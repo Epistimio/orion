@@ -29,4 +29,4 @@ we would want to accomodate C++20.
 
 # Team
 
-Dendi Suhubdy, Xavier Boulithier
+Dendi Suhubdy, Xavier Bouthillier
