@@ -29,4 +29,4 @@ we would want to accomodate C++20.
 
 # Team
 
-Dendi Suhubdy, Xavier Bouthillier
+Dendi Suhubdy, Xavier Bouthillier, Christos Tsirigotis. Supervised by Pascal Lamblin and Frédéric Bastien
