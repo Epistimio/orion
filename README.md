@@ -20,13 +20,44 @@ The choice of new hyperparameters would be done using Bayesian optimization algo
 
 # Execution of Research Plan
 
-We plan to build this package that would be language agnostic, and also operation system agnostic, although at the beginning we would want to use it for mainly python scripts. This package is written mainly in C++17 and
-we would want to accomodate C++20. 
+We plan to build this package that would be language agnostic, and also operation system agnostic, although at the beginning we would want to use it for mainly python scripts. This package is written mainly in C++17 and we would want to accomodate C++20. 
+
+# Installation
+
+`mkdir build`
+`cd build`
+`cmake ..`
+`make -j8`
+`(sudo) make install`
+
+This will install `metaoptd` and `metaopt` binary in your computer. You will then need to install the `metaopt` Python package by
+
+`python setup.py install`
 
 # Usage
 
-`evolve <python-script> --hyperparameter-argc`
+Run the daemon by executing
+
+`metaoptd`
+
+assuming that `metaoptd` is in your `$PATH`, you can also set up a cron-job to automatically start `metaoptd` when your computer (node) starts.
+
+`metaopt` is the client that interacts with `metaoptd` (daemon service) that would submit job queues for the current node, `metaoptd` would then schedule efficiently the job based on the training statistics that we've collected frominside the experiemnt script `<python-script>`
+
+Run your experiment by calling
+
+`metaopt <python-script> --hyperparameter-argv`
+
+This will spawn python as a child process and with your argument parser, we highly suggest that your hyperparameters are stated in the argument parser at the main script of your experiment. The stream of logs of the training statistics would be saved in the hyperparameter history on LevelDB/TinyDB or for a cluster/supercomputer in a MongoDB database, you would control the condition of your experiment via the python package `metaopt`
 
 # Team
 
-Dendi Suhubdy, Xavier Bouthillier, Christos Tsirigotis. Supervised by Pascal Lamblin and Frédéric Bastien
+Dendi Suhubdy, Xavier Bouthillier, Christos Tsirigotis. Supervised by Pascal Lamblin and Frédéric Bastien.
+
+# Copyright
+
+Univeriste de Montreal, 2017.
+
+# License
+
+GNU GPL 
