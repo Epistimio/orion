@@ -1,23 +1,20 @@
 cmake_minimum_required(VERSION 3.8.0)
 
-project (evolve)
+project (METAOPT)
 
 set(CMAKE_BUILD_TYPE Release)
 set (CMAKE_CXX_STANDARD 11)
 
-set(BOOST_INCLUDE_DIR /usr/local/Cellar/boost/1.65.1/include)
-set(BOOST_LIBRARY_DIR /usr/local/Cellar/boost/1.65.1/lib)
-
-find_package( Boost 1.65 COMPONENTS system REQUIRED )
+FIND_PACKAGE( Boost 1.55 COMPONENTS program_options REQUIRED )
 
 include_directories( 
-	${BOOST_INCLUDE_DIR}
-	${FOOD_SOURCE_DIR}/include
+	${Boost_INCLUDE_DIR}
+	${METAOPT_SOURCE_DIR}/include
 )
 
 link_directories(
-	${BOOST_LIBRARY_DIR}
-	${FOOD_SOURCE_DIR}/lib
+	${Boost_LIBRARY_DIR}
+	${METAOPT_SOURCE_DIR}/lib
 )
 
 set(
@@ -28,12 +25,25 @@ set(
 #add_library(exchange SHARED ${SOURCES})
 
 add_executable(
-    evolve
+    metaoptd
+	${METAOPT_SOURCE_DIR}/src/metaoptd.cpp
+)
+
+add_executable(
+    metaopt
+	${METAOPT_SOURCE_DIR}/src/metaopt.cpp
 )
 
 TARGET_LINK_LIBRARIES(
-    evolve
+    metaoptd
     ${Boost_LIBRARY_DIR}
 )
 
-install(TARGETS evolve DESTINATION /usr/local/bin)
+TARGET_LINK_LIBRARIES(
+    metaopt
+    ${Boost_LIBRARY_DIR}
+	-lboost_program_options
+)
+
+install(TARGETS metaoptd DESTINATION /usr/local/bin)
+install(TARGETS metaopt DESTINATION /usr/local/bin)
