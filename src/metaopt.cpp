@@ -6,7 +6,6 @@
 #include <string>
 
 // Local headers
-#include "evolve.h"
 
 namespace
 {
@@ -25,7 +24,8 @@ int main(int argc, char** argv)
     namespace po = boost::program_options;
     po::options_description desc("Options");
     desc.add_options()
-      ("--script", "Python Script file (Experiment)"); 
+      ("--script", "Python Script file (Experiment)"),
+      ("--hyperparameter-optimization-argparse", "Normal Python Script Argparse - Hyperparameters, e.g. --batchsize --dropout"); 
  
     po::variables_map vm;
     try 
@@ -37,8 +37,7 @@ int main(int argc, char** argv)
        */ 
       if ( vm.count("help")  ) 
       { 
-        std::cout << "Basic Command Line Parameter App" << std::endl 
-                  << desc << std::endl; 
+        std::cout << "Meta Hyperparameter Optimization" << std::endl  << desc << std::endl; 
         return SUCCESS; 
       } 
  
