@@ -7,6 +7,9 @@ set (CMAKE_CXX_STANDARD 11)
 
 FIND_PACKAGE( Boost 1.55 COMPONENTS program_options REQUIRED )
 
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_RUNTIME ON)
+
 include_directories( 
 	${Boost_INCLUDE_DIR}
 	${METAOPT_SOURCE_DIR}/include
@@ -37,6 +40,7 @@ add_executable(
 TARGET_LINK_LIBRARIES(
     metaoptd
     ${Boost_LIBRARY_DIR}
+	${Boost_LIBRARIES}
 )
 
 TARGET_LINK_LIBRARIES(
