@@ -5,7 +5,7 @@ project (METAOPT)
 set(CMAKE_BUILD_TYPE Release)
 set (CMAKE_CXX_STANDARD 11)
 
-FIND_PACKAGE( Boost 1.55 COMPONENTS program_options REQUIRED )
+FIND_PACKAGE( Boost 1.54 COMPONENTS program_options REQUIRED )
 
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME ON)
