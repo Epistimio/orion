@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/dendisuhubdy/metaopt.svg?branch=master)](https://travis-ci.org/dendisuhubdy/metaopt)
+Linux x86-64
+[![Build Status](https://travis-ci.org/mila-udem/metaopt.svg?branch=master)](https://travis-ci.org/mila-udem/metaopt)
 
 # Asynchronous Hyperparameter Optimization on Distributed N-Node CPU/GPUs
 
