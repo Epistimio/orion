@@ -29,8 +29,6 @@ addons:
       - valgrind
       - g++-6
       - g++-7
-      - clang-3.9
-      - clang-5.0
     sources: &sources
       - ubuntu-toolchain-r-test
 
