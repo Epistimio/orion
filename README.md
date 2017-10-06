@@ -1,6 +1,3 @@
-Linux x86-64
-[![Build Status](https://travis-ci.org/mila-udem/metaopt.svg?branch=master)](https://travis-ci.org/mila-udem/metaopt)
-
 | System | 2.7 | 3.5 |
 | --- | --- | --- |
 | Linux CPU | [![Build Status](https://travis-ci.org/mila-udem/metaopt.svg?branch=master)](https://travis-ci.org/mila-udem/metaopt) | [![Build Status](https://travis-ci.org/mila-udem/metaopt.svg?branch=master)](https://travis-ci.org/mila-udem/metaopt) |
