@@ -16,7 +16,7 @@ env:
     # GitHub token for pushing the documentation, logging in with the
     # Travis command line utility and so on. The token is stored in the
     # ${GITHUB_TOKEN} environment variable.
-    - secure: "642dccd857b27ab5f326ca6b6abae0f92a207918"
+    - secure:
 
   # Workaround for https://github.com/travis-ci/travis-ci/issues/4681
   matrix:
@@ -148,6 +148,20 @@ matrix:
     # With Boost 1.62
     - os: linux
       env: UNIT_TESTS=true LLVM_VERSION=default BOOST_VERSION=1.62.0
+      compiler: clang
+    # With Boost 1.63
+    - os: linux
+      env: UNIT_TESTS=true LLVM_VERSION=default BOOST_VERSION=1.63.0
+      compiler: clang
+
+    # With Boost 1.64
+    - os: linux
+      env: UNIT_TESTS=true LLVM_VERSION=default BOOST_VERSION=1.64.0
+      compiler: clang
+
+    # With Boost 1.65
+    - os: linux
+      env: UNIT_TESTS=true LLVM_VERSION=default BOOST_VERSION=1.65.0
       compiler: clang
 
     # Without Boost (make sure we don't depend on it)
@@ -317,8 +331,8 @@ before_script:
   ############################################################################
   # Set the git identity (for pushing the documentation and the benchmarks)
   ############################################################################
-  - git config --global user.name "Dendi Suhubdy"
-  - git config --global user.email "suhubdyd@iro.umontreal.ca"
+  - git config --global user.name "Travis Bot"
+  - git config --global user.email "<>"
 
   ############################################################################
   # Go back to the root of the project and setup the build directory

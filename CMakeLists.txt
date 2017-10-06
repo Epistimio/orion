@@ -42,7 +42,7 @@ TARGET_LINK_LIBRARIES(
 TARGET_LINK_LIBRARIES(
     metaopt
     ${Boost_LIBRARY_DIR}
-	-lboost_program_options
+	${Boost_LIBRARIES}
 )
 
 install(TARGETS metaoptd DESTINATION /usr/local/bin)
