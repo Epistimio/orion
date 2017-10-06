@@ -5,7 +5,10 @@ project (METAOPT)
 set(CMAKE_BUILD_TYPE Release)
 set (CMAKE_CXX_STANDARD 11)
 
-FIND_PACKAGE( Boost 1.55 COMPONENTS program_options REQUIRED )
+FIND_PACKAGE( Boost 1.54 COMPONENTS program_options REQUIRED )
+
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_RUNTIME ON)
 
 include_directories( 
 	${Boost_INCLUDE_DIR}
@@ -37,12 +40,13 @@ add_executable(
 TARGET_LINK_LIBRARIES(
     metaoptd
     ${Boost_LIBRARY_DIR}
+	${Boost_LIBRARIES}
 )
 
 TARGET_LINK_LIBRARIES(
     metaopt
     ${Boost_LIBRARY_DIR}
-	-lboost_program_options
+	${Boost_LIBRARIES}
 )
 
 install(TARGETS metaoptd DESTINATION /usr/local/bin)
