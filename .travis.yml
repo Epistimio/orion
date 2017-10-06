@@ -28,7 +28,6 @@ addons:
     packages:
       - valgrind
       - g++-6
-      - g++-7
       - libboost-all-dev
     sources: &sources
       - ubuntu-toolchain-r-test
@@ -37,7 +36,6 @@ addons:
 cache:
   directories:
     - ${TRAVIS_BUILD_DIR}/deps/llvm-3.9.0
-    - ${TRAVIS_BUILD_DIR}/deps/llvm-5.0.0
     - ${TRAVIS_BUILD_DIR}/deps/boost-1.55.0
 
 
@@ -67,18 +65,10 @@ matrix:
     - os: linux
       env: UNIT_TESTS=true LLVM_VERSION=3.9.0 BOOST_VERSION=default ENABLE_MEMCHECK=true
       compiler: clang
-    # Clang 5.0
-    - os: linux
-      env: UNIT_TESTS=true LLVM_VERSION=5.0.0 BOOST_VERSION=default ENABLE_MEMCHECK=true
-      compiler: clang
 
     # GCC 6
     - os: linux
       env: UNIT_TESTS=true COMPILER=g++-6     BOOST_VERSION=default ENABLE_MEMCHECK=true
-      compiler: gcc
-    # GCC 7
-    - os: linux
-      env: UNIT_TESTS=true COMPILER=g++-7     BOOST_VERSION=default ENABLE_MEMCHECK=true
       compiler: gcc
 
     # Xcode 6.4
@@ -119,9 +109,9 @@ matrix:
       env: UNIT_TESTS=true BOOST_VERSION=default CMAKE_OPTIONS="-DBOOST_HANA_ENABLE_EXCEPTIONS=OFF"
       osx_image: xcode8
 
-    # With Boost 1.55
+    # With Boost 1.54
     - os: linux
-      env: UNIT_TESTS=true LLVM_VERSION=default BOOST_VERSION=1.55.0
+      env: UNIT_TESTS=true LLVM_VERSION=default BOOST_VERSION=1.54.0
       compiler: clang
 
     # Without Boost (make sure we don't depend on it)
@@ -190,12 +180,11 @@ install:
   # Setup default versions and override compiler if needed
   ############################################################################
   - if [[ "${LLVM_VERSION}" == "default" ]]; then LLVM_VERSION=3.9.0; fi
-  - if [[ "${BOOST_VERSION}" == "default" ]]; then BOOST_VERSION=1.55.0; fi
-
+  - if [[ "${BOOST_VERSION}" == "default" ]]; then BOOST_VERSION=1.54.0; fi
   - if [[ "${COMPILER}" != "" ]]; then export CXX=${COMPILER}; fi
 
   ############################################################################
-  # Install Boost
+  # Install Boost headers
   ############################################################################
   - |
     if [[ "${BOOST_VERSION}" != "" ]]; then
@@ -204,7 +193,7 @@ install:
         if [[ "${BOOST_VERSION}" == "trunk" ]]; then
           BOOST_URL="http://github.com/boostorg/boost.git"
           travis_retry git clone --depth 1 --recursive --quiet ${BOOST_URL} ${BOOST_DIR} || exit 1
-          (cd ${BOOST_DIR} && ./bootstrap.sh && ./b2 install)
+          (cd ${BOOST_DIR} && ./bootstrap.sh && ./b2 headers)
         else
           BOOST_URL="http://sourceforge.net/projects/boost/files/boost/${BOOST_VERSION}/boost_${BOOST_VERSION//\./_}.tar.gz"
           mkdir -p ${BOOST_DIR}
@@ -322,28 +311,26 @@ script:
   # Only push the documentation when we're on master, otherwise just make sure
   # it builds properly.
   ############################################################################
-  - |
-    if [[ "${DOCUMENTATION}" == "true" && "${BOOST_BUILD}" != "true" ]]; then
-      (cd build && ! make doc 2>&1 | grep -E "warning|error") || exit 1
-      if [[ "${TRAVIS_PULL_REQUEST}" == "false" && "${TRAVIS_BRANCH}" == "master" ]]; then
-        # Suppress output to avoid leaking the token when the command fails
-        git clone https://dendisuhubdy:${GITHUB_TOKEN}@github.com/boostorg/hana --depth 1 --branch=gh-pages doc/html &>/dev/null
-        rm -rf doc/html/{search,*.png,*.css,*.js,*.html}
-        cp -R build/doc/html/* doc/html/
-        pushd doc/html
-        git add --all .
-        git commit --allow-empty -m "Update documentation to ${TRAVIS_COMMIT:0:7}"
-        # Suppress output to avoid leaking the token
-        travis_retry git push origin gh-pages &>/dev/null
-        popd
-      fi
-    fi
-  - |
-    if [[ "${DOCUMENTATION}" == "true" && "${BOOST_BUILD}" == "true" ]]; then
-      touch Jamroot
-      (cd doc && b2)
-      if [[ ! -d doc/html ]]; then exit 1; fi
-    fi
+  #- |
+  #  if [[ "${DOCUMENTATION}" == "true" && "${BOOST_BUILD}" != "true" ]]; then
+  #    (cd build && ! make doc 2>&1 | grep -E "warning|error") || exit 1
+  #    if [[ "${TRAVIS_PULL_REQUEST}" == "false" && "${TRAVIS_BRANCH}" == "master" ]]; then
+  #      # Suppress output to avoid leaking the token when the command fails
+  #      git clone https://dendisuhubdy:${GITHUB_TOKEN}@github.com/boostorg/hana --depth 1 --branch=gh-pages doc/html &>/dev/null
+  #      rm -rf doc/html/{search,*.png,*.css,*.js,*.html}
+  #      cp -R build/doc/html/* doc/html/
+  #      pushd doc/html
+  #      git add --all .
+  #      travis_retry git push origin gh-pages &>/dev/null
+  #      popd
+  #    fi
+  #  fi
+  #- |
+  #  if [[ "${DOCUMENTATION}" == "true" && "${BOOST_BUILD}" == "true" ]]; then
+  #    touch Jamroot
+  #    (cd doc && b2)
+  #    if [[ ! -d doc/html ]]; then exit 1; fi
+  #  fi
   ############################################################################
   # We only run the full benchmarks on `master` when we're not in a pull
   # request, because otherwise it takes too much Travis resources. Otherwise,
@@ -352,30 +339,30 @@ script:
   # Note: The benchmarks associated to a version of the documentation are
   #       stored in `doc/html/benchmarks/`.
   ############################################################################
-  - |
-    if [[ "${BENCHMARKS}" == "true" ]]; then
-      if [[ "${TRAVIS_PULL_REQUEST}" == "false" && "${TRAVIS_BRANCH}" == "master" ]]; then
-        (cd build && make benchmarks) || exit 1
-        compiler_slug=$(cd build && make travis_compiler_slug | grep 'travis_compiler_slug:' | cut -d ' ' -f 2)
-        config_slug=$(cd build && make travis_config_slug | grep 'travis_config_slug:' | cut -d ' ' -f 2)
-        # Suppress output to avoid leaking the token when the command fails
-        git clone https://dendisuhubdy:${GITHUB_TOKEN}@github.com/boostorg/hana --depth 1 --branch=gh-pages doc/html &>/dev/null
-        rm -rf doc/html/benchmarks/${config_slug}/${compiler_slug}/
-        mkdir -p doc/html/benchmarks/${config_slug}/${compiler_slug}/
-        for benchmark in $(ls build/benchmark/*.json | grep -v ".erb"); do
-          cp ${benchmark} doc/html/benchmarks/${config_slug}/${compiler_slug}/
-        done
-        pushd doc/html
-        git add --all .
-        git commit --allow-empty -m "Update benchmarks to ${TRAVIS_COMMIT:0:7} for build type '${config_slug}' and compiler '${compiler_slug}'"
-        # Suppress output to avoid leaking the token
-        travis_retry git push origin gh-pages &>/dev/null
-        popd
-      else
-        export BOOST_HANA_JUST_CHECK_BENCHMARKS=true
-        (cd build && make benchmarks -j2)
-      fi
-    fi
+  #- |
+  #  if [[ "${BENCHMARKS}" == "true" ]]; then
+  #    if [[ "${TRAVIS_PULL_REQUEST}" == "false" && "${TRAVIS_BRANCH}" == "master" ]]; then
+  #      (cd build && make benchmarks) || exit 1
+  #      compiler_slug=$(cd build && make travis_compiler_slug | grep 'travis_compiler_slug:' | cut -d ' ' -f 2)
+  #      config_slug=$(cd build && make travis_config_slug | grep 'travis_config_slug:' | cut -d ' ' -f 2)
+  #      # Suppress output to avoid leaking the token when the command fails
+  #      git clone https://dendisuhubdy:${GITHUB_TOKEN}@github.com/boostorg/hana --depth 1 --branch=gh-pages doc/html &>/dev/null
+  #      rm -rf doc/html/benchmarks/${config_slug}/${compiler_slug}/
+  #      mkdir -p doc/html/benchmarks/${config_slug}/${compiler_slug}/
+  #      for benchmark in $(ls build/benchmark/*.json | grep -v ".erb"); do
+  #        cp ${benchmark} doc/html/benchmarks/${config_slug}/${compiler_slug}/
+  #      done
+  #      pushd doc/html
+  #      git add --all .
+  #      git commit --allow-empty -m "Update benchmarks to ${TRAVIS_COMMIT:0:7} for build type '${config_slug}' and compiler '${compiler_slug}'"
+  #     # Suppress output to avoid leaking the token
+  #      travis_retry git push origin gh-pages &>/dev/null
+  #      popd
+  #    else
+  #      export BOOST_HANA_JUST_CHECK_BENCHMARKS=true
+  #      (cd build && make benchmarks -j2)
+  #    fi
+  #  fi
   ############################################################################
   # Build and run the unit tests and examples.
   ############################################################################
