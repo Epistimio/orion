@@ -1,0 +1,41 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from __future__ import print_function
+import argparse
+import textwrap
+
+from metaopt import __version__
+
+DESCRIPTION = """\
+mopt:
+  MetaOpt cli script for asynchronous distributed hyperparameter optimization
+"""
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=textwrap.dedent(DESCRIPTION))
+    parser.add_argument('-V', '--version',
+                        action='version', version='metaopt ' + str(__version__))
+    parser.add_argument('-p', '--pool',
+                        type=int, metavar='ID',
+                        help='worker pool id to subscribe to')
+    parser.add_argument('-c', '--config',
+                        type=argparse.FileType('r'), metavar='path_to_config',
+                        help='path to your script\'s configuration file (yaml, json, ini, ...anything)')
+    parser.add_argument('script',
+                        type=str, metavar='path_to_script',
+                        help='path to your experiment\'s Python script')
+    parser.add_argument('script_args',
+                        nargs=argparse.REMAINDER, metavar='...',
+                        help='Command line arguments to your script (if any)')
+
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+    args = parse_arguments()
+    print(args)
+    if args.config:
+        print(args.config.read())
