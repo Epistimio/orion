@@ -19,8 +19,8 @@ def parse_arguments():
     parser.add_argument('-V', '--version',
                         action='version', version='metaopt ' + str(__version__))
     parser.add_argument('-p', '--pool',
-                        type=int, metavar='ID',
-                        help='worker pool id to subscribe to')
+                        type=str, metavar='ID',
+                        help='worker pool unique string id (e.g. exp name) to subscribe to')
     parser.add_argument('-c', '--config',
                         type=argparse.FileType('r'), metavar='path_to_config',
                         help='path to your script\'s configuration file (yaml, json, ini, ...anything)')
@@ -36,6 +36,7 @@ def parse_arguments():
 
 if __name__ == '__main__':
     args = parse_arguments()
+
     print(args)
     if args.config:
         print(args.config.read())
