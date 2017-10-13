@@ -1,4 +1,4 @@
-Intial Research Plan
+Initial Research Plan
 ====
 
 The plan of this package is to build an automatic tool to do hyperparameter optimization. During our time at MILA, before and after coding up research ideas we always do hyperparameter optimization to set up a baseline on SOTA.

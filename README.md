@@ -54,4 +54,4 @@ Montreal Institute of Learning Algorithms, Université de Montréal, 2017.
 
 # License
 
-GNU General Public License v3.0
+3-Clause BSD License
