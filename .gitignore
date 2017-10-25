@@ -3,6 +3,9 @@
 ### General ###
 *~
 
+### StarUML documentation ###
+*.mdj
+
 ### C++ ###
 # Prerequisites
 *.d
