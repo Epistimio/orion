@@ -1,42 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import print_function
-import argparse
-import textwrap
+from __future__ import print_function, absolute_import
 
-from metaopt import __version__
+from metaopt.io import parsing
 
-DESCRIPTION = """\
+MOPT_DESCRIPTION = """\
 mopt:
-  MetaOpt cli script for asynchronous distributed hyperparameter optimization
+  MetaOpt cli script for asynchronous distributed optimization
 """
 
-
-def parse_arguments():
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=textwrap.dedent(DESCRIPTION))
-    parser.add_argument('-V', '--version',
-                        action='version', version='metaopt ' + str(__version__))
-    parser.add_argument('-p', '--pool',
-                        type=str, metavar='ID',
-                        help='worker pool unique string id (e.g. exp name) to subscribe to')
-    parser.add_argument('-c', '--config',
-                        type=argparse.FileType('r'), metavar='path_to_config',
-                        help='path to your script\'s configuration file (yaml, json, ini, ...anything)')
-    parser.add_argument('script',
-                        type=str, metavar='path_to_script',
-                        help='path to your experiment\'s Python script')
-    parser.add_argument('script_args',
-                        nargs=argparse.REMAINDER, metavar='...',
-                        help='Command line arguments to your script (if any)')
-
-    return parser.parse_args()
-
-
 if __name__ == '__main__':
-    args = parse_arguments()
+    # Fetch experiment name, user's script, args and parameter config
+    # Use `-h` option to
+    expconfig = parsing.mopt_args(MOPT_DESCRIPTION)
+    # TODO load defaults here...
+    # Fetch mopt system variables (e.g. database information)
+    # See metaopt.io.parsing.MOPT_ENV_VARS for environmental variables used
+    expconfig = parsing.env_vars(expconfig)
+    # Fetch options for optimization and auto stopping method to be used
+    # See inside `config` at metaopt's root directory for all possible options
+    expconfig = parsing.mopt_config(expconfig)
+    # TODO check database here, but decide on database
 
-    print(args)
-    if args.config:
-        print(args.config.read())
+    print(expconfig)
+    if expconfig['userconfig']:
+        print(expconfig['userconfig'])
