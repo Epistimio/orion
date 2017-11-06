@@ -1,2 +1,19 @@
+# General info
+include LICENSE
+include README.md
+
+# Control and setup helpers
 include versioneer.py
 include src/metaopt/_version.py
+
+# Data and configuration files
+graft config
+
+# Patterns to exclude from any directory
+global-exclude *~
+global-exclude *.flc
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude .dircopy.log
+global-exclude .git
+global-exclude .ipynb_checkpoints
