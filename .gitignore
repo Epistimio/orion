@@ -2,6 +2,7 @@
 
 ### General ###
 *~
+*.swp
 
 ### StarUML documentation ###
 *.mdj
