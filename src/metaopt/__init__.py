@@ -30,5 +30,5 @@ __authors__ = {
 __url__ = 'https://github.com/mila-udem/metaopt'
 
 from .utils.appdirs import AppDirs
-dirs = AppDirs('metaopt', __author_short__)
+dirs = AppDirs(__name__, __author_short__)
 del AppDirs
