@@ -1,27 +1,56 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""
+mopt:
+  MetaOpt cli script for asynchronous distributed optimization
+
+"""
 from __future__ import print_function, absolute_import
+import getpass
+import datetime
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
 
 from metaopt.io import parsing
 
-MOPT_DESCRIPTION = """\
-mopt:
-  MetaOpt cli script for asynchronous distributed optimization
-"""
-
 if __name__ == '__main__':
+    starttime = datetime.datetime.utcnow()
+    user = getpass.getuser()
+
     # Fetch experiment name, user's script, args and parameter config
     # Use `-h` option to
-    expconfig = parsing.mopt_args(MOPT_DESCRIPTION)
-    # TODO load defaults here...
-    # Fetch mopt system variables (e.g. database information)
-    # See metaopt.io.parsing.MOPT_ENV_VARS for environmental variables used
-    expconfig = parsing.env_vars(expconfig)
-    # Fetch options for optimization and auto stopping method to be used
-    # See inside `config` at metaopt's root directory for all possible options
-    expconfig = parsing.mopt_config(expconfig)
-    # TODO check database here, but decide on database
+    cmdargs, cmdconfig = parsing.mopt_args(__doc__)
+    #  print(cmdargs, cmdconfig)
 
-    print(expconfig)
-    if expconfig['userconfig']:
-        print(expconfig['userconfig'])
+    expconfig = parsing.default_options(user, starttime)
+    # Fetch mopt system variables (database and resource information)
+    # See `metaopt.io.parsing.ENV_VARS` for environmental variables used
+    expconfig = parsing.env_vars(expconfig)
+
+    tmpconfig = parsing.mopt_config(expconfig, dict(), cmdconfig, cmdargs)
+    exp_name = tmpconfig['exp_name']
+    db_opts = tmpconfig['database']
+    print(exp_name)
+    pp.pprint(db_opts)
+    print()
+
+    # TODO: Init database with `db_opts`
+    # TODO: Get experiment metadata for experiment with name == `exp_name`,
+    # if it exists.
+    dbconfig = dict()
+
+    expconfig = parsing.mopt_config(expconfig, dbconfig, cmdconfig, cmdargs)
+
+    metadata = dict()
+    metadata['user'] = user
+    metadata['starttime'] = starttime
+    # XXX: More metadata on this experiment, mby for each run of this experiment
+    # log different configs too..
+
+    # XXX Module defaults should be written to an example configuration file
+    # automatically as pre-commit hooks!!
+    # 1. check whether supplied method{optimizer, dynamic} names exist
+    # 2. check whether supplied specific methods/parameters are correct
+    pp.pprint(dict(expconfig))
+    print()
+    pp.pprint(metadata)
