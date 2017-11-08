@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""\
+"""
 MetaOpt is an aynchronous distributed framework for black-box function
 optimization. To be used as a hyperparameter optimizer for
 machine learning models and training, as well as a flexible experimentation

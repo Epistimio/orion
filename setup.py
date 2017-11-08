@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 import sys
 import os
+import textwrap
 from glob import iglob
 
 from setuptools import (setup, find_packages)
@@ -37,7 +38,7 @@ setup_args = dict(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description=metaopt.__descr__,
-    long_description=metaopt.__doc__,
+    long_description=textwrap.dedent(metaopt.__doc__),
     license=metaopt.__license__,
     author=metaopt.__author__,
     author_email=metaopt.__author_email__,
@@ -47,7 +48,7 @@ setup_args = dict(
     include_package_data=True,
     data_files=find_data_files(),
     scripts=['scripts/mopt'],
-    install_requires=[],
+    install_requires=['six', 'PyYAML'],
     setup_requires=[],
     )
 
@@ -77,5 +78,5 @@ setup_args['classifiers'] = [
     ]
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     setup(**setup_args)
