@@ -11,3 +11,5 @@ script:
 
 services:
     - postgresql
+    - mongodb
+    - mysql
