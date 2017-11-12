@@ -51,7 +51,7 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=fixme,F0401,intern-builtin,nonzero-method,parameter-unpacking,backtick,raw_input-builtin,dict-view-method,filter-builtin-not-iterating,long-builtin,unichr-builtin,input-builtin,unicode-builtin,file-builtin,map-builtin-not-iterating,delslice-method,apply-builtin,cmp-method,setslice-method,coerce-method,long-suffix,raising-string,import-star-module-level,buffer-builtin,reload-builtin,unpacking-in-except,print-statement,hex-method,old-octal-literal,metaclass-assignment,dict-iter-method,range-builtin-not-iterating,using-cmp-argument,indexing-exception,no-absolute-import,coerce-builtin,getslice-method,suppressed-message,execfile-builtin,round-builtin,useless-suppression,reduce-builtin,old-raise-syntax,zip-builtin-not-iterating,cmp-builtin,xrange-builtin,standarderror-builtin,old-division,oct-method,next-method-called,old-ne-operator,basestring-builtin
+disable=unidiomatic-typecheck,redefined-outer-name,fixme,F0401,intern-builtin,wrong-import-position
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -375,7 +375,7 @@ known-third-party=enchant
 max-args=8
 
 # Maximum number of attributes for a class (see R0902).
-max-attributes=7
+max-attributes=10
 
 # Maximum number of boolean expressions in a if statement
 max-bool-expr=5
