@@ -49,20 +49,24 @@ setup_args = dict(
     package_dir={'': 'src'},
     include_package_data=True,
     data_files=find_data_files(),
-    scripts=['scripts/mopt'],
+    entry_points={
+        'console_scripts': [
+            'mopt = metaopt.cli:main',
+            ],
+        },
     install_requires=['six', 'PyYAML'],
     tests_require=['pytest>=3.0.0'],
     setup_requires=['setuptools', 'pytest-runner>=2.0,<3dev'],
     #  http://peak.telecommunity.com/DevCenter/setuptools#setting-the-zip-safe-flag
     #  zip_safe=False
-)
+    )
 
 setup_args['keywords'] = [
     'Machine Learning',
     'Deep Learning',
     'Distributed',
     'Optimization',
-]
+    ]
 
 setup_args['platforms'] = ['Linux']
 
