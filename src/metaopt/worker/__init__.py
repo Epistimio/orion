@@ -21,4 +21,3 @@ A worker is delegated with various management and functional responsibilities:
       with daemon for further instructions.
 
 """
-
