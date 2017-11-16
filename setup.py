@@ -28,56 +28,57 @@ def find_data_files():
     configs = [cfg for cfg in iglob(config_path) if isfile(cfg)]
 
     data_files = [
-            (install_config_path, configs),
-            (metaopt.dirs.site_data_dir, ['LICENSE', 'README.md']),
-            ]
+        (install_config_path, configs),
+        (metaopt.dirs.site_data_dir, ['LICENSE', 'README.rst']),
+    ]
 
     return data_files
 
 
 setup_args = dict(
-        name=metaopt.__name__,
-        version=versioneer.get_version(),
-        cmdclass=versioneer.get_cmdclass(),
-        description=metaopt.__descr__,
-        long_description=textwrap.dedent(metaopt.__doc__),
-        license=metaopt.__license__,
-        author=metaopt.__author__,
-        author_email=metaopt.__author_email__,
-        url=metaopt.__url__,
-        packages=find_packages('src'),
-        package_dir={'': 'src'},
-        include_package_data=True,
-        data_files=find_data_files(),
-        scripts=['scripts/mopt'],
-        install_requires=['six', 'PyYAML'],
-        tests_require=['pytest'],
-        setup_requires=['pytest-runner'],
-        )
+    name=metaopt.__name__,
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
+    description=metaopt.__descr__,
+    long_description=textwrap.dedent(metaopt.__doc__),
+    license=metaopt.__license__,
+    author=metaopt.__author__,
+    author_email=metaopt.__author_email__,
+    url=metaopt.__url__,
+    packages=find_packages(where='src'),
+    package_dir={'': 'src'},
+    include_package_data=True,
+    data_files=find_data_files(),
+    scripts=['scripts/mopt'],
+    install_requires=['six', 'PyYAML'],
+    tests_require=['pytest>=3.0.0'],
+    setup_requires=['setuptools', 'pytest-runner>=2.0,<3dev'],
+    #  http://peak.telecommunity.com/DevCenter/setuptools#setting-the-zip-safe-flag
+    #  zip_safe=False
+)
 
 setup_args['keywords'] = [
-        'Machine Learning',
-        'Deep Learning',
-        'Distributed',
-        'Optimization',
-        ]
+    'Machine Learning',
+    'Deep Learning',
+    'Distributed',
+    'Optimization',
+]
 
 setup_args['platforms'] = ['Linux']
 
 setup_args['classifiers'] = [
-        'Development Status :: 1 - Planning',
-        'Intended Audience :: Developers',
-        'Intended Audience :: Education',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: BSD License',
-        'Operating System :: POSIX',
-        'Operating System :: Unix',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 3',
-        'Topic :: Scientific/Engineering',
-        'Topic :: Scientific/Engineering :: Artificial Intelligence',
-        ]
+    'Development Status :: 1 - Planning',
+    'Intended Audience :: Developers',
+    'Intended Audience :: Education',
+    'Intended Audience :: Science/Research',
+    'License :: OSI Approved :: BSD License',
+    'Operating System :: POSIX',
+    'Operating System :: Unix',
+    'Programming Language :: Python',
+    'Topic :: Scientific/Engineering',
+    'Topic :: Scientific/Engineering :: Artificial Intelligence',
+] + [('Programming Language :: Python :: %s' % x)
+     for x in '2 2.6 2.7 3 3.4 3.5 3.6'.split()]
 
 if __name__ == '__main__':
     setup(**setup_args)
