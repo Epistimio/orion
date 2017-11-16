@@ -5,11 +5,10 @@ mopt:
   MetaOpt cli script for asynchronous distributed optimization
 
 """
-from __future__ import print_function, absolute_import
-import getpass
+from __future__ import absolute_import
+
 import datetime
-import pprint
-pp = pprint.PrettyPrinter(indent=4)
+import getpass
 
 from metaopt.io import parsing
 
@@ -30,9 +29,9 @@ if __name__ == '__main__':
     tmpconfig = parsing.mopt_config(expconfig, dict(), cmdconfig, cmdargs)
     exp_name = tmpconfig['exp_name']
     db_opts = tmpconfig['database']
-    print(exp_name)
-    pp.pprint(db_opts)
-    print()
+    #  print(exp_name)
+    #  pp.pprint(db_opts)
+    #  print()
 
     # TODO: Init database with `db_opts`
     # TODO: Get experiment metadata for experiment with name == `exp_name`,
@@ -51,6 +50,6 @@ if __name__ == '__main__':
     # automatically as pre-commit hooks!!
     # 1. check whether supplied method{optimizer, dynamic} names exist
     # 2. check whether supplied specific methods/parameters are correct
-    pp.pprint(dict(expconfig))
-    print()
-    pp.pprint(metadata)
+    #  pp.pprint(dict(expconfig))
+    #  print()
+    #  pp.pprint(metadata)
