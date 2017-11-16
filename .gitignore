@@ -2,53 +2,24 @@
 
 ### General ###
 *~
-*.swp
+*.sw*
+.idea/
+.spyderproject
+.spyproject
+.ropeproject
 
-### StarUML documentation ###
+# StarUML documentation
 *.mdj
-
-### C++ ###
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
-build/*
-Build/*
 
 ### Python ###
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*$py.class
+
+# Compiled Dynamic libraries (C extensions)
+*.so
 
 # Distribution / packaging
 .Python
@@ -66,7 +37,8 @@ sdist/
 var/
 *.egg-info/
 .installed.cfg
-*.egg
+*.egg[s]
+MANIFEST
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -86,7 +58,8 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
-*,cover
+*.cover
+.hypothesis/
 
 # Translations
 *.mo
@@ -96,9 +69,8 @@ coverage.xml
 *.log
 
 # Sphinx documentation
-docs/_build/
-doc/_doxybuild
-doc/_build
+docs/build
+docs/src/reference
 
 # PyBuilder
 target/
