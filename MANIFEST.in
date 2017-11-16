@@ -1,19 +1,21 @@
 # General info
 include LICENSE
-include README.md
+include *.rst
 
 # Control and setup helpers
-include versioneer.py
 include src/metaopt/_version.py
+include versioneer.py
 
-# Data and configuration files
-graft config
+# Exclude development helpers
+exclude .coveragerc
+exclude .travis.yml
+exclude tox.ini
+exclude *-requirements.txt
+exclude .appveyor.yml
 
-# Patterns to exclude from any directory
-global-exclude *~
-global-exclude *.flc
-global-exclude *.pyc
-global-exclude *.pyo
-global-exclude .dircopy.log
-global-exclude .git
-global-exclude .ipynb_checkpoints
+# Include src, tests, docs
+recursive-include docs *.rst *.py
+include docs/requirements.txt
+prune docs/build
+recursive-include src *.py
+recursive-include tests *.py
