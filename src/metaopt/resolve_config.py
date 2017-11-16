@@ -1,8 +1,7 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.resolve_config` -- Functions for configuration parsing and resolving
-==================================================================================
+:mod:`metaopt.resolve_config` -- Configuration parsing and resolving
+====================================================================
 
 .. module:: resolve_config
    :platform: Unix
@@ -11,7 +10,7 @@
 How:
 
  - Experiment name resolves like this:
-    * cmd-arg **>** cmd-provided moptconfig **>** :const:`DEF_CMD_EXP_NAME`
+    * cmd-arg **>** cmd-provided moptconfig **>** REQUIRED (no default is given)
 
  - Database options resolve with the following precedence (high to low):
     * cmd-provided moptconfig **>** env vars **>** default files **>** defaults
@@ -63,7 +62,6 @@ log = logging.getLogger(__name__)
 # Default settings for command line arguments (option, description)
 DEF_CMD_MAX_TRIALS = (-1, 'inf/until preempted')
 DEF_CMD_POOL_SIZE = (10, str(10))
-DEF_CMD_EXP_NAME = (None, '{user}_{starttime}')
 
 DEF_CONFIG_FILES_PATHS = [
     os.path.join(metaopt.DIRS.site_data_dir, 'moptconfig.yaml.example'),
@@ -120,7 +118,7 @@ def mopt_args(description):
         type=str, metavar='stringID',
         help="experiment's unique name; "
              "use an existing name to resume an experiment "
-             "(default: %s)" % DEF_CMD_EXP_NAME[1])
+             "(default: None - specified either here or in a config)")
 
     moptgroup.add_argument(
         '--max-trials', type=int, metavar='#',
@@ -171,7 +169,7 @@ def mopt_args(description):
     return args, config
 
 
-def default_options(user, starttime):
+def default_options():
     """Create a nesteddict with options from the default configuration files.
 
     Respect precedence from application's default, to system's and
@@ -183,9 +181,7 @@ def default_options(user, starttime):
     defcfg = nesteddict()
 
     # get some defaults
-    defcfg['exp_name'] = DEF_CMD_EXP_NAME[1].format(
-        user=user,
-        starttime=starttime.isoformat())
+    defcfg['exp_name'] = None
     defcfg['max_trials'] = DEF_CMD_MAX_TRIALS[0]
     defcfg['pool_size'] = DEF_CMD_POOL_SIZE[0]
 
@@ -207,7 +203,8 @@ def default_options(user, starttime):
                         for vk, vv in six.iteritems(v):
                             defcfg[k][vk] = vv
                     else:
-                        defcfg[k] = v
+                        if k != 'exp_name':
+                            defcfg[k] = v
         except IOError as e:  # default file could not be found
             log.debug(e)
         except AttributeError as e:

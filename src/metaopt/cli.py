@@ -3,11 +3,18 @@
 mopt:
   MetaOpt cli script for asynchronous distributed optimization
 
+ ERROR CODES
+-------------
+0  : Success
+-1 : Provide a name for the experiment (cli argument or moptconfig file)
+
 """
 from __future__ import absolute_import
 
 import datetime
 import getpass
+import logging
+import sys
 
 from metaopt import resolve_config as resolvconf
 
@@ -17,7 +24,7 @@ def main():
     starttime = datetime.datetime.utcnow()
     user = getpass.getuser()
 
-    expconfig, moptdb = infer_config_and_db(user, starttime)
+    expconfig, moptdb = infer_config_and_db(user)
     expmetadata = infer_metadata(user, starttime)
     # XXX: More metadata on this experiment, mby for each run of this experiment
     # log different configs too..
@@ -31,33 +38,38 @@ def main():
     print(expmetadata)
 
 
-def infer_config_and_db(user, starttime):
+def infer_config_and_db(user):
     """Use metaopt.resolve_config to organize how configuration is built."""
     # Fetch experiment name, user's script, args and parameter config
     # Use `-h` option to show help
     cmdargs, cmdconfig = resolvconf.mopt_args(__doc__)
     #  print(cmdargs, cmdconfig)
 
-    expconfig = resolvconf.default_options(user, starttime)
+    expconfig = resolvconf.default_options()
     # Fetch mopt system variables (database and resource information)
     # See :const:`metaopt.io.resolvconf.ENV_VARS` for environmental variables used
     expconfig = resolvconf.env_vars(expconfig)
 
-    # (TODO) Init database with `db_opts`
     tmpconfig = resolvconf.mopt_config(expconfig, dict(), cmdconfig, cmdargs)
     db_opts = tmpconfig['database']
+    # (TODO) Init database with `db_opts`
     moptdb = object()
 
+    exp_name = tmpconfig['exp_name']
     # (TODO) Get experiment metadata for experiment with name == `exp_name`,
     # if it exists.
-    exp_name = tmpconfig['exp_name']
     dbconfig = dict()
+
+    expconfig = resolvconf.mopt_config(expconfig, dbconfig, cmdconfig, cmdargs)
+    exp_name = expconfig['exp_name']
 
     print(db_opts)
     print()
     print(exp_name)
-
-    expconfig = resolvconf.mopt_config(expconfig, dbconfig, cmdconfig, cmdargs)
+    if exp_name is None:
+        logging.fatal("Could not infer experiment's name:\n"
+                      "Please use cmd arg or a cmd provided config file.")
+        sys.exit(-1)
 
     return expconfig, moptdb
 
