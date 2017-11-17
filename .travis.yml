@@ -6,16 +6,16 @@ services:
 matrix:
   fast_finish: true
   include:
-    # - env: TOXENV=flake8
-    #   python: 3.6
-    # - env: TOXENV=pylint
-    #   python: 3.6
-    # - env: TOXENV=doc8
-    #   python: 3.6
-    # - env: TOXENV=packaging
-    #   python: 3.6
-    # - env: TOXENV=docs
-    #   python: 3.6
+    - env: TOXENV=flake8
+      python: 3.6
+    - env: TOXENV=pylint
+      python: 3.6
+    - env: TOXENV=doc8
+      python: 3.6
+    - env: TOXENV=packaging
+      python: 3.6
+    - env: TOXENV=docs
+      python: 3.6
     - env: TOXENV=py27
       python: 2.7
     - env: TOXENV=py34

@@ -1,5 +1,3 @@
-# Created by https://www.gitignore.io/api/c++
-
 ### General ###
 *~
 *.sw*
@@ -7,6 +5,7 @@
 .spyderproject
 .spyproject
 .ropeproject
+*.log
 
 # StarUML documentation
 *.mdj
@@ -64,9 +63,6 @@ coverage.xml
 # Translations
 *.mo
 *.pot
-
-# Django stuff:
-*.log
 
 # Sphinx documentation
 docs/build

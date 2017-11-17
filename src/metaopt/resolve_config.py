@@ -90,7 +90,7 @@ ENV_VARS = dict(
 ################################################################################
 
 
-def mopt_args(description):
+def fetch_mopt_args(description):
     """Get options from command line arguments.
 
     :param description: string description of ``mopt`` executable
@@ -169,7 +169,7 @@ def mopt_args(description):
     return args, config
 
 
-def default_options():
+def fetch_default_options():
     """Create a nesteddict with options from the default configuration files.
 
     Respect precedence from application's default, to system's and
@@ -178,22 +178,22 @@ def default_options():
     .. seealso:: :const:`DEF_CONFIG_FILES_PATHS`
 
     """
-    defcfg = nesteddict()
+    default_config = nesteddict()
 
     # get some defaults
-    defcfg['exp_name'] = None
-    defcfg['max_trials'] = DEF_CMD_MAX_TRIALS[0]
-    defcfg['pool_size'] = DEF_CMD_POOL_SIZE[0]
+    default_config['exp_name'] = None
+    default_config['max_trials'] = DEF_CMD_MAX_TRIALS[0]
+    default_config['pool_size'] = DEF_CMD_POOL_SIZE[0]
 
     # get default options for some managerial variables (see :const:`ENV_VARS`)
-    for signif, evars in six.iteritems(ENV_VARS):
-        for _, key, default_value in evars:
-            defcfg[signif][key] = default_value
+    for signifier, env_vars in six.iteritems(ENV_VARS):
+        for _, key, default_value in env_vars:
+            default_config[signifier][key] = default_value
 
     # fetch options from default configuration files
-    for cfgpath in DEF_CONFIG_FILES_PATHS:
+    for configpath in DEF_CONFIG_FILES_PATHS:
         try:
-            with open(cfgpath) as f:
+            with open(configpath) as f:
                 cfg = yaml.safe_load(f)
                 if cfg is None:
                     continue
@@ -201,20 +201,20 @@ def default_options():
                 for k, v in six.iteritems(cfg):
                     if k in ENV_VARS:
                         for vk, vv in six.iteritems(v):
-                            defcfg[k][vk] = vv
+                            default_config[k][vk] = vv
                     else:
                         if k != 'exp_name':
-                            defcfg[k] = v
+                            default_config[k] = v
         except IOError as e:  # default file could not be found
             log.debug(e)
         except AttributeError as e:
-            log.warning("Problem parsing file: %s", cfgpath)
+            log.warning("Problem parsing file: %s", configpath)
             log.warning(e)
 
-    return defcfg
+    return default_config
 
 
-def env_vars(config):
+def merge_env_vars(config):
     """Fetch environmental variables related to metaopt's managerial data.
 
     :type config: :func:`nesteddict`
@@ -229,7 +229,7 @@ def env_vars(config):
     return newcfg
 
 
-def mopt_config(config, dbconfig, cmdconfig, cmdargs):
+def merge_mopt_config(config, dbconfig, cmdconfig, cmdargs):
     """
     Finalize mopt configuration.
 
