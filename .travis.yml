@@ -5,19 +5,17 @@ services:
 
 matrix:
   fast_finish: true
-  allow_failures:
-    - python: 3.7-dev
   include:
-    - env: TOXENV=flake8
-      python: 3.6
-    - env: TOXENV=pylint
-      python: 3.6
-    - env: TOXENV=doc8
-      python: 3.6
-    - env: TOXENV=packaging
-      python: 3.6
-    - env: TOXENV=docs
-      python: 3.6
+    # - env: TOXENV=flake8
+    #   python: 3.6
+    # - env: TOXENV=pylint
+    #   python: 3.6
+    # - env: TOXENV=doc8
+    #   python: 3.6
+    # - env: TOXENV=packaging
+    #   python: 3.6
+    # - env: TOXENV=docs
+    #   python: 3.6
     - env: TOXENV=py27
       python: 2.7
     - env: TOXENV=py34
@@ -26,8 +24,6 @@ matrix:
       python: 3.5
     - env: TOXENV=py36
       python: 3.6
-    - env: TOXENV=py37
-      python: 3.7-dev
 
 install:
   - pip install tox
