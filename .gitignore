@@ -1,41 +1,76 @@
 # Created by https://www.gitignore.io/api/c++
 
-### C++ ###
-# Prerequisites
-*.d
+### General ###
+*~
+*.sw*
+.idea/
+.spyderproject
+.spyproject
+.ropeproject
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# StarUML documentation
+*.mdj
 
-# Precompiled Headers
-*.gch
-*.pch
+### Python ###
 
-# Compiled Dynamic libraries
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Compiled Dynamic libraries (C extensions)
 *.so
-*.dylib
-*.dll
 
-# Fortran module files
-*.mod
-*.smod
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg[s]
+MANIFEST
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
 
-# Executables
-*.exe
-*.out
-*.app
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
 
-build/*
-Build/*
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
 
+# Translations
+*.mo
+*.pot
 
-# End of https://www.gitignore.io/api/c++
+# Django stuff:
+*.log
+
+# Sphinx documentation
+docs/build
+docs/src/reference
+
+# PyBuilder
+target/

@@ -1,66 +1,84 @@
 #!/usr/bin/env python
-from setuptools import setup, Extension, distutils, Command, find_packages
-from distutils.core import setup
-import setuptools.command.build_ext
-import setuptools.command.install
-import setuptools.command.develop
-import setuptools.command.build_py
-import distutils.unixccompiler
-import distutils.command.build
-import distutils.command.clean
-import platform
-import subprocess
-import shutil
-import sys
+# -*- coding: utf-8 -*-
+"""Installation script for MetaOpt."""
+from __future__ import absolute_import
+
+from glob import iglob
 import os
+import sys
+import textwrap
 
-DEBUG = check_env_flag('DEBUG')
+from setuptools import (find_packages, setup)
+
+import versioneer
+
+isfile = os.path.isfile
+pjoin = os.path.join
+repo_root = os.path.dirname(os.path.abspath(__file__))
+mpath = pjoin(repo_root, 'src')
+sys.path.insert(0, mpath)
+
+import metaopt  # noqa
 
 
-class clean(distutils.command.clean.clean):
+def find_data_files():
+    """Find MetaOpt's configuration and metadata files."""
+    install_config_path = pjoin(metaopt.dirs.site_data_dir, 'config')
+    config_path = pjoin('config', '*')
+    configs = [cfg for cfg in iglob(config_path) if isfile(cfg)]
 
-    def run(self):
-        import glob
-        with open('.gitignore', 'r') as f:
-            ignores = f.read()
-            for wildcard in filter(bool, ignores.split('\n')):
-                for filename in glob.glob(wildcard):
-                    try:
-                        os.remove(filename)
-                    except OSError:
-                        shutil.rmtree(filename, ignore_errors=True)
+    data_files = [
+        (install_config_path, configs),
+        (metaopt.dirs.site_data_dir, ['LICENSE', 'README.rst']),
+    ]
 
-        # It's an old-style class in Python 2.7...
-        distutils.command.clean.clean.run(self)
+    return data_files
 
-################################################################################
-# Configuring compile flags
-################################################################################
 
-include_dirs = []
-library_dirs = []
-extra_link_args = []
-extra_compile_args = ['-std=c++1z', '-Wno-write-strings',
-                      # Python 2.6 requires -fno-strict-aliasing, see
-                      # http://legacy.python.org/dev/peps/pep-3123/
-                      '-fno-strict-aliasing']
+setup_args = dict(
+    name=metaopt.__name__,
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
+    description=metaopt.__descr__,
+    long_description=textwrap.dedent(metaopt.__doc__),
+    license=metaopt.__license__,
+    author=metaopt.__author__,
+    author_email=metaopt.__author_email__,
+    url=metaopt.__url__,
+    packages=find_packages(where='src'),
+    package_dir={'': 'src'},
+    include_package_data=True,
+    data_files=find_data_files(),
+    scripts=['scripts/mopt'],
+    install_requires=['six', 'PyYAML'],
+    tests_require=['pytest>=3.0.0'],
+    setup_requires=['setuptools', 'pytest-runner>=2.0,<3dev'],
+    #  http://peak.telecommunity.com/DevCenter/setuptools#setting-the-zip-safe-flag
+    #  zip_safe=False
+)
 
-cmdclass = {
-    'build': build,
-    'develop': develop,
-    'install': install,
-    'clean': clean,
-}
+setup_args['keywords'] = [
+    'Machine Learning',
+    'Deep Learning',
+    'Distributed',
+    'Optimization',
+]
 
-cmdclass.update(build_dep_cmds)
+setup_args['platforms'] = ['Linux']
 
-setup(name='Metaopt',
-      version='0.1',
-      description='Meta Hyperparameter Optimization',
-      author='MetaOptimizer Team - Universite de Montreal',
-      author_email='lisa_labo@iro.umontreal.ca',
-      url='https://mila.quebec',
-      packages=['distutils', 'distutils.command'],
-      cmdclass=cmdclass,
-      install_requires=['pyyaml', 'numpy'],
-     )
+setup_args['classifiers'] = [
+    'Development Status :: 1 - Planning',
+    'Intended Audience :: Developers',
+    'Intended Audience :: Education',
+    'Intended Audience :: Science/Research',
+    'License :: OSI Approved :: BSD License',
+    'Operating System :: POSIX',
+    'Operating System :: Unix',
+    'Programming Language :: Python',
+    'Topic :: Scientific/Engineering',
+    'Topic :: Scientific/Engineering :: Artificial Intelligence',
+] + [('Programming Language :: Python :: %s' % x)
+     for x in '2 2.6 2.7 3 3.4 3.5 3.6'.split()]
+
+if __name__ == '__main__':
+    setup(**setup_args)

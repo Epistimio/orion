@@ -50,8 +50,8 @@ Dendi Suhubdy, Xavier Bouthillier, Christos Tsirigotis. Supervised by Pascal Lam
 
 # Copyright
 
-Montreal Institute of Learning Algorithms, Univeriste de Montreal, 2017.
+Montreal Institute of Learning Algorithms, Université de Montréal, 2017.
 
 # License
 
-GNU General Public License v3.0
+3-Clause BSD License
