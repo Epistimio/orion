@@ -23,13 +23,13 @@ import metaopt  # noqa
 
 def find_data_files():
     """Find MetaOpt's configuration and metadata files."""
-    install_config_path = pjoin(metaopt.dirs.site_data_dir, 'config')
+    install_config_path = pjoin(metaopt.DIRS.site_data_dir, 'config')
     config_path = pjoin('config', '*')
     configs = [cfg for cfg in iglob(config_path) if isfile(cfg)]
 
     data_files = [
         (install_config_path, configs),
-        (metaopt.dirs.site_data_dir, ['LICENSE', 'README.rst']),
+        (metaopt.DIRS.site_data_dir, ['LICENSE', 'README.rst']),
     ]
 
     return data_files
@@ -49,20 +49,24 @@ setup_args = dict(
     package_dir={'': 'src'},
     include_package_data=True,
     data_files=find_data_files(),
-    scripts=['scripts/mopt'],
+    entry_points={
+        'console_scripts': [
+            'mopt = metaopt.cli:main',
+            ],
+        },
     install_requires=['six', 'PyYAML'],
     tests_require=['pytest>=3.0.0'],
     setup_requires=['setuptools', 'pytest-runner>=2.0,<3dev'],
     #  http://peak.telecommunity.com/DevCenter/setuptools#setting-the-zip-safe-flag
     #  zip_safe=False
-)
+    )
 
 setup_args['keywords'] = [
     'Machine Learning',
     'Deep Learning',
     'Distributed',
     'Optimization',
-]
+    ]
 
 setup_args['platforms'] = ['Linux']
 
