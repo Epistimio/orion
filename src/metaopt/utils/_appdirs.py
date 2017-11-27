@@ -156,19 +156,17 @@ def site_data_dir(appname=None, appauthor=None, version=None, multipath=False):
                 path = os.path.join(path, appauthor, appname)
             else:
                 path = os.path.join(path, appname)
-    elif system == 'darwin':
-        path = os.path.expanduser('/Library/Application Support')
-        if appname:
-            path = os.path.join(path, appname)
     else:
-        # XDG default for $XDG_DATA_DIRS
-        # only first, if multipath is False
-        linux_data_dirs = os.getenv('XDG_DATA_DIRS')
         env_site_data_dirs = os.path.join(sys.prefix, 'share')
-        if linux_data_dirs is None:
+        if system == 'darwin':
+            os_specific_dirs = os.path.expanduser('/Library/Application Support')
+        else:
+            os_specific_dirs = os.getenv('XDG_DATA_DIRS')
+
+        if os_specific_dirs is None:
             path = env_site_data_dirs
         else:
-            path = os.pathsep.join([env_site_data_dirs, linux_data_dirs])
+            path = os.pathsep.join([env_site_data_dirs, os_specific_dirs])
 
         pathlist = [os.path.expanduser(x.rstrip(os.sep)) for x in path.split(os.pathsep)]
         if appname:
