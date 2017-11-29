@@ -6,11 +6,11 @@
 # configurations: some are inferred automatically,
 # but most depend on user's input to `mopt`
 - exp_name: supernaedo2
+  # inferred from os
+  user: tsirif
+  datetime: 2017-11-22T23:00:00
 
   metadata:
-  # inferred from os
-    user: tsirif
-    datetime: 2017-11-22T23:00:00
     # from metaopt.__version__
     mopt_version: 0.1
     # from `mopt`'s args
@@ -63,10 +63,10 @@
       gradient_scipy: 0.2
 
 - exp_name: supernaedo2
+  user: tsirif
+  datetime: 2017-11-23T00:00:00
 
   metadata:
-    user: tsirif
-    datetime: 2017-11-23T00:00:00
     mopt_version: 0.1
     user_script: full_path/ieeeela.py
     user_config: ~
@@ -101,10 +101,10 @@
       gradient_scipy: 0.2
 
 - exp_name: supernaedo2
+  user: dendi
+  datetime: 2017-11-23T00:00:00
 
   metadata:
-    user: dendi
-    datetime: 2017-11-23T00:00:00
     mopt_version: 0.1
     user_script: full_path/main.py
     user_config: ~
