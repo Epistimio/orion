@@ -72,9 +72,9 @@ DEF_CONFIG_FILES_PATHS = [
 # list containing tuples of
 # (environmental variable names, configuration keys, default values)
 ENV_VARS_DB = [
-    ('METAOPT_DB_NAME', 'name', 'MetaOpt'),
-    ('METAOPT_DB_TYPE', 'type', 'MongoDB'),
-    ('METAOPT_DB_ADDRESS', 'address', socket.gethostbyname(socket.gethostname()))
+    ('METAOPT_DB_NAME', 'dbname', 'MetaOpt'),
+    ('METAOPT_DB_TYPE', 'dbtype', 'MongoDB'),
+    ('METAOPT_DB_ADDRESS', 'host', socket.gethostbyname(socket.gethostname()))
     ]
 
 # TODO: Default resource from environmental (localhost)
@@ -231,25 +231,34 @@ def merge_env_vars(config):
 
 def merge_mopt_config(config, dbconfig, cmdconfig, cmdargs):
     """
-    Finalize mopt configuration.
+    Mopt Configuration
+    ------------------
 
-       * **name**: Experiment**s name. If you provide a past experiment**s name,
-         then that experiment will be resumed. This means that its history of
-         trials will be reused, along with any configurations logged in the
-         database which are not overwritten by current call to `mopt` script.
-         (default: <username>_<start datetime>)
-       * **max_trials**: Maximum number of trial evaluations to be computed
-         (required as a cmd line argument or a moptconfig parameter)
-       * **pool_size**: Number of workers evaluating in parallel asychronously
-         (default: 10 @ default resource). Can be a dict of the form:
-         {resource_alias: subpool_size}
-       * **database**: (db_opts)
-       * **resources**: {resource_alias: (entry_address, scheduler, scheduler_ops)}
-         (optional)
-       * **optimizer**: {optimizer module name : method-specific configuration}
-       * **dynamic**: {dynamic module name : method-specific configuration}
+    name --  Experiment's name.
 
-       .. seealso:: Method-specific configurations reside in `/config`
+       If you provide a past experiment**s name,
+       then that experiment will be resumed. This means that its history of
+       trials will be reused, along with any configurations logged in the
+       database which are not overwritten by current call to `mopt` script.
+
+       (default: <username>_<start datetime>)
+
+    max_trials -- Maximum number of trial evaluations to be computed
+
+       (required as a cmd line argument or a moptconfig parameter)
+
+    pool_size -- Number of workers evaluating in parallel asychronously
+
+       (default: 10 @ default resource). Can be a dict of the form:
+       {resource_alias: subpool_size}
+
+    database -- dict with keys: dbtype, dbname, host, port, username, password
+
+    resources -- {resource_alias: (entry_address, scheduler, scheduler_ops)} (optional)
+
+    algorithm -- {optimizer module name : method-specific configuration}
+
+    .. seealso:: Method-specific configurations reside in `/config`
 
     """
     expconfig = deepcopy(config)
