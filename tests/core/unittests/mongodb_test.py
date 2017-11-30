@@ -60,12 +60,14 @@ class TestConnection(object):
             MongoDB(host='asdfada', port=123, dbname='metaopt',
                     username='uasdfaf', password='paasdfss')
         assert "Connection" in str(exc_info.value)
+        MongoDB.instance = None  # Set singular instance to None for independent tests
 
     def test_bad_authentication(self):
         """Raise when authentication cannot be achieved."""
         with pytest.raises(DatabaseError) as exc_info:
             MongoDB(dbname='metaopt_test', username='uasdfaf', password='paasdfss')
         assert "Authentication" in str(exc_info.value)
+        MongoDB.instance = None  # Set singular instance to None for independent tests
 
     def test_connection_with_uri(self):
         """Check the case when connecting with ready `uri`."""
@@ -75,6 +77,7 @@ class TestConnection(object):
         assert moptdb.username == 'user'
         assert moptdb.password == 'pass'
         assert moptdb.dbname == 'metaopt_test'
+        MongoDB.instance = None  # Set singular instance to None for independent tests
 
     def test_overwrite_uri(self):
         """Check the case when connecting with ready `uri`."""
@@ -86,6 +89,7 @@ class TestConnection(object):
         assert moptdb.username == 'user'
         assert moptdb.password == 'pass'
         assert moptdb.dbname == 'metaopt_test'
+        MongoDB.instance = None  # Set singular instance to None for independent tests
 
     def test_singleton(self):
         """Test that MongoDB class is a singleton."""
@@ -94,6 +98,7 @@ class TestConnection(object):
         moptdb.initiate_connection()
         moptdb.close_connection()
         assert MongoDB() is moptdb
+        MongoDB.instance = None  # Set singular instance to None for independent tests
 
 
 @pytest.mark.usefixtures("clean_db")
