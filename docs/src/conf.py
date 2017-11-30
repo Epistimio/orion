@@ -15,19 +15,9 @@ serve to show the default.
 If extensions (or modules to document with autodoc) are in another directory,
 add these directories to sys.path here. If the directory is relative to the
 documentation root, use os.path.abspath to make it absolute, like shown here.
-
-How to document -- sources:
-
-   1. `Numpy Standard <https://numpydoc.readthedocs.io/en/latest/format.html>`_
-   2. `Python Standard <https://docs.python.org/devguide/documenting.html>`_
-   3. `reST general <http://www.sphinx-doc.org/en/stable/rest.html>`_
-   4. `reST reference tags <http://www.sphinx-doc.org/en/stable/domains.html#the-python-domain>`_
-   5. `Cross-reference <http://www.sphinx-doc.org/en/stable/domains.html#python-roles>`_
-
 """
 from __future__ import absolute_import
 
-import glob
 import os
 import re
 import sys
@@ -54,9 +44,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
-    'sphinx.ext.extlinks',
-    'sphinx.ext.autosummary',
-    'numpydoc',
+    'sphinx.ext.extlinks'
 ]
 
 # General information about the project.
@@ -103,9 +91,6 @@ pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
-
-# The reST default role (used for this markup: `text`) to use for all documents.
-default_role = "autolink"
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -196,19 +181,4 @@ texinfo_documents = [
 
 # -- Autodoc configuration -----------------------------------------------
 
-autodoc_mock_imports = ['_version', 'utils._appdirs']
-
-################################################################################
-#                             Numpy Doc Extension                              #
-################################################################################
-
-# sphinx.ext.autosummary will automatically be loaded as well. So:
-autosummary_generate = glob.glob("reference/*.rst")
-
-# Generate ``plot::`` for ``Examples`` sections which contain matplotlib
-numpydoc_use_plots = False
-
-# Create a Sphinx table of contents for the lists of class methods and
-# attributes. If a table of contents is made, Sphinx expects each entry to have
-# a separate page.
-numpydoc_class_members_toctree = False
+autodoc_mock_imports = ['_version', 'utils.appdirs']

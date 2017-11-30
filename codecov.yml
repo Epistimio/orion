@@ -21,9 +21,9 @@ coverage:
     project:
       # add more later when packages will be namespaced
       default: false
-      # tests:
-      #   target: 100%
-      #   paths: tests
+      tests:
+        target: 100%
+        paths: tests
       core:
         # change this to more strict number and some allowance threshold later
         target: auto
