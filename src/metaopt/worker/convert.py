@@ -26,11 +26,12 @@ Usage:
         the characteristic keywords, enlisted in :mod:`metaopt.optim.distribs`,
         to describe distributions and declare the hyperparameters
         to be optimized. So that a possible command line argument
-        like `-lrate0=0.1` becomes `-lrate0~'10**uniform(-3,1)'`.
+        like ``-lrate0=0.1`` becomes ``-lrate0~'10**uniform(-3,1)'``.
 
 .. note::
-   Use `~` instead of `=` to denote that a varible "draws from"
+   Use ``~`` instead of ``=`` to denote that a varible "draws from"
    a distribution. We support Python syntax for describing distributions.
+
 
       * Module will also use the script's provided input file/args as a
         template to fill an appropriate input with proposed values for the

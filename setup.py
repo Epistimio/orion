@@ -54,7 +54,7 @@ setup_args = dict(
             'mopt = metaopt.cli:main',
             ],
         },
-    install_requires=['six', 'PyYAML'],
+    install_requires=['six', 'PyYAML', 'pymongo>=3'],
     tests_require=['pytest>=3.0.0'],
     setup_requires=['setuptools', 'pytest-runner>=2.0,<3dev'],
     #  http://peak.telecommunity.com/DevCenter/setuptools#setting-the-zip-safe-flag

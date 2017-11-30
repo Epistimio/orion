@@ -1,0 +1,244 @@
+# Example `metaopt` database, first are the "primary keys" (there's also an
+# implicit _id key here in MOngoDB, but we cannot base our search based on that)
+---
+
+# Example of entries in `experiments` collection
+# configurations: some are inferred automatically,
+# but most depend on user's input to `mopt`
+- exp_name: supernaedo2
+
+  metadata:
+  # inferred from os
+    user: tsirif
+    datetime: 2017-11-22T23:00:00
+    # from metaopt.__version__
+    mopt_version: 0.1
+    # from `mopt`'s args
+    user_script: full_path/main.py
+    # from `mopt`'s args
+    user_config: ~
+    # from `mopt`'s args
+    user_args: '--encoding_layer~enum([rnn, lstm, gru]) --decoding_layer~enum([rnn, lstm_with_attention, gru])'
+    # from user's vsc, e.g. git
+    user_vcs: git
+    user_version: ~
+    user_commit_hash: as5f7asf5asfa7sf
+
+  # TODO: enable references to other experiments
+  # reuse their trial history
+  # set defaults for their missing arguments
+  references:
+    - exp_name: supernaedo1
+      user: tsirif
+
+      params:
+        - name: decoding_layer
+          type: enum
+          value: gru
+
+  # metaopt's configuration
+  pool_size: 2
+  max_trials: 1000
+
+  # functional info
+  status: completed  # running, completed, broken
+  # stats, all are metaopt's products
+  stats:
+    trials_completed: 0
+    best_trial_id: ~
+    start_time: 123
+    end_time: ~
+    duration: ~
+
+  # **complete** specification of algorithms used
+  # user's configuration, but defaults are inferred
+  algorithms:
+    bayesian_scikit:
+      yoyo: 5
+      rate: ksereis
+    gradient_scipy:
+      lrate: 0.1
+    global_to_local:
+      bayesian_scikit: 0.8
+      gradient_scipy: 0.2
+
+- exp_name: supernaedo2
+
+  metadata:
+    user: tsirif
+    datetime: 2017-11-23T00:00:00
+    mopt_version: 0.1
+    user_script: full_path/ieeeela.py
+    user_config: ~
+    user_args: '--encoding_layer~enum([rnn, lstm, gru]) --decoding_layer~enum([rnn, lstm_with_attention, gru])'
+    user_vcs: git
+    user_version: ~
+    user_commit_hash: as5f7asf5asfa7sf
+  references:
+    - exp_name: supernaedo1
+      user: tsirif
+      params:
+        - name: decoding_layer
+          type: enum
+          value: gru
+  pool_size: 2
+  max_trials: 1000
+  status: running
+  stats:
+    trials_completed: 0
+    best_trial_id: ~
+    start_time: 123
+    end_time: ~
+    duration: ~
+  algorithms:
+    bayesian_scikit:
+      yoyo: 5
+      rate: exeeeee
+    gradient_scipy:
+      lrate: 0.1
+    global_to_local:
+      bayesian_scikit: 0.8
+      gradient_scipy: 0.2
+
+- exp_name: supernaedo2
+
+  metadata:
+    user: dendi
+    datetime: 2017-11-23T00:00:00
+    mopt_version: 0.1
+    user_script: full_path/main.py
+    user_config: ~
+    user_args: '--encoding_layer~enum([rnn, lstm, gru]) --decoding_layer~enum([rnn, lstm_with_attention, gru])'
+    user_vcs: git
+    user_version: ~
+    user_commit_hash: as5f7asf5asfa7sf
+  references:
+    - exp_name: supernaedo1
+      user: tsirif
+      params:
+        - name: decoding_layer
+          type: enum
+          value: gru
+  pool_size: 2
+  max_trials: 1000
+  status: running
+  stats:
+    trials_completed: 0
+    best_trial_id: ~
+    start_time: 123
+    end_time: ~
+    duration: ~
+  algorithms:
+    bayesian_scikit:
+      yoyo: 5
+      rate: yoyoyo
+    gradient_scipy:
+      lrate: 0.1
+    global_to_local:
+      bayesian_scikit: 0.8
+      gradient_scipy: 0.2
+---
+
+# Example of entries in `trials` collection
+- exp_name: supernaedo2
+  user: tsirif
+
+  status: completed  # new, pending, suspended, completed, broken
+  submit_time: 2017-11-22T23:00:00
+  start_time: ~
+  end_time: ~
+  result:
+    - name: ~
+      type: objective  # objective, constraint
+      value: ~
+  params:
+    - name: encoding_layer
+      type: enum  # int, float, enum (TODO: how will be priors logged?)
+      value: rnn
+    - name: decoding_layer
+      type: enum
+      value: rnn
+- exp_name: supernaedo2
+  user: tsirif
+
+  status: completed  # new, pending, suspended, completed, broken
+  submit_time: 2017-11-23T00:00:00
+  start_time: 150
+  end_time: ~
+  result:
+    - name: ~
+      type: objective  # objective, constraint
+      value: ~
+  params:
+    - name: encoding_layer
+      type: enum  # int, float, enum (TODO: how will be priors logged?)
+      value: gru
+    - name: decoding_layer
+      type: enum
+      value: lstm_with_attention
+- exp_name: supernaedo2
+  user: tsirif
+
+  status: new  # new, pending, suspended, completed, broken
+  submit_time: 2017-11-23T01:00:00
+  start_time: ~
+  end_time: ~
+  result:
+    - name: ~
+      type: objective  # objective, constraint
+      value: ~
+  params:
+    - name: encoding_layer
+      type: enum  # int, float, enum (TODO: how will be priors logged?)
+      value: lstm
+    - name: decoding_layer
+      type: enum
+      value: lstm_with_attention
+- exp_name: supernaedo2
+  user: tsirif
+
+  status: new  # new, pending, suspended, completed, broken
+  submit_time: 2017-11-23T02:00:00
+  start_time: ~
+  end_time: ~
+  result:
+    - name: ~
+      type: objective  # objective, constraint
+      value: ~
+  params:
+    - name: encoding_layer
+      type: enum  # int, float, enum (TODO: how will be priors logged?)
+      value: lstm
+    - name: decoding_layer
+      type: enum
+      value: lstm_with_attention
+---
+
+# Example of entries in `workers` collection
+- exp_name: supernaedo2
+  user: tsirif
+
+  type: all  # consumer, producer, all
+  resource: leto52
+  pid: 1231
+  status: alive  # alive, success, dead
+  lastfound: 10
+- exp_name: supernaedo2
+  user: tsirif
+
+  type: all
+  resource: leto52
+  pid: 14141
+  status: dead
+  lastfound: 11
+---
+
+# Example of entries in `resources` collection
+- name: leto52
+  exp_name: supernaedo2
+  user: tsirif
+
+  hostname: leto52.iro.umontreal.ca
+  max_concurrent: 10
+  scheduler: slurm
+  scheduler_args: '--qos=unkillable --gres=gpu --mem=20000'
