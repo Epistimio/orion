@@ -42,9 +42,7 @@ class Factory(type):
 
     Attributes
     ----------
-    base_class : object
-       A parent class whose factory is this.
-    types : list of `base_class` classes
+    types : list of subclasses of ``cls.__base__``
        Updated to contain all possible implementations currently. Check out code.
     typenames : list of str
        Names of implemented wrapper classes, correspond to possible ``of_type``
@@ -68,18 +66,18 @@ class Factory(type):
         cls.typenames = list(map(lambda x: x.__name__, cls.types))
 
     def __call__(cls, of_type=None, *args, **kwargs):
-        """Create an object, instance of `base_class`, on first call
+        """Create an object, instance of ``cls.__base__``, on first call.
 
-        :param of_type: Name of class, subclass of `base_class`, wrapper
+        :param of_type: Name of class, subclass of ``cls.__base__``, wrapper
            of a database framework that will be instantiated on the first call.
-        :param args: positional arguments to initialize `base_class`'s instance (if any)
-        :param kwargs: keyword arguments to initialize `base_class`'s instance (if any)
+        :param args: positional arguments to initialize ``cls.__base__``'s instance (if any)
+        :param kwargs: keyword arguments to initialize ``cls.__base__``'s instance (if any)
 
         .. seealso::
            `Factory.typenames` for values of argument `of_type`.
 
         .. seealso::
-           Attributes of :class:`base_class` and :meth:`base_class.__init__` for
+           Attributes of ``cls.__base__`` and ``cls.__base__.__init__`` for
            values of `args` and `kwargs`.
 
         .. note:: New object is saved as `Factory`'s internal state.
