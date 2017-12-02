@@ -20,7 +20,7 @@ import logging
 
 import six
 
-from metaopt.utils import (AbstractSingletonType, SingletonType)
+from metaopt.utils import (AbstractSingletonType, SingletonFactory)
 
 
 @six.add_metaclass(AbstractSingletonType)
@@ -148,70 +148,11 @@ class DatabaseError(RuntimeError):
     pass
 
 
-# Include current implementations of the wrapper
-from metaopt.io.database.mongodb import MongoDB  # noqa
-
-
-class DatabaseType(SingletonType):
-    """Instantiate appropriate wrapper for the infrastructure based on input
-    argument, ``dbtype``.
-
-    Attributes
-    ----------
-    all : list of `AbstractDB` classes
-       Updated to contain `all` possible implementations currently. Check out code.
-    typenames : list of str
-       Names of implemented wrapper classes, correspond to possible ``dbtype``
-       values.
-
-    """
-
-    all = [AbstractDB, MongoDB]
-    typenames = list(map(lambda x: x.__name__, all))
-
-    def __call__(cls, dbtype='AbstractDB', *args, **kwargs):
-        """Create an object, instance of `AbstractDB`, on first call
-
-        :param db_type: Name of class, subclass of `AbstractDB`, wrapper
-           of a database framework that will be instantiated on the first call.
-        :param args: positional arguments to initialize `AbstractDB`'s instance (if any)
-        :param kwargs: keyword arguments to initialize `AbstractDB`'s instance (if any)
-
-        .. seealso::
-           Attributes of :class:`DatabaseType` for values of argument `dbtype`.
-
-        .. seealso::
-           Attributes of :class:`AbstractDB` and :meth:`AbstractDB.__init__` for
-           values of `args` and `kwargs`.
-
-        .. note:: New object is saved as `DatabaseType`'s internal state.
-
-        :return: The object which was created on the first call.
-        """
-        if cls.instance is not None:
-            return cls.instance
-
-        for wrapper_class in DatabaseType.all:
-            if not issubclass(wrapper_class, AbstractDB):
-                logging.debug("Encountered invalid database class of type: %s",
-                              wrapper_class.__name__)
-                logging.debug("Please raise an issue and notify maintainers!")
-                continue
-            if wrapper_class.__name__.lower() == dbtype.lower():
-                cls.instance = wrapper_class(*args, **kwargs)
-                return cls.instance
-
-        error = "Could not find implementation of database, type = '%s'" % dbtype
-        error += "\nCurrently, there is an implemented wrapper for types:\n"
-        error += str(DatabaseType.typenames)
-        raise NotImplementedError(error)
-
-
-@six.add_metaclass(DatabaseType)  # pylint: disable=too-few-public-methods
-class Database(object):
+@six.add_metaclass(SingletonFactory)  # pylint: disable=too-few-public-methods,abstract-method
+class Database(AbstractDB):
     """Class used to inject dependency on a database framework.
 
-    .. seealso:: `DatabaseType` metaclass and `AbstractDB` interface.
+    .. seealso:: `Factory` metaclass and `AbstractDB` interface.
     """
 
     pass

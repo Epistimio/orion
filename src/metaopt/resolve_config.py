@@ -236,12 +236,10 @@ def merge_mopt_config(config, dbconfig, cmdconfig, cmdargs):
 
     name --  Experiment's name.
 
-       If you provide a past experiment**s name,
+       If you provide a past experiment's name,
        then that experiment will be resumed. This means that its history of
        trials will be reused, along with any configurations logged in the
        database which are not overwritten by current call to `mopt` script.
-
-       (default: <username>_<start datetime>)
 
     max_trials -- Maximum number of trial evaluations to be computed
 
@@ -252,7 +250,7 @@ def merge_mopt_config(config, dbconfig, cmdconfig, cmdargs):
        (default: 10 @ default resource). Can be a dict of the form:
        {resource_alias: subpool_size}
 
-    database -- dict with keys: dbtype, dbname, host, port, username, password
+    database -- dict with keys: of_type, dbname, host, port, username, password
 
     resources -- {resource_alias: (entry_address, scheduler, scheduler_ops)} (optional)
 

@@ -4,7 +4,8 @@
 
 import pytest
 
-from metaopt.io.database import (Database, MongoDB)
+from metaopt.io.database import Database
+from metaopt.io.database.mongodb import MongoDB
 
 
 def test_empty_first_call():
@@ -29,9 +30,12 @@ def test_notfound_type_first_call():
 
 def test_instatiation_and_singleton():
     """Test create just one object, that object persists between calls."""
-    database = Database(dbtype='MongoDB', dbname='metaopt_test',
+    database = Database(of_type='MongoDB', dbname='metaopt_test',
                         username='user', password='pass')
 
     assert Database() is database
-    assert Database('fire', [], {'doesnt_matter': 'it\'s singleton'}) is database
+    with pytest.raises(ValueError) as exc_info:
+        Database('fire', [], {'doesnt_matter': 'it\'s singleton'})
+    assert 'singleton' in str(exc_info.value)
     MongoDB.instance = None  # Set singular instance to None for independent tests
+    Database.instance = None

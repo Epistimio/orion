@@ -9,7 +9,8 @@ from pymongo import MongoClient
 import pytest
 import yaml
 
-from metaopt.io.database import (DatabaseError, MongoDB)
+from metaopt.io.database import DatabaseError
+from metaopt.io.database.mongodb import MongoDB
 
 DB_TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
