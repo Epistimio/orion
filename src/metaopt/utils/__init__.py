@@ -11,7 +11,6 @@
 from abc import ABCMeta
 from glob import glob
 from importlib import import_module
-import logging
 
 
 class SingletonType(type):
@@ -91,11 +90,6 @@ class Factory(type):
             of_type = cls.__base__.__name__
 
         for inherited_class in cls.types:
-            if not issubclass(inherited_class, cls.__base__):
-                logging.error("Encountered invalid database class of type: %s",
-                              inherited_class.__name__)
-                logging.error("Please raise an issue and notify maintainers!")
-                continue
             if inherited_class.__name__.lower() == of_type.lower():
                 return inherited_class.__call__(*args, **kwargs)
 
