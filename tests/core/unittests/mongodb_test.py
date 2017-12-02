@@ -3,24 +3,12 @@
 """Collection of tests for :mod:`metaopt.io.database.mongodb`."""
 
 from datetime import datetime
-import os
 
 from pymongo import MongoClient
 import pytest
-import yaml
 
 from metaopt.io.database import DatabaseError
 from metaopt.io.database.mongodb import MongoDB
-
-DB_TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-@pytest.fixture(scope='module')
-def exp_config():
-    """Load an example database."""
-    with open(os.path.join(DB_TEST_DIR, 'experiment.yaml')) as f:
-        exp_config = list(yaml.safe_load_all(f))
-    return exp_config
 
 
 @pytest.fixture(scope='module')
@@ -48,10 +36,12 @@ def clean_db(database, exp_config):
 @pytest.fixture(scope='module')
 def moptdb():
     """Return MongoDB wrapper instance initiated with test opts."""
+    MongoDB.instance = None
     moptdb = MongoDB(username='user', password='pass', dbname='metaopt_test')
     return moptdb
 
 
+@pytest.mark.usefixtures("null_db_instances")
 class TestConnection(object):
     """Create a :class:`metaopt.io.database.MongoDB`, check connection cases."""
 
@@ -61,14 +51,12 @@ class TestConnection(object):
             MongoDB(host='asdfada', port=123, dbname='metaopt',
                     username='uasdfaf', password='paasdfss')
         assert "Connection" in str(exc_info.value)
-        MongoDB.instance = None  # Set singular instance to None for independent tests
 
     def test_bad_authentication(self):
         """Raise when authentication cannot be achieved."""
         with pytest.raises(DatabaseError) as exc_info:
             MongoDB(dbname='metaopt_test', username='uasdfaf', password='paasdfss')
         assert "Authentication" in str(exc_info.value)
-        MongoDB.instance = None  # Set singular instance to None for independent tests
 
     def test_connection_with_uri(self):
         """Check the case when connecting with ready `uri`."""
@@ -78,7 +66,6 @@ class TestConnection(object):
         assert moptdb.username == 'user'
         assert moptdb.password == 'pass'
         assert moptdb.dbname == 'metaopt_test'
-        MongoDB.instance = None  # Set singular instance to None for independent tests
 
     def test_overwrite_uri(self):
         """Check the case when connecting with ready `uri`."""
@@ -90,7 +77,6 @@ class TestConnection(object):
         assert moptdb.username == 'user'
         assert moptdb.password == 'pass'
         assert moptdb.dbname == 'metaopt_test'
-        MongoDB.instance = None  # Set singular instance to None for independent tests
 
     def test_singleton(self):
         """Test that MongoDB class is a singleton."""
@@ -99,7 +85,6 @@ class TestConnection(object):
         moptdb.initiate_connection()
         moptdb.close_connection()
         assert MongoDB() is moptdb
-        MongoDB.instance = None  # Set singular instance to None for independent tests
 
 
 @pytest.mark.usefixtures("clean_db")

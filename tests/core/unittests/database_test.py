@@ -8,34 +8,41 @@ from metaopt.io.database import Database
 from metaopt.io.database.mongodb import MongoDB
 
 
-def test_empty_first_call():
-    """Should not be able to make first call without any arguments.
+@pytest.mark.usefixtures("null_db_instances")
+class TestDatabaseFactory(object):
+    """Test the creation of a determinate `Database` type, by a complete spefication
+    of a database by-itself (this on which every `Database` acts on as part
+    of its being, attributes of an `AbstractDB`) and for-itself (what essentially
+    differentiates one concrete `Database` from one other).
 
-    Hegelian Ontology Primer
-    ------------------------
-
-    Type indeterminate <-> type abstracted from its property <-> No type
     """
-    with pytest.raises(TypeError) as exc_info:
-        Database()
-    assert 'abstract class' in str(exc_info.value)
 
+    def test_empty_first_call(self):
+        """Should not be able to make first call without any arguments.
 
-def test_notfound_type_first_call():
-    """Raise when supplying not implemented wrapper name."""
-    with pytest.raises(NotImplementedError) as exc_info:
-        Database('notfound')
-    assert 'AbstractDB' in str(exc_info.value)
+        Hegelian Ontology Primer
+        ------------------------
 
+        Type indeterminate <-> type abstracted from its property <-> No type
+        """
+        with pytest.raises(TypeError) as exc_info:
+            Database()
+        assert 'abstract class' in str(exc_info.value)
 
-def test_instatiation_and_singleton():
-    """Test create just one object, that object persists between calls."""
-    database = Database(of_type='MongoDB', dbname='metaopt_test',
-                        username='user', password='pass')
+    def test_notfound_type_first_call(self):
+        """Raise when supplying not implemented wrapper name."""
+        with pytest.raises(NotImplementedError) as exc_info:
+            Database('notfound')
+        assert 'AbstractDB' in str(exc_info.value)
 
-    assert Database() is database
-    with pytest.raises(ValueError) as exc_info:
-        Database('fire', [], {'doesnt_matter': 'it\'s singleton'})
-    assert 'singleton' in str(exc_info.value)
-    MongoDB.instance = None  # Set singular instance to None for independent tests
-    Database.instance = None
+    def test_instatiation_and_singleton(self):
+        """Test create just one object, that object persists between calls."""
+        database = Database(of_type='MongoDB', dbname='metaopt_test',
+                            username='user', password='pass')
+
+        assert isinstance(database, MongoDB)
+        assert database is MongoDB()
+        assert database is Database()
+        with pytest.raises(ValueError) as exc_info:
+            Database('fire', [], {'it_matters': 'it\'s singleton'})
+        assert 'singleton' in str(exc_info.value)
