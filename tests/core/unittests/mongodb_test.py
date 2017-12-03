@@ -94,13 +94,13 @@ class TestRead(object):
     def test_read_experiment(self, exp_config, moptdb):
         """Fetch a whole experiment entries."""
         loaded_config = moptdb.read(
-            'experiments', {'exp_name': 'supernaedo2', 'user': 'tsirif'})
+            'experiments', {'name': 'supernaedo2', 'metadata.user': 'tsirif'})
         assert loaded_config == exp_config[0][:2]
 
         loaded_config = moptdb.read('experiments',
                                     {'exp_name': 'supernaedo2',
-                                     'user': 'tsirif',
-                                     'datetime': datetime(2017, 11, 22, 23, 0, 0)})
+                                     'metadata.user': 'tsirif',
+                                     'metadata.datetime': datetime(2017, 11, 22, 23, 0, 0)})
         assert loaded_config == [exp_config[0][0]]
         assert loaded_config[0]['_id'] == exp_config[0][0]['_id']
 
@@ -112,14 +112,14 @@ class TestRead(object):
     def test_read_default(self, exp_config, moptdb):
         """Fetch value(s) from an entry."""
         value = moptdb.read(
-            'experiments', {'exp_name': 'supernaedo2', 'user': 'tsirif'},
+            'experiments', {'name': 'supernaedo2', 'metadata.user': 'tsirif'},
             selection={'algorithms': 1, '_id': 0})
         assert value == [{'algorithms': exp_config[0][i]['algorithms']} for i in (0, 1)]
 
     def test_read_nothing(self, moptdb):
         """Fetch value(s) from an entry."""
         value = moptdb.read(
-            'experiments', {'exp_name': 'not_found', 'user': 'tsirif'},
+            'experiments', {'name': 'not_found', 'metadata.user': 'tsirif'},
             selection={'algorithms': 1})
         assert value == []
 
@@ -170,12 +170,12 @@ class TestWrite(object):
 
     def test_update_many_default(self, database, moptdb):
         """Should match existing entries, and update some of their keys."""
-        filt = {'exp_name': 'supernaedo2', 'user': 'tsirif'}
+        filt = {'name': 'supernaedo2', 'metadata.user': 'tsirif'}
         count_before = database.experiments.count()
         # call interface
         assert moptdb.write('experiments', {'pool_size': 16}, filt) is True
         assert database.experiments.count() == count_before
-        value = list(database.experiments.find({'exp_name': 'supernaedo2'}))
+        value = list(database.experiments.find({'name': 'supernaedo2'}))
         assert value[0]['pool_size'] == 16
         assert value[1]['pool_size'] == 16
         assert value[2]['pool_size'] == 2
@@ -212,7 +212,7 @@ class TestRemove(object):
 
     def test_remove_many_default(self, exp_config, database, moptdb):
         """Should match existing entries, and delete them all."""
-        filt = {'exp_name': 'supernaedo2', 'user': 'tsirif'}
+        filt = {'name': 'supernaedo2', 'metadata.user': 'tsirif'}
         count_before = database.experiments.count()
         # call interface
         assert moptdb.remove('experiments', filt) is True
