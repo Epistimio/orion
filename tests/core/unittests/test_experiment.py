@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`metaopt.worker.experiment`."""
 
-from datetime import datetime
+import datetime
 import getpass
 
 import pytest
@@ -25,8 +25,14 @@ def with_user_xavier(monkeypatch):
 @pytest.fixture()
 def random_dt(monkeypatch):
     """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    random_dt = datetime(1903, 4, 25, 0, 0, 0)
-    monkeypatch.setattr(datetime, 'utcnow', lambda: random_dt)
+    random_dt = datetime.datetime(1903, 4, 25, 0, 0, 0)
+
+    class MockDatetime(datetime.datetime):
+        @classmethod
+        def utcnow(cls):
+            return random_dt
+
+    monkeypatch.setattr(datetime, 'datetime', MockDatetime)
     return random_dt
 
 
