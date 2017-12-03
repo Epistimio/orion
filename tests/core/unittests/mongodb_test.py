@@ -102,6 +102,12 @@ class TestRead(object):
                                      'metadata.user': 'tsirif',
                                      'metadata.datetime': datetime(2017, 11, 22, 23, 0, 0)})
         assert loaded_config == [exp_config[0][0]]
+        assert loaded_config[0]['_id'] == exp_config[0][0]['_id']
+
+    def test_read_with_id(self, exp_config, moptdb):
+        """Query using ``_id`` key."""
+        loaded_config = moptdb.read('experiments', {'_id': exp_config[0][2]['_id']})
+        assert loaded_config == [exp_config[0][2]]
 
     def test_read_default(self, exp_config, moptdb):
         """Fetch value(s) from an entry."""
@@ -173,18 +179,39 @@ class TestWrite(object):
         assert value[1]['pool_size'] == 16
         assert value[2]['pool_size'] == 2
 
+    def test_update_with_id(self, exp_config, database, moptdb):
+        """Query using ``_id`` key."""
+        filt = {'_id': exp_config[0][1]['_id']}
+        count_before = database.experiments.count()
+        # call interface
+        assert moptdb.write('experiments', {'pool_size': 36}, filt) is True
+        assert database.experiments.count() == count_before
+        value = list(database.experiments.find(filt))
+        assert value[0]['pool_size'] == 36
+
 
 @pytest.mark.usefixtures("clean_db")
 class TestRemove(object):
     """Calls to :meth:`metaopt.io.database.mongodb.MongoDB.remove`."""
 
-    def test_remove_many_default(self, database, moptdb):
+    def test_remove_many_default(self, exp_config, database, moptdb):
         """Should match existing entries, and delete them all."""
         filt = {'exp_name': 'supernaedo2', 'metadata.user': 'tsirif'}
         count_before = database.experiments.count()
         # call interface
         assert moptdb.remove('experiments', filt) is True
         assert database.experiments.count() == count_before - 2
+        assert database.experiments.count() == 1
+        assert list(database.experiments.find()) == [exp_config[0][2]]
+
+    def test_remove_with_id(self, exp_config, database, moptdb):
+        """Query using ``_id`` key."""
+        filt = {'_id': exp_config[0][0]['_id']}
+        count_before = database.experiments.count()
+        # call interface
+        assert moptdb.remove('experiments', filt) is True
+        assert database.experiments.count() == count_before - 1
+        assert list(database.experiments.find()) == exp_config[0][1:]
 
 
 @pytest.mark.usefixtures("clean_db")
