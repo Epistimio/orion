@@ -110,7 +110,7 @@ class TestRead(object):
                                     {'exp_name': 'supernaedo2',
                                      'metadata.user': 'tsirif',
                                      'metadata.datetime': datetime(2017, 11, 22, 23, 0, 0)})
-        assert loaded_config == exp_config[0][0]
+        assert loaded_config == [exp_config[0][0]]
 
     def test_read_default(self, exp_config, moptdb):
         """Fetch value(s) from an entry."""
@@ -124,7 +124,7 @@ class TestRead(object):
         value = moptdb.read(
             'experiments', {'exp_name': 'not_found', 'metadata.user': 'tsirif'},
             selection={'algorithms': 1})
-        assert value is None
+        assert value == []
 
     def test_read_trials(self, exp_config, moptdb):
         """Fetch value(s) from an entry."""

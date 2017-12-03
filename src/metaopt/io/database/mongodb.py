@@ -122,10 +122,7 @@ class MongoDB(AbstractDB):
         cursor = dbcollection.find(query, selection)
         dbdocs = list(cursor)
 
-        if not dbdocs:
-            return None
-
-        return dbdocs if len(dbdocs) > 1 else dbdocs[0]
+        return dbdocs
 
     def remove(self, collection_name, query):
         """Delete from a collection document[s] which match the `query`.
