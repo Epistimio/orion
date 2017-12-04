@@ -124,6 +124,15 @@ class MongoDB(AbstractDB):
 
         return dbdocs
 
+    def count(self, collection_name, query=None):
+        """Count the number of documents in a collection which match the `query`.
+
+        .. seealso:: :meth:`AbstractDB.count` for argument documentation.
+
+        """
+        dbcollection = self._db[collection_name]
+        return dbcollection.count(filter=query)
+
     def remove(self, collection_name, query):
         """Delete from a collection document[s] which match the `query`.
 
