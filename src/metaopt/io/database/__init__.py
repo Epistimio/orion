@@ -118,7 +118,7 @@ class AbstractDB(object):
         selection : dict, optional
            Elements of matched entries to return, the projection.
 
-        :return: matched document[s]
+        :return: list of matched document[s]
 
         """
         pass
