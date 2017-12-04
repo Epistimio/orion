@@ -9,7 +9,11 @@
 
 """
 
-#  import datetime
+import datetime
+import getpass
+
+from metaopt.io.database import Database
+#  from metaopt.worker.trial import Trial
 
 
 class Experiment(object):
@@ -21,7 +25,7 @@ class Experiment(object):
        Unique identifier for this experiment per `user`.
     refers : dict or list of `Experiment` objects, after initialization is done.
        A dictionary pointing to a past `Experiment` name, ``refers[name]``, whose
-       `Trial`s we want to add in the history of completed `Trial`s we want to re-use.
+       trials we want to add in the history of completed trials we want to re-use.
     metadata : dict
        Contains managerial information about this `Experiment`.
     pool_size : int
@@ -68,7 +72,7 @@ class Experiment(object):
     user_version : str, optional
        Current user's repository version.
     user_commit_hash : str, optional
-       Current Experiment`'s commit hash for **MetaOpt**'s invocation.
+       Current `Experiment`'s commit hash for **MetaOpt**'s invocation.
 
     """
 
@@ -89,7 +93,30 @@ class Experiment(object):
         :param name: Describe a configuration with a unique identifier per :attr:`user`.
         :type name: str
         """
-        raise NotImplementedError()
+        self._init_done = False
+        self._db = Database()  # fetch database instance
+
+        self._id = None
+        self.name = name
+        self.refers = None
+        user = getpass.getuser()
+        stamp = datetime.datetime.utcnow()
+        self.metadata = {'user': user, 'datetime': stamp}
+        self.pool_size = None
+        self.max_trials = None
+        self.status = None
+        self.algorithms = None
+
+        config = self._db.read('experiments',
+                               {'name': name, 'metadata.user': user})
+        if config:
+            config = sorted(config, key=lambda x: x['metadata']['datetime'],
+                            reverse=True)[0]
+            #  assert (len(config) == 1) is not True  # currently
+            for varname in self.__slots__:
+                if not varname.startswith('_'):
+                    setattr(self, varname, config[varname])
+            self._id = config['_id']
 
     def reserve_trial(self, score_handle=None):
         """Find *new* trials that exist currently in database and select one of
@@ -117,7 +144,7 @@ class Experiment(object):
         """Inform database about *new* suggested trial with specific parameter
         values. Each of them correspond to a different possible run.
 
-        :type trials: list of `Trial`s
+        :type trials: list of `Trial`
         """
         raise NotImplementedError()
 
@@ -131,7 +158,7 @@ class Experiment(object):
 
     @property
     def config(self):
-        """Return a dictionary no-writeable view of `Experiment`'s configuration."""
+        """Return a dictionary no-writeable view of an `Experiment` configuration."""
         raise NotImplementedError()
 
     @config.setter
@@ -141,8 +168,8 @@ class Experiment(object):
         If `Experiment` was already set and an overwrite is needed, a *fork*
         is advised with a different :attr:`name` for this particular configuration.
 
-        .. note:: Calling this property is necessary for an experiment's initialization
-           process to be considered as done.
+        .. note:: Calling this property is necessary for an experiment's
+           initialization process to be considered as done.
         """
         raise NotImplementedError()
 

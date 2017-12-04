@@ -11,4 +11,6 @@
 
 
 class Trial(object):
+    """Represents an entry in database/trials collection."""
+
     pass
