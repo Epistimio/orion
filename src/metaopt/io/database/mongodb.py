@@ -50,8 +50,8 @@ class MongoDB(AbstractDB):
                                      port=self.port,
                                      username=self.username,
                                      password=self.password,
-                                     authSource=self.dbname)
-            self._db = self._conn[self.dbname]
+                                     authSource=self.name)
+            self._db = self._conn[self.name]
             self._db.command('ismaster')  # .. seealso:: :meth:`is_connected`
         except pymongo.errors.ConnectionFailure as e:
             self._logger.error("Could not connect to host, %s:%s",
@@ -60,7 +60,7 @@ class MongoDB(AbstractDB):
                                      "specified uri"), e)
         except pymongo.errors.OperationFailure as e:
             self._logger.error("Could not verify user, %s, on database, %s",
-                               self.username, self.dbname)
+                               self.username, self.name)
             raise_from(DatabaseError("Authentication Failure: bad credentials"), e)
 
     @property
@@ -155,8 +155,8 @@ class MongoDB(AbstractDB):
         else:  # host argument was a URI
             # Arguments in MongoClient overwrite elements from URI
             self.host, _port = settings['nodelist'][0]
-            if self.dbname is None:
-                self.dbname = settings['database']
+            if self.name is None:
+                self.name = settings['database']
             if self.port is None:
                 self.port = _port
             if self.username is None:

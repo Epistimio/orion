@@ -37,7 +37,7 @@ def clean_db(database, exp_config):
 def moptdb():
     """Return MongoDB wrapper instance initiated with test opts."""
     MongoDB.instance = None
-    moptdb = MongoDB(username='user', password='pass', dbname='metaopt_test')
+    moptdb = MongoDB(username='user', password='pass', name='metaopt_test')
     return moptdb
 
 
@@ -48,14 +48,14 @@ class TestConnection(object):
     def test_bad_connection(self):
         """Raise when connection cannot be achieved."""
         with pytest.raises(DatabaseError) as exc_info:
-            MongoDB(host='asdfada', port=123, dbname='metaopt',
+            MongoDB(host='asdfada', port=123, name='metaopt',
                     username='uasdfaf', password='paasdfss')
         assert "Connection" in str(exc_info.value)
 
     def test_bad_authentication(self):
         """Raise when authentication cannot be achieved."""
         with pytest.raises(DatabaseError) as exc_info:
-            MongoDB(dbname='metaopt_test', username='uasdfaf', password='paasdfss')
+            MongoDB(name='metaopt_test', username='uasdfaf', password='paasdfss')
         assert "Authentication" in str(exc_info.value)
 
     def test_connection_with_uri(self):
@@ -65,22 +65,22 @@ class TestConnection(object):
         assert moptdb.port == 27017
         assert moptdb.username == 'user'
         assert moptdb.password == 'pass'
-        assert moptdb.dbname == 'metaopt_test'
+        assert moptdb.name == 'metaopt_test'
 
     def test_overwrite_uri(self):
         """Check the case when connecting with ready `uri`."""
         moptdb = MongoDB('mongodb://lala:pass@localhost:1231/metaopt',
-                         port=27017, dbname='metaopt_test', username='user',
+                         port=27017, name='metaopt_test', username='user',
                          password='pass')
         assert moptdb.host == 'localhost'
         assert moptdb.port == 27017
         assert moptdb.username == 'user'
         assert moptdb.password == 'pass'
-        assert moptdb.dbname == 'metaopt_test'
+        assert moptdb.name == 'metaopt_test'
 
     def test_singleton(self):
         """Test that MongoDB class is a singleton."""
-        moptdb = MongoDB(username='user', password='pass', dbname='metaopt_test')
+        moptdb = MongoDB(username='user', password='pass', name='metaopt_test')
         # reinit connection does not change anything
         moptdb.initiate_connection()
         moptdb.close_connection()

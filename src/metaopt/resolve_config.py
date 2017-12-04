@@ -250,7 +250,7 @@ def merge_mopt_config(config, dbconfig, cmdconfig, cmdargs):
        (default: 10 @ default resource). Can be a dict of the form:
        {resource_alias: subpool_size}
 
-    database -- dict with keys: of_type, dbname, host, port, username, password
+    database -- dict with keys: 'type', 'name', 'host', 'port', 'username', 'password'
 
     resources -- {resource_alias: (entry_address, scheduler, scheduler_ops)} (optional)
 
