@@ -4,33 +4,10 @@
 
 from datetime import datetime
 
-from pymongo import MongoClient
 import pytest
 
 from metaopt.io.database import DatabaseError
 from metaopt.io.database.mongodb import MongoDB
-
-
-@pytest.fixture(scope='module')
-def database():
-    """Return Mongo database object to test with example entries."""
-    client = MongoClient(username='user', password='pass', authSource='metaopt_test')
-    database = client.metaopt_test
-    yield database
-    client.close()
-
-
-@pytest.fixture()
-def clean_db(database, exp_config):
-    """Clean insert example experiment entries to collections."""
-    database.experiments.drop()
-    database.experiments.insert_many(exp_config[0])
-    database.trials.drop()
-    database.trials.insert_many(exp_config[1])
-    database.workers.drop()
-    database.workers.insert_many(exp_config[2])
-    database.resources.drop()
-    database.resources.insert_many(exp_config[3])
 
 
 @pytest.fixture(scope='module')
