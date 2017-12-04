@@ -9,11 +9,15 @@
 
 """
 
+import copy
 import datetime
 import getpass
+import logging
 
 from metaopt.io.database import Database
 #  from metaopt.worker.trial import Trial
+
+log = logging.getLogger(__name__)
 
 
 class Experiment(object):
@@ -158,8 +162,15 @@ class Experiment(object):
 
     @property
     def config(self):
-        """Return a dictionary no-writeable view of an `Experiment` configuration."""
-        raise NotImplementedError()
+        """Return a copy of an `Experiment` configuration as a dictionary."""
+        if self._init_done:
+            return self._db.read('experiments', {'_id': self._id})[0]
+
+        config = dict()
+        for varname in self.__slots__:
+            if not varname.startswith('_'):
+                config[varname] = getattr(self, varname)
+        return copy.deepcopy(config)
 
     @config.setter
     def config(self, config):
