@@ -20,7 +20,7 @@ import logging
 
 import six
 
-from metaopt.utils import AbstractSingletonType
+from metaopt.utils import (AbstractSingletonType, SingletonFactory)
 
 
 @six.add_metaclass(AbstractSingletonType)
@@ -106,14 +106,14 @@ class AbstractDB(object):
         pass
 
     @abstractmethod
-    def read(self, collection_name, query, selection=None):
+    def read(self, collection_name, query=None, selection=None):
         """Read a collection and return a value according to the query.
 
         Parameters
         ----------
         collection_name : str
            A collection inside database, a table.
-        query : dict
+        query : dict, optional
            Filter entries in collection.
         selection : dict, optional
            Elements of matched entries to return, the projection.
@@ -148,4 +148,11 @@ class DatabaseError(RuntimeError):
     pass
 
 
-from metaopt.io.database.mongodb import MongoDB  # noqa
+@six.add_metaclass(SingletonFactory)  # pylint: disable=too-few-public-methods,abstract-method
+class Database(AbstractDB):
+    """Class used to inject dependency on a database framework.
+
+    .. seealso:: `Factory` metaclass and `AbstractDB` interface.
+    """
+
+    pass

@@ -111,7 +111,7 @@ class MongoDB(AbstractDB):
                                           upsert=True)
         return result.acknowledged
 
-    def read(self, collection_name, query, selection=None):
+    def read(self, collection_name, query=None, selection=None):
         """Read a collection and return a value according to the query.
 
         .. seealso:: :meth:`AbstractDB.read` for argument documentation.

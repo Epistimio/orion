@@ -5,8 +5,8 @@ mopt:
 
 ERROR CODES
 -----------
-* 0  : Success
-* -1 : Provide a name for the experiment (cli argument or moptconfig file)
+ 0 -- Success
+ 1 -- Provide a name for the experiment (cli argument or moptconfig file)
 
 """
 from __future__ import absolute_import
@@ -17,6 +17,7 @@ import logging
 import sys
 
 from metaopt import resolve_config
+from metaopt.io.database import Database
 
 
 def main():
@@ -55,9 +56,9 @@ def infer_config_and_db(user):
     tmpconfig = resolve_config.merge_mopt_config(expconfig, dict(),
                                                  cmdconfig, cmdargs)
     db_opts = tmpconfig['database']
-    # (TODO) Init database with `db_opts`
+    moptdb = Database(**db_opts)
     print(user)
-    moptdb = object()
+    # (TODO) Init Experiment class
 
     exp_name = tmpconfig['exp_name']
     # (TODO) Get experiment metadata for experiment with name == `exp_name`,
