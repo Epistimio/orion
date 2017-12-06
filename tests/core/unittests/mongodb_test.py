@@ -75,7 +75,7 @@ class TestRead(object):
         assert loaded_config == exp_config[0][:2]
 
         loaded_config = moptdb.read('experiments',
-                                    {'exp_name': 'supernaedo2',
+                                    {'name': 'supernaedo2',
                                      'metadata.user': 'tsirif',
                                      'metadata.datetime': datetime(2017, 11, 22, 23, 0, 0)})
         assert loaded_config == [exp_config[0][0]]
