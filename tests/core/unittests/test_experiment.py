@@ -36,6 +36,34 @@ def random_dt(monkeypatch):
     return random_dt
 
 
+@pytest.fixture()
+def new_config(random_dt):
+    new_config = dict(
+        name='supernaekei',
+        # refers is missing on purpose
+        metadata={'user': 'tsirif',
+                  'datetime': random_dt,
+                  'mopt_version': 0.1,
+                  'user_script': 'abs_path/to_yoyoy.py',
+                  'user_config': 'abs_path/hereitis.yaml',
+                  'user_args': '--mini-batch~uniform(32, 256)',
+                  'user_vcs': 'git',
+                  'user_version': 0.8,
+                  'user_commit_hash': 'fsa7df7a8sdf7a8s7'},
+        pool_size=10,
+        max_trials=1000,
+        algorithms={'bayesian_scikit': {'yoyo': 5, 'alpha': 0.8}},
+        # the following should be ignored by the setting function:
+        # status is not settable:
+        status='asdfafa',
+        # attrs starting with '_' also
+        _id='fasdfasfa',
+        # and in general anything which is not in Experiment's slots
+        something_to_be_ignored='asdfa'
+        )
+    return new_config
+
+
 class TestInitExperiment(object):
     """Create new Experiment instance."""
 
@@ -106,7 +134,7 @@ class TestConfigProperty(object):
         """
         exp = Experiment('supernaedo2')
         exp_config[0][1].pop('_id')
-        assert exp.config == exp_config[0][1]
+        assert exp.configuration == exp_config[0][1]
 
     def test_get_before_init_no_hit(self, exp_config, random_dt):
         """Return a configuration dict according to an experiment object.
@@ -116,7 +144,7 @@ class TestConfigProperty(object):
         of current state, to be used with :mod:`metaopt.resolve_config`.
         """
         exp = Experiment('supernaekei')
-        cfg = exp.config
+        cfg = exp.configuration
         assert cfg['name'] == 'supernaekei'
         assert cfg['refers'] is None
         assert cfg['metadata']['user'] == 'tsirif'
@@ -128,13 +156,86 @@ class TestConfigProperty(object):
         assert cfg['algorithms'] is None
         assert len(cfg) == 7
 
-    def test_set_before_init_with_diffs(self, exp_config):
-        pass
+    def test_good_set_before_init_hit_with_diffs(self, exp_config):
+        """Trying to set, and differences were found from the config pulled from db.
 
-    def test_set_before_init_no_diffs(self, exp_config):
-        pass
+        In this case:
+        1. Force renaming of experiment, prompt user for new name.
+        2. Fork from experiment with previous name. New experiments refers to the
+           old one, if user wants to.
+        3. Overwrite elements with the ones from input.
 
-    def test_get_after_init(self, exp_config):
+        .. warning:: Currently, not implemented.
+        """
+        new_config = {'pool_size': 8}
+        exp = Experiment('supernaedo2')
+        with pytest.raises(NotImplementedError):
+            exp.configure(new_config)
+
+    def test_good_set_before_init_hit_no_diffs_exc_max_trials(self, exp_config):
+        """Trying to set, and NO differences were found from the config pulled from db.
+
+        Everything is normal, nothing changes. Experiment is resumed,
+        perhaps with more trials to evaluate (the only exception is 'max_trials').
+        """
+        exp = Experiment('supernaedo2')
+        # Deliver an external configuration to finalize init
+        exp_config[0][1]['max_trials'] = 5000
+        exp_config[0][1]['status'] = 'new'
+        exp.configure(exp_config[0][1])
+        assert exp.configuration == exp_config[0][1]
+        exp_config[0][1]['max_trials'] = 1000  # don't ruin resource
+        exp_config[0][1]['status'] = 'running'
+
+    def test_good_set_before_init_no_hit(self, random_dt, database, new_config):
+        """Trying to set, overwrite everything from input."""
+        exp = Experiment(new_config['name'])
+        exp.configure(new_config)
+        assert exp._init_done is True
+        found_config = list(database.experiments.find({'name': 'supernaekei',
+                                                       'metadata.user': 'tsirif'}))
+        assert len(found_config) == 1
+        _id = found_config[0].pop('_id')
+        assert _id != 'fasdfasfa'
+        assert exp._id == _id
+        new_config['refers'] = None
+        new_config['status'] = 'new'
+        new_config.pop('_id')
+        new_config.pop('something_to_be_ignored')
+        assert found_config[0] == new_config
+        assert exp.name == new_config['name']
+        assert exp.refers is None
+        assert exp.metadata == new_config['metadata']
+        assert exp.pool_size == new_config['pool_size']
+        assert exp.max_trials == new_config['max_trials']
+        assert exp.status == new_config['status']
+        #  assert exp.algorithms == new_config['algorithms']
+
+    def test_inconsistent_1_set_before_init_no_hit(self, random_dt, new_config):
+        """Test inconsistent configuration because of name."""
+        exp = Experiment(new_config['name'])
+        new_config['name'] = 'asdfaa'
+        with pytest.raises(ValueError) as exc_info:
+            exp.configure(new_config)
+        assert 'inconsistent' in str(exc_info.value)
+
+    def test_inconsistent_2_set_before_init_no_hit(self, random_dt, new_config):
+        """Test inconsistent configuration because of user."""
+        exp = Experiment(new_config['name'])
+        new_config['metadata']['user'] = 'asdfaa'
+        with pytest.raises(ValueError) as exc_info:
+            exp.configure(new_config)
+        assert 'inconsistent' in str(exc_info.value)
+
+    def test_inconsistent_3_set_before_init_no_hit(self, random_dt, new_config):
+        """Test inconsistent configuration because of datetime."""
+        exp = Experiment(new_config['name'])
+        new_config['metadata']['datetime'] = 123
+        with pytest.raises(ValueError) as exc_info:
+            exp.configure(new_config)
+        assert 'inconsistent' in str(exc_info.value)
+
+    def test_get_after_init_plus_hit_no_diffs(self, exp_config):
         """Return a configuration dict according to an experiment object.
 
         Before initialization is done, it can be the case that the pair (`name`,
@@ -143,14 +244,26 @@ class TestConfigProperty(object):
         """
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
-        exp.config = exp_config[0][1]
-        assert exp.config == exp_config[0][1]
+        exp.configure(exp_config[0][1])
+        assert exp._init_done is True
+        exp_config[0][1]['status'] = 'new'
+        assert exp.configuration == exp_config[0][1]
+        exp_config[0][1]['status'] = 'running'  # don't ruin resource
 
-    def test_set_after_init(self, exp_config):
+    def test_try_set_after_init(self, exp_config):
         """Cannot set a configuration after init (currently)."""
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
-        exp.config = exp_config[0][1]
-        with pytest.raises(ValueError) as exc_info:
-            exp.config = exp_config[0][1]
-        assert 'Cannot set' in str(exc_info.value)
+        exp.configure(exp_config[0][1])
+        assert exp._init_done is True
+        with pytest.raises(RuntimeError) as exc_info:
+            exp.configure(exp_config[0][1])
+        assert 'cannot reset' in str(exc_info.value)
+
+    def test_after_init_algorithms_are_objects(self, exp_config):
+        """Attribute exp.algorithms become objects after init."""
+        pass
+
+    def test_after_init_refers_are_objects(self, exp_config):
+        """Attribute exp.refers become objects after init."""
+        pass

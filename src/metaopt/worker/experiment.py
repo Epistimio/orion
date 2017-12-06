@@ -14,6 +14,8 @@ import datetime
 import getpass
 import logging
 
+import six
+
 from metaopt.io.database import Database
 #  from metaopt.worker.trial import Trial
 
@@ -39,11 +41,11 @@ class Experiment(object):
 
        This attribute can be updated if the rest of the experiment configuration
        is the same. In that case, if trying to set to an already set experiment,
-       it will be the previous number of `max_trials` plus the one suggested by
-       the input config.
+       it will overwrite the previous one.
     status : str
        A keyword among {*'new'*, *'running'*, *'done'*, *'broken'*} indicating
-       how **MetaOpt** considers the current `Experiment`.
+       how **MetaOpt** considers the current `Experiment`. This attribute cannot
+       be set from an mopt configuration.
 
        * 'new' : Denotes a new valid configuration that has not been run yet.
        * 'running' : Denotes an experiment which is currently being executed.
@@ -161,7 +163,7 @@ class Experiment(object):
         raise NotImplementedError()
 
     @property
-    def config(self):
+    def configuration(self):
         """Return a copy of an `Experiment` configuration as a dictionary."""
         if self._init_done:
             return self._db.read('experiments', {'_id': self._id})[0]
@@ -170,19 +172,62 @@ class Experiment(object):
         for varname in self.__slots__:
             if not varname.startswith('_'):
                 config[varname] = getattr(self, varname)
+        # Reason for deepcopy is that some attributes are dictionaries
+        # themselves, we don't want to accidentally change the state of this
+        # object from a getter.
         return copy.deepcopy(config)
 
-    @config.setter
-    def config(self, config):
+    def configure(self, config):
         """Set `Experiment` by overwriting current attributes.
 
         If `Experiment` was already set and an overwrite is needed, a *fork*
         is advised with a different :attr:`name` for this particular configuration.
 
         .. note:: Calling this property is necessary for an experiment's
-           initialization process to be considered as done.
+           initialization process to be considered as done. But it can be called
+           only once.
         """
-        raise NotImplementedError()
+        if self._init_done:
+            raise RuntimeError("Configuration is done; cannot reset an Experiment.")
+
+        # If status is None in this object, then database did not hit a config
+        # with same (name, user's name) pair. Everything depends on the user's
+        # moptconfig to set.
+        if self.status is None:
+            if config['name'] != self.name or \
+                    config['metadata']['user'] != self.metadata['user'] or \
+                    config['metadata']['datetime'] != self.metadata['datetime']:
+                raise ValueError("Configuration given is inconsistent with this Experiment.")
+            is_new = True
+        else:
+            # Fork if it is needed
+            is_new = self._is_different_from(config)
+            if is_new:
+                self._fork_config(config)  # Change (?) `name` attribute here.
+
+        # Just overwrite everything given
+        for section, value in six.iteritems(config):
+            if section == 'status' or \
+                    section not in self.__slots__ or \
+                    section.startswith('_'):
+                continue
+            setattr(self, section, value)
+
+        self.status = 'new'
+        final_config = self.configuration  # grab dict representation of Experiment
+
+        # Sanitize and replace some sections with objects
+        self._sanitize_config()
+
+        # If everything is alright, push new config to database
+        if is_new:
+            self._db.write('experiments', final_config)
+            # XXX: This may be MongoDB only; it updates an inserted dict with _id
+            self._id = final_config['_id']
+        else:
+            self._db.write('experiments', final_config, {'_id': self._id})
+
+        self._init_done = True
 
     @property
     def stats(self):
@@ -210,17 +255,22 @@ class Experiment(object):
         raise NotImplementedError()
 
     def _sanitize_config(self):
-        """Chech before dispatching experiment whether configuration corresponds
+        """Check before dispatching experiment whether configuration corresponds
         to a runnable experiment.
 
-        For example, check whether configured algorithms correspond to [known]
-        implementations of the ``Algorithm`` class. Instantiate these objects.
+        1. Check `refers` and instantiate `Experiment` objects from it.
+        2. From `metadata` given: ``user_script``, ``user_config`` should exist.
+        3. Check if experiment `is_done`, prompt for larger `max_trials` if it is.
+        4. Check whether configured algorithms correspond to [known]/valid
+           implementations of the ``Algorithm`` class. Instantiate these objects.
         """
-        raise NotImplementedError()
+        pass
 
-    def _fork_config(self):
+    def _fork_config(self, config):
         """Ask for a different identifier for this experiment. Set :attr:`refers`
         key to previous experiment's name, the one that we forked from.
+
+        :param config: Conflicting configuration that will change based on prompt.
         """
         raise NotImplementedError()
 
@@ -228,4 +278,16 @@ class Experiment(object):
         """Return True, if current `Experiment`'s configuration as described by
         its attributes is different from the one suggested in `config`.
         """
-        raise NotImplementedError()
+        is_diff = False
+        for section, value in six.iteritems(config):
+            # 'status' should not be in config
+            # 'max_trials' overwrites without forking
+            if section in ('status', 'max_trials') or \
+                    section not in self.__slots__ or \
+                    section.startswith('_'):
+                continue
+            if getattr(self, section) != value:
+                is_diff = True
+                break
+
+        return is_diff
