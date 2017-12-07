@@ -136,7 +136,7 @@ class Trial(object):
 
         allowed_types = ('int', 'float', 'enum')
 
-    __slots__ = ('exp_name', 'user', '_status', 'worker',
+    __slots__ = ('exp_name', 'user', '_id', '_status', 'worker',
                  'submit_time', 'start_time', 'end_time', 'results', 'params')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'broken')
 
@@ -193,3 +193,8 @@ class Trial(object):
             raise ValueError("Given status, {0}, not one of: {1}".format(
                 status, self.allowed_stati))
         self._status = status
+
+    @property
+    def id(self):
+        """Return database key `_id`."""
+        return self._id
