@@ -34,6 +34,9 @@ class TestTrial(object):
         assert t.start_time == exp_config[1][1]['start_time']
         assert t.end_time == exp_config[1][1]['end_time']
         assert list(map(dict, t.results)) == exp_config[1][1]['results']
+        assert t.results[0].name == exp_config[1][1]['results'][0]['name']
+        assert t.results[0].type == exp_config[1][1]['results'][0]['type']
+        assert t.results[0].value == exp_config[1][1]['results'][0]['value']
         assert list(map(dict, t.params)) == exp_config[1][1]['params']
 
     def test_bad_access(self):
@@ -88,12 +91,13 @@ class TestTrial(object):
         assert list(map(dict, trials)) == exp_config[1]
 
     def test_str_trial(self, exp_config):
+        """Test representation of `Trial`."""
         t = Trial(**exp_config[1][1])
         assert str(t) == "Trial(exp_name='supernaedo2', "\
                          "status='completed', params.value=['gru', 'lstm_with_attention'])"
 
     def test_str_value(self, exp_config):
+        """Test representation of `Trial.Value`."""
         t = Trial(**exp_config[1][1])
         assert str(t.params[0]) == "Param(name='encoding_layer', "\
                                    "type='enum', value='gru')"
-

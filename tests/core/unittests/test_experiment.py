@@ -38,6 +38,7 @@ def random_dt(monkeypatch):
 
 @pytest.fixture()
 def new_config(random_dt):
+    """Create a configuration that will not hit the database."""
     new_config = dict(
         name='supernaekei',
         # refers is missing on purpose
