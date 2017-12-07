@@ -13,11 +13,13 @@ import copy
 import datetime
 import getpass
 import logging
+import math
+import random
 
 import six
 
 from metaopt.io.database import Database
-#  from metaopt.worker.trial import Trial
+from metaopt.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
@@ -61,7 +63,7 @@ class Experiment(object):
     --------
     user : str
        System user currently owning this running process, the one who invoked **MetaOpt**.
-    datetime : str
+    datetime : `datetime.datetime`
        When was this particular configuration submitted to the database.
     mopt_version : str
        Version of **MetaOpt** which suggested this experiment. `user`'s current
@@ -119,9 +121,9 @@ class Experiment(object):
             config = sorted(config, key=lambda x: x['metadata']['datetime'],
                             reverse=True)[0]
             #  assert (len(config) == 1) is not True  # currently
-            for varname in self.__slots__:
-                if not varname.startswith('_'):
-                    setattr(self, varname, config[varname])
+            for attrname in self.__slots__:
+                if not attrname.startswith('_'):
+                    setattr(self, attrname, config[attrname])
             self._id = config['_id']
 
     def reserve_trial(self, score_handle=None):
@@ -129,12 +131,34 @@ class Experiment(object):
         them based on the highest score return from `score_handle` callable.
 
         :param score_handle: A way to decide which trial out of the *new* ones to
-           to pick as *pending*, defaults to a random choice.
+           to pick as *reserved*, defaults to a random choice.
         :type score_handle: callable
 
-        :return: selected `Trial` object
+        :return: selected `Trial` object, None if could not find any.
         """
-        raise NotImplementedError()
+        if score_handle is not None and not callable(score_handle):
+            raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
+
+        query = dict(
+            exp_name=self.name,
+            user=self.metadata['user'],
+            status='new'
+            )
+        new_trials = Trial.build(self._db.read('trials', query))
+
+        if not new_trials:
+            return None
+
+        if score_handle is None:
+            selected_trial = random.sample(new_trials, 1)[0]
+        else:
+            raise NotImplementedError("scoring will be supported in the next iteration.")
+
+        selected_trial.status = 'reserved'
+
+        self._db.write('trials', dict(selected_trial), query={'_id': selected_trial.id})
+
+        return selected_trial
 
     def push_completed_trial(self, trial):
         """Inform database about an evaluated `trial` with results.
@@ -142,9 +166,10 @@ class Experiment(object):
         :param trial: Corresponds to a successful evaluation of a particular run.
         :type trial: `Trial`
 
-        .. note:: Change status from *pending* to *completed*.
+        .. note:: Change status from *reserved* to *completed*.
         """
-        raise NotImplementedError()
+        trial.status = 'completed'
+        self._db.write('trials', dict(trial), query={'_id': trial.id})
 
     def register_trials(self, trials):
         """Inform database about *new* suggested trial with specific parameter
@@ -152,7 +177,9 @@ class Experiment(object):
 
         :type trials: list of `Trial`
         """
-        raise NotImplementedError()
+        for trial in trials:
+            trial.status = 'new'
+        self._db.write('trials', list(map(dict, trials)))
 
     @property
     def is_done(self):
@@ -160,7 +187,15 @@ class Experiment(object):
 
         .. note:: To be used as a terminating condition in a ``Worker``.
         """
-        raise NotImplementedError()
+        query = dict(
+            exp_name=self.name,
+            user=self.metadata['user'],
+            status='completed'
+            )
+        num_completed_trials = len(self._db.read('trials', query, {'_id': 1}))
+        if num_completed_trials >= self.max_trials:
+            return True
+        return False
 
     @property
     def configuration(self):
@@ -169,9 +204,9 @@ class Experiment(object):
             return self._db.read('experiments', {'_id': self._id})[0]
 
         config = dict()
-        for varname in self.__slots__:
-            if not varname.startswith('_'):
-                config[varname] = getattr(self, varname)
+        for attrname in self.__slots__:
+            if not attrname.startswith('_'):
+                config[attrname] = getattr(self, attrname)
         # Reason for deepcopy is that some attributes are dictionaries
         # themselves, we don't want to accidentally change the state of this
         # object from a getter.
@@ -244,6 +279,8 @@ class Experiment(object):
         best_trials_id : int
            Unique identifier of the `Trial` object in the database which achieved
            the best known objective result.
+        best_evaluation : float
+           Evaluation score of the best trial
         start_time : `datetime.datetime`
            When Experiment was first dispatched and started running.
         finish_time : `datetime.datetime`
@@ -252,7 +289,31 @@ class Experiment(object):
            Elapsed time.
 
         """
-        raise NotImplementedError()
+        query = dict(
+            exp_name=self.name,
+            user=self.metadata['user'],
+            status='completed'
+            )
+        completed_trials = self._db.read('trials', query,
+                                         selection={'_id': 1, 'end_time': 1,
+                                                    'results': 1})
+        stats = dict()
+        stats['trials_completed'] = len(completed_trials)
+        stats['best_trials_id'] = None
+        stats['best_evaluation'] = math.inf
+        stats['start_time'] = self.metadata['datetime']
+        stats['finish_time'] = stats['start_time']
+        for trial in completed_trials:
+            if trial.end_time > stats['finish_time']:
+                stats['finish_time'] = trial.end_time
+            assert trial.results[0].type == 'objective'
+            objective = trial.results[0].value
+            if objective < stats['best_evaluation']:
+                stats['best_evaluation'] = objective
+                stats['best_trials_id'] = trial.id
+        stats['duration'] = stats['finish_time'] - stats['start_time']
+
+        return stats
 
     def _sanitize_config(self):
         """Check before dispatching experiment whether configuration corresponds
