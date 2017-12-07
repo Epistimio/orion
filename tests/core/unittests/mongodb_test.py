@@ -205,3 +205,8 @@ class TestCount(object):
         """Call querying with unique _id."""
         found = moptdb.count('trials', {'_id': exp_config[1][2]['_id']})
         assert found == 1
+
+    def test_count_nothing(self, moptdb):
+        """Call with argument that will not find anything."""
+        found = moptdb.count('experiments', {'name': 'lalalanotfound'})
+        assert found == 0
