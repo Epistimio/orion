@@ -131,7 +131,7 @@ class Trial(object):
 
     class Param(Value):
         """Types for a `Param` can be either an integer (discrete value),
-        floating precision numerical or a categorical expression (a string).
+        floating precision numerical or a categorical expression (e.g. a string).
         """
 
         allowed_types = ('int', 'float', 'enum')

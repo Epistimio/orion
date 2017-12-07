@@ -41,7 +41,7 @@
   max_trials: 1000
 
   # functional info
-  status: completed  # running, done, broken
+  status: completed  # pending, done, broken
   # stats, all are metaopt's products
   # stats:
   #   trials_completed: 0
@@ -83,7 +83,7 @@
         value: gru
   pool_size: 2
   max_trials: 1000
-  status: running
+  status: broken
   # stats:
   #   trials_completed: 0
   #   best_trial_id: ~

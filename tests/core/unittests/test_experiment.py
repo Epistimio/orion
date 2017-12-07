@@ -182,11 +182,11 @@ class TestConfigProperty(object):
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
         exp_config[0][1]['max_trials'] = 5000
-        exp_config[0][1]['status'] = 'new'
+        exp_config[0][1]['status'] = 'pending'
         exp.configure(exp_config[0][1])
         assert exp.configuration == exp_config[0][1]
         exp_config[0][1]['max_trials'] = 1000  # don't ruin resource
-        exp_config[0][1]['status'] = 'running'
+        exp_config[0][1]['status'] = 'broken'
 
     def test_good_set_before_init_no_hit(self, random_dt, database, new_config):
         """Trying to set, overwrite everything from input."""
@@ -200,7 +200,7 @@ class TestConfigProperty(object):
         assert _id != 'fasdfasfa'
         assert exp._id == _id
         new_config['refers'] = None
-        new_config['status'] = 'new'
+        new_config['status'] = 'pending'
         new_config.pop('_id')
         new_config.pop('something_to_be_ignored')
         assert found_config[0] == new_config
@@ -247,9 +247,9 @@ class TestConfigProperty(object):
         # Deliver an external configuration to finalize init
         exp.configure(exp_config[0][1])
         assert exp._init_done is True
-        exp_config[0][1]['status'] = 'new'
+        exp_config[0][1]['status'] = 'pending'
         assert exp.configuration == exp_config[0][1]
-        exp_config[0][1]['status'] = 'running'  # don't ruin resource
+        exp_config[0][1]['status'] = 'broken'  # don't ruin resource
 
     def test_try_set_after_init(self, exp_config):
         """Cannot set a configuration after init (currently)."""

@@ -253,7 +253,7 @@ class Experiment(object):
                 continue
             setattr(self, section, value)
 
-        self.status = 'new'
+        self.status = 'pending'
         final_config = self.configuration  # grab dict representation of Experiment
 
         # Sanitize and replace some sections with objects
@@ -262,7 +262,8 @@ class Experiment(object):
         # If everything is alright, push new config to database
         if is_new:
             self._db.write('experiments', final_config)
-            # XXX: This may be MongoDB only; it updates an inserted dict with _id
+            # XXX: Reminder for future DB implementations:
+            # MongoDB, updates an inserted dict with _id, so should you :P
             self._id = final_config['_id']
         else:
             self._db.write('experiments', final_config, {'_id': self._id})
@@ -309,13 +310,13 @@ class Experiment(object):
         stats['start_time'] = self.metadata['datetime']
         stats['finish_time'] = stats['start_time']
         for trial in completed_trials:
-            if trial.end_time > stats['finish_time']:
-                stats['finish_time'] = trial.end_time
-            assert trial.results[0].type == 'objective'
-            objective = trial.results[0].value
+            if trial['end_time'] > stats['finish_time']:
+                stats['finish_time'] = trial['end_time']
+            assert trial['results'][0]['type'] == 'objective'
+            objective = trial['results'][0]['value']
             if objective < stats['best_evaluation']:
                 stats['best_evaluation'] = objective
-                stats['best_trials_id'] = trial.id
+                stats['best_trials_id'] = trial['_id']
         stats['duration'] = stats['finish_time'] - stats['start_time']
 
         return stats
