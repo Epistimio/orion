@@ -33,11 +33,11 @@ class TestTrial(object):
         assert t.submit_time == exp_config[1][1]['submit_time']
         assert t.start_time == exp_config[1][1]['start_time']
         assert t.end_time == exp_config[1][1]['end_time']
-        assert list(map(dict, t.results)) == exp_config[1][1]['results']
+        assert list(map(lambda x: x.to_dict(), t.results)) == exp_config[1][1]['results']
         assert t.results[0].name == exp_config[1][1]['results'][0]['name']
         assert t.results[0].type == exp_config[1][1]['results'][0]['type']
         assert t.results[0].value == exp_config[1][1]['results'][0]['value']
-        assert list(map(dict, t.params)) == exp_config[1][1]['params']
+        assert list(map(lambda x: x.to_dict(), t.params)) == exp_config[1][1]['params']
 
     def test_bad_access(self):
         """Other than `Trial.__slots__` are not allowed."""
@@ -80,15 +80,16 @@ class TestTrial(object):
         with pytest.raises(ValueError):
             v.type = 'asfda'
 
+    @pytest.mark.usefixtures("clean_db")
     def test_convertion_to_dict(self, exp_config):
         """Convert to dictionary form for database using ``dict``."""
         t = Trial(**exp_config[1][1])
-        assert dict(t) == exp_config[1][1]
+        assert t.to_dict() == exp_config[1][1]
 
     def test_build_trials(self, exp_config):
         """Convert to objects form using `Trial.build`."""
         trials = Trial.build(exp_config[1])
-        assert list(map(dict, trials)) == exp_config[1]
+        assert list(map(lambda x: x.to_dict(), trials)) == exp_config[1]
 
     def test_str_trial(self, exp_config):
         """Test representation of `Trial`."""

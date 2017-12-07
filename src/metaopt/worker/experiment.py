@@ -182,7 +182,7 @@ class Experiment(object):
         """
         for trial in trials:
             trial.status = 'new'
-        self._db.write('trials', list(map(dict, trials)))
+        self._db.write('trials', list(map(lambda x: x.to_dict(), trials)))
 
     @property
     def is_done(self):

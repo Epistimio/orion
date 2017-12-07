@@ -93,13 +93,14 @@ class Trial(object):
             for attrname, value in six.iteritems(kwargs):
                 setattr(self, attrname, value)
 
-        def __iter__(self):
+        def to_dict(self):
             """Needed to be able to convert `Value` to `dict` form."""
-            for attrname in self.__slots__:
-                if attrname == '_type':
-                    yield ('type', self._type)
-                else:
-                    yield (attrname, getattr(self, attrname))
+            ret = dict(
+                name=self.name,
+                type=self._type,
+                value=self.value
+                )
+            return ret
 
         def __str__(self):
             """Represent partially with a string."""
@@ -164,15 +165,18 @@ class Trial(object):
             else:
                 setattr(self, attrname, value)
 
-    def __iter__(self):
+    def to_dict(self):
         """Needed to be able to convert `Trial` to `dict` form."""
+        ret = dict(
+            status=self._status,
+            results=list(map(lambda x: x.to_dict(), self.results)),
+            params=list(map(lambda x: x.to_dict(), self.params))
+            )
         for attrname in self.__slots__:
-            if attrname in ('results', 'params'):
-                yield (attrname, list(map(dict, getattr(self, attrname))))
-            elif attrname == '_status':
-                yield ('status', self._status)
-            else:
-                yield (attrname, getattr(self, attrname))
+            if attrname in ('results', 'params', '_status'):
+                continue
+            ret[attrname] = getattr(self, attrname)
+        return ret
 
     def __str__(self):
         """Represent partially with a string."""
