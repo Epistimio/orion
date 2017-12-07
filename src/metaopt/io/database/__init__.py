@@ -124,6 +124,20 @@ class AbstractDB(object):
         pass
 
     @abstractmethod
+    def count(self, collection_name, query=None):
+        """Count the number of documents in a collection which match the `query`.
+
+        Parameters
+        ----------
+        collection_name : str
+           A collection inside database, a table.
+        query : dict
+           Filter entries in collection.
+
+        """
+        pass
+
+    @abstractmethod
     def remove(self, collection_name, query):
         """Delete from a collection document[s] which match the `query`.
 

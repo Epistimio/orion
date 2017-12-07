@@ -43,7 +43,7 @@ def moptdb():
 
 @pytest.mark.usefixtures("null_db_instances")
 class TestConnection(object):
-    """Create a :class:`metaopt.io.database.MongoDB`, check connection cases."""
+    """Create a :class:`metaopt.io.database.mongodb.MongoDB`, check connection cases."""
 
     def test_bad_connection(self):
         """Raise when connection cannot be achieved."""
@@ -89,7 +89,7 @@ class TestConnection(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestRead(object):
-    """Calls to :meth:`metaopt.io.database.MongoDB.read`."""
+    """Calls to :meth:`metaopt.io.database.mongodb.MongoDB.read`."""
 
     def test_read_experiment(self, exp_config, moptdb):
         """Fetch a whole experiment entries."""
@@ -133,7 +133,7 @@ class TestRead(object):
 
 
 class TestWrite(object):
-    """Calls to :meth:`metaopt.io.database.MongoDB.write`."""
+    """Calls to :meth:`metaopt.io.database.mongodb.MongoDB.write`."""
 
     def test_insert_one(self, database, moptdb):
         """Should insert a single new entry in the collection."""
@@ -176,7 +176,7 @@ class TestWrite(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestRemove(object):
-    """Calls to :meth:`metaopt.io.database.MongoDB.remove`."""
+    """Calls to :meth:`metaopt.io.database.mongodb.MongoDB.remove`."""
 
     def test_remove_many_default(self, database, moptdb):
         """Should match existing entries, and delete them all."""
@@ -185,3 +185,28 @@ class TestRemove(object):
         # call interface
         assert moptdb.remove('experiments', filt) is True
         assert database.experiments.count() == count_before - 2
+
+
+@pytest.mark.usefixtures("clean_db")
+class TestCount(object):
+    """Calls :meth:`metaopt.io.database.mongodb.MongoDB.count`."""
+
+    def test_count_default(self, exp_config, moptdb):
+        """Call just with collection name."""
+        found = moptdb.count('trials')
+        assert found == len(exp_config[1])
+
+    def test_count_query(self, exp_config, moptdb):
+        """Call with a query."""
+        found = moptdb.count('trials', {'status': 'completed'})
+        assert found == len([x for x in exp_config[1] if x['status'] == 'completed'])
+
+    def test_count_query_with_id(self, exp_config, moptdb):
+        """Call querying with unique _id."""
+        found = moptdb.count('trials', {'_id': exp_config[1][2]['_id']})
+        assert found == 1
+
+    def test_count_nothing(self, moptdb):
+        """Call with argument that will not find anything."""
+        found = moptdb.count('experiments', {'name': 'lalalanotfound'})
+        assert found == 0
