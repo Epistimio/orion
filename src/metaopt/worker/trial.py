@@ -108,6 +108,8 @@ class Trial(object):
                 repr(self._type), repr(self.value))
             return ret
 
+        __repr__ = __str__
+
         @property
         def type(self):
             """For meaning of property type, see `Value.type`."""
@@ -177,6 +179,8 @@ class Trial(object):
         ret = "Trial(exp_name={0}, status={1}, params.value={2})".format(
             repr(self.exp_name), repr(self._status), [p.value for p in self.params])
         return ret
+
+    __repr__ = __str__
 
     @property
     def status(self):
