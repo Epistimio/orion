@@ -45,16 +45,16 @@ class Experiment(object):
        is the same. In that case, if trying to set to an already set experiment,
        it will overwrite the previous one.
     status : str
-       A keyword among {*'new'*, *'running'*, *'done'*, *'broken'*} indicating
+       A keyword among {*'pending'*, *'done'*, *'broken'*} indicating
        how **MetaOpt** considers the current `Experiment`. This attribute cannot
        be set from an mopt configuration.
 
-       * 'new' : Denotes a new valid configuration that has not been run yet.
-       * 'running' : Denotes an experiment which is currently being executed.
+       * 'pending' : Denotes an experiment with valid configuration which is
+          currently being handled by **MetaOpt**.
        * 'done' : Denotes an experiment which has completed `max_trials` number
-          of parameter evaluations and is not running.
-       * 'broken' : Denotes an experiment with non valid configuration, which shall
-          not be run.
+          of parameter evaluations and is not *pending*.
+       * 'broken' : Denotes an experiment which stopped unsuccessfully due to
+          unexpected behaviour.
     algorithms : dict of dicts or list of `Algorithm` objects, after initialization is done.
        Complete specification of the optimization and dynamical procedures taking
        place in this `Experiment`.
