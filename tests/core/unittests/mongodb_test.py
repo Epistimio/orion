@@ -138,6 +138,7 @@ class TestRead(object):
         assert value == exp_config[1][2:]
 
 
+@pytest.mark.usefixtures("clean_db")
 class TestWrite(object):
     """Calls to :meth:`metaopt.io.database.mongodb.MongoDB.write`."""
 
@@ -186,8 +187,23 @@ class TestWrite(object):
         # call interface
         assert moptdb.write('experiments', {'pool_size': 36}, filt) is True
         assert database.experiments.count() == count_before
+        value = list(database.experiments.find())
+        assert value[0]['pool_size'] == 2
+        assert value[1]['pool_size'] == 36
+        assert value[2]['pool_size'] == 2
+
+    def test_upsert_with_id(self, database, moptdb):
+        """Query with a non-existent ``_id`` should upsert something."""
+        filt = {'_id': 'lalalathisisnew'}
+        count_before = database.experiments.count()
+        # call interface
+        assert moptdb.write('experiments', {'pool_size': 66}, filt) is True
+        assert database.experiments.count() == count_before + 1
         value = list(database.experiments.find(filt))
-        assert value[0]['pool_size'] == 36
+        assert len(value) == 1
+        assert len(value[0]) == 2
+        assert value[0]['_id'] == 'lalalathisisnew'
+        assert value[0]['pool_size'] == 66
 
 
 @pytest.mark.usefixtures("clean_db")
