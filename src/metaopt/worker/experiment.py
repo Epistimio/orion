@@ -118,9 +118,12 @@ class Experiment(object):
         config = self._db.read('experiments',
                                {'name': name, 'metadata.user': user})
         if config:
+            if len(config) > 1:
+                log.warning("Many experiments for (%s, %s) are available but "
+                            "only the most recent one can be accessed. "
+                            "Experiment forks will be supported soon.", name, user)
             config = sorted(config, key=lambda x: x['metadata']['datetime'],
                             reverse=True)[0]
-            #  assert (len(config) == 1) is not True  # currently
             for attrname in self.__slots__:
                 if not attrname.startswith('_'):
                     setattr(self, attrname, config[attrname])
