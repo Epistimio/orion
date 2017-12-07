@@ -203,6 +203,8 @@ class Experiment(object):
     @property
     def configuration(self):
         """Return a copy of an `Experiment` configuration as a dictionary."""
+        # After successful initialization, get a dict form from DB.
+        # Check :attr:`algorithms` and :attr:`refers` to see why.
         if self._init_done:
             return self._db.read('experiments', {'_id': self._id})[0]
 
