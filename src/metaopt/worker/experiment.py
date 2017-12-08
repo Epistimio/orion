@@ -86,6 +86,8 @@ class Experiment(object):
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
                  'status', 'algorithms', '_db', '_init_done', '_id')
+    # 'status' should not be in config
+    non_forking_attrs = ('status', 'pool_size', 'max_trials')
 
     def __init__(self, name):
         """Initialize an Experiment object with primary key (:attr:`name`, :attr:`user`).
@@ -246,9 +248,17 @@ class Experiment(object):
 
         # Just overwrite everything given
         for section, value in six.iteritems(config):
-            if section == 'status' or \
-                    section not in self.__slots__ or \
-                    section.startswith('_'):
+            if section == 'status':
+                log.warning("Found section 'status' in configuration. This experiment "
+                            "attribute cannot be set. Ignoring.")
+                continue
+            if section not in self.__slots__:
+                log.warning("Found secton '%s' in configuration. Experiments "
+                            "do not support this option. Ignoring.", section)
+                continue
+            if section.startswith('_'):
+                log.warning("Found secton '%s' in configuration. "
+                            "Cannot set private attributes. Ignoring.", section)
                 continue
             setattr(self, section, value)
 
@@ -345,9 +355,7 @@ class Experiment(object):
         """
         is_diff = False
         for section, value in six.iteritems(config):
-            # 'status' should not be in config
-            # 'max_trials' overwrites without forking
-            if section in ('status', 'max_trials') or \
+            if section in self.non_forking_attrs or \
                     section not in self.__slots__ or \
                     section.startswith('_'):
                 continue
