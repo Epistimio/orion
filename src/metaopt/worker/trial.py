@@ -140,7 +140,7 @@ class Trial(object):
                  'submit_time', 'start_time', 'end_time', 'results', 'params')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'broken')
 
-    def __init__(self, experiment, **kwargs):
+    def __init__(self, **kwargs):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
         for attrname in self.__slots__:
             if attrname in ('results', 'params'):
@@ -148,7 +148,6 @@ class Trial(object):
             else:
                 setattr(self, attrname, None)
 
-        self.experiment = experiment
         self.status = 'new'
 
         for attrname, value in six.iteritems(kwargs):

@@ -12,8 +12,8 @@ class TestTrial(object):
 
     def test_init_empty(self):
         """Initialize empty trial."""
-        t = Trial('naedw')
-        assert t.experiment == 'naedw'
+        t = Trial()
+        assert t.experiment is None
         assert t.status == 'new'
         assert t.worker is None
         assert t.submit_time is None
@@ -39,14 +39,14 @@ class TestTrial(object):
 
     def test_bad_access(self):
         """Other than `Trial.__slots__` are not allowed."""
-        t = Trial('naedw')
+        t = Trial()
         with pytest.raises(AttributeError):
             t.asdfa = 3
 
     def test_bad_init(self):
         """Other than `Trial.__slots__` are not allowed in __init__ too."""
         with pytest.raises(AttributeError):
-            Trial('naedw', ispii='iela')
+            Trial(ispii='iela')
 
     def test_value_bad_init(self):
         """Other than `Trial.Value.__slots__` are not allowed in __init__ too."""
@@ -55,11 +55,11 @@ class TestTrial(object):
 
     def test_not_allowed_status(self):
         """Other than `Trial.allowed_stati` are not allowed in `Trial.status`."""
-        t = Trial('naedw')
+        t = Trial()
         with pytest.raises(ValueError):
             t.status = 'asdf'
         with pytest.raises(ValueError):
-            t = Trial('naedw', status='ispi')
+            t = Trial(status='ispi')
 
     def test_value_not_allowed_type(self):
         """Other than `Trial.Result.allowed_types` are not allowed in `Trial.Result.type`.
