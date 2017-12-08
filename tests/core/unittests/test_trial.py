@@ -12,9 +12,8 @@ class TestTrial(object):
 
     def test_init_empty(self):
         """Initialize empty trial."""
-        t = Trial('naedw', 'naekei')
-        assert t.exp_name == 'naedw'
-        assert t.user == 'naekei'
+        t = Trial('naedw')
+        assert t.experiment == 'naedw'
         assert t.status == 'new'
         assert t.worker is None
         assert t.submit_time is None
@@ -26,8 +25,7 @@ class TestTrial(object):
     def test_init_full(self, exp_config):
         """Initialize with a dictionary with complete specification."""
         t = Trial(**exp_config[1][1])
-        assert t.exp_name == exp_config[1][1]['exp_name']
-        assert t.user == exp_config[1][1]['user']
+        assert t.experiment == exp_config[1][1]['experiment']
         assert t.status == exp_config[1][1]['status']
         assert t.worker == exp_config[1][1]['worker']
         assert t.submit_time == exp_config[1][1]['submit_time']
@@ -41,14 +39,14 @@ class TestTrial(object):
 
     def test_bad_access(self):
         """Other than `Trial.__slots__` are not allowed."""
-        t = Trial('naedw', 'naekei')
+        t = Trial('naedw')
         with pytest.raises(AttributeError):
             t.asdfa = 3
 
     def test_bad_init(self):
         """Other than `Trial.__slots__` are not allowed in __init__ too."""
         with pytest.raises(AttributeError):
-            Trial('naedw', 'naekei', ispii='iela')
+            Trial('naedw', ispii='iela')
 
     def test_value_bad_init(self):
         """Other than `Trial.Value.__slots__` are not allowed in __init__ too."""
@@ -57,11 +55,11 @@ class TestTrial(object):
 
     def test_not_allowed_status(self):
         """Other than `Trial.allowed_stati` are not allowed in `Trial.status`."""
-        t = Trial('naedw', 'naekei')
+        t = Trial('naedw')
         with pytest.raises(ValueError):
             t.status = 'asdf'
         with pytest.raises(ValueError):
-            t = Trial('naedw', 'naekei', status='ispi')
+            t = Trial('naedw', status='ispi')
 
     def test_value_not_allowed_type(self):
         """Other than `Trial.Result.allowed_types` are not allowed in `Trial.Result.type`.
@@ -86,6 +84,7 @@ class TestTrial(object):
         t = Trial(**exp_config[1][1])
         assert t.to_dict() == exp_config[1][1]
 
+    @pytest.mark.usefixtures("clean_db")
     def test_build_trials(self, exp_config):
         """Convert to objects form using `Trial.build`."""
         trials = Trial.build(exp_config[1])
@@ -94,7 +93,7 @@ class TestTrial(object):
     def test_str_trial(self, exp_config):
         """Test representation of `Trial`."""
         t = Trial(**exp_config[1][1])
-        assert str(t) == "Trial(exp_name='supernaedo2', "\
+        assert str(t) == "Trial(experiment='supernaedo2', "\
                          "status='completed', params.value=['gru', 'lstm_with_attention'])"
 
     def test_str_value(self, exp_config):

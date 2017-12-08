@@ -104,13 +104,13 @@ class TestRead(object):
         """Fetch value(s) from an entry."""
         value = moptdb.read(
             'trials',
-            {'exp_name': 'supernaedo2', 'user': 'tsirif',
+            {'experiment': 'supernaedo2',
              'submit_time': {'$gte': datetime(2017, 11, 23, 0, 0, 0)}})
         assert value == exp_config[1][1:]
 
         value = moptdb.read(
             'trials',
-            {'exp_name': 'supernaedo2', 'user': 'tsirif',
+            {'experiment': 'supernaedo2',
              'submit_time': {'$gt': datetime(2017, 11, 23, 0, 0, 0)}})
         assert value == exp_config[1][2:]
 

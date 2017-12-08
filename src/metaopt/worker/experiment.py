@@ -143,8 +143,7 @@ class Experiment(object):
             raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
 
         query = dict(
-            exp_name=self.name,
-            user=self.metadata['user'],
+            experiment=self._id,
             status='new'
             )
         new_trials = Trial.build(self._db.read('trials', query))
@@ -159,7 +158,8 @@ class Experiment(object):
 
         selected_trial.status = 'reserved'
 
-        self._db.write('trials', dict(selected_trial), query={'_id': selected_trial.id})
+        self._db.write('trials', selected_trial.to_dict(),
+                       query={'_id': selected_trial.id})
 
         return selected_trial
 
@@ -172,7 +172,7 @@ class Experiment(object):
         .. note:: Change status from *reserved* to *completed*.
         """
         trial.status = 'completed'
-        self._db.write('trials', dict(trial), query={'_id': trial.id})
+        self._db.write('trials', trial.to_dict(), query={'_id': trial.id})
 
     def register_trials(self, trials):
         """Inform database about *new* suggested trial with specific parameter
@@ -191,8 +191,7 @@ class Experiment(object):
         .. note:: To be used as a terminating condition in a ``Worker``.
         """
         query = dict(
-            exp_name=self.name,
-            user=self.metadata['user'],
+            experiment=self._id,
             status='completed'
             )
         num_completed_trials = len(self._db.read('trials', query, {'_id': 1}))
@@ -296,8 +295,7 @@ class Experiment(object):
 
         """
         query = dict(
-            exp_name=self.name,
-            user=self.metadata['user'],
+            experiment=self._id,
             status='completed'
             )
         completed_trials = self._db.read('trials', query,

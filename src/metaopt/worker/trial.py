@@ -18,10 +18,9 @@ class Trial(object):
 
     Attributes
     ----------
-    exp_name : str
-       Name of experiment that produced this trial. See :attr:`Experiment.name`
-    user : str
-       User who created this experiment. See :attr:`Experiment.user`.
+    experiment : str
+       Unique identifier for the experiment taht produced this trial.
+       Same as an `Experiment._id`.
     status : str
        Indicates how this trial is currently being used. Can take the following
        values:
@@ -137,11 +136,11 @@ class Trial(object):
 
         allowed_types = ('int', 'float', 'enum')
 
-    __slots__ = ('exp_name', 'user', '_id', '_status', 'worker',
+    __slots__ = ('experiment', '_id', '_status', 'worker',
                  'submit_time', 'start_time', 'end_time', 'results', 'params')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'broken')
 
-    def __init__(self, exp_name, user, **kwargs):
+    def __init__(self, experiment, **kwargs):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
         for attrname in self.__slots__:
             if attrname in ('results', 'params'):
@@ -149,8 +148,7 @@ class Trial(object):
             else:
                 setattr(self, attrname, None)
 
-        self.exp_name = exp_name
-        self.user = user
+        self.experiment = experiment
         self.status = 'new'
 
         for attrname, value in six.iteritems(kwargs):
@@ -180,8 +178,8 @@ class Trial(object):
 
     def __str__(self):
         """Represent partially with a string."""
-        ret = "Trial(exp_name={0}, status={1}, params.value={2})".format(
-            repr(self.exp_name), repr(self._status), [p.value for p in self.params])
+        ret = "Trial(experiment={0}, status={1}, params.value={2})".format(
+            repr(self.experiment), repr(self._status), [p.value for p in self.params])
         return ret
 
     __repr__ = __str__
