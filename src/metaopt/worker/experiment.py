@@ -85,7 +85,7 @@ class Experiment(object):
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
-                 'status', 'algorithms', '_db', '_init_done', '_id')
+                 'status', 'algorithms', '_db', '_init_done', '_id', '_last_fetched')
     # 'status' should not be in config
     non_forking_attrs = ('status', 'pool_size', 'max_trials')
 
@@ -130,6 +130,8 @@ class Experiment(object):
                 if not attrname.startswith('_'):
                     setattr(self, attrname, config[attrname])
             self._id = config['_id']
+
+        self._last_fetched = self.metadata['datetime']
 
     def reserve_trial(self, score_handle=None):
         """Find *new* trials that exist currently in database and select one of
@@ -185,6 +187,25 @@ class Experiment(object):
         for trial in trials:
             trial.status = 'new'
         self._db.write('trials', list(map(lambda x: x.to_dict(), trials)))
+
+    def fetch_completed_trials(self):
+        """Fetch recent completed trials that this `Experiment` instance has not
+        yet seen.
+
+        .. note:: It will return only those with `Trial.end_time` after
+           `_last_fetched`, for performance reasons.
+
+        :return: list of completed `Trial` objects
+        """
+        query = dict(
+            experiment=self._id,
+            status='completed',
+            end_time={'$gte': self._last_fetched}
+            )
+        completed_trials = Trial.build(self._db.read('trials', query))
+        self._last_fetched = datetime.datetime.utcnow()
+
+        return completed_trials
 
     @property
     def is_done(self):
