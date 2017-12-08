@@ -196,7 +196,7 @@ class Experiment(object):
             experiment=self._id,
             status='completed'
             )
-        num_completed_trials = len(self._db.read('trials', query, {'_id': 1}))
+        num_completed_trials = self._db.count('trials', query)
         if num_completed_trials >= self.max_trials:
             return True
         return False

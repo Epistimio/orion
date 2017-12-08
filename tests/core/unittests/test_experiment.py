@@ -168,7 +168,7 @@ class TestConfigProperty(object):
 
         .. warning:: Currently, not implemented.
         """
-        new_config = {'pool_size': 8}
+        new_config = {'metadata': {'user_version': 1.2}}
         exp = Experiment('supernaedo2')
         with pytest.raises(NotImplementedError):
             exp.configure(new_config)
