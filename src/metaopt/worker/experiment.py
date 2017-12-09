@@ -121,9 +121,9 @@ class Experiment(object):
                                {'name': name, 'metadata.user': user})
         if config:
             if len(config) > 1:
-                log.warning("Many experiments for (%s, %s) are available but "
+                log.warning("Many (%s) experiments for (%s, %s) are available but "
                             "only the most recent one can be accessed. "
-                            "Experiment forks will be supported soon.", name, user)
+                            "Experiment forks will be supported soon.", len(config), name, user)
             config = sorted(config, key=lambda x: x['metadata']['datetime'],
                             reverse=True)[0]
             for attrname in self.__slots__:
@@ -161,6 +161,7 @@ class Experiment(object):
             raise NotImplementedError("scoring will be supported in the next iteration.")
 
         selected_trial.status = 'reserved'
+        selected_trial.start_time = datetime.datetime.utcnow()
 
         self._db.write('trials', selected_trial.to_dict(),
                        query={'_id': selected_trial.id})
@@ -175,6 +176,7 @@ class Experiment(object):
 
         .. note:: Change status from *reserved* to *completed*.
         """
+        trial.end_time = datetime.datetime.utcnow()
         trial.status = 'completed'
         self._db.write('trials', trial.to_dict(), query={'_id': trial.id})
 
@@ -184,9 +186,13 @@ class Experiment(object):
 
         :type trials: list of `Trial`
         """
+        stamp = datetime.datetime.utcnow()
         for trial in trials:
+            trial.experiment = self._id
             trial.status = 'new'
-        self._db.write('trials', list(map(lambda x: x.to_dict(), trials)))
+            trial.submit_time = stamp
+        trials_dicts = list(map(lambda x: x.to_dict(), trials))
+        self._db.write('trials', trials_dicts)
 
     def fetch_completed_trials(self):
         """Fetch recent completed trials that this `Experiment` instance has not
@@ -274,11 +280,11 @@ class Experiment(object):
                             "attribute cannot be set. Ignoring.")
                 continue
             if section not in self.__slots__:
-                log.warning("Found secton '%s' in configuration. Experiments "
+                log.warning("Found section '%s' in configuration. Experiments "
                             "do not support this option. Ignoring.", section)
                 continue
             if section.startswith('_'):
-                log.warning("Found secton '%s' in configuration. "
+                log.warning("Found section '%s' in configuration. "
                             "Cannot set private attributes. Ignoring.", section)
                 continue
             setattr(self, section, value)
