@@ -145,6 +145,8 @@ class Trial(object):
         for attrname in self.__slots__:
             if attrname in ('results', 'params'):
                 setattr(self, attrname, list())
+            elif attrname == '_id':
+                continue
             else:
                 setattr(self, attrname, None)
 
@@ -172,7 +174,15 @@ class Trial(object):
         for attrname in self.__slots__:
             if attrname in ('results', 'params', '_status'):
                 continue
-            ret[attrname] = getattr(self, attrname)
+            try:
+                ret[attrname] = getattr(self, attrname)
+            except AttributeError:
+                # if `_id` is not found it is because it has not been provided
+                # in the init. Trial object should not be able to set a value
+                # (whatever value) to its `_id` on its own, but is should just
+                # expect that it could have one
+                pass
+
         return ret
 
     def __str__(self):
