@@ -77,7 +77,7 @@ class TestRead(object):
         loaded_config = moptdb.read('experiments',
                                     {'name': 'supernaedo2',
                                      'metadata.user': 'tsirif',
-                                     'metadata.datetime': datetime(2017, 11, 22, 23, 0, 0)})
+                                     'metadata.datetime': exp_config[0][0]['metadata']['datetime']})
         assert loaded_config == [exp_config[0][0]]
         assert loaded_config[0]['_id'] == exp_config[0][0]['_id']
 
@@ -106,13 +106,13 @@ class TestRead(object):
             'trials',
             {'experiment': 'supernaedo2',
              'submit_time': {'$gte': datetime(2017, 11, 23, 0, 0, 0)}})
-        assert value == exp_config[1][1:]
+        assert value == exp_config[1][2:]
 
         value = moptdb.read(
             'trials',
             {'experiment': 'supernaedo2',
              'submit_time': {'$gt': datetime(2017, 11, 23, 0, 0, 0)}})
-        assert value == exp_config[1][2:]
+        assert value == exp_config[1][3:]
 
 
 @pytest.mark.usefixtures("clean_db")

@@ -92,12 +92,12 @@ class TestTrial(object):
 
     def test_str_trial(self, exp_config):
         """Test representation of `Trial`."""
-        t = Trial(**exp_config[1][1])
+        t = Trial(**exp_config[1][2])
         assert str(t) == "Trial(experiment='supernaedo2', "\
                          "status='completed', params.value=['gru', 'lstm_with_attention'])"
 
     def test_str_value(self, exp_config):
         """Test representation of `Trial.Value`."""
-        t = Trial(**exp_config[1][1])
+        t = Trial(**exp_config[1][2])
         assert str(t.params[0]) == "Param(name='encoding_layer', "\
                                    "type='enum', value='gru')"
