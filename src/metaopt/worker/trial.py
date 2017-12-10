@@ -215,8 +215,11 @@ class Trial(object):
         return self._id
 
     @property
-    def objective_value(self):
-        """Return this trial's objecive value if it is evaluated, else None"""
+    def objective(self):
+        """Return this trial's objecive value if it is evaluated, else None.
+
+        :rtype: `Trial.Result`
+        """
         value = []
         for res in self.results:
             if res.type == 'objective':

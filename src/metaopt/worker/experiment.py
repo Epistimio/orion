@@ -13,7 +13,6 @@ import copy
 import datetime
 import getpass
 import logging
-import math
 import random
 
 import six
@@ -341,17 +340,21 @@ class Experiment(object):
         stats = dict()
         stats['trials_completed'] = len(completed_trials)
         stats['best_trials_id'] = None
-        stats['best_evaluation'] = math.inf
+        trial = Trial(**completed_trials[0])
+        stats['best_evaluation'] = trial.objective.value
+        stats['best_trials_id'] = trial.id
         stats['start_time'] = self.metadata['datetime']
         stats['finish_time'] = stats['start_time']
         for trial in completed_trials:
-            if trial['end_time'] > stats['finish_time']:
-                stats['finish_time'] = trial['end_time']
-            assert trial['results'][0]['type'] == 'objective'
-            objective = trial['results'][0]['value']
+            trial = Trial(**trial)
+            # All trials are going to finish certainly after the start date
+            # of the experiment they belong to
+            if trial.end_time > stats['finish_time']:  # pylint:disable=no-member
+                stats['finish_time'] = trial.end_time
+            objective = trial.objective.value
             if objective < stats['best_evaluation']:
                 stats['best_evaluation'] = objective
-                stats['best_trials_id'] = trial['_id']
+                stats['best_trials_id'] = trial.id
         stats['duration'] = stats['finish_time'] - stats['start_time']
 
         return stats

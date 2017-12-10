@@ -168,7 +168,7 @@
   results:
     - name: ~
       type: objective  # objective, constraint
-      value: 3
+      value: 2
   params:
     - name: encoding_layer
       type: enum  # int, float, enum (TODO: how will be priors logged?)

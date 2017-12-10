@@ -106,15 +106,15 @@ class TestTrial(object):
         """Check property `Trial.objective_value`."""
         # 1 results in `results` list
         t = Trial(**exp_config[1][2])
-        assert isinstance(t.objective_value, Trial.Result)
-        assert t.objective_value.name == 'yolo'
-        assert t.objective_value.type == 'objective'
-        assert t.objective_value.value == 10
+        assert isinstance(t.objective, Trial.Result)
+        assert t.objective.name == 'yolo'
+        assert t.objective.type == 'objective'
+        assert t.objective.value == 10
 
         # 0 results in `results` list
         tmp = exp_config[1][2]['results'].pop(0)
         t = Trial(**exp_config[1][2])
-        assert t.objective_value is None
+        assert t.objective is None
         exp_config[1][2]['results'].append(tmp)
 
         # >1 results in `results` list
@@ -122,8 +122,8 @@ class TestTrial(object):
                                                 type='objective',
                                                 value=12))
         t = Trial(**exp_config[1][2])
-        assert isinstance(t.objective_value, Trial.Result)
-        assert t.objective_value.name == 'yolo'
-        assert t.objective_value.type == 'objective'
-        assert t.objective_value.value == 10
+        assert isinstance(t.objective, Trial.Result)
+        assert t.objective.name == 'yolo'
+        assert t.objective.type == 'objective'
+        assert t.objective.value == 10
         tmp = exp_config[1][2]['results'].pop()

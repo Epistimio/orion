@@ -415,8 +415,8 @@ def test_experiment_stats(hacked_exp, exp_config, random_dt):
     """Check that property stats is returning a proper summary of experiment's results."""
     stats = hacked_exp.stats
     assert stats['trials_completed'] == 3
-    assert stats['best_trials_id'] == exp_config[1][0]['_id']
-    assert stats['best_evaluation'] == 3
+    assert stats['best_trials_id'] == exp_config[1][1]['_id']
+    assert stats['best_evaluation'] == 2
     assert stats['start_time'] == exp_config[0][2]['metadata']['datetime']
     assert stats['finish_time'] == exp_config[1][2]['end_time']
     assert stats['duration'] == stats['finish_time'] - stats['start_time']
