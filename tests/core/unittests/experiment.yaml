@@ -184,9 +184,12 @@
   start_time: 150
   end_time: 2017-11-23T00:00:00
   results:
-    - name: ~
+    - name: yolo
       type: objective  # objective, constraint
       value: 10
+    - name: contra
+      type: constraint  # objective, constraint
+      value: 1.2
   params:
     - name: encoding_layer
       type: enum  # int, float, enum (TODO: how will be priors logged?)

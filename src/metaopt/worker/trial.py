@@ -10,7 +10,11 @@
 
 """
 
+import logging
+
 import six
+
+log = logging.getLogger(__name__)
 
 
 class Trial(object):
@@ -209,3 +213,20 @@ class Trial(object):
     def id(self):
         """Return database key `_id`."""
         return self._id
+
+    @property
+    def objective_value(self):
+        """Return this trial's objecive value if it is evaluated, else None"""
+        value = []
+        for res in self.results:
+            if res.type == 'objective':
+                value.append(res)
+        if len(value) >= 1:
+            if len(value) > 1:
+                log.warning("Found multiple results of objective function type:\n%s",
+                            value)
+                log.warning("Multi-objective optimization is not currently supported.\n"
+                            "Optimizing according to the first one only: %s", value[0])
+            return value[0]
+
+        return None
