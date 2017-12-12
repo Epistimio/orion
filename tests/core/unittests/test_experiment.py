@@ -196,6 +196,7 @@ class TestConfigProperty(object):
         assert cfg['algorithms'] is None
         assert len(cfg) == 7
 
+    @pytest.mark.skip(reason="To be implemented...")
     def test_good_set_before_init_hit_with_diffs(self, exp_config):
         """Trying to set, and differences were found from the config pulled from db.
 
@@ -315,10 +316,12 @@ class TestConfigProperty(object):
             exp.configure(exp_config[0][1])
         assert 'cannot reset' in str(exc_info.value)
 
+    @pytest.mark.skip(reason="To be implemented...")
     def test_after_init_algorithms_are_objects(self, exp_config):
         """Attribute exp.algorithms become objects after init."""
         pass
 
+    @pytest.mark.skip(reason="To be implemented...")
     def test_after_init_refers_are_objects(self, exp_config):
         """Attribute exp.refers become objects after init."""
         pass
@@ -353,6 +356,7 @@ class TestReserveTrial(object):
         with pytest.raises(ValueError):
             hacked_exp.reserve_trial(score_handle='asfa')
 
+    @pytest.mark.skip(reason="To be implemented...")
     def test_reserve_with_score(self, hacked_exp):
         """Reserve with a score object that can do its job."""
         with pytest.raises(NotImplementedError):
