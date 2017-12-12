@@ -13,7 +13,7 @@ from metaopt.io.database.mongodb import MongoDB
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture()
 def exp_config():
     """Load an example database."""
     with open(os.path.join(TEST_DIR, 'experiment.yaml')) as f:

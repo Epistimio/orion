@@ -246,8 +246,6 @@ class TestConfigProperty(object):
         exp_config[0][1]['status'] = 'pending'
         exp.configure(exp_config[0][1])
         assert exp.configuration == exp_config[0][1]
-        exp_config[0][1]['max_trials'] = 1000  # don't ruin resource
-        exp_config[0][1]['status'] = 'broken'
 
     def test_good_set_before_init_hit_no_diffs_exc_pool_size(self, exp_config):
         """Trying to set, and NO differences were found from the config pulled from db.
@@ -261,8 +259,6 @@ class TestConfigProperty(object):
         exp_config[0][1]['status'] = 'pending'
         exp.configure(exp_config[0][1])
         assert exp.configuration == exp_config[0][1]
-        exp_config[0][1]['pool_size'] = 2  # don't ruin resource
-        exp_config[0][1]['status'] = 'broken'
 
     def test_good_set_before_init_no_hit(self, random_dt, database, new_config):
         """Trying to set, overwrite everything from input."""
@@ -325,7 +321,6 @@ class TestConfigProperty(object):
         assert exp._init_done is True
         exp_config[0][1]['status'] = 'pending'
         assert exp.configuration == exp_config[0][1]
-        exp_config[0][1]['status'] = 'broken'  # don't ruin resource
 
     def test_try_set_after_init(self, exp_config):
         """Cannot set a configuration after init (currently)."""
@@ -369,8 +364,6 @@ class TestReserveTrial(object):
         exp_config[1][3]['status'] = 'reserved'
         exp_config[1][3]['start_time'] = random_dt
         assert trial.to_dict() == exp_config[1][3]
-        exp_config[1][3]['status'] = 'new'
-        exp_config[1][3]['start_time'] = None
 
     @pytest.mark.usefixtures("patch_sample2")
     def test_reserve_success2(self, exp_config, hacked_exp):
@@ -380,9 +373,8 @@ class TestReserveTrial(object):
         was not a 'new' one.
         """
         trial = hacked_exp.reserve_trial()
-        exp_config[1][-1]['status'] = 'reserved'
-        assert trial.to_dict() == exp_config[1][-1]
-        exp_config[1][-1]['status'] = 'suspended'
+        exp_config[1][6]['status'] = 'reserved'
+        assert trial.to_dict() == exp_config[1][6]
 
     def test_reserve_with_uncallable_score(self, hacked_exp):
         """Reserve with a score object that cannot do its job."""
