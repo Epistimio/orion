@@ -147,7 +147,7 @@ class Experiment(object):
 
         query = dict(
             experiment=self._id,
-            status='new'
+            status={'$in': ['new', 'suspended', 'interrupted']}
             )
         new_trials = Trial.build(self._db.read('trials', query))
 
@@ -159,8 +159,9 @@ class Experiment(object):
         else:
             raise NotImplementedError("scoring will be supported in the next iteration.")
 
+        if selected_trial.status == 'new':
+            selected_trial.start_time = datetime.datetime.utcnow()
         selected_trial.status = 'reserved'
-        selected_trial.start_time = datetime.datetime.utcnow()
 
         self._db.write('trials', selected_trial.to_dict(),
                        query={'_id': selected_trial.id})

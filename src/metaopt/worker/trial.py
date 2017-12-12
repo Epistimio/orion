@@ -37,6 +37,9 @@ class Trial(object):
           a 'reserved' trial prematurely.
        * 'completed' : is the status of a previously 'reserved' trial that
           successfully got evaluated. `Trial.results` must contain the evaluation.
+       * 'interrupted' : Indicates trials that are stopped from being evaluated
+          by external *actors* (e.g. cluster timeout, KeyboardInterrupt, killing
+          of the worker process).
        * 'broken' : Indicates a trial that was not successfully evaluated for not
           expected reason.
     worker : str
@@ -142,7 +145,7 @@ class Trial(object):
 
     __slots__ = ('experiment', '_id', '_status', 'worker',
                  'submit_time', 'start_time', 'end_time', 'results', 'params')
-    allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'broken')
+    allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
     NoID = None
 
     def __init__(self, **kwargs):

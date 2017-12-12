@@ -142,7 +142,7 @@
 # Example of entries in `trials` collection
 - experiment: supernaedo2
 
-  status: completed  # new, reserved, suspended, completed, broken
+  status: completed  # new, reserved, suspended, completed, interrupted, broken
   worker: 1251231
   submit_time: 2017-11-22T23:00:00
   start_time: ~
@@ -160,7 +160,7 @@
       value: rnn
 - experiment: supernaedo2
 
-  status: completed  # new, reserved, suspended, completed, broken
+  status: completed
   worker: 1251231
   submit_time: 2017-11-22T23:00:00
   start_time: ~
@@ -178,7 +178,7 @@
       value: rnn
 - experiment: supernaedo2
 
-  status: completed  # new, reserved, suspended, completed, broken
+  status: completed
   worker: 23415151
   submit_time: 2017-11-23T00:00:00
   start_time: 150
@@ -199,7 +199,7 @@
       value: lstm_with_attention
 - experiment: supernaedo2
 
-  status: new  # new, reserved, suspended, completed, broken
+  status: new
   worker: ~
   submit_time: 2017-11-23T01:00:00
   start_time: ~
@@ -221,6 +221,42 @@
   worker: ~
   submit_time: 2017-11-23T02:00:00
   start_time: ~
+  end_time: ~
+  results:
+    - name: ~
+      type: objective  # objective, constraint
+      value: ~
+  params:
+    - name: encoding_layer
+      type: enum  # int, float, enum (TODO: how will be priors logged?)
+      value: lstm
+    - name: decoding_layer
+      type: enum
+      value: lstm_with_attention
+- experiment: supernaedo2
+
+  status: interrupted
+  worker: ~
+  submit_time: 2017-11-23T03:00:00
+  start_time: 2017-11-23T03:00:00
+  end_time: ~
+  results:
+    - name: ~
+      type: objective  # objective, constraint
+      value: ~
+  params:
+    - name: encoding_layer
+      type: enum  # int, float, enum (TODO: how will be priors logged?)
+      value: lstm
+    - name: decoding_layer
+      type: enum
+      value: lstm_with_attention
+- experiment: supernaedo2
+
+  status: suspended
+  worker: ~
+  submit_time: 2017-11-23T04:00:00
+  start_time: 2017-11-23T04:00:00
   end_time: ~
   results:
     - name: ~

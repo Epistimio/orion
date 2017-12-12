@@ -37,8 +37,30 @@ def patch_sample(monkeypatch):
     def mock_sample(a_list, should_be_one):
         assert type(a_list) == list
         assert len(a_list) >= 1
+        # Part of `TestReserveTrial.test_reserve_success`
+        assert a_list[0].status == 'new'
+        assert a_list[1].status == 'new'
+        assert a_list[2].status == 'interrupted'
+        assert a_list[3].status == 'suspended'
         assert should_be_one == 1
         return [a_list[0]]
+
+    monkeypatch.setattr(random, 'sample', mock_sample)
+
+
+@pytest.fixture()
+def patch_sample2(monkeypatch):
+    """Patch ``random.sample`` to return the first one and check call."""
+    def mock_sample(a_list, should_be_one):
+        assert type(a_list) == list
+        assert len(a_list) >= 1
+        # Part of `TestReserveTrial.test_reserve_success2`
+        assert a_list[0].status == 'new'
+        assert a_list[1].status == 'new'
+        assert a_list[2].status == 'interrupted'
+        assert a_list[3].status == 'suspended'
+        assert should_be_one == 1
+        return [a_list[-1]]
 
     monkeypatch.setattr(random, 'sample', mock_sample)
 
@@ -196,7 +218,7 @@ class TestConfigProperty(object):
         assert cfg['algorithms'] is None
         assert len(cfg) == 7
 
-    @pytest.mark.skip(reason="To be implemented...")
+    @pytest.mark.xfail(reason="To be implemented...", raises=NotImplementedError)
     def test_good_set_before_init_hit_with_diffs(self, exp_config):
         """Trying to set, and differences were found from the config pulled from db.
 
@@ -210,8 +232,7 @@ class TestConfigProperty(object):
         """
         new_config = {'metadata': {'user_version': 1.2}}
         exp = Experiment('supernaedo2')
-        with pytest.raises(NotImplementedError):
-            exp.configure(new_config)
+        exp.configure(new_config)
 
     def test_good_set_before_init_hit_no_diffs_exc_max_trials(self, exp_config):
         """Trying to set, and NO differences were found from the config pulled from db.
@@ -351,16 +372,27 @@ class TestReserveTrial(object):
         exp_config[1][3]['status'] = 'new'
         exp_config[1][3]['start_time'] = None
 
+    @pytest.mark.usefixtures("patch_sample2")
+    def test_reserve_success2(self, exp_config, hacked_exp):
+        """Successfully find new trials in db and reserve one at 'random'.
+
+        Version that start_time does not get written, because the selected trial
+        was not a 'new' one.
+        """
+        trial = hacked_exp.reserve_trial()
+        exp_config[1][-1]['status'] = 'reserved'
+        assert trial.to_dict() == exp_config[1][-1]
+        exp_config[1][-1]['status'] = 'suspended'
+
     def test_reserve_with_uncallable_score(self, hacked_exp):
         """Reserve with a score object that cannot do its job."""
         with pytest.raises(ValueError):
             hacked_exp.reserve_trial(score_handle='asfa')
 
-    @pytest.mark.skip(reason="To be implemented...")
+    @pytest.mark.xfail(reason="To be implemented...", raises=NotImplementedError)
     def test_reserve_with_score(self, hacked_exp):
         """Reserve with a score object that can do its job."""
-        with pytest.raises(NotImplementedError):
-            hacked_exp.reserve_trial(score_handle=lambda x: 66)
+        hacked_exp.reserve_trial(score_handle=lambda x: 66)
         pass
 
 
