@@ -128,7 +128,7 @@ class Trial(object):
 
     class Result(Value):
         """Types for a `Result` can be either an evaluation of an 'objective'
-        function or of an 'constaint' expression.
+        function or of an 'constraint' expression.
         """
 
         allowed_types = ('objective', 'constraint')
@@ -143,14 +143,13 @@ class Trial(object):
     __slots__ = ('experiment', '_id', '_status', 'worker',
                  'submit_time', 'start_time', 'end_time', 'results', 'params')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'broken')
+    NoID = None
 
     def __init__(self, **kwargs):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
         for attrname in self.__slots__:
             if attrname in ('results', 'params'):
                 setattr(self, attrname, list())
-            elif attrname == '_id':
-                continue
             else:
                 setattr(self, attrname, None)
 
@@ -170,24 +169,26 @@ class Trial(object):
 
     def to_dict(self):
         """Needed to be able to convert `Trial` to `dict` form."""
-        ret = dict(
-            status=self._status,
-            results=list(map(lambda x: x.to_dict(), self.results)),
-            params=list(map(lambda x: x.to_dict(), self.params))
-            )
-        for attrname in self.__slots__:
-            if attrname in ('results', 'params', '_status'):
-                continue
-            try:
-                ret[attrname] = getattr(self, attrname)
-            except AttributeError:
-                # if `_id` is not found it is because it has not been provided
-                # in the init. Trial object should not be able to set a value
-                # (whatever value) to its `_id` on its own, but is should just
-                # expect that it could have one
-                pass
+        trial_dictionary = dict()
 
-        return ret
+        for attrname in self.__slots__:
+            attrname = attrname.lstrip("_")
+            trial_dictionary[attrname] = getattr(self, attrname)
+
+        # Overwrite "results" and "params" with list of dictionaries rather
+        # than list of Value objects
+        for attrname in ('results', 'params'):
+            trial_dictionary[attrname] = list(map(lambda x: x.to_dict(),
+                                                  getattr(self, attrname)))
+
+        # Trial object should not be able to set a value
+        # (whatever value) to its `_id` on its own, but is should just
+        # expect that it could have one
+        trial_dictionary.pop('id')  # Pop invalid name for database id key
+        if self.is_registered:
+            trial_dictionary['_id'] = self.id
+
+        return trial_dictionary
 
     def __str__(self):
         """Represent partially with a string."""
@@ -216,20 +217,25 @@ class Trial(object):
 
     @property
     def objective(self):
-        """Return this trial's objecive value if it is evaluated, else None.
+        """Return this trial's objective value if it is evaluated, else None.
 
         :rtype: `Trial.Result`
         """
-        value = []
-        for res in self.results:
-            if res.type == 'objective':
-                value.append(res)
-        if len(value) >= 1:
-            if len(value) > 1:
-                log.warning("Found multiple results of objective function type:\n%s",
-                            value)
-                log.warning("Multi-objective optimization is not currently supported.\n"
-                            "Optimizing according to the first one only: %s", value[0])
-            return value[0]
+        value = [result for result in self.results
+                 if result.type == 'objective']
 
-        return None
+        if not value:
+            return None
+
+        if len(value) > 1:
+            log.warning("Found multiple results of objective function type:\n%s",
+                        value)
+            log.warning("Multi-objective optimization is not currently supported.\n"
+                        "Optimizing according to the first one only: %s", value[0])
+
+        return value[0]
+
+    @property
+    def is_registered(self):
+        """Check whether `Trial` is registered in database based on `_id` value."""
+        return self._id is not self.NoID
