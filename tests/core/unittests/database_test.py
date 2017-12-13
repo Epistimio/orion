@@ -37,7 +37,7 @@ class TestDatabaseFactory(object):
 
     def test_instatiation_and_singleton(self):
         """Test create just one object, that object persists between calls."""
-        database = Database(of_type='MongoDB', dbname='metaopt_test',
+        database = Database(of_type='MongoDB', name='metaopt_test',
                             username='user', password='pass')
 
         assert isinstance(database, MongoDB)

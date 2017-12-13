@@ -56,7 +56,8 @@ def infer_config_and_db(user):
     tmpconfig = resolve_config.merge_mopt_config(expconfig, dict(),
                                                  cmdconfig, cmdargs)
     db_opts = tmpconfig['database']
-    moptdb = Database(**db_opts)
+    dbtype = db_opts.pop('type')
+    moptdb = Database(of_type=dbtype, **db_opts)
     print(user)
     # (TODO) Init Experiment class
 

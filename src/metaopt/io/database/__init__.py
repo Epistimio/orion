@@ -33,24 +33,24 @@ class AbstractDB(object):
        It can be either:
           1. Known hostname or IP address in which database server resides.
           2. URI: A database framework specific connection string.
-    dbname : str
+    name : str
        Name of database containing experiments.
     port : int
        Port that database server listens to for requests.
     username : str
-        Name of user with write/read permissions to database with name `dbname`.
+        Name of user with write/read permissions to database with name `name`.
     password : str
         Secret phrase of user, `username`.
 
     """
 
-    def __init__(self, host='localhost', dbname=None,
+    def __init__(self, host='localhost', name=None,
                  port=None, username=None, password=None):
         """Init method, see attributes of :class:`AbstractDB`."""
         self._logger = logging.getLogger(__name__)
 
         self.host = host
-        self.dbname = dbname
+        self.name = name
         self.port = port
         self.username = username
         self.password = password
