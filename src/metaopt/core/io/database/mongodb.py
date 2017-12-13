@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.io.database.mongodb` -- Wrapper for MongoDB
-=========================================================
+:mod:`metaopt.core.io.database.mongodb` -- Wrapper for MongoDB
+==============================================================
 
 .. module:: database
    :platform: Unix
-   :synopsis: Implement :class:`metaopt.io.database.AbstractDB` for MongoDB.
+   :synopsis: Implement :class:`metaopt.core.io.database.AbstractDB` for MongoDB.
 
 """
 from __future__ import absolute_import
@@ -15,7 +15,7 @@ from pymongo import MongoClient
 from pymongo.uri_parser import parse_uri
 from six import raise_from
 
-from metaopt.io.database import (AbstractDB, DatabaseError)
+from metaopt.core.io.database import (AbstractDB, DatabaseError)
 
 
 class MongoDB(AbstractDB):
@@ -30,7 +30,7 @@ class MongoDB(AbstractDB):
     Information on MongoDB `connection string
     <https://docs.mongodb.com/manual/reference/connection-string/>`_.
 
-    .. seealso:: :class:`metaopt.io.database.AbstractDB` for more on attributes.
+    .. seealso:: :class:`metaopt.core.io.database.AbstractDB` for more on attributes.
 
     """
 

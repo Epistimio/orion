@@ -37,7 +37,7 @@ sys.path.insert(0, docs_src_path)
 src_path = os.path.abspath(os.path.join(docs_src_path, '..', '..', 'src'))
 sys.path.insert(0, src_path)
 
-import metaopt  # noqa
+import metaopt.core as metaopt  # noqa
 
 # -- General configuration ------------------------------------------------
 

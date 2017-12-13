@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.io.database` -- Wrappers for database frameworks
-==============================================================
+:mod:`metaopt.core.io.database` -- Wrappers for database frameworks
+===================================================================
 
 .. module:: database
    :platform: Unix
@@ -10,7 +10,7 @@
 Contains :class:`AbstractDB`, an interface for databases.
 Currently, implemented wrappers:
 
-   - :class:`metaopt.io.database.mongodb.MongoDB`
+   - :class:`metaopt.core.io.database.mongodb.MongoDB`
 
 """
 from __future__ import absolute_import
@@ -20,7 +20,7 @@ import logging
 
 import six
 
-from metaopt.utils import (AbstractSingletonType, SingletonFactory)
+from metaopt.core.utils import (AbstractSingletonType, SingletonFactory)
 
 
 @six.add_metaclass(AbstractSingletonType)

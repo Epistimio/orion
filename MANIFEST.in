@@ -4,7 +4,7 @@ include *.rst
 exclude RESEARCH.md
 
 # Control and setup helpers
-include src/metaopt/_version.py
+include src/metaopt/core/_version.py
 include versioneer.py
 
 # Exclude development helpers

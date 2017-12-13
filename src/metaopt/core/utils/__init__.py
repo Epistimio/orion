@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.utils` -- Package-wide useful routines
-====================================================
+:mod:`metaopt.core.utils` -- Package-wide useful routines
+=========================================================
 
 .. module:: utils
    :platform: Unix
-   :synopsis: Helper functions useful in possibly all :mod:`metaopt`'s modules.
+   :synopsis: Helper functions useful in possibly all :mod:`metaopt.core`'s modules.
 """
 
 from abc import ABCMeta

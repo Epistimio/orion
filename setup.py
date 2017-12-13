@@ -18,7 +18,7 @@ repo_root = os.path.dirname(os.path.abspath(__file__))
 mpath = pjoin(repo_root, 'src')
 sys.path.insert(0, mpath)
 
-import metaopt  # noqa
+import metaopt.core as metaopt  # noqa
 
 
 def find_data_files():
@@ -36,7 +36,7 @@ def find_data_files():
 
 
 setup_args = dict(
-    name=metaopt.__name__,
+    name='metaopt',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description=metaopt.__descr__,
@@ -45,13 +45,14 @@ setup_args = dict(
     author=metaopt.__author__,
     author_email=metaopt.__author_email__,
     url=metaopt.__url__,
+    namespace_packages=['metaopt'],
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
     include_package_data=True,
     data_files=find_data_files(),
     entry_points={
         'console_scripts': [
-            'mopt = metaopt.cli:main',
+            'mopt = metaopt.core.cli:main',
             ],
         },
     install_requires=['six', 'PyYAML', 'pymongo>=3'],

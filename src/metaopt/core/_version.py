@@ -43,7 +43,7 @@ def get_config():
     cfg.style = "pep440-post"
     cfg.tag_prefix = ""
     cfg.parentdir_prefix = "metaopt-"
-    cfg.versionfile_source = "src/metaopt/_version.py"
+    cfg.versionfile_source = "src/metaopt/core/_version.py"
     cfg.verbose = False
     return cfg
 

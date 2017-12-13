@@ -1,1 +1,1 @@
-src/metaopt/_version.py export-subst
+src/metaopt/core/_version.py export-subst
