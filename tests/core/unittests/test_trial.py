@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Collection of tests for :mod:`metaopt.worker.trial`."""
+"""Collection of tests for :mod:`metaopt.core.worker.trial`."""
 
 import pytest
 
-from metaopt.worker.trial import Trial
+from metaopt.core.worker.trial import Trial
 
 
 class TestTrial(object):

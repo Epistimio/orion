@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.resolve_config` -- Configuration parsing and resolving
-====================================================================
+:mod:`metaopt.core.resolve_config` -- Configuration parsing and resolving
+=========================================================================
 
 .. module:: resolve_config
    :platform: Unix
@@ -64,9 +64,9 @@ DEF_CMD_MAX_TRIALS = (-1, 'inf/until preempted')
 DEF_CMD_POOL_SIZE = (10, str(10))
 
 DEF_CONFIG_FILES_PATHS = [
-    os.path.join(metaopt.DIRS.site_data_dir, 'moptconfig.yaml.example'),
-    os.path.join(metaopt.DIRS.site_config_dir, 'moptconfig.yaml'),
-    os.path.join(metaopt.DIRS.user_config_dir, 'moptconfig.yaml')
+    os.path.join(metaopt.core.DIRS.site_data_dir, 'moptconfig.yaml.example'),
+    os.path.join(metaopt.core.DIRS.site_config_dir, 'moptconfig.yaml'),
+    os.path.join(metaopt.core.DIRS.user_config_dir, 'moptconfig.yaml')
     ]
 
 # list containing tuples of
@@ -102,7 +102,7 @@ def fetch_mopt_args(description):
 
     parser.add_argument(
         '-V', '--version',
-        action='version', version='metaopt ' + metaopt.__version__)
+        action='version', version='metaopt ' + metaopt.core.__version__)
 
     parser.add_argument(
         '-v', '--verbose',
@@ -155,7 +155,7 @@ def fetch_mopt_args(description):
 
     args = vars(parser.parse_args())  # convert to dict
     # Explicitly add metaopt's version as experiment's metadata
-    args['version'] = metaopt.__version__
+    args['version'] = metaopt.core.__version__
     moptfile = args.pop('moptconfig')
     config = dict()
     if moptfile:

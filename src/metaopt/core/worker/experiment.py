@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.worker.experiment` -- Description of an optimization attempt
-==========================================================================
+:mod:`metaopt.core.worker.experiment` -- Description of an optimization attempt
+===============================================================================
 
 .. module:: trial
    :platform: Unix
@@ -17,8 +17,8 @@ import random
 
 import six
 
-from metaopt.io.database import Database
-from metaopt.worker.trial import Trial
+from metaopt.core.io.database import Database
+from metaopt.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
