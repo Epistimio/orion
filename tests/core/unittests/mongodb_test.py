@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Collection of tests for :mod:`metaopt.core.io.database.mongodb`."""
+"""Collection of tests for :mod:`metaopt.io.database.mongodb`."""
 
 from datetime import datetime
 
 import pytest
 
-from metaopt.core.io.database import DatabaseError
-from metaopt.core.io.database.mongodb import MongoDB
+from metaopt.io.database import DatabaseError
+from metaopt.io.database.mongodb import MongoDB
 
 
 @pytest.fixture(scope='module')
@@ -20,7 +20,7 @@ def moptdb():
 
 @pytest.mark.usefixtures("null_db_instances")
 class TestConnection(object):
-    """Create a :class:`metaopt.core.io.database.mongodb.MongoDB`, check connection cases."""
+    """Create a :class:`metaopt.io.database.mongodb.MongoDB`, check connection cases."""
 
     def test_bad_connection(self):
         """Raise when connection cannot be achieved."""
@@ -66,7 +66,7 @@ class TestConnection(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestRead(object):
-    """Calls to :meth:`metaopt.core.io.database.mongodb.MongoDB.read`."""
+    """Calls to :meth:`metaopt.io.database.mongodb.MongoDB.read`."""
 
     def test_read_experiment(self, exp_config, moptdb):
         """Fetch a whole experiment entries."""
@@ -117,7 +117,7 @@ class TestRead(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestWrite(object):
-    """Calls to :meth:`metaopt.core.io.database.mongodb.MongoDB.write`."""
+    """Calls to :meth:`metaopt.io.database.mongodb.MongoDB.write`."""
 
     def test_insert_one(self, database, moptdb):
         """Should insert a single new entry in the collection."""
@@ -185,7 +185,7 @@ class TestWrite(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestRemove(object):
-    """Calls to :meth:`metaopt.core.io.database.mongodb.MongoDB.remove`."""
+    """Calls to :meth:`metaopt.io.database.mongodb.MongoDB.remove`."""
 
     def test_remove_many_default(self, exp_config, database, moptdb):
         """Should match existing entries, and delete them all."""
@@ -209,7 +209,7 @@ class TestRemove(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestCount(object):
-    """Calls :meth:`metaopt.core.io.database.mongodb.MongoDB.count`."""
+    """Calls :meth:`metaopt.io.database.mongodb.MongoDB.count`."""
 
     def test_count_default(self, exp_config, moptdb):
         """Call just with collection name."""

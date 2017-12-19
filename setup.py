@@ -18,9 +18,7 @@ repo_root = os.path.dirname(os.path.abspath(__file__))
 mpath = pjoin(repo_root, 'src')
 sys.path.insert(0, mpath)
 
-import metaopt.core as metaopt  # noqa
-
-print(sys.version)
+import metaopt  # noqa
 
 
 def find_data_files():
@@ -37,12 +35,8 @@ def find_data_files():
     return data_files
 
 
-tests_require = [
-    'pytest>=3.0.0'
-    ]
-
 setup_args = dict(
-    name='metaopt',
+    name=metaopt.__name__,
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description=metaopt.__descr__,
@@ -51,20 +45,18 @@ setup_args = dict(
     author=metaopt.__author__,
     author_email=metaopt.__author_email__,
     url=metaopt.__url__,
-    namespace_packages=['metaopt'],
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
     include_package_data=True,
     data_files=find_data_files(),
     entry_points={
         'console_scripts': [
-            'mopt = metaopt.core.cli:main',
+            'mopt = metaopt.cli:main',
             ],
         },
     install_requires=['six', 'PyYAML', 'pymongo>=3'],
-    tests_require=tests_require,
+    tests_require=['pytest>=3.0.0'],
     setup_requires=['setuptools', 'pytest-runner>=2.0,<3dev'],
-    extras_require=dict(test=tests_require),
     #  http://peak.telecommunity.com/DevCenter/setuptools#setting-the-zip-safe-flag
     #  zip_safe=False
     )

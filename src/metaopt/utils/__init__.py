@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.utils` -- Package-wide useful routines
-=========================================================
+:mod:`metaopt.utils` -- Package-wide useful routines
+====================================================
 
 .. module:: utils
    :platform: Unix
-   :synopsis: Helper functions useful in possibly all :mod:`metaopt.core`'s modules.
+   :synopsis: Helper functions useful in possibly all :mod:`metaopt`'s modules.
 """
 
 from abc import ABCMeta
 from glob import glob
 from importlib import import_module
-import os
 
 
 class SingletonType(type):
@@ -55,12 +54,12 @@ class Factory(type):
         """Search in directory for attribute names subclassing `bases[0]`"""
         super(Factory, cls).__init__(names, bases, dictionary)
 
-        cls.modules = []
+        modules = []
         base = import_module(cls.__base__.__module__)
-        py_files = glob(base.__path__[0] + '/[A-Za-z]*.py')
-        py_mods = map(lambda x: '.' + os.path.split(os.path.splitext(x)[0])[1], py_files)
-        for py_mod in py_mods:
-            cls.modules.append(import_module(py_mod, package=cls.__base__.__module__))
+        py_files = map(lambda x: '.' + x.split('.')[0].split('/')[-1],
+                       glob(base.__path__[0] + '/[A-Za-z]*.py'))
+        for py_file in py_files:
+            modules.append(import_module(py_file, package=cls.__base__.__module__))
 
         cls.types = [cls.__base__] + cls.__base__.__subclasses__()
         cls.types = [class_ for class_ in cls.types if class_.__name__ != cls.__name__]

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.worker.convert` -- Parse and generate user script's configuration
-====================================================================================
+:mod:`metaopt.worker.convert` -- Parse and generate user script's configuration
+===============================================================================
 
 .. module:: convert
    :platform: Unix

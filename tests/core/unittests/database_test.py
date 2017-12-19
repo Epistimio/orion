@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Example usage and tests for :mod:`metaopt.core.io.database`."""
+"""Example usage and tests for :mod:`metaopt.io.database`."""
 
 import pytest
 
-from metaopt.core.io.database import Database
-from metaopt.core.io.database.mongodb import MongoDB
+from metaopt.io.database import Database
+from metaopt.io.database.mongodb import MongoDB
 
 
 @pytest.mark.usefixtures("null_db_instances")

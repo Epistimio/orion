@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Collection of tests for :mod:`metaopt.core.worker.experiment`."""
+"""Collection of tests for :mod:`metaopt.worker.experiment`."""
 
 import datetime
 import getpass
@@ -8,9 +8,9 @@ import random
 
 import pytest
 
-from metaopt.core.io.database import Database
-from metaopt.core.worker.experiment import Experiment
-from metaopt.core.worker.trial import Trial
+from metaopt.io.database import Database
+from metaopt.worker.experiment import Experiment
+from metaopt.worker.trial import Trial
 
 
 @pytest.fixture()
@@ -203,7 +203,7 @@ class TestConfigProperty(object):
 
         Before initialization is done, it can be the case that the pair (`name`,
         user's name) has not hit the database. return a yaml compliant form
-        of current state, to be used with :mod:`metaopt.core.resolve_config`.
+        of current state, to be used with :mod:`metaopt.resolve_config`.
         """
         exp = Experiment('supernaekei')
         cfg = exp.configuration
@@ -313,7 +313,7 @@ class TestConfigProperty(object):
 
         Before initialization is done, it can be the case that the pair (`name`,
         user's name) has not hit the database. return a yaml compliant form
-        of current state, to be used with :mod:`metaopt.core.resolve_config`.
+        of current state, to be used with :mod:`metaopt.resolve_config`.
         """
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
