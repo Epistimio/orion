@@ -16,8 +16,8 @@ import getpass
 import logging
 import sys
 
-from metaopt.core import resolve_config
-from metaopt.core.io.database import Database
+from metaopt import resolve_config
+from metaopt.io.database import Database
 
 
 def main():
@@ -42,7 +42,7 @@ def main():
 
 
 def infer_config_and_db(user):
-    """Use metaopt.core.resolve_config to organize how configuration is built."""
+    """Use metaopt.resolve_config to organize how configuration is built."""
     # Fetch experiment name, user's script, args and parameter config
     # Use `-h` option to show help
     cmdargs, cmdconfig = resolve_config.fetch_mopt_args(__doc__)
@@ -50,7 +50,7 @@ def infer_config_and_db(user):
 
     expconfig = resolve_config.fetch_default_options()
     # Fetch mopt system variables (database and resource information)
-    # See :const:`metaopt.core.io.resolve_config.ENV_VARS` for environmental variables used
+    # See :const:`metaopt.io.resolve_config.ENV_VARS` for environmental variables used
     expconfig = resolve_config.merge_env_vars(expconfig)
 
     tmpconfig = resolve_config.merge_mopt_config(expconfig, dict(),

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.worker` -- Coordination of the hyperoptimization procedure
-=============================================================================
+:mod:`metaopt.worker` -- Coordination of the hyperoptimization procedure
+========================================================================
 
 .. module:: worker
    :platform: Unix

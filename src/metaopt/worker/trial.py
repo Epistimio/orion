@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # pylint: skip-file
 """
-:mod:`metaopt.core.worker.trial` -- Container class for `Trial` entity
-======================================================================
+:mod:`metaopt.worker.trial` -- Container class for `Trial` entity
+=================================================================
 
 .. module:: trial
    :platform: Unix

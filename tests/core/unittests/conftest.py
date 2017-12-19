@@ -7,8 +7,8 @@ from pymongo import MongoClient
 import pytest
 import yaml
 
-from metaopt.core.io.database import Database
-from metaopt.core.io.database.mongodb import MongoDB
+from metaopt.io.database import Database
+from metaopt.io.database.mongodb import MongoDB
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
