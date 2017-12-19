@@ -116,7 +116,7 @@ class Dimension(object):
             self.prior = prior
         self._args = args
         self._kwargs = kwargs
-        # Default shape `None` corresponds to 0-dim (scalar) or shape == 1.
+        # Default shape `None` corresponds to 0-dim (scalar) or shape == ().
         # Read about ``size`` argument in
         # `scipy.stats._distn_infrastructure.rv_generic._argcheck_rvs`
         self._shape = self._kwargs.pop('shape', None)
@@ -167,11 +167,13 @@ class Dimension(object):
         :type x: numeric or array-like
 
         .. note:: Default `Dimension` does not have any extra constraints.
-           It just checks whether point lies inside the support.
+           It just checks whether point lies inside the support and the shape.
 
         """
         low, high = self.interval()
         point_ = numpy.asarray(point)
+        if point_.shape != self.shape:
+            return False
         return numpy.all(point_ < high) and numpy.all(point_ >= low)
 
     def __repr__(self):
@@ -200,9 +202,10 @@ class Dimension(object):
     @property
     def shape(self):
         """Return the shape of dimension."""
-        if self._shape is None:  # This is due to a scipy convention, check `__init__`
-            return 1
-        return self._shape
+        _, _, _, size = self.prior._parse_args_rvs(*self._args,  # pylint:disable=protected-access
+                                                   **self._kwargs,
+                                                   size=self._shape)
+        return size
 
 
 class Real(Dimension):
@@ -370,6 +373,8 @@ class Categorical(Dimension):
 
         """
         point_ = numpy.asarray(point)
+        if point_.shape != self.shape:
+            return False
         return numpy.all(self._check(point_))
 
     def __repr__(self):
