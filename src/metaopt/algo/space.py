@@ -25,7 +25,7 @@ and are in concordance with `metaopt.algo.space` objects. These objects will be
 defined by `metaopt.core` using the user script's configuration file.
 
 (TODO) Spaces can be transformed to other spaces, using an appropriate
-**compositor** (pattern) subclass of `Dimension`.
+**compositor** subclass of `Dimension`.
 
 Prior distributions, contained in `Dimension` classes, are based on
 `scipy.stats.distributions` and should be configured as noted in the
@@ -57,7 +57,6 @@ class _Ellipsis:  # pylint:disable=too-few-public-methods
 # TODO random == uniform (non discrete) -> real
 # TODO random == uniform == randint (discrete)
 # TODO TEST
-# TODO Space
 # TODO builders
 
 
@@ -119,6 +118,8 @@ class Dimension(object):
         # Default shape `None` corresponds to 0-dim (scalar) or shape == ().
         # Read about ``size`` argument in
         # `scipy.stats._distn_infrastructure.rv_generic._argcheck_rvs`
+        if 'size' in kwargs:
+            raise ValueError("Use 'shape' keyword only instead of 'size'.")
         self._shape = self._kwargs.pop('shape', None)
         self.discrete = self._kwargs.pop('discrete', False)
 
@@ -139,10 +140,15 @@ class Dimension(object):
            Set random state to something other than None for reproducible
            results.
 
+        .. warning:: Setting `seed` with an integer will cause the same ndarray
+           to be sampled if ``n_samples > 0``. Set `seed` with a
+           ``numpy.random.RandomState`` to carry on the changes in random state
+           across many samples.
+
         """
-        samples = [self.prior.rvs(*self._args, **self._kwargs,
-                                  size=self._shape,
-                                  random_state=seed) for _ in range(n_samples)]
+        samples = [self.prior.rvs(*self._args, size=self._shape,
+                                  random_state=seed,
+                                  **self._kwargs) for _ in range(n_samples)]
         # Making discrete by ourselves because scipy does not use **floor**
         if self.discrete:
             return list(map(lambda x: numpy.floor(x).astype(int), samples))
@@ -203,8 +209,8 @@ class Dimension(object):
     def shape(self):
         """Return the shape of dimension."""
         _, _, _, size = self.prior._parse_args_rvs(*self._args,  # pylint:disable=protected-access
-                                                   **self._kwargs,
-                                                   size=self._shape)
+                                                   size=self._shape,
+                                                   **self._kwargs)
         return size
 
 
@@ -244,7 +250,7 @@ class Real(Dimension):
         low : float
            Lower bound (inclusive), optional; default ``-numpy.inf``.
         high : float:
-           Upper bound (exclusive), optional; default ``-numpy.inf``.
+           Upper bound (exclusive), optional; default ``numpy.inf``.
 
         """
         self.low = kwargs.pop('low', -numpy.inf)
@@ -252,7 +258,7 @@ class Real(Dimension):
         if self.high <= self.low:
             raise ValueError("Lower bound {} has to be less "
                              "than upper bound {}".format(self.low, self.high))
-        super().__init__(name, prior, *args, **kwargs)
+        super(Real, self).__init__(name, prior, *args, **kwargs)
 
     def __contains__(self, point):
         """Check if constraints hold for this `point` of `Dimension`.
@@ -261,13 +267,35 @@ class Real(Dimension):
         :type x: numeric or array-like
 
         """
-        if not super().__contains__(point):
+        if not super(Real, self).__contains__(point):
             return False
         point_ = numpy.asarray(point)
         return numpy.all(point_ < self.high) and numpy.all(point_ >= self.low)
 
+    def sample(self, n_samples=1, seed=None):
+        """Draw random samples from `prior`.
 
-class Integer(Dimension):
+        .. seemore:: `Dimension.sample`
+
+        """
+        samples = []
+        for _ in range(n_samples):
+            for _ in range(4):
+                sample = super(Real, self).sample(1, seed)
+                if sample[0] not in self:
+                    nice = False
+                    continue
+                nice = True
+                samples.extend(sample)
+                break
+            if not nice:
+                raise ValueError("Improbable bounds: (low={0}, high={1}). "
+                                 "Please make interval larger.".format(self.low, self.high))
+
+        return samples
+
+
+class Integer(Real):
     """Subclass of `Dimension` for representing integer parameters.
 
     Attributes
@@ -295,7 +323,21 @@ class Integer(Dimension):
 
         """
         kwargs['discrete'] = True
-        super().__init__(name, prior, *args, **kwargs)
+        super(Integer, self).__init__(name, prior, *args, **kwargs)
+
+    def __contains__(self, point):
+        """Check if constraints hold for this `point` of `Dimension`.
+
+        :param x: a parameter corresponding to this `Dimension`.
+        :type x: numeric or array-like
+
+        `Integer` will check whether `point` contains only integers.
+
+        """
+        point_ = numpy.asarray(point)
+        if not numpy.all(numpy.equal(numpy.mod(point_, 1), 0)):
+            return False
+        return super(Integer, self).__contains__(point)
 
 
 class Categorical(Dimension):
@@ -343,9 +385,9 @@ class Categorical(Dimension):
                                         otypes=[numpy.object])
         self._check = numpy.vectorize(lambda x: x in self.categories)
 
-        prior = distributions.rv_discrete(values=(range(len(self.categories)),
+        prior = distributions.rv_discrete(values=(list(range(len(self.categories))),
                                                   self._probs))
-        super().__init__(name, prior, **kwargs)
+        super(Categorical, self).__init__(name, prior, **kwargs)
 
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
@@ -353,8 +395,15 @@ class Categorical(Dimension):
         .. seemore:: `Dimension.sample`
 
         """
-        samples = super().sample(n_samples, seed)
-        return list(map(self._inverse, samples))
+        positions = super(Categorical, self).sample(n_samples, seed)
+        samples = list(map(self._inverse, positions))
+        result = []
+        for i, sample in zip(positions, samples):
+            if sample.shape == ():
+                result.append(self.categories[i].__class__(sample))
+            else:
+                result.append(sample)
+        return result
 
     def interval(self, alpha=1.0):
         """Return a tuple of possible values that this categorical dimension
@@ -372,7 +421,7 @@ class Categorical(Dimension):
         :type x: numeric or array-like
 
         """
-        point_ = numpy.asarray(point)
+        point_ = numpy.asarray(point, dtype=numpy.object)
         if point_.shape != self.shape:
             return False
         return numpy.all(self._check(point_))
@@ -380,13 +429,14 @@ class Categorical(Dimension):
     def __repr__(self):
         """Represent the object as a string."""
         if len(self.categories) > 5:
-            cats = self.categories[:2] + (_Ellipsis(), ) + self.categories[-2:]
-            probs = self._probs[:2] + (_Ellipsis(), ) + self._probs[-2:]
+            cats = self.categories[:2] + self.categories[-2:]
+            probs = self._probs[:2] + self._probs[-2:]
+            prior = list(zip(cats, probs))
+            prior.insert(2, _Ellipsis())
         else:
             cats = self.categories
             probs = self._probs
-
-        prior = dict(zip(cats, probs))
+            prior = list(zip(cats, probs))
 
         return "Categorical(name={0}, prior={1}, shape={2})".format(self.name,
                                                                     prior,
@@ -441,7 +491,7 @@ class Space(OrderedDict):
     def __getitem__(self, key):
         """Wrap __getitem__ to allow searching with position."""
         if isinstance(key, six.string_types):
-            return super().__getitem__(key)
+            return super(Space, self).__getitem__(key)
 
         values = list(self.values())
         return values[key]
@@ -454,7 +504,10 @@ class Space(OrderedDict):
         if not isinstance(value, Dimension):
             raise TypeError("Values registered to Space must be Dimension types. "
                             "Provided: {}".format(value))
-        super().__setitem__(key, value)
+        if key in self:
+            raise ValueError("There is already a Dimension registered with this name. "
+                             "Register it with another name.")
+        super(Space, self).__setitem__(key, value)
 
     def __contains__(self, value):
         """Check whether `value` is within the bounds of the space.
@@ -465,7 +518,7 @@ class Space(OrderedDict):
 
         """
         if isinstance(value, six.string_types):
-            return super().__contains__(value)
+            return super(Space, self).__contains__(value)
 
         try:
             len(value)
