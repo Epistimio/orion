@@ -34,7 +34,7 @@ unless noted otherwise!
 
 (TODO) Complete list of distribution names supported and their settings
 (TODO) Set up sphinx interlink with scipy to make documentation of priors
-       beautiful!
+beautiful!
 
 """
 
@@ -198,7 +198,8 @@ class Dimension(object):
         if isinstance(value, six.string_types) or value is None:
             self._name = value
         else:
-            raise TypeError("Dimension's name must be either string or None.")
+            raise TypeError("Dimension's name must be either string or None. "
+                            "Provided: {}, of type: {}".format(value, type(value)))
 
     @property
     def type(self):
@@ -275,7 +276,7 @@ class Real(Dimension):
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
 
-        .. seemore:: `Dimension.sample`
+        .. seealso:: `Dimension.sample`
 
         """
         samples = []
@@ -392,7 +393,7 @@ class Categorical(Dimension):
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
 
-        .. seemore:: `Dimension.sample`
+        .. seealso:: `Dimension.sample`
 
         """
         positions = super(Categorical, self).sample(n_samples, seed)
