@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`metaopt.core.io.space_builder`."""
 
+import sys
+
 import pytest
 from scipy.stats import distributions as dists
 
@@ -82,21 +84,24 @@ class TestDimensionBuilder(object):
         with pytest.raises(TypeError) as exc:
             dimbuilder.build('yolo3', 'alpha(1.1, whatisthis=5, discrete=True)')
         assert 'Parameter' in str(exc.value)
-        assert 'unexpected' in str(exc.value.__cause__)
+        if sys.version_info[0] == 3:
+            assert 'unexpected' in str(exc.value.__cause__)
 
     def test_build_fails_because_of_ValueError_on_run(self, dimbuilder):
         """Build fails because ValueError happens on init."""
         with pytest.raises(TypeError) as exc:
             dimbuilder.build('yolo2', 'alpha(0.9, low=4, high=10, shape=2)')
         assert 'Parameter' in str(exc.value)
-        assert 'Improbable bounds' in str(exc.value.__cause__)
+        if sys.version_info[0] == 3:
+            assert 'Improbable bounds' in str(exc.value.__cause__)
 
     def test_build_fails_because_of_ValueError_on_init(self, dimbuilder):
         """Build fails because ValueError happens on init."""
         with pytest.raises(TypeError) as exc:
             dimbuilder.build('yolo2', 'alpha(0.9, low=4, high=10, size=2)')
         assert 'Parameter' in str(exc.value)
-        assert 'size' in str(exc.value.__cause__)
+        if sys.version_info[0] == 3:
+            assert 'size' in str(exc.value.__cause__)
 
     def test_build_gaussian(self, dimbuilder):
         """Check that gaussian/normal/norm is built into reciprocal correctly."""
@@ -149,7 +154,8 @@ class TestDimensionBuilder(object):
         with pytest.raises(TypeError) as exc:
             dimbuilder.build('yolo2', "enum({'adfa': 0.1, 3: 0.4})")
         assert 'Parameter' in str(exc.value)
-        assert 'sum' in str(exc.value.__cause__)
+        if sys.version_info[0] == 3:
+            assert 'sum' in str(exc.value.__cause__)
 
     def test_build_fails_because_empty_args(self, dimbuilder):
         """What happens if somebody 'forgets' stuff?"""
@@ -161,7 +167,8 @@ class TestDimensionBuilder(object):
         with pytest.raises(TypeError) as exc:
             dimbuilder.build('what', "alpha()")
         assert 'Parameter' in str(exc.value)
-        assert 'positional' in str(exc.value.__cause__)
+        if sys.version_info[0] == 3:
+            assert 'positional' in str(exc.value.__cause__)
 
     def test_build_fails_because_troll(self, dimbuilder):
         """What happens if somebody does not fit regular expression expected?"""
@@ -206,7 +213,8 @@ class TestDimensionBuilder(object):
         with pytest.raises(TypeError) as exc:
             dimbuilder.build('yolo2', "random({'adfa': 0.1, 3: 0.4})")
         assert 'Parameter' in str(exc.value)
-        assert 'sum' in str(exc.value.__cause__)
+        if sys.version_info[0] == 3:
+            assert 'sum' in str(exc.value.__cause__)
 
         dim = dimbuilder.build('yolo', "random('adfa', 1, shape=4)")
         assert isinstance(dim, Categorical)

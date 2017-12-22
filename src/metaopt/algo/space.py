@@ -439,6 +439,10 @@ class Categorical(Dimension):
             probs = self._probs
             prior = list(zip(cats, probs))
 
+        prior = map(lambda x: '{0[0]}: {0[1]:.2f}'.format(x)
+                    if not isinstance(x, _Ellipsis) else str(x), prior)
+        prior = "{" + ', '.join(prior) + "}"
+
         return "Categorical(name={0}, prior={1}, shape={2})".format(self.name,
                                                                     prior,
                                                                     self.shape)
@@ -539,6 +543,4 @@ class Space(OrderedDict):
     def __repr__(self):
         """Represent as a string the space and the dimensions it contains."""
         dims = list(self.values())
-        if len(dims) > 17:
-            dims = dims[:8] + [_Ellipsis()] + dims[-8:]
         return "Space([{}])".format(',\n       '.join(map(str, dims)))

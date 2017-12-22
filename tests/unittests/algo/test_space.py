@@ -177,10 +177,7 @@ class TestReal(object):
         """Randomized test **unsuccessfully** sampling with the extra bounds."""
         dim = Real('yolo', 'norm', 0, 2, low=-2, high=+2, shape=(4, 4))
         with pytest.raises(ValueError) as exc:
-            for _ in range(8):
-                samples = dim.sample(8)
-                for sample in samples:
-                    assert sample in dim
+            dim.sample(8)
         assert "Improbable bounds" in str(exc.value)
 
     def test_bad_bounds(self):
@@ -243,7 +240,7 @@ class TestCategorical(object):
         assert 2 in dim
         assert 3 not in dim
 
-        assert str(dim) == "Categorical(name=yolo, prior=[('asdfa', 0.5), (2, 0.5)], shape=())"
+        assert str(dim) == "Categorical(name=yolo, prior={asdfa: 0.50, 2: 0.50}, shape=())"
 
         assert dim.name == 'yolo'
         assert dim.type == 'categorical'
@@ -283,7 +280,7 @@ class TestCategorical(object):
         dim = Categorical('yolo', categories, shape=2)
 
         assert str(dim) == "Categorical(name=yolo, " \
-                           "prior=[(0, 0.1), (1, 0.1), ..., (8, 0.1), (9, 0.1)], " \
+                           "prior={0: 0.10, 1: 0.10, ..., 8: 0.10, 9: 0.10}, " \
                            "shape=(2,))"
 
     def test_bad_probabilities(self):

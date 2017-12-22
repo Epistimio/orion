@@ -13,6 +13,7 @@
 
 import numbers
 import re
+import sys
 
 from scipy.stats import distributions as sp_dists
 import six
@@ -142,9 +143,13 @@ class DimensionBuilder(object):
         self.name = name
         _check_expr_to_eval(expression)
         prior, arg_string = re.findall(r'([a-z][a-z0-9_]*)\((.*)\)', expression)[0]
+        if sys.version_info[0] == 3:  # if Python3
+            globals_ = {'__builtins__': {}}
+        else:  # if Python2
+            # Try False = True somewhere in Python2, you will see...
+            globals_ = {'__builtins__': {'True': True, 'False': False}}
         try:
-            dimension = eval("self." + expression, {'__builtins__': {}},
-                             {'self': self})
+            dimension = eval("self." + expression, globals_, {'self': self})
             return dimension
         except AttributeError:
             pass
@@ -153,7 +158,7 @@ class DimensionBuilder(object):
         # try to see if it is legit scipy stuff and call a `Dimension`
         # appropriately.
         args, kwargs = eval("_get_arguments(" + arg_string + ")",
-                            {'__builtins__': {}},
+                            globals_,
                             {'_get_arguments': _get_arguments})
 
         if hasattr(sp_dists._continuous_distns, prior):
