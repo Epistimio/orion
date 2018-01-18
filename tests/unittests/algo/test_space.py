@@ -187,6 +187,17 @@ class TestReal(object):
         with pytest.raises(ValueError):
             Real('yolo', 'norm', 0, 2, low=+2, high=+2, shape=(4, 4))
 
+    def test_interval(self):
+        """Interval takes into account explicitly bounds."""
+        dim = Real('yolo', 'norm', 0, 3, low=-3, high=+3)
+        assert dim.interval() == (-3, 3)
+
+        dim = Real('yolo', 'alpha', 0.9, low=-3, high=+3)
+        assert dim.interval() == (0, 3)
+
+        dim = Real('yolo', 'uniform', -2, 4, low=-3, high=+3)
+        assert dim.interval() == (-2.0, 2.0)
+
 
 class TestInteger(object):
     """Test methods of a `Integer` object."""
@@ -198,6 +209,7 @@ class TestInteger(object):
         assert len(samples) == 1
         assert samples[0] == -2
 
+        # There is a scipy bug here concerning interval
         assert dists.uniform.interval(1.0, -3, 6) == dim.interval()
         assert dists.uniform.interval(0.5, -3, 6) == dim.interval(0.5)
 
@@ -220,6 +232,17 @@ class TestInteger(object):
         assert 6 not in dim
         assert -3 in dim
         assert -4 not in dim
+
+    @pytest.mark.xfail(reason="scipy bug")
+    def test_scipy_integer_dist_interval_bug(self):
+        """Scipy does not return the correct answer for integer distributions."""
+        dim = Integer('yolo', 'randint', -3, 6)
+        assert dim.interval() == (-3, 6)
+        assert dim.interval(1.0) == (-3, 6)
+        assert dim.interval(0.9999) == (-3, 6)
+
+        dim = Integer('yolo2', 'randint', -2, 4, loc=8)
+        assert dim.interval() == (6, 12)
 
 
 class TestCategorical(object):

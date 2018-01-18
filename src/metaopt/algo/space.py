@@ -51,14 +51,6 @@ class _Ellipsis:  # pylint:disable=too-few-public-methods
     def __repr__(self):
         return '...'
 
-# TODO Accept a string parsed out from args or config
-# TODO reciprocal == loguniform
-# TODO gaussian == normal == norm -> real
-# TODO random == uniform (non discrete) -> real
-# TODO random == uniform == randint (discrete)
-# TODO TEST
-# TODO builders
-
 
 class Dimension(object):
     """Base class for search space dimensions.
@@ -254,24 +246,25 @@ class Real(Dimension):
            Upper bound (exclusive), optional; default ``numpy.inf``.
 
         """
-        self.low = kwargs.pop('low', -numpy.inf)
-        self.high = kwargs.pop('high', numpy.inf)
-        if self.high <= self.low:
+        self._low = kwargs.pop('low', -numpy.inf)
+        self._high = kwargs.pop('high', numpy.inf)
+        if self._high <= self._low:
             raise ValueError("Lower bound {} has to be less "
-                             "than upper bound {}".format(self.low, self.high))
+                             "than upper bound {}".format(self._low, self._high))
         super(Real, self).__init__(name, prior, *args, **kwargs)
 
-    def __contains__(self, point):
-        """Check if constraints hold for this `point` of `Dimension`.
+    def interval(self, alpha=1.0):
+        """Return a tuple containing lower and upper bound for parameters.
 
-        :param x: a parameter corresponding to this `Dimension`.
-        :type x: numeric or array-like
+        If parameters are drawn from an 'open' supported random variable,
+        then it will be attempted to calculate the interval from which
+        a variable is `alpha`-likely to be drawn from.
+
+        .. note:: Lower bound is inclusive, upper bound is exclusive.
 
         """
-        if not super(Real, self).__contains__(point):
-            return False
-        point_ = numpy.asarray(point)
-        return numpy.all(point_ < self.high) and numpy.all(point_ >= self.low)
+        prior_low, prior_high = super(Real, self).interval(alpha)
+        return (max(prior_low, self._low), min(prior_high, self._high))
 
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
@@ -291,7 +284,7 @@ class Real(Dimension):
                 break
             if not nice:
                 raise ValueError("Improbable bounds: (low={0}, high={1}). "
-                                 "Please make interval larger.".format(self.low, self.high))
+                                 "Please make interval larger.".format(self._low, self._high))
 
         return samples
 
