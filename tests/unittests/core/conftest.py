@@ -7,10 +7,13 @@ from pymongo import MongoClient
 import pytest
 import yaml
 
+from metaopt.core.io.convert import (JSONConverter, YAMLConverter)
 from metaopt.core.io.database import Database
 from metaopt.core.io.database.mongodb import MongoDB
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+YAML_SAMPLE = './sample_config.yml'
+JSON_SAMPLE = './sample_config.json'
 
 
 @pytest.fixture()
@@ -56,3 +59,27 @@ def create_db_instance(null_db_instances, clean_db):
     database = Database(of_type='MongoDB', name='metaopt_test',
                         username='user', password='pass')
     return database
+
+
+@pytest.fixture()
+def yaml_converter():
+    """Return a `metaopt.core.io.convert.YAMLConverter`."""
+    return YAMLConverter()
+
+
+@pytest.fixture()
+def json_converter():
+    """Return a `metaopt.core.io.convert.JSONConverter`."""
+    return JSONConverter()
+
+
+@pytest.fixture(scope='session')
+def yaml_sample_path():
+    """Return path with a yaml sample file."""
+    return YAML_SAMPLE
+
+
+@pytest.fixture(scope='session')
+def json_sample_path():
+    """Return path with a json sample file."""
+    return JSON_SAMPLE
