@@ -408,8 +408,8 @@ def test_register_trials(database, random_dt, hacked_exp):
     """Register a list of newly proposed trials/parameters."""
     hacked_exp._id = 'lalala'  # white box hack
     trials = [
-        Trial(params=[{'name': 'a', 'type': 'int', 'value': 5}]),
-        Trial(params=[{'name': 'b', 'type': 'int', 'value': 6}]),
+        Trial(params=[{'name': 'a', 'type': 'integer', 'value': 5}]),
+        Trial(params=[{'name': 'b', 'type': 'integer', 'value': 6}]),
         ]
     hacked_exp.register_trials(trials)
     yo = list(database.trials.find({'experiment': hacked_exp._id}))

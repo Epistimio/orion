@@ -18,7 +18,7 @@
     # from `mopt`'s args
     user_config: ~
     # from `mopt`'s args
-    user_args: '--encoding_layer~enum([rnn, lstm, gru]) --decoding_layer~enum([rnn, lstm_with_attention, gru])'
+    user_args: '--encoding_layer~random([rnn, lstm, gru]) --decoding_layer~random([rnn, lstm_with_attention, gru])'
     # from user's vsc, e.g. git
     user_vcs: git
     user_version: ~
@@ -33,7 +33,7 @@
 
     params:
       - name: decoding_layer
-        type: enum
+        type: categorical
         value: gru
 
   # metaopt's configuration
@@ -70,7 +70,7 @@
     mopt_version: 0.1
     user_script: full_path/ieeeela.py
     user_config: ~
-    user_args: '--encoding_layer~enum([rnn, lstm, gru]) --decoding_layer~enum([rnn, lstm_with_attention, gru])'
+    user_args: '--encoding_layer~random([rnn, lstm, gru]) --decoding_layer~random([rnn, lstm_with_attention, gru])'
     user_vcs: git
     user_version: ~
     user_commit_hash: as5f7asf5asfa7sf
@@ -79,7 +79,7 @@
     user: tsirif
     params:
       - name: decoding_layer
-        type: enum
+        type: categorical
         value: gru
   pool_size: 2
   max_trials: 1000
@@ -108,7 +108,7 @@
     mopt_version: 0.1
     user_script: full_path/main.py
     user_config: ~
-    user_args: '--encoding_layer~enum([rnn, lstm, gru]) --decoding_layer~enum([rnn, lstm_with_attention, gru])'
+    user_args: '--encoding_layer~random([rnn, lstm, gru]) --decoding_layer~random([rnn, lstm_with_attention, gru])'
     user_vcs: git
     user_version: ~
     user_commit_hash: as5f7asf5asfa7sf
@@ -117,7 +117,7 @@
     user: tsirif
     params:
       - name: decoding_layer
-        type: enum
+        type: categorical
         value: gru
   pool_size: 2
   max_trials: 1000
@@ -153,10 +153,10 @@
       value: 3
   params:
     - name: encoding_layer
-      type: enum  # int, float, enum (TODO: how will be priors logged?)
+      type: categorical
       value: rnn
     - name: decoding_layer
-      type: enum
+      type: categorical
       value: rnn
 - experiment: supernaedo2
 
@@ -171,10 +171,10 @@
       value: 2
   params:
     - name: encoding_layer
-      type: enum  # int, float, enum (TODO: how will be priors logged?)
+      type: categorical
       value: rnn
     - name: decoding_layer
-      type: enum
+      type: categorical
       value: rnn
 - experiment: supernaedo2
 
@@ -192,10 +192,10 @@
       value: 1.2
   params:
     - name: encoding_layer
-      type: enum  # int, float, enum (TODO: how will be priors logged?)
+      type: categorical
       value: gru
     - name: decoding_layer
-      type: enum
+      type: categorical
       value: lstm_with_attention
 - experiment: supernaedo2
 
@@ -210,10 +210,10 @@
       value: ~
   params:
     - name: encoding_layer
-      type: enum  # int, float, enum (TODO: how will be priors logged?)
+      type: categorical
       value: lstm
     - name: decoding_layer
-      type: enum
+      type: categorical
       value: lstm_with_attention
 - experiment: supernaedo2
 
@@ -228,10 +228,10 @@
       value: ~
   params:
     - name: encoding_layer
-      type: enum  # int, float, enum (TODO: how will be priors logged?)
+      type: categorical
       value: lstm
     - name: decoding_layer
-      type: enum
+      type: categorical
       value: lstm_with_attention
 - experiment: supernaedo2
 
@@ -246,10 +246,10 @@
       value: ~
   params:
     - name: encoding_layer
-      type: enum  # int, float, enum (TODO: how will be priors logged?)
+      type: categorical
       value: lstm
     - name: decoding_layer
-      type: enum
+      type: categorical
       value: lstm_with_attention
 - experiment: supernaedo2
 
@@ -264,10 +264,10 @@
       value: ~
   params:
     - name: encoding_layer
-      type: enum  # int, float, enum (TODO: how will be priors logged?)
+      type: categorical
       value: lstm
     - name: decoding_layer
-      type: enum
+      type: categorical
       value: lstm_with_attention
 ---
 

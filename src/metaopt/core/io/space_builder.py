@@ -9,23 +9,51 @@
    :synopsis: Functions which build `Dimension` and `Space` objects for
       defining problem's search space.
 
+Replace actual hyperparam values in your script's config files or cmd
+arguments with metaopt's keywords for declaring hyperparameter types
+to be optimized.
+
+Motivation for this way of metaopt's configuration is to achieve as
+minimal intrusion to user's workflow as possible by:
+
+   * Offering to user the choice to keep the original way of passing
+   hyperparameters to their script, be it through some **config file
+   type** (e.g. yaml, json, ini, etc) or through **command line
+   arguments**.
+
+   * Instead of passing the actual hyperparameter values, use one of
+   the characteristic keywords, names enlisted in `scipy.stats.distributions`
+   or `metaopt.core.io.space_builder.DimensionBuilder`,
+   to describe distributions and declare the hyperparameters
+   to be optimized. So that a possible command line argument
+   like ``-lrate0=0.1`` becomes ``-lrate0~'uniform(-3, 1)'``.
+
+.. note::
+   Use ``~`` instead of ``=`` to denote that a variable "draws from"
+   a distribution. We support limited Python syntax for describing distributions.
+
+   * Module will also use the script's provided input file/args as a
+   template to fill an appropriate input with proposed values for the
+   script's execution in each hyperiteration.
+
 """
 
+import collections
+import copy
+import logging
 import numbers
+import os
 import re
 import sys
 
 from scipy.stats import distributions as sp_dists
 import six
 
-from metaopt.algo.space import (Categorical, Integer, Real)
+from metaopt.algo.space import (Categorical, Integer, Real, Space)
+from metaopt.core.io.convert import infer_converter_from_file_type
 
 
-USERCONFIG_KEYWORD = 'mopt~'
-USERARGS_SEP = '~'
-userconfig_tmpl = None
-userargs_tmpl = None
-config_method = None
+log = logging.getLogger(__name__)
 
 
 def _check_expr_to_eval(expr):
@@ -206,9 +234,172 @@ class DimensionBuilder(object):
         return dimension
 
 
-def build():
-    """Create a definition of the problem's search space, using information
-    from the user's script configuration and arguments.
+class SpaceBuilder(object):
+    """Build a `Space` object form user's configuration."""
 
-    """
-    pass
+    USERCONFIG_OPTION = '--config='
+    USERCONFIG_KEYWORD = 'mopt~'
+    USERARGS_SEARCH = r'\W*([a-zA-Z0-9_-]+)~(.*)'
+    USERARGS_TMPL = r'(.*)~(.*)'
+
+    def __init__(self):
+        """Initialize a `SpaceBuilder`."""
+        self.userconfig = None
+        self.is_userconfig_an_option = None
+        self.userargs_tmpl = None
+        self.userconfig_tmpl = None
+        self.dimbuilder = DimensionBuilder()
+        self.space = None
+        self.converter = None
+
+    def build_from(self, cmd_args):
+        """Create a definition of the problem's search space, using information
+        from the user's script configuration (if provided) and command line arguments.
+
+        :param cmd_args: A list of command line arguments provided for the user's script.
+
+        .. note:: A template configuration file complementing user's script can be
+           provided either by explicitly using the prefix '--config=' or by being the
+           first positional argument.
+
+        """
+        self.userargs_tmpl = None
+        self.userconfig_tmpl = None
+        self.space = Space()
+
+        self.userconfig, self.is_userconfig_an_option = self._build_from_args(cmd_args)
+
+        if self.userconfig:
+            self._build_from_config(self.userconfig)
+
+        log.debug("Configuration and command line arguments were parsed and "
+                  "a `Space` object was built successfully:\n%s", self.space)
+
+        return self.space
+
+    def _build_from_config(self, config_path):
+        self.converter = infer_converter_from_file_type(config_path)
+        self.userconfig_tmpl = self.converter.parse(config_path)
+
+        stack = collections.deque()
+        stack.append(('', self.userconfig_tmpl))
+        while True:
+            try:
+                namespace, stuff = stack.pop()
+            except IndexError:
+                break
+            if isinstance(stuff, dict):
+                for k, v in six.iteritems(stuff):
+                    stack.append(('/'.join([namespace, str(k)]), v))
+            elif isinstance(stuff, list):
+                for position, thing in enumerate(stuff):
+                    stack.append(('/'.join([namespace, str(position)]), thing))
+            elif isinstance(stuff, six.string_types):
+                if stuff.startswith(self.USERCONFIG_KEYWORD):
+                    dimension = self.dimbuilder.build(namespace,
+                                                      stuff[len(self.USERCONFIG_KEYWORD):])
+                    try:
+                        self.space.register(dimension)
+                    except ValueError as exc:
+                        six.raise_from(
+                            ValueError(
+                                "Conflict for name '%s' in script configuration and arguments.",
+                                namespace),
+                            exc)
+
+    def _build_from_args(self, cmd_args):
+        userconfig = None
+        is_userconfig_an_option = None
+        self.userargs_tmpl = collections.defaultdict(list)
+        args_pattern = re.compile(self.USERARGS_SEARCH)
+        args_prefix_pattern = re.compile(self.USERARGS_TMPL)
+
+        for arg in cmd_args:
+            found = args_pattern.findall(arg)
+            if len(found) != 1:
+                if arg.startswith(self.USERCONFIG_OPTION):
+                    if not userconfig:
+                        userconfig = arg[len(self.USERCONFIG_OPTION):]
+                        is_userconfig_an_option = True
+                    else:
+                        raise ValueError(
+                            "Already found one configuration file in: %s",
+                            userconfig
+                            )
+                else:
+                    self.userargs_tmpl[None].append(arg)
+                continue
+
+            name, expression = found[0]
+            namespace = '/' + name
+            dimension = self.dimbuilder.build(namespace, expression)
+            self.space.register(dimension)
+
+            found = args_prefix_pattern.findall(arg)
+            assert len(found) == 1 and found[0][1] == expression, "Parsing prefix problem."
+            self.userargs_tmpl[namespace] = found[0][0] + '='
+
+        if not userconfig and self.userargs_tmpl:  # try the first positional argument
+            if os.path.isfile(self.userargs_tmpl[None][0]):
+                userconfig = self.userargs_tmpl[None].pop(0)
+                is_userconfig_an_option = False
+
+        return userconfig, is_userconfig_an_option
+
+    def build_to(self, config_path, trial):
+        """Use templates saved from `build_from` to generate a config file (if needed)
+        and command line arguments to correspond to specific parameter selections.
+
+        :param config_path: Path in which the configuration file instance
+           will be created.
+        :param trial: A `metaopt.core.worker.trial.Trial` object with concrete
+           parameter values for the defined `Space`.
+
+        """
+        if self.userconfig:
+            self._build_to_config(config_path, trial)
+        return self._build_to_args(config_path, trial)
+
+    def _build_to_config(self, config_path, trial):
+        config_instance = copy.deepcopy(self.userconfig_tmpl)
+
+        for param in trial.params:
+            stuff = config_instance
+            path = param.name.split('/')
+            for key in path[1:]:
+                # Parameter name may correspond to stuff in cmd args
+                if isinstance(stuff, list):
+                    key = int(key)
+                    try:
+                        stuff[key]
+                    except IndexError:
+                        break
+                else:  # isinstance(stuff, dict):
+                    if key not in stuff:
+                        break
+
+                if isinstance(stuff[key], six.string_types):
+                    stuff[key] = param.value
+                else:
+                    stuff = stuff[key]
+
+        self.converter.generate(config_path, config_instance)
+
+    def _build_to_args(self, config_path, trial):
+        cmd_args = []
+
+        if self.userconfig:
+            if self.is_userconfig_an_option:
+                cmd_args.append(self.USERCONFIG_OPTION + config_path)
+            else:
+                cmd_args.append(config_path)
+
+        cmd_args.extend(self.userargs_tmpl[None])
+
+        for param in trial.params:
+            if param.name not in self.userargs_tmpl:
+                continue
+            prefix = self.userargs_tmpl[param.name]
+            cmd_args.append(prefix + str(param.value))
+
+        return cmd_args

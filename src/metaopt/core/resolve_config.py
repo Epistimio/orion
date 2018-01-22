@@ -72,8 +72,8 @@ DEF_CONFIG_FILES_PATHS = [
 # list containing tuples of
 # (environmental variable names, configuration keys, default values)
 ENV_VARS_DB = [
-    ('METAOPT_DB_NAME', 'dbname', 'MetaOpt'),
-    ('METAOPT_DB_TYPE', 'dbtype', 'MongoDB'),
+    ('METAOPT_DB_NAME', 'name', 'MetaOpt'),
+    ('METAOPT_DB_TYPE', 'type', 'MongoDB'),
     ('METAOPT_DB_ADDRESS', 'host', socket.gethostbyname(socket.gethostname()))
     ]
 

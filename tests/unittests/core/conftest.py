@@ -12,8 +12,8 @@ from metaopt.core.io.database import Database
 from metaopt.core.io.database.mongodb import MongoDB
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-YAML_SAMPLE = './sample_config.yml'
-JSON_SAMPLE = './sample_config.json'
+YAML_SAMPLE = os.path.join(TEST_DIR, 'sample_config.yml')
+JSON_SAMPLE = os.path.join(TEST_DIR, 'sample_config.json')
 
 
 @pytest.fixture()
@@ -61,25 +61,25 @@ def create_db_instance(null_db_instances, clean_db):
     return database
 
 
-@pytest.fixture()
-def yaml_converter():
-    """Return a `metaopt.core.io.convert.YAMLConverter`."""
-    return YAMLConverter()
-
-
-@pytest.fixture()
-def json_converter():
-    """Return a `metaopt.core.io.convert.JSONConverter`."""
-    return JSONConverter()
-
-
 @pytest.fixture(scope='session')
 def yaml_sample_path():
     """Return path with a yaml sample file."""
-    return YAML_SAMPLE
+    return os.path.abspath(YAML_SAMPLE)
 
 
 @pytest.fixture(scope='session')
 def json_sample_path():
     """Return path with a json sample file."""
     return JSON_SAMPLE
+
+
+@pytest.fixture(scope='session')
+def yaml_converter():
+    """Return a yaml converter."""
+    return YAMLConverter()
+
+
+@pytest.fixture(scope='session')
+def json_converter():
+    """Return a json converter."""
+    return JSONConverter()

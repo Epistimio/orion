@@ -2,19 +2,27 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`metaopt.core.io.space_builder`."""
 
+import copy
 import sys
 
 import pytest
 from scipy.stats import distributions as dists
 
 from metaopt.algo.space import (Categorical, Integer, Real)
-from metaopt.core.io.space_builder import DimensionBuilder
+from metaopt.core.io.space_builder import (DimensionBuilder, SpaceBuilder)
+from metaopt.core.worker.trial import Trial
 
 
 @pytest.fixture(scope='module')
 def dimbuilder():
     """Return a `DimensionBuilder` instance."""
     return DimensionBuilder()
+
+
+@pytest.fixture(scope='module')
+def spacebuilder():
+    """Return a `SpaceBuilder` instance."""
+    return SpaceBuilder()
 
 
 class TestDimensionBuilder(object):
@@ -264,3 +272,228 @@ class TestDimensionBuilder(object):
         assert dim._prior_name == 'uniform'
         assert isinstance(dim.prior, dists.uniform_gen)
         assert dim.interval() == (0.0, 1.0)
+
+
+class TestSpaceBuilder(object):
+    """Check whether space definition from various input format is successful."""
+
+    def test_build_from_yaml_config(self, spacebuilder, yaml_sample_path):
+        """Build space from a yaml config only."""
+        space = spacebuilder.build_from([yaml_sample_path])
+        print(space)
+        assert spacebuilder.userconfig == yaml_sample_path
+        assert len(space) == 6
+        assert '/layers/1/width' in space
+        assert '/layers/1/type' in space
+        assert '/layers/2/type' in space
+        assert '/training/lr0' in space
+        assert '/training/mbs' in space
+        assert '/something-same' in space
+
+    def test_build_from_json_config(self, spacebuilder, json_sample_path):
+        """Build space from a json config only."""
+        space = spacebuilder.build_from([json_sample_path])
+        print(space)
+        assert spacebuilder.userconfig == json_sample_path
+        assert len(space) == 6
+        assert '/layers/1/width' in space
+        assert '/layers/1/type' in space
+        assert '/layers/2/type' in space
+        assert '/training/lr0' in space
+        assert '/training/mbs' in space
+        assert '/something-same' in space
+
+    def test_parse_equivalency(self, spacebuilder, yaml_sample_path, json_sample_path):
+        """Templates found from json and yaml are the same."""
+        spacebuilder.build_from([yaml_sample_path])
+        dict_from_yaml = copy.deepcopy(spacebuilder.userconfig_tmpl)
+        spacebuilder.build_from([json_sample_path])
+        dict_from_json = copy.deepcopy(spacebuilder.userconfig_tmpl)
+        assert dict_from_json == dict_from_yaml
+
+    def test_build_from_args_only(self, spacebuilder):
+        """Build a space using only args."""
+        cmd_args = ["--seed=555",
+                    "-yolo~random(-3, 1)",
+                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
+                    "--arch2~random({'lala': 0.2, 'yolo': 0.8})"]
+        space = spacebuilder.build_from(cmd_args)
+        print(space)
+        assert spacebuilder.userconfig is None
+        assert len(space) == 2
+        assert '/yolo' in space
+        assert '/arch2' in space
+        assert len(spacebuilder.userargs_tmpl) == 3
+        assert spacebuilder.userargs_tmpl[None] == ["--seed=555",
+                                                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})"]
+        assert spacebuilder.userargs_tmpl['/yolo'] == '-yolo='
+        assert spacebuilder.userargs_tmpl['/arch2'] == '--arch2='
+
+    def test_build_from_args_and_config1(self, spacebuilder, yaml_sample_path):
+        """Build a space using both args and config file!"""
+        cmd_args = [yaml_sample_path, "--seed=555",
+                    "-yolo~random(-3, 1)",
+                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
+                    "--arch2~random({'lala': 0.2, 'yolo': 0.8})"]
+        space = spacebuilder.build_from(cmd_args)
+        print(space)
+        assert len(space) == 8
+        assert '/yolo' in space
+        assert '/arch2' in space
+        assert '/layers/1/width' in space
+        assert '/layers/1/type' in space
+        assert '/layers/2/type' in space
+        assert '/training/lr0' in space
+        assert '/training/mbs' in space
+        assert '/something-same' in space
+        assert len(spacebuilder.userargs_tmpl) == 3
+        assert spacebuilder.userargs_tmpl[None] == ["--seed=555",
+                                                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})"]
+        assert spacebuilder.userargs_tmpl['/yolo'] == '-yolo='
+        assert spacebuilder.userargs_tmpl['/arch2'] == '--arch2='
+
+    def test_build_from_args_and_config2(self, spacebuilder, yaml_sample_path):
+        """Build a space using both args and config file!"""
+        cmd_args = ["--seed=555",
+                    "-yolo~random(-3, 1)",
+                    "--config=" + yaml_sample_path,
+                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
+                    "--arch2~random({'lala': 0.2, 'yolo': 0.8})"]
+        space = spacebuilder.build_from(cmd_args)
+        print(space)
+        assert len(space) == 8
+        assert '/yolo' in space
+        assert '/arch2' in space
+        assert '/layers/1/width' in space
+        assert '/layers/1/type' in space
+        assert '/layers/2/type' in space
+        assert '/training/lr0' in space
+        assert '/training/mbs' in space
+        assert '/something-same' in space
+        assert len(spacebuilder.userargs_tmpl) == 3
+        assert spacebuilder.userargs_tmpl[None] == ["--seed=555",
+                                                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})"]
+        assert spacebuilder.userargs_tmpl['/yolo'] == '-yolo='
+        assert spacebuilder.userargs_tmpl['/arch2'] == '--arch2='
+
+    def test_build_finds_conflict(self, spacebuilder, yaml_sample_path):
+        """Conflicting definition in args and config~ raise an error!"""
+        cmd_args = ["--seed=555",
+                    "--config=" + yaml_sample_path,
+                    "-yolo~random(-3, 1)",
+                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
+                    "--something-same~random({'lala': 0.2, 'yolo': 0.8})"]
+        with pytest.raises(ValueError) as exc:
+            spacebuilder.build_from(cmd_args)
+        assert 'Conflict' in str(exc.value)
+
+    def test_build_finds_two_configs(self, spacebuilder, yaml_sample_path):
+        """There are two explicit definitions of config paths."""
+        cmd_args = ["--seed=555",
+                    "--config=" + yaml_sample_path,
+                    "-yolo~random(-3, 1)",
+                    "--config=" + yaml_sample_path,
+                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
+                    "--something-same~random({'lala': 0.2, 'yolo': 0.8})"]
+        with pytest.raises(ValueError) as exc:
+            spacebuilder.build_from(cmd_args)
+        assert 'Already' in str(exc.value)
+
+    def test_build_with_nothing(self, spacebuilder):
+        """Return an empty space if nothing is provided."""
+        space = spacebuilder.build_from([])
+        assert not space
+
+        space = spacebuilder.build_from(["--seed=555", "--naedw"])
+        assert not space
+
+    def test_generate_without_config(self, spacebuilder):
+        """Build a space using only args."""
+        cmd_args = ["--seed=555",
+                    "-yolo~random(-3, 1)",
+                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
+                    "--arch2~random({'lala': 0.2, 'yolo': 0.8})"]
+        spacebuilder.build_from(cmd_args)
+        trial = Trial(params=[
+            {'name': '/yolo', 'type': 'real', 'value': -2.4},
+            {'name': '/arch2', 'type': 'categorical', 'value': 'yolo'}])
+
+        cmd_inst = spacebuilder.build_to(None, trial)
+        assert cmd_inst == ["--seed=555",
+                            "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
+                            "-yolo=-2.4",
+                            "--arch2=yolo"]
+
+    def test_generate_only_with_yaml_config(self, spacebuilder,
+                                            yaml_sample_path, tmpdir, yaml_converter):
+        """Build a space using only a yaml config."""
+        spacebuilder.build_from([yaml_sample_path])
+        trial = Trial(params=[
+            {'name': '/layers/1/width', 'type': 'integer', 'value': 100},
+            {'name': '/layers/1/type', 'type': 'categorical', 'value': 'relu'},
+            {'name': '/layers/2/type', 'type': 'categorical', 'value': 'sigmoid'},
+            {'name': '/training/lr0', 'type': 'real', 'value': 0.032},
+            {'name': '/training/mbs', 'type': 'integer', 'value': 64},
+            {'name': '/something-same', 'type': 'categorical', 'value': '3'}])
+        output_file = str(tmpdir.join("output.yml"))
+        cmd_inst = spacebuilder.build_to(output_file, trial)
+        assert cmd_inst == [output_file]
+        output_data = yaml_converter.parse(output_file)
+        assert output_data == {'yo': 5, 'training': {'lr0': 0.032, 'mbs': 64},
+                               'layers': [{'width': 64, 'type': 'relu'},
+                                          {'width': 100, 'type': 'relu'},
+                                          {'width': 16, 'type': 'sigmoid'}],
+                               'something-same': '3'}
+
+    def test_generate_only_with_json_config(self, spacebuilder,
+                                            json_sample_path, tmpdir, json_converter):
+        """Build a space using only a json config."""
+        spacebuilder.build_from(['--config=' + json_sample_path])
+        trial = Trial(params=[
+            {'name': '/layers/1/width', 'type': 'integer', 'value': 100},
+            {'name': '/layers/1/type', 'type': 'categorical', 'value': 'relu'},
+            {'name': '/layers/2/type', 'type': 'categorical', 'value': 'sigmoid'},
+            {'name': '/training/lr0', 'type': 'real', 'value': 0.032},
+            {'name': '/training/mbs', 'type': 'integer', 'value': 64},
+            {'name': '/something-same', 'type': 'categorical', 'value': '3'}])
+        output_file = str(tmpdir.join("output.json"))
+        cmd_inst = spacebuilder.build_to(output_file, trial)
+        assert cmd_inst == ['--config=' + output_file]
+        output_data = json_converter.parse(output_file)
+        assert output_data == {'yo': 5, 'training': {'lr0': 0.032, 'mbs': 64},
+                               'layers': [{'width': 64, 'type': 'relu'},
+                                          {'width': 100, 'type': 'relu'},
+                                          {'width': 16, 'type': 'sigmoid'}],
+                               'something-same': '3'}
+
+    def test_generate_from_args_and_config(self, spacebuilder,
+                                           json_sample_path, tmpdir, json_converter):
+        """Build a space using only a json config."""
+        cmd_args = ["--seed=555",
+                    "-yolo~random(-3, 1)",
+                    '--config=' + json_sample_path,
+                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
+                    "--arch2~random({'lala': 0.2, 'yolo': 0.8})"]
+        spacebuilder.build_from(cmd_args)
+        trial = Trial(params=[
+            {'name': '/yolo', 'type': 'real', 'value': -2.4},
+            {'name': '/arch2', 'type': 'categorical', 'value': 'yolo'},
+            {'name': '/layers/1/width', 'type': 'integer', 'value': 100},
+            {'name': '/layers/1/type', 'type': 'categorical', 'value': 'relu'},
+            {'name': '/layers/2/type', 'type': 'categorical', 'value': 'sigmoid'},
+            {'name': '/training/lr0', 'type': 'real', 'value': 0.032},
+            {'name': '/training/mbs', 'type': 'integer', 'value': 64},
+            {'name': '/something-same', 'type': 'categorical', 'value': '3'}])
+        output_file = str(tmpdir.join("output.json"))
+        cmd_inst = spacebuilder.build_to(output_file, trial)
+        assert cmd_inst == ['--config=' + output_file] + [
+            "--seed=555",
+            "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
+            "-yolo=-2.4",
+            "--arch2=yolo"]
+        output_data = json_converter.parse(output_file)
+        assert output_data == {'yo': 5, 'training': {'lr0': 0.032, 'mbs': 64},
+                               'layers': [{'width': 64, 'type': 'relu'},
+                                          {'width': 100, 'type': 'relu'},
+                                          {'width': 16, 'type': 'sigmoid'}],
+                               'something-same': '3'}

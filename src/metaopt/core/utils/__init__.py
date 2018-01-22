@@ -57,10 +57,15 @@ class Factory(type):
 
         cls.modules = []
         base = import_module(cls.__base__.__module__)
-        py_files = glob(base.__path__[0] + '/[A-Za-z]*.py')
-        py_mods = map(lambda x: '.' + os.path.split(os.path.splitext(x)[0])[1], py_files)
-        for py_mod in py_mods:
-            cls.modules.append(import_module(py_mod, package=cls.__base__.__module__))
+        try:
+            py_files = glob(os.path.abspath(os.path.join(base.__path__[0], '[A-Za-z]*.py')))
+            py_mods = map(lambda x: '.' + os.path.split(os.path.splitext(x)[0])[1], py_files)
+            for py_mod in py_mods:
+                cls.modules.append(import_module(py_mod, package=cls.__base__.__module__))
+        except AttributeError:
+            # This means that base class and implementations reside in a module
+            # itself and not a subpackage.
+            pass
 
         cls.types = [cls.__base__] + cls.__base__.__subclasses__()
         cls.types = [class_ for class_ in cls.types if class_.__name__ != cls.__name__]

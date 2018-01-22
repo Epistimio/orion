@@ -147,7 +147,7 @@ class JSONConverter(BaseConverter):
 
         """
         with open(filepath) as f:
-            return self.json.load(stream=f)
+            return self.json.load(f)
 
     def generate(self, filepath, data):
         """Create a configuration file at `filepath` using dictionary `data`.
@@ -156,7 +156,7 @@ class JSONConverter(BaseConverter):
 
         """
         with open(filepath, 'w') as f:
-            self.json.dump(data, stream=f)
+            self.json.dump(data, f)
 
 
 @six.add_metaclass(Factory)  # pylint: disable=too-few-public-methods

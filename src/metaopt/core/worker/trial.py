@@ -141,7 +141,7 @@ class Trial(object):
         floating precision numerical or a categorical expression (e.g. a string).
         """
 
-        allowed_types = ('int', 'float', 'enum')
+        allowed_types = ('integer', 'real', 'categorical')
 
     __slots__ = ('experiment', '_id', '_status', 'worker',
                  'submit_time', 'start_time', 'end_time', 'results', 'params')
