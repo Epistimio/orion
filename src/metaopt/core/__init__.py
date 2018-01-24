@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-MetaOpt is an aynchronous distributed framework for black-box function optimization.
+MetaOpt is an asynchronous distributed framework for black-box function optimization.
 
 Its purpose is to serve as a hyperparameter optimizer for
 machine learning models and training, as well as a flexible experimentation

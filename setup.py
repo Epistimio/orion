@@ -42,7 +42,7 @@ tests_require = [
     ]
 
 setup_args = dict(
-    name='metaopt',
+    name='metaopt.core',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description=metaopt.__descr__,
@@ -51,7 +51,7 @@ setup_args = dict(
     author=metaopt.__author__,
     author_email=metaopt.__author_email__,
     url=metaopt.__url__,
-    namespace_packages=['metaopt'],
+    namespace_packages=['metaopt', 'metaopt.algo'],
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
     include_package_data=True,
