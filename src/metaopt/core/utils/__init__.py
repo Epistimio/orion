@@ -76,15 +76,15 @@ class Factory(ABCMeta):
         # Get types advertised through entry points!
         for entry_point in pkg_resources.iter_entry_points(cls.__name__):
             entry_point.load()
-            print("Found a %s %s from distribution: %s=%s" %
-                  (entry_point.name, cls.__name__,
-                   entry_point.dist.project_name, entry_point.dist.version))
+            log.debug("Found a %s %s from distribution: %s=%s",
+                      entry_point.name, cls.__name__,
+                      entry_point.dist.project_name, entry_point.dist.version)
 
         # Get types visible from base module or package, but internal
         cls.types = cls.__base__.__subclasses__()
         cls.types = [class_ for class_ in cls.types if class_.__name__ != cls.__name__]
         cls.typenames = list(map(lambda x: x.__name__, cls.types))
-        print("Implementations found: %s" % cls.typenames)
+        log.debug("Implementations found: %s", cls.typenames)
 
     def __call__(cls, of_type, *args, **kwargs):
         """Create an object, instance of ``cls.__base__``, on first call.

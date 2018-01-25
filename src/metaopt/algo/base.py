@@ -9,7 +9,7 @@
       objective.
 
 """
-# TODO algorithm injects requirements on space, as a class variable (<- Transformer PR)
+# TODO algorithm injects requirements on space (<- Transformer PR)
 from abc import (ABCMeta, abstractmethod)
 
 import six
@@ -58,7 +58,7 @@ class BaseAlgorithm(object):
            hyperparameter names to values.
 
         """
-        self.space = space
+        self._space = space
         # Instantiate tunable parameters of an algorithm
         for varname, hyper in six.iteritems(hypers):
             # Check if tunable element is another algorithm
@@ -66,7 +66,8 @@ class BaseAlgorithm(object):
                 subalgo_type = list(hyper)[0]
                 subalgo_hypers = hyper[subalgo_type]
                 if isinstance(subalgo_hypers, dict):
-                    hyper = OptimizationAlgorithm(subalgo_type, **subalgo_hypers)
+                    hyper = OptimizationAlgorithm(subalgo_type,
+                                                  space, **subalgo_hypers)
 
             setattr(self, varname, hyper)
 
@@ -148,13 +149,27 @@ class BaseAlgorithm(object):
 
         """
         dict_form = dict()
-        for attrname in self.__dict__:
-            variable_itself = getattr(self, attrname)
-            if isinstance(variable_itself, BaseAlgorithm):
-                variable_itself = variable_itself.configuration
-            dict_form[attrname] = variable_itself
+        for attrname, attr in six.iteritems(self.__dict__):
+            if attrname.startswith('_'):  # Do not log _space or others in conf
+                continue
+            if isinstance(attr, BaseAlgorithm):
+                attr = attr.configuration
+            dict_form[attrname] = attr
 
         return {self.__class__.__name__: dict_form}
+
+    @property
+    def space(self):
+        """Domain of problem associated with this algorithm's instance."""
+        return self._space
+
+    @space.setter
+    def space(self, space_):
+        """Propagate changes in defined space to possibly nested algorithms."""
+        self._space = space_
+        for attr in six.itervalues(self.__dict__):
+            if isinstance(attr, BaseAlgorithm):
+                attr.space = space_
 
 
 @six.add_metaclass(Factory)  # pylint: disable=too-few-public-methods,abstract-method
