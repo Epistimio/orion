@@ -14,14 +14,14 @@ def test_init(dumbalgo):
     algo = dumbalgo(8, value=1, subone=nested_algo)
     assert algo.space == 8
     assert algo.value == 1
-    assert algo.score == 0
+    assert algo.scoring == 0
     assert algo.judgement is None
     assert algo.suspend is False
     assert algo.done is False
     assert isinstance(algo.subone, BaseAlgorithm)
     assert algo.subone.space == 8
     assert algo.subone.value == 6
-    assert algo.subone.score == 5
+    assert algo.subone.scoring == 5
 
 
 def test_configuration(dumbalgo):
@@ -35,14 +35,14 @@ def test_configuration(dumbalgo):
     assert config == {
         'DumbAlgo': {
             'value': 1,
-            'score': 0,
+            'scoring': 0,
             'judgement': None,
             'suspend': False,
             'done': False,
             'subone': {
                 'DumbAlgo': {
                     'value': 6,
-                    'score': 5,
+                    'scoring': 5,
                     'judgement': None,
                     'suspend': False,
                     'done': False,

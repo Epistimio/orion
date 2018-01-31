@@ -22,7 +22,7 @@ class DumbAlgo(BaseAlgorithm):
         self._judge_point = None
         self._measurements = None
         super(DumbAlgo, self).__init__(space, value=value,
-                                       score=score, judgement=judgement,
+                                       scoring=score, judgement=judgement,
                                        suspend=suspend,
                                        done=done,
                                        **nested_algo)
@@ -40,7 +40,7 @@ class DumbAlgo(BaseAlgorithm):
     def score(self, point):
         """Log and return stab."""
         self._score_point = point
-        return self.score
+        return self.scoring
 
     def judge(self, point, measurements):
         """Log and return stab."""

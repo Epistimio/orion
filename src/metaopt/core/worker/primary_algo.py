@@ -63,6 +63,7 @@ class PrimaryAlgo(BaseAlgorithm):
         """
         for point in points:
             assert point in self._space
+        assert len(points) == len(results)
         # TODO Transform into required space
         self.algorithm.observe(points, results)
 
