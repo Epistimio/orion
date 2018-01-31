@@ -51,6 +51,7 @@ import six
 
 from metaopt.algo.space import (Categorical, Integer, Real, Space)
 from metaopt.core.io.convert import infer_converter_from_file_type
+from metaopt.core.utils import SingletonType
 
 
 log = logging.getLogger(__name__)
@@ -70,6 +71,7 @@ def _real_or_int(**kwargs):
     return Integer if kwargs.get('discrete', False) else Real
 
 
+@six.add_metaclass(SingletonType)
 class DimensionBuilder(object):
     """Create `Dimension` objects using a name for it and an string expression
     which encodes prior and dimension information.
@@ -234,6 +236,7 @@ class DimensionBuilder(object):
         return dimension
 
 
+@six.add_metaclass(SingletonType)
 class SpaceBuilder(object):
     """Build a `Space` object form user's configuration."""
 
@@ -339,7 +342,7 @@ class SpaceBuilder(object):
             assert len(found) == 1 and found[0][1] == expression, "Parsing prefix problem."
             self.userargs_tmpl[namespace] = found[0][0] + '='
 
-        if not userconfig and self.userargs_tmpl:  # try the first positional argument
+        if not userconfig and self.userargs_tmpl[None]:  # try the first positional argument
             if os.path.isfile(self.userargs_tmpl[None][0]):
                 userconfig = self.userargs_tmpl[None].pop(0)
                 is_userconfig_an_option = False
