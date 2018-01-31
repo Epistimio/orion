@@ -7,6 +7,7 @@ from pymongo import MongoClient
 import pytest
 import yaml
 
+from metaopt.algo.space import (Categorical, Integer, Real, Space)
 from metaopt.core.io.convert import (JSONConverter, YAMLConverter)
 from metaopt.core.io.database import Database
 from metaopt.core.io.database.mongodb import MongoDB
@@ -83,3 +84,23 @@ def yaml_converter():
 def json_converter():
     """Return a json converter."""
     return JSONConverter()
+
+
+@pytest.fixture(scope='module')
+def space():
+    """Construct a simple space with every possible kind of Dimension."""
+    space = Space()
+    categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 4: 0.4}
+    dim = Categorical('yolo', categories, shape=2)
+    space.register(dim)
+    dim = Integer('yolo2', 'uniform', -3, 6)
+    space.register(dim)
+    dim = Real('yolo3', 'alpha', 0.9)
+    space.register(dim)
+    return space
+
+
+@pytest.fixture(scope='module')
+def fixed_suggestion():
+    """Return the same tuple/sample from a possible space."""
+    return (('asdfa', 2), 0, 3.5)
