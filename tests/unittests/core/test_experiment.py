@@ -8,6 +8,7 @@ import random
 
 import pytest
 
+from metaopt.algo.base import BaseAlgorithm
 from metaopt.core.io.database import Database
 from metaopt.core.worker.experiment import Experiment
 from metaopt.core.worker.trial import Trial
@@ -105,13 +106,13 @@ def new_config(random_dt):
                   'mopt_version': 0.1,
                   'user_script': 'abs_path/to_yoyoy.py',
                   'user_config': 'abs_path/hereitis.yaml',
-                  'user_args': '--mini-batch~uniform(32, 256)',
+                  'user_args': ['--mini-batch~uniform(32, 256, discrete=True)'],
                   'user_vcs': 'git',
                   'user_version': 0.8,
                   'user_commit_hash': 'fsa7df7a8sdf7a8s7'},
         pool_size=10,
         max_trials=1000,
-        algorithms={'bayesian_scikit': {'yoyo': 5, 'alpha': 0.8}},
+        algorithms={'dumbalgo': {}},
         # the following should be ignored by the setting function:
         # status is not settable:
         status='asdfafa',
@@ -332,10 +333,12 @@ class TestConfigProperty(object):
             exp.configure(exp_config[0][1])
         assert 'cannot reset' in str(exc_info.value)
 
-    @pytest.mark.skip(reason="To be implemented...")
     def test_after_init_algorithms_are_objects(self, exp_config):
         """Attribute exp.algorithms become objects after init."""
-        pass
+        exp = Experiment('supernaedo2')
+        # Deliver an external configuration to finalize init
+        exp.configure(exp_config[0][1])
+        assert isinstance(exp.algorithms, BaseAlgorithm)
 
     @pytest.mark.skip(reason="To be implemented...")
     def test_after_init_refers_are_objects(self, exp_config):

@@ -18,7 +18,9 @@ import random
 import six
 
 from metaopt.core.io.database import Database
+from metaopt.core.io.space_builder import SpaceBuilder
 from metaopt.core.worker.trial import Trial
+from metaopt.core.worker.primary_algo import PrimaryAlgo
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +56,7 @@ class Experiment(object):
           of parameter evaluations and is not *pending*.
        * 'broken' : Denotes an experiment which stopped unsuccessfully due to
           unexpected behaviour.
-    algorithms : dict of dicts or list of `Algorithm` objects, after initialization is done.
+    algorithms : dict of dicts or an `PrimaryAlgo` object, after initialization is done.
        Complete specification of the optimization and dynamical procedures taking
        place in this `Experiment`.
 
@@ -69,8 +71,6 @@ class Experiment(object):
        **MetaOpt** version.
     user_script : str
        Full absolute path to `user`'s executable.
-    user_config : str
-       Full absolute path to `user`'s configuration, possibly templated for **MetaOpt**.
     user_args : list of str
        Contains separate arguments to be passed when invoking `user_script`,
        possibly templated for **MetaOpt**.
@@ -215,7 +215,10 @@ class Experiment(object):
 
     @property
     def is_done(self):
-        """Count how many trials have been completed and compare with `max_trials`.
+        """Return True, if this experiment is considered to be finished.
+
+        1. Count how many trials have been completed and compare with `max_trials`.
+        2. Ask `algorithms` if they consider there is a chance for further improvement.
 
         .. note:: To be used as a terminating condition in a ``Worker``.
         """
@@ -226,20 +229,40 @@ class Experiment(object):
         num_completed_trials = self._db.count('trials', query)
         if num_completed_trials >= self.max_trials:
             return True
+
+        if self._init_done:
+            return self.algorithms.is_done
+
         return False
+
+    @property
+    def space(self):
+        """Return problem's parameter `metaopt.algo.space.Space`.
+
+        .. note:: It will return None, if experiment init is not done.
+        """
+        if self._init_done:
+            return self.algorithms.space
+        return None
 
     @property
     def configuration(self):
         """Return a copy of an `Experiment` configuration as a dictionary."""
         # After successful initialization, get a dict form from DB.
         # Check :attr:`algorithms` and :attr:`refers` to see why.
+        # (TODO) To be removed, when `refers` is settled.
         if self._init_done:
             return self._db.read('experiments', {'_id': self._id})[0]
 
         config = dict()
         for attrname in self.__slots__:
-            if not attrname.startswith('_'):
-                config[attrname] = getattr(self, attrname)
+            if attrname.startswith('_'):
+                continue
+            attribute = getattr(self, attrname)
+            if self._init_done and attrname == 'algorithms':
+                config[attrname] = attribute.configuration
+            else:
+                config[attrname] = attribute
         # Reason for deepcopy is that some attributes are dictionaries
         # themselves, we don't want to accidentally change the state of this
         # object from a getter.
@@ -293,7 +316,7 @@ class Experiment(object):
         final_config = self.configuration  # grab dict representation of Experiment
 
         # Sanitize and replace some sections with objects
-        self._sanitize_config()
+        self._sanitize_and_instantiate_config()
 
         # If everything is alright, push new config to database
         if is_new:
@@ -360,17 +383,21 @@ class Experiment(object):
 
         return stats
 
-    def _sanitize_config(self):
+    def _sanitize_and_instantiate_config(self):
         """Check before dispatching experiment whether configuration corresponds
-        to a runnable experiment.
+        to a executable experiment environment.
 
-        1. Check `refers` and instantiate `Experiment` objects from it.
-        2. From `metadata` given: ``user_script``, ``user_config`` should exist.
-        3. Check if experiment `is_done`, prompt for larger `max_trials` if it is.
-        4. Check whether configured algorithms correspond to [known]/valid
+        1. Check `refers` and instantiate `Experiment` objects from it. (TODO)
+        2. Try to build parameter space from user arguments.
+        3. Check whether configured algorithms correspond to [known]/valid
            implementations of the ``Algorithm`` class. Instantiate these objects.
+        4. Check if experiment `is_done`, prompt for larger `max_trials` if it is. (TODO)
+
         """
-        pass
+        space = SpaceBuilder().build_from(self.metadata['user_args'])
+        if not space:
+            raise ValueError("Parameter space is empty. There is nothing to optimize.")
+        self.algorithms = PrimaryAlgo(space, self.algorithms)
 
     def _fork_config(self, config):
         """Ask for a different identifier for this experiment. Set :attr:`refers`
