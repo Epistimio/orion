@@ -19,7 +19,7 @@ import six
 
 from metaopt.core.io.database import Database
 from metaopt.core.io.space_builder import SpaceBuilder
-from metaopt.core.utils.format import trial_to_tuple
+from metaopt.core.utils.format_trials import trial_to_tuple
 from metaopt.core.worker.primary_algo import PrimaryAlgo
 from metaopt.core.worker.trial import Trial
 

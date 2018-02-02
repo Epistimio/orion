@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.utils.format` -- Utility functions for formatting data
-=========================================================================
+:mod:`metaopt.core.utils.format_trials` -- Utility functions for formatting data
+================================================================================
 
-.. module:: format
+.. module:: format_trials
    :platform: Unix
    :synopsis: Conversion functions between various data types used in
       framework's ecosystem.
@@ -40,3 +40,16 @@ def tuple_to_trial(data, space):
         value=data[order]
         ) for order in range(len(space))]
     return Trial(params=params)
+
+
+def get_trial_results(trial):
+    """Format results from a `Trial` using standard structures."""
+    results = dict()
+    obj = trial.objective
+    results['objective'] = obj.value if obj else None
+    results['constraint'] = [result.value for result in trial.results
+                             if result.type == 'constraint']
+    grad = trial.gradient
+    results['gradient'] = tuple(grad.value) if grad else None
+
+    return results

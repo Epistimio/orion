@@ -4,8 +4,8 @@
 
 import pytest
 
+from metaopt.core.utils.format_trials import (trial_to_tuple, tuple_to_trial)
 from metaopt.core.worker.trial import Trial
-from metaopt.core.utils.format import (tuple_to_trial, trial_to_tuple)
 
 
 @pytest.fixture()
