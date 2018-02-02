@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`metaopt.core.worker.experiment`."""
 
-import datetime
-import getpass
 import random
 
 import pytest
@@ -12,24 +10,6 @@ from metaopt.algo.base import BaseAlgorithm
 from metaopt.core.io.database import Database
 from metaopt.core.worker.experiment import Experiment
 from metaopt.core.worker.trial import Trial
-
-
-@pytest.fixture()
-def with_user_tsirif(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'tsirif'``."""
-    monkeypatch.setattr(getpass, 'getuser', lambda: 'tsirif')
-
-
-@pytest.fixture()
-def with_user_bouthilx(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'bouthilx'``."""
-    monkeypatch.setattr(getpass, 'getuser', lambda: 'bouthilx')
-
-
-@pytest.fixture()
-def with_user_dendi(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'dendi'``."""
-    monkeypatch.setattr(getpass, 'getuser', lambda: 'dendi')
 
 
 @pytest.fixture()
@@ -64,35 +44,6 @@ def patch_sample2(monkeypatch):
         return [a_list[-1]]
 
     monkeypatch.setattr(random, 'sample', mock_sample)
-
-
-@pytest.fixture()
-def random_dt(monkeypatch):
-    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    random_dt = datetime.datetime(1903, 4, 25, 0, 0, 0)
-
-    class MockDatetime(datetime.datetime):
-        @classmethod
-        def utcnow(cls):
-            return random_dt
-
-    monkeypatch.setattr(datetime, 'datetime', MockDatetime)
-    return random_dt
-
-
-@pytest.fixture()
-def hacked_exp(with_user_dendi, random_dt, clean_db):
-    """Return an `Experiment` instance with hacked _id to find trials in
-    fake database.
-    """
-    try:
-        Database(of_type='MongoDB', name='metaopt_test',
-                 username='user', password='pass')
-    except (TypeError, ValueError):
-        pass
-    exp = Experiment('supernaedo2')
-    exp._id = 'supernaedo2'  # white box hack
-    return exp
 
 
 @pytest.fixture()

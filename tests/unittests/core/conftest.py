@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """Common fixtures and utils for tests."""
 
+import datetime
+import getpass
 import os
 
 from pymongo import MongoClient
@@ -11,6 +13,7 @@ from metaopt.algo.space import (Categorical, Integer, Real, Space)
 from metaopt.core.io.convert import (JSONConverter, YAMLConverter)
 from metaopt.core.io.database import Database
 from metaopt.core.io.database.mongodb import MongoDB
+from metaopt.core.worker.experiment import Experiment
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, 'sample_config.yml')
@@ -25,7 +28,7 @@ def exp_config():
     return exp_config
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def database():
     """Return Mongo database object to test with example entries."""
     client = MongoClient(username='user', password='pass', authSource='metaopt_test')
@@ -104,3 +107,50 @@ def space():
 def fixed_suggestion():
     """Return the same tuple/sample from a possible space."""
     return (('asdfa', 2), 0, 3.5)
+
+
+@pytest.fixture()
+def with_user_tsirif(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'tsirif'``."""
+    monkeypatch.setattr(getpass, 'getuser', lambda: 'tsirif')
+
+
+@pytest.fixture()
+def with_user_bouthilx(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'bouthilx'``."""
+    monkeypatch.setattr(getpass, 'getuser', lambda: 'bouthilx')
+
+
+@pytest.fixture()
+def with_user_dendi(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'dendi'``."""
+    monkeypatch.setattr(getpass, 'getuser', lambda: 'dendi')
+
+
+@pytest.fixture()
+def random_dt(monkeypatch):
+    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
+    random_dt = datetime.datetime(1903, 4, 25, 0, 0, 0)
+
+    class MockDatetime(datetime.datetime):
+        @classmethod
+        def utcnow(cls):
+            return random_dt
+
+    monkeypatch.setattr(datetime, 'datetime', MockDatetime)
+    return random_dt
+
+
+@pytest.fixture()
+def hacked_exp(with_user_dendi, random_dt, clean_db):
+    """Return an `Experiment` instance with hacked _id to find trials in
+    fake database.
+    """
+    try:
+        Database(of_type='MongoDB', name='metaopt_test',
+                 username='user', password='pass')
+    except (TypeError, ValueError):
+        pass
+    exp = Experiment('supernaedo2')
+    exp._id = 'supernaedo2'  # white box hack
+    return exp
