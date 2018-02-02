@@ -134,7 +134,7 @@ class Trial(object):
         function or of an 'constraint' expression.
         """
 
-        allowed_types = ('objective', 'constraint')
+        allowed_types = ('objective', 'constraint', 'gradient')
 
     class Param(Value):
         """Types for a `Param` can be either an integer (discrete value),
@@ -224,21 +224,32 @@ class Trial(object):
 
         :rtype: `Trial.Result`
         """
-        value = [result for result in self.results
-                 if result.type == 'objective']
+        return self._fetch_one_result_of_type('objective')
 
-        if not value:
-            return None
+    @property
+    def gradient(self):
+        """Return this trial's gradient value if it is evaluated, else None.
 
-        if len(value) > 1:
-            log.warning("Found multiple results of objective function type:\n%s",
-                        value)
-            log.warning("Multi-objective optimization is not currently supported.\n"
-                        "Optimizing according to the first one only: %s", value[0])
-
-        return value[0]
+        :rtype: `Trial.Result`
+        """
+        return self._fetch_one_result_of_type('gradient')
 
     @property
     def is_registered(self):
         """Check whether `Trial` is registered in database based on `_id` value."""
         return self._id is not self.NoID
+
+    def _fetch_one_result_of_type(self, result_type):
+        value = [result for result in self.results
+                 if result.type == result_type]
+
+        if not value:
+            return None
+
+        if len(value) > 1:
+            log.warning("Found multiple results of '%s' type:\n%s",
+                        result_type, value)
+            log.warning("Multi-objective optimization is not currently supported.\n"
+                        "Optimizing according to the first one only: %s", value[0])
+
+        return value[0]
