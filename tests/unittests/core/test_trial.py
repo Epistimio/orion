@@ -99,7 +99,7 @@ class TestTrial(object):
     def test_str_value(self, exp_config):
         """Test representation of `Trial.Value`."""
         t = Trial(**exp_config[1][2])
-        assert str(t.params[0]) == "Param(name='encoding_layer', "\
+        assert str(t.params[0]) == "Param(name='/encoding_layer', "\
                                    "type='categorical', value='gru')"
 
     def test_objective_property(self, exp_config):

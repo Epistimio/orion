@@ -131,10 +131,10 @@
       type: objective  # objective, constraint
       value: 3
   params:
-    - name: encoding_layer
+    - name: /encoding_layer
       type: categorical
       value: rnn
-    - name: decoding_layer
+    - name: /decoding_layer
       type: categorical
       value: rnn
 - experiment: supernaedo2
@@ -149,10 +149,10 @@
       type: objective  # objective, constraint
       value: 2
   params:
-    - name: encoding_layer
+    - name: /encoding_layer
       type: categorical
       value: rnn
-    - name: decoding_layer
+    - name: /decoding_layer
       type: categorical
       value: rnn
 - experiment: supernaedo2
@@ -170,10 +170,10 @@
       type: constraint  # objective, constraint
       value: 1.2
   params:
-    - name: encoding_layer
+    - name: /encoding_layer
       type: categorical
       value: gru
-    - name: decoding_layer
+    - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
 - experiment: supernaedo2
@@ -188,10 +188,10 @@
       type: objective  # objective, constraint
       value: ~
   params:
-    - name: encoding_layer
+    - name: /encoding_layer
       type: categorical
       value: lstm
-    - name: decoding_layer
+    - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
 - experiment: supernaedo2
@@ -206,10 +206,10 @@
       type: objective  # objective, constraint
       value: ~
   params:
-    - name: encoding_layer
+    - name: /encoding_layer
       type: categorical
       value: lstm
-    - name: decoding_layer
+    - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
 - experiment: supernaedo2
@@ -224,10 +224,10 @@
       type: objective  # objective, constraint
       value: ~
   params:
-    - name: encoding_layer
+    - name: /encoding_layer
       type: categorical
       value: lstm
-    - name: decoding_layer
+    - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
 - experiment: supernaedo2
@@ -242,10 +242,10 @@
       type: objective  # objective, constraint
       value: ~
   params:
-    - name: encoding_layer
+    - name: /encoding_layer
       type: categorical
       value: lstm
-    - name: decoding_layer
+    - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
 ---

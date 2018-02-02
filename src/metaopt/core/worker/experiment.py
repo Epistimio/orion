@@ -3,7 +3,7 @@
 :mod:`metaopt.core.worker.experiment` -- Description of an optimization attempt
 ===============================================================================
 
-.. module:: trial
+.. module:: experiment
    :platform: Unix
    :synopsis: Manage history of trials corresponding to a black box process
 
@@ -19,8 +19,9 @@ import six
 
 from metaopt.core.io.database import Database
 from metaopt.core.io.space_builder import SpaceBuilder
-from metaopt.core.worker.trial import Trial
+from metaopt.core.utils.format import trial_to_tuple
 from metaopt.core.worker.primary_algo import PrimaryAlgo
+from metaopt.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
@@ -154,10 +155,17 @@ class Experiment(object):
         if not new_trials:
             return None
 
-        if score_handle is None:
-            selected_trial = random.sample(new_trials, 1)[0]
-        else:
-            raise NotImplementedError("scoring will be supported in the next iteration.")
+        if score_handle is not None and self.space:
+            scores = list(map(score_handle,
+                              map(lambda x: trial_to_tuple(x, self.space), new_trials)))
+            scored_trials = zip(scores, new_trials)
+            best_trials = filter(lambda st: st[0] == max(scores), scored_trials)
+            new_trials = list(zip(*best_trials))[1]
+        elif score_handle is not None:
+            log.warning("While reserving trial: `score_handle` was provided, but "
+                        "parameter space has not been defined yet.")
+
+        selected_trial = random.sample(new_trials, 1)[0]
 
         if selected_trial.status == 'new':
             selected_trial.start_time = datetime.datetime.utcnow()
@@ -418,6 +426,10 @@ class Experiment(object):
                     section.startswith('_'):
                 continue
             if getattr(self, section) != value:
+                log.debug("Config given is different from config found in db at section: %s",
+                          section)
+                log.debug("Config+ : %s", value)
+                log.debug("Config- : %s", getattr(self, section))
                 is_diff = True
                 break
 

@@ -384,11 +384,18 @@ class TestReserveTrial(object):
         with pytest.raises(ValueError):
             hacked_exp.reserve_trial(score_handle='asfa')
 
-    @pytest.mark.xfail(reason="To be implemented...", raises=NotImplementedError)
-    def test_reserve_with_score(self, hacked_exp):
+    def fake_handle(self, xxx):
+        """Fake score handle for testing."""
+        self.times_called += 1
+        return self.times_called
+
+    def test_reserve_with_score(self, hacked_exp, exp_config):
         """Reserve with a score object that can do its job."""
-        hacked_exp.reserve_trial(score_handle=lambda x: 66)
-        pass
+        self.times_called = 0
+        hacked_exp.configure(exp_config[0][2])
+        trial = hacked_exp.reserve_trial(score_handle=self.fake_handle)
+        exp_config[1][6]['status'] = 'reserved'
+        assert trial.to_dict() == exp_config[1][6]
 
 
 @pytest.mark.usefixtures("patch_sample")
