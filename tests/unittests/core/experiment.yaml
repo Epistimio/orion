@@ -148,6 +148,9 @@
     - name: ~
       type: objective  # objective, constraint
       value: 2
+    - name: naedw_grad
+      type: gradient
+      value: [-0.1, 2]
   params:
     - name: /encoding_layer
       type: categorical
@@ -169,6 +172,9 @@
     - name: contra
       type: constraint  # objective, constraint
       value: 1.2
+    - name: naedw_grad
+      type: gradient
+      value: [5, 3]
   params:
     - name: /encoding_layer
       type: categorical
