@@ -60,6 +60,9 @@ setup_args = dict(
         'console_scripts': [
             'mopt = metaopt.core.cli:main',
             ],
+        'OptimizationAlgorithm': [
+            'random = metaopt.algo.random:Random',
+            ],
         },
     install_requires=['six', 'PyYAML', 'pymongo>=3', 'numpy', 'scipy'],
     tests_require=tests_require,
