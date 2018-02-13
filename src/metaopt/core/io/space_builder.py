@@ -17,24 +17,24 @@ Motivation for this way of metaopt's configuration is to achieve as
 minimal intrusion to user's workflow as possible by:
 
    * Offering to user the choice to keep the original way of passing
-   hyperparameters to their script, be it through some **config file
-   type** (e.g. yaml, json, ini, etc) or through **command line
-   arguments**.
+     hyperparameters to their script, be it through some **config file
+     type** (e.g. yaml, json, ini, etc) or through **command line
+     arguments**.
 
    * Instead of passing the actual hyperparameter values, use one of
-   the characteristic keywords, names enlisted in `scipy.stats.distributions`
-   or `metaopt.core.io.space_builder.DimensionBuilder`,
-   to describe distributions and declare the hyperparameters
-   to be optimized. So that a possible command line argument
-   like ``-lrate0=0.1`` becomes ``-lrate0~'uniform(-3, 1)'``.
+     the characteristic keywords, names enlisted in `scipy.stats.distributions`
+     or `metaopt.core.io.space_builder.DimensionBuilder`,
+     to describe distributions and declare the hyperparameters
+     to be optimized. So that a possible command line argument
+     like ``-lrate0=0.1`` becomes ``-lrate0~'uniform(-3, 1)'``.
 
 .. note::
    Use ``~`` instead of ``=`` to denote that a variable "draws from"
    a distribution. We support limited Python syntax for describing distributions.
 
    * Module will also use the script's provided input file/args as a
-   template to fill an appropriate input with proposed values for the
-   script's execution in each hyperiteration.
+     template to fill an appropriate input with proposed values for the
+     script's execution in each hyperiteration.
 
 """
 
@@ -52,7 +52,6 @@ import six
 from metaopt.algo.space import (Categorical, Integer, Real, Space)
 from metaopt.core.io.convert import infer_converter_from_file_type
 from metaopt.core.utils import SingletonType
-
 
 log = logging.getLogger(__name__)
 
@@ -261,6 +260,8 @@ class SpaceBuilder(object):
 
         :param cmd_args: A list of command line arguments provided for the user's script.
 
+        :rtype: `metaopt.algo.space.Space`
+
         .. note:: A template configuration file complementing user's script can be
            provided either by explicitly using the prefix '--config=' or by being the
            first positional argument.
@@ -326,7 +327,7 @@ class SpaceBuilder(object):
                         is_userconfig_an_option = True
                     else:
                         raise ValueError(
-                            "Already found one configuration file in: %s",
+                            "Already found one configuration file in: %s" %
                             userconfig
                             )
                 else:
@@ -357,6 +358,9 @@ class SpaceBuilder(object):
            will be created.
         :param trial: A `metaopt.core.worker.trial.Trial` object with concrete
            parameter values for the defined `Space`.
+
+        :returns: A list with the command line arguments that must be given to
+           script's execution.
 
         """
         if self.userconfig:
