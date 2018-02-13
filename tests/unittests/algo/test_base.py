@@ -33,14 +33,14 @@ def test_configuration(dumbalgo):
     algo = dumbalgo(8, value=1, subone=nested_algo)
     config = algo.configuration
     assert config == {
-        'DumbAlgo': {
+        'dumbalgo': {
             'value': 1,
             'scoring': 0,
             'judgement': None,
             'suspend': False,
             'done': False,
             'subone': {
-                'DumbAlgo': {
+                'dumbalgo': {
                     'value': 6,
                     'scoring': 5,
                     'judgement': None,

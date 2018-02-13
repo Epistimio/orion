@@ -42,7 +42,7 @@ class PrimaryAlgo(BaseAlgorithm):
         # TODO cascade Transformation through `Factory`
 
     def suggest(self, num=1):
-        """Suggest a `num`ber of new sets of parameters.
+        """Suggest a `num` of new sets of parameters.
 
         :param num: how many sets to be suggested.
 

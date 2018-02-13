@@ -32,14 +32,14 @@ class TestPrimaryAlgoWraps(object):
         """Check if initialization works."""
         assert isinstance(palgo.algorithm, dumbalgo)
         assert palgo.configuration == {
-            'DumbAlgo': {
+            'dumbalgo': {
                 'value': fixed_suggestion,
                 'scoring': 0,
                 'judgement': None,
                 'suspend': False,
                 'done': False,
                 'subone': {
-                    'DumbAlgo': {
+                    'dumbalgo': {
                         'value': 6,
                         'scoring': 5,
                         'judgement': None,
@@ -106,4 +106,5 @@ class TestPrimaryAlgoWraps(object):
 
 class TestPrimaryAlgoTransforms(object):
     """Check if PrimaryAlgo appropriately transforms spaces and samples."""
+
     pass

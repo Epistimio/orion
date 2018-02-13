@@ -9,12 +9,14 @@
       objective.
 
 """
-# TODO algorithm injects requirements on space (<- Transformer PR)
 from abc import (ABCMeta, abstractmethod)
+import logging
 
 import six
 
 from metaopt.core.utils import Factory
+
+log = logging.getLogger(__name__)
 
 
 @six.add_metaclass(ABCMeta)
@@ -58,7 +60,10 @@ class BaseAlgorithm(object):
            hyperparameter names to values.
 
         """
+        log.debug("Creating Algorithm object of %s type with parameters:\n%s",
+                  type(self).__name__, hypers)
         self._space = space
+        self._hyper_names = list(hypers.keys())
         # Instantiate tunable parameters of an algorithm
         for varname, hyper in six.iteritems(hypers):
             # Check if tunable element is another algorithm
@@ -73,7 +78,7 @@ class BaseAlgorithm(object):
 
     @abstractmethod
     def suggest(self, num=1):
-        """Suggest a `num`ber of new sets of parameters.
+        """Suggest a `num` of new sets of parameters.
 
         :param num: how many sets to be suggested.
 
@@ -115,7 +120,7 @@ class BaseAlgorithm(object):
         """Return True, if an algorithm holds that there can be no further improvement."""
         return False
 
-    def score(self, point):
+    def score(self, point):  # pylint:disable=no-self-use,unused-argument
         """Allow algorithm to evaluate `point` based on a prediction about
         this parameter set's performance. Return a subjective measure of expected
         performance.
@@ -124,7 +129,7 @@ class BaseAlgorithm(object):
         """
         return 0
 
-    def judge(self, point, measurements):
+    def judge(self, point, measurements):  # pylint:disable=no-self-use,unused-argument
         """Inform an algorithm about online `measurements` of a running trial.
 
         The algorithm can return a dictionary of data which will be provided
@@ -149,14 +154,15 @@ class BaseAlgorithm(object):
 
         """
         dict_form = dict()
-        for attrname, attr in six.iteritems(self.__dict__):
+        for attrname in self._hyper_names:
             if attrname.startswith('_'):  # Do not log _space or others in conf
                 continue
+            attr = getattr(self, attrname)
             if isinstance(attr, BaseAlgorithm):
                 attr = attr.configuration
             dict_form[attrname] = attr
 
-        return {self.__class__.__name__: dict_form}
+        return {self.__class__.__name__.lower(): dict_form}
 
     @property
     def space(self):
