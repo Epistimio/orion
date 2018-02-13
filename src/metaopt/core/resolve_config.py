@@ -41,6 +41,7 @@ import os
 import socket
 import textwrap
 
+from numpy import inf as infinity
 import six
 import yaml
 
@@ -53,6 +54,11 @@ def nesteddict():
     return defaultdict(nesteddict)
 
 
+def is_exe(path):
+    """Test whether `path` describes an executable file."""
+    return os.path.isfile(path) and os.access(path, os.X_OK)
+
+
 log = logging.getLogger(__name__)
 
 ################################################################################
@@ -60,7 +66,7 @@ log = logging.getLogger(__name__)
 ################################################################################
 
 # Default settings for command line arguments (option, description)
-DEF_CMD_MAX_TRIALS = (-1, 'inf/until preempted')
+DEF_CMD_MAX_TRIALS = (infinity, 'inf/until preempted')
 DEF_CMD_POOL_SIZE = (10, str(10))
 
 DEF_CONFIG_FILES_PATHS = [
@@ -114,7 +120,7 @@ def fetch_mopt_args(description):
         description="These arguments determine mopt's behaviour")
 
     moptgroup.add_argument(
-        '-e', '--exp-name',
+        '-n', '--name',
         type=str, metavar='stringID',
         help="experiment's unique name; "
              "use an existing name to resume an experiment "
@@ -131,7 +137,7 @@ def fetch_mopt_args(description):
              "(default: %s)" % DEF_CMD_POOL_SIZE[1])
 
     moptgroup.add_argument(
-        '-mc', '--moptconfig',
+        '-c', '--config',
         type=argparse.FileType('r'), metavar='path-to-config',
         help="user provided mopt configuration file")
 
@@ -141,30 +147,44 @@ def fetch_mopt_args(description):
                     "and they can serve as metaopt's parameter declaration.")
 
     usergroup.add_argument(
-        '-c', '--userconfig',
-        type=str, metavar='path-to-config',
-        help="your script's configuration file (yaml, json, ini, ...anything)")
-
-    usergroup.add_argument(
-        'userscript', type=str, metavar='path-to-script',
+        'user_script', type=str, metavar='path-to-script',
         help="your experiment's script")
 
     usergroup.add_argument(
-        'userargs', nargs=argparse.REMAINDER, metavar='...',
-        help="command line arguments to your script (if any)")
+        'user_args', nargs=argparse.REMAINDER, metavar='...',
+        help="Command line arguments to your script (if any). A configuration "
+             "file intended to be used with 'userscript' must be given as a path "
+             "in the **first positional** argument OR using `--config=<path>` "
+             "keyword argument.")
 
     args = vars(parser.parse_args())  # convert to dict
+
+    verbose = args.pop('verbose')
+    if verbose == 1:
+        logging.basicConfig(level=logging.INFO)
+    elif verbose == 2:
+        logging.basicConfig(level=logging.DEBUG)
+
     # Explicitly add metaopt's version as experiment's metadata
-    args['version'] = metaopt.core.__version__
-    moptfile = args.pop('moptconfig')
+    args['metadata'] = dict()
+    args['metadata']['mopt_version'] = metaopt.core.__version__
+    log.debug("Using metaopt version %s", args['metadata']['mopt_version'])
+
+    moptfile = args.pop('config')
     config = dict()
     if moptfile:
+        log.debug("Found metaopt configuration file at: %s", os.path.abspath(moptfile.name))
         config = yaml.safe_load(moptfile)
 
-    if args['verbose'] == 1:
-        logging.basicConfig(level=logging.INFO)
-    elif args['verbose'] == 2:
-        logging.basicConfig(level=logging.DEBUG)
+    # Move 'user_script' and 'user_args' to 'metadata' key
+    user_script = args.pop('user_script')
+    abs_user_script = os.path.abspath(user_script)
+    if is_exe(abs_user_script):
+        user_script = abs_user_script
+    args['metadata']['user_script'] = user_script
+    args['metadata']['user_args'] = args.pop('user_args')
+    log.debug("Problem definition: %s %s", args['metadata']['user_script'],
+              ' '.join(args['metadata']['user_args']))
 
     return args, config
 
@@ -181,7 +201,7 @@ def fetch_default_options():
     default_config = nesteddict()
 
     # get some defaults
-    default_config['exp_name'] = None
+    default_config['name'] = None
     default_config['max_trials'] = DEF_CMD_MAX_TRIALS[0]
     default_config['pool_size'] = DEF_CMD_POOL_SIZE[0]
 
@@ -203,7 +223,7 @@ def fetch_default_options():
                         for vk, vv in six.iteritems(v):
                             default_config[k][vk] = vv
                     else:
-                        if k != 'exp_name':
+                        if k != 'name':
                             default_config[k] = v
         except IOError as e:  # default file could not be found
             log.debug(e)
@@ -271,6 +291,10 @@ def merge_mopt_config(config, dbconfig, cmdconfig, cmdargs):
 
     for k, v in six.iteritems(cmdargs):
         if v is not None:
-            expconfig[k] = v
+            if k == 'metadata':
+                for vk, vv in six.iteritems(v):
+                    expconfig[k][vk] = vv
+            else:
+                expconfig[k] = v
 
     return expconfig
