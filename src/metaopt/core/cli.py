@@ -1,89 +1,92 @@
 # -*- coding: utf-8 -*-
 """
-mopt:
-  MetaOpt cli script for asynchronous distributed optimization
+:mod:`metaopt.core.cli` -- Functions that define console scripts
+================================================================
 
-ERROR CODES
------------
- 0 -- Success
- 1 -- Provide a name for the experiment (cli argument or moptconfig file)
+.. module:: cli
+   :platform: Unix
+   :synopsis: Helper functions to setup an experiment and execute it.
 
 """
 from __future__ import absolute_import
 
-import datetime
-import getpass
 import logging
-import sys
 
 from metaopt.core import resolve_config
 from metaopt.core.io.database import Database
+from metaopt.core.worker import workon
+from metaopt.core.worker.experiment import Experiment
+
+log = logging.getLogger(__name__)
+
+CLI_DOC_HEADER = """
+mopt:
+  MetaOpt cli script for asynchronous distributed optimization
+
+"""
 
 
 def main():
-    """Entry point for metaopt.core functionality."""
-    starttime = datetime.datetime.utcnow()
-    user = getpass.getuser()
-
-    expconfig, moptdb = infer_config_and_db(user)
-    expmetadata = infer_metadata(user, starttime)
-    # XXX: More metadata on this experiment, mby for each run of this experiment
-    # log different configs too..
-
-    # XXX Module defaults should be written to an example configuration file
-    # automatically as pre-commit hooks!!
-    # 1. check whether supplied method{optimizer, dynamic} names exist
-    # 2. check whether supplied specific methods/parameters are correct
-    print(moptdb)
-    print()
-    print(dict(expconfig))
-    print()
-    print(expmetadata)
+    """Entry point for `metaopt.core` functionality."""
+    experiment = infer_experiment()
+    workon(experiment)
+    return 0
 
 
-def infer_config_and_db(user):
-    """Use metaopt.core.resolve_config to organize how configuration is built."""
-    # Fetch experiment name, user's script, args and parameter config
+def infer_experiment():
+    """Use `metaopt.core.resolve_config` to organize how configuration is built."""
+    # Fetch experiment name, user's script path and command line arguments
     # Use `-h` option to show help
-    cmdargs, cmdconfig = resolve_config.fetch_mopt_args(__doc__)
-    #  print(cmdargs, cmdconfig)
+    cmdargs, cmdconfig = resolve_config.fetch_mopt_args(CLI_DOC_HEADER)
 
+    # Initialize configuration dictionary.
+    # Fetch info from defaults and configurations from default locations.
     expconfig = resolve_config.fetch_default_options()
+
     # Fetch mopt system variables (database and resource information)
     # See :const:`metaopt.core.io.resolve_config.ENV_VARS` for environmental variables used
     expconfig = resolve_config.merge_env_vars(expconfig)
 
+    # Initialize singleton database object
     tmpconfig = resolve_config.merge_mopt_config(expconfig, dict(),
                                                  cmdconfig, cmdargs)
     db_opts = tmpconfig['database']
     dbtype = db_opts.pop('type')
-    moptdb = Database(of_type=dbtype, **db_opts)
-    print(user)
-    # (TODO) Init Experiment class
+    log.debug("Creating %s database client with args: %s", dbtype, db_opts)
+    Database(of_type=dbtype, **db_opts)
 
-    exp_name = tmpconfig['exp_name']
-    # (TODO) Get experiment metadata for experiment with name == `exp_name`,
-    # if it exists.
-    dbconfig = dict()
+    # Information should be enough to infer experiment's name.
+    exp_name = tmpconfig['name']
+    if exp_name is None:
+        raise RuntimeError("Could not infer experiment's name. "
+                           "Please use either `name` cmd line arg or provide one "
+                           "in metaopt's configuration file.")
+
+    # Initialize experiment object.
+    # Check for existing name and fetch configuration.
+    experiment = Experiment(exp_name)
+    dbconfig = experiment.configuration
 
     expconfig = resolve_config.merge_mopt_config(expconfig, dbconfig,
                                                  cmdconfig, cmdargs)
-    exp_name = expconfig['exp_name']
 
-    print(db_opts)
-    print()
-    print(exp_name)
-    if exp_name is None:
-        logging.fatal("Could not infer experiment's name:\n"
-                      "Please use cmd arg or a cmd provided config file.")
-        sys.exit(-1)
+    # Infer rest information about the process + versioning
+    expconfig['metadata'] = infer_versioning_metadata(expconfig['metadata'])
 
-    return expconfig, moptdb
+    # Pop out configuration concerning databases and resources
+    expconfig.pop('database', None)
+    expconfig.pop('resources', None)
+    expconfig.pop('status', None)
+
+    # Finish experiment's configuration
+    experiment.configure(expconfig)
+
+    return experiment
 
 
-def infer_metadata(user, starttime):
-    """Identify current experiment in terms of user, time and code base."""
-    metadata = dict()
-    metadata['user'] = user
-    metadata['starttime'] = starttime
-    return metadata
+def infer_versioning_metadata(existing_metadata):
+    """Infer information about user's script versioning if available."""
+    # VCS system
+    # User repo's version
+    # User repo's HEAD commit hash
+    return existing_metadata
