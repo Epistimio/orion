@@ -8,9 +8,13 @@
    :synopsis: Suggest new parameter sets which optimize the objective.
 
 """
+import logging
+
 import six
 
 from metaopt.core.utils import (format_trials, SingletonType)
+
+log = logging.getLogger(__name__)
 
 
 @six.add_metaclass(SingletonType)
@@ -29,6 +33,7 @@ class Producer(object):
         :param experiment: Manager of this experiment, provides convenient
            interface for interacting with the database.
         """
+        log.debug("Creating Producer object.")
         self.experiment = experiment
         self.num_new_trials = experiment.pool_size
         self.space = experiment.space
@@ -39,25 +44,27 @@ class Producer(object):
 
     def produce(self):
         """Create and register new trials."""
-        # Fetch trials to observe
-        completed_trials = self.experiment.fetch_completed_trials()
-
-        # Create list of points and corresponding results
-        points = list(map(lambda trial: format_trials.trial_to_tuple(trial, self.space),
-                          completed_trials))
-        results = list(map(format_trials.get_trial_results, completed_trials))
-
-        # Observe them
-        self.algorithm.observe(points, results)
-
-        # Suggest new ones
+        log.debug("### Suggest new ones.")
         new_points = self.algorithm.suggest(self.num_new_trials)
 
-        # Convert them to `Trial` objects
+        log.debug("### Convert them to `Trial` objects.")
         new_trials = list(map(lambda data: format_trials.tuple_to_trial(data, self.space),
                               new_points))
 
-        # Register them
+        log.debug("### Register to database: %s", new_trials)
         self.experiment.register_trials(new_trials)
 
-        # Done :)
+    def update(self):
+        """Pull newest completed trials to update local model."""
+        log.debug("### Fetch trials to observe:")
+        completed_trials = self.experiment.fetch_completed_trials()
+        log.debug("### %s", completed_trials)
+
+        if completed_trials:
+            log.debug("### Convert them to list of points and their results.")
+            points = list(map(lambda trial: format_trials.trial_to_tuple(trial, self.space),
+                              completed_trials))
+            results = list(map(format_trials.get_trial_results, completed_trials))
+
+            log.debug("### Observe them.")
+            self.algorithm.observe(points, results)

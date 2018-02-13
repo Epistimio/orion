@@ -16,17 +16,18 @@ def producer(hacked_exp, random_dt, exp_config):
     # insert fake point
     fake_point = ('lstm', 'gru')
     assert fake_point in hacked_exp.space
-    hacked_exp.algorithms.algorithm.value = ('lstm', 'gru')
-    return Producer(hacked_exp)
+    hacked_exp.algorithms.algorithm.value = fake_point
+    try:
+        return Producer(hacked_exp)
+    except ValueError:
+        pass
+
+    return Producer()
 
 
-def test_produce(producer, database, random_dt):
-    """Test functionality of producer."""
-    trials_in_db_before = database.trials.count()
-    new_trials_in_db_before = database.trials.count({'status': 'new'})
-
-    producer.produce()
-
+def test_update(producer):
+    """Test functionality of producer.update()."""
+    producer.update()
     # Algorithm must have received completed points and their results
     obs_points = producer.algorithm.algorithm._points
     obs_results = producer.algorithm.algorithm._results
@@ -50,6 +51,15 @@ def test_produce(producer, database, random_dt):
         'gradient': (5, 3),
         'constraint': [1.2]
         }
+
+
+def test_update_and_produce(producer, database, random_dt):
+    """Test functionality of producer.produce()."""
+    trials_in_db_before = database.trials.count()
+    new_trials_in_db_before = database.trials.count({'status': 'new'})
+
+    producer.update()
+    producer.produce()
 
     # Algorithm was ordered to suggest some trials
     num_new_points = producer.algorithm.algorithm._num
