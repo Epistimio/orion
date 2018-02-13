@@ -83,7 +83,7 @@ class Factory(ABCMeta):
         # Get types visible from base module or package, but internal
         cls.types = cls.__base__.__subclasses__()
         cls.types = [class_ for class_ in cls.types if class_.__name__ != cls.__name__]
-        cls.typenames = list(map(lambda x: x.__name__, cls.types))
+        cls.typenames = list(map(lambda x: x.__name__.lower(), cls.types))
         log.debug("Implementations found: %s", cls.typenames)
 
     def __call__(cls, of_type, *args, **kwargs):

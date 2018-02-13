@@ -70,6 +70,10 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
                 if isinstance(subalgo_hypers, dict):
                     hyper = OptimizationAlgorithm(subalgo_type,
                                                   space, **subalgo_hypers)
+            elif isinstance(hyper, str) and \
+                    hyper.lower() in OptimizationAlgorithm.typenames:
+                # pylint: disable=too-many-function-args
+                hyper = OptimizationAlgorithm(hyper, space)
 
             setattr(self, varname, hyper)
 
