@@ -197,6 +197,12 @@ class TestConfigProperty(object):
         exp_config[0][1]['max_trials'] = 5000
         exp_config[0][1]['status'] = 'pending'
         exp.configure(exp_config[0][1])
+        exp_config[0][1]['algorithms']['dumbalgo']['done'] = False
+        exp_config[0][1]['algorithms']['dumbalgo']['judgement'] = None
+        exp_config[0][1]['algorithms']['dumbalgo']['scoring'] = 0
+        exp_config[0][1]['algorithms']['dumbalgo']['suspend'] = False
+        exp_config[0][1]['algorithms']['dumbalgo']['value'] = 5
+        assert exp._id == exp_config[0][1].pop('_id')
         assert exp.configuration == exp_config[0][1]
 
     def test_good_set_before_init_hit_no_diffs_exc_pool_size(self, exp_config):
@@ -210,6 +216,12 @@ class TestConfigProperty(object):
         exp_config[0][1]['pool_size'] = 10
         exp_config[0][1]['status'] = 'pending'
         exp.configure(exp_config[0][1])
+        exp_config[0][1]['algorithms']['dumbalgo']['done'] = False
+        exp_config[0][1]['algorithms']['dumbalgo']['judgement'] = None
+        exp_config[0][1]['algorithms']['dumbalgo']['scoring'] = 0
+        exp_config[0][1]['algorithms']['dumbalgo']['suspend'] = False
+        exp_config[0][1]['algorithms']['dumbalgo']['value'] = 5
+        assert exp._id == exp_config[0][1].pop('_id')
         assert exp.configuration == exp_config[0][1]
 
     def test_good_set_before_init_no_hit(self, random_dt, database, new_config):
@@ -227,6 +239,11 @@ class TestConfigProperty(object):
         new_config['status'] = 'pending'
         new_config.pop('_id')
         new_config.pop('something_to_be_ignored')
+        new_config['algorithms']['dumbalgo']['done'] = False
+        new_config['algorithms']['dumbalgo']['judgement'] = None
+        new_config['algorithms']['dumbalgo']['scoring'] = 0
+        new_config['algorithms']['dumbalgo']['suspend'] = False
+        new_config['algorithms']['dumbalgo']['value'] = 5
         assert found_config[0] == new_config
         assert exp.name == new_config['name']
         assert exp.refers is None
@@ -272,6 +289,12 @@ class TestConfigProperty(object):
         exp.configure(exp_config[0][1])
         assert exp._init_done is True
         exp_config[0][1]['status'] = 'pending'
+        exp_config[0][1]['algorithms']['dumbalgo']['done'] = False
+        exp_config[0][1]['algorithms']['dumbalgo']['judgement'] = None
+        exp_config[0][1]['algorithms']['dumbalgo']['scoring'] = 0
+        exp_config[0][1]['algorithms']['dumbalgo']['suspend'] = False
+        exp_config[0][1]['algorithms']['dumbalgo']['value'] = 5
+        assert exp._id == exp_config[0][1].pop('_id')
         assert exp.configuration == exp_config[0][1]
 
     def test_try_set_after_init(self, exp_config):

@@ -16,8 +16,6 @@
     # from `mopt`'s args
     user_script: full_path/main.py
     # from `mopt`'s args
-    user_config: ~
-    # from `mopt`'s args
     user_args: ["--encoding_layer~random(['rnn', 'lstm', 'gru'])", "--decoding_layer~random(['rnn', 'lstm_with_attention', 'gru'])"]
     # from user's vsc, e.g. git
     user_vcs: git
@@ -42,13 +40,6 @@
 
   # functional info
   status: completed  # pending, done, broken
-  # stats, all are metaopt's products
-  # stats:
-  #   trials_completed: 0
-  #   best_trial_id: ~
-  #   start_time: 123
-  #   end_time: ~
-  #   duration: ~
 
   # **complete** specification of algorithms used
   # user's configuration, but defaults are inferred
@@ -62,7 +53,6 @@
     datetime: 2017-11-22T21:00:00
     mopt_version: 0.1
     user_script: full_path/ieeeela.py
-    user_config: ~
     user_args: ["--encoding_layer~random(['rnn', 'lstm', 'gru'])", "--decoding_layer~random(['rnn', 'lstm_with_attention', 'gru'])"]
     user_vcs: git
     user_version: ~
@@ -93,7 +83,6 @@
     datetime: 2017-11-22T20:00:00
     mopt_version: 0.1
     user_script: full_path/main.py
-    user_config: ~
     user_args: ["--encoding_layer~random(['rnn', 'lstm', 'gru'])", "--decoding_layer~random(['rnn', 'lstm_with_attention', 'gru'])"]
     user_vcs: git
     user_version: ~

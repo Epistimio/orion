@@ -8,7 +8,6 @@
    :synopsis: Manage history of trials corresponding to a black box process
 
 """
-
 import copy
 import datetime
 import getpass
@@ -103,6 +102,7 @@ class Experiment(object):
         :param name: Describe a configuration with a unique identifier per :attr:`user`.
         :type name: str
         """
+        log.debug("Creating Experiment object with name: %s", name)
         self._init_done = False
         self._db = Database()  # fetch database instance
 
@@ -120,6 +120,8 @@ class Experiment(object):
         config = self._db.read('experiments',
                                {'name': name, 'metadata.user': user})
         if config:
+            log.debug("Found existing experiment, %s, under user, %s, registered in database.",
+                      name, user)
             if len(config) > 1:
                 log.warning("Many (%s) experiments for (%s, %s) are available but "
                             "only the most recent one can be accessed. "
@@ -235,11 +237,11 @@ class Experiment(object):
             status='completed'
             )
         num_completed_trials = self._db.count('trials', query)
-        if num_completed_trials >= self.max_trials:
-            return True
 
-        if self._init_done:
-            return self.algorithms.is_done
+        if num_completed_trials >= self.max_trials or \
+                (self._init_done and self.algorithms.is_done):
+            self._db.write('experiments', {'status': 'done'}, {'_id': self._id})
+            return True
 
         return False
 
@@ -256,12 +258,6 @@ class Experiment(object):
     @property
     def configuration(self):
         """Return a copy of an `Experiment` configuration as a dictionary."""
-        # After successful initialization, get a dict form from DB.
-        # Check :attr:`algorithms` and :attr:`refers` to see why.
-        # (TODO) To be removed, when `refers` is settled.
-        if self._init_done:
-            return self._db.read('experiments', {'_id': self._id})[0]
-
         config = dict()
         for attrname in self.__slots__:
             if attrname.startswith('_'):
@@ -320,11 +316,12 @@ class Experiment(object):
                 continue
             setattr(self, section, value)
 
-        self.status = 'pending'
-        final_config = self.configuration  # grab dict representation of Experiment
-
         # Sanitize and replace some sections with objects
         self._sanitize_and_instantiate_config()
+        self._init_done = True
+
+        self.status = 'pending'
+        final_config = self.configuration  # grab dict representation of Experiment
 
         # If everything is alright, push new config to database
         if is_new:
@@ -334,8 +331,6 @@ class Experiment(object):
             self._id = final_config['_id']
         else:
             self._db.write('experiments', final_config, {'_id': self._id})
-
-        self._init_done = True
 
     @property
     def stats(self):
@@ -425,7 +420,11 @@ class Experiment(object):
                     section not in self.__slots__ or \
                     section.startswith('_'):
                 continue
-            if getattr(self, section) != value:
+            item = getattr(self, section)
+            if section == 'algorithms':
+                item = {k.lower(): v for k, v in six.iteritems(item)}
+                value = {k.lower(): v for k, v in six.iteritems(value)}
+            if item != value:
                 log.debug("Config given is different from config found in db at section: %s",
                           section)
                 log.debug("Config+ : %s", value)
