@@ -10,12 +10,12 @@
 """
 import logging
 
-from metaopt.core.utils import (format_trials, SingletonType)
+from metaopt.core.utils import format_trials
 
 log = logging.getLogger(__name__)
 
 
-class Producer(object, metaclass=SingletonType):
+class Producer(object):
     """Produce suggested sets of problem's parameter space to try out.
 
     It uses an `Experiment` object to poll for not yet observed trials which

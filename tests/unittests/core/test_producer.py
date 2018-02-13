@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`metaopt.core.worker.producer`."""
-
-
 import pytest
 
 from metaopt.core.worker.producer import Producer
@@ -17,12 +15,7 @@ def producer(hacked_exp, random_dt, exp_config):
     fake_point = ('lstm', 'gru')
     assert fake_point in hacked_exp.space
     hacked_exp.algorithms.algorithm.value = fake_point
-    try:
-        return Producer(hacked_exp)
-    except ValueError:
-        pass
-
-    return Producer()
+    return Producer(hacked_exp)
 
 
 def test_update(producer):

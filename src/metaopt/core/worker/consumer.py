@@ -16,13 +16,12 @@ import tempfile
 from metaopt.core.io.convert import JSONConverter
 from metaopt.core.io.database import Database
 from metaopt.core.io.space_builder import SpaceBuilder
-from metaopt.core.utils import SingletonType
 from metaopt.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
 
-class Consumer(object, metaclass=SingletonType):
+class Consumer(object):
     """Consume a trial by using it to initialize a black-box box to evaluate it.
 
     It uses an `Experiment` object to push an evaluated trial, if results are
