@@ -368,18 +368,17 @@ class Categorical(Dimension):
         if isinstance(categories, dict):
             self.categories = tuple(categories.keys())
             self._probs = tuple(categories.values())
-            if sum(self._probs) != 1:
-                raise ValueError("Probabilities given for categories do not sum to one.")
         else:
             self.categories = tuple(categories)
             self._probs = tuple(numpy.tile(1. / len(categories), len(categories)))
+
+        prior = distributions.rv_discrete(values=(list(range(len(self.categories))),
+                                                  self._probs))
 
         self._inverse = numpy.vectorize(lambda x: self.categories[x],
                                         otypes=[numpy.object])
         self._check = numpy.vectorize(lambda x: x in self.categories)
 
-        prior = distributions.rv_discrete(values=(list(range(len(self.categories))),
-                                                  self._probs))
         super(Categorical, self).__init__(name, prior, **kwargs)
 
     def sample(self, n_samples=1, seed=None):
