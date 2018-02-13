@@ -10,15 +10,12 @@
 """
 import logging
 
-import six
-
 from metaopt.core.utils import (format_trials, SingletonType)
 
 log = logging.getLogger(__name__)
 
 
-@six.add_metaclass(SingletonType)
-class Producer(object):
+class Producer(object, metaclass=SingletonType):
     """Produce suggested sets of problem's parameter space to try out.
 
     It uses an `Experiment` object to poll for not yet observed trials which

@@ -8,8 +8,6 @@
    :synopsis: Provides functions for communicating with `metaopt.core`.
 
 """
-from __future__ import print_function
-
 import os
 
 IS_METAOPT_ON = False

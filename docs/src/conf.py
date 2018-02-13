@@ -25,8 +25,6 @@ How to document -- sources:
    5. `Cross-reference <http://www.sphinx-doc.org/en/stable/domains.html#python-roles>`_
 
 """
-from __future__ import absolute_import
-
 import glob
 import os
 import re

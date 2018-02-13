@@ -37,17 +37,14 @@ minimal intrusion to user's workflow as possible by:
      script's execution in each hyperiteration.
 
 """
-
 import collections
 import copy
 import logging
 import numbers
 import os
 import re
-import sys
 
 from scipy.stats import distributions as sp_dists
-import six
 
 from metaopt.algo.space import (Categorical, Integer, Real, Space)
 from metaopt.core.io.convert import infer_converter_from_file_type
@@ -70,8 +67,7 @@ def _real_or_int(**kwargs):
     return Integer if kwargs.get('discrete', False) else Real
 
 
-@six.add_metaclass(SingletonType)
-class DimensionBuilder(object):
+class DimensionBuilder(object, metaclass=SingletonType):
     """Create `Dimension` objects using a name for it and an string expression
     which encodes prior and dimension information.
 
@@ -121,9 +117,8 @@ class DimensionBuilder(object):
             if isinstance(args[0], (dict, list)):
                 return Categorical(name, *args, **kwargs)
         except IndexError as exc:
-            six.raise_from(TypeError("Parameter '{}': "
-                                     "Expected argument with categories.".format(name)),
-                           exc)
+            raise TypeError("Parameter '{}': "
+                            "Expected argument with categories.".format(name)) from exc
 
         return Categorical(name, args, **kwargs)
 
@@ -172,11 +167,7 @@ class DimensionBuilder(object):
         self.name = name
         _check_expr_to_eval(expression)
         prior, arg_string = re.findall(r'([a-z][a-z0-9_]*)\((.*)\)', expression)[0]
-        if sys.version_info[0] == 3:  # if Python3
-            globals_ = {'__builtins__': {}}
-        else:  # if Python2
-            # Try False = True somewhere in Python2, you will see...
-            globals_ = {'__builtins__': {'True': True, 'False': False}}
+        globals_ = {'__builtins__': {}}
         try:
             dimension = eval("self." + expression, globals_, {'self': self})
             return dimension
@@ -210,33 +201,29 @@ class DimensionBuilder(object):
         try:
             dimension = self._build(name, expression)
         except ValueError as exc:
-            six.raise_from(TypeError(
-                "Parameter '{}': Incorrect arguments.".format(name)), exc)
+            raise TypeError("Parameter '{}': Incorrect arguments.".format(name)) from exc
         except IndexError as exc:
-            six.raise_from(
-                TypeError(
-                    "Parameter '{0}': Please provide a valid form for prior:\n"
-                    "'distribution(*args, **kwargs)'\nProvided: '{1}'".format(name, expression)),
-                exc)
+            error_msg = "Parameter '{0}': Please provide a valid form for prior:\n"\
+                        "'distribution(*args, **kwargs)'\n"\
+                        "Provided: '{1}'".format(name, expression)
+            raise TypeError(error_msg) from exc
 
         try:
             dimension.sample()
             dimension.interval()
         except TypeError as exc:
-            six.raise_from(TypeError(
-                "Parameter '{0}': Incorrect arguments for distribution '{1}'.\n"
-                "Scipy Docs::\n\n{2}".format(name,
-                                             dimension._prior_name,
-                                             dimension.prior.__doc__)), exc)
+            error_msg = "Parameter '{0}': Incorrect arguments for distribution '{1}'.\n"\
+                        "Scipy Docs::\n\n{2}".format(name,
+                                                     dimension._prior_name,
+                                                     dimension.prior.__doc__)
+            raise TypeError(error_msg) from exc
         except ValueError as exc:
-            six.raise_from(TypeError(
-                "Parameter '{0}': Incorrect arguments.".format(name)), exc)
+            raise TypeError("Parameter '{0}': Incorrect arguments.".format(name)) from exc
 
         return dimension
 
 
-@six.add_metaclass(SingletonType)
-class SpaceBuilder(object):
+class SpaceBuilder(object, metaclass=SingletonType):
     """Build a `Space` object form user's configuration."""
 
     USERCONFIG_OPTION = '--config='
@@ -293,23 +280,21 @@ class SpaceBuilder(object):
             except IndexError:
                 break
             if isinstance(stuff, dict):
-                for k, v in six.iteritems(stuff):
+                for k, v in stuff.items():
                     stack.append(('/'.join([namespace, str(k)]), v))
             elif isinstance(stuff, list):
                 for position, thing in enumerate(stuff):
                     stack.append(('/'.join([namespace, str(position)]), thing))
-            elif isinstance(stuff, six.string_types):
+            elif isinstance(stuff, str):
                 if stuff.startswith(self.USERCONFIG_KEYWORD):
                     dimension = self.dimbuilder.build(namespace,
                                                       stuff[len(self.USERCONFIG_KEYWORD):])
                     try:
                         self.space.register(dimension)
                     except ValueError as exc:
-                        six.raise_from(
-                            ValueError(
-                                "Conflict for name '%s' in script configuration and arguments.",
-                                namespace),
-                            exc)
+                        error_msg = "Conflict for name '{}' in script configuration "\
+                                    "and arguments.".format(namespace)
+                        raise ValueError(error_msg) from exc
 
     def _build_from_args(self, cmd_args):
         userconfig = None
@@ -385,7 +370,7 @@ class SpaceBuilder(object):
                     if key not in stuff:
                         break
 
-                if isinstance(stuff[key], six.string_types):
+                if isinstance(stuff[key], str):
                     stuff[key] = param.value
                 else:
                     stuff = stuff[key]

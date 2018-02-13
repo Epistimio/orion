@@ -14,8 +14,6 @@ import getpass
 import logging
 import random
 
-import six
-
 from metaopt.core.io.database import Database
 from metaopt.core.io.space_builder import SpaceBuilder
 from metaopt.core.utils.format_trials import trial_to_tuple
@@ -301,7 +299,7 @@ class Experiment(object):
                 self._fork_config(config)  # Change (?) `name` attribute here.
 
         # Just overwrite everything given
-        for section, value in six.iteritems(config):
+        for section, value in config.items():
             if section == 'status':
                 log.warning("Found section 'status' in configuration. This experiment "
                             "attribute cannot be set. Ignoring.")
@@ -415,15 +413,15 @@ class Experiment(object):
         its attributes is different from the one suggested in `config`.
         """
         is_diff = False
-        for section, value in six.iteritems(config):
+        for section, value in config.items():
             if section in self.non_forking_attrs or \
                     section not in self.__slots__ or \
                     section.startswith('_'):
                 continue
             item = getattr(self, section)
             if section == 'algorithms':
-                item = {k.lower(): v for k, v in six.iteritems(item)}
-                value = {k.lower(): v for k, v in six.iteritems(value)}
+                item = {k.lower(): v for k, v in item.items()}
+                value = {k.lower(): v for k, v in value.items()}
             if item != value:
                 log.debug("Config given is different from config found in db at section: %s",
                           section)

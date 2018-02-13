@@ -16,13 +16,9 @@ Currently supported:
     - JSON
 
 """
-from __future__ import absolute_import
-
 from abc import (ABC, abstractmethod)
 import importlib
 import os
-
-import six
 
 from metaopt.core.utils import Factory
 
@@ -126,8 +122,8 @@ class JSONConverter(BaseConverter):
             self.json.dump(data, f)
 
 
-@six.add_metaclass(Factory)  # pylint: disable=too-few-public-methods,abstract-method
-class Converter(BaseConverter):
+# pylint: disable=too-few-public-methods,abstract-method
+class Converter(BaseConverter, metaclass=Factory):
     """Class used to inject dependency on a configuration file parser/generator.
 
     .. seealso:: `Factory` metaclass and `BaseConverter` interface.

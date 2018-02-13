@@ -11,10 +11,7 @@
 import logging
 import os
 import subprocess
-import sys
 import tempfile
-
-import six
 
 from metaopt.core.io.convert import JSONConverter
 from metaopt.core.io.database import Database
@@ -25,8 +22,7 @@ from metaopt.core.worker.trial import Trial
 log = logging.getLogger(__name__)
 
 
-@six.add_metaclass(SingletonType)
-class Consumer(object):
+class Consumer(object, metaclass=SingletonType):
     """Consume a trial by using it to initialize a black-box box to evaluate it.
 
     It uses an `Experiment` object to push an evaluated trial, if results are
@@ -57,15 +53,7 @@ class Consumer(object):
         # Get path to user's script and infer trial configuration directory
         self.script = experiment.metadata['user_script']
         self.tmp_dir = os.path.join(tempfile.gettempdir(), 'metaopt')
-
-        if sys.version_info[0] == 3:  # if Python3
-            os.makedirs(self.tmp_dir, exist_ok=True)
-        else:  # if Python2
-            try:
-                os.makedirs(self.tmp_dir)
-            except OSError as exc:
-                if exc.errno != 17:  # [Errno 17] File exists
-                    raise exc
+        os.makedirs(self.tmp_dir, exist_ok=True)
 
         self.converter = JSONConverter()
 

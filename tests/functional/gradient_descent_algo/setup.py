@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Installation script for `metaopt.algo.gradient_descent`."""
-from __future__ import absolute_import
-
 from setuptools import (find_packages, setup)
 
 setup_args = dict(
@@ -47,7 +45,7 @@ setup_args['classifiers'] = [
     'Topic :: Scientific/Engineering',
     'Topic :: Scientific/Engineering :: Artificial Intelligence',
 ] + [('Programming Language :: Python :: %s' % x)
-     for x in '2 2.6 2.7 3 3.4 3.5 3.6'.split()]
+     for x in '3 3.4 3.5 3.6'.split()]
 
 if __name__ == '__main__':
     setup(**setup_args)

@@ -13,18 +13,13 @@ Currently, implemented wrappers:
    - :class:`metaopt.core.io.database.mongodb.MongoDB`
 
 """
-from __future__ import absolute_import
-
 from abc import abstractmethod, abstractproperty
 import logging
-
-import six
 
 from metaopt.core.utils import (AbstractSingletonType, SingletonFactory)
 
 
-@six.add_metaclass(AbstractSingletonType)
-class AbstractDB(object):
+class AbstractDB(object, metaclass=AbstractSingletonType):
     """Base class for database framework wrappers.
 
     Attributes
@@ -162,8 +157,8 @@ class DatabaseError(RuntimeError):
     pass
 
 
-@six.add_metaclass(SingletonFactory)  # pylint: disable=too-few-public-methods,abstract-method
-class Database(AbstractDB):
+# pylint: disable=too-few-public-methods,abstract-method
+class Database(AbstractDB, metaclass=SingletonFactory):
     """Class used to inject dependency on a database framework.
 
     .. seealso:: `Factory` metaclass and `AbstractDB` interface.

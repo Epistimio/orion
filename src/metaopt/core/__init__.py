@@ -13,8 +13,6 @@ training time for automatic early stopping or on-the-fly reconfiguration.
 
 Start by having a look here: https://github.com/mila-udem/metaopt
 """
-from __future__ import absolute_import
-
 from ._version import get_versions
 from .utils._appdirs import AppDirs
 

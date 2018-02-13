@@ -8,8 +8,6 @@
    :synopsis: Helper functions to setup an experiment and execute it.
 
 """
-from __future__ import absolute_import
-
 import logging
 
 from metaopt.core import resolve_config

@@ -9,10 +9,7 @@
    :synopsis: Describe a particular training run, parameters and results
 
 """
-
 import logging
-
-import six
 
 log = logging.getLogger(__name__)
 
@@ -96,7 +93,7 @@ class Trial(object):
             """See attributes of `Value` for possible argument for `kwargs`."""
             for attrname in self.__slots__:
                 setattr(self, attrname, None)
-            for attrname, value in six.iteritems(kwargs):
+            for attrname, value in kwargs.items():
                 setattr(self, attrname, value)
 
         def to_dict(self):
@@ -158,7 +155,7 @@ class Trial(object):
 
         self.status = 'new'
 
-        for attrname, value in six.iteritems(kwargs):
+        for attrname, value in kwargs.items():
             if attrname == 'results':
                 attr = getattr(self, attrname)
                 for item in value:

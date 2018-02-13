@@ -31,8 +31,6 @@ precedence is respected when building the settings dictionary:
 .. note:: `Optimization` entries are required, `Dynamic` entry is optional.
 
 """
-from __future__ import absolute_import
-
 import argparse
 from collections import defaultdict
 from copy import deepcopy
@@ -42,7 +40,6 @@ import socket
 import textwrap
 
 from numpy import inf as infinity
-import six
 import yaml
 
 import metaopt
@@ -206,7 +203,7 @@ def fetch_default_options():
     default_config['pool_size'] = DEF_CMD_POOL_SIZE[0]
 
     # get default options for some managerial variables (see :const:`ENV_VARS`)
-    for signifier, env_vars in six.iteritems(ENV_VARS):
+    for signifier, env_vars in ENV_VARS.items():
         for _, key, default_value in env_vars:
             default_config[signifier][key] = default_value
 
@@ -218,9 +215,9 @@ def fetch_default_options():
                 if cfg is None:
                     continue
                 # implies that yaml must be in dict form
-                for k, v in six.iteritems(cfg):
+                for k, v in cfg.items():
                     if k in ENV_VARS:
-                        for vk, vv in six.iteritems(v):
+                        for vk, vv in v.items():
                             default_config[k][vk] = vv
                     else:
                         if k != 'name':
@@ -241,7 +238,7 @@ def merge_env_vars(config):
 
     """
     newcfg = deepcopy(config)
-    for signif, evars in six.iteritems(ENV_VARS):
+    for signif, evars in ENV_VARS.items():
         for var_name, key, _ in evars:
             value = os.getenv(var_name)
             if value is not None:
@@ -282,17 +279,17 @@ def merge_mopt_config(config, dbconfig, cmdconfig, cmdargs):
     expconfig = deepcopy(config)
 
     for cfg in (dbconfig, cmdconfig):
-        for k, v in six.iteritems(cfg):
+        for k, v in cfg.items():
             if k in ENV_VARS:
-                for vk, vv in six.iteritems(v):
+                for vk, vv in v.items():
                     expconfig[k][vk] = vv
             else:
                 expconfig[k] = v
 
-    for k, v in six.iteritems(cmdargs):
+    for k, v in cmdargs.items():
         if v is not None:
             if k == 'metadata':
-                for vk, vv in six.iteritems(v):
+                for vk, vv in v.items():
                     expconfig[k][vk] = vv
             else:
                 expconfig[k] = v

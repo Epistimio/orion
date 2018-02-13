@@ -43,7 +43,6 @@ from collections import OrderedDict
 import numpy
 from scipy._lib._util import check_random_state
 from scipy.stats import distributions
-import six
 
 
 # helper class to be able to print [1, ..., 4] instead of [1, '...', 4]
@@ -99,7 +98,7 @@ class Dimension(object):
         if 'random_state' in kwargs or 'seed' in kwargs:
             raise ValueError("random_state/seed cannot be set in a "
                              "parameter's definition! Set seed globally!")
-        if isinstance(prior, six.string_types):
+        if isinstance(prior, str):
             self._prior_name = prior
             self.prior = getattr(distributions, prior)
         else:
@@ -187,7 +186,7 @@ class Dimension(object):
 
     @name.setter
     def name(self, value):
-        if isinstance(value, six.string_types) or value is None:
+        if isinstance(value, str) or value is None:
             self._name = value
         else:
             raise TypeError("Dimension's name must be either string or None. "
@@ -475,7 +474,7 @@ class Space(OrderedDict):
 
         """
         rng = check_random_state(seed)
-        samples = [dim.sample(n_samples, rng) for dim in six.itervalues(self)]
+        samples = [dim.sample(n_samples, rng) for dim in self.values()]
         return list(zip(*samples))
 
     def interval(self, alpha=1.0):
@@ -484,11 +483,11 @@ class Space(OrderedDict):
         .. note:: Lower bound is inclusive, upper bound is exclusive.
 
         """
-        return [dim.interval(alpha) for dim in six.itervalues(self)]
+        return [dim.interval(alpha) for dim in self.values()]
 
     def __getitem__(self, key):
         """Wrap __getitem__ to allow searching with position."""
-        if isinstance(key, six.string_types):
+        if isinstance(key, str):
             return super(Space, self).__getitem__(key)
 
         values = list(self.values())
@@ -496,7 +495,7 @@ class Space(OrderedDict):
 
     def __setitem__(self, key, value):
         """Wrap __setitem__ to allow only `Dimension`s values and string keys."""
-        if not isinstance(key, six.string_types):
+        if not isinstance(key, str):
             raise TypeError("Keys registered to Space must be string types. "
                             "Provided: {}".format(key))
         if not isinstance(value, Dimension):
@@ -515,19 +514,19 @@ class Space(OrderedDict):
            or a string indicating a dimension's name.
 
         """
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             return super(Space, self).__contains__(value)
 
         try:
             len(value)
         except TypeError as exc:
-            six.raise_from(TypeError("Can check only for dimension names or "
-                                     "for tuples with parameter values."), exc)
+            raise TypeError("Can check only for dimension names or "
+                            "for tuples with parameter values.") from exc
 
         if not self:
             return False
 
-        for component, dim in zip(value, six.itervalues(self)):
+        for component, dim in zip(value, self.values()):
             if component not in dim:
                 return False
 

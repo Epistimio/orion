@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Installation script for MetaOpt."""
-from __future__ import absolute_import
-
 from glob import iglob
 import os
 import sys
@@ -64,7 +62,7 @@ setup_args = dict(
             'random = metaopt.algo.random:Random',
             ],
         },
-    install_requires=['six', 'PyYAML', 'pymongo>=3', 'numpy', 'scipy'],
+    install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy'],
     tests_require=tests_require,
     setup_requires=['setuptools', 'pytest-runner>=2.0,<3dev'],
     extras_require=dict(test=tests_require),
@@ -93,7 +91,7 @@ setup_args['classifiers'] = [
     'Topic :: Scientific/Engineering',
     'Topic :: Scientific/Engineering :: Artificial Intelligence',
 ] + [('Programming Language :: Python :: %s' % x)
-     for x in '2 2.6 2.7 3 3.4 3.5 3.6'.split()]
+     for x in '3 3.4 3.5 3.6'.split()]
 
 if __name__ == '__main__':
     setup(**setup_args)

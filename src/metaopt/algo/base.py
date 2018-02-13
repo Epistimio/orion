@@ -12,15 +12,12 @@
 from abc import (ABCMeta, abstractmethod)
 import logging
 
-import six
-
 from metaopt.core.utils import Factory
 
 log = logging.getLogger(__name__)
 
 
-@six.add_metaclass(ABCMeta)
-class BaseAlgorithm(object):
+class BaseAlgorithm(object, metaclass=ABCMeta):
     """Base class describing what an algorithm can do.
 
     Notes
@@ -65,7 +62,7 @@ class BaseAlgorithm(object):
         self._space = space
         self._hyper_names = list(hypers.keys())
         # Instantiate tunable parameters of an algorithm
-        for varname, hyper in six.iteritems(hypers):
+        for varname, hyper in hypers.items():
             # Check if tunable element is another algorithm
             if isinstance(hyper, dict) and len(hyper) == 1:
                 subalgo_type = list(hyper)[0]
@@ -173,13 +170,13 @@ class BaseAlgorithm(object):
     def space(self, space_):
         """Propagate changes in defined space to possibly nested algorithms."""
         self._space = space_
-        for attr in six.itervalues(self.__dict__):
+        for attr in self.__dict__.values():
             if isinstance(attr, BaseAlgorithm):
                 attr.space = space_
 
 
-@six.add_metaclass(Factory)  # pylint: disable=too-few-public-methods,abstract-method
-class OptimizationAlgorithm(BaseAlgorithm):
+# pylint: disable=too-few-public-methods,abstract-method
+class OptimizationAlgorithm(BaseAlgorithm, metaclass=Factory):
     """Class used to inject dependency on an algorithm implementation.
 
     .. seealso:: `Factory` metaclass and `BaseAlgorithm` interface.
