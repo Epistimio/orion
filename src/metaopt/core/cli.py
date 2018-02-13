@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 :mod:`metaopt.core.cli` -- Functions that define console scripts
@@ -88,3 +89,7 @@ def infer_versioning_metadata(existing_metadata):
     # User repo's version
     # User repo's HEAD commit hash
     return existing_metadata
+
+
+if __name__ == "__main__":
+    main()
