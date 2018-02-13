@@ -18,6 +18,7 @@ Currently supported:
 """
 from __future__ import absolute_import
 
+from abc import (ABC, abstractmethod)
 import importlib
 import os
 
@@ -40,7 +41,7 @@ def infer_converter_from_file_type(config_path):
     raise NotImplementedError(error)
 
 
-class BaseConverter(object):
+class BaseConverter(ABC):
     """Base class for configuration parsers/generators.
 
     Attributes
@@ -53,6 +54,7 @@ class BaseConverter(object):
 
     file_extensions = []
 
+    @abstractmethod
     def parse(self, filepath):
         """Read dictionary out of the configuration file.
 
@@ -61,36 +63,13 @@ class BaseConverter(object):
         filepath : str
            Full path to the original user script's configuration.
 
-        :raises :exc:`ParsingError`: if parsing fails
-
         """
-        with open(filepath) as f:
-            return f.read()
+        pass
 
+    @abstractmethod
     def generate(self, filepath, data):
-        """Create a configuration file at `filepath` using dictionary `data`.
-
-        :raises :exc:`GenerationError`: if generation fails
-
-        """
-        with open(filepath, 'w') as f:
-            f.write(data)
-
-
-class ParsingError(RuntimeError):
-    """Exception type used to delegate responsibility from any converter
-    implementation's parsing errors.
-    """
-
-    pass
-
-
-class GenerationError(RuntimeError):
-    """Exception type used to delegate responsibility from any converter
-    implementation's generating errors.
-    """
-
-    pass
+        """Create a configuration file at `filepath` using dictionary `data`."""
+        pass
 
 
 class YAMLConverter(BaseConverter):
@@ -110,18 +89,12 @@ class YAMLConverter(BaseConverter):
         file : str
            Full path to the original user script's configuration.
 
-        :raises :exc:`ParsingError`: if parsing fails
-
         """
         with open(filepath) as f:
             return self.yaml.load(stream=f)
 
     def generate(self, filepath, data):
-        """Create a configuration file at `filepath` using dictionary `data`.
-
-        :raises :exc:`GenerationError`: if generation fails
-
-        """
+        """Create a configuration file at `filepath` using dictionary `data`."""
         with open(filepath, 'w') as f:
             self.yaml.dump(data, stream=f)
 
@@ -143,23 +116,17 @@ class JSONConverter(BaseConverter):
         file : str
            Full path to the original user script's configuration.
 
-        :raises :exc:`ParsingError`: if parsing fails
-
         """
         with open(filepath) as f:
             return self.json.load(f)
 
     def generate(self, filepath, data):
-        """Create a configuration file at `filepath` using dictionary `data`.
-
-        :raises :exc:`GenerationError`: if generation fails
-
-        """
+        """Create a configuration file at `filepath` using dictionary `data`."""
         with open(filepath, 'w') as f:
             self.json.dump(data, f)
 
 
-@six.add_metaclass(Factory)  # pylint: disable=too-few-public-methods
+@six.add_metaclass(Factory)  # pylint: disable=too-few-public-methods,abstract-method
 class Converter(BaseConverter):
     """Class used to inject dependency on a configuration file parser/generator.
 
