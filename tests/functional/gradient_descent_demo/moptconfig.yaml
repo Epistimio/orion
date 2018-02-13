@@ -1,0 +1,13 @@
+name: voila_voici22
+
+pool_size: 1
+max_trials: 100
+
+algorithms:
+  gradient_descent:
+    learning_rate: 0.1
+
+database:
+  type: 'mongodb'
+  name: 'metaopt_test'
+  host: 'mongodb://user:pass@localhost'

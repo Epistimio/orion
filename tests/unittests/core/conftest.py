@@ -5,9 +5,7 @@ import datetime
 import getpass
 import os
 
-from pymongo import MongoClient
 import pytest
-import yaml
 
 from metaopt.algo.space import (Categorical, Integer, Real, Space)
 from metaopt.core.io.convert import (JSONConverter, YAMLConverter)
@@ -18,36 +16,6 @@ from metaopt.core.worker.experiment import Experiment
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, 'sample_config.yml')
 JSON_SAMPLE = os.path.join(TEST_DIR, 'sample_config.json')
-
-
-@pytest.fixture()
-def exp_config():
-    """Load an example database."""
-    with open(os.path.join(TEST_DIR, 'experiment.yaml')) as f:
-        exp_config = list(yaml.safe_load_all(f))
-    return exp_config
-
-
-@pytest.fixture(scope='session')
-def database():
-    """Return Mongo database object to test with example entries."""
-    client = MongoClient(username='user', password='pass', authSource='metaopt_test')
-    database = client.metaopt_test
-    yield database
-    client.close()
-
-
-@pytest.fixture()
-def clean_db(database, exp_config):
-    """Clean insert example experiment entries to collections."""
-    database.experiments.drop()
-    database.experiments.insert_many(exp_config[0])
-    database.trials.drop()
-    database.trials.insert_many(exp_config[1])
-    database.workers.drop()
-    database.workers.insert_many(exp_config[2])
-    database.resources.drop()
-    database.resources.insert_many(exp_config[3])
 
 
 @pytest.fixture()
