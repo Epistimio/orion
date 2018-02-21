@@ -6,7 +6,7 @@ import os
 import sys
 import textwrap
 
-from setuptools import (find_packages, setup)
+from setuptools import setup
 
 import versioneer
 
@@ -39,6 +39,13 @@ tests_require = [
     'pytest>=3.0.0'
     ]
 
+
+packages = [
+    'metaopt.core',
+    'metaopt.client',
+    'metaopt.algo',
+    ]
+
 setup_args = dict(
     name='metaopt.core',
     version=versioneer.get_version(),
@@ -49,8 +56,7 @@ setup_args = dict(
     author=metaopt.__author__,
     author_email=metaopt.__author_email__,
     url=metaopt.__url__,
-    namespace_packages=['metaopt', 'metaopt.algo'],
-    packages=find_packages(where='src'),
+    packages=packages,
     package_dir={'': 'src'},
     include_package_data=True,
     data_files=find_data_files(),
@@ -66,8 +72,9 @@ setup_args = dict(
     tests_require=tests_require,
     setup_requires=['setuptools', 'pytest-runner>=2.0,<3dev'],
     extras_require=dict(test=tests_require),
-    #  http://peak.telecommunity.com/DevCenter/setuptools#setting-the-zip-safe-flag
-    #  zip_safe=False
+    # "Zipped eggs don't play nicely with namespace packaging"
+    # from https://github.com/pypa/sample-namespace-packages
+    zip_safe=False
     )
 
 setup_args['keywords'] = [

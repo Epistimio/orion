@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Installation script for `metaopt.algo.gradient_descent`."""
-from setuptools import (find_packages, setup)
+from setuptools import setup
 
 setup_args = dict(
     name='metaopt.algo.gradient_descent',
@@ -11,8 +11,7 @@ setup_args = dict(
     author='Christos Tsirigotis',
     author_email='tsirif@gmail.com',
     url='https://github.com/mila-udem/metaopt',
-    namespace_packages=['metaopt', 'metaopt.algo'],
-    packages=find_packages(where='src'),
+    packages=['metaopt.algo'],
     package_dir={'': 'src'},
     include_package_data=True,
     entry_points={
@@ -21,7 +20,10 @@ setup_args = dict(
             ],
         },
     install_requires=['metaopt.core'],
-    setup_requires=['setuptools', 'metaopt.core'],
+    setup_requires=['setuptools'],
+    # "Zipped eggs don't play nicely with namespace packaging"
+    # from https://github.com/pypa/sample-namespace-packages
+    zip_safe=False
     )
 
 setup_args['keywords'] = [
