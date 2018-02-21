@@ -13,10 +13,9 @@ from metaopt.core.worker.experiment import Experiment
 
 
 @pytest.mark.usefixtures("clean_db")
-def test_demo(database):
+def test_demo(database, monkeypatch):
     """Test a simple usage scenario."""
-    curdir = os.path.abspath(os.path.curdir)
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     process = subprocess.Popen(["mopt", "--config", "./moptconfig.yaml",
                                 "./black_box.py", "-x~random(-50, 50)"])
     rcode = process.wait()
@@ -57,14 +56,11 @@ def test_demo(database):
     assert params[0]['type'] == 'real'
     assert (params[0]['value'] - 34.56789) < 1e-5
 
-    os.chdir(curdir)
-
 
 @pytest.mark.usefixtures("clean_db")
-def test_demo_two_workers(database):
+def test_demo_two_workers(database, monkeypatch):
     """Test a simple usage scenario."""
-    curdir = os.path.abspath(os.path.curdir)
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     processes = []
     for _ in range(2):
         process = subprocess.Popen(["mopt", "-n", "two_workers_demo",
@@ -102,8 +98,6 @@ def test_demo_two_workers(database):
     assert len(params) == 1
     assert params[0]['name'] == '/x'
     assert params[0]['type'] == 'real'
-
-    os.chdir(curdir)
 
 
 @pytest.mark.usefixtures("clean_db")

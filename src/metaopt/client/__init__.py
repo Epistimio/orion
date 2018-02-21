@@ -11,6 +11,7 @@
 import os
 
 IS_METAOPT_ON = False
+_HAS_REPORTED_RESULTS = False
 RESULTS_FILENAME = os.getenv('METAOPT_RESULTS_PATH', None)
 if RESULTS_FILENAME and os.path.isfile(RESULTS_FILENAME):
     import json
@@ -19,8 +20,6 @@ if RESULTS_FILENAME and os.path.isfile(RESULTS_FILENAME):
 if RESULTS_FILENAME and not IS_METAOPT_ON:
     raise RuntimeWarning("Results file path provided in environmental variable "
                          "does not correspond to an existing file.")
-
-_HAS_REPORTED_RESULTS = False
 
 
 def report_results(data):
