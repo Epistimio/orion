@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`metaopt.core.worker.experiment`."""
 
+import copy
 import random
 
 import pytest
@@ -182,7 +183,8 @@ class TestConfigProperty(object):
 
         .. warning:: Currently, not implemented.
         """
-        new_config = {'metadata': {'user_version': 1.2}}
+        new_config = copy.deepcopy(exp_config[0][1])
+        new_config['metadata']['user_version'] = 1.2
         exp = Experiment('supernaedo2')
         exp.configure(new_config)
 
@@ -195,8 +197,8 @@ class TestConfigProperty(object):
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
         exp_config[0][1]['max_trials'] = 5000
-        exp_config[0][1]['status'] = 'pending'
         exp.configure(exp_config[0][1])
+        exp_config[0][1]['status'] = 'pending'
         exp_config[0][1]['algorithms']['dumbalgo']['done'] = False
         exp_config[0][1]['algorithms']['dumbalgo']['judgement'] = None
         exp_config[0][1]['algorithms']['dumbalgo']['scoring'] = 0
@@ -318,6 +320,23 @@ class TestConfigProperty(object):
     def test_after_init_refers_are_objects(self, exp_config):
         """Attribute exp.refers become objects after init."""
         pass
+
+    def test_algorithm_config_with_just_a_string(self, exp_config):
+        """Test that configuring an algorithm with just a string is OK."""
+        new_config = copy.deepcopy(exp_config[0][1])
+        new_config['algorithms'] = 'dumbalgo'
+        exp = Experiment('supernaedo2')
+        exp.configure(new_config)
+        new_config['status'] = 'pending'
+        new_config['algorithms'] = dict()
+        new_config['algorithms']['dumbalgo'] = dict()
+        new_config['algorithms']['dumbalgo']['done'] = False
+        new_config['algorithms']['dumbalgo']['judgement'] = None
+        new_config['algorithms']['dumbalgo']['scoring'] = 0
+        new_config['algorithms']['dumbalgo']['suspend'] = False
+        new_config['algorithms']['dumbalgo']['value'] = 5
+        assert exp._id == new_config.pop('_id')
+        assert exp.configuration == new_config
 
 
 class TestReserveTrial(object):

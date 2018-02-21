@@ -283,6 +283,9 @@ class Experiment(object):
         if self._init_done:
             raise RuntimeError("Configuration is done; cannot reset an Experiment.")
 
+        # Sanitize and replace some sections with objects
+        candidate_algorithms = Experiment._sanitize_and_instantiate_config(config)
+
         # If status is None in this object, then database did not hit a config
         # with same (name, user's name) pair. Everything depends on the user's
         # moptconfig to set.
@@ -314,10 +317,8 @@ class Experiment(object):
                 continue
             setattr(self, section, value)
 
-        # Sanitize and replace some sections with objects
-        self._sanitize_and_instantiate_config()
         self._init_done = True
-
+        self.algorithms = candidate_algorithms
         self.status = 'pending'
         final_config = self.configuration  # grab dict representation of Experiment
 
@@ -384,7 +385,8 @@ class Experiment(object):
 
         return stats
 
-    def _sanitize_and_instantiate_config(self):
+    @staticmethod
+    def _sanitize_and_instantiate_config(config):
         """Check before dispatching experiment whether configuration corresponds
         to a executable experiment environment.
 
@@ -395,10 +397,13 @@ class Experiment(object):
         4. Check if experiment `is_done`, prompt for larger `max_trials` if it is. (TODO)
 
         """
-        space = SpaceBuilder().build_from(self.metadata['user_args'])
+        space = SpaceBuilder().build_from(config['metadata']['user_args'])
         if not space:
             raise ValueError("Parameter space is empty. There is nothing to optimize.")
-        self.algorithms = PrimaryAlgo(space, self.algorithms)
+        algorithms = PrimaryAlgo(space, config['algorithms'])
+        # Sanitize 'algorithms' section in given configuration
+        config['algorithms'] = algorithms.configuration
+        return algorithms
 
     def _fork_config(self, config):
         """Ask for a different identifier for this experiment. Set :attr:`refers`
@@ -419,14 +424,11 @@ class Experiment(object):
                     section.startswith('_'):
                 continue
             item = getattr(self, section)
-            if section == 'algorithms':
-                item = {k.lower(): v for k, v in item.items()}
-                value = {k.lower(): v for k, v in value.items()}
             if item != value:
-                log.debug("Config given is different from config found in db at section: %s",
-                          section)
-                log.debug("Config+ : %s", value)
-                log.debug("Config- : %s", getattr(self, section))
+                log.warning("Config given is different from config found in db at section: %s",
+                            section)
+                log.warning("Config+ :\n%s", value)
+                log.warning("Config- :\n%s", item)
                 is_diff = True
                 break
 

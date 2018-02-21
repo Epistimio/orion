@@ -14,7 +14,7 @@ class DumbAlgo(BaseAlgorithm):
     """Stab class for `BaseAlgorithm`."""
 
     def __init__(self, space, value=5,
-                 score=0, judgement=None,
+                 scoring=0, judgement=None,
                  suspend=False, done=False, **nested_algo):
         """Configure returns, allow for variable variables."""
         self._times_called_suspend = 0
@@ -26,7 +26,7 @@ class DumbAlgo(BaseAlgorithm):
         self._judge_point = None
         self._measurements = None
         super(DumbAlgo, self).__init__(space, value=value,
-                                       scoring=score, judgement=judgement,
+                                       scoring=scoring, judgement=judgement,
                                        suspend=suspend,
                                        done=done,
                                        **nested_algo)
@@ -67,7 +67,7 @@ class DumbAlgo(BaseAlgorithm):
 
 # Hack it into being discoverable
 OptimizationAlgorithm.types.append(DumbAlgo)
-OptimizationAlgorithm.typenames.append(DumbAlgo.__name__)
+OptimizationAlgorithm.typenames.append(DumbAlgo.__name__.lower())
 
 
 @pytest.fixture(scope='session')

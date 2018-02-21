@@ -44,7 +44,12 @@
   # **complete** specification of algorithms used
   # user's configuration, but defaults are inferred
   algorithms:
-    dumbalgo: {}
+    dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
+      value: 5
+      scoring: 0
+      judgement: ~
+      suspend: False
+      done: False
 
 - name: supernaedo2
 
@@ -67,14 +72,13 @@
   pool_size: 2
   max_trials: 1000
   status: broken
-  # stats:
-  #   trials_completed: 0
-  #   best_trial_id: ~
-  #   start_time: 123
-  #   end_time: ~
-  #   duration: ~
   algorithms:
-    dumbalgo: {}
+    dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
+      value: 5
+      scoring: 0
+      judgement: ~
+      suspend: False
+      done: False
 
 - name: supernaedo2
 
@@ -97,14 +101,13 @@
   pool_size: 2
   max_trials: 1000
   status: running
-  # stats:
-  #   trials_completed: 0
-  #   best_trial_id: ~
-  #   start_time: 123
-  #   end_time: ~
-  #   duration: ~
   algorithms:
-    dumbalgo: {}
+    dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
+      value: 5
+      scoring: 0
+      judgement: ~
+      suspend: False
+      done: False
 ---
 
 # Example of entries in `trials` collection

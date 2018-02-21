@@ -14,7 +14,7 @@ def palgo(dumbalgo, space, fixed_suggestion):
         'value': fixed_suggestion,
         'subone': {'DumbAlgo': dict(
             value=6,
-            score=5
+            scoring=5
             )}
         }}
     palgo = PrimaryAlgo(space, algo_config)

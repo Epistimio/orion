@@ -29,6 +29,8 @@ def workon(experiment):
         trial = experiment.reserve_trial(score_handle=producer.algorithm.score)
 
         if trial is None:
+            log.debug("#### Failed to pull a new trial from database.")
+
             log.debug("#### Fetch most recent completed trials and update algorithm.")
             producer.update()
 
@@ -36,7 +38,7 @@ def workon(experiment):
             if experiment.is_done:
                 break
 
-            log.debug("#### Failed to pull a new trial from database. Producing...")
+            log.debug("#### Produce new trials.")
             producer.produce()
 
         else:

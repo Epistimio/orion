@@ -9,7 +9,7 @@ def test_init(dumbalgo):
     """Check if initialization works for nested algos."""
     nested_algo = {'DumbAlgo': dict(
         value=6,
-        score=5
+        scoring=5
         )}
     algo = dumbalgo(8, value=1, subone=nested_algo)
     assert algo.space == 8
@@ -28,7 +28,7 @@ def test_configuration(dumbalgo):
     """Check configuration getter works for nested algos."""
     nested_algo = {'DumbAlgo': dict(
         value=6,
-        score=5
+        scoring=5
         )}
     algo = dumbalgo(8, value=1, subone=nested_algo)
     config = algo.configuration
