@@ -90,8 +90,8 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
     @abstractmethod
     def observe(self, points, results):
-        """Observe evaluation `results` corresponding to list of `points` in
-        space.
+        """Observe the `results` of the evaluation of the `points` in the
+        process defined in user's script.
 
         Parameters
         ----------
@@ -135,6 +135,12 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
         The algorithm can return a dictionary of data which will be provided
         as a response to the running environment. Default is None response.
+
+        .. note:: Calling algorithm to `judge` a `point` based on its online
+           `measurements` will effectively change a state in the algorithm (like
+           a reinforcement learning agent's hidden state or an automatic early
+           stopping mechanism's regression), which it may change the value of
+           the property `should_suspend`.
 
         """
         return None
