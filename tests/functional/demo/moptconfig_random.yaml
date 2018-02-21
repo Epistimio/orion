@@ -1,10 +1,9 @@
 name: demo_random_search
 
-pool_size: 4
-max_trials: 100
+pool_size: 2
+max_trials: 400
 
-algorithms:
-  random
+algorithms: random
 
 database:
   type: 'mongodb'

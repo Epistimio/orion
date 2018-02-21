@@ -61,6 +61,52 @@ def test_demo(database):
 
 
 @pytest.mark.usefixtures("clean_db")
+def test_demo_two_workers(database):
+    """Test a simple usage scenario."""
+    curdir = os.path.abspath(os.path.curdir)
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    processes = []
+    for _ in range(2):
+        process = subprocess.Popen(["mopt", "-n", "two_workers_demo",
+                                    "--config", "./moptconfig_random.yaml",
+                                    "./black_box.py", "-x~norm(34, 3)"])
+        processes.append(process)
+
+    for process in processes:
+        rcode = process.wait()
+        assert rcode == 0
+
+    exp = list(database.experiments.find({'name': 'two_workers_demo'}))
+    assert len(exp) == 1
+    exp = exp[0]
+    assert '_id' in exp
+    exp_id = exp['_id']
+    assert exp['name'] == 'two_workers_demo'
+    assert exp['pool_size'] == 2
+    assert exp['max_trials'] == 400
+    assert exp['status'] == 'done'
+    assert exp['algorithms'] == {'random': {}}
+    assert 'user' in exp['metadata']
+    assert 'datetime' in exp['metadata']
+    assert 'mopt_version' in exp['metadata']
+    assert 'user_script' in exp['metadata']
+    assert os.path.isabs(exp['metadata']['user_script'])
+    assert exp['metadata']['user_args'] == ['-x~norm(34, 3)']
+
+    trials = list(database.trials.find({'experiment': exp_id}))
+    for trial in trials:
+        assert trial['status'] == 'completed'
+    assert len(trials) > 400
+    assert len(trials) <= 402
+    params = trials[-1]['params']
+    assert len(params) == 1
+    assert params[0]['name'] == '/x'
+    assert params[0]['type'] == 'real'
+
+    os.chdir(curdir)
+
+
+@pytest.mark.usefixtures("clean_db")
 def test_workon(database):
     """Test scenario having a configured experiment already setup."""
     try:
