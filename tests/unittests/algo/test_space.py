@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`metaopt.algo.space`."""
 
-from collections import OrderedDict
+from collections import (defaultdict, OrderedDict)
 
 import numpy as np
 from numpy.testing import assert_array_equal as assert_eq
@@ -80,23 +80,11 @@ class TestDimension(object):
         assert len(samples) == 1
         assert dists.alpha.rvs(0.9) == samples[0]
 
-    def test_discrete_True(self, seed):
-        """Use explicitly discrete argument == True."""
-        dim = Dimension('yolo', 'uniform', -3, 4, shape=(4, 4), discrete=True)
-        samples = dim.sample(seed=seed)
-        assert len(samples) == 1
-        test_array = np.array([[-3, 0, -3, 0],
-                               [-2, -1, 0, -1],
-                               [-2, -3, -3, -1],
-                               [-2, -3, 0, -2]], dtype=np.int)
-        assert_eq(test_array, samples[0])
-
-    def test_discrete_False(self, seed):
-        """Use explicitly discrete argument == False."""
-        dim = Dimension('yolo', 'uniform', -3, 4, shape=(4, 4), discrete=False)
-        samples = dim.sample(seed=seed)
-        assert len(samples) == 1
-        assert_eq(dists.uniform.rvs(-3, 4, size=(4, 4)), samples[0])
+    def test_ban_discrete_kwarg(self):
+        """Do not allow use for 'discrete' kwarg, because now there's `_Discrete`."""
+        with pytest.raises(ValueError) as exc:
+            Dimension('yolo', 'uniform', -3, 4, shape=(4, 4), discrete=True)
+        assert "pure `_Discrete`" in str(exc.value)
 
     def test_many_samples(self, seed):
         """More than 1."""
@@ -139,7 +127,7 @@ class TestDimension(object):
 class TestReal(object):
     """Test methods of a `Real` object."""
 
-    def test_as_you_are_as_you_were(self, seed):
+    def test_simple_instance(self, seed):
         """Test Real.__init__."""
         dim = Real('yolo', 'alpha', 0.9)
         samples = dim.sample(seed=seed)
@@ -202,7 +190,7 @@ class TestReal(object):
 class TestInteger(object):
     """Test methods of a `Integer` object."""
 
-    def test_as_you_are_as_you_were(self, seed):
+    def test_simple_instance(self, seed):
         """Test Integer.__init__."""
         dim = Integer('yolo', 'uniform', -3, 6)
         samples = dim.sample(seed=seed)
@@ -257,8 +245,7 @@ class TestCategorical(object):
         assert samples[0] == 'asdfa'
         assert dim._probs == (0.5, 0.5)
 
-        assert categories == dim.interval()
-        assert categories == dim.interval(0.5)
+        assert categories == dim.categories
 
         assert 2 in dim
         assert 3 not in dim
@@ -279,8 +266,7 @@ class TestCategorical(object):
         assert samples[0] == 2
         assert dim._probs == probs
 
-        assert categories == dim.interval()
-        assert categories == dim.interval(0.5)
+        assert categories == dim.categories
 
         assert 2 in dim
         assert 0 not in dim
@@ -288,6 +274,20 @@ class TestCategorical(object):
         assert dim.name == 'yolo'
         assert dim.type == 'categorical'
         assert dim.shape == ()
+
+    def test_probabilities_are_ok(self, seed):
+        """Test that the probabilities given are legit using law of big numbers."""
+        bins = defaultdict(int)
+        probs = (0.1, 0.2, 0.3, 0.4)
+        categories = ('asdfa', 2, 3, 4)
+        categories = OrderedDict(zip(categories, probs))
+        dim = Categorical('yolo', categories)
+        for _ in range(500):
+            sample = dim.sample(seed=seed)[0]
+            bins[sample] += 1
+        for keys in bins.keys():
+            bins[keys] /= float(500)
+        print(bins)
 
     def test_contains_wrong_shape(self):
         """Check correct category but wrongly shaped array."""
@@ -311,6 +311,15 @@ class TestCategorical(object):
         categories = {'asdfa': 0.05, 2: 0.2, 3: 0.3, 4: 0.4}
         with pytest.raises(ValueError):
             Categorical('yolo', categories, shape=2)
+
+    def test_interval_is_banned(self):
+        """Check that calling `Categorical.interval` raises `RuntimeError`."""
+        categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 4: 0.4}
+        dim = Categorical('yolo', categories, shape=2)
+
+        with pytest.raises(RuntimeError) as exc:
+            dim.interval()
+        assert 'not ordered' in str(exc.value)
 
 
 class TestSpace(object):
@@ -385,14 +394,18 @@ class TestSpace(object):
         """Check exceptions in setting items in Space."""
         space = Space()
 
+        # The name of an integer must be a of `str` type.
+        # Integers are reversed for indexing the OrderedDict.
         with pytest.raises(TypeError) as exc:
             space[5] = Integer('yolo', 'uniform', -3, 6)
         assert "string" in str(exc.value)
 
+        # Only object of type `Dimension` are allowed in `Space`.
         with pytest.raises(TypeError) as exc:
             space['ispis'] = 'nope'
         assert "Dimension" in str(exc.value)
 
+        # Cannot register something with the same name.
         space.register(Integer('yolo', 'uniform', -3, 6))
         with pytest.raises(ValueError) as exc:
             space.register(Real('yolo', 'uniform', 0, 6))

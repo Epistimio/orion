@@ -63,8 +63,8 @@ def _get_arguments(*args, **kwargs):
     return args, kwargs
 
 
-def _real_or_int(**kwargs):
-    return Integer if kwargs.get('discrete', False) else Real
+def _real_or_int(kwargs):
+    return Integer if kwargs.pop('discrete', False) else Real
 
 
 class DimensionBuilder(object, metaclass=SingletonType):
@@ -135,11 +135,11 @@ class DimensionBuilder(object, metaclass=SingletonType):
         elif len(args) == 2:
             # Change that .@#$% scipy convention for uniform.
             # First is low, second is high.
-            klass = _real_or_int(**kwargs)
+            klass = _real_or_int(kwargs)
             return klass(name, 'uniform', args[0], args[1] - args[0], **kwargs)
 
         # ``len(args) < 2``
-        klass = _real_or_int(**kwargs)
+        klass = _real_or_int(kwargs)
         return klass(name, 'uniform', *args, **kwargs)
 
     def gaussian(self, *args, **kwargs):
@@ -149,7 +149,7 @@ class DimensionBuilder(object, metaclass=SingletonType):
     def normal(self, *args, **kwargs):
         """Another synonym for `scipy.stats.distributions.norm`."""
         name = self.name
-        klass = _real_or_int(**kwargs)
+        klass = _real_or_int(kwargs)
         return klass(name, 'norm', *args, **kwargs)
 
     def loguniform(self, *args, **kwargs):
@@ -157,7 +157,7 @@ class DimensionBuilder(object, metaclass=SingletonType):
         `scipy.stats.distributions.reciprocal` prior distribution.
         """
         name = self.name
-        klass = _real_or_int(**kwargs)
+        klass = _real_or_int(kwargs)
         return klass(name, 'reciprocal', *args, **kwargs)
 
     def _build(self, name, expression):
@@ -182,7 +182,7 @@ class DimensionBuilder(object, metaclass=SingletonType):
                             {'_get_arguments': _get_arguments})
 
         if hasattr(sp_dists._continuous_distns, prior):
-            klass = _real_or_int(**kwargs)
+            klass = _real_or_int(kwargs)
         elif hasattr(sp_dists._discrete_distns, prior):
             klass = Integer
         else:
@@ -210,7 +210,6 @@ class DimensionBuilder(object, metaclass=SingletonType):
 
         try:
             dimension.sample()
-            dimension.interval()
         except TypeError as exc:
             error_msg = "Parameter '{0}': Incorrect arguments for distribution '{1}'.\n"\
                         "Scipy Docs::\n\n{2}".format(name,

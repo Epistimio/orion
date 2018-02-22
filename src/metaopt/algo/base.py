@@ -123,24 +123,31 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
     def score(self, point):  # pylint:disable=no-self-use,unused-argument
         """Allow algorithm to evaluate `point` based on a prediction about
-        this parameter set's performance. Return a subjective measure of expected
-        performance.
+        this parameter set's performance.
 
         By default, return the same score any parameter (no preference).
+
+        :returns: A subjective measure of expected perfomance.
+        :rtype: float
+
         """
         return 0
 
     def judge(self, point, measurements):  # pylint:disable=no-self-use,unused-argument
         """Inform an algorithm about online `measurements` of a running trial.
 
-        The algorithm can return a dictionary of data which will be provided
-        as a response to the running environment. Default is None response.
+        This method is to be used as a callback in a client-server communication
+        between user's script and a metaopt's worker using a `BaseAlgorithm`.
+        Data returned from this method must be serializable and will be used as
+        a response to the running environment. Default response is None.
 
         .. note:: Calling algorithm to `judge` a `point` based on its online
            `measurements` will effectively change a state in the algorithm (like
            a reinforcement learning agent's hidden state or an automatic early
            stopping mechanism's regression), which it may change the value of
            the property `should_suspend`.
+
+        :returns: None or a serializable dictionary containing named data
 
         """
         return None

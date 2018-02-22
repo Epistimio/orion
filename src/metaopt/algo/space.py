@@ -24,17 +24,10 @@ Parameter values recorded in `metaopt.core.worker.trial.Trial` objects must be
 and are in concordance with `metaopt.algo.space` objects. These objects will be
 defined by `metaopt.core` using the user script's configuration file.
 
-(TODO) Spaces can be transformed to other spaces, using an appropriate
-**compositor** subclass of `Dimension`.
-
 Prior distributions, contained in `Dimension` classes, are based on
 `scipy.stats.distributions` and should be configured as noted in the
 scipy documentation for each specific implentation of a random variable type,
 unless noted otherwise!
-
-(TODO) Complete list of distribution names supported and their settings
-(TODO) Set up sphinx interlink with scipy to make documentation of priors
-beautiful!
 
 """
 
@@ -66,8 +59,6 @@ class Dimension(object):
     shape : tuple
        Defines how many dimensions are packed in this `Dimension`.
        Describes the shape of the corresponding tensor.
-    discrete : bool
-       True, if this `Dimension` samples discrete stuff.
 
     """
 
@@ -87,7 +78,7 @@ class Dimension(object):
         kwargs : dict
            Shape parameter(s) for the `prior` distribution.
            Should include all the non-optional arguments.
-           It may include ``loc``, ``scale``, ``shape``, or ``discrete``.
+           It may include ``loc``, ``scale``, ``shape``.
 
         .. seealso:: `scipy.stats.distributions` for possible values of
            `prior` and their arguments.
@@ -98,6 +89,9 @@ class Dimension(object):
         if 'random_state' in kwargs or 'seed' in kwargs:
             raise ValueError("random_state/seed cannot be set in a "
                              "parameter's definition! Set seed globally!")
+        if 'discrete' in kwargs:
+            raise ValueError("Do not use kwarg 'discrete' on `Dimension`, "
+                             "use pure `_Discrete` class instead!")
         if isinstance(prior, str):
             self._prior_name = prior
             self.prior = getattr(distributions, prior)
@@ -112,7 +106,6 @@ class Dimension(object):
         if 'size' in kwargs:
             raise ValueError("Use 'shape' keyword only instead of 'size'.")
         self._shape = self._kwargs.pop('shape', None)
-        self.discrete = self._kwargs.pop('discrete', False)
 
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
@@ -140,9 +133,6 @@ class Dimension(object):
         samples = [self.prior.rvs(*self._args, size=self._shape,
                                   random_state=seed,
                                   **self._kwargs) for _ in range(n_samples)]
-        # Making discrete by ourselves because scipy does not use **floor**
-        if self.discrete:
-            return list(map(lambda x: numpy.floor(x).astype(int), samples))
         return samples
 
     def interval(self, alpha=1.0):
@@ -206,6 +196,21 @@ class Dimension(object):
         return size
 
 
+class _Discrete(Dimension):
+
+    def sample(self, n_samples=1, seed=None):
+        """Draw random samples from `prior`.
+
+        Discretizes with `numpy.floor` the results from `Dimension.sample`.
+
+        .. seealso:: `Dimension.sample`
+
+        """
+        samples = super(_Discrete, self).sample(n_samples, seed)
+        # Making discrete by ourselves because scipy does not use **floor**
+        return list(map(lambda x: numpy.floor(x).astype(int), samples))
+
+
 class Real(Dimension):
     """Subclass of `Dimension` for representing real parameters.
 
@@ -216,8 +221,6 @@ class Real(Dimension):
     prior : `scipy.stats.distributions.rv_generic`
     shape : tuple
        See Attributes of `Dimension`.
-    discrete : bool
-       False
     low : float
        Constrain with a lower bound (inclusive), default ``-numpy.inf``.
     high : float
@@ -288,7 +291,7 @@ class Real(Dimension):
         return samples
 
 
-class Integer(Real):
+class Integer(Real, _Discrete):
     """Subclass of `Dimension` for representing integer parameters.
 
     Attributes
@@ -298,25 +301,8 @@ class Integer(Real):
     prior : `scipy.stats.distributions.rv_generic`
     shape : tuple
        See Attributes of `Dimension`.
-    discrete : bool
-       True
 
     """
-
-    def __init__(self, name, prior, *args, **kwargs):
-        """Search space dimension that can take on integer values.
-
-        Parameters
-        ----------
-        name : str
-        prior : str
-        args : list
-        kwargs : dict
-           See Parameters of `Dimension.__init__`.
-
-        """
-        kwargs['discrete'] = True
-        super(Integer, self).__init__(name, prior, *args, **kwargs)
 
     def __contains__(self, point):
         """Check if constraints hold for this `point` of `Dimension`.
@@ -333,7 +319,7 @@ class Integer(Real):
         return super(Integer, self).__contains__(point)
 
 
-class Categorical(Dimension):
+class Categorical(_Discrete):
     """Subclass of `Dimension` for representing integer parameters.
 
     Attributes
@@ -343,8 +329,6 @@ class Categorical(Dimension):
     prior : `scipy.stats.distributions.rv_generic`
     shape : tuple
        See Attributes of `Dimension`.
-    discrete : bool
-       True
     categories : tuple
        A set of unordered stuff to pick out from, except if enum
 
@@ -364,7 +348,6 @@ class Categorical(Dimension):
            See Parameters of `Dimension.__init__` for general.
 
         """
-        kwargs['discrete'] = True
         if isinstance(categories, dict):
             self.categories = tuple(categories.keys())
             self._probs = tuple(categories.values())
@@ -401,10 +384,11 @@ class Categorical(Dimension):
         """Return a tuple of possible values that this categorical dimension
         can take.
 
-        Awkward name.
+        .. warning:: This method makes no sense for categorical variables. Use
+           ``self.categories`` instead.
 
         """
-        return self.categories
+        raise RuntimeError("Categories are not ordered. Use ``self.categories`` instead")
 
     def __contains__(self, point):
         """Check if constraints hold for this `point` of `Dimension`.
@@ -482,7 +466,13 @@ class Space(OrderedDict):
         .. note:: Lower bound is inclusive, upper bound is exclusive.
 
         """
-        return [dim.interval(alpha) for dim in self.values()]
+        res = list()
+        for dim in self.values():
+            if dim.type == 'categorical':
+                res.append(dim.categories)
+            else:
+                res.append(dim.interval(alpha))
+        return res
 
     def __getitem__(self, key):
         """Wrap __getitem__ to allow searching with position."""

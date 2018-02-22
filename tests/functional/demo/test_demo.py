@@ -92,7 +92,7 @@ def test_demo_two_workers(database, monkeypatch):
     trials = list(database.trials.find({'experiment': exp_id}))
     for trial in trials:
         assert trial['status'] == 'completed'
-    assert len(trials) > 400
+    assert len(trials) >= 400
     assert len(trials) <= 402
     params = trials[-1]['params']
     assert len(params) == 1

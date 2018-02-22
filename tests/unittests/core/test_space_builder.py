@@ -203,7 +203,6 @@ class TestDimensionBuilder(object):
         assert dim.name == 'yolo'
         assert dim._prior_name == 'Distribution'
         assert isinstance(dim.prior, dists.rv_discrete)
-        assert dim.interval() == (('adfa', 1),)
 
         dim = dimbuilder.build('yolo2', "random({'adfa': 0.1, 3: 0.4, 5: 0.5})")
         assert isinstance(dim, Categorical)
