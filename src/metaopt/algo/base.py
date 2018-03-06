@@ -29,10 +29,44 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
     the results of its evaluation.
 
     **Developer Note**: Each algorithm's complete specification, i.e.
-    implementation of its methods and hyperparameters of its own, lies in a
-    concrete algorithm class. Decorator (TODO) `declare_param` is provided in
-    `metaopt.algo.base` which enables developer to declare hyperparameters
-    of an algorithm implementation or wrapper.
+    implementation of its methods and parameters of its own, lies in a
+    separate concrete algorithm class, which must be an **immediate** subclass of
+    `BaseAlgorithm`. [The reason for this is current implementation of `Factory`
+    metaclass which uses `BaseAlgorithm.__subclasses__()`.] Second, one must
+    declare an algorithm's own parameters (tunable elements which could be set
+    by configuration). This is done by passing them to `BaseAlgorithm.__init__`
+    by calling Python's super with a `Space` object as a positional argument plus
+    algorithm's own parameters as keyword arguments. The keys of the keyword
+    arguments passed to `BaseAlgorithm.__init__` are interpreted as the algorithm's
+    parameter names. So for example, a subclass could be as simple as this
+    (regarding the logistics, not an actual algorithm's implementation):
+
+    Examples
+    --------
+    ```
+    from metaopt.algo.base import BaseAlgorithm
+    from metaopt.algo.space import (Integer, Space)
+
+    class MySimpleAlgo(BaseAlgorithm):
+
+        def __init__(self, space, multiplier=1, another_param="a string param"):
+            super().__init__(space, multiplier=multiplier, another_param=another_param)
+
+        def suggest(self, num=1):
+            print(self.another_param)
+            return list(map(lambda x: tuple(map(lambda y: self.multiplier * y, x)),
+                            self.space.sample(num)))
+
+        def observe(self, points, results):
+            pass
+
+    dim = Integer('named_param', 'norm', 3, 2, shape=(2, 3))
+    s = Space()
+    s.register(dim)
+
+    algo = MySimpleAlgo(s, 2, "I am just sampling!")
+    algo.suggest()
+    ```
 
     References
     ----------
@@ -45,37 +79,37 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
     """
 
-    def __init__(self, space, **hypers):
+    def __init__(self, space, **kwargs):
         """Declare problem's parameter space and set up algo's hyperparameters.
 
         Parameters
         ----------
         space : `metaopt.algo.space.Space`
            Definition of a problem's parameter space.
-        hypers : dict
+        kwargs : dict
            Tunable elements of a particular algorithm, a dictionary from
            hyperparameter names to values.
 
         """
         log.debug("Creating Algorithm object of %s type with parameters:\n%s",
-                  type(self).__name__, hypers)
+                  type(self).__name__, kwargs)
         self._space = space
-        self._hyper_names = list(hypers.keys())
+        self._param_names = list(kwargs.keys())
         # Instantiate tunable parameters of an algorithm
-        for varname, hyper in hypers.items():
+        for varname, param in kwargs.items():
             # Check if tunable element is another algorithm
-            if isinstance(hyper, dict) and len(hyper) == 1:
-                subalgo_type = list(hyper)[0]
-                subalgo_hypers = hyper[subalgo_type]
-                if isinstance(subalgo_hypers, dict):
-                    hyper = OptimizationAlgorithm(subalgo_type,
-                                                  space, **subalgo_hypers)
-            elif isinstance(hyper, str) and \
-                    hyper.lower() in OptimizationAlgorithm.typenames:
+            if isinstance(param, dict) and len(param) == 1:
+                subalgo_type = list(param)[0]
+                subalgo_kwargs = param[subalgo_type]
+                if isinstance(subalgo_kwargs, dict):
+                    param = OptimizationAlgorithm(subalgo_type,
+                                                  space, **subalgo_kwargs)
+            elif isinstance(param, str) and \
+                    param.lower() in OptimizationAlgorithm.typenames:
                 # pylint: disable=too-many-function-args
-                hyper = OptimizationAlgorithm(hyper, space)
+                param = OptimizationAlgorithm(param, space)
 
-            setattr(self, varname, hyper)
+            setattr(self, varname, param)
 
     @abstractmethod
     def suggest(self, num=1):
@@ -168,7 +202,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
         """
         dict_form = dict()
-        for attrname in self._hyper_names:
+        for attrname in self._param_names:
             if attrname.startswith('_'):  # Do not log _space or others in conf
                 continue
             attr = getattr(self, attrname)
