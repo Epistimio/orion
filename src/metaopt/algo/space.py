@@ -210,6 +210,14 @@ class _Discrete(Dimension):
         # Making discrete by ourselves because scipy does not use **floor**
         return list(map(lambda x: numpy.floor(x).astype(int), samples))
 
+    def interval(self, alpha=1.0):
+        low, high = super(_Discrete, self).interval(alpha)
+        int_low = int(numpy.floor(low))
+        int_high = int(numpy.floor(high))
+        if int_high < high:  # Exclusive upper bound
+            int_high += 1
+        return (int_low, int_high)
+
 
 class Real(Dimension):
     """Subclass of `Dimension` for representing real parameters.
@@ -388,7 +396,8 @@ class Categorical(_Discrete):
            ``self.categories`` instead.
 
         """
-        raise RuntimeError("Categories are not ordered. Use ``self.categories`` instead")
+        raise RuntimeError("Categories have no ``interval`` (as they are not ordered).\n"
+                           "Use ``self.categories`` instead.")
 
     def __contains__(self, point):
         """Check if constraints hold for this `point` of `Dimension`.
@@ -492,7 +501,7 @@ class Space(OrderedDict):
                             "Provided: {}".format(value))
         if key in self:
             raise ValueError("There is already a Dimension registered with this name. "
-                             "Register it with another name.")
+                             "Register it with another name. Provided: {}".format(key))
         super(Space, self).__setitem__(key, value)
 
     def __contains__(self, value):

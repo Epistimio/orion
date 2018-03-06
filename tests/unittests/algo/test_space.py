@@ -26,17 +26,17 @@ class TestDimension(object):
 
     def test_simple_instance(self, seed):
         """Test Dimension.__init__."""
-        dim = Dimension('yolo', 'alpha', 0.9)
+        dim = Dimension('yolo', 'norm', 0.9, 0.1)
         samples = dim.sample(seed=seed)
         assert len(samples) == 1
-        assert dists.alpha.rvs(0.9) == samples[0]
+        assert dists.norm.rvs(0.9, 0.1) == samples[0]
 
-        assert dists.alpha.interval(1.0, 0.9) == dim.interval()
-        assert dists.alpha.interval(0.5, 0.9) == dim.interval(0.5)
+        assert dists.norm.interval(1.0, 0.9, 0.1) == dim.interval()
+        assert dists.norm.interval(0.5, 0.9, 0.1) == dim.interval(0.5)
 
         assert 1.0 in dim
 
-        assert str(dim) == "Dimension(name=yolo, prior={alpha: (0.9,), {}}, shape=())"
+        assert str(dim) == "Dimension(name=yolo, prior={norm: (0.9, 0.1), {}}, shape=())"
 
         assert dim.name == 'yolo'
         assert dim.type == 'dimension'
@@ -44,41 +44,41 @@ class TestDimension(object):
 
     def test_shaped_instance(self, seed):
         """Use shape keyword argument."""
-        dim = Dimension('yolo', 'alpha', 0.9, shape=(3, 2))
+        dim = Dimension('yolo', 'norm', 0.9, shape=(3, 2))
         samples = dim.sample(seed=seed)
         assert len(samples) == 1
-        assert_eq(dists.alpha.rvs(0.9, size=(3, 2)), samples[0])
+        assert_eq(dists.norm.rvs(0.9, size=(3, 2)), samples[0])
 
         assert dim.shape == (3, 2)
 
-        dim = Dimension('yolo', 'alpha', 0.9, shape=4)
+        dim = Dimension('yolo', 'norm', 0.9, shape=4)
         samples = dim.sample(seed=seed)
         assert len(samples) == 1
-        assert_eq(dists.alpha.rvs(0.9, size=4), samples[0])
+        assert_eq(dists.norm.rvs(0.9, size=4), samples[0])
 
         assert dim.shape == (4,)
 
-    def test_bad_size_kwarg(self):
+    def test_ban_size_kwarg(self):
         """Should not be able to use 'size' kwarg."""
         with pytest.raises(ValueError):
-            Dimension('yolo', 'alpha', 0.9, size=(3, 2))
+            Dimension('yolo', 'norm', 0.9, size=(3, 2))
 
-    def test_bad_seed_kwarg(self):
+    def test_ban_seed_kwarg(self):
         """Should not be able to use 'seed' kwarg."""
         with pytest.raises(ValueError):
-            Dimension('yolo', 'alpha', 0.9, seed=8)
+            Dimension('yolo', 'norm', 0.9, seed=8)
 
-    def test_bad_rng_kwarg(self):
+    def test_ban_rng_kwarg(self):
         """Should not be able to use 'random_state' kwarg."""
         with pytest.raises(ValueError):
-            Dimension('yolo', 'alpha', 0.9, random_state=8)
+            Dimension('yolo', 'norm', 0.9, random_state=8)
 
     def test_with_predefined_dist(self, seed):
         """Use an already defined distribution object as prior arg."""
-        dim = Dimension('yolo', dists.alpha, 0.9)
+        dim = Dimension('yolo', dists.norm, 0.9)
         samples = dim.sample(seed=seed)
         assert len(samples) == 1
-        assert dists.alpha.rvs(0.9) == samples[0]
+        assert dists.norm.rvs(0.9) == samples[0]
 
     def test_ban_discrete_kwarg(self):
         """Do not allow use for 'discrete' kwarg, because now there's `_Discrete`."""
@@ -129,17 +129,17 @@ class TestReal(object):
 
     def test_simple_instance(self, seed):
         """Test Real.__init__."""
-        dim = Real('yolo', 'alpha', 0.9)
+        dim = Real('yolo', 'norm', 0.9)
         samples = dim.sample(seed=seed)
         assert len(samples) == 1
-        assert dists.alpha.rvs(0.9) == samples[0]
+        assert dists.norm.rvs(0.9) == samples[0]
 
-        assert dists.alpha.interval(1.0, 0.9) == dim.interval()
-        assert dists.alpha.interval(0.5, 0.9) == dim.interval(0.5)
+        assert dists.norm.interval(1.0, 0.9) == dim.interval()
+        assert dists.norm.interval(0.5, 0.9) == dim.interval(0.5)
 
         assert 1.0 in dim
 
-        assert str(dim) == "Real(name=yolo, prior={alpha: (0.9,), {}}, shape=())"
+        assert str(dim) == "Real(name=yolo, prior={norm: (0.9,), {}}, shape=())"
 
         assert dim.name == 'yolo'
         assert dim.type == 'real'
@@ -197,9 +197,8 @@ class TestInteger(object):
         assert len(samples) == 1
         assert samples[0] == -2
 
-        # There is a scipy bug here concerning interval
-        assert dists.uniform.interval(1.0, -3, 6) == dim.interval()
-        assert dists.uniform.interval(0.5, -3, 6) == dim.interval(0.5)
+        assert dim.interval() == (-3, 3)
+        assert dim.interval(0.5) == (-2, 2)
 
         assert 1.0 in dim
 
@@ -342,7 +341,7 @@ class TestSpace(object):
         space.register(dim)
         dim = Integer('yolo2', 'uniform', -3, 6)
         space.register(dim)
-        dim = Real('yolo3', 'alpha', 0.9)
+        dim = Real('yolo3', 'norm', 0.9)
         space.register(dim)
 
         assert 'yolo' in space
@@ -367,7 +366,7 @@ class TestSpace(object):
         space.register(dim)
         dim = Integer('yolo2', 'uniform', -3, 6)
         space.register(dim)
-        dim = Real('yolo3', 'alpha', 0.9)
+        dim = Real('yolo3', 'norm', 0.9)
         space.register(dim)
 
         point = space.sample(seed=seed)
@@ -385,10 +384,10 @@ class TestSpace(object):
         space.register(dim)
         dim = Integer('yolo2', 'uniform', -3, 6)
         space.register(dim)
-        dim = Real('yolo3', 'alpha', 0.9)
+        dim = Real('yolo3', 'norm', 0.9)
         space.register(dim)
 
-        assert space.interval() == [categories, (-3, 3), (0, np.inf)]
+        assert space.interval() == [categories, (-3, 3), (-np.inf, np.inf)]
 
     def test_bad_setitem(self):
         """Check exceptions in setting items in Space."""
@@ -420,7 +419,7 @@ class TestSpace(object):
         space.register(dim)
         dim = Integer('yolo2', 'uniform', -3, 6)
         space.register(dim)
-        dim = Real('yolo3', 'alpha', 0.9)
+        dim = Real('yolo3', 'norm', 0.9)
         space.register(dim)
 
         assert space['yolo'].type == 'categorical'
@@ -437,9 +436,9 @@ class TestSpace(object):
         space = Space()
         dim = Integer('yolo2', 'uniform', -3, 6, shape=(2,))
         space.register(dim)
-        dim = Real('yolo3', 'alpha', 0.9)
+        dim = Real('yolo3', 'norm', 0.9)
         space.register(dim)
 
         assert str(space) == "Space(["\
                              "Integer(name=yolo2, prior={uniform: (-3, 6), {}}, shape=(2,)),\n" \
-                             "       Real(name=yolo3, prior={alpha: (0.9,), {}}, shape=())])"
+                             "       Real(name=yolo3, prior={norm: (0.9,), {}}, shape=())])"
