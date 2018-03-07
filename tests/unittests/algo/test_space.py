@@ -14,7 +14,7 @@ from metaopt.algo.space import (Categorical, Dimension, Integer, Real, Space)
 
 @pytest.fixture(scope='function')
 def seed():
-    """Return a fixed ``numpy.random.RandomState`` and gloal seed."""
+    """Return a fixed ``numpy.random.RandomState`` and global seed."""
     seed = 5
     rng = np.random.RandomState(seed)
     np.random.seed(seed)
@@ -286,7 +286,8 @@ class TestCategorical(object):
             bins[sample] += 1
         for keys in bins.keys():
             bins[keys] /= float(500)
-        print(bins)
+        for key, value in categories.items():
+            assert abs(bins[key] - value) < 0.01
 
     def test_contains_wrong_shape(self):
         """Check correct category but wrongly shaped array."""
@@ -362,18 +363,24 @@ class TestSpace(object):
         space = Space()
         probs = (0.1, 0.2, 0.3, 0.4)
         categories = ('asdfa', 2, 3, 4)
-        dim = Categorical('yolo', OrderedDict(zip(categories, probs)), shape=2)
-        space.register(dim)
-        dim = Integer('yolo2', 'uniform', -3, 6)
-        space.register(dim)
-        dim = Real('yolo3', 'norm', 0.9)
-        space.register(dim)
+        dim1 = Categorical('yolo', OrderedDict(zip(categories, probs)), shape=(2, 2))
+        space.register(dim1)
+        dim2 = Integer('yolo2', 'uniform', -3, 6)
+        space.register(dim2)
+        dim3 = Real('yolo3', 'norm', 0.9)
+        space.register(dim3)
 
         point = space.sample(seed=seed)
-        print(point)
+        assert point == [(dim1.sample()[0],
+                          dim2.sample()[0],
+                          dim3.sample()[0]), ]
 
         points = space.sample(2, seed=seed)
-        print(points)
+        points1 = dim1.sample(2)
+        points2 = dim2.sample(2)
+        points3 = dim3.sample(2)
+        assert points == [(points1[0], points2[0], points3[0]),
+                          (points1[1], points2[1], points3[1])]
 
     def test_interval(self):
         """Check whether interval is cool."""
