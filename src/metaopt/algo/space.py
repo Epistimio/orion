@@ -379,14 +379,8 @@ class Categorical(_Discrete):
 
         """
         positions = super(Categorical, self).sample(n_samples, seed)
-        samples = list(map(self._inverse, positions))
-        result = []
-        for i, sample in zip(positions, samples):
-            if sample.shape == ():
-                result.append(self.categories[i].__class__(sample))
-            else:
-                result.append(sample)
-        return result
+        samples = list(map(lambda x: x.tolist(), map(self._inverse, positions)))
+        return samples
 
     def interval(self, alpha=1.0):
         """Return a tuple of possible values that this categorical dimension
