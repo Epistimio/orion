@@ -28,9 +28,9 @@ class Consumer(object):
     delivered to the worker process successfully.
 
     It forks another process which executes user's script with the suggested
-    options. It expects results to be written in a file, whose path has been
-    defined in a special metaopt environmental variable which is set into the
-    child process' environment.
+    options. It expects results to be written in a **JSON** file, whose path
+    has been defined in a special metaopt environmental variable which is set
+    into the child process' environment.
 
     """
 
@@ -48,9 +48,9 @@ class Consumer(object):
                                " initialization.")
 
         # Fetch space builder
-        self.template = SpaceBuilder()
+        self.template_builder = SpaceBuilder()
         # Get path to user's script and infer trial configuration directory
-        self.script = experiment.metadata['user_script']
+        self.script_path = experiment.metadata['user_script']
         self.tmp_dir = os.path.join(tempfile.gettempdir(), 'metaopt')
         os.makedirs(self.tmp_dir, exist_ok=True)
 
@@ -73,8 +73,8 @@ class Consumer(object):
             log.debug("### Register successfully evaluated %s.", completed_trial)
             self.experiment.push_completed_trial(completed_trial)
         else:
-            log.debug("### Recycle failed %s.", trial)
-            trial.status = 'new'  # recycle failed trial
+            log.debug("### Save %s as broken.", trial)
+            trial.status = 'broken'
             Database().write('trials', trial.to_dict(),
                              query={'_id': trial.id})
 
@@ -91,7 +91,7 @@ class Consumer(object):
         log.debug("## New temp results file: %s", results_file.name)
 
         log.debug("## Building command line argument and configuration for trial.")
-        cmd_args = self.template.build_to(config_file.name, trial)
+        cmd_args = self.template_builder.build_to(config_file.name, trial)
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
         script_process = self.launch_process(results_file.name, cmd_args)
@@ -119,7 +119,7 @@ class Consumer(object):
         """Facilitate launching a black-box trial."""
         env = dict(os.environ)
         env['METAOPT_RESULTS_PATH'] = str(results_filename)
-        command = [self.script] + cmd_args
+        command = [self.script_path] + cmd_args
         process = subprocess.Popen(command, env=env)
         returncode = process.poll()
         if returncode is not None and returncode < 0:

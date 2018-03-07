@@ -170,6 +170,9 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
     def judge(self, point, measurements):  # pylint:disable=no-self-use,unused-argument
         """Inform an algorithm about online `measurements` of a running trial.
 
+        :param point: A tuple which specifies the values of the (hyper)parameters
+           used to execute user's script with.
+
         This method is to be used as a callback in a client-server communication
         between user's script and a metaopt's worker using a `BaseAlgorithm`.
         Data returned from this method must be serializable and will be used as
