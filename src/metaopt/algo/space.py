@@ -212,8 +212,14 @@ class _Discrete(Dimension):
 
     def interval(self, alpha=1.0):
         low, high = super(_Discrete, self).interval(alpha)
-        int_low = int(numpy.floor(low))
-        int_high = int(numpy.floor(high))
+        try:
+            int_low = int(numpy.floor(low))
+        except OverflowError:  # infinity cannot be converted to Python int type
+            int_low = -numpy.inf
+        try:
+            int_high = int(numpy.floor(high))
+        except OverflowError:  # infinity cannot be converted to Python int type
+            int_high = numpy.inf
         if int_high < high:  # Exclusive upper bound
             int_high += 1
         return (int_low, int_high)

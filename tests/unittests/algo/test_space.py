@@ -220,6 +220,12 @@ class TestInteger(object):
         assert -3 in dim
         assert -4 not in dim
 
+    def test_interval_with_infs(self):
+        """Regression test: Interval handles correctly extreme bounds."""
+        dim = Integer('yolo', 'poisson', 5)
+        # XXX: Complete this on both end of interval when scipy bug is fixed
+        assert dim.interval()[1] == np.inf
+
     @pytest.mark.xfail(reason="scipy bug")
     def test_scipy_integer_dist_interval_bug(self):
         """Scipy does not return the correct answer for integer distributions."""
