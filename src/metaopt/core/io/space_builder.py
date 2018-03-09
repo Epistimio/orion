@@ -40,7 +40,6 @@ minimal intrusion to user's workflow as possible by:
 import collections
 import copy
 import logging
-import numbers
 import os
 import re
 
@@ -110,7 +109,7 @@ class DimensionBuilder(object, metaclass=SingletonType):
         """Init of `DimensionBuilder`."""
         self.name = None
 
-    def enum(self, *args, **kwargs):
+    def choices(self, *args, **kwargs):
         """Create a `Categorical` dimension."""
         name = self.name
         try:
@@ -122,24 +121,18 @@ class DimensionBuilder(object, metaclass=SingletonType):
 
         return Categorical(name, args, **kwargs)
 
-    def random(self, *args, **kwargs):
-        """Create `Real` or `Integer` uniform, or `Categorical`."""
+    def uniform(self, *args, **kwargs):
+        """Create an `Integer` or `Real` uniformly distributed dimension.
+
+        .. note:: Changes scipy convention for uniform's arguments. In scipy,
+           ``uniform(a, b)`` means uniform in the interval [a, a+b). Here, it
+           means uniform in the interval [a, b).
+
+        """
         name = self.name
-        for arg in args:
-            if not isinstance(arg, numbers.Number):
-                return self.enum(*args, **kwargs)
-
-        if len(args) > 2:
-            # Too many stuff => Categorical
-            return self.enum(*args, **kwargs)
-        elif len(args) == 2:
-            # Change that .@#$% scipy convention for uniform.
-            # First is low, second is high.
-            klass = _real_or_int(kwargs)
-            return klass(name, 'uniform', args[0], args[1] - args[0], **kwargs)
-
-        # ``len(args) < 2``
         klass = _real_or_int(kwargs)
+        if len(args) == 2:
+            return klass(name, 'uniform', args[0], args[1] - args[0], **kwargs)
         return klass(name, 'uniform', *args, **kwargs)
 
     def gaussian(self, *args, **kwargs):

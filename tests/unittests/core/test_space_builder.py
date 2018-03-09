@@ -134,35 +134,35 @@ class TestDimensionBuilder(object):
         assert dim._prior_name == 'norm'
         assert isinstance(dim.prior, dists.norm_gen)
 
-    def test_build_enum(self, dimbuilder):
+    def test_build_choices(self, dimbuilder):
         """Create correctly a `Categorical` dimension."""
-        dim = dimbuilder.build('yolo', "enum('adfa', 1, 0.3, 'asaga', shape=4)")
+        dim = dimbuilder.build('yolo', "choices('adfa', 1, 0.3, 'asaga', shape=4)")
         assert isinstance(dim, Categorical)
         assert dim.name == 'yolo'
         assert dim._prior_name == 'Distribution'
         assert isinstance(dim.prior, dists.rv_discrete)
 
-        dim = dimbuilder.build('yolo', "enum(['adfa', 1])")
+        dim = dimbuilder.build('yolo', "choices(['adfa', 1])")
         assert isinstance(dim, Categorical)
         assert dim.name == 'yolo'
         assert dim._prior_name == 'Distribution'
         assert isinstance(dim.prior, dists.rv_discrete)
 
-        dim = dimbuilder.build('yolo2', "enum({'adfa': 0.1, 3: 0.4, 5: 0.5})")
+        dim = dimbuilder.build('yolo2', "choices({'adfa': 0.1, 3: 0.4, 5: 0.5})")
         assert isinstance(dim, Categorical)
         assert dim.name == 'yolo2'
         assert dim._prior_name == 'Distribution'
         assert isinstance(dim.prior, dists.rv_discrete)
 
         with pytest.raises(TypeError) as exc:
-            dimbuilder.build('yolo2', "enum({'adfa': 0.1, 3: 0.4})")
+            dimbuilder.build('yolo2', "choices({'adfa': 0.1, 3: 0.4})")
         assert 'Parameter' in str(exc.value)
         assert 'sum' in str(exc.value.__cause__)
 
     def test_build_fails_because_empty_args(self, dimbuilder):
         """What happens if somebody 'forgets' stuff?"""
         with pytest.raises(TypeError) as exc:
-            dimbuilder.build('yolo', "enum()")
+            dimbuilder.build('yolo', "choices()")
         assert 'Parameter' in str(exc.value)
         assert 'categories' in str(exc.value)
 
@@ -177,92 +177,6 @@ class TestDimensionBuilder(object):
             dimbuilder.build('yolo', "lalalala")
         assert 'Parameter' in str(exc.value)
         assert 'form for prior' in str(exc.value)
-
-    def test_build_random(self, dimbuilder):
-        """Things built by random keyword."""
-        dim = dimbuilder.build('yolo', "random('adfa', 1, 0.3, 'asaga', shape=4)")
-        assert isinstance(dim, Categorical)
-        assert dim.name == 'yolo'
-        assert dim._prior_name == 'Distribution'
-        assert isinstance(dim.prior, dists.rv_discrete)
-
-        dim = dimbuilder.build('yolo', "random(-3, 1, 8, 50, shape=4)")
-        assert isinstance(dim, Categorical)
-        assert dim.name == 'yolo'
-        assert dim._prior_name == 'Distribution'
-        assert isinstance(dim.prior, dists.rv_discrete)
-
-        dim = dimbuilder.build('yolo', "random(['adfa', 1])")
-        assert isinstance(dim, Categorical)
-        assert dim.name == 'yolo'
-        assert dim._prior_name == 'Distribution'
-        assert isinstance(dim.prior, dists.rv_discrete)
-
-        dim = dimbuilder.build('yolo', "random(('adfa', 1))")
-        assert isinstance(dim, Categorical)
-        assert dim.name == 'yolo'
-        assert dim._prior_name == 'Distribution'
-        assert isinstance(dim.prior, dists.rv_discrete)
-
-        dim = dimbuilder.build('yolo2', "random({'adfa': 0.1, 3: 0.4, 5: 0.5})")
-        assert isinstance(dim, Categorical)
-        assert dim.name == 'yolo2'
-        assert dim._prior_name == 'Distribution'
-        assert isinstance(dim.prior, dists.rv_discrete)
-
-        with pytest.raises(TypeError) as exc:
-            dimbuilder.build('yolo2', "random({'adfa': 0.1, 3: 0.4})")
-        assert 'Parameter' in str(exc.value)
-        assert 'sum' in str(exc.value.__cause__)
-
-        dim = dimbuilder.build('yolo', "random('adfa', 1, shape=4)")
-        assert isinstance(dim, Categorical)
-        assert dim.name == 'yolo'
-        assert dim._prior_name == 'Distribution'
-        assert isinstance(dim.prior, dists.rv_discrete)
-
-        dim = dimbuilder.build('yolo', "random(-3, 5.4, shape=4)")
-        assert isinstance(dim, Real)
-        assert dim.name == 'yolo'
-        assert dim._prior_name == 'uniform'
-        assert isinstance(dim.prior, dists.uniform_gen)
-        assert dim.interval() == (-3, 5.4)
-
-        dim = dimbuilder.build('yolo', "random(4)")
-        assert isinstance(dim, Real)
-        assert dim.name == 'yolo'
-        assert dim._prior_name == 'uniform'
-        assert isinstance(dim.prior, dists.uniform_gen)
-        assert dim.interval() == (4.0, 5.0)
-
-        dim = dimbuilder.build('yolo', "random()")
-        assert isinstance(dim, Real)
-        assert dim.name == 'yolo'
-        assert dim._prior_name == 'uniform'
-        assert isinstance(dim.prior, dists.uniform_gen)
-        assert dim.interval() == (0.0, 1.0)
-
-        dim = dimbuilder.build('yolo', "random(-3, 5, shape=4, discrete=True)")
-        assert isinstance(dim, Real)
-        assert dim.name == 'yolo'
-        assert dim._prior_name == 'uniform'
-        assert isinstance(dim.prior, dists.uniform_gen)
-        assert dim.interval() == (-3, 5)
-
-        # These two below, do not make any sense for integers.. meh
-        dim = dimbuilder.build('yolo', "random(4, discrete=True)")
-        assert isinstance(dim, Real)
-        assert dim.name == 'yolo'
-        assert dim._prior_name == 'uniform'
-        assert isinstance(dim.prior, dists.uniform_gen)
-        assert dim.interval() == (4.0, 5.0)
-
-        dim = dimbuilder.build('yolo', "random(discrete=True)")
-        assert isinstance(dim, Integer)
-        assert dim.name == 'yolo'
-        assert dim._prior_name == 'uniform'
-        assert isinstance(dim.prior, dists.uniform_gen)
-        assert dim.interval() == (0.0, 1.0)
 
 
 class TestSpaceBuilder(object):
@@ -305,9 +219,9 @@ class TestSpaceBuilder(object):
     def test_build_from_args_only(self, spacebuilder):
         """Build a space using only args."""
         cmd_args = ["--seed=555",
-                    "-yolo~random(-3, 1)",
-                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
-                    "--arch2~random({'lala': 0.2, 'yolo': 0.8})"]
+                    "-yolo~uniform(-3, 1)",
+                    "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
+                    "--arch2~choices({'lala': 0.2, 'yolo': 0.8})"]
         space = spacebuilder.build_from(cmd_args)
         print(space)
         assert spacebuilder.userconfig is None
@@ -316,16 +230,16 @@ class TestSpaceBuilder(object):
         assert '/arch2' in space
         assert len(spacebuilder.userargs_tmpl) == 3
         assert spacebuilder.userargs_tmpl[None] == ["--seed=555",
-                                                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})"]
+                                                    "--arch1=choices({'lala': 0.2, 'yolo': 0.8})"]
         assert spacebuilder.userargs_tmpl['/yolo'] == '-yolo='
         assert spacebuilder.userargs_tmpl['/arch2'] == '--arch2='
 
     def test_build_from_args_and_config1(self, spacebuilder, yaml_sample_path):
         """Build a space using both args and config file!"""
         cmd_args = [yaml_sample_path, "--seed=555",
-                    "-yolo~random(-3, 1)",
-                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
-                    "--arch2~random({'lala': 0.2, 'yolo': 0.8})"]
+                    "-yolo~uniform(-3, 1)",
+                    "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
+                    "--arch2~choices({'lala': 0.2, 'yolo': 0.8})"]
         space = spacebuilder.build_from(cmd_args)
         print(space)
         assert len(space) == 8
@@ -339,17 +253,17 @@ class TestSpaceBuilder(object):
         assert '/something-same' in space
         assert len(spacebuilder.userargs_tmpl) == 3
         assert spacebuilder.userargs_tmpl[None] == ["--seed=555",
-                                                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})"]
+                                                    "--arch1=choices({'lala': 0.2, 'yolo': 0.8})"]
         assert spacebuilder.userargs_tmpl['/yolo'] == '-yolo='
         assert spacebuilder.userargs_tmpl['/arch2'] == '--arch2='
 
     def test_build_from_args_and_config2(self, spacebuilder, yaml_sample_path):
         """Build a space using both args and config file!"""
         cmd_args = ["--seed=555",
-                    "-yolo~random(-3, 1)",
+                    "-yolo~uniform(-3, 1)",
                     "--config=" + yaml_sample_path,
-                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
-                    "--arch2~random({'lala': 0.2, 'yolo': 0.8})"]
+                    "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
+                    "--arch2~choices({'lala': 0.2, 'yolo': 0.8})"]
         space = spacebuilder.build_from(cmd_args)
         print(space)
         assert len(space) == 8
@@ -363,7 +277,7 @@ class TestSpaceBuilder(object):
         assert '/something-same' in space
         assert len(spacebuilder.userargs_tmpl) == 3
         assert spacebuilder.userargs_tmpl[None] == ["--seed=555",
-                                                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})"]
+                                                    "--arch1=choices({'lala': 0.2, 'yolo': 0.8})"]
         assert spacebuilder.userargs_tmpl['/yolo'] == '-yolo='
         assert spacebuilder.userargs_tmpl['/arch2'] == '--arch2='
 
@@ -371,9 +285,9 @@ class TestSpaceBuilder(object):
         """Conflicting definition in args and config~ raise an error!"""
         cmd_args = ["--seed=555",
                     "--config=" + yaml_sample_path,
-                    "-yolo~random(-3, 1)",
-                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
-                    "--something-same~random({'lala': 0.2, 'yolo': 0.8})"]
+                    "-yolo~uniform(-3, 1)",
+                    "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
+                    "--something-same~choices({'lala': 0.2, 'yolo': 0.8})"]
         with pytest.raises(ValueError) as exc:
             spacebuilder.build_from(cmd_args)
         assert 'Conflict' in str(exc.value)
@@ -382,10 +296,10 @@ class TestSpaceBuilder(object):
         """There are two explicit definitions of config paths."""
         cmd_args = ["--seed=555",
                     "--config=" + yaml_sample_path,
-                    "-yolo~random(-3, 1)",
+                    "-yolo~uniform(-3, 1)",
                     "--config=" + yaml_sample_path,
-                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
-                    "--something-same~random({'lala': 0.2, 'yolo': 0.8})"]
+                    "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
+                    "--something-same~choices({'lala': 0.2, 'yolo': 0.8})"]
         with pytest.raises(ValueError) as exc:
             spacebuilder.build_from(cmd_args)
         assert 'Already' in str(exc.value)
@@ -401,9 +315,9 @@ class TestSpaceBuilder(object):
     def test_generate_without_config(self, spacebuilder):
         """Build a space using only args."""
         cmd_args = ["--seed=555",
-                    "-yolo~random(-3, 1)",
-                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
-                    "--arch2~random({'lala': 0.2, 'yolo': 0.8})"]
+                    "-yolo~uniform(-3, 1)",
+                    "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
+                    "--arch2~choices({'lala': 0.2, 'yolo': 0.8})"]
         spacebuilder.build_from(cmd_args)
         trial = Trial(params=[
             {'name': '/yolo', 'type': 'real', 'value': -2.4},
@@ -411,7 +325,7 @@ class TestSpaceBuilder(object):
 
         cmd_inst = spacebuilder.build_to(None, trial)
         assert cmd_inst == ["--seed=555",
-                            "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
+                            "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
                             "-yolo=-2.4",
                             "--arch2=yolo"]
 
@@ -461,10 +375,10 @@ class TestSpaceBuilder(object):
                                            json_sample_path, tmpdir, json_converter):
         """Build a space using only a json config."""
         cmd_args = ["--seed=555",
-                    "-yolo~random(-3, 1)",
+                    "-yolo~uniform(-3, 1)",
                     '--config=' + json_sample_path,
-                    "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
-                    "--arch2~random({'lala': 0.2, 'yolo': 0.8})"]
+                    "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
+                    "--arch2~choices({'lala': 0.2, 'yolo': 0.8})"]
         spacebuilder.build_from(cmd_args)
         trial = Trial(params=[
             {'name': '/yolo', 'type': 'real', 'value': -2.4},
@@ -479,7 +393,7 @@ class TestSpaceBuilder(object):
         cmd_inst = spacebuilder.build_to(output_file, trial)
         assert cmd_inst == ['--config=' + output_file] + [
             "--seed=555",
-            "--arch1=random({'lala': 0.2, 'yolo': 0.8})",
+            "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
             "-yolo=-2.4",
             "--arch2=yolo"]
         output_data = json_converter.parse(output_file)

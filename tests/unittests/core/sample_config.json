@@ -11,12 +11,12 @@
     },
     {
       "width": "mopt~uniform(32, 128, discrete=True)",
-      "type": "mopt~random('relu', 'sigmoid', 'selu', 'leaky')"
+      "type": "mopt~choices('relu', 'sigmoid', 'selu', 'leaky')"
     },
     {
       "width": 16,
-      "type": "mopt~random('relu', 'sigmoid', 'selu', 'leaky')"
+      "type": "mopt~choices('relu', 'sigmoid', 'selu', 'leaky')"
     }
   ],
-  "something-same": "mopt~random([1, 2, 3, 4, 5])"
+  "something-same": "mopt~choices([1, 2, 3, 4, 5])"
 }

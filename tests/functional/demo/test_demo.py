@@ -17,7 +17,7 @@ def test_demo(database, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     process = subprocess.Popen(["mopt", "--config", "./moptconfig.yaml",
-                                "./black_box.py", "-x~random(-50, 50)"])
+                                "./black_box.py", "-x~uniform(-50, 50)"])
     rcode = process.wait()
     assert rcode == 0
 
@@ -36,7 +36,7 @@ def test_demo(database, monkeypatch):
     assert 'mopt_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
     assert os.path.isabs(exp['metadata']['user_script'])
-    assert exp['metadata']['user_args'] == ['-x~random(-50, 50)']
+    assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
 
     trials = list(database.trials.find({'experiment': exp_id}))
     assert len(trials) < 15
@@ -119,7 +119,7 @@ def test_workon(database):
     config['max_trials'] = 100
     config['metadata']['user_script'] = os.path.abspath(os.path.join(
         os.path.dirname(__file__), "black_box.py"))
-    config['metadata']['user_args'] = ["-x~random(-50, 50)"]
+    config['metadata']['user_args'] = ["-x~uniform(-50, 50)"]
     experiment.configure(config)
 
     workon(experiment)
@@ -138,7 +138,7 @@ def test_workon(database):
     assert 'datetime' in exp['metadata']
     assert 'user_script' in exp['metadata']
     assert os.path.isabs(exp['metadata']['user_script'])
-    assert exp['metadata']['user_args'] == ['-x~random(-50, 50)']
+    assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
 
     trials = list(database.trials.find({'experiment': exp_id}))
     assert len(trials) < 15
