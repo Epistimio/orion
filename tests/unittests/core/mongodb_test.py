@@ -199,6 +199,57 @@ class TestWrite(object):
 
 
 @pytest.mark.usefixtures("clean_db")
+class TestReadAndWrite(object):
+    """Calls to :meth:`metaopt.core.io.database.mongodb.MongoDB.read_and_write`."""
+
+    def test_read_and_write_one(self, database, moptdb, exp_config):
+        """Should read and update a single entry in the collection."""
+        # Make sure there is only one match
+        documents = moptdb.read(
+            'experiments',
+            {'name': 'supernaedo2', 'metadata.user': 'dendi'})
+        assert len(documents) == 1
+
+        # Find and update atomically
+        loaded_config = moptdb.read_and_write(
+            'experiments',
+            {'name': 'supernaedo2', 'metadata.user': 'dendi'},
+            {'status': 'lalala'})
+        exp_config[0][2]['status'] = 'lalala'
+        assert loaded_config == exp_config[0][2]
+
+    def test_read_and_write_many(self, database, moptdb, exp_config):
+        """Should update only one entry."""
+        # Make sure there is many matches
+        documents = moptdb.read('experiments', {'name': 'supernaedo2'})
+        assert len(documents) > 1
+
+        # Find many and update first one only
+        loaded_config = moptdb.read_and_write(
+            'experiments',
+            {'name': 'supernaedo2'},
+            {'status': 'lalala'})
+
+        exp_config[0][0]['status'] = 'lalala'
+        assert loaded_config == exp_config[0][0]
+
+        # Make sure it only changed the first document found
+        documents = moptdb.read('experiments', {'name': 'supernaedo2'})
+        assert documents[0]['status'] == 'lalala'
+        assert documents[1]['status'] != 'lalala'
+        assert documents[2]['status'] != 'lalala'
+
+    def test_read_and_write_no_match(self, database, moptdb):
+        """Should return None when there is no match."""
+        loaded_config = moptdb.read_and_write(
+            'experiments',
+            {'name': 'lalala'},
+            {'status': 'lalala'})
+
+        assert loaded_config is None
+
+
+@pytest.mark.usefixtures("clean_db")
 class TestRemove(object):
     """Calls to :meth:`metaopt.core.io.database.mongodb.MongoDB.remove`."""
 
