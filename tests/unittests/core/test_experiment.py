@@ -48,6 +48,71 @@ def patch_sample2(monkeypatch):
 
 
 @pytest.fixture()
+def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
+    """Patch ``random.sample`` to return the first one and check call."""
+    def mock_sample(a_list, should_be_one):
+        assert type(a_list) == list
+        assert len(a_list) >= 1
+        # Part of `TestReserveTrial.test_reserve_race_condition`
+        if len(a_list) == 4:
+            assert a_list[0].status == 'new'
+        if len(a_list) == 3:
+            assert a_list[0].status == 'new'
+        if len(a_list) == 2:
+            assert a_list[0].status == 'interrupted'
+        if len(a_list) == 1:
+            assert a_list[0].status == 'suspended'
+
+        assert should_be_one == 1
+
+        if len(a_list) > 3:
+            # Set row's status as 'reserved' just like if it was reserved by
+            # another process right after the call to moptdb.read()
+            create_db_instance.write(
+                "trials",
+                data={"status": "reserved"},
+                query={"_id": a_list[0].id})
+            trial = create_db_instance.read("trials", {"_id": a_list[0].id})
+            assert trial[0]['status'] == 'reserved'
+
+        return [a_list[0]]
+
+    monkeypatch.setattr(random, 'sample', mock_sample)
+
+
+@pytest.fixture()
+def patch_sample_concurrent2(monkeypatch, create_db_instance, exp_config):
+    """Patch ``random.sample`` to return the first one and check call."""
+    def mock_sample(a_list, should_be_one):
+        assert type(a_list) == list
+        assert len(a_list) >= 1
+        # Part of `TestReserveTrial.test_reserve_dead_race_condition`
+        if len(a_list) == 4:
+            assert a_list[0].status == 'new'
+        if len(a_list) == 3:
+            assert a_list[0].status == 'new'
+        if len(a_list) == 2:
+            assert a_list[0].status == 'interrupted'
+        if len(a_list) == 1:
+            assert a_list[0].status == 'suspended'
+
+        assert should_be_one == 1
+
+        # Set row's status as 'reserved' just like if it was reserved by
+        # another process right after the call to moptdb.read()
+        create_db_instance.write(
+            "trials",
+            data={"status": "reserved"},
+            query={"_id": a_list[0].id})
+        trial = create_db_instance.read("trials", {"_id": a_list[0].id})
+        assert trial[0]['status'] == 'reserved'
+
+        return [a_list[0]]
+
+    monkeypatch.setattr(random, 'sample', mock_sample)
+
+
+@pytest.fixture()
 def new_config(random_dt):
     """Create a configuration that will not hit the database."""
     new_config = dict(
@@ -371,6 +436,20 @@ class TestReserveTrial(object):
         trial = hacked_exp.reserve_trial()
         exp_config[1][6]['status'] = 'reserved'
         assert trial.to_dict() == exp_config[1][6]
+
+    @pytest.mark.usefixtures("patch_sample_concurrent")
+    def test_reserve_race_condition(self, exp_config, hacked_exp, random_dt):
+        """Get its trials reserved before by another process once."""
+        trial = hacked_exp.reserve_trial()
+        exp_config[1][4]['status'] = 'reserved'
+        exp_config[1][4]['start_time'] = random_dt
+        assert trial.to_dict() == exp_config[1][4]
+
+    @pytest.mark.usefixtures("patch_sample_concurrent2")
+    def test_reserve_dead_race_condition(self, exp_config, hacked_exp):
+        """Always get its trials reserved before by another process."""
+        trial = hacked_exp.reserve_trial()
+        assert trial is None
 
     def test_reserve_with_uncallable_score(self, hacked_exp):
         """Reserve with a score object that cannot do its job."""
