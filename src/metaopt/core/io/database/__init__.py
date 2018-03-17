@@ -39,6 +39,9 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
 
     """
 
+    ASCENDING = 0
+    DESCENDING = 1
+
     def __init__(self, host='localhost', name=None,
                  port=None, username=None, password=None):
         """Init method, see attributes of :class:`AbstractDB`."""
@@ -74,8 +77,34 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         pass
 
     @abstractmethod
-    def write(self, collection_name, data,
-              query=None):
+    def ensure_index(self, collection_name, keys, unique=False):
+        """Create given indexes if they do not already exist in database.
+
+        Parameters
+        ----------
+        collection_name : str
+           A collection inside database, a table.
+        keys: str or list of tuples
+           Can be a string representing a key to index, or a list of tuples
+           with the structure `[(key_name, sort_order)]`. `key_name` must be a
+           string and sort_order can be either `AbstractDB.ASCENDING` or
+           AbstractDB.DESCENDING`.
+        unique: bool, optional
+           Ensure each document have a different key value. If not, operations
+           like `write()` and `read_and_write()` will raise
+           `DuplicateKeyError`.
+           Defaults to False.
+
+        .. note::
+            Depending on the backend, the indexing operation might operate in
+            background. This means some operations on the database might occur
+            before the indexes are totally built.
+
+        """
+        pass
+
+    @abstractmethod
+    def write(self, collection_name, data, query=None):
         """Write new information to a collection. Perform insert or update.
 
         Parameters

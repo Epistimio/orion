@@ -82,8 +82,43 @@ class MongoDB(AbstractDB):
         """
         self._conn.close()
 
-    def write(self, collection_name, data,
-              query=None):
+    def ensure_index(self, collection_name, keys, unique=False):
+        """Create given indexes if they do not already exist in database.
+
+        .. seealso:: :meth:`AbstractDB.ensure_index` for argument documentation.
+
+        """
+        # MongoDB's `create_index()` is idempotent, which means it will only
+        # create new indexes if they do not already exists. That's why we do
+        # not need to verify if indexes already exists.
+        dbcollection = self._db[collection_name]
+
+        keys = self._convert_index_keys(keys)
+
+        dbcollection.create_index(keys, unique=unique, background=True)
+
+    def _convert_index_keys(self, keys):
+        """Convert index keys to MongoDB ones."""
+        if not isinstance(keys, (list, tuple)):
+            keys = [(keys, self.ASCENDING)]
+
+        converted_keys = []
+        for key, sort_order in keys:
+            converted_keys.append((key, self._convert_sort_order(sort_order)))
+
+        return converted_keys
+
+    def _convert_sort_order(self, sort_order):
+        """Convert generic `AbstractDB` sort orders to MongoDB ones."""
+        if sort_order is self.ASCENDING:
+            return pymongo.ASCENDING
+        elif sort_order is self.DESCENDING:
+            return pymongo.DESCENDING
+        else:
+            raise RuntimeError("Invalid database sort order %s" %
+                               str(sort_order))
+
+    def write(self, collection_name, data, query=None):
         """Write new information to a collection. Perform insert or update.
 
         .. seealso:: :meth:`AbstractDB.write` for argument documentation.

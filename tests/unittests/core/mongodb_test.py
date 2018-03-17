@@ -80,6 +80,50 @@ class TestConnection(object):
 
 
 @pytest.mark.usefixtures("clean_db")
+class TestEnsureIndex(object):
+    """Calls to :meth:`metaopt.core.io.database.mongodb.MongoDB.ensure_index`."""
+
+    def test_new_index(self, moptdb):
+        """Index should be added to mongo database"""
+        assert "status_1" not in moptdb._db.experiments.index_information()
+        moptdb.ensure_index('experiments', 'status')
+        assert "status_1" in moptdb._db.experiments.index_information()
+
+    def test_existing_index(self, moptdb):
+        """Index should be added to mongo database and reattempt should do nothing"""
+        assert "status_1" not in moptdb._db.experiments.index_information()
+        moptdb.ensure_index('experiments', 'status')
+        assert "status_1" in moptdb._db.experiments.index_information()
+        moptdb.ensure_index('experiments', 'status')
+        assert "status_1" in moptdb._db.experiments.index_information()
+
+    def test_ordered_index(self, moptdb):
+        """Sort order should be added to index"""
+        assert "end_time_-1" not in moptdb._db.trials.index_information()
+        moptdb.ensure_index('trials', [('end_time', MongoDB.DESCENDING)])
+        assert "end_time_-1" in moptdb._db.trials.index_information()
+
+    def test_compound_index(self, moptdb):
+        """Tuple of Index should be added as a compound index."""
+        assert "name_1_metadata.user_1" not in moptdb._db.experiments.index_information()
+        moptdb.ensure_index('experiments',
+                            [('name', MongoDB.ASCENDING),
+                             ('metadata.user', MongoDB.ASCENDING)])
+        assert "name_1_metadata.user_1" in moptdb._db.experiments.index_information()
+
+    def test_unique_index(self, moptdb):
+        """Index should be set as unique in mongo database's index information."""
+        assert "name_1_metadata.user_1" not in moptdb._db.experiments.index_information()
+        moptdb.ensure_index('experiments',
+                            [('name', MongoDB.ASCENDING),
+                             ('metadata.user', MongoDB.ASCENDING)],
+                            unique=True)
+        index_information = moptdb._db.experiments.index_information()
+        assert "name_1_metadata.user_1" in index_information
+        assert index_information["name_1_metadata.user_1"]['unique']
+
+
+@pytest.mark.usefixtures("clean_db")
 class TestRead(object):
     """Calls to :meth:`metaopt.core.io.database.mongodb.MongoDB.read`."""
 
