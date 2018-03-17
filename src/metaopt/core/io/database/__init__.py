@@ -126,6 +126,11 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
            In the case of an update operation, if `query` fails to find a
            document that matches, insert of `data` will be performed instead.
 
+        :raises :exc:`DuplicateKeyError`: if the operation is creating duplicate
+            keys in two different documents. Only occurs if the keys have
+            unique indexes. See :meth:`AbstractDB.ensure_index` for more
+            information about indexes.
+
         """
         pass
 
@@ -168,6 +173,11 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
 
         :return: updated first matched document or None if nothing found
 
+        :raises :exc:`DuplicateKeyError`: if the operation is creating duplicate
+            keys in two different documents. Only occurs if the keys have
+            unique indexes. See :meth:`AbstractDB.ensure_index` for more
+            information about indexes.
+
         """
         pass
 
@@ -205,6 +215,14 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
 class DatabaseError(RuntimeError):
     """Exception type used to delegate responsibility from any database
     implementation's own Exception types.
+    """
+
+    pass
+
+
+class DuplicateKeyError(DatabaseError):
+    """Exception type used when a write attempt is made but the new document
+    have an index already contained in the database.
     """
 
     pass

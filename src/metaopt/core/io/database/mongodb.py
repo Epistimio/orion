@@ -8,9 +8,39 @@
    :synopsis: Implement :class:`metaopt.core.io.database.AbstractDB` for MongoDB.
 
 """
+import functools
+
 import pymongo
 
-from metaopt.core.io.database import (AbstractDB, DatabaseError)
+from metaopt.core.io.database import (
+    AbstractDB, DatabaseError, DuplicateKeyError)
+
+
+def mongodb_exception_wrapper(method):
+    """Convert pymongo exceptions to generic exception types defined in src.core.io.database.
+
+    Current exception types converted:
+    pymongo.errors.DuplicateKeyError -> DuplicateKeyError
+    pymongo.errors.BulkWriteError[DuplicateKeyError] -> DuplicateKeyError
+
+    """
+    @functools.wraps(method)
+    def _decorator(self, *args, **kwargs):
+
+        try:
+            rval = method(self, *args, **kwargs)
+        except pymongo.errors.DuplicateKeyError as e:
+            raise DuplicateKeyError(str(e)) from e
+        except pymongo.errors.BulkWriteError as e:
+            for error in e.details['writeErrors']:
+                if "duplicate key error" in error["errmsg"]:
+                    raise DuplicateKeyError(error["errmsg"]) from e
+
+            raise
+
+        return rval
+
+    return _decorator
 
 
 class MongoDB(AbstractDB):
@@ -118,6 +148,7 @@ class MongoDB(AbstractDB):
             raise RuntimeError("Invalid database sort order %s" %
                                str(sort_order))
 
+    @mongodb_exception_wrapper
     def write(self, collection_name, data, query=None):
         """Write new information to a collection. Perform insert or update.
 
@@ -154,6 +185,7 @@ class MongoDB(AbstractDB):
 
         return dbdocs
 
+    @mongodb_exception_wrapper
     def read_and_write(self, collection_name, query, data, selection=None):
         """Read a collection's document and update the found document.
 

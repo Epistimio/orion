@@ -3,11 +3,13 @@
 """Collection of tests for :mod:`metaopt.core.io.database.mongodb`."""
 
 from datetime import datetime
+import functools
 
 from pymongo import MongoClient
 import pytest
 
-from metaopt.core.io.database import DatabaseError
+import pymongo
+from metaopt.core.io.database import Database, DatabaseError, DuplicateKeyError
 from metaopt.core.io.database.mongodb import MongoDB
 
 
@@ -77,6 +79,68 @@ class TestConnection(object):
         moptdb.initiate_connection()
         moptdb.close_connection()
         assert MongoDB() is moptdb
+
+
+@pytest.mark.usefixtures("clean_db")
+class TestExceptionWrapper(object):
+    def test_duplicate_key_error(self, monkeypatch, moptdb, exp_config):
+        """Should raise generic DuplicateKeyError."""
+
+        # Add unique indexes to force trigger of DuplicateKeyError on write()
+        moptdb.ensure_index('experiments',
+                            [('name', Database.ASCENDING),
+                             ('metadata.user', Database.ASCENDING)],
+                            unique=True)
+
+        config_to_add = exp_config[0][0]
+        config_to_add.pop('_id')
+
+        query = {'_id': exp_config[0][1]['_id']}
+
+        # Make sure it raises pymongo.errors.DuplicateKeyError when there is no
+        # wrapper
+        monkeypatch.setattr(
+            moptdb, "read_and_write",
+            functools.partial(moptdb.read_and_write.__wrapped__, moptdb))
+        with pytest.raises(pymongo.errors.DuplicateKeyError) as exc_info:
+            moptdb.read_and_write('experiments', query, config_to_add)
+
+        monkeypatch.undo()
+
+        # Verify that the wrapper converts it properly to DuplicateKeyError
+        with pytest.raises(DuplicateKeyError) as exc_info:
+            moptdb.read_and_write('experiments', query, config_to_add)
+        assert "duplicate key error" in str(exc_info.value)
+
+    def test_bulk_duplicate_key_error(self, monkeypatch, moptdb, exp_config):
+        """Should raise generic DuplicateKeyError."""
+
+        # Make sure it raises pymongo.errors.BulkWriteError when there is no
+        # wrapper
+        monkeypatch.setattr(
+            moptdb, "write",
+            functools.partial(moptdb.write.__wrapped__, moptdb))
+        with pytest.raises(pymongo.errors.BulkWriteError) as exc_info:
+            moptdb.write('experiments', exp_config[0])
+
+        monkeypatch.undo()
+
+        # Verify that the wrapper converts it properly to DuplicateKeyError
+        with pytest.raises(DuplicateKeyError) as exc_info:
+            moptdb.write('experiments', exp_config[0])
+        assert "duplicate key error" in str(exc_info.value)
+
+    def test_non_converted_errors(self, moptdb, exp_config):
+        """Should raise OperationFailure because _id inside exp_config[0][0]
+        cannot be set. It is an immutable key of the collection
+        """
+
+        config_to_add = exp_config[0][0]
+
+        query = {'_id': exp_config[0][1]['_id']}
+
+        with pytest.raises(pymongo.errors.OperationFailure) as exc_info:
+            moptdb.read_and_write('experiments', query, config_to_add)
 
 
 @pytest.mark.usefixtures("clean_db")
