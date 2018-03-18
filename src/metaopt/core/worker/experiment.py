@@ -104,6 +104,7 @@ class Experiment(object):
         log.debug("Creating Experiment object with name: %s", name)
         self._init_done = False
         self._db = Database()  # fetch database instance
+        self._setup_db()  # build indexes for collections
 
         self._id = None
         self.name = name
@@ -133,6 +134,19 @@ class Experiment(object):
             self._id = config['_id']
 
         self._last_fetched = self.metadata['datetime']
+
+    def _setup_db(self):
+        self._db.ensure_index('experiments',
+                              [('name', Database.ASCENDING),
+                               ('metadata.user', Database.ASCENDING)],
+                              unique=True)
+        self._db.ensure_index('experiments', 'status')
+
+        self._db.ensure_index('trials', 'experiment')
+        self._db.ensure_index('trials', 'status')
+        self._db.ensure_index('trials', 'results')
+        self._db.ensure_index('trials', 'start_time')
+        self._db.ensure_index('trials', [('end_time', Database.DESCENDING)])
 
     def reserve_trial(self, score_handle=None):
         """Find *new* trials that exist currently in database and select one of
@@ -324,15 +338,20 @@ class Experiment(object):
 
         # If everything is alright, push new config to database
         if is_new:
-            # TODO: No need for read_and_write here, because unique indexes
-            #       will make sure no experiments will be added with identical
-            #       names. That means, this need refactoring once support for
-            #       additional indexes is added to database.
+            # This will raise DuplicateKeyError if a concurrent experiment with
+            # identical (name, metadata.user) is written first in the database.
+
             self._db.write('experiments', final_config)
             # XXX: Reminder for future DB implementations:
             # MongoDB, updates an inserted dict with _id, so should you :P
             self._id = final_config['_id']
         else:
+            # Writing the final config to an already existing experiment raises
+            # a DuplicatKeyError because of the embedding id `metadata.user`.
+            # To avoid this `final_config["name"]` is popped out before
+            # `db.write()`, thus seamingly breaking  the compound index
+            # `(name, metadata.user)`
+            final_config.pop("name")
             self._db.write('experiments', final_config, {'_id': self._id})
 
     @property

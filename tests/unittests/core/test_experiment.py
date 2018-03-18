@@ -8,7 +8,7 @@ import random
 import pytest
 
 from metaopt.algo.base import BaseAlgorithm
-from metaopt.core.io.database import Database
+from metaopt.core.io.database import Database, DuplicateKeyError
 from metaopt.core.worker.experiment import Experiment
 from metaopt.core.worker.trial import Trial
 
@@ -353,6 +353,7 @@ class TestConfigProperty(object):
         """
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
+        experiment_count_before = exp._db.count("experiments")
         exp.configure(exp_config[0][1])
         assert exp._init_done is True
         exp_config[0][1]['status'] = 'pending'
@@ -363,6 +364,7 @@ class TestConfigProperty(object):
         exp_config[0][1]['algorithms']['dumbalgo']['value'] = 5
         assert exp._id == exp_config[0][1].pop('_id')
         assert exp.configuration == exp_config[0][1]
+        assert experiment_count_before == exp._db.count("experiments")
 
     def test_try_set_after_init(self, exp_config):
         """Cannot set a configuration after init (currently)."""
@@ -373,6 +375,60 @@ class TestConfigProperty(object):
         with pytest.raises(RuntimeError) as exc_info:
             exp.configure(exp_config[0][1])
         assert 'cannot reset' in str(exc_info.value)
+
+    def test_try_set_after_race_condition(self, exp_config, new_config):
+        """Cannot set a configuration after init if it looses a race
+        condition.
+
+        The experiment from process which first writes to db is initialized
+        properly. The experiment which looses the race condition cannot be
+        initialized and needs to be rebuilt.
+        """
+        exp = Experiment(new_config['name'])
+        # Another experiment gets configured first
+        experiment_count_before = exp._db.count("experiments")
+        naughty_little_exp = Experiment(new_config['name'])
+        naughty_little_exp.configure(new_config)
+        assert naughty_little_exp._init_done is True
+        assert exp._init_done is False
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        # First experiment won't be able to be configured
+        with pytest.raises(DuplicateKeyError) as exc_info:
+            exp.configure(new_config)
+        assert 'duplicate key error' in str(exc_info.value)
+
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+
+    def test_try_reset_after_race_condition(self, exp_config, new_config):
+        """Cannot set a configuration after init if it looses a race condition,
+        but can set it if reloaded.
+
+        The experiment from process which first writes to db is initialized
+        properly. The experiment which looses the race condition cannot be
+        initialized and needs to be rebuilt.
+        """
+        exp = Experiment(new_config['name'])
+        # Another experiment gets configured first
+        experiment_count_before = exp._db.count("experiments")
+        naughty_little_exp = Experiment(new_config['name'])
+        naughty_little_exp.configure(new_config)
+        assert naughty_little_exp._init_done is True
+        assert exp._init_done is False
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        # First experiment won't be able to be configured
+        with pytest.raises(DuplicateKeyError) as exc_info:
+            exp.configure(new_config)
+        assert 'duplicate key error' in str(exc_info.value)
+
+        # Still not more experiment in DB
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+
+        # Retry configuring the experiment
+        exp = Experiment(new_config['name'])
+        exp.configure(new_config)
+        assert exp._init_done is True
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        assert exp.configuration == naughty_little_exp.configuration
 
     def test_after_init_algorithms_are_objects(self, exp_config):
         """Attribute exp.algorithms become objects after init."""
