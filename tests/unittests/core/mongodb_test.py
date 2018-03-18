@@ -5,10 +5,10 @@
 from datetime import datetime
 import functools
 
+import pymongo
 from pymongo import MongoClient
 import pytest
 
-import pymongo
 from metaopt.core.io.database import Database, DatabaseError, DuplicateKeyError
 from metaopt.core.io.database.mongodb import MongoDB
 
@@ -83,9 +83,10 @@ class TestConnection(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestExceptionWrapper(object):
+    """Call to methods wrapped with `mongodb_exception_wrapper()`."""
+
     def test_duplicate_key_error(self, monkeypatch, moptdb, exp_config):
         """Should raise generic DuplicateKeyError."""
-
         # Add unique indexes to force trigger of DuplicateKeyError on write()
         moptdb.ensure_index('experiments',
                             [('name', Database.ASCENDING),
@@ -114,7 +115,6 @@ class TestExceptionWrapper(object):
 
     def test_bulk_duplicate_key_error(self, monkeypatch, moptdb, exp_config):
         """Should raise generic DuplicateKeyError."""
-
         # Make sure it raises pymongo.errors.BulkWriteError when there is no
         # wrapper
         monkeypatch.setattr(
@@ -131,15 +131,17 @@ class TestExceptionWrapper(object):
         assert "duplicate key error" in str(exc_info.value)
 
     def test_non_converted_errors(self, moptdb, exp_config):
-        """Should raise OperationFailure because _id inside exp_config[0][0]
-        cannot be set. It is an immutable key of the collection
-        """
+        """Should raise OperationFailure.
 
+        This is because _id inside exp_config[0][0] cannot be set. It is an
+        immutable key of the collection.
+
+        """
         config_to_add = exp_config[0][0]
 
         query = {'_id': exp_config[0][1]['_id']}
 
-        with pytest.raises(pymongo.errors.OperationFailure) as exc_info:
+        with pytest.raises(pymongo.errors.OperationFailure):
             moptdb.read_and_write('experiments', query, config_to_add)
 
 
@@ -194,15 +196,15 @@ class TestRead(object):
     def test_read_experiment(self, exp_config, moptdb):
         """Fetch a whole experiment entries."""
         loaded_config = moptdb.read(
-            'experiments', {'name': 'supernaedo2', 'metadata.user': 'tsirif'})
-        assert loaded_config == exp_config[0][:2]
+            'trials', {'experiment': 'supernaedo2', 'status': 'new'})
+        assert loaded_config == [exp_config[1][3], exp_config[1][4]]
 
-        loaded_config = moptdb.read('experiments',
-                                    {'name': 'supernaedo2',
-                                     'metadata.user': 'tsirif',
-                                     'metadata.datetime': exp_config[0][0]['metadata']['datetime']})
-        assert loaded_config == [exp_config[0][0]]
-        assert loaded_config[0]['_id'] == exp_config[0][0]['_id']
+        loaded_config = moptdb.read(
+            'trials',
+            {'experiment': 'supernaedo2',
+             'submit_time': exp_config[1][3]['submit_time']})
+        assert loaded_config == [exp_config[1][3]]
+        assert loaded_config[0]['_id'] == exp_config[1][3]['_id']
 
     def test_read_with_id(self, exp_config, moptdb):
         """Query using ``_id`` key."""
@@ -214,7 +216,7 @@ class TestRead(object):
         value = moptdb.read(
             'experiments', {'name': 'supernaedo2', 'metadata.user': 'tsirif'},
             selection={'algorithms': 1, '_id': 0})
-        assert value == [{'algorithms': exp_config[0][i]['algorithms']} for i in (0, 1)]
+        assert value == [{'algorithms': exp_config[0][0]['algorithms']}]
 
     def test_read_nothing(self, moptdb):
         """Fetch value(s) from an entry."""
@@ -270,12 +272,12 @@ class TestWrite(object):
 
     def test_update_many_default(self, database, moptdb):
         """Should match existing entries, and update some of their keys."""
-        filt = {'name': 'supernaedo2', 'metadata.user': 'tsirif'}
+        filt = {'metadata.user': 'tsirif'}
         count_before = database.experiments.count()
         # call interface
         assert moptdb.write('experiments', {'pool_size': 16}, filt) is True
         assert database.experiments.count() == count_before
-        value = list(database.experiments.find({'name': 'supernaedo2'}))
+        value = list(database.experiments.find({}))
         assert value[0]['pool_size'] == 16
         assert value[1]['pool_size'] == 16
         assert value[2]['pool_size'] == 2
@@ -345,7 +347,6 @@ class TestReadAndWrite(object):
         documents = moptdb.read('experiments', {'name': 'supernaedo2'})
         assert documents[0]['status'] == 'lalala'
         assert documents[1]['status'] != 'lalala'
-        assert documents[2]['status'] != 'lalala'
 
     def test_read_and_write_no_match(self, database, moptdb):
         """Should return None when there is no match."""
@@ -363,7 +364,7 @@ class TestRemove(object):
 
     def test_remove_many_default(self, exp_config, database, moptdb):
         """Should match existing entries, and delete them all."""
-        filt = {'name': 'supernaedo2', 'metadata.user': 'tsirif'}
+        filt = {'metadata.user': 'tsirif'}
         count_before = database.experiments.count()
         # call interface
         assert moptdb.remove('experiments', filt) is True

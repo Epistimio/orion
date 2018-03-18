@@ -51,7 +51,7 @@
       suspend: False
       done: False
 
-- name: supernaedo2
+- name: supernaedo3
 
   metadata:
     user: tsirif
