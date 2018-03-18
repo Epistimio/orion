@@ -333,7 +333,7 @@ class Integer(Real, _Discrete):
         return super(Integer, self).__contains__(point)
 
 
-class Categorical(_Discrete):
+class Categorical(Dimension):
     """Subclass of `Dimension` for representing integer parameters.
 
     Attributes
@@ -369,13 +369,10 @@ class Categorical(_Discrete):
             self.categories = tuple(categories)
             self._probs = tuple(numpy.tile(1. / len(categories), len(categories)))
 
+        # Just for compatibility; everything should be `Dimension` to let the
+        # `Transformer` decorators be able to wrap smoothly anything.
         prior = distributions.rv_discrete(values=(list(range(len(self.categories))),
                                                   self._probs))
-
-        self._inverse = numpy.vectorize(lambda x: self.categories[x],
-                                        otypes=[numpy.object])
-        self._check = numpy.vectorize(lambda x: x in self.categories)
-
         super(Categorical, self).__init__(name, prior, **kwargs)
 
     def sample(self, n_samples=1, seed=None):
@@ -384,8 +381,9 @@ class Categorical(_Discrete):
         .. seealso:: `Dimension.sample`
 
         """
-        positions = super(Categorical, self).sample(n_samples, seed)
-        samples = list(map(lambda x: x.tolist(), map(self._inverse, positions)))
+        rng = check_random_state(seed)
+        samples = [rng.choice(self.categories, p=self._probs, size=self._shape)
+                   for _ in range(n_samples)]
         return samples
 
     def interval(self, alpha=1.0):
@@ -409,7 +407,8 @@ class Categorical(_Discrete):
         point_ = numpy.asarray(point, dtype=numpy.object)
         if point_.shape != self.shape:
             return False
-        return numpy.all(self._check(point_))
+        _check = numpy.vectorize(lambda x: x in self.categories)
+        return numpy.all(_check(point_))
 
     def __repr__(self):
         """Represent the object as a string."""

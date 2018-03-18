@@ -268,7 +268,7 @@ class TestCategorical(object):
         dim = Categorical('yolo', OrderedDict(zip(categories, probs)))
         samples = dim.sample(seed=seed)
         assert len(samples) == 1
-        assert samples[0] == 2
+        assert samples[0] == '2'
         assert dim._probs == probs
 
         assert categories == dim.categories
@@ -284,7 +284,7 @@ class TestCategorical(object):
         """Test that the probabilities given are legit using law of big numbers."""
         bins = defaultdict(int)
         probs = (0.1, 0.2, 0.3, 0.4)
-        categories = ('asdfa', 2, 3, 4)
+        categories = ('asdfa', '2', '3', '4')
         categories = OrderedDict(zip(categories, probs))
         dim = Categorical('yolo', categories)
         for _ in range(500):
@@ -377,16 +377,29 @@ class TestSpace(object):
         space.register(dim3)
 
         point = space.sample(seed=seed)
-        assert point == [(dim1.sample()[0],
-                          dim2.sample()[0],
-                          dim3.sample()[0]), ]
+        test_point = [(dim1.sample()[0],
+                       dim2.sample()[0],
+                       dim3.sample()[0]), ]
+        assert len(point) == len(test_point) == 1
+        assert len(point[0]) == len(test_point[0]) == 3
+        assert np.all(point[0][0] == test_point[0][0])
+        assert point[0][1] == test_point[0][1]
+        assert point[0][2] == test_point[0][2]
 
         points = space.sample(2, seed=seed)
+        print(points)
         points1 = dim1.sample(2)
         points2 = dim2.sample(2)
         points3 = dim3.sample(2)
-        assert points == [(points1[0], points2[0], points3[0]),
-                          (points1[1], points2[1], points3[1])]
+        test_points = [(points1[0], points2[0], points3[0]),
+                       (points1[1], points2[1], points3[1])]
+        print(test_points)
+        assert len(points) == len(test_points) == 2
+        for i in range(2):
+            assert len(points[i]) == len(test_points[i]) == 3
+            assert np.all(points[i][0] == test_points[i][0])
+            assert points[i][1] == test_points[i][1]
+            assert points[i][2] == test_points[i][2]
 
     def test_interval(self):
         """Check whether interval is cool."""
