@@ -4,6 +4,7 @@
 
 from datetime import datetime
 
+from pymongo import MongoClient
 import pytest
 
 from metaopt.core.io.database import DatabaseError
@@ -18,10 +19,22 @@ def moptdb():
     return moptdb
 
 
+@pytest.fixture()
+def patch_mongo_client(monkeypatch):
+    """Patch ``pymongo.MongoClient`` to force serverSelectionTimeoutMS to 1."""
+    def mock_class(*args, **kwargs):
+        # 1 sec, defaults to 20 secs otherwise
+        kwargs['serverSelectionTimeoutMS'] = 1.
+        return MongoClient(*args, **kwargs)
+
+    monkeypatch.setattr('metaopt.core.io.database.mongodb.MongoClient', mock_class)
+
+
 @pytest.mark.usefixtures("null_db_instances")
 class TestConnection(object):
     """Create a :class:`metaopt.core.io.database.mongodb.MongoDB`, check connection cases."""
 
+    @pytest.mark.usefixtures("patch_mongo_client")
     def test_bad_connection(self):
         """Raise when connection cannot be achieved."""
         with pytest.raises(DatabaseError) as exc_info:
