@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=protected-access
 """
 :mod:`metaopt.core.worker.experiment` -- Description of an optimization attempt
 ===============================================================================
@@ -283,8 +284,12 @@ class Experiment(object):
         if self._init_done:
             raise RuntimeError("Configuration is done; cannot reset an Experiment.")
 
-        # Sanitize and replace some sections with objects
-        candidate_algorithms = Experiment._sanitize_and_instantiate_config(config)
+        # Copy and simulate instantiating given configuration
+        experiment = Experiment(self.name)
+        experiment._instantiate_config(self.configuration)
+        experiment._instantiate_config(config)
+        experiment._init_done = True
+        experiment.status = 'pending'
 
         # If status is None in this object, then database did not hit a config
         # with same (name, user's name) pair. Everything depends on the user's
@@ -297,30 +302,15 @@ class Experiment(object):
             is_new = True
         else:
             # Fork if it is needed
-            is_new = self._is_different_from(config)
+            is_new = self._is_different_from(experiment.configuration)
             if is_new:
-                self._fork_config(config)  # Change (?) `name` attribute here.
+                experiment._fork_config(config)
 
-        # Just overwrite everything given
-        for section, value in config.items():
-            if section == 'status':
-                log.warning("Found section 'status' in configuration. This experiment "
-                            "attribute cannot be set. Ignoring.")
-                continue
-            if section not in self.__slots__:
-                log.warning("Found section '%s' in configuration. Experiments "
-                            "do not support this option. Ignoring.", section)
-                continue
-            if section.startswith('_'):
-                log.warning("Found section '%s' in configuration. "
-                            "Cannot set private attributes. Ignoring.", section)
-                continue
-            setattr(self, section, value)
+        final_config = experiment.configuration
+        self._instantiate_config(final_config)
 
         self._init_done = True
-        self.algorithms = candidate_algorithms
         self.status = 'pending'
-        final_config = self.configuration  # grab dict representation of Experiment
 
         # If everything is alright, push new config to database
         if is_new:
@@ -385,8 +375,7 @@ class Experiment(object):
 
         return stats
 
-    @staticmethod
-    def _sanitize_and_instantiate_config(config):
+    def _instantiate_config(self, config):
         """Check before dispatching experiment whether configuration corresponds
         to a executable experiment environment.
 
@@ -397,13 +386,29 @@ class Experiment(object):
         4. Check if experiment `is_done`, prompt for larger `max_trials` if it is. (TODO)
 
         """
-        space = SpaceBuilder().build_from(config['metadata']['user_args'])
-        if not space:
-            raise ValueError("Parameter space is empty. There is nothing to optimize.")
-        algorithms = PrimaryAlgo(space, config['algorithms'])
-        # Sanitize 'algorithms' section in given configuration
-        config['algorithms'] = algorithms.configuration
-        return algorithms
+        # Just overwrite everything else given
+        for section, value in config.items():
+            if section == 'status':
+                continue
+            if section not in self.__slots__:
+                log.warning("Found section '%s' in configuration. Experiments "
+                            "do not support this option. Ignoring.", section)
+                continue
+            if section.startswith('_'):
+                log.warning("Found section '%s' in configuration. "
+                            "Cannot set private attributes. Ignoring.", section)
+                continue
+            setattr(self, section, value)
+
+        try:
+            space = SpaceBuilder().build_from(config['metadata']['user_args'])
+            if not space:
+                raise ValueError("Parameter space is empty. There is nothing to optimize.")
+
+            # Instantiate algorithms
+            self.algorithms = PrimaryAlgo(space, self.algorithms)
+        except KeyError:
+            pass
 
     def _fork_config(self, config):
         """Ask for a different identifier for this experiment. Set :attr:`refers`
