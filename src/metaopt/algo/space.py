@@ -196,35 +196,6 @@ class Dimension(object):
         return size
 
 
-class _Discrete(Dimension):
-
-    def sample(self, n_samples=1, seed=None):
-        """Draw random samples from `prior`.
-
-        Discretizes with `numpy.floor` the results from `Dimension.sample`.
-
-        .. seealso:: `Dimension.sample`
-
-        """
-        samples = super(_Discrete, self).sample(n_samples, seed)
-        # Making discrete by ourselves because scipy does not use **floor**
-        return list(map(lambda x: numpy.floor(x).astype(int), samples))
-
-    def interval(self, alpha=1.0):
-        low, high = super(_Discrete, self).interval(alpha)
-        try:
-            int_low = int(numpy.floor(low))
-        except OverflowError:  # infinity cannot be converted to Python int type
-            int_low = -numpy.inf
-        try:
-            int_high = int(numpy.floor(high))
-        except OverflowError:  # infinity cannot be converted to Python int type
-            int_high = numpy.inf
-        if int_high < high:  # Exclusive upper bound
-            int_high += 1
-        return (int_low, int_high)
-
-
 class Real(Dimension):
     """Subclass of `Dimension` for representing real parameters.
 
@@ -303,6 +274,49 @@ class Real(Dimension):
                                  "Please make interval larger.".format(self._low, self._high))
 
         return samples
+
+
+class _Discrete(Dimension):
+
+    def sample(self, n_samples=1, seed=None):
+        """Draw random samples from `prior`.
+
+        Discretizes with `numpy.floor` the results from `Dimension.sample`.
+
+        .. seealso:: `Dimension.sample`
+        .. seealso:: Discussion in https://github.com/mila-udem/metaopt/issues/56
+           if you want to understand better how this `Integer` diamond inheritance
+           works.
+
+        """
+        samples = super(_Discrete, self).sample(n_samples, seed)
+        # Making discrete by ourselves because scipy does not use **floor**
+        return list(map(lambda x: numpy.floor(x).astype(int), samples))
+
+    def interval(self, alpha=1.0):
+        """Return a tuple containing lower and upper bound for parameters.
+
+        If parameters are drawn from an 'open' supported random variable,
+        then it will be attempted to calculate the interval from which
+        a variable is `alpha`-likely to be drawn from.
+
+        Bounds are integers.
+
+        .. note:: Lower bound is inclusive, upper bound is exclusive.
+
+        """
+        low, high = super(_Discrete, self).interval(alpha)
+        try:
+            int_low = int(numpy.floor(low))
+        except OverflowError:  # infinity cannot be converted to Python int type
+            int_low = -numpy.inf
+        try:
+            int_high = int(numpy.floor(high))
+        except OverflowError:  # infinity cannot be converted to Python int type
+            int_high = numpy.inf
+        if int_high < high:  # Exclusive upper bound
+            int_high += 1
+        return (int_low, int_high)
 
 
 class Integer(Real, _Discrete):
