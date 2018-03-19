@@ -150,8 +150,8 @@ class Dimension(object):
     def __contains__(self, point):
         """Check if constraints hold for this `point` of `Dimension`.
 
-        :param x: a parameter corresponding to this `Dimension`.
-        :type x: numeric or array-like
+        :param point: a parameter corresponding to this `Dimension`.
+        :type point: numeric or array-like
 
         .. note:: Default `Dimension` does not have any extra constraints.
            It just checks whether point lies inside the support and the shape.
@@ -396,7 +396,8 @@ class Categorical(Dimension):
 
         """
         rng = check_random_state(seed)
-        samples = [rng.choice(self.categories, p=self._probs, size=self._shape)
+        cat_ndarray = numpy.array(self.categories, dtype=numpy.object)
+        samples = [rng.choice(cat_ndarray, p=self._probs, size=self._shape)
                    for _ in range(n_samples)]
         return samples
 

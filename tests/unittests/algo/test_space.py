@@ -268,7 +268,7 @@ class TestCategorical(object):
         dim = Categorical('yolo', OrderedDict(zip(categories, probs)))
         samples = dim.sample(seed=seed)
         assert len(samples) == 1
-        assert samples[0] == '2'
+        assert samples[0] == 2
         assert dim._probs == probs
 
         assert categories == dim.categories
@@ -326,6 +326,23 @@ class TestCategorical(object):
         with pytest.raises(RuntimeError) as exc:
             dim.interval()
         assert 'not ordered' in str(exc.value)
+
+    def test_that_objects_types_are_ok(self):
+        """Check that output samples are of the correct type.
+
+        Don't let numpy mess with their automatic type inference.
+        """
+        categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
+        dim = Categorical('yolo', categories)
+
+        assert '2' not in dim
+        assert 2 in dim
+        assert 'asdfa' in dim
+
+        dim = Categorical('yolo', categories, shape=(2,))
+
+        assert ['2', 'asdfa'] not in dim
+        assert [2, 'asdfa'] in dim
 
 
 class TestSpace(object):
@@ -387,13 +404,11 @@ class TestSpace(object):
         assert point[0][2] == test_point[0][2]
 
         points = space.sample(2, seed=seed)
-        print(points)
         points1 = dim1.sample(2)
         points2 = dim2.sample(2)
         points3 = dim3.sample(2)
         test_points = [(points1[0], points2[0], points3[0]),
                        (points1[1], points2[1], points3[1])]
-        print(test_points)
         assert len(points) == len(test_points) == 2
         for i in range(2):
             assert len(points[i]) == len(test_points[i]) == 3
