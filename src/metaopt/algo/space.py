@@ -335,8 +335,8 @@ class Integer(Real, _Discrete):
     def __contains__(self, point):
         """Check if constraints hold for this `point` of `Dimension`.
 
-        :param x: a parameter corresponding to this `Dimension`.
-        :type x: numeric or array-like
+        :param point: a parameter corresponding to this `Dimension`.
+        :type point: numeric or array-like
 
         `Integer` will check whether `point` contains only integers.
 
@@ -415,8 +415,8 @@ class Categorical(Dimension):
     def __contains__(self, point):
         """Check if constraints hold for this `point` of `Dimension`.
 
-        :param x: a parameter corresponding to this `Dimension`.
-        :type x: numeric or array-like
+        :param point: a parameter corresponding to this `Dimension`.
+        :type point: numeric or array-like
 
         """
         point_ = numpy.asarray(point, dtype=numpy.object)
