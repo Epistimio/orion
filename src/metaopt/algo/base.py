@@ -43,30 +43,32 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
     Examples
     --------
-    ```
-    from metaopt.algo.base import BaseAlgorithm
-    from metaopt.algo.space import (Integer, Space)
+    .. code-block:: python
+       :linenos:
+       :emphasize-lines: 7
 
-    class MySimpleAlgo(BaseAlgorithm):
+       from metaopt.algo.base import BaseAlgorithm
+       from metaopt.algo.space import (Integer, Space)
 
-        def __init__(self, space, multiplier=1, another_param="a string param"):
-            super().__init__(space, multiplier=multiplier, another_param=another_param)
+       class MySimpleAlgo(BaseAlgorithm):
 
-        def suggest(self, num=1):
-            print(self.another_param)
-            return list(map(lambda x: tuple(map(lambda y: self.multiplier * y, x)),
-                            self.space.sample(num)))
+           def __init__(self, space, multiplier=1, another_param="a string param"):
+               super().__init__(space, multiplier=multiplier, another_param=another_param)
 
-        def observe(self, points, results):
-            pass
+           def suggest(self, num=1):
+               print(self.another_param)
+               return list(map(lambda x: tuple(map(lambda y: self.multiplier * y, x)),
+                               self.space.sample(num)))
 
-    dim = Integer('named_param', 'norm', 3, 2, shape=(2, 3))
-    s = Space()
-    s.register(dim)
+           def observe(self, points, results):
+               pass
 
-    algo = MySimpleAlgo(s, 2, "I am just sampling!")
-    algo.suggest()
-    ```
+       dim = Integer('named_param', 'norm', 3, 2, shape=(2, 3))
+       s = Space()
+       s.register(dim)
+
+       algo = MySimpleAlgo(s, 2, "I am just sampling!")
+       algo.suggest()
 
     References
     ----------
@@ -233,7 +235,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 class OptimizationAlgorithm(BaseAlgorithm, metaclass=Factory):
     """Class used to inject dependency on an algorithm implementation.
 
-    .. seealso:: `Factory` metaclass and `BaseAlgorithm` interface.
+    .. seealso:: `metaopt.core.utils.Factory` metaclass and `BaseAlgorithm` interface.
     """
 
     pass
