@@ -2,33 +2,15 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`metaopt.core.worker.experiment`."""
 
-import datetime
-import getpass
+import copy
 import random
 
 import pytest
 
+from metaopt.algo.base import BaseAlgorithm
 from metaopt.core.io.database import Database
 from metaopt.core.worker.experiment import Experiment
 from metaopt.core.worker.trial import Trial
-
-
-@pytest.fixture()
-def with_user_tsirif(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'tsirif'``."""
-    monkeypatch.setattr(getpass, 'getuser', lambda: 'tsirif')
-
-
-@pytest.fixture()
-def with_user_bouthilx(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'bouthilx'``."""
-    monkeypatch.setattr(getpass, 'getuser', lambda: 'bouthilx')
-
-
-@pytest.fixture()
-def with_user_dendi(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'dendi'``."""
-    monkeypatch.setattr(getpass, 'getuser', lambda: 'dendi')
 
 
 @pytest.fixture()
@@ -66,35 +48,6 @@ def patch_sample2(monkeypatch):
 
 
 @pytest.fixture()
-def random_dt(monkeypatch):
-    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    random_dt = datetime.datetime(1903, 4, 25, 0, 0, 0)
-
-    class MockDatetime(datetime.datetime):
-        @classmethod
-        def utcnow(cls):
-            return random_dt
-
-    monkeypatch.setattr(datetime, 'datetime', MockDatetime)
-    return random_dt
-
-
-@pytest.fixture()
-def hacked_exp(with_user_dendi, random_dt, clean_db):
-    """Return an `Experiment` instance with hacked _id to find trials in
-    fake database.
-    """
-    try:
-        Database(of_type='MongoDB', name='metaopt_test',
-                 username='user', password='pass')
-    except (TypeError, ValueError):
-        pass
-    exp = Experiment('supernaedo2')
-    exp._id = 'supernaedo2'  # white box hack
-    return exp
-
-
-@pytest.fixture()
 def new_config(random_dt):
     """Create a configuration that will not hit the database."""
     new_config = dict(
@@ -105,13 +58,13 @@ def new_config(random_dt):
                   'mopt_version': 0.1,
                   'user_script': 'abs_path/to_yoyoy.py',
                   'user_config': 'abs_path/hereitis.yaml',
-                  'user_args': '--mini-batch~uniform(32, 256)',
+                  'user_args': ['--mini-batch~uniform(32, 256, discrete=True)'],
                   'user_vcs': 'git',
                   'user_version': 0.8,
                   'user_commit_hash': 'fsa7df7a8sdf7a8s7'},
         pool_size=10,
         max_trials=1000,
-        algorithms={'bayesian_scikit': {'yoyo': 5, 'alpha': 0.8}},
+        algorithms={'dumbalgo': {}},
         # the following should be ignored by the setting function:
         # status is not settable:
         status='asdfafa',
@@ -230,7 +183,8 @@ class TestConfigProperty(object):
 
         .. warning:: Currently, not implemented.
         """
-        new_config = {'metadata': {'user_version': 1.2}}
+        new_config = copy.deepcopy(exp_config[0][1])
+        new_config['metadata']['user_version'] = 1.2
         exp = Experiment('supernaedo2')
         exp.configure(new_config)
 
@@ -243,8 +197,14 @@ class TestConfigProperty(object):
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
         exp_config[0][1]['max_trials'] = 5000
-        exp_config[0][1]['status'] = 'pending'
         exp.configure(exp_config[0][1])
+        exp_config[0][1]['status'] = 'pending'
+        exp_config[0][1]['algorithms']['dumbalgo']['done'] = False
+        exp_config[0][1]['algorithms']['dumbalgo']['judgement'] = None
+        exp_config[0][1]['algorithms']['dumbalgo']['scoring'] = 0
+        exp_config[0][1]['algorithms']['dumbalgo']['suspend'] = False
+        exp_config[0][1]['algorithms']['dumbalgo']['value'] = 5
+        assert exp._id == exp_config[0][1].pop('_id')
         assert exp.configuration == exp_config[0][1]
 
     def test_good_set_before_init_hit_no_diffs_exc_pool_size(self, exp_config):
@@ -258,6 +218,12 @@ class TestConfigProperty(object):
         exp_config[0][1]['pool_size'] = 10
         exp_config[0][1]['status'] = 'pending'
         exp.configure(exp_config[0][1])
+        exp_config[0][1]['algorithms']['dumbalgo']['done'] = False
+        exp_config[0][1]['algorithms']['dumbalgo']['judgement'] = None
+        exp_config[0][1]['algorithms']['dumbalgo']['scoring'] = 0
+        exp_config[0][1]['algorithms']['dumbalgo']['suspend'] = False
+        exp_config[0][1]['algorithms']['dumbalgo']['value'] = 5
+        assert exp._id == exp_config[0][1].pop('_id')
         assert exp.configuration == exp_config[0][1]
 
     def test_good_set_before_init_no_hit(self, random_dt, database, new_config):
@@ -275,6 +241,11 @@ class TestConfigProperty(object):
         new_config['status'] = 'pending'
         new_config.pop('_id')
         new_config.pop('something_to_be_ignored')
+        new_config['algorithms']['dumbalgo']['done'] = False
+        new_config['algorithms']['dumbalgo']['judgement'] = None
+        new_config['algorithms']['dumbalgo']['scoring'] = 0
+        new_config['algorithms']['dumbalgo']['suspend'] = False
+        new_config['algorithms']['dumbalgo']['value'] = 5
         assert found_config[0] == new_config
         assert exp.name == new_config['name']
         assert exp.refers is None
@@ -320,6 +291,12 @@ class TestConfigProperty(object):
         exp.configure(exp_config[0][1])
         assert exp._init_done is True
         exp_config[0][1]['status'] = 'pending'
+        exp_config[0][1]['algorithms']['dumbalgo']['done'] = False
+        exp_config[0][1]['algorithms']['dumbalgo']['judgement'] = None
+        exp_config[0][1]['algorithms']['dumbalgo']['scoring'] = 0
+        exp_config[0][1]['algorithms']['dumbalgo']['suspend'] = False
+        exp_config[0][1]['algorithms']['dumbalgo']['value'] = 5
+        assert exp._id == exp_config[0][1].pop('_id')
         assert exp.configuration == exp_config[0][1]
 
     def test_try_set_after_init(self, exp_config):
@@ -332,15 +309,34 @@ class TestConfigProperty(object):
             exp.configure(exp_config[0][1])
         assert 'cannot reset' in str(exc_info.value)
 
-    @pytest.mark.skip(reason="To be implemented...")
     def test_after_init_algorithms_are_objects(self, exp_config):
         """Attribute exp.algorithms become objects after init."""
-        pass
+        exp = Experiment('supernaedo2')
+        # Deliver an external configuration to finalize init
+        exp.configure(exp_config[0][1])
+        assert isinstance(exp.algorithms, BaseAlgorithm)
 
     @pytest.mark.skip(reason="To be implemented...")
     def test_after_init_refers_are_objects(self, exp_config):
         """Attribute exp.refers become objects after init."""
         pass
+
+    def test_algorithm_config_with_just_a_string(self, exp_config):
+        """Test that configuring an algorithm with just a string is OK."""
+        new_config = copy.deepcopy(exp_config[0][1])
+        new_config['algorithms'] = 'dumbalgo'
+        exp = Experiment('supernaedo2')
+        exp.configure(new_config)
+        new_config['status'] = 'pending'
+        new_config['algorithms'] = dict()
+        new_config['algorithms']['dumbalgo'] = dict()
+        new_config['algorithms']['dumbalgo']['done'] = False
+        new_config['algorithms']['dumbalgo']['judgement'] = None
+        new_config['algorithms']['dumbalgo']['scoring'] = 0
+        new_config['algorithms']['dumbalgo']['suspend'] = False
+        new_config['algorithms']['dumbalgo']['value'] = 5
+        assert exp._id == new_config.pop('_id')
+        assert exp.configuration == new_config
 
 
 class TestReserveTrial(object):
@@ -381,11 +377,18 @@ class TestReserveTrial(object):
         with pytest.raises(ValueError):
             hacked_exp.reserve_trial(score_handle='asfa')
 
-    @pytest.mark.xfail(reason="To be implemented...", raises=NotImplementedError)
-    def test_reserve_with_score(self, hacked_exp):
+    def fake_handle(self, xxx):
+        """Fake score handle for testing."""
+        self.times_called += 1
+        return self.times_called
+
+    def test_reserve_with_score(self, hacked_exp, exp_config):
         """Reserve with a score object that can do its job."""
-        hacked_exp.reserve_trial(score_handle=lambda x: 66)
-        pass
+        self.times_called = 0
+        hacked_exp.configure(exp_config[0][2])
+        trial = hacked_exp.reserve_trial(score_handle=self.fake_handle)
+        exp_config[1][6]['status'] = 'reserved'
+        assert trial.to_dict() == exp_config[1][6]
 
 
 @pytest.mark.usefixtures("patch_sample")
@@ -408,8 +411,8 @@ def test_register_trials(database, random_dt, hacked_exp):
     """Register a list of newly proposed trials/parameters."""
     hacked_exp._id = 'lalala'  # white box hack
     trials = [
-        Trial(params=[{'name': 'a', 'type': 'int', 'value': 5}]),
-        Trial(params=[{'name': 'b', 'type': 'int', 'value': 6}]),
+        Trial(params=[{'name': 'a', 'type': 'integer', 'value': 5}]),
+        Trial(params=[{'name': 'b', 'type': 'integer', 'value': 6}]),
         ]
     hacked_exp.register_trials(trials)
     yo = list(database.trials.find({'experiment': hacked_exp._id}))

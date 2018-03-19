@@ -99,11 +99,11 @@ class TestTrial(object):
     def test_str_value(self, exp_config):
         """Test representation of `Trial.Value`."""
         t = Trial(**exp_config[1][2])
-        assert str(t.params[0]) == "Param(name='encoding_layer', "\
-                                   "type='enum', value='gru')"
+        assert str(t.params[0]) == "Param(name='/encoding_layer', "\
+                                   "type='categorical', value='gru')"
 
     def test_objective_property(self, exp_config):
-        """Check property `Trial.objective_value`."""
+        """Check property `Trial.objective`."""
         # 1 results in `results` list
         t = Trial(**exp_config[1][2])
         assert isinstance(t.objective, Trial.Result)
@@ -126,4 +126,30 @@ class TestTrial(object):
         assert t.objective.name == 'yolo'
         assert t.objective.type == 'objective'
         assert t.objective.value == 10
+        tmp = exp_config[1][2]['results'].pop()
+
+    def test_gradient_property(self, exp_config):
+        """Check property `Trial.gradient`."""
+        # 1 results in `results` list
+        t = Trial(**exp_config[1][2])
+        assert isinstance(t.gradient, Trial.Result)
+        assert t.gradient.name == 'naedw_grad'
+        assert t.gradient.type == 'gradient'
+        assert t.gradient.value == [5, 3]
+
+        # 0 results in `results` list
+        tmp = exp_config[1][2]['results'].pop()
+        t = Trial(**exp_config[1][2])
+        assert t.gradient is None
+        exp_config[1][2]['results'].append(tmp)
+
+        # >1 results in `results` list
+        exp_config[1][2]['results'].append(dict(name='yolo2',
+                                                type='gradient',
+                                                value=[12, 15]))
+        t = Trial(**exp_config[1][2])
+        assert isinstance(t.gradient, Trial.Result)
+        assert t.gradient.name == 'naedw_grad'
+        assert t.gradient.type == 'gradient'
+        assert t.gradient.value == [5, 3]
         tmp = exp_config[1][2]['results'].pop()

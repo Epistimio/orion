@@ -27,7 +27,7 @@ class TestDatabaseFactory(object):
         """
         with pytest.raises(TypeError) as exc_info:
             Database()
-        assert 'abstract class' in str(exc_info.value)
+        assert 'positional argument' in str(exc_info.value)
 
     def test_notfound_type_first_call(self):
         """Raise when supplying not implemented wrapper name."""

@@ -25,8 +25,6 @@ How to document -- sources:
    5. `Cross-reference <http://www.sphinx-doc.org/en/stable/domains.html#python-roles>`_
 
 """
-from __future__ import absolute_import
-
 import glob
 import os
 import re
@@ -99,6 +97,7 @@ templates_path = ['_templates']
 exclude_patterns = ['_build']
 
 # The name of the Pygments (syntax highlighting) style to use.
+highlight_language = 'python3'
 pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.

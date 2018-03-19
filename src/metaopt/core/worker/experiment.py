@@ -1,23 +1,24 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=protected-access
 """
 :mod:`metaopt.core.worker.experiment` -- Description of an optimization attempt
 ===============================================================================
 
-.. module:: trial
+.. module:: experiment
    :platform: Unix
    :synopsis: Manage history of trials corresponding to a black box process
 
 """
-
 import copy
 import datetime
 import getpass
 import logging
 import random
 
-import six
-
 from metaopt.core.io.database import Database
+from metaopt.core.io.space_builder import SpaceBuilder
+from metaopt.core.utils.format_trials import trial_to_tuple
+from metaopt.core.worker.primary_algo import PrimaryAlgo
 from metaopt.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
@@ -54,7 +55,7 @@ class Experiment(object):
           of parameter evaluations and is not *pending*.
        * 'broken' : Denotes an experiment which stopped unsuccessfully due to
           unexpected behaviour.
-    algorithms : dict of dicts or list of `Algorithm` objects, after initialization is done.
+    algorithms : dict of dicts or an `PrimaryAlgo` object, after initialization is done.
        Complete specification of the optimization and dynamical procedures taking
        place in this `Experiment`.
 
@@ -69,8 +70,6 @@ class Experiment(object):
        **MetaOpt** version.
     user_script : str
        Full absolute path to `user`'s executable.
-    user_config : str
-       Full absolute path to `user`'s configuration, possibly templated for **MetaOpt**.
     user_args : list of str
        Contains separate arguments to be passed when invoking `user_script`,
        possibly templated for **MetaOpt**.
@@ -102,6 +101,7 @@ class Experiment(object):
         :param name: Describe a configuration with a unique identifier per :attr:`user`.
         :type name: str
         """
+        log.debug("Creating Experiment object with name: %s", name)
         self._init_done = False
         self._db = Database()  # fetch database instance
 
@@ -119,6 +119,8 @@ class Experiment(object):
         config = self._db.read('experiments',
                                {'name': name, 'metadata.user': user})
         if config:
+            log.debug("Found existing experiment, %s, under user, %s, registered in database.",
+                      name, user)
             if len(config) > 1:
                 log.warning("Many (%s) experiments for (%s, %s) are available but "
                             "only the most recent one can be accessed. "
@@ -154,10 +156,17 @@ class Experiment(object):
         if not new_trials:
             return None
 
-        if score_handle is None:
-            selected_trial = random.sample(new_trials, 1)[0]
-        else:
-            raise NotImplementedError("scoring will be supported in the next iteration.")
+        if score_handle is not None and self.space:
+            scores = list(map(score_handle,
+                              map(lambda x: trial_to_tuple(x, self.space), new_trials)))
+            scored_trials = zip(scores, new_trials)
+            best_trials = filter(lambda st: st[0] == max(scores), scored_trials)
+            new_trials = list(zip(*best_trials))[1]
+        elif score_handle is not None:
+            log.warning("While reserving trial: `score_handle` was provided, but "
+                        "parameter space has not been defined yet.")
+
+        selected_trial = random.sample(new_trials, 1)[0]
 
         if selected_trial.status == 'new':
             selected_trial.start_time = datetime.datetime.utcnow()
@@ -215,7 +224,10 @@ class Experiment(object):
 
     @property
     def is_done(self):
-        """Count how many trials have been completed and compare with `max_trials`.
+        """Return True, if this experiment is considered to be finished.
+
+        1. Count how many trials have been completed and compare with `max_trials`.
+        2. Ask `algorithms` if they consider there is a chance for further improvement.
 
         .. note:: To be used as a terminating condition in a ``Worker``.
         """
@@ -224,22 +236,36 @@ class Experiment(object):
             status='completed'
             )
         num_completed_trials = self._db.count('trials', query)
-        if num_completed_trials >= self.max_trials:
+
+        if num_completed_trials >= self.max_trials or \
+                (self._init_done and self.algorithms.is_done):
+            self._db.write('experiments', {'status': 'done'}, {'_id': self._id})
             return True
+
         return False
+
+    @property
+    def space(self):
+        """Return problem's parameter `metaopt.algo.space.Space`.
+
+        .. note:: It will return None, if experiment init is not done.
+        """
+        if self._init_done:
+            return self.algorithms.space
+        return None
 
     @property
     def configuration(self):
         """Return a copy of an `Experiment` configuration as a dictionary."""
-        # After successful initialization, get a dict form from DB.
-        # Check :attr:`algorithms` and :attr:`refers` to see why.
-        if self._init_done:
-            return self._db.read('experiments', {'_id': self._id})[0]
-
         config = dict()
         for attrname in self.__slots__:
-            if not attrname.startswith('_'):
-                config[attrname] = getattr(self, attrname)
+            if attrname.startswith('_'):
+                continue
+            attribute = getattr(self, attrname)
+            if self._init_done and attrname == 'algorithms':
+                config[attrname] = attribute.configuration
+            else:
+                config[attrname] = attribute
         # Reason for deepcopy is that some attributes are dictionaries
         # themselves, we don't want to accidentally change the state of this
         # object from a getter.
@@ -258,6 +284,13 @@ class Experiment(object):
         if self._init_done:
             raise RuntimeError("Configuration is done; cannot reset an Experiment.")
 
+        # Copy and simulate instantiating given configuration
+        experiment = Experiment(self.name)
+        experiment._instantiate_config(self.configuration)
+        experiment._instantiate_config(config)
+        experiment._init_done = True
+        experiment.status = 'pending'
+
         # If status is None in this object, then database did not hit a config
         # with same (name, user's name) pair. Everything depends on the user's
         # moptconfig to set.
@@ -269,31 +302,15 @@ class Experiment(object):
             is_new = True
         else:
             # Fork if it is needed
-            is_new = self._is_different_from(config)
+            is_new = self._is_different_from(experiment.configuration)
             if is_new:
-                self._fork_config(config)  # Change (?) `name` attribute here.
+                experiment._fork_config(config)
 
-        # Just overwrite everything given
-        for section, value in six.iteritems(config):
-            if section == 'status':
-                log.warning("Found section 'status' in configuration. This experiment "
-                            "attribute cannot be set. Ignoring.")
-                continue
-            if section not in self.__slots__:
-                log.warning("Found section '%s' in configuration. Experiments "
-                            "do not support this option. Ignoring.", section)
-                continue
-            if section.startswith('_'):
-                log.warning("Found section '%s' in configuration. "
-                            "Cannot set private attributes. Ignoring.", section)
-                continue
-            setattr(self, section, value)
+        final_config = experiment.configuration
+        self._instantiate_config(final_config)
 
+        self._init_done = True
         self.status = 'pending'
-        final_config = self.configuration  # grab dict representation of Experiment
-
-        # Sanitize and replace some sections with objects
-        self._sanitize_config()
 
         # If everything is alright, push new config to database
         if is_new:
@@ -303,8 +320,6 @@ class Experiment(object):
             self._id = final_config['_id']
         else:
             self._db.write('experiments', final_config, {'_id': self._id})
-
-        self._init_done = True
 
     @property
     def stats(self):
@@ -360,17 +375,40 @@ class Experiment(object):
 
         return stats
 
-    def _sanitize_config(self):
+    def _instantiate_config(self, config):
         """Check before dispatching experiment whether configuration corresponds
-        to a runnable experiment.
+        to a executable experiment environment.
 
-        1. Check `refers` and instantiate `Experiment` objects from it.
-        2. From `metadata` given: ``user_script``, ``user_config`` should exist.
-        3. Check if experiment `is_done`, prompt for larger `max_trials` if it is.
-        4. Check whether configured algorithms correspond to [known]/valid
+        1. Check `refers` and instantiate `Experiment` objects from it. (TODO)
+        2. Try to build parameter space from user arguments.
+        3. Check whether configured algorithms correspond to [known]/valid
            implementations of the ``Algorithm`` class. Instantiate these objects.
+        4. Check if experiment `is_done`, prompt for larger `max_trials` if it is. (TODO)
+
         """
-        pass
+        # Just overwrite everything else given
+        for section, value in config.items():
+            if section == 'status':
+                continue
+            if section not in self.__slots__:
+                log.warning("Found section '%s' in configuration. Experiments "
+                            "do not support this option. Ignoring.", section)
+                continue
+            if section.startswith('_'):
+                log.warning("Found section '%s' in configuration. "
+                            "Cannot set private attributes. Ignoring.", section)
+                continue
+            setattr(self, section, value)
+
+        try:
+            space = SpaceBuilder().build_from(config['metadata']['user_args'])
+            if not space:
+                raise ValueError("Parameter space is empty. There is nothing to optimize.")
+
+            # Instantiate algorithms
+            self.algorithms = PrimaryAlgo(space, self.algorithms)
+        except KeyError:
+            pass
 
     def _fork_config(self, config):
         """Ask for a different identifier for this experiment. Set :attr:`refers`
@@ -385,12 +423,17 @@ class Experiment(object):
         its attributes is different from the one suggested in `config`.
         """
         is_diff = False
-        for section, value in six.iteritems(config):
+        for section, value in config.items():
             if section in self.non_forking_attrs or \
                     section not in self.__slots__ or \
                     section.startswith('_'):
                 continue
-            if getattr(self, section) != value:
+            item = getattr(self, section)
+            if item != value:
+                log.warning("Config given is different from config found in db at section: %s",
+                            section)
+                log.warning("Config+ :\n%s", value)
+                log.warning("Config- :\n%s", item)
                 is_diff = True
                 break
 

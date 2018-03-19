@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Installation script for MetaOpt."""
-from __future__ import absolute_import
-
 from glob import iglob
 import os
 import sys
 import textwrap
 
-from setuptools import (find_packages, setup)
+from setuptools import setup
 
 import versioneer
 
@@ -41,8 +39,15 @@ tests_require = [
     'pytest>=3.0.0'
     ]
 
+
+packages = [
+    'metaopt.core',
+    'metaopt.client',
+    'metaopt.algo',
+    ]
+
 setup_args = dict(
-    name='metaopt',
+    name='metaopt.core',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description=metaopt.__descr__,
@@ -51,8 +56,7 @@ setup_args = dict(
     author=metaopt.__author__,
     author_email=metaopt.__author_email__,
     url=metaopt.__url__,
-    namespace_packages=['metaopt'],
-    packages=find_packages(where='src'),
+    packages=packages,
     package_dir={'': 'src'},
     include_package_data=True,
     data_files=find_data_files(),
@@ -60,13 +64,17 @@ setup_args = dict(
         'console_scripts': [
             'mopt = metaopt.core.cli:main',
             ],
+        'OptimizationAlgorithm': [
+            'random = metaopt.algo.random:Random',
+            ],
         },
-    install_requires=['six', 'PyYAML', 'pymongo>=3'],
+    install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy'],
     tests_require=tests_require,
     setup_requires=['setuptools', 'pytest-runner>=2.0,<3dev'],
     extras_require=dict(test=tests_require),
-    #  http://peak.telecommunity.com/DevCenter/setuptools#setting-the-zip-safe-flag
-    #  zip_safe=False
+    # "Zipped eggs don't play nicely with namespace packaging"
+    # from https://github.com/pypa/sample-namespace-packages
+    zip_safe=False
     )
 
 setup_args['keywords'] = [
@@ -90,7 +98,7 @@ setup_args['classifiers'] = [
     'Topic :: Scientific/Engineering',
     'Topic :: Scientific/Engineering :: Artificial Intelligence',
 ] + [('Programming Language :: Python :: %s' % x)
-     for x in '2 2.6 2.7 3 3.4 3.5 3.6'.split()]
+     for x in '3 3.4 3.5 3.6'.split()]
 
 if __name__ == '__main__':
     setup(**setup_args)

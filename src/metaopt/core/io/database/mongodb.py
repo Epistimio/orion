@@ -8,12 +8,9 @@
    :synopsis: Implement :class:`metaopt.core.io.database.AbstractDB` for MongoDB.
 
 """
-from __future__ import absolute_import
-
 import pymongo
 from pymongo import MongoClient
 from pymongo.uri_parser import parse_uri
-from six import raise_from
 
 from metaopt.core.io.database import (AbstractDB, DatabaseError)
 
@@ -56,12 +53,12 @@ class MongoDB(AbstractDB):
         except pymongo.errors.ConnectionFailure as e:
             self._logger.error("Could not connect to host, %s:%s",
                                self.host, self.port)
-            raise_from(DatabaseError("Connection Failure: database not found on "
-                                     "specified uri"), e)
+            raise DatabaseError("Connection Failure: database not found on "
+                                "specified uri") from e
         except pymongo.errors.OperationFailure as e:
             self._logger.error("Could not verify user, %s, on database, %s",
                                self.username, self.name)
-            raise_from(DatabaseError("Authentication Failure: bad credentials"), e)
+            raise DatabaseError("Authentication Failure: bad credentials") from e
 
     @property
     def is_connected(self):

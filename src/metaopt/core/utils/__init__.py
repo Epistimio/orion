@@ -11,7 +11,13 @@
 from abc import ABCMeta
 from glob import glob
 from importlib import import_module
+import logging
 import os
+
+import pkg_resources
+
+
+log = logging.getLogger(__name__)
 
 
 class SingletonType(type):
@@ -37,7 +43,7 @@ class AbstractSingletonType(SingletonType, ABCMeta):
     pass
 
 
-class Factory(type):
+class Factory(ABCMeta):
     """Instantiate appropriate wrapper for the infrastructure based on input
     argument, ``of_type``.
 
@@ -57,16 +63,30 @@ class Factory(type):
 
         cls.modules = []
         base = import_module(cls.__base__.__module__)
-        py_files = glob(base.__path__[0] + '/[A-Za-z]*.py')
-        py_mods = map(lambda x: '.' + os.path.split(os.path.splitext(x)[0])[1], py_files)
-        for py_mod in py_mods:
-            cls.modules.append(import_module(py_mod, package=cls.__base__.__module__))
+        try:
+            py_files = glob(os.path.abspath(os.path.join(base.__path__[0], '[A-Za-z]*.py')))
+            py_mods = map(lambda x: '.' + os.path.split(os.path.splitext(x)[0])[1], py_files)
+            for py_mod in py_mods:
+                cls.modules.append(import_module(py_mod, package=cls.__base__.__module__))
+        except AttributeError:
+            # This means that base class and implementations reside in a module
+            # itself and not a subpackage.
+            pass
 
-        cls.types = [cls.__base__] + cls.__base__.__subclasses__()
+        # Get types advertised through entry points!
+        for entry_point in pkg_resources.iter_entry_points(cls.__name__):
+            entry_point.load()
+            log.debug("Found a %s %s from distribution: %s=%s",
+                      entry_point.name, cls.__name__,
+                      entry_point.dist.project_name, entry_point.dist.version)
+
+        # Get types visible from base module or package, but internal
+        cls.types = cls.__base__.__subclasses__()
         cls.types = [class_ for class_ in cls.types if class_.__name__ != cls.__name__]
-        cls.typenames = list(map(lambda x: x.__name__, cls.types))
+        cls.typenames = list(map(lambda x: x.__name__.lower(), cls.types))
+        log.debug("Implementations found: %s", cls.typenames)
 
-    def __call__(cls, of_type=None, *args, **kwargs):
+    def __call__(cls, of_type, *args, **kwargs):
         """Create an object, instance of ``cls.__base__``, on first call.
 
         :param of_type: Name of class, subclass of ``cls.__base__``, wrapper
@@ -85,9 +105,6 @@ class Factory(type):
 
         :return: The object which was created on the first call.
         """
-        if of_type is None:
-            of_type = cls.__base__.__name__
-
         for inherited_class in cls.types:
             if inherited_class.__name__.lower() == of_type.lower():
                 return inherited_class.__call__(*args, **kwargs)

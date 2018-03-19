@@ -21,5 +21,4 @@ include docs/requirements.txt
 prune docs/build
 prune docs/src/reference
 recursive-include src *.py
-recursive-include tests *.py *.yaml *.json *.yml *.in LICENSE
-include tests/requirements.txt
+recursive-include tests *.py *.yaml
