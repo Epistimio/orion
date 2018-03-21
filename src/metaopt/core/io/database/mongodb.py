@@ -9,8 +9,6 @@
 
 """
 import pymongo
-from pymongo import MongoClient
-from pymongo.uri_parser import parse_uri
 
 from metaopt.core.io.database import (AbstractDB, DatabaseError)
 
@@ -43,11 +41,11 @@ class MongoDB(AbstractDB):
         self._sanitize_attrs()
 
         try:
-            self._conn = MongoClient(host=self.host,
-                                     port=self.port,
-                                     username=self.username,
-                                     password=self.password,
-                                     authSource=self.name)
+            self._conn = pymongo.MongoClient(host=self.host,
+                                             port=self.port,
+                                             username=self.username,
+                                             password=self.password,
+                                             authSource=self.name)
             self._db = self._conn[self.name]
             self._db.command('ismaster')  # .. seealso:: :meth:`is_connected`
         except pymongo.errors.ConnectionFailure as e:
@@ -145,10 +143,10 @@ class MongoDB(AbstractDB):
         """Sanitize attributes using MongoDB's 'uri_parser' module."""
         try:
             # Host can be a valid MongoDB URI
-            settings = parse_uri(self.host)
+            settings = pymongo.uri_parser.parse_uri(self.host)
         except pymongo.errors.InvalidURI:  # host argument was a hostname
             if self.port is None:
-                self.port = MongoClient.PORT
+                self.port = pymongo.MongoClient.PORT
         else:  # host argument was a URI
             # Arguments in MongoClient overwrite elements from URI
             self.host, _port = settings['nodelist'][0]
