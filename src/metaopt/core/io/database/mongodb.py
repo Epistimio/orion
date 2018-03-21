@@ -8,9 +8,57 @@
    :synopsis: Implement :class:`metaopt.core.io.database.AbstractDB` for MongoDB.
 
 """
+import functools
+
 import pymongo
 
-from metaopt.core.io.database import (AbstractDB, DatabaseError)
+from metaopt.core.io.database import (
+    AbstractDB, DatabaseError, DuplicateKeyError)
+
+
+AUTH_FAILED_MESSAGES = [
+    "auth failed",
+    "Authentication failed."]
+
+DUPLICATE_KEY_MESSAGES = [
+    "duplicate key error"]
+
+
+def mongodb_exception_wrapper(method):
+    """Convert pymongo exceptions to generic exception types defined in src.core.io.database.
+
+    Current exception types converted:
+    pymongo.errors.DuplicateKeyError -> DuplicateKeyError
+    pymongo.errors.BulkWriteError[DUPLICATE_KEY_MESSAGES] -> DuplicateKeyError
+    pymongo.errors.ConnectionFailure -> DatabaseError
+    pymongo.errors.OperationFailure(AUTH_FAILED_MESSAGES) -> DatabaseError
+
+    """
+    @functools.wraps(method)
+    def _decorator(self, *args, **kwargs):
+
+        try:
+            rval = method(self, *args, **kwargs)
+        except pymongo.errors.DuplicateKeyError as e:
+            raise DuplicateKeyError(str(e)) from e
+        except pymongo.errors.BulkWriteError as e:
+            for error in e.details['writeErrors']:
+                if any(m in error["errmsg"] for m in DUPLICATE_KEY_MESSAGES):
+                    raise DuplicateKeyError(error["errmsg"]) from e
+
+            raise
+        except pymongo.errors.ConnectionFailure as e:
+            raise DatabaseError("Connection Failure: database not found on "
+                                "specified uri") from e
+        except pymongo.errors.OperationFailure as e:
+            if any(m in str(e) for m in AUTH_FAILED_MESSAGES):
+                raise DatabaseError("Authentication Failure: bad credentials") from e
+
+            raise
+
+        return rval
+
+    return _decorator
 
 
 class MongoDB(AbstractDB):
@@ -29,6 +77,7 @@ class MongoDB(AbstractDB):
 
     """
 
+    @mongodb_exception_wrapper
     def initiate_connection(self):
         """Connect to database, unless MongoDB `is_connected`.
 
@@ -40,23 +89,13 @@ class MongoDB(AbstractDB):
 
         self._sanitize_attrs()
 
-        try:
-            self._conn = pymongo.MongoClient(host=self.host,
-                                             port=self.port,
-                                             username=self.username,
-                                             password=self.password,
-                                             authSource=self.name)
-            self._db = self._conn[self.name]
-            self._db.command('ismaster')  # .. seealso:: :meth:`is_connected`
-        except pymongo.errors.ConnectionFailure as e:
-            self._logger.error("Could not connect to host, %s:%s",
-                               self.host, self.port)
-            raise DatabaseError("Connection Failure: database not found on "
-                                "specified uri") from e
-        except pymongo.errors.OperationFailure as e:
-            self._logger.error("Could not verify user, %s, on database, %s",
-                               self.username, self.name)
-            raise DatabaseError("Authentication Failure: bad credentials") from e
+        self._conn = pymongo.MongoClient(host=self.host,
+                                         port=self.port,
+                                         username=self.username,
+                                         password=self.password,
+                                         authSource=self.name)
+        self._db = self._conn[self.name]
+        self._db.command('ismaster')  # .. seealso:: :meth:`is_connected`
 
     @property
     def is_connected(self):
@@ -82,8 +121,44 @@ class MongoDB(AbstractDB):
         """
         self._conn.close()
 
-    def write(self, collection_name, data,
-              query=None):
+    def ensure_index(self, collection_name, keys, unique=False):
+        """Create given indexes if they do not already exist in database.
+
+        .. seealso:: :meth:`AbstractDB.ensure_index` for argument documentation.
+
+        """
+        # MongoDB's `create_index()` is idempotent, which means it will only
+        # create new indexes if they do not already exists. That's why we do
+        # not need to verify if indexes already exists.
+        dbcollection = self._db[collection_name]
+
+        keys = self._convert_index_keys(keys)
+
+        dbcollection.create_index(keys, unique=unique, background=True)
+
+    def _convert_index_keys(self, keys):
+        """Convert index keys to MongoDB ones."""
+        if not isinstance(keys, (list, tuple)):
+            keys = [(keys, self.ASCENDING)]
+
+        converted_keys = []
+        for key, sort_order in keys:
+            converted_keys.append((key, self._convert_sort_order(sort_order)))
+
+        return converted_keys
+
+    def _convert_sort_order(self, sort_order):
+        """Convert generic `AbstractDB` sort orders to MongoDB ones."""
+        if sort_order is self.ASCENDING:
+            return pymongo.ASCENDING
+        elif sort_order is self.DESCENDING:
+            return pymongo.DESCENDING
+        else:
+            raise RuntimeError("Invalid database sort order %s" %
+                               str(sort_order))
+
+    @mongodb_exception_wrapper
+    def write(self, collection_name, data, query=None):
         """Write new information to a collection. Perform insert or update.
 
         .. seealso:: :meth:`AbstractDB.write` for argument documentation.
@@ -119,6 +194,7 @@ class MongoDB(AbstractDB):
 
         return dbdocs
 
+    @mongodb_exception_wrapper
     def read_and_write(self, collection_name, query, data, selection=None):
         """Read a collection's document and update the found document.
 

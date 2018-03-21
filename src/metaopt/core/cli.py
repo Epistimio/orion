@@ -12,7 +12,7 @@
 import logging
 
 from metaopt.core import resolve_config
-from metaopt.core.io.database import Database
+from metaopt.core.io.database import Database, DuplicateKeyError
 from metaopt.core.worker import workon
 from metaopt.core.worker.experiment import Experiment
 
@@ -43,7 +43,8 @@ def infer_experiment():
     expconfig = resolve_config.fetch_default_options()
 
     # Fetch mopt system variables (database and resource information)
-    # See :const:`metaopt.core.io.resolve_config.ENV_VARS` for environmental variables used
+    # See :const:`metaopt.core.io.resolve_config.ENV_VARS` for environmental
+    # variables used
     expconfig = resolve_config.merge_env_vars(expconfig)
 
     # Initialize singleton database object
@@ -58,9 +59,37 @@ def infer_experiment():
     exp_name = tmpconfig['name']
     if exp_name is None:
         raise RuntimeError("Could not infer experiment's name. "
-                           "Please use either `name` cmd line arg or provide one "
-                           "in metaopt's configuration file.")
+                           "Please use either `name` cmd line arg or provide "
+                           "one in metaopt's configuration file.")
 
+    experiment = create_experiment(exp_name, expconfig, cmdconfig, cmdargs)
+
+    return experiment
+
+
+def create_experiment(exp_name, expconfig, cmdconfig, cmdargs):
+    """Create an experiment based on configuration.
+
+    Configuration is a combination of command line, experiment configuration
+    file, experiment configuration in database and metaopt configuration files.
+
+    Precedence of configurations is:
+    `cmdargs` > `cmdconfig` > `dbconfig` > `expconfig`
+
+    This means `expconfig` values would be overwritten by `dbconfig` and so on.
+
+    Parameters
+    ----------
+    exp_name: str
+        Name of the experiment
+    expconfig: dict
+        Configuration coming from default configuration files.
+    cmdconfig: dict
+        Configuration coming from configuration file.
+    cmdargs: dict
+        Configuration coming from command line arguments.
+
+    """
     # Initialize experiment object.
     # Check for existing name and fetch configuration.
     experiment = Experiment(exp_name)
@@ -77,8 +106,16 @@ def infer_experiment():
     expconfig.pop('resources', None)
     expconfig.pop('status', None)
 
-    # Finish experiment's configuration
-    experiment.configure(expconfig)
+    # Finish experiment's configuration and write it to database.
+    try:
+        experiment.configure(expconfig)
+    except DuplicateKeyError:
+        # Fails if concurrent experiment with identical (name, metadata.user)
+        # is written first in the database.
+        # Next infer_experiment() should either load experiment from database
+        # and run smoothly if identical or trigger an experiment fork.
+        # In other words, there should not be more than 1 level of recursion.
+        experiment = create_experiment(exp_name, expconfig, cmdconfig, cmdargs)
 
     return experiment
 

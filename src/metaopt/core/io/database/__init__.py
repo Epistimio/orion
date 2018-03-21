@@ -14,7 +14,6 @@ Currently, implemented wrappers:
 
 """
 from abc import abstractmethod, abstractproperty
-import logging
 
 from metaopt.core.utils import (AbstractSingletonType, SingletonFactory)
 
@@ -39,11 +38,12 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
 
     """
 
+    ASCENDING = 0
+    DESCENDING = 1
+
     def __init__(self, host='localhost', name=None,
                  port=None, username=None, password=None):
         """Init method, see attributes of :class:`AbstractDB`."""
-        self._logger = logging.getLogger(__name__)
-
         self.host = host
         self.name = name
         self.port = port
@@ -74,8 +74,34 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         pass
 
     @abstractmethod
-    def write(self, collection_name, data,
-              query=None):
+    def ensure_index(self, collection_name, keys, unique=False):
+        """Create given indexes if they do not already exist in database.
+
+        Parameters
+        ----------
+        collection_name : str
+           A collection inside database, a table.
+        keys: str or list of tuples
+           Can be a string representing a key to index, or a list of tuples
+           with the structure `[(key_name, sort_order)]`. `key_name` must be a
+           string and sort_order can be either `AbstractDB.ASCENDING` or
+           AbstractDB.DESCENDING`.
+        unique: bool, optional
+           Ensure each document have a different key value. If not, operations
+           like `write()` and `read_and_write()` will raise
+           `DuplicateKeyError`.
+           Defaults to False.
+
+        .. note::
+            Depending on the backend, the indexing operation might operate in
+            background. This means some operations on the database might occur
+            before the indexes are totally built.
+
+        """
+        pass
+
+    @abstractmethod
+    def write(self, collection_name, data, query=None):
         """Write new information to a collection. Perform insert or update.
 
         Parameters
@@ -96,6 +122,11 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         .. note::
            In the case of an update operation, if `query` fails to find a
            document that matches, insert of `data` will be performed instead.
+
+        :raises :exc:`DuplicateKeyError`: if the operation is creating duplicate
+            keys in two different documents. Only occurs if the keys have
+            unique indexes. See :meth:`AbstractDB.ensure_index` for more
+            information about indexes.
 
         """
         pass
@@ -139,6 +170,11 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
 
         :return: updated first matched document or None if nothing found
 
+        :raises :exc:`DuplicateKeyError`: if the operation is creating duplicate
+            keys in two different documents. Only occurs if the keys have
+            unique indexes. See :meth:`AbstractDB.ensure_index` for more
+            information about indexes.
+
         """
         pass
 
@@ -176,6 +212,14 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
 class DatabaseError(RuntimeError):
     """Exception type used to delegate responsibility from any database
     implementation's own Exception types.
+    """
+
+    pass
+
+
+class DuplicateKeyError(DatabaseError):
+    """Exception type used when a write attempt is made but the new document
+    have an index already contained in the database.
     """
 
     pass

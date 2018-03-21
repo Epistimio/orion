@@ -8,7 +8,7 @@ import random
 import pytest
 
 from metaopt.algo.base import BaseAlgorithm
-from metaopt.core.io.database import Database
+from metaopt.core.io.database import Database, DuplicateKeyError
 from metaopt.core.worker.experiment import Experiment
 from metaopt.core.worker.trial import Trial
 
@@ -20,9 +20,9 @@ def patch_sample(monkeypatch):
         assert type(a_list) == list
         assert len(a_list) >= 1
         # Part of `TestReserveTrial.test_reserve_success`
-        assert a_list[0].status == 'new'
+        assert a_list[0].status == 'interrupted'
         assert a_list[1].status == 'new'
-        assert a_list[2].status == 'interrupted'
+        assert a_list[2].status == 'new'
         assert a_list[3].status == 'suspended'
         assert should_be_one == 1
         return [a_list[0]]
@@ -37,9 +37,9 @@ def patch_sample2(monkeypatch):
         assert type(a_list) == list
         assert len(a_list) >= 1
         # Part of `TestReserveTrial.test_reserve_success2`
-        assert a_list[0].status == 'new'
+        assert a_list[0].status == 'interrupted'
         assert a_list[1].status == 'new'
-        assert a_list[2].status == 'interrupted'
+        assert a_list[2].status == 'new'
         assert a_list[3].status == 'suspended'
         assert should_be_one == 1
         return [a_list[-1]]
@@ -55,11 +55,11 @@ def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
         assert len(a_list) >= 1
         # Part of `TestReserveTrial.test_reserve_race_condition`
         if len(a_list) == 4:
-            assert a_list[0].status == 'new'
+            assert a_list[0].status == 'interrupted'
         if len(a_list) == 3:
             assert a_list[0].status == 'new'
         if len(a_list) == 2:
-            assert a_list[0].status == 'interrupted'
+            assert a_list[0].status == 'new'
         if len(a_list) == 1:
             assert a_list[0].status == 'suspended'
 
@@ -88,11 +88,11 @@ def patch_sample_concurrent2(monkeypatch, create_db_instance, exp_config):
         assert len(a_list) >= 1
         # Part of `TestReserveTrial.test_reserve_dead_race_condition`
         if len(a_list) == 4:
-            assert a_list[0].status == 'new'
+            assert a_list[0].status == 'interrupted'
         if len(a_list) == 3:
             assert a_list[0].status == 'new'
         if len(a_list) == 2:
-            assert a_list[0].status == 'interrupted'
+            assert a_list[0].status == 'new'
         if len(a_list) == 1:
             assert a_list[0].status == 'suspended'
 
@@ -190,15 +190,15 @@ class TestInitExperiment(object):
         exp = Experiment('supernaedo2')
         assert exp._init_done is False
         assert exp._db is create_db_instance
-        assert exp._id == exp_config[0][1]['_id']
-        assert exp.name == exp_config[0][1]['name']
-        assert exp.refers == exp_config[0][1]['refers']
-        assert exp.metadata == exp_config[0][1]['metadata']
-        assert exp._last_fetched == exp_config[0][1]['metadata']['datetime']
-        assert exp.pool_size == exp_config[0][1]['pool_size']
-        assert exp.max_trials == exp_config[0][1]['max_trials']
-        assert exp.status == exp_config[0][1]['status']
-        assert exp.algorithms == exp_config[0][1]['algorithms']
+        assert exp._id == exp_config[0][0]['_id']
+        assert exp.name == exp_config[0][0]['name']
+        assert exp.refers == exp_config[0][0]['refers']
+        assert exp.metadata == exp_config[0][0]['metadata']
+        assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
+        assert exp.pool_size == exp_config[0][0]['pool_size']
+        assert exp.max_trials == exp_config[0][0]['max_trials']
+        assert exp.status == exp_config[0][0]['status']
+        assert exp.algorithms == exp_config[0][0]['algorithms']
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
@@ -213,8 +213,8 @@ class TestConfigProperty(object):
         Assuming that experiment's (exp's name, user's name) has hit the database.
         """
         exp = Experiment('supernaedo2')
-        exp_config[0][1].pop('_id')
-        assert exp.configuration == exp_config[0][1]
+        exp_config[0][0].pop('_id')
+        assert exp.configuration == exp_config[0][0]
 
     def test_get_before_init_no_hit(self, exp_config, random_dt):
         """Return a configuration dict according to an experiment object.
@@ -261,16 +261,16 @@ class TestConfigProperty(object):
         """
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
-        exp_config[0][1]['max_trials'] = 5000
-        exp.configure(exp_config[0][1])
-        exp_config[0][1]['status'] = 'pending'
-        exp_config[0][1]['algorithms']['dumbalgo']['done'] = False
-        exp_config[0][1]['algorithms']['dumbalgo']['judgement'] = None
-        exp_config[0][1]['algorithms']['dumbalgo']['scoring'] = 0
-        exp_config[0][1]['algorithms']['dumbalgo']['suspend'] = False
-        exp_config[0][1]['algorithms']['dumbalgo']['value'] = 5
-        assert exp._id == exp_config[0][1].pop('_id')
-        assert exp.configuration == exp_config[0][1]
+        exp_config[0][0]['max_trials'] = 5000
+        exp.configure(exp_config[0][0])
+        exp_config[0][0]['status'] = 'pending'
+        exp_config[0][0]['algorithms']['dumbalgo']['done'] = False
+        exp_config[0][0]['algorithms']['dumbalgo']['judgement'] = None
+        exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
+        exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
+        exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        assert exp._id == exp_config[0][0].pop('_id')
+        assert exp.configuration == exp_config[0][0]
 
     def test_good_set_before_init_hit_no_diffs_exc_pool_size(self, exp_config):
         """Trying to set, and NO differences were found from the config pulled from db.
@@ -280,16 +280,16 @@ class TestConfigProperty(object):
         """
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
-        exp_config[0][1]['pool_size'] = 10
-        exp_config[0][1]['status'] = 'pending'
-        exp.configure(exp_config[0][1])
-        exp_config[0][1]['algorithms']['dumbalgo']['done'] = False
-        exp_config[0][1]['algorithms']['dumbalgo']['judgement'] = None
-        exp_config[0][1]['algorithms']['dumbalgo']['scoring'] = 0
-        exp_config[0][1]['algorithms']['dumbalgo']['suspend'] = False
-        exp_config[0][1]['algorithms']['dumbalgo']['value'] = 5
-        assert exp._id == exp_config[0][1].pop('_id')
-        assert exp.configuration == exp_config[0][1]
+        exp_config[0][0]['pool_size'] = 10
+        exp_config[0][0]['status'] = 'pending'
+        exp.configure(exp_config[0][0])
+        exp_config[0][0]['algorithms']['dumbalgo']['done'] = False
+        exp_config[0][0]['algorithms']['dumbalgo']['judgement'] = None
+        exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
+        exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
+        exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        assert exp._id == exp_config[0][0].pop('_id')
+        assert exp.configuration == exp_config[0][0]
 
     def test_good_set_before_init_no_hit(self, random_dt, database, new_config):
         """Trying to set, overwrite everything from input."""
@@ -353,32 +353,88 @@ class TestConfigProperty(object):
         """
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
-        exp.configure(exp_config[0][1])
+        experiment_count_before = exp._db.count("experiments")
+        exp.configure(exp_config[0][0])
         assert exp._init_done is True
-        exp_config[0][1]['status'] = 'pending'
-        exp_config[0][1]['algorithms']['dumbalgo']['done'] = False
-        exp_config[0][1]['algorithms']['dumbalgo']['judgement'] = None
-        exp_config[0][1]['algorithms']['dumbalgo']['scoring'] = 0
-        exp_config[0][1]['algorithms']['dumbalgo']['suspend'] = False
-        exp_config[0][1]['algorithms']['dumbalgo']['value'] = 5
-        assert exp._id == exp_config[0][1].pop('_id')
-        assert exp.configuration == exp_config[0][1]
+        exp_config[0][0]['status'] = 'pending'
+        exp_config[0][0]['algorithms']['dumbalgo']['done'] = False
+        exp_config[0][0]['algorithms']['dumbalgo']['judgement'] = None
+        exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
+        exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
+        exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        assert exp._id == exp_config[0][0].pop('_id')
+        assert exp.configuration == exp_config[0][0]
+        assert experiment_count_before == exp._db.count("experiments")
 
     def test_try_set_after_init(self, exp_config):
         """Cannot set a configuration after init (currently)."""
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
-        exp.configure(exp_config[0][1])
+        exp.configure(exp_config[0][0])
         assert exp._init_done is True
         with pytest.raises(RuntimeError) as exc_info:
-            exp.configure(exp_config[0][1])
+            exp.configure(exp_config[0][0])
         assert 'cannot reset' in str(exc_info.value)
+
+    def test_try_set_after_race_condition(self, exp_config, new_config):
+        """Cannot set a configuration after init if it looses a race
+        condition.
+
+        The experiment from process which first writes to db is initialized
+        properly. The experiment which looses the race condition cannot be
+        initialized and needs to be rebuilt.
+        """
+        exp = Experiment(new_config['name'])
+        # Another experiment gets configured first
+        experiment_count_before = exp._db.count("experiments")
+        naughty_little_exp = Experiment(new_config['name'])
+        naughty_little_exp.configure(new_config)
+        assert naughty_little_exp._init_done is True
+        assert exp._init_done is False
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        # First experiment won't be able to be configured
+        with pytest.raises(DuplicateKeyError) as exc_info:
+            exp.configure(new_config)
+        assert 'duplicate key error' in str(exc_info.value)
+
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+
+    def test_try_reset_after_race_condition(self, exp_config, new_config):
+        """Cannot set a configuration after init if it looses a race condition,
+        but can set it if reloaded.
+
+        The experiment from process which first writes to db is initialized
+        properly. The experiment which looses the race condition cannot be
+        initialized and needs to be rebuilt.
+        """
+        exp = Experiment(new_config['name'])
+        # Another experiment gets configured first
+        experiment_count_before = exp._db.count("experiments")
+        naughty_little_exp = Experiment(new_config['name'])
+        naughty_little_exp.configure(new_config)
+        assert naughty_little_exp._init_done is True
+        assert exp._init_done is False
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        # First experiment won't be able to be configured
+        with pytest.raises(DuplicateKeyError) as exc_info:
+            exp.configure(new_config)
+        assert 'duplicate key error' in str(exc_info.value)
+
+        # Still not more experiment in DB
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+
+        # Retry configuring the experiment
+        exp = Experiment(new_config['name'])
+        exp.configure(new_config)
+        assert exp._init_done is True
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        assert exp.configuration == naughty_little_exp.configuration
 
     def test_after_init_algorithms_are_objects(self, exp_config):
         """Attribute exp.algorithms become objects after init."""
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
-        exp.configure(exp_config[0][1])
+        exp.configure(exp_config[0][0])
         assert isinstance(exp.algorithms, BaseAlgorithm)
 
     @pytest.mark.skip(reason="To be implemented...")
@@ -390,7 +446,7 @@ class TestConfigProperty(object):
         """Test that configuring an algorithm with just a string is OK."""
         new_config = copy.deepcopy(exp_config[0][1])
         new_config['algorithms'] = 'dumbalgo'
-        exp = Experiment('supernaedo2')
+        exp = Experiment('supernaedo3')
         exp.configure(new_config)
         new_config['status'] = 'pending'
         new_config['algorithms'] = dict()
@@ -422,9 +478,8 @@ class TestReserveTrial(object):
     def test_reserve_success(self, exp_config, hacked_exp, random_dt):
         """Successfully find new trials in db and reserve one at 'random'."""
         trial = hacked_exp.reserve_trial()
-        exp_config[1][3]['status'] = 'reserved'
-        exp_config[1][3]['start_time'] = random_dt
-        assert trial.to_dict() == exp_config[1][3]
+        exp_config[1][5]['status'] = 'reserved'
+        assert trial.to_dict() == exp_config[1][5]
 
     @pytest.mark.usefixtures("patch_sample2")
     def test_reserve_success2(self, exp_config, hacked_exp):
@@ -441,9 +496,9 @@ class TestReserveTrial(object):
     def test_reserve_race_condition(self, exp_config, hacked_exp, random_dt):
         """Get its trials reserved before by another process once."""
         trial = hacked_exp.reserve_trial()
-        exp_config[1][4]['status'] = 'reserved'
-        exp_config[1][4]['start_time'] = random_dt
-        assert trial.to_dict() == exp_config[1][4]
+        exp_config[1][3]['status'] = 'reserved'
+        exp_config[1][3]['start_time'] = random_dt
+        assert trial.to_dict() == exp_config[1][3]
 
     @pytest.mark.usefixtures("patch_sample_concurrent2")
     def test_reserve_dead_race_condition(self, exp_config, hacked_exp):
