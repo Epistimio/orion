@@ -25,9 +25,11 @@ def patch_mongo_client(monkeypatch):
     def mock_class(*args, **kwargs):
         # 1 sec, defaults to 20 secs otherwise
         kwargs['serverSelectionTimeoutMS'] = 1.
+        # NOTE: Can't use pymongo.MongoClient otherwise there is an infinit
+        # recursion; mock(mock(mock(mock(...(MongoClient)...))))
         return MongoClient(*args, **kwargs)
 
-    monkeypatch.setattr('metaopt.core.io.database.mongodb.MongoClient', mock_class)
+    monkeypatch.setattr('pymongo.MongoClient', mock_class)
 
 
 @pytest.mark.usefixtures("null_db_instances")
