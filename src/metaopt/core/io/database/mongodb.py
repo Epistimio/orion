@@ -16,12 +16,22 @@ from metaopt.core.io.database import (
     AbstractDB, DatabaseError, DuplicateKeyError)
 
 
+AUTH_FAILED_MESSAGES = [
+    "auth failed",
+    "Authentication failed."]
+
+DUPLICATE_KEY_MESSAGES = [
+    "duplicate key error"]
+
+
 def mongodb_exception_wrapper(method):
     """Convert pymongo exceptions to generic exception types defined in src.core.io.database.
 
     Current exception types converted:
     pymongo.errors.DuplicateKeyError -> DuplicateKeyError
-    pymongo.errors.BulkWriteError[DuplicateKeyError] -> DuplicateKeyError
+    pymongo.errors.BulkWriteError[DUPLICATE_KEY_MESSAGES] -> DuplicateKeyError
+    pymongo.errors.ConnectionFailure -> DatabaseError
+    pymongo.errors.OperationFailure(AUTH_FAILED_MESSAGES) -> DatabaseError
 
     """
     @functools.wraps(method)
@@ -33,8 +43,16 @@ def mongodb_exception_wrapper(method):
             raise DuplicateKeyError(str(e)) from e
         except pymongo.errors.BulkWriteError as e:
             for error in e.details['writeErrors']:
-                if "duplicate key error" in error["errmsg"]:
+                if any(m in error["errmsg"] for m in DUPLICATE_KEY_MESSAGES):
                     raise DuplicateKeyError(error["errmsg"]) from e
+
+            raise
+        except pymongo.errors.ConnectionFailure as e:
+            raise DatabaseError("Connection Failure: database not found on "
+                                "specified uri") from e
+        except pymongo.errors.OperationFailure as e:
+            if any(m in str(e) for m in AUTH_FAILED_MESSAGES):
+                raise DatabaseError("Authentication Failure: bad credentials") from e
 
             raise
 
@@ -59,6 +77,7 @@ class MongoDB(AbstractDB):
 
     """
 
+    @mongodb_exception_wrapper
     def initiate_connection(self):
         """Connect to database, unless MongoDB `is_connected`.
 
@@ -70,23 +89,13 @@ class MongoDB(AbstractDB):
 
         self._sanitize_attrs()
 
-        try:
-            self._conn = pymongo.MongoClient(host=self.host,
-                                             port=self.port,
-                                             username=self.username,
-                                             password=self.password,
-                                             authSource=self.name)
-            self._db = self._conn[self.name]
-            self._db.command('ismaster')  # .. seealso:: :meth:`is_connected`
-        except pymongo.errors.ConnectionFailure as e:
-            self._logger.error("Could not connect to host, %s:%s",
-                               self.host, self.port)
-            raise DatabaseError("Connection Failure: database not found on "
-                                "specified uri") from e
-        except pymongo.errors.OperationFailure as e:
-            self._logger.error("Could not verify user, %s, on database, %s",
-                               self.username, self.name)
-            raise DatabaseError("Authentication Failure: bad credentials") from e
+        self._conn = pymongo.MongoClient(host=self.host,
+                                         port=self.port,
+                                         username=self.username,
+                                         password=self.password,
+                                         authSource=self.name)
+        self._db = self._conn[self.name]
+        self._db.command('ismaster')  # .. seealso:: :meth:`is_connected`
 
     @property
     def is_connected(self):

@@ -10,7 +10,7 @@ from pymongo import MongoClient
 import pytest
 
 from metaopt.core.io.database import Database, DatabaseError, DuplicateKeyError
-from metaopt.core.io.database.mongodb import MongoDB
+from metaopt.core.io.database.mongodb import AUTH_FAILED_MESSAGES, MongoDB
 
 
 @pytest.fixture(scope='module')
@@ -39,15 +39,35 @@ class TestConnection(object):
     """Create a :class:`metaopt.core.io.database.mongodb.MongoDB`, check connection cases."""
 
     @pytest.mark.usefixtures("patch_mongo_client")
-    def test_bad_connection(self):
+    def test_bad_connection(self, monkeypatch):
         """Raise when connection cannot be achieved."""
+        monkeypatch.setattr(
+            MongoDB, "initiate_connection",
+            MongoDB.initiate_connection.__wrapped__)
+        with pytest.raises(pymongo.errors.ConnectionFailure) as exc_info:
+            MongoDB(host='asdfada', port=123, name='metaopt',
+                    username='uasdfaf', password='paasdfss')
+        assert "Name or service not known" in str(exc_info.value)
+
+        monkeypatch.undo()
+
+        # Verify that the wrapper converts it properly to DatabaseError
         with pytest.raises(DatabaseError) as exc_info:
             MongoDB(host='asdfada', port=123, name='metaopt',
                     username='uasdfaf', password='paasdfss')
         assert "Connection" in str(exc_info.value)
 
-    def test_bad_authentication(self):
+    def test_bad_authentication(self, monkeypatch):
         """Raise when authentication cannot be achieved."""
+        monkeypatch.setattr(
+            MongoDB, "initiate_connection",
+            MongoDB.initiate_connection.__wrapped__)
+        with pytest.raises(pymongo.errors.OperationFailure) as exc_info:
+            MongoDB(name='metaopt_test', username='uasdfaf', password='paasdfss')
+        assert any(m in str(exc_info.value) for m in AUTH_FAILED_MESSAGES)
+
+        monkeypatch.undo()
+
         with pytest.raises(DatabaseError) as exc_info:
             MongoDB(name='metaopt_test', username='uasdfaf', password='paasdfss')
         assert "Authentication" in str(exc_info.value)

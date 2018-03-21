@@ -14,7 +14,6 @@ Currently, implemented wrappers:
 
 """
 from abc import abstractmethod, abstractproperty
-import logging
 
 from metaopt.core.utils import (AbstractSingletonType, SingletonFactory)
 
@@ -45,8 +44,6 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
     def __init__(self, host='localhost', name=None,
                  port=None, username=None, password=None):
         """Init method, see attributes of :class:`AbstractDB`."""
-        self._logger = logging.getLogger(__name__)
-
         self.host = host
         self.name = name
         self.port = port
