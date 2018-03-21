@@ -119,6 +119,30 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         pass
 
     @abstractmethod
+    def read_and_write(self, collection_name, query, data, selection=None):
+        """Read a collection's document and update the found document.
+
+        If many documents are found, the first one is selected.
+
+        Returns the updated document, or None if nothing found.
+
+        Parameters
+        ----------
+        collection_name : str
+           A collection inside database, a table.
+        query : dict
+           Filter entries in collection.
+        data : dict or list of dicts
+           New data that will **update** the entry.
+        selection : dict, optional
+           Elements of matched entries to return, the projection.
+
+        :return: updated first matched document or None if nothing found
+
+        """
+        pass
+
+    @abstractmethod
     def count(self, collection_name, query=None):
         """Count the number of documents in a collection which match the `query`.
 

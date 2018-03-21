@@ -168,12 +168,22 @@ class Experiment(object):
 
         selected_trial = random.sample(new_trials, 1)[0]
 
-        if selected_trial.status == 'new':
-            selected_trial.start_time = datetime.datetime.utcnow()
-        selected_trial.status = 'reserved'
+        # Query on status to ensure atomicity. If another process change the
+        # status meanwhile, read_and_write will fail, because query will fail.
+        query = {'_id': selected_trial.id, 'status': selected_trial.status}
 
-        self._db.write('trials', selected_trial.to_dict(),
-                       query={'_id': selected_trial.id})
+        update = dict(status='reserved')
+
+        if selected_trial.status == 'new':
+            update["start_time"] = datetime.datetime.utcnow()
+
+        selected_trial_dict = self._db.read_and_write(
+            'trials', query=query, data=update)
+
+        if selected_trial_dict is None:
+            selected_trial = self.reserve_trial(score_handle=score_handle)
+        else:
+            selected_trial = Trial(**selected_trial_dict)
 
         return selected_trial
 
@@ -314,6 +324,10 @@ class Experiment(object):
 
         # If everything is alright, push new config to database
         if is_new:
+            # TODO: No need for read_and_write here, because unique indexes
+            #       will make sure no experiments will be added with identical
+            #       names. That means, this need refactoring once support for
+            #       additional indexes is added to database.
             self._db.write('experiments', final_config)
             # XXX: Reminder for future DB implementations:
             # MongoDB, updates an inserted dict with _id, so should you :P

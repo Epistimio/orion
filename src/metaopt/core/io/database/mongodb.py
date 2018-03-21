@@ -119,6 +119,25 @@ class MongoDB(AbstractDB):
 
         return dbdocs
 
+    def read_and_write(self, collection_name, query, data, selection=None):
+        """Read a collection's document and update the found document.
+
+        Returns the updated document, or None if nothing found.
+
+        .. seealso:: :meth:`AbstractDB.read_and_write` for
+                     argument documentation.
+
+        """
+        dbcollection = self._db[collection_name]
+
+        update_data = {'$set': data}
+
+        dbdoc = dbcollection.find_one_and_update(
+            query, update_data, projection=selection,
+            return_document=pymongo.ReturnDocument.AFTER)
+
+        return dbdoc
+
     def count(self, collection_name, query=None):
         """Count the number of documents in a collection which match the `query`.
 
