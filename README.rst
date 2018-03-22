@@ -17,10 +17,10 @@ Core design value is the minimum disruption of a researcher's workflow.
 It allows fast and efficient tuning, providing minimum simple non-intrusive
 (not even necessary!) helper *client* interface for a user's script.
 
-So if `./run.py --mini-batch=50` looks like what you execute normally,
+So if ``./run.py --mini-batch=50`` looks like what you execute normally,
 now what you have to do looks like this:
 
-    `mopt -n experiment_name ./run.py --mini-batch~'randint(32, 256)'`
+    ``mopt -n experiment_name ./run.py --mini-batch~'randint(32, 256)'``
 
 Check out user's guide-101 for the simplest of demonstrations!
 
@@ -56,7 +56,8 @@ Install Orion (beta) by running:
 Contribute
 ----------
 
-Do you have a question?  
+Do you have a question?
+
 Do you want to report a bug or suggest a feature? Name it!
 
 - Issue Tracker: github.com/mila-udem/orion/issues
@@ -77,5 +78,6 @@ The project is licensed under the BSD license.
 Core Developers
 ---------------
 
-Christos Tsirigotis @tsirif
-Xavier Bouthillier @bouthilx
+Christos Tsirigotis [`@tsirif <https://github.com/tsirif>`_]
+
+Xavier Bouthillier [`@bouthilx <https://github.com/bouthilx>`_]
