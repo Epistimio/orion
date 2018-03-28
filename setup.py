@@ -4,7 +4,6 @@
 from glob import iglob
 import os
 import sys
-import textwrap
 
 from setuptools import setup
 
@@ -51,7 +50,7 @@ setup_args = dict(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description=orion.__descr__,
-    long_description=textwrap.dedent(orion.__doc__),
+    long_description=open(os.path.join(repo_root, "README.rst")).read(),
     license=orion.__license__,
     author=orion.__author__,
     author_email=orion.__author_email__,
