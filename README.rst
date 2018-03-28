@@ -20,7 +20,7 @@ It allows fast and efficient tuning, providing minimum simple non-intrusive
 So if ``./run.py --mini-batch=50`` looks like what you execute normally,
 now what you have to do looks like this:
 
-    ``mopt -n experiment_name ./run.py --mini-batch~'randint(32, 256)'``
+``mopt -n experiment_name ./run.py --mini-batch~'randint(32, 256)'``
 
 Check out user's guide-101 for the simplest of demonstrations!
 
@@ -51,7 +51,7 @@ Installation
 
 Install Orion (beta) by running:
 
-    `pip install git+https://github.com/mila-udem/orion.git@master`
+``pip install git+https://github.com/mila-udem/orion.git@master``
 
 Contribute
 ----------
