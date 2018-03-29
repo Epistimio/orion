@@ -10,6 +10,9 @@
 """
 import os
 
+from metaopt.client.manual import insert_trials  # noqa
+
+
 IS_METAOPT_ON = False
 _HAS_REPORTED_RESULTS = False
 RESULTS_FILENAME = os.getenv('METAOPT_RESULTS_PATH', None)

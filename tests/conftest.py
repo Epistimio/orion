@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Common fixtures and utils for unittests and functional tests."""
+import datetime
+import getpass
 import os
 
 from pymongo import MongoClient
@@ -8,6 +10,8 @@ import pytest
 import yaml
 
 from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
+from orion.core.io.database import Database
+from orion.core.io.database.mongodb import MongoDB
 
 
 class DumbAlgo(BaseAlgorithm):
@@ -105,3 +109,42 @@ def clean_db(database, exp_config):
     database.workers.insert_many(exp_config[2])
     database.resources.drop()
     database.resources.insert_many(exp_config[3])
+
+
+@pytest.fixture()
+def with_user_tsirif(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'tsirif'``."""
+    monkeypatch.setattr(getpass, 'getuser', lambda: 'tsirif')
+
+
+@pytest.fixture()
+def with_user_bouthilx(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'bouthilx'``."""
+    monkeypatch.setattr(getpass, 'getuser', lambda: 'bouthilx')
+
+
+@pytest.fixture()
+def with_user_dendi(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'dendi'``."""
+    monkeypatch.setattr(getpass, 'getuser', lambda: 'dendi')
+
+
+@pytest.fixture()
+def random_dt(monkeypatch):
+    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
+    random_dt = datetime.datetime(1903, 4, 25, 0, 0, 0)
+
+    class MockDatetime(datetime.datetime):
+        @classmethod
+        def utcnow(cls):
+            return random_dt
+
+    monkeypatch.setattr(datetime, 'datetime', MockDatetime)
+    return random_dt
+
+
+@pytest.fixture()
+def null_db_instances():
+    """Nullify singleton instance so that we can assure independent instantiation tests."""
+    Database.instance = None
+    MongoDB.instance = None
