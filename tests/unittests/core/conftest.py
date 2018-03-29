@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 """Common fixtures and utils for tests."""
 
-import datetime
-import getpass
 import os
 
 import pytest
@@ -10,20 +8,12 @@ import pytest
 from orion.algo.space import (Categorical, Integer, Real, Space)
 from orion.core.io.convert import (JSONConverter, YAMLConverter)
 from orion.core.io.database import Database
-from orion.core.io.database.mongodb import MongoDB
 from orion.core.utils import SingletonError
 from orion.core.worker.experiment import Experiment
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, 'sample_config.yml')
 JSON_SAMPLE = os.path.join(TEST_DIR, 'sample_config.json')
-
-
-@pytest.fixture()
-def null_db_instances():
-    """Nullify singleton instance so that we can assure independent instantiation tests."""
-    Database.instance = None
-    MongoDB.instance = None
 
 
 @pytest.fixture()
@@ -76,38 +66,6 @@ def space():
 def fixed_suggestion():
     """Return the same tuple/sample from a possible space."""
     return (('asdfa', 2), 0, 3.5)
-
-
-@pytest.fixture()
-def with_user_tsirif(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'tsirif'``."""
-    monkeypatch.setattr(getpass, 'getuser', lambda: 'tsirif')
-
-
-@pytest.fixture()
-def with_user_bouthilx(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'bouthilx'``."""
-    monkeypatch.setattr(getpass, 'getuser', lambda: 'bouthilx')
-
-
-@pytest.fixture()
-def with_user_dendi(monkeypatch):
-    """Make ``getpass.getuser()`` return ``'dendi'``."""
-    monkeypatch.setattr(getpass, 'getuser', lambda: 'dendi')
-
-
-@pytest.fixture()
-def random_dt(monkeypatch):
-    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    random_dt = datetime.datetime(1903, 4, 25, 0, 0, 0)
-
-    class MockDatetime(datetime.datetime):
-        @classmethod
-        def utcnow(cls):
-            return random_dt
-
-    monkeypatch.setattr(datetime, 'datetime', MockDatetime)
-    return random_dt
 
 
 @pytest.fixture()
