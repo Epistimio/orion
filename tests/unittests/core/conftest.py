@@ -11,6 +11,7 @@ from orion.algo.space import (Categorical, Integer, Real, Space)
 from orion.core.io.convert import (JSONConverter, YAMLConverter)
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
+from orion.core.utils import SingletonError
 from orion.core.worker.experiment import Experiment
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -117,7 +118,7 @@ def hacked_exp(with_user_dendi, random_dt, clean_db):
     try:
         Database(of_type='MongoDB', name='orion_test',
                  username='user', password='pass')
-    except (TypeError, ValueError):
+    except (TypeError, SingletonError):
         pass
     exp = Experiment('supernaedo2')
     exp._id = 'supernaedo2'  # white box hack
