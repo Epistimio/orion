@@ -43,7 +43,7 @@ class SingletonType(type):
         if cls.instance is None:
             cls.instance = super(SingletonType, cls).__call__(*args, **kwargs)
         elif args or kwargs:
-            raise ValueError("A singleton instance has already been instantiated.")
+            raise SingletonError()
         return cls.instance
 
 
