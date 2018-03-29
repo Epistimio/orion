@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.client.manual` -- Routines for manual interaction with database
-=============================================================================
+===========================================================================
 
 .. module:: manual
    :platform: Unix
@@ -54,9 +54,6 @@ def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
     experiment.configure(experiment.configuration)
 
     valid_points = []
-
-    print(experiment.space)
-
     for point in points:
         try:
             assert point in experiment.space
