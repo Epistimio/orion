@@ -1,22 +1,50 @@
-.. Oríon documentation master file, created by
-   sphinx-quickstart on Mon Nov 13 19:08:05 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to Oríon's documentation!
-===================================
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   reference/modules
-
-
+.. include:: ../../README.rst
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
+
+.. * :ref:`search`
+
+
+.. toctree::
+   :maxdepth: 1
+
+   installing
+
+
+.. toctree::
+   :caption: User's Guide
+   :maxdepth: 2
+
+   user/executing
+   user/database
+   user/algorithms
+   user/configuring
+
+
+.. toctree::
+   :caption: Developer's Guide
+   :maxdepth: 2
+
+   developer/algorithms
+   developer/standards
+   developer/testing
+   developer/documenting
+
+
+.. .. toctree::
+..    :caption: Plan
+
+..    roadmap
+..    changelog
+..    contributors
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Code Reference
+
+   reference/modules

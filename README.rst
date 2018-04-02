@@ -1,5 +1,6 @@
+*****
 Orion
-=======
+*****
 
 .. image:: https://travis-ci.org/mila-udem/orion.svg?branch=master
    :target: https://travis-ci.org/mila-udem/orion
@@ -25,7 +26,7 @@ now what you have to do looks like this:
 Check out user's guide-101 for the simplest of demonstrations!
 
 Features
---------
+========
 *As simple and as complex you want*
 
 - Simple and natural, but also explicit and verbose, search domain definitions
@@ -40,37 +41,34 @@ Features
   **only** a single line of code.
 - More algorithms:
   Implementing and distributing algorithms is as easy as possible!
-  Check developer's guide-201. Expect algorithm plugins to pop out quickly!
+  Check developer's guide-101. Expect algorithm plugins to pop out quickly!
 - Came up with an idea?
   Your intuition is still at play:
   Help your optima hunter now by a command line interface.
 - And other many more already there or coming soon!
 
 Installation
-------------
+============
 
 Install Orion (beta) by running:
 
 ``pip install git+https://github.com/mila-udem/orion.git@master``
 
-Contribute
-----------
+.. For more information read the full installation docs
+.. :doc:`here </installing>`.
 
-Do you have a question?
+Contribute or Ask
+=================
 
+Do you have a question or issues?
 Do you want to report a bug or suggest a feature? Name it!
+Please contact us by opening an issue in our repository below:
 
 - Issue Tracker: github.com/mila-udem/orion/issues
 - Source Code: github.com/mila-udem/orion
 
-Support
--------
-
-If you are having issues, contact us immediately.
-We have a mailing list located at: voici@voilà.com
-
 License
--------
+=======
 
 The project is licensed under the BSD license.
 
