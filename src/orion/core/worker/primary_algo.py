@@ -10,8 +10,7 @@
 """
 
 from orion.algo.base import BaseAlgorithm
-# TODO Define Transformation classes, request and composite them using
-# decorator pattern + `Factory`
+from orion.core.worker.transformer import build_required_space
 
 
 class PrimaryAlgo(BaseAlgorithm):
@@ -38,8 +37,9 @@ class PrimaryAlgo(BaseAlgorithm):
         """
         self.algorithm = None
         super(PrimaryAlgo, self).__init__(space, algorithm=algorithm_config)
-        # TODO check requirements
-        # TODO cascade Transformation through `Factory`
+        requirements = self.algorithm.requires
+        self.transformed_space = build_required_space(requirements, self.space)
+        self.algorithm.space = self.transformed_space
 
     def suggest(self, num=1):
         """Suggest a `num` of new sets of parameters.
@@ -51,9 +51,8 @@ class PrimaryAlgo(BaseAlgorithm):
         """
         points = self.algorithm.suggest(num)
         for point in points:
-            assert point in self._space  # TODO substitute with transformed space
-        # TODO Transform back to the original space
-        return points
+            assert point in self.transformed_space
+        return [self.transformed_space.reverse(point) for point in points]
 
     def observe(self, points, results):
         """Observe evaluation `results` corresponding to list of `points` in
@@ -61,11 +60,12 @@ class PrimaryAlgo(BaseAlgorithm):
 
         .. seealso:: `orion.algo.base.BaseAlgorithm.observe`
         """
-        for point in points:
-            assert point in self._space
         assert len(points) == len(results)
-        # TODO Transform into required space
-        self.algorithm.observe(points, results)
+        tpoints = []
+        for point in points:
+            assert point in self.space
+            tpoints.append(self.transformed_space.transform(point))
+        self.algorithm.observe(tpoints, results)
 
     @property
     def is_done(self):
@@ -79,9 +79,8 @@ class PrimaryAlgo(BaseAlgorithm):
 
         By default, return the same score any parameter (no preference).
         """
-        assert point in self._space
-        # TODO Transform into required space
-        return self.algorithm.score(point)
+        assert point in self.space
+        return self.algorithm.score(self.transformed_space.transform(point))
 
     def judge(self, point, measurements):
         """Inform an algorithm about online `measurements` of a running trial.
@@ -91,8 +90,8 @@ class PrimaryAlgo(BaseAlgorithm):
 
         """
         assert point in self._space
-        # TODO Transform into required space
-        return self.algorithm.judge(point, measurements)
+        return self.algorithm.judge(self.transformed_space.transform(point),
+                                    measurements)
 
     @property
     def should_suspend(self):
@@ -117,7 +116,3 @@ class PrimaryAlgo(BaseAlgorithm):
         .. note:: Redefining property here without setter, denies base class' setter.
         """
         return self._space
-
-    #  @property
-    #  def transformed_space(self):
-    #      pass

@@ -2,8 +2,8 @@
 # flake8: noqa: D102
 # pylint: disable=missing-docstring,no-self-use
 """
-:mod:`metaopt.core.worker.transformer` -- Perform operations on Dimensions
-==========================================================================
+:mod:`orion.core.worker.transformer` -- Perform operations on Dimensions
+========================================================================
 
 .. module:: transformer
    :platform: Unix
@@ -13,7 +13,7 @@
 """
 from abc import (ABCMeta, abstractmethod)
 
-from metaopt.algo.space import Space
+from orion.algo.space import Space
 
 
 def build_required_space(requirements, original_space):
