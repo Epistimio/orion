@@ -500,7 +500,13 @@ class Categorical(Dimension):
 
 
 class Space(OrderedDict):
-    """Represents the search space."""
+    """Represents the search space.
+
+    It is an ordered dictionary which :attr:`contains` `Dimension` objects.
+    That class attribute is used to perform checks on :meth:`register`.
+    """
+
+    contains = Dimension
 
     def register(self, dimension):
         """Register a new dimension to `Space`."""
@@ -559,13 +565,16 @@ class Space(OrderedDict):
         return values[key]
 
     def __setitem__(self, key, value):
-        """Wrap __setitem__ to allow only `Dimension`s values and string keys."""
+        """Wrap __setitem__ to allow only ``Space.contains`` class, e.g. `Dimension`,
+        values and string keys.
+        """
         if not isinstance(key, str):
-            raise TypeError("Keys registered to Space must be string types. "
-                            "Provided: {}".format(key))
-        if not isinstance(value, Dimension):
-            raise TypeError("Values registered to Space must be Dimension types. "
-                            "Provided: {}".format(value))
+            raise TypeError("Keys registered to {} must be string types. "
+                            "Provided: {}".format(self.__class__.__name__, key))
+        if not isinstance(value, self.contains):
+            raise TypeError("Values registered to {} must be {} types. "
+                            "Provided: {}".format(self.__class__.__name__,
+                                                  self.contains.__name__, value))
         if key in self:
             raise ValueError("There is already a Dimension registered with this name. "
                              "Register it with another name. Provided: {}".format(key))
