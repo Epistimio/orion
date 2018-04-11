@@ -284,7 +284,7 @@ def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
             if k in ENV_VARS:
                 for vk, vv in v.items():
                     expconfig[k][vk] = vv
-            else:
+            elif v is not None:
                 expconfig[k] = v
 
     for k, v in cmdargs.items():
