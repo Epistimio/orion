@@ -201,6 +201,7 @@ def fetch_default_options():
     default_config['name'] = None
     default_config['max_trials'] = DEF_CMD_MAX_TRIALS[0]
     default_config['pool_size'] = DEF_CMD_POOL_SIZE[0]
+    default_config['algorithms'] = 'random'
 
     # get default options for some managerial variables (see :const:`ENV_VARS`)
     for signifier, env_vars in ENV_VARS.items():
