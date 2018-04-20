@@ -60,8 +60,8 @@ extensions = [
 # General information about the project.
 project = u'orion'
 _full_version = orion.__version__
-author = u'MetaOptimizer Team - MILA, Université de Montréal'
-copyright = u'2017, MetaOptimizer Team - MILA, Université de Montréal'
+author = u'Orion Team - MILA, Université de Montréal'
+copyright = u'2017, Orion Team - MILA, Université de Montréal'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -168,7 +168,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'orion.tex', 'MetaOpt Documentation',
-     u'MetaOptimizer Team - MILA, Université de Montréal', 'manual'),
+     u'Orion Team - MILA, Université de Montréal', 'manual'),
 ]
 
 

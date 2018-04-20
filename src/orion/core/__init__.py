@@ -22,7 +22,7 @@ del get_versions
 __descr__ = 'Distributed Asynchronous [black-box] Optimization'
 __version__ = VERSIONS['version']
 __license__ = 'BSD-3-Clause'
-__author__ = 'MetaOptimizer Team - MILA, Université de Montréal'
+__author__ = 'Orion Team - MILA, Université de Montréal'
 __author_short__ = 'MILA'
 __author_email__ = 'lisa_labo@iro.umontreal.ca'
 __authors__ = {
