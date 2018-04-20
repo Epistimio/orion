@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.core.worker.producer` -- Produce and register samples to try
-==========================================================================
+========================================================================
 
 .. module:: producer
    :platform: Unix
