@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.core.worker.consumer` -- Evaluate objective on a set of parameters
-================================================================================
+==============================================================================
 
 .. module:: consumer
    :platform: Unix
