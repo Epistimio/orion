@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.core.io.database` -- Wrappers for database frameworks
-===================================================================
+=================================================================
 
 .. module:: database
    :platform: Unix
