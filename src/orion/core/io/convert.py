@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.core.worker.convert` -- Parse and generate user script's configuration
-====================================================================================
+==================================================================================
 
 .. module:: convert
    :platform: Unix
