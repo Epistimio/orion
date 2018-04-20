@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.core.worker` -- Coordination of the optimization procedure
-========================================================================
+======================================================================
 
 .. module:: worker
    :platform: Unix
