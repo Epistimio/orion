@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.core.io` -- Input/output functions for interaction with user's script
-===================================================================================
+=================================================================================
 
 .. module:: io
    :platform: Unix
