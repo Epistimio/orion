@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.core.resolve_config` -- Configuration parsing and resolving
-=========================================================================
+=======================================================================
 
 .. module:: resolve_config
    :platform: Unix
