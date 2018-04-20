@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.core.utils.format_trials` -- Utility functions for formatting data
-================================================================================
+==============================================================================
 
 .. module:: format_trials
    :platform: Unix
