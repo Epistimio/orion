@@ -49,7 +49,7 @@ def infer_experiment():
 
     # Initialize singleton database object
     tmpconfig = resolve_config.merge_orion_config(expconfig, dict(),
-                                                 cmdconfig, cmdargs)
+                                                  cmdconfig, cmdargs)
     db_opts = tmpconfig['database']
     dbtype = db_opts.pop('type')
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
@@ -96,7 +96,7 @@ def create_experiment(exp_name, expconfig, cmdconfig, cmdargs):
     dbconfig = experiment.configuration
 
     expconfig = resolve_config.merge_orion_config(expconfig, dbconfig,
-                                                 cmdconfig, cmdargs)
+                                                  cmdconfig, cmdargs)
 
     # Infer rest information about the process + versioning
     expconfig['metadata'] = infer_versioning_metadata(expconfig['metadata'])

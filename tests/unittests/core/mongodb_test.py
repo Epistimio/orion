@@ -84,8 +84,8 @@ class TestConnection(object):
     def test_overwrite_uri(self):
         """Check the case when connecting with ready `uri`."""
         orion_db = MongoDB('mongodb://lala:pass@localhost:1231/orion',
-                         port=27017, name='orion_test', username='user',
-                         password='pass')
+                           port=27017, name='orion_test', username='user',
+                           password='pass')
         assert orion_db.host == 'localhost'
         assert orion_db.port == 27017
         assert orion_db.username == 'user'
@@ -109,9 +109,9 @@ class TestExceptionWrapper(object):
         """Should raise generic DuplicateKeyError."""
         # Add unique indexes to force trigger of DuplicateKeyError on write()
         orion_db.ensure_index('experiments',
-                            [('name', Database.ASCENDING),
-                             ('metadata.user', Database.ASCENDING)],
-                            unique=True)
+                              [('name', Database.ASCENDING),
+                               ('metadata.user', Database.ASCENDING)],
+                              unique=True)
 
         config_to_add = exp_config[0][0]
         config_to_add.pop('_id')
@@ -193,17 +193,17 @@ class TestEnsureIndex(object):
         """Tuple of Index should be added as a compound index."""
         assert "name_1_metadata.user_1" not in orion_db._db.experiments.index_information()
         orion_db.ensure_index('experiments',
-                            [('name', MongoDB.ASCENDING),
-                             ('metadata.user', MongoDB.ASCENDING)])
+                              [('name', MongoDB.ASCENDING),
+                               ('metadata.user', MongoDB.ASCENDING)])
         assert "name_1_metadata.user_1" in orion_db._db.experiments.index_information()
 
     def test_unique_index(self, orion_db):
         """Index should be set as unique in mongo database's index information."""
         assert "name_1_metadata.user_1" not in orion_db._db.experiments.index_information()
         orion_db.ensure_index('experiments',
-                            [('name', MongoDB.ASCENDING),
-                             ('metadata.user', MongoDB.ASCENDING)],
-                            unique=True)
+                              [('name', MongoDB.ASCENDING),
+                               ('metadata.user', MongoDB.ASCENDING)],
+                              unique=True)
         index_information = orion_db._db.experiments.index_information()
         assert "name_1_metadata.user_1" in index_information
         assert index_information["name_1_metadata.user_1"]['unique']
