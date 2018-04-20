@@ -16,7 +16,7 @@ from orion.core.worker.experiment import Experiment
 def test_demo(database, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    process = subprocess.Popen(["mopt", "--config", "./moptconfig.yaml",
+    process = subprocess.Popen(["mopt", "--config", "./orion_config.yaml",
                                 "./black_box.py", "-x~uniform(-50, 50)"])
     rcode = process.wait()
     assert rcode == 0
@@ -64,7 +64,7 @@ def test_demo_two_workers(database, monkeypatch):
     processes = []
     for _ in range(2):
         process = subprocess.Popen(["mopt", "-n", "two_workers_demo",
-                                    "--config", "./moptconfig_random.yaml",
+                                    "--config", "./orion_config_random.yaml",
                                     "./black_box.py", "-x~norm(34, 3)"])
         processes.append(process)
 

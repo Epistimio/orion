@@ -10,17 +10,17 @@
 How:
 
  - Experiment name resolves like this:
-    * cmd-arg **>** cmd-provided moptconfig **>** REQUIRED (no default is given)
+    * cmd-arg **>** cmd-provided orion_config **>** REQUIRED (no default is given)
 
  - Database options resolve with the following precedence (high to low):
-    * cmd-provided moptconfig **>** env vars **>** default files **>** defaults
+    * cmd-provided orion_config **>** env vars **>** default files **>** defaults
 
 .. seealso:: :const:`ENV_VARS`, :const:`ENV_VARS_DB`
 
 
  - All other managerial, `Optimization` or `Dynamic` options resolve like this:
 
-    * cmd-args **>** cmd-provided moptconfig **>** database (if experiment name
+    * cmd-args **>** cmd-provided orion_config **>** database (if experiment name
       can be found) **>** default files
 
 Default files are given as a list at :const:`DEF_CONFIG_FILES_PATHS` and a
@@ -67,9 +67,9 @@ DEF_CMD_MAX_TRIALS = (infinity, 'inf/until preempted')
 DEF_CMD_POOL_SIZE = (10, str(10))
 
 DEF_CONFIG_FILES_PATHS = [
-    os.path.join(orion.core.DIRS.site_data_dir, 'moptconfig.yaml.example'),
-    os.path.join(orion.core.DIRS.site_config_dir, 'moptconfig.yaml'),
-    os.path.join(orion.core.DIRS.user_config_dir, 'moptconfig.yaml')
+    os.path.join(orion.core.DIRS.site_data_dir, 'orion_config.yaml.example'),
+    os.path.join(orion.core.DIRS.site_config_dir, 'orion_config.yaml'),
+    os.path.join(orion.core.DIRS.user_config_dir, 'orion_config.yaml')
     ]
 
 # list containing tuples of
@@ -260,7 +260,7 @@ def merge_mopt_config(config, dbconfig, cmdconfig, cmdargs):
 
     max_trials -- Maximum number of trial evaluations to be computed
 
-       (required as a cmd line argument or a moptconfig parameter)
+       (required as a cmd line argument or a orion_config parameter)
 
     pool_size -- Number of workers evaluating in parallel asychronously
 

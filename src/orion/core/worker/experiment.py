@@ -317,7 +317,7 @@ class Experiment(object):
 
         # If status is None in this object, then database did not hit a config
         # with same (name, user's name) pair. Everything depends on the user's
-        # moptconfig to set.
+        # orion_config to set.
         if self.status is None:
             if config['name'] != self.name or \
                     config['metadata']['user'] != self.metadata['user'] or \
