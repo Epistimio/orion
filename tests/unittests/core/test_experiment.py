@@ -67,7 +67,7 @@ def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
 
         if len(a_list) > 3:
             # Set row's status as 'reserved' just like if it was reserved by
-            # another process right after the call to moptdb.read()
+            # another process right after the call to orion_db.read()
             create_db_instance.write(
                 "trials",
                 data={"status": "reserved"},
@@ -99,7 +99,7 @@ def patch_sample_concurrent2(monkeypatch, create_db_instance, exp_config):
         assert should_be_one == 1
 
         # Set row's status as 'reserved' just like if it was reserved by
-        # another process right after the call to moptdb.read()
+        # another process right after the call to orion_db.read()
         create_db_instance.write(
             "trials",
             data={"status": "reserved"},
