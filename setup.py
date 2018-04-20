@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Installation script for MetaOpt."""
+"""Installation script for Orion."""
 from glob import iglob
 import os
 import sys
@@ -22,7 +22,7 @@ print(sys.version)
 
 
 def find_data_files():
-    """Find MetaOpt's configuration and metadata files."""
+    """Find Orion's configuration and metadata files."""
     install_config_path = pjoin(orion.DIRS.site_data_dir, 'config')
     config_path = pjoin('config', '*')
     configs = [cfg for cfg in iglob(config_path) if isfile(cfg)]

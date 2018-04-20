@@ -46,11 +46,11 @@ class Experiment(object):
        it will overwrite the previous one.
     status : str
        A keyword among {*'pending'*, *'done'*, *'broken'*} indicating
-       how **MetaOpt** considers the current `Experiment`. This attribute cannot
+       how **Orion** considers the current `Experiment`. This attribute cannot
        be set from an mopt configuration.
 
        * 'pending' : Denotes an experiment with valid configuration which is
-          currently being handled by **MetaOpt**.
+          currently being handled by **Orion**.
        * 'done' : Denotes an experiment which has completed `max_trials` number
           of parameter evaluations and is not *pending*.
        * 'broken' : Denotes an experiment which stopped unsuccessfully due to
@@ -62,23 +62,23 @@ class Experiment(object):
     Metadata
     --------
     user : str
-       System user currently owning this running process, the one who invoked **MetaOpt**.
+       System user currently owning this running process, the one who invoked **Orion**.
     datetime : `datetime.datetime`
        When was this particular configuration submitted to the database.
     mopt_version : str
-       Version of **MetaOpt** which suggested this experiment. `user`'s current
-       **MetaOpt** version.
+       Version of **Orion** which suggested this experiment. `user`'s current
+       **Orion** version.
     user_script : str
        Full absolute path to `user`'s executable.
     user_args : list of str
        Contains separate arguments to be passed when invoking `user_script`,
-       possibly templated for **MetaOpt**.
+       possibly templated for **Orion**.
     user_vcs : str, optional
        User's version control system for this executable's code repository.
     user_version : str, optional
        Current user's repository version.
     user_commit_hash : str, optional
-       Current `Experiment`'s commit hash for **MetaOpt**'s invocation.
+       Current `Experiment`'s commit hash for **Orion**'s invocation.
 
     """
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-MetaOpt documentation build configuration file.
+Orion documentation build configuration file.
 
 This file is execfile()d with the current directory set to its
 containing dir.
@@ -140,7 +140,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'MetaOptdoc'
+htmlhelp_basename = 'Oriondoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -167,7 +167,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'orion.tex', 'MetaOpt Documentation',
+    (master_doc, 'orion.tex', 'Orion Documentation',
      u'Orion Team - MILA, Université de Montréal', 'manual'),
 ]
 
@@ -177,7 +177,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'orion', 'MetaOpt Documentation',
+    (master_doc, 'orion', 'Orion Documentation',
      [author], 1)
 ]
 
@@ -188,8 +188,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'MetaOpt', 'MetaOpt Documentation',
-     author, 'MetaOpt', 'One line description of project.',
+    (master_doc, 'Orion', 'Orion Documentation',
+     author, 'Orion', 'One line description of project.',
      'Miscellaneous'),
 ]
 

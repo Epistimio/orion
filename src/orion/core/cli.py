@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 CLI_DOC_HEADER = """
 mopt:
-  MetaOpt cli script for asynchronous distributed optimization
+  Orion cli script for asynchronous distributed optimization
 
 """
 

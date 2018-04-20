@@ -75,7 +75,7 @@ DEF_CONFIG_FILES_PATHS = [
 # list containing tuples of
 # (environmental variable names, configuration keys, default values)
 ENV_VARS_DB = [
-    ('METAOPT_DB_NAME', 'name', 'MetaOpt'),
+    ('METAOPT_DB_NAME', 'name', 'Orion'),
     ('METAOPT_DB_TYPE', 'type', 'MongoDB'),
     ('METAOPT_DB_ADDRESS', 'host', socket.gethostbyname(socket.gethostname()))
     ]
@@ -113,7 +113,7 @@ def fetch_mopt_args(description):
         help="logging levels of information about the process (-v: INFO. -vv: DEBUG)")
 
     moptgroup = parser.add_argument_group(
-        "MetaOpt arguments (optional)",
+        "Orion arguments (optional)",
         description="These arguments determine mopt's behaviour")
 
     moptgroup.add_argument(
