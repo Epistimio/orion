@@ -2,7 +2,7 @@
 # pylint: disable=eval-used,protected-access
 """
 :mod:`orion.core.io.space_builder` -- Create Space objects from configuration
-===============================================================================
+=============================================================================
 
 .. module:: space_builder
    :platform: Unix
