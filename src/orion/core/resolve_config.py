@@ -167,11 +167,11 @@ def fetch_mopt_args(description):
     args['metadata']['mopt_version'] = orion.core.__version__
     log.debug("Using orion version %s", args['metadata']['mopt_version'])
 
-    moptfile = args.pop('config')
+    orion_file = args.pop('config')
     config = dict()
-    if moptfile:
-        log.debug("Found orion configuration file at: %s", os.path.abspath(moptfile.name))
-        config = yaml.safe_load(moptfile)
+    if orion_file:
+        log.debug("Found orion configuration file at: %s", os.path.abspath(orion_file.name))
+        config = yaml.safe_load(orion_file)
 
     # Move 'user_script' and 'user_args' to 'metadata' key
     user_script = args.pop('user_script')
