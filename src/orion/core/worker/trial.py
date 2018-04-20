@@ -2,7 +2,7 @@
 # pylint: skip-file
 """
 :mod:`orion.core.worker.trial` -- Container class for `Trial` entity
-======================================================================
+====================================================================
 
 .. module:: trial
    :platform: Unix
