@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Example usage and tests for :mod:`metaopt.core.io.space_builder`."""
+"""Example usage and tests for :mod:`orion.core.io.space_builder`."""
 import copy
 
 import pytest
 from scipy.stats import distributions as dists
 
-from metaopt.algo.space import (Categorical, Integer, Real)
-from metaopt.core.io.space_builder import (DimensionBuilder, SpaceBuilder)
-from metaopt.core.worker.trial import Trial
+from orion.algo.space import (Categorical, Integer, Real)
+from orion.core.io.space_builder import (DimensionBuilder, SpaceBuilder)
+from orion.core.worker.trial import Trial
 
 
 @pytest.fixture(scope='module')

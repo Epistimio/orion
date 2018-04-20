@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Example usage and tests for :mod:`metaopt.algo.base`."""
+"""Example usage and tests for :mod:`orion.algo.base`."""
 
-from metaopt.algo.base import BaseAlgorithm
+from orion.algo.base import BaseAlgorithm
 
 
 def test_init(dumbalgo):

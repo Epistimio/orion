@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Installation script for MetaOpt."""
+"""Installation script for Orion."""
 from glob import iglob
 import os
 import sys
@@ -16,20 +16,20 @@ repo_root = os.path.dirname(os.path.abspath(__file__))
 mpath = pjoin(repo_root, 'src')
 sys.path.insert(0, mpath)
 
-import metaopt.core as metaopt  # noqa
+import orion.core as orion  # noqa
 
 print(sys.version)
 
 
 def find_data_files():
-    """Find MetaOpt's configuration and metadata files."""
-    install_config_path = pjoin(metaopt.DIRS.site_data_dir, 'config')
+    """Find Orion's configuration and metadata files."""
+    install_config_path = pjoin(orion.DIRS.site_data_dir, 'config')
     config_path = pjoin('config', '*')
     configs = [cfg for cfg in iglob(config_path) if isfile(cfg)]
 
     data_files = [
         (install_config_path, configs),
-        (metaopt.DIRS.site_data_dir, ['LICENSE', 'README.rst']),
+        (orion.DIRS.site_data_dir, ['LICENSE', 'README.rst']),
     ]
 
     return data_files
@@ -41,31 +41,31 @@ tests_require = [
 
 
 packages = [
-    'metaopt.core',
-    'metaopt.client',
-    'metaopt.algo',
+    'orion.core',
+    'orion.client',
+    'orion.algo',
     ]
 
 setup_args = dict(
-    name='metaopt.core',
+    name='orion.core',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    description=metaopt.__descr__,
-    long_description=textwrap.dedent(metaopt.__doc__),
-    license=metaopt.__license__,
-    author=metaopt.__author__,
-    author_email=metaopt.__author_email__,
-    url=metaopt.__url__,
+    description=orion.__descr__,
+    long_description=textwrap.dedent(orion.__doc__),
+    license=orion.__license__,
+    author=orion.__author__,
+    author_email=orion.__author_email__,
+    url=orion.__url__,
     packages=packages,
     package_dir={'': 'src'},
     include_package_data=True,
     data_files=find_data_files(),
     entry_points={
         'console_scripts': [
-            'mopt = metaopt.core.cli:main',
+            'orion = orion.core.cli:main',
             ],
         'OptimizationAlgorithm': [
-            'random = metaopt.algo.random:Random',
+            'random = orion.algo.random:Random',
             ],
         },
     install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy'],

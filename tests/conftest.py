@@ -7,7 +7,7 @@ from pymongo import MongoClient
 import pytest
 import yaml
 
-from metaopt.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
+from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
 
 
 class DumbAlgo(BaseAlgorithm):
@@ -88,8 +88,8 @@ def exp_config():
 @pytest.fixture(scope='session')
 def database():
     """Return Mongo database object to test with example entries."""
-    client = MongoClient(username='user', password='pass', authSource='metaopt_test')
-    database = client.metaopt_test
+    client = MongoClient(username='user', password='pass', authSource='orion_test')
+    database = client.orion_test
     yield database
     client.close()
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-MetaOpt documentation build configuration file.
+Orion documentation build configuration file.
 
 This file is execfile()d with the current directory set to its
 containing dir.
@@ -35,7 +35,7 @@ sys.path.insert(0, docs_src_path)
 src_path = os.path.abspath(os.path.join(docs_src_path, '..', '..', 'src'))
 sys.path.insert(0, src_path)
 
-import metaopt.core as metaopt  # noqa
+import orion.core as orion  # noqa
 
 # -- General configuration ------------------------------------------------
 
@@ -58,10 +58,10 @@ extensions = [
 ]
 
 # General information about the project.
-project = u'metaopt'
-_full_version = metaopt.__version__
-author = u'MetaOptimizer Team - MILA, Université de Montréal'
-copyright = u'2017, MetaOptimizer Team - MILA, Université de Montréal'
+project = u'orion'
+_full_version = orion.__version__
+author = u'Orion Team - MILA, Université de Montréal'
+copyright = u'2017, Orion Team - MILA, Université de Montréal'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -140,7 +140,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'MetaOptdoc'
+htmlhelp_basename = 'Oriondoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -167,8 +167,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'metaopt.tex', 'MetaOpt Documentation',
-     u'MetaOptimizer Team - MILA, Université de Montréal', 'manual'),
+    (master_doc, 'orion.tex', 'Orion Documentation',
+     u'Orion Team - MILA, Université de Montréal', 'manual'),
 ]
 
 
@@ -177,7 +177,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'metaopt', 'MetaOpt Documentation',
+    (master_doc, 'orion', 'Orion Documentation',
      [author], 1)
 ]
 
@@ -188,8 +188,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'MetaOpt', 'MetaOpt Documentation',
-     author, 'MetaOpt', 'One line description of project.',
+    (master_doc, 'Orion', 'Orion Documentation',
+     author, 'Orion', 'One line description of project.',
      'Miscellaneous'),
 ]
 

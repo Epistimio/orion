@@ -1,1 +1,1 @@
-src/metaopt/core/_version.py export-subst
+src/orion/core/_version.py export-subst

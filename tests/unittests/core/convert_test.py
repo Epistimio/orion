@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Example usage and tests for :mod:`metaopt.core.io.converter`."""
+"""Example usage and tests for :mod:`orion.core.io.converter`."""
 
 import pytest
 
-from metaopt.core.io.convert import (infer_converter_from_file_type,
-                                     JSONConverter, YAMLConverter)
+from orion.core.io.convert import (infer_converter_from_file_type,
+                                   JSONConverter, YAMLConverter)
 
 
 def test_infer_a_yaml_converter(yaml_sample_path):

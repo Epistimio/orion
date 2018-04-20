@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Collection of tests for :mod:`metaopt.core.worker.producer`."""
+"""Collection of tests for :mod:`orion.core.worker.producer`."""
 import pytest
 
-from metaopt.core.worker.producer import Producer
+from orion.core.worker.producer import Producer
 
 
 @pytest.fixture()

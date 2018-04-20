@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Example usage and tests for :mod:`metaopt.core.utils.format`."""
+"""Example usage and tests for :mod:`orion.core.utils.format`."""
 
 import pytest
 
-from metaopt.core.utils.format_trials import (trial_to_tuple, tuple_to_trial)
-from metaopt.core.worker.trial import Trial
+from orion.core.utils.format_trials import (trial_to_tuple, tuple_to_trial)
+from orion.core.worker.trial import Trial
 
 
 @pytest.fixture()

@@ -3,7 +3,7 @@
 """Simple one dimensional example for a possible user's script."""
 import argparse
 
-from metaopt.client import report_results
+from orion.client import report_results
 
 
 def function(x):

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Example usage and tests for :mod:`metaopt.core.worker.primary_algo`."""
+"""Example usage and tests for :mod:`orion.core.worker.primary_algo`."""
 
 import pytest
 
-from metaopt.core.worker.primary_algo import PrimaryAlgo
+from orion.core.worker.primary_algo import PrimaryAlgo
 
 
 @pytest.fixture()

@@ -7,16 +7,16 @@ import subprocess
 import numpy
 import pytest
 
-from metaopt.core.io.database import Database
-from metaopt.core.worker import workon
-from metaopt.core.worker.experiment import Experiment
+from orion.core.io.database import Database
+from orion.core.worker import workon
+from orion.core.worker.experiment import Experiment
 
 
 @pytest.mark.usefixtures("clean_db")
 def test_demo(database, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    process = subprocess.Popen(["mopt", "--config", "./moptconfig.yaml",
+    process = subprocess.Popen(["orion", "--config", "./orion_config.yaml",
                                 "./black_box.py", "-x~uniform(-50, 50)"])
     rcode = process.wait()
     assert rcode == 0
@@ -33,7 +33,7 @@ def test_demo(database, monkeypatch):
     assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1}}
     assert 'user' in exp['metadata']
     assert 'datetime' in exp['metadata']
-    assert 'mopt_version' in exp['metadata']
+    assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
     assert os.path.isabs(exp['metadata']['user_script'])
     assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
@@ -63,8 +63,8 @@ def test_demo_two_workers(database, monkeypatch):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     processes = []
     for _ in range(2):
-        process = subprocess.Popen(["mopt", "-n", "two_workers_demo",
-                                    "--config", "./moptconfig_random.yaml",
+        process = subprocess.Popen(["orion", "-n", "two_workers_demo",
+                                    "--config", "./orion_config_random.yaml",
                                     "./black_box.py", "-x~norm(34, 3)"])
         processes.append(process)
 
@@ -84,7 +84,7 @@ def test_demo_two_workers(database, monkeypatch):
     assert exp['algorithms'] == {'random': {}}
     assert 'user' in exp['metadata']
     assert 'datetime' in exp['metadata']
-    assert 'mopt_version' in exp['metadata']
+    assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
     assert os.path.isabs(exp['metadata']['user_script'])
     assert exp['metadata']['user_args'] == ['-x~norm(34, 3)']
@@ -104,7 +104,7 @@ def test_demo_two_workers(database, monkeypatch):
 def test_workon(database):
     """Test scenario having a configured experiment already setup."""
     try:
-        Database(of_type='MongoDB', name='metaopt_test',
+        Database(of_type='MongoDB', name='orion_test',
                  username='user', password='pass')
     except (TypeError, ValueError):
         pass

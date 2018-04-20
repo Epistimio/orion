@@ -7,11 +7,11 @@ import os
 
 import pytest
 
-from metaopt.algo.space import (Categorical, Integer, Real, Space)
-from metaopt.core.io.convert import (JSONConverter, YAMLConverter)
-from metaopt.core.io.database import Database
-from metaopt.core.io.database.mongodb import MongoDB
-from metaopt.core.worker.experiment import Experiment
+from orion.algo.space import (Categorical, Integer, Real, Space)
+from orion.core.io.convert import (JSONConverter, YAMLConverter)
+from orion.core.io.database import Database
+from orion.core.io.database.mongodb import MongoDB
+from orion.core.worker.experiment import Experiment
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, 'sample_config.yml')
@@ -28,7 +28,7 @@ def null_db_instances():
 @pytest.fixture()
 def create_db_instance(null_db_instances, clean_db):
     """Create and save a singleton database instance."""
-    database = Database(of_type='MongoDB', name='metaopt_test',
+    database = Database(of_type='MongoDB', name='orion_test',
                         username='user', password='pass')
     return database
 
@@ -115,7 +115,7 @@ def hacked_exp(with_user_dendi, random_dt, clean_db):
     fake database.
     """
     try:
-        Database(of_type='MongoDB', name='metaopt_test',
+        Database(of_type='MongoDB', name='orion_test',
                  username='user', password='pass')
     except (TypeError, ValueError):
         pass

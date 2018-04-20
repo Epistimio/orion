@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Example usage and tests for :mod:`metaopt.client`."""
+"""Example usage and tests for :mod:`orion.client`."""
 
 from importlib import reload
 import json
 
 import pytest
 
-from metaopt import client
+from orion import client
 
 
 @pytest.fixture()

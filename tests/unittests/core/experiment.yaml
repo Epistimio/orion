@@ -1,21 +1,21 @@
-# Example `metaopt` database, first are the "primary keys" (there's also an
+# Example `orion` database, first are the "primary keys" (there's also an
 # implicit _id key here in MOngoDB, but we cannot base our search based on that)
 ---
 
 # Example of entries in `experiments` collection
 # configurations: some are inferred automatically,
-# but most depend on user's input to `mopt`
+# but most depend on user's input to `orion`
 - name: supernaedo2
 
   metadata:
     # inferred from os
     user: tsirif
     datetime: 2017-11-22T20:00:00
-    # from metaopt.__version__
-    mopt_version: 0.1
-    # from `mopt`'s args
+    # from orion.__version__
+    orion_version: 0.1
+    # from `orion`'s args
     user_script: full_path/main.py
-    # from `mopt`'s args
+    # from `orion`'s args
     user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
     # from user's vsc, e.g. git
     user_vcs: git
@@ -34,7 +34,7 @@
         type: categorical
         value: gru
 
-  # metaopt's configuration
+  # orion's configuration
   pool_size: 2
   max_trials: 1000
 
@@ -56,7 +56,7 @@
   metadata:
     user: tsirif
     datetime: 2017-11-22T21:00:00
-    mopt_version: 0.1
+    orion_version: 0.1
     user_script: full_path/ieeeela.py
     user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
     user_vcs: git
@@ -85,7 +85,7 @@
   metadata:
     user: dendi
     datetime: 2017-11-22T20:00:00
-    mopt_version: 0.1
+    orion_version: 0.1
     user_script: full_path/main.py
     user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
     user_vcs: git
