@@ -112,28 +112,28 @@ def fetch_mopt_args(description):
         action='count', default=0,
         help="logging levels of information about the process (-v: INFO. -vv: DEBUG)")
 
-    moptgroup = parser.add_argument_group(
+    orion_group = parser.add_argument_group(
         "Orion arguments (optional)",
         description="These arguments determine mopt's behaviour")
 
-    moptgroup.add_argument(
+    orion_group.add_argument(
         '-n', '--name',
         type=str, metavar='stringID',
         help="experiment's unique name; "
              "use an existing name to resume an experiment "
              "(default: None - specified either here or in a config)")
 
-    moptgroup.add_argument(
+    orion_group.add_argument(
         '--max-trials', type=int, metavar='#',
         help="number of jobs/trials to be completed "
              "(default: %s)" % DEF_CMD_MAX_TRIALS[1])
 
-    moptgroup.add_argument(
+    orion_group.add_argument(
         "--pool-size", type=int, metavar='#',
         help="number of concurrent workers to evaluate candidate samples "
              "(default: %s)" % DEF_CMD_POOL_SIZE[1])
 
-    moptgroup.add_argument(
+    orion_group.add_argument(
         '-c', '--config',
         type=argparse.FileType('r'), metavar='path-to-config',
         help="user provided mopt configuration file")
