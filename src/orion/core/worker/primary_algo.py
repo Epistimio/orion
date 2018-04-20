@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.core.worker.primary_algo` -- Sanitizing wrapper of main algorithm
-===============================================================================
+=============================================================================
 
 .. module:: primary_algo
    :platform: Unix
