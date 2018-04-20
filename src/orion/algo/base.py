@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.algo.base` -- What is a search algorithm, optimizer of a process
+:mod:`orion.algo.base` -- What is a search algorithm, optimizer of a process
 ==============================================================================
 
 .. module:: base
@@ -12,7 +12,7 @@
 from abc import (ABCMeta, abstractmethod)
 import logging
 
-from metaopt.core.utils import Factory
+from orion.core.utils import Factory
 
 log = logging.getLogger(__name__)
 
@@ -47,8 +47,8 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
        :linenos:
        :emphasize-lines: 7
 
-       from metaopt.algo.base import BaseAlgorithm
-       from metaopt.algo.space import (Integer, Space)
+       from orion.algo.base import BaseAlgorithm
+       from orion.algo.space import (Integer, Space)
 
        class MySimpleAlgo(BaseAlgorithm):
 
@@ -86,7 +86,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
         Parameters
         ----------
-        space : `metaopt.algo.space.Space`
+        space : `orion.algo.space.Space`
            Definition of a problem's parameter space.
         kwargs : dict
            Tunable elements of a particular algorithm, a dictionary from
@@ -120,7 +120,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         :param num: how many sets to be suggested.
 
         .. note:: New parameters must be compliant with the problem's domain
-           `metaopt.algo.space.Space`.
+           `orion.algo.space.Space`.
         """
         pass
 
@@ -132,7 +132,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         Parameters
         ----------
         points : list of tuples of array-likes
-           Points from a `metaopt.algo.space.Space`.
+           Points from a `orion.algo.space.Space`.
            Evaluated problem parameters by a consumer.
         results : list of dicts
            Contains the result of an evaluation; partial information about the
@@ -176,7 +176,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
            used to execute user's script with.
 
         This method is to be used as a callback in a client-server communication
-        between user's script and a metaopt's worker using a `BaseAlgorithm`.
+        between user's script and a orion's worker using a `BaseAlgorithm`.
         Data returned from this method must be serializable and will be used as
         a response to the running environment. Default response is None.
 
@@ -235,7 +235,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 class OptimizationAlgorithm(BaseAlgorithm, metaclass=Factory):
     """Class used to inject dependency on an algorithm implementation.
 
-    .. seealso:: `metaopt.core.utils.Factory` metaclass and `BaseAlgorithm` interface.
+    .. seealso:: `orion.core.utils.Factory` metaclass and `BaseAlgorithm` interface.
     """
 
     pass

@@ -42,8 +42,8 @@ def get_config():
     cfg.VCS = "git"
     cfg.style = "pep440-post"
     cfg.tag_prefix = ""
-    cfg.parentdir_prefix = "metaopt-"
-    cfg.versionfile_source = "src/metaopt/core/_version.py"
+    cfg.parentdir_prefix = "orion-"
+    cfg.versionfile_source = "src/orion/core/_version.py"
     cfg.verbose = False
     return cfg
 

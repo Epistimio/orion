@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.worker.producer` -- Produce and register samples to try
+:mod:`orion.core.worker.producer` -- Produce and register samples to try
 ==========================================================================
 
 .. module:: producer
@@ -10,7 +10,7 @@
 """
 import logging
 
-from metaopt.core.utils import format_trials
+from orion.core.utils import format_trials
 
 log = logging.getLogger(__name__)
 

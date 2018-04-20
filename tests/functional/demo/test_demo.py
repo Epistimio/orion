@@ -7,9 +7,9 @@ import subprocess
 import numpy
 import pytest
 
-from metaopt.core.io.database import Database
-from metaopt.core.worker import workon
-from metaopt.core.worker.experiment import Experiment
+from orion.core.io.database import Database
+from orion.core.worker import workon
+from orion.core.worker.experiment import Experiment
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -104,7 +104,7 @@ def test_demo_two_workers(database, monkeypatch):
 def test_workon(database):
     """Test scenario having a configured experiment already setup."""
     try:
-        Database(of_type='MongoDB', name='metaopt_test',
+        Database(of_type='MongoDB', name='orion_test',
                  username='user', password='pass')
     except (TypeError, ValueError):
         pass

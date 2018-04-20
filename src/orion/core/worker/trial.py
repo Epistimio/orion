@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: skip-file
 """
-:mod:`metaopt.core.worker.trial` -- Container class for `Trial` entity
+:mod:`orion.core.worker.trial` -- Container class for `Trial` entity
 ======================================================================
 
 .. module:: trial

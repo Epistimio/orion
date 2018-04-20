@@ -7,5 +7,5 @@ algorithms: random
 
 database:
   type: 'mongodb'
-  name: 'metaopt_test'
+  name: 'orion_test'
   host: 'mongodb://user:pass@localhost'

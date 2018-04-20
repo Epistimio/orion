@@ -35,7 +35,7 @@ sys.path.insert(0, docs_src_path)
 src_path = os.path.abspath(os.path.join(docs_src_path, '..', '..', 'src'))
 sys.path.insert(0, src_path)
 
-import metaopt.core as metaopt  # noqa
+import orion.core as orion  # noqa
 
 # -- General configuration ------------------------------------------------
 
@@ -58,8 +58,8 @@ extensions = [
 ]
 
 # General information about the project.
-project = u'metaopt'
-_full_version = metaopt.__version__
+project = u'orion'
+_full_version = orion.__version__
 author = u'MetaOptimizer Team - MILA, Université de Montréal'
 copyright = u'2017, MetaOptimizer Team - MILA, Université de Montréal'
 
@@ -167,7 +167,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'metaopt.tex', 'MetaOpt Documentation',
+    (master_doc, 'orion.tex', 'MetaOpt Documentation',
      u'MetaOptimizer Team - MILA, Université de Montréal', 'manual'),
 ]
 
@@ -177,7 +177,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'metaopt', 'MetaOpt Documentation',
+    (master_doc, 'orion', 'MetaOpt Documentation',
      [author], 1)
 ]
 

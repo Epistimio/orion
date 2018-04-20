@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Collection of tests for :mod:`metaopt.core.worker.experiment`."""
+"""Collection of tests for :mod:`orion.core.worker.experiment`."""
 
 import copy
 import random
 
 import pytest
 
-from metaopt.algo.base import BaseAlgorithm
-from metaopt.core.io.database import Database, DuplicateKeyError
-from metaopt.core.worker.experiment import Experiment
-from metaopt.core.worker.trial import Trial
+from orion.algo.base import BaseAlgorithm
+from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.worker.experiment import Experiment
+from orion.core.worker.trial import Trial
 
 
 @pytest.fixture()
@@ -221,7 +221,7 @@ class TestConfigProperty(object):
 
         Before initialization is done, it can be the case that the pair (`name`,
         user's name) has not hit the database. return a yaml compliant form
-        of current state, to be used with :mod:`metaopt.core.resolve_config`.
+        of current state, to be used with :mod:`orion.core.resolve_config`.
         """
         exp = Experiment('supernaekei')
         cfg = exp.configuration
@@ -349,7 +349,7 @@ class TestConfigProperty(object):
 
         Before initialization is done, it can be the case that the pair (`name`,
         user's name) has not hit the database. return a yaml compliant form
-        of current state, to be used with :mod:`metaopt.core.resolve_config`.
+        of current state, to be used with :mod:`orion.core.resolve_config`.
         """
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
@@ -466,7 +466,7 @@ class TestReserveTrial(object):
     def test_reserve_none(self):
         """Find nothing, return None."""
         try:
-            Database(of_type='MongoDB', name='metaopt_test',
+            Database(of_type='MongoDB', name='orion_test',
                      username='user', password='pass')
         except (TypeError, ValueError):
             pass

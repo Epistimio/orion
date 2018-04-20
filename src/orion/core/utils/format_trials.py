@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.utils.format_trials` -- Utility functions for formatting data
+:mod:`orion.core.utils.format_trials` -- Utility functions for formatting data
 ================================================================================
 
 .. module:: format_trials
@@ -10,14 +10,14 @@
 
 """
 
-from metaopt.core.worker.trial import Trial
+from orion.core.worker.trial import Trial
 
 
 def trial_to_tuple(trial, space):
-    """Extract a parameter tuple from a `metaopt.core.worker.trial.Trial`.
+    """Extract a parameter tuple from a `orion.core.worker.trial.Trial`.
 
     The order within the tuple is dictated by the defined
-    `metaopt.algo.space.Space` object.
+    `orion.algo.space.Space` object.
     """
     assert len(trial.params) == len(space)
     for order, param in enumerate(trial.params):
@@ -26,12 +26,12 @@ def trial_to_tuple(trial, space):
 
 
 def tuple_to_trial(data, space):
-    """Create a `metaopt.core.worker.trial.Trial` object from `data`,
+    """Create a `orion.core.worker.trial.Trial` object from `data`,
     filling only parameter information from `data`.
 
     :param data: A tuple representing a sample point from `space`.
     :param space: Definition of problem's domain.
-    :type space: `metaopt.algo.space.Space`
+    :type space: `orion.algo.space.Space`
     """
     assert len(data) == len(space)
     params = [dict(

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Collection of tests for :mod:`metaopt.core.io.database.mongodb`."""
+"""Collection of tests for :mod:`orion.core.io.database.mongodb`."""
 
 from datetime import datetime
 import functools
@@ -9,15 +9,15 @@ import pymongo
 from pymongo import MongoClient
 import pytest
 
-from metaopt.core.io.database import Database, DatabaseError, DuplicateKeyError
-from metaopt.core.io.database.mongodb import AUTH_FAILED_MESSAGES, MongoDB
+from orion.core.io.database import Database, DatabaseError, DuplicateKeyError
+from orion.core.io.database.mongodb import AUTH_FAILED_MESSAGES, MongoDB
 
 
 @pytest.fixture(scope='module')
 def moptdb():
     """Return MongoDB wrapper instance initiated with test opts."""
     MongoDB.instance = None
-    moptdb = MongoDB(username='user', password='pass', name='metaopt_test')
+    moptdb = MongoDB(username='user', password='pass', name='orion_test')
     return moptdb
 
 
@@ -36,7 +36,7 @@ def patch_mongo_client(monkeypatch):
 
 @pytest.mark.usefixtures("null_db_instances")
 class TestConnection(object):
-    """Create a :class:`metaopt.core.io.database.mongodb.MongoDB`, check connection cases."""
+    """Create a :class:`orion.core.io.database.mongodb.MongoDB`, check connection cases."""
 
     @pytest.mark.usefixtures("patch_mongo_client")
     def test_bad_connection(self, monkeypatch):
@@ -45,7 +45,7 @@ class TestConnection(object):
             MongoDB, "initiate_connection",
             MongoDB.initiate_connection.__wrapped__)
         with pytest.raises(pymongo.errors.ConnectionFailure) as exc_info:
-            MongoDB(host='asdfada', port=123, name='metaopt',
+            MongoDB(host='asdfada', port=123, name='orion',
                     username='uasdfaf', password='paasdfss')
         assert "Name or service not known" in str(exc_info.value)
 
@@ -53,7 +53,7 @@ class TestConnection(object):
 
         # Verify that the wrapper converts it properly to DatabaseError
         with pytest.raises(DatabaseError) as exc_info:
-            MongoDB(host='asdfada', port=123, name='metaopt',
+            MongoDB(host='asdfada', port=123, name='orion',
                     username='uasdfaf', password='paasdfss')
         assert "Connection" in str(exc_info.value)
 
@@ -63,38 +63,38 @@ class TestConnection(object):
             MongoDB, "initiate_connection",
             MongoDB.initiate_connection.__wrapped__)
         with pytest.raises(pymongo.errors.OperationFailure) as exc_info:
-            MongoDB(name='metaopt_test', username='uasdfaf', password='paasdfss')
+            MongoDB(name='orion_test', username='uasdfaf', password='paasdfss')
         assert any(m in str(exc_info.value) for m in AUTH_FAILED_MESSAGES)
 
         monkeypatch.undo()
 
         with pytest.raises(DatabaseError) as exc_info:
-            MongoDB(name='metaopt_test', username='uasdfaf', password='paasdfss')
+            MongoDB(name='orion_test', username='uasdfaf', password='paasdfss')
         assert "Authentication" in str(exc_info.value)
 
     def test_connection_with_uri(self):
         """Check the case when connecting with ready `uri`."""
-        moptdb = MongoDB('mongodb://user:pass@localhost/metaopt_test')
+        moptdb = MongoDB('mongodb://user:pass@localhost/orion_test')
         assert moptdb.host == 'localhost'
         assert moptdb.port == 27017
         assert moptdb.username == 'user'
         assert moptdb.password == 'pass'
-        assert moptdb.name == 'metaopt_test'
+        assert moptdb.name == 'orion_test'
 
     def test_overwrite_uri(self):
         """Check the case when connecting with ready `uri`."""
-        moptdb = MongoDB('mongodb://lala:pass@localhost:1231/metaopt',
-                         port=27017, name='metaopt_test', username='user',
+        moptdb = MongoDB('mongodb://lala:pass@localhost:1231/orion',
+                         port=27017, name='orion_test', username='user',
                          password='pass')
         assert moptdb.host == 'localhost'
         assert moptdb.port == 27017
         assert moptdb.username == 'user'
         assert moptdb.password == 'pass'
-        assert moptdb.name == 'metaopt_test'
+        assert moptdb.name == 'orion_test'
 
     def test_singleton(self):
         """Test that MongoDB class is a singleton."""
-        moptdb = MongoDB(username='user', password='pass', name='metaopt_test')
+        moptdb = MongoDB(username='user', password='pass', name='orion_test')
         # reinit connection does not change anything
         moptdb.initiate_connection()
         moptdb.close_connection()
@@ -167,7 +167,7 @@ class TestExceptionWrapper(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestEnsureIndex(object):
-    """Calls to :meth:`metaopt.core.io.database.mongodb.MongoDB.ensure_index`."""
+    """Calls to :meth:`orion.core.io.database.mongodb.MongoDB.ensure_index`."""
 
     def test_new_index(self, moptdb):
         """Index should be added to mongo database"""
@@ -211,7 +211,7 @@ class TestEnsureIndex(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestRead(object):
-    """Calls to :meth:`metaopt.core.io.database.mongodb.MongoDB.read`."""
+    """Calls to :meth:`orion.core.io.database.mongodb.MongoDB.read`."""
 
     def test_read_experiment(self, exp_config, moptdb):
         """Fetch a whole experiment entries."""
@@ -262,7 +262,7 @@ class TestRead(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestWrite(object):
-    """Calls to :meth:`metaopt.core.io.database.mongodb.MongoDB.write`."""
+    """Calls to :meth:`orion.core.io.database.mongodb.MongoDB.write`."""
 
     def test_insert_one(self, database, moptdb):
         """Should insert a single new entry in the collection."""
@@ -330,7 +330,7 @@ class TestWrite(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestReadAndWrite(object):
-    """Calls to :meth:`metaopt.core.io.database.mongodb.MongoDB.read_and_write`."""
+    """Calls to :meth:`orion.core.io.database.mongodb.MongoDB.read_and_write`."""
 
     def test_read_and_write_one(self, database, moptdb, exp_config):
         """Should read and update a single entry in the collection."""
@@ -380,7 +380,7 @@ class TestReadAndWrite(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestRemove(object):
-    """Calls to :meth:`metaopt.core.io.database.mongodb.MongoDB.remove`."""
+    """Calls to :meth:`orion.core.io.database.mongodb.MongoDB.remove`."""
 
     def test_remove_many_default(self, exp_config, database, moptdb):
         """Should match existing entries, and delete them all."""
@@ -404,7 +404,7 @@ class TestRemove(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestCount(object):
-    """Calls :meth:`metaopt.core.io.database.mongodb.MongoDB.count`."""
+    """Calls :meth:`orion.core.io.database.mongodb.MongoDB.count`."""
 
     def test_count_default(self, exp_config, moptdb):
         """Call just with collection name."""

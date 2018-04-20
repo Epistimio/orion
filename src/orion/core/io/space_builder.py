@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=eval-used,protected-access
 """
-:mod:`metaopt.core.io.space_builder` -- Create Space objects from configuration
+:mod:`orion.core.io.space_builder` -- Create Space objects from configuration
 ===============================================================================
 
 .. module:: space_builder
@@ -10,10 +10,10 @@
       defining problem's search space.
 
 Replace actual hyperparam values in your script's config files or cmd
-arguments with metaopt's keywords for declaring hyperparameter types
+arguments with orion's keywords for declaring hyperparameter types
 to be optimized.
 
-Motivation for this way of metaopt's configuration is to achieve as
+Motivation for this way of orion's configuration is to achieve as
 minimal intrusion to user's workflow as possible by:
 
    * Offering to user the choice to keep the original way of passing
@@ -23,7 +23,7 @@ minimal intrusion to user's workflow as possible by:
 
    * Instead of passing the actual hyperparameter values, use one of
      the characteristic keywords, names enlisted in `scipy.stats.distributions`
-     or `metaopt.core.io.space_builder.DimensionBuilder`,
+     or `orion.core.io.space_builder.DimensionBuilder`,
      to describe distributions and declare the hyperparameters
      to be optimized. So that a possible command line argument
      like ``-lrate0=0.1`` becomes ``-lrate0~'uniform(-3, 1)'``.
@@ -45,9 +45,9 @@ import re
 
 from scipy.stats import distributions as sp_dists
 
-from metaopt.algo.space import (Categorical, Integer, Real, Space)
-from metaopt.core.io.convert import infer_converter_from_file_type
-from metaopt.core.utils import SingletonType
+from orion.algo.space import (Categorical, Integer, Real, Space)
+from orion.core.io.convert import infer_converter_from_file_type
+from orion.core.utils import SingletonType
 
 log = logging.getLogger(__name__)
 
@@ -239,7 +239,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
 
         :param cmd_args: A list of command line arguments provided for the user's script.
 
-        :rtype: `metaopt.algo.space.Space`
+        :rtype: `orion.algo.space.Space`
 
         .. note:: A template configuration file complementing user's script can be
            provided either by explicitly using the prefix '--config=' or by being the
@@ -333,7 +333,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
 
         :param config_path: Path in which the configuration file instance
            will be created.
-        :param trial: A `metaopt.core.worker.trial.Trial` object with concrete
+        :param trial: A `orion.core.worker.trial.Trial` object with concrete
            parameter values for the defined `Space`.
 
         :returns: A list with the command line arguments that must be given to

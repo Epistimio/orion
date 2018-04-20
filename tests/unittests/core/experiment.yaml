@@ -1,4 +1,4 @@
-# Example `metaopt` database, first are the "primary keys" (there's also an
+# Example `orion` database, first are the "primary keys" (there's also an
 # implicit _id key here in MOngoDB, but we cannot base our search based on that)
 ---
 
@@ -11,7 +11,7 @@
     # inferred from os
     user: tsirif
     datetime: 2017-11-22T20:00:00
-    # from metaopt.__version__
+    # from orion.__version__
     mopt_version: 0.1
     # from `mopt`'s args
     user_script: full_path/main.py
@@ -34,7 +34,7 @@
         type: categorical
         value: gru
 
-  # metaopt's configuration
+  # orion's configuration
   pool_size: 2
   max_trials: 1000
 

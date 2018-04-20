@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.algo.space` -- Objects describing a problem's domain
+:mod:`orion.algo.space` -- Objects describing a problem's domain
 ==================================================================
 
 .. module:: space
@@ -17,12 +17,12 @@ the base class `Dimension`:
 
 These are instantiated to declare a problem's parameter space. Metaopt registers
 them in a ordered dictionary, `Space`, which describes how the parameters should
-be in order for `metaopt.algo.base.AbstractAlgorithm` implementations to
-communicate with `metaopt.core`.
+be in order for `orion.algo.base.AbstractAlgorithm` implementations to
+communicate with `orion.core`.
 
-Parameter values recorded in `metaopt.core.worker.trial.Trial` objects must be
-and are in concordance with `metaopt.algo.space` objects. These objects will be
-defined by `metaopt.core` using the user script's configuration file.
+Parameter values recorded in `orion.core.worker.trial.Trial` objects must be
+and are in concordance with `orion.algo.space` objects. These objects will be
+defined by `orion.core` using the user script's configuration file.
 
 Prior distributions, contained in `Dimension` classes, are based on
 `scipy.stats.distributions` and should be configured as noted in the
@@ -284,7 +284,7 @@ class _Discrete(Dimension):
         Discretizes with `numpy.floor` the results from `Dimension.sample`.
 
         .. seealso:: `Dimension.sample`
-        .. seealso:: Discussion in https://github.com/mila-udem/metaopt/issues/56
+        .. seealso:: Discussion in https://github.com/mila-udem/orion/issues/56
            if you want to understand better how this `Integer` diamond inheritance
            works.
 

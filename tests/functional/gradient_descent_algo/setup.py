@@ -1,25 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Installation script for `metaopt.algo.gradient_descent`."""
+"""Installation script for `orion.algo.gradient_descent`."""
 from setuptools import setup
 
 setup_args = dict(
-    name='metaopt.algo.gradient_descent',
+    name='orion.algo.gradient_descent',
     version=0.1,
     description="Implement a gradient descent algorithm, for demo and testing.",
     license='BSD-3-Clause',
     author='Christos Tsirigotis',
     author_email='tsirif@gmail.com',
-    url='https://github.com/mila-udem/metaopt',
-    packages=['metaopt.algo'],
+    url='https://github.com/mila-udem/orion',
+    packages=['orion.algo'],
     package_dir={'': 'src'},
     include_package_data=True,
     entry_points={
         'OptimizationAlgorithm': [
-            'gradient_descent = metaopt.algo.gradient_descent:Gradient_Descent'
+            'gradient_descent = orion.algo.gradient_descent:Gradient_Descent'
             ],
         },
-    install_requires=['metaopt.core'],
+    install_requires=['orion.core'],
     setup_requires=['setuptools'],
     # "Zipped eggs don't play nicely with namespace packaging"
     # from https://github.com/pypa/sample-namespace-packages

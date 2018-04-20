@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.algo.random` -- Random sampler as optimization algorithm
+:mod:`orion.algo.random` -- Random sampler as optimization algorithm
 ======================================================================
 
 .. module:: random
@@ -9,7 +9,7 @@
 
 """
 
-from metaopt.algo.base import BaseAlgorithm
+from orion.algo.base import BaseAlgorithm
 
 
 class Random(BaseAlgorithm):
@@ -28,7 +28,7 @@ class Random(BaseAlgorithm):
         :param num: how many sets to be suggested.
 
         .. note:: New parameters must be compliant with the problem's domain
-           `metaopt.algo.space.Space`.
+           `orion.algo.space.Space`.
         """
         return self.space.sample(num)
 

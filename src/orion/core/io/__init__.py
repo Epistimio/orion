@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.io` -- Input/output functions for interaction with user's script
+:mod:`orion.core.io` -- Input/output functions for interaction with user's script
 ===================================================================================
 
 .. module:: io

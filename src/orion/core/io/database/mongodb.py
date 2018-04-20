@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.io.database.mongodb` -- Wrapper for MongoDB
+:mod:`orion.core.io.database.mongodb` -- Wrapper for MongoDB
 ==============================================================
 
 .. module:: database
    :platform: Unix
-   :synopsis: Implement :class:`metaopt.core.io.database.AbstractDB` for MongoDB.
+   :synopsis: Implement :class:`orion.core.io.database.AbstractDB` for MongoDB.
 
 """
 import functools
 
 import pymongo
 
-from metaopt.core.io.database import (
+from orion.core.io.database import (
     AbstractDB, DatabaseError, DuplicateKeyError)
 
 
@@ -73,7 +73,7 @@ class MongoDB(AbstractDB):
     Information on MongoDB `connection string
     <https://docs.mongodb.com/manual/reference/connection-string/>`_.
 
-    .. seealso:: :class:`metaopt.core.io.database.AbstractDB` for more on attributes.
+    .. seealso:: :class:`orion.core.io.database.AbstractDB` for more on attributes.
 
     """
 

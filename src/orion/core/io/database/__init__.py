@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.io.database` -- Wrappers for database frameworks
+:mod:`orion.core.io.database` -- Wrappers for database frameworks
 ===================================================================
 
 .. module:: database
@@ -10,12 +10,12 @@
 Contains :class:`AbstractDB`, an interface for databases.
 Currently, implemented wrappers:
 
-   - :class:`metaopt.core.io.database.mongodb.MongoDB`
+   - :class:`orion.core.io.database.mongodb.MongoDB`
 
 """
 from abc import abstractmethod, abstractproperty
 
-from metaopt.core.utils import (AbstractSingletonType, SingletonFactory)
+from orion.core.utils import (AbstractSingletonType, SingletonFactory)
 
 
 class AbstractDB(object, metaclass=AbstractSingletonType):

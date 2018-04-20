@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=protected-access
 """
-:mod:`metaopt.core.worker.experiment` -- Description of an optimization attempt
+:mod:`orion.core.worker.experiment` -- Description of an optimization attempt
 ===============================================================================
 
 .. module:: experiment
@@ -15,11 +15,11 @@ import getpass
 import logging
 import random
 
-from metaopt.core.io.database import Database
-from metaopt.core.io.space_builder import SpaceBuilder
-from metaopt.core.utils.format_trials import trial_to_tuple
-from metaopt.core.worker.primary_algo import PrimaryAlgo
-from metaopt.core.worker.trial import Trial
+from orion.core.io.database import Database
+from orion.core.io.space_builder import SpaceBuilder
+from orion.core.utils.format_trials import trial_to_tuple
+from orion.core.worker.primary_algo import PrimaryAlgo
+from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
@@ -270,7 +270,7 @@ class Experiment(object):
 
     @property
     def space(self):
-        """Return problem's parameter `metaopt.algo.space.Space`.
+        """Return problem's parameter `orion.algo.space.Space`.
 
         .. note:: It will return None, if experiment init is not done.
         """

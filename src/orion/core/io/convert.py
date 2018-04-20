@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.worker.convert` -- Parse and generate user script's configuration
+:mod:`orion.core.worker.convert` -- Parse and generate user script's configuration
 ====================================================================================
 
 .. module:: convert
@@ -20,7 +20,7 @@ from abc import (ABC, abstractmethod)
 import importlib
 import os
 
-from metaopt.core.utils import Factory
+from orion.core.utils import Factory
 
 
 def infer_converter_from_file_type(config_path):

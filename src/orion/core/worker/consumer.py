@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.worker.consumer` -- Evaluate objective on a set of parameters
+:mod:`orion.core.worker.consumer` -- Evaluate objective on a set of parameters
 ================================================================================
 
 .. module:: consumer
@@ -13,10 +13,10 @@ import os
 import subprocess
 import tempfile
 
-from metaopt.core.io.convert import JSONConverter
-from metaopt.core.io.database import Database
-from metaopt.core.io.space_builder import SpaceBuilder
-from metaopt.core.worker.trial import Trial
+from orion.core.io.convert import JSONConverter
+from orion.core.io.database import Database
+from orion.core.io.space_builder import SpaceBuilder
+from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class Consumer(object):
 
     It forks another process which executes user's script with the suggested
     options. It expects results to be written in a **JSON** file, whose path
-    has been defined in a special metaopt environmental variable which is set
+    has been defined in a special orion environmental variable which is set
     into the child process' environment.
 
     """
@@ -51,7 +51,7 @@ class Consumer(object):
         self.template_builder = SpaceBuilder()
         # Get path to user's script and infer trial configuration directory
         self.script_path = experiment.metadata['user_script']
-        self.tmp_dir = os.path.join(tempfile.gettempdir(), 'metaopt')
+        self.tmp_dir = os.path.join(tempfile.gettempdir(), 'orion')
         os.makedirs(self.tmp_dir, exist_ok=True)
 
         self.converter = JSONConverter()
@@ -60,7 +60,7 @@ class Consumer(object):
         """Execute user's script as a block box using the options contained
         within `trial`.
 
-        :type trial: `metaopt.core.worker.trial.Trial`
+        :type trial: `orion.core.worker.trial.Trial`
 
         """
         log.debug("### Create new temporary directory at '%s':", self.tmp_dir)

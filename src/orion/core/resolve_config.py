@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.resolve_config` -- Configuration parsing and resolving
+:mod:`orion.core.resolve_config` -- Configuration parsing and resolving
 =========================================================================
 
 .. module:: resolve_config
    :platform: Unix
-   :synopsis: How does metaopt resolve configuration settings?
+   :synopsis: How does orion resolve configuration settings?
 
 How:
 
@@ -26,7 +26,7 @@ How:
 Default files are given as a list at :const:`DEF_CONFIG_FILES_PATHS` and a
 precedence is respected when building the settings dictionary:
 
- * default metaopt example file **<** system-wide config **<** user-wide config
+ * default orion example file **<** system-wide config **<** user-wide config
 
 .. note:: `Optimization` entries are required, `Dynamic` entry is optional.
 
@@ -42,7 +42,7 @@ import textwrap
 from numpy import inf as infinity
 import yaml
 
-import metaopt
+import orion
 
 
 # Define type of arbitrary nested defaultdicts
@@ -67,9 +67,9 @@ DEF_CMD_MAX_TRIALS = (infinity, 'inf/until preempted')
 DEF_CMD_POOL_SIZE = (10, str(10))
 
 DEF_CONFIG_FILES_PATHS = [
-    os.path.join(metaopt.core.DIRS.site_data_dir, 'moptconfig.yaml.example'),
-    os.path.join(metaopt.core.DIRS.site_config_dir, 'moptconfig.yaml'),
-    os.path.join(metaopt.core.DIRS.user_config_dir, 'moptconfig.yaml')
+    os.path.join(orion.core.DIRS.site_data_dir, 'moptconfig.yaml.example'),
+    os.path.join(orion.core.DIRS.site_config_dir, 'moptconfig.yaml'),
+    os.path.join(orion.core.DIRS.user_config_dir, 'moptconfig.yaml')
     ]
 
 # list containing tuples of
@@ -105,7 +105,7 @@ def fetch_mopt_args(description):
 
     parser.add_argument(
         '-V', '--version',
-        action='version', version='metaopt ' + metaopt.core.__version__)
+        action='version', version='orion ' + orion.core.__version__)
 
     parser.add_argument(
         '-v', '--verbose',
@@ -141,7 +141,7 @@ def fetch_mopt_args(description):
     usergroup = parser.add_argument_group(
         "User script related arguments",
         description="These arguments determine user's script behaviour "
-                    "and they can serve as metaopt's parameter declaration.")
+                    "and they can serve as orion's parameter declaration.")
 
     usergroup.add_argument(
         'user_script', type=str, metavar='path-to-script',
@@ -162,15 +162,15 @@ def fetch_mopt_args(description):
     elif verbose == 2:
         logging.basicConfig(level=logging.DEBUG)
 
-    # Explicitly add metaopt's version as experiment's metadata
+    # Explicitly add orion's version as experiment's metadata
     args['metadata'] = dict()
-    args['metadata']['mopt_version'] = metaopt.core.__version__
-    log.debug("Using metaopt version %s", args['metadata']['mopt_version'])
+    args['metadata']['mopt_version'] = orion.core.__version__
+    log.debug("Using orion version %s", args['metadata']['mopt_version'])
 
     moptfile = args.pop('config')
     config = dict()
     if moptfile:
-        log.debug("Found metaopt configuration file at: %s", os.path.abspath(moptfile.name))
+        log.debug("Found orion configuration file at: %s", os.path.abspath(moptfile.name))
         config = yaml.safe_load(moptfile)
 
     # Move 'user_script' and 'user_args' to 'metadata' key
@@ -232,7 +232,7 @@ def fetch_default_options():
 
 
 def merge_env_vars(config):
-    """Fetch environmental variables related to metaopt's managerial data.
+    """Fetch environmental variables related to orion's managerial data.
 
     :type config: :func:`nesteddict`
 

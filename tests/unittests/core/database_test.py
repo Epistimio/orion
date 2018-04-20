@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Example usage and tests for :mod:`metaopt.core.io.database`."""
+"""Example usage and tests for :mod:`orion.core.io.database`."""
 
 import pytest
 
-from metaopt.core.io.database import Database
-from metaopt.core.io.database.mongodb import MongoDB
+from orion.core.io.database import Database
+from orion.core.io.database.mongodb import MongoDB
 
 
 @pytest.mark.usefixtures("null_db_instances")
@@ -37,7 +37,7 @@ class TestDatabaseFactory(object):
 
     def test_instatiation_and_singleton(self):
         """Test create just one object, that object persists between calls."""
-        database = Database(of_type='MongoDB', name='metaopt_test',
+        database = Database(of_type='MongoDB', name='orion_test',
                             username='user', password='pass')
 
         assert isinstance(database, MongoDB)

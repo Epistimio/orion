@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.worker` -- Coordination of the optimization procedure
+:mod:`orion.core.worker` -- Coordination of the optimization procedure
 ========================================================================
 
 .. module:: worker
@@ -11,9 +11,9 @@
 """
 import logging
 
-from metaopt.core.io.database import Database
-from metaopt.core.worker.consumer import Consumer
-from metaopt.core.worker.producer import Producer
+from orion.core.io.database import Database
+from orion.core.worker.consumer import Consumer
+from orion.core.worker.producer import Producer
 
 log = logging.getLogger(__name__)
 

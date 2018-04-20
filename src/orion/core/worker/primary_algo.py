@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.worker.primary_algo` -- Sanitizing wrapper of main algorithm
+:mod:`orion.core.worker.primary_algo` -- Sanitizing wrapper of main algorithm
 ===============================================================================
 
 .. module:: primary_algo
@@ -9,7 +9,7 @@
 
 """
 
-from metaopt.algo.base import BaseAlgorithm
+from orion.algo.base import BaseAlgorithm
 # TODO Define Transformation classes, request and composite them using
 # decorator pattern + `Factory`
 
@@ -30,7 +30,7 @@ class PrimaryAlgo(BaseAlgorithm):
 
         Parameters
         ----------
-        space : `metaopt.algo.space.Space`
+        space : `orion.algo.space.Space`
            The original definition of a problem's parameters space.
         algorithm_config : dict
            Configuration for the algorithm.
@@ -47,7 +47,7 @@ class PrimaryAlgo(BaseAlgorithm):
         :param num: how many sets to be suggested.
 
         .. note:: New parameters must be compliant with the problem's domain
-           `metaopt.algo.space.Space`.
+           `orion.algo.space.Space`.
         """
         points = self.algorithm.suggest(num)
         for point in points:
@@ -59,7 +59,7 @@ class PrimaryAlgo(BaseAlgorithm):
         """Observe evaluation `results` corresponding to list of `points` in
         space.
 
-        .. seealso:: `metaopt.algo.base.BaseAlgorithm.observe`
+        .. seealso:: `orion.algo.base.BaseAlgorithm.observe`
         """
         for point in points:
             assert point in self._space

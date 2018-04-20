@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.core.cli` -- Functions that define console scripts
+:mod:`orion.core.cli` -- Functions that define console scripts
 ================================================================
 
 .. module:: cli
@@ -11,10 +11,10 @@
 """
 import logging
 
-from metaopt.core import resolve_config
-from metaopt.core.io.database import Database, DuplicateKeyError
-from metaopt.core.worker import workon
-from metaopt.core.worker.experiment import Experiment
+from orion.core import resolve_config
+from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.worker import workon
+from orion.core.worker.experiment import Experiment
 
 log = logging.getLogger(__name__)
 
@@ -26,14 +26,14 @@ mopt:
 
 
 def main():
-    """Entry point for `metaopt.core` functionality."""
+    """Entry point for `orion.core` functionality."""
     experiment = infer_experiment()
     workon(experiment)
     return 0
 
 
 def infer_experiment():
-    """Use `metaopt.core.resolve_config` to organize how configuration is built."""
+    """Use `orion.core.resolve_config` to organize how configuration is built."""
     # Fetch experiment name, user's script path and command line arguments
     # Use `-h` option to show help
     cmdargs, cmdconfig = resolve_config.fetch_mopt_args(CLI_DOC_HEADER)
@@ -43,7 +43,7 @@ def infer_experiment():
     expconfig = resolve_config.fetch_default_options()
 
     # Fetch mopt system variables (database and resource information)
-    # See :const:`metaopt.core.io.resolve_config.ENV_VARS` for environmental
+    # See :const:`orion.core.io.resolve_config.ENV_VARS` for environmental
     # variables used
     expconfig = resolve_config.merge_env_vars(expconfig)
 
@@ -60,7 +60,7 @@ def infer_experiment():
     if exp_name is None:
         raise RuntimeError("Could not infer experiment's name. "
                            "Please use either `name` cmd line arg or provide "
-                           "one in metaopt's configuration file.")
+                           "one in orion's configuration file.")
 
     experiment = create_experiment(exp_name, expconfig, cmdconfig, cmdargs)
 
@@ -71,7 +71,7 @@ def create_experiment(exp_name, expconfig, cmdconfig, cmdargs):
     """Create an experiment based on configuration.
 
     Configuration is a combination of command line, experiment configuration
-    file, experiment configuration in database and metaopt configuration files.
+    file, experiment configuration in database and orion configuration files.
 
     Precedence of configurations is:
     `cmdargs` > `cmdconfig` > `dbconfig` > `expconfig`

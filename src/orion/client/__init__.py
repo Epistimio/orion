@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.client` -- Helper function for returning results from script
+:mod:`orion.client` -- Helper function for returning results from script
 ==========================================================================
 
 .. module:: client
    :platform: Unix
-   :synopsis: Provides functions for communicating with `metaopt.core`.
+   :synopsis: Provides functions for communicating with `orion.core`.
 
 """
 import os
@@ -31,7 +31,7 @@ def report_results(data):
     .. note:: To be called only once in order to report a final evaluation
        of a particular trial.
 
-    .. note:: In case that user's script is not running in a metaopt's context,
+    .. note:: In case that user's script is not running in a orion's context,
        this function will act as a Python `print` function.
 
     .. note:: For your own good, this can be called **only once**.
