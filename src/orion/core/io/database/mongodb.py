@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.core.io.database.mongodb` -- Wrapper for MongoDB
-==============================================================
+============================================================
 
 .. module:: database
    :platform: Unix
