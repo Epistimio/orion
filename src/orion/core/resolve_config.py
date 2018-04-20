@@ -248,7 +248,7 @@ def merge_env_vars(config):
 
 def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
     """
-    Mopt Configuration
+    Orion Configuration
     ------------------
 
     name --  Experiment's name.
