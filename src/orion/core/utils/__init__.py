@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.core.utils` -- Package-wide useful routines
-=========================================================
+=======================================================
 
 .. module:: utils
    :platform: Unix
