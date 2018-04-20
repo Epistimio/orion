@@ -93,10 +93,10 @@ ENV_VARS = dict(
 ################################################################################
 
 
-def fetch_mopt_args(description):
+def fetch_orion_args(description):
     """Get options from command line arguments.
 
-    :param description: string description of ``mopt`` executable
+    :param description: string description of ``orion`` executable
 
     """
     parser = argparse.ArgumentParser(
@@ -114,7 +114,7 @@ def fetch_mopt_args(description):
 
     orion_group = parser.add_argument_group(
         "Orion arguments (optional)",
-        description="These arguments determine mopt's behaviour")
+        description="These arguments determine orion's behaviour")
 
     orion_group.add_argument(
         '-n', '--name',
@@ -136,7 +136,7 @@ def fetch_mopt_args(description):
     orion_group.add_argument(
         '-c', '--config',
         type=argparse.FileType('r'), metavar='path-to-config',
-        help="user provided mopt configuration file")
+        help="user provided orion configuration file")
 
     usergroup = parser.add_argument_group(
         "User script related arguments",
@@ -164,8 +164,8 @@ def fetch_mopt_args(description):
 
     # Explicitly add orion's version as experiment's metadata
     args['metadata'] = dict()
-    args['metadata']['mopt_version'] = orion.core.__version__
-    log.debug("Using orion version %s", args['metadata']['mopt_version'])
+    args['metadata']['orion_version'] = orion.core.__version__
+    log.debug("Using orion version %s", args['metadata']['orion_version'])
 
     orion_file = args.pop('config')
     config = dict()
@@ -246,7 +246,7 @@ def merge_env_vars(config):
     return newcfg
 
 
-def merge_mopt_config(config, dbconfig, cmdconfig, cmdargs):
+def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
     """
     Mopt Configuration
     ------------------
@@ -256,7 +256,7 @@ def merge_mopt_config(config, dbconfig, cmdconfig, cmdargs):
        If you provide a past experiment's name,
        then that experiment will be resumed. This means that its history of
        trials will be reused, along with any configurations logged in the
-       database which are not overwritten by current call to `mopt` script.
+       database which are not overwritten by current call to `orion` script.
 
     max_trials -- Maximum number of trial evaluations to be computed
 

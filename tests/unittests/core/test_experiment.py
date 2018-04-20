@@ -120,7 +120,7 @@ def new_config(random_dt):
         # refers is missing on purpose
         metadata={'user': 'tsirif',
                   'datetime': random_dt,
-                  'mopt_version': 0.1,
+                  'orion_version': 0.1,
                   'user_script': 'abs_path/to_yoyoy.py',
                   'user_config': 'abs_path/hereitis.yaml',
                   'user_args': ['--mini-batch~uniform(32, 256, discrete=True)'],

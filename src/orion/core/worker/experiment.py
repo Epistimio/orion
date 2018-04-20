@@ -47,7 +47,7 @@ class Experiment(object):
     status : str
        A keyword among {*'pending'*, *'done'*, *'broken'*} indicating
        how **Orion** considers the current `Experiment`. This attribute cannot
-       be set from an mopt configuration.
+       be set from an orion configuration.
 
        * 'pending' : Denotes an experiment with valid configuration which is
           currently being handled by **Orion**.
@@ -65,7 +65,7 @@ class Experiment(object):
        System user currently owning this running process, the one who invoked **Orion**.
     datetime : `datetime.datetime`
        When was this particular configuration submitted to the database.
-    mopt_version : str
+    orion_version : str
        Version of **Orion** which suggested this experiment. `user`'s current
        **Orion** version.
     user_script : str

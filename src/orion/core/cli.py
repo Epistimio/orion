@@ -19,7 +19,7 @@ from orion.core.worker.experiment import Experiment
 log = logging.getLogger(__name__)
 
 CLI_DOC_HEADER = """
-mopt:
+orion:
   Orion cli script for asynchronous distributed optimization
 
 """
@@ -36,19 +36,19 @@ def infer_experiment():
     """Use `orion.core.resolve_config` to organize how configuration is built."""
     # Fetch experiment name, user's script path and command line arguments
     # Use `-h` option to show help
-    cmdargs, cmdconfig = resolve_config.fetch_mopt_args(CLI_DOC_HEADER)
+    cmdargs, cmdconfig = resolve_config.fetch_orion_args(CLI_DOC_HEADER)
 
     # Initialize configuration dictionary.
     # Fetch info from defaults and configurations from default locations.
     expconfig = resolve_config.fetch_default_options()
 
-    # Fetch mopt system variables (database and resource information)
+    # Fetch orion system variables (database and resource information)
     # See :const:`orion.core.io.resolve_config.ENV_VARS` for environmental
     # variables used
     expconfig = resolve_config.merge_env_vars(expconfig)
 
     # Initialize singleton database object
-    tmpconfig = resolve_config.merge_mopt_config(expconfig, dict(),
+    tmpconfig = resolve_config.merge_orion_config(expconfig, dict(),
                                                  cmdconfig, cmdargs)
     db_opts = tmpconfig['database']
     dbtype = db_opts.pop('type')
@@ -95,7 +95,7 @@ def create_experiment(exp_name, expconfig, cmdconfig, cmdargs):
     experiment = Experiment(exp_name)
     dbconfig = experiment.configuration
 
-    expconfig = resolve_config.merge_mopt_config(expconfig, dbconfig,
+    expconfig = resolve_config.merge_orion_config(expconfig, dbconfig,
                                                  cmdconfig, cmdargs)
 
     # Infer rest information about the process + versioning

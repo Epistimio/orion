@@ -62,7 +62,7 @@ setup_args = dict(
     data_files=find_data_files(),
     entry_points={
         'console_scripts': [
-            'mopt = orion.core.cli:main',
+            'orion = orion.core.cli:main',
             ],
         'OptimizationAlgorithm': [
             'random = orion.algo.random:Random',

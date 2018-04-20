@@ -219,7 +219,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
     """Build a `Space` object form user's configuration."""
 
     USERCONFIG_OPTION = '--config='
-    USERCONFIG_KEYWORD = 'mopt~'
+    USERCONFIG_KEYWORD = 'orion~'
     USERARGS_SEARCH = r'\W*([a-zA-Z0-9_-]+)~(.*)'
     USERARGS_TMPL = r'(.*)~(.*)'
 
