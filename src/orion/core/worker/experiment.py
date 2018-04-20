@@ -2,7 +2,7 @@
 # pylint:disable=protected-access
 """
 :mod:`orion.core.worker.experiment` -- Description of an optimization attempt
-===============================================================================
+=============================================================================
 
 .. module:: experiment
    :platform: Unix
