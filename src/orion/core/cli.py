@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 CLI_DOC_HEADER = """
 orion:
-  Orion cli script for asynchronous distributed optimization
+  Oríon cli script for asynchronous distributed optimization
 
 """
 

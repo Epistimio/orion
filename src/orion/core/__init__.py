@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Orion is an asynchronous distributed framework for black-box function optimization.
+Oríon is an asynchronous distributed framework for black-box function optimization.
 
 Its purpose is to serve as a hyperparameter optimizer for
 machine learning models and training, as well as a flexible experimentation
@@ -22,7 +22,7 @@ del get_versions
 __descr__ = 'Distributed Asynchronous [black-box] Optimization'
 __version__ = VERSIONS['version']
 __license__ = 'BSD-3-Clause'
-__author__ = 'Orion Team - MILA, Université de Montréal'
+__author__ = 'Oríon Team - MILA, Université de Montréal'
 __author_short__ = 'MILA'
 __author_email__ = 'lisa_labo@iro.umontreal.ca'
 __authors__ = {

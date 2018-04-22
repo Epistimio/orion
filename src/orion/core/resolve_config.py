@@ -75,7 +75,7 @@ DEF_CONFIG_FILES_PATHS = [
 # list containing tuples of
 # (environmental variable names, configuration keys, default values)
 ENV_VARS_DB = [
-    ('ORION_DB_NAME', 'name', 'Orion'),
+    ('ORION_DB_NAME', 'name', 'Oríon'),
     ('ORION_DB_TYPE', 'type', 'MongoDB'),
     ('ORION_DB_ADDRESS', 'host', socket.gethostbyname(socket.gethostname()))
     ]
@@ -113,7 +113,7 @@ def fetch_orion_args(description):
         help="logging levels of information about the process (-v: INFO. -vv: DEBUG)")
 
     orion_group = parser.add_argument_group(
-        "Orion arguments (optional)",
+        "Oríon arguments (optional)",
         description="These arguments determine orion's behaviour")
 
     orion_group.add_argument(
@@ -248,7 +248,7 @@ def merge_env_vars(config):
 
 def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
     """
-    Orion Configuration
+    Oríon Configuration
     -------------------
 
     name --  Experiment's name.
