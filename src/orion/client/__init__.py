@@ -10,14 +10,14 @@
 """
 import os
 
-IS_METAOPT_ON = False
+IS_ORION_ON = False
 _HAS_REPORTED_RESULTS = False
-RESULTS_FILENAME = os.getenv('METAOPT_RESULTS_PATH', None)
+RESULTS_FILENAME = os.getenv('ORION_RESULTS_PATH', None)
 if RESULTS_FILENAME and os.path.isfile(RESULTS_FILENAME):
     import json
-    IS_METAOPT_ON = True
+    IS_ORION_ON = True
 
-if RESULTS_FILENAME and not IS_METAOPT_ON:
+if RESULTS_FILENAME and not IS_ORION_ON:
     raise RuntimeWarning("Results file path provided in environmental variable "
                          "does not correspond to an existing file.")
 
@@ -40,7 +40,7 @@ def report_results(data):
     global _HAS_REPORTED_RESULTS  # pylint:disable=global-statement
     if _HAS_REPORTED_RESULTS:
         raise RuntimeWarning("Has already reported evaluation results once.")
-    if IS_METAOPT_ON:
+    if IS_ORION_ON:
         with open(RESULTS_FILENAME, 'w') as results_file:
             json.dump(data, results_file)
     else:

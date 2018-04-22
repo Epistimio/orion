@@ -75,9 +75,9 @@ DEF_CONFIG_FILES_PATHS = [
 # list containing tuples of
 # (environmental variable names, configuration keys, default values)
 ENV_VARS_DB = [
-    ('METAOPT_DB_NAME', 'name', 'Orion'),
-    ('METAOPT_DB_TYPE', 'type', 'MongoDB'),
-    ('METAOPT_DB_ADDRESS', 'host', socket.gethostbyname(socket.gethostname()))
+    ('ORION_DB_NAME', 'name', 'Orion'),
+    ('ORION_DB_TYPE', 'type', 'MongoDB'),
+    ('ORION_DB_ADDRESS', 'host', socket.gethostbyname(socket.gethostname()))
     ]
 
 # TODO: Default resource from environmental (localhost)
