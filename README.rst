@@ -1,5 +1,5 @@
 *****
-Orion
+Oríon
 *****
 
 .. image:: https://travis-ci.org/mila-udem/orion.svg?branch=master
@@ -8,7 +8,7 @@ Orion
 .. image:: https://codecov.io/gh/mila-udem/orion/branch/master/graphs/badge.svg?branch=master
    :target: https://codecov.io/gh/mila-udem/orion
 
-Orion is an asynchronous framework for black-box function optimization.
+Oríon is an asynchronous framework for black-box function optimization.
 
 Its purpose is to serve as a meta-optimizer for machine learning models
 and training, as well as a flexible experimentation
@@ -50,7 +50,7 @@ Features
 Installation
 ============
 
-Install Orion (beta) by running:
+Install Oríon (beta) by running:
 
 ``pip install git+https://github.com/mila-udem/orion.git@master``
 
