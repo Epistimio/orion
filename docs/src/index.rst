@@ -20,6 +20,7 @@ Indices and tables
    :maxdepth: 2
 
    user/executing
+   user/defining
    user/database
    user/algorithms
    user/configuring
@@ -29,10 +30,10 @@ Indices and tables
    :caption: Developer's Guide
    :maxdepth: 2
 
-   developer/algorithms
-   developer/standards
    developer/testing
    developer/documenting
+   developer/standards
+   developer/algorithms
 
 
 .. .. toctree::

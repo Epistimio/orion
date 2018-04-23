@@ -1,6 +1,6 @@
-************
-Installation
-************
+*******
+Install
+*******
 
 Via PyPI
 ========
@@ -14,14 +14,16 @@ Via Git
 =======
 
 This way is recommended if you want to work with the bleeding edge version
-of Metaopt.
+of Oríon.
 
 User's recommended
 ------------------
 
 .. code-block:: sh
 
-   pip install git+https://github.com/mila-udem/metaopt.git@master
+   pip install git+https://github.com/mila-udem/orion.git@master
+
+Begin reading instructions for using it in :doc:`/user/executing`.
 
 Developer's recommended
 -----------------------
@@ -35,13 +37,15 @@ also recommended, but not necessary. Example:
 .. code-block:: sh
 
    <Create and navigate to the directory where local repo will reside>
-   git clone https://github.com/mila-udem/metaopt.git
-   mkvirtualenv -a $PWD/metaopt metaopt
-   workon metaopt
+   git clone https://github.com/mila-udem/orion.git
+   mkvirtualenv -a $PWD/orion orion
+   workon orion
    python setup.py develop --optimize=1
    <Do your job>
    deactivate
 
-.. _repository: https://github.com/mila-udem/metaopt
+Begin reading instructions for developing it in :doc:`/developer/testing`.
+
+.. _repository: https://github.com/mila-udem/orion
 .. _virtual environment: https://virtualenvwrapper.readthedocs.io/en/latest/command_ref.html#mkvirtualenv
 .. _development mode: https://setuptools.readthedocs.io/en/latest/setuptools.html#development-mode
