@@ -75,7 +75,7 @@ DEF_CONFIG_FILES_PATHS = [
 # list containing tuples of
 # (environmental variable names, configuration keys, default values)
 ENV_VARS_DB = [
-    ('ORION_DB_NAME', 'name', 'Oríon'),
+    ('ORION_DB_NAME', 'name', 'orion'),
     ('ORION_DB_TYPE', 'type', 'MongoDB'),
     ('ORION_DB_ADDRESS', 'host', socket.gethostbyname(socket.gethostname()))
     ]
