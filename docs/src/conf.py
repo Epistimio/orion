@@ -60,8 +60,8 @@ extensions = [
 # General information about the project.
 project = u'orion'
 _full_version = orion.__version__
-author = u'Oríon Team - MILA, Université de Montréal'
-copyright = u'2017-2018, Oríon Team - MILA, Université de Montréal'
+author = orion.__author__
+copyright = orion.__copyright__
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -182,7 +182,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'orion.tex', 'Oríon Documentation',
+    (master_doc, 'orion.tex', u'Oríon Documentation',
      u'Oríon Team - MILA, Université de Montréal', 'manual'),
 ]
 
@@ -204,7 +204,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'Oríon', 'Oríon Documentation',
-     author, 'Oríon', 'One line description of project.',
+     author, 'orion', orion.__descr__,
      'Miscellaneous'),
 ]
 
