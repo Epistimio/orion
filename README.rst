@@ -58,7 +58,8 @@ Install Oríon (beta) by running:
 
 ``pip install git+https://github.com/mila-udem/orion.git@master``
 
-For more information read the full :doc:`installation docs </installing>`.
+For more information read the full installation docs.
+.. TODO Once website is published use a full hyperlink to the installation page
 
 Contribute or Ask
 =================
