@@ -209,7 +209,7 @@ class Real(Dimension):
     low : float
        Constrain with a lower bound (inclusive), default ``-numpy.inf``.
     high : float
-       Constrain with an upper bound (exclusive), default ``-numpy.inf``.
+       Constrain with an upper bound (exclusive), default ``numpy.inf``.
 
     """
 

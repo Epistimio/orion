@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`metaopt.client.manual` -- Routines for manual interaction with database
+:mod:`orion.client.manual` -- Routines for manual interaction with database
 =============================================================================
 
 .. module:: manual
@@ -9,10 +9,10 @@
       and link them with a particular existing experiment.
 
 """
-from metaopt.core import resolve_config
-from metaopt.core.io.database import Database
-from metaopt.core.utils import (format_trials, SingletonError,)
-from metaopt.core.worker.experiment import Experiment
+from orion.core.cli import resolve_config
+from orion.core.io.database import Database
+from orion.core.utils import (format_trials, SingletonError,)
+from orion.core.worker.experiment import Experiment
 
 
 def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
@@ -37,7 +37,7 @@ def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
     config = resolve_config.fetch_default_options()  # Get database perhaps from default locs
     config = resolve_config.merge_env_vars(config)  # Get database perhaps from env vars
 
-    tmpconfig = resolve_config.merge_mopt_config(config, dict(),
+    tmpconfig = resolve_config.merge_orion_config(config, dict(),
                                                  cmdconfig, dict())
 
     db_opts = tmpconfig['database']
@@ -54,6 +54,9 @@ def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
     experiment.configure(experiment.configuration)
 
     valid_points = []
+
+    print(experiment.space)
+
     for point in points:
         try:
             assert point in experiment.space
