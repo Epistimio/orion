@@ -19,6 +19,7 @@ from orion.client import manual
 log = logging.getLogger(__name__)
 
 
+#By inferring the experiment, we create a new configured experiment
 def execute(cmdargs, cmdconfig):
     experiment, cmdargs = infer_experiment(cmdargs, cmdconfig)
 
