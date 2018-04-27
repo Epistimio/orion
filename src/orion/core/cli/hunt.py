@@ -1,43 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli` -- Functions that define console scripts
+:mod:`orion.core.cli.hunt` -- Module running the optimization command
 ================================================================
 
-.. module:: cli
+.. module:: hunt
    :platform: Unix
-   :synopsis: Helper functions to setup an experiment and execute it.
+   :synopsis: Gets an experiment and iterates over it until one of the exit conditions is met
 
 """
 import logging
 
-from orion.core import resolve_config
+from orion.core.cli import resolve_config
 from orion.core.io.database import Database, DuplicateKeyError
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
+from orion.client import manual
 
 log = logging.getLogger(__name__)
 
 CLI_DOC_HEADER = """
 orion:
   Oríon cli script for asynchronous distributed optimization
-
 """
 
-
-def main():
-    """Entry point for `orion.core` functionality."""
-    experiment = infer_experiment()
+def execute(cmdargs, cmdconfig):
+    experiment, cmdargs = infer_experiment(cmdargs, cmdconfig)
     workon(experiment)
-    return 0
 
 
-def infer_experiment():
-    """Use `orion.core.resolve_config` to organize how configuration is built."""
-    # Fetch experiment name, user's script path and command line arguments
-    # Use `-h` option to show help
-    cmdargs, cmdconfig = resolve_config.fetch_orion_args(CLI_DOC_HEADER)
-
+def infer_experiment(cmdargs, cmdconfig):
     # Initialize configuration dictionary.
     # Fetch info from defaults and configurations from default locations.
     expconfig = resolve_config.fetch_default_options()
@@ -52,6 +44,7 @@ def infer_experiment():
                                                   cmdconfig, cmdargs)
     db_opts = tmpconfig['database']
     dbtype = db_opts.pop('type')
+    
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
     Database(of_type=dbtype, **db_opts)
 
@@ -64,7 +57,7 @@ def infer_experiment():
 
     experiment = create_experiment(exp_name, expconfig, cmdconfig, cmdargs)
 
-    return experiment
+    return experiment, cmdargs
 
 
 def create_experiment(exp_name, expconfig, cmdconfig, cmdargs):
@@ -126,7 +119,3 @@ def infer_versioning_metadata(existing_metadata):
     # User repo's version
     # User repo's HEAD commit hash
     return existing_metadata
-
-
-if __name__ == "__main__":
-    main()
