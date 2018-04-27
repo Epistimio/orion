@@ -19,14 +19,6 @@ from orion.client import manual
 
 log = logging.getLogger(__name__)
 
-<<<<<<< HEAD:src/orion/core/cli/hunt.py
-CLI_DOC_HEADER = """
-orion:
-  Oríon cli script for asynchronous distributed optimization
-"""
-=======
->>>>>>> e4e9a7e... Removed : manual.py inside the metaopt folder, it was moved to the orion/client folder:src/orion/core/cli/hunt.py
-
 def execute(cmdargs, cmdconfig):
     experiment, cmdargs = infer_experiment(cmdargs, cmdconfig)
     workon(experiment)
