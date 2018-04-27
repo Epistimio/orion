@@ -137,7 +137,7 @@ class OrionArgsParser(metaclass=SingletonType):
         return self.fetch_insert_args()
 
     def init_only(self, *args, **kwargs):
-        return self.fetch_create_args()
+        return self.fetch_init_only_args()
 
     def create_hunt_parsing_group(self, subparsers):
         hunt_parser = subparsers.add_parser('hunt', help='hunt help')
@@ -185,6 +185,24 @@ class OrionArgsParser(metaclass=SingletonType):
             help="Command line arguments representing the future space of the experiment.")
 
         create_parser.set_defaults(func=self.create)
+
+    def create_init_only_parsing_group(self, subparsers):
+        init_only_parser = subparsers.add_parser('init_only', help='init_only help')
+       
+        orion_group = self.get_basic_args_group(init_only_parser)
+
+        usergroup = init_only_parser.add_argument_group(
+            "User script related arguments",
+            description="These arguments determine user's script behaviour "
+                        "and they can serve as orion's parameter declaration.")
+        usergroup.add_argument(
+            'user_args', nargs=argparse.REMAINDER, metavar='...',
+            help="Command line arguments to your script (if any). A configuration "
+                 "file intended to be used with 'userscript' must be given as a path "
+                 "in the **first positional** argument OR using `--config=<path>` "
+                 "keyword argument.")
+        
+        init_only_parser.set_defaults(func=self.init_only)
 
     def create_insert_parsing_group(self, subparsers):
         insert_parser = subparsers.add_parser('insert', help='insert help')
@@ -261,6 +279,7 @@ class OrionArgsParser(metaclass=SingletonType):
         args['metadata']['orion_version'] = orion.core.__version__
         log.debug("Using orion version %s", args['metadata']['orion_version'])
 
+<<<<<<< HEAD
         config = self.fetch_config()
         args['metadata']['user_args'] = args.pop('user_args')
 
@@ -282,7 +301,28 @@ class OrionArgsParser(metaclass=SingletonType):
 
         return  args, config
 
+=======
+        config = self.fetch_config()
+
+        args['metadata']['user_args'] = args.pop('user_args')
+
+        return args, config
+>>>>>>> 34c0717... Trying to merge stuff
     
+    def fetch_init_only_args(self):
+        args = self.args_as_dict
+
+        # Explicitly add orion's version as experiment's metadata
+        args['metadata'] = dict()
+        args['metadata']['orion_version'] = orion.core.__version__
+        log.debug("Using orion version %s", args['metadata']['orion_version'])
+
+        config = self.fetch_config()
+
+        args['metadata']['user_args'] = args.pop('user_args')
+
+        return args, config
+
     def fetch_config(self):
         orion_file = self.args_as_dict.pop('config')
         config = dict()
