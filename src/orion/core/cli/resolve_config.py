@@ -77,9 +77,9 @@ DEF_CONFIG_FILES_PATHS = [
 # list containing tuples of
 # (environmental variable names, configuration keys, default values)
 ENV_VARS_DB = [
-    ('ORION_DB_NAME', 'name', 'orion'),
-    ('ORION_DB_TYPE', 'type', 'MongoDB'),
-    ('ORION_DB_ADDRESS', 'host', socket.gethostbyname(socket.gethostname()))
+    ('METAOPT_DB_NAME', 'name', 'Orion'),
+    ('METAOPT_DB_TYPE', 'type', 'MongoDB'),
+    ('METAOPT_DB_ADDRESS', 'host', socket.gethostbyname(socket.gethostname()))
     ]
 
 # TODO: Default resource from environmental (localhost)
@@ -113,7 +113,7 @@ class OrionArgsParser(metaclass=SingletonType):
         subparsers = self.parser.add_subparsers(help='sub-command help')
         self.create_hunt_parsing_group(subparsers)
         self.create_insert_parsing_group(subparsers)
-        self.create_init_only_parsing_group(subparsers)
+
 
         self.args = self.parser.parse_args()
         self.args_as_dict = vars(self.args)
@@ -124,6 +124,7 @@ class OrionArgsParser(metaclass=SingletonType):
         elif verbose == 2:
             logging.basicConfig(level=logging.DEBUG)
         
+        #Configuration(self.parser.parse_args())
         
     def __call__(self, *args, **kwargs):
         return self.args.func(args, kwargs)
@@ -134,14 +135,11 @@ class OrionArgsParser(metaclass=SingletonType):
     def insert(self, *args, **kwargs):
         return self.fetch_insert_args()
 
-    def init_only(self, *args, **kwargs):
-        return self.fetch_create_args()
-
     def create_hunt_parsing_group(self, subparsers):
         hunt_parser = subparsers.add_parser('hunt', help='hunt help')
        
         orion_group = self.get_basic_args_group(hunt_parser)
-        
+
         orion_group.add_argument(
             '--max-trials', type=int, metavar='#',
             help="number of jobs/trials to be completed "
@@ -151,13 +149,8 @@ class OrionArgsParser(metaclass=SingletonType):
             "--pool-size", type=int, metavar='#',
             help="number of concurrent workers to evaluate candidate samples "
                  "(default: %s)" % DEF_CMD_POOL_SIZE[1])
-
-        orion_group.add_argument(
-            '-c', '--config',
-            type=argparse.FileType('r'), metavar='path-to-config',
-            help="user provided orion configuration file")
-
-        usergroup = parser.add_argument_group(
+         
+        usergroup = hunt_parser.add_argument_group(
             "User script related arguments",
             description="These arguments determine user's script behaviour "
                         "and they can serve as orion's parameter declaration.")
@@ -174,20 +167,6 @@ class OrionArgsParser(metaclass=SingletonType):
                  "keyword argument.")
         
         hunt_parser.set_defaults(func=self.hunt)
-    
-    def create_init_only_parsing_group(self, subparsers):
-        create_parser = subparsers.add_parser('init_only', help='init_only help')
-
-        orion_group = self.get_basic_args_group(create_parser)
-
-        usergroup = create_parser.add_argument_group(
-                    "User script related arguments", description="These arguments determine the space creation behavior.")
-
-        usergroup.add_argument(
-            'user_args', nargs=argparse.REMAINDER, metavar='...', 
-            help="Command line arguments representing the future space of the experiment.")
-
-        create_parser.set_defaults(func=self.create)
 
     def create_insert_parsing_group(self, subparsers):
         insert_parser = subparsers.add_parser('insert', help='insert help')
@@ -259,32 +238,8 @@ class OrionArgsParser(metaclass=SingletonType):
     def fetch_insert_args(self):
         args = self.args_as_dict
 
-        # Explicitly add orion's version as experiment's metadata
-        args['metadata'] = dict()
-        args['metadata']['orion_version'] = orion.core.__version__
-        log.debug("Using orion version %s", args['metadata']['orion_version'])
-
-        config = self.fetch_config()
-        args['metadata']['user_args'] = args.pop('user_args')
-
         config = self.fetch_config()
         return  args, config
-
-    def fetch_create_args(self):
-        args = self.args_as_dict
-        
-        # Explicitly add orion's version as experiment's metadata
-        args['metadata'] = dict()
-        args['metadata']['orion_version'] = orion.core.__version__
-        log.debug("Using orion version %s", args['metadata']['orion_version'])
-
-        config = self.fetch_config()
-        args['metadata']['user_args'] = args.pop('user_args')
-        
-        config = self.fetch_config()
-
-        return  args, config
-
     
     def fetch_config(self):
         orion_file = self.args_as_dict.pop('config')
@@ -357,7 +312,7 @@ def merge_env_vars(config):
 
 def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
     """
-    Oríon Configuration
+    Orion Configuration
     -------------------
 
     name --  Experiment's name.
