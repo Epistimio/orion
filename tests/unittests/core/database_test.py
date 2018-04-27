@@ -6,6 +6,7 @@ import pytest
 
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
+from orion.core.utils import SingletonError
 
 
 @pytest.mark.usefixtures("null_db_instances")
@@ -43,6 +44,6 @@ class TestDatabaseFactory(object):
         assert isinstance(database, MongoDB)
         assert database is MongoDB()
         assert database is Database()
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(SingletonError) as exc_info:
             Database('fire', [], {'it_matters': 'it\'s singleton'})
         assert 'singleton' in str(exc_info.value)

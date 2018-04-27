@@ -1,5 +1,5 @@
 # Example `orion` database, first are the "primary keys" (there's also an
-# implicit _id key here in MOngoDB, but we cannot base our search based on that)
+# implicit _id key here in MongoDB, but we cannot base our search based on that)
 ---
 
 # Example of entries in `experiments` collection
