@@ -21,7 +21,6 @@ log = logging.getLogger(__name__)
 
 def execute(cmdargs, cmdconfig):
     experiment, cmdargs = infer_experiment(cmdargs, cmdconfig)
-    workon(experiment)
 
 def infer_experiment(cmdargs, cmdconfig):
     # Initialize configuration dictionary.
