@@ -38,12 +38,14 @@ import logging
 import os
 import socket
 import textwrap
+import sys
 
 from numpy import inf as infinity
 import yaml
 
 import orion
-
+from orion.core.utils import SingletonType
+#from orion.core.utils import Configuration
 
 # Define type of arbitrary nested defaultdicts
 def nesteddict():
@@ -75,9 +77,9 @@ DEF_CONFIG_FILES_PATHS = [
 # list containing tuples of
 # (environmental variable names, configuration keys, default values)
 ENV_VARS_DB = [
-    ('ORION_DB_NAME', 'name', 'orion'),
-    ('ORION_DB_TYPE', 'type', 'MongoDB'),
-    ('ORION_DB_ADDRESS', 'host', socket.gethostbyname(socket.gethostname()))
+    ('METAOPT_DB_NAME', 'name', 'Orion'),
+    ('METAOPT_DB_TYPE', 'type', 'MongoDB'),
+    ('METAOPT_DB_ADDRESS', 'host', socket.gethostbyname(socket.gethostname()))
     ]
 
 # TODO: Default resource from environmental (localhost)
@@ -87,104 +89,166 @@ ENV_VARS_DB = [
 ENV_VARS = dict(
     database=ENV_VARS_DB
     )
-
 ################################################################################
 #                           Input Parsing Functions                            #
 ################################################################################
+class OrionArgsParser(metaclass=SingletonType):
+    def __init__(self, description):
+        
+        self.description = description
+
+        self.parser = argparse.ArgumentParser(
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            description=textwrap.dedent(description))
+
+        self.parser.add_argument(
+            '-V', '--version',
+            action='version', version='orion ' + orion.core.__version__)
+
+        self.parser.add_argument(
+            '-v', '--verbose',
+            action='count', default=0,
+            help="logging levels of information about the process (-v: INFO. -vv: DEBUG)")
+       
+        subparsers = self.parser.add_subparsers(help='sub-command help')
+        self.create_hunt_parsing_group(subparsers)
+        self.create_insert_parsing_group(subparsers)
 
 
-def fetch_orion_args(description):
-    """Get options from command line arguments.
+        self.args = self.parser.parse_args()
+        self.args_as_dict = vars(self.args)
 
-    :param description: string description of ``orion`` executable
+        verbose = self.args_as_dict.pop('verbose', 0)
+        if verbose == 1:
+            logging.basicConfig(level=logging.INFO)
+        elif verbose == 2:
+            logging.basicConfig(level=logging.DEBUG)
+        
+        #Configuration(self.parser.parse_args())
+        
+    def __call__(self, *args, **kwargs):
+        return self.args.func(args, kwargs)
 
-    """
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=textwrap.dedent(description))
+    def hunt(self, *args, **kwargs):
+        return self.fetch_hunt_args()
 
-    parser.add_argument(
-        '-V', '--version',
-        action='version', version='orion ' + orion.core.__version__)
+    def insert(self, *args, **kwargs):
+        return self.fetch_insert_args()
 
-    parser.add_argument(
-        '-v', '--verbose',
-        action='count', default=0,
-        help="logging levels of information about the process (-v: INFO. -vv: DEBUG)")
+    def create_hunt_parsing_group(self, subparsers):
+        hunt_parser = subparsers.add_parser('hunt', help='hunt help')
+       
+        orion_group = self.get_basic_args_group(hunt_parser)
 
-    orion_group = parser.add_argument_group(
-        "Oríon arguments (optional)",
-        description="These arguments determine orion's behaviour")
+        orion_group.add_argument(
+            '--max-trials', type=int, metavar='#',
+            help="number of jobs/trials to be completed "
+                 "(default: %s)" % DEF_CMD_MAX_TRIALS[1])
 
-    orion_group.add_argument(
-        '-n', '--name',
-        type=str, metavar='stringID',
-        help="experiment's unique name; "
-             "use an existing name to resume an experiment "
-             "(default: None - specified either here or in a config)")
+        orion_group.add_argument(
+            "--pool-size", type=int, metavar='#',
+            help="number of concurrent workers to evaluate candidate samples "
+                 "(default: %s)" % DEF_CMD_POOL_SIZE[1])
+         
+        usergroup = hunt_parser.add_argument_group(
+            "User script related arguments",
+            description="These arguments determine user's script behaviour "
+                        "and they can serve as orion's parameter declaration.")
 
-    orion_group.add_argument(
-        '--max-trials', type=int, metavar='#',
-        help="number of jobs/trials to be completed "
-             "(default: %s)" % DEF_CMD_MAX_TRIALS[1])
+        usergroup.add_argument(
+            'user_script', type=str, metavar='path-to-script',
+            help="your experiment's script")
 
-    orion_group.add_argument(
-        "--pool-size", type=int, metavar='#',
-        help="number of concurrent workers to evaluate candidate samples "
-             "(default: %s)" % DEF_CMD_POOL_SIZE[1])
+        usergroup.add_argument(
+            'user_args', nargs=argparse.REMAINDER, metavar='...',
+            help="Command line arguments to your script (if any). A configuration "
+                 "file intended to be used with 'userscript' must be given as a path "
+                 "in the **first positional** argument OR using `--config=<path>` "
+                 "keyword argument.")
+        
+        hunt_parser.set_defaults(func=self.hunt)
 
-    orion_group.add_argument(
-        '-c', '--config',
-        type=argparse.FileType('r'), metavar='path-to-config',
-        help="user provided orion configuration file")
+    def create_insert_parsing_group(self, subparsers):
+        insert_parser = subparsers.add_parser('insert', help='insert help')
+        
+        orion_group = self.get_basic_args_group(insert_parser)
 
-    usergroup = parser.add_argument_group(
-        "User script related arguments",
-        description="These arguments determine user's script behaviour "
-                    "and they can serve as orion's parameter declaration.")
+        usergroup = insert_parser.add_argument_group(
+            "User script related arguments",
+            description="These arguments determine user's script behaviour "
+                        "and they can serve as orion's parameter declaration.")
 
-    usergroup.add_argument(
-        'user_script', type=str, metavar='path-to-script',
-        help="your experiment's script")
+        usergroup.add_argument(
+            'user_args', nargs=argparse.REMAINDER, metavar='...',
+            help="Command line arguments to your script (if any). A configuration "
+                 "file intended to be used with 'userscript' must be given as a path "
+                 "in the **first positional** argument OR using `--config=<path>` "
+                 "keyword argument.")
 
-    usergroup.add_argument(
-        'user_args', nargs=argparse.REMAINDER, metavar='...',
-        help="Command line arguments to your script (if any). A configuration "
-             "file intended to be used with 'userscript' must be given as a path "
-             "in the **first positional** argument OR using `--config=<path>` "
-             "keyword argument.")
+        insert_parser.set_defaults(func=self.insert)
+   
 
-    args = vars(parser.parse_args())  # convert to dict
+    def get_basic_args_group(self, parser):
+        orion_group = parser.add_argument_group(
+            "Orion arguments (optional)",
+            description="These arguments determine orion's behaviour") 
 
-    verbose = args.pop('verbose')
-    if verbose == 1:
-        logging.basicConfig(level=logging.INFO)
-    elif verbose == 2:
-        logging.basicConfig(level=logging.DEBUG)
+        orion_group.add_argument(
+            '-n', '--name',
+            type=str, metavar='stringID',
+            help="experiment's unique name; "
+                 "(default: None - specified either here or in a config)")
+        
+        
+        orion_group.add_argument(
+            '-c', '--config',
+            type=argparse.FileType('r'), metavar='path-to-config',
+            help="user provided orion configuration file")
+        
+        return orion_group
 
-    # Explicitly add orion's version as experiment's metadata
-    args['metadata'] = dict()
-    args['metadata']['orion_version'] = orion.core.__version__
-    log.debug("Using orion version %s", args['metadata']['orion_version'])
 
-    orion_file = args.pop('config')
-    config = dict()
-    if orion_file:
-        log.debug("Found orion configuration file at: %s", os.path.abspath(orion_file.name))
-        config = yaml.safe_load(orion_file)
+    def fetch_hunt_args(self):
+        """Get options from command line arguments.
 
-    # Move 'user_script' and 'user_args' to 'metadata' key
-    user_script = args.pop('user_script')
-    abs_user_script = os.path.abspath(user_script)
-    if is_exe(abs_user_script):
-        user_script = abs_user_script
-    args['metadata']['user_script'] = user_script
-    args['metadata']['user_args'] = args.pop('user_args')
-    log.debug("Problem definition: %s %s", args['metadata']['user_script'],
-              ' '.join(args['metadata']['user_args']))
+        :param description: string description of ``orion`` executable
 
-    return args, config
+        """
+        args = self.args_as_dict
 
+        # Explicitly add orion's version as experiment's metadata
+        args['metadata'] = dict()
+        args['metadata']['orion_version'] = orion.core.__version__
+        log.debug("Using orion version %s", args['metadata']['orion_version'])
+
+        config = self.fetch_config()
+
+        # Move 'user_script' and 'user_args' to 'metadata' key
+        user_script = args.pop('user_script')
+        abs_user_script = os.path.abspath(user_script)
+        if is_exe(abs_user_script):
+            user_script = abs_user_script
+        args['metadata']['user_script'] = user_script
+        args['metadata']['user_args'] = args.pop('user_args')
+        log.debug("Problem definition: %s %s", args['metadata']['user_script'],
+                  ' '.join(args['metadata']['user_args']))
+
+        return args, config
+
+    def fetch_insert_args(self):
+        args = self.args_as_dict
+
+        config = self.fetch_config()
+        return  args, config
+    
+    def fetch_config(self):
+        orion_file = self.args_as_dict.pop('config')
+        config = dict()
+        if orion_file:
+            log.debug("Found orion configuration file at: %s", os.path.abspath(orion_file.name))
+            config = yaml.safe_load(orion_file)
+
+        return config
 
 def fetch_default_options():
     """Create a nesteddict with options from the default configuration files.
@@ -201,7 +265,6 @@ def fetch_default_options():
     default_config['name'] = None
     default_config['max_trials'] = DEF_CMD_MAX_TRIALS[0]
     default_config['pool_size'] = DEF_CMD_POOL_SIZE[0]
-    default_config['algorithms'] = 'random'
 
     # get default options for some managerial variables (see :const:`ENV_VARS`)
     for signifier, env_vars in ENV_VARS.items():
@@ -249,7 +312,7 @@ def merge_env_vars(config):
 
 def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
     """
-    Oríon Configuration
+    Orion Configuration
     -------------------
 
     name --  Experiment's name.
@@ -284,7 +347,7 @@ def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
             if k in ENV_VARS:
                 for vk, vv in v.items():
                     expconfig[k][vk] = vv
-            elif v is not None:
+            else:
                 expconfig[k] = v
 
     for k, v in cmdargs.items():
@@ -296,4 +359,3 @@ def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
                 expconfig[k] = v
 
     return expconfig
-
