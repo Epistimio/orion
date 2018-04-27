@@ -105,3 +105,4 @@ def clean_db(database, exp_config):
     database.workers.insert_many(exp_config[2])
     database.resources.drop()
     database.resources.insert_many(exp_config[3])
+

@@ -46,3 +46,4 @@ class TestDatabaseFactory(object):
         with pytest.raises(ValueError) as exc_info:
             Database('fire', [], {'it_matters': 'it\'s singleton'})
         assert 'singleton' in str(exc_info.value)
+

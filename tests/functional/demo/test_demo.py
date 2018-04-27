@@ -186,3 +186,4 @@ def test_workon(database):
     assert params[0]['name'] == '/x'
     assert params[0]['type'] == 'real'
     assert (params[0]['value'] - 34.56789) < 1e-5
+

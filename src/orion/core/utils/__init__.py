@@ -120,3 +120,4 @@ class SingletonFactory(AbstractSingletonType, Factory):
     """Wrapping `Factory` with `SingletonType`. Keep compatibility with `AbstractSingletonType`."""
 
     pass
+

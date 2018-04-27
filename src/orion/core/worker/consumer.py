@@ -1,47 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-:mod:`orion.core.worker.consumer` -- Evaluate objective on a set of parameters
-==============================================================================
 
-.. module:: consumer
-   :platform: Unix
-   :synopsis: Call user's script as a black box process to evaluate a trial.
-
-"""
-import logging
-import os
-import subprocess
-import tempfile
-
-from orion.core.io.convert import JSONConverter
-from orion.core.io.database import Database
-from orion.core.io.space_builder import SpaceBuilder
-from orion.core.worker.trial import Trial
-
-log = logging.getLogger(__name__)
-
-
-class Consumer(object):
-    """Consume a trial by using it to initialize a black-box box to evaluate it.
-
-    It uses an `Experiment` object to push an evaluated trial, if results are
-    delivered to the worker process successfully.
-
-    It forks another process which executes user's script with the suggested
-    options. It expects results to be written in a **JSON** file, whose path
-    has been defined in a special orion environmental variable which is set
-    into the child process' environment.
-
-    """
-
-    def __init__(self, experiment):
-        """Initialize a consumer.
-
-        :param experiment: Manager of this experiment, provides convenient
-           interface for interacting with the database.
-        """
-        log.debug("Creating Consumer object.")
-        self.experiment = experiment
         self.space = experiment.space
         if self.space is None:
             raise RuntimeError("Experiment object provided to Consumer has not yet completed"
@@ -128,3 +85,4 @@ class Consumer(object):
             return None
 
         return process
+
