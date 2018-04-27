@@ -118,7 +118,7 @@ class Consumer(object):
     def launch_process(self, results_filename, cmd_args):
         """Facilitate launching a black-box trial."""
         env = dict(os.environ)
-        env['METAOPT_RESULTS_PATH'] = str(results_filename)
+        env['ORION_RESULTS_PATH'] = str(results_filename)
         command = [self.script_path] + cmd_args
         process = subprocess.Popen(command, env=env)
         returncode = process.poll()

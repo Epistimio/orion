@@ -15,7 +15,7 @@ the base class `Dimension`:
     * `Integer`
     * `Categorical`
 
-These are instantiated to declare a problem's parameter space. Orion registers
+These are instantiated to declare a problem's parameter space. Oríon registers
 them in a ordered dictionary, `Space`, which describes how the parameters should
 be in order for `orion.algo.base.AbstractAlgorithm` implementations to
 communicate with `orion.core`.

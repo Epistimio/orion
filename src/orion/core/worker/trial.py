@@ -79,7 +79,7 @@ class Trial(object):
         name : str
            A possible named for the quality that this is quantifying.
         type : str
-           An identifier with semantic importance for **Orion**. See
+           An identifier with semantic importance for **Oríon**. See
            `Param.type` and `Result.type`.
         value : str or numerical
            value suggested for this dimension of the parameter space.

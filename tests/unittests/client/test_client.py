@@ -24,10 +24,10 @@ class TestReportResults(object):
 
         Then: It should print `data` parameter instead to stdout.
         """
-        monkeypatch.delenv('METAOPT_RESULTS_PATH', raising=False)
+        monkeypatch.delenv('ORION_RESULTS_PATH', raising=False)
         reloaded_client = reload(client)
 
-        assert reloaded_client.IS_METAOPT_ON is False
+        assert reloaded_client.IS_ORION_ON is False
         assert reloaded_client.RESULTS_FILENAME is None
         assert reloaded_client._HAS_REPORTED_RESULTS is False
 
@@ -44,10 +44,10 @@ class TestReportResults(object):
         path = str(tmpdir.join('naedw.txt'))
         with open(path, mode='w'):
             pass
-        monkeypatch.setenv('METAOPT_RESULTS_PATH', path)
+        monkeypatch.setenv('ORION_RESULTS_PATH', path)
         reloaded_client = reload(client)
 
-        assert reloaded_client.IS_METAOPT_ON is True
+        assert reloaded_client.IS_ORION_ON is True
         assert reloaded_client.RESULTS_FILENAME == path
         assert reloaded_client._HAS_REPORTED_RESULTS is False
 
@@ -66,7 +66,7 @@ class TestReportResults(object):
         if environmental is set but does not correspond to an existing file.
         """
         path = str(tmpdir.join('naedw.txt'))
-        monkeypatch.setenv('METAOPT_RESULTS_PATH', path)
+        monkeypatch.setenv('ORION_RESULTS_PATH', path)
 
         with pytest.raises(RuntimeWarning) as exc:
             reload(client)
@@ -77,7 +77,7 @@ class TestReportResults(object):
         """Check that a Warning will be raised at call time,
         if function has already been called once.
         """
-        monkeypatch.delenv('METAOPT_RESULTS_PATH', raising=False)
+        monkeypatch.delenv('ORION_RESULTS_PATH', raising=False)
         reloaded_client = reload(client)
 
         reloaded_client.report_results(data)
@@ -85,6 +85,6 @@ class TestReportResults(object):
             reloaded_client.report_results(data)
 
         assert "already reported" in str(exc.value)
-        assert reloaded_client.IS_METAOPT_ON is False
+        assert reloaded_client.IS_ORION_ON is False
         assert reloaded_client.RESULTS_FILENAME is None
         assert reloaded_client._HAS_REPORTED_RESULTS is True
