@@ -30,14 +30,26 @@ def infer_experiment(cmdargs, cmdconfig):
     # Fetch info from defaults and configurations from default locations.
     expconfig = resolve_config.fetch_default_options()
 
+    log.debug("Default configuration options.")
+    log.debug(expconfig)
+    log.debug("Command-line condif.")
+    log.debug(cmdconfig)
+
+
     # Fetch orion system variables (database and resource information)
     # See :const:`orion.core.io.resolve_config.ENV_VARS` for environmental
     # variables used
     expconfig = resolve_config.merge_env_vars(expconfig)
 
+    log.debug("With env, vars")
+    log.debug(expconfig)
+
     # Initialize singleton database object
     tmpconfig = resolve_config.merge_orion_config(expconfig, dict(),
                                                   cmdconfig, cmdargs)
+    
+    log.debug("Tmpconfig")
+    log.debug(tmpconfig)
     db_opts = tmpconfig['database']
     dbtype = db_opts.pop('type')
     
