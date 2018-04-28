@@ -279,35 +279,11 @@ class OrionArgsParser(metaclass=SingletonType):
         args['metadata']['orion_version'] = orion.core.__version__
         log.debug("Using orion version %s", args['metadata']['orion_version'])
 
-<<<<<<< HEAD
-        config = self.fetch_config()
-        args['metadata']['user_args'] = args.pop('user_args')
-
-        config = self.fetch_config()
-        return  args, config
-
-    def fetch_create_args(self):
-        args = self.args_as_dict
-        
-        # Explicitly add orion's version as experiment's metadata
-        args['metadata'] = dict()
-        args['metadata']['orion_version'] = orion.core.__version__
-        log.debug("Using orion version %s", args['metadata']['orion_version'])
-
-        config = self.fetch_config()
-        args['metadata']['user_args'] = args.pop('user_args')
-        
-        config = self.fetch_config()
-
-        return  args, config
-
-=======
         config = self.fetch_config()
 
         args['metadata']['user_args'] = args.pop('user_args')
 
         return args, config
->>>>>>> 34c0717... Trying to merge stuff
     
     def fetch_init_only_args(self):
         args = self.args_as_dict
@@ -428,11 +404,20 @@ def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
 
     for cfg in (dbconfig, cmdconfig):
         for k, v in cfg.items():
+<<<<<<< HEAD
             if k in ENV_VARS:
                 for vk, vv in v.items():
                     expconfig[k][vk] = vv
             elif v is not None:
                 expconfig[k] = v
+=======
+            if v is not None:
+                if k in ENV_VARS:
+                    for vk, vv in v.items():
+                        expconfig[k][vk] = vv
+                else:
+                    expconfig[k] = v
+>>>>>>> 93536f5... Fixed missing default algorithm bug.
 
     for k, v in cmdargs.items():
         if v is not None:

@@ -96,9 +96,14 @@ def create_experiment(exp_name, expconfig, cmdconfig, cmdargs):
     experiment = Experiment(exp_name)
     dbconfig = experiment.configuration
 
+    log.debug("DB config")
+    log.debug(dbconfig)
+
     expconfig = resolve_config.merge_orion_config(expconfig, dbconfig,
                                                   cmdconfig, cmdargs)
-
+    
+    log.debug("Expconfig")
+    log.debug(expconfig)
     # Infer rest information about the process + versioning
     expconfig['metadata'] = infer_versioning_metadata(expconfig['metadata'])
 
