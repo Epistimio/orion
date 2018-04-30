@@ -173,20 +173,6 @@ class OrionArgsParser(metaclass=SingletonType):
         hunt_parser.set_defaults(func=self.hunt)
     
     def create_init_only_parsing_group(self, subparsers):
-        create_parser = subparsers.add_parser('init_only', help='init_only help')
-
-        orion_group = self.get_basic_args_group(create_parser)
-
-        usergroup = create_parser.add_argument_group(
-                    "User script related arguments", description="These arguments determine the space creation behavior.")
-
-        usergroup.add_argument(
-            'user_args', nargs=argparse.REMAINDER, metavar='...', 
-            help="Command line arguments representing the future space of the experiment.")
-
-        create_parser.set_defaults(func=self.create)
-
-    def create_init_only_parsing_group(self, subparsers):
         init_only_parser = subparsers.add_parser('init_only', help='init_only help')
        
         orion_group = self.get_basic_args_group(init_only_parser)
