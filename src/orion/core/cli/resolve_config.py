@@ -404,20 +404,11 @@ def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
 
     for cfg in (dbconfig, cmdconfig):
         for k, v in cfg.items():
-<<<<<<< HEAD
             if k in ENV_VARS:
                 for vk, vv in v.items():
                     expconfig[k][vk] = vv
             elif v is not None:
                 expconfig[k] = v
-=======
-            if v is not None:
-                if k in ENV_VARS:
-                    for vk, vv in v.items():
-                        expconfig[k][vk] = vv
-                else:
-                    expconfig[k] = v
->>>>>>> 93536f5... Fixed missing default algorithm bug.
 
     for k, v in cmdargs.items():
         if v is not None:
