@@ -86,6 +86,8 @@ class Dimension(object):
         """
         self._name = None
         self.name = name
+        self._default_value = None
+
         if 'random_state' in kwargs or 'seed' in kwargs:
             raise ValueError("random_state/seed cannot be set in a "
                              "parameter's definition! Set seed globally!")
@@ -106,6 +108,9 @@ class Dimension(object):
         if 'size' in kwargs:
             raise ValueError("Use 'shape' keyword only instead of 'size'.")
         self._shape = self._kwargs.pop('shape', None)
+        
+        default_value = self._kwargs.pop('default_value', None)
+        self.default_value = default_value
 
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
@@ -161,13 +166,14 @@ class Dimension(object):
         point_ = numpy.asarray(point)
         if point_.shape != self.shape:
             return False
+
         return numpy.all(point_ < high) and numpy.all(point_ >= low)
 
     def __repr__(self):
         """Represent the object as a string."""
-        return "{0}(name={1}, prior={{{2}: {3}, {4}}}, shape={5})".format(
+        return "{0}(name={1}, prior={{{2}: {3}, {4}}}, shape={5}, default value={6})".format(
             self.__class__.__name__, self.name, self._prior_name,
-            self._args, self._kwargs, self.shape)
+            self._args, self._kwargs, self.shape, self._default_value)
 
     @property
     def name(self):
@@ -181,6 +187,21 @@ class Dimension(object):
         else:
             raise TypeError("Dimension's name must be either string or None. "
                             "Provided: {}, of type: {}".format(value, type(value)))
+    
+    @property
+    def default_value(self):
+        return self._default_value
+
+    @default_value.setter
+    def default_value(self, value):
+        casted_value = None
+
+        if value is not None:
+            casted_value = self.cast_to_dimension_type(value)
+            
+            if casted_value not in self:
+                raise ValueError("Dimenson's default value must be contained in its interval")
+        self._default_value = casted_value
 
     @property
     def type(self):
@@ -195,6 +216,8 @@ class Dimension(object):
                                                    **self._kwargs)
         return size
 
+    def cast_to_dimension_type(self, value):
+        raise NotImplementedError
 
 class Real(Dimension):
     """Subclass of `Dimension` for representing real parameters.
@@ -275,6 +298,8 @@ class Real(Dimension):
 
         return samples
 
+    def cast_to_dimension_type(self, value):
+        return float(value)
 
 class _Discrete(Dimension):
 
@@ -345,7 +370,9 @@ class Integer(Real, _Discrete):
         if not numpy.all(numpy.equal(numpy.mod(point_, 1), 0)):
             return False
         return super(Integer, self).__contains__(point)
-
+    
+    def cast_to_dimension_type(self, value):
+        return int(value)
 
 class Categorical(Dimension):
     """Subclass of `Dimension` for representing integer parameters.
@@ -445,6 +472,8 @@ class Categorical(Dimension):
                                                                     prior,
                                                                     self.shape)
 
+    def cast_to_dimension_type(self, value):
+        return str(value)
 
 class Space(OrderedDict):
     """Represents the search space."""
