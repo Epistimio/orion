@@ -9,6 +9,8 @@
    :synopsis: Creates a new 'type' for the given experiment.
 """
 import logging
+import argparse
+import orion
 
 from orion.core.cli import resolve_config
 from orion.core.io.database import Database, DuplicateKeyError
@@ -18,6 +20,37 @@ from orion.client import manual
 
 log = logging.getLogger(__name__)
 
+
+def get_parser(parser):
+    init_only_parser = parser.add_parser('init_only', help='init_only help')
+   
+    resolve_config.get_basic_args_group(init_only_parser)
+
+    usergroup = init_only_parser.add_argument_group(
+        "User script related arguments",
+        description="These arguments determine user's script behaviour "
+                    "and they can serve as orion's parameter declaration.")
+
+    usergroup.add_argument(
+        'user_args', nargs=argparse.REMAINDER, metavar='...',
+        help="Command line arguments to your script (if any). A configuration "
+             "file intended to be used with 'userscript' must be given as a path "
+             "in the **first positional** argument OR using `--config=<path>` "
+             "keyword argument.")
+    
+    init_only_parser.set_defaults(func=fetch_args)
+
+def fetch_args(args):
+    # Explicitly add orion's version as experiment's metadata
+    args['metadata'] = dict()
+    args['metadata']['orion_version'] = orion.core.__version__
+    log.debug("Using orion version %s", args['metadata']['orion_version'])
+
+    config = resolve_config.fetch_config(args)
+
+    args['metadata']['user_args'] = args.pop('user_args')
+
+    execute(args, config)
 
 #By inferring the experiment, we create a new configured experiment
 def execute(cmdargs, cmdconfig):
