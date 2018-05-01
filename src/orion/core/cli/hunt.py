@@ -10,6 +10,9 @@
 
 """
 import logging
+import argparse
+import orion
+import os
 
 from orion.core.cli import resolve_config
 from orion.core.io.database import Database, DuplicateKeyError
@@ -19,6 +22,64 @@ from orion.client import manual
 
 log = logging.getLogger(__name__)
 
+def get_parser(parser):
+    hunt_parser = parser.add_parser('hunt', help='hunt help')
+   
+    orion_group = resolve_config.get_basic_args_group(hunt_parser)
+
+    orion_group.add_argument(
+        '--max-trials', type=int, metavar='#',
+        help="number of jobs/trials to be completed "
+             "(default: %s)" % resolve_config.DEF_CMD_MAX_TRIALS[1])
+
+    orion_group.add_argument(
+        "--pool-size", type=int, metavar='#',
+        help="number of concurrent workers to evaluate candidate samples "
+             "(default: %s)" % resolve_config.DEF_CMD_POOL_SIZE[1])
+     
+    usergroup = hunt_parser.add_argument_group(
+        "User script related arguments",
+        description="These arguments determine user's script behaviour "
+                    "and they can serve as orion's parameter declaration.")
+
+    usergroup.add_argument(
+        'user_script', type=str, metavar='path-to-script',
+        help="your experiment's script")
+
+    usergroup.add_argument(
+        'user_args', nargs=argparse.REMAINDER, metavar='...',
+        help="Command line arguments to your script (if any). A configuration "
+             "file intended to be used with 'userscript' must be given as a path "
+             "in the **first positional** argument OR using `--config=<path>` "
+             "keyword argument.")
+    
+    hunt_parser.set_defaults(func=fetch_args)
+
+def fetch_args(args):
+    """Get options from command line arguments.
+
+    :param description: string description of ``orion`` executable
+
+    """
+    # Explicitly add orion's version as experiment's metadata
+    args['metadata'] = dict()
+    args['metadata']['orion_version'] = orion.core.__version__
+    log.debug("Using orion version %s", args['metadata']['orion_version'])
+
+    config = resolve_config.fetch_config(args)
+
+    # Move 'user_script' and 'user_args' to 'metadata' key
+    user_script = args.pop('user_script')
+    abs_user_script = os.path.abspath(user_script)
+    if resolve_config.is_exe(abs_user_script):
+        user_script = abs_user_script
+
+    args['metadata']['user_script'] = user_script
+    args['metadata']['user_args'] = args.pop('user_args')
+    log.debug("Problem definition: %s %s", args['metadata']['user_script'],
+              ' '.join(args['metadata']['user_args']))
+
+    execute(args, config)
 
 def execute(cmdargs, cmdconfig):
     experiment, cmdargs = infer_experiment(cmdargs, cmdconfig)

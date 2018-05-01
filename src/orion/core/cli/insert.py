@@ -10,15 +10,49 @@
 
 """
 import logging
+import argparse
+import orion
 
+from orion.core.io.database import Database
 from orion.core.cli import resolve_config
 from orion.core.worker.experiment import Experiment
 
 log = logging.getLogger(__name__)
 
+def get_parser(parser):
+    insert_parser = parser.add_parser('insert', help='insert help')
+    
+    resolve_config.get_basic_args_group(insert_parser)
+
+    usergroup = insert_parser.add_argument_group(
+        "User script related arguments",
+        description="These arguments determine user's script behaviour "
+                    "and they can serve as orion's parameter declaration.")
+
+    usergroup.add_argument(
+        'user_args', nargs=argparse.REMAINDER, metavar='...',
+        help="Command line arguments to your script (if any). A configuration "
+             "file intended to be used with 'userscript' must be given as a path "
+             "in the **first positional** argument OR using `--config=<path>` "
+             "keyword argument.")
+
+    insert_parser.set_defaults(func=fetch_args)
+
+def fetch_args(args):
+    # Explicitly add orion's version as experiment's metadata
+    args['metadata'] = dict()
+    args['metadata']['orion_version'] = orion.core.__version__
+    log.debug("Using orion version %s", args['metadata']['orion_version'])
+
+    config = resolve_config.fetch_config(args)
+
+    args['metadata']['user_args'] = args.pop('user_args')
+
+    execute(args, config)
+
 
 def execute(cmdargs, cmdconfig):
-    points = cmdargs.['user_args']
+    points = cmdargs.pop('user_args', None)
     experiment, cmdargs = infer_experiment(cmdargs, cmdconfig)
 
 def infer_experiment(cmdargs, cmdconfig):
