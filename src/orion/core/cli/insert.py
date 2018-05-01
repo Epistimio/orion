@@ -12,10 +12,14 @@
 import logging
 import argparse
 import orion
+import collections
+import re
 
+from orion.core.io.space_builder import SpaceBuilder
 from orion.core.io.database import Database
 from orion.core.cli import resolve_config
 from orion.core.worker.experiment import Experiment
+from orion.core.io.convert import infer_converter_from_file_type
 
 log = logging.getLogger(__name__)
 
@@ -24,17 +28,7 @@ def get_parser(parser):
     
     resolve_config.get_basic_args_group(insert_parser)
 
-    usergroup = insert_parser.add_argument_group(
-        "User script related arguments",
-        description="These arguments determine user's script behaviour "
-                    "and they can serve as orion's parameter declaration.")
-
-    usergroup.add_argument(
-        'user_args', nargs=argparse.REMAINDER, metavar='...',
-        help="Command line arguments to your script (if any). A configuration "
-             "file intended to be used with 'userscript' must be given as a path "
-             "in the **first positional** argument OR using `--config=<path>` "
-             "keyword argument.")
+    resolve_config.get_user_args_group(insert_parser)
 
     insert_parser.set_defaults(func=fetch_args)
 

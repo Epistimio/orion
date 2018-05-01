@@ -26,18 +26,8 @@ def get_parser(parser):
    
     resolve_config.get_basic_args_group(init_only_parser)
 
-    usergroup = init_only_parser.add_argument_group(
-        "User script related arguments",
-        description="These arguments determine user's script behaviour "
-                    "and they can serve as orion's parameter declaration.")
+    resolve_config.get_user_args_group(init_only_parser)
 
-    usergroup.add_argument(
-        'user_args', nargs=argparse.REMAINDER, metavar='...',
-        help="Command line arguments to your script (if any). A configuration "
-             "file intended to be used with 'userscript' must be given as a path "
-             "in the **first positional** argument OR using `--config=<path>` "
-             "keyword argument.")
-    
     init_only_parser.set_defaults(func=fetch_args)
 
 def fetch_args(args):
@@ -48,6 +38,7 @@ def fetch_args(args):
 
     config = resolve_config.fetch_config(args)
 
+    args.pop('user_script')
     args['metadata']['user_args'] = args.pop('user_args')
 
     execute(args, config)
