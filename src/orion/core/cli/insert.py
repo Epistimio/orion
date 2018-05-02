@@ -59,7 +59,7 @@ def execute(cmd_args, file_config):
 
     validate_dimensions(transformed_args, exp_space)
 
-    values = [value for namespace, value in transformed_args.items()]
+    values = create_tuple_for_values(transformed_args, exp_space)
 
     trial = tuple_to_trial(values, exp_space)
 
@@ -82,6 +82,16 @@ def validate_dimensions(transformed_args, exp_space):
         elif value not in exp_space[namespace]:
             error_msg = "Value {} is outside of dimension's prior interval".format(value)
             raise ValueError(error_msg)
+
+def create_tuple_for_values(transformed_args, exp_space):
+    values = []
+    for namespace in exp_space:
+        if namespace in transformed_args.keys():
+            values.append(transformed_args[namespace])
+        else:
+            values.append(exp_space[namespace].default_value)
+
+    return values
 
 def infer_experiment(cmd_args, file_config):
     # Initialize configuration dictionary.
