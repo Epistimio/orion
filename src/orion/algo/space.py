@@ -164,6 +164,7 @@ class Dimension(object):
         """
         low, high = self.interval()
         point_ = numpy.asarray(point)
+        
         if point_.shape != self.shape:
             return False
 
@@ -200,7 +201,7 @@ class Dimension(object):
             casted_value = self.cast_to_dimension_type(value)
             
             if casted_value not in self:
-                raise ValueError("Dimenson's default value must be contained in its interval")
+                raise ValueError("Dimension's default value must be contained in its interval")
         self._default_value = casted_value
 
     @property
@@ -299,7 +300,7 @@ class Real(Dimension):
         return samples
 
     def cast_to_dimension_type(self, value):
-        return float(value)
+        return numpy.float64(value)
 
 class _Discrete(Dimension):
 
@@ -372,7 +373,7 @@ class Integer(Real, _Discrete):
         return super(Integer, self).__contains__(point)
     
     def cast_to_dimension_type(self, value):
-        return int(value)
+        return numpy.int64(value)
 
 class Categorical(Dimension):
     """Subclass of `Dimension` for representing integer parameters.
@@ -404,7 +405,7 @@ class Categorical(Dimension):
 
         """
         if isinstance(categories, dict):
-            self.categories = tuple(categories.keys())
+            self.categories = tuple(map(lambda k: str(k), categories.keys()))
             self._probs = tuple(categories.values())
         else:
             self.categories = tuple(categories)
@@ -468,9 +469,10 @@ class Categorical(Dimension):
                     if not isinstance(x, _Ellipsis) else str(x), prior)
         prior = "{" + ', '.join(prior) + "}"
 
-        return "Categorical(name={0}, prior={1}, shape={2})".format(self.name,
+        return "Categorical(name={0}, prior={1}, shape={2}, default value={3})".format(self.name,
                                                                     prior,
-                                                                    self.shape)
+                                                                    self.shape,
+                                                                    self.default_value)
 
     def cast_to_dimension_type(self, value):
         return str(value)
