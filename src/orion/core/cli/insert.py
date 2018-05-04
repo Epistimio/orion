@@ -14,6 +14,8 @@ import argparse
 import orion
 import collections
 import re
+import sys
+import os
 
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.io.database import Database
@@ -41,6 +43,7 @@ def fetch_args(args):
 
     config = resolve_config.fetch_config(args)
 
+    args.pop('user_script')
     args['metadata']['user_args'] = args.pop('user_args')
 
     execute(args, config)
@@ -51,8 +54,7 @@ def execute(cmd_args, file_config):
     experiment = infer_experiment(cmd_args, file_config)
 
     if experiment.status is None:
-        raise RuntimeError("No experiment with this name inside "
-                            "the database.")
+        raise ValueError("No experiment with given name inside database, can't insert")
 
     transformed_args = build_from(command_line_user_args)
     exp_space = SpaceBuilder().build_from(experiment.configuration['metadata']['user_args'])
@@ -71,7 +73,7 @@ def validate_dimensions(transformed_args, exp_space):
     #Find any dimension that is not given by the user and make sure they have a default value
     for exp_n in exp_namespaces:
         if exp_n not in transformed_args.keys() and exp_space[exp_n].default_value is None: 
-            error_msg = "Dimension {} is unspecified and has no default value".format(invalid_namespaces)
+            error_msg = "Dimension {} is unspecified and has no default value".format(exp_n)
             raise ValueError(error_msg)
     
     #Find any namespace that is not in the space of the experiment, or values that lie outside the prior's interval
@@ -87,7 +89,8 @@ def create_tuple_for_values(transformed_args, exp_space):
     values = []
     for namespace in exp_space:
         if namespace in transformed_args.keys():
-            values.append(transformed_args[namespace])
+            casted_value = exp_space[namespace].cast_to_dimension_type(transformed_args[namespace])
+            values.append(casted_value)
         else:
             values.append(exp_space[namespace].default_value)
 
@@ -153,16 +156,20 @@ def create_experiment(exp_name, expconfig, file_config, cmd_args):
     experiment = Experiment(exp_name)
     dbconfig = experiment.configuration
 
+    log.debug("DB config")
+    log.debug(dbconfig)
+
     expconfig = resolve_config.merge_orion_config(expconfig, dbconfig,
                                                   file_config, cmd_args)
-
     # Infer rest information about the process + versioning
     expconfig['metadata'] = infer_versioning_metadata(expconfig['metadata'])
-    
+
     # Pop out configuration concerning databases and resources
     expconfig.pop('database', None)
     expconfig.pop('resources', None)
     expconfig.pop('status', None)
+
+    log.info(expconfig)
 
     return experiment
 
@@ -217,6 +224,7 @@ def build_from_args(cmd_args):
     is_userconfig_an_option = None
     USERARGS_SEARCH = r'\W*([a-zA-Z0-9_-]+)=([a-zA-Z0-9_]+)'
     USERARGS_TMPL = r'(.*)=(.*)'
+    USERCONFIG_OPTION = "--config="
 
     transformed_args = {}
     userargs_tmpl = collections.defaultdict(list)
@@ -226,9 +234,9 @@ def build_from_args(cmd_args):
     for arg in cmd_args:
         found = args_pattern.findall(arg)
         if len(found) != 1:
-            if arg.startswith(self.USERCONFIG_OPTION):
+            if arg.startswith(USERCONFIG_OPTION):
                 if not userconfig:
-                    userconfig = arg[len(self.USERCONFIG_OPTION):]
+                    userconfig = arg[len(USERCONFIG_OPTION):]
                     is_userconfig_an_option = True
                 else:
                     raise ValueError(
@@ -236,7 +244,7 @@ def build_from_args(cmd_args):
                         userconfig
                         )
             else:
-                self.userargs_tmpl[None].append(arg)
+                userargs_tmpl[None].append(arg)
             continue
 
         name, value = found[0]
@@ -254,7 +262,7 @@ def build_from_args(cmd_args):
         userargs_tmpl[namespace] = found[0][0] + '='
 
     if not userconfig and userargs_tmpl[None]:  # try the first positional argument
-        if os.path.isfile(self.userargs_tmpl[None][0]):
+        if os.path.isfile(userargs_tmpl[None][0]):
             userconfig = userargs_tmpl[None].pop(0)
             is_userconfig_an_option = False
 
