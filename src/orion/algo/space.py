@@ -163,6 +163,12 @@ class Dimension(object):
 
         """
         low, high = self.interval()
+        
+        try:
+            point = self.cast_to_dimension_type(point)
+        except NotImplementedError:
+            pass
+
         point_ = numpy.asarray(point)
         
         if point_.shape != self.shape:
@@ -216,9 +222,14 @@ class Dimension(object):
                                                    size=self._shape,
                                                    **self._kwargs)
         return size
+    
+    @property
+    def underlying_type(self):
+        raise NotImplementedError
 
     def cast_to_dimension_type(self, value):
-        raise NotImplementedError
+        dim_type = self.underlying_type
+        return dim_type(value)
 
 class Real(Dimension):
     """Subclass of `Dimension` for representing real parameters.
@@ -299,8 +310,9 @@ class Real(Dimension):
 
         return samples
 
-    def cast_to_dimension_type(self, value):
-        return numpy.float64(value)
+    @property
+    def underlying_type(self):
+        return numpy.float64
 
 class _Discrete(Dimension):
 
@@ -372,8 +384,9 @@ class Integer(Real, _Discrete):
             return False
         return super(Integer, self).__contains__(point)
     
-    def cast_to_dimension_type(self, value):
-        return numpy.int64(value)
+    @property
+    def underlying_type(self):
+        return numpy.int64
 
 class Categorical(Dimension):
     """Subclass of `Dimension` for representing integer parameters.
@@ -473,9 +486,10 @@ class Categorical(Dimension):
                                                                     prior,
                                                                     self.shape,
                                                                     self.default_value)
-
-    def cast_to_dimension_type(self, value):
-        return str(value)
+    
+    @property
+    def underlying_type(self):
+        return str
 
 class Space(OrderedDict):
     """Represents the search space."""
