@@ -110,7 +110,10 @@ class Dimension(object):
         self._shape = self._kwargs.pop('shape', None)
         
         default_value = self._kwargs.pop('default_value', None)
-        self.default_value = default_value
+
+        if default_value is not None and default_value not in self: 
+            raise ValueError("Dimension's default value must be contained in its interval")
+        self._default_value = default_value
 
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
@@ -164,11 +167,6 @@ class Dimension(object):
         """
         low, high = self.interval()
         
-        try:
-            point = self.cast_to_dimension_type(point)
-        except NotImplementedError:
-            pass
-
         point_ = numpy.asarray(point)
         
         if point_.shape != self.shape:
@@ -199,17 +197,6 @@ class Dimension(object):
     def default_value(self):
         return self._default_value
 
-    @default_value.setter
-    def default_value(self, value):
-        casted_value = None
-
-        if value is not None:
-            casted_value = self.cast_to_dimension_type(value)
-            
-            if casted_value not in self:
-                raise ValueError("Dimension's default value must be contained in its interval")
-        self._default_value = casted_value
-
     @property
     def type(self):
         """See `Dimension` attributes."""
@@ -222,14 +209,6 @@ class Dimension(object):
                                                    size=self._shape,
                                                    **self._kwargs)
         return size
-    
-    @property
-    def underlying_type(self):
-        raise NotImplementedError
-
-    def cast_to_dimension_type(self, value):
-        dim_type = self.underlying_type
-        return dim_type(value)
 
 class Real(Dimension):
     """Subclass of `Dimension` for representing real parameters.
@@ -310,10 +289,6 @@ class Real(Dimension):
 
         return samples
 
-    @property
-    def underlying_type(self):
-        return numpy.float64
-
 class _Discrete(Dimension):
 
     def sample(self, n_samples=1, seed=None):
@@ -383,10 +358,6 @@ class Integer(Real, _Discrete):
         if not numpy.all(numpy.equal(numpy.mod(point_, 1), 0)):
             return False
         return super(Integer, self).__contains__(point)
-    
-    @property
-    def underlying_type(self):
-        return numpy.int64
 
 class Categorical(Dimension):
     """Subclass of `Dimension` for representing integer parameters.
@@ -418,7 +389,7 @@ class Categorical(Dimension):
 
         """
         if isinstance(categories, dict):
-            self.categories = tuple(map(lambda k: str(k), categories.keys()))
+            self.categories = tuple(categories.keys())
             self._probs = tuple(categories.values())
         else:
             self.categories = tuple(categories)
@@ -486,10 +457,6 @@ class Categorical(Dimension):
                                                                     prior,
                                                                     self.shape,
                                                                     self.default_value)
-    
-    @property
-    def underlying_type(self):
-        return str
 
 class Space(OrderedDict):
     """Represents the search space."""

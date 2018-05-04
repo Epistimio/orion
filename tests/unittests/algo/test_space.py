@@ -123,33 +123,9 @@ class TestDimension(object):
         with pytest.raises(TypeError):
             dim.name = 4
 
-    def test_no_default_value(self):
-       dim = Dimension('yolo', 'uniform', -3, 4)
-       assert dim.default_value == None
-
-    def test_no_cast_from_base_dimension(self):
-        dim = Dimension('yolo', 'uniform', -3, 4)
-        
-        with pytest.raises(NotImplementedError):
-            dim.cast_to_dimension_type(1)
-
     def test_init_with_default_value(self):
-        with pytest.raises(NotImplementedError):
-            dim = Dimension('yolo', 'uniform', -3, 4, default_value = 4)
-
-    def test_set_none_default_value(self):
-        dim = Dimension('yolo', 'uniform', -3, 4)
-        dim.default_value = None
-
-        assert dim.default_value == None
-        assert str(dim) == "Dimension(name=yolo, prior={uniform: (-3, 4), {}}, shape=(), default value=None)"
-
-    def test_set_value_default_value(self):
-        dim = Dimension('yolo', 'uniform', -3, 4)
-
-        with pytest.raises(NotImplementedError):
-            dim.default_value = 4
-
+        with pytest.raises(ValueError):
+            dim = Dimension('yolo', 'uniform', -3, 4, default_value=4)
 
 class TestReal(object):
     """Test methods of a `Real` object."""
@@ -213,44 +189,14 @@ class TestReal(object):
         dim = Real('yolo', 'uniform', -2, 4, low=-3, high=+3)
         assert dim.interval() == (-2.0, 2.0)
 
-    def test_no_default_value(self):
-       dim = Real('yolo', 'uniform', -3, 4)
-       assert dim.default_value == None
-
-    def test_cast_to_dimension_type(self):
-        dim = Real('yolo', 'uniform', -3, 4)
-        v = dim.cast_to_dimension_type(1)
-        sample = dim.sample()[0]
-
-        assert type(v) == type(sample)
-
     def test_init_with_default_value(self):
-        dim = Real('yolo', 'uniform', -3, 10, default_value = 2)
-        sample = dim.sample()[0]
+        dim = Real('yolo', 'uniform', -3, 10, default_value=2.0)
 
-        assert type(dim.default_value) == type(sample)
-
-    def test_set_none_default_value(self):
-        dim = Real('yolo', 'uniform', -3, 4)
-        dim.default_value = None
-
-        assert dim.default_value == None
-        assert str(dim) == "Real(name=yolo, prior={uniform: (-3, 4), {}}, shape=(), default value=None)"
+        assert type(dim.default_value) is float
 
     def test_set_outside_bounds_default_value(self):
-        dim = Real('yolo', 'uniform', -3, 2)
         with pytest.raises(ValueError):
-            dim.default_value = 4
-
-    def test_set_valid_default_value(self):
-        dim = Real('yolo', 'uniform', -3, 10)
-        dim.default_value = 2.8
-
-        sample = dim.sample()[0]
-
-        assert dim.default_value is not None
-        assert dim.default_value == 2.8
-        assert type(dim.default_value) == type(sample)
+            dim = Real('yolo', 'uniform', -3, 2, default_value=5)
 
 class TestInteger(object):
     """Test methods of a `Integer` object."""
@@ -302,45 +248,15 @@ class TestInteger(object):
         dim = Integer('yolo2', 'randint', -2, 4, loc=8)
         assert dim.interval() == (6, 12)
 
-    def test_no_default_value(self):
-       dim = Integer('yolo', 'uniform', -3, 4)
-       assert dim.default_value == None
-
-    def test_cast_to_dimension_type(self):
-        dim = Integer('yolo', 'uniform', -3, 4)
-        v = dim.cast_to_dimension_type(1)
-        sample = dim.sample()[0]
-
-        assert type(v) == type(sample)
-
     def test_init_with_default_value(self):
-        dim = Integer('yolo', 'uniform', -3, 10, default_value = 2)
+        dim = Integer('yolo', 'uniform', -3, 10, default_value=2)
         sample = dim.sample()[0]
 
-        assert type(dim.default_value) == type(sample)
-
-    def test_set_none_default_value(self):
-        dim = Integer('yolo', 'uniform', -3, 4)
-        dim.default_value = None
-
-        assert dim.default_value == None
-        assert str(dim) == "Integer(name=yolo, prior={uniform: (-3, 4), {}}, shape=(), default value=None)"
+        assert type(dim.default_value) is int
 
     def test_set_outside_bounds_default_value(self):
-        dim = Integer('yolo', 'uniform', -3, 2)
         with pytest.raises(ValueError):
-            dim.default_value = 4
-
-    def test_set_valid_default_value(self):
-        dim = Integer('yolo', 'uniform', -3, 10)
-        dim.default_value = 2
-
-        sample = dim.sample()[0]
-
-        assert dim.default_value is not None
-        assert dim.default_value == 2
-        assert type(dim.default_value) == type(sample)
-
+            dim = Integer('yolo', 'uniform', -3, 2, default_value=4)
 
 class TestCategorical(object):
     """Test methods of a `Categorical` object."""
@@ -365,7 +281,6 @@ class TestCategorical(object):
         assert dim.type == 'categorical'
         assert dim.shape == ()
 
-    @pytest.mark.xfail(reason="type implementation detail")
     def test_with_dict(self, seed):
         """Test Categorical.__init__ with a dictionary."""
         probs = (0.1, 0.2, 0.3, 0.4)
@@ -400,7 +315,6 @@ class TestCategorical(object):
         for key, value in categories.items():
             assert abs(bins[key] - value) < 0.01
 
-    @pytest.mark.xfail(reason="type implementation detail")
     def test_contains_wrong_shape(self):
         """Check correct category but wrongly shaped array."""
         categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 4: 0.4}
@@ -433,7 +347,6 @@ class TestCategorical(object):
             dim.interval()
         assert 'not ordered' in str(exc.value)
 
-    @pytest.mark.xfail(reason="type implementation detail")
     def test_that_objects_types_are_ok(self):
         """Check that output samples are of the correct type.
 
@@ -451,55 +364,28 @@ class TestCategorical(object):
         assert ['2', 'asdfa'] not in dim
         assert [2, 'asdfa'] in dim
 
-    def test_no_default_value(self):
-       categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
-       dim = Categorical('yolo', categories)
-       assert dim.default_value == None
-
-    def test_cast_to_dimension_type(self):
+    def test_init_with_default_value_string(self):
         categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
-        dim = Categorical('yolo', categories)
+        dim = Categorical('yolo', categories, default_value="asdfa")
 
-        v = dim.cast_to_dimension_type(1)
-        sample = dim.sample()[0]
+        assert type(dim.default_value) is str
+
+    def test_init_with_default_value_int(self):
+        categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
+        dim = Categorical('yolo', categories, default_value=2)
+
+        assert type(dim.default_value) is int
+
+    def test_init_with_wrong_default_value(self):
+        categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
         
-        assert type(v) == type(sample)
-
-    @pytest.mark.xfail(reason="type implementation detail")
-    def test_init_with_default_value(self):
-        categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
-        dim = Categorical('yolo', categories, default_value = "def")
-        sample = dim.sample()[0]
-
-        assert type(dim.default_value) == type(sample)
-
-    def test_set_none_default_value(self):
-        categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
-        dim = Categorical('yolo', categories)
-        dim.default_value = None
-
-        assert dim.default_value == None
-        assert str(dim) == "Categorical(name=yolo, " \
-                           "prior={asdfa: 0.10, 2: 0.20, 3: 0.30, lalala: 0.40}, " \
-                           "shape=(), default value=None)"
+        with pytest.raises(ValueError):
+            dim = Categorical('yolo', categories, default_value=2.3)
 
     def test_set_outside_bounds_default_value(self):
         categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
-        dim = Categorical('yolo', categories)
         with pytest.raises(ValueError):
-            dim.default_value = 4
-
-    @pytest.mark.xfail(reason="type implementation detail")
-    def test_set_valid_default_value(self):
-        categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
-        dim = Categorical('yolo', categories)
-        dim.default_value = 2
-
-        sample = dim.sample()[0]
-
-        assert dim.default_value is not None
-        assert dim.default_value == 2
-        assert type(dim.default_value) == type(sample)
+            dim = Categorical('yolo', categories, default_value=4)
 
 class TestSpace(object):
     """Test methods of a `Space` object."""
@@ -509,7 +395,6 @@ class TestSpace(object):
         space = Space()
         assert isinstance(space, OrderedDict)
 
-    @pytest.mark.xfail(reason="type implementation detail")
     def test_register_and_contain(self):
         """Register bunch of dimensions, check if points/name are in space."""
         space = Space()
@@ -573,7 +458,6 @@ class TestSpace(object):
             assert points[i][1] == test_points[i][1]
             assert points[i][2] == test_points[i][2]
 
-    @pytest.mark.xfail(reason="type implementation detail")
     def test_interval(self):
         """Check whether interval is cool."""
         space = Space()
