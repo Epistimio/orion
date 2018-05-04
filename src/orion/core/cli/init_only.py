@@ -20,7 +20,6 @@ from orion.client import manual
 
 log = logging.getLogger(__name__)
 
-
 def get_parser(parser):
     init_only_parser = parser.add_parser('init_only', help='init_only help')
    

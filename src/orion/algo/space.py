@@ -166,6 +166,7 @@ class Dimension(object):
            It just checks whether point lies inside the support and the shape.
 
         """
+<<<<<<< HEAD
         raise NotImplementedError
 
     def __repr__(self):
@@ -204,6 +205,10 @@ class Dimension(object):
                                                    size=self._shape,
                                                    **self._kwargs)
         return size
+    
+    @property
+    def underlying_type(self):
+        raise NotImplementedError
 
 
 class Real(Dimension):
@@ -477,6 +482,7 @@ class Categorical(Dimension):
 
         return "Categorical(name={0}, prior={1}, shape={2}, default value={3})"\
                .format(self.name, prior, self.shape, self.default_value)
+
 
 
 class Space(OrderedDict):
