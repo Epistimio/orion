@@ -373,7 +373,7 @@ class TestSpaceBuilder(object):
 
     def test_generate_from_args_and_config(self, spacebuilder,
                                            json_sample_path, tmpdir, json_converter):
-        """Build a space using only a json config."""
+        """Build a space using definitions from cli arguments and a json file."""
         cmd_args = ["--seed=555",
                     "-yolo~uniform(-3, 1)",
                     '--config=' + json_sample_path,
@@ -402,3 +402,21 @@ class TestSpaceBuilder(object):
                                           {'width': 100, 'type': 'relu'},
                                           {'width': 16, 'type': 'sigmoid'}],
                                'something-same': '3'}
+
+    def test_generate_from_args_plus_properties(self, spacebuilder):
+        """Build a space using definitions from cli arguments and a json file."""
+        cmd_args = ["--seed=555",
+                    "-yolo~uniform(-3, 1)",
+                    "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
+                    "--arch2~choices({'lala': 0.2, 'yolo': 0.8})",
+                    "--name~trial.full_name"]
+        spacebuilder.build_from(cmd_args)
+        trial = Trial(params=[
+            {'name': '/yolo', 'type': 'real', 'value': -2.4},
+            {'name': '/arch2', 'type': 'categorical', 'value': 'yolo'}])
+        cmd_inst = spacebuilder.build_to(None, trial)
+        assert cmd_inst == [
+            "--seed=555",
+            "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
+            "-yolo=-2.4",
+            "--arch2=yolo", "--name=/yolo:-2.4-/arch2:yolo"]

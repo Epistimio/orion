@@ -222,8 +222,9 @@ class SpaceBuilder(object, metaclass=SingletonType):
 
     USERCONFIG_OPTION = '--config='
     USERCONFIG_KEYWORD = 'orion~'
-    USERARGS_SEARCH = r'\W*([a-zA-Z0-9_-]+)~([a-zA-Z0-9_]+\(.*\))'
-    USERARGS_TMPL = r'(.*)~(.*\(.*\))'
+    USERARGS_SEARCH = r'\W*([a-zA-Z0-9_-]+)~(.*)'
+    USERARGS_TMPL = r'(.*)~(.*)'
+    EXPOSED_PROPERTIES = ['trial.hash_name', 'trial.full_name']
 
     def __init__(self):
         """Initialize a `SpaceBuilder`."""
@@ -231,13 +232,27 @@ class SpaceBuilder(object, metaclass=SingletonType):
         self.is_userconfig_an_option = None
         self.userargs_tmpl = None
         self.userconfig_tmpl = None
+
         self.dimbuilder = DimensionBuilder()
         self.space = None
+
+        self.commands_tmpl = None
+
         self.converter = None
 
     def build_from(self, cmd_args):
         """Create a definition of the problem's search space, using information
         from the user's script configuration (if provided) and command line arguments.
+
+        This method is also responsible for parsing semantics which allow
+        information from the `Experiment` or a `Trial` object to be passed
+        to user's script. For example, a command line option like
+        ``--name~trial.hash_name`` will be parsed to mean that a unique hash
+        identifier of the trial that defines an execution shall be passed to
+        the option ``--name``. Usage of these properties are not obligatory,
+        but it helps integrating with solutions which help experiment
+        reproducibility and resumability. See :attr:`EXPOSED_PROPERTIES` to
+        check which properties are supported.
 
         :param cmd_args: A list of command line arguments provided for the user's script.
 
@@ -250,6 +265,8 @@ class SpaceBuilder(object, metaclass=SingletonType):
         """
         self.userargs_tmpl = None
         self.userconfig_tmpl = None
+
+        self.commands_tmpl = None
         self.space = Space()
 
         self.userconfig, self.is_userconfig_an_option = self._build_from_args(cmd_args)
@@ -294,6 +311,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
         userconfig = None
         is_userconfig_an_option = None
         self.userargs_tmpl = collections.defaultdict(list)
+        self.commands_tmpl = dict()
         args_pattern = re.compile(self.USERARGS_SEARCH)
         args_prefix_pattern = re.compile(self.USERARGS_TMPL)
 
@@ -314,10 +332,21 @@ class SpaceBuilder(object, metaclass=SingletonType):
                 continue
 
             name, expression = found[0]
-            namespace = '/' + name
-
-            dimension = self.dimbuilder.build(namespace, expression)
-            self.space.register(dimension)
+            if expression in self.EXPOSED_PROPERTIES:
+                # It's a experiment/trial management command
+                namespace = '$' + name
+                try:
+                    objname, attrname = expression.split('.')
+                except ValueError as exc:
+                    raise ValueError("Expected dotted expression with two parts "
+                                     "{{object}}.{{attribute}}. "
+                                     "Got: '{}'".format(expression)) from exc
+                self.commands_tmpl[namespace] = (objname, attrname)
+            else:
+                # Ikr it's a dimension
+                namespace = '/' + name
+                dimension = self.dimbuilder.build(namespace, expression)
+                self.space.register(dimension)
 
             found = args_prefix_pattern.findall(arg)
             assert len(found) == 1 and found[0][1] == expression, "Parsing prefix problem."
@@ -374,6 +403,8 @@ class SpaceBuilder(object, metaclass=SingletonType):
 
     def _build_to_args(self, config_path, trial):
         cmd_args = []
+        # objects whose properties can be fetched to fill a cli argument
+        exposed_objects = {'trial': trial}
 
         if self.userconfig:
             if self.is_userconfig_an_option:
@@ -388,5 +419,11 @@ class SpaceBuilder(object, metaclass=SingletonType):
                 continue
             prefix = self.userargs_tmpl[param.name]
             cmd_args.append(prefix + str(param.value))
+
+        for namespace, (objname, attrname) in self.commands_tmpl.items():
+            obj = exposed_objects[objname]
+            item = getattr(obj, attrname)
+            prefix = self.userargs_tmpl[namespace]
+            cmd_args.append(prefix + item)
 
         return cmd_args
