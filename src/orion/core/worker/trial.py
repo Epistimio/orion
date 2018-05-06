@@ -9,6 +9,7 @@
    :synopsis: Describe a particular training run, parameters and results
 
 """
+import hashlib
 import logging
 
 log = logging.getLogger(__name__)
@@ -100,7 +101,7 @@ class Trial(object):
             """Needed to be able to convert `Value` to `dict` form."""
             ret = dict(
                 name=self.name,
-                type=self._type,
+                type=self.type,
                 value=self.value
                 )
             return ret
@@ -109,7 +110,7 @@ class Trial(object):
             """Represent partially with a string."""
             ret = "{0}(name={1}, type={2}, value={3})".format(
                 type(self).__name__, repr(self.name),
-                repr(self._type), repr(self.value))
+                repr(self.type), repr(self.value))
             return ret
 
         __repr__ = __str__
@@ -154,6 +155,7 @@ class Trial(object):
                 setattr(self, attrname, None)
 
         self.status = 'new'
+        self._id = self.NoID
 
         for attrname, value in kwargs.items():
             if attrname == 'results':
@@ -192,8 +194,8 @@ class Trial(object):
 
     def __str__(self):
         """Represent partially with a string."""
-        ret = "Trial(experiment={0}, status={1}, params.value={2})".format(
-            repr(self.experiment), repr(self._status), [p.value for p in self.params])
+        ret = "Trial(experiment={0}, status={1},\n      params={2})".format(
+            repr(self.experiment), repr(self._status), self.params_repr(sep=('\n' + ' ' * 13)))
         return ret
 
     __repr__ = __str__
@@ -235,6 +237,17 @@ class Trial(object):
     def is_registered(self):
         """Check whether `Trial` is registered in database based on `_id` value."""
         return self._id is not self.NoID
+
+    def params_repr(self, sep=','):
+        """Represent with a string the parameter contained in this `Trial` object."""
+        return sep.join(map(lambda param: "{0.name}:{0.value}".format(param), self.params))
+
+    @property
+    def hash_name(self):
+        """Generate a unique name for this `Trial`."""
+        if not self.params:
+            raise ValueError("Cannot distinguish this trial, as 'params' have not been set.")
+        return hashlib.md5(self.params_repr().encode('utf-8')).hexdigest()
 
     def _fetch_one_result_of_type(self, result_type):
         value = [result for result in self.results
