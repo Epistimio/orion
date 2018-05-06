@@ -221,18 +221,25 @@ class TestSpaceBuilder(object):
         cmd_args = ["--seed=555",
                     "-yolo~uniform(-3, 1)",
                     "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
-                    "--arch2~choices({'lala': 0.2, 'yolo': 0.8})"]
+                    "--arch2~choices({'lala': 0.2, 'yolo': 0.8})",
+                    "~trial.full_name",
+                    "--some-path=~/fadlfal",
+                    "--home-path-for-no-reason-whatsoever=~"]
         space = spacebuilder.build_from(cmd_args)
         print(space)
         assert spacebuilder.userconfig is None
         assert len(space) == 2
         assert '/yolo' in space
         assert '/arch2' in space
-        assert len(spacebuilder.userargs_tmpl) == 3
-        assert spacebuilder.userargs_tmpl[None] == ["--seed=555",
-                                                    "--arch1=choices({'lala': 0.2, 'yolo': 0.8})"]
-        assert spacebuilder.userargs_tmpl['/yolo'] == '-yolo='
-        assert spacebuilder.userargs_tmpl['/arch2'] == '--arch2='
+        assert list(spacebuilder.userargs_tmpl.keys()) == ['_0', '/yolo', '_1',
+                                                           '/arch2', '$2', '_3', '_4']
+        assert spacebuilder.userargs_tmpl['_0'] == "--seed=555"
+        assert spacebuilder.userargs_tmpl['/yolo'] == "-yolo="
+        assert spacebuilder.userargs_tmpl['_1'] == "--arch1=choices({'lala': 0.2, 'yolo': 0.8})"
+        assert spacebuilder.userargs_tmpl['/arch2'] == "--arch2="
+        assert spacebuilder.userargs_tmpl['$2'] == ""
+        assert spacebuilder.userargs_tmpl['_3'] == "--some-path=~/fadlfal"
+        assert spacebuilder.userargs_tmpl['_4'] == "--home-path-for-no-reason-whatsoever=~"
 
     def test_build_from_args_and_config1(self, spacebuilder, yaml_sample_path):
         """Build a space using both args and config file!"""
@@ -251,11 +258,13 @@ class TestSpaceBuilder(object):
         assert '/training/lr0' in space
         assert '/training/mbs' in space
         assert '/something-same' in space
-        assert len(spacebuilder.userargs_tmpl) == 3
-        assert spacebuilder.userargs_tmpl[None] == ["--seed=555",
-                                                    "--arch1=choices({'lala': 0.2, 'yolo': 0.8})"]
-        assert spacebuilder.userargs_tmpl['/yolo'] == '-yolo='
-        assert spacebuilder.userargs_tmpl['/arch2'] == '--arch2='
+        assert len(spacebuilder.userargs_tmpl) == 5
+        assert list(spacebuilder.userargs_tmpl.keys()) == ['config', '_1', '/yolo', '_2', '/arch2']
+        assert spacebuilder.userargs_tmpl['config'] == ""
+        assert spacebuilder.userargs_tmpl['_1'] == "--seed=555"
+        assert spacebuilder.userargs_tmpl['/yolo'] == "-yolo="
+        assert spacebuilder.userargs_tmpl['_2'] == "--arch1=choices({'lala': 0.2, 'yolo': 0.8})"
+        assert spacebuilder.userargs_tmpl['/arch2'] == "--arch2="
 
     def test_build_from_args_and_config2(self, spacebuilder, yaml_sample_path):
         """Build a space using both args and config file!"""
@@ -275,11 +284,13 @@ class TestSpaceBuilder(object):
         assert '/training/lr0' in space
         assert '/training/mbs' in space
         assert '/something-same' in space
-        assert len(spacebuilder.userargs_tmpl) == 3
-        assert spacebuilder.userargs_tmpl[None] == ["--seed=555",
-                                                    "--arch1=choices({'lala': 0.2, 'yolo': 0.8})"]
-        assert spacebuilder.userargs_tmpl['/yolo'] == '-yolo='
-        assert spacebuilder.userargs_tmpl['/arch2'] == '--arch2='
+        assert len(spacebuilder.userargs_tmpl) == 5
+        assert list(spacebuilder.userargs_tmpl.keys()) == ['_0', '/yolo', 'config', '_1', '/arch2']
+        assert spacebuilder.userargs_tmpl['_0'] == "--seed=555"
+        assert spacebuilder.userargs_tmpl['/yolo'] == "-yolo="
+        assert spacebuilder.userargs_tmpl['config'] == "--config="
+        assert spacebuilder.userargs_tmpl['_1'] == "--arch1=choices({'lala': 0.2, 'yolo': 0.8})"
+        assert spacebuilder.userargs_tmpl['/arch2'] == "--arch2="
 
     def test_build_finds_conflict(self, spacebuilder, yaml_sample_path):
         """Conflicting definition in args and config~ raise an error!"""
@@ -325,8 +336,8 @@ class TestSpaceBuilder(object):
 
         cmd_inst = spacebuilder.build_to(None, trial)
         assert cmd_inst == ["--seed=555",
-                            "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
                             "-yolo=-2.4",
+                            "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
                             "--arch2=yolo"]
 
     def test_generate_only_with_yaml_config(self, spacebuilder,
@@ -391,11 +402,9 @@ class TestSpaceBuilder(object):
             {'name': '/something-same', 'type': 'categorical', 'value': '3'}])
         output_file = str(tmpdir.join("output.json"))
         cmd_inst = spacebuilder.build_to(output_file, trial)
-        assert cmd_inst == ['--config=' + output_file] + [
-            "--seed=555",
-            "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
-            "-yolo=-2.4",
-            "--arch2=yolo"]
+        assert cmd_inst == ["--seed=555", "-yolo=-2.4"] +\
+            ['--config=' + output_file] +\
+            ["--arch1=choices({'lala': 0.2, 'yolo': 0.8})", "--arch2=yolo"]
         output_data = json_converter.parse(output_file)
         assert output_data == {'yo': 5, 'training': {'lr0': 0.032, 'mbs': 64},
                                'layers': [{'width': 64, 'type': 'relu'},
@@ -417,6 +426,6 @@ class TestSpaceBuilder(object):
         cmd_inst = spacebuilder.build_to(None, trial)
         assert cmd_inst == [
             "--seed=555",
-            "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
             "-yolo=-2.4",
+            "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
             "--arch2=yolo", "--name=/yolo:-2.4-/arch2:yolo"]
