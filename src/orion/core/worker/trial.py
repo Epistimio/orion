@@ -244,10 +244,17 @@ class Trial(object):
 
     @property
     def hash_name(self):
-        """Generate a unique name for this `Trial`."""
+        """Generate a unique name with an md5sum hash for this `Trial`."""
         if not self.params:
             raise ValueError("Cannot distinguish this trial, as 'params' have not been set.")
         return hashlib.md5(self.params_repr().encode('utf-8')).hexdigest()
+
+    @property
+    def full_name(self):
+        """Generate a unique name using the full definition of parameters."""
+        if not self.params:
+            raise ValueError("Cannot distinguish this trial, as 'params' have not been set.")
+        return self.params_repr(sep='-')
 
     def _fetch_one_result_of_type(self, result_type):
         value = [result for result in self.results

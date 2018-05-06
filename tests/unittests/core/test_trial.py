@@ -166,12 +166,22 @@ class TestTrial(object):
         t = Trial()
         assert t.params_repr() == ""
 
-    def test_name_property(self, exp_config):
-        """Check property `Trial.name`."""
+    def test_hash_name_property(self, exp_config):
+        """Check property `Trial.hash_name`."""
         t = Trial(**exp_config[1][2])
         assert t.hash_name == "29ae84d14c5655000fa7f1b608f16008"
 
         t = Trial()
         with pytest.raises(ValueError) as exc:
             t.hash_name
+        assert 'params' in str(exc.value)
+
+    def test_full_name_property(self, exp_config):
+        """Check property `Trial.full_name`."""
+        t = Trial(**exp_config[1][2])
+        assert t.full_name == "/encoding_layer:gru-/decoding_layer:lstm_with_attention"
+
+        t = Trial()
+        with pytest.raises(ValueError) as exc:
+            t.full_name
         assert 'params' in str(exc.value)
