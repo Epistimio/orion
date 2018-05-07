@@ -430,7 +430,7 @@ class TestSpaceBuilder(object):
             "--seed=555",
             "-yolo=-2.4",
             "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
-            "--arch2=yolo", "--name=/yolo:-2.4-/arch2:yolo"]
+            "--arch2=yolo", "--name=.yolo:-2.4-.arch2:yolo"]
 
     def test_handle_not_exposed_properties(self, spacebuilder):
         """Build arguments using something which is neither legit exposed property,

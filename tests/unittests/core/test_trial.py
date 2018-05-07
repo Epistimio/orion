@@ -179,7 +179,7 @@ class TestTrial(object):
     def test_full_name_property(self, exp_config):
         """Check property `Trial.full_name`."""
         t = Trial(**exp_config[1][2])
-        assert t.full_name == "/encoding_layer:gru-/decoding_layer:lstm_with_attention"
+        assert t.full_name == ".encoding_layer:gru-.decoding_layer:lstm_with_attention"
 
         t = Trial()
         with pytest.raises(ValueError) as exc:

@@ -195,8 +195,6 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     """Test integration with a possible framework that needs to create
     unique directories per trial.
     """
-    # XXX: ~trial.full_name has a bug.
-    # returned str cannot contain '/' if it is to be a single dir
     # XXX: return and complete test when there is a way to control random
     # seed of Oríon
     how_many = 1000
