@@ -81,7 +81,9 @@ def validate_dimensions(transformed_args, exp_space):
         if namespace not in exp_space:
             error_msg = "Found namespace outside of experiment space : {}".format(namespace)
             raise ValueError(error_msg)
+        
         elif value not in exp_space[namespace]:
+            #TODO check eval
             error_msg = "Value {} is outside of dimension's prior interval".format(value)
             raise ValueError(error_msg)
 
@@ -89,8 +91,9 @@ def create_tuple_for_values(transformed_args, exp_space):
     values = []
     for namespace in exp_space:
         if namespace in transformed_args.keys():
-            casted_value = exp_space[namespace].cast_to_dimension_type(transformed_args[namespace])
-            values.append(casted_value)
+            value = transformed_args[namespace]
+            value = type(exp_space[namespace].sample()[0])(value)
+            values.append(value)
         else:
             values.append(exp_space[namespace].default_value)
 
