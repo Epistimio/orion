@@ -106,6 +106,8 @@ def create_experiment(exp_name, expconfig, cmdconfig, cmdargs):
     expconfig.pop('resources', None)
     expconfig.pop('status', None)
 
+    log.info(expconfig)
+
     # Finish experiment's configuration and write it to database.
     try:
         experiment.configure(expconfig)
