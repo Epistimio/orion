@@ -16,9 +16,11 @@ from orion.algo.base import BaseAlgorithm
 class Gradient_Descent(BaseAlgorithm):
     """Implement a gradient descent algorithm."""
 
-    def __init__(self, space, learning_rate=1.):
+    def __init__(self, space, learning_rate=1., dx_tolerance=1e-7):
         """Declare `learning_rate` as a hyperparameter of this algorithm."""
-        super(Gradient_Descent, self).__init__(space, learning_rate=learning_rate)
+        super(Gradient_Descent, self).__init__(space,
+                                               learning_rate=learning_rate,
+                                               dx_tolerance=dx_tolerance)
         self.has_observed_once = False
         self.current_point = None
         self.gradient = numpy.array([numpy.inf])
@@ -50,4 +52,5 @@ class Gradient_Descent(BaseAlgorithm):
     @property
     def is_done(self):
         """Implement a terminating condition."""
-        return self.learning_rate * numpy.sqrt(self.gradient.dot(self.gradient)) <= 1e-7
+        dx = self.learning_rate * numpy.sqrt(self.gradient.dot(self.gradient))
+        return dx <= self.dx_tolerance

@@ -59,7 +59,8 @@ def test_demo(database, monkeypatch):
     assert exp['pool_size'] == 1
     assert exp['max_trials'] == 100
     assert exp['status'] == 'done'
-    assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1}}
+    assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
+                                                      'dx_tolerance': 1e-7}}
     assert 'user' in exp['metadata']
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
@@ -162,7 +163,8 @@ def test_workon(database):
     assert exp['pool_size'] == 1
     assert exp['max_trials'] == 100
     assert exp['status'] == 'done'
-    assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1}}
+    assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
+                                                      'dx_tolerance': 1e-7}}
     assert 'user' in exp['metadata']
     assert 'datetime' in exp['metadata']
     assert 'user_script' in exp['metadata']
@@ -189,7 +191,7 @@ def test_workon(database):
 
 
 @pytest.mark.usefixtures("clean_db")
-def test_unique_folder_creation(database, monkeypatch, tmpdir):
+def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     """Test integration with a possible framework that needs to create
     unique directories per trial.
     """
@@ -197,17 +199,18 @@ def test_unique_folder_creation(database, monkeypatch, tmpdir):
     # returned str cannot contain '/' if it is to be a single dir
     # XXX: return and complete test when there is a way to control random
     # seed of Oríon
+    how_many = 1000
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    process = subprocess.Popen(["orion", "--max-trials=3", "--pool-size=1",
+    process = subprocess.Popen(["orion", "--max-trials={}".format(how_many),
+                                "--pool-size=1",
                                 "--name=lalala",
-                                "--config", "./orion_config_random.yaml",
+                                "--config", "./stress_gradient.yaml",
                                 "./dir_per_trial.py",
                                 "--dir={}".format(str(tmpdir)),
                                 "--other-name~exp.name",
                                 "--name~trial.hash_name",
-                                "-x~uniform(-50, 50)"])
+                                "-x~gaussian(30, 10)"])
     rcode = process.wait()
-    assert rcode == 0
 
     exp = list(database.experiments.find({'name': 'lalala'}))
     assert len(exp) == 1
@@ -215,7 +218,27 @@ def test_unique_folder_creation(database, monkeypatch, tmpdir):
     assert '_id' in exp
     exp_id = exp['_id']
 
+    assert rcode == 0
+    # For contingent broken trials, which in this test means that a existing
+    # directory was attempted to be created, it means that it's not md5 or
+    # bad hash creation to blame, but the finite precision of the floating
+    # point representation. Specifically, it seems that gradient descent
+    # is able to reach such levels of precision jumping around the minimum
+    # (notice that an appropriate learning rate was selected in this stress
+    # test to create underdamped behaviour), that it begins to suggest same
+    # things from the past. This is intended to be shown with the assertions
+    # in the for-loop below.
     trials_c = list(database.trials.find({'experiment': exp_id, 'status': 'completed'}))
-    assert len(trials_c) == 3
+    list_of_cx = [trial['params'][0]['value'] for trial in trials_c]
+    trials_b = list(database.trials.find({'experiment': exp_id, 'status': 'broken'}))
+    list_of_bx = [trial['params'][0]['value'] for trial in trials_b]
+    for bx in list_of_bx:
+        assert bx in list_of_cx
+
+    # ``exp.name`` has been delivered correctly (next 2 assertions)
     assert len(os.listdir(str(tmpdir))) == 1
-    assert len(os.listdir(str(tmpdir.join('lalala')))) == 3
+    # Also, because of the way the demo gradient descent works `how_many` trials
+    # can be completed
+    assert len(os.listdir(str(tmpdir.join('lalala')))) == how_many
+    assert len(trials_c) == how_many
+    capfd.readouterr()  # Suppress fd level 1 & 2
