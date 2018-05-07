@@ -224,15 +224,16 @@ class TestSpaceBuilder(object):
                     "--arch2~choices({'lala': 0.2, 'yolo': 0.8})",
                     "~trial.full_name",
                     "--some-path=~/fadlfal",
-                    "--home-path-for-no-reason-whatsoever=~"]
+                    "--home-path-for-no-reason-whatsoever=~",
+                    "~/../dasfa/.giasdf/fadsfdas"]
         space = spacebuilder.build_from(cmd_args)
         print(space)
         assert spacebuilder.userconfig is None
         assert len(space) == 2
         assert '/yolo' in space
         assert '/arch2' in space
-        assert list(spacebuilder.userargs_tmpl.keys()) == ['_0', '/yolo', '_1',
-                                                           '/arch2', '$2', '_3', '_4']
+        assert list(spacebuilder.userargs_tmpl.keys()) == ['_0', '/yolo', '_1', '/arch2',
+                                                           '$2', '_3', '_4', '_5']
         assert spacebuilder.userargs_tmpl['_0'] == "--seed=555"
         assert spacebuilder.userargs_tmpl['/yolo'] == "-yolo="
         assert spacebuilder.userargs_tmpl['_1'] == "--arch1=choices({'lala': 0.2, 'yolo': 0.8})"
@@ -240,6 +241,7 @@ class TestSpaceBuilder(object):
         assert spacebuilder.userargs_tmpl['$2'] == ""
         assert spacebuilder.userargs_tmpl['_3'] == "--some-path=~/fadlfal"
         assert spacebuilder.userargs_tmpl['_4'] == "--home-path-for-no-reason-whatsoever=~"
+        assert spacebuilder.userargs_tmpl['_5'] == "~/../dasfa/.giasdf/fadsfdas"
 
     def test_build_from_args_and_config1(self, spacebuilder, yaml_sample_path):
         """Build a space using both args and config file!"""
