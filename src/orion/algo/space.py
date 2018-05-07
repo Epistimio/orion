@@ -260,7 +260,7 @@ class Real(Dimension):
         """
         low, high = self.interval()
         
-        point_ = numpy.asarray(point, numpy.float64)
+        point_ = numpy.asarray(point)
         
         if point_.shape != self.shape:
             return False
@@ -367,7 +367,7 @@ class Integer(Real, _Discrete):
         `Integer` will check whether `point` contains only integers.
 
         """
-        point_ = numpy.asarray(point, numpy.float64)
+        point_ = numpy.asarray(point)
         if not numpy.all(numpy.equal(numpy.mod(point_, 1), 0)):
             return False
         return super(Integer, self).__contains__(point)

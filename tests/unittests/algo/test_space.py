@@ -137,7 +137,6 @@ class TestReal(object):
         assert dists.norm.interval(0.5, 0.9) == dim.interval(0.5)
 
         assert 1.0 in dim
-        assert "1.0" in dim
 
         assert str(dim) == "Real(name=yolo, prior={norm: (0.9,), {}}, shape=(), default value=None)"
 
@@ -213,7 +212,6 @@ class TestInteger(object):
         assert dim.interval(0.5) == (-2, 2)
 
         assert 1.0 in dim
-        assert "1.0" in dim
 
         assert str(dim) == "Integer(name=yolo, prior={uniform: (-3, 6), {}}, shape=(), default value=None)"
 
@@ -226,7 +224,6 @@ class TestInteger(object):
         dim = Integer('yolo', 'uniform', -3, 6)
 
         assert 0.1 not in dim
-        assert "0.1" not in dim
         assert (0.1, -0.2) not in dim
         assert 0 in dim
         assert (1, 2) not in dim
