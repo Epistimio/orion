@@ -111,8 +111,9 @@ class Dimension(object):
         
         default_value = self._kwargs.pop('default_value', None)
 
-        if default_value is not None and default_value not in self: 
-            raise ValueError("{} is not a valid value for this Dimension. Can't set default value.".format(default_value))
+        if default_value is not None and default_value not in self:
+            raise ValueError("{} is not a valid value for this Dimension. "
+                            "Can't set default value.".format(default_value))
 
         self._default_value = default_value
 
@@ -185,10 +186,11 @@ class Dimension(object):
             self._name = value
         else:
             raise TypeError("Dimension's name must be either string or None. "
-                            "Provided: {}, of type: {}".format(value, type(value)))
-    
+                           "Provided: {}, of type: {}".format(value, type(value)))
+
     @property
     def default_value(self):
+        """Return the default value for this dimensions"""
         return self._default_value
 
     @property
@@ -203,6 +205,7 @@ class Dimension(object):
                                                    size=self._shape,
                                                    **self._kwargs)
         return size
+
 
 class Real(Dimension):
     """Subclass of `Dimension` for representing real parameters.
@@ -244,8 +247,9 @@ class Real(Dimension):
         self._low = kwargs.pop('low', -numpy.inf)
         self._high = kwargs.pop('high', numpy.inf)
         if self._high <= self._low:
-            raise ValueError("Lower bound {} has to be less "
-                             "than upper bound {}".format(self._low, self._high))
+            raise ValueError("Lower bound {} has to be less than upper bound {}"
+                                                .format(self._low, self._high))
+                                                
         super(Real, self).__init__(name, prior, *args, **kwargs)
         
     def __contains__(self, point):
@@ -259,9 +263,9 @@ class Real(Dimension):
 
         """
         low, high = self.interval()
-        
+
         point_ = numpy.asarray(point)
-        
+
         if point_.shape != self.shape:
             return False
 
@@ -301,6 +305,7 @@ class Real(Dimension):
                                  "Please make interval larger.".format(self._low, self._high))
 
         return samples
+
 
 class _Discrete(Dimension):
 
@@ -371,6 +376,7 @@ class Integer(Real, _Discrete):
         if not numpy.all(numpy.equal(numpy.mod(point_, 1), 0)):
             return False
         return super(Integer, self).__contains__(point)
+
 
 class Categorical(Dimension):
     """Subclass of `Dimension` for representing integer parameters.
@@ -464,12 +470,12 @@ class Categorical(Dimension):
 
         prior = map(lambda x: '{0[0]}: {0[1]:.2f}'.format(x)
                     if not isinstance(x, _Ellipsis) else str(x), prior)
+
         prior = "{" + ', '.join(prior) + "}"
 
-        return "Categorical(name={0}, prior={1}, shape={2}, default value={3})".format(self.name,
-                                                                    prior,
-                                                                    self.shape,
-                                                                    self.default_value)
+        return "Categorical(name={0}, prior={1}, shape={2}, default value={3})"\
+                                .format(self.name, prior, self.shape, self.default_value)
+
 
 class Space(OrderedDict):
     """Represents the search space."""

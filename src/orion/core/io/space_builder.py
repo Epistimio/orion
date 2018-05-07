@@ -163,7 +163,7 @@ class DimensionBuilder(object, metaclass=SingletonType):
         globals_ = {'__builtins__': {}}
         try:
             dimension = eval("self." + expression, globals_, {'self': self})
-            
+
             return dimension
         except AttributeError:
             pass
