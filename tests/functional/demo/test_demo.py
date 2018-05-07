@@ -186,3 +186,34 @@ def test_workon(database):
     assert params[0]['name'] == '/x'
     assert params[0]['type'] == 'real'
     assert (params[0]['value'] - 34.56789) < 1e-5
+
+
+@pytest.mark.usefixtures("clean_db")
+def test_unique_folder_creation(database, monkeypatch, tmpdir):
+    """Test integration with a possible framework that needs to create
+    unique directories per trial.
+    """
+    # XXX: ~trial.full_name has a bug.
+    # returned str cannot contain '/' if it is to be a single dir
+    # XXX: return and complete test when there is a way to control random
+    # seed of Oríon
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    process = subprocess.Popen(["orion", "--max-trials=3", "--pool-size=1",
+                                "--name=lalala",
+                                "--config", "./orion_config_random.yaml",
+                                "./dir_per_trial.py",
+                                "--dir={}".format(str(tmpdir)),
+                                "--name~trial.hash_name",
+                                "-x~uniform(-50, 50)"])
+    rcode = process.wait()
+    assert rcode == 0
+
+    exp = list(database.experiments.find({'name': 'lalala'}))
+    assert len(exp) == 1
+    exp = exp[0]
+    assert '_id' in exp
+    exp_id = exp['_id']
+
+    trials_c = list(database.trials.find({'experiment': exp_id, 'status': 'completed'}))
+    assert len(trials_c) == 3
+    assert len(os.listdir(str(tmpdir))) == 3
