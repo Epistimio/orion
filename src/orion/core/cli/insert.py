@@ -59,9 +59,7 @@ def execute(cmd_args, file_config):
     transformed_args = build_from(command_line_user_args)
     exp_space = SpaceBuilder().build_from(experiment.configuration['metadata']['user_args'])
 
-    validate_dimensions(transformed_args, exp_space)
-
-    values = create_tuple_for_values(transformed_args, exp_space)
+    values = create_tuple_from_values(transformed_args, exp_space)
 
     trial = tuple_to_trial(values, exp_space)
 
@@ -69,7 +67,7 @@ def execute(cmd_args, file_config):
 
 def validate_dimensions(transformed_args, exp_space):
     exp_namespaces = list(exp_space.keys())
-    
+    values = {}
     #Find any dimension that is not given by the user and make sure they have a default value
     for exp_n in exp_namespaces:
         if exp_n not in transformed_args.keys() and exp_space[exp_n].default_value is None: 
@@ -81,19 +79,35 @@ def validate_dimensions(transformed_args, exp_space):
         if namespace not in exp_space:
             error_msg = "Found namespace outside of experiment space : {}".format(namespace)
             raise ValueError(error_msg)
-        
-        elif value not in exp_space[namespace]:
-            #TODO check eval
+       
+        valid, value = validate_input_value(value, exp_space, namespace)
+
+        if not valid:
             error_msg = "Value {} is outside of dimension's prior interval".format(value)
             raise ValueError(error_msg)
+        
+        values[namespace] = value
+    
+    return values
 
-def create_tuple_for_values(transformed_args, exp_space):
+def validate_input_value(value, exp_space, namespace):
+    try:
+        e_value = eval(value)
+        if e_value in exp_space[namespace]:
+            return True, e_value
+    except TypeError:
+        if value not in exp_space:
+            return False, None
+
+    return True, value
+
+def create_tuple_from_values(transformed_args, exp_space):
+    values_dict = validate_dimensions(transformed_args, exp_space)
     values = []
+
     for namespace in exp_space:
-        if namespace in transformed_args.keys():
-            value = transformed_args[namespace]
-            value = type(exp_space[namespace].sample()[0])(value)
-            values.append(value)
+        if namespace in values_dict.keys():
+            values.append(values_dict[namespace])
         else:
             values.append(exp_space[namespace].default_value)
 
