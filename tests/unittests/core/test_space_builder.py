@@ -413,7 +413,7 @@ class TestSpaceBuilder(object):
                                'something-same': '3'}
 
     def test_generate_from_args_plus_properties(self, spacebuilder):
-        """Build a space using definitions from cli arguments and a json file."""
+        """Build arguments using definitions from cli arguments and a json file."""
         cmd_args = ["--seed=555",
                     "-yolo~uniform(-3, 1)",
                     "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
@@ -429,3 +429,11 @@ class TestSpaceBuilder(object):
             "-yolo=-2.4",
             "--arch1=choices({'lala': 0.2, 'yolo': 0.8})",
             "--arch2=yolo", "--name=/yolo:-2.4-/arch2:yolo"]
+
+    def test_handle_not_exposed_properties(self, spacebuilder):
+        """Build arguments using something which is neither legit exposed property,
+        nor legit dimension definition."""
+        cmd_args = ["--name~trial.asdfad"]
+        with pytest.raises(TypeError) as exc:
+            spacebuilder.build_from(cmd_args)
+        assert 'trial.asdfad' in str(exc.value)

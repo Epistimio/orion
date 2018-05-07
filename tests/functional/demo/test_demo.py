@@ -203,6 +203,7 @@ def test_unique_folder_creation(database, monkeypatch, tmpdir):
                                 "--config", "./orion_config_random.yaml",
                                 "./dir_per_trial.py",
                                 "--dir={}".format(str(tmpdir)),
+                                "--other-name~exp.name",
                                 "--name~trial.hash_name",
                                 "-x~uniform(-50, 50)"])
     rcode = process.wait()
@@ -216,4 +217,5 @@ def test_unique_folder_creation(database, monkeypatch, tmpdir):
 
     trials_c = list(database.trials.find({'experiment': exp_id, 'status': 'completed'}))
     assert len(trials_c) == 3
-    assert len(os.listdir(str(tmpdir))) == 3
+    assert len(os.listdir(str(tmpdir))) == 1
+    assert len(os.listdir(str(tmpdir.join('lalala')))) == 3

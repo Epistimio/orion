@@ -91,7 +91,7 @@ class Consumer(object):
         log.debug("## New temp results file: %s", results_file.name)
 
         log.debug("## Building command line argument and configuration for trial.")
-        cmd_args = self.template_builder.build_to(config_file.name, trial)
+        cmd_args = self.template_builder.build_to(config_file.name, trial, self.experiment)
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
         script_process = self.launch_process(results_file.name, cmd_args)

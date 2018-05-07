@@ -15,10 +15,11 @@ def execute():
     parser.add_argument('-x', type=float, required=True)
     parser.add_argument('--dir', type=str, required=True)
     parser.add_argument('--name', type=str, required=True)
+    parser.add_argument('--other-name', type=str, required=True)
     inputs = parser.parse_args()
 
     # That's what is expected to happen
-    os.makedirs(os.path.join(inputs.dir, "my-exp-{}".format(inputs.name)),
+    os.makedirs(os.path.join(inputs.dir, inputs.other_name, "my-exp-{}".format(inputs.name)),
                 exist_ok=False)  # Raise OSError if it exists
 
     results = list()

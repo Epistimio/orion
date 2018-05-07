@@ -240,7 +240,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
     USERARGS_NAMESPACE = r'\W*([a-zA-Z0-9_-]+)'
     USERARGS_CONFIG = '--config='
 
-    EXPOSED_PROPERTIES = ['trial.hash_name', 'trial.full_name']
+    EXPOSED_PROPERTIES = ['trial.hash_name', 'trial.full_name', 'exp.name']
 
     def __init__(self):
         """Initialize a `SpaceBuilder`."""
@@ -381,12 +381,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
                 # It's a experiment/trial management command
                 namespace = '$'
                 namespace += ns_search[0] if ns_search else get_next_pos_ns()
-                try:
-                    objname, attrname = expression.split('.')
-                except ValueError as exc:
-                    raise ValueError("Expected dotted expression with two parts "
-                                     "'{{object}}.{{attribute}}'. "
-                                     "Got: '{}'".format(expression)) from exc
+                objname, attrname = expression.split('.')
                 self.commands_tmpl[namespace] = (objname, attrname)
                 self.userargs_tmpl[namespace] = prefix + '=' if ns_search else ''
             elif not ns_search or not expression or expression[0] == '/':
@@ -417,14 +412,18 @@ class SpaceBuilder(object, metaclass=SingletonType):
 
         return userconfig
 
-    def build_to(self, config_path, trial):
+    def build_to(self, config_path, trial, experiment=None):
         """Use templates saved from `build_from` to generate a config file (if needed)
         and command line arguments to correspond to specific parameter selections.
 
         :param config_path: Path in which the configuration file instance
            will be created.
         :param trial: A `orion.core.worker.trial.Trial` object with concrete
-           parameter values for the defined `Space`.
+           parameter values for the defined `Space`. It may be used to retrieve
+           managerial information from it.
+        :param experiment: An `orion.core.worker.experiment.Experiment` object.
+           It may be used to retrieve managerial information from it. See
+           :attr:`EXPOSED_PROPERTIES`.
 
         :returns: A list with the command line arguments that must be given to
            script's execution.
@@ -432,7 +431,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
         """
         if self.userconfig:
             self._build_to_config(config_path, trial)
-        return self._build_to_args(config_path, trial)
+        return self._build_to_args(config_path, trial, experiment)
 
     def _build_to_config(self, config_path, trial):
         config_instance = copy.deepcopy(self.userconfig_tmpl)
@@ -459,10 +458,10 @@ class SpaceBuilder(object, metaclass=SingletonType):
 
         self.converter.generate(config_path, config_instance)
 
-    def _build_to_args(self, config_path, trial):
+    def _build_to_args(self, config_path, trial, experiment=None):
         cmd_args = []
         # objects whose properties can be fetched to fill a cli argument
-        exposed_objects = {'trial': trial}
+        exposed_objects = {'trial': trial, 'exp': experiment}
         param_names = [trial.params[i].name for i in range(len(trial.params))]
 
         for namespace, prefix in self.userargs_tmpl.items():
