@@ -34,8 +34,6 @@ class TestDimension(object):
         assert dists.norm.interval(1.0, 0.9, 0.1) == dim.interval()
         assert dists.norm.interval(0.5, 0.9, 0.1) == dim.interval(0.5)
 
-        assert 1.0 in dim
-
         assert str(dim) == "Dimension(name=yolo, prior={norm: (0.9, 0.1), {}}, shape=(), default value=None)"
 
         assert dim.name == 'yolo'
@@ -101,21 +99,15 @@ class TestDimension(object):
     def test_contains_bounds(self):
         """Test __contains__ for bounds."""
         dim = Dimension('yolo', 'uniform', -3, 4)
-        assert -3 in dim
-        assert -2 in dim
-        assert 0 in dim
-        assert 0.9999 in dim
-        assert 1 not in dim
+        with pytest.raises(NotImplementedError):
+            assert -3 in dim
 
     def test_contains_shape(self):
         """Test __contains__ for shape check."""
         dim = Dimension(None, 'uniform', -3, 4, shape=(4, 4))
-        assert -3 not in dim
-        assert -2 not in dim
-        assert 0 not in dim
-        assert 0.9999 not in dim
-        assert 1 not in dim
-        assert dists.uniform.rvs(-3, 4, size=(4, 4)) in dim
+    
+        with pytest.raises(NotImplementedError):
+            assert dists.uniform.rvs(-3, 4, size=(4, 4)) in dim
 
     def test_set_bad_name(self):
         """Try setting a name other than str or None."""
@@ -124,8 +116,12 @@ class TestDimension(object):
             dim.name = 4
 
     def test_init_with_default_value(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(NotImplementedError):
             dim = Dimension('yolo', 'uniform', -3, 4, default_value=4)
+    
+    def test_no_default_value(self):
+        dim = Dimension('yolo', 'uniform', -3, 4)	
+        assert dim.default_value == None
 
 class TestReal(object):
     """Test methods of a `Real` object."""
@@ -141,6 +137,7 @@ class TestReal(object):
         assert dists.norm.interval(0.5, 0.9) == dim.interval(0.5)
 
         assert 1.0 in dim
+        assert "1.0" in dim
 
         assert str(dim) == "Real(name=yolo, prior={norm: (0.9,), {}}, shape=(), default value=None)"
 
@@ -197,6 +194,10 @@ class TestReal(object):
     def test_set_outside_bounds_default_value(self):
         with pytest.raises(ValueError):
             dim = Real('yolo', 'uniform', -3, 2, default_value=5)
+    
+    def test_no_default_value(self):
+        dim = Real('yolo', 'uniform', -3, 4)	
+        assert dim.default_value == None
 
 class TestInteger(object):
     """Test methods of a `Integer` object."""
@@ -212,6 +213,7 @@ class TestInteger(object):
         assert dim.interval(0.5) == (-2, 2)
 
         assert 1.0 in dim
+        assert "1.0" in dim
 
         assert str(dim) == "Integer(name=yolo, prior={uniform: (-3, 6), {}}, shape=(), default value=None)"
 
@@ -224,6 +226,7 @@ class TestInteger(object):
         dim = Integer('yolo', 'uniform', -3, 6)
 
         assert 0.1 not in dim
+        assert "0.1" not in dim
         assert (0.1, -0.2) not in dim
         assert 0 in dim
         assert (1, 2) not in dim
@@ -257,6 +260,10 @@ class TestInteger(object):
     def test_set_outside_bounds_default_value(self):
         with pytest.raises(ValueError):
             dim = Integer('yolo', 'uniform', -3, 2, default_value=4)
+
+    def test_no_default_value(self):
+        dim = Integer('yolo', 'uniform', -3, 4)	
+        assert dim.default_value == None
 
 class TestCategorical(object):
     """Test methods of a `Categorical` object."""
@@ -382,10 +389,10 @@ class TestCategorical(object):
         with pytest.raises(ValueError):
             dim = Categorical('yolo', categories, default_value=2.3)
 
-    def test_set_outside_bounds_default_value(self):
+    def test_no_default_value(self):
         categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
-        with pytest.raises(ValueError):
-            dim = Categorical('yolo', categories, default_value=4)
+        dim = Categorical('yolo', categories)
+        assert dim.default_value == None
 
 class TestSpace(object):
     """Test methods of a `Space` object."""

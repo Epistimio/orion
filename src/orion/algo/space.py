@@ -112,7 +112,8 @@ class Dimension(object):
         default_value = self._kwargs.pop('default_value', None)
 
         if default_value is not None and default_value not in self: 
-            raise ValueError("Dimension's default value must be contained in its interval")
+            raise ValueError("{} is not a valid value for this Dimension. Can't set default value.".format(default_value))
+
         self._default_value = default_value
 
     def sample(self, n_samples=1, seed=None):
@@ -165,14 +166,7 @@ class Dimension(object):
            It just checks whether point lies inside the support and the shape.
 
         """
-        low, high = self.interval()
-        
-        point_ = numpy.asarray(point)
-        
-        if point_.shape != self.shape:
-            return False
-
-        return numpy.all(point_ < high) and numpy.all(point_ >= low)
+        raise NotImplementedError
 
     def __repr__(self):
         """Represent the object as a string."""
@@ -253,6 +247,25 @@ class Real(Dimension):
             raise ValueError("Lower bound {} has to be less "
                              "than upper bound {}".format(self._low, self._high))
         super(Real, self).__init__(name, prior, *args, **kwargs)
+        
+    def __contains__(self, point):
+        """Check if constraints hold for this `point` of `Dimension`.
+
+        :param point: a parameter corresponding to this `Dimension`.
+        :type point: numeric or array-like
+
+        .. note:: Default `Dimension` does not have any extra constraints.
+           It just checks whether point lies inside the support and the shape.
+
+        """
+        low, high = self.interval()
+        
+        point_ = numpy.asarray(point, numpy.float64)
+        
+        if point_.shape != self.shape:
+            return False
+
+        return numpy.all(point_ < high) and numpy.all(point_ >= low)
 
     def interval(self, alpha=1.0):
         """Return a tuple containing lower and upper bound for parameters.
@@ -354,7 +367,7 @@ class Integer(Real, _Discrete):
         `Integer` will check whether `point` contains only integers.
 
         """
-        point_ = numpy.asarray(point)
+        point_ = numpy.asarray(point, numpy.float64)
         if not numpy.all(numpy.equal(numpy.mod(point_, 1), 0)):
             return False
         return super(Integer, self).__contains__(point)
