@@ -13,6 +13,8 @@
 """
 from abc import (ABCMeta, abstractmethod)
 
+import numpy
+
 from orion.algo.space import Space
 
 
@@ -45,13 +47,16 @@ def build_required_space(requirements, original_space):
 
 
 class Transformer(object, metaclass=ABCMeta):
-    """Define a injective function and its inverse. Base transformation class.
+    """Define an (injective) function and its inverse. Base transformation class.
 
     :attr:`target_type` defines the type of the target space of the forward function.
-    It can take the values: ``['real', 'integer', 'categorical', 'invariant']``.
-    In the case of ``'invariant'``, target == domain dimension type.
+    It can provide one of the values: ``['real', 'integer', 'categorical']``.
+
+    :attr:`domain_type` is similar to `target_type` but it refers to the domain.
+    If it is ``None``, then it can receive inputs of any type.
     """
 
+    domain_type = None
     target_type = None
 
     @abstractmethod
@@ -76,7 +81,8 @@ class Transformer(object, metaclass=ABCMeta):
 class Identity(Transformer):
     """Implement an identity transformation. Everything as it is."""
 
-    target_type = 'invariant'
+    def __init__(self, domain_type=None):
+        self._domain_type = domain_type
 
     def transform(self, point):
         return point
@@ -87,17 +93,28 @@ class Identity(Transformer):
     def repr_format(self, what):
         return what
 
+    @property
+    def domain_type(self):
+        return self._domain_type
+
+    @property
+    def target_type(self):
+        return self.domain_type
+
 
 class Compose(Transformer):
 
-    def __init__(self, transformers):
-        self.composition = Identity()
+    def __init__(self, transformers, base_domain_type=None):
         try:
             self.apply = transformers.pop()
         except IndexError:
             self.apply = Identity()
         if transformers:
-            self.composition = Compose(transformers)
+            self.composition = Compose(transformers, base_domain_type)
+        else:
+            self.composition = Identity(base_domain_type)
+        assert self.apply.domain_type is None or \
+            self.composition.target_type == self.apply.domain_type
 
     def transform(self, point):
         point = self.composition.transform(point)
@@ -115,10 +132,103 @@ class Compose(Transformer):
         return self.apply.repr_format(self.composition.repr_format(what))
 
     @property
+    def domain_type(self):
+        return self.composition.domain_type
+
+    @property
     def target_type(self):
         type_before = self.composition.target_type
         type_after = self.apply.target_type
-        return type_after if type_after != 'invariant' else type_before
+        return type_after if type_after else type_before
+
+
+class Reverse(Transformer):
+    """Apply the reverse transformation that another one would do."""
+
+    def __init__(self, transformer: Transformer):
+        self.transformer = transformer
+
+    def transform(self, point):
+        return self.transformer.reverse(point)
+
+    def reverse(self, transformed_point):
+        return self.transformer.transform(transformed_point)
+
+    def repr_format(self, what):
+        return "{}{}".format(self.__class__.__name__, what)
+
+    @property
+    def target_type(self):
+        return self.transformer.domain_type
+
+    @property
+    def domain_type(self):
+        return self.transformer.target_type
+
+
+class Quantize(Transformer):
+    """Transform real numbers to integers, violating injection."""
+
+    domain_type = 'real'
+    target_type = 'integer'
+
+    def transform(self, point):
+        return numpy.asarray(point).round().astype(int)
+
+    def reverse(self, transformed_point):
+        return numpy.asarray(transformed_point).astype(float)
+
+
+class Enumerate(Transformer):
+    """Enumerate categories."""
+
+    domain_type = 'categorical'
+    target_type = 'integer'
+
+    def __init__(self, categories):
+        self.categories = categories
+        map_dict = {cat: i for i, cat in enumerate(categories)}
+        self._map = numpy.vectorize(lambda x: map_dict[x], otypes='i')
+        self._imap = numpy.vectorize(lambda x: categories[x], otypes=[numpy.object])
+
+    def transform(self, point):
+        return self._map(point).tolist()
+
+    def reverse(self, transformed_point):
+        return self._imap(transformed_point).tolist()
+
+
+class OneHotEncode(Transformer):
+    """Encode categories to a 1-hot integer space representation."""
+
+    domain_type = 'categorical'
+    target_type = 'real'
+
+    def __init__(self, categories):
+        self.categories = categories
+        self.enumerator = Enumerate(categories)
+        self.num_cats = len(categories)
+
+    def transform(self, point):
+        indices = self.enumerator.transform(point)
+
+        if self.num_cats == 2:
+            return indices
+
+        hot = numpy.zeros(self.infer_target_shape(indices.shape))
+        grid = numpy.meshgrid(*[numpy.arange(dim) for dim in indices.shape],
+                              indexing='ij')
+        hot[grid + [indices]] = 1
+        return hot
+
+    def reverse(self, transformed_point):
+        point_ = numpy.asarray(transformed_point)
+        if self.num_cats == 2:
+            return self.enumerator.reverse((point_ > 0.5).astype(int))
+        return self.enumerator.reverse(point_.argmax(axis=-1))
+
+    def infer_target_shape(self, shape):
+        return tuple(list(shape) + [self.num_cats])
 
 
 class TransformedDimension(object):
