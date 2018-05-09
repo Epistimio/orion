@@ -102,6 +102,7 @@ def clean_db(database, exp_config):
     database.workers.drop()
     database.resources.drop()
 
+
 @pytest.fixture()
 def only_experiments_db(database, exp_config):
     """Clean the database and insert only experiments."""

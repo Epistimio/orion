@@ -106,6 +106,7 @@ def clean_db(database, exp_config):
     database.resources.drop()
     database.resources.insert_many(exp_config[3])
 
+
 @pytest.fixture()
 def only_experiments_db(database, exp_config):
     """Clean the database and insert only experiments."""

@@ -9,22 +9,23 @@
    :synopsis: Gets an experiment and iterates over it until one of the exit conditions is met
 
 """
+
 import logging
-import argparse
-import orion
 import os
 
+import orion
 from orion.core.cli import resolve_config
 from orion.core.io.database import Database, DuplicateKeyError
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
-from orion.client import manual
 
 log = logging.getLogger(__name__)
 
+
 def get_parser(parser):
+    """Return the parser that needs to be used for this command"""
     hunt_parser = parser.add_parser('hunt', help='hunt help')
-   
+
     orion_group = resolve_config.get_basic_args_group(hunt_parser)
 
     orion_group.add_argument(
@@ -36,17 +37,14 @@ def get_parser(parser):
         "--pool-size", type=int, metavar='#',
         help="number of concurrent workers to evaluate candidate samples "
              "(default: %s)" % resolve_config.DEF_CMD_POOL_SIZE[1])
-     
+
     resolve_config.get_user_args_group(hunt_parser)
 
     hunt_parser.set_defaults(func=fetch_args)
 
+
 def fetch_args(args):
-    """Get options from command line arguments.
-
-    :param description: string description of ``orion`` executable
-
-    """
+    """Get options from command line arguments."""
     # Explicitly add orion's version as experiment's metadata
     args['metadata'] = dict()
     args['metadata']['orion_version'] = orion.core.__version__
@@ -65,14 +63,15 @@ def fetch_args(args):
     log.debug("Problem definition: %s %s", args['metadata']['user_script'],
               ' '.join(args['metadata']['user_args']))
 
-    execute(args, config)
+    _execute(args, config)
 
-def execute(cmdargs, cmdconfig):
-    experiment, cmdargs = infer_experiment(cmdargs, cmdconfig)
+
+def _execute(cmdargs, cmdconfig):
+    experiment, cmdargs = _infer_experiment(cmdargs, cmdconfig)
     workon(experiment)
 
 
-def infer_experiment(cmdargs, cmdconfig):
+def _infer_experiment(cmdargs, cmdconfig):
     # Initialize configuration dictionary.
     # Fetch info from defaults and configurations from default locations.
     expconfig = resolve_config.fetch_default_options()
@@ -82,14 +81,13 @@ def infer_experiment(cmdargs, cmdconfig):
     # variables used
     expconfig = resolve_config.merge_env_vars(expconfig)
 
-
     # Initialize singleton database object
     tmpconfig = resolve_config.merge_orion_config(expconfig, dict(),
                                                   cmdconfig, cmdargs)
-    
+
     db_opts = tmpconfig['database']
     dbtype = db_opts.pop('type')
-    
+
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
     Database(of_type=dbtype, **db_opts)
 
