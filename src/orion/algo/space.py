@@ -86,7 +86,6 @@ class Dimension(object):
         """
         self._name = None
         self.name = name
-        self._default_value = None
 
         if 'random_state' in kwargs or 'seed' in kwargs:
             raise ValueError("random_state/seed cannot be set in a "
