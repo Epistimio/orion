@@ -204,10 +204,7 @@ class Dimension(object):
                                                    size=self._shape,
                                                    **self._kwargs)
         return size
-    
-    @property
-    def underlying_type(self):
-        raise NotImplementedError
+
 
 
 class Real(Dimension):
