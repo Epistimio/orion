@@ -434,7 +434,8 @@ class TestSpaceBuilder(object):
 
     def test_handle_not_exposed_properties(self, spacebuilder):
         """Build arguments using something which is neither legit exposed property,
-        nor legit dimension definition."""
+        nor legit dimension definition.
+        """
         cmd_args = ["--name~trial.asdfad"]
         with pytest.raises(TypeError) as exc:
             spacebuilder.build_from(cmd_args)

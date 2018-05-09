@@ -337,10 +337,8 @@ class SpaceBuilder(object, metaclass=SingletonType):
         recognise a ``--config`` option or by checking the first positional
         argument, if not found elsewhere. Only one is allowed.
 
-        .. note:: Currently positional arguments cannot define a parameter
-           dimension. And I don't think they will; it wouldn't be good for
-           your health down the line. Please be responsible and give a good
-           descriptive name to your inputs.
+        .. note:: Positional arguments cannot define a parameter
+           dimension, because no **meaningful** name can be assigned.
 
         .. note:: Templates preserve given argument order.
 
