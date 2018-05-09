@@ -34,8 +34,8 @@ class TestDimension(object):
         assert dists.norm.interval(1.0, 0.9, 0.1) == dim.interval()
         assert dists.norm.interval(0.5, 0.9, 0.1) == dim.interval(0.5)
 
-        assert str(dim) == "Dimension(name=yolo, prior={norm: (0.9, 0.1), {}}, "\
-                            "shape=(), default value=None)"
+        assert str(dim) == "Dimension(name=yolo, prior={norm: (0.9, 0.1), {}}, " \
+                           "shape=(), default value=None)"
 
         assert dim.name == 'yolo'
         assert dim.type == 'dimension'
@@ -119,7 +119,7 @@ class TestDimension(object):
     def test_init_with_default_value(self):
         """Make sure the __contains__ method does not work"""
         with pytest.raises(NotImplementedError):
-            dim = Dimension('yolo', 'uniform', -3, 4, default_value=4)
+            Dimension('yolo', 'uniform', -3, 4, default_value=4)
 
     def test_no_default_value(self):
         """Test that no giving a default value assigns None"""
@@ -198,7 +198,7 @@ class TestReal(object):
     def test_set_outside_bounds_default_value(self):
         """Make sure default value is inside the bounds"""
         with pytest.raises(ValueError):
-            dim = Real('yolo', 'uniform', -3, 2, default_value=5)
+            Real('yolo', 'uniform', -3, 2, default_value=5)
 
     def test_no_default_value(self):
         """Make sure the default value is None"""
@@ -222,7 +222,7 @@ class TestInteger(object):
         assert 1.0 in dim
 
         assert str(dim) == "Integer(name=yolo, prior={uniform: (-3, 6), {}}, "\
-                            "shape=(), default value=None)"
+                           "shape=(), default value=None)"
 
         assert dim.name == 'yolo'
         assert dim.type == 'integer'
@@ -266,9 +266,10 @@ class TestInteger(object):
     def test_set_outside_bounds_default_value(self):
         """Make sure the default value is inside the bounds of the dimensions"""
         with pytest.raises(ValueError):
-            dim = Integer('yolo', 'uniform', -3, 2, default_value=4)
+            Integer('yolo', 'uniform', -3, 2, default_value=4)
 
     def test_no_default_value(self):
+        """Make sure the default value is None"""
         dim = Integer('yolo', 'uniform', -3, 4)
         assert dim.default_value is None
 
@@ -291,7 +292,7 @@ class TestCategorical(object):
         assert 3 not in dim
 
         assert str(dim) == "Categorical(name=yolo, prior={asdfa: 0.50, 2: 0.50}, "\
-                            "shape=(), default value=None)"
+                           "shape=(), default value=None)"
 
         assert dim.name == 'yolo'
         assert dim.type == 'categorical'
@@ -381,12 +382,14 @@ class TestCategorical(object):
         assert [2, 'asdfa'] in dim
 
     def test_init_with_default_value_string(self):
+        """Make sure the default value is of the correct type"""
         categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
         dim = Categorical('yolo', categories, default_value="asdfa")
 
         assert type(dim.default_value) is str
 
     def test_init_with_default_value_int(self):
+        """Make sure the default value is of the correct type"""
         categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
         dim = Categorical('yolo', categories, default_value=2)
 
@@ -395,11 +398,12 @@ class TestCategorical(object):
     def test_init_with_wrong_default_value(self):
         """Make sure the default value exists"""
         categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
-        
+
         with pytest.raises(ValueError):
-            dim = Categorical('yolo', categories, default_value=2.3)
+            Categorical('yolo', categories, default_value=2.3)
 
     def test_no_default_value(self):
+        """Make sure the default value is None"""
         categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
         dim = Categorical('yolo', categories)
         assert dim.default_value is None
@@ -541,5 +545,7 @@ class TestSpace(object):
         space.register(dim)
 
         assert str(space) == "Space(["\
-                             "Integer(name=yolo2, prior={uniform: (-3, 6), {}}, shape=(2,), default value=None),\n" \
-                             "       Real(name=yolo3, prior={norm: (0.9,), {}}, shape=(), default value=None)])"
+                             "Integer(name=yolo2, prior={uniform: (-3, 6), {}}, shape=(2,),"\
+                             "default value=None),\n"\
+                             "       Real(name=yolo3, prior={norm: (0.9,), {}}, shape=(), "\
+                             "default value=None)])"

@@ -108,12 +108,12 @@ class Dimension(object):
         if 'size' in kwargs:
             raise ValueError("Use 'shape' keyword only instead of 'size'.")
         self._shape = self._kwargs.pop('shape', None)
-        
+
         default_value = self._kwargs.pop('default_value', None)
 
         if default_value is not None and default_value not in self:
             raise ValueError("{} is not a valid value for this Dimension. "
-                            "Can't set default value.".format(default_value))
+                             "Can't set default value.".format(default_value))
 
         self._default_value = default_value
 
@@ -186,7 +186,7 @@ class Dimension(object):
             self._name = value
         else:
             raise TypeError("Dimension's name must be either string or None. "
-                           "Provided: {}, of type: {}".format(value, type(value)))
+                            "Provided: {}, of type: {}".format(value, type(value)))
 
     @property
     def default_value(self):
@@ -248,10 +248,10 @@ class Real(Dimension):
         self._high = kwargs.pop('high', numpy.inf)
         if self._high <= self._low:
             raise ValueError("Lower bound {} has to be less than upper bound {}"
-                                                .format(self._low, self._high))
-                                                
+                             .format(self._low, self._high))
+
         super(Real, self).__init__(name, prior, *args, **kwargs)
-        
+
     def __contains__(self, point):
         """Check if constraints hold for this `point` of `Dimension`.
 
@@ -474,7 +474,7 @@ class Categorical(Dimension):
         prior = "{" + ', '.join(prior) + "}"
 
         return "Categorical(name={0}, prior={1}, shape={2}, default value={3})"\
-                                .format(self.name, prior, self.shape, self.default_value)
+               .format(self.name, prior, self.shape, self.default_value)
 
 
 class Space(OrderedDict):
