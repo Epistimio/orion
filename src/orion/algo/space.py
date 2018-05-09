@@ -166,7 +166,6 @@ class Dimension(object):
            It just checks whether point lies inside the support and the shape.
 
         """
-<<<<<<< HEAD
         raise NotImplementedError
 
     def __repr__(self):

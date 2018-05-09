@@ -18,7 +18,7 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     monkeypatch.setenv('ORION_DB_NAME', 'orion_test')
     monkeypatch.setenv('ORION_DB_ADDRESS', 'mongodb://user:pass@localhost')
-    process = subprocess.Popen(["orion", "-n", "default_algo",
+    process = subprocess.Popen(["orion", "hunt", "-n", "default_algo",
                                 "--max-trials", "30",
                                 "./black_box.py", "-x~uniform(-50, 50)"])
     rcode = process.wait()
