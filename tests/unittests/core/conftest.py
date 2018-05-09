@@ -74,7 +74,7 @@ def space():
 @pytest.fixture(scope='module')
 def fixed_suggestion():
     """Return the same tuple/sample from a possible space."""
-    return (('asdfa', '2'), 0, 3.5)
+    return (('asdfa', 2), 0, 3.5)
 
 
 @pytest.fixture()
