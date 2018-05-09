@@ -143,7 +143,7 @@ class TestReal(object):
         assert 1.0 in dim
 
         assert str(dim) == "Real(name=yolo, prior={norm: (0.9,), {}}, shape=(), default value=None)"
-
+        assert dim.underlying_type == np.float64
         assert dim.name == 'yolo'
         assert dim.type == 'real'
         assert dim.shape == ()
@@ -204,6 +204,7 @@ class TestReal(object):
         """Make sure the default value is None"""
         dim = Real('yolo', 'uniform', -3, 4)
         assert dim.default_value is None
+
 
 
 class TestInteger(object):
@@ -287,6 +288,7 @@ class TestCategorical(object):
         assert dim._probs == (0.5, 0.5)
 
         assert categories == dim.categories
+        assert dim.underlying_type == str
 
         assert 2 in dim
         assert 3 not in dim

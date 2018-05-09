@@ -15,7 +15,7 @@ def trial():
         dict(
             name='yolo',
             type='categorical',
-            value=('asdfa', 2)
+            value=('asdfa', '2')
             ),
         dict(
             name='yolo2',
