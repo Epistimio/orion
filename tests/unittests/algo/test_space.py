@@ -34,9 +34,8 @@ class TestDimension(object):
         assert dists.norm.interval(1.0, 0.9, 0.1) == dim.interval()
         assert dists.norm.interval(0.5, 0.9, 0.1) == dim.interval(0.5)
 
-        assert 1.0 in dim
-
-        assert str(dim) == "Dimension(name=yolo, prior={norm: (0.9, 0.1), {}}, shape=())"
+        assert str(dim) == "Dimension(name=yolo, prior={norm: (0.9, 0.1), {}}, " \
+                           "shape=(), default value=None)"
 
         assert dim.name == 'yolo'
         assert dim.type == 'dimension'
@@ -101,27 +100,31 @@ class TestDimension(object):
     def test_contains_bounds(self):
         """Test __contains__ for bounds."""
         dim = Dimension('yolo', 'uniform', -3, 4)
-        assert -3 in dim
-        assert -2 in dim
-        assert 0 in dim
-        assert 0.9999 in dim
-        assert 1 not in dim
+        with pytest.raises(NotImplementedError):
+            assert -3 in dim
 
     def test_contains_shape(self):
         """Test __contains__ for shape check."""
         dim = Dimension(None, 'uniform', -3, 4, shape=(4, 4))
-        assert -3 not in dim
-        assert -2 not in dim
-        assert 0 not in dim
-        assert 0.9999 not in dim
-        assert 1 not in dim
-        assert dists.uniform.rvs(-3, 4, size=(4, 4)) in dim
+
+        with pytest.raises(NotImplementedError):
+            assert dists.uniform.rvs(-3, 4, size=(4, 4)) in dim
 
     def test_set_bad_name(self):
         """Try setting a name other than str or None."""
         dim = Dimension('yolo', 'uniform', -3, 4, shape=(4, 4))
         with pytest.raises(TypeError):
             dim.name = 4
+
+    def test_init_with_default_value(self):
+        """Make sure the __contains__ method does not work"""
+        with pytest.raises(NotImplementedError):
+            Dimension('yolo', 'uniform', -3, 4, default_value=4)
+
+    def test_no_default_value(self):
+        """Test that no giving a default value assigns None"""
+        dim = Dimension('yolo', 'uniform', -3, 4)
+        assert dim.default_value is None
 
 
 class TestReal(object):
@@ -139,7 +142,7 @@ class TestReal(object):
 
         assert 1.0 in dim
 
-        assert str(dim) == "Real(name=yolo, prior={norm: (0.9,), {}}, shape=())"
+        assert str(dim) == "Real(name=yolo, prior={norm: (0.9,), {}}, shape=(), default value=None)"
 
         assert dim.name == 'yolo'
         assert dim.type == 'real'
@@ -186,6 +189,22 @@ class TestReal(object):
         dim = Real('yolo', 'uniform', -2, 4, low=-3, high=+3)
         assert dim.interval() == (-2.0, 2.0)
 
+    def test_init_with_default_value(self):
+        """Make sure the default value is set"""
+        dim = Real('yolo', 'uniform', -3, 10, default_value=2.0)
+
+        assert type(dim.default_value) is float
+
+    def test_set_outside_bounds_default_value(self):
+        """Make sure default value is inside the bounds"""
+        with pytest.raises(ValueError):
+            Real('yolo', 'uniform', -3, 2, default_value=5)
+
+    def test_no_default_value(self):
+        """Make sure the default value is None"""
+        dim = Real('yolo', 'uniform', -3, 4)
+        assert dim.default_value is None
+
 
 class TestInteger(object):
     """Test methods of a `Integer` object."""
@@ -202,7 +221,8 @@ class TestInteger(object):
 
         assert 1.0 in dim
 
-        assert str(dim) == "Integer(name=yolo, prior={uniform: (-3, 6), {}}, shape=())"
+        assert str(dim) == "Integer(name=yolo, prior={uniform: (-3, 6), {}}, "\
+                           "shape=(), default value=None)"
 
         assert dim.name == 'yolo'
         assert dim.type == 'integer'
@@ -237,6 +257,22 @@ class TestInteger(object):
         dim = Integer('yolo2', 'randint', -2, 4, loc=8)
         assert dim.interval() == (6, 12)
 
+    def test_init_with_default_value(self):
+        """Make sure the type of the default value is int"""
+        dim = Integer('yolo', 'uniform', -3, 10, default_value=2)
+
+        assert type(dim.default_value) is int
+
+    def test_set_outside_bounds_default_value(self):
+        """Make sure the default value is inside the bounds of the dimensions"""
+        with pytest.raises(ValueError):
+            Integer('yolo', 'uniform', -3, 2, default_value=4)
+
+    def test_no_default_value(self):
+        """Make sure the default value is None"""
+        dim = Integer('yolo', 'uniform', -3, 4)
+        assert dim.default_value is None
+
 
 class TestCategorical(object):
     """Test methods of a `Categorical` object."""
@@ -255,7 +291,8 @@ class TestCategorical(object):
         assert 2 in dim
         assert 3 not in dim
 
-        assert str(dim) == "Categorical(name=yolo, prior={asdfa: 0.50, 2: 0.50}, shape=())"
+        assert str(dim) == "Categorical(name=yolo, prior={asdfa: 0.50, 2: 0.50}, "\
+                           "shape=(), default value=None)"
 
         assert dim.name == 'yolo'
         assert dim.type == 'categorical'
@@ -310,7 +347,7 @@ class TestCategorical(object):
 
         assert str(dim) == "Categorical(name=yolo, " \
                            "prior={0: 0.10, 1: 0.10, ..., 8: 0.10, 9: 0.10}, " \
-                           "shape=(2,))"
+                           "shape=(2,), default value=None)"
 
     def test_bad_probabilities(self):
         """User provided bad probabilities."""
@@ -343,6 +380,33 @@ class TestCategorical(object):
 
         assert ['2', 'asdfa'] not in dim
         assert [2, 'asdfa'] in dim
+
+    def test_init_with_default_value_string(self):
+        """Make sure the default value is of the correct type"""
+        categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
+        dim = Categorical('yolo', categories, default_value="asdfa")
+
+        assert type(dim.default_value) is str
+
+    def test_init_with_default_value_int(self):
+        """Make sure the default value is of the correct type"""
+        categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
+        dim = Categorical('yolo', categories, default_value=2)
+
+        assert type(dim.default_value) is int
+
+    def test_init_with_wrong_default_value(self):
+        """Make sure the default value exists"""
+        categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
+
+        with pytest.raises(ValueError):
+            Categorical('yolo', categories, default_value=2.3)
+
+    def test_no_default_value(self):
+        """Make sure the default value is None"""
+        categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
+        dim = Categorical('yolo', categories)
+        assert dim.default_value is None
 
 
 class TestSpace(object):
@@ -481,5 +545,7 @@ class TestSpace(object):
         space.register(dim)
 
         assert str(space) == "Space(["\
-                             "Integer(name=yolo2, prior={uniform: (-3, 6), {}}, shape=(2,)),\n" \
-                             "       Real(name=yolo3, prior={norm: (0.9,), {}}, shape=())])"
+                             "Integer(name=yolo2, prior={uniform: (-3, 6), {}}, shape=(2,), "\
+                             "default value=None),\n"\
+                             "       Real(name=yolo3, prior={norm: (0.9,), {}}, shape=(), "\
+                             "default value=None)])"

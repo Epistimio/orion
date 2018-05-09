@@ -163,6 +163,7 @@ class DimensionBuilder(object, metaclass=SingletonType):
         globals_ = {'__builtins__': {}}
         try:
             dimension = eval("self." + expression, globals_, {'self': self})
+
             return dimension
         except AttributeError:
             pass
@@ -183,6 +184,7 @@ class DimensionBuilder(object, metaclass=SingletonType):
                             "'{1}' does not correspond to a supported distribution.".format(
                                 name, prior))
         dimension = klass(name, prior, *args, **kwargs)
+
         return dimension
 
     def build(self, name, expression):
@@ -220,8 +222,8 @@ class SpaceBuilder(object, metaclass=SingletonType):
 
     USERCONFIG_OPTION = '--config='
     USERCONFIG_KEYWORD = 'orion~'
-    USERARGS_SEARCH = r'\W*([a-zA-Z0-9_-]+)~(.*)'
-    USERARGS_TMPL = r'(.*)~(.*)'
+    USERARGS_SEARCH = r'\W*([a-zA-Z0-9_-]+)~([a-zA-Z0-9_]+\(.*\))'
+    USERARGS_TMPL = r'(.*)~(.*\(.*\))'
 
     def __init__(self):
         """Initialize a `SpaceBuilder`."""
@@ -313,6 +315,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
 
             name, expression = found[0]
             namespace = '/' + name
+
             dimension = self.dimbuilder.build(namespace, expression)
             self.space.register(dimension)
 

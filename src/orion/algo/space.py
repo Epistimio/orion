@@ -86,6 +86,7 @@ class Dimension(object):
         """
         self._name = None
         self.name = name
+
         if 'random_state' in kwargs or 'seed' in kwargs:
             raise ValueError("random_state/seed cannot be set in a "
                              "parameter's definition! Set seed globally!")
@@ -106,6 +107,14 @@ class Dimension(object):
         if 'size' in kwargs:
             raise ValueError("Use 'shape' keyword only instead of 'size'.")
         self._shape = self._kwargs.pop('shape', None)
+
+        default_value = self._kwargs.pop('default_value', None)
+
+        if default_value is not None and default_value not in self:
+            raise ValueError("{} is not a valid value for this Dimension. "
+                             "Can't set default value.".format(default_value))
+
+        self._default_value = default_value
 
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
@@ -157,17 +166,13 @@ class Dimension(object):
            It just checks whether point lies inside the support and the shape.
 
         """
-        low, high = self.interval()
-        point_ = numpy.asarray(point)
-        if point_.shape != self.shape:
-            return False
-        return numpy.all(point_ < high) and numpy.all(point_ >= low)
+        raise NotImplementedError
 
     def __repr__(self):
         """Represent the object as a string."""
-        return "{0}(name={1}, prior={{{2}: {3}, {4}}}, shape={5})".format(
+        return "{0}(name={1}, prior={{{2}: {3}, {4}}}, shape={5}, default value={6})".format(
             self.__class__.__name__, self.name, self._prior_name,
-            self._args, self._kwargs, self.shape)
+            self._args, self._kwargs, self.shape, self._default_value)
 
     @property
     def name(self):
@@ -181,6 +186,11 @@ class Dimension(object):
         else:
             raise TypeError("Dimension's name must be either string or None. "
                             "Provided: {}, of type: {}".format(value, type(value)))
+
+    @property
+    def default_value(self):
+        """Return the default value for this dimensions"""
+        return self._default_value
 
     @property
     def type(self):
@@ -236,9 +246,29 @@ class Real(Dimension):
         self._low = kwargs.pop('low', -numpy.inf)
         self._high = kwargs.pop('high', numpy.inf)
         if self._high <= self._low:
-            raise ValueError("Lower bound {} has to be less "
-                             "than upper bound {}".format(self._low, self._high))
+            raise ValueError("Lower bound {} has to be less than upper bound {}"
+                             .format(self._low, self._high))
+
         super(Real, self).__init__(name, prior, *args, **kwargs)
+
+    def __contains__(self, point):
+        """Check if constraints hold for this `point` of `Dimension`.
+
+        :param point: a parameter corresponding to this `Dimension`.
+        :type point: numeric or array-like
+
+        .. note:: Default `Dimension` does not have any extra constraints.
+           It just checks whether point lies inside the support and the shape.
+
+        """
+        low, high = self.interval()
+
+        point_ = numpy.asarray(point)
+
+        if point_.shape != self.shape:
+            return False
+
+        return numpy.all(point_ < high) and numpy.all(point_ >= low)
 
     def interval(self, alpha=1.0):
         """Return a tuple containing lower and upper bound for parameters.
@@ -317,6 +347,9 @@ class _Discrete(Dimension):
         if int_high < high:  # Exclusive upper bound
             int_high += 1
         return (int_low, int_high)
+
+    def __contains__(self, point):
+        raise NotImplementedError
 
 
 class Integer(Real, _Discrete):
@@ -439,11 +472,11 @@ class Categorical(Dimension):
 
         prior = map(lambda x: '{0[0]}: {0[1]:.2f}'.format(x)
                     if not isinstance(x, _Ellipsis) else str(x), prior)
+
         prior = "{" + ', '.join(prior) + "}"
 
-        return "Categorical(name={0}, prior={1}, shape={2})".format(self.name,
-                                                                    prior,
-                                                                    self.shape)
+        return "Categorical(name={0}, prior={1}, shape={2}, default value={3})"\
+               .format(self.name, prior, self.shape, self.default_value)
 
 
 class Space(OrderedDict):
