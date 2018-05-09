@@ -24,25 +24,56 @@ def build_required_space(requirements, original_space):
 
     It uses appropriate cascade of `Transformer` objects per `Dimension`
     contained in `original_space`.
+
+    Parameters
+    ----------
+    requirements : list of str or str
+       Describes requirements that an algorithm needs a parameter space to have
+       in order to be able to operate on it. In case it is a list, the infered
+       transformations are going to be applied from the first item in the list to
+       the last.
+    original_space : `orion.algo.space.Space`
+       Original problem's definition of parameter space given by the user to Oríon.
+
+    Supported Requirements
+    ----------------------
+     * Null requirement; use problem's parameter space as it is defined
+     * ``'real'``: transform every dimension to a `orion.algo.space.Real` one
+     * ``'integer'``: transform every dimension to a `orion.algo.space.Integer` one
+
     """
     requirements = requirements if isinstance(requirements, list) else [requirements]
     space = TransformedSpace()
     for dim in original_space.values():
         transformers = []
         type_ = dim.type
+        base_domain_type = type_
         for requirement in requirements:
-            # TODO Write classes and instantiate transformers accordingly
-            if type_ == 'real':
+            if type_ == 'real' and requirement in ('real', None):
                 pass
-            elif type_ == 'integer':
+            elif type_ == 'real' and requirement == 'integer':
+                transformers.append(Quantize())
+            elif type_ == 'integer' and requirement in ('integer', None):
                 pass
-            elif type_ == 'categorical':
+            elif type_ == 'integer' and requirement == 'real':
+                transformers.append(Reverse(Quantize()))
+            elif type_ == 'categorical' and requirement == 'real':
+                transformers.extend([Enumerate(dim.categories),
+                                     OneHotEncode(len(dim.categories))])
+            elif type_ == 'categorical' and requirement == 'integer':
+                transformers.append(Enumerate(dim.categories))
+            elif type_ == 'categorical' and requirement is None:
                 pass
             else:
-                raise TypeError("Unsupported dimension type '{}'".format(type_))
-            last_type = transformers[-1].target_type
-            type_ = last_type if last_type != 'invariant' else type_
-        space.register(TransformedDimension(Compose(transformers), dim))
+                raise TypeError("Unsupported dimension type ('{}') "
+                                "or requirement ('{}')".format(requirement, type_))
+            try:
+                last_type = transformers[-1].target_type
+                type_ = last_type if last_type != 'invariant' else type_
+            except IndexError:
+                pass
+        space.register(TransformedDimension(Compose(transformers, base_domain_type),
+                                            dim))
     return space
 
 
@@ -146,6 +177,7 @@ class Reverse(Transformer):
     """Apply the reverse transformation that another one would do."""
 
     def __init__(self, transformer: Transformer):
+        assert not isinstance(transformer, OneHotEncode), "real to categorical is pointless"
         self.transformer = transformer
 
     def transform(self, point):
@@ -155,7 +187,7 @@ class Reverse(Transformer):
         return self.transformer.transform(transformed_point)
 
     def repr_format(self, what):
-        return "{}{}".format(self.__class__.__name__, what)
+        return "{}{}".format(self.__class__.__name__, self.transformer.repr_format(what))
 
     @property
     def target_type(self):
@@ -192,43 +224,47 @@ class Enumerate(Transformer):
         self._imap = numpy.vectorize(lambda x: categories[x], otypes=[numpy.object])
 
     def transform(self, point):
-        return self._map(point).tolist()
+        return self._map(point)
 
     def reverse(self, transformed_point):
-        return self._imap(transformed_point).tolist()
+        return self._imap(transformed_point)
 
 
 class OneHotEncode(Transformer):
     """Encode categories to a 1-hot integer space representation."""
 
-    domain_type = 'categorical'
+    domain_type = 'integer'
     target_type = 'real'
 
-    def __init__(self, categories):
-        self.categories = categories
-        self.enumerator = Enumerate(categories)
-        self.num_cats = len(categories)
+    def __init__(self, bound: int):
+        self.num_cats = bound
 
     def transform(self, point):
-        indices = self.enumerator.transform(point)
+        point_ = numpy.asarray(point)
+        assert numpy.all(point_ < self.num_cats) and numpy.all(point_ >= 0) and\
+            numpy.all(point_ % 1 == 0)
 
-        if self.num_cats == 2:
-            return indices
+        if self.num_cats <= 2:
+            return numpy.asarray(point_, dtype=float)
 
-        hot = numpy.zeros(self.infer_target_shape(indices.shape))
-        grid = numpy.meshgrid(*[numpy.arange(dim) for dim in indices.shape],
+        hot = numpy.zeros(self.infer_target_shape(point_.shape))
+        grid = numpy.meshgrid(*[numpy.arange(dim) for dim in point_.shape],
                               indexing='ij')
-        hot[grid + [indices]] = 1
+        hot[grid + [point_]] = 1
         return hot
 
     def reverse(self, transformed_point):
         point_ = numpy.asarray(transformed_point)
         if self.num_cats == 2:
-            return self.enumerator.reverse((point_ > 0.5).astype(int))
-        return self.enumerator.reverse(point_.argmax(axis=-1))
+            return (point_ > 0.5).astype(int)
+        elif self.num_cats == 1:
+            return numpy.zeros_like(point_, dtype=int)
+
+        assert point_.shape[-1] == self.num_cats
+        return point_.argmax(axis=-1)
 
     def infer_target_shape(self, shape):
-        return tuple(list(shape) + [self.num_cats])
+        return tuple(list(shape) + [self.num_cats]) if self.num_cats > 2 else shape
 
 
 class TransformedDimension(object):
@@ -250,14 +286,22 @@ class TransformedDimension(object):
 
     def interval(self, alpha=1.0):
         """Map the interval bounds to the transformed ones."""
-        low, high = self.original_dimension.interval(alpha)
+        try:
+            low, high = self.original_dimension.interval(alpha)
+        except RuntimeError as exc:
+            if "Categories" in str(exc):
+                return (-0.1, 1.1)
+            raise
         return self.transform(low), self.transform(high)
 
     def __contains__(self, point):
         """Reverse transform and ask the original dimension if it is a possible
         sample.
         """
-        orig_point = self.reverse(point)
+        try:
+            orig_point = self.reverse(point)
+        except AssertionError:
+            return False
         return orig_point in self.original_dimension
 
     def __repr__(self):

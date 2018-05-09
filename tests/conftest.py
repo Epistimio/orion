@@ -3,6 +3,7 @@
 """Common fixtures and utils for unittests and functional tests."""
 import os
 
+import numpy
 from pymongo import MongoClient
 import pytest
 import yaml
@@ -115,17 +116,16 @@ def clean_db(database, exp_config):
 
 
 @pytest.fixture()
-def only_experiments_db(database, exp_config):
-    """Clean the database and insert only experiments."""
-    database.experiments.drop()
-    database.experiments.insert_many(exp_config[0])
-    database.trials.drop()
-    database.workers.drop()
-    database.resources.drop()
-
-
-@pytest.fixture()
 def null_db_instances():
     """Nullify singleton instance so that we can assure independent instantiation tests."""
     Database.instance = None
     MongoDB.instance = None
+
+
+@pytest.fixture(scope='function')
+def seed():
+    """Return a fixed ``numpy.random.RandomState`` and global seed."""
+    seed = 5
+    rng = numpy.random.RandomState(seed)
+    numpy.random.seed(seed)
+    return rng
