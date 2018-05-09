@@ -19,6 +19,7 @@ import pkg_resources
 
 log = logging.getLogger(__name__)
 
+
 class SingletonError(ValueError):
     """Exception to be raised when someone provides arguments to build
     an object from a already-instantiated `SingletonType` class.
@@ -27,6 +28,7 @@ class SingletonError(ValueError):
     def __init__(self):
         """Pass the same constant message to ValueError underneath."""
         super().__init__("A singleton instance has already been instantiated.")
+
 
 class SingletonType(type):
     """Metaclass that implements the singleton pattern for a Python class."""

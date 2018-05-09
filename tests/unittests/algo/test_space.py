@@ -205,7 +205,6 @@ class TestReal(object):
         assert dim.default_value is None
 
 
-
 class TestInteger(object):
     """Test methods of a `Integer` object."""
 

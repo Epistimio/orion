@@ -206,7 +206,6 @@ class Dimension(object):
         return size
 
 
-
 class Real(Dimension):
     """Subclass of `Dimension` for representing real parameters.
 
@@ -478,7 +477,6 @@ class Categorical(Dimension):
 
         return "Categorical(name={0}, prior={1}, shape={2}, default value={3})"\
                .format(self.name, prior, self.shape, self.default_value)
-
 
 
 class Space(OrderedDict):

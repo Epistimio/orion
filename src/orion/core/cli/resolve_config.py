@@ -38,14 +38,12 @@ import logging
 import os
 import socket
 import textwrap
-import sys
 
 from numpy import inf as infinity
 import yaml
 
 import orion
-from orion.core.utils import SingletonType
-#from orion.core.utils import Configuration
+
 
 # Define type of arbitrary nested defaultdicts
 def nesteddict():
@@ -95,7 +93,10 @@ ENV_VARS = dict(
 
 
 class OrionArgsParser:
+    """Parser object handling the upper-level parsing of Orion's arguments."""
+
     def __init__(self, description):
+        """Create the pre-command arguments"""
         self.description = description
 
         self.parser = argparse.ArgumentParser(
@@ -110,24 +111,28 @@ class OrionArgsParser:
             '-v', '--verbose',
             action='count', default=0,
             help="logging levels of information about the process (-v: INFO. -vv: DEBUG)")
-       
+
         self.subparsers = self.parser.add_subparsers(help='sub-command help')
 
     def get_subparsers(self):
+        """Return the subparser object for this parser."""
         return self.subparsers
 
     def parse(self):
+        """Call argparse and generate a dictionary of arguments' value"""
         args = vars(self.parser.parse_args())
 
         verbose = args.pop('verbose', 0)
         if verbose == 1:
             logging.basicConfig(level=logging.INFO)
         elif verbose == 2:
-            logging.basicConfig(level=logging.DEBUG) 
-        
+            logging.basicConfig(level=logging.DEBUG)
+
         args.pop('func')(args)
 
+
 def fetch_config(args):
+    """Return the config inside the .yaml file if present."""
     orion_file = args.pop('config')
     config = dict()
     if orion_file:
@@ -136,26 +141,31 @@ def fetch_config(args):
 
     return config
 
+
 def get_basic_args_group(parser):
+    """Return the basic arguments for any command."""
     basic_args_group = parser.add_argument_group(
         "Orion arguments (optional)",
-        description="These arguments determine orion's behaviour") 
+        description="These arguments determine orion's behaviour")
 
     basic_args_group.add_argument(
         '-n', '--name',
         type=str, metavar='stringID',
         help="experiment's unique name; "
              "(default: None - specified either here or in a config)")
-    
-    
-    basic_args_group.add_argument(
-        '-c', '--config',
-        type=argparse.FileType('r'), metavar='path-to-config',
-        help="user provided orion configuration file")
+
+    basic_args_group.add_argument('-c', '--config', type=argparse.FileType('r'),
+                                  metavar='path-to-config', help="user provided "
+                                  "orion configuration file")
 
     return basic_args_group
-   
+
+
 def get_user_args_group(parser):
+    """
+    Return the user group arguments for any command.
+    User group arguments are composed of the user script and the user args
+    """
     usergroup = parser.add_argument_group(
         "User script related arguments",
         description="These arguments determine user's script behaviour "
@@ -173,6 +183,7 @@ def get_user_args_group(parser):
              "keyword argument.")
 
     return usergroup
+
 
 def fetch_default_options():
     """Create a nesteddict with options from the default configuration files.

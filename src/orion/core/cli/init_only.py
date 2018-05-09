@@ -1,35 +1,37 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.create` -- Module running the create command
+:mod:`orion.core.cli.init_only` -- Module running the init_only command
 ================================================================
 
-.. module:: create
+.. module:: init_only
    :platform: Unix
-   :synopsis: Creates a new 'type' for the given experiment.
+   :synopsis: Creates a new experiment.
 """
-import logging
-import argparse
-import orion
 
+import logging
+
+import orion
 from orion.core.cli import resolve_config
 from orion.core.io.database import Database, DuplicateKeyError
-from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
-from orion.client import manual
 
 log = logging.getLogger(__name__)
 
+
 def get_parser(parser):
+    """Return the parser that needs to be used for this command"""
     init_only_parser = parser.add_parser('init_only', help='init_only help')
-   
+
     resolve_config.get_basic_args_group(init_only_parser)
 
     resolve_config.get_user_args_group(init_only_parser)
 
     init_only_parser.set_defaults(func=fetch_args)
 
+
 def fetch_args(args):
+    """Create the dictionary of modified args for the execution of the command"""
     # Explicitly add orion's version as experiment's metadata
     args['metadata'] = dict()
     args['metadata']['orion_version'] = orion.core.__version__
@@ -40,13 +42,15 @@ def fetch_args(args):
     args.pop('user_script')
     args['metadata']['user_args'] = args.pop('user_args')
 
-    execute(args, config)
+    _execute(args, config)
 
-#By inferring the experiment, we create a new configured experiment
-def execute(cmdargs, cmdconfig):
-    experiment, cmdargs = infer_experiment(cmdargs, cmdconfig)
 
-def infer_experiment(cmdargs, cmdconfig):
+# By inferring the experiment, we create a new configured experiment
+def _execute(cmdargs, cmdconfig):
+    _, cmdargs = _infer_experiment(cmdargs, cmdconfig)
+
+
+def _infer_experiment(cmdargs, cmdconfig):
     # Initialize configuration dictionary.
     # Fetch info from defaults and configurations from default locations.
     expconfig = resolve_config.fetch_default_options()
@@ -61,7 +65,7 @@ def infer_experiment(cmdargs, cmdconfig):
                                                   cmdconfig, cmdargs)
     db_opts = tmpconfig['database']
     dbtype = db_opts.pop('type')
-    
+
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
     Database(of_type=dbtype, **db_opts)
 
@@ -136,4 +140,3 @@ def infer_versioning_metadata(existing_metadata):
     # User repo's version
     # User repo's HEAD commit hash
     return existing_metadata
-

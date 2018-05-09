@@ -38,7 +38,7 @@ def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
     config = resolve_config.merge_env_vars(config)  # Get database perhaps from env vars
 
     tmpconfig = resolve_config.merge_orion_config(config, dict(),
-                                                 cmdconfig, dict())
+                                                  cmdconfig, dict())
 
     db_opts = tmpconfig['database']
     db_type = db_opts.pop('type')
