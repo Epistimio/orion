@@ -545,7 +545,7 @@ class TestSpace(object):
         space.register(dim)
 
         assert str(space) == "Space(["\
-                             "Integer(name=yolo2, prior={uniform: (-3, 6), {}}, shape=(2,),"\
+                             "Integer(name=yolo2, prior={uniform: (-3, 6), {}}, shape=(2,), "\
                              "default value=None),\n"\
                              "       Real(name=yolo3, prior={norm: (0.9,), {}}, shape=(), "\
                              "default value=None)])"

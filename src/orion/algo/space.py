@@ -349,6 +349,9 @@ class _Discrete(Dimension):
             int_high += 1
         return (int_low, int_high)
 
+    def __contains__(self, point):
+        raise NotImplementedError
+
 
 class Integer(Real, _Discrete):
     """Subclass of `Dimension` for representing integer parameters.
