@@ -25,7 +25,7 @@ def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
     :param raise_exc: whether an inappropriate tuple of parameters will raise
        an exception or it will be ignored
 
-    .. info:: If `raise_exc` is True, no set of parameters will be inserted. If
+    .. note:: If `raise_exc` is True, no set of parameters will be inserted. If
        it is False, only the valid ones will be inserted; the rest will be ignored.
 
     .. note:: This cannot be used to prepopulate a future experiment. So,

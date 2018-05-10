@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.core.cli.init_only` -- Module running the init_only command
-================================================================
+=======================================================================
 
 .. module:: init_only
    :platform: Unix
