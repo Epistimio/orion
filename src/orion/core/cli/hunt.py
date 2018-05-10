@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.core.cli.hunt` -- Module running the optimization command
-================================================================
+=====================================================================
 
 .. module:: hunt
    :platform: Unix
