@@ -93,8 +93,11 @@ class TestTrial(object):
     def test_str_trial(self, exp_config):
         """Test representation of `Trial`."""
         t = Trial(**exp_config[1][2])
-        assert str(t) == "Trial(experiment='supernaedo2', "\
-                         "status='completed', params.value=['gru', 'lstm_with_attention'])"
+        assert str(t) == "Trial(experiment='supernaedo2', status='completed',\n"\
+                         "      params=/encoding_layer:gru\n"\
+                         "             /decoding_layer:lstm_with_attention)"
+        print()
+        print(str(t))
 
     def test_str_value(self, exp_config):
         """Test representation of `Trial.Value`."""
@@ -153,3 +156,32 @@ class TestTrial(object):
         assert t.gradient.type == 'gradient'
         assert t.gradient.value == [5, 3]
         tmp = exp_config[1][2]['results'].pop()
+
+    def test_params_repr_property(self, exp_config):
+        """Check property `Trial.params_repr`."""
+        t = Trial(**exp_config[1][2])
+        assert t.params_repr() == "/encoding_layer:gru,/decoding_layer:lstm_with_attention"
+        assert t.params_repr(sep='\n') == "/encoding_layer:gru\n/decoding_layer:lstm_with_attention"
+
+        t = Trial()
+        assert t.params_repr() == ""
+
+    def test_hash_name_property(self, exp_config):
+        """Check property `Trial.hash_name`."""
+        t = Trial(**exp_config[1][2])
+        assert t.hash_name == "29ae84d14c5655000fa7f1b608f16008"
+
+        t = Trial()
+        with pytest.raises(ValueError) as exc:
+            t.hash_name
+        assert 'params' in str(exc.value)
+
+    def test_full_name_property(self, exp_config):
+        """Check property `Trial.full_name`."""
+        t = Trial(**exp_config[1][2])
+        assert t.full_name == ".encoding_layer:gru-.decoding_layer:lstm_with_attention"
+
+        t = Trial()
+        with pytest.raises(ValueError) as exc:
+            t.full_name
+        assert 'params' in str(exc.value)

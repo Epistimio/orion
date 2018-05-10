@@ -47,7 +47,6 @@ class TestConnection(object):
         with pytest.raises(pymongo.errors.ConnectionFailure) as exc_info:
             MongoDB(host='asdfada', port=123, name='orion',
                     username='uasdfaf', password='paasdfss')
-        assert "Name or service not known" in str(exc_info.value)
 
         monkeypatch.undo()
 
