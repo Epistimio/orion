@@ -1,43 +1,77 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli` -- Functions that define console scripts
-================================================================
+:mod:`orion.core.cli.hunt` -- Module running the optimization command
+=====================================================================
 
-.. module:: cli
+.. module:: hunt
    :platform: Unix
-   :synopsis: Helper functions to setup an experiment and execute it.
+   :synopsis: Gets an experiment and iterates over it until one of the exit conditions is met
 
 """
-import logging
 
-from orion.core import resolve_config
+import logging
+import os
+
+import orion
+from orion.core.cli import resolve_config
 from orion.core.io.database import Database, DuplicateKeyError
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
 
 log = logging.getLogger(__name__)
 
-CLI_DOC_HEADER = """
-orion:
-  Oríon cli script for asynchronous distributed optimization
 
-"""
+def get_parser(parser):
+    """Return the parser that needs to be used for this command"""
+    hunt_parser = parser.add_parser('hunt', help='hunt help')
+
+    orion_group = resolve_config.get_basic_args_group(hunt_parser)
+
+    orion_group.add_argument(
+        '--max-trials', type=int, metavar='#',
+        help="number of jobs/trials to be completed "
+             "(default: %s)" % resolve_config.DEF_CMD_MAX_TRIALS[1])
+
+    orion_group.add_argument(
+        "--pool-size", type=int, metavar='#',
+        help="number of concurrent workers to evaluate candidate samples "
+             "(default: %s)" % resolve_config.DEF_CMD_POOL_SIZE[1])
+
+    resolve_config.get_user_args_group(hunt_parser)
+
+    hunt_parser.set_defaults(func=fetch_args)
 
 
-def main():
-    """Entry point for `orion.core` functionality."""
-    experiment = infer_experiment()
+def fetch_args(args):
+    """Get options from command line arguments."""
+    # Explicitly add orion's version as experiment's metadata
+    args['metadata'] = dict()
+    args['metadata']['orion_version'] = orion.core.__version__
+    log.debug("Using orion version %s", args['metadata']['orion_version'])
+
+    config = resolve_config.fetch_config(args)
+
+    # Move 'user_script' and 'user_args' to 'metadata' key
+    user_script = args.pop('user_script')
+    abs_user_script = os.path.abspath(user_script)
+    if resolve_config.is_exe(abs_user_script):
+        user_script = abs_user_script
+
+    args['metadata']['user_script'] = user_script
+    args['metadata']['user_args'] = args.pop('user_args')
+    log.debug("Problem definition: %s %s", args['metadata']['user_script'],
+              ' '.join(args['metadata']['user_args']))
+
+    _execute(args, config)
+
+
+def _execute(cmdargs, cmdconfig):
+    experiment, cmdargs = _infer_experiment(cmdargs, cmdconfig)
     workon(experiment)
-    return 0
 
 
-def infer_experiment():
-    """Use `orion.core.resolve_config` to organize how configuration is built."""
-    # Fetch experiment name, user's script path and command line arguments
-    # Use `-h` option to show help
-    cmdargs, cmdconfig = resolve_config.fetch_orion_args(CLI_DOC_HEADER)
-
+def _infer_experiment(cmdargs, cmdconfig):
     # Initialize configuration dictionary.
     # Fetch info from defaults and configurations from default locations.
     expconfig = resolve_config.fetch_default_options()
@@ -50,8 +84,10 @@ def infer_experiment():
     # Initialize singleton database object
     tmpconfig = resolve_config.merge_orion_config(expconfig, dict(),
                                                   cmdconfig, cmdargs)
+
     db_opts = tmpconfig['database']
     dbtype = db_opts.pop('type')
+
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
     Database(of_type=dbtype, **db_opts)
 
@@ -64,7 +100,7 @@ def infer_experiment():
 
     experiment = create_experiment(exp_name, expconfig, cmdconfig, cmdargs)
 
-    return experiment
+    return experiment, cmdargs
 
 
 def create_experiment(exp_name, expconfig, cmdconfig, cmdargs):
@@ -95,9 +131,11 @@ def create_experiment(exp_name, expconfig, cmdconfig, cmdargs):
     experiment = Experiment(exp_name)
     dbconfig = experiment.configuration
 
+    log.debug("DB config")
+    log.debug(dbconfig)
+
     expconfig = resolve_config.merge_orion_config(expconfig, dbconfig,
                                                   cmdconfig, cmdargs)
-
     # Infer rest information about the process + versioning
     expconfig['metadata'] = infer_versioning_metadata(expconfig['metadata'])
 
@@ -128,7 +166,3 @@ def infer_versioning_metadata(existing_metadata):
     # User repo's version
     # User repo's HEAD commit hash
     return existing_metadata
-
-
-if __name__ == "__main__":
-    main()
