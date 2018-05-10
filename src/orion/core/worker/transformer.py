@@ -324,6 +324,12 @@ class TransformedDimension(object):
         """Wrap original shape with transformer, because it may have changed."""
         return self.transformer.infer_target_shape(self.original_dimension.shape)
 
+    @property
+    def default_value(self):
+        """Wrap original default value."""
+        defval = self.original_dimension.default_value
+        return self.transform(defval) if defval is not None else None
+
 
 class TransformedSpace(Space):
     """Wrap the `Space` to support transformation methods."""

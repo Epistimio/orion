@@ -469,7 +469,7 @@ class TestTransformedDimension(object):
 
     def test_repr(self, tdim):
         """Check method `__repr__`."""
-        assert str(tdim) == "Quantize(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2)))"
+        assert str(tdim) == "Quantize(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None))"  # noqa
 
     def test_name_property(self, tdim):
         """Check property `name`."""
@@ -486,6 +486,13 @@ class TestTransformedDimension(object):
         assert tdim.shape == (3, 2)
         assert tdim2.original_dimension.shape == ()
         assert tdim2.shape == (4,)
+
+    def test_default_value_property(self, tdim, tdim2):
+        """Check property `default_value`."""
+        assert tdim.default_value is None
+        tdim2.original_dimension._default_value = '3'
+        assert numpy.all(tdim2.default_value == (0., 0., 1., 0.))
+        tdim2.original_dimension._default_value = None
 
 
 @pytest.fixture(scope='module')
@@ -569,9 +576,9 @@ class TestRequiredSpaceBuilder(object):
         assert tspace[1].type == 'integer'
         assert tspace[2].type == 'integer'
         assert(str(tspace) ==
-               "Space([Quantize(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2))),\n"
-               "       Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=())),\n"  # noqa
-               "       Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=())])")
+               "Space([Quantize(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
+               "       Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None)),\n"  # noqa
+               "       Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None)])")  # noqa
 
     def test_real_requirement(self, space_each_type):
         """Check what is built using 'real' requirement."""
@@ -581,6 +588,6 @@ class TestRequiredSpaceBuilder(object):
         assert tspace[1].type == 'real'
         assert tspace[2].type == 'real'
         assert(str(tspace) ==
-               "Space([Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2)),\n"
-               "       OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=()))),\n"  # noqa
-               "       ReverseQuantize(Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=()))])")  # noqa
+               "Space([Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None),\n"  # noqa
+               "       OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None))),\n"  # noqa
+               "       ReverseQuantize(Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None))])")  # noqa
