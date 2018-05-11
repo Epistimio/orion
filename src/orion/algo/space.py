@@ -601,3 +601,52 @@ class Space(OrderedDict):
         """Represent as a string the space and the dimensions it contains."""
         dims = list(self.values())
         return "Space([{}])".format(',\n       '.join(map(str, dims)))
+
+
+def pack_point(point, space):
+    """Take a list of points and pack it appropriately as a point from `space`.
+
+    :param point: array-like or list of numbers
+    :param space: problem's parameter definition,
+       instance of `orion.algo.space.Space`
+
+    .. note:: It works only if dimensions included in `space` have 0D or 1D shape.
+
+    :returns: list of numbers or tuples
+    """
+    packed = []
+    idx = 0
+    for dim in space.values():
+        shape = dim.shape
+        if shape:
+            assert len(shape) == 1
+            next_idx = idx + shape[0]
+            packed.append(tuple(point[idx:next_idx]))
+            idx = next_idx
+        else:
+            packed.append(point[idx])
+            idx += 1
+    assert packed in space
+    return packed
+
+
+def unpack_point(point, space):
+    """Flatten `point` in `space` and convert it to a 1D `numpy.ndarray`.
+
+    :param point: list of number or tuples, in `space`
+    :param space: problem's parameter definition,
+       instance of `orion.algo.space.Space`
+
+    .. note:: It works only if dimensions included in `space` have 0D or 1D shape.
+
+    :returns: a list of float numbers
+    """
+    unpacked = []
+    for subpoint, dim in zip(point, space.values()):
+        shape = dim.shape
+        if shape:
+            assert len(shape) == 1
+            unpacked.extend(subpoint)
+        else:
+            unpacked.append(subpoint)
+    return unpacked
