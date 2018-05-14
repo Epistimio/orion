@@ -117,6 +117,18 @@ class Dimension(object):
 
         self._default_value = default_value
 
+    def __hashable_members(self):
+        return (self.name, self.shape, self.type, self.default_value, self.prior)
+
+    def __eq__(self, other):
+        if not isinstance(other, Dimension):
+            return False
+
+        return self.__hashable_members() == other.__hashable_members()
+
+    def __hash__(self):
+        return hash(self.__hashable_members())
+
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
 
