@@ -1,18 +1,12 @@
 .. include:: ../../README.rst
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-
-.. * :ref:`search`
-
 
 .. toctree::
+   :caption: Installation Guide
    :maxdepth: 1
 
    installing
+   database
 
 
 .. toctree::
