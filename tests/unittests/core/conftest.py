@@ -10,19 +10,11 @@ import pytest
 from orion.algo.space import (Categorical, Integer, Real, Space)
 from orion.core.io.convert import (JSONConverter, YAMLConverter)
 from orion.core.io.database import Database
-from orion.core.io.database.mongodb import MongoDB
 from orion.core.worker.experiment import Experiment
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, 'sample_config.yml')
 JSON_SAMPLE = os.path.join(TEST_DIR, 'sample_config.json')
-
-
-@pytest.fixture()
-def null_db_instances():
-    """Nullify singleton instance so that we can assure independent instantiation tests."""
-    Database.instance = None
-    MongoDB.instance = None
 
 
 @pytest.fixture()

@@ -191,6 +191,7 @@ def test_workon(database):
 
 
 @pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
 def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     """Test integration with a possible framework that needs to create
     unique directories per trial.
@@ -199,16 +200,15 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     # seed of Oríon
     how_many = 1000
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    process = subprocess.Popen(["orion", "--max-trials={}".format(how_many),
-                                "--pool-size=1",
-                                "--name=lalala",
-                                "--config", "./stress_gradient.yaml",
-                                "./dir_per_trial.py",
-                                "--dir={}".format(str(tmpdir)),
-                                "--other-name~exp.name",
-                                "--name~trial.hash_name",
-                                "-x~gaussian(30, 10)"])
-    rcode = process.wait()
+    orion.core.cli.main(["hunt", "--max-trials={}".format(how_many),
+                         "--pool-size=1",
+                         "--name=lalala",
+                         "--config", "./stress_gradient.yaml",
+                         "./dir_per_trial.py",
+                         "--dir={}".format(str(tmpdir)),
+                         "--other-name~exp.name",
+                         "--name~trial.hash_name",
+                         "-x~gaussian(30, 10)"])
 
     exp = list(database.experiments.find({'name': 'lalala'}))
     assert len(exp) == 1
@@ -216,7 +216,6 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     assert '_id' in exp
     exp_id = exp['_id']
 
-    assert rcode == 0
     # For contingent broken trials, which in this test means that a existing
     # directory was attempted to be created, it means that it's not md5 or
     # bad hash creation to blame, but the finite precision of the floating
