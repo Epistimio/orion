@@ -205,7 +205,7 @@ class Quantize(Transformer):
     target_type = 'integer'
 
     def transform(self, point):
-        return numpy.asarray(point).round().astype(int)
+        return numpy.floor(numpy.asarray(point)).astype(int)
 
     def reverse(self, transformed_point):
         return numpy.asarray(transformed_point).astype(float)

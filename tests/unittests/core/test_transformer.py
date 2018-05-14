@@ -70,9 +70,9 @@ class TestReverse(object):
     def test_reverse(self):
         """Check if it reverses `transform` properly, if possible."""
         t = Reverse(Quantize())
-        assert t.reverse(8.6) == 9
+        assert t.reverse(8.6) == 8
         assert t.reverse(5.3) == 5
-        assert numpy.all(t.reverse([8.6, 5.3]) == numpy.array([9, 5], dtype=int))
+        assert numpy.all(t.reverse([8.6, 5.3]) == numpy.array([8, 5], dtype=int))
 
     def test_infer_target_shape(self):
         """Check if it infers the shape of a transformed `Dimension`."""
@@ -199,9 +199,9 @@ class TestQuantize(object):
     def test_transform(self):
         """Check if it transforms properly."""
         t = Quantize()
-        assert t.transform(8.6) == 9
+        assert t.transform(8.6) == 8
         assert t.transform(5.3) == 5
-        assert numpy.all(t.transform([8.6, 5.3]) == numpy.array([9, 5], dtype=int))
+        assert numpy.all(t.transform([8.6, 5.3]) == numpy.array([8, 5], dtype=int))
 
     def test_reverse(self):
         """Check if it reverses `transform` properly, if possible."""
@@ -406,9 +406,9 @@ class TestTransformedDimension(object):
 
     def test_transform(self, tdim):
         """Check method `transform`."""
-        assert tdim.transform(8.6) == 9
+        assert tdim.transform(8.6) == 8
         assert tdim.transform(5.3) == 5
-        assert numpy.all(tdim.transform([8.6, 5.3]) == numpy.array([9, 5], dtype=int))
+        assert numpy.all(tdim.transform([8.6, 5.3]) == numpy.array([8, 5], dtype=int))
 
     def test_reverse(self, tdim):
         """Check method `reverse`."""
@@ -425,11 +425,11 @@ class TestTransformedDimension(object):
 
     def test_sample(self, tdim, seed):
         """Check method `sample`."""
-        assert numpy.all(tdim.sample(seed=seed) == numpy.array([[1, 1], [3, 1], [1, 2]]))
+        assert numpy.all(tdim.sample(seed=seed) == numpy.array([[1, 0], [3, 0], [1, 2]]))
         samples = tdim.sample(2, seed=seed)
         assert len(samples) == 2
-        assert numpy.all(samples[0] == numpy.array([[0, 0], [1, 1], [0, 1]]))
-        assert numpy.all(samples[1] == numpy.array([[1, 2], [-1, 0], [2, 3]]))
+        assert numpy.all(samples[0] == numpy.array([[-1, 0], [1, 0], [-1, 0]]))
+        assert numpy.all(samples[1] == numpy.array([[0, 1], [-1, 0], [2, 2]]))
 
     def test_interval(self, tdim):
         """Check method `interval`."""
@@ -591,3 +591,19 @@ class TestRequiredSpaceBuilder(object):
                "Space([Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None),\n"  # noqa
                "       OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None))),\n"  # noqa
                "       ReverseQuantize(Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None))])")  # noqa
+
+
+def test_quantization_does_not_violate_bounds():
+    """Regress on bug that converts valid float in tdim to non valid excl. upper bound."""
+    dim = Integer('yo', 'uniform', 3, 7)
+    transformers = [Reverse(Quantize())]
+    tdim = TransformedDimension(Compose(transformers, dim.type), dim)
+    assert 10 not in dim
+    assert 9 in dim
+    assert 10 not in dim
+    assert 9 in dim
+    # but be careful, because upper bound is exclusive
+    assert 9.6 in tdim
+    assert tdim.reverse(9.6) in dim
+    # solution is to quantize with 'floor' instead of 'round'
+    assert tdim.reverse(9.6) == 9
