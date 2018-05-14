@@ -19,14 +19,16 @@ from .utils._appdirs import AppDirs
 VERSIONS = get_versions()
 del get_versions
 
-__descr__ = 'Distributed Asynchronous [black-box] Optimization'
+__descr__ = 'Asynchronous [black-box] Optimization'
 __version__ = VERSIONS['version']
 __license__ = 'BSD-3-Clause'
-__author__ = 'Oríon Team - MILA, Université de Montréal'
+__author__ = u'Oríon Team - MILA, Université de Montréal'
 __author_short__ = 'MILA'
 __author_email__ = 'lisa_labo@iro.umontreal.ca'
+__copyright__ = u'2017-2018, Oríon Team - MILA, Université de Montréal'
 __authors__ = {
     'tsirif': ('Christos Tsirigotis', 'tsirif@gmail.com'),
+    'bouthilx': ('Xavier Bouthillier', 'xavier.bouthillier@gmail.com'),
 }
 __url__ = 'https://github.com/mila-udem/orion'
 

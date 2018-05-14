@@ -14,7 +14,7 @@ The choice of new hyperparameters would be done using Bayesian optimization algo
 Execution of Research Plan
 ===
 
-We plan to build this package that would be language agnostic, and also operation system agnostic, although at the beginning we would want to use it for mainly python scripts. This package is written mainly in C++17 and we would want to accomodate C++20. There would be a Python library written that you could call inside your script like `import metaopt` that would do the logging, and sending training statistics criteria to the database to be used to generate the new set of hyperparameters and also to early stop the experiment.
+We plan to build this package that would be language agnostic, and also operation system agnostic, although at the beginning we would want to use it for mainly python scripts. This package is written mainly in C++17 and we would want to accomodate C++20. There would be a Python library written that you could call inside your script like `import orion` that would do the logging, and sending training statistics criteria to the database to be used to generate the new set of hyperparameters and also to early stop the experiment.
 
 Summary of 04/10/2017 discussion and other notes
 ===

@@ -1,57 +1,89 @@
-| System | 2.7 | 3.5 |
-| --- | --- | --- |
-| Linux CPU | [![Build Status](https://travis-ci.org/mila-udem/metaopt.svg?branch=master)](https://travis-ci.org/mila-udem/metaopt) | [![Build Status](https://travis-ci.org/mila-udem/metaopt.svg?branch=master)](https://travis-ci.org/mila-udem/metaopt) |
-| Linux GPU | [![Build Status](https://travis-ci.org/mila-udem/metaopt.svg?branch=master)](https://travis-ci.org/mila-udem/metaopt) | [![Build Status](https://travis-ci.org/mila-udem/metaopt.svg?branch=master)](https://travis-ci.org/mila-udem/metaopt) |
-| macOS CPU | [![Build Status](https://travis-ci.org/mila-udem/metaopt.svg?branch=master)](https://travis-ci.org/mila-udem/metaopt) | [![Build Status](https://travis-ci.org/mila-udem/metaopt.svg?branch=master)](https://travis-ci.org/mila-udem/metaopt) |
+*****
+Oríon
+*****
 
-# Asynchronous Hyperparameter Optimization on Distributed N-Node CPU/GPUs
+.. image:: https://travis-ci.org/mila-udem/orion.svg?branch=master
+   :target: https://travis-ci.org/mila-udem/orion
 
-# Requirements
+.. image:: https://codecov.io/gh/mila-udem/orion/branch/master/graphs/badge.svg?branch=master
+   :target: https://codecov.io/gh/mila-udem/orion
 
-- cmake 3.8.0 (minimum)
-- gcc-5.0 (minimum)
-- boost 1.55.1 (minimum)
+Oríon is an asynchronous framework for black-box function optimization.
 
-# Installation
+Its purpose is to serve as a meta-optimizer for machine learning models
+and training, as well as a flexible experimentation
+platform for large scale asynchronous optimization procedures.
 
-```bash
-mkdir build
-cd build
-cmake..
-make -j8
-(sudo) make install
-```
+Core design value is the minimum disruption of a researcher's workflow.
+It allows fast and efficient tuning, providing minimum simple non-intrusive
+(not even necessary!) helper *client* interface for a user's script.
 
-This will install `metaoptd` and `metaopt` binary in your computer. You will then need to install the `metaopt` Python package by
+So if ``./run.py --mini-batch=50`` looks like what you execute normally,
+now what you have to do looks like this:
 
-`python setup.py install`
+``orion -n experiment_name ./run.py --mini-batch~'randint(32, 256)'``
 
-# Usage
+Check out user's guide-101 for the simplest of demonstrations!
 
-Run the daemon by executing
+Features
+========
+*As simple and as complex you want*
 
-`metaoptd`
+- Simple and natural, but also explicit and verbose, search domain definitions
+- Minimal and non-intrusive client interface for reporting
+  target function values
+- Database logging (currently powered by MongoDB_)
+- Flexible configuration
+- Explicit experiment termination conditions
+- Algorithms algorithms algorithms:
+  Skopt_'s bayesian optimizers are at hand without writing.
+  Random search is the default.
+  **only** a single line of code.
+- More algorithms:
+  Implementing and distributing algorithms is as easy as possible!
+  Check `developer's guide-101`_. Expect algorithm plugins to pop out quickly!
+- Came up with an idea?
+  Your intuition is still at play:
+  Help your optima hunter now by a command line interface.
+- And other many more already there or coming soon!
 
-assuming that `metaoptd` is in your `$PATH`, you can also set up a cron-job to automatically start `metaoptd` when your computer (node) starts.
+.. _MongoDB: https://www.mongodb.com/
+.. _Skopt: https://scikit-optimize.github.io/
+.. _developer's guide-101: /developer/testing
 
-`metaopt` is the client that interacts with `metaoptd` (daemon service) that would submit job queues for the current node, `metaoptd` would then schedule efficiently the job based on the training statistics that we've collected frominside the experiemnt script `<python-script>`
+Installation
+============
 
-Run your experiment by calling
+Install Oríon (beta) by running:
 
-`metaopt <python-script> --hyperparameter-argv`
+``pip install git+https://github.com/mila-udem/orion.git@master``
 
-This will spawn python as a child process and with your argument parser, we highly suggest that your hyperparameters are stated in the argument parser at the main script of your experiment. The stream of logs of the training statistics would be saved in the hyperparameter history on LevelDB/TinyDB or for a cluster/supercomputer in a MongoDB database, you would control the condition of your experiment via the python package `metaopt`
+For more information read the full installation docs.
+.. TODO Once website is published use a full hyperlink to the installation page
 
-# Team
+Contribute or Ask
+=================
 
-The MILA MetaOpt team (currently):
+Do you have a question or issues?
+Do you want to report a bug or suggest a feature? Name it!
+Please contact us by opening an issue in our repository below:
 
-Dendi Suhubdy, Xavier Bouthillier, Christos Tsirigotis. Supervised by Pascal Lamblin and Frédéric Bastien.
+- Issue Tracker: `github.com/mila-udem/orion/issues`
+- Source Code: `github.com/mila-udem/orion`
 
-# Copyright
+Start by starring and forking our Github repo!
 
-Montreal Institute of Learning Algorithms, Université de Montréal, 2017.
+Thanks for the support!
 
-# License
+License
+=======
 
-3-Clause BSD License
+The project is licensed under the BSD license.
+
+
+Core Developers
+---------------
+
+Christos Tsirigotis [`@tsirif <https://github.com/tsirif>`_]
+
+Xavier Bouthillier [`@bouthilx <https://github.com/bouthilx>`_]
