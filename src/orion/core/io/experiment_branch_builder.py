@@ -42,18 +42,24 @@ class ExperimentBranchBuilder:
         self.conflicting_space = SpaceBuilder().build_from(user_args)
 
     def _find_conflicts(self):
+        # Loop through the conflicting space and identify problematic dimensions
         for d in self.conflicting_space.values():
+            # If the name is inside the space but not the value the dimensions has changed
             if d.name in self.experiment_space:
                 if d not in self.experiment_space.values():
                     self.conflicts['changed'].append(d)
+            # If the name does not exist, it is a new dimension
             else:
                 self.conflicts['new'].append(d)
 
+        # In the same vein, if any dimension of the current space is not inside
+        # the conflicting space, it is missing
         for d in self.experiment_space.values():
             if d.name not in self.conflicting_space:
                 self.conflicts['missing'].append(d)
 
     def _create_dimensions_name_list(self):
+        # Keep a list of the name of all the dimensions for each status
         self.new_dimensions_names = self._list_dimensions_names('new')
         self.missing_dimensions_names = self._list_dimensions_names('missing')
         self.changed_dimensions_names = self._list_dimensions_names('changed')
@@ -108,6 +114,7 @@ class ExperimentBranchBuilder:
         if is_in:
             self.solved_conflicts[status].remove(value)
             self.conflicts[status].append(value)
+            self._create_dimensions_name_list()
 
     # Helper functions
 
