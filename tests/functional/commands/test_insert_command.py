@@ -24,7 +24,8 @@ def test_insert_invalid_experiment(database, monkeypatch):
         orion.core.cli.main(["insert", "-n", "dumb_experiment",
                              "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1"])
 
-    assert ("No experiment with given name 'dumb_experiment' for user 'corneau'" in str(exc_info.value))
+    assert ("No experiment with given name 'dumb_experiment' for user 'corneau'"
+            in str(exc_info.value))
 
 
 @pytest.mark.usefixtures("only_experiments_db")

@@ -67,7 +67,8 @@ def _execute(cmd_args, file_config):
     experiment = _infer_experiment(cmd_args, file_config)
 
     if experiment.status is None:
-        raise ValueError("No experiment with given name inside database, can't insert")
+        raise ValueError("No experiment with given name '%s' for user '%s' inside database, "
+                         "can't insert." % (experiment.name, experiment.metadata['user']))
 
     transformed_args = _build_from(command_line_user_args)
     exp_space = SpaceBuilder().build_from(experiment.configuration['metadata']['user_args'])
