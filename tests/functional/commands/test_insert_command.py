@@ -2,34 +2,40 @@
 # -*- coding: utf-8 -*-
 """Perform a functional test of the default commands for demo purposes."""
 import os
-import subprocess
 
 import pytest
 
+import orion.core.cli
+
+
+def get_user_corneau():
+    """Return user corneau (to mock getpass.getuser)"""
+    return "corneau"
+
 
 @pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
 def test_insert_invalid_experiment(database, monkeypatch):
     """Test the insertion of an invalid experiment"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    monkeypatch.setattr("getpass.getuser", get_user_corneau)
 
-    try:
-        process = subprocess.Popen(["orion", "insert", "-n", "dumb_experiment",
-                                    "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1"])
-        process.wait()
-    except ValueError as err:
-        assert str(err) == "No experiment with given name inside database, can't insert"
-        pass
+    with pytest.raises(ValueError) as exc_info:
+        orion.core.cli.main(["insert", "-n", "dumb_experiment",
+                             "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1"])
+
+    assert ("No experiment with given name 'dumb_experiment' for user 'corneau'" in str(exc_info.value))
 
 
 @pytest.mark.usefixtures("only_experiments_db")
+@pytest.mark.usefixtures("null_db_instances")
 def test_insert_single_trial(database, monkeypatch):
     """Try to insert a single trial"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    process = subprocess.Popen(["orion", "insert", "-n", "test_insert_normal",
-                                "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1"])
+    monkeypatch.setattr("getpass.getuser", get_user_corneau)
 
-    rcode = process.wait()
-    assert rcode == 0
+    orion.core.cli.main(["insert", "-n", "test_insert_normal",
+                         "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1"])
 
     exp = list(database.experiments.find({"name": "test_insert_normal"}))
     assert len(exp) == 1
@@ -47,14 +53,15 @@ def test_insert_single_trial(database, monkeypatch):
 
 
 @pytest.mark.usefixtures("only_experiments_db")
+@pytest.mark.usefixtures("null_db_instances")
 def test_insert_single_trial_default_value(database, monkeypatch):
     """Try to insert a single trial using a default value"""
-    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    process = subprocess.Popen(["orion", "insert", "-n", "test_insert_normal",
-                                "-c", "./orion_config_random.yaml", "./black_box.py"])
 
-    rcode = process.wait()
-    assert rcode == 0
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    monkeypatch.setattr("getpass.getuser", get_user_corneau)
+
+    orion.core.cli.main(["insert", "-n", "test_insert_normal",
+                         "-c", "./orion_config_random.yaml", "./black_box.py"])
 
     exp = list(database.experiments.find({"name": "test_insert_normal"}))
     assert len(exp) == 1
@@ -72,58 +79,59 @@ def test_insert_single_trial_default_value(database, monkeypatch):
 
 
 @pytest.mark.usefixtures("only_experiments_db")
+@pytest.mark.usefixtures("null_db_instances")
 def test_insert_with_no_default_value(database, monkeypatch):
     """Try to insert a single trial by omitting a namespace with no default value"""
-    try:
-        monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-        process = subprocess.Popen(["orion", "insert", "-n", "test_insert_normal",
-                                    "-c", "./orion_config_random.yaml", "./black_box.py"])
 
-        process.wait()
-    except ValueError as err:
-        assert str(err) == "Dimension /x is unspecified and has no default value"
-        pass
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    monkeypatch.setattr("getpass.getuser", get_user_corneau)
+
+    with pytest.raises(ValueError) as exc_info:
+        orion.core.cli.main(["insert", "-n", "test_insert_missing_default_value",
+                             "-c", "./orion_config_random.yaml", "./black_box.py"])
+
+    assert "Dimension /x is unspecified and has no default value" in str(exc_info.value)
 
 
 @pytest.mark.usefixtures("only_experiments_db")
+@pytest.mark.usefixtures("null_db_instances")
 def test_insert_with_incorrect_namespace(database, monkeypatch):
     """Try to insert a single trial with a namespace not inside the experiment space"""
-    try:
-        monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-        process = subprocess.Popen(["orion", "insert", "-n", "test_insert_normal",
-                                    "-c", "./orion_config_random.yaml", "./black_box.py", "-p=4"])
 
-        process.wait()
-    except ValueError as err:
-        assert str(err) == "Found namespace outside of experiment space : /p"
-        pass
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    monkeypatch.setattr("getpass.getuser", get_user_corneau)
+
+    with pytest.raises(ValueError) as exc_info:
+        orion.core.cli.main(["insert", "-n", "test_insert_normal",
+                             "-c", "./orion_config_random.yaml",
+                             "./black_box.py", "-p=4"])
+
+    assert "Found namespace outside of experiment space : /p" in str(exc_info.value)
 
 
 @pytest.mark.usefixtures("only_experiments_db")
+@pytest.mark.usefixtures("null_db_instances")
 def test_insert_with_outside_bound_value(database, monkeypatch):
     """Try to insert a single trial with value outside the distribution's interval"""
-    try:
-        monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-        process = subprocess.Popen(["orion", "insert", "-n", "test_insert_two_hyperparameters",
-                                    "-c", "./orion_config_random.yaml",
-                                    "./black_box.py", "-x=4", "-y=100"])
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    monkeypatch.setattr("getpass.getuser", get_user_corneau)
 
-        process.wait()
-    except ValueError as err:
-        assert str(err) == "Value 100 is outside of dimension's prior interval"
-        pass
+
+    with pytest.raises(ValueError) as exc_info:
+        orion.core.cli.main(["insert", "-n", "test_insert_two_hyperparameters",
+                             "-c", "./orion_config_random.yaml",
+                             "./black_box.py", "-x=4", "-y=100"])
+    assert "Value 100 is outside of" in str(exc_info.value)
 
 
 @pytest.mark.usefixtures("only_experiments_db")
+@pytest.mark.usefixtures("null_db_instances")
 def test_insert_two_hyperparameters(database, monkeypatch):
     """Try to insert a single trial with two hyperparameters"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    process = subprocess.Popen(["orion", "insert", "-n", "test_insert_two_hyperparameters",
-                                "-c", "./orion_config_random.yaml",
-                                "./black_box.py", "-x=1", "-y=2"])
-
-    rcode = process.wait()
-    assert rcode == 0
+    monkeypatch.setattr("getpass.getuser", get_user_corneau)
+    orion.core.cli.main(["insert", "-n", "test_insert_two_hyperparameters",
+                         "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1", "-y=2"])
 
     exp = list(database.experiments.find({"name": "test_insert_two_hyperparameters"}))
     assert len(exp) == 1

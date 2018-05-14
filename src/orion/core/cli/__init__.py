@@ -23,7 +23,7 @@ orion:
 """
 
 
-def main():
+def main(argv=None):
     """Entry point for `orion.core` functionality."""
     # Fetch experiment name, user's script path and command line arguments
     # Use `-h` option to show help

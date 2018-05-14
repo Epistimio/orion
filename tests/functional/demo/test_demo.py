@@ -7,22 +7,23 @@ import subprocess
 import numpy
 import pytest
 
+import orion.core.cli
 from orion.core.io.database import Database
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
 
 
 @pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
 def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     """Check that random algorithm is used, when no algo is chosen explicitly."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     monkeypatch.setenv('ORION_DB_NAME', 'orion_test')
     monkeypatch.setenv('ORION_DB_ADDRESS', 'mongodb://user:pass@localhost')
-    process = subprocess.Popen(["orion", "hunt", "-n", "default_algo",
-                                "--max-trials", "30",
-                                "./black_box.py", "-x~uniform(-50, 50)"])
-    rcode = process.wait()
-    assert rcode == 0
+
+    orion.core.cli.main(["hunt", "-n", "default_algo",
+                         "--max-trials", "30",
+                         "./black_box.py", "-x~uniform(-50, 50)"])
 
     exp = list(database.experiments.find({'name': 'default_algo'}))
     assert len(exp) == 1
@@ -42,13 +43,12 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
 
 
 @pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
 def test_demo(database, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    process = subprocess.Popen(["orion", "hunt", "--config", "./orion_config.yaml",
-                                "./black_box.py", "-x~uniform(-50, 50)"])
-    rcode = process.wait()
-    assert rcode == 0
+    orion.core.cli.main(["hunt", "--config", "./orion_config.yaml",
+                         "./black_box.py", "-x~uniform(-50, 50)"])
 
     exp = list(database.experiments.find({'name': 'voila_voici'}))
     assert len(exp) == 1

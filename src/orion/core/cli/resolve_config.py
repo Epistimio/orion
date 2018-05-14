@@ -118,9 +118,9 @@ class OrionArgsParser:
         """Return the subparser object for this parser."""
         return self.subparsers
 
-    def parse(self):
+    def parse(self, argv):
         """Call argparse and generate a dictionary of arguments' value"""
-        args = vars(self.parser.parse_args())
+        args = vars(self.parser.parse_args(argv))
 
         verbose = args.pop('verbose', 0)
         if verbose == 1:
