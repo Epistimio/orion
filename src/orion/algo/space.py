@@ -32,6 +32,7 @@ unless noted otherwise!
 """
 
 from collections import OrderedDict
+import numbers
 
 import numpy
 from scipy._lib._util import check_random_state
@@ -206,6 +207,19 @@ class Dimension(object):
         return size
 
 
+def _is_numeric_array(point):
+    """Test whether a point is numerical object or an array containing only numerical objects"""
+    def _is_numeric(item):
+        return isinstance(item, (numbers.Number, numpy.ndarray))
+
+    try:
+        return all(_is_numeric(item) for item in point)
+    except TypeError:
+        return _is_numeric(point)
+
+    return False
+
+
 class Real(Dimension):
     """Subclass of `Dimension` for representing real parameters.
 
@@ -261,6 +275,9 @@ class Real(Dimension):
            It just checks whether point lies inside the support and the shape.
 
         """
+        if not _is_numeric_array(point):
+            return False
+
         low, high = self.interval()
 
         point_ = numpy.asarray(point)
@@ -374,6 +391,9 @@ class Integer(Real, _Discrete):
         `Integer` will check whether `point` contains only integers.
 
         """
+        if not _is_numeric_array(point):
+            return False
+
         point_ = numpy.asarray(point)
         if not numpy.all(numpy.equal(numpy.mod(point_, 1), 0)):
             return False

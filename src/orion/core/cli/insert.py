@@ -83,6 +83,7 @@ def _execute(cmd_args, file_config):
 def _validate_dimensions(transformed_args, exp_space):
     exp_namespaces = list(exp_space.keys())
     values = {}
+
     # Find any dimension that is not given by the user and make sure they have a default value
     for exp_n in exp_namespaces:
         if exp_n not in transformed_args.keys() and exp_space[exp_n].default_value is None:
@@ -108,15 +109,16 @@ def _validate_dimensions(transformed_args, exp_space):
 
 
 def _validate_input_value(value, exp_space, namespace):
-    try:
-        e_value = eval(value)
-        if e_value in exp_space[namespace]:
-            return True, e_value
-    except TypeError:
-        if value not in exp_space:
-            return False, None
 
-    return True, value
+    is_valid = False
+
+    try:
+        value = eval(value)
+        is_valid = value in exp_space[namespace]
+    except NameError:
+        is_valid = value in exp_space[namespace]
+
+    return is_valid, value
 
 
 def _create_tuple_from_values(transformed_args, exp_space):
