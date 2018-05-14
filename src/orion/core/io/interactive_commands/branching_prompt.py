@@ -20,6 +20,10 @@ class BranchingPrompt(cmd.Cmd):
     'moment to quit without saving.'
     prompt = '(orion) '
 
+    special_keywords = {'~new': 'new',
+                        '~changed': 'changed',
+                        '~missing': 'missing'}
+
     conflicts_message = {'new': 'Dimension {} is new',
                          'changed': 'Dimension {} has changed from {} to {}',
                          'missing': 'Dimension {} is missing',
@@ -57,19 +61,11 @@ class BranchingPrompt(cmd.Cmd):
 
     def do_add(self, arg):
         'Add the given `new` or `changed` dimension to the configuration'
-        name = arg.split(' ')[0]
-        try:
-            self.branch_builder.add_dimension(name)
-        except ValueError as ex:
-            print('Invalid dimension name')
+        self._call_function_for_all_args(arg, self.branch_builder.add_dimension)
 
     def do_remove(self, arg):
         'Remove the given `missing` dimension from the configuration'
-        arg = arg.split(' ')[0]
-        try:
-            self.branch_builder.remove_dimension(arg)
-        except ValueError as ex:
-            print('Invalid dimension name')
+        self._call_function_for_all_args(arg, self.branch_builder.remove_dimension)
 
     def do_rename(self, arg):
         'Usage : rename `old` `new`\nRename old dimension to new'
@@ -78,7 +74,6 @@ class BranchingPrompt(cmd.Cmd):
         if len(args) < 2:
             print('Missing arguments')
             return
-
         try:
             self.branch_builder.rename_dimension(args)
         except ValueError as ex:
@@ -86,17 +81,26 @@ class BranchingPrompt(cmd.Cmd):
 
     def do_reset(self, arg):
         'Mark dimension as unsolved'
-        arg = arg.split(' ')[0]
-        try:
-            self.branch_builder.reset_dimension(arg)
-        except ValueError as ex:
-            print('Invalid dimension name')
+        self._call_function_for_all_args(arg, self.branch_builder.reset_dimension)
 
     def do_exit(self, arg):
         print('Closing interactive conflicts solver')
         return True
 
     # Helper functions
+    def _call_function_for_all_args(self, arg, function):
+        if arg in self.special_keywords:
+            args = list(map(lambda d: d.name[1:],
+                        self.branch_builder.conflicts[self.special_keywords[arg]]))
+        else:
+            args = arg.split(' ')
+
+        for a in args:
+            try:
+                function(a)
+            except ValueError as ex:
+                print('Invalid dimension name {}'.format(a))
+
     def _print_dimension_status(self, name):
         is_solved, status, dimension = self.branch_builder.get_dimension_status(name)
 
