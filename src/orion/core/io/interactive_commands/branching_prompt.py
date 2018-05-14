@@ -33,45 +33,18 @@ class BranchingPrompt(cmd.Cmd):
         """Starts the prompt for the interactive conflicts solving"""
         self.cmdloop()
 
+    # Commands
     def do_status(self, arg):
         'Display the current status of the conflicting configuration'
-
         if len(arg) == 0:
             self._print_conflicts_message('Solved conflicts', self.branch_builder.solved_conflicts)
+
+            if any(self.branch_builder.solved_conflicts.values()):
+                print()
+
             self._print_conflicts_message('Unsolved conflicts', self.branch_builder.conflicts)
         else:
             self._print_dimension_status(arg)
-
-    def _print_dimension_status(self, name):
-        dimension_status, key, value = self.branch_builder.get_dimension_status(name)
-
-        if key is None or value is None:
-            print('Invalid dimension name')
-            return
-
-        if dimension_status == False:
-            print('Unsolved')
-        else:
-            print('Solved')
-        
-        if key != 'changed':
-            print(self.conflicts_message[key].format(value.name))
-            print(value)
-        else:
-            print(self.conflicts_message[key].format(value.name, self.branch_builder.get_old_dimension_value(value.name), value))
-    
-    def _print_conflicts_message(self, preprint_message, conflicts_dict):
-        if any(conflicts_dict.values()):
-            print(preprint_message)
-            for k in conflicts_dict:
-                if k == 'experiment' and conflicts_dict[k] != '':
-                    print(self.conflicts_message[k].format(conflicts_dict[k]))
-                else:
-                    for v in conflicts_dict[k]:
-                        if k != 'changed':
-                            print(self.conflicts_message[k].format(v.name))
-                        else:
-                            print(self.conflicts_message[k].format(v.name, self.branch_builder.get_old_dimension_value(v.name), v))
 
     def do_name(self, arg):
         'Change the name of the experiment'
@@ -83,14 +56,76 @@ class BranchingPrompt(cmd.Cmd):
             print('Invalid experiment name')
 
     def do_add(self, arg):
-        'Add a new hyperparameter to the experiment'
+        'Add the given `new` or `changed` dimension to the configuration'
         name = arg.split(' ')[0]
         try:
             self.branch_builder.add_dimension(name)
-        except IndexError as ex:
+        except ValueError as ex:
             print('Invalid dimension name')
+
+    def do_remove(self, arg):
+        'Remove the given `missing` dimension from the configuration'
+        arg = arg.split(' ')[0]
+        try:
+            self.branch_builder.remove_dimension(arg)
+        except ValueError as ex:
+            print('Invalid dimension name')
+
+    def do_rename(self, arg):
+        'Usage : rename `old` `new`\nRename old dimension to new'
+        args = arg.split(' ')
+
+        if len(args) < 2:
+            print('Missing arguments')
             return
+
+        try:
+            self.branch_builder.rename_dimension(args)
+        except ValueError as ex:
+            print('Invalid dimension(s) name(s)')
+
+    def do_reset(self, arg):
+        'Mark dimension as unsolved'
+        arg = arg.split(' ')[0]
+        try:
+            self.branch_builder.reset_dimension(arg)
+        except ValueError as ex:
+            print('Invalid dimension name')
 
     def do_exit(self, arg):
         print('Closing interactive conflicts solver')
         return True
+
+    # Helper functions
+    def _print_dimension_status(self, name):
+        is_solved, status, dimension = self.branch_builder.get_dimension_status(name)
+
+        if status is None or dimension is None:
+            print('Invalid dimension name')
+            return
+
+        print('Unsolved' if not is_solved else 'Solved')
+
+        self._print_dimension_conflict_info(status, dimension)
+
+    def _print_conflicts_message(self, preprint_message, conflicts_dict):
+        if not any(conflicts_dict.values()):
+            return
+
+        print(preprint_message)
+        for status in conflicts_dict:
+            if status == 'experiment' and conflicts_dict[status] != '':
+                print(self.conflicts_message[status].format(conflicts_dict[status]))
+            else:
+                for dim in conflicts_dict[status]:
+                    self._print_dimension_conflict_info(status, dim)
+
+    def _print_dimension_conflict_info(self, status, dimension):
+        if status != 'changed':
+            print(self.conflicts_message[status].format(dimension.name))
+            print(dimension)
+        else:
+            print(self.conflicts_message[status]
+                  .format(dimension.name,
+                  self.branch_builder.get_old_dimension_value(dimension.name),
+                  dimension))
