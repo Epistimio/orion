@@ -21,7 +21,6 @@ log = logging.getLogger(__name__)
 class ExperimentBranchBuilder:
     """Build a new configuration for the experiment based on parent config."""
 
-
     def __init__(self, experiment_config, conflicting_config):
         self.experiment_config = experiment_config
         self.conflicting_config = conflicting_config
@@ -32,7 +31,7 @@ class ExperimentBranchBuilder:
         self._build_spaces()
         self._find_conflicts()
         self._create_dimensions_name_list()
-        
+
         self.conflicts['experiment'] = self.experiment_config['name']
 
     def _build_spaces(self):
@@ -62,39 +61,83 @@ class ExperimentBranchBuilder:
     def _list_dimensions_names(self, key):
         return list(map(lambda d: d.name, self.conflicts[key]))
 
+    # API section
+
     def change_experiment_name(self, arg):
-        """Make sure `arg` is a valid, non-conflicting name, and change the experiment's name to it"""
+        """Make sure arg is a valid, non-conflicting name, and change the experiment's name to it"""
         if arg != self.conflicts['experiment']:
             self.conflicts['experiment'] = ''
             self.solved_conflicts['experiment'] = arg
 
     def add_dimension(self, name):
         """Add `name` dimension to the solved conflicts list"""
-        index = self.new_dimensions_names.index('/' + name)
-        self.new_dimensions_names.pop(index)
-        dim = self.conflicts['new'].pop(index)
-        self.solved_conflicts['new'].append(dim)
+        prefixed_name = '/' + name
+        if prefixed_name in self.new_dimensions_names:
+            self._mark_as_solved(name, self.new_dimensions_names, 'new')
+        elif prefixed_name in self.changed_dimensions_names:
+            self._mark_as_solved(name, self.changed_dimensions_names, 'changed')
+
+    def remove_dimension(self, name):
+        """Remove `name` from the configuration and marks conflict as solved"""
+        self._mark_as_solved(name, self.missing_dimensions_names, 'missing')
 
     def get_dimension_status(self, name):
         """Return the status of a dimension (unsolved/solved)"""
-        is_in, key, value = self._is_dimension_in_dict(name, self.conflicts)
-        
-        if is_in == False:
-            return self._is_dimension_in_dict(name, self.solved_conflicts)
+        is_in, key, value = self._is_dimension_in_dict('/' + name, self.conflicts)
+
+        if is_in is False:
+            return self._is_dimension_in_dict('/' + name, self.solved_conflicts)
 
         is_in = False
         return is_in, key, value
 
-    def _is_dimension_in_dict(self, name, conflicts_dict):
-        for k in conflicts_dict:
-            for value in conflicts_dict[k]:
-                return True, k, value
-        
-        return False, None, None
-
     def get_old_dimension_value(self, name):
         if name in self.experiment_space:
             return self.experiment_space[name]
+
+    def rename_dimension(self, args):
+        old, new = args
+        if self._is_dimension_in_list(old, self.conflicts['missing']) and \
+           self._is_dimension_in_list(new, self.conflicts['new']):
+                self._mark_as_solved(old, self.missing_dimensions_names, 'missing')
+                self._mark_as_solved(new, self.new_dimensions_names, 'new')
+
+    def reset_dimension(self, arg):
+        is_in, status, value = self._is_dimension_in_dict('/' + arg, self.solved_conflicts)
+
+        if is_in:
+            self.solved_conflicts[status].remove(value)
+            self.conflicts[status].append(value)
+
+    # Helper functions
+
+    def _mark_as_solved(self, name, name_list, status):
+        index = name_list.index('/' + name)
+        name_list.pop(index)
+        self._change_conflict_status(self.conflicts, self.solved_conflicts,
+                                     status, index)
+
+    def _change_conflict_status(self, source, destination, status, index):
+        dim = source[status].pop(index)
+        destination[status].append(dim)
+
+    def _is_dimension_in_dict(self, name, conflicts_dict):
+        for k in conflicts_dict:
+            if k == 'experiment':
+                continue
+
+            is_in, value = self._is_dimension_in_list(name, conflicts_dict[k])
+            if is_in:
+                return True, k, value
+
+        return False, None, None
+
+    def _is_dimension_in_list(self, name, dimensions_list):
+        for value in dimensions_list:
+            if value.name == name:
+                return True, value
+
+        return False, None
 
     def _craft_bridge_api_package(self):
         pass
