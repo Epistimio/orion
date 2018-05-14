@@ -27,7 +27,7 @@ def test_insert_command_full_parsing(database, monkeypatch):
     args_list = ["insert", "-n", "test", "--config",
                  "./orion_config_random.yaml", "./black_box.py", "-x=1"]
 
-    insert.get_parser(subparsers)
+    insert.add_subparser(subparsers)
     subparsers.choices['insert'].set_defaults(func='')
 
     args = vars(parser.parse_args(args_list))

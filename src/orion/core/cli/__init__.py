@@ -32,13 +32,13 @@ def main(argv=None):
 
     load_modules_parser(orion_parser)
 
-    orion_parser.parse()
+    orion_parser.execute(argv)
 
     return 0
 
 
 def load_modules_parser(orion_parser):
-    """Search through the `cli` folder for any module containing a `get_parser` function"""
+    """Search through the `cli` folder for any module containing a `add_subparser` function"""
     this_module = __import__('orion.core.cli', fromlist=[''])
     path = this_module.__path__[0]
 
@@ -48,9 +48,9 @@ def load_modules_parser(orion_parser):
     for f in files:
         module = __import__('orion.core.cli.' + f, fromlist=[''])
 
-        if hasattr(module, 'get_parser'):
-            get_parser = getattr(module, 'get_parser')
-            get_parser(orion_parser.get_subparsers())
+        if hasattr(module, 'add_subparser'):
+            add_subparser = getattr(module, 'add_subparser')
+            add_subparser(orion_parser.get_subparsers())
 
 
 if __name__ == "__main__":

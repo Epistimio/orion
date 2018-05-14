@@ -29,7 +29,7 @@ def test_hunt_command_full_parsing(database, monkeypatch):
                  "--max-trials", "400", "--pool-size", "4",
                  "./black_box.py", "-x~normal(1,1)"]
 
-    hunt.get_parser(subparsers)
+    hunt.add_subparser(subparsers)
     subparsers.choices['hunt'].set_defaults(func='')
 
     args = vars(parser.parse_args(args_list))

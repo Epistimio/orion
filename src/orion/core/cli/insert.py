@@ -26,18 +26,28 @@ from orion.core.worker.experiment import Experiment
 log = logging.getLogger(__name__)
 
 
-def get_parser(parser):
-    """Return the parser that needs to be used for this command"""
+def add_subparser(parser):
+    """Add the subparser that needs to be used for this command"""
     insert_parser = parser.add_parser('insert', help='insert help')
 
     resolve_config.get_basic_args_group(insert_parser)
 
     resolve_config.get_user_args_group(insert_parser)
 
-    insert_parser.set_defaults(func=fetch_args)
+    insert_parser.set_defaults(func=main)
+
+    return insert_parser
 
 
-def fetch_args(args):
+def main(args):
+    """Fetch config and insert new point"""
+    # Note: Side effects on args
+    config = fetch_config(args)
+
+    _execute(args, config)
+
+
+def fetch_config(args):
     """Get options from command line arguments."""
     # Explicitly add orion's version as experiment's metadata
     args['metadata'] = dict()
@@ -49,7 +59,7 @@ def fetch_args(args):
     args.pop('user_script')
     args['metadata']['user_args'] = args.pop('user_args')
 
-    _execute(args, config)
+    return config
 
 
 def _execute(cmd_args, file_config):

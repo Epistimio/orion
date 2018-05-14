@@ -28,7 +28,7 @@ def test_init_only_command_full_parsing(database, monkeypatch):
                  "./orion_config_random.yaml", "./black_box.py",
                  "-x~normal(1,1)"]
 
-    init_only.get_parser(subparsers)
+    init_only.add_subparser(subparsers)
     subparsers.choices['init_only'].set_defaults(func='')
 
     args = vars(parser.parse_args(args_list))

@@ -128,7 +128,13 @@ class OrionArgsParser:
         elif verbose == 2:
             logging.basicConfig(level=logging.DEBUG)
 
-        args.pop('func')(args)
+        function = args.pop('func')
+        return args, function
+
+    def execute(self, argv):
+        """Execute main function of the subparser"""
+        args, function = self.parse(argv)
+        function(args)
 
 
 def fetch_config(args):

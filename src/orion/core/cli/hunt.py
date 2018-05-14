@@ -22,8 +22,8 @@ from orion.core.worker.experiment import Experiment
 log = logging.getLogger(__name__)
 
 
-def get_parser(parser):
-    """Return the parser that needs to be used for this command"""
+def add_subparser(parser):
+    """Add the subparser that needs to be used for this command"""
     hunt_parser = parser.add_parser('hunt', help='hunt help')
 
     orion_group = resolve_config.get_basic_args_group(hunt_parser)
@@ -40,10 +40,20 @@ def get_parser(parser):
 
     resolve_config.get_user_args_group(hunt_parser)
 
-    hunt_parser.set_defaults(func=fetch_args)
+    hunt_parser.set_defaults(func=main)
+
+    return hunt_parser
 
 
-def fetch_args(args):
+def main(args):
+    """Fetch config and execute hunt command"""
+    # Note: Side effects on args
+    config = fetch_config(args)
+
+    _execute(args, config)
+
+
+def fetch_config(args):
     """Get options from command line arguments."""
     # Explicitly add orion's version as experiment's metadata
     args['metadata'] = dict()
@@ -63,11 +73,11 @@ def fetch_args(args):
     log.debug("Problem definition: %s %s", args['metadata']['user_script'],
               ' '.join(args['metadata']['user_args']))
 
-    _execute(args, config)
+    return config
 
 
 def _execute(cmdargs, cmdconfig):
-    experiment, cmdargs = _infer_experiment(cmdargs, cmdconfig)
+    experiment = _infer_experiment(cmdargs, cmdconfig)
     workon(experiment)
 
 
@@ -100,7 +110,7 @@ def _infer_experiment(cmdargs, cmdconfig):
 
     experiment = create_experiment(exp_name, expconfig, cmdconfig, cmdargs)
 
-    return experiment, cmdargs
+    return experiment
 
 
 def create_experiment(exp_name, expconfig, cmdconfig, cmdargs):

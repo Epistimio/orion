@@ -19,7 +19,7 @@ from orion.core.worker.experiment import Experiment
 log = logging.getLogger(__name__)
 
 
-def get_parser(parser):
+def add_subparser(parser):
     """Return the parser that needs to be used for this command"""
     init_only_parser = parser.add_parser('init_only', help='init_only help')
 
@@ -27,10 +27,20 @@ def get_parser(parser):
 
     resolve_config.get_user_args_group(init_only_parser)
 
-    init_only_parser.set_defaults(func=fetch_args)
+    init_only_parser.set_defaults(func=main)
+
+    return init_only_parser
 
 
-def fetch_args(args):
+def main(args):
+    """Fetch config and initialize experiment"""
+    # Note: Side effects on args
+    config = fetch_config(args)
+
+    _execute(args, config)
+
+
+def fetch_config(args):
     """Create the dictionary of modified args for the execution of the command"""
     # Explicitly add orion's version as experiment's metadata
     args['metadata'] = dict()
@@ -42,12 +52,12 @@ def fetch_args(args):
     args.pop('user_script')
     args['metadata']['user_args'] = args.pop('user_args')
 
-    _execute(args, config)
+    return config
 
 
 # By inferring the experiment, we create a new configured experiment
 def _execute(cmdargs, cmdconfig):
-    _, cmdargs = _infer_experiment(cmdargs, cmdconfig)
+    _infer_experiment(cmdargs, cmdconfig)
 
 
 def _infer_experiment(cmdargs, cmdconfig):
@@ -78,7 +88,7 @@ def _infer_experiment(cmdargs, cmdconfig):
 
     experiment = create_experiment(exp_name, expconfig, cmdconfig, cmdargs)
 
-    return experiment, cmdargs
+    return experiment
 
 
 def create_experiment(exp_name, expconfig, cmdconfig, cmdargs):

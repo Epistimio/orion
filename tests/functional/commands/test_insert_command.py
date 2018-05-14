@@ -56,7 +56,6 @@ def test_insert_single_trial(database, monkeypatch):
 @pytest.mark.usefixtures("null_db_instances")
 def test_insert_single_trial_default_value(database, monkeypatch):
     """Try to insert a single trial using a default value"""
-
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     monkeypatch.setattr("getpass.getuser", get_user_corneau)
 
@@ -82,7 +81,6 @@ def test_insert_single_trial_default_value(database, monkeypatch):
 @pytest.mark.usefixtures("null_db_instances")
 def test_insert_with_no_default_value(database, monkeypatch):
     """Try to insert a single trial by omitting a namespace with no default value"""
-
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     monkeypatch.setattr("getpass.getuser", get_user_corneau)
 
@@ -97,7 +95,6 @@ def test_insert_with_no_default_value(database, monkeypatch):
 @pytest.mark.usefixtures("null_db_instances")
 def test_insert_with_incorrect_namespace(database, monkeypatch):
     """Try to insert a single trial with a namespace not inside the experiment space"""
-
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     monkeypatch.setattr("getpass.getuser", get_user_corneau)
 
@@ -115,7 +112,6 @@ def test_insert_with_outside_bound_value(database, monkeypatch):
     """Try to insert a single trial with value outside the distribution's interval"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     monkeypatch.setattr("getpass.getuser", get_user_corneau)
-
 
     with pytest.raises(ValueError) as exc_info:
         orion.core.cli.main(["insert", "-n", "test_insert_two_hyperparameters",
