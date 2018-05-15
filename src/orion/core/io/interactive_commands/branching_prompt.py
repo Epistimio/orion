@@ -47,14 +47,20 @@ class BranchingPrompt(cmd.Cmd):
     def do_status(self, arg):
         """Display the current status of the conflicting configuration"""
         if len(arg) == 0:
-            self._print_conflicts_message('Solved conflicts', self.branch_builder.solved_conflicts)
+            solved_conflicts = list(self.branch_builder.get_conflicts_with_solved_status(True))
+            conflicts = list(self.branch_builder.get_conflicts_with_solved_status())
 
-            if any(self.branch_builder.solved_conflicts.values()):
-                print()
+            if len(solved_conflicts) > 0:
+                print('Solved')
+                self._print_conflicts_message(solved_conflicts)
+            if len(conflicts) > 0:
+                if len(solved_conflicts) > 0:
+                    print()
+                print('Unsolved')
+                self._print_conflicts_message(conflicts)
 
-            self._print_conflicts_message('Unsolved conflicts', self.branch_builder.conflicts)
         else:
-            self._print_dimension_status(arg)
+            self._print_singular_status(arg)
 
     def do_name(self, arg):
         """Change the name of the experiment"""
@@ -100,10 +106,21 @@ class BranchingPrompt(cmd.Cmd):
     # Helper functions
     def _call_function_for_all_args(self, arg, function):
         if arg in self.special_keywords:
-            args = list(map(lambda d: d.name[1:],
-                        self.branch_builder.conflicts[self.special_keywords[arg]]))
+            args = list(map(lambda c: c.dimension.name[1:],
+                        self.branch_builder.get_filtered_conflicts([
+                            self.special_keywords[arg]])))
         else:
             args = arg.split(' ')
+
+        for a in args:
+            if '*' in a:
+                prefix = a.split('*')[0]
+                filtered_conflicts = self.branch_builder \
+                                         .filter_conflicts(lambda c:
+                                                           c.dimension.name.startswith(prefix))
+                args.remove(a)
+                args = args + list(map(lambda c: c.dimension.name[1:], filtered_conflicts))
+                continue
 
         for a in args:
             try:
@@ -112,34 +129,22 @@ class BranchingPrompt(cmd.Cmd):
                 print('Invalid dimension name {}'.format(a))
 
     def _print_dimension_status(self, name):
-        is_solved, status, dimension = self.branch_builder.get_dimension_status(name)
+        conflict = self.branch_builder.get_dimension_conflict(name)
 
-        if status is None or dimension is None:
-            print('Invalid dimension name')
-            return
+        print('Solved' if conflict.is_solved else 'Unsolved')
 
-        print('Unsolved' if not is_solved else 'Solved')
+        self._print_dimension_conflict_info(conflict)
 
-        self._print_dimension_conflict_info(status, dimension)
+    def _print_conflicts_message(self, conflicts):
+        for conflict in conflicts:
+            self._print_singular_conflict_info(conflict)
 
-    def _print_conflicts_message(self, preprint_message, conflicts_dict):
-        if not any(conflicts_dict.values()):
-            return
-
-        print(preprint_message)
-        for status in conflicts_dict:
-            if status == 'experiment' and conflicts_dict[status] != '':
-                print(self.conflicts_message[status].format(conflicts_dict[status]))
-            else:
-                for dim in conflicts_dict[status]:
-                    self._print_dimension_conflict_info(status, dim)
-
-    def _print_dimension_conflict_info(self, status, dimension):
-        if status != 'changed':
-            print(self.conflicts_message[status].format(dimension.name))
-            print(dimension)
+    def _print_singular_conflict_info(self, conflict):
+        if conflict.status != 'changed':
+            print(self.conflicts_message[conflict.status].format(conflict.dimension.name))
+            print(conflict.dimension)
         else:
-            print(self.conflicts_message[status]
-                  .format(dimension.name,
-                  self.branch_builder.get_old_dimension_value(dimension.name),
-                  dimension))
+            print(self.conflicts_message[conflict.status]
+                  .format(conflict.dimension.name,
+                  self.branch_builder.get_old_dimension_value(conflict.dimension.name),
+                  conflict.dimension))
