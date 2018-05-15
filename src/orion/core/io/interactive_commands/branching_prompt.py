@@ -47,8 +47,8 @@ class BranchingPrompt(cmd.Cmd):
     def do_status(self, arg):
         """Display the current status of the conflicting configuration"""
         if len(arg) == 0:
-            solved_conflicts = list(self.branch_builder.get_conflicts_with_solved_status(True))
-            conflicts = list(self.branch_builder.get_conflicts_with_solved_status())
+            solved_conflicts = list(self.branch_builder.filter_conflicts_with_solved_state(True))
+            conflicts = list(self.branch_builder.filter_conflicts_with_solved_state())
 
             if len(solved_conflicts) > 0:
                 print('Solved')
@@ -103,11 +103,15 @@ class BranchingPrompt(cmd.Cmd):
         print('Closing interactive conflicts solver')
         return True
 
+    def do_commit(self, arg):
+        print(self.branch_builder.operations)
+        return True
+
     # Helper functions
     def _call_function_for_all_args(self, arg, function):
         if arg in self.special_keywords:
             args = list(map(lambda c: c.dimension.name[1:],
-                        self.branch_builder.get_filtered_conflicts([
+                        self.branch_builder.filter_conflicts_with_status([
                             self.special_keywords[arg]])))
         else:
             args = arg.split(' ')
