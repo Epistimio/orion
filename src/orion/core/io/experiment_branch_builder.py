@@ -25,7 +25,6 @@ class Conflict:
         self.is_solved = False
         self.dimension = dimension
         self.status = status
-        self.operation = None
 
 
 class ExperimentBranchBuilder:
@@ -40,9 +39,17 @@ class ExperimentBranchBuilder:
         self.conflicting_config = conflicting_config
 
         self.conflicts = []
+        self.operations = {}
+        self._operations_mapping = {'add': self._add_adaptor,
+                                    'rename': self._rename_adaptor,
+                                    'remove': self._remove_adaptor}
 
         self._build_spaces()
         self._find_conflicts()
+
+        branching_name = conflicting_config.pop('branch', None)
+        if branching_name is not None:
+            self.change_experiment_name(branching_name)
 
     def _build_spaces(self):
         user_args = self.conflicting_config['metadata']['user_args']
@@ -77,11 +84,31 @@ class ExperimentBranchBuilder:
 
     def add_dimension(self, name):
         """Add `name` dimension to the solved conflicts list"""
-        self._mark_as_solved(name, ['new', 'changed'])
+        conflict = self._mark_as_solved(name, ['new', 'changed'])
+        self._put_operation('add', (conflict))
 
     def remove_dimension(self, name):
         """Remove `name` from the configuration and marks conflict as solved"""
-        self._mark_as_solved(name, ['missing'])
+        conflict = self._mark_as_solved(name, ['missing'])
+        self._put_operation('remove', (conflict))
+
+    def rename_dimension(self, args):
+        """Change the name of old dimension to new dimension"""
+        old, new = args
+
+        old_index, missing_conflicts = self._assert_has_status(old, 'missing')
+        new_index, new_conflicts = self._assert_has_status(new, 'new')
+
+        old_conflict = missing_conflicts[old_index]
+        new_conflict = new_conflicts[new_index]
+
+        old_conflict.is_solved = True
+        new_conflict.is_solved = True
+        self._put_operation('rename', (old_conflict, new_conflict))
+
+    def reset_dimension(self, arg):
+        conflict = self._mark_as(arg, ['missing', 'new', 'changed'], False)
+        self._remove_from_operations(conflict)
 
     def get_dimension_conflict(self, name):
         prefixed_name = '/' + name
@@ -95,34 +122,67 @@ class ExperimentBranchBuilder:
 
         return None
 
-    def rename_dimension(self, args):
-        """Change the name of old dimension to new dimension"""
-        old, new = args
-        self._mark_as_solved('/' + old, ['missing'])
-        self._mark_as_solved('/' + new, ['new'])
+    def filter_conflicts_with_solved_state(self, wants_solved=False):
+        return self.filter_conflicts(lambda c: c.is_solved is wants_solved)
 
-    def reset_dimension(self, arg):
-        self._mark_as(arg, ['missing', 'new', 'changed'], False)
-
-    def get_conflicts_with_solved_status(self, wants_solved=False):
-        return filter(lambda c: c.is_solved is wants_solved, self.conflicts)
-
-    def get_filtered_conflicts(self, status):
-        return filter(lambda c: c.status in status, self.conflicts)
+    def filter_conflicts_with_status(self, status):
+        return self.filter_conflicts(lambda c: c.status in status)
 
     def filter_conflicts(self, filter_function):
         return filter(filter_function, self.conflicts)
+
+    def create_adaptors(self):
+        adaptors = []
+        for operation in self.operations:
+            for conflict in self.operations[operation]:
+                adaptors.append(self._operations_mapping[operation](conflict))
+
     # Helper functions
 
     def _mark_as_solved(self, name, status):
-        self._mark_as(name, status, True)
+        return self._mark_as(name, status, True)
 
     def _mark_as(self, name, status, is_solved):
+        index, conflicts = self._assert_has_status(name, status)
+        conflict = conflicts[index]
+        conflict.is_solved = is_solved
+
+        return conflict
+
+    def _assert_has_status(self, name, status):
         prefixed_name = '/' + name
-
-        conflicts = list(self.get_filtered_conflicts(status))
+        conflicts = list(self.filter_conflicts_with_status(status))
         index = list(map(lambda c: c.dimension.name, conflicts)).index(prefixed_name)
-        conflicts[index].is_solved = is_solved
 
-    def _craft_bridge_api_package(self):
+        return index, conflicts
+
+    def _put_operation(self, operation_name, args):
+        if operation_name not in self.operations:
+            self.operations[operation_name] = []
+
+        if args not in self.operations[operation_name]:
+            self.operations[operation_name].append(args)
+
+    def _remove_from_operations(self, arg):
+        for operation in self.operations:
+            if operation == 'rename':
+                for value in self.operations[operation]:
+                    old, new = value
+                    if arg in value:
+                        old.is_solved = False
+                        new.is_solved = False
+                        self.operations[operation].remove(value)
+
+            elif arg in self.operations[operation]:
+                arg.is_solved = False
+                self.operations[operation].remove(arg)
+
+    # TODO Create Adaptor instances
+    def _add_adaptor(self, conflict):
+        pass
+
+    def _rename_adaptor(self, conflict):
+        pass
+
+    def _remove_adaptor(self, conflict):
         pass
