@@ -60,13 +60,13 @@ class ExperimentBranchBuilder:
                     self.conflicts.append(Conflict('changed', dim))
             # If the name does not exist, it is a new dimension
             else:
-                self.conflicts.append('new', dim)
+                self.conflicts.append(Conflict('new', dim))
 
         # In the same vein, if any dimension of the current space is not inside
         # the conflicting space, it is missing
         for dim in self.experiment_space.values():
             if dim.name not in self.conflicting_space:
-                self.conflicts.append('missing', dim)
+                self.conflicts.append(Conflict('missing', dim))
 
     # API section
 
