@@ -79,11 +79,3 @@ License
 =======
 
 The project is licensed under the BSD license.
-
-
-Core Developers
----------------
-
-Christos Tsirigotis [`@tsirif <https://github.com/tsirif>`_]
-
-Xavier Bouthillier [`@bouthilx <https://github.com/bouthilx>`_]
