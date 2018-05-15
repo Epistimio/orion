@@ -113,7 +113,7 @@ def fetch_orion_args(description):
         help="logging levels of information about the process (-v: INFO. -vv: DEBUG)")
 
     orion_group = parser.add_argument_group(
-        "Oríon arguments (optional)",
+        u"Oríon arguments (optional)",
         description="These arguments determine orion's behaviour")
 
     orion_group.add_argument(
