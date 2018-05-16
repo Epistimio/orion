@@ -11,6 +11,7 @@
 import logging
 import os
 import subprocess
+import sys
 import tempfile
 
 from orion.core.io.convert import JSONConverter
@@ -104,6 +105,8 @@ class Consumer(object):
         if returncode != 0:
             log.error("Something went wrong. Check logs. Process "
                       "returned with code %d !", returncode)
+            if returncode == 2:
+                sys.exit(2)
             return None
 
         log.debug("## Parse results from file and fill corresponding Trial object.")

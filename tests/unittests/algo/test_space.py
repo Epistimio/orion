@@ -143,7 +143,6 @@ class TestReal(object):
         assert 1.0 in dim
 
         assert str(dim) == "Real(name=yolo, prior={norm: (0.9,), {}}, shape=(), default value=None)"
-
         assert dim.name == 'yolo'
         assert dim.type == 'real'
         assert dim.shape == ()

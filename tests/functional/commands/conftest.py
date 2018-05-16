@@ -8,8 +8,6 @@ import pytest
 import yaml
 
 from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
-from orion.core.io.database import Database
-from orion.core.io.database.mongodb import MongoDB
 
 
 class DumbAlgo(BaseAlgorithm):
@@ -82,7 +80,7 @@ def dumbalgo():
 def exp_config():
     """Load an example database."""
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-              'unittests', 'core', 'experiment.yaml')) as f:
+              'experiment.yaml')) as f:
         exp_config = list(yaml.safe_load_all(f))
     return exp_config
 
@@ -100,13 +98,9 @@ def database():
 def clean_db(database, exp_config):
     """Clean insert example experiment entries to collections."""
     database.experiments.drop()
-    database.experiments.insert_many(exp_config[0])
     database.trials.drop()
-    database.trials.insert_many(exp_config[1])
     database.workers.drop()
-    database.workers.insert_many(exp_config[2])
     database.resources.drop()
-    database.resources.insert_many(exp_config[3])
 
 
 @pytest.fixture()
@@ -117,10 +111,3 @@ def only_experiments_db(database, exp_config):
     database.trials.drop()
     database.workers.drop()
     database.resources.drop()
-
-
-@pytest.fixture()
-def null_db_instances():
-    """Nullify singleton instance so that we can assure independent instantiation tests."""
-    Database.instance = None
-    MongoDB.instance = None

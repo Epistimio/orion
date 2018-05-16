@@ -55,7 +55,9 @@ class TestDimensionBuilder(object):
         assert isinstance(dim, Real)
         assert dim.name == 'yolo2'
         assert dim._prior_name == 'alpha'
-        assert 3.3 not in dim and (3.3, 11.1) not in dim and (3.3, 6) in dim
+        assert 3.3 not in dim
+        assert (3.3, 11.1) not in dim
+        assert (3.3, 6) in dim
         assert isinstance(dim.prior, dists.alpha_gen)
 
     def test_build_a_good_integer(self, dimbuilder):

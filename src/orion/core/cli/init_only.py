@@ -1,43 +1,66 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli` -- Functions that define console scripts
-================================================================
+:mod:`orion.core.cli.init_only` -- Module running the init_only command
+=======================================================================
 
-.. module:: cli
+.. module:: init_only
    :platform: Unix
-   :synopsis: Helper functions to setup an experiment and execute it.
-
+   :synopsis: Creates a new experiment.
 """
+
 import logging
 
-from orion.core import resolve_config
+import orion
+from orion.core.cli import resolve_config
 from orion.core.io.database import Database, DuplicateKeyError
-from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
 
 log = logging.getLogger(__name__)
 
-CLI_DOC_HEADER = """
-orion:
-  Oríon cli script for asynchronous distributed optimization
 
-"""
+def add_subparser(parser):
+    """Return the parser that needs to be used for this command"""
+    init_only_parser = parser.add_parser('init_only', help='init_only help')
+
+    resolve_config.get_basic_args_group(init_only_parser)
+
+    resolve_config.get_user_args_group(init_only_parser)
+
+    init_only_parser.set_defaults(func=main)
+
+    return init_only_parser
 
 
-def main():
-    """Entry point for `orion.core` functionality."""
-    experiment = infer_experiment()
-    workon(experiment)
-    return 0
+def main(args):
+    """Fetch config and initialize experiment"""
+    # Note: Side effects on args
+    config = fetch_config(args)
+
+    _execute(args, config)
 
 
-def infer_experiment():
-    """Use `orion.core.resolve_config` to organize how configuration is built."""
-    # Fetch experiment name, user's script path and command line arguments
-    # Use `-h` option to show help
-    cmdargs, cmdconfig = resolve_config.fetch_orion_args(CLI_DOC_HEADER)
+def fetch_config(args):
+    """Create the dictionary of modified args for the execution of the command"""
+    # Explicitly add orion's version as experiment's metadata
+    args['metadata'] = dict()
+    args['metadata']['orion_version'] = orion.core.__version__
+    log.debug("Using orion version %s", args['metadata']['orion_version'])
 
+    config = resolve_config.fetch_config(args)
+
+    args.pop('user_script')
+    args['metadata']['user_args'] = args.pop('user_args')
+
+    return config
+
+
+# By inferring the experiment, we create a new configured experiment
+def _execute(cmdargs, cmdconfig):
+    _infer_experiment(cmdargs, cmdconfig)
+
+
+def _infer_experiment(cmdargs, cmdconfig):
     # Initialize configuration dictionary.
     # Fetch info from defaults and configurations from default locations.
     expconfig = resolve_config.fetch_default_options()
@@ -52,6 +75,7 @@ def infer_experiment():
                                                   cmdconfig, cmdargs)
     db_opts = tmpconfig['database']
     dbtype = db_opts.pop('type')
+
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
     Database(of_type=dbtype, **db_opts)
 
@@ -106,8 +130,6 @@ def create_experiment(exp_name, expconfig, cmdconfig, cmdargs):
     expconfig.pop('resources', None)
     expconfig.pop('status', None)
 
-    log.info(expconfig)
-
     # Finish experiment's configuration and write it to database.
     try:
         experiment.configure(expconfig)
@@ -128,7 +150,3 @@ def infer_versioning_metadata(existing_metadata):
     # User repo's version
     # User repo's HEAD commit hash
     return existing_metadata
-
-
-if __name__ == "__main__":
-    main()
