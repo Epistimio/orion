@@ -224,7 +224,7 @@ class TestConfigProperty(object):
         assert cfg['max_trials'] is None
         assert cfg['algorithms'] is None
 
-    @pytest.mark.xfail(reason="To be implemented...", raises=NotImplementedError)
+    @pytest.mark.skip(reason='Interactive prompt problems')
     def test_good_set_before_init_hit_with_diffs(self, exp_config):
         """Trying to set, and differences were found from the config pulled from db.
 
@@ -239,6 +239,7 @@ class TestConfigProperty(object):
         new_config = copy.deepcopy(exp_config[0][1])
         new_config['metadata']['user_version'] = 1.2
         exp = Experiment('supernaedo2')
+
         exp.configure(new_config)
 
     def test_good_set_before_init_hit_no_diffs_exc_max_trials(self, exp_config):
