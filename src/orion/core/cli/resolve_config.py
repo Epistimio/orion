@@ -93,7 +93,7 @@ ENV_VARS = dict(
 
 
 class OrionArgsParser:
-    """Parser object handling the upper-level parsing of Orion's arguments."""
+    """Parser object handling the upper-level parsing of Oríon's arguments."""
 
     def __init__(self, description):
         """Create the pre-command arguments"""
@@ -151,7 +151,7 @@ def fetch_config(args):
 def get_basic_args_group(parser):
     """Return the basic arguments for any command."""
     basic_args_group = parser.add_argument_group(
-        "Orion arguments (optional)",
+        "Oríon arguments (optional)",
         description="These arguments determine orion's behaviour")
 
     basic_args_group.add_argument(
