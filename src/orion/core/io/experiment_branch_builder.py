@@ -179,7 +179,10 @@ class ExperimentBranchBuilder:
 
     # TODO Create Adaptor instances
     def _add_adaptor(self, conflict):
-        pass
+        if conflict.status == 'changed':
+            pass
+        else:
+            pass
 
     def _rename_adaptor(self, conflict):
         pass
