@@ -100,6 +100,14 @@ class TestTrial(object):
         trials = Trial.build(exp_config[1])
         assert list(map(lambda x: x.to_dict(), trials)) == exp_config[1]
 
+    @pytest.mark.usefixtures("clean_db")
+    def test_value_equal(self, exp_config):
+        """Compare Param objects using __eq__"""
+        trials = Trial.build(exp_config[1])
+
+        assert trials[0].params[0] == Trial.Param(**exp_config[1][0]['params'][0])
+        assert trials[0].params[1] != Trial.Param(**exp_config[1][0]['params'][0])
+
     def test_str_trial(self, exp_config):
         """Test representation of `Trial`."""
         t = Trial(**exp_config[1][2])
