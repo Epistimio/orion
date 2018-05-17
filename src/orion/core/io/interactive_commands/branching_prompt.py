@@ -25,10 +25,6 @@ class BranchingPrompt(cmd.Cmd):
     'moment to quit without saving.'
     prompt = '(orion) '
 
-    special_keywords = {'~new': 'new',
-                        '~changed': 'changed',
-                        '~missing': 'missing'}
-
     conflicts_message = {'new': 'Dimension {} is new',
                          'changed': 'Dimension {} has changed from {} to {}',
                          'missing': 'Dimension {} is missing',
@@ -109,28 +105,10 @@ class BranchingPrompt(cmd.Cmd):
 
     # Helper functions
     def _call_function_for_all_args(self, arg, function):
-        if arg in self.special_keywords:
-            args = list(map(lambda c: c.dimension.name[1:],
-                        self.branch_builder.filter_conflicts_with_status([
-                            self.special_keywords[arg]])))
-        else:
-            args = arg.split(' ')
-
-        for a in args:
-            if '*' in a:
-                prefix = a.split('*')[0]
-                filtered_conflicts = self.branch_builder \
-                                         .filter_conflicts(lambda c:
-                                                           c.dimension.name.startswith(prefix))
-                args.remove(a)
-                args = args + list(map(lambda c: c.dimension.name[1:], filtered_conflicts))
-                continue
-
-        for a in args:
-            try:
-                function(a)
-            except ValueError as ex:
-                print('Invalid dimension name {}'.format(a))
+        try:
+            function(a)
+        except ValueError as ex:
+            print('Invalid dimension name {}'.format(a))
 
     def _print_dimension_status(self, name):
         conflict = self.branch_builder.get_dimension_conflict(name)
