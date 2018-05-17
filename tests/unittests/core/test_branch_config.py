@@ -87,6 +87,16 @@ def test_changed_conflict(parent_config, changed_config):
     assert conflict.status == 'changed'
 
 
+def test_add_single_hit(parent_config, new_config):
+    del new_config['metadata']['user_args'][0]
+    branch_builder = ExperimentBranchBuilder(parent_config, new_config)
+    branch_builder.add_dimension('w_d')
+
+    assert len(branch_builder.conflicts) == 2
+    assert len(list(branch_builder.filter_conflicts_with_solved_state(True))) == 1
+    assert len(list(branch_builder.filter_conflicts_with_solved_state())) == 1
+
+
 def test_add_new(parent_config, new_config):
     branch_builder = ExperimentBranchBuilder(parent_config, new_config)
     branch_builder.add_dimension('w_d')
@@ -180,3 +190,78 @@ def test_bad_name_experiment(parent_config, child_config):
     assert branch_builder.experiment_config['name'] == 'test'
     branch_builder.change_experiment_name('test')
     assert branch_builder.conflicting_config['name'] == 'test2'
+
+
+def test_add_all_new(parent_config, new_config):
+    branch_builder = ExperimentBranchBuilder(parent_config, new_config)
+    branch_builder.add_dimension('~new')
+
+    assert len(branch_builder.conflicts) == 1
+
+    conflict = branch_builder.conflicts[0]
+
+    assert conflict.is_solved is True
+    assert len(branch_builder.operations['add']) == 1
+
+
+def test_add_all_changed(parent_config, changed_config):
+    branch_builder = ExperimentBranchBuilder(parent_config, changed_config)
+    branch_builder.add_dimension('~changed')
+
+    assert len(branch_builder.conflicts) == 1
+
+    conflict = branch_builder.conflicts[0]
+
+    assert conflict.is_solved is True
+    assert len(branch_builder.operations['add']) == 1
+
+
+def test_remove_all_missing(parent_config, missing_config):
+    branch_builder = ExperimentBranchBuilder(parent_config, missing_config)
+    branch_builder.remove_dimension('~missing')
+
+    assert len(branch_builder.conflicts) == 1
+
+    conflict = branch_builder.conflicts[0]
+
+    assert conflict.is_solved is True
+    assert len(branch_builder.operations['remove']) == 1
+
+
+def test_keyword_hit_given_status(parent_config, new_config):
+    del new_config['metadata']['user_args'][0]
+    branch_builder = ExperimentBranchBuilder(parent_config, new_config)
+    branch_builder.add_dimension('~new')
+
+    assert len(branch_builder.conflicts) == 2
+    assert len(list(branch_builder.filter_conflicts(lambda c: c.is_solved))) == 1
+    assert len(list(branch_builder.filter_conflicts(lambda c: not c.is_solved))) == 1
+
+
+def test_bad_keyword(parent_config, missing_config):
+    branch_builder = ExperimentBranchBuilder(parent_config, missing_config)
+    
+    with pytest.raises(ValueError):
+        branch_builder.remove_dimension('~test')
+
+
+def test_good_wildcard(parent_config, new_config):
+    branch_builder = ExperimentBranchBuilder(parent_config, new_config)
+    branch_builder.add_dimension('w*')
+
+    assert len(branch_builder.conflicts) == 1
+    assert len(list(branch_builder.filter_conflicts(lambda c: c.is_solved))) == 1
+
+
+def test_wildcard_different_status(parent_config, new_config):
+    parent_config['metadata']['user_args'].append('-wow~normal(1,10)')
+    branch_builder = ExperimentBranchBuilder(parent_config, new_config)
+    branch_builder.add_dimension('w*')
+
+    assert len(branch_builder.conflicts) == 2
+    assert len(list(branch_builder.filter_conflicts(lambda c: c.is_solved))) == 1
+
+def test_old_dimension_value(parent_config, changed_config):
+    branch_builder = ExperimentBranchBuilder(parent_config, changed_config)
+    
+    assert branch_builder.get_old_dimension_value('/y') is not None
