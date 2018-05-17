@@ -44,6 +44,10 @@ class ExperimentBranchBuilder:
                                     'rename': self._rename_adaptor,
                                     'remove': self._remove_adaptor}
 
+        self.special_keywords = {'~new': 'new',
+                        '~changed': 'changed',
+                        '~missing': 'missing'}
+
         self._build_spaces()
         self._find_conflicts()
 
@@ -84,13 +88,22 @@ class ExperimentBranchBuilder:
 
     def add_dimension(self, name):
         """Add `name` dimension to the solved conflicts list"""
-        conflict = self._mark_as_solved(name, ['new', 'changed'])
-        self._put_operation('add', (conflict))
+        self._do_basic(name, ['new', 'changed'], 'add')
 
     def remove_dimension(self, name):
         """Remove `name` from the configuration and marks conflict as solved"""
-        conflict = self._mark_as_solved(name, ['missing'])
-        self._put_operation('remove', (conflict))
+        self._do_basic(name, ['missing'], 'remove')
+
+    def _do_basic(self, name, status, operation):
+        for _name in self._get_names(name, status):
+            conflict = self._mark_as_solved(_name, status)
+            self._put_operation(operation, (conflict))
+
+    def reset_dimension(self, arg):
+        status = ['missing', 'new', 'changed']
+        for _name in self._get_names(arg, status):
+            conflict = self._mark_as(arg, status, False)
+            self._remove_from_operations(conflict)
 
     def rename_dimension(self, args):
         """Change the name of old dimension to new dimension"""
@@ -105,10 +118,6 @@ class ExperimentBranchBuilder:
         old_conflict.is_solved = True
         new_conflict.is_solved = True
         self._put_operation('rename', (old_conflict, new_conflict))
-
-    def reset_dimension(self, arg):
-        conflict = self._mark_as(arg, ['missing', 'new', 'changed'], False)
-        self._remove_from_operations(conflict)
 
     def get_dimension_conflict(self, name):
         prefixed_name = '/' + name
@@ -138,6 +147,31 @@ class ExperimentBranchBuilder:
                 adaptors.append(self._operations_mapping[operation](conflict))
 
     # Helper functions
+    def _get_names(self, name, status):
+        args = name.split(' ')
+        names = []
+
+        for arg in args:
+            if arg in self.special_keywords:
+                self._extend_special_keywords(arg, names)
+            elif '*' in arg:
+                self._extend_wildcard(arg, names, status)
+            else:
+                names = [arg]
+
+        return names
+
+    def _extend_special_keywords(self, arg, names):
+        names.extend(list(map(lambda c: c.dimension.name[1:],
+                        self.filter_conflicts_with_status([
+                            self.special_keywords[arg]]))))
+
+    def _extend_wildcard(self, arg, names, status):
+        prefix = '/' + arg.split('*')[0]
+        filtered_conflicts = self.filter_conflicts(lambda c:
+                                                   c.dimension.name.startswith(prefix)
+                                                   and c.status in status)
+        names.extend(list(map(lambda c: c.dimension.name[1:], filtered_conflicts)))
 
     def _mark_as_solved(self, name, status):
         return self._mark_as(name, status, True)
