@@ -132,6 +132,7 @@ class Trial(object):
         function or of an 'constraint' expression.
         """
 
+        __slots__ = ()
         allowed_types = ('objective', 'constraint', 'gradient')
 
     class Param(Value):
@@ -139,6 +140,7 @@ class Trial(object):
         floating precision numerical or a categorical expression (e.g. a string).
         """
 
+        __slots__ = ()
         allowed_types = ('integer', 'real', 'categorical')
 
     __slots__ = ('experiment', '_id', '_status', 'worker',
