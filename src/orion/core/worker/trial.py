@@ -106,6 +106,10 @@ class Trial(object):
                 )
             return ret
 
+        def __eq__(self, other):
+            """Test equality based on self.to_dict()"""
+            return self.name == other.name and self.type == other.type and self.value == other.value
+
         def __str__(self):
             """Represent partially with a string."""
             ret = "{0}(name={1}, type={2}, value={3})".format(
