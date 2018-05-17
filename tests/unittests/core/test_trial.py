@@ -53,6 +53,16 @@ class TestTrial(object):
         with pytest.raises(AttributeError):
             Trial.Value(ispii='iela')
 
+    def test_param_bad_init(self):
+        """Other than `Trial.Param.__slots__` are not allowed in __init__ too."""
+        with pytest.raises(AttributeError):
+            Trial.Param(ispii='iela')
+
+    def test_result_bad_init(self):
+        """Other than `Trial.Result.__slots__` are not allowed in __init__ too."""
+        with pytest.raises(AttributeError):
+            Trial.Result(ispii='iela')
+
     def test_not_allowed_status(self):
         """Other than `Trial.allowed_stati` are not allowed in `Trial.status`."""
         t = Trial()
