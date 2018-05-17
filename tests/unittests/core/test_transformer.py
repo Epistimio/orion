@@ -422,6 +422,10 @@ class TestTransformedDimension(object):
         """
         for thing in Dimension.__dict__:
             assert thing in TransformedDimension.__dict__
+        for thing in TransformedDimension.__dict__:
+            if thing in ('transform', 'reverse'):
+                continue
+            assert thing in Dimension.__dict__
 
     def test_sample(self, tdim, seed):
         """Check method `sample`."""
