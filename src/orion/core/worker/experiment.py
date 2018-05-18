@@ -15,7 +15,7 @@ import getpass
 import logging
 import random
 
-from orion.core.io.database import Database
+from orion.core.io.database import Database, ReadOnlyDB
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
@@ -461,3 +461,66 @@ class Experiment(object):
                 break
 
         return is_diff
+
+
+# pylint: disable=too-few-public-methods
+class ExperimentView(object):
+    """Non-writable view of an experiment
+
+    .. seealso::
+
+        :py:class:`orion.core.worker.experiment.Experiment` for writable experiments.
+
+    """
+
+    __slots__ = ('_experiment', )
+
+    #                     Attributes
+    valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials", "status"] +
+                        # Properties
+                        ["space", "algorithms", "stats"] +
+                        # Methods
+                        ["fetch_completed_trials"])
+
+    def __init__(self, name):
+        """Initialize viewed experiment object with primary key (:attr:`name`, :attr:`user`).
+
+        Try to find an entry in `Database` with such a key and config this object
+        from it import, if successful. Else, init with default/empty values and
+        insert new entry with this object's attributes in database.
+
+        .. note::
+
+            A view is **note** initializable. It is meant to access trials and statistics from the
+            experiment..
+
+        :param name: Describe a configuration with a unique identifier per :attr:`user`.
+        :type name: str
+        """
+        self._experiment = Experiment(name)
+        self._experiment._db = ReadOnlyDB(self._experiment._db)
+
+    def __getattr__(self, name):
+        """Get attribute only if valid"""
+        if name not in self.valid_attributes:
+            raise AttributeError("Cannot access attribute %s on view-only experiments." % name)
+
+        return getattr(self._experiment, name)
+
+    @property
+    def is_done(self):
+        """Return True, if this experiment is considered to be finished.
+
+        Note that call to this property will **not** change the status of the experiment in the
+        database. Only writable :class:`orion.core.worker.experiment.Experiment` would do so.
+
+        .. seealso::
+            :attr:`orion.core.worker.experiment.Experiment.is_done`
+        """
+        query = dict(
+            experiment=self._id,
+            status='completed'
+            )
+        num_completed_trials = self._experiment._db.count('trials', query)
+
+        return num_completed_trials >= self.max_trials
