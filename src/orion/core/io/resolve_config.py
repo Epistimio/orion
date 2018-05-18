@@ -82,10 +82,11 @@ ENV_VARS = dict(
 
 def fetch_config(args):
     """Return the config inside the .yaml file if present."""
-    orion_file = args.pop('config')
+    orion_file = args.get('config')
     config = dict()
     if orion_file:
         log.debug("Found orion configuration file at: %s", os.path.abspath(orion_file.name))
+        orion_file.seek(0)
         config = yaml.safe_load(orion_file)
 
     return config
