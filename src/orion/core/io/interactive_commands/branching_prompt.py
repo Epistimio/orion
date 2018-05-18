@@ -106,9 +106,9 @@ class BranchingPrompt(cmd.Cmd):
     # Helper functions
     def _call_function_for_all_args(self, arg, function):
         try:
-            function(a)
+            function(arg)
         except ValueError as ex:
-            print('Invalid dimension name {}'.format(a))
+            print('Invalid dimension name {}'.format(arg))
 
     def _print_dimension_status(self, name):
         conflict = self.branch_builder.get_dimension_conflict(name)
