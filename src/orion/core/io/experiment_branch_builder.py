@@ -1,14 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.io.experiment_branch_builder.py` -- Module building the
-difference between a parent experience and its branching child.
-========================================================================
+:mod:`orion.core.io.experiment_branch_builder.py` -- Module offering an
+API to solve conflicts when branching experiments.
+=======================================================================
 .. module:: experiment_branch_builder
    :platform: Unix
-   :synopsis: Gets a conflicting config regarding a given experiment and
-   handles the solving of the different conflicts
+   :synopsis: Create a list of adapters from the conflicts between an
+   experiment and the experiment from which it is branching from.
 
+Conflicts between two experiments arise when these experiments have different
+spaces but have the same name. Solving these conflicts require the creation of
+adapters to bridge from the parent experiment and the child experiment.
+
+Conflicting dimensions can be in one of three different states :
+    * New : this dimension is not present in the parent's space
+    * Changed : this dimension's prior has changed between the parent's and the child's space
+    * Missing : this dimension is not present in the child's space
+
+To solve these conflicts, the builder object offers a public API to add, remove or rename
+dimensions.
+
+For more info on adapters :
+    ..seealso::
+        :meth:`orion.core.evc.adapters.BaseAdapter`
 """
 
 import logging
@@ -19,10 +34,12 @@ from orion.core.io.space_builder import SpaceBuilder
 log = logging.getLogger(__name__)
 
 
+# pylint: disable=too-few-public-methods
 class Conflict:
     """Represent a single conflict inside the configuration"""
 
     def __init__(self, status, dimension):
+        """Init conflict"""
         self.is_solved = False
         self.dimension = dimension
         self.status = status
@@ -50,9 +67,11 @@ class ExperimentBranchBuilder:
                                  '~missing': 'missing'}
 
         self.commandline_keywords = {'~+': [], '~-': [], '~>': []}
+
         self.cl_keywords_functions = {'~+': self.add_dimension,
                                       '~-': self.remove_dimension,
                                       '~>': self.rename_dimension}
+
         self.cl_keywords_re = {'~+': re.compile(r'([a-zA-Z_]+)~+'),
                                '~-': re.compile(r'([a-zA-Z_]+)~-'),
                                '~>': re.compile(r'([a-zA-Z_]+)~>([a-zA-Z_]+)')}
@@ -68,11 +87,20 @@ class ExperimentBranchBuilder:
 
     def _interpret_commandline(self):
         args = self.conflicting_config['metadata']['user_args']
+        to_delete = []
         for arg in args:
             for keyword in self.commandline_keywords:
                 if keyword in arg:
                     self.commandline_keywords[keyword].append(arg)
-                    args[args.index(arg)] = arg.replace(keyword, '~')
+
+                    index = args.index(arg)
+                    if keyword == '~+':
+                        args[index] = arg.replace(keyword, '~')
+                    else:
+                        to_delete.append(index)
+
+        for i in sorted(to_delete, reverse=True):
+            del args[i]
 
     def _build_spaces(self):
         # Remove config solving indicators for space builder
@@ -107,17 +135,44 @@ class ExperimentBranchBuilder:
 
     # API section
 
-    def change_experiment_name(self, arg):
-        """Make sure arg is a valid, non-conflicting name, and change the experiment's name to it"""
-        if arg != self.experiment_config['name']:
-            self.conflicting_config['name'] = arg
+    def change_experiment_name(self, name):
+        """Change the child's experiment name to `name`
 
-    def add_dimension(self, name):
-        """Add `name` dimension to the solved conflicts list"""
-        self._do_basic(name, ['new', 'changed'], 'add')
+        Parameters
+        ----------
+        name: str
+           New name for the child experiment. Must be different from the parent's name
+
+        """
+        if name != self.experiment_config['name']:
+            self.conflicting_config['name'] = name
+
+    def add_dimension(self, args):
+        """Add the dimensions whose name's are inside the args input string to the
+        child's space by solving their respective conflicts.
+
+        Only dimensions with the `new` or `changed` conflicting state may be added.
+
+        Parameters
+        ----------
+        args: str
+            String containing dimensions' name separated by a whitespace.
+
+        """
+        self._do_basic(args, ['new', 'changed'], 'add')
 
     def remove_dimension(self, name):
-        """Remove `name` from the configuration and marks conflict as solved"""
+        """Remove the dimensions whose name's are inside the args input string from the
+        child's space by solving their respective conflicts.
+
+        Only dimensions with the `missing` conflicting state may be removed.
+
+        Parameters
+        ----------
+        args: str
+            String containing dimensions' name separated by a whitespace.
+
+        """
         self._do_basic(name, ['missing'], 'remove')
 
     def _do_basic(self, name, status, operation):
@@ -126,13 +181,33 @@ class ExperimentBranchBuilder:
             self._put_operation(operation, (conflict))
 
     def reset_dimension(self, arg):
+        """Remove the dimensions whose name's are inside the args input string from the
+        solved conflicts list.
+
+        Parameters
+        ----------
+        args: str
+            String containing dimensions' name separated by a whitespace.
+
+        """
         status = ['missing', 'new', 'changed']
         for _name in self._get_names(arg, status):
             conflict = self._mark_as(arg, status, False)
             self._remove_from_operations(conflict)
 
     def rename_dimension(self, args):
-        """Change the name of old dimension to new dimension"""
+        """Rename the first dimension inside the args tuple from the parent's space
+        to the second dimension inside the args tuple from the child's space.
+
+        Only a `missing` dimension can be renamed. It can only be renamed to a `new`
+        dimension.
+
+        Parameters
+        ----------
+        args: tuple of two str
+            Tuple containing the old dimension's name and the new dimension's name (in this order)
+
+        """
         old, new = args
 
         old_index, missing_conflicts = self._assert_has_status(old, 'missing')
@@ -146,24 +221,41 @@ class ExperimentBranchBuilder:
         self._put_operation('rename', (old_conflict, new_conflict))
 
     def get_dimension_conflict(self, name):
+        """Return the conflict object related to the dimension of name `name`
+
+        Parameters
+        ----------
+        name: str
+            Name of the dimension
+
+        """
         prefixed_name = '/' + name
         index = list(map(lambda c: c.dimension.name, self.conflicts)).index(prefixed_name)
         return self.conflicts[index]
 
     def get_old_dimension_value(self, name):
-        """Return the dimension from the parent experiment space"""
+        """Return the Dimension object with name `name` from the parent experiment
+
+        Parameters
+        ----------
+        name: str
+            Name of the dimension
+
+        """
         if name in self.experiment_space:
             return self.experiment_space[name]
 
         return None
 
-    def filter_conflicts_with_solved_state(self, wants_solved=False):
-        return self.filter_conflicts(lambda c: c.is_solved is wants_solved)
-
-    def filter_conflicts_with_status(self, status):
-        return self.filter_conflicts(lambda c: c.status in status)
-
     def filter_conflicts(self, filter_function):
+        """Return a sublist of the conflicts filtered by the filter_function
+
+        Parameters
+        ----------
+        filter_function: callable
+            Function which returns a boolean for the `filter` call
+
+        """
         return filter(filter_function, self.conflicts)
 
     def create_adaptors(self):
@@ -188,9 +280,8 @@ class ExperimentBranchBuilder:
         return names
 
     def _extend_special_keywords(self, arg, names):
-        names.extend(list(map(lambda c: c.dimension.name[1:],
-                          self.filter_conflicts_with_status([
-                              self.special_keywords[arg]]))))
+        conflicts = self.filter_conflicts_with_status([self.special_keywords[arg]])
+        names.extend(list(map(lambda c: c.dimension.name[1:], conflicts)))
 
     def _extend_wildcard(self, arg, names, status):
         prefix = '/' + arg.split('*')[0]
