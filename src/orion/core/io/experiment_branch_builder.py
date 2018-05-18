@@ -280,7 +280,7 @@ class ExperimentBranchBuilder:
         return names
 
     def _extend_special_keywords(self, arg, names):
-        conflicts = self.filter_conflicts_with_status([self.special_keywords[arg]])
+        conflicts = self._filter_conflicts_status([self.special_keywords[arg]])
         names.extend(list(map(lambda c: c.dimension.name[1:], conflicts)))
 
     def _extend_wildcard(self, arg, names, status):
@@ -302,7 +302,7 @@ class ExperimentBranchBuilder:
 
     def _assert_has_status(self, name, status):
         prefixed_name = '/' + name
-        conflicts = list(self.filter_conflicts_with_status(status))
+        conflicts = list(self._filter_conflicts_status(status))
         index = list(map(lambda c: c.dimension.name, conflicts)).index(prefixed_name)
 
         return index, conflicts
@@ -327,6 +327,12 @@ class ExperimentBranchBuilder:
             elif arg in self.operations[operation]:
                 arg.is_solved = False
                 self.operations[operation].remove(arg)
+
+    def _filter_conflicts_status(self, status):
+        def filter_status(c):
+            return c.status in status
+
+        return self.filter_conflicts(filter_status)
 
     # TODO Create Adaptor instances
     def _add_adaptor(self, conflict):

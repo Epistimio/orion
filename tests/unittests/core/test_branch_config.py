@@ -6,6 +6,14 @@ import pytest
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 
 
+def filter_true(c):
+    return c.is_solved is True
+
+
+def filter_false(c):
+    return not filter_true(c)
+
+
 @pytest.fixture
 def parent_config():
     """Create a configuration that will not hit the database."""
@@ -104,8 +112,8 @@ def test_add_single_hit(parent_config, new_config):
     branch_builder.add_dimension('w_d')
 
     assert len(branch_builder.conflicts) == 2
-    assert len(list(branch_builder.filter_conflicts_with_solved_state(True))) == 1
-    assert len(list(branch_builder.filter_conflicts_with_solved_state())) == 1
+    assert len(list(branch_builder.filter_conflicts(filter_true))) == 1
+    assert len(list(branch_builder.filter_conflicts(filter_false))) == 1
 
 
 def test_add_new(parent_config, new_config):
@@ -284,7 +292,7 @@ def test_commandline_solving(parent_config, cl_config):
 
     assert len(branch_builder.conflicting_space) == 2
     assert len(branch_builder.conflicts) == 4
-    assert len(list(branch_builder.filter_conflicts_with_solved_state(True))) == 4
+    assert len(list(branch_builder.filter_conflicts(filter_true))) == 4
     assert len(branch_builder.operations['add']) == 2
     assert len(branch_builder.operations['rename']) == 1
     assert len(branch_builder.operations['remove']) == 1

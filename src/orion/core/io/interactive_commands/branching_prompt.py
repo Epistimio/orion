@@ -43,8 +43,14 @@ class BranchingPrompt(cmd.Cmd):
     def do_status(self, arg):
         """Display the current status of the conflicting configuration"""
         if len(arg) == 0:
-            solved_conflicts = list(self.branch_builder.filter_conflicts_with_solved_state(True))
-            conflicts = list(self.branch_builder.filter_conflicts_with_solved_state())
+            def filter_true(c):
+                return c.is_solved is True
+
+            def filter_false(c):
+                return not filter_true(c)
+
+            solved_conflicts = list(self.branch_builder.filter_conflicts(filter_true))
+            conflicts = list(self.branch_builder.filter_conflicts(filter_false))
 
             if len(solved_conflicts) > 0:
                 print('Solved')
