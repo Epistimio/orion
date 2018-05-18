@@ -9,10 +9,8 @@
       and link them with a particular existing experiment.
 
 """
-from orion.core.cli import resolve_config
-from orion.core.io.database import Database
-from orion.core.utils import (format_trials, SingletonError,)
-from orion.core.worker.experiment import Experiment
+from orion.core.io.experiment_builder import ExperimentBuilder
+from orion.core.utils import format_trials
 
 
 def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
@@ -34,32 +32,17 @@ def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
 
     """
     cmdconfig = cmdconfig if cmdconfig else {}
-    config = resolve_config.fetch_default_options()  # Get database perhaps from default locs
-    config = resolve_config.merge_env_vars(config)  # Get database perhaps from env vars
+    cmdconfig['name'] = experiment_name
 
-    tmpconfig = resolve_config.merge_orion_config(config, dict(),
-                                                  cmdconfig, dict())
-
-    db_opts = tmpconfig['database']
-    db_type = db_opts.pop('type')
-    try:
-        Database(of_type=db_type, **db_opts)
-    except SingletonError:
-        pass
-
-    experiment = Experiment(experiment_name)
-    # Configuration is completely taken from the database
-    if experiment.id is None:
-        raise ValueError("No experiment named '{}' could be found.".format(experiment_name))
-    experiment.configure(experiment.configuration)
+    experiment_view = ExperimentBuilder().build_view_from({'config': cmdconfig})
 
     valid_points = []
 
-    print(experiment.space)
+    print(experiment_view.space)
 
     for point in points:
         try:
-            assert point in experiment.space
+            assert point in experiment_view.space
             valid_points.append(point)
         except AssertionError:
             if raise_exc:
@@ -68,7 +51,7 @@ def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
     if not valid_points:
         return
 
-    new_trials = list(map(lambda data: format_trials.tuple_to_trial(data,
-                                                                    experiment.space),
-                          valid_points))
-    experiment.register_trials(new_trials)
+    new_trials = list(
+        map(lambda data: format_trials.tuple_to_trial(data, experiment_view.space),
+            valid_points))
+    ExperimentBuilder().build_from(experiment_view.configuration).register_trials(new_trials)
