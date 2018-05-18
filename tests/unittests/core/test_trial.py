@@ -53,6 +53,16 @@ class TestTrial(object):
         with pytest.raises(AttributeError):
             Trial.Value(ispii='iela')
 
+    def test_param_bad_init(self):
+        """Other than `Trial.Param.__slots__` are not allowed in __init__ too."""
+        with pytest.raises(AttributeError):
+            Trial.Param(ispii='iela')
+
+    def test_result_bad_init(self):
+        """Other than `Trial.Result.__slots__` are not allowed in __init__ too."""
+        with pytest.raises(AttributeError):
+            Trial.Result(ispii='iela')
+
     def test_not_allowed_status(self):
         """Other than `Trial.allowed_stati` are not allowed in `Trial.status`."""
         t = Trial()
@@ -89,6 +99,14 @@ class TestTrial(object):
         """Convert to objects form using `Trial.build`."""
         trials = Trial.build(exp_config[1])
         assert list(map(lambda x: x.to_dict(), trials)) == exp_config[1]
+
+    @pytest.mark.usefixtures("clean_db")
+    def test_value_equal(self, exp_config):
+        """Compare Param objects using __eq__"""
+        trials = Trial.build(exp_config[1])
+
+        assert trials[0].params[0] == Trial.Param(**exp_config[1][0]['params'][0])
+        assert trials[0].params[1] != Trial.Param(**exp_config[1][0]['params'][0])
 
     def test_str_trial(self, exp_config):
         """Test representation of `Trial`."""
