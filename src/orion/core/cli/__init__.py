@@ -52,10 +52,10 @@ def main(argv=None):
 def load_modules_parser(orion_parser):
     """Search through the `cli` folder for any module containing a `get_parser` function"""
     modules = module_import.load_modules_in_path('orion.core.cli',
-                                                 lambda m: hasattr(m, 'get_parser'))
+                                                 lambda m: hasattr(m, 'add_subparser'))
 
     for module in modules:
-        get_parser = getattr(module, 'get_parser')
+        get_parser = getattr(module, 'add_subparser')
         get_parser(orion_parser.get_subparsers())
 
 
