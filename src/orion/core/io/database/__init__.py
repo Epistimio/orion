@@ -209,6 +209,36 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         pass
 
 
+# pylint: disable=too-few-public-methods
+class ReadOnlyDB(object):
+    """Read-only view on a database.
+
+    .. seealso::
+
+        :py:class:`orion.core.io.database.AbstractDB`
+    """
+
+    __slots__ = ('_database', )
+
+    #                     Attributes
+    valid_attributes = (["host", "name", "port", "username", "password"] +
+                        # Properties
+                        ["is_connected"] +
+                        # Methods
+                        ["initiate_connection", "close_connection", "read", "count"])
+
+    def __init__(self, database):
+        """Init method, see attributes of :class:`AbstractDB`."""
+        self._database = database
+
+    def __getattr__(self, attr):
+        """Get attribute only if valid"""
+        if attr not in self.valid_attributes:
+            raise AttributeError("Cannot access attribute %s on view-only experiments." % attr)
+
+        return getattr(self._database, attr)
+
+
 class DatabaseError(RuntimeError):
     """Exception type used to delegate responsibility from any database
     implementation's own Exception types.
