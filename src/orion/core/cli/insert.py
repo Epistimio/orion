@@ -16,7 +16,8 @@ import os
 import re
 
 import orion
-from orion.core.cli import resolve_config
+from orion.core.io import resolve_config
+from orion.core.cli import base as cli
 from orion.core.io.convert import infer_converter_from_file_type
 from orion.core.io.database import Database
 from orion.core.io.space_builder import SpaceBuilder
@@ -30,9 +31,9 @@ def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
     insert_parser = parser.add_parser('insert', help='insert help')
 
-    resolve_config.get_basic_args_group(insert_parser)
+    cli.get_basic_args_group(insert_parser)
 
-    resolve_config.get_user_args_group(insert_parser)
+    cli.get_user_args_group(insert_parser)
 
     insert_parser.set_defaults(func=main)
 

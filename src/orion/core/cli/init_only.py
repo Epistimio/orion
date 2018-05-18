@@ -12,7 +12,8 @@
 import logging
 
 import orion
-from orion.core.cli import resolve_config
+from orion.core.io import resolve_config
+from orion.core.cli import base as cli
 from orion.core.io.database import Database, DuplicateKeyError
 from orion.core.worker.experiment import Experiment
 
@@ -23,9 +24,9 @@ def add_subparser(parser):
     """Return the parser that needs to be used for this command"""
     init_only_parser = parser.add_parser('init_only', help='init_only help')
 
-    resolve_config.get_basic_args_group(init_only_parser)
+    cli.get_basic_args_group(init_only_parser)
 
-    resolve_config.get_user_args_group(init_only_parser)
+    cli.get_user_args_group(init_only_parser)
 
     init_only_parser.set_defaults(func=main)
 
