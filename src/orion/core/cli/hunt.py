@@ -14,7 +14,8 @@ import logging
 import os
 
 import orion
-from orion.core.cli import resolve_config
+from orion.core.io import resolve_config
+from orion.core.cli import base as cli
 from orion.core.io.database import Database, DuplicateKeyError
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
@@ -26,7 +27,7 @@ def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
     hunt_parser = parser.add_parser('hunt', help='hunt help')
 
-    orion_group = resolve_config.get_basic_args_group(hunt_parser)
+    orion_group = cli.get_basic_args_group(hunt_parser)
 
     orion_group.add_argument(
         '--max-trials', type=int, metavar='#',
@@ -38,7 +39,7 @@ def add_subparser(parser):
         help="number of concurrent workers to evaluate candidate samples "
              "(default: %s)" % resolve_config.DEF_CMD_POOL_SIZE[1])
 
-    resolve_config.get_user_args_group(hunt_parser)
+    cli.get_user_args_group(hunt_parser)
 
     hunt_parser.set_defaults(func=main)
 
