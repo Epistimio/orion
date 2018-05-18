@@ -5,14 +5,15 @@ import pytest
 
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 
+
 @pytest.fixture
 def parent_config():
     """Create a configuration that will not hit the database."""
     config = dict(
         name='test',
         metadata={'user_script': 'abs_path/black_box.py',
-                  'user_args': 
-                        ['-x~uniform(0,1)', '-y~normal(0,1)', '-z~uniform(0,10)']})
+                  'user_args':
+                  ['-x~uniform(0,1)', '-y~normal(0,1)', '-z~uniform(0,10)']})
     return config
 
 
@@ -22,8 +23,8 @@ def child_config():
     config = dict(
         name='test2',
         metadata={'user_script': 'abs_path/black_box.py',
-                  'user_args': 
-                        ['-x~uniform(0,1)', '-y~normal(0,1)', '-z~uniform(0,10)']})
+                  'user_args':
+                  ['-x~uniform(0,1)', '-y~normal(0,1)', '-z~uniform(0,10)']})
     return config
 
 
@@ -45,6 +46,16 @@ def changed_config(child_config):
     second_element = second_element.replace('normal', 'uniform')
     child_config['metadata']['user_args'][1] = second_element
     return child_config
+
+
+@pytest.fixture
+def cl_config():
+    config = dict(
+        name='test2',
+        metadata={'user_script': 'abs_path/black_box.py',
+                  'user_args':
+                  ['-x~>w_d', '-y~+uniform(0,1)', '-w_d~+normal(0,1)', '-z~-']})
+    return config
 
 
 def test_no_conflicts(parent_config, child_config):
@@ -139,7 +150,7 @@ def test_rename_missing(parent_config, missing_config):
     branch_builder.rename_dimension(['x', 'w_d'])
 
     assert len(branch_builder.conflicts) == 2
-    
+
     conflicts = branch_builder.conflicts
 
     for conflict in conflicts:
@@ -172,7 +183,7 @@ def test_reset_dimension(parent_config, new_config):
 
 def test_dimension_conflict(parent_config, new_config):
     branch_builder = ExperimentBranchBuilder(parent_config, new_config)
-    
+
     assert branch_builder.get_dimension_conflict('w_d').dimension.name == '/w_d'
 
 
@@ -240,7 +251,7 @@ def test_keyword_hit_given_status(parent_config, new_config):
 
 def test_bad_keyword(parent_config, missing_config):
     branch_builder = ExperimentBranchBuilder(parent_config, missing_config)
-    
+
     with pytest.raises(ValueError):
         branch_builder.remove_dimension('~test')
 
@@ -261,7 +272,19 @@ def test_wildcard_different_status(parent_config, new_config):
     assert len(branch_builder.conflicts) == 2
     assert len(list(branch_builder.filter_conflicts(lambda c: c.is_solved))) == 1
 
+
 def test_old_dimension_value(parent_config, changed_config):
     branch_builder = ExperimentBranchBuilder(parent_config, changed_config)
-    
+
     assert branch_builder.get_old_dimension_value('/y') is not None
+
+
+def test_commandline_solving(parent_config, cl_config):
+    branch_builder = ExperimentBranchBuilder(parent_config, cl_config)
+
+    assert len(branch_builder.conflicting_space) == 2
+    assert len(branch_builder.conflicts) == 4
+    assert len(list(branch_builder.filter_conflicts_with_solved_state(True))) == 4
+    assert len(branch_builder.operations['add']) == 2
+    assert len(branch_builder.operations['rename']) == 1
+    assert len(branch_builder.operations['remove']) == 1

@@ -12,6 +12,7 @@ difference between a parent experience and its branching child.
 """
 
 import logging
+import re
 
 from orion.core.io.space_builder import SpaceBuilder
 
@@ -45,17 +46,36 @@ class ExperimentBranchBuilder:
                                     'remove': self._remove_adaptor}
 
         self.special_keywords = {'~new': 'new',
-                        '~changed': 'changed',
-                        '~missing': 'missing'}
+                                 '~changed': 'changed',
+                                 '~missing': 'missing'}
 
+        self.commandline_keywords = {'~+': [], '~-': [], '~>': []}
+        self.cl_keywords_functions = {'~+': self.add_dimension,
+                                      '~-': self.remove_dimension,
+                                      '~>': self.rename_dimension}
+        self.cl_keywords_re = {'~+': re.compile(r'([a-zA-Z_]+)~+'),
+                               '~-': re.compile(r'([a-zA-Z_]+)~-'),
+                               '~>': re.compile(r'([a-zA-Z_]+)~>([a-zA-Z_]+)')}
+
+        self._interpret_commandline()
         self._build_spaces()
         self._find_conflicts()
+        self._solve_commandline_conflicts()
 
         branching_name = conflicting_config.pop('branch', None)
         if branching_name is not None:
             self.change_experiment_name(branching_name)
 
+    def _interpret_commandline(self):
+        args = self.conflicting_config['metadata']['user_args']
+        for arg in args:
+            for keyword in self.commandline_keywords:
+                if keyword in arg:
+                    self.commandline_keywords[keyword].append(arg)
+                    args[args.index(arg)] = arg.replace(keyword, '~')
+
     def _build_spaces(self):
+        # Remove config solving indicators for space builder
         user_args = self.conflicting_config['metadata']['user_args']
         experiment_args = self.experiment_config['metadata']['user_args']
 
@@ -78,6 +98,12 @@ class ExperimentBranchBuilder:
         for dim in self.experiment_space.values():
             if dim.name not in self.conflicting_space:
                 self.conflicts.append(Conflict('missing', dim))
+
+    def _solve_commandline_conflicts(self):
+        for keyword in self.commandline_keywords:
+            for dimension in self.commandline_keywords[keyword]:
+                value = self.cl_keywords_re[keyword].findall(dimension)
+                self.cl_keywords_functions[keyword](*value)
 
     # API section
 
@@ -163,14 +189,14 @@ class ExperimentBranchBuilder:
 
     def _extend_special_keywords(self, arg, names):
         names.extend(list(map(lambda c: c.dimension.name[1:],
-                        self.filter_conflicts_with_status([
-                            self.special_keywords[arg]]))))
+                          self.filter_conflicts_with_status([
+                              self.special_keywords[arg]]))))
 
     def _extend_wildcard(self, arg, names, status):
         prefix = '/' + arg.split('*')[0]
         filtered_conflicts = self.filter_conflicts(lambda c:
-                                                   c.dimension.name.startswith(prefix)
-                                                   and c.status in status)
+                                                   c.dimension.name
+                                                   .startswith(prefix) and c.status in status)
         names.extend(list(map(lambda c: c.dimension.name[1:], filtered_conflicts)))
 
     def _mark_as_solved(self, name, status):
