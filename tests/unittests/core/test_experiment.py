@@ -9,7 +9,7 @@ import pytest
 
 from orion.algo.base import BaseAlgorithm
 from orion.core.io.database import Database, DuplicateKeyError
-from orion.core.worker.experiment import Experiment
+from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
 
 
@@ -586,3 +586,105 @@ def test_experiment_stats(hacked_exp, exp_config, random_dt):
     assert stats['finish_time'] == exp_config[1][2]['end_time']
     assert stats['duration'] == stats['finish_time'] - stats['start_time']
     assert len(stats) == 6
+
+
+class TestInitExperimentView(object):
+    """Create new ExperimentView instance."""
+
+    @pytest.mark.usefixtures("with_user_tsirif")
+    def test_empty_experiment_view(self):
+        """Hit user name, but exp_name does not hit the db, create new entry."""
+        exp = ExperimentView('supernaekei')
+
+        assert exp._id is None
+
+    @pytest.mark.usefixtures("with_user_bouthilx")
+    def test_empty_experiment_view_due_to_username(self):
+        """Hit exp_name, but user's name does not hit the db, create new entry."""
+        exp = ExperimentView('supernaekei')
+
+        assert exp._id is None
+
+    @pytest.mark.usefixtures("with_user_tsirif")
+    def test_existing_experiment_view(self, create_db_instance, exp_config):
+        """Hit exp_name + user's name in the db, fetch most recent entry."""
+        exp = ExperimentView('supernaedo2')
+        assert exp._experiment._init_done is False
+        assert exp._experiment._db._database is create_db_instance
+        assert exp._id == exp_config[0][0]['_id']
+        assert exp.name == exp_config[0][0]['name']
+        assert exp.refers == exp_config[0][0]['refers']
+        assert exp.metadata == exp_config[0][0]['metadata']
+        assert exp._experiment._last_fetched == exp_config[0][0]['metadata']['datetime']
+        assert exp.pool_size == exp_config[0][0]['pool_size']
+        assert exp.max_trials == exp_config[0][0]['max_trials']
+        assert exp.status == exp_config[0][0]['status']
+        assert exp.algorithms == exp_config[0][0]['algorithms']
+
+        with pytest.raises(AttributeError):
+            exp.this_is_not_in_config = 5
+
+        # Test that experiment.push_completed_trial indeed exists
+        exp._experiment.push_completed_trial
+        with pytest.raises(AttributeError):
+            exp.push_completed_trial
+
+        with pytest.raises(AttributeError):
+            exp.register_trials
+
+        with pytest.raises(AttributeError):
+            exp.reserve_trial
+
+
+def test_fetch_completed_trials_from_view(hacked_exp, exp_config, random_dt):
+    """Fetch a list of the unseen yet completed trials."""
+    experiment_view = ExperimentView(hacked_exp.name)
+    experiment_view._experiment = hacked_exp
+
+    trials = experiment_view.fetch_completed_trials()
+    assert experiment_view._experiment._last_fetched == random_dt
+    assert len(trials) == 3
+    assert trials[0].to_dict() == exp_config[1][0]
+    assert trials[1].to_dict() == exp_config[1][1]
+    assert trials[2].to_dict() == exp_config[1][2]
+
+
+def test_view_is_done_property(hacked_exp):
+    """Check experiment stopping conditions accessed from view."""
+    experiment_view = ExperimentView(hacked_exp.name)
+    experiment_view._experiment = hacked_exp
+
+    assert experiment_view.is_done is False
+
+    with pytest.raises(AttributeError):
+        experiment_view.max_trials = 2
+
+    hacked_exp.max_trials = 2
+
+    assert experiment_view.is_done is True
+
+
+def test_experiment_view_stats(hacked_exp, exp_config, random_dt):
+    """Check that property stats from view is consistent."""
+    experiment_view = ExperimentView(hacked_exp.name)
+    experiment_view._experiment = hacked_exp
+
+    stats = experiment_view.stats
+    assert stats['trials_completed'] == 3
+    assert stats['best_trials_id'] == exp_config[1][1]['_id']
+    assert stats['best_evaluation'] == 2
+    assert stats['start_time'] == exp_config[0][2]['metadata']['datetime']
+    assert stats['finish_time'] == exp_config[1][2]['end_time']
+    assert stats['duration'] == stats['finish_time'] - stats['start_time']
+    assert len(stats) == 6
+
+
+@pytest.mark.usefixtures("with_user_tsirif")
+def test_experiment_view_db_read_only():
+    """Verify that wrapper experiments' database is read-only"""
+    exp = ExperimentView('supernaedo2')
+
+    # Test that database.write indeed exists
+    exp._experiment._db._database.write
+    with pytest.raises(AttributeError):
+        exp._experiment._db.write
