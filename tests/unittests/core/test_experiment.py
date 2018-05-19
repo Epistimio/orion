@@ -621,7 +621,7 @@ class TestInitExperimentView(object):
         assert exp.pool_size == exp_config[0][0]['pool_size']
         assert exp.max_trials == exp_config[0][0]['max_trials']
         assert exp.status == exp_config[0][0]['status']
-        assert exp.algorithms == exp_config[0][0]['algorithms']
+        assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
 
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
