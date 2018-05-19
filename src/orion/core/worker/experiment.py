@@ -311,6 +311,11 @@ class Experiment(object):
         experiment._instantiate_config(config)
         experiment._init_done = True
 
+        # If experiment is new or non-branching parameters have been changed such that the status is
+        # not 'done' anymore
+        if experiment.status is None or (experiment.status != 'broken' and not experiment.is_done):
+            experiment.status = 'pending'
+
         # If id is None in this object, then database did not hit a config
         # with same (name, user's name) pair. Everything depends on the user's
         # orion_config to set.
@@ -329,6 +334,7 @@ class Experiment(object):
         self._instantiate_config(final_config)
 
         self._init_done = True
+        self.status = experiment.status
 
         # If everything is alright, push new config to database
         if is_new:
