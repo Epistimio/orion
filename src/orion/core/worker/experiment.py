@@ -313,8 +313,7 @@ class Experiment(object):
         # orion_config to set.
         if self._id is None:
             if config['name'] != self.name or \
-                    config['metadata']['user'] != self.metadata['user'] or \
-                    config['metadata']['datetime'] != self.metadata['datetime']:
+                    config['metadata']['user'] != self.metadata['user']:
                 raise ValueError("Configuration given is inconsistent with this Experiment.")
             is_new = True
         else:
