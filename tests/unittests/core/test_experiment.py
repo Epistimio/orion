@@ -324,13 +324,11 @@ class TestConfigProperty(object):
             exp.configure(new_config)
         assert 'inconsistent' in str(exc_info.value)
 
-    def test_inconsistent_3_set_before_init_no_hit(self, random_dt, new_config):
+    def test_not_inconsistent_3_set_before_init_no_hit(self, random_dt, new_config):
         """Test inconsistent configuration because of datetime."""
         exp = Experiment(new_config['name'])
         new_config['metadata']['datetime'] = 123
-        with pytest.raises(ValueError) as exc_info:
-            exp.configure(new_config)
-        assert 'inconsistent' in str(exc_info.value)
+        exp.configure(new_config)
 
     def test_get_after_init_plus_hit_no_diffs(self, exp_config):
         """Return a configuration dict according to an experiment object.
