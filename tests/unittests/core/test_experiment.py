@@ -588,23 +588,25 @@ class TestInitExperimentView(object):
 
     @pytest.mark.usefixtures("with_user_tsirif")
     def test_empty_experiment_view(self):
-        """Hit user name, but exp_name does not hit the db, create new entry."""
-        exp = ExperimentView('supernaekei')
-
-        assert exp._id is None
+        """Hit user name, but exp_name does not hit the db."""
+        with pytest.raises(ValueError) as exc_info:
+            ExperimentView('supernaekei')
+        assert ("No experiment with given name 'supernaekei' for user 'tsirif'"
+                in str(exc_info.value))
 
     @pytest.mark.usefixtures("with_user_bouthilx")
     def test_empty_experiment_view_due_to_username(self):
         """Hit exp_name, but user's name does not hit the db, create new entry."""
-        exp = ExperimentView('supernaekei')
-
-        assert exp._id is None
+        with pytest.raises(ValueError) as exc_info:
+            ExperimentView('supernaedo2')
+        assert ("No experiment with given name 'supernaedo2' for user 'bouthilx'"
+                in str(exc_info.value))
 
     @pytest.mark.usefixtures("with_user_tsirif")
     def test_existing_experiment_view(self, create_db_instance, exp_config):
         """Hit exp_name + user's name in the db, fetch most recent entry."""
         exp = ExperimentView('supernaedo2')
-        assert exp._experiment._init_done is False
+        assert exp._experiment._init_done is True
         assert exp._experiment._db._database is create_db_instance
         assert exp._id == exp_config[0][0]['_id']
         assert exp.name == exp_config[0][0]['name']

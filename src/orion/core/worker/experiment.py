@@ -494,13 +494,19 @@ class ExperimentView(object):
 
         .. note::
 
-            A view is **note** initializable. It is meant to access trials and statistics from the
-            experiment..
+            A view is fully configured at initialiation. It cannot be reconfigured.
 
         :param name: Describe a configuration with a unique identifier per :attr:`user`.
         :type name: str
         """
         self._experiment = Experiment(name)
+
+        if self._experiment.status is None:
+            raise ValueError("No experiment with given name '%s' for user '%s' inside database, "
+                             "no view can be created." %
+                             (self._experiment.name, self._experiment.metadata['user']))
+
+        self._experiment.configure(self._experiment.configuration)
         self._experiment._db = ReadOnlyDB(self._experiment._db)
 
     def __getattr__(self, name):
