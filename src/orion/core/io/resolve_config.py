@@ -40,7 +40,6 @@ from numpy import inf as infinity
 import yaml
 
 import orion
-from orion.core.utils import nesteddict
 
 
 def is_exe(path):
@@ -93,7 +92,7 @@ def fetch_config(args):
 
 
 def fetch_default_options():
-    """Create a nesteddict with options from the default configuration files.
+    """Create a dict with options from the default configuration files.
 
     Respect precedence from application's default, to system's and
     user's.
@@ -101,7 +100,7 @@ def fetch_default_options():
     .. seealso:: :const:`DEF_CONFIG_FILES_PATHS`
 
     """
-    default_config = nesteddict()
+    default_config = dict()
 
     # get some defaults
     default_config['name'] = None
@@ -111,6 +110,7 @@ def fetch_default_options():
 
     # get default options for some managerial variables (see :const:`ENV_VARS`)
     for signifier, env_vars in ENV_VARS.items():
+        default_config[signifier] = {}
         for _, key, default_value in env_vars:
             default_config[signifier][key] = default_value
 
@@ -124,6 +124,7 @@ def fetch_default_options():
                 # implies that yaml must be in dict form
                 for k, v in cfg.items():
                     if k in ENV_VARS:
+                        default_config[k] = {}
                         for vk, vv in v.items():
                             default_config[k][vk] = vv
                     else:
@@ -142,19 +143,24 @@ def merge_env_vars(config):
     """Fetch environmental variables related to orion's managerial data.
 
     :type config: :func:`nesteddict`
-
     """
-    newcfg = deepcopy(config)
+    return merge_configs(config, fetch_env_vars())
+
+
+def fetch_env_vars():
+    """Fetch environmental variables related to orion's managerial data."""
+    env_vars = {}
+
     for signif, evars in ENV_VARS.items():
+        env_vars[signif] = {}
+
         for var_name, key, _ in evars:
             value = os.getenv(var_name)
+
             if value is not None:
-                newcfg[signif][key] = value
-    return newcfg
+                env_vars[signif][key] = value
 
-
-def merge_configs(*configs):
-    raise NotImplementedError
+    return env_vars
 
 
 def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
@@ -187,25 +193,61 @@ def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
     .. seealso:: Method-specific configurations reside in `/config`
 
     """
-    expconfig = deepcopy(config)
+    return merge_configs(config, dbconfig, cmdconfig, cmdargs)
 
-    for cfg in (dbconfig, cmdconfig):
-        for k, v in cfg.items():
-            if k in ENV_VARS:
-                for vk, vv in v.items():
-                    expconfig[k][vk] = vv
-            elif v is not None:
-                expconfig[k] = v
 
-    for k, v in cmdargs.items():
-        if v is not None:
-            if k == 'metadata':
-                for vk, vv in v.items():
-                    expconfig[k][vk] = vv
-            else:
-                expconfig[k] = v
+def merge_configs(*configs):
+    """Merge configuration dictionnaries following the given hierarchy
 
-    return expconfig
+    Suppose function is called as merge_configs(A, B, C). Then any pair (key, value) in C would
+    overwrite any previous value from A or B. Same apply for B over A.
+
+    If for some pair (key, value), the value is a dictionary, then it will either overwrite previous
+    value if it was not also a directory, or it will be merged following
+    `merge_configs(old_value, new_value)`.
+
+    .. warning:
+
+        Redefinition of subdictionaries may lead to confusing results because merges do not remove
+        data.
+
+        If for instance, we have {'a': {'b': 1, 'c': 2}} and we would like to update `'a'` such that
+        it only have `{'c': 3}`, it won't work with {'a': {'c': 3}}.
+
+        merge_configs({'a': {'b': 1, 'c': 2}}, {'a': {'c': 3}}) -> {'a': {'b': 1, 'c': 3}}
+
+    Example
+    -------
+    .. code-block:: python
+        :linenos:
+
+        a = {'a': 1, 'b': {'c': 2}}
+        b = {'b': {'c': 3}}
+        c = {'b': {'c': {'d': 4}}}
+
+        m = resolve_config.merge_configs(a, b, c)
+
+        assert m == {'a': 1, 'b': {'c': {'d': 4}}}
+
+        a = {'a': 1, 'b': {'c': 2, 'd': 3}}
+        b = {'b': {'c': 4}}
+        c = {'b': {'c': {'e': 5}}}
+
+        m = resolve_config.merge_configs(a, b, c)
+
+        assert m == {'a': 1, 'b': {'c': {'e': 5}, 'd': 3}}
+
+    """
+    merged_config = configs[0]
+
+    for config in configs[1:]:
+        for key, value in config.items():
+            if isinstance(value, dict) and isinstance(merged_config.get(key), dict):
+                merged_config[key] = merge_configs(merged_config[key], value)
+            elif value is not None:
+                merged_config[key] = value
+
+    return merged_config
 
 
 def infer_versioning_metadata(existing_metadata):
