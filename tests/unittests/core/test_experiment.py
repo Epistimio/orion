@@ -505,7 +505,7 @@ class TestReserveTrial(object):
     def test_reserve_with_score(self, hacked_exp, exp_config):
         """Reserve with a score object that can do its job."""
         self.times_called = 0
-        hacked_exp.configure(exp_config[0][2])
+        hacked_exp.configure(exp_config[0][3])
         trial = hacked_exp.reserve_trial(score_handle=self.fake_handle)
         exp_config[1][6]['status'] = 'reserved'
         assert trial.to_dict() == exp_config[1][6]
@@ -577,7 +577,7 @@ def test_experiment_stats(hacked_exp, exp_config, random_dt):
     assert stats['trials_completed'] == 3
     assert stats['best_trials_id'] == exp_config[1][1]['_id']
     assert stats['best_evaluation'] == 2
-    assert stats['start_time'] == exp_config[0][2]['metadata']['datetime']
+    assert stats['start_time'] == exp_config[0][3]['metadata']['datetime']
     assert stats['finish_time'] == exp_config[1][2]['end_time']
     assert stats['duration'] == stats['finish_time'] - stats['start_time']
     assert len(stats) == 6
@@ -670,7 +670,7 @@ def test_experiment_view_stats(hacked_exp, exp_config, random_dt):
     assert stats['trials_completed'] == 3
     assert stats['best_trials_id'] == exp_config[1][1]['_id']
     assert stats['best_evaluation'] == 2
-    assert stats['start_time'] == exp_config[0][2]['metadata']['datetime']
+    assert stats['start_time'] == exp_config[0][3]['metadata']['datetime']
     assert stats['finish_time'] == exp_config[1][2]['end_time']
     assert stats['duration'] == stats['finish_time'] - stats['start_time']
     assert len(stats) == 6
