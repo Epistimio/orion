@@ -96,7 +96,6 @@
         value: gru
   pool_size: 2
   max_trials: 1
-  status: done
   algorithms:
     dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
       value: 5
