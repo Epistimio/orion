@@ -445,6 +445,39 @@ class TestConfigProperty(object):
         assert exp._id == new_config.pop('_id')
         assert exp.configuration == new_config
 
+    @pytest.mark.usefixtures("trial_id_substitution")
+    def test_status_is_pending_when_increase_max_trials(self, exp_config):
+        """Attribute exp.algorithms become objects after init."""
+        exp = Experiment('supernaedo4')
+
+        # Deliver an external configuration to finalize init
+        exp.configure(exp_config[0][2])
+
+        assert exp.status == "done"
+
+        exp = Experiment('supernaedo4')
+        # Deliver an external configuration to finalize init
+        exp_config[0][2]['max_trials'] = 1000
+        exp.configure(exp_config[0][2])
+
+        assert exp.status == "pending"
+
+    @pytest.mark.usefixtures("trial_id_substitution")
+    def test_status_stays_broken(self, exp_config):
+        """Attribute exp.algorithms become objects after init."""
+        exp = Experiment('supernaedo3')
+        # Deliver an external configuration to finalize init
+        exp.configure(exp_config[0][1])
+
+        assert exp.status == "broken"
+
+        exp = Experiment('supernaedo3')
+        # Deliver an external configuration to finalize init
+        exp_config[0][1]['max_trials'] = 1000
+        exp.configure(exp_config[0][1])
+
+        assert exp.status == "broken"
+
 
 class TestReserveTrial(object):
     """Calls to interface `Experiment.reserve_trial`."""
@@ -505,7 +538,7 @@ class TestReserveTrial(object):
     def test_reserve_with_score(self, hacked_exp, exp_config):
         """Reserve with a score object that can do its job."""
         self.times_called = 0
-        hacked_exp.configure(exp_config[0][2])
+        hacked_exp.configure(exp_config[0][3])
         trial = hacked_exp.reserve_trial(score_handle=self.fake_handle)
         exp_config[1][6]['status'] = 'reserved'
         assert trial.to_dict() == exp_config[1][6]
@@ -577,7 +610,7 @@ def test_experiment_stats(hacked_exp, exp_config, random_dt):
     assert stats['trials_completed'] == 3
     assert stats['best_trials_id'] == exp_config[1][1]['_id']
     assert stats['best_evaluation'] == 2
-    assert stats['start_time'] == exp_config[0][2]['metadata']['datetime']
+    assert stats['start_time'] == exp_config[0][3]['metadata']['datetime']
     assert stats['finish_time'] == exp_config[1][2]['end_time']
     assert stats['duration'] == stats['finish_time'] - stats['start_time']
     assert len(stats) == 6
@@ -651,6 +684,10 @@ def test_view_is_done_property(hacked_exp):
     experiment_view = ExperimentView(hacked_exp.name)
     experiment_view._experiment = hacked_exp
 
+    # Fully configure wrapper experiment (should normally occur inside ExperimentView.__init__
+    # but hacked_exp has been _hacked_ inside afterwards.
+    hacked_exp.configure(hacked_exp.configuration)
+
     assert experiment_view.is_done is False
 
     with pytest.raises(AttributeError):
@@ -670,7 +707,7 @@ def test_experiment_view_stats(hacked_exp, exp_config, random_dt):
     assert stats['trials_completed'] == 3
     assert stats['best_trials_id'] == exp_config[1][1]['_id']
     assert stats['best_evaluation'] == 2
-    assert stats['start_time'] == exp_config[0][2]['metadata']['datetime']
+    assert stats['start_time'] == exp_config[0][3]['metadata']['datetime']
     assert stats['finish_time'] == exp_config[1][2]['end_time']
     assert stats['duration'] == stats['finish_time'] - stats['start_time']
     assert len(stats) == 6
