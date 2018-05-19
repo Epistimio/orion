@@ -478,7 +478,7 @@ class ExperimentView(object):
     #                     Attributes
     valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials", "status"] +
                         # Properties
-                        ["space", "algorithms", "stats"] +
+                        ["space", "algorithms", "stats", "configuration"] +
                         # Methods
                         ["fetch_completed_trials"])
 
