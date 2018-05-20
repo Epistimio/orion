@@ -106,6 +106,7 @@ class BranchingPrompt(cmd.Cmd):
         return True
 
     def do_commit(self, arg):
+        """Exit the prompt and creates the adapters inside the builders"""
         print(self.branch_builder.operations)
         return True
 

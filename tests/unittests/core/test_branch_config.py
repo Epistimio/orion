@@ -7,10 +7,12 @@ from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 
 
 def filter_true(c):
+    """Filter solved conflicts"""
     return c.is_solved is True
 
 
 def filter_false(c):
+    """Filter unsolved conflicts"""
     return not filter_true(c)
 
 
@@ -38,18 +40,21 @@ def child_config():
 
 @pytest.fixture
 def missing_config(child_config):
+    """Create a child config with a missing dimension"""
     del(child_config['metadata']['user_args'][0])
     return child_config
 
 
 @pytest.fixture
 def new_config(child_config):
+    """Create a child config with a new dimension"""
     child_config['metadata']['user_args'].append('-w_d~normal(0,1)')
     return child_config
 
 
 @pytest.fixture
 def changed_config(child_config):
+    """Create a child config with a changed dimension"""
     second_element = child_config['metadata']['user_args'][1]
     second_element = second_element.replace('normal', 'uniform')
     child_config['metadata']['user_args'][1] = second_element
@@ -58,6 +63,7 @@ def changed_config(child_config):
 
 @pytest.fixture
 def cl_config():
+    """Create a child config with markers for commandline solving"""
     config = dict(
         name='test2',
         metadata={'user_script': 'abs_path/black_box.py',
@@ -67,6 +73,7 @@ def cl_config():
 
 
 def test_no_conflicts(parent_config, child_config):
+    """Test the case where the child is the same as the parent"""
     branch_builder = ExperimentBranchBuilder(parent_config, child_config)
 
     assert len(branch_builder.conflicts) == 0
@@ -74,6 +81,7 @@ def test_no_conflicts(parent_config, child_config):
 
 
 def test_missing_conflict(parent_config, missing_config):
+    """Test if missing dimension is currently detected"""
     branch_builder = ExperimentBranchBuilder(parent_config, missing_config)
 
     assert len(branch_builder.conflicts) == 1
@@ -85,6 +93,7 @@ def test_missing_conflict(parent_config, missing_config):
 
 
 def test_new_conflict(parent_config, new_config):
+    """Test if new dimension is currently detected"""
     branch_builder = ExperimentBranchBuilder(parent_config, new_config)
 
     assert len(branch_builder.conflicts) == 1
@@ -96,6 +105,7 @@ def test_new_conflict(parent_config, new_config):
 
 
 def test_changed_conflict(parent_config, changed_config):
+    """Test if changed dimension is currently detected"""
     branch_builder = ExperimentBranchBuilder(parent_config, changed_config)
 
     assert len(branch_builder.conflicts) == 1
@@ -107,6 +117,7 @@ def test_changed_conflict(parent_config, changed_config):
 
 
 def test_add_single_hit(parent_config, new_config):
+    """Test if adding a dimension only touches the correct statuses"""
     del new_config['metadata']['user_args'][0]
     branch_builder = ExperimentBranchBuilder(parent_config, new_config)
     branch_builder.add_dimension('w_d')
@@ -117,6 +128,7 @@ def test_add_single_hit(parent_config, new_config):
 
 
 def test_add_new(parent_config, new_config):
+    """Test if adding a new dimension solves the conflict"""
     branch_builder = ExperimentBranchBuilder(parent_config, new_config)
     branch_builder.add_dimension('w_d')
 
@@ -129,6 +141,7 @@ def test_add_new(parent_config, new_config):
 
 
 def test_add_changed(parent_config, changed_config):
+    """Test if adding a changed dimension solves the conflict"""
     branch_builder = ExperimentBranchBuilder(parent_config, changed_config)
     branch_builder.add_dimension('y')
 
@@ -141,6 +154,7 @@ def test_add_changed(parent_config, changed_config):
 
 
 def test_remove_missing(parent_config, missing_config):
+    """Test if removing a missing dimension solves the conflict"""
     branch_builder = ExperimentBranchBuilder(parent_config, missing_config)
     branch_builder.remove_dimension('x')
 
@@ -153,6 +167,7 @@ def test_remove_missing(parent_config, missing_config):
 
 
 def test_rename_missing(parent_config, missing_config):
+    """Test if renaming a dimension to another solves both conflicts"""
     missing_config['metadata']['user_args'].append('-w_d~normal(0,1)')
     branch_builder = ExperimentBranchBuilder(parent_config, missing_config)
     branch_builder.rename_dimension(['x', 'w_d'])
@@ -177,6 +192,7 @@ def test_rename_missing(parent_config, missing_config):
 
 
 def test_reset_dimension(parent_config, new_config):
+    """Test if resetting a dimension unsolves the conflict"""
     branch_builder = ExperimentBranchBuilder(parent_config, new_config)
 
     branch_builder.add_dimension('w_d')
@@ -190,12 +206,14 @@ def test_reset_dimension(parent_config, new_config):
 
 
 def test_dimension_conflict(parent_config, new_config):
+    """Test if getting a dimension conflict returns it correctly"""
     branch_builder = ExperimentBranchBuilder(parent_config, new_config)
 
     assert branch_builder.get_dimension_conflict('w_d').dimension.name == '/w_d'
 
 
 def test_name_experiment(parent_config, child_config):
+    """Test if changing the experiment names work for valid name"""
     branch_builder = ExperimentBranchBuilder(parent_config, child_config)
 
     assert branch_builder.conflicting_config['name'] == 'test2'
@@ -204,6 +222,7 @@ def test_name_experiment(parent_config, child_config):
 
 
 def test_bad_name_experiment(parent_config, child_config):
+    """Test if changing the experiment names does not work for invalid name"""
     branch_builder = ExperimentBranchBuilder(parent_config, child_config)
 
     assert branch_builder.experiment_config['name'] == 'test'
@@ -212,6 +231,7 @@ def test_bad_name_experiment(parent_config, child_config):
 
 
 def test_add_all_new(parent_config, new_config):
+    """Test if using ~new adds all new dimensions"""
     branch_builder = ExperimentBranchBuilder(parent_config, new_config)
     branch_builder.add_dimension('~new')
 
@@ -224,6 +244,7 @@ def test_add_all_new(parent_config, new_config):
 
 
 def test_add_all_changed(parent_config, changed_config):
+    """Test if using ~changed adds all changed dimensions"""
     branch_builder = ExperimentBranchBuilder(parent_config, changed_config)
     branch_builder.add_dimension('~changed')
 
@@ -236,6 +257,7 @@ def test_add_all_changed(parent_config, changed_config):
 
 
 def test_remove_all_missing(parent_config, missing_config):
+    """Test if using ~missing removes all missing dimensions"""
     branch_builder = ExperimentBranchBuilder(parent_config, missing_config)
     branch_builder.remove_dimension('~missing')
 
@@ -248,6 +270,7 @@ def test_remove_all_missing(parent_config, missing_config):
 
 
 def test_keyword_hit_given_status(parent_config, new_config):
+    """Test if using ~new adds only new dimensions"""
     del new_config['metadata']['user_args'][0]
     branch_builder = ExperimentBranchBuilder(parent_config, new_config)
     branch_builder.add_dimension('~new')
@@ -258,6 +281,7 @@ def test_keyword_hit_given_status(parent_config, new_config):
 
 
 def test_bad_keyword(parent_config, missing_config):
+    """Test that bad keywords are handle silently"""
     branch_builder = ExperimentBranchBuilder(parent_config, missing_config)
 
     with pytest.raises(ValueError):
@@ -265,6 +289,7 @@ def test_bad_keyword(parent_config, missing_config):
 
 
 def test_good_wildcard(parent_config, new_config):
+    """Test if using wildcard adds all dimensions with prefix"""
     branch_builder = ExperimentBranchBuilder(parent_config, new_config)
     branch_builder.add_dimension('w*')
 
@@ -273,6 +298,7 @@ def test_good_wildcard(parent_config, new_config):
 
 
 def test_wildcard_different_status(parent_config, new_config):
+    """Test if using wildcard adds only dimensions with valid status"""
     parent_config['metadata']['user_args'].append('-wow~normal(1,10)')
     branch_builder = ExperimentBranchBuilder(parent_config, new_config)
     branch_builder.add_dimension('w*')
@@ -282,12 +308,14 @@ def test_wildcard_different_status(parent_config, new_config):
 
 
 def test_old_dimension_value(parent_config, changed_config):
+    """Test if experiment is not corrupted and old value is the same"""
     branch_builder = ExperimentBranchBuilder(parent_config, changed_config)
 
     assert branch_builder.get_old_dimension_value('/y') is not None
 
 
 def test_commandline_solving(parent_config, cl_config):
+    """Test if all markers work for conflicts solving through the command line"""
     branch_builder = ExperimentBranchBuilder(parent_config, cl_config)
 
     assert len(branch_builder.conflicting_space) == 2

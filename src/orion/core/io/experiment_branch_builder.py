@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.io.experiment_branch_builder.py` -- Module offering an
-API to solve conflicts when branching experiments.
-=======================================================================
+:mod:`orion.core.io.experiment_branch_builder.py` -- Module offering an API to solve conflicts
+==============================================================================================
+
 .. module:: experiment_branch_builder
    :platform: Unix
-   :synopsis: Create a list of adapters from the conflicts between an
-   experiment and the experiment from which it is branching from.
+   :synopsis: Create a list of adapters from the conflicts between an experiment and it's parent.
 
 Conflicts between two experiments arise when these experiments have different
 spaces but have the same name. Solving these conflicts require the creation of
@@ -329,8 +328,9 @@ class ExperimentBranchBuilder:
                 self.operations[operation].remove(arg)
 
     def _filter_conflicts_status(self, status):
-        def filter_status(c):
-            return c.status in status
+        def filter_status(conflict):
+            """Filter the conflict having status inside the `status` list"""
+            return conflict.status in status
 
         return self.filter_conflicts(filter_status)
 
