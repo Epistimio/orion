@@ -296,7 +296,7 @@ class TestConfigProperty(object):
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
 
-    def test_good_set_before_init_hit_no_diffs_exc_pool_size(self, exp_config):
+    def test_good_set_before_init_hit_no_diffs_exc_max_broken(self, exp_config):
         """Trying to set, and NO differences were found from the config pulled from db.
 
         Everything is normal, nothing changes. Experiment is resumed,

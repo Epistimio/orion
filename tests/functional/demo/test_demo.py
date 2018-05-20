@@ -7,7 +7,6 @@ import subprocess
 import numpy
 import pytest
 
-import orion.core.cli
 from orion.core.io.database import Database
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment

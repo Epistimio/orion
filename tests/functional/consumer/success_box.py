@@ -21,7 +21,7 @@ def execute():
 
     y = function(inputs.x)
 
-    time.sleep(0.5)
+    time.sleep(1)
     results = list()
     results.append(dict(
         name='example_objective',

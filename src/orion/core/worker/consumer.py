@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 
 def update_trial_with_status(trial, new_status):
-    """Update `status` for existing `trial` in database."""
+    """Update existing `trial` in the database, using a `new_status`."""
     log.debug("### Save %s as %s.", trial, new_status)
     trial.status = new_status
     Database().write('trials', trial.to_dict(), query={'_id': trial.id})
@@ -40,6 +40,29 @@ class Consumer(object):
     options. It expects results to be written in a **JSON** file, whose path
     has been defined in a special orion environmental variable which is set
     into the child process' environment.
+
+    Attributes
+    ----------
+    experiment : `orion.core.worker.experiment.Experiment`
+       Manager of current experiment
+    space : `orion.algo.space.Space`
+       Definition of problem's parameter space
+    template_builder : `orion.core.io.space_builder.SpaceBuilder`
+       Object that will build particular instances of the command line arguments
+       and possibly configuration files, corresponding to a particular trial.
+    script_path : str
+       Path or name of the executable initializing user's code to be optimized
+    tmp_dir : str
+       Path to base temporary directory in user's system to output instances
+       of configuration files, logs and comminucation files for a particular
+       trial
+    converter : `orion.core.io.converter.JSONConverter`
+       Convenience object that parses and generates JSON files
+    latest_results : list of `orion.core.worker.trial.Trial.Result`
+       Contains the latest results communicated from user's code regarding
+       a particular trial's performance. This is what is going to be reported
+       as the conclusive results about a trial's performance and influence
+       an optimization algorithm's generation of point in the parameter space.
 
     """
 
@@ -75,9 +98,17 @@ class Consumer(object):
         if user's script fatally crashed during execution, and as *'interrupted'*
         if a catchable terminating os signal was captured.
 
+        It consists the main entry point to the functionality of this object.
+        It will be called by `orion.core.worker.workon` to evaluate the
+        performance of a particular `trial` on user's script.
+
+        When a `trial` is successfully evaluated, its entry in the database
+        is going to be updated with the results reported from user's code
+        (described in `self.latest_results`), and a `'done'` status.
+
         :type trial: `orion.core.worker.trial.Trial`
 
-        .. info:: Out of the possible reasons that a user's script may crash,
+        .. note:: Out of the possible reasons that a user's script may crash,
            three case categories need to be taken into consideration:
 
            1. **There is a bug in user's code**: Conditional or not, due to a
@@ -174,7 +205,12 @@ class Consumer(object):
 
         It sets :attr:`self.latest_results`.
 
+        Override it with a subclass of `Consumer` to implement a different
+        way of communication with user's code and possibly management of the
+        child process.
+
         :returns: Exit code of the child process
+        :rtype: int
 
         """
         log.debug("## Launch user's script as a subprocess and wait for finish.")
@@ -206,7 +242,6 @@ class Consumer(object):
                                                     value=res['value']) for res in results]
             except json.decoder.JSONDecodeError:
                 pass
-
 
         return returncode
 
