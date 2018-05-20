@@ -40,8 +40,8 @@ def test_insert_invalid_experiment(database, monkeypatch):
     monkeypatch.setattr("getpass.getuser", get_user_corneau)
 
     with pytest.raises(ValueError) as exc_info:
-        orion.core.cli.main(["insert", "-n", "dumb_experiment",
-                             "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1"])
+        orion.core.cli._main(["insert", "-n", "dumb_experiment",
+                              "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1"])
 
     assert ("No experiment with given name 'dumb_experiment' for user 'corneau'"
             in str(exc_info.value))
@@ -54,8 +54,8 @@ def test_insert_single_trial(database, monkeypatch):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     monkeypatch.setattr("getpass.getuser", get_user_corneau)
 
-    orion.core.cli.main(["insert", "-n", "test_insert_normal",
-                         "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1"])
+    orion.core.cli._main(["insert", "-n", "test_insert_normal",
+                          "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1"])
 
     exp = list(database.experiments.find({"name": "test_insert_normal"}))
     assert len(exp) == 1
@@ -79,8 +79,8 @@ def test_insert_single_trial_default_value(database, monkeypatch):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     monkeypatch.setattr("getpass.getuser", get_user_corneau)
 
-    orion.core.cli.main(["insert", "-n", "test_insert_normal",
-                         "-c", "./orion_config_random.yaml", "./black_box.py"])
+    orion.core.cli._main(["insert", "-n", "test_insert_normal",
+                          "-c", "./orion_config_random.yaml", "./black_box.py"])
 
     exp = list(database.experiments.find({"name": "test_insert_normal"}))
     assert len(exp) == 1
@@ -105,8 +105,8 @@ def test_insert_with_no_default_value(database, monkeypatch):
     monkeypatch.setattr("getpass.getuser", get_user_corneau)
 
     with pytest.raises(ValueError) as exc_info:
-        orion.core.cli.main(["insert", "-n", "test_insert_missing_default_value",
-                             "-c", "./orion_config_random.yaml", "./black_box.py"])
+        orion.core.cli._main(["insert", "-n", "test_insert_missing_default_value",
+                              "-c", "./orion_config_random.yaml", "./black_box.py"])
 
     assert "Dimension /x is unspecified and has no default value" in str(exc_info.value)
 
@@ -119,9 +119,9 @@ def test_insert_with_incorrect_namespace(database, monkeypatch):
     monkeypatch.setattr("getpass.getuser", get_user_corneau)
 
     with pytest.raises(ValueError) as exc_info:
-        orion.core.cli.main(["insert", "-n", "test_insert_normal",
-                             "-c", "./orion_config_random.yaml",
-                             "./black_box.py", "-p=4"])
+        orion.core.cli._main(["insert", "-n", "test_insert_normal",
+                              "-c", "./orion_config_random.yaml",
+                              "./black_box.py", "-p=4"])
 
     assert "Found namespace outside of experiment space : /p" in str(exc_info.value)
 
@@ -134,9 +134,9 @@ def test_insert_with_outside_bound_value(database, monkeypatch):
     monkeypatch.setattr("getpass.getuser", get_user_corneau)
 
     with pytest.raises(ValueError) as exc_info:
-        orion.core.cli.main(["insert", "-n", "test_insert_two_hyperparameters",
-                             "-c", "./orion_config_random.yaml",
-                             "./black_box.py", "-x=4", "-y=100"])
+        orion.core.cli._main(["insert", "-n", "test_insert_two_hyperparameters",
+                              "-c", "./orion_config_random.yaml",
+                              "./black_box.py", "-x=4", "-y=100"])
     assert "Value 100 is outside of" in str(exc_info.value)
 
 
@@ -146,8 +146,8 @@ def test_insert_two_hyperparameters(database, monkeypatch):
     """Try to insert a single trial with two hyperparameters"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     monkeypatch.setattr("getpass.getuser", get_user_corneau)
-    orion.core.cli.main(["insert", "-n", "test_insert_two_hyperparameters",
-                         "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1", "-y=2"])
+    orion.core.cli._main(["insert", "-n", "test_insert_two_hyperparameters",
+                          "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1", "-y=2"])
 
     exp = list(database.experiments.find({"name": "test_insert_two_hyperparameters"}))
     assert len(exp) == 1

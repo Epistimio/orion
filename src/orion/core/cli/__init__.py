@@ -11,6 +11,7 @@
 """
 import logging
 import os
+import sys
 
 from orion.core.cli import resolve_config
 
@@ -23,18 +24,17 @@ orion:
 """
 
 
-def main(argv=None):
-    """Entry point for `orion.core` functionality."""
+def _main(argv=None):
     # Fetch experiment name, user's script path and command line arguments
     # Use `-h` option to show help
-
     orion_parser = resolve_config.OrionArgsParser(CLI_DOC_HEADER)
-
     load_modules_parser(orion_parser)
+    return orion_parser.execute(argv)
 
-    orion_parser.execute(argv)
 
-    return 0
+def main(argv=None):
+    """Entry point for `orion.core` functionality."""
+    sys.exit(_main(argv))
 
 
 def load_modules_parser(orion_parser):

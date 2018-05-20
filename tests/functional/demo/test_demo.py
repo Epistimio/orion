@@ -21,9 +21,11 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     monkeypatch.setenv('ORION_DB_NAME', 'orion_test')
     monkeypatch.setenv('ORION_DB_ADDRESS', 'mongodb://user:pass@localhost')
 
-    orion.core.cli.main(["hunt", "-n", "default_algo",
-                         "--max-trials", "30",
-                         "./black_box.py", "-x~uniform(-50, 50)"])
+    process = subprocess.Popen(["orion", "hunt", "-n", "default_algo",
+                                "--max-trials", "30",
+                                "./black_box.py", "-x~uniform(-50, 50)"])
+    rcode = process.wait()
+    assert rcode == 0
 
     exp = list(database.experiments.find({'name': 'default_algo'}))
     assert len(exp) == 1
@@ -48,8 +50,10 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
 def test_demo(database, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(["hunt", "--config", "./orion_config.yaml",
-                         "./black_box.py", "-x~uniform(-50, 50)"])
+    process = subprocess.Popen(["orion", "hunt", "--config", "./orion_config.yaml",
+                                "./black_box.py", "-x~uniform(-50, 50)"])
+    rcode = process.wait()
+    assert rcode == 0
 
     exp = list(database.experiments.find({'name': 'voila_voici'}))
     assert len(exp) == 1
@@ -156,7 +160,7 @@ def test_workon(database):
     config['metadata']['user_args'] = ["-x~uniform(-50, 50)"]
     experiment.configure(config)
 
-    workon(experiment)
+    assert workon(experiment) == 0
 
     exp = list(database.experiments.find({'name': 'voila_voici'}))
     assert len(exp) == 1
@@ -205,16 +209,18 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     # seed of Oríon
     how_many = 1000
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(["hunt", "--max-trials={}".format(how_many),
-                         "--pool-size=1",
-                         "--max-broken=1000",
-                         "--name=lalala",
-                         "--config", "./stress_gradient.yaml",
-                         "./dir_per_trial.py",
-                         "--dir={}".format(str(tmpdir)),
-                         "--other-name~exp.name",
-                         "--name~trial.hash_name",
-                         "-x~gaussian(30, 10)"])
+    process = subprocess.Popen(["orion", "hunt", "--max-trials={}".format(how_many),
+                                "--pool-size=1",
+                                "--max-broken=1000",
+                                "--name=lalala",
+                                "--config", "./stress_gradient.yaml",
+                                "./dir_per_trial.py",
+                                "--dir={}".format(str(tmpdir)),
+                                "--other-name~exp.name",
+                                "--name~trial.hash_name",
+                                "-x~gaussian(30, 10)"])
+    rcode = process.wait()
+    assert rcode == 0
 
     exp = list(database.experiments.find({'name': 'lalala'}))
     assert len(exp) == 1

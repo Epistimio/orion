@@ -41,7 +41,7 @@ def add_subparser(parser):
     orion_group.add_argument(
         "--max-broken", type=int, metavar='#',
         help="maximum number of broken trials to be tolerated before declaring "
-             "experiment as broken (default: %s)" % resolve_config.DEF_CMD_MAX_TRIALS[1])
+             "experiment as broken (default: %s)" % resolve_config.DEF_CMD_MAX_BROKEN[1])
 
     resolve_config.get_user_args_group(hunt_parser)
 
@@ -54,8 +54,7 @@ def main(args):
     """Fetch config and execute hunt command"""
     # Note: Side effects on args
     config = fetch_config(args)
-
-    _execute(args, config)
+    return _execute(args, config)
 
 
 def fetch_config(args):
@@ -83,7 +82,7 @@ def fetch_config(args):
 
 def _execute(cmdargs, cmdconfig):
     experiment = _infer_experiment(cmdargs, cmdconfig)
-    workon(experiment)
+    return workon(experiment)
 
 
 def _infer_experiment(cmdargs, cmdconfig):
