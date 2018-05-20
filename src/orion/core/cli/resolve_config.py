@@ -65,6 +65,7 @@ log = logging.getLogger(__name__)
 # Default settings for command line arguments (option, description)
 DEF_CMD_MAX_TRIALS = (infinity, 'inf/until preempted')
 DEF_CMD_POOL_SIZE = (10, str(10))
+DEF_CMD_MAX_BROKEN = (3, str(3))
 
 DEF_CONFIG_FILES_PATHS = [
     os.path.join(orion.core.DIRS.site_data_dir, 'orion_config.yaml.example'),
@@ -206,6 +207,7 @@ def fetch_default_options():
     default_config['name'] = None
     default_config['max_trials'] = DEF_CMD_MAX_TRIALS[0]
     default_config['pool_size'] = DEF_CMD_POOL_SIZE[0]
+    default_config['max_broken'] = DEF_CMD_MAX_BROKEN[0]
     default_config['algorithms'] = 'random'
 
     # get default options for some managerial variables (see :const:`ENV_VARS`)

@@ -82,10 +82,10 @@ class Experiment(object):
 
     """
 
-    __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
+    __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials', 'max_broken',
                  'status', 'algorithms', '_db', '_init_done', '_id', '_last_fetched')
     # 'status' should not be in config
-    non_forking_attrs = ('status', 'pool_size', 'max_trials')
+    non_forking_attrs = ('status', 'pool_size', 'max_trials', 'max_broken')
 
     def __init__(self, name):
         """Initialize an Experiment object with primary key (:attr:`name`, :attr:`user`).
@@ -114,6 +114,7 @@ class Experiment(object):
         self.metadata = {'user': user, 'datetime': stamp}
         self.pool_size = None
         self.max_trials = None
+        self.max_broken = None
         self.status = None
         self.algorithms = None
 
@@ -264,6 +265,24 @@ class Experiment(object):
         if num_completed_trials >= self.max_trials or \
                 (self._init_done and self.algorithms.is_done):
             self._db.write('experiments', {'status': 'done'}, {'_id': self._id})
+            return True
+
+        return False
+
+    @property
+    def is_broken(self):
+        """Return True, if this experiment is considered to be broken.
+
+        .. note:: To be used as a terminating condition for a failed ``Worker``.
+        """
+        query = dict(
+            experiment=self._id,
+            status='broken'
+            )
+        num_broken_trials = self._db.count('trials', query)
+
+        if num_broken_trials >= self.max_broken:
+            self._db.write('experiments', {'status': 'broken'}, {'_id': self._id})
             return True
 
         return False

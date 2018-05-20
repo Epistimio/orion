@@ -37,6 +37,7 @@
   # orion's configuration
   pool_size: 2
   max_trials: 1000
+  max_broken: 3
 
   # functional info
   status: completed  # pending, done, broken
@@ -71,6 +72,7 @@
         value: gru
   pool_size: 2
   max_trials: 1000
+  max_broken: 3
   status: broken
   algorithms:
     dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
@@ -100,6 +102,7 @@
         value: gru
   pool_size: 2
   max_trials: 1000
+  max_broken: 3
   status: running
   algorithms:
     dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
@@ -231,6 +234,42 @@
 - experiment: supernaedo2
 
   status: suspended
+  worker: ~
+  submit_time: 2017-11-23T04:00:00
+  start_time: 2017-11-23T04:00:00
+  end_time: ~
+  results:
+    - name: ~
+      type: objective  # objective, constraint
+      value: ~
+  params:
+    - name: /encoding_layer
+      type: categorical
+      value: lstm
+    - name: /decoding_layer
+      type: categorical
+      value: lstm_with_attention
+- experiment: supernaedo2
+
+  status: broken
+  worker: ~
+  submit_time: 2017-11-23T04:00:00
+  start_time: 2017-11-23T04:00:00
+  end_time: ~
+  results:
+    - name: ~
+      type: objective  # objective, constraint
+      value: ~
+  params:
+    - name: /encoding_layer
+      type: categorical
+      value: lstm
+    - name: /decoding_layer
+      type: categorical
+      value: lstm_with_attention
+- experiment: supernaedo2
+
+  status: broken
   worker: ~
   submit_time: 2017-11-23T04:00:00
   start_time: 2017-11-23T04:00:00

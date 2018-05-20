@@ -17,14 +17,15 @@
     user_version: ~
     user_commit_hash: as5f7asf5asfa7sf
   refers:
-    name: 
+    name:
     user: tsirif
     params:
       - name:
-        type: 
+        type:
         value:
   pool_size: 2
   max_trials: 1000
+  max_broken: 3
   status: running
   algorithms:
     random: {}
@@ -41,14 +42,15 @@
     user_version: ~
     user_commit_hash: as5f7asf5asfa7sf
   refers:
-    name: 
+    name:
     user: tsirif
     params:
       - name:
-        type: 
+        type:
         value:
   pool_size: 2
   max_trials: 1000
+  max_broken: 3
   status: running
   algorithms:
     random: {}
@@ -65,14 +67,15 @@
     user_version: ~
     user_commit_hash: as5f7asf5asfa7sf
   refers:
-    name: 
+    name:
     user: tsirif
     params:
       - name:
-        type: 
+        type:
         value:
   pool_size: 2
   max_trials: 1000
+  max_broken: 3
   status: running
-  algorithms: 
+  algorithms:
     random: {}

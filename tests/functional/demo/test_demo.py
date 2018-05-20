@@ -32,6 +32,7 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     assert exp['name'] == 'default_algo'
     assert exp['pool_size'] == 10
     assert exp['max_trials'] == 30
+    assert exp['max_broken'] == 3
     assert exp['status'] == 'done'
     assert exp['algorithms'] == {'random': {}}
     assert 'user' in exp['metadata']
@@ -58,6 +59,7 @@ def test_demo(database, monkeypatch):
     assert exp['name'] == 'voila_voici'
     assert exp['pool_size'] == 1
     assert exp['max_trials'] == 100
+    assert exp['max_broken'] == 3
     assert exp['status'] == 'done'
     assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
                                                       'dx_tolerance': 1e-7}}
@@ -110,6 +112,7 @@ def test_demo_two_workers(database, monkeypatch):
     assert exp['name'] == 'two_workers_demo'
     assert exp['pool_size'] == 2
     assert exp['max_trials'] == 400
+    assert exp['max_broken'] == 3
     assert exp['status'] == 'done'
     assert exp['algorithms'] == {'random': {}}
     assert 'user' in exp['metadata']
@@ -147,6 +150,7 @@ def test_workon(database):
         }
     config['pool_size'] = 1
     config['max_trials'] = 100
+    config['max_broken'] = 3
     config['metadata']['user_script'] = os.path.abspath(os.path.join(
         os.path.dirname(__file__), "black_box.py"))
     config['metadata']['user_args'] = ["-x~uniform(-50, 50)"]
@@ -162,6 +166,7 @@ def test_workon(database):
     assert exp['name'] == 'voila_voici'
     assert exp['pool_size'] == 1
     assert exp['max_trials'] == 100
+    assert exp['max_broken'] == 3
     assert exp['status'] == 'done'
     assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
                                                       'dx_tolerance': 1e-7}}
@@ -202,6 +207,7 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["hunt", "--max-trials={}".format(how_many),
                          "--pool-size=1",
+                         "--max-broken=1000",
                          "--name=lalala",
                          "--config", "./stress_gradient.yaml",
                          "./dir_per_trial.py",

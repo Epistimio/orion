@@ -38,6 +38,11 @@ def add_subparser(parser):
         help="number of concurrent workers to evaluate candidate samples "
              "(default: %s)" % resolve_config.DEF_CMD_POOL_SIZE[1])
 
+    orion_group.add_argument(
+        "--max-broken", type=int, metavar='#',
+        help="maximum number of broken trials to be tolerated before declaring "
+             "experiment as broken (default: %s)" % resolve_config.DEF_CMD_MAX_TRIALS[1])
+
     resolve_config.get_user_args_group(hunt_parser)
 
     hunt_parser.set_defaults(func=main)

@@ -4,8 +4,27 @@
 import os
 
 import pytest
+import yaml
 
 import orion.core.cli
+
+
+@pytest.fixture(scope='module')
+def exp_config():
+    """Load an example database."""
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+              'experiment.yaml')) as f:
+        exp_config = list(yaml.safe_load_all(f))
+    return exp_config
+
+
+@pytest.fixture()
+def clean_db(database):
+    """Clean insert example experiment entries to collections."""
+    database.experiments.drop()
+    database.trials.drop()
+    database.workers.drop()
+    database.resources.drop()
 
 
 def get_user_corneau():
