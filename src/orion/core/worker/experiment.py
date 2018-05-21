@@ -15,6 +15,7 @@ import getpass
 import logging
 import random
 
+from orion.core.evc.adapters import Adapter, BaseAdapter
 from orion.core.io.database import Database, DuplicateKeyError, ReadOnlyDB
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
@@ -35,15 +36,16 @@ class Experiment(object):
        id of the experiment in the database if experiment is configured. Value is `None`
        if the experiment is not configured.
     refers : dict or list of `Experiment` objects, after initialization is done.
-       A dictionary pointing to a past `Experiment` name, ``refers[name]``, whose
+       A dictionary pointing to a past `Experiment` id, ``refers[parent_id]``, whose
        trials we want to add in the history of completed trials we want to re-use.
+       For convenience and database effiency purpose, all experiments of a common tree shares
+       `refers[root_id]`, with the root experiment refering to itself.
     metadata : dict
        Contains managerial information about this `Experiment`.
     pool_size : int
        How many workers can participate asynchronously in this `Experiment`.
     max_trials : int
        How many trials must be evaluated, before considering this `Experiment` done.
-
        This attribute can be updated if the rest of the experiment configuration
        is the same. In that case, if trying to set to an already set experiment,
        it will overwrite the previous one.
@@ -99,7 +101,7 @@ class Experiment(object):
 
         self._id = None
         self.name = name
-        self.refers = None
+        self.refers = dict()
         user = getpass.getuser()
         self.metadata = {'user': user}
         self.pool_size = None
@@ -287,6 +289,10 @@ class Experiment(object):
                 config[attrname] = attribute.configuration
             else:
                 config[attrname] = attribute
+
+            if self._init_done and attrname == "refers" and attribute.get("adapter"):
+                config[attrname] = copy.deepcopy(config[attrname])
+                config[attrname]['adapter'] = config[attrname]['adapter'].configuration
         # Reason for deepcopy is that some attributes are dictionaries
         # themselves, we don't want to accidentally change the state of this
         # object from a getter.
@@ -345,6 +351,14 @@ class Experiment(object):
             # XXX: Reminder for future DB implementations:
             # MongoDB, updates an inserted dict with _id, so should you :P
             self._id = final_config['_id']
+
+            # Update refers in db if experiment is root
+            if not self.refers:
+                self.refers = {'root_id': self._id, 'parent_id': None, 'adapter': []}
+                update = {'refers': self.refers}
+                query = {'_id': self._id}
+                self._db.write('experiments', data=update, query=query)
+
         else:
             # Writing the final config to an already existing experiment raises
             # a DuplicatKeyError because of the embedding id `metadata.user`.
@@ -412,7 +426,7 @@ class Experiment(object):
         """Check before dispatching experiment whether configuration corresponds
         to a executable experiment environment.
 
-        1. Check `refers` and instantiate `Experiment` objects from it. (TODO)
+        1. Check `refers` and instantiate `Adapter` objects from it.
         2. Try to build parameter space from user arguments.
         3. Check whether configured algorithms correspond to [known]/valid
            implementations of the ``Algorithm`` class. Instantiate these objects.
@@ -429,6 +443,13 @@ class Experiment(object):
                 log.warning("Found section '%s' in configuration. "
                             "Cannot set private attributes. Ignoring.", section)
                 continue
+
+            # Copy sub configuration to value confusing side-effects
+            # Only copy at this level, not `config` directly to avoid TypeErrors if config contains
+            # non-serializable objects (copy.deepcopy complains otherwise).
+            if isinstance(value, dict):
+                value = copy.deepcopy(value)
+
             setattr(self, section, value)
 
         try:
@@ -440,6 +461,9 @@ class Experiment(object):
             self.algorithms = PrimaryAlgo(space, self.algorithms)
         except KeyError:
             pass
+
+        if self.refers and not isinstance(self.refers.get('adapter'), BaseAdapter):
+            self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
     def _fork_config(self, config):
         """Ask for a different identifier for this experiment. Set :attr:`refers`
