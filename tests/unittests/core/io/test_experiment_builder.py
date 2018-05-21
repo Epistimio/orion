@@ -142,7 +142,7 @@ def test_build_view_from(config_file, create_db_instance, exp_config, random_dt)
     assert exp_view._experiment._db._database is create_db_instance
     assert exp_view._id == exp_config[0][0]['_id']
     assert exp_view.name == exp_config[0][0]['name']
-    assert exp_view.refers == exp_config[0][0]['refers']
+    assert exp_view.configuration['refers'] == exp_config[0][0]['refers']
     assert exp_view.metadata == exp_config[0][0]['metadata']
     assert exp_view._experiment._last_fetched == exp_config[0][0]['metadata']['datetime']
     assert exp_view.pool_size == exp_config[0][0]['pool_size']
@@ -165,7 +165,7 @@ def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_d
     assert exp._init_done is True
     assert exp._db is create_db_instance
     assert exp.name == cmdargs['name']
-    assert exp.refers is None
+    assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
     assert exp.metadata['datetime'] == random_dt
     assert exp.metadata['user'] == 'tsirif'
     assert exp.metadata['user_args'] == cmdargs['user_args']
@@ -192,7 +192,7 @@ def test_build_from_hit(old_config_file, create_db_instance, exp_config):
     assert exp._db is create_db_instance
     assert exp._id == exp_config[0][0]['_id']
     assert exp.name == exp_config[0][0]['name']
-    assert exp.refers == exp_config[0][0]['refers']
+    assert exp.configuration['refers'] == exp_config[0][0]['refers']
     assert exp.metadata == exp_config[0][0]['metadata']
     assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
     assert exp.pool_size == exp_config[0][0]['pool_size']
@@ -216,7 +216,7 @@ def test_build_from_config_no_hit(config_file, create_db_instance, exp_config, r
     assert exp._init_done is True
     assert exp._db is create_db_instance
     assert exp.name == cmdargs['name']
-    assert exp.refers is None
+    assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
     assert exp.metadata['datetime'] == random_dt
     assert exp.metadata['user'] == 'tsirif'
     assert exp.metadata['user_args'] == cmdargs['user_args']
@@ -246,7 +246,7 @@ def test_build_from_config_hit(old_config_file, create_db_instance, exp_config):
     assert exp._db is create_db_instance
     assert exp._id == exp_config[0][0]['_id']
     assert exp.name == exp_config[0][0]['name']
-    assert exp.refers == exp_config[0][0]['refers']
+    assert exp.configuration['refers'] == exp_config[0][0]['refers']
     assert exp.metadata == exp_config[0][0]['metadata']
     assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
     assert exp.pool_size == exp_config[0][0]['pool_size']
