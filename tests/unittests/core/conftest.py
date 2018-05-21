@@ -140,3 +140,24 @@ def trial_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_insta
         query = {'experiment': trial['experiment']}
         update = {'experiment': experiment_dict[trial['experiment']]['_id']}
         db.write('trials', update, query)
+
+
+@pytest.fixture()
+def refers_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_instance):
+    """Replace trial ids by the actual ids of the experiments."""
+    db = create_db_instance
+    query = {'metadata.user': 'tsirif'}
+    selection = {'name': 1, 'refers': 1}
+    experiments = db.read('experiments', query, selection)
+    experiment_dict = dict((experiment['name'], experiment) for experiment in experiments)
+
+    for experiment in experiments:
+        query = {'_id': experiment['_id']}
+        print(experiment['refers'])
+        root_id = experiment_dict[experiment['refers']['root_id']]['_id']
+        if experiment['refers']['parent_id'] is not None:
+            parent_id = experiment_dict[experiment['refers']['parent_id']]['_id']
+        else:
+            parent_id = None
+        update = {'refers.root_id': root_id, 'refers.parent_id': parent_id}
+        db.write('experiments', update, query)
