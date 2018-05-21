@@ -10,7 +10,7 @@ from orion.core.worker.producer import Producer
 def producer(hacked_exp, random_dt, exp_config):
     """Return a setup `Producer`."""
     # make init done
-    hacked_exp.configure(exp_config[0][2])
+    hacked_exp.configure(exp_config[0][3])
     # insert fake point
     fake_point = ('gru', 'rnn')
     assert fake_point in hacked_exp.space
@@ -24,11 +24,11 @@ def test_update(producer):
     # Algorithm must have received completed points and their results
     obs_points = producer.algorithm.algorithm._points
     obs_results = producer.algorithm.algorithm._results
-    assert len(obs_points) == 3
-    assert obs_points[0] == ('lstm', 'rnn')
+    assert len(obs_points) == 6
+    assert obs_points[0] == ('rnn', 'rnn')
     assert obs_points[1] == ('rnn', 'rnn')
-    assert obs_points[2] == ('gru', 'gru')
-    assert len(obs_results) == 3
+    assert obs_points[2] == ('gru', 'lstm_with_attention')
+    assert len(obs_results) == 6
     assert obs_results[0] == {
         'objective': 3,
         'gradient': None,
