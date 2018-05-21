@@ -19,6 +19,7 @@ generic manner.
 """
 
 
+# pylint: disable=too-few-public-methods
 class PreOrderTraversal(object):
     """Iterate on a tree in a pre-order traversal fashion
 
@@ -51,6 +52,7 @@ class PreOrderTraversal(object):
         return node
 
 
+# pylint: disable=too-few-public-methods
 class DepthFirstTraversal(object):
     """Iterate on a tree in a pre-order traversal fashion
 
@@ -72,7 +74,7 @@ class DepthFirstTraversal(object):
 
     def _compute_potential(self):
         """Filter out seen nodes from the stack"""
-        if len(self.stack) == 0:
+        if not self.stack:
             return []
 
         return list(filter(lambda n: n not in self.seen, self.stack[-1].children))
@@ -84,7 +86,7 @@ class DepthFirstTraversal(object):
     def __next__(self):
         """Get the next node in depth-first traversal"""
         potential = self._compute_potential()
-        while len(self.stack) > 0 and len(potential) > 0:
+        while self.stack and potential:
             self.stack += potential[::-1]
             potential = self._compute_potential()
 
@@ -256,6 +258,7 @@ class TreeNode(object):
         """
         for child in nodes:
             del self._children[self.children.index(child)]
+            # pylint: disable=protected-access
             child._parent = None
 
     def add_children(self, *nodes):
@@ -269,6 +272,12 @@ class TreeNode(object):
         for child in nodes:
             if child is not None and not isinstance(child, TreeNode):
                 raise TypeError("Cannot add %s to children" % str(child))
+
+            # TreeNode.set_parent uses add_children so using it here could cause an infinit
+            # recursion. add_children() gets the dirty job done.
+            child.drop_parent()
+            # pylint: disable=protected-access
+            child._parent = self
 
             if child not in self._children:
                 # TreeNode.set_parent uses add_children so using it here could cause an infinit
