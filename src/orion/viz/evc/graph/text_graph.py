@@ -13,4 +13,5 @@ import networkx as nx
 
 class text_graph(object):
     def __init__(self):
-        super(text_graph, self).__init__()
+        super(text_graph, self, evc_node).__init__()
+
