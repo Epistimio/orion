@@ -40,7 +40,14 @@ class evc_graph(object):
         it in memory
         '''
         self.graph = nx.Graph()
-        
+
+        '''
+        Build graph based on
+        EVC nodes. Would it better be a 
+        property of the class?
+        '''
+        self.build_graph(root=True)
+
     def add_node(self, node, children):
         self.graph.add_node(node)
         for child in children:
@@ -155,7 +162,7 @@ class evc_graph(object):
         
         """
         tikz = self.dumps_tikz(self.graph, layout, use_label=use_label)
-        preamble = preamble(layout)
+        preamble = self.preamble(layout)
         return (
             '{preamble}\n'
             r'\begin{{document}}' '\n'
@@ -186,6 +193,7 @@ class evc_graph(object):
 
     def image_visualize(self, path):
         """Visualize graph in a path
+
         """
         '''
         Use nx.draw to draw the image
@@ -197,8 +205,8 @@ class evc_graph(object):
         plt.savefig(path)
 
     def image_visualize_pydot(self, path):
-        """Visualize graph in a path
-        to a pydot file
+        """Visualize graph in a path to a pydot file
+
         """
         '''
         import respected pydot - write dot from networkx
