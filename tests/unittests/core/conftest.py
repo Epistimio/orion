@@ -20,9 +20,13 @@ JSON_SAMPLE = os.path.join(TEST_DIR, 'sample_config.json')
 @pytest.fixture()
 def create_db_instance(null_db_instances, clean_db):
     """Create and save a singleton database instance."""
-    database = Database(of_type='MongoDB', name='orion_test',
-                        username='user', password='pass')
-    return database
+    try:
+        db = Database(of_type='MongoDB', name='orion_test',
+                      username='user', password='pass')
+    except ValueError:
+        db = Database()
+
+    return db
 
 
 @pytest.fixture(scope='session')
@@ -102,30 +106,19 @@ def random_dt(monkeypatch):
 
 
 @pytest.fixture()
-def hacked_exp(with_user_dendi, random_dt, clean_db):
+def hacked_exp(with_user_dendi, random_dt, clean_db, create_db_instance):
     """Return an `Experiment` instance with hacked _id to find trials in
     fake database.
     """
-    try:
-        Database(of_type='MongoDB', name='orion_test',
-                 username='user', password='pass')
-    except (TypeError, ValueError):
-        pass
     exp = Experiment('supernaedo2')
     exp._id = 'supernaedo2'  # white box hack
     return exp
 
 
 @pytest.fixture()
-def trial_id_substitution(with_user_tsirif, random_dt, clean_db):
+def trial_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_instance):
     """Replace trial ids by the actual ids of the experiments."""
-    try:
-        Database(of_type='MongoDB', name='orion_test',
-                 username='user', password='pass')
-    except (TypeError, ValueError):
-        pass
-
-    db = Database()
+    db = create_db_instance
     experiments = db.read('experiments', {'metadata.user': 'tsirif'})
     experiment_dict = dict((experiment['name'], experiment) for experiment in experiments)
     trials = db.read('trials')
