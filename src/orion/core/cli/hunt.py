@@ -11,9 +11,7 @@
 """
 
 import logging
-import os
 
-import orion
 from orion.core.cli import base as cli
 from orion.core.io import resolve_config
 from orion.core.io.experiment_builder import ExperimentBuilder
@@ -47,31 +45,7 @@ def add_subparser(parser):
 
 def main(args):
     """Fetch config and execute hunt command"""
-    # Note: Side effects on args
-    set_metadata(args)
-
-    _execute(args)
-
-
-def set_metadata(args):
-    """Set metadata from command line arguments."""
-    # Explicitly add orion's version as experiment's metadata
-    args['metadata'] = dict()
-    args['metadata']['orion_version'] = orion.core.__version__
-    log.debug("Using orion version %s", args['metadata']['orion_version'])
-
-    # Move 'user_script' and 'user_args' to 'metadata' key
-    user_script = args.pop('user_script')
-    abs_user_script = os.path.abspath(user_script)
-    if resolve_config.is_exe(abs_user_script):
-        user_script = abs_user_script
-
-    args['metadata']['user_script'] = user_script
-    args['metadata']['user_args'] = args.pop('user_args')
-    log.debug("Problem definition: %s %s", args['metadata']['user_script'],
-              ' '.join(args['metadata']['user_args']))
-
-
-def _execute(cmdargs):
-    experiment = ExperimentBuilder().build_from(cmdargs)
+    args['root'] = None
+    args['leafs'] = []
+    experiment = ExperimentBuilder().build_from(args)
     workon(experiment)
