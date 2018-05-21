@@ -600,7 +600,7 @@ def test_fetch_completed_trials(hacked_exp, exp_config, random_dt):
     """Fetch a list of the unseen yet completed trials."""
     trials = hacked_exp.fetch_completed_trials()
     assert hacked_exp._last_fetched == random_dt
-    assert len(trials) == 3
+    assert len(trials) == 6
     assert trials[0].to_dict() == exp_config[1][0]
     assert trials[1].to_dict() == exp_config[1][1]
     assert trials[2].to_dict() == exp_config[1][2]
@@ -625,7 +625,7 @@ def test_is_done_property_with_algo(hacked_exp):
 def test_experiment_stats(hacked_exp, exp_config, random_dt):
     """Check that property stats is returning a proper summary of experiment's results."""
     stats = hacked_exp.stats
-    assert stats['trials_completed'] == 3
+    assert stats['trials_completed'] == 6
     assert stats['best_trials_id'] == exp_config[1][1]['_id']
     assert stats['best_evaluation'] == 2
     assert stats['start_time'] == exp_config[0][3]['metadata']['datetime']
@@ -690,7 +690,7 @@ def test_fetch_completed_trials_from_view(hacked_exp, exp_config, random_dt):
 
     trials = experiment_view.fetch_completed_trials()
     assert experiment_view._experiment._last_fetched == random_dt
-    assert len(trials) == 3
+    assert len(trials) == 6
     assert trials[0].to_dict() == exp_config[1][0]
     assert trials[1].to_dict() == exp_config[1][1]
     assert trials[2].to_dict() == exp_config[1][2]
@@ -737,7 +737,7 @@ def test_experiment_view_stats(hacked_exp, exp_config, random_dt):
     experiment_view._experiment = hacked_exp
 
     stats = experiment_view.stats
-    assert stats['trials_completed'] == 3
+    assert stats['trials_completed'] == 6
     assert stats['best_trials_id'] == exp_config[1][1]['_id']
     assert stats['best_evaluation'] == 2
     assert stats['start_time'] == exp_config[0][3]['metadata']['datetime']
