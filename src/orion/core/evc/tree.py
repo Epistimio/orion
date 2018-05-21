@@ -395,6 +395,17 @@ class TreeNode(object):
         """Iterate on the tree with pre-order traversal"""
         return PreOrderTraversal(self)
 
+    def __repr__(self):
+        """Represent the object as a string."""
+        parent = self.parent
+        if parent is not None:
+            parent = parent.item
+
+        children = [child.item for child in self.children]
+
+        return ("%s(%s, parent=%s, children=%s)" %
+                (self.__class__.__name__, str(self.item), str(parent), str(children)))
+
 
 def flattened(trials_tree):
     """Get a list of the tree items in pre-order traversal"""
