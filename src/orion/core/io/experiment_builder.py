@@ -190,7 +190,7 @@ class ExperimentBuilder(object):
                 user_script = abs_user_script
 
         exp_config['metadata']['user_script'] = user_script
-        exp_config['metadata']['user_args'] = exp_config.pop('user_args', None)
+        exp_config['metadata']['user_args'] = exp_config.pop('user_args', [])
 
         exp_config['metadata']['user'] = getpass.getuser()
 
