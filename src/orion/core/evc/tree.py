@@ -385,13 +385,16 @@ class TreeNode(object):
 
         """
         if node is None:
-            return TreeNode(function(self, None))
+            rval, _ = function(self, None)
+            return TreeNode(rval)
         elif node is self.parent:
-            rval_node = node.map(function, node.parent)
-            return TreeNode(function(self, rval_node), rval_node)
+            rval_parent_node = node.map(function, node.parent)
+            rval, parent_node = function(self, rval_parent_node)
+            return TreeNode(rval, parent_node)
         elif node is self.children:
-            rval_nodes = [child.map(function, child.children) for child in self.children]
-            return TreeNode(function(self, rval_nodes), parent=None, children=rval_nodes)
+            rval_children_nodes = [child.map(function, child.children) for child in self.children]
+            rval, children_nodes = function(self, rval_children_nodes)
+            return TreeNode(rval, parent=None, children=children_nodes)
         else:
             raise TypeError("Invalid nodes: %s" % str(node))
 
