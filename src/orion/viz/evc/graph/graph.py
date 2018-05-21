@@ -11,7 +11,6 @@
 """
 import networkx as nx
 import matplotlib.pyplot as plt
-import subprocess
 
 class evc_graph(object):
     r"""Image graph object
@@ -41,6 +40,12 @@ class evc_graph(object):
         it in memory
         '''
         self.graph = nx.Graph()
+        
+    def add_node(self, node, children):
+            self.graph.add_node(node)
+        for child in children:
+            self.graph.add_edge(node, child)
+        return node, children
 
     def build_graph(self, root=True):
         """Convert the EVC tree to the networkx graph
@@ -61,20 +66,8 @@ class evc_graph(object):
         Traverse the tree preorderly and then add 
         EVC node to the nn.Graph() graph
         '''
-        for node in self.evc_node:
-            # current node is say, root
-            self.graph.add_node(node)
-            # its children connected with the current node
-            # is connected with an edge
-            self.graph.add_edge(node, node.next())
-            # we've built our tree
-        
-        '''
-        Was considering using the map, but giving the node
-        the corresponding edges might not be straightforward
-        '''
-        #self.evc_node.map(self.graph.add_node, self.evc_node)
-        #self.evc_node.map(self.graph.add_edge, (self.evc_node, self.evc_node.next()))
+
+        self.evc_node.map(self.add_node, self.evc_node.children)
     
     def dumps_tikz(self, layout='layered', use_label=True):
         """Return TikZ code as `str`given a graph
