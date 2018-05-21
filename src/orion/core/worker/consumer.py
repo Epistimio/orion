@@ -8,7 +8,6 @@
    :synopsis: Call user's script as a black box process to evaluate a trial.
 
 """
-import json
 import logging
 import os
 import subprocess
@@ -23,15 +22,8 @@ from orion.core.worker.trial import Trial
 log = logging.getLogger(__name__)
 
 
-def update_trial_with_status(trial, new_status):
-    """Update existing `trial` in the database, using a `new_status`."""
-    log.debug("### Save %s as %s.", trial, new_status)
-    trial.status = new_status
-    Database().write('trials', trial.to_dict(), query={'_id': trial.id})
-
-
 class Consumer(object):
-    """Consume a trial by using it to initialize a black-box box to evaluate it.
+    """Consume a trial by using it to initialize a black box to evaluate it.
 
     It uses an `Experiment` object to push an evaluated trial, if results are
     delivered to the worker process successfully.
@@ -58,13 +50,19 @@ class Consumer(object):
        trial
     converter : `orion.core.io.converter.JSONConverter`
        Convenience object that parses and generates JSON files
-    latest_results : list of `orion.core.worker.trial.Trial.Result`
-       Contains the latest results communicated from user's code regarding
-       a particular trial's performance. This is what is going to be reported
-       as the conclusive results about a trial's performance and influence
-       an optimization algorithm's generation of point in the parameter space.
+    current_trial : `orion.core.worker.trial.Trial`
+       If it is not None, then this is the trial which is being currently
+       evaluated by the worker.
 
     """
+
+    class SuspendTrial(Exception):
+        """Raise this to communicate that `self.current_trial`'s evaluation
+        has not been completed and that the execution of user's script has been
+        suspended.
+        """
+
+        pass
 
     def __init__(self, experiment):
         """Initialize a consumer.
@@ -88,7 +86,7 @@ class Consumer(object):
 
         self.converter = JSONConverter()
 
-        self.latest_results = None
+        self.current_trial = None
 
     def consume(self, trial):
         """Execute user's script as a block box using the options contained
@@ -104,7 +102,7 @@ class Consumer(object):
 
         When a `trial` is successfully evaluated, its entry in the database
         is going to be updated with the results reported from user's code
-        (described in `self.latest_results`), and a `'done'` status.
+        (described in ``self.current_trial.results``), and a ``'done'`` status.
 
         :type trial: `orion.core.worker.trial.Trial`
 
@@ -150,14 +148,9 @@ class Consumer(object):
 
         """
         try:
-            log.debug("### Create new temporary directory at '%s':", self.tmp_dir)
-            self.latest_results = list()
+            self.current_trial = trial
             returncode = None
-
-            with tempfile.TemporaryDirectory(prefix=self.experiment.name + '_',
-                                             dir=self.tmp_dir) as workdirname:
-                log.debug("## New temp consumer context: %s", workdirname)
-                returncode = self._consume(trial, workdirname)
+            returncode = self._consume()
 
         except KeyboardInterrupt:
             new_status = 'interrupted'
@@ -165,45 +158,56 @@ class Consumer(object):
 
         except SystemExit:
             new_status = 'broken'
-            Database().write('experiments',
-                             {'status': 'broken'},
-                             {'_id': self.experiment._id})
+            Database().write('experiments', {'status': 'broken'},
+                             {'_id': self.experiment._id})  # pylint:disable=protected-access
             raise
 
+        except Consumer.SuspendTrial:
+            new_status = 'suspended'
+
         finally:
-            trial.results = self.latest_results
-
-            if returncode == 0 or (returncode is None and trial.results):
-                log.debug("### Register successfully evaluated %s.", trial)
-                self.experiment.push_completed_trial(trial)
+            if returncode == 0 or (returncode is None and self.current_trial.results):
+                log.debug("### Update successfully evaluated %s.", self.current_trial)
+                self.experiment.push_completed_trial(self.current_trial)
             elif returncode is not None:
-                update_trial_with_status(trial, 'broken')
+                self.experiment.push_completed_trial(self.current_trial, 'broken')
             else:
-                update_trial_with_status(trial, new_status)
+                self.experiment.push_completed_trial(self.current_trial, new_status)
+            self.current_trial = None
 
-    def _consume(self, trial, workdirname):
-        config_file = tempfile.NamedTemporaryFile(mode='w', prefix='trial_',
-                                                  suffix='.conf', dir=workdirname,
-                                                  delete=False)
-        config_file.close()
-        log.debug("## New temp config file: %s", config_file.name)
-        results_file = tempfile.NamedTemporaryFile(mode='w', prefix='results_',
-                                                   suffix='.out', dir=workdirname,
-                                                   delete=False)
-        results_file.close()
-        log.debug("## New temp results file: %s", results_file.name)
+    def _consume(self):
+        log.debug("### Create new temporary directory at '%s':", self.tmp_dir)
+        # XXX: wrap up with try/finally and safe-release resources explicitly
+        # finally, substitute with statement with the creation of an object.
+        with tempfile.TemporaryDirectory(prefix=self.experiment.name + '_',
+                                         dir=self.tmp_dir) as workdirname:
+            log.debug("## New temp consumer context: %s", workdirname)
+            config_file = tempfile.NamedTemporaryFile(mode='w', prefix='trial_',
+                                                      suffix='.conf', dir=workdirname,
+                                                      delete=False)
+            config_file.close()
+            log.debug("## New temp config file: %s", config_file.name)
+            results_file = tempfile.NamedTemporaryFile(mode='w', prefix='results_',
+                                                       suffix='.out', dir=workdirname,
+                                                       delete=False)
+            results_file.close()
+            log.debug("## New temp results file: %s", results_file.name)
 
-        log.debug("## Building command line argument and configuration for trial.")
-        cmd_args = self.template_builder.build_to(config_file.name, trial, self.experiment)
+            log.debug("## Building command line argument and configuration for trial.")
+            cmd_args = self.template_builder.build_to(config_file.name,
+                                                      self.current_trial,
+                                                      self.experiment)
 
-        command = [self.script_path] + cmd_args
-        return self.interact_with_script(command, results_file)
+            command = [self.script_path] + cmd_args
+            return self.interact_with_script(command, results_file)
 
     def interact_with_script(self, command, results_file):
-        """Interact with user's script by launching it in a separate process
-        and listening to data that it sends to this worker process periodically.
+        """Interact with user's script by launching it in a separate process.
 
-        It sets :attr:`self.latest_results`.
+        When the process exits, evaluation information
+        reported to a file will be attempted to be retrieved.
+
+        It sets ``self.current_trial.results``, if possible.
 
         Override it with a subclass of `Consumer` to implement a different
         way of communication with user's code and possibly management of the
@@ -237,10 +241,10 @@ class Consumer(object):
             log.debug("## Parse results from file and fill corresponding Trial object.")
             try:
                 results = self.converter.parse(results_file.name)
-                self.latest_results = [Trial.Result(name=res['name'],
-                                                    type=res['type'],
-                                                    value=res['value']) for res in results]
-            except json.decoder.JSONDecodeError:
+                self.current_trial.results = [Trial.Result(name=res['name'],
+                                                           type=res['type'],
+                                                           value=res['value']) for res in results]
+            except ValueError:  # JSON error because file is empty
                 pass
 
         return returncode
