@@ -248,6 +248,8 @@ class TreeNode(object):
     def drop_children(self, *nodes):
         """Drop the children of the node, do nothing if no parent
 
+        If no nodes are passed, the method will drop all the children of the current node.
+
         Note that the parent of the given node will be removed as well
 
         Raises
@@ -256,7 +258,10 @@ class TreeNode(object):
             If one of the given nodes is not a children of the current node.
 
         """
-        for child in nodes:
+        if not nodes:
+            nodes = self.children
+
+        for child in list(nodes):
             del self._children[self.children.index(child)]
             # pylint: disable=protected-access
             child._parent = None
