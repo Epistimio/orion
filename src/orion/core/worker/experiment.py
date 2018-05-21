@@ -195,7 +195,6 @@ class Experiment(object):
         :param score_handle: A way to decide which trial out of the *new* ones to
            to pick as *reserved*, defaults to a random choice.
         :type score_handle: callable
-
         :return: selected `Trial` object, None if could not find any.
         """
         if score_handle is not None and not callable(score_handle):
@@ -247,7 +246,10 @@ class Experiment(object):
         :param trial: Corresponds to a successful evaluation of a particular run.
         :type trial: `Trial`
 
-        .. note:: Change status from *reserved* to *completed*.
+        .. note::
+
+            Change status from *reserved* to *completed*.
+
         """
         trial.end_time = datetime.datetime.utcnow()
         trial.status = 'completed'
@@ -274,8 +276,10 @@ class Experiment(object):
         """Fetch recent completed trials that this `Experiment` instance has not
         yet seen.
 
-        .. note:: It will return only those with `Trial.end_time` after
-           `_last_fetched`, for performance reasons.
+        .. note::
+
+            It will return only those with `Trial.end_time` after `_last_fetched`, for performance
+            reasons.
 
         :return: list of completed `Trial` objects
         """
@@ -305,7 +309,10 @@ class Experiment(object):
         1. Count how many trials have been completed and compare with `max_trials`.
         2. Ask `algorithms` if they consider there is a chance for further improvement.
 
-        .. note:: To be used as a terminating condition in a ``Worker``.
+        .. note::
+
+            To be used as a terminating condition in a ``Worker``.
+
         """
         query = dict(
             experiment=self._id,
@@ -353,9 +360,11 @@ class Experiment(object):
         If `Experiment` was already set and an overwrite is needed, a *fork*
         is advised with a different :attr:`name` for this particular configuration.
 
-        .. note:: Calling this property is necessary for an experiment's
-           initialization process to be considered as done. But it can be called
-           only once.
+        .. note::
+
+            Calling this property is necessary for an experiment's initialization process to be
+            considered as done. But it can be called only once.
+
         """
         if self._init_done:
             raise RuntimeError("Configuration is done; cannot reset an Experiment.")
@@ -517,8 +526,9 @@ class Experiment(object):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
     def _fork_config(self, config):
-        """Ask for a different identifier for this experiment. Set :attr:`refers`
-        key to previous experiment's name, the one that we forked from.
+        """Ask for a different identifier for this experiment.
+
+        Set :attr:`node` key to previous experiment's name, the one that we forked from.
 
         :param config: Conflicting configuration that will change based on prompt.
         """
