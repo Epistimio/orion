@@ -149,7 +149,7 @@ class TestInitExperiment(object):
         assert exp._db is create_db_instance
         assert exp._id is None
         assert exp.name == 'supernaekei'
-        assert exp.refers is None
+        assert exp.refers == {}
         assert exp.metadata['user'] == 'tsirif'
         assert exp.metadata['datetime'] == random_dt
         assert exp._last_fetched == random_dt
@@ -168,7 +168,7 @@ class TestInitExperiment(object):
         assert exp._db is create_db_instance
         assert exp._id is None
         assert exp.name == 'supernaedo2'
-        assert exp.refers is None
+        assert exp.refers == {}
         assert exp.metadata['user'] == 'bouthilx'
         assert exp.metadata['datetime'] == random_dt
         assert exp._last_fetched == random_dt
@@ -220,7 +220,7 @@ class TestConfigProperty(object):
         exp = Experiment('supernaekei')
         cfg = exp.configuration
         assert cfg['name'] == 'supernaekei'
-        assert cfg['refers'] is None
+        assert cfg['refers'] == {}
         assert cfg['metadata']['user'] == 'tsirif'
         assert cfg['metadata']['datetime'] == random_dt
         assert len(cfg['metadata']) == 2
@@ -292,7 +292,8 @@ class TestConfigProperty(object):
         _id = found_config[0].pop('_id')
         assert _id != 'fasdfasfa'
         assert exp._id == _id
-        new_config['refers'] = None
+        new_config['refers'] = {}
+        new_config['status'] = 'pending'
         new_config.pop('_id')
         new_config.pop('something_to_be_ignored')
         new_config['algorithms']['dumbalgo']['done'] = False
@@ -300,9 +301,10 @@ class TestConfigProperty(object):
         new_config['algorithms']['dumbalgo']['scoring'] = 0
         new_config['algorithms']['dumbalgo']['suspend'] = False
         new_config['algorithms']['dumbalgo']['value'] = 5
+        new_config['refers'] = {'adapter': [], 'parent_id': None, 'root_id': _id}
         assert found_config[0] == new_config
         assert exp.name == new_config['name']
-        assert exp.refers is None
+        assert exp.configuration['refers'] == new_config['refers']
         assert exp.metadata == new_config['metadata']
         assert exp.pool_size == new_config['pool_size']
         assert exp.max_trials == new_config['max_trials']
@@ -641,7 +643,7 @@ class TestInitExperimentView(object):
         assert exp._experiment._db._database is create_db_instance
         assert exp._id == exp_config[0][0]['_id']
         assert exp.name == exp_config[0][0]['name']
-        assert exp.refers == exp_config[0][0]['refers']
+        assert exp.configuration['refers'] == exp_config[0][0]['refers']
         assert exp.metadata == exp_config[0][0]['metadata']
         assert exp._experiment._last_fetched == exp_config[0][0]['metadata']['datetime']
         assert exp.pool_size == exp_config[0][0]['pool_size']
