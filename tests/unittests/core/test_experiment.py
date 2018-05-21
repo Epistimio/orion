@@ -688,6 +688,10 @@ def test_view_is_done_property(hacked_exp):
     experiment_view = ExperimentView(hacked_exp.name)
     experiment_view._experiment = hacked_exp
 
+    # Fully configure wrapper experiment (should normally occur inside ExperimentView.__init__
+    # but hacked_exp has been _hacked_ inside afterwards.
+    hacked_exp.configure(hacked_exp.configuration)
+
     assert experiment_view.is_done is False
 
     with pytest.raises(AttributeError):
