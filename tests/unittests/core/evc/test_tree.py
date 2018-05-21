@@ -323,7 +323,7 @@ def test_map_children():
         for child in TreeNode(0, None, children):
             child.item += 1
 
-        return node.item + 1
+        return node.item + 1, children
 
     rval = root.map(increment, root.children)
     assert [node.item for node in rval] == [2, 3, 4, 4, 3, 3, 3, 4]
@@ -361,7 +361,7 @@ def test_map_parent():
             for parent in parent.root:
                 parent.item += 1
 
-        return node.item + 1
+        return node.item + 1, parent
 
     rval = f.map(increment_parent, f.parent)
     assert [node.item for node in rval.root] == [4, 3, 2]
