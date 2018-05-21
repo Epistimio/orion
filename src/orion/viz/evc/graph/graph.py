@@ -42,7 +42,7 @@ class evc_graph(object):
         self.graph = nx.Graph()
         
     def add_node(self, node, children):
-            self.graph.add_node(node)
+        self.graph.add_node(node)
         for child in children:
             self.graph.add_edge(node, child)
         return node, children
@@ -137,7 +137,8 @@ class evc_graph(object):
             layout_lib = 'force'
         else:
             raise ValueError(
-                'Unknown which library contains layout: {s}'.format(s=layout))
+                'Unknown which library contains layout: {s}'
+                        .format(s=layout))
         document = (
             '\documentclass{{standalone}}\n'
             '\usepackage{{amsmath}}\n'
@@ -153,7 +154,7 @@ class evc_graph(object):
         """Return `str` that contains a preamble and tikzpicture.
         
         """
-        tikz = dumps_tikz(self.graph, layout, use_label=use_label)
+        tikz = self.dumps_tikz(self.graph, layout, use_label=use_label)
         preamble = preamble(layout)
         return (
             '{preamble}\n'
@@ -169,7 +170,7 @@ class evc_graph(object):
         """Write TikZ picture as TeX file.
 
         """
-        s = dumps_tikz(self.graph)
+        s = self.dumps_tikz(self.graph)
         with open(path, 'w') as f:
             f.write(s)
 
@@ -178,7 +179,8 @@ class evc_graph(object):
         """Write TeX document (use this as an example).
         
         """
-        s = document(self.graph, layout='layered', use_label=use_label)
+        s = self.document(self.graph, layout='layered', 
+                            use_label=use_label)
         with open(path, 'w') as f:
             f.write(s)
 
