@@ -14,7 +14,7 @@ import logging
 
 from orion.core.cli import base as cli
 from orion.core.io import resolve_config
-from orion.core.io.experiment_builder import ExperimentBuilder
+from orion.core.io.evc_builder import EVCBuilder
 from orion.core.worker import workon
 
 log = logging.getLogger(__name__)
@@ -47,5 +47,5 @@ def main(args):
     """Fetch config and execute hunt command"""
     args['root'] = None
     args['leafs'] = []
-    experiment = ExperimentBuilder().build_from(args)
+    experiment = EVCBuilder().build_from(args)
     workon(experiment)
