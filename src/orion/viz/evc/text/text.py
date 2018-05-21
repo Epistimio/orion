@@ -9,5 +9,8 @@
               purposes
 
 """
-import networkx
-import matplotlibt
+import networkx as nx 
+import matplotlib.pyplot as plt
+
+class textgraph(object):
+    def __init__(self,
