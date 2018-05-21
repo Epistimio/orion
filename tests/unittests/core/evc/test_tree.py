@@ -151,6 +151,26 @@ def test_node_remove_children_in_batch():
     assert child2.parent is None
 
 
+def test_node_remove_all_children():
+    """Test drop_children() drops all of them"""
+    parent = TreeNode("test")
+    child1 = TreeNode("test1")
+    child2 = TreeNode("test2")
+
+    parent.add_children(child1, child2)
+
+    assert parent.children[0] is child1
+    assert parent.children[1] is child2
+    assert child1.parent is parent
+    assert child2.parent is parent
+
+    parent.drop_children()
+
+    assert len(parent.children) == 0
+    assert child1.parent is None
+    assert child2.parent is None
+
+
 def test_parent_parent():
     """Test path through two level of parents"""
     grand_parent = TreeNode("test")
