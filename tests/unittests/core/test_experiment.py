@@ -722,3 +722,44 @@ def test_experiment_view_db_read_only():
     exp._experiment._db._database.write
     with pytest.raises(AttributeError):
         exp._experiment._db.write
+
+
+class TestInitExperimentWithEVC(object):
+    """Create new Experiment instance with EVC."""
+
+    @pytest.mark.usefixtures("with_user_tsirif")
+    def test_new_experiment_with_parent(self, create_db_instance, random_dt, exp_config):
+        """Configure a branch experiment."""
+        exp = Experiment('supernaedo2.6')
+        exp.metadata = exp_config[0][4]['metadata']
+        exp.refers = exp_config[0][4]['refers']
+        exp.algorithms = exp_config[0][4]['algorithms']
+        exp.configure(exp.configuration)
+        assert exp._init_done is True
+        assert exp._db is create_db_instance
+        assert exp._id is not None
+        assert exp.name == 'supernaedo2.6'
+        assert exp.configuration['refers'] == exp_config[0][4]['refers']
+        assert exp.metadata == exp_config[0][4]['metadata']
+        assert exp._last_fetched == random_dt
+        assert exp.pool_size is None
+        assert exp.max_trials is None
+        assert exp.status == 'pending'
+        assert exp.configuration['algorithms'] == {'random': {}}
+
+    @pytest.mark.usefixtures("with_user_tsirif")
+    def test_experiment_with_parent(self, create_db_instance, random_dt, exp_config):
+        """Configure an existing experiment with parent."""
+        exp = Experiment('supernaedo2.1')
+        exp.algorithms = {'random': {}}
+        exp.configure(exp.configuration)
+        assert exp._init_done is True
+        assert exp._db is create_db_instance
+        assert exp._id is not None
+        assert exp.name == 'supernaedo2.1'
+        assert exp.configuration['refers'] == exp_config[0][4]['refers']
+        assert exp.metadata == exp_config[0][4]['metadata']
+        assert exp.pool_size == 2
+        assert exp.max_trials == 1000
+        assert exp.status == 'pending'
+        assert exp.configuration['algorithms'] == {'random': {}}
