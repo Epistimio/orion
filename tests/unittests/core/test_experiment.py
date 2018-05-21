@@ -698,6 +698,22 @@ def test_view_is_done_property(hacked_exp):
     assert experiment_view.is_done is True
 
 
+def test_view_algo_is_done_property(hacked_exp):
+    """Check experiment's algo stopping conditions accessed from view."""
+    experiment_view = ExperimentView(hacked_exp.name)
+    experiment_view._experiment = hacked_exp
+
+    # Fully configure wrapper experiment (should normally occur inside ExperimentView.__init__
+    # but hacked_exp has been _hacked_ inside afterwards.
+    hacked_exp.configure(hacked_exp.configuration)
+
+    assert experiment_view.is_done is False
+
+    hacked_exp.algorithms.algorithm.done = True
+
+    assert experiment_view.is_done is True
+
+
 def test_experiment_view_stats(hacked_exp, exp_config, random_dt):
     """Check that property stats from view is consistent."""
     experiment_view = ExperimentView(hacked_exp.name)
