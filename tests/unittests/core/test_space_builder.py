@@ -97,7 +97,7 @@ class TestDimensionBuilder(object):
     def test_build_fails_because_of_ValueError_on_run(self, dimbuilder):
         """Build fails because ValueError happens on init."""
         with pytest.raises(TypeError) as exc:
-            dimbuilder.build('yolo2', 'alpha(0.9, low=4, high=6, shape=2)')
+            dimbuilder.build('yolo2', 'alpha(0.9, low=5, high=6, shape=2)')
         assert 'Parameter' in str(exc.value)
         assert 'Improbable bounds' in str(exc.value.__cause__)
 
