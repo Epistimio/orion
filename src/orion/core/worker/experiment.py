@@ -621,7 +621,7 @@ class ExperimentView(object):
             )
         num_completed_trials = self._experiment._db.count('trials', query)
 
-        return num_completed_trials >= self.max_trials
+        return num_completed_trials >= self.max_trials or self.algorithms.is_done
 
     def __repr__(self):
         """Represent the object as a string."""
