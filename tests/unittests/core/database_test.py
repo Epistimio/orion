@@ -48,7 +48,7 @@ class TestDatabaseFactory(object):
         assert 'singleton' in str(exc_info.value)
 
 
-@pytest.mark.usefixtures("null_db_instances")
+@pytest.mark.usefixtures("null_db_instances", "clean_db")
 class TestReadOnlyDatabase(object):
     """Test coherence of read-only database and its wrapped database."""
 
