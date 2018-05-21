@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.viz.evc.text` -- Build and text graph based on exp-fork tree
+:mod:`orion.viz.evc.graph.text_graph` -- Build and text graph based on exp-fork tree
 ==============================================================================
 
 .. module:: vizualization
@@ -10,7 +10,7 @@
 
 """
 import networkx as nx 
-import matplotlib.pyplot as plt
 
-class textgraph(object):
-    def __init__(self,
+class text_graph(object):
+    def __init__(self):
+        super(text_graph, self).__init__()
