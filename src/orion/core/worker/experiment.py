@@ -25,6 +25,7 @@ from orion.core.worker.trial import Trial
 log = logging.getLogger(__name__)
 
 
+# pylint: disable=too-many-public-methods
 class Experiment(object):
     """Represents an entry in database/experiments collection.
 
@@ -85,7 +86,7 @@ class Experiment(object):
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
-                 'status', 'algorithms', '_db', '_init_done', '_id', '_last_fetched')
+                 'status', 'algorithms', '_db', '_init_done', '_id', '_node', '_last_fetched')
     # 'status' should not be in config
     non_forking_attrs = ('status', 'pool_size', 'max_trials')
 
@@ -110,6 +111,7 @@ class Experiment(object):
 
         self._id = None
         self.name = name
+        self._node = None
         self.refers = dict()
         user = getpass.getuser()
         stamp = datetime.datetime.utcnow()
@@ -150,6 +152,52 @@ class Experiment(object):
         self._db.ensure_index('trials', 'start_time')
         self._db.ensure_index('trials', [('end_time', Database.DESCENDING)])
 
+    def fetch_trials(self, query, selection=None):
+        """Fetch trials of the experiment in the database
+
+        .. note::
+
+            The query is always updated with `{"experiment": self._id}`
+
+        .. seealso::
+
+            :meth:`orion.core.io.database.AbstractDB.read` for more information about the
+            arguments.
+
+        """
+        query["experiment"] = self._id
+
+        return Trial.build(self._db.read('trials', query, selection))
+
+    def fetch_trials_tree(self, query, selection=None):
+        """Fetch trials recursively in the EVC tree
+
+        .. seealso::
+
+            :meth:`orion.core.worker.Experiment.fetch_trials` for more information about the
+            arguments.
+
+            :class:`orion.core.evc.experiment.ExperimentNode` for more information about the EVC
+            tree.
+
+        """
+        if self._node is None:
+            return self.fetch_trials(query, selection)
+
+        return self._node.fetch_trials(query, selection)
+
+    def connect_to_version_control_tree(self, node):
+        """Connect the experiment to its node in a version control tree
+
+        .. seealso::
+
+            :class:`orion.core.evc.experiment.ExperimentNode`
+
+        :param node: Node giving access to the experiment version control tree.
+        :type name: None or `ExperimentNode`
+        """
+        self._node = node
+
     def reserve_trial(self, score_handle=None):
         """Find *new* trials that exist currently in database and select one of
         them based on the highest score return from `score_handle` callable.
@@ -167,7 +215,7 @@ class Experiment(object):
             experiment=self._id,
             status={'$in': ['new', 'suspended', 'interrupted']}
             )
-        new_trials = Trial.build(self._db.read('trials', query))
+        new_trials = self.fetch_trials(query)
 
         if not new_trials:
             return None
@@ -243,7 +291,7 @@ class Experiment(object):
             status='completed',
             end_time={'$gte': self._last_fetched}
             )
-        completed_trials = Trial.build(self._db.read('trials', query))
+        completed_trials = self.fetch_trials_tree(query)
         self._last_fetched = datetime.datetime.utcnow()
 
         return completed_trials
@@ -400,19 +448,21 @@ class Experiment(object):
             experiment=self._id,
             status='completed'
             )
-        completed_trials = self._db.read('trials', query,
-                                         selection={'_id': 1, 'end_time': 1,
-                                                    'results': 1})
+        selection = {
+            '_id': 1,
+            'end_time': 1,
+            'results': 1
+            }
+        completed_trials = self.fetch_trials(query, selection)
         stats = dict()
         stats['trials_completed'] = len(completed_trials)
         stats['best_trials_id'] = None
-        trial = Trial(**completed_trials[0])
+        trial = completed_trials[0]
         stats['best_evaluation'] = trial.objective.value
         stats['best_trials_id'] = trial.id
         stats['start_time'] = self.metadata['datetime']
         stats['finish_time'] = stats['start_time']
         for trial in completed_trials:
-            trial = Trial(**trial)
             # All trials are going to finish certainly after the start date
             # of the experiment they belong to
             if trial.end_time > stats['finish_time']:  # pylint:disable=no-member
@@ -499,6 +549,10 @@ class Experiment(object):
 
         return is_diff
 
+    def __repr__(self):
+        """Represent the object as a string."""
+        return "Experiment(name=%s, metadata.user=%s)" % (self.name, self.metadata['user'])
+
 
 # pylint: disable=too-few-public-methods
 class ExperimentView(object):
@@ -517,7 +571,8 @@ class ExperimentView(object):
                         # Properties
                         ["space", "algorithms", "stats", "configuration"] +
                         # Methods
-                        ["fetch_completed_trials"])
+                        ["fetch_trials", "fetch_trials_tree", "fetch_completed_trials",
+                         "connect_to_version_control_tree"])
 
     def __init__(self, name):
         """Initialize viewed experiment object with primary key (:attr:`name`, :attr:`user`).
@@ -567,3 +622,7 @@ class ExperimentView(object):
         num_completed_trials = self._experiment._db.count('trials', query)
 
         return num_completed_trials >= self.max_trials
+
+    def __repr__(self):
+        """Represent the object as a string."""
+        return "ExperimentView(name=%s, metadata.user=%s)" % (self.name, self.metadata['user'])
