@@ -155,7 +155,10 @@ class ExperimentBranchBuilder:
     def is_solved(self):
         """Return True if all the current conflicts have been solved"""
         solved = list(self.filter_conflicts(lambda c: c.is_solved))
-        return len(solved) == len(self.conflicts)
+
+        experiment_name = self.experiment_config['name']
+        child_name = self.conflicting_config['name']
+        return len(solved) == len(self.conflicts) and experiment_name != child_name
 
     def change_experiment_name(self, name):
         """Change the child's experiment name to `name`
