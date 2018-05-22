@@ -6,11 +6,11 @@
 
 .. module:: experiment_branch_builder
    :platform: Unix
-   :synopsis: Create a list of adapters from the conflicts between an experiment and it's parent.
+   :synopsis: Create a list of Adapters from the conflicts between an experiment and it's parent.
 
 Conflicts between two experiments arise when these experiments have different
 spaces but have the same name. Solving these conflicts require the creation of
-adapters to bridge from the parent experiment and the child experiment.
+Adapters to bridge from the parent experiment and the child experiment.
 
 Conflicting dimensions can be in one of three different states :
     * New : this dimension is not present in the parent's space
@@ -20,28 +20,39 @@ Conflicting dimensions can be in one of three different states :
 To solve these conflicts, the builder object offers a public API to add, remove or rename
 dimensions.
 
-For more info on adapters :
+For more info on Adapters :
     ..seealso::
-        :meth:`orion.core.evc.adapters.BaseAdapter`
+        :meth:`orion.core.evc.Adapters.BaseAdapter`
 """
 
 import logging
 import re
 
+import orion.core.evc.adapters as Adapters
+from orion.core.worker.trial import Trial
 from orion.core.io.space_builder import SpaceBuilder
 
 log = logging.getLogger(__name__)
+
+
+def _create_param(dimension):
+    return Trial.Param(name=dimension.name, _type=dimension.type, value=dimension.default_value)
+
+
+def _get_expression(dim, args):
+    return list(filter(lambda arg: arg[1:].startswith(dim.name[1:]), args))[0].split('~')[1]
 
 
 # pylint: disable=too-few-public-methods
 class Conflict:
     """Represent a single conflict inside the configuration"""
 
-    def __init__(self, status, dimension):
+    def __init__(self, status, dimension, expression):
         """Init conflict"""
         self.is_solved = False
         self.dimension = dimension
         self.status = status
+        self.expression = expression
 
 
 class ExperimentBranchBuilder:
@@ -57,9 +68,9 @@ class ExperimentBranchBuilder:
 
         self.conflicts = []
         self.operations = {}
-        self._operations_mapping = {'add': self._add_adaptor,
-                                    'rename': self._rename_adaptor,
-                                    'remove': self._remove_adaptor}
+        self._operations_mapping = {'add': self._add_adapter,
+                                    'rename': self._rename_adapter,
+                                    'remove': self._remove_adapter}
 
         self.special_keywords = {'~new': 'new',
                                  '~changed': 'changed',
@@ -75,6 +86,9 @@ class ExperimentBranchBuilder:
                                '~-': re.compile(r'([a-zA-Z_]+)~-'),
                                '~>': re.compile(r'([a-zA-Z_]+)~>([a-zA-Z_]+)')}
 
+        self.user_args = self.conflicting_config['metadata']['user_args']
+        self.experiment_args = self.experiment_config['metadata']['user_args']
+
         self._interpret_commandline()
         self._build_spaces()
         self._find_conflicts()
@@ -85,29 +99,24 @@ class ExperimentBranchBuilder:
             self.change_experiment_name(branching_name)
 
     def _interpret_commandline(self):
-        args = self.conflicting_config['metadata']['user_args']
         to_delete = []
-        for arg in args:
+        for arg in self.user_args:
             for keyword in self.commandline_keywords:
                 if keyword in arg:
                     self.commandline_keywords[keyword].append(arg)
 
-                    index = args.index(arg)
+                    index = self.user_args.index(arg)
                     if keyword == '~+':
-                        args[index] = arg.replace(keyword, '~')
+                        self.user_args[index] = arg.replace(keyword, '~')
                     else:
                         to_delete.append(index)
 
         for i in sorted(to_delete, reverse=True):
-            del args[i]
+            del self.user_args[i]
 
     def _build_spaces(self):
-        # Remove config solving indicators for space builder
-        user_args = self.conflicting_config['metadata']['user_args']
-        experiment_args = self.experiment_config['metadata']['user_args']
-
-        self.experiment_space = SpaceBuilder().build_from(experiment_args)
-        self.conflicting_space = SpaceBuilder().build_from(user_args)
+        self.experiment_space = SpaceBuilder().build_from(self.experiment_args)
+        self.conflicting_space = SpaceBuilder().build_from(self.user_args)
 
     def _find_conflicts(self):
         # Loop through the conflicting space and identify problematic dimensions
@@ -115,16 +124,16 @@ class ExperimentBranchBuilder:
             # If the name is inside the space but not the value the dimensions has changed
             if dim.name in self.experiment_space:
                 if dim not in self.experiment_space.values():
-                    self.conflicts.append(Conflict('changed', dim))
+                    self.conflicts.append(Conflict('changed', dim, _get_expression(dim, self.user_args)))
             # If the name does not exist, it is a new dimension
             else:
-                self.conflicts.append(Conflict('new', dim))
+                self.conflicts.append(Conflict('new', dim, _get_expression(dim, self.user_args)))
 
         # In the same vein, if any dimension of the current space is not inside
         # the conflicting space, it is missing
         for dim in self.experiment_space.values():
             if dim.name not in self.conflicting_space:
-                self.conflicts.append(Conflict('missing', dim))
+                self.conflicts.append(Conflict('missing', dim, _get_expression(dim, self.experiment_args)))
 
     def _solve_commandline_conflicts(self):
         for keyword in self.commandline_keywords:
@@ -133,6 +142,11 @@ class ExperimentBranchBuilder:
                 self.cl_keywords_functions[keyword](*value)
 
     # API section
+
+    @property
+    def is_solved(self):
+        solved = list(self.filter_conflicts(lambda c: c.is_solved))
+        return len(solved) == len(self.conflicts)
 
     def change_experiment_name(self, name):
         """Change the child's experiment name to `name`
@@ -215,6 +229,9 @@ class ExperimentBranchBuilder:
         old_conflict = missing_conflicts[old_index]
         new_conflict = new_conflicts[new_index]
 
+        if new_conflict.is_solved or old_conflict.is_solved:
+            raise ValueError('Only dimensions with an unsolved conflict may be renamed')
+
         old_conflict.is_solved = True
         new_conflict.is_solved = True
         self._put_operation('rename', (old_conflict, new_conflict))
@@ -257,11 +274,14 @@ class ExperimentBranchBuilder:
         """
         return filter(filter_function, self.conflicts)
 
-    def create_adaptors(self):
-        adaptors = []
+    def create_adapters(self):
+        """Return a list of Adapters for every single dimension"""
+        adapters = []
         for operation in self.operations:
             for conflict in self.operations[operation]:
-                adaptors.append(self._operations_mapping[operation](conflict))
+                adapters.append(self._operations_mapping[operation](conflict))
+
+        return Adapters.CompositeAdapter(*adapters)
 
     # Helper functions
     def _get_names(self, name, status):
@@ -334,15 +354,34 @@ class ExperimentBranchBuilder:
 
         return self.filter_conflicts(filter_status)
 
-    # TODO Create Adaptor instances
-    def _add_adaptor(self, conflict):
+    def _add_adapter(self, conflict):
         if conflict.status == 'changed':
-            pass
+            adapter = self._changed_adapter(conflict)
         else:
-            pass
+            adapter = Adapters.DimensionAddition(_create_param(conflict.dimension))
 
-    def _rename_adaptor(self, conflict):
-        pass
+        return adapter
 
-    def _remove_adaptor(self, conflict):
-        pass
+    def _changed_adapter(self, dimensions):
+        if isinstance(dimensions, tuple):
+            old_prior, new_prior = [c.expression for c in dimensions]
+            return Adapters.DimensionPriorChange(dimensions[1].dimension.name, old_prior, new_prior)
+        else:
+            dim = self.get_old_dimension_value(dimensions.dimension.name)
+            old_conflict = Conflict("", dim, _get_expression(dim, self.experiment_args))
+            return self._changed_adapter((old_conflict, dimensions))
+
+    def _rename_adapter(self, conflict):
+        old, new = conflict
+        old_dim = old.dimension
+        new_dim = new.dimension
+
+        rename = Adapters.DimensionRenaming(old_dim.name, new_dim.name)
+
+        if old.expression != new.expression:
+            rename = Adapters.CompositeAdapter(rename, self._changed_adapter(conflict))
+
+        return rename
+
+    def _remove_adapter(self, conflict):
+        return Adapters.DimensionDeletion(_create_param(conflict.dimension))
