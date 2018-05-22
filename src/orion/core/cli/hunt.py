@@ -36,6 +36,10 @@ def add_subparser(parser):
         help="number of concurrent workers to evaluate candidate samples "
              "(default: %s)" % resolve_config.DEF_CMD_POOL_SIZE[1])
 
+    orion_group.add_argument(
+        '--branch', '-b', type=str, metavar='newBranchID',
+        help="name of the new experiment resulting of the branch of this one.")
+
     cli.get_user_args_group(hunt_parser)
 
     hunt_parser.set_defaults(func=main)
