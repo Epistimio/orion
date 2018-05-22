@@ -21,11 +21,7 @@ def add_subparser(parser):
     """Return the parser that needs to be used for this command"""
     init_only_parser = parser.add_parser('init_only', help='init_only help')
 
-<<<<<<< HEAD
     cli.get_basic_args_group(init_only_parser)
-=======
-    resolve_config.get_basic_args_group(init_only_parser, add_branching=True)
->>>>>>> a934491... Add support for '-b' command line argument
 
     cli.get_user_args_group(init_only_parser)
 
