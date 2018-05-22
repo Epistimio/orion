@@ -94,8 +94,8 @@ class evc_graph(object):
                 '''Check if accidently we
                     passed a root, if yes root do nothing
                 '''
-                self.graph.add_node(evc_node.parent.item)
-                self.graph.add_edge(evc_node.parent.item, node.item)
+                self.graph.add_node(self.evc_node.parent.item)
+                self.graph.add_edge(self.evc_node.parent.item, self.evc_node.item)
             '''
             Now traverse only the current node's children
             '''
@@ -146,7 +146,7 @@ class evc_graph(object):
         '''
         draw the graph
         '''
-        nx.draw(self.graph, pos=pos,with_labels=True)
+        nx.draw(self.graph, pos=pos, with_labels=True)
         '''
         Write to file
         '''
@@ -206,4 +206,19 @@ if __name__=="__main__":
 
     # write to disk
     test_graph.image_visualize('./tmp/graph.png')
-    test_graph.image_visualize_dot('./tmp/graph')
+    test_graph.image_visualize_dot('./tmp/graph.dot')
+
+    evc_node = b
+
+    '''
+    a is root of EVC tree
+    '''
+
+    test_graph = evc_graph(evc_node)
+    
+    # print nodes in graph
+    print(list(test_graph.graph.nodes))
+
+    # write to disk
+    test_graph.image_visualize('./tmp/subgraph.png')
+    test_graph.image_visualize_dot('./tmp/subgraph.dot')
