@@ -61,22 +61,13 @@ class EvcGraph(object):
             2. do a preordertraversal of the tree and
                build a nn.Graph()
         """
-        if self.evc_node != self.evc_node.root:
-            '''Check if accidently we
-                passed a root, if yes root do nothing
-            '''
-            curr_node = self.evc_node
+        curr_node = self.evc_node
 
-            while curr_node.parent != self.evc_node.root:
-                self.graph.add_node(self.evc_node.parent.item)
-                self.graph.add_edge(self.evc_node.parent.item,
-                                    self.evc_node.item)
-                curr_node = self.evc_node.parent
-                if curr_node.parent == self.evc_node.root:
-                    self.graph.add_node(self.evc_node.root.item)
-                    self.graph.add_edge(self.evc_node.root.item,
-                                        curr_node.item)
-
+        while curr_node.parent is not None:
+            self.graph.add_node(curr_node.parent.item)
+            self.graph.add_edge(curr_node.parent.item,
+                                curr_node.item)
+            curr_node = curr_node.parent
 
         '''
         Traverse the tree preorderly and then add
@@ -85,7 +76,7 @@ class EvcGraph(object):
         for node in self.evc_node:
             self.graph.add_node(node.item)
             for child in node.children:
-                self.graph.add_edge(node.item, child.item)
+                self.graph.add_edge(child.item, node.item)
 
     def image_visualize(self, path, title='EVC Graph'):
         """Visualize graph in a path"""
@@ -100,8 +91,11 @@ class EvcGraph(object):
         '''
         Use nx.draw to draw the image
         '''
+
+        seq = list(self.graph.nodes)
+
         nx.draw(self.graph, pos=pos, with_labels=True,
-                color='blue', node_size=1200)
+                color='blue', node_size=[len(node) * 300 for node in seq])
         '''
         Save the figure to a path
         '''
@@ -154,16 +148,16 @@ class EvcGraph(object):
 if __name__ == "__main__":
     from orion.core.evc.tree import TreeNode
 
-    A = TreeNode("a")
-    B = TreeNode("b", A)
-    C = TreeNode("c", A)
-    D = TreeNode("d", A)
-    E = TreeNode("e", A)
-    F = TreeNode("f", B)
-    G = TreeNode("g", B)
-    H = TreeNode("h", E)
-    J = TreeNode("j", H)
-    K = TreeNode("k", G)
+    A = TreeNode("exp1")
+    B = TreeNode("exp2", A)
+    C = TreeNode("exp3", A)
+    D = TreeNode("exp4", A)
+    E = TreeNode("exp5", A)
+    F = TreeNode("exp6", B)
+    G = TreeNode("exp7", B)
+    H = TreeNode("exp8", E)
+    J = TreeNode("exp9", H)
+    K = TreeNode("exp10", G)
 
     r'''
         # Gives this tree
@@ -184,13 +178,11 @@ if __name__ == "__main__":
     print(TEST_GRAPH.graph.adj)
     # write to disk
     TEST_GRAPH.image_visualize('./tmp/graph.png')
-    TEST_GRAPH.image_visualize_dot('./tmp/graph.dot')
 
     '''
     a is root of EVC tree
     '''
-
-    TEST_GRAPH2 = EvcGraph(G)
+    TEST_GRAPH2 = EvcGraph(B)
 
     # print nodes in graph
     print(list(TEST_GRAPH2.graph.nodes))
@@ -198,4 +190,12 @@ if __name__ == "__main__":
 
     # write to disk
     TEST_GRAPH2.image_visualize('./tmp/subgraph.png')
-    TEST_GRAPH2.image_visualize_dot('./tmp/subgraph.dot')
+
+    TEST_GRAPH3 = EvcGraph(G)
+
+    # print nodes in graph
+    print(list(TEST_GRAPH3.graph.nodes))
+    print(TEST_GRAPH3.graph.adj)
+
+    # write to disk
+    TEST_GRAPH3.image_visualize('./tmp/subsubgraph.png')
