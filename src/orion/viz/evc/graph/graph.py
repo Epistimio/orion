@@ -49,6 +49,7 @@ class EvcGraph(object):
         EVC nodes. Would it better be a
         property of the class?
         '''
+        plt.clf()
         self.build_graph()
 
     def build_graph(self):
@@ -64,21 +65,27 @@ class EvcGraph(object):
             '''Check if accidently we
                 passed a root, if yes root do nothing
             '''
-            self.graph.add_node(self.evc_node.parent.item,
-                                color='blue', size=500)
-            self.graph.add_edge(self.evc_node.parent.item, self.evc_node.item,
-                                color='red', weight=0.84, size=300)
+            curr_node = self.evc_node
+
+            while curr_node.parent != self.evc_node.root:
+                self.graph.add_node(self.evc_node.parent.item)
+                self.graph.add_edge(self.evc_node.parent.item,
+                                    self.evc_node.item)
+                curr_node = self.evc_node.parent
+                if curr_node.parent == self.evc_node.root:
+                    self.graph.add_node(self.evc_node.root.item)
+                    self.graph.add_edge(self.evc_node.root.item,
+                                        curr_node.item)
+
 
         '''
         Traverse the tree preorderly and then add
         EVC node to the nn.Graph() graph
         '''
         for node in self.evc_node:
-            self.graph.add_node(node.item,
-                                color='blue', size=500)
+            self.graph.add_node(node.item)
             for child in node.children:
-                self.graph.add_edge(node.item, child.item, color='red',
-                                    weight=0.84, size=300)
+                self.graph.add_edge(node.item, child.item)
 
     def image_visualize(self, path, title='EVC Graph'):
         """Visualize graph in a path"""
@@ -93,11 +100,13 @@ class EvcGraph(object):
         '''
         Use nx.draw to draw the image
         '''
-        nx.draw(self.graph, pos=pos, with_labels=True)
+        nx.draw(self.graph, pos=pos, with_labels=True,
+                color='blue', node_size=1200)
         '''
         Save the figure to a path
         '''
         plt.savefig(path)
+        plt.clf()
 
     def image_visualize_dot(self, path):
         """Visualize image to dot format"""
@@ -153,6 +162,8 @@ if __name__ == "__main__":
     F = TreeNode("f", B)
     G = TreeNode("g", B)
     H = TreeNode("h", E)
+    J = TreeNode("j", H)
+    K = TreeNode("k", G)
 
     r'''
         # Gives this tree
@@ -170,7 +181,7 @@ if __name__ == "__main__":
     TEST_GRAPH = EvcGraph(A)
     # print nodes in graph
     print(list(TEST_GRAPH.graph.nodes))
-
+    print(TEST_GRAPH.graph.adj)
     # write to disk
     TEST_GRAPH.image_visualize('./tmp/graph.png')
     TEST_GRAPH.image_visualize_dot('./tmp/graph.dot')
@@ -179,10 +190,11 @@ if __name__ == "__main__":
     a is root of EVC tree
     '''
 
-    TEST_GRAPH2 = EvcGraph(B)
+    TEST_GRAPH2 = EvcGraph(G)
 
     # print nodes in graph
     print(list(TEST_GRAPH2.graph.nodes))
+    print(TEST_GRAPH2.graph.adj)
 
     # write to disk
     TEST_GRAPH2.image_visualize('./tmp/subgraph.png')
