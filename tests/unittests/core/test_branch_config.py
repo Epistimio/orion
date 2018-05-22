@@ -337,7 +337,7 @@ def test_adapter_add_new(parent_config, cl_config):
 
     branch_builder = ExperimentBranchBuilder(parent_config, cl_config)
     adapters = branch_builder.create_adapters().adapters
-    
+
     assert len(adapters) == 1
     assert isinstance(adapters[0], Adapters.DimensionAddition)
 
@@ -350,7 +350,7 @@ def test_adapter_add_changed(parent_config, cl_config):
 
     branch_builder = ExperimentBranchBuilder(parent_config, cl_config)
     adapters = branch_builder.create_adapters().adapters
-    
+
     assert len(adapters) == 1
     assert isinstance(adapters[0], Adapters.DimensionPriorChange)
 
@@ -363,7 +363,7 @@ def test_adapter_remove_missing(parent_config, cl_config):
 
     branch_builder = ExperimentBranchBuilder(parent_config, cl_config)
     adapters = branch_builder.create_adapters().adapters
-    
+
     assert len(adapters) == 1
     assert isinstance(adapters[0], Adapters.DimensionDeletion)
 
@@ -377,7 +377,7 @@ def test_adapter_rename_missing(parent_config, cl_config):
     cl_config['metadata']['user_args'][1] = '-w_d~uniform(0,1)'
     branch_builder = ExperimentBranchBuilder(parent_config, cl_config)
     adapters = branch_builder.create_adapters().adapters
-    
+
     assert len(adapters) == 1
     assert isinstance(adapters[0], Adapters.DimensionRenaming)
 
@@ -392,7 +392,7 @@ def test_adapter_rename_different_prior(parent_config, cl_config):
 
     branch_builder = ExperimentBranchBuilder(parent_config, cl_config)
     adapters = branch_builder.create_adapters().adapters
-    
+
     assert len(adapters) == 1
     assert isinstance(adapters[0], Adapters.CompositeAdapter)
 

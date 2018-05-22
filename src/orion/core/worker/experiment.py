@@ -9,12 +9,12 @@
    :synopsis: Manage history of trials corresponding to a black box process
 
 """
-import sys
 import copy
 import datetime
 import getpass
 import logging
 import random
+import sys
 
 from orion.core.evc.adapters import Adapter, BaseAdapter
 from orion.core.io.database import Database, ReadOnlyDB
