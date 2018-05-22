@@ -9,6 +9,7 @@
    :synopsis: Manage history of trials corresponding to a black box process
 
 """
+import sys
 import copy
 import datetime
 import getpass
@@ -536,11 +537,18 @@ class Experiment(object):
         """
         self._ensure_branching_unique_name(config)
         experiment_brancher = ExperimentBranchBuilder(original_config, config)
-        branching_prompt = BranchingPrompt(experiment_brancher)
-        log.info('Starting branch solving')
 
-        adaptors = branching_prompt.solve_conflicts()
-        print(adaptors)
+        if not experiment_brancher.is_solved:
+            branching_prompt = BranchingPrompt(experiment_brancher)
+            branching_prompt.cmdloop()
+
+            if branching_prompt.abort:
+                sys.exit()
+
+        adapter = experiment_brancher.create_adapters()
+        self.refers['adapter'] = adapter
+        self.refers['parent_id'] = original_config['_id']
+        self.refers['root_id'] = original_config['refers']['root_id']
 
     def _ensure_branching_unique_name(self, config):
         branching_name = config.get('branch')
