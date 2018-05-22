@@ -41,5 +41,18 @@ def main(argv=None):
     return 0
 
 
+<<<<<<< HEAD
+=======
+def load_modules_parser(orion_parser):
+    """Search through the `cli` folder for any module containing a `get_parser` function"""
+    modules = module_import.load_modules_in_path('orion.core.cli',
+                                                 lambda m: hasattr(m, 'get_parser'))
+
+    for module in modules:
+        get_parser = getattr(module, 'get_parser')
+        get_parser(orion_parser.get_subparsers())
+
+
+>>>>>>> 2a224b4... Fix some flake8 and pylint issues
 if __name__ == "__main__":
     main()
