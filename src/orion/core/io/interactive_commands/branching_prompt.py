@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.io.interactive_commands.base_commands.py` -- Module hosting
-the base commands of the interactive prompt for branch conflicts solving as
-well as handling the dispatch to specific sub commands classes.
-============================================================================
+:mod:`orion.core.io.interactive_commands.base_commands.py` -- CLI for conflict solving
+======================================================================================
 .. module:: base_commands
     :platform: Unix
     :synopsis: Launch the interactive prompt and call the related commands
@@ -34,6 +32,7 @@ class BranchingPrompt(cmd.Cmd):
         """Retrieve the instance of ExperimentBranchBuilder containing the conflicts"""
         cmd.Cmd.__init__(self)
         self.branch_builder = branch_builder
+        self.abort = False
 
     def solve_conflicts(self):
         """Start the prompt for the interactive conflicts solving"""
@@ -94,7 +93,7 @@ class BranchingPrompt(cmd.Cmd):
         try:
             self.branch_builder.rename_dimension(args)
         except ValueError as ex:
-            print('Invalid dimension(s) name(s)')
+            print(ex)
 
     def do_reset(self, arg):
         """Mark dimension as unsolved"""
@@ -103,11 +102,12 @@ class BranchingPrompt(cmd.Cmd):
     def do_abort(self, arg):
         """Exit the prompt without saving"""
         print('Closing interactive conflicts solver')
+
+        self.abort = True
         return True
 
     def do_commit(self, arg):
         """Exit the prompt and creates the adapters inside the builders"""
-        print(self.branch_builder.operations)
         return True
 
     # Helper functions
