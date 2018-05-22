@@ -106,7 +106,7 @@ class Experiment(object):
         self._id = None
         self.name = name
         self._node = None
-        self.refers = dict()
+        self.refers = {}
         user = getpass.getuser()
         self.metadata = {'user': user}
         self.pool_size = None
@@ -546,9 +546,9 @@ class Experiment(object):
                 sys.exit()
 
         adapter = experiment_brancher.create_adapters()
+        self._instantiate_config(config)
         self.refers['adapter'] = adapter
-        self.refers['parent_id'] = original_config['_id']
-        self.refers['root_id'] = original_config['refers']['root_id']
+        self.refers['parent_id'] = self._id
 
     def _ensure_branching_unique_name(self, config):
         branching_name = config.get('branch')
