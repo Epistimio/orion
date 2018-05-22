@@ -29,8 +29,8 @@ import logging
 import re
 
 import orion.core.evc.adapters as Adapters
-from orion.core.worker.trial import Trial
 from orion.core.io.space_builder import SpaceBuilder
+from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
@@ -124,7 +124,8 @@ class ExperimentBranchBuilder:
             # If the name is inside the space but not the value the dimensions has changed
             if dim.name in self.experiment_space:
                 if dim not in self.experiment_space.values():
-                    self.conflicts.append(Conflict('changed', dim, _get_expression(dim, self.user_args)))
+                    self.conflicts.append(Conflict('changed', dim, _get_expression(dim,
+                                                                                   self.user_args)))
             # If the name does not exist, it is a new dimension
             else:
                 self.conflicts.append(Conflict('new', dim, _get_expression(dim, self.user_args)))
@@ -133,7 +134,8 @@ class ExperimentBranchBuilder:
         # the conflicting space, it is missing
         for dim in self.experiment_space.values():
             if dim.name not in self.conflicting_space:
-                self.conflicts.append(Conflict('missing', dim, _get_expression(dim, self.experiment_args)))
+                self.conflicts.append(Conflict('missing', dim,
+                                               _get_expression(dim, self.experiment_args)))
 
     def _solve_commandline_conflicts(self):
         for keyword in self.commandline_keywords:
@@ -145,6 +147,7 @@ class ExperimentBranchBuilder:
 
     @property
     def is_solved(self):
+        """Return True if all the current conflicts have been solved"""
         solved = list(self.filter_conflicts(lambda c: c.is_solved))
         return len(solved) == len(self.conflicts)
 
@@ -366,10 +369,10 @@ class ExperimentBranchBuilder:
         if isinstance(dimensions, tuple):
             old_prior, new_prior = [c.expression for c in dimensions]
             return Adapters.DimensionPriorChange(dimensions[1].dimension.name, old_prior, new_prior)
-        else:
-            dim = self.get_old_dimension_value(dimensions.dimension.name)
-            old_conflict = Conflict("", dim, _get_expression(dim, self.experiment_args))
-            return self._changed_adapter((old_conflict, dimensions))
+
+        dim = self.get_old_dimension_value(dimensions.dimension.name)
+        old_conflict = Conflict("", dim, _get_expression(dim, self.experiment_args))
+        return self._changed_adapter((old_conflict, dimensions))
 
     def _rename_adapter(self, conflict):
         old, new = conflict
