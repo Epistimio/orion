@@ -3,6 +3,7 @@
 """Collection of tests for :mod:`orion.core.io.experiment_branch_builder`."""
 import pytest
 
+import orion.core.evc.adapters as Adapters
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 
 
@@ -316,11 +317,87 @@ def test_old_dimension_value(parent_config, changed_config):
 
 def test_commandline_solving(parent_config, cl_config):
     """Test if all markers work for conflicts solving through the command line"""
+    cl_config['metadata']['user_args'][2] = '-w_d~normal(0,1)'
+
     branch_builder = ExperimentBranchBuilder(parent_config, cl_config)
 
     assert len(branch_builder.conflicting_space) == 2
     assert len(branch_builder.conflicts) == 4
     assert len(list(branch_builder.filter_conflicts(filter_true))) == 4
-    assert len(branch_builder.operations['add']) == 2
+    assert len(branch_builder.operations['add']) == 1
     assert len(branch_builder.operations['rename']) == 1
     assert len(branch_builder.operations['remove']) == 1
+
+
+def test_adapter_add_new(parent_config, cl_config):
+    """Test if a DimensionAddition is created when solving a new conflict"""
+    indexes = [3, 1, 0]
+    for i in indexes:
+        del cl_config['metadata']['user_args'][i]
+
+    branch_builder = ExperimentBranchBuilder(parent_config, cl_config)
+    adapters = branch_builder.create_adapters().adapters
+    
+    assert len(adapters) == 1
+    assert isinstance(adapters[0], Adapters.DimensionAddition)
+
+
+def test_adapter_add_changed(parent_config, cl_config):
+    """Test if a DimensionPriorChange is created when solving a new conflict"""
+    indexes = [3, 2, 0]
+    for i in indexes:
+        del cl_config['metadata']['user_args'][i]
+
+    branch_builder = ExperimentBranchBuilder(parent_config, cl_config)
+    adapters = branch_builder.create_adapters().adapters
+    
+    assert len(adapters) == 1
+    assert isinstance(adapters[0], Adapters.DimensionPriorChange)
+
+
+def test_adapter_remove_missing(parent_config, cl_config):
+    """Test if a DimensionDeletion is created when solving a new conflict"""
+    indexes = [2, 1, 0]
+    for i in indexes:
+        del cl_config['metadata']['user_args'][i]
+
+    branch_builder = ExperimentBranchBuilder(parent_config, cl_config)
+    adapters = branch_builder.create_adapters().adapters
+    
+    assert len(adapters) == 1
+    assert isinstance(adapters[0], Adapters.DimensionDeletion)
+
+
+def test_adapter_rename_missing(parent_config, cl_config):
+    """Test if a DimensionRenaming is created when solving a new conflict"""
+    indexes = [3, 1]
+    for i in indexes:
+        del cl_config['metadata']['user_args'][i]
+
+    cl_config['metadata']['user_args'][1] = '-w_d~uniform(0,1)'
+    branch_builder = ExperimentBranchBuilder(parent_config, cl_config)
+    adapters = branch_builder.create_adapters().adapters
+    
+    assert len(adapters) == 1
+    assert isinstance(adapters[0], Adapters.DimensionRenaming)
+
+
+def test_adapter_rename_different_prior(parent_config, cl_config):
+    """Test if a DimensionRenaming is created when solving a new conflict"""
+    indexes = [3, 1]
+    for i in indexes:
+        del cl_config['metadata']['user_args'][i]
+
+    cl_config['metadata']['user_args'][1] = '-w_d~normal(0,1)'
+
+    branch_builder = ExperimentBranchBuilder(parent_config, cl_config)
+    adapters = branch_builder.create_adapters().adapters
+    
+    assert len(adapters) == 1
+    assert isinstance(adapters[0], Adapters.CompositeAdapter)
+
+    adapters = adapters[0].adapters
+
+    assert len(adapters) == 2
+    assert isinstance(adapters[0], Adapters.DimensionRenaming)
+    assert isinstance(adapters[1], Adapters.DimensionPriorChange)
