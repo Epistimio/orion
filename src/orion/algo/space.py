@@ -120,6 +120,7 @@ class Dimension(object):
     def __hashable_members(self):
         return (self.name, self.shape, self.type, self.default_value, self.prior)
 
+    # pylint:disable=protected-access
     def __eq__(self, other):
         """Return True if other is the same dimension as self"""
         if not isinstance(other, Dimension):

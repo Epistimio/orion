@@ -395,5 +395,6 @@ class ExperimentBranchBuilder:
 
         return rename
 
-    def _remove_adapter(self, conflict):
+    @staticmethod
+    def _remove_adapter(conflict):
         return Adapters.DimensionDeletion(_create_param(conflict.dimension))

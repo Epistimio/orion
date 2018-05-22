@@ -81,7 +81,12 @@ def replace_key_in_order(odict, key_prev, key_after):
 
 
 def _should_not_be_built(expression):
-    return '-' in expression or '>' in expression
+    return expression.startswith('-') or expression.startswith('>')
+
+
+def _remove_marker(expression, marker='+'):
+    if expression.startswith(marker):
+        expression = expression.replace(marker, '', 1)
 
 
 class DimensionBuilder(object, metaclass=SingletonType):
@@ -325,8 +330,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
                     if _should_not_be_built(expression):
                         break
 
-                    if '+' in expression:
-                        expression = expression.replace('+', '')
+                    _remove_marker(expression)
 
                     dimension = self.dimbuilder.build(namespace, expression)
                     try:
@@ -401,15 +405,11 @@ class SpaceBuilder(object, metaclass=SingletonType):
                 # If it's nameless (positional) it cannot be a dimension
                 log.warning("Nameless argument '%s' will not define a dimension.", arg)
                 self.userargs_tmpl['_' + get_next_pos_ns()] = arg
-            else:
+            elif not _should_not_be_built(expression):
                 # Otherwise it's a dimension; ikr
                 namespace = '/' + ns_search[0]
 
-                if _should_not_be_built(expression):
-                    break
-
-                if '+' in expression:
-                    expression = expression.replace('+', '')
+                _remove_marker(expression)
 
                 dimension = self.dimbuilder.build(namespace, expression)
 
