@@ -10,9 +10,9 @@
 
 """
 import logging
-import os
 
 from orion.core.cli.base import OrionArgsParser
+import orion.core.utils.module_import
 
 log = logging.getLogger(__name__)
 
@@ -24,19 +24,13 @@ orion:
 
 
 def load_modules_parser(orion_parser):
-    """Search through the `cli` folder for any module containing a `add_subparser` function"""
-    this_module = __import__('orion.core.cli', fromlist=[''])
-    path = this_module.__path__[0]
+    """Search through the `cli` folder for any module containing a `get_parser` function"""
+    modules = module_import.load_modules_in_path('orion.core.cli',
+                                                 lambda m: hasattr(m, 'get_parser'))
 
-    files = list(map(lambda f: f.split('.')[0],
-                     filter(lambda f2: f2.endswith('py'), os.listdir(path))))
-
-    for f in files:
-        module = __import__('orion.core.cli.' + f, fromlist=[''])
-
-        if hasattr(module, 'add_subparser'):
-            add_subparser = getattr(module, 'add_subparser')
-            add_subparser(orion_parser.get_subparsers())
+    for m in modules:
+        get_parser = getattr(m, 'get_parser')
+        get_parser(orion_parser.get_subparsers())
 
 
 def main(argv=None):
