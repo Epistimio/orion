@@ -9,6 +9,9 @@
               as an image or as a tex based visualization
 
 """
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -122,7 +125,7 @@ class evc_graph(object):
             style = ' [' + style + '] ' if style else ''
             s += str(u) + line + style + str(v) + ';\n'
         tikzpicture = (
-            r'\begin{{tikzpicture}}' '\n'
+            r'\begin{{tikzpicture}}\n'
             '\graph[{layout} layout, sibling distance=5.0cm,'
             # 'edge quotes mid,'
             'edges={{nodes={{ sloped, inner sep=10pt }} }},'
@@ -147,14 +150,16 @@ class evc_graph(object):
                 'Unknown which library contains layout: {s}'
                         .format(s=layout))
         document = (
-            '\documentclass{{standalone}}\n'
-            '\usepackage{{amsmath}}\n'
+            '\\n'
+            '\documentclass{{standalone}}'
             '\n'
+            '\usepackage{{amsmath}}\n'
             '\usepackage{{tikz}}\n'
             '\usetikzlibrary{{graphs,graphs.standard,'
             'graphdrawing,quotes,shapes}}\n'
             '\usegdlibrary{{ {layout_lib} }}\n').format(
                 layout_lib=layout_lib)
+
         return document
 
     def document(self, layout, use_label):
@@ -223,4 +228,33 @@ class evc_graph(object):
         '''
         write it to path
         '''
-        write_dot(self.graph, path) 
+        write_dot(self.graph, path)
+
+if __name__=="__main__":
+
+    a = TreeNode("a")
+    b = TreeNode("b", a)
+    c = TreeNode("c", a)
+    d = TreeNode("d", a)
+    e = TreeNode("e", a)
+    f = TreeNode("f", b)
+    g = TreeNode("g", b)
+    h = TreeNode("h", e)
+
+    '''
+        # Gives this tree
+        # a
+        # |   \  \   \
+        # b    c  d   e
+        # | \         |
+        # f  g        h
+    '''
+
+    evc_node = a 
+
+    '''
+    a is root of EVC tree
+    '''
+
+    test_graph = evc_graph(evc_node)
+    test_graph.image_visualize('./tmp/graph.png')

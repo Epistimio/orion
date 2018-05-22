@@ -66,8 +66,7 @@ def test_create_image_graph():
     hash graph.png and compare it statically
     '''
     value = md5('./tmp/graph.png')
-    assert value == 098f6bcd4621d373cade4e832627b4f6
-
+    assert value == '098f6bcd4621d373cade4e832627b4f6'
 
 @pytest.fixture()
 def test_create_pydot_graph():
@@ -80,7 +79,7 @@ def test_create_pydot_graph():
     hash graph.png and compare it statically
     '''
     value = md5('./tmp/graph.dot')
-    assert value == 098f6bcd4621d373cade4e832627b4f6
+    assert value == '098f6bcd4621d373cade4e832627b4f6'
 
 @pytest.fixture()
 def test_create_tex_graph():
@@ -93,7 +92,7 @@ def test_create_tex_graph():
     hash graph.png and compare it statically
     '''
     value = md5('./tmp/graph.tex')
-    assert value == 098f6bcd4621d373cade4e832627b4f6
+    assert value == '098f6bcd4621d373cade4e832627b4f6'
 
 @pytest.fixture()
 def test_create_tikz_graph():
@@ -106,4 +105,4 @@ def test_create_tikz_graph():
     hash graph.png and compare it statically
     '''
     value = md5('./tmp/graph.tikz')
-    assert value == 098f6bcd4621d373cade4e832627b4f6
+    assert value == '098f6bcd4621d373cade4e832627b4f6'
