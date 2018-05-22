@@ -80,6 +80,10 @@ def replace_key_in_order(odict, key_prev, key_after):
     return tmp
 
 
+def _should_not_be_built(expression):
+    return '-' in expression or '>' in expression
+
+
 class DimensionBuilder(object, metaclass=SingletonType):
     """Create `Dimension` objects using a name for it and an string expression
     which encodes prior and dimension information.
@@ -173,6 +177,7 @@ class DimensionBuilder(object, metaclass=SingletonType):
         """
         self.name = name
         _check_expr_to_eval(expression)
+
         prior, arg_string = re.findall(r'([a-z][a-z0-9_]*)\((.*)\)', expression)[0]
         globals_ = {'__builtins__': {}}
         try:
@@ -236,7 +241,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
 
     # TODO Expose these 4 USER oriented goodfellows to a orion configuration file :)
     USERCONFIG_KEYWORD = 'orion~'
-    USERARGS_TMPL = r'(.*)~(.*)'
+    USERARGS_TMPL = r'(.*)~([\+\-\>]?.*)'
     USERARGS_NAMESPACE = r'\W*([a-zA-Z0-9_-]+)'
     USERARGS_CONFIG = '--config='
 
@@ -315,8 +320,15 @@ class SpaceBuilder(object, metaclass=SingletonType):
                     stack.append(('/'.join([namespace, str(position)]), thing))
             elif isinstance(stuff, str):
                 if stuff.startswith(self.USERCONFIG_KEYWORD):
-                    dimension = self.dimbuilder.build(namespace,
-                                                      stuff[len(self.USERCONFIG_KEYWORD):])
+                    expression = stuff[len(self.USERCONFIG_KEYWORD):]
+
+                    if _should_not_be_built(expression):
+                        break
+
+                    if '+' in expression:
+                        expression = expression.replace('+', '')
+
+                    dimension = self.dimbuilder.build(namespace, expression)
                     try:
                         self.space.register(dimension)
                     except ValueError as exc:
@@ -392,7 +404,15 @@ class SpaceBuilder(object, metaclass=SingletonType):
             else:
                 # Otherwise it's a dimension; ikr
                 namespace = '/' + ns_search[0]
+
+                if _should_not_be_built(expression):
+                    break
+
+                if '+' in expression:
+                    expression = expression.replace('+', '')
+
                 dimension = self.dimbuilder.build(namespace, expression)
+
                 self.space.register(dimension)
                 self.userargs_tmpl[namespace] = prefix + '='
 
