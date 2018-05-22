@@ -17,6 +17,7 @@ import random
 
 from orion.core.evc.adapters import Adapter, BaseAdapter
 from orion.core.io.database import Database, DuplicateKeyError, ReadOnlyDB
+from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
@@ -392,7 +393,7 @@ class Experiment(object):
             # Branch if it is needed
             is_new = self._is_different_from(experiment.configuration)
             if is_new:
-                experiment._branch_config(config)
+                experiment._branch_config(self.configuration, config)
 
         final_config = experiment.configuration
         self._instantiate_config(final_config)
@@ -527,15 +528,17 @@ class Experiment(object):
         if self.refers and not isinstance(self.refers.get('adapter'), BaseAdapter):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
-    def _branch_config(self, config):
+    def _branch_config(self, original_config, config):
         """Ask for a different identifier for this experiment. Set :attr:`refers`
         key to previous experiment's name, the one that we branched from.
 
         :param config: Conflicting configuration that will change based on prompt.
         """
-        experiment_brancher = ExperimentBranchBuilder(self, config)
+        experiment_brancher = ExperimentBranchBuilder(original_config, config)
+        branching_prompt = BranchingPrompt(experiment_brancher)
         log.info('Starting branch solving')
-        experiment_brancher.solve_conflicts()
+
+        branching_prompt.solve_conflicts()
         raise NotImplementedError
 
     def _is_different_from(self, config):
