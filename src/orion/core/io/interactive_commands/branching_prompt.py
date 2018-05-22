@@ -23,6 +23,10 @@ class BranchingPrompt(cmd.Cmd):
     'moment to quit without saving.'
     prompt = '(orion) '
 
+    special_keywords = {'~new': 'new',
+                        '~changed': 'changed',
+                        '~missing': 'missing'}
+
     conflicts_message = {'new': 'Dimension {} is new',
                          'changed': 'Dimension {} has changed from {} to {}',
                          'missing': 'Dimension {} is missing',
