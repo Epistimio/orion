@@ -534,12 +534,23 @@ class Experiment(object):
 
         :param config: Conflicting configuration that will change based on prompt.
         """
+        self._ensure_branching_unique_name(config)
         experiment_brancher = ExperimentBranchBuilder(original_config, config)
         branching_prompt = BranchingPrompt(experiment_brancher)
         log.info('Starting branch solving')
 
-        self.config['thing'] = branching_prompt.solve_conflicts()
-        raise NotImplementedError
+        adaptors = branching_prompt.solve_conflicts()
+        print(adaptors)
+
+    def _ensure_branching_unique_name(self, config):
+        branching_name = config.get('branch')
+
+        if branching_name is not None:
+            query = dict(name=branching_name)
+
+            named_experiments = self._db.count('experiments', query)
+            if named_experiments > 0:
+                raise ValueError('Branching name already in use.')
 
     def _is_different_from(self, config):
         """Return True, if current `Experiment`'s configuration as described by

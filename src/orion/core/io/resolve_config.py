@@ -92,6 +92,55 @@ def fetch_config(args):
     return config
 
 
+def get_basic_args_group(parser, add_branching=False):
+    """Return the basic arguments for any command."""
+    basic_args_group = parser.add_argument_group(
+        "Oríon arguments (optional)",
+        description="These arguments determine orion's behaviour")
+
+    basic_args_group.add_argument(
+        '-n', '--name',
+        type=str, metavar='stringID',
+        help="experiment's unique name; "
+             "(default: None - specified either here or in a config)")
+
+    basic_args_group.add_argument('-c', '--config', type=argparse.FileType('r'),
+                                  metavar='path-to-config', help="user provided "
+                                  "orion configuration file")
+
+    if add_branching:
+        basic_args_group.add_argument(
+            '-b', '--branch',
+            type=str, metavar='branchID',
+            help='Unique name for the new branching experiment')
+
+    return basic_args_group
+
+
+def get_user_args_group(parser):
+    """
+    Return the user group arguments for any command.
+    User group arguments are composed of the user script and the user args
+    """
+    usergroup = parser.add_argument_group(
+        "User script related arguments",
+        description="These arguments determine user's script behaviour "
+                    "and they can serve as orion's parameter declaration.")
+
+    usergroup.add_argument(
+        'user_script', type=str, metavar='path-to-script',
+        help="your experiment's script")
+
+    usergroup.add_argument(
+        'user_args', nargs=argparse.REMAINDER, metavar='...',
+        help="Command line arguments to your script (if any). A configuration "
+             "file intended to be used with 'userscript' must be given as a path "
+             "in the **first positional** argument OR using `--config=<path>` "
+             "keyword argument.")
+
+    return usergroup
+
+
 def fetch_default_options():
     """Create a dict with options from the default configuration files.
 
