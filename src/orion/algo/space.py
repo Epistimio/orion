@@ -121,12 +121,14 @@ class Dimension(object):
         return (self.name, self.shape, self.type, self.default_value, self.prior)
 
     def __eq__(self, other):
+        """Return True if other is the same dimension as self"""
         if not isinstance(other, Dimension):
             return False
 
         return self.__hashable_members() == other.__hashable_members()
 
     def __hash__(self):
+        """Return the hash of the hashable members"""
         return hash(self.__hashable_members())
 
     def sample(self, n_samples=1, seed=None):

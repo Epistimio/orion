@@ -22,6 +22,10 @@ class ExperimentBranchBuilder:
     """Build a new configuration for the experiment based on parent config."""
 
     def __init__(self, experiment_config, conflicting_config):
+        """
+        Initialize the ExperimentBranchBuilder by populating a list of the conflicts inside
+        the two configurations.
+        """
         self.experiment_config = experiment_config
         self.conflicting_config = conflicting_config
 
@@ -43,20 +47,20 @@ class ExperimentBranchBuilder:
 
     def _find_conflicts(self):
         # Loop through the conflicting space and identify problematic dimensions
-        for d in self.conflicting_space.values():
+        for dim in self.conflicting_space.values():
             # If the name is inside the space but not the value the dimensions has changed
-            if d.name in self.experiment_space:
-                if d not in self.experiment_space.values():
-                    self.conflicts['changed'].append(d)
+            if dim.name in self.experiment_space:
+                if dim not in self.experiment_space.values():
+                    self.conflicts['changed'].append(dim)
             # If the name does not exist, it is a new dimension
             else:
-                self.conflicts['new'].append(d)
+                self.conflicts['new'].append(dim)
 
         # In the same vein, if any dimension of the current space is not inside
         # the conflicting space, it is missing
-        for d in self.experiment_space.values():
-            if d.name not in self.conflicting_space:
-                self.conflicts['missing'].append(d)
+        for dim in self.experiment_space.values():
+            if dim.name not in self.conflicting_space:
+                self.conflicts['missing'].append(dim)
 
     def _create_dimensions_name_list(self):
         # Keep a list of the name of all the dimensions for each status
@@ -98,17 +102,22 @@ class ExperimentBranchBuilder:
         return is_in, key, value
 
     def get_old_dimension_value(self, name):
+        """Return the dimension from the parent experiment space"""
         if name in self.experiment_space:
             return self.experiment_space[name]
 
+        return None
+
     def rename_dimension(self, args):
+        """Change the name of old dimension to new dimension"""
         old, new = args
         if self._is_dimension_in_list(old, self.conflicts['missing']) and \
            self._is_dimension_in_list(new, self.conflicts['new']):
-                self._mark_as_solved(old, self.missing_dimensions_names, 'missing')
-                self._mark_as_solved(new, self.new_dimensions_names, 'new')
+            self._mark_as_solved(old, self.missing_dimensions_names, 'missing')
+            self._mark_as_solved(new, self.new_dimensions_names, 'new')
 
     def reset_dimension(self, arg):
+        """Remove dimension `arg` from the solved conflicts"""
         is_in, status, value = self._is_dimension_in_dict('/' + arg, self.solved_conflicts)
 
         if is_in:

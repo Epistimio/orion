@@ -541,7 +541,7 @@ class Experiment(object):
         branching_prompt = BranchingPrompt(experiment_brancher)
         log.info('Starting branch solving')
 
-        branching_prompt.solve_conflicts()
+        self.config['thing'] = branching_prompt.solve_conflicts()
         raise NotImplementedError
 
     def _is_different_from(self, config):

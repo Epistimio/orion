@@ -14,6 +14,11 @@ import cmd
 
 
 class BranchingPrompt(cmd.Cmd):
+    """
+    Interactive command prompt to solve the configurations conflicts
+    between the parent configuration and the new one.
+    """
+
     intro = 'Welcome to Orion\'s experiment branching interactive conflicts '
     'solver. If you are unfamiliar with this process, you can type '
     '`help` to open the help menu. You can also type `abort` at any'
@@ -30,16 +35,17 @@ class BranchingPrompt(cmd.Cmd):
                          'experiment': 'Experiment name {0} is conflicting'}
 
     def __init__(self, branch_builder):
+        """Retrieve the instance of ExperimentBranchBuilder containing the conflicts"""
         cmd.Cmd.__init__(self)
         self.branch_builder = branch_builder
 
     def solve_conflicts(self):
-        """Starts the prompt for the interactive conflicts solving"""
+        """Start the prompt for the interactive conflicts solving"""
         self.cmdloop()
 
     # Commands
     def do_status(self, arg):
-        'Display the current status of the conflicting configuration'
+        """Display the current status of the conflicting configuration"""
         if len(arg) == 0:
             self._print_conflicts_message('Solved conflicts', self.branch_builder.solved_conflicts)
 
@@ -51,7 +57,7 @@ class BranchingPrompt(cmd.Cmd):
             self._print_dimension_status(arg)
 
     def do_name(self, arg):
-        'Change the name of the experiment'
+        """Change the name of the experiment"""
         arg = arg.split(' ')[0]
 
         if len(arg) > 0:
@@ -60,15 +66,18 @@ class BranchingPrompt(cmd.Cmd):
             print('Invalid experiment name')
 
     def do_add(self, arg):
-        'Add the given `new` or `changed` dimension to the configuration'
+        """Add the given `new` or `changed` dimension to the configuration"""
         self._call_function_for_all_args(arg, self.branch_builder.add_dimension)
 
     def do_remove(self, arg):
-        'Remove the given `missing` dimension from the configuration'
+        """Remove the given `missing` dimension from the configuration"""
         self._call_function_for_all_args(arg, self.branch_builder.remove_dimension)
 
     def do_rename(self, arg):
-        'Usage : rename `old` `new`\nRename old dimension to new'
+        """
+        Usage : rename `old` `new`
+        Rename old dimension to new
+        """
         args = arg.split(' ')
 
         if len(args) < 2:
@@ -80,10 +89,11 @@ class BranchingPrompt(cmd.Cmd):
             print('Invalid dimension(s) name(s)')
 
     def do_reset(self, arg):
-        'Mark dimension as unsolved'
+        """Mark dimension as unsolved"""
         self._call_function_for_all_args(arg, self.branch_builder.reset_dimension)
 
-    def do_exit(self, arg):
+    def do_abort(self, arg):
+        """Exit the prompt without saving"""
         print('Closing interactive conflicts solver')
         return True
 

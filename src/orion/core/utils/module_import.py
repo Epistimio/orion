@@ -13,12 +13,12 @@
 import os
 
 
-def load_modules_in_path(path, filter_function=None, from_list=['']):
+def load_modules_in_path(path, filter_function=None):
     """
-        Load all modules inside `path` and return a list of those
-        fitting the filter function.
+    Load all modules inside `path` and return a list of those
+    fitting the filter function.
     """
-    this_module = __import__(path, fromlist=from_list)
+    this_module = __import__(path, fromlist=[''])
     file_path = this_module.__path__[0]
 
     files = list(map(lambda f: f.split('.')[0],
