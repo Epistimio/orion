@@ -67,7 +67,7 @@ class OrionArgsParser:
         function(args)
 
 
-def get_basic_args_group(parser):
+def get_basic_args_group(parser, add_branching=False):
     """Return the basic arguments for any command."""
     basic_args_group = parser.add_argument_group(
         "Oríon arguments (optional)",
@@ -82,6 +82,12 @@ def get_basic_args_group(parser):
     basic_args_group.add_argument('-c', '--config', type=argparse.FileType('r'),
                                   metavar='path-to-config', help="user provided "
                                   "orion configuration file")
+
+    if add_branching:
+        basic_args_group.add_argument(
+            '-b', '--branch',
+            type=str, metavar='branchID',
+            help='Unique name for the new branching experiment')
 
     return basic_args_group
 

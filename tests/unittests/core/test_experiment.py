@@ -212,7 +212,7 @@ class TestConfigProperty(object):
 
         Before initialization is done, it can be the case that the pair (`name`,
         user's name) has not hit the database. return a yaml compliant form
-        of current state, to be used with :mod:`orion.core.cli.resolve_config`.
+        of current state, to be used with :mod:`orion.core.io.resolve_config`.
         """
         exp = Experiment('supernaekei')
         cfg = exp.configuration
