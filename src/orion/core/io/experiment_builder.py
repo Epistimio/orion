@@ -1,0 +1,291 @@
+# -*- coding: utf-8 -*-
+# pylint:disable=protected-access
+"""
+:mod:`orion.core.io.experiment_builder` -- Create experiment from user options
+==============================================================================
+
+.. module:: experiment
+   :platform: Unix
+   :synopsis: Functions which build `Experiment` and `ExperimentView` objects
+       based on user configuration.
+
+
+The instantiation of an `Experiment` is not a trivial process when the user request an experiment
+with specific options. One can easily create a new experiment with
+`ExperimentView('some_experiment_name')`, but the configuration of a _writable_ experiment is less
+straighforward. This is because there is many sources of configuration and they have a strict
+hierarchy. From the more global to the more specific, there is:
+
+1. Global configuration:
+
+  Defined by `src.orion.core.io.resolve_config.DEF_CONFIG_FILES_PATHS`.
+  Can be scattered in user file system, defaults could look like:
+
+    - `/some/path/to/.virtualenvs/orion/share/orion.core`
+    - `/etc/xdg/xdg-ubuntu/orion.core`
+    - `/home/${USER}/.config/orion.core`
+
+  Note that some variables have default value even if user do not defined them in global
+  configuration:
+
+    - `max_trials = src.orion.core.io.resolve_config.DEF_CMD_MAX_TRIALS`
+    - `pool_size = src.orion.core.io.resolve_config.DEF_CMD_POOL_SIZE`
+    - `algorithms = random`
+    - Database specific:
+
+      * `datbase.name = 'orion'`
+      * `database.type = 'MongoDB'`
+      * `database.host = ${HOST}`
+
+2. Oríon specific environment variables:
+
+  Environment variables which can override global configuration
+    - Database specific:
+      * `ORION_DB_NAME`
+      * `ORION_DB_TYPE`
+      * `ORION_DB_ADDRESS`
+
+3. Experiment configuration inside the database
+
+  Configuration of the experiment if present in the database.
+  Making this part of the configuration of the experiment makes it possible
+  for the user to execute an experiment by only specifying partial configuration. The rest of the
+  configuration is fetched from the database.
+
+  For example, a user could:
+
+  1. Rerun the same experiment
+
+    Only providing the name is sufficient to rebuild the entire configuration of the
+    experiment.
+
+  2. Make a modification to an existing experiment
+
+    The user can provide the name of the existing experiment and only provide the changes to
+    apply on it. Here is an minimal example where we fully initialize a first experiment with a
+    config file and then branch from it with minimal information.
+
+    .. code-block:: bash
+
+      # Initialize root experiment
+      orion init_only --config previous_exeriment.yaml ./userscript -x~'uniform(0, 10)'
+      # Branch a new experiment
+      orion hunt -n previous_experiment ./userscript -x~'uniform(0, 100)'
+
+4. Configuration file
+
+  This configuration file is meant to overwrite the configuration coming from the database.
+  If this configuration file was interpreted as part of the global configuration, a user could
+  only modify an experiment using command line arguments.
+
+5. Command-line arguments
+
+  Those are the arguments provided to `orion` for any method (hunt, insert, etc). It includes the
+  argument to `orion` itself as well as the user's script name and its arguments.
+
+"""
+import datetime
+import getpass
+import logging
+import os
+
+import orion
+from orion.core.io import resolve_config
+from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.worker.experiment import Experiment, ExperimentView
+
+
+log = logging.getLogger(__name__)
+
+
+class ExperimentBuilder(object):
+    """Builder for :class:`orion.core.worker.experiment.Experiment`
+    and :class:`orion.core.worker.experiment.ExperimentView`
+
+    .. seealso::
+
+        `orion.core.io.experiment_builder` for more information on the process of building
+        experiments.
+
+        :class:`orion.core.worker.experiment.Experiment`
+        :class:`orion.core.worker.experiment.ExperimentView`
+    """
+
+    # pylint:disable=no-self-use
+    def fetch_default_options(self):
+        """Get dictionary of default options"""
+        return resolve_config.fetch_default_options()
+
+    # pylint:disable=no-self-use
+    def fetch_env_vars(self):
+        """Get dictionary of environment variables specific to Oríon"""
+        return resolve_config.fetch_env_vars()
+
+    def fetch_file_config(self, cmdargs):
+        """Get dictionary of options from configuration file provided in command-line"""
+        return resolve_config.fetch_config(cmdargs)
+
+    def fetch_local_config(self, cmdargs):
+        """Get dictionary of options from all local sources (not from db)
+
+        .. seealso::
+
+            `orion.core.io.experiment_builder` for more information on the hierarchy of
+            configurations.
+        """
+        default_options = self.fetch_default_options()
+        env_vars = self.fetch_env_vars()
+        cmdconfig = self.fetch_file_config(cmdargs)
+
+        return resolve_config.merge_configs(default_options, env_vars, cmdconfig, cmdargs)
+
+    def fetch_db_config(self, cmdargs):
+        """Get dictionary of options from all local sources (not from db)
+
+        Note
+        ----
+            This method builds an experiment view in the background to fetch the configuration from
+            the database.
+        """
+        try:
+            experiment_view = self.build_view_from(cmdargs)
+        except ValueError as e:
+            if "No experiment with given name" in str(e):
+                return {}
+
+        return experiment_view.configuration
+
+    def fetch_full_config(self, cmdargs):
+        """Get dictionary of the full configuration of the experiment.
+
+        .. seealso::
+
+            `orion.core.io.experiment_builder` for more information on the hierarchy of
+            configurations.
+
+        Note
+        ----
+            This method builds an experiment view in the background to fetch the configuration from
+            the database.
+        """
+        default_options = self.fetch_default_options()
+        env_vars = self.fetch_env_vars()
+        db_config = self.fetch_db_config(cmdargs)
+        cmdconfig = self.fetch_file_config(cmdargs)
+
+        exp_config = resolve_config.merge_configs(
+            default_options, env_vars, db_config, cmdconfig, cmdargs)
+
+        # Infer rest information about the process + versioning
+        if 'metadata' not in exp_config:
+            exp_config['metadata'] = {}
+
+        exp_config['metadata']['orion_version'] = orion.core.__version__
+
+        # Move 'user_script' and 'user_args' to 'metadata' key
+        user_script = exp_config.pop('user_script', None)
+        if user_script:
+            abs_user_script = os.path.abspath(user_script)
+            if resolve_config.is_exe(abs_user_script):
+                user_script = abs_user_script
+
+        exp_config['metadata']['user_script'] = user_script
+        exp_config['metadata']['user_args'] = exp_config.pop('user_args', [])
+
+        exp_config['metadata']['user'] = getpass.getuser()
+
+        if 'datetime' not in exp_config['metadata']:
+            exp_config['metadata']['datetime'] = datetime.datetime.utcnow()
+
+        exp_config['metadata'] = resolve_config.infer_versioning_metadata(exp_config['metadata'])
+
+        return exp_config
+
+    def build_view_from(self, cmdargs):
+        """Build an experiment view based on full configuration.
+
+        .. seealso::
+
+            `orion.core.io.experiment_builder` for more information on the hierarchy of
+            configurations.
+
+            :class:`orion.core.worker.experiment.ExperimentView` for more information on the
+            experiment view object.
+        """
+        local_config = self.fetch_local_config(cmdargs)
+
+        db_opts = local_config['database']
+        dbtype = db_opts.pop('type')
+
+        # Information should be enough to infer experiment's name.
+        log.debug("Creating %s database client with args: %s", dbtype, db_opts)
+        try:
+            Database(of_type=dbtype, **db_opts)
+        except ValueError:
+            if Database().__class__.__name__.lower() != dbtype.lower():
+                raise
+
+        exp_name = local_config['name']
+        if exp_name is None:
+            raise RuntimeError("Could not infer experiment's name. "
+                               "Please use either `name` cmd line arg or provide "
+                               "one in orion's configuration file.")
+
+        return ExperimentView(local_config["name"])
+
+    def build_from(self, cmdargs):
+        """Build a fully configured (and writable) experiment based on full configuration.
+
+        .. seealso::
+
+            `orion.core.io.experiment_builder` for more information on the hierarchy of
+            configurations.
+
+            :class:`orion.core.worker.experiment.Experiment` for more information on the experiment
+            object.
+        """
+        full_config = self.fetch_full_config(cmdargs)
+
+        log.info(full_config)
+
+        # Pop out configuration concerning databases and resources
+        full_config.pop('database', None)
+        full_config.pop('resources', None)
+        full_config.pop('status', None)
+
+        try:
+            experiment = self.build_from_config(full_config)
+        except DuplicateKeyError:
+            # Fails if concurrent experiment with identical (name, metadata.user)
+            # is written first in the database.
+            # Next build_from_config() should either load experiment from database
+            # and run smoothly if identical or trigger an experiment fork.
+            # In other words, there should not be more than 1 level of recursion.
+            experiment = self.build_from(cmdargs)
+
+        return experiment
+
+    def build_from_config(self, config):
+        """Build a fully configured (and writable) experiment based on full configuration.
+
+        .. seealso::
+
+            `orion.core.io.experiment_builder` for more information on the hierarchy of
+            configurations.
+
+            :class:`orion.core.worker.experiment.Experiment` for more information on the experiment
+            object.
+        """
+        log.info(config)
+
+        # Pop out configuration concerning databases and resources
+        config.pop('database', None)
+        config.pop('resources', None)
+        config.pop('status', None)
+
+        experiment = Experiment(config['name'])
+
+        # Finish experiment's configuration and write it to database.
+        experiment.configure(config)
+
+        return experiment
