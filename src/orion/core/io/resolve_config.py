@@ -31,6 +31,7 @@ precedence is respected when building the settings dictionary:
 .. note:: `Optimization` entries are required, `Dynamic` entry is optional.
 
 """
+import argparse
 import logging
 import os
 import socket

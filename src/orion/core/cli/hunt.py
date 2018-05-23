@@ -24,7 +24,7 @@ def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
     hunt_parser = parser.add_parser('hunt', help='hunt help')
 
-    orion_group = cli.get_basic_args_group(hunt_parser)
+    orion_group = cli.get_basic_args_group(hunt_parser, add_branching=True)
 
     orion_group.add_argument(
         '--max-trials', type=int, metavar='#',
@@ -35,10 +35,6 @@ def add_subparser(parser):
         "--pool-size", type=int, metavar='#',
         help="number of concurrent workers to evaluate candidate samples "
              "(default: %s)" % resolve_config.DEF_CMD_POOL_SIZE[1])
-
-    orion_group.add_argument(
-        '--branch', '-b', type=str, metavar='newBranchID',
-        help="name of the new experiment resulting of the branch of this one.")
 
     cli.get_user_args_group(hunt_parser)
 

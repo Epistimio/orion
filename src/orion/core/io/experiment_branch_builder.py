@@ -143,12 +143,6 @@ class ExperimentBranchBuilder:
                 value = self.cl_keywords_re[keyword].findall(dimension)
                 self.cl_keywords_functions[keyword](*value)
 
-    def _solve_commandline_conflicts(self):
-        for keyword in self.commandline_keywords:
-            for dimension in self.commandline_keywords[keyword]:
-                value = self.cl_keywords_re[keyword].findall(dimension)
-                self.cl_keywords_functions[keyword](*value)
-
     # API section
 
     @property

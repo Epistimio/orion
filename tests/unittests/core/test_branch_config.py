@@ -324,8 +324,10 @@ def test_commandline_solving(parent_config, cl_config):
     assert len(branch_builder.conflicting_space) == 2
     assert len(branch_builder.conflicts) == 4
     assert len(list(branch_builder.filter_conflicts(filter_true))) == 4
-    assert len(branch_builder.operations['add']) == 1 assert len(branch_builder.operations['rename']) == 1
-    assert len(branch_builder.operations['remove']) == 1 
+    assert len(branch_builder.operations['add']) == 1
+    assert len(branch_builder.operations['rename']) == 1
+    assert len(branch_builder.operations['remove']) == 1
+
 
 def test_adapter_add_new(parent_config, cl_config):
     """Test if a DimensionAddition is created when solving a new conflict"""
