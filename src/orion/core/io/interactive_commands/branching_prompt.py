@@ -65,6 +65,7 @@ class BranchingPrompt(cmd.Cmd):
 
     def do_name(self, arg):
         """Change the name of the experiment"""
+        print('TIP: You can use the \'-b\' or \'--branch\' command-line argument to automate the naming process.')
         arg = arg.split(' ')[0]
 
         if len(arg) > 0:
@@ -74,10 +75,14 @@ class BranchingPrompt(cmd.Cmd):
 
     def do_add(self, arg):
         """Add the given `new` or `changed` dimension to the configuration"""
+        print('TIP: You can use the \'~+\' marker in place of the usual ~ with the command-line to solve this conflict automatically.'
+              '\nEx: -x~+uniform(0,1)')
         self._call_function_for_all_args(arg, self.branch_builder.add_dimension)
 
     def do_remove(self, arg):
         """Remove the given `missing` dimension from the configuration"""
+        print('TIP: You can use the \'~-\' marker in place of the usual ~ with the command-line to solve this conflict automatically.'
+              '\nEx: -x~-')
         self._call_function_for_all_args(arg, self.branch_builder.remove_dimension)
 
     def do_rename(self, arg):
@@ -85,6 +90,8 @@ class BranchingPrompt(cmd.Cmd):
         Usage : rename `old` `new`
         Rename old dimension to new
         """
+        print('TIP: You can use the \'~>\' marker in place of the usual ~ with the command-line to solve this dimension automatically.'
+              '\nEx: -x~>y')
         args = arg.split(' ')
 
         if len(args) < 2:
