@@ -347,7 +347,7 @@ class TreeNode(object):
                 for child in TreeNode(0, None, children):
                     child.item += 1
 
-                return node.item + 1
+                return node.item + 1, children
 
             # Should return
             #
@@ -365,7 +365,7 @@ class TreeNode(object):
                     for parent in parent.root:
                         parent.item += 1
 
-                return node.item + 1
+                return node.item + 1, parent
 
             # Should return
             #
