@@ -488,13 +488,12 @@ class ExperimentView(object):
     def __init__(self, name):
         """Initialize viewed experiment object with primary key (:attr:`name`, :attr:`user`).
 
-        Try to find an entry in `Database` with such a key and config this object
-        from it import, if successful. Else, init with default/empty values and
-        insert new entry with this object's attributes in database.
+        Build an experiment from configuration found in `Database` with a key (name, user).
 
         .. note::
 
             A view is fully configured at initialiation. It cannot be reconfigured.
+            If no experiment is found for the key (name, user), a `ValueError` will be raised.
 
         :param name: Describe a configuration with a unique identifier per :attr:`user`.
         :type name: str
