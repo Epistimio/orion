@@ -306,10 +306,13 @@ class TreeNode(object):
         Parameters
         ----------
         function : callable
-            Callable object to which will be passed current node plus the parent node of children
-            nodes of the result down or up the tree respectively
+            Callable object to which will be passed the current node plus the parent node or the
+            children nodes, depending on the direction of function application.
             If map on parents, callable(self, rval_parent_node)
-            If map on children, callable(self, rval_children_nodes)
+            If map on children, callable(self, rval_children_nodes).
+            Note that the callable object is expected to return an object which will be set as the
+            current node's item (in the resulting tree), and the parent node or the children nodes
+            depending on the direction of function application.
         node: None, `orion.core.evc.TreeNode` or list
             Can be either
             `None`: function is applied on current node only
