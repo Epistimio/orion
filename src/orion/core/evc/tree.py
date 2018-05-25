@@ -278,16 +278,11 @@ class TreeNode(object):
             if child is not None and not isinstance(child, TreeNode):
                 raise TypeError("Cannot add %s to children" % str(child))
 
-            # TreeNode.set_parent uses add_children so using it here could cause an infinit
-            # recursion. add_children() gets the dirty job done.
-            child.drop_parent()
-            # pylint: disable=protected-access
-            child._parent = self
-
             if child not in self._children:
                 # TreeNode.set_parent uses add_children so using it here could cause an infinit
                 # recursion. add_children() gets the dirty job done.
                 child.drop_parent()
+                # pylint: disable=protected-access
                 child._parent = self
                 self._children.append(child)
 
