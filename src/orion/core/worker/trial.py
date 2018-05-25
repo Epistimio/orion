@@ -12,6 +12,8 @@
 import hashlib
 import logging
 
+from orion.core.io.database import Database
+
 log = logging.getLogger(__name__)
 
 
@@ -147,14 +149,14 @@ class Trial(object):
         __slots__ = ()
         allowed_types = ('integer', 'real', 'categorical')
 
-    __slots__ = ('experiment', '_status', 'worker',
-                 'submit_time', 'start_time', 'end_time', 'results', 'params')
+    __slots__ = ('experiment', '_id', '_status', 'worker',
+                 'submit_time', 'start_time', 'end_time', 'results', 'params', 'parents')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
 
     def __init__(self, **kwargs):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
         for attrname in self.__slots__:
-            if attrname in ('results', 'params'):
+            if attrname in ('results', 'params', 'parents'):
                 setattr(self, attrname, list())
             else:
                 setattr(self, attrname, None)
@@ -187,7 +189,7 @@ class Trial(object):
 
         # Overwrite "results" and "params" with list of dictionaries rather
         # than list of Value objects
-        for attrname in ('results', 'params'):
+        for attrname in ('results', 'params', 'parents'):
             trial_dictionary[attrname] = list(map(lambda x: x.to_dict(),
                                                   getattr(self, attrname)))
 
@@ -202,6 +204,29 @@ class Trial(object):
         return ret
 
     __repr__ = __str__
+
+    def _fetch_all_parents(self, current_parents=None):
+        if current_parents is None:
+            current_parents = []
+
+        for parent in self.parents:
+            if parent in current_parents:
+                continue
+
+            query = dict(_id=parent)
+            parent_trial = Trial.build(Database().read('trials', query))[0]
+
+            parent_trial._fetch_all_parents(current_parents)
+
+        current_parents.append(self._id)
+
+    def fetch_all_parents(self):
+        """Return a list composed of the ID of all the parents of this Trial"""
+        current_parents = []
+        self._fetch_all_parents(current_parents)
+        current_parents.pop()
+
+        return current_parents
 
     @property
     def status(self):
