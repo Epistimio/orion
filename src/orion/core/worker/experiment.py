@@ -15,7 +15,7 @@ import getpass
 import logging
 import random
 
-from orion.core.io.database import Database
+from orion.core.io.database import Database, ReadOnlyDB
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
@@ -313,7 +313,11 @@ class Experiment(object):
         experiment._instantiate_config(self.configuration)
         experiment._instantiate_config(config)
         experiment._init_done = True
-        experiment.status = 'pending'
+
+        # If experiment is new or non-branching parameters have been changed such that the status is
+        # not 'done' anymore
+        if experiment.status is None or (experiment.status != 'broken' and not experiment.is_done):
+            experiment.status = 'pending'
 
         # If status is None in this object, then database did not hit a config
         # with same (name, user's name) pair. Everything depends on the user's
@@ -334,7 +338,7 @@ class Experiment(object):
         self._instantiate_config(final_config)
 
         self._init_done = True
-        self.status = 'pending'
+        self.status = experiment.status
 
         # If everything is alright, push new config to database
         if is_new:
@@ -471,3 +475,71 @@ class Experiment(object):
                 break
 
         return is_diff
+
+
+# pylint: disable=too-few-public-methods
+class ExperimentView(object):
+    """Non-writable view of an experiment
+
+    .. seealso::
+
+        :py:class:`orion.core.worker.experiment.Experiment` for writable experiments.
+
+    """
+
+    __slots__ = ('_experiment', )
+
+    #                     Attributes
+    valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials", "status"] +
+                        # Properties
+                        ["space", "algorithms", "stats", "configuration"] +
+                        # Methods
+                        ["fetch_completed_trials"])
+
+    def __init__(self, name):
+        """Initialize viewed experiment object with primary key (:attr:`name`, :attr:`user`).
+
+        Build an experiment from configuration found in `Database` with a key (name, user).
+
+        .. note::
+
+            A view is fully configured at initialiation. It cannot be reconfigured.
+            If no experiment is found for the key (name, user), a `ValueError` will be raised.
+
+        :param name: Describe a configuration with a unique identifier per :attr:`user`.
+        :type name: str
+        """
+        self._experiment = Experiment(name)
+
+        if self._experiment.status is None:
+            raise ValueError("No experiment with given name '%s' for user '%s' inside database, "
+                             "no view can be created." %
+                             (self._experiment.name, self._experiment.metadata['user']))
+
+        self._experiment.configure(self._experiment.configuration)
+        self._experiment._db = ReadOnlyDB(self._experiment._db)
+
+    def __getattr__(self, name):
+        """Get attribute only if valid"""
+        if name not in self.valid_attributes:
+            raise AttributeError("Cannot access attribute %s on view-only experiments." % name)
+
+        return getattr(self._experiment, name)
+
+    @property
+    def is_done(self):
+        """Return True, if this experiment is considered to be finished.
+
+        Note that call to this property will **not** change the status of the experiment in the
+        database. Only writable :class:`orion.core.worker.experiment.Experiment` would do so.
+
+        .. seealso::
+            :attr:`orion.core.worker.experiment.Experiment.is_done`
+        """
+        query = dict(
+            experiment=self._id,
+            status='completed'
+            )
+        num_completed_trials = self._experiment._db.count('trials', query)
+
+        return num_completed_trials >= self.max_trials or self.algorithms.is_done
