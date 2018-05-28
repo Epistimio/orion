@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.resolve_config` -- Configuration parsing and resolving
-=======================================================================
+:mod:`orion.core.io.resolve_config` -- Configuration parsing and resolving
+==========================================================================
 
 .. module:: resolve_config
    :platform: Unix
@@ -32,23 +32,14 @@ precedence is respected when building the settings dictionary:
 
 """
 import argparse
-from collections import defaultdict
-from copy import deepcopy
 import logging
 import os
 import socket
-import textwrap
 
 from numpy import inf as infinity
 import yaml
 
 import orion
-
-
-# Define type of arbitrary nested defaultdicts
-def nesteddict():
-    """Extend defaultdict to arbitrary nested levels."""
-    return defaultdict(nesteddict)
 
 
 def is_exe(path):
@@ -87,68 +78,21 @@ ENV_VARS_DB = [
 ENV_VARS = dict(
     database=ENV_VARS_DB
     )
-################################################################################
-#                           Input Parsing Functions                            #
-################################################################################
-
-
-class OrionArgsParser:
-    """Parser object handling the upper-level parsing of Oríon's arguments."""
-
-    def __init__(self, description):
-        """Create the pre-command arguments"""
-        self.description = description
-
-        self.parser = argparse.ArgumentParser(
-            formatter_class=argparse.RawDescriptionHelpFormatter,
-            description=textwrap.dedent(description))
-
-        self.parser.add_argument(
-            '-V', '--version',
-            action='version', version='orion ' + orion.core.__version__)
-
-        self.parser.add_argument(
-            '-v', '--verbose',
-            action='count', default=0,
-            help="logging levels of information about the process (-v: INFO. -vv: DEBUG)")
-
-        self.subparsers = self.parser.add_subparsers(help='sub-command help')
-
-    def get_subparsers(self):
-        """Return the subparser object for this parser."""
-        return self.subparsers
-
-    def parse(self, argv):
-        """Call argparse and generate a dictionary of arguments' value"""
-        args = vars(self.parser.parse_args(argv))
-
-        verbose = args.pop('verbose', 0)
-        if verbose == 1:
-            logging.basicConfig(level=logging.INFO)
-        elif verbose == 2:
-            logging.basicConfig(level=logging.DEBUG)
-
-        function = args.pop('func')
-        return args, function
-
-    def execute(self, argv):
-        """Execute main function of the subparser"""
-        args, function = self.parse(argv)
-        function(args)
 
 
 def fetch_config(args):
     """Return the config inside the .yaml file if present."""
-    orion_file = args.pop('config')
+    orion_file = args.get('config')
     config = dict()
     if orion_file:
         log.debug("Found orion configuration file at: %s", os.path.abspath(orion_file.name))
+        orion_file.seek(0)
         config = yaml.safe_load(orion_file)
 
     return config
 
 
-def get_basic_args_group(parser):
+def get_basic_args_group(parser, add_branching=False):
     """Return the basic arguments for any command."""
     basic_args_group = parser.add_argument_group(
         "Oríon arguments (optional)",
@@ -163,6 +107,12 @@ def get_basic_args_group(parser):
     basic_args_group.add_argument('-c', '--config', type=argparse.FileType('r'),
                                   metavar='path-to-config', help="user provided "
                                   "orion configuration file")
+
+    if add_branching:
+        basic_args_group.add_argument(
+            '-b', '--branch',
+            type=str, metavar='branchID',
+            help='Unique name for the new branching experiment')
 
     return basic_args_group
 
@@ -192,7 +142,7 @@ def get_user_args_group(parser):
 
 
 def fetch_default_options():
-    """Create a nesteddict with options from the default configuration files.
+    """Create a dict with options from the default configuration files.
 
     Respect precedence from application's default, to system's and
     user's.
@@ -200,7 +150,7 @@ def fetch_default_options():
     .. seealso:: :const:`DEF_CONFIG_FILES_PATHS`
 
     """
-    default_config = nesteddict()
+    default_config = dict()
 
     # get some defaults
     default_config['name'] = None
@@ -210,6 +160,7 @@ def fetch_default_options():
 
     # get default options for some managerial variables (see :const:`ENV_VARS`)
     for signifier, env_vars in ENV_VARS.items():
+        default_config[signifier] = {}
         for _, key, default_value in env_vars:
             default_config[signifier][key] = default_value
 
@@ -223,6 +174,7 @@ def fetch_default_options():
                 # implies that yaml must be in dict form
                 for k, v in cfg.items():
                     if k in ENV_VARS:
+                        default_config[k] = {}
                         for vk, vv in v.items():
                             default_config[k][vk] = vv
                     else:
@@ -241,15 +193,24 @@ def merge_env_vars(config):
     """Fetch environmental variables related to orion's managerial data.
 
     :type config: :func:`nesteddict`
-
     """
-    newcfg = deepcopy(config)
+    return merge_configs(config, fetch_env_vars())
+
+
+def fetch_env_vars():
+    """Fetch environmental variables related to orion's managerial data."""
+    env_vars = {}
+
     for signif, evars in ENV_VARS.items():
+        env_vars[signif] = {}
+
         for var_name, key, _ in evars:
             value = os.getenv(var_name)
+
             if value is not None:
-                newcfg[signif][key] = value
-    return newcfg
+                env_vars[signif][key] = value
+
+    return env_vars
 
 
 def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
@@ -282,22 +243,66 @@ def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
     .. seealso:: Method-specific configurations reside in `/config`
 
     """
-    expconfig = deepcopy(config)
+    return merge_configs(config, dbconfig, cmdconfig, cmdargs)
 
-    for cfg in (dbconfig, cmdconfig):
-        for k, v in cfg.items():
-            if k in ENV_VARS:
-                for vk, vv in v.items():
-                    expconfig[k][vk] = vv
-            elif v is not None:
-                expconfig[k] = v
 
-    for k, v in cmdargs.items():
-        if v is not None:
-            if k == 'metadata':
-                for vk, vv in v.items():
-                    expconfig[k][vk] = vv
-            else:
-                expconfig[k] = v
+def merge_configs(*configs):
+    """Merge configuration dictionnaries following the given hierarchy
 
-    return expconfig
+    Suppose function is called as merge_configs(A, B, C). Then any pair (key, value) in C would
+    overwrite any previous value from A or B. Same apply for B over A.
+
+    If for some pair (key, value), the value is a dictionary, then it will either overwrite previous
+    value if it was not also a directory, or it will be merged following
+    `merge_configs(old_value, new_value)`.
+
+    .. warning:
+
+        Redefinition of subdictionaries may lead to confusing results because merges do not remove
+        data.
+
+        If for instance, we have {'a': {'b': 1, 'c': 2}} and we would like to update `'a'` such that
+        it only have `{'c': 3}`, it won't work with {'a': {'c': 3}}.
+
+        merge_configs({'a': {'b': 1, 'c': 2}}, {'a': {'c': 3}}) -> {'a': {'b': 1, 'c': 3}}
+
+    Example
+    -------
+    .. code-block:: python
+        :linenos:
+
+        a = {'a': 1, 'b': {'c': 2}}
+        b = {'b': {'c': 3}}
+        c = {'b': {'c': {'d': 4}}}
+
+        m = resolve_config.merge_configs(a, b, c)
+
+        assert m == {'a': 1, 'b': {'c': {'d': 4}}}
+
+        a = {'a': 1, 'b': {'c': 2, 'd': 3}}
+        b = {'b': {'c': 4}}
+        c = {'b': {'c': {'e': 5}}}
+
+        m = resolve_config.merge_configs(a, b, c)
+
+        assert m == {'a': 1, 'b': {'c': {'e': 5}, 'd': 3}}
+
+    """
+    merged_config = configs[0]
+
+    for config in configs[1:]:
+        for key, value in config.items():
+            if isinstance(value, dict) and isinstance(merged_config.get(key), dict):
+                merged_config[key] = merge_configs(merged_config[key], value)
+            elif value is not None:
+                merged_config[key] = value
+
+    return merged_config
+
+
+def infer_versioning_metadata(existing_metadata):
+    """Infer information about user's script versioning if available."""
+    # VCS system
+    # User repo's version
+    # User repo's HEAD commit hash
+    return existing_metadata

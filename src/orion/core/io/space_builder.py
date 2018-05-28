@@ -80,6 +80,14 @@ def replace_key_in_order(odict, key_prev, key_after):
     return tmp
 
 
+def _should_not_be_built(expression):
+    return expression.startswith('-') or expression.startswith('>')
+
+
+def _remove_marker(expression, marker='+'):
+    return expression.replace(marker, '', 1) if expression.startswith(marker) else expression
+
+
 class DimensionBuilder(object, metaclass=SingletonType):
     """Create `Dimension` objects using a name for it and an string expression
     which encodes prior and dimension information.
@@ -173,6 +181,7 @@ class DimensionBuilder(object, metaclass=SingletonType):
         """
         self.name = name
         _check_expr_to_eval(expression)
+
         prior, arg_string = re.findall(r'([a-z][a-z0-9_]*)\((.*)\)', expression)[0]
         globals_ = {'__builtins__': {}}
         try:
@@ -236,7 +245,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
 
     # TODO Expose these 4 USER oriented goodfellows to a orion configuration file :)
     USERCONFIG_KEYWORD = 'orion~'
-    USERARGS_TMPL = r'(.*)~(.*)'
+    USERARGS_TMPL = r'(.*)~([\+\-\>]?.*)'
     USERARGS_NAMESPACE = r'\W*([a-zA-Z0-9_-]+)'
     USERARGS_CONFIG = '--config='
 
@@ -247,6 +256,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
         self.userconfig = None
         self.userargs_tmpl = None
         self.userconfig_tmpl = None
+        self.config_expressions = None
         self.positional_args_count = 0
 
         self.dimbuilder = DimensionBuilder()
@@ -281,6 +291,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
         """
         self.userargs_tmpl = None
         self.userconfig_tmpl = None
+        self.config_expressions = None
 
         self.commands_tmpl = None
         self.space = Space()
@@ -296,6 +307,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
         return self.space
 
     def _build_from_config(self, config_path):
+        self.config_expressions = collections.OrderedDict()
         self.converter = infer_converter_from_file_type(config_path)
         self.userconfig_tmpl = self.converter.parse(config_path)
 
@@ -314,8 +326,17 @@ class SpaceBuilder(object, metaclass=SingletonType):
                     stack.append(('/'.join([namespace, str(position)]), thing))
             elif isinstance(stuff, str):
                 if stuff.startswith(self.USERCONFIG_KEYWORD):
-                    dimension = self.dimbuilder.build(namespace,
-                                                      stuff[len(self.USERCONFIG_KEYWORD):])
+                    expression = stuff[len(self.USERCONFIG_KEYWORD):]
+
+                    # Store the expression before it is modified for the dimension builder
+                    self.config_expressions[namespace] = '~' + expression
+
+                    if _should_not_be_built(expression):
+                        break
+
+                    expression = _remove_marker(expression)
+
+                    dimension = self.dimbuilder.build(namespace, expression)
                     try:
                         self.space.register(dimension)
                     except ValueError as exc:
@@ -388,10 +409,14 @@ class SpaceBuilder(object, metaclass=SingletonType):
                 # If it's nameless (positional) it cannot be a dimension
                 log.warning("Nameless argument '%s' will not define a dimension.", arg)
                 self.userargs_tmpl['_' + get_next_pos_ns()] = arg
-            else:
+            elif not _should_not_be_built(expression):
                 # Otherwise it's a dimension; ikr
                 namespace = '/' + ns_search[0]
+
+                expression = _remove_marker(expression)
+
                 dimension = self.dimbuilder.build(namespace, expression)
+
                 self.space.register(dimension)
                 self.userargs_tmpl[namespace] = prefix + '='
 

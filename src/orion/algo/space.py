@@ -117,6 +117,21 @@ class Dimension(object):
 
         self._default_value = default_value
 
+    def __hashable_members(self):
+        return (self.name, self.shape, self.type, self.default_value, self.prior)
+
+    # pylint:disable=protected-access
+    def __eq__(self, other):
+        """Return True if other is the same dimension as self"""
+        if not isinstance(other, Dimension):
+            return False
+
+        return self.__hashable_members() == other.__hashable_members()
+
+    def __hash__(self):
+        """Return the hash of the hashable members"""
+        return hash(self.__hashable_members())
+
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
 
