@@ -85,8 +85,7 @@ def _should_not_be_built(expression):
 
 
 def _remove_marker(expression, marker='+'):
-    if expression.startswith(marker):
-        expression = expression.replace(marker, '', 1)
+    return expression.replace(marker, '', 1) if expression.startswith(marker) else expression
 
 
 class DimensionBuilder(object, metaclass=SingletonType):
@@ -257,6 +256,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
         self.userconfig = None
         self.userargs_tmpl = None
         self.userconfig_tmpl = None
+        self.config_expressions = None
         self.positional_args_count = 0
 
         self.dimbuilder = DimensionBuilder()
@@ -291,6 +291,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
         """
         self.userargs_tmpl = None
         self.userconfig_tmpl = None
+        self.config_expressions = None
 
         self.commands_tmpl = None
         self.space = Space()
@@ -306,6 +307,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
         return self.space
 
     def _build_from_config(self, config_path):
+        self.config_expressions = collections.OrderedDict()
         self.converter = infer_converter_from_file_type(config_path)
         self.userconfig_tmpl = self.converter.parse(config_path)
 
@@ -326,10 +328,13 @@ class SpaceBuilder(object, metaclass=SingletonType):
                 if stuff.startswith(self.USERCONFIG_KEYWORD):
                     expression = stuff[len(self.USERCONFIG_KEYWORD):]
 
+                    # Store the expression before it is modified for the dimension builder
+                    self.config_expressions[namespace] = '~' + expression
+
                     if _should_not_be_built(expression):
                         break
 
-                    _remove_marker(expression)
+                    expression = _remove_marker(expression)
 
                     dimension = self.dimbuilder.build(namespace, expression)
                     try:
@@ -408,7 +413,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
                 # Otherwise it's a dimension; ikr
                 namespace = '/' + ns_search[0]
 
-                _remove_marker(expression)
+                expression = _remove_marker(expression)
 
                 dimension = self.dimbuilder.build(namespace, expression)
 

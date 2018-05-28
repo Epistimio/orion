@@ -25,6 +25,7 @@ For more info on Adapters :
         :meth:`orion.core.evc.Adapters.BaseAdapter`
 """
 
+import copy
 import logging
 import re
 
@@ -41,6 +42,17 @@ def _create_param(dimension):
 
 def _get_expression(dim, args):
     return list(filter(lambda arg: arg[1:].startswith(dim.name[1:]), args))[0].split('~')[1]
+
+
+def _concat_key_value(args):
+    return [] if args is None else map(lambda k: k + args[k], args)
+
+
+def _format_dimension_name(name):
+    if name[0] == '-':
+        name = name[1:]
+
+    return name if name.startswith('/') else '/' + name
 
 
 # pylint: disable=too-few-public-methods
@@ -82,15 +94,18 @@ class ExperimentBranchBuilder:
                                       '~-': self.remove_dimension,
                                       '~>': self.rename_dimension}
 
-        self.cl_keywords_re = {'~+': re.compile(r'([a-zA-Z_]+)~+'),
-                               '~-': re.compile(r'([a-zA-Z_]+)~-'),
-                               '~>': re.compile(r'([a-zA-Z_]+)~>([a-zA-Z_]+)')}
+        self.cl_keywords_re = {'~+': re.compile(r'(.*)~\+'),
+                               '~-': re.compile(r'(.*)~\-'),
+                               '~>': re.compile(r'(.*)~\>([a-zA-Z_]+)')}
 
         self.user_args = self.conflicting_config['metadata']['user_args']
         self.experiment_args = self.experiment_config['metadata']['user_args']
 
-        self._interpret_commandline()
+        self.extended_user_args = copy.deepcopy(self.user_args)
+        self.extended_experiment_args = copy.deepcopy(self.experiment_args)
+
         self._build_spaces()
+        self._interpret_args()
         self._find_conflicts()
         self._solve_commandline_conflicts()
 
@@ -98,25 +113,18 @@ class ExperimentBranchBuilder:
         if branching_name is not None:
             self.change_experiment_name(branching_name)
 
-    def _interpret_commandline(self):
-        to_delete = []
-        for arg in self.user_args:
+    def _interpret_args(self):
+        for arg in self.extended_user_args:
             for keyword in self.commandline_keywords:
                 if keyword in arg:
                     self.commandline_keywords[keyword].append(arg)
 
-                    index = self.user_args.index(arg)
-                    if keyword == '~+':
-                        self.user_args[index] = arg.replace(keyword, '~')
-                    else:
-                        to_delete.append(index)
-
-        for i in sorted(to_delete, reverse=True):
-            del self.user_args[i]
-
     def _build_spaces(self):
         self.experiment_space = SpaceBuilder().build_from(self.experiment_args)
+        self.extended_experiment_args.extend(_concat_key_value(SpaceBuilder().config_expressions))
+
         self.conflicting_space = SpaceBuilder().build_from(self.user_args)
+        self.extended_user_args.extend(_concat_key_value(SpaceBuilder().config_expressions))
 
     def _find_conflicts(self):
         # Loop through the conflicting space and identify problematic dimensions
@@ -124,18 +132,19 @@ class ExperimentBranchBuilder:
             # If the name is inside the space but not the value the dimensions has changed
             if dim.name in self.experiment_space:
                 if dim not in self.experiment_space.values():
-                    self.conflicts.append(Conflict('changed', dim, _get_expression(dim,
-                                                                                   self.user_args)))
+                    self.conflicts.append(Conflict('changed', dim,
+                                                   _get_expression(dim, self.extended_user_args)))
             # If the name does not exist, it is a new dimension
             else:
-                self.conflicts.append(Conflict('new', dim, _get_expression(dim, self.user_args)))
+                self.conflicts.append(Conflict('new', dim,
+                                               _get_expression(dim, self.extended_user_args)))
 
         # In the same vein, if any dimension of the current space is not inside
         # the conflicting space, it is missing
         for dim in self.experiment_space.values():
             if dim.name not in self.conflicting_space:
                 self.conflicts.append(Conflict('missing', dim,
-                                               _get_expression(dim, self.experiment_args)))
+                                               _get_expression(dim, self.extended_experiment_args)))
 
     def _solve_commandline_conflicts(self):
         for keyword in self.commandline_keywords:
@@ -251,7 +260,7 @@ class ExperimentBranchBuilder:
             Name of the dimension
 
         """
-        prefixed_name = '/' + name
+        prefixed_name = _format_dimension_name(name)
         index = list(map(lambda c: c.dimension.name, self.conflicts)).index(prefixed_name)
         return self.conflicts[index]
 
@@ -309,7 +318,7 @@ class ExperimentBranchBuilder:
         names.extend(list(map(lambda c: c.dimension.name[1:], conflicts)))
 
     def _extend_wildcard(self, arg, names, status):
-        prefix = '/' + arg.split('*')[0]
+        prefix = _format_dimension_name(arg.split('*')[0])
         filtered_conflicts = self.filter_conflicts(lambda c:
                                                    c.dimension.name
                                                    .startswith(prefix) and c.status in status)
@@ -326,7 +335,7 @@ class ExperimentBranchBuilder:
         return conflict
 
     def _assert_has_status(self, name, status):
-        prefixed_name = '/' + name
+        prefixed_name = _format_dimension_name(name)
         conflicts = list(self._filter_conflicts_status(status))
         index = list(map(lambda c: c.dimension.name, conflicts)).index(prefixed_name)
 
@@ -370,7 +379,7 @@ class ExperimentBranchBuilder:
 
     def _changed_adapter(self, dimensions):
         if isinstance(dimensions, tuple):
-            old_prior, new_prior = [c.expression for c in dimensions]
+            old_prior, new_prior = [c.expression.replace('+', '') for c in dimensions]
             return Adapters.DimensionPriorChange(dimensions[1].dimension.name, old_prior, new_prior)
 
         dim = self.get_old_dimension_value(dimensions.dimension.name)
