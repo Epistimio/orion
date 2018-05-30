@@ -15,6 +15,7 @@ from orion.core.worker.experiment import Experiment
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, 'sample_config.yml')
 JSON_SAMPLE = os.path.join(TEST_DIR, 'sample_config.json')
+UNKNOWN_SAMPLE = os.path.join(TEST_DIR, 'sample_config.unknown_type')
 
 
 @pytest.fixture()
@@ -35,6 +36,18 @@ def yaml_sample_path():
 def json_sample_path():
     """Return path with a json sample file."""
     return JSON_SAMPLE
+
+
+@pytest.fixture(scope='session')
+def unknown_type_sample_path():
+    """Return path with a sample file of unknown configuration filetype."""
+    return UNKNOWN_SAMPLE
+
+
+@pytest.fixture(scope='session')
+def some_sample_path():
+    """Return path with a sample file of unknown configuration filetype."""
+    return os.path.join(TEST_DIR, 'some_sample_config.lol')
 
 
 @pytest.fixture(scope='session')

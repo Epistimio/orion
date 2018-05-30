@@ -9,6 +9,7 @@
 """
 
 from abc import ABCMeta
+from collections import defaultdict
 from glob import glob
 from importlib import import_module
 import logging
@@ -18,6 +19,12 @@ import pkg_resources
 
 
 log = logging.getLogger(__name__)
+
+
+# Define type of arbitrary nested defaultdicts
+def nesteddict():
+    """Extend defaultdict to arbitrary nested levels."""
+    return defaultdict(nesteddict)
 
 
 class SingletonError(ValueError):
