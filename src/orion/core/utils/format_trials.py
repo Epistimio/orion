@@ -51,8 +51,17 @@ def tuple_to_trial(data, space):
 def get_trial_results(trial):
     """Format results from a `Trial` using standard structures."""
     results = dict()
-    obj = trial.objective
-    results['objective'] = obj.value if obj else None
+
+    lie = trial.lie
+    objective = trial.objective
+
+    if lie:
+        results['objective'] = lie.value
+    elif objective:
+        results['objective'] = objective.value
+    else:
+        results['objective'] = None
+
     results['constraint'] = [result.value for result in trial.results
                              if result.type == 'constraint']
     grad = trial.gradient
