@@ -445,6 +445,7 @@
     - name: /decoding_layer
       type: categorical
       value: rnn
+  parents: []
 - experiment: supernaedo2
 
   status: completed
@@ -466,6 +467,7 @@
     - name: /decoding_layer
       type: categorical
       value: rnn
+  parents: []
 - experiment: supernaedo2
 
   status: completed
@@ -489,7 +491,8 @@
       value: gru
     - name: /decoding_layer
       type: categorical
-      value: gru
+      value: lstm_with_attention
+  parents: []
 - experiment: supernaedo2
 
   status: new
@@ -508,6 +511,7 @@
     - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
+  parents: []
 - experiment: supernaedo2
 
   status: new  # new, reserved, suspended, completed, broken
@@ -526,6 +530,7 @@
     - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
+  parents: []
 - experiment: supernaedo2
 
   status: interrupted
@@ -544,6 +549,7 @@
     - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
+  parents: []
 - experiment: supernaedo2
 
   status: suspended
@@ -562,7 +568,7 @@
     - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
-
+  parents: []
 - experiment: supernaedo4
 
   status: completed
@@ -584,6 +590,7 @@
     - name: /decoding_layer
       type: categorical
       value: rnn
+  parents: []
 
 # Should pass the adapter
 - experiment: supernaedo2
@@ -607,6 +614,7 @@
     - name: /decoding_layer
       type: categorical
       value: gru
+  parents: []
 
 # Should be filtered out by adapter
 - experiment: supernaedo2
@@ -630,6 +638,7 @@
     - name: /decoding_layer
       type: categorical
       value: rnn
+  parents: []
 
 - experiment: supernaedo2.1
 
@@ -649,6 +658,7 @@
     - name: /encoding_layer
       type: categorical
       value: rnn
+  parents: []
 
 # Should pass with 2.1
 - experiment: supernaedo2
@@ -672,6 +682,7 @@
     - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
+  parents: []
 
 - experiment: supernaedo2.2
 
@@ -691,6 +702,7 @@
     - name: /encoding_layer
       type: categorical
       value: rnn
+  parents: []
 
 - experiment: supernaedo2.3
 
@@ -713,6 +725,7 @@
     - name: /decoding_layer
       type: categorical
       value: gru
+  parents: []
 
 # Should not pass because of encoding lstm
 - experiment: supernaedo2.3
@@ -736,6 +749,7 @@
     - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
+  parents: []
 
 # Should not pass because of decoding_layer gru
 - experiment: supernaedo2.3
@@ -759,6 +773,7 @@
     - name: /decoding_layer
       type: categorical
       value: gru
+  parents: []
 
 # Should pass
 - experiment: supernaedo2.3
@@ -782,6 +797,7 @@
     - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
+  parents: []
 
 # Should not pass to parent because of encoding lstm_with_attention
 - experiment: supernaedo2.3.1
@@ -802,6 +818,7 @@
     - name: /encoding
       type: categorical
       value: lstm_with_attention
+  parents: []
 
 # Should pass to parent
 - experiment: supernaedo2.3.1
@@ -822,6 +839,7 @@
     - name: /encoding
       type: categorical
       value: rnn
+  parents: []
 
 - experiment: supernaedo2.3.1.1
 
@@ -841,6 +859,7 @@
     - name: /encoding
       type: categorical
       value: rnn
+  parents: []
 
 - experiment: supernaedo2.3.1.2
 
@@ -860,6 +879,7 @@
     - name: /encoding
       type: categorical
       value: rnn
+  parents: []
 
 - experiment: supernaedo2.3.1.3
 
@@ -879,6 +899,7 @@
     - name: /encoding
       type: categorical
       value: rnn
+  parents: []
 
 - experiment: supernaedo2.2.1
 
@@ -898,6 +919,8 @@
     - name: /encoding_layer
       type: categorical
       value: rnn
+  parents: []
+
 
 ---
 
