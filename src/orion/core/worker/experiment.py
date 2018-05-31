@@ -20,6 +20,7 @@ from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.trial import Trial
+from orion.core.worker.trials_history import TrialsHistory
 
 log = logging.getLogger(__name__)
 
@@ -106,6 +107,7 @@ class Experiment(object):
         self.pool_size = None
         self.max_trials = None
         self.algorithms = None
+        self._trials_history = TrialsHistory()
 
         config = self._db.read('experiments',
                                {'name': name, 'metadata.user': user})
@@ -214,6 +216,9 @@ class Experiment(object):
                 trial.experiment = self._id
                 trial.status = 'new'
                 trial.submit_time = stamp
+
+                trial.parents = self._trials_history.get_most_recent_parents()
+
             trials_dicts = list(map(lambda x: x.to_dict(), trials))
             self._db.write('trials', trials_dicts)
         except DuplicateKeyError:
@@ -246,6 +251,9 @@ class Experiment(object):
         Value is `None` if the experiment is not configured.
         """
         return self._id
+
+    def update_parents(self, completed_trials):
+        self._trials_history.update_parents(completed_trials)
 
     @property
     def is_done(self):
