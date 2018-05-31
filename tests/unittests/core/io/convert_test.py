@@ -99,28 +99,28 @@ a_var = {b!s}
 
     def test_bad_parse_1(self, generic_converter):
         """Check that conflict is reported when duplicates are present."""
-        BAD_UNKNOWN_SAMPLE_1 = os.path.join(TEST_DIR, '..', 'bad_config1.unknown_type')
+        BAD_UNKNOWN_SAMPLE_1 = os.path.join(TEST_DIR, '..', 'bad_config1.txt')
         with pytest.raises(ValueError) as exc:
             generic_converter.parse(BAD_UNKNOWN_SAMPLE_1)
         assert '/lala/la' in str(exc)
 
     def test_bad_parse_2(self, generic_converter):
         """Check that conflict is reported even when more sneaky duplicate happens."""
-        BAD_UNKNOWN_SAMPLE_2 = os.path.join(TEST_DIR, '..', 'bad_config2.unknown_type')
+        BAD_UNKNOWN_SAMPLE_2 = os.path.join(TEST_DIR, '..', 'bad_config2.txt')
         with pytest.raises(ValueError) as exc:
             generic_converter.parse(BAD_UNKNOWN_SAMPLE_2)
         assert 'lala/la' in str(exc)
 
     def test_bad_parse_3(self, generic_converter):
         """Check that conflict is reported if a namespace points is both and not final."""
-        BAD_UNKNOWN_SAMPLE_3 = os.path.join(TEST_DIR, '..', 'bad_config3.unknown_type')
+        BAD_UNKNOWN_SAMPLE_3 = os.path.join(TEST_DIR, '..', 'bad_config3.txt')
         with pytest.raises(ValueError) as exc:
             generic_converter.parse(BAD_UNKNOWN_SAMPLE_3)
         assert 'lala' in str(exc)
 
     def test_bad_parse_4(self, generic_converter):
         """Check that conflict is reported if a namespace points is both and not final."""
-        BAD_UNKNOWN_SAMPLE_4 = os.path.join(TEST_DIR, '..', 'bad_config4.unknown_type')
+        BAD_UNKNOWN_SAMPLE_4 = os.path.join(TEST_DIR, '..', 'bad_config4.txt')
         with pytest.raises(ValueError) as exc:
             generic_converter.parse(BAD_UNKNOWN_SAMPLE_4)
         assert 'lala' in str(exc)
