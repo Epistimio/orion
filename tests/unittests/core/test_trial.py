@@ -183,3 +183,9 @@ class TestTrial(object):
         with pytest.raises(ValueError) as exc:
             t.full_name
         assert 'params' in str(exc.value)
+
+    def test_ancestors_empty(self, exp_config):
+        """Check if trial with no parents returns no ancestor"""
+        t = Trial(**exp_config[1][2])
+
+        assert len(t.fetch_all_ancestors()) == 0
