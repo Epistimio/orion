@@ -64,4 +64,5 @@ class Producer(object):
             results = list(map(format_trials.get_trial_results, completed_trials))
 
             log.debug("### Observe them.")
+            self.experiment.update_parents(completed_trials)
             self.algorithm.observe(points, results)
