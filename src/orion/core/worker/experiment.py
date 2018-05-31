@@ -26,7 +26,6 @@ from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.trial import Trial
-from orion.core.worker.trials_history import TrialsHistory
 
 log = logging.getLogger(__name__)
 
@@ -84,8 +83,7 @@ class Experiment(object):
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
-                 'algorithms', '_db', '_init_done', '_id', '_node', '_last_fetched',
-                 '_trials_history')
+                 'algorithms', '_db', '_init_done', '_id', '_node', '_last_fetched')
     non_branching_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name):
@@ -116,7 +114,6 @@ class Experiment(object):
         self.pool_size = None
         self.max_trials = None
         self.algorithms = None
-        self._trials_history = TrialsHistory()
 
         config = self._db.read('experiments',
                                {'name': name, 'metadata.user': user})
@@ -274,8 +271,6 @@ class Experiment(object):
         trial.status = 'new'
         trial.submit_time = stamp
 
-        trial.parents = self._trials_history.children
-
         self._db.write('trials', trial.to_dict())
 
     def fetch_completed_trials(self):
@@ -307,10 +302,6 @@ class Experiment(object):
         Value is `None` if the experiment is not configured.
         """
         return self._id
-
-    def update_history(self, completed_trials):
-        """Update the trials history"""
-        self._trials_history.update(completed_trials)
 
     @property
     def node(self):
