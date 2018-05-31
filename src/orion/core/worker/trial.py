@@ -21,7 +21,7 @@ class Trial(object):
     Attributes
     ----------
     experiment : str
-       Unique identifier for the experiment taht produced this trial.
+       Unique identifier for the experiment that produced this trial.
        Same as an `Experiment._id`.
     status : str
        Indicates how this trial is currently being used. Can take the following
@@ -141,7 +141,7 @@ class Trial(object):
 
         allowed_types = ('integer', 'real', 'categorical')
 
-    __slots__ = ('experiment', '_id', '_status', 'worker',
+    __slots__ = ('experiment', '_status', 'worker',
                  'submit_time', 'start_time', 'end_time', 'results', 'params')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
     NoID = None
@@ -155,7 +155,6 @@ class Trial(object):
                 setattr(self, attrname, None)
 
         self.status = 'new'
-        self._id = self.NoID
 
         for attrname, value in kwargs.items():
             if attrname == 'results':
@@ -187,8 +186,7 @@ class Trial(object):
         # (whatever value) to its `_id` on its own, but is should just
         # expect that it could have one
         trial_dictionary.pop('id')  # Pop invalid name for database id key
-        if self.is_registered:
-            trial_dictionary['_id'] = self.id
+        trial_dictionary['_id'] = self.id
 
         return trial_dictionary
 
@@ -214,8 +212,8 @@ class Trial(object):
 
     @property
     def id(self):
-        """Return database key `_id`."""
-        return self._id
+        """Return hash_name which is also the database key `_id`."""
+        return self.__hash__()
 
     @property
     def objective(self):
@@ -233,14 +231,13 @@ class Trial(object):
         """
         return self._fetch_one_result_of_type('gradient')
 
-    @property
-    def is_registered(self):
-        """Check whether `Trial` is registered in database based on `_id` value."""
-        return self._id is not self.NoID
+    def _repr_values(self, values, sep=','):
+        """Represent with a string the given values."""
+        return sep.join(map(lambda value: "{0.name}:{0.value}".format(value), values))
 
     def params_repr(self, sep=','):
-        """Represent with a string the parameter contained in this `Trial` object."""
-        return sep.join(map(lambda param: "{0.name}:{0.value}".format(param), self.params))
+        """Represent with a string the parameters contained in this `Trial` object."""
+        return self._repr_values(self.params)
 
     @property
     def hash_name(self):
@@ -251,6 +248,9 @@ class Trial(object):
         if not self.params:
             raise ValueError("Cannot distinguish this trial, as 'params' have not been set.")
         return hashlib.md5(self.params_repr().encode('utf-8')).hexdigest()
+
+    def __hash__(self):
+        return self.hash_name
 
     @property
     def full_name(self):
