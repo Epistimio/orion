@@ -130,9 +130,6 @@ def new_config(random_dt):
         pool_size=10,
         max_trials=1000,
         algorithms={'dumbalgo': {}},
-        # the following should be ignored by the setting function:
-        # status is not settable:
-        status='asdfafa',
         # attrs starting with '_' also
         _id='fasdfasfa',
         # and in general anything which is not in Experiment's slots
@@ -159,7 +156,6 @@ class TestInitExperiment(object):
         assert len(exp.metadata) == 2
         assert exp.pool_size is None
         assert exp.max_trials is None
-        assert exp.status is None
         assert exp.algorithms is None
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
@@ -179,7 +175,6 @@ class TestInitExperiment(object):
         assert len(exp.metadata) == 2
         assert exp.pool_size is None
         assert exp.max_trials is None
-        assert exp.status is None
         assert exp.algorithms is None
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
@@ -197,7 +192,6 @@ class TestInitExperiment(object):
         assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
         assert exp.pool_size == exp_config[0][0]['pool_size']
         assert exp.max_trials == exp_config[0][0]['max_trials']
-        assert exp.status == exp_config[0][0]['status']
         assert exp.algorithms == exp_config[0][0]['algorithms']
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
@@ -232,9 +226,7 @@ class TestConfigProperty(object):
         assert len(cfg['metadata']) == 2
         assert cfg['pool_size'] is None
         assert cfg['max_trials'] is None
-        assert cfg['status'] is None
         assert cfg['algorithms'] is None
-        assert len(cfg) == 7
 
     @pytest.mark.xfail(reason="To be implemented...", raises=NotImplementedError)
     def test_good_set_before_init_hit_with_diffs(self, exp_config):
@@ -263,7 +255,6 @@ class TestConfigProperty(object):
         # Deliver an external configuration to finalize init
         exp_config[0][0]['max_trials'] = 5000
         exp.configure(exp_config[0][0])
-        exp_config[0][0]['status'] = 'pending'
         exp_config[0][0]['algorithms']['dumbalgo']['done'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['judgement'] = None
         exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
@@ -281,7 +272,6 @@ class TestConfigProperty(object):
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
         exp_config[0][0]['pool_size'] = 10
-        exp_config[0][0]['status'] = 'pending'
         exp.configure(exp_config[0][0])
         exp_config[0][0]['algorithms']['dumbalgo']['done'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['judgement'] = None
@@ -303,7 +293,6 @@ class TestConfigProperty(object):
         assert _id != 'fasdfasfa'
         assert exp._id == _id
         new_config['refers'] = None
-        new_config['status'] = 'pending'
         new_config.pop('_id')
         new_config.pop('something_to_be_ignored')
         new_config['algorithms']['dumbalgo']['done'] = False
@@ -317,7 +306,6 @@ class TestConfigProperty(object):
         assert exp.metadata == new_config['metadata']
         assert exp.pool_size == new_config['pool_size']
         assert exp.max_trials == new_config['max_trials']
-        assert exp.status == new_config['status']
         #  assert exp.algorithms == new_config['algorithms']
 
     def test_inconsistent_1_set_before_init_no_hit(self, random_dt, new_config):
@@ -356,7 +344,6 @@ class TestConfigProperty(object):
         experiment_count_before = exp._db.count("experiments")
         exp.configure(exp_config[0][0])
         assert exp._init_done is True
-        exp_config[0][0]['status'] = 'pending'
         exp_config[0][0]['algorithms']['dumbalgo']['done'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['judgement'] = None
         exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
@@ -448,7 +435,6 @@ class TestConfigProperty(object):
         new_config['algorithms'] = 'dumbalgo'
         exp = Experiment('supernaedo3')
         exp.configure(new_config)
-        new_config['status'] = 'pending'
         new_config['algorithms'] = dict()
         new_config['algorithms']['dumbalgo'] = dict()
         new_config['algorithms']['dumbalgo']['done'] = False
@@ -573,6 +559,15 @@ def test_is_done_property(hacked_exp):
     """Check experiment stopping conditions for maximum number of trials completed."""
     assert hacked_exp.is_done is False
     hacked_exp.max_trials = 2
+    assert hacked_exp.is_done is True
+
+
+def test_is_done_property_with_algo(hacked_exp):
+    """Check experiment stopping conditions for algo which converged."""
+    # Configure experiment to have instantiated algo
+    hacked_exp.configure(hacked_exp.configuration)
+    assert hacked_exp.is_done is False
+    hacked_exp.algorithms.algorithm.done = True
     assert hacked_exp.is_done is True
 
 
