@@ -394,7 +394,7 @@ class TreeNode(object):
             rval, children_nodes = function(self, rval_children_nodes)
             return TreeNode(rval, parent=None, children=children_nodes)
         else:
-            raise TypeError("Invalid nodes: %s" % str(node))
+            raise ValueError("Invalid nodes: %s" % str(node))
 
     def __iter__(self):
         """Iterate on the tree with pre-order traversal"""
