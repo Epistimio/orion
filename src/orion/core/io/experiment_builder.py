@@ -29,7 +29,7 @@ hierarchy. From the more global to the more specific, there is:
         - `pool_size = src.orion.core.io.resolve_config.DEF_CMD_POOL_SIZE`
         - `algorithms = random`
         - Database specific:
-            * `datbase.name = 'orion'`
+            * `database.name = 'orion'`
             * `database.type = 'MongoDB'`
             * `database.host = ${HOST}`
 
