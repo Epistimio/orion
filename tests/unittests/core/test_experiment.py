@@ -453,30 +453,14 @@ class TestConfigProperty(object):
         # Deliver an external configuration to finalize init
         exp.configure(exp_config[0][2])
 
-        assert exp.status == "done"
+        assert exp.is_done
 
         exp = Experiment('supernaedo4')
         # Deliver an external configuration to finalize init
         exp_config[0][2]['max_trials'] = 1000
         exp.configure(exp_config[0][2])
 
-        assert exp.status == "pending"
-
-    @pytest.mark.usefixtures("trial_id_substitution")
-    def test_status_stays_broken(self, exp_config):
-        """Attribute exp.algorithms become objects after init."""
-        exp = Experiment('supernaedo3')
-        # Deliver an external configuration to finalize init
-        exp.configure(exp_config[0][1])
-
-        assert exp.status == "broken"
-
-        exp = Experiment('supernaedo3')
-        # Deliver an external configuration to finalize init
-        exp_config[0][1]['max_trials'] = 1000
-        exp.configure(exp_config[0][1])
-
-        assert exp.status == "broken"
+        assert not exp.is_done
 
 
 class TestReserveTrial(object):
@@ -648,7 +632,6 @@ class TestInitExperimentView(object):
         assert exp._experiment._last_fetched == exp_config[0][0]['metadata']['datetime']
         assert exp.pool_size == exp_config[0][0]['pool_size']
         assert exp.max_trials == exp_config[0][0]['max_trials']
-        assert exp.status == exp_config[0][0]['status']
         assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
 
         with pytest.raises(AttributeError):
