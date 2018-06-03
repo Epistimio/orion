@@ -184,9 +184,6 @@ class ExperimentBuilder(object):
 
         exp_config['metadata']['user'] = getpass.getuser()
 
-        if 'datetime' not in exp_config['metadata']:
-            exp_config['metadata']['datetime'] = datetime.datetime.utcnow()
-
         exp_config['metadata'] = resolve_config.infer_versioning_metadata(exp_config['metadata'])
 
         return exp_config

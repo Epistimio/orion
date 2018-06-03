@@ -97,9 +97,6 @@ def test_fetch_full_config_new_config(config_file, exp_config, random_dt):
 
     assert full_config['name'] == exp_config[0][0]['name']
     assert full_config['refers'] == exp_config[0][0]['refers']
-    assert full_config['metadata']['datetime'] == exp_config[0][0]['metadata']['datetime']
-    assert full_config['metadata'] == exp_config[0][0]['metadata']
-    assert full_config['metadata'] == exp_config[0][0]['metadata']
     assert full_config['metadata'] == exp_config[0][0]['metadata']
     assert full_config['pool_size'] == cmdconfig['pool_size']
     assert full_config['max_trials'] == cmdconfig['max_trials']
@@ -143,8 +140,8 @@ def test_fetch_full_config_no_hit(config_file, exp_config, random_dt):
     assert full_config['max_trials'] == 100
     assert full_config['name'] == 'supernaekei'
     assert full_config['pool_size'] == 1
-    assert full_config['metadata']['datetime'] == random_dt
     assert full_config['metadata']['user'] == 'tsirif'
+    assert 'datetime' not in full_config['metadata']
     assert 'refers' not in full_config
     assert 'status' not in full_config
 
