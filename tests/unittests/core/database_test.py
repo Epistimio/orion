@@ -52,11 +52,9 @@ class TestDatabaseFactory(object):
 class TestReadOnlyDatabase(object):
     """Test coherence of read-only database and its wrapped database."""
 
-    def test_valid_attributes(self):
+    def test_valid_attributes(self, create_db_instance):
         """Test attributes are coherent from view and wrapped database."""
-        database = Database(of_type='MongoDB', name='orion_test',
-                            username='user', password='pass')
-
+        database = create_db_instance
         readonly_database = ReadOnlyDB(database)
 
         assert readonly_database.is_connected == database.is_connected
@@ -65,11 +63,9 @@ class TestReadOnlyDatabase(object):
         assert readonly_database.username == database.username
         assert readonly_database.password == database.password
 
-    def test_read(self):
+    def test_read(self, create_db_instance):
         """Test read is coherent from view and wrapped database."""
-        database = Database(of_type='MongoDB', name='orion_test',
-                            username='user', password='pass')
-
+        database = create_db_instance
         readonly_database = ReadOnlyDB(database)
 
         args = {"collection_name": "trials", "query": {"experiment": "supernaedo2"}}
@@ -79,11 +75,9 @@ class TestReadOnlyDatabase(object):
         assert len(result) > 0  # Otherwise the test is pointless
         assert readonly_result == result
 
-    def test_invalid_attributes(self):
+    def test_invalid_attributes(self, create_db_instance):
         """Test that attributes for writing are not accessible."""
-        database = Database(of_type='MongoDB', name='orion_test',
-                            username='user', password='pass')
-
+        database = create_db_instance
         readonly_database = ReadOnlyDB(database)
 
         # Test that database.ensure_index indeed exists
