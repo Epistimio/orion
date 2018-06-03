@@ -140,14 +140,6 @@ def fetch_default_options():
     return default_config
 
 
-def merge_env_vars(config):
-    """Fetch environmental variables related to orion's managerial data.
-
-    :type config: :func:`nesteddict`
-    """
-    return merge_configs(config, fetch_env_vars())
-
-
 def fetch_env_vars():
     """Fetch environmental variables related to orion's managerial data."""
     env_vars = {}
@@ -162,39 +154,6 @@ def fetch_env_vars():
                 env_vars[signif][key] = value
 
     return env_vars
-
-
-def merge_orion_config(config, dbconfig, cmdconfig, cmdargs):
-    """
-    Oríon Configuration
-    -------------------
-
-    name --  Experiment's name.
-
-       If you provide a past experiment's name,
-       then that experiment will be resumed. This means that its history of
-       trials will be reused, along with any configurations logged in the
-       database which are not overwritten by current call to `orion` script.
-
-    max_trials -- Maximum number of trial evaluations to be computed
-
-       (required as a cmd line argument or a orion_config parameter)
-
-    pool_size -- Number of workers evaluating in parallel asychronously
-
-       (default: 10 @ default resource). Can be a dict of the form:
-       {resource_alias: subpool_size}
-
-    database -- dict with keys: 'type', 'name', 'host', 'port', 'username', 'password'
-
-    resources -- {resource_alias: (entry_address, scheduler, scheduler_ops)} (optional)
-
-    algorithm -- {optimizer module name : method-specific configuration}
-
-    .. seealso:: Method-specific configurations reside in `/config`
-
-    """
-    return merge_configs(config, dbconfig, cmdconfig, cmdargs)
 
 
 def merge_configs(*configs):
