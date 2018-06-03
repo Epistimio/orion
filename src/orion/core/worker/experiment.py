@@ -481,9 +481,9 @@ class ExperimentView(object):
     __slots__ = ('_experiment', )
 
     #                     Attributes
-    valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials", "status"] +
+    valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials"] +
                         # Properties
-                        ["space", "algorithms", "stats", "configuration"] +
+                        ["id", "is_done", "space", "algorithms", "stats", "configuration"] +
                         # Methods
                         ["fetch_completed_trials"])
 
@@ -502,7 +502,7 @@ class ExperimentView(object):
         """
         self._experiment = Experiment(name)
 
-        if self._experiment.status is None:
+        if self._experiment.id is None:
             raise ValueError("No experiment with given name '%s' for user '%s' inside database, "
                              "no view can be created." %
                              (self._experiment.name, self._experiment.metadata['user']))
@@ -516,21 +516,3 @@ class ExperimentView(object):
             raise AttributeError("Cannot access attribute %s on view-only experiments." % name)
 
         return getattr(self._experiment, name)
-
-    @property
-    def is_done(self):
-        """Return True, if this experiment is considered to be finished.
-
-        Note that call to this property will **not** change the status of the experiment in the
-        database. Only writable :class:`orion.core.worker.experiment.Experiment` would do so.
-
-        .. seealso::
-            :attr:`orion.core.worker.experiment.Experiment.is_done`
-        """
-        query = dict(
-            experiment=self._id,
-            status='completed'
-            )
-        num_completed_trials = self._experiment._db.count('trials', query)
-
-        return num_completed_trials >= self.max_trials or self.algorithms.is_done

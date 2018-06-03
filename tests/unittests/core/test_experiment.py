@@ -482,6 +482,23 @@ class TestConfigProperty(object):
         assert exp._id == new_config.pop('_id')
         assert exp.configuration == new_config
 
+    @pytest.mark.usefixtures("trial_id_substitution")
+    def test_status_is_pending_when_increase_max_trials(self, exp_config):
+        """Attribute exp.algorithms become objects after init."""
+        exp = Experiment('supernaedo4')
+
+        # Deliver an external configuration to finalize init
+        exp.configure(exp_config[0][2])
+
+        assert exp.is_done
+
+        exp = Experiment('supernaedo4')
+        # Deliver an external configuration to finalize init
+        exp_config[0][2]['max_trials'] = 1000
+        exp.configure(exp_config[0][2])
+
+        assert not exp.is_done
+
 
 class TestReserveTrial(object):
     """Calls to interface `Experiment.reserve_trial`."""
@@ -652,7 +669,6 @@ class TestInitExperimentView(object):
         assert exp._experiment._last_fetched == exp_config[0][0]['metadata']['datetime']
         assert exp.pool_size == exp_config[0][0]['pool_size']
         assert exp.max_trials == exp_config[0][0]['max_trials']
-        assert exp.status == exp_config[0][0]['status']
         assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
 
         with pytest.raises(AttributeError):
