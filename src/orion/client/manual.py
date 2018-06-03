@@ -49,7 +49,7 @@ def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
 
     experiment = Experiment(experiment_name)
     # Configuration is completely taken from the database
-    if experiment._id is None:
+    if experiment.id is None:
         raise ValueError("No experiment named '{}' could be found.".format(experiment_name))
     experiment.configure(experiment.configuration)
 

@@ -31,6 +31,9 @@ class Experiment(object):
     ----------
     name : str
        Unique identifier for this experiment per `user`.
+    id: object
+       id of the experiment in the database if experiment is configured. Value is `None`
+       if the experiment is not configured.
     refers : dict or list of `Experiment` objects, after initialization is done.
        A dictionary pointing to a past `Experiment` name, ``refers[name]``, whose
        trials we want to add in the history of completed trials we want to re-use.
@@ -231,6 +234,15 @@ class Experiment(object):
         self._last_fetched = datetime.datetime.utcnow()
 
         return completed_trials
+
+    # pylint: disable=invalid-name
+    @property
+    def id(self):
+        """Id of the experiment in the database if configured.
+
+        Value is `None` if the experiment is not configured.
+        """
+        return self._id
 
     @property
     def is_done(self):

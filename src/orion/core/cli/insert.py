@@ -66,7 +66,7 @@ def _execute(cmd_args, file_config):
     command_line_user_args = cmd_args['metadata'].pop('user_args', None)
     experiment = _infer_experiment(cmd_args, file_config)
 
-    if experiment._id is None:
+    if experiment.id is None:
         raise ValueError("No experiment with given name '%s' for user '%s' inside database, "
                          "can't insert." % (experiment.name, experiment.metadata['user']))
 
