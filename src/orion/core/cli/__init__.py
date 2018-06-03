@@ -16,12 +16,6 @@ from orion.core.cli.base import OrionArgsParser
 
 log = logging.getLogger(__name__)
 
-CLI_DOC_HEADER = """
-orion:
-  Orion cli script for asynchronous distributed optimization
-
-"""
-
 
 def load_modules_parser(orion_parser):
     """Search through the `cli` folder for any module containing a `add_subparser` function"""
@@ -44,7 +38,7 @@ def main(argv=None):
     # Fetch experiment name, user's script path and command line arguments
     # Use `-h` option to show help
 
-    orion_parser = OrionArgsParser(CLI_DOC_HEADER)
+    orion_parser = OrionArgsParser()
 
     load_modules_parser(orion_parser)
 

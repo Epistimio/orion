@@ -15,10 +15,17 @@ import textwrap
 import orion
 
 
+CLI_DOC_HEADER = """
+orion:
+  Orion cli script for asynchronous distributed optimization
+
+"""
+
+
 class OrionArgsParser:
     """Parser object handling the upper-level parsing of Oríon's arguments."""
 
-    def __init__(self, description):
+    def __init__(self, description=CLI_DOC_HEADER):
         """Create the pre-command arguments"""
         self.description = description
 
