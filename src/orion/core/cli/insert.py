@@ -15,7 +15,6 @@ import logging
 import os
 import re
 
-import orion
 from orion.core.cli import base as cli
 from orion.core.io.convert import infer_converter_from_file_type
 from orion.core.io.experiment_builder import ExperimentBuilder
@@ -39,25 +38,8 @@ def add_subparser(parser):
 
 def main(args):
     """Fetch config and insert new point"""
-    set_metadata(args)
-
-    _execute(args)
-
-
-def set_metadata(args):
-    """Set metadata from command line arguments."""
-    # Explicitly add orion's version as experiment's metadata
-    args['metadata'] = dict()
-    args['metadata']['orion_version'] = orion.core.__version__
-    log.debug("Using orion version %s", args['metadata']['orion_version'])
-
-    args.pop('user_script')
-    args['metadata']['user_args'] = args.pop('user_args')
-
-
-def _execute(cmd_args):
-    command_line_user_args = cmd_args['metadata'].pop('user_args', None)
-    experiment_view = ExperimentBuilder().build_view_from(cmd_args)
+    command_line_user_args = args.pop('user_args', None)
+    experiment_view = ExperimentBuilder().build_view_from(args)
 
     transformed_args = _build_from(command_line_user_args)
     exp_space = experiment_view.space

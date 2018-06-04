@@ -31,7 +31,7 @@ precedence is respected when building the settings dictionary:
 .. note:: `Optimization` entries are required, `Dynamic` entry is optional.
 
 """
-from copy import deepcopy
+import getpass
 import logging
 import os
 import socket
@@ -154,6 +154,27 @@ def fetch_env_vars():
                 env_vars[signif][key] = value
 
     return env_vars
+
+
+def fetch_metadata(cmdargs):
+    """Infer rest information about the process + versioning"""
+    metadata = {}
+
+    metadata['orion_version'] = orion.core.__version__
+
+    # Move 'user_script' and 'user_args' to 'metadata' key
+    user_script = cmdargs.get('user_script', None)
+    if user_script:
+        abs_user_script = os.path.abspath(user_script)
+        if is_exe(abs_user_script):
+            user_script = abs_user_script
+
+    metadata['user_script'] = user_script
+    metadata['user_args'] = cmdargs.get('user_args', None)
+
+    metadata['user'] = getpass.getuser()
+
+    return infer_versioning_metadata(metadata)
 
 
 def merge_configs(*configs):

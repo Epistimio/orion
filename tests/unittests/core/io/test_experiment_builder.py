@@ -7,18 +7,6 @@ import pytest
 from orion.core.io.experiment_builder import ExperimentBuilder
 
 
-@pytest.fixture
-def version_01(monkeypatch):
-    """Force orion version 0.1 on output of ExperimentBuilder.fetch_full_config"""
-    non_patched_fetch_full_config = ExperimentBuilder.fetch_full_config
-
-    def fetch_full_config(self, cmdargs):
-        full_config = non_patched_fetch_full_config(self, cmdargs)
-        full_config['metadata']['orion_version'] = 0.1
-        return full_config
-    monkeypatch.setattr(ExperimentBuilder, "fetch_full_config", fetch_full_config)
-
-
 @pytest.mark.usefixtures("clean_db")
 def test_fetch_local_config(config_file):
     """Test local config (default, env_vars, cmdconfig, cmdargs)"""
@@ -53,9 +41,7 @@ def test_fetch_local_config_from_incomplete_config(incomplete_config_file):
     assert local_config['pool_size'] == 10
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
 def test_fetch_db_config_no_hit(config_file, random_dt):
     """Verify that fetch_db_config returns an empty dict when the experiment is not in db"""
     cmdargs = {'name': 'supernaekei', 'config': config_file}
@@ -63,9 +49,7 @@ def test_fetch_db_config_no_hit(config_file, random_dt):
     assert db_config == {}
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
 def test_fetch_db_config_hit(config_file, exp_config):
     """Verify db config when experiment is in db"""
     cmdargs = {'name': 'supernaedo2', 'config': config_file}
@@ -80,9 +64,7 @@ def test_fetch_db_config_hit(config_file, exp_config):
     assert db_config['algorithms'] == exp_config[0][0]['algorithms']
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
 def test_fetch_full_config_new_config(config_file, exp_config, random_dt):
     """Verify full config with new config (causing branch)"""
     cmdargs = {'name': 'supernaedo2',
@@ -103,10 +85,8 @@ def test_fetch_full_config_new_config(config_file, exp_config, random_dt):
     assert full_config['algorithms'] == cmdconfig['algorithms']
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-@pytest.mark.usefixtures("with_user_tsirif")
-def test_fetch_full_config_old_config(old_config_file, exp_config):
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
+def test_fetch_full_config_old_config(old_config_file, exp_config, random_dt):
     """Verify full config with old config (not causing branch)"""
     cmdargs = {'name': 'supernaedo2',
                'config': old_config_file,
@@ -127,9 +107,7 @@ def test_fetch_full_config_old_config(old_config_file, exp_config):
     assert full_config['algorithms'] == cmdconfig['algorithms']
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
 def test_fetch_full_config_no_hit(config_file, exp_config, random_dt):
     """Verify full config when experiment not in db"""
     cmdargs = {'name': 'supernaekei', 'config': config_file}
@@ -146,9 +124,7 @@ def test_fetch_full_config_no_hit(config_file, exp_config, random_dt):
     assert 'status' not in full_config
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
 def test_build_view_from_no_hit(config_file, create_db_instance, exp_config):
     """Try building experiment view when not in db"""
     cmdargs = {'name': 'supernaekei', 'config': config_file}
@@ -158,10 +134,8 @@ def test_build_view_from_no_hit(config_file, create_db_instance, exp_config):
     assert "No experiment with given name 'supernaekei' for user 'tsirif'" in str(exc_info.value)
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-@pytest.mark.usefixtures("with_user_tsirif")
-def test_build_view_from(config_file, create_db_instance, exp_config):
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
+def test_build_view_from(config_file, create_db_instance, exp_config, random_dt):
     """Try building experiment view when in db"""
     cmdargs = {'name': 'supernaedo2', 'config': config_file}
     exp_view = ExperimentBuilder().build_view_from(cmdargs)
@@ -179,9 +153,7 @@ def test_build_view_from(config_file, create_db_instance, exp_config):
     assert exp_view.algorithms.configuration == exp_config[0][0]['algorithms']
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
 def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_dt):
     """Try building experiment when not in db"""
     cmdargs = {'name': 'supernaekei', 'config': config_file,
@@ -207,10 +179,7 @@ def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_d
     assert exp.algorithms.configuration == {'random': {}}
 
 
-@pytest.mark.usefixtures("version_01")
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("version_XYZ", "clean_db", "null_db_instances", "with_user_tsirif")
 def test_build_from_hit(old_config_file, create_db_instance, exp_config):
     """Try building experiment when in db (no branch)"""
     cmdargs = {'name': 'supernaedo2',
@@ -236,10 +205,7 @@ def test_build_from_hit(old_config_file, create_db_instance, exp_config):
     assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
 
 
-@pytest.mark.usefixtures("version_01")
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("version_XYZ", "clean_db", "null_db_instances", "with_user_tsirif")
 def test_build_from_config_no_hit(config_file, create_db_instance, exp_config, random_dt):
     """Try building experiment from config when not in db"""
     cmdargs = {'name': 'supernaekei', 'config': config_file,
@@ -266,9 +232,7 @@ def test_build_from_config_no_hit(config_file, create_db_instance, exp_config, r
     assert exp.algorithms.configuration == {'random': {}}
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
 def test_build_from_config_hit(old_config_file, create_db_instance, exp_config):
     """Try building experiment from config when in db (no branch)"""
     cmdargs = {'name': 'supernaedo2',

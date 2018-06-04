@@ -12,7 +12,7 @@
     user: tsirif
     datetime: 2017-11-22T20:00:00
     # from orion.__version__
-    orion_version: 0.1
+    orion_version: XYZ
     # from `orion`'s args
     user_script: full_path/main.py
     # from `orion`'s args
@@ -53,7 +53,7 @@
   metadata:
     user: tsirif
     datetime: 2017-11-22T21:00:00
-    orion_version: 0.1
+    orion_version: XYZ
     user_script: full_path/ieeeela.py
     user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
     user_vcs: git
@@ -81,7 +81,7 @@
   metadata:
     user: tsirif
     datetime: 2017-11-22T21:00:00
-    orion_version: 0.1
+    orion_version: XYZ
     user_script: full_path/ieeeela.py
     user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
     user_vcs: git
@@ -110,7 +110,7 @@
   metadata:
     user: dendi
     datetime: 2017-11-22T20:00:00
-    orion_version: 0.1
+    orion_version: XYZ
     user_script: full_path/main.py
     user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
     user_vcs: git

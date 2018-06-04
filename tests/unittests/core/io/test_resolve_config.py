@@ -2,10 +2,20 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.resolve_config`."""
 
-
 import os
 
+import pytest
+
 import orion.core.io.resolve_config as resolve_config
+
+
+@pytest.fixture
+def force_is_exe(monkeypatch):
+    """Force orion version XYZ on output of resolve_config.fetch_metadata"""
+    def is_exe(path):
+        return True
+
+    monkeypatch.setattr(resolve_config, "is_exe", is_exe)
 
 
 def test_fetch_default_options():
@@ -39,6 +49,50 @@ def test_fetch_env_vars():
 
     env_vars_config = resolve_config.fetch_env_vars()
     assert env_vars_config == {'database': {'name': db_name, 'type': db_type}}
+
+
+@pytest.mark.usefixtures("version_XYZ")
+def test_fetch_metadata_orion_version():
+    """Verify orion version"""
+    metadata = resolve_config.fetch_metadata({})
+    assert metadata['orion_version'] == 'XYZ'
+
+
+@pytest.mark.usefixtures("force_is_exe")
+def test_fetch_metadata_executable_users_script():
+    """Verify executable user script with absolute path"""
+    cmdargs = {'user_script': 'A'}
+    metadata = resolve_config.fetch_metadata(cmdargs)
+    assert metadata['user_script'] == os.path.abspath('A')
+
+
+def test_fetch_metadata_non_executable_users_script():
+    """Verify executable user script keeps given path"""
+    cmdargs = {'user_script': 'A'}
+    metadata = resolve_config.fetch_metadata(cmdargs)
+    assert metadata['user_script'] == 'A'
+
+
+@pytest.mark.usefixtures()
+def test_fetch_metadata_user_args():
+    """Verify user args"""
+    user_args = range(10)
+    cmdargs = {'user_args': user_args}
+    metadata = resolve_config.fetch_metadata(cmdargs)
+    assert metadata['user_args'] == user_args
+
+
+@pytest.mark.usefixtures("with_user_tsirif")
+def test_fetch_metadata_user_tsirif():
+    """Verify user name"""
+    metadata = resolve_config.fetch_metadata({})
+    assert metadata['user'] == "tsirif"
+
+
+def test_fetch_metadata():
+    """Verify no additional data is stored in metadata"""
+    metadata = resolve_config.fetch_metadata({})
+    len(metadata) == 4
 
 
 def test_fetch_config_no_hit():
