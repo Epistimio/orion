@@ -170,17 +170,17 @@ class TestEnsureIndex(object):
 
     def test_new_index(self, orion_db):
         """Index should be added to mongo database"""
-        assert "status_1" not in orion_db._db.experiments.index_information()
-        orion_db.ensure_index('experiments', 'status')
-        assert "status_1" in orion_db._db.experiments.index_information()
+        assert "status_1" not in orion_db._db.trials.index_information()
+        orion_db.ensure_index('trials', 'status')
+        assert "status_1" in orion_db._db.trials.index_information()
 
     def test_existing_index(self, orion_db):
         """Index should be added to mongo database and reattempt should do nothing"""
-        assert "status_1" not in orion_db._db.experiments.index_information()
-        orion_db.ensure_index('experiments', 'status')
-        assert "status_1" in orion_db._db.experiments.index_information()
-        orion_db.ensure_index('experiments', 'status')
-        assert "status_1" in orion_db._db.experiments.index_information()
+        assert "status_1" not in orion_db._db.trials.index_information()
+        orion_db.ensure_index('trials', 'status')
+        assert "status_1" in orion_db._db.trials.index_information()
+        orion_db.ensure_index('trials', 'status')
+        assert "status_1" in orion_db._db.trials.index_information()
 
     def test_ordered_index(self, orion_db):
         """Sort order should be added to index"""
@@ -343,8 +343,8 @@ class TestReadAndWrite(object):
         loaded_config = orion_db.read_and_write(
             'experiments',
             {'name': 'supernaedo2', 'metadata.user': 'dendi'},
-            {'status': 'lalala'})
-        exp_config[0][2]['status'] = 'lalala'
+            {'pool_size': 'lalala'})
+        exp_config[0][2]['pool_size'] = 'lalala'
         assert loaded_config == exp_config[0][2]
 
     def test_read_and_write_many(self, database, orion_db, exp_config):
@@ -357,22 +357,22 @@ class TestReadAndWrite(object):
         loaded_config = orion_db.read_and_write(
             'experiments',
             {'name': 'supernaedo2'},
-            {'status': 'lalala'})
+            {'pool_size': 'lalala'})
 
-        exp_config[0][0]['status'] = 'lalala'
+        exp_config[0][0]['pool_size'] = 'lalala'
         assert loaded_config == exp_config[0][0]
 
         # Make sure it only changed the first document found
         documents = orion_db.read('experiments', {'name': 'supernaedo2'})
-        assert documents[0]['status'] == 'lalala'
-        assert documents[1]['status'] != 'lalala'
+        assert documents[0]['pool_size'] == 'lalala'
+        assert documents[1]['pool_size'] != 'lalala'
 
     def test_read_and_write_no_match(self, database, orion_db):
         """Should return None when there is no match."""
         loaded_config = orion_db.read_and_write(
             'experiments',
             {'name': 'lalala'},
-            {'status': 'lalala'})
+            {'pool_size': 'lalala'})
 
         assert loaded_config is None
 

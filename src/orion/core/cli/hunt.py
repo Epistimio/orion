@@ -152,7 +152,6 @@ def create_experiment(exp_name, expconfig, cmdconfig, cmdargs):
     # Pop out configuration concerning databases and resources
     expconfig.pop('database', None)
     expconfig.pop('resources', None)
-    expconfig.pop('status', None)
 
     log.info(expconfig)
 

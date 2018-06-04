@@ -38,9 +38,6 @@
   pool_size: 2
   max_trials: 1000
 
-  # functional info
-  status: completed  # pending, done, broken
-
   # **complete** specification of algorithms used
   # user's configuration, but defaults are inferred
   algorithms:
@@ -71,7 +68,6 @@
         value: gru
   pool_size: 2
   max_trials: 1000
-  status: broken
   algorithms:
     dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
       value: 5
@@ -100,7 +96,6 @@
         value: gru
   pool_size: 2
   max_trials: 1000
-  status: running
   algorithms:
     dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
       value: 5
