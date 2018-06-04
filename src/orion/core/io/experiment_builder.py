@@ -244,6 +244,6 @@ class ExperimentBuilder(object):
             # Next build_from_config() should either load experiment from database
             # and run smoothly if identical or trigger an experiment fork.
             # In other words, there should not be more than 1 level of recursion.
-            experiment = self._build_from_config(config)
+            experiment = self.build_from_config(config)
 
         return experiment
