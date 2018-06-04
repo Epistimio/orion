@@ -75,11 +75,8 @@ hierarchy. From the more global to the more specific, there is:
 
 """
 import datetime
-import getpass
 import logging
-import os
 
-import orion
 from orion.core.io import resolve_config
 from orion.core.io.database import Database, DuplicateKeyError
 from orion.core.worker.experiment import Experiment, ExperimentView
@@ -145,6 +142,10 @@ class ExperimentBuilder(object):
 
         return experiment_view.configuration
 
+    def fetch_metadata(self, cmdargs):
+        """Infer rest information about the process + versioning"""
+        return resolve_config.fetch_metadata(cmdargs)
+
     def fetch_full_config(self, cmdargs):
         """Get dictionary of the full configuration of the experiment.
 
@@ -162,29 +163,10 @@ class ExperimentBuilder(object):
         env_vars = self.fetch_env_vars()
         db_config = self.fetch_db_config(cmdargs)
         cmdconfig = self.fetch_file_config(cmdargs)
+        metadata = dict(metadata=self.fetch_metadata(cmdargs))
 
         exp_config = resolve_config.merge_configs(
-            default_options, env_vars, db_config, cmdconfig, cmdargs)
-
-        # Infer rest information about the process + versioning
-        if 'metadata' not in exp_config:
-            exp_config['metadata'] = {}
-
-        exp_config['metadata']['orion_version'] = orion.core.__version__
-
-        # Move 'user_script' and 'user_args' to 'metadata' key
-        user_script = exp_config.pop('user_script', None)
-        if user_script:
-            abs_user_script = os.path.abspath(user_script)
-            if resolve_config.is_exe(abs_user_script):
-                user_script = abs_user_script
-
-        exp_config['metadata']['user_script'] = user_script
-        exp_config['metadata']['user_args'] = exp_config.pop('user_args', None)
-
-        exp_config['metadata']['user'] = getpass.getuser()
-
-        exp_config['metadata'] = resolve_config.infer_versioning_metadata(exp_config['metadata'])
+            default_options, env_vars, db_config, cmdconfig, cmdargs, metadata)
 
         return exp_config
 
