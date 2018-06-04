@@ -213,7 +213,17 @@ class ExperimentBuilder(object):
 
         log.info(full_config)
 
-        return self.build_from_config(full_config)
+        try:
+            experiment = self.build_from_config(full_config)
+        except DuplicateKeyError:
+            # Fails if concurrent experiment with identical (name, metadata.user)
+            # is written first in the database.
+            # Next build_from(cmdargs) should either load experiment from database
+            # and run smoothly if identical or trigger an experiment fork.
+            # In other words, there should not be more than 1 level of recursion.
+            experiment = self.build_from(cmdargs)
+
+        return experiment
 
     def build_from_config(self, config):
         """Build a fully configured (and writable) experiment based on full configuration.
@@ -236,14 +246,6 @@ class ExperimentBuilder(object):
         experiment = Experiment(config['name'])
 
         # Finish experiment's configuration and write it to database.
-        try:
-            experiment.configure(config)
-        except DuplicateKeyError:
-            # Fails if concurrent experiment with identical (name, metadata.user)
-            # is written first in the database.
-            # Next build_from_config() should either load experiment from database
-            # and run smoothly if identical or trigger an experiment fork.
-            # In other words, there should not be more than 1 level of recursion.
-            experiment = self.build_from_config(config)
+        experiment.configure(config)
 
         return experiment
