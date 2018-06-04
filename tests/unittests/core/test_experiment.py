@@ -151,9 +151,8 @@ class TestInitExperiment(object):
         assert exp.name == 'supernaekei'
         assert exp.refers is None
         assert exp.metadata['user'] == 'tsirif'
-        assert exp.metadata['datetime'] == random_dt
         assert exp._last_fetched == random_dt
-        assert len(exp.metadata) == 2
+        assert len(exp.metadata) == 1
         assert exp.pool_size is None
         assert exp.max_trials is None
         assert exp.algorithms is None
@@ -170,9 +169,8 @@ class TestInitExperiment(object):
         assert exp.name == 'supernaedo2'
         assert exp.refers is None
         assert exp.metadata['user'] == 'bouthilx'
-        assert exp.metadata['datetime'] == random_dt
         assert exp._last_fetched == random_dt
-        assert len(exp.metadata) == 2
+        assert len(exp.metadata) == 1
         assert exp.pool_size is None
         assert exp.max_trials is None
         assert exp.algorithms is None
@@ -222,8 +220,7 @@ class TestConfigProperty(object):
         assert cfg['name'] == 'supernaekei'
         assert cfg['refers'] is None
         assert cfg['metadata']['user'] == 'tsirif'
-        assert cfg['metadata']['datetime'] == random_dt
-        assert len(cfg['metadata']) == 2
+        assert len(cfg['metadata']) == 1
         assert cfg['pool_size'] is None
         assert cfg['max_trials'] is None
         assert cfg['algorithms'] is None
