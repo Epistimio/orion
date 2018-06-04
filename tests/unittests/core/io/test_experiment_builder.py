@@ -42,18 +42,18 @@ def test_fetch_local_config_from_incomplete_config(incomplete_config_file):
 
 
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
-def test_fetch_db_config_no_hit(config_file, random_dt):
-    """Verify that fetch_db_config returns an empty dict when the experiment is not in db"""
+def test_fetch_config_from_db_no_hit(config_file, random_dt):
+    """Verify that fetch_config_from_db returns an empty dict when the experiment is not in db"""
     cmdargs = {'name': 'supernaekei', 'config': config_file}
-    db_config = ExperimentBuilder().fetch_db_config(cmdargs)
+    db_config = ExperimentBuilder().fetch_config_from_db(cmdargs)
     assert db_config == {}
 
 
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
-def test_fetch_db_config_hit(config_file, exp_config):
+def test_fetch_config_from_db_hit(config_file, exp_config, random_dt):
     """Verify db config when experiment is in db"""
     cmdargs = {'name': 'supernaedo2', 'config': config_file}
-    db_config = ExperimentBuilder().fetch_db_config(cmdargs)
+    db_config = ExperimentBuilder().fetch_config_from_db(cmdargs)
 
     assert db_config['name'] == exp_config[0][0]['name']
     assert db_config['refers'] == exp_config[0][0]['refers']
