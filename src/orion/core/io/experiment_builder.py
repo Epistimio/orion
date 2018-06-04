@@ -111,20 +111,6 @@ class ExperimentBuilder(object):
         """Get dictionary of options from configuration file provided in command-line"""
         return resolve_config.fetch_config(cmdargs)
 
-    def fetch_local_config(self, cmdargs):
-        """Get dictionary of options from all local sources (not from db)
-
-        .. seealso::
-
-            `orion.core.io.experiment_builder` for more information on the hierarchy of
-            configurations.
-        """
-        default_options = self.fetch_default_options()
-        env_vars = self.fetch_env_vars()
-        cmdconfig = self.fetch_file_config(cmdargs)
-
-        return resolve_config.merge_configs(default_options, env_vars, cmdconfig, cmdargs)
-
     def fetch_config_from_db(self, cmdargs):
         """Get dictionary of options from experiment found in the database
 
@@ -145,13 +131,20 @@ class ExperimentBuilder(object):
         """Infer rest information about the process + versioning"""
         return resolve_config.fetch_metadata(cmdargs)
 
-    def fetch_full_config(self, cmdargs):
+    def fetch_full_config(self, cmdargs, use_db=True):
         """Get dictionary of the full configuration of the experiment.
 
         .. seealso::
 
             `orion.core.io.experiment_builder` for more information on the hierarchy of
             configurations.
+
+        Parameters
+        ----------
+        cmdargs:
+
+        use_db: bool
+            Use experiment configuration found in database if True. Defaults to True.
 
         Note
         ----
@@ -161,7 +154,10 @@ class ExperimentBuilder(object):
         """
         default_options = self.fetch_default_options()
         env_vars = self.fetch_env_vars()
-        config_from_db = self.fetch_config_from_db(cmdargs)
+        if use_db:
+            config_from_db = self.fetch_config_from_db(cmdargs)
+        else:
+            config_from_db = {}
         cmdconfig = self.fetch_file_config(cmdargs)
         metadata = dict(metadata=self.fetch_metadata(cmdargs))
 
@@ -181,7 +177,7 @@ class ExperimentBuilder(object):
             :class:`orion.core.worker.experiment.ExperimentView` for more information on the
             experiment view object.
         """
-        local_config = self.fetch_local_config(cmdargs)
+        local_config = self.fetch_full_config(cmdargs, use_db=False)
 
         db_opts = local_config['database']
         dbtype = db_opts.pop('type')
@@ -216,11 +212,6 @@ class ExperimentBuilder(object):
         full_config = self.fetch_full_config(cmdargs)
 
         log.info(full_config)
-
-        # Pop out configuration concerning databases and resources
-        full_config.pop('database', None)
-        full_config.pop('resources', None)
-        full_config.pop('status', None)
 
         return self.build_from_config(full_config)
 
