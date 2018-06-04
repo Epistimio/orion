@@ -11,7 +11,7 @@ from orion.core.io.experiment_builder import ExperimentBuilder
 def test_fetch_local_config(config_file):
     """Test local config (default, env_vars, cmdconfig, cmdargs)"""
     cmdargs = {"config": config_file}
-    local_config = ExperimentBuilder().fetch_local_config(cmdargs)
+    local_config = ExperimentBuilder().fetch_full_config(cmdargs, use_db=False)
 
     assert local_config['algorithms'] == 'random'
     assert local_config['database']['host'] == 'mongodb://user:pass@localhost'
@@ -30,7 +30,7 @@ def test_fetch_local_config_from_incomplete_config(incomplete_config_file):
     This is to ensure merge_configs update properly the subconfigs
     """
     cmdargs = {"config": incomplete_config_file}
-    local_config = ExperimentBuilder().fetch_local_config(cmdargs)
+    local_config = ExperimentBuilder().fetch_full_config(cmdargs, use_db=False)
 
     assert local_config['algorithms'] == 'random'
     assert local_config['database']['host'] == 'mongodb://user:pass@localhost'
