@@ -11,7 +11,6 @@
 
 import logging
 
-import orion
 from orion.core.cli import base as cli
 from orion.core.io.experiment_builder import ExperimentBuilder
 
@@ -32,23 +31,6 @@ def add_subparser(parser):
 
 
 def main(args):
-    """Set metadata and initialize experiment"""
-    set_metadata(args)
-
-    _execute(args)
-
-
-def set_metadata(args):
-    """Set metadata from command line arguments."""
-    # Explicitly add orion's version as experiment's metadata
-    args['metadata'] = dict()
-    args['metadata']['orion_version'] = orion.core.__version__
-    log.debug("Using orion version %s", args['metadata']['orion_version'])
-
-    args.pop('user_script')
-    args['metadata']['user_args'] = args.pop('user_args')
-
-
-# By building the experiment, we create a new experiment document in database
-def _execute(cmdargs):
-    ExperimentBuilder().build_from(cmdargs)
+    """Build and initialize experiment"""
+    # By building the experiment, we create a new experiment document in database
+    ExperimentBuilder().build_from(args)
