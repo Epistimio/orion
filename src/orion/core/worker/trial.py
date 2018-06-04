@@ -141,7 +141,7 @@ class Trial(object):
 
         allowed_types = ('integer', 'real', 'categorical')
 
-    __slots__ = ('experiment', '_status', 'worker',
+    __slots__ = ('experiment', '_status', 'worker', '_id',
                  'submit_time', 'start_time', 'end_time', 'results', 'params')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
     NoID = None
@@ -166,13 +166,20 @@ class Trial(object):
                 for item in value:
                     attr.append(self.Param(**item))
             else:
-                setattr(self, attrname, value)
+                if attrname == '_id':
+                    if self.params is not None and self.experiment is not None:
+                        self._id = self.id
+                else:
+                    setattr(self, attrname, value)
 
     def to_dict(self):
         """Needed to be able to convert `Trial` to `dict` form."""
         trial_dictionary = dict()
 
         for attrname in self.__slots__:
+            if attrname == '_id':
+                continue
+
             attrname = attrname.lstrip("_")
             trial_dictionary[attrname] = getattr(self, attrname)
 
@@ -182,10 +189,6 @@ class Trial(object):
             trial_dictionary[attrname] = list(map(lambda x: x.to_dict(),
                                                   getattr(self, attrname)))
 
-        # Trial object should not be able to set a value
-        # (whatever value) to its `_id` on its own, but is should just
-        # expect that it could have one
-        trial_dictionary.pop('id')  # Pop invalid name for database id key
         trial_dictionary['_id'] = self.id
 
         return trial_dictionary
@@ -237,7 +240,7 @@ class Trial(object):
 
     def params_repr(self, sep=','):
         """Represent with a string the parameters contained in this `Trial` object."""
-        return self._repr_values(self.params)
+        return self._repr_values(self.params, sep)
 
     @property
     def hash_name(self):
@@ -247,9 +250,10 @@ class Trial(object):
         """
         if not self.params:
             raise ValueError("Cannot distinguish this trial, as 'params' have not been set.")
-        return hashlib.md5(self.params_repr().encode('utf-8')).hexdigest()
+        return hashlib.md5((self.params_repr() + str(self.experiment)).encode('utf-8')).hexdigest()
 
     def __hash__(self):
+        """Return the hashname for this trial"""
         return self.hash_name
 
     @property
