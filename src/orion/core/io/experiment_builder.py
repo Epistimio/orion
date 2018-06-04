@@ -126,8 +126,8 @@ class ExperimentBuilder(object):
 
         return resolve_config.merge_configs(default_options, env_vars, cmdconfig, cmdargs)
 
-    def fetch_db_config(self, cmdargs):
-        """Get dictionary of options from all local sources (not from db)
+    def fetch_config_from_db(self, cmdargs):
+        """Get dictionary of options from experiment found in the database
 
         Note
         ----
@@ -161,12 +161,12 @@ class ExperimentBuilder(object):
         """
         default_options = self.fetch_default_options()
         env_vars = self.fetch_env_vars()
-        db_config = self.fetch_db_config(cmdargs)
+        config_from_db = self.fetch_config_from_db(cmdargs)
         cmdconfig = self.fetch_file_config(cmdargs)
         metadata = dict(metadata=self.fetch_metadata(cmdargs))
 
         exp_config = resolve_config.merge_configs(
-            default_options, env_vars, db_config, cmdconfig, cmdargs, metadata)
+            default_options, env_vars, config_from_db, cmdconfig, cmdargs, metadata)
 
         return exp_config
 
