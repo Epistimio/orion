@@ -9,7 +9,7 @@ import pytest
 
 from orion.algo.base import BaseAlgorithm
 from orion.core.io.database import Database, DuplicateKeyError
-from orion.core.worker.experiment import Experiment
+from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
 
 
@@ -154,9 +154,8 @@ class TestInitExperiment(object):
         assert exp.name == 'supernaekei'
         assert exp.refers is None
         assert exp.metadata['user'] == 'tsirif'
-        assert exp.metadata['datetime'] == random_dt
         assert exp._last_fetched == random_dt
-        assert len(exp.metadata) == 2
+        assert len(exp.metadata) == 1
         assert exp.pool_size is None
         assert exp.max_trials is None
         assert exp.status is None
@@ -174,9 +173,8 @@ class TestInitExperiment(object):
         assert exp.name == 'supernaedo2'
         assert exp.refers is None
         assert exp.metadata['user'] == 'bouthilx'
-        assert exp.metadata['datetime'] == random_dt
         assert exp._last_fetched == random_dt
-        assert len(exp.metadata) == 2
+        assert len(exp.metadata) == 1
         assert exp.pool_size is None
         assert exp.max_trials is None
         assert exp.status is None
@@ -228,8 +226,7 @@ class TestConfigProperty(object):
         assert cfg['name'] == 'supernaekei'
         assert cfg['refers'] is None
         assert cfg['metadata']['user'] == 'tsirif'
-        assert cfg['metadata']['datetime'] == random_dt
-        assert len(cfg['metadata']) == 2
+        assert len(cfg['metadata']) == 1
         assert cfg['pool_size'] is None
         assert cfg['max_trials'] is None
         assert cfg['status'] is None
@@ -336,13 +333,11 @@ class TestConfigProperty(object):
             exp.configure(new_config)
         assert 'inconsistent' in str(exc_info.value)
 
-    def test_inconsistent_3_set_before_init_no_hit(self, random_dt, new_config):
+    def test_not_inconsistent_3_set_before_init_no_hit(self, random_dt, new_config):
         """Test inconsistent configuration because of datetime."""
         exp = Experiment(new_config['name'])
         new_config['metadata']['datetime'] = 123
-        with pytest.raises(ValueError) as exc_info:
-            exp.configure(new_config)
-        assert 'inconsistent' in str(exc_info.value)
+        exp.configure(new_config)
 
     def test_get_after_init_plus_hit_no_diffs(self, exp_config):
         """Return a configuration dict according to an experiment object.
@@ -448,7 +443,6 @@ class TestConfigProperty(object):
         new_config['algorithms'] = 'dumbalgo'
         exp = Experiment('supernaedo3')
         exp.configure(new_config)
-        new_config['status'] = 'pending'
         new_config['algorithms'] = dict()
         new_config['algorithms']['dumbalgo'] = dict()
         new_config['algorithms']['dumbalgo']['done'] = False
@@ -458,6 +452,39 @@ class TestConfigProperty(object):
         new_config['algorithms']['dumbalgo']['value'] = 5
         assert exp._id == new_config.pop('_id')
         assert exp.configuration == new_config
+
+    @pytest.mark.usefixtures("trial_id_substitution")
+    def test_status_is_pending_when_increase_max_trials(self, exp_config):
+        """Attribute exp.algorithms become objects after init."""
+        exp = Experiment('supernaedo4')
+
+        # Deliver an external configuration to finalize init
+        exp.configure(exp_config[0][2])
+
+        assert exp.status == "done"
+
+        exp = Experiment('supernaedo4')
+        # Deliver an external configuration to finalize init
+        exp_config[0][2]['max_trials'] = 1000
+        exp.configure(exp_config[0][2])
+
+        assert exp.status == "pending"
+
+    @pytest.mark.usefixtures("trial_id_substitution")
+    def test_status_stays_broken(self, exp_config):
+        """Attribute exp.algorithms become objects after init."""
+        exp = Experiment('supernaedo3')
+        # Deliver an external configuration to finalize init
+        exp.configure(exp_config[0][1])
+
+        assert exp.status == "broken"
+
+        exp = Experiment('supernaedo3')
+        # Deliver an external configuration to finalize init
+        exp_config[0][1]['max_trials'] = 1000
+        exp.configure(exp_config[0][1])
+
+        assert exp.status == "broken"
 
 
 class TestReserveTrial(object):
@@ -519,7 +546,7 @@ class TestReserveTrial(object):
     def test_reserve_with_score(self, hacked_exp, exp_config):
         """Reserve with a score object that can do its job."""
         self.times_called = 0
-        hacked_exp.configure(exp_config[0][2])
+        hacked_exp.configure(exp_config[0][3])
         trial = hacked_exp.reserve_trial(score_handle=self.fake_handle)
         exp_config[1][6]['status'] = 'reserved'
         assert trial.to_dict() == exp_config[1][6]
@@ -582,7 +609,111 @@ def test_experiment_stats(hacked_exp, exp_config, random_dt):
     assert stats['trials_completed'] == 3
     assert stats['best_trials_id'] == exp_config[1][1]['_id']
     assert stats['best_evaluation'] == 2
-    assert stats['start_time'] == exp_config[0][2]['metadata']['datetime']
+    assert stats['start_time'] == exp_config[0][3]['metadata']['datetime']
     assert stats['finish_time'] == exp_config[1][2]['end_time']
     assert stats['duration'] == stats['finish_time'] - stats['start_time']
     assert len(stats) == 6
+
+
+class TestInitExperimentView(object):
+    """Create new ExperimentView instance."""
+
+    @pytest.mark.usefixtures("with_user_tsirif")
+    def test_empty_experiment_view(self):
+        """Hit user name, but exp_name does not hit the db."""
+        with pytest.raises(ValueError) as exc_info:
+            ExperimentView('supernaekei')
+        assert ("No experiment with given name 'supernaekei' for user 'tsirif'"
+                in str(exc_info.value))
+
+    @pytest.mark.usefixtures("with_user_bouthilx")
+    def test_empty_experiment_view_due_to_username(self):
+        """Hit exp_name, but user's name does not hit the db, create new entry."""
+        with pytest.raises(ValueError) as exc_info:
+            ExperimentView('supernaedo2')
+        assert ("No experiment with given name 'supernaedo2' for user 'bouthilx'"
+                in str(exc_info.value))
+
+    @pytest.mark.usefixtures("with_user_tsirif")
+    def test_existing_experiment_view(self, create_db_instance, exp_config):
+        """Hit exp_name + user's name in the db, fetch most recent entry."""
+        exp = ExperimentView('supernaedo2')
+        assert exp._experiment._init_done is True
+        assert exp._experiment._db._database is create_db_instance
+        assert exp._id == exp_config[0][0]['_id']
+        assert exp.name == exp_config[0][0]['name']
+        assert exp.refers == exp_config[0][0]['refers']
+        assert exp.metadata == exp_config[0][0]['metadata']
+        assert exp._experiment._last_fetched == exp_config[0][0]['metadata']['datetime']
+        assert exp.pool_size == exp_config[0][0]['pool_size']
+        assert exp.max_trials == exp_config[0][0]['max_trials']
+        assert exp.status == exp_config[0][0]['status']
+        assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
+
+        with pytest.raises(AttributeError):
+            exp.this_is_not_in_config = 5
+
+        # Test that experiment.push_completed_trial indeed exists
+        exp._experiment.push_completed_trial
+        with pytest.raises(AttributeError):
+            exp.push_completed_trial
+
+        with pytest.raises(AttributeError):
+            exp.register_trials
+
+        with pytest.raises(AttributeError):
+            exp.reserve_trial
+
+
+def test_fetch_completed_trials_from_view(hacked_exp, exp_config, random_dt):
+    """Fetch a list of the unseen yet completed trials."""
+    experiment_view = ExperimentView(hacked_exp.name)
+    experiment_view._experiment = hacked_exp
+
+    trials = experiment_view.fetch_completed_trials()
+    assert experiment_view._experiment._last_fetched == random_dt
+    assert len(trials) == 3
+    assert trials[0].to_dict() == exp_config[1][0]
+    assert trials[1].to_dict() == exp_config[1][1]
+    assert trials[2].to_dict() == exp_config[1][2]
+
+
+def test_view_is_done_property(hacked_exp):
+    """Check experiment stopping conditions accessed from view."""
+    experiment_view = ExperimentView(hacked_exp.name)
+    experiment_view._experiment = hacked_exp
+
+    assert experiment_view.is_done is False
+
+    with pytest.raises(AttributeError):
+        experiment_view.max_trials = 2
+
+    hacked_exp.max_trials = 2
+
+    assert experiment_view.is_done is True
+
+
+def test_experiment_view_stats(hacked_exp, exp_config, random_dt):
+    """Check that property stats from view is consistent."""
+    experiment_view = ExperimentView(hacked_exp.name)
+    experiment_view._experiment = hacked_exp
+
+    stats = experiment_view.stats
+    assert stats['trials_completed'] == 3
+    assert stats['best_trials_id'] == exp_config[1][1]['_id']
+    assert stats['best_evaluation'] == 2
+    assert stats['start_time'] == exp_config[0][3]['metadata']['datetime']
+    assert stats['finish_time'] == exp_config[1][2]['end_time']
+    assert stats['duration'] == stats['finish_time'] - stats['start_time']
+    assert len(stats) == 6
+
+
+@pytest.mark.usefixtures("with_user_tsirif")
+def test_experiment_view_db_read_only():
+    """Verify that wrapper experiments' database is read-only"""
+    exp = ExperimentView('supernaedo2')
+
+    # Test that database.write indeed exists
+    exp._experiment._db._database.write
+    with pytest.raises(AttributeError):
+        exp._experiment._db.write

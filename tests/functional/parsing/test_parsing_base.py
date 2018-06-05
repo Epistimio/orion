@@ -6,7 +6,7 @@ import os
 
 import pytest
 
-from orion.core.cli import resolve_config
+import orion.core.cli.base as cli
 
 
 def _create_parser(need_subparser=True):
@@ -26,7 +26,7 @@ def test_common_group_arguments(database, monkeypatch):
     parser, subparsers = _create_parser()
     args_list = ["-n", "test", "--config", "./orion_config_random.yaml"]
 
-    resolve_config.get_basic_args_group(parser)
+    cli.get_basic_args_group(parser)
     args = vars(parser.parse_args(args_list))
     assert args['name'] == 'test'
     assert args['config'].name == "./orion_config_random.yaml"
@@ -39,7 +39,7 @@ def test_user_group_arguments(database, monkeypatch):
     parser = _create_parser(False)
     args_list = ["./black_box.py", "-x~normal(50,50)"]
 
-    resolve_config.get_user_args_group(parser)
+    cli.get_user_args_group(parser)
     args = vars(parser.parse_args(args_list))
     assert args['user_script'] == './black_box.py'
     assert len(args['user_args']) == 1
@@ -54,8 +54,8 @@ def test_common_and_user_group_arguments(database, monkeypatch):
     args_list = ["-n", "test", "-c", "./orion_config_random.yaml",
                  "./black_box.py", "-x~normal(50,50)"]
 
-    resolve_config.get_basic_args_group(parser)
-    resolve_config.get_user_args_group(parser)
+    cli.get_basic_args_group(parser)
+    cli.get_user_args_group(parser)
     args = vars(parser.parse_args(args_list))
     assert args['name'] == 'test'
     assert args['config'].name == './orion_config_random.yaml'
