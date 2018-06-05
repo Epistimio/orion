@@ -15,7 +15,7 @@ import getpass
 import logging
 import random
 
-from orion.core.io.database import Database, ReadOnlyDB
+from orion.core.io.database import Database, DuplicateKeyError, ReadOnlyDB
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
@@ -301,6 +301,11 @@ class Experiment(object):
         """
         if self._init_done:
             raise RuntimeError("Configuration is done; cannot reset an Experiment.")
+
+        # Experiment was build using db, but config was build before experiment got in db.
+        # Fake a DuplicateKeyError to force reinstantiation of experiment with proper config.
+        if self._id is not None and "datetime" not in config['metadata']:
+            raise DuplicateKeyError("Cannot register an existing experiment with a new config")
 
         # Copy and simulate instantiating given configuration
         experiment = Experiment(self.name)

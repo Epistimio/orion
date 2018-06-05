@@ -119,7 +119,6 @@ def new_config(random_dt):
         name='supernaekei',
         # refers is missing on purpose
         metadata={'user': 'tsirif',
-                  'datetime': random_dt,
                   'orion_version': 0.1,
                   'user_script': 'abs_path/to_yoyoy.py',
                   'user_config': 'abs_path/hereitis.yaml',
@@ -285,6 +284,9 @@ class TestConfigProperty(object):
         assert exp._init_done is True
         found_config = list(database.experiments.find({'name': 'supernaekei',
                                                        'metadata.user': 'tsirif'}))
+
+        new_config['metadata']['datetime'] = exp.metadata['datetime']
+
         assert len(found_config) == 1
         _id = found_config[0].pop('_id')
         assert _id != 'fasdfasfa'
@@ -367,9 +369,11 @@ class TestConfigProperty(object):
         initialized and needs to be rebuilt.
         """
         exp = Experiment(new_config['name'])
+        assert exp.status is None
         # Another experiment gets configured first
         experiment_count_before = exp._db.count("experiments")
         naughty_little_exp = Experiment(new_config['name'])
+        assert naughty_little_exp.status is None
         naughty_little_exp.configure(new_config)
         assert naughty_little_exp._init_done is True
         assert exp._init_done is False
@@ -378,6 +382,43 @@ class TestConfigProperty(object):
         with pytest.raises(DuplicateKeyError) as exc_info:
             exp.configure(new_config)
         assert 'duplicate key error' in str(exc_info.value)
+
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+
+    def test_try_set_after_race_condition_with_hit(self, exp_config, new_config):
+        """Cannot set a configuration after init if config is built
+        from no-hit (without up-to-date db info) and new exp is hit
+
+        The experiment from process which first writes to db is initialized
+        properly. The experiment which looses the race condition cannot be
+        initialized and needs to be rebuilt.
+        """
+        # Another experiment gets configured first
+        naughty_little_exp = Experiment(new_config['name'])
+        assert naughty_little_exp.status is None
+        experiment_count_before = naughty_little_exp._db.count("experiments")
+        naughty_little_exp.configure(copy.deepcopy(new_config))
+        assert naughty_little_exp._init_done is True
+
+        import pprint
+        pprint.pprint(new_config)
+
+        exp = Experiment(new_config['name'])
+        assert exp._init_done is False
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        # Experiment with hit won't be able to be configured with config without db info
+        with pytest.raises(DuplicateKeyError) as exc_info:
+            exp.configure(new_config)
+        assert 'Cannot register an existing experiment with a new config' in str(exc_info.value)
+
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+
+        new_config['metadata']['datetime'] = naughty_little_exp.metadata['datetime']
+        exp = Experiment(new_config['name'])
+        assert exp._init_done is False
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        # New experiment will be able to be configured
+        exp.configure(new_config)
 
         assert (experiment_count_before + 1) == exp._db.count("experiments")
 
@@ -406,6 +447,7 @@ class TestConfigProperty(object):
         assert (experiment_count_before + 1) == exp._db.count("experiments")
 
         # Retry configuring the experiment
+        new_config['metadata']['datetime'] = naughty_little_exp.metadata['datetime']
         exp = Experiment(new_config['name'])
         exp.configure(new_config)
         assert exp._init_done is True
