@@ -141,7 +141,7 @@ class Trial(object):
 
         allowed_types = ('integer', 'real', 'categorical')
 
-    __slots__ = ('experiment', '_status', 'worker', '_id',
+    __slots__ = ('experiment', '_status', 'worker',
                  'submit_time', 'start_time', 'end_time', 'results', 'params')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
     NoID = None
@@ -156,6 +156,9 @@ class Trial(object):
 
         self.status = 'new'
 
+        # Remove useless item
+        kwargs.pop('_id', None)
+
         for attrname, value in kwargs.items():
             if attrname == 'results':
                 attr = getattr(self, attrname)
@@ -166,19 +169,13 @@ class Trial(object):
                 for item in value:
                     attr.append(self.Param(**item))
             else:
-                if attrname == '_id':
-                    if self.params is not None and self.experiment is not None:
-                        self._id = self.id
-                else:
-                    setattr(self, attrname, value)
+                setattr(self, attrname, value)
 
     def to_dict(self):
         """Needed to be able to convert `Trial` to `dict` form."""
         trial_dictionary = dict()
 
         for attrname in self.__slots__:
-            if attrname == '_id':
-                continue
 
             attrname = attrname.lstrip("_")
             trial_dictionary[attrname] = getattr(self, attrname)
