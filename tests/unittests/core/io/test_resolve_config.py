@@ -3,6 +3,7 @@
 """Example usage and tests for :mod:`orion.core.io.resolve_config`."""
 
 import os
+import socket
 
 import pytest
 
@@ -23,7 +24,7 @@ def test_fetch_default_options():
     default_config = resolve_config.fetch_default_options()
 
     assert default_config['algorithms'] == 'random'
-    assert default_config['database']['host'] == '127.0.1.1'
+    assert default_config['database']['host'] == socket.gethostbyname(socket.gethostname())
     assert default_config['database']['name'] == 'orion'
     assert default_config['database']['type'] == 'MongoDB'
 
