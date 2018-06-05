@@ -17,61 +17,73 @@ straighforward. This is because there is many sources of configuration and they 
 hierarchy. From the more global to the more specific, there is:
 
 1. Global configuration:
-    Defined by `src.orion.core.io.resolve_config.DEF_CONFIG_FILES_PATHS`.
-    Can be scattered in user file system, defaults could look like:
-        - `/some/path/to/.virtualenvs/orion/share/orion.core`
-        - `/etc/xdg/xdg-ubuntu/orion.core`
-        - `/home/${USER}/.config/orion.core`
 
-    Note that some variables have default value even if user do not defined them in global
-    configuration:
-        - `max_trials = src.orion.core.io.resolve_config.DEF_CMD_MAX_TRIALS`
-        - `pool_size = src.orion.core.io.resolve_config.DEF_CMD_POOL_SIZE`
-        - `algorithms = random`
-        - Database specific:
-            * `database.name = 'orion'`
-            * `database.type = 'MongoDB'`
-            * `database.host = ${HOST}`
+  Defined by `src.orion.core.io.resolve_config.DEF_CONFIG_FILES_PATHS`.
+  Can be scattered in user file system, defaults could look like:
+
+    - `/some/path/to/.virtualenvs/orion/share/orion.core`
+    - `/etc/xdg/xdg-ubuntu/orion.core`
+    - `/home/${USER}/.config/orion.core`
+
+  Note that some variables have default value even if user do not defined them in global
+  configuration:
+
+    - `max_trials = src.orion.core.io.resolve_config.DEF_CMD_MAX_TRIALS`
+    - `pool_size = src.orion.core.io.resolve_config.DEF_CMD_POOL_SIZE`
+    - `algorithms = random`
+    - Database specific:
+
+      * `database.name = 'orion'`
+      * `database.type = 'MongoDB'`
+      * `database.host = ${HOST}`
 
 2. Oríon specific environment variables:
-    Environment variables which can override global configuration
+
+   Environment variables which can override global configuration
+
     - Database specific:
-        * `ORION_DB_NAME`
-        * `ORION_DB_TYPE`
-        * `ORION_DB_ADDRESS`
+
+      * `ORION_DB_NAME`
+      * `ORION_DB_TYPE`
+      * `ORION_DB_ADDRESS`
 
 3. Experiment configuration inside the database
-    Configuration of the experiment if present in the database.
-    Making this part of the configuration of the experiment makes it possible
-    for the user to execute an experiment by only specifying partial configuration. The rest of the
-    configuration is fetched from the database.
 
-    For example, a user could:
+  Configuration of the experiment if present in the database.
+  Making this part of the configuration of the experiment makes it possible
+  for the user to execute an experiment by only specifying partial configuration. The rest of the
+  configuration is fetched from the database.
+
+  For example, a user could:
 
     1. Rerun the same experiment
-        Only providing the name is sufficient to rebuild the entire configuration of the
-        experiment.
+
+      Only providing the name is sufficient to rebuild the entire configuration of the
+      experiment.
 
     2. Make a modification to an existing experiment
-        The user can provide the name of the existing experiment and only provide the changes to
-        apply on it. Here is an minimal example where we fully initialize a first experiment with a
-        config file and then branch from it with minimal information.
 
-        .. code-block:: bash
+      The user can provide the name of the existing experiment and only provide the changes to
+      apply on it. Here is an minimal example where we fully initialize a first experiment with a
+      config file and then branch from it with minimal information.
 
-            # Initialize root experiment
-            orion init_only --config previous_exeriment.yaml ./userscript -x~'uniform(0, 10)'
-            # Branch a new experiment
-            orion hunt -n previous_experiment ./userscript -x~'uniform(0, 100)'
+      .. code-block:: bash
+
+          # Initialize root experiment
+          orion init_only --config previous_exeriment.yaml ./userscript -x~'uniform(0, 10)'
+          # Branch a new experiment
+          orion hunt -n previous_experiment ./userscript -x~'uniform(0, 100)'
 
 4. Configuration file
-    This configuration file is meant to overwrite the configuration coming from the database.
-    If this configuration file was interpreted as part of the global configuration, a user could
-    only modify an experiment using command line arguments.
+
+  This configuration file is meant to overwrite the configuration coming from the database.
+  If this configuration file was interpreted as part of the global configuration, a user could
+  only modify an experiment using command line arguments.
 
 5. Command-line arguments
-    Those are the arguments provided to `orion` for any method (hunt, insert, etc). It includes the
-    argument to `orion` itself as well as the user's script name and its arguments.
+
+  Those are the arguments provided to `orion` for any method (hunt, insert, etc). It includes the
+  argument to `orion` itself as well as the user's script name and its arguments.
 
 """
 import logging
