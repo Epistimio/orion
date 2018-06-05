@@ -379,7 +379,7 @@ class Experiment(object):
             status='completed'
             )
         completed_trials = self._db.read('trials', query,
-                                         selection={'_id': 1, 'end_time': 1,
+                                         selection={'end_time': 1,
                                                     'results': 1, 'experiment': 1, 'params': 1})
         stats = dict()
         stats['trials_completed'] = len(completed_trials)

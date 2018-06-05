@@ -256,7 +256,7 @@ class Trial(object):
     @property
     def full_name(self):
         """Generate a unique name using the full definition of parameters."""
-        if not self.params:
+        if not self.params or not self.experiment:
             raise ValueError("Cannot distinguish this trial, as 'params' have not been set.")
         return self.params_repr(sep='-').replace('/', '.')
 

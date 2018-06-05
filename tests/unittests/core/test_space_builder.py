@@ -424,7 +424,7 @@ class TestSpaceBuilder(object):
                     "--arch2~choices({'lala': 0.2, 'yolo': 0.8})",
                     "--name~trial.full_name"]
         spacebuilder.build_from(cmd_args)
-        trial = Trial(params=[
+        trial = Trial(experiment='supernaedo2', params=[
             {'name': '/yolo', 'type': 'real', 'value': -2.4},
             {'name': '/arch2', 'type': 'categorical', 'value': 'yolo'}])
         cmd_inst = spacebuilder.build_to(None, trial)
