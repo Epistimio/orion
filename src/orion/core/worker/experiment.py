@@ -15,7 +15,7 @@ import getpass
 import logging
 import random
 
-from orion.core.io.database import Database
+from orion.core.io.database import (Database, DuplicateKeyError)
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
@@ -208,13 +208,16 @@ class Experiment(object):
 
         :type trials: list of `Trial`
         """
-        stamp = datetime.datetime.utcnow()
-        for trial in trials:
-            trial.experiment = self._id
-            trial.status = 'new'
-            trial.submit_time = stamp
-        trials_dicts = list(map(lambda x: x.to_dict(), trials))
-        self._db.write('trials', trials_dicts)
+        try:
+            stamp = datetime.datetime.utcnow()
+            for trial in trials:
+                trial.experiment = self._id
+                trial.status = 'new'
+                trial.submit_time = stamp
+            trials_dicts = list(map(lambda x: x.to_dict(), trials))
+            self._db.write('trials', trials_dicts)
+        except DuplicateKeyError:
+            pass
 
     def fetch_completed_trials(self):
         """Fetch recent completed trials that this `Experiment` instance has not
@@ -376,8 +379,8 @@ class Experiment(object):
             status='completed'
             )
         completed_trials = self._db.read('trials', query,
-                                         selection={'_id': 1, 'end_time': 1,
-                                                    'results': 1})
+                                         selection={'end_time': 1,
+                                                    'results': 1, 'experiment': 1, 'params': 1})
         stats = dict()
         stats['trials_completed'] = len(completed_trials)
         stats['best_trials_id'] = None
