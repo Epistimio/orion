@@ -774,11 +774,11 @@ class TestInitExperimentWithEVC(object):
         assert exp._id is not None
         assert exp.name == 'supernaedo2.6'
         assert exp.configuration['refers'] == exp_config[0][4]['refers']
+        exp_config[0][4]['metadata']['datetime'] = random_dt
         assert exp.metadata == exp_config[0][4]['metadata']
         assert exp._last_fetched == random_dt
         assert exp.pool_size is None
         assert exp.max_trials is None
-        assert exp.status == 'pending'
         assert exp.configuration['algorithms'] == {'random': {}}
 
     @pytest.mark.usefixtures("with_user_tsirif")
@@ -795,5 +795,4 @@ class TestInitExperimentWithEVC(object):
         assert exp.metadata == exp_config[0][4]['metadata']
         assert exp.pool_size == 2
         assert exp.max_trials == 1000
-        assert exp.status == 'pending'
         assert exp.configuration['algorithms'] == {'random': {}}
