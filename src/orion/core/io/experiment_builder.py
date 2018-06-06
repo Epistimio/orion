@@ -253,7 +253,6 @@ class ExperimentBuilder(object):
         # Pop out configuration concerning databases and resources
         config.pop('database', None)
         config.pop('resources', None)
-        config.pop('status', None)
 
         experiment = Experiment(config['name'])
 
