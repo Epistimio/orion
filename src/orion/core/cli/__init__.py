@@ -12,29 +12,9 @@
 import logging
 import os
 
-from orion.core.cli import resolve_config
+from orion.core.cli.base import OrionArgsParser
 
 log = logging.getLogger(__name__)
-
-CLI_DOC_HEADER = """
-orion:
-  Orion cli script for asynchronous distributed optimization
-
-"""
-
-
-def main(argv=None):
-    """Entry point for `orion.core` functionality."""
-    # Fetch experiment name, user's script path and command line arguments
-    # Use `-h` option to show help
-
-    orion_parser = resolve_config.OrionArgsParser(CLI_DOC_HEADER)
-
-    load_modules_parser(orion_parser)
-
-    orion_parser.execute(argv)
-
-    return 0
 
 
 def load_modules_parser(orion_parser):
@@ -51,6 +31,20 @@ def load_modules_parser(orion_parser):
         if hasattr(module, 'add_subparser'):
             add_subparser = getattr(module, 'add_subparser')
             add_subparser(orion_parser.get_subparsers())
+
+
+def main(argv=None):
+    """Entry point for `orion.core` functionality."""
+    # Fetch experiment name, user's script path and command line arguments
+    # Use `-h` option to show help
+
+    orion_parser = OrionArgsParser()
+
+    load_modules_parser(orion_parser)
+
+    orion_parser.execute(argv)
+
+    return 0
 
 
 if __name__ == "__main__":

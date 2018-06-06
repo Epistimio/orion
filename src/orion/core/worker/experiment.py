@@ -15,7 +15,8 @@ import getpass
 import logging
 import random
 
-from orion.core.io.database import Database
+from orion.core.evc.adapters import Adapter, BaseAdapter
+from orion.core.io.database import Database, DuplicateKeyError, ReadOnlyDB
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
@@ -24,6 +25,7 @@ from orion.core.worker.trial import Trial
 log = logging.getLogger(__name__)
 
 
+# pylint: disable=too-many-public-methods
 class Experiment(object):
     """Represents an entry in database/experiments collection.
 
@@ -35,15 +37,16 @@ class Experiment(object):
        id of the experiment in the database if experiment is configured. Value is `None`
        if the experiment is not configured.
     refers : dict or list of `Experiment` objects, after initialization is done.
-       A dictionary pointing to a past `Experiment` name, ``refers[name]``, whose
+       A dictionary pointing to a past `Experiment` id, ``refers[parent_id]``, whose
        trials we want to add in the history of completed trials we want to re-use.
+       For convenience and database effiency purpose, all experiments of a common tree shares
+       `refers[root_id]`, with the root experiment refering to itself.
     metadata : dict
        Contains managerial information about this `Experiment`.
     pool_size : int
        How many workers can participate asynchronously in this `Experiment`.
     max_trials : int
        How many trials must be evaluated, before considering this `Experiment` done.
-
        This attribute can be updated if the rest of the experiment configuration
        is the same. In that case, if trying to set to an already set experiment,
        it will overwrite the previous one.
@@ -75,7 +78,7 @@ class Experiment(object):
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
-                 'algorithms', '_db', '_init_done', '_id', '_last_fetched')
+                 'algorithms', '_db', '_init_done', '_id', '_node', '_last_fetched')
     non_forking_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name):
@@ -99,10 +102,10 @@ class Experiment(object):
 
         self._id = None
         self.name = name
-        self.refers = None
+        self._node = None
+        self.refers = dict()
         user = getpass.getuser()
-        stamp = datetime.datetime.utcnow()
-        self.metadata = {'user': user, 'datetime': stamp}
+        self.metadata = {'user': user}
         self.pool_size = None
         self.max_trials = None
         self.algorithms = None
@@ -123,19 +126,66 @@ class Experiment(object):
                     setattr(self, attrname, config[attrname])
             self._id = config['_id']
 
-        self._last_fetched = self.metadata['datetime']
+        self._last_fetched = self.metadata.get("datetime", datetime.datetime.utcnow())
 
     def _setup_db(self):
         self._db.ensure_index('experiments',
                               [('name', Database.ASCENDING),
                                ('metadata.user', Database.ASCENDING)],
                               unique=True)
+        self._db.ensure_index('experiments', 'metadata.datetime')
 
         self._db.ensure_index('trials', 'experiment')
         self._db.ensure_index('trials', 'status')
         self._db.ensure_index('trials', 'results')
         self._db.ensure_index('trials', 'start_time')
         self._db.ensure_index('trials', [('end_time', Database.DESCENDING)])
+
+    def fetch_trials(self, query, selection=None):
+        """Fetch trials of the experiment in the database
+
+        .. note::
+
+            The query is always updated with `{"experiment": self._id}`
+
+        .. seealso::
+
+            :meth:`orion.core.io.database.AbstractDB.read` for more information about the
+            arguments.
+
+        """
+        query["experiment"] = self._id
+
+        return Trial.build(self._db.read('trials', query, selection))
+
+    def fetch_trials_tree(self, query, selection=None):
+        """Fetch trials recursively in the EVC tree
+
+        .. seealso::
+
+            :meth:`orion.core.worker.Experiment.fetch_trials` for more information about the
+            arguments.
+
+            :class:`orion.core.evc.experiment.ExperimentNode` for more information about the EVC
+            tree.
+
+        """
+        if self._node is None:
+            return self.fetch_trials(query, selection)
+
+        return self._node.fetch_trials(query, selection)
+
+    def connect_to_version_control_tree(self, node):
+        """Connect the experiment to its node in a version control tree
+
+        .. seealso::
+
+            :class:`orion.core.evc.experiment.ExperimentNode`
+
+        :param node: Node giving access to the experiment version control tree.
+        :type name: None or `ExperimentNode`
+        """
+        self._node = node
 
     def reserve_trial(self, score_handle=None):
         """Find *new* trials that exist currently in database and select one of
@@ -144,7 +194,6 @@ class Experiment(object):
         :param score_handle: A way to decide which trial out of the *new* ones to
            to pick as *reserved*, defaults to a random choice.
         :type score_handle: callable
-
         :return: selected `Trial` object, None if could not find any.
         """
         if score_handle is not None and not callable(score_handle):
@@ -154,7 +203,7 @@ class Experiment(object):
             experiment=self._id,
             status={'$in': ['new', 'suspended', 'interrupted']}
             )
-        new_trials = Trial.build(self._db.read('trials', query))
+        new_trials = self.fetch_trials(query)
 
         if not new_trials:
             return None
@@ -196,7 +245,10 @@ class Experiment(object):
         :param trial: Corresponds to a successful evaluation of a particular run.
         :type trial: `Trial`
 
-        .. note:: Change status from *reserved* to *completed*.
+        .. note::
+
+            Change status from *reserved* to *completed*.
+
         """
         trial.end_time = datetime.datetime.utcnow()
         trial.status = 'completed'
@@ -220,8 +272,10 @@ class Experiment(object):
         """Fetch recent completed trials that this `Experiment` instance has not
         yet seen.
 
-        .. note:: It will return only those with `Trial.end_time` after
-           `_last_fetched`, for performance reasons.
+        .. note::
+
+            It will return only those with `Trial.end_time` after `_last_fetched`, for performance
+            reasons.
 
         :return: list of completed `Trial` objects
         """
@@ -230,7 +284,7 @@ class Experiment(object):
             status='completed',
             end_time={'$gte': self._last_fetched}
             )
-        completed_trials = Trial.build(self._db.read('trials', query))
+        completed_trials = self.fetch_trials_tree(query)
         self._last_fetched = datetime.datetime.utcnow()
 
         return completed_trials
@@ -251,7 +305,10 @@ class Experiment(object):
         1. Count how many trials have been completed and compare with `max_trials`.
         2. Ask `algorithms` if they consider there is a chance for further improvement.
 
-        .. note:: To be used as a terminating condition in a ``Worker``.
+        .. note::
+
+            To be used as a terminating condition in a ``Worker``.
+
         """
         query = dict(
             experiment=self._id,
@@ -284,6 +341,10 @@ class Experiment(object):
                 config[attrname] = attribute.configuration
             else:
                 config[attrname] = attribute
+
+            if self._init_done and attrname == "refers" and attribute.get("adapter"):
+                config[attrname] = copy.deepcopy(config[attrname])
+                config[attrname]['adapter'] = config[attrname]['adapter'].configuration
         # Reason for deepcopy is that some attributes are dictionaries
         # themselves, we don't want to accidentally change the state of this
         # object from a getter.
@@ -295,12 +356,19 @@ class Experiment(object):
         If `Experiment` was already set and an overwrite is needed, a *fork*
         is advised with a different :attr:`name` for this particular configuration.
 
-        .. note:: Calling this property is necessary for an experiment's
-           initialization process to be considered as done. But it can be called
-           only once.
+        .. note::
+
+            Calling this property is necessary for an experiment's initialization process to be
+            considered as done. But it can be called only once.
+
         """
         if self._init_done:
             raise RuntimeError("Configuration is done; cannot reset an Experiment.")
+
+        # Experiment was build using db, but config was build before experiment got in db.
+        # Fake a DuplicateKeyError to force reinstantiation of experiment with proper config.
+        if self._id is not None and "datetime" not in config['metadata']:
+            raise DuplicateKeyError("Cannot register an existing experiment with a new config")
 
         # Copy and simulate instantiating given configuration
         experiment = Experiment(self.name)
@@ -313,8 +381,7 @@ class Experiment(object):
         # orion_config to set.
         if self._id is None:
             if config['name'] != self.name or \
-                    config['metadata']['user'] != self.metadata['user'] or \
-                    config['metadata']['datetime'] != self.metadata['datetime']:
+                    config['metadata']['user'] != self.metadata['user']:
                 raise ValueError("Configuration given is inconsistent with this Experiment.")
             is_new = True
         else:
@@ -330,6 +397,8 @@ class Experiment(object):
 
         # If everything is alright, push new config to database
         if is_new:
+            final_config['metadata']['datetime'] = datetime.datetime.utcnow()
+            self.metadata['datetime'] = final_config['metadata']['datetime']
             # This will raise DuplicateKeyError if a concurrent experiment with
             # identical (name, metadata.user) is written first in the database.
 
@@ -337,6 +406,14 @@ class Experiment(object):
             # XXX: Reminder for future DB implementations:
             # MongoDB, updates an inserted dict with _id, so should you :P
             self._id = final_config['_id']
+
+            # Update refers in db if experiment is root
+            if not self.refers:
+                self.refers = {'root_id': self._id, 'parent_id': None, 'adapter': []}
+                update = {'refers': self.refers}
+                query = {'_id': self._id}
+                self._db.write('experiments', data=update, query=query)
+
         else:
             # Writing the final config to an already existing experiment raises
             # a DuplicatKeyError because of the embedding id `metadata.user`.
@@ -375,19 +452,21 @@ class Experiment(object):
             experiment=self._id,
             status='completed'
             )
-        completed_trials = self._db.read('trials', query,
-                                         selection={'_id': 1, 'end_time': 1,
-                                                    'results': 1})
+        selection = {
+            '_id': 1,
+            'end_time': 1,
+            'results': 1
+            }
+        completed_trials = self.fetch_trials(query, selection)
         stats = dict()
         stats['trials_completed'] = len(completed_trials)
         stats['best_trials_id'] = None
-        trial = Trial(**completed_trials[0])
+        trial = completed_trials[0]
         stats['best_evaluation'] = trial.objective.value
         stats['best_trials_id'] = trial.id
         stats['start_time'] = self.metadata['datetime']
         stats['finish_time'] = stats['start_time']
         for trial in completed_trials:
-            trial = Trial(**trial)
             # All trials are going to finish certainly after the start date
             # of the experiment they belong to
             if trial.end_time > stats['finish_time']:  # pylint:disable=no-member
@@ -404,7 +483,7 @@ class Experiment(object):
         """Check before dispatching experiment whether configuration corresponds
         to a executable experiment environment.
 
-        1. Check `refers` and instantiate `Experiment` objects from it. (TODO)
+        1. Check `refers` and instantiate `Adapter` objects from it.
         2. Try to build parameter space from user arguments.
         3. Check whether configured algorithms correspond to [known]/valid
            implementations of the ``Algorithm`` class. Instantiate these objects.
@@ -421,6 +500,13 @@ class Experiment(object):
                 log.warning("Found section '%s' in configuration. "
                             "Cannot set private attributes. Ignoring.", section)
                 continue
+
+            # Copy sub configuration to value confusing side-effects
+            # Only copy at this level, not `config` directly to avoid TypeErrors if config contains
+            # non-serializable objects (copy.deepcopy complains otherwise).
+            if isinstance(value, dict):
+                value = copy.deepcopy(value)
+
             setattr(self, section, value)
 
         try:
@@ -433,9 +519,13 @@ class Experiment(object):
         except KeyError:
             pass
 
+        if self.refers and not isinstance(self.refers.get('adapter'), BaseAdapter):
+            self.refers['adapter'] = Adapter.build(self.refers['adapter'])
+
     def _fork_config(self, config):
-        """Ask for a different identifier for this experiment. Set :attr:`refers`
-        key to previous experiment's name, the one that we forked from.
+        """Ask for a different identifier for this experiment.
+
+        Set :attr:`node` key to previous experiment's name, the one that we forked from.
 
         :param config: Conflicting configuration that will change based on prompt.
         """
@@ -461,3 +551,62 @@ class Experiment(object):
                 break
 
         return is_diff
+
+    def __repr__(self):
+        """Represent the object as a string."""
+        return "Experiment(name=%s, metadata.user=%s)" % (self.name, self.metadata['user'])
+
+
+# pylint: disable=too-few-public-methods
+class ExperimentView(object):
+    """Non-writable view of an experiment
+
+    .. seealso::
+
+        :py:class:`orion.core.worker.experiment.Experiment` for writable experiments.
+
+    """
+
+    __slots__ = ('_experiment', )
+
+    #                     Attributes
+    valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials"] +
+                        # Properties
+                        ["id", "is_done", "space", "algorithms", "stats", "configuration"] +
+                        # Methods
+                        ["fetch_trials", "fetch_trials_tree", "fetch_completed_trials",
+                         "connect_to_version_control_tree"])
+
+    def __init__(self, name):
+        """Initialize viewed experiment object with primary key (:attr:`name`, :attr:`user`).
+
+        Build an experiment from configuration found in `Database` with a key (name, user).
+
+        .. note::
+
+            A view is fully configured at initialiation. It cannot be reconfigured.
+            If no experiment is found for the key (name, user), a `ValueError` will be raised.
+
+        :param name: Describe a configuration with a unique identifier per :attr:`user`.
+        :type name: str
+        """
+        self._experiment = Experiment(name)
+
+        if self._experiment.id is None:
+            raise ValueError("No experiment with given name '%s' for user '%s' inside database, "
+                             "no view can be created." %
+                             (self._experiment.name, self._experiment.metadata['user']))
+
+        self._experiment.configure(self._experiment.configuration)
+        self._experiment._db = ReadOnlyDB(self._experiment._db)
+
+    def __getattr__(self, name):
+        """Get attribute only if valid"""
+        if name not in self.valid_attributes:
+            raise AttributeError("Cannot access attribute %s on view-only experiments." % name)
+
+        return getattr(self._experiment, name)
+
+    def __repr__(self):
+        """Represent the object as a string."""
+        return "ExperimentView(name=%s, metadata.user=%s)" % (self.name, self.metadata['user'])
