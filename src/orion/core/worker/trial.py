@@ -144,7 +144,6 @@ class Trial(object):
     __slots__ = ('experiment', '_status', 'worker',
                  'submit_time', 'start_time', 'end_time', 'results', 'params')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
-    NoID = None
 
     def __init__(self, **kwargs):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
@@ -245,8 +244,8 @@ class Trial(object):
 
         .. note:: Two trials that have the same `params` must have the same `hash_name`.
         """
-        if not self.params:
-            raise ValueError("Cannot distinguish this trial, as 'params' have not been set.")
+        if not self.params and not self.experiment:
+            raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' have not been set.")
         return hashlib.md5((self.params_repr() + str(self.experiment)).encode('utf-8')).hexdigest()
 
     def __hash__(self):
@@ -257,7 +256,7 @@ class Trial(object):
     def full_name(self):
         """Generate a unique name using the full definition of parameters."""
         if not self.params or not self.experiment:
-            raise ValueError("Cannot distinguish this trial, as 'params' have not been set.")
+            raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' have not been set.")
         return self.params_repr(sep='-').replace('/', '.')
 
     def _fetch_one_result_of_type(self, result_type):
