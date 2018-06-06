@@ -401,6 +401,7 @@ class Experiment(object):
         # If everything is alright, push new config to database
         if is_new:
             final_config['metadata']['datetime'] = datetime.datetime.utcnow()
+            self.metadata['datetime'] = final_config['metadata']['datetime']
             # This will raise DuplicateKeyError if a concurrent experiment with
             # identical (name, metadata.user) is written first in the database.
 
