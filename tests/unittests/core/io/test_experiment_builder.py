@@ -60,7 +60,6 @@ def test_fetch_config_from_db_hit(config_file, exp_config, random_dt):
     assert db_config['metadata'] == exp_config[0][0]['metadata']
     assert db_config['pool_size'] == exp_config[0][0]['pool_size']
     assert db_config['max_trials'] == exp_config[0][0]['max_trials']
-    assert db_config['status'] == exp_config[0][0]['status']
     assert db_config['algorithms'] == exp_config[0][0]['algorithms']
 
 
@@ -121,7 +120,6 @@ def test_fetch_full_config_no_hit(config_file, exp_config, random_dt):
     assert full_config['metadata']['user'] == 'tsirif'
     assert 'datetime' not in full_config['metadata']
     assert 'refers' not in full_config
-    assert 'status' not in full_config
 
 
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
@@ -149,7 +147,6 @@ def test_build_view_from(config_file, create_db_instance, exp_config, random_dt)
     assert exp_view._experiment._last_fetched == exp_config[0][0]['metadata']['datetime']
     assert exp_view.pool_size == exp_config[0][0]['pool_size']
     assert exp_view.max_trials == exp_config[0][0]['max_trials']
-    assert exp_view.status == exp_config[0][0]['status']
     assert exp_view.algorithms.configuration == exp_config[0][0]['algorithms']
 
 
@@ -175,7 +172,6 @@ def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_d
     assert exp._last_fetched == random_dt
     assert exp.pool_size == 1
     assert exp.max_trials == 100
-    assert exp.status == 'pending'
     assert exp.algorithms.configuration == {'random': {}}
 
 
@@ -201,7 +197,6 @@ def test_build_from_hit(old_config_file, create_db_instance, exp_config):
     assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
     assert exp.pool_size == exp_config[0][0]['pool_size']
     assert exp.max_trials == exp_config[0][0]['max_trials']
-    assert exp.status == exp_config[0][0]['status']
     assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
 
 
@@ -228,7 +223,7 @@ def test_build_from_config_no_hit(config_file, create_db_instance, exp_config, r
     assert exp._last_fetched == random_dt
     assert exp.pool_size == 1
     assert exp.max_trials == 100
-    assert exp.status == 'pending'
+    assert not exp.is_done
     assert exp.algorithms.configuration == {'random': {}}
 
 
@@ -256,5 +251,4 @@ def test_build_from_config_hit(old_config_file, create_db_instance, exp_config):
     assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
     assert exp.pool_size == exp_config[0][0]['pool_size']
     assert exp.max_trials == exp_config[0][0]['max_trials']
-    assert exp.status == exp_config[0][0]['status']
     assert exp.algorithms.configuration == exp_config[0][0]['algorithms']

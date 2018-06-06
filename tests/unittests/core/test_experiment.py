@@ -369,11 +369,11 @@ class TestConfigProperty(object):
         initialized and needs to be rebuilt.
         """
         exp = Experiment(new_config['name'])
-        assert exp.status is None
+        assert exp.id is None
         # Another experiment gets configured first
         experiment_count_before = exp._db.count("experiments")
         naughty_little_exp = Experiment(new_config['name'])
-        assert naughty_little_exp.status is None
+        assert naughty_little_exp.id is None
         naughty_little_exp.configure(new_config)
         assert naughty_little_exp._init_done is True
         assert exp._init_done is False
@@ -395,13 +395,10 @@ class TestConfigProperty(object):
         """
         # Another experiment gets configured first
         naughty_little_exp = Experiment(new_config['name'])
-        assert naughty_little_exp.status is None
+        assert naughty_little_exp.id is None
         experiment_count_before = naughty_little_exp._db.count("experiments")
         naughty_little_exp.configure(copy.deepcopy(new_config))
         assert naughty_little_exp._init_done is True
-
-        import pprint
-        pprint.pprint(new_config)
 
         exp = Experiment(new_config['name'])
         assert exp._init_done is False
