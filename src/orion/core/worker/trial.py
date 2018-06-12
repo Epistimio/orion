@@ -177,7 +177,6 @@ class Trial(object):
         trial_dictionary = dict()
 
         for attrname in self.__slots__:
-
             attrname = attrname.lstrip("_")
             trial_dictionary[attrname] = getattr(self, attrname)
 
@@ -187,7 +186,7 @@ class Trial(object):
             trial_dictionary[attrname] = list(map(lambda x: x.to_dict(),
                                                   getattr(self, attrname)))
 
-        trial_dictionary['_id'] = self.id
+        trial_dictionary['_id'] = trial_dictionary.pop('id')
 
         return trial_dictionary
 
