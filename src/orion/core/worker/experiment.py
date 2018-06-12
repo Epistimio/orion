@@ -101,8 +101,7 @@ class Experiment(object):
         self.name = name
         self.refers = None
         user = getpass.getuser()
-        stamp = datetime.datetime.utcnow()
-        self.metadata = {'user': user, 'datetime': stamp}
+        self.metadata = {'user': user}
         self.pool_size = None
         self.max_trials = None
         self.algorithms = None
@@ -123,13 +122,14 @@ class Experiment(object):
                     setattr(self, attrname, config[attrname])
             self._id = config['_id']
 
-        self._last_fetched = self.metadata['datetime']
+        self._last_fetched = self.metadata.get("datetime", datetime.datetime.utcnow())
 
     def _setup_db(self):
         self._db.ensure_index('experiments',
                               [('name', Database.ASCENDING),
                                ('metadata.user', Database.ASCENDING)],
                               unique=True)
+        self._db.ensure_index('experiments', 'metadata.datetime')
 
         self._db.ensure_index('trials', 'experiment')
         self._db.ensure_index('trials', 'status')
@@ -305,6 +305,11 @@ class Experiment(object):
         if self._init_done:
             raise RuntimeError("Configuration is done; cannot reset an Experiment.")
 
+        # Experiment was build using db, but config was build before experiment got in db.
+        # Fake a DuplicateKeyError to force reinstantiation of experiment with proper config.
+        if self._id is not None and "datetime" not in config['metadata']:
+            raise DuplicateKeyError("Cannot register an existing experiment with a new config")
+
         # Copy and simulate instantiating given configuration
         experiment = Experiment(self.name)
         experiment._instantiate_config(self.configuration)
@@ -316,8 +321,7 @@ class Experiment(object):
         # orion_config to set.
         if self._id is None:
             if config['name'] != self.name or \
-                    config['metadata']['user'] != self.metadata['user'] or \
-                    config['metadata']['datetime'] != self.metadata['datetime']:
+                    config['metadata']['user'] != self.metadata['user']:
                 raise ValueError("Configuration given is inconsistent with this Experiment.")
             is_new = True
         else:
@@ -333,6 +337,7 @@ class Experiment(object):
 
         # If everything is alright, push new config to database
         if is_new:
+            final_config['metadata']['datetime'] = datetime.datetime.utcnow()
             # This will raise DuplicateKeyError if a concurrent experiment with
             # identical (name, metadata.user) is written first in the database.
 
