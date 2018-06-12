@@ -84,7 +84,8 @@ class Experiment(object):
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
-                 'algorithms', '_db', '_init_done', '_id', '_node', '_last_fetched')
+                 'algorithms', '_db', '_init_done', '_id', '_node', '_last_fetched',
+                 '_trials_history')
     non_branching_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name):

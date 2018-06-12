@@ -27,7 +27,7 @@ def test_update(producer):
     assert len(obs_points) == 3
     assert obs_points[0] == ('lstm', 'rnn')
     assert obs_points[1] == ('rnn', 'rnn')
-    assert obs_points[2] == ('gru', 'gru')
+    assert obs_points[2] == ('gru', 'lstm_with_attention')
     assert len(obs_results) == 3
     assert obs_results[0] == {
         'objective': 3,
