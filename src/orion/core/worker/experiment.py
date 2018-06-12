@@ -15,7 +15,7 @@ import getpass
 import logging
 import random
 
-from orion.core.io.database import (Database, DuplicateKeyError)
+from orion.core.io.database import Database, DuplicateKeyError, ReadOnlyDB
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
@@ -464,3 +464,53 @@ class Experiment(object):
                 break
 
         return is_diff
+
+
+# pylint: disable=too-few-public-methods
+class ExperimentView(object):
+    """Non-writable view of an experiment
+
+    .. seealso::
+
+        :py:class:`orion.core.worker.experiment.Experiment` for writable experiments.
+
+    """
+
+    __slots__ = ('_experiment', )
+
+    #                     Attributes
+    valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials"] +
+                        # Properties
+                        ["id", "is_done", "space", "algorithms", "stats", "configuration"] +
+                        # Methods
+                        ["fetch_completed_trials"])
+
+    def __init__(self, name):
+        """Initialize viewed experiment object with primary key (:attr:`name`, :attr:`user`).
+
+        Build an experiment from configuration found in `Database` with a key (name, user).
+
+        .. note::
+
+            A view is fully configured at initialiation. It cannot be reconfigured.
+            If no experiment is found for the key (name, user), a `ValueError` will be raised.
+
+        :param name: Describe a configuration with a unique identifier per :attr:`user`.
+        :type name: str
+        """
+        self._experiment = Experiment(name)
+
+        if self._experiment.id is None:
+            raise ValueError("No experiment with given name '%s' for user '%s' inside database, "
+                             "no view can be created." %
+                             (self._experiment.name, self._experiment.metadata['user']))
+
+        self._experiment.configure(self._experiment.configuration)
+        self._experiment._db = ReadOnlyDB(self._experiment._db)
+
+    def __getattr__(self, name):
+        """Get attribute only if valid"""
+        if name not in self.valid_attributes:
+            raise AttributeError("Cannot access attribute %s on view-only experiments." % name)
+
+        return getattr(self._experiment, name)

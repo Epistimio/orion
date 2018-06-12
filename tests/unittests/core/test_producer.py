@@ -10,7 +10,7 @@ from orion.core.worker.producer import Producer
 def producer(hacked_exp, random_dt, exp_config):
     """Return a setup `Producer`."""
     # make init done
-    hacked_exp.configure(exp_config[0][2])
+    hacked_exp.configure(exp_config[0][3])
     # insert fake point
     fake_point = ('gru', 'rnn')
     assert fake_point in hacked_exp.space
