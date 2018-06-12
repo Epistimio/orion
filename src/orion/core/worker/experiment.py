@@ -15,7 +15,7 @@ import getpass
 import logging
 import random
 
-from orion.core.io.database import Database
+from orion.core.io.database import Database, DuplicateKeyError, ReadOnlyDB
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
@@ -31,6 +31,9 @@ class Experiment(object):
     ----------
     name : str
        Unique identifier for this experiment per `user`.
+    id: object
+       id of the experiment in the database if experiment is configured. Value is `None`
+       if the experiment is not configured.
     refers : dict or list of `Experiment` objects, after initialization is done.
        A dictionary pointing to a past `Experiment` name, ``refers[name]``, whose
        trials we want to add in the history of completed trials we want to re-use.
@@ -44,17 +47,6 @@ class Experiment(object):
        This attribute can be updated if the rest of the experiment configuration
        is the same. In that case, if trying to set to an already set experiment,
        it will overwrite the previous one.
-    status : str
-       A keyword among {*'pending'*, *'done'*, *'broken'*} indicating
-       how **Oríon** considers the current `Experiment`. This attribute cannot
-       be set from an orion configuration.
-
-       * 'pending' : Denotes an experiment with valid configuration which is
-          currently being handled by **Oríon**.
-       * 'done' : Denotes an experiment which has completed `max_trials` number
-          of parameter evaluations and is not *pending*.
-       * 'broken' : Denotes an experiment which stopped unsuccessfully due to
-          unexpected behaviour.
     algorithms : dict of dicts or an `PrimaryAlgo` object, after initialization is done.
        Complete specification of the optimization and dynamical procedures taking
        place in this `Experiment`.
@@ -83,9 +75,8 @@ class Experiment(object):
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
-                 'status', 'algorithms', '_db', '_init_done', '_id', '_last_fetched')
-    # 'status' should not be in config
-    non_forking_attrs = ('status', 'pool_size', 'max_trials')
+                 'algorithms', '_db', '_init_done', '_id', '_last_fetched')
+    non_forking_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name):
         """Initialize an Experiment object with primary key (:attr:`name`, :attr:`user`).
@@ -114,7 +105,6 @@ class Experiment(object):
         self.metadata = {'user': user, 'datetime': stamp}
         self.pool_size = None
         self.max_trials = None
-        self.status = None
         self.algorithms = None
 
         config = self._db.read('experiments',
@@ -140,7 +130,6 @@ class Experiment(object):
                               [('name', Database.ASCENDING),
                                ('metadata.user', Database.ASCENDING)],
                               unique=True)
-        self._db.ensure_index('experiments', 'status')
 
         self._db.ensure_index('trials', 'experiment')
         self._db.ensure_index('trials', 'status')
@@ -219,13 +208,16 @@ class Experiment(object):
 
         :type trials: list of `Trial`
         """
-        stamp = datetime.datetime.utcnow()
-        for trial in trials:
-            trial.experiment = self._id
-            trial.status = 'new'
-            trial.submit_time = stamp
-        trials_dicts = list(map(lambda x: x.to_dict(), trials))
-        self._db.write('trials', trials_dicts)
+        try:
+            stamp = datetime.datetime.utcnow()
+            for trial in trials:
+                trial.experiment = self._id
+                trial.status = 'new'
+                trial.submit_time = stamp
+            trials_dicts = list(map(lambda x: x.to_dict(), trials))
+            self._db.write('trials', trials_dicts)
+        except DuplicateKeyError:
+            pass
 
     def fetch_completed_trials(self):
         """Fetch recent completed trials that this `Experiment` instance has not
@@ -246,6 +238,15 @@ class Experiment(object):
 
         return completed_trials
 
+    # pylint: disable=invalid-name
+    @property
+    def id(self):
+        """Id of the experiment in the database if configured.
+
+        Value is `None` if the experiment is not configured.
+        """
+        return self._id
+
     @property
     def is_done(self):
         """Return True, if this experiment is considered to be finished.
@@ -261,12 +262,8 @@ class Experiment(object):
             )
         num_completed_trials = self._db.count('trials', query)
 
-        if num_completed_trials >= self.max_trials or \
-                (self._init_done and self.algorithms.is_done):
-            self._db.write('experiments', {'status': 'done'}, {'_id': self._id})
-            return True
-
-        return False
+        return ((num_completed_trials >= self.max_trials) or
+                (self._init_done and self.algorithms.is_done))
 
     @property
     def space(self):
@@ -313,12 +310,11 @@ class Experiment(object):
         experiment._instantiate_config(self.configuration)
         experiment._instantiate_config(config)
         experiment._init_done = True
-        experiment.status = 'pending'
 
-        # If status is None in this object, then database did not hit a config
+        # If id is None in this object, then database did not hit a config
         # with same (name, user's name) pair. Everything depends on the user's
         # orion_config to set.
-        if self.status is None:
+        if self._id is None:
             if config['name'] != self.name or \
                     config['metadata']['user'] != self.metadata['user'] or \
                     config['metadata']['datetime'] != self.metadata['datetime']:
@@ -334,7 +330,6 @@ class Experiment(object):
         self._instantiate_config(final_config)
 
         self._init_done = True
-        self.status = 'pending'
 
         # If everything is alright, push new config to database
         if is_new:
@@ -384,8 +379,8 @@ class Experiment(object):
             status='completed'
             )
         completed_trials = self._db.read('trials', query,
-                                         selection={'_id': 1, 'end_time': 1,
-                                                    'results': 1})
+                                         selection={'end_time': 1,
+                                                    'results': 1, 'experiment': 1, 'params': 1})
         stats = dict()
         stats['trials_completed'] = len(completed_trials)
         stats['best_trials_id'] = None
@@ -421,8 +416,6 @@ class Experiment(object):
         """
         # Just overwrite everything else given
         for section, value in config.items():
-            if section == 'status':
-                continue
             if section not in self.__slots__:
                 log.warning("Found section '%s' in configuration. Experiments "
                             "do not support this option. Ignoring.", section)
@@ -471,3 +464,53 @@ class Experiment(object):
                 break
 
         return is_diff
+
+
+# pylint: disable=too-few-public-methods
+class ExperimentView(object):
+    """Non-writable view of an experiment
+
+    .. seealso::
+
+        :py:class:`orion.core.worker.experiment.Experiment` for writable experiments.
+
+    """
+
+    __slots__ = ('_experiment', )
+
+    #                     Attributes
+    valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials"] +
+                        # Properties
+                        ["id", "is_done", "space", "algorithms", "stats", "configuration"] +
+                        # Methods
+                        ["fetch_completed_trials"])
+
+    def __init__(self, name):
+        """Initialize viewed experiment object with primary key (:attr:`name`, :attr:`user`).
+
+        Build an experiment from configuration found in `Database` with a key (name, user).
+
+        .. note::
+
+            A view is fully configured at initialiation. It cannot be reconfigured.
+            If no experiment is found for the key (name, user), a `ValueError` will be raised.
+
+        :param name: Describe a configuration with a unique identifier per :attr:`user`.
+        :type name: str
+        """
+        self._experiment = Experiment(name)
+
+        if self._experiment.id is None:
+            raise ValueError("No experiment with given name '%s' for user '%s' inside database, "
+                             "no view can be created." %
+                             (self._experiment.name, self._experiment.metadata['user']))
+
+        self._experiment.configure(self._experiment.configuration)
+        self._experiment._db = ReadOnlyDB(self._experiment._db)
+
+    def __getattr__(self, name):
+        """Get attribute only if valid"""
+        if name not in self.valid_attributes:
+            raise AttributeError("Cannot access attribute %s on view-only experiments." % name)
+
+        return getattr(self._experiment, name)

@@ -170,17 +170,17 @@ class TestEnsureIndex(object):
 
     def test_new_index(self, orion_db):
         """Index should be added to mongo database"""
-        assert "status_1" not in orion_db._db.experiments.index_information()
-        orion_db.ensure_index('experiments', 'status')
-        assert "status_1" in orion_db._db.experiments.index_information()
+        assert "status_1" not in orion_db._db.trials.index_information()
+        orion_db.ensure_index('trials', 'status')
+        assert "status_1" in orion_db._db.trials.index_information()
 
     def test_existing_index(self, orion_db):
         """Index should be added to mongo database and reattempt should do nothing"""
-        assert "status_1" not in orion_db._db.experiments.index_information()
-        orion_db.ensure_index('experiments', 'status')
-        assert "status_1" in orion_db._db.experiments.index_information()
-        orion_db.ensure_index('experiments', 'status')
-        assert "status_1" in orion_db._db.experiments.index_information()
+        assert "status_1" not in orion_db._db.trials.index_information()
+        orion_db.ensure_index('trials', 'status')
+        assert "status_1" in orion_db._db.trials.index_information()
+        orion_db.ensure_index('trials', 'status')
+        assert "status_1" in orion_db._db.trials.index_information()
 
     def test_ordered_index(self, orion_db):
         """Sort order should be added to index"""
@@ -250,13 +250,13 @@ class TestRead(object):
             'trials',
             {'experiment': 'supernaedo2',
              'submit_time': {'$gte': datetime(2017, 11, 23, 0, 0, 0)}})
-        assert value == exp_config[1][2:]
+        assert value == exp_config[1][2:7]
 
         value = orion_db.read(
             'trials',
             {'experiment': 'supernaedo2',
              'submit_time': {'$gt': datetime(2017, 11, 23, 0, 0, 0)}})
-        assert value == exp_config[1][3:]
+        assert value == exp_config[1][3:7]
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -299,7 +299,8 @@ class TestWrite(object):
         value = list(database.experiments.find({}))
         assert value[0]['pool_size'] == 16
         assert value[1]['pool_size'] == 16
-        assert value[2]['pool_size'] == 2
+        assert value[2]['pool_size'] == 16
+        assert value[3]['pool_size'] == 2
 
     def test_update_with_id(self, exp_config, database, orion_db):
         """Query using ``_id`` key."""
@@ -343,9 +344,9 @@ class TestReadAndWrite(object):
         loaded_config = orion_db.read_and_write(
             'experiments',
             {'name': 'supernaedo2', 'metadata.user': 'dendi'},
-            {'status': 'lalala'})
-        exp_config[0][2]['status'] = 'lalala'
-        assert loaded_config == exp_config[0][2]
+            {'pool_size': 'lalala'})
+        exp_config[0][3]['pool_size'] = 'lalala'
+        assert loaded_config == exp_config[0][3]
 
     def test_read_and_write_many(self, database, orion_db, exp_config):
         """Should update only one entry."""
@@ -357,22 +358,22 @@ class TestReadAndWrite(object):
         loaded_config = orion_db.read_and_write(
             'experiments',
             {'name': 'supernaedo2'},
-            {'status': 'lalala'})
+            {'pool_size': 'lalala'})
 
-        exp_config[0][0]['status'] = 'lalala'
+        exp_config[0][0]['pool_size'] = 'lalala'
         assert loaded_config == exp_config[0][0]
 
         # Make sure it only changed the first document found
         documents = orion_db.read('experiments', {'name': 'supernaedo2'})
-        assert documents[0]['status'] == 'lalala'
-        assert documents[1]['status'] != 'lalala'
+        assert documents[0]['pool_size'] == 'lalala'
+        assert documents[1]['pool_size'] != 'lalala'
 
     def test_read_and_write_no_match(self, database, orion_db):
         """Should return None when there is no match."""
         loaded_config = orion_db.read_and_write(
             'experiments',
             {'name': 'lalala'},
-            {'status': 'lalala'})
+            {'pool_size': 'lalala'})
 
         assert loaded_config is None
 
@@ -385,11 +386,12 @@ class TestRemove(object):
         """Should match existing entries, and delete them all."""
         filt = {'metadata.user': 'tsirif'}
         count_before = database.experiments.count()
+        count_filt = database.experiments.count(filt)
         # call interface
         assert orion_db.remove('experiments', filt) is True
-        assert database.experiments.count() == count_before - 2
+        assert database.experiments.count() == count_before - count_filt
         assert database.experiments.count() == 1
-        assert list(database.experiments.find()) == [exp_config[0][2]]
+        assert list(database.experiments.find()) == [exp_config[0][3]]
 
     def test_remove_with_id(self, exp_config, database, orion_db):
         """Query using ``_id`` key."""

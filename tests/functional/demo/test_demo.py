@@ -32,7 +32,6 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     assert exp['name'] == 'default_algo'
     assert exp['pool_size'] == 10
     assert exp['max_trials'] == 30
-    assert exp['status'] == 'done'
     assert exp['algorithms'] == {'random': {}}
     assert 'user' in exp['metadata']
     assert 'datetime' in exp['metadata']
@@ -58,7 +57,6 @@ def test_demo(database, monkeypatch):
     assert exp['name'] == 'voila_voici'
     assert exp['pool_size'] == 1
     assert exp['max_trials'] == 100
-    assert exp['status'] == 'done'
     assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
                                                       'dx_tolerance': 1e-7}}
     assert 'user' in exp['metadata']
@@ -110,7 +108,6 @@ def test_demo_two_workers(database, monkeypatch):
     assert exp['name'] == 'two_workers_demo'
     assert exp['pool_size'] == 2
     assert exp['max_trials'] == 400
-    assert exp['status'] == 'done'
     assert exp['algorithms'] == {'random': {}}
     assert 'user' in exp['metadata']
     assert 'datetime' in exp['metadata']
@@ -162,7 +159,6 @@ def test_workon(database):
     assert exp['name'] == 'voila_voici'
     assert exp['pool_size'] == 1
     assert exp['max_trials'] == 100
-    assert exp['status'] == 'done'
     assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
                                                       'dx_tolerance': 1e-7}}
     assert 'user' in exp['metadata']

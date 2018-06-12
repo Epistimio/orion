@@ -25,7 +25,6 @@
         value:
   pool_size: 2
   max_trials: 1000
-  status: running
   algorithms:
     random: {}
 
@@ -49,7 +48,6 @@
         value:
   pool_size: 2
   max_trials: 1000
-  status: running
   algorithms:
     random: {}
 
@@ -73,6 +71,5 @@
         value:
   pool_size: 2
   max_trials: 1000
-  status: running
   algorithms: 
     random: {}
