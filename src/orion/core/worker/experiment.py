@@ -260,11 +260,23 @@ class Experiment(object):
         self._db.write('trials', trial.to_dict(), query={'_id': trial.id})
 
     def register_trial(self, trial):
-        """Inform database about *new* suggested trial with specific parameter
-        values. Trials may only be registered one at a time to avoid registration
-        of duplications.
+        """Register new trial in the database.
 
-        :type trials: list of `Trial`
+        Inform database about *new* suggested trial with specific parameter values. Trials may only
+        be registered one at a time to avoid registration of duplicates.
+
+        Parameters
+        ----------
+        trials: `Trial` object
+            Trial to register in the database
+
+        Raises
+        ------
+        orion.core.io.database.DuplicateKeyError
+            If a trial with the same id already exist in the database. Since the id is computed
+            based on a hashing of the trial, this should mean that an identical trial already exist
+            in the database.
+
         """
         stamp = datetime.datetime.utcnow()
         trial.experiment = self._id
