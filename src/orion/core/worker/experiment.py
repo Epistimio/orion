@@ -259,7 +259,7 @@ class Experiment(object):
         trial.status = 'completed'
         self._db.write('trials', trial.to_dict(), query={'_id': trial.id})
 
-    def register_trials(self, trials):
+    def register_trial(self, trial):
         """Inform database about *new* suggested trial with specific parameter
         values. Each of them correspond to a different possible run.
 
@@ -267,12 +267,10 @@ class Experiment(object):
         """
         try:
             stamp = datetime.datetime.utcnow()
-            for trial in trials:
-                trial.experiment = self._id
-                trial.status = 'new'
-                trial.submit_time = stamp
-            trials_dicts = list(map(lambda x: x.to_dict(), trials))
-            self._db.write('trials', trials_dicts)
+            trial.experiment = self._id
+            trial.status = 'new'
+            trial.submit_time = stamp
+            self._db.write('trials', trial.to_dict())
         except DuplicateKeyError:
             pass
 
