@@ -10,6 +10,7 @@ import yaml
 from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
+from orion.core.worker.trial import Trial
 
 
 class DumbAlgo(BaseAlgorithm):
@@ -84,6 +85,10 @@ def exp_config():
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
               'unittests', 'core', 'experiment.yaml')) as f:
         exp_config = list(yaml.safe_load_all(f))
+
+    for i, t_dict in enumerate(exp_config[1]):
+        exp_config[1][i] = Trial(**t_dict).to_dict()
+
     return exp_config
 
 

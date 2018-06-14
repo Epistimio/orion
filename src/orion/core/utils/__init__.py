@@ -91,7 +91,16 @@ class Factory(ABCMeta):
                       entry_point.dist.project_name, entry_point.dist.version)
 
         # Get types visible from base module or package, but internal
-        cls.types = cls.__base__.__subclasses__()
+        def get_all_subclasses(parent):
+            """Get set of subclasses recursively"""
+            subclasses = set()
+            for subclass in parent.__subclasses__():
+                subclasses.add(subclass)
+                subclasses |= get_all_subclasses(subclass)
+
+            return subclasses
+
+        cls.types = list(get_all_subclasses(cls.__base__))
         cls.types = [class_ for class_ in cls.types if class_.__name__ != cls.__name__]
         cls.typenames = list(map(lambda x: x.__name__.lower(), cls.types))
         log.debug("Implementations found: %s", cls.typenames)
