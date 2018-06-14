@@ -34,11 +34,17 @@ def tuple_to_trial(data, space):
     :type space: `orion.algo.space.Space`
     """
     assert len(data) == len(space)
-    params = [dict(
-        name=space[order].name,
-        type=space[order].type,
-        value=data[order]
-        ) for order in range(len(space))]
+    params = []
+    for i, dim in enumerate(space.values()):
+        try:
+            datum = data[i].tolist()  # if it is numpy.ndarray
+        except AttributeError:
+            datum = data[i]
+        params.append(dict(
+            name=dim.name,
+            type=dim.type,
+            value=datum
+            ))
     return Trial(params=params)
 
 
