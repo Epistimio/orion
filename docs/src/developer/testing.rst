@@ -1,7 +1,7 @@
 .. contents:: Developer's Guide 101: Tools & Testing
 
 *******
-Prepare
+Testing
 *******
 
 For developer's convenience the packages enlisted in the requirements file
@@ -10,7 +10,7 @@ Packages include `tox <https://tox.readthedocs.io/en/latest/>`_ for defining
 and organizing macros of sh commands in virtual environments, and packages
 for linting as we will see in a next chapter.
 
-======================
+
 Continuous Integration
 ======================
 
@@ -22,7 +22,6 @@ We use **TravisCI** and **CodeCov**.
 .. image:: https://codecov.io/gh/mila-udem/orion/branch/master/graphs/badge.svg?branch=master
    :target: https://codecov.io/gh/mila-udem/orion
 
-==================
 Continuous Testing
 ==================
 
@@ -54,9 +53,8 @@ on shell's screen.
 This will finally always run the tests on background and on a code change event,
 it automatically performs **regression testing**.
 
-****
 Test
-****
+====
 
 All the tests for our software are located and organized in the directory
 ``/tests`` relative to the root of the code repository. There are two kinds of
