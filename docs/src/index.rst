@@ -42,4 +42,6 @@
    :maxdepth: 2
    :caption: Code Reference
 
-   reference/modules
+   code/core
+   code/algo
+   code/client
