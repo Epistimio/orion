@@ -25,29 +25,29 @@ Last line of the main() function
 .. code-block:: python
 
         test_error_rate = test(epoch)
-    
+
     report_results([dict(
         name='test_error_rate',
         type='objective',
         value=test_error_rate)])
 
 .. code-block:: bash
-    
+
     orion -v hunt -n resnet18-cifar10 python main.py --lr~'loguniform(1e-5, 1.0)'
 
-.. note :: 
+.. note ::
 
-	If you are using python3, the script will fail with message
+    If you are using python3, the script will fail with message
 
-	.. code-block:: bash 
+    .. code-block:: bash
 
-		ImportError: No module named 'vgg'
+        ImportError: No module named 'vgg'
 
-	You can fix this with the following command from the repository's root.
+    You can fix this with the following command from the repository's root.
 
-	.. code-block:: bash
+    .. code-block:: bash
 
-		sed -i 's/from /from ./g' models/__init__.py
+        sed -i 's/from /from ./g' models/__init__.py
 
 
-# orion submit -n resnet18-cifar10 mysubmissionfile
+.. # orion submit -n resnet18-cifar10 mysubmissionfile

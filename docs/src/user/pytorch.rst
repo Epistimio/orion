@@ -17,7 +17,7 @@ Adapting the code
 =================
 
 .. code-block:: bash
-    
+
     $ cd examples/mnist
 
 .. code-block:: bash
@@ -42,7 +42,7 @@ Last line of the main() function
 .. code-block:: python
 
         test_error_rate = test(args, model, device, test_loader)
-    
+
     report_results([dict(
         name='test_error_rate',
         type='objective',

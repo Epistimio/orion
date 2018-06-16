@@ -5,7 +5,7 @@ Algorithm modules
 TODO
 
 .. automodule:: orion.algo
-   :members: 
+   :members:
 
 .. toctree::
    :maxdepth: 2
