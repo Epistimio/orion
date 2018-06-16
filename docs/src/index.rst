@@ -20,13 +20,13 @@
 
 
 .. toctree::
-   :caption: Developer's Guide
-   :maxdepth: 2
+   :caption: Plugin development's Guide
+   :maxdepth: 1
 
-   developer/testing
-   developer/documenting
-   developer/standards
-   developer/algorithms
+   plugins/base
+   plugins/algorithms
+   plugins/database
+   plugins/analysis
 
 
 .. .. toctree::
@@ -44,3 +44,13 @@
    code/core
    code/algo
    code/client
+
+.. toctree::
+   :caption: Developer's Guide
+   :maxdepth: 1
+
+   developer/testing
+   developer/documenting
+   developer/standards
+
+.. Don't fetch reference/viz
