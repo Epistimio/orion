@@ -82,8 +82,8 @@ class TestConnection(object):
 
     def test_overwrite_uri(self):
         """Check the case when connecting with ready `uri`."""
-        orion_db = MongoDB('mongodb://lala:pass@localhost:1231/orion',
-                           port=27017, name='orion_test', username='user',
+        orion_db = MongoDB('mongodb://user:pass@localhost:27017/orion_test',
+                           port=1231, name='orion', username='lala',
                            password='pass')
         assert orion_db.host == 'localhost'
         assert orion_db.port == 27017
