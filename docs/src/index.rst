@@ -11,13 +11,19 @@
 
 .. toctree::
    :caption: User's Guide
-   :maxdepth: 2
+   :maxdepth: 1
 
+   user/pytorch
    user/executing
+   user/configuring
    user/defining
    user/algorithms
-   user/configuring
 
+.. toctree::
+   :caption: Examples
+   :maxdepth: 1
+
+   examples/pytorch_cifar
 
 .. toctree::
    :caption: Plugin development's Guide
