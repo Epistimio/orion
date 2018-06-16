@@ -65,7 +65,7 @@ tests: Unit tests are located under ``/tests/unittests`` and functional tests
 
 Our software requires pytest_ ``>=3.0.0`` for automated testing.
 Also, it requires the particular database setup described in
-:doc:`/user/database` to have been followed.
+:doc:`/database` to have been followed.
 
 Hence the tests can be invoked with::
 

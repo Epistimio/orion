@@ -15,7 +15,6 @@
 
    user/executing
    user/defining
-   user/database
    user/algorithms
    user/configuring
 
