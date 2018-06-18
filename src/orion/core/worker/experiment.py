@@ -268,19 +268,16 @@ class Experiment(object):
 
         :type trials: list of `Trial`
         """
-        try:
-            stamp = datetime.datetime.utcnow()
-            for trial in trials:
-                trial.experiment = self._id
-                trial.status = 'new'
-                trial.submit_time = stamp
+        stamp = datetime.datetime.utcnow()
+        for trial in trials:
+            trial.experiment = self._id
+            trial.status = 'new'
+            trial.submit_time = stamp
 
-                trial.parents = self._trials_history.get_most_recent_parents()
+            trial.parents = self._trials_history.get_most_recent_parents()
 
-            trials_dicts = list(map(lambda x: x.to_dict(), trials))
-            self._db.write('trials', trials_dicts)
-        except DuplicateKeyError:
-            pass
+        trials_dicts = list(map(lambda x: x.to_dict(), trials))
+        self._db.write('trials', trials_dicts)
 
     def fetch_completed_trials(self):
         """Fetch recent completed trials that this `Experiment` instance has not
