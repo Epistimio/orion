@@ -28,6 +28,7 @@ class DumbAlgo(BaseAlgorithm):
         self._score_point = None
         self._judge_point = None
         self._measurements = None
+        self.possible_values = []
         super(DumbAlgo, self).__init__(space, value=value,
                                        scoring=scoring, judgement=judgement,
                                        suspend=suspend,
@@ -37,7 +38,11 @@ class DumbAlgo(BaseAlgorithm):
     def suggest(self, num=1):
         """Suggest based on `value`."""
         self._num = num
-        return [self.value] * num
+
+        if len(self.possible_values) < num:
+            return [self.value] * num
+
+        return [self.possible_values.pop(0)] * num
 
     def observe(self, points, results):
         """Log inputs."""
@@ -77,6 +82,14 @@ OptimizationAlgorithm.typenames.append(DumbAlgo.__name__.lower())
 def dumbalgo():
     """Return stab algorithm class."""
     return DumbAlgo
+
+
+@pytest.fixture()
+def categorical_values():
+    """Return a list of all the categorical points possible for `supernaedo2` and `supernaedo3`"""
+    return [('rnn', 'rnn'), ('rnn', 'lstm_with_attention'), ('rnn', 'gru'),
+            ('gru', 'rnn'), ('gru', 'lstm_with_attention'), ('gru', 'gru'),
+            ('lstm', 'rnn'), ('lstm', 'lstm_with_attention'), ('lstm', 'gru')]
 
 
 @pytest.fixture()
