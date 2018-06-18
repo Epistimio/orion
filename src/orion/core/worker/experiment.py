@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=protected-access
+# pylint:disable=protected-access,too-many-public-methods
 """
 :mod:`orion.core.worker.experiment` -- Description of an optimization attempt
 =============================================================================
@@ -274,7 +274,7 @@ class Experiment(object):
             trial.status = 'new'
             trial.submit_time = stamp
 
-            trial.parents = self._trials_history.get_most_recent_parents()
+            trial.parents = self._trials_history.parents
 
         trials_dicts = list(map(lambda x: x.to_dict(), trials))
         self._db.write('trials', trials_dicts)
@@ -310,6 +310,7 @@ class Experiment(object):
         return self._id
 
     def update_parents(self, completed_trials):
+        """Update the parents inside trials history"""
         self._trials_history.update_parents(completed_trials)
 
     @property
