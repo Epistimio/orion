@@ -132,7 +132,7 @@ class Trial(object):
         function or of an 'constraint' expression.
         """
 
-        allowed_types = ('objective', 'constraint', 'gradient')
+        allowed_types = ('objective', 'constraint', 'gradient', 'other')
 
     class Param(Value):
         """Types for a `Param` can be either an integer (discrete value),
