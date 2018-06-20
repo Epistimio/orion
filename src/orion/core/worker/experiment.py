@@ -274,6 +274,17 @@ class Experiment(object):
         except DuplicateKeyError:
             pass
 
+    def _fetch_trials(self, query):
+        """Fetch trials for this `Experiment` that fulfill the query
+        requirements
+
+        :return: list of completed `Trial` objects
+        """
+        query.update(experiment=self._id)
+        trials = trial.build(self._db.read('trials', query))
+
+        return completed_trials
+
     def fetch_completed_trials(self):
         """Fetch recent completed trials that this `Experiment` instance has not
         yet seen.
@@ -286,7 +297,6 @@ class Experiment(object):
         :return: list of completed `Trial` objects
         """
         query = dict(
-            experiment=self._id,
             status='completed',
             end_time={'$gte': self._last_fetched}
             )
