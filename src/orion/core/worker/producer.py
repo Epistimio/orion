@@ -157,7 +157,7 @@ class Producer(object):
 
     def _produces_lies(self):
         log.debug("### Fetch trials to observe:")
-        non_completed_trials = self.experiment.fetch_trials({'status': {'$neq': 'completed'}})
+        non_completed_trials = self.experiment._fetch_trials({'status': {'$neq': 'completed'}})
         log.debug("### %s", non_completed_trials)
         if non_completed_trials:
             log.debug("### Use defined ParallelStrategy to assign them fake results.")

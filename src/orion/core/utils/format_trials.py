@@ -58,7 +58,7 @@ def get_trial_results(trial):
     if lie:
         results['objective'] = lie.value
     elif objective:
-        results['objective'] = objective.value
+        results['objective'] = objective.value
     else:
         results['objective'] = None
 
