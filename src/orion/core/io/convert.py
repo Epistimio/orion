@@ -14,6 +14,10 @@ file types.
 Currently supported:
     - YAML
     - JSON
+    - See below, for configuration agnostic parsing
+
+A `GenericConverter` is provided that tries and parses configuration
+files, regardless of their type, according to predefined Oríon's markers.
 
 """
 from abc import (ABC, abstractmethod)
@@ -193,7 +197,8 @@ class GenericConverter(BaseConverter):
         subst = self.re_module.sub(r'{', r'{{', self.template)
         subst = self.re_module.sub(r'}', r'}}', subst)
         substituted, num_subs = self.regex.subn(r'{\1!s}', subst)
-        assert len(ret) == num_subs, "original: {}\n, regex:{}".format(self.template, self.regex)
+        assert len(ret) == num_subs, "This means an error in the regex. Report bug. Details::\n"\
+            "original: {}\n, regex:{}".format(self.template, self.regex)
         self.template = substituted
 
         # Wrap it in style of what the rest of `Converter`s return
