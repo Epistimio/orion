@@ -42,6 +42,10 @@ class OrionArgsParser:
             action='count', default=0,
             help="logging levels of information about the process (-v: INFO. -vv: DEBUG)")
 
+        self.parser.add_argument(
+            '-d', '--debug', action='store_true',
+            help="Use debugging mode with EphemeralDB.")
+
         self.subparsers = self.parser.add_subparsers(help='sub-command help')
 
     def get_subparsers(self):

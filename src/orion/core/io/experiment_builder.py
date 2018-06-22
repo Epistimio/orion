@@ -201,6 +201,9 @@ class ExperimentBuilder(object):
         db_opts = local_config['database']
         dbtype = db_opts.pop('type')
 
+        if local_config.get("debug"):
+            dbtype = "EphemeralDB"
+
         # Information should be enough to infer experiment's name.
         log.debug("Creating %s database client with args: %s", dbtype, db_opts)
         try:
