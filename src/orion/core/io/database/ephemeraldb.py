@@ -403,7 +403,7 @@ def _flatten(dictionary):
             return dictionary
 
         key, value = dictionary.popitem()
-        if dict != type(value):
+        if not isinstance(value, dict) or not value:
             new_dictionary = {key: value}
             new_dictionary.update(__flatten(dictionary))
             return new_dictionary
