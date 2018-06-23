@@ -360,16 +360,9 @@ class EphemeralDocument(object):
             key_is_match(abc.def.ghi, abc.de) -> False
             key_is_match(abc.def.ghi, xyz) -> False
             """
-            if not key.startswith(selected_key):
-                return False
-
-            if not key.replace(selected_key, ''):
-                return True
-
-            if key.replace(selected_key, '')[0] == ".":
-                return True
-
-            return False
+            return (key == selected_key or
+                    (key.startswith(selected_key) and
+                     key.replace(selected_key, '')[0] == "."))
 
         for key, value in self._data.items():
             for selected_key, include in keys.items():
