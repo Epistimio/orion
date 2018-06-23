@@ -48,7 +48,6 @@ import orion.core as orion  # noqa
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    # 'sphinx.ext.napolean',
     'sphinx.ext.doctest',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
