@@ -77,6 +77,14 @@ class MongoDB(AbstractDB):
 
     """
 
+    def __init__(self, host='localhost', name=None,
+                 port=None, username=None, password=None):
+        """Init method, see attributes of :class:`AbstractDB`."""
+        self.options = {'authSource': name}
+        self.uri = None
+
+        super(MongoDB, self).__init__(host, name, port, username, password)
+
     @mongodb_exception_wrapper
     def initiate_connection(self):
         """Connect to database, unless MongoDB `is_connected`.
@@ -89,11 +97,11 @@ class MongoDB(AbstractDB):
 
         self._sanitize_attrs()
 
-        self._conn = pymongo.MongoClient(host=self.host,
+        self._conn = pymongo.MongoClient(self.uri if self.uri else self.host,
                                          port=self.port,
                                          username=self.username,
                                          password=self.password,
-                                         authSource=self.name)
+                                         **self.options)
         self._db = self._conn[self.name]
         self._db.command('ismaster')  # .. seealso:: :meth:`is_connected`
 
@@ -244,12 +252,17 @@ class MongoDB(AbstractDB):
                 self.port = pymongo.MongoClient.PORT
         else:  # host argument was a URI
             # Arguments in MongoClient overwrite elements from URI
+
+            self.uri = self.host
             self.host, _port = settings['nodelist'][0]
-            if self.name is None:
+            if settings['database'] is not None:
                 self.name = settings['database']
-            if self.port is None:
+            if _port is not None:
                 self.port = _port
-            if self.username is None:
+            if settings['username'] is not None:
                 self.username = settings['username']
-            if self.password is None:
+            if settings['password'] is not None:
                 self.password = settings['password']
+
+            # Use new self.name if authSource not specified in URI
+            self.options['authSource'] = settings['options'].get('authsource', self.name)

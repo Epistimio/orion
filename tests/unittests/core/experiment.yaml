@@ -76,6 +76,35 @@
       suspend: False
       done: False
 
+- name: supernaedo4
+
+  metadata:
+    user: tsirif
+    datetime: 2017-11-22T21:00:00
+    orion_version: 0.1
+    user_script: full_path/ieeeela.py
+    user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
+    user_vcs: git
+    user_version: ~
+    user_commit_hash: as5f7asf5asfa7sf
+  refers:
+    name: supernaedo1
+    user: tsirif
+    params:
+      - name: decoding_layer
+        type: categorical
+        value: gru
+  pool_size: 2
+  max_trials: 1
+  status: done
+  algorithms:
+    dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
+      value: 5
+      scoring: 0
+      judgement: ~
+      suspend: False
+      done: False
+
 - name: supernaedo2
 
   metadata:
@@ -249,6 +278,28 @@
       value: gru
   parents: []
 
+- experiment: supernaedo4
+
+  status: completed
+  worker: 1251231
+  submit_time: 2017-11-22T23:00:00
+  start_time: ~
+  end_time: 2017-11-22T22:30:00
+  results:
+    - name: ~
+      type: objective  # objective, constraint
+      value: 2
+    - name: naedw_grad
+      type: gradient
+      value: [-0.1, 2]
+  params:
+    - name: /encoding_layer
+      type: categorical
+      value: rnn
+    - name: /decoding_layer
+      type: categorical
+      value: rnn
+  parents: []
 ---
 
 # Example of entries in `workers` collection

@@ -114,3 +114,23 @@ def hacked_exp(with_user_dendi, random_dt, clean_db):
     exp = Experiment('supernaedo2')
     exp._id = 'supernaedo2'  # white box hack
     return exp
+
+
+@pytest.fixture()
+def trial_id_substitution(with_user_tsirif, random_dt, clean_db):
+    """Replace trial ids by the actual ids of the experiments."""
+    try:
+        Database(of_type='MongoDB', name='orion_test',
+                 username='user', password='pass')
+    except (TypeError, ValueError):
+        pass
+
+    db = Database()
+    experiments = db.read('experiments', {'metadata.user': 'tsirif'})
+    experiment_dict = dict((experiment['name'], experiment) for experiment in experiments)
+    trials = db.read('trials')
+
+    for trial in trials:
+        query = {'experiment': trial['experiment']}
+        update = {'experiment': experiment_dict[trial['experiment']]['_id']}
+        db.write('trials', update, query)
