@@ -19,6 +19,8 @@ Experiment Name
 ===============
 
 TODO
+-n, --name
+--branch
 
 Black Box Script
 ================
