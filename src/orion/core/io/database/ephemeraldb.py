@@ -224,8 +224,8 @@ class EphemeralCollection(object):
         update['$set'], otherwise the new document is `update`.
         """
         if "$set" in update:
-            new_document = copy.deepcopy(update["$set"])
-            new_document.update(query)
+            new_document = copy.deepcopy(query)
+            new_document.update(update["$set"])
         else:
             new_document = update
 
