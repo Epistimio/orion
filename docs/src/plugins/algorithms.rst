@@ -1,3 +1,7 @@
+**********
+Algorithms
+**********
+
 The absolute bare **minimum interface** an optimization algorithm needs to have
 is an ``observe`` method and a ``suggest`` method, so that:
 
@@ -17,11 +21,10 @@ to discover externally installed algorithms implementing Oríon's interface
 
 .. contents:: Developer's Guide 104: Basic Algorithm
 
-******************
 Meet BaseAlgorithm
-******************
+==================
 
-Basic algorithm's interface is defined in :doc:`/reference/orion.algo.base`.
+Basic algorithm's interface is defined in :doc:`/code/algo`.
 The example we are going to follow is from the nested source repository used for
 actual functional testing, gradient_descent_algo_.
 
@@ -36,12 +39,6 @@ The Space Class
 
 TODO
 
-Distribute Your Algorithms
-==========================
-
-Template `setup.py <gradient_descent_algo_setup>`_
-TODO
-
 .. _gradient_descent_algo: https://github.com/mila-udem/orion/tree/master/tests/functional/gradient_descent_algo
 .. _gradient_descent_algo_code: https://github.com/mila-udem/orion/blob/master/tests/functional/gradient_descent_algo/src/orion/algo/gradient_descent.py
-.. _gradient_descent_algo_setup: https://github.com/mila-udem/orion/blob/master/tests/functional/gradient_descent_algo/setup.py
+

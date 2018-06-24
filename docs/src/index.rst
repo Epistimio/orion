@@ -11,23 +11,28 @@
 
 .. toctree::
    :caption: User's Guide
-   :maxdepth: 2
+   :maxdepth: 1
 
+   user/pytorch
    user/executing
-   user/defining
-   user/database
-   user/algorithms
    user/configuring
-
+   user/defining
+   user/algorithms
 
 .. toctree::
-   :caption: Developer's Guide
-   :maxdepth: 2
+   :caption: Examples
+   :maxdepth: 1
 
-   developer/testing
-   developer/documenting
-   developer/standards
-   developer/algorithms
+   examples/pytorch_cifar
+
+.. toctree::
+   :caption: Plugin development's Guide
+   :maxdepth: 1
+
+   plugins/base
+   plugins/algorithms
+   plugins/database
+   plugins/analysis
 
 
 .. .. toctree::
@@ -42,4 +47,16 @@
    :maxdepth: 2
    :caption: Code Reference
 
-   reference/modules
+   code/core
+   code/algo
+   code/client
+
+.. toctree::
+   :caption: Developer's Guide
+   :maxdepth: 1
+
+   developer/testing
+   developer/documenting
+   developer/standards
+
+.. Don't fetch reference/viz
