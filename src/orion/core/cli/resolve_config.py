@@ -32,7 +32,6 @@ precedence is respected when building the settings dictionary:
 
 """
 import argparse
-from collections import defaultdict
 from copy import deepcopy
 import logging
 import os
@@ -43,12 +42,7 @@ from numpy import inf as infinity
 import yaml
 
 import orion
-
-
-# Define type of arbitrary nested defaultdicts
-def nesteddict():
-    """Extend defaultdict to arbitrary nested levels."""
-    return defaultdict(nesteddict)
+from orion.core.utils import nesteddict
 
 
 def is_exe(path):

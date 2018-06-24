@@ -296,7 +296,8 @@ class SpaceBuilder(object, metaclass=SingletonType):
         return self.space
 
     def _build_from_config(self, config_path):
-        self.converter = infer_converter_from_file_type(config_path)
+        self.converter = infer_converter_from_file_type(config_path,
+                                                        default_keyword=self.USERCONFIG_KEYWORD)
         self.userconfig_tmpl = self.converter.parse(config_path)
 
         stack = collections.deque()
