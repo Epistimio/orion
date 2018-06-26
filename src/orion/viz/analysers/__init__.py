@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.viz.analysers.base` -- What is a data analyzer
-==============================================================================
+:mod:`orion.viz.analysers` -- Base interface, factory and wrapper for DataAdapter
+=================================================================================
 
-.. module:: base
+.. module:: analysers
    :platform: Unix
-   :synopsis: Formulation of a general data analyser for visualization
+   :synopsis: Formulation of a general interface for a data analyser to provide
+   information to a plotter object
 
 """
 from abc import (ABCMeta, abstractmethod)
@@ -20,6 +21,18 @@ class BaseAnalyser(object, metaclass=ABCMeta):
     """Base class describing what a data analyzer can do."""
 
     def __init__(self, trials, experiment, **kwargs):
+        """Create an analyser with all the necessary tools for it to do its thing.
+
+        Parameters
+        ----------
+        trials : List of `orion.core.worker.trial.Trial`
+            All the trials to be analyse.
+        experiment : `orion.core.worker.experiment.Experiment`
+            Current experiment being analyzed.
+        kwargs : dict
+            Tunable elements of a particular data analyser.
+
+        """
         log.debug("Creating Algorithm object of %s type with parameters:\n%s",
                   type(self).__name__, kwargs)
 
@@ -35,8 +48,11 @@ class BaseAnalyser(object, metaclass=ABCMeta):
                 subanalyser_type = list(param)[0]
                 subanalyser_kwargs = param[subanalyser_type]
                 if isinstance(subanalyser_kwargs, dict):
-                    param = AnalyserFactory(subanalyser_type,
-                                            trials, experiment, **subanalyser_kwargs)
+                    try:
+                        param = AnalyserFactory(subanalyser_type,
+                                                trials, experiment, **subanalyser_kwargs)
+                    except NotImplementedError:
+                        pass
             elif isinstance(param, str) and \
                     param.lower() in AnalyserFactory.typenames:
                 # pylint: disable=too-many-function-args
@@ -46,22 +62,34 @@ class BaseAnalyser(object, metaclass=ABCMeta):
 
     @abstractmethod
     def analyse(self, of_type=None):
+        """Return a `orion.viz.analysis.Analysis` object containing the results of the analyse.
+
+        Parameters
+        ----------
+        of_type : Subclass of `orion.viz.analysis.Analysis`
+            If the data analyser provides different type of analyses, this tells the
+            object which one we want.
+        """
         pass
 
     @property
     def space(self):
+        """Return problem space."""
         return self._space
 
     @property
     def experiment(self):
+        """Return current experiment."""
         return self._experiment
 
     @property
     def trials(self):
+        """Return all trials."""
         return self._trials
 
     @property
     def available_analysis(self):
+        """Return the type of analysis this analyser provides."""
         return []
 
 
