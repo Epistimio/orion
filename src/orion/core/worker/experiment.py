@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=protected-access
+# pylint:disable=protected-access,too-many-public-methods
 """
 :mod:`orion.core.worker.experiment` -- Description of an optimization attempt
 =============================================================================
@@ -15,11 +15,13 @@ import getpass
 import logging
 import random
 
+
 from orion.core.io.database import Database, DuplicateKeyError, ReadOnlyDB
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.trial import Trial
+from orion.core.worker.trials_history import TrialsHistory
 
 log = logging.getLogger(__name__)
 
@@ -75,7 +77,7 @@ class Experiment(object):
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
-                 'algorithms', '_db', '_init_done', '_id', '_last_fetched')
+                 'algorithms', '_db', '_init_done', '_id', '_last_fetched', '_trials_history')
     non_forking_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name):
@@ -106,6 +108,7 @@ class Experiment(object):
         self.pool_size = None
         self.max_trials = None
         self.algorithms = None
+        self._trials_history = TrialsHistory()
 
         config = self._db.read('experiments',
                                {'name': name, 'metadata.user': user})
@@ -208,16 +211,16 @@ class Experiment(object):
 
         :type trials: list of `Trial`
         """
-        try:
-            stamp = datetime.datetime.utcnow()
-            for trial in trials:
-                trial.experiment = self._id
-                trial.status = 'new'
-                trial.submit_time = stamp
-            trials_dicts = list(map(lambda x: x.to_dict(), trials))
-            self._db.write('trials', trials_dicts)
-        except DuplicateKeyError:
-            pass
+        stamp = datetime.datetime.utcnow()
+        for trial in trials:
+            trial.experiment = self._id
+            trial.status = 'new'
+            trial.submit_time = stamp
+
+            trial.parents = self._trials_history.parents
+
+        trials_dicts = list(map(lambda x: x.to_dict(), trials))
+        self._db.write('trials', trials_dicts)
 
     def fetch_completed_trials(self):
         """Fetch recent completed trials that this `Experiment` instance has not
@@ -246,6 +249,10 @@ class Experiment(object):
         Value is `None` if the experiment is not configured.
         """
         return self._id
+
+    def update_parents(self, completed_trials):
+        """Update the parents inside trials history"""
+        self._trials_history.update_parents(completed_trials)
 
     @property
     def is_done(self):

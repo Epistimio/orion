@@ -10,6 +10,7 @@
 """
 import logging
 
+from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
 
 log = logging.getLogger(__name__)
@@ -41,15 +42,28 @@ class Producer(object):
 
     def produce(self):
         """Create and register new trials."""
-        log.debug("### Suggest new ones.")
-        new_points = self.algorithm.suggest(self.num_new_trials)
+        needs_to_sample = True
+        max_samples = 100
+        current_samples = 0
 
-        log.debug("### Convert them to `Trial` objects.")
-        new_trials = list(map(lambda data: format_trials.tuple_to_trial(data, self.space),
-                              new_points))
+        while needs_to_sample and current_samples < max_samples:
+            current_samples = current_samples + 1
+            log.debug("### Suggest new ones.")
 
-        log.debug("### Register to database: %s", new_trials)
-        self.experiment.register_trials(new_trials)
+            new_points = self.algorithm.suggest(self.num_new_trials)
+
+            log.debug("### Convert them to `Trial` objects.")
+            new_trials = list(map(lambda data: format_trials.tuple_to_trial(data, self.space),
+                                  new_points))
+
+            log.debug("### Register to database: %s", new_trials)
+
+            try:
+                self.experiment.register_trials(new_trials)
+                needs_to_sample = False
+            except DuplicateKeyError:
+                log.debug("#### Bad sample. Producing new one")
+                self.update()
 
     def update(self):
         """Pull newest completed trials to update local model."""
@@ -64,4 +78,5 @@ class Producer(object):
             results = list(map(format_trials.get_trial_results, completed_trials))
 
             log.debug("### Observe them.")
+            self.experiment.update_parents(completed_trials)
             self.algorithm.observe(points, results)

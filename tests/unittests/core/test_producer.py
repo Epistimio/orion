@@ -7,14 +7,12 @@ from orion.core.worker.producer import Producer
 
 
 @pytest.fixture()
-def producer(hacked_exp, random_dt, exp_config):
+def producer(hacked_exp, random_dt, exp_config, categorical_values):
     """Return a setup `Producer`."""
     # make init done
-    hacked_exp.configure(exp_config[0][3])
-    # insert fake point
-    fake_point = ('gru', 'rnn')
-    assert fake_point in hacked_exp.space
-    hacked_exp.algorithms.algorithm.value = fake_point
+    hacked_exp.configure(exp_config[0][2])
+    hacked_exp.pool_size = 1
+    hacked_exp.algorithms.algorithm.possible_values = categorical_values
     return Producer(hacked_exp)
 
 
@@ -27,7 +25,7 @@ def test_update(producer):
     assert len(obs_points) == 3
     assert obs_points[0] == ('lstm', 'rnn')
     assert obs_points[1] == ('rnn', 'rnn')
-    assert obs_points[2] == ('gru', 'gru')
+    assert obs_points[2] == ('gru', 'lstm_with_attention')
     assert len(obs_results) == 3
     assert obs_results[0] == {
         'objective': 3,
@@ -46,7 +44,6 @@ def test_update(producer):
         }
 
 
-@pytest.mark.skip(reason="DumbAlgo generates duplicate trials")
 def test_update_and_produce(producer, database, random_dt):
     """Test functionality of producer.produce()."""
     trials_in_db_before = database.trials.count()
@@ -57,11 +54,11 @@ def test_update_and_produce(producer, database, random_dt):
 
     # Algorithm was ordered to suggest some trials
     num_new_points = producer.algorithm.algorithm._num
-    assert num_new_points == 2  # pool size
+    assert num_new_points == 1  # pool size
 
     # `num_new_points` new trials were registered at database
-    assert database.trials.count() == trials_in_db_before + 2
-    assert database.trials.count({'status': 'new'}) == new_trials_in_db_before + 2
+    assert database.trials.count() == trials_in_db_before + 1
+    assert database.trials.count({'status': 'new'}) == new_trials_in_db_before + 1
     new_trials = list(database.trials.find({'status': 'new', 'submit_time': random_dt}))
     assert new_trials[0]['experiment'] == producer.experiment.name
     assert new_trials[0]['start_time'] is None
@@ -70,19 +67,7 @@ def test_update_and_produce(producer, database, random_dt):
     assert new_trials[0]['params'] == [
         {'name': '/encoding_layer',
          'type': 'categorical',
-         'value': 'lstm'},
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'}
-        ]
-    assert new_trials[1]['experiment'] == producer.experiment.name
-    assert new_trials[1]['start_time'] is None
-    assert new_trials[1]['end_time'] is None
-    assert new_trials[1]['results'] == []
-    assert new_trials[1]['params'] == [
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'lstm'},
+         'value': 'rnn'},
         {'name': '/decoding_layer',
          'type': 'categorical',
          'value': 'gru'}

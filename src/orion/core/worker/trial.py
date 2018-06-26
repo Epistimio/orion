@@ -12,6 +12,8 @@
 import hashlib
 import logging
 
+from orion.core.io.database import Database
+
 log = logging.getLogger(__name__)
 
 
@@ -141,14 +143,14 @@ class Trial(object):
 
         allowed_types = ('integer', 'real', 'categorical')
 
-    __slots__ = ('experiment', '_status', 'worker',
-                 'submit_time', 'start_time', 'end_time', 'results', 'params')
+    __slots__ = ('experiment', '_id', '_status', 'worker',
+                 'submit_time', 'start_time', 'end_time', 'results', 'params', 'parents')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
 
     def __init__(self, **kwargs):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
         for attrname in self.__slots__:
-            if attrname in ('results', 'params'):
+            if attrname in ('results', 'params', 'parents'):
                 setattr(self, attrname, list())
             else:
                 setattr(self, attrname, None)
@@ -175,7 +177,6 @@ class Trial(object):
         trial_dictionary = dict()
 
         for attrname in self.__slots__:
-
             attrname = attrname.lstrip("_")
             trial_dictionary[attrname] = getattr(self, attrname)
 
@@ -185,7 +186,7 @@ class Trial(object):
             trial_dictionary[attrname] = list(map(lambda x: x.to_dict(),
                                                   getattr(self, attrname)))
 
-        trial_dictionary['_id'] = self.id
+        trial_dictionary['_id'] = trial_dictionary.pop('id')
 
         return trial_dictionary
 
@@ -196,6 +197,26 @@ class Trial(object):
         return ret
 
     __repr__ = __str__
+
+    def _fetch_all_ancestors(self, current_ancestors=None):
+        for parent in self.parents:
+            if parent in current_ancestors:
+                continue
+
+            query = dict(_id=parent)
+            parent_trial = Trial.build(Database().read('trials', query))[0]
+
+            parent_trial._fetch_all_ancestors(current_ancestors)
+
+        current_ancestors.append(self._id)
+
+    def fetch_all_ancestors(self):
+        """Return a list composed of the ID of all the ancestors of this Trial"""
+        current_ancestors = []
+        self._fetch_all_ancestors(current_ancestors)
+        current_ancestors.pop()
+
+        return current_ancestors
 
     @property
     def status(self):

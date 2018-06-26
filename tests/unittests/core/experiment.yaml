@@ -153,6 +153,7 @@
     - name: /decoding_layer
       type: categorical
       value: rnn
+  parents: []
 - experiment: supernaedo2
 
   status: completed
@@ -174,6 +175,7 @@
     - name: /decoding_layer
       type: categorical
       value: rnn
+  parents: []
 - experiment: supernaedo2
 
   status: completed
@@ -197,7 +199,8 @@
       value: gru
     - name: /decoding_layer
       type: categorical
-      value: gru
+      value: lstm_with_attention
+  parents: []
 - experiment: supernaedo2
 
   status: new
@@ -215,7 +218,8 @@
       value: gru
     - name: /decoding_layer
       type: categorical
-      value: lstm_with_attention
+      value: rnn
+  parents: []
 - experiment: supernaedo2
 
   status: new  # new, reserved, suspended, completed, broken
@@ -234,6 +238,7 @@
     - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
+  parents: []
 - experiment: supernaedo2
 
   status: interrupted
@@ -252,6 +257,7 @@
     - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
+  parents: []
 - experiment: supernaedo2
 
   status: suspended
@@ -270,6 +276,7 @@
     - name: /decoding_layer
       type: categorical
       value: gru
+  parents: []
 
 - experiment: supernaedo4
 
@@ -292,6 +299,7 @@
     - name: /decoding_layer
       type: categorical
       value: rnn
+  parents: []
 ---
 
 # Example of entries in `workers` collection
