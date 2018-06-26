@@ -12,7 +12,7 @@
 import logging
 
 from orion.viz.plotters import BasePlotter
-from orion.viz.analysis import SingleValueAnalysis
+from orion.viz.analysis import Analysis
 
 log = logging.getLogger(__name__)
 
@@ -28,4 +28,4 @@ class Commandline(BasePlotter):
 
     @property
     def required_analysis(self):
-        return [SingleValueAnalysis]
+        return [subclass for subclass in Analysis.__subclasses__()]

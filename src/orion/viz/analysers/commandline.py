@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.viz.analysers.commandline_analyser` -- Default analyser for debug purposes
+:mod:`orion.viz.analysers.commandline` -- Default analyser for debug purposes
 ======================================================================================
 
 .. module:: commandline
