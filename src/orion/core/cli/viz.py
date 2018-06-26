@@ -15,6 +15,7 @@ import orion
 from orion.core.cli import resolve_config
 from orion.core.io.database import Database
 from orion.core.worker.experiment import Experiment
+from orion.core.worker.trial import Trial
 from orion.viz.analysers import AnalyserWrapper
 from orion.viz.plotters import PlotterWrapper
 
@@ -56,16 +57,18 @@ def fetch_config(args):
 
 
 def _execute(cmd_args, file_config):
+    analyser_config = file_config.pop('analyser')
+    plotter_config = {cmd_args.pop('plotter'): {}}
     experiment = _infer_experiment(cmd_args, file_config)
 
     if experiment.id is None:
         raise ValueError("No experiment with given name '%s' for user '%s' inside database, "
                          "can't insert." % (experiment.name, experiment.metadata['user']))
 
-    trials = experiment._db.read('trials', dict(experiment=experiment.id))
-    analyser_config = {cmd_args['analyser']: {}}
+    trials = Trial.build(experiment._db.read('trials', dict(experiment=experiment.id)))
     analyser = AnalyserWrapper(trials, experiment, analyser_config)
-    plotter_config = {cmd_args['plotter']: {}}
+
+    print(analyser_config)
     plotter = PlotterWrapper(analyser.analyse(), plotter_config)
     plotter.plot()
 
@@ -143,6 +146,8 @@ def create_experiment(exp_name, expconfig, file_config, cmd_args):
     expconfig.pop('resources', None)
 
     log.info(expconfig)
+
+    experiment.configure(expconfig)
 
     return experiment
 
