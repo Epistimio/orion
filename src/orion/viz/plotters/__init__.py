@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 class BasePlotter(object, metaclass=ABCMeta):
     """Base class describing what a data analyzer can do."""
 
-    def __init__(self, analysis, **kwargs):
+    def __init__(self, analysis, save_formats, **kwargs):
         log.debug("Creating Algorithm object of %s type with parameters:\n%s",
                   type(self).__name__, kwargs)
 
@@ -34,11 +34,11 @@ class BasePlotter(object, metaclass=ABCMeta):
                 subplotter_kwargs = param[subplotter_type]
                 if isinstance(subplotter_kwargs, dict):
                     param = PlotterFactory(subplotter_type,
-                                           analysis, **subplotter_kwargs)
+                                           analysis, save_formats, **subplotter_kwargs)
             elif isinstance(param, str) and \
                     param.lower() in PlotterFactory.typenames:
                 # pylint: disable=too-many-function-args
-                param = PlotterFactory(param, analysis)
+                param = PlotterFactory(param, analysis, save_formats)
 
             setattr(self, varname, param)
 
@@ -66,9 +66,9 @@ class PlotterFactory(BasePlotter, metaclass=Factory):
 
 
 class PlotterWrapper(BasePlotter):
-    def __init__(self, analysis, plotter_config):
+    def __init__(self, analysis, save_formats, plotter_config):
         self.plotter = None
-        super(PlotterWrapper, self).__init__(analysis, plotter=plotter_config)
+        super(PlotterWrapper, self).__init__(analysis, save_formats, plotter=plotter_config)
 
         if type(analysis) not in self.required_analysis:
             raise TypeError('Analysis type not supported by this plotter')
