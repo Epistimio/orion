@@ -58,7 +58,7 @@ def fetch_config(args):
 
 def _execute(cmd_args, file_config):
     analyser_config = file_config.pop('analyser')
-    plotter_config = {cmd_args.pop('plotter'): {}}
+    plotter_config = file_config.pop('plotter')
     experiment = _infer_experiment(cmd_args, file_config)
 
     if experiment.id is None:
@@ -69,7 +69,7 @@ def _execute(cmd_args, file_config):
     analyser = AnalyserWrapper(trials, experiment, analyser_config)
 
     print(analyser_config)
-    plotter = PlotterWrapper(analyser.analyse(), plotter_config)
+    plotter = PlotterWrapper(analyser.analyse(), ['png'], plotter_config)
     plotter.plot()
 
 
