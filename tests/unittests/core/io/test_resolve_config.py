@@ -21,6 +21,7 @@ def force_is_exe(monkeypatch):
 
 def test_fetch_default_options():
     """Verify default options"""
+    resolve_config.DEF_CONFIG_FILES_PATHS = []
     default_config = resolve_config.fetch_default_options()
 
     assert default_config['algorithms'] == 'random'

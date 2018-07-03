@@ -4,6 +4,7 @@
 
 import pytest
 
+from orion.core.io import resolve_config
 from orion.core.io.experiment_builder import ExperimentBuilder
 
 
@@ -29,6 +30,7 @@ def test_fetch_local_config_from_incomplete_config(incomplete_config_file):
 
     This is to ensure merge_configs update properly the subconfigs
     """
+    resolve_config.DEF_CONFIG_FILES_PATHS = []
     cmdargs = {"config": incomplete_config_file}
     local_config = ExperimentBuilder().fetch_full_config(cmdargs, use_db=False)
 
