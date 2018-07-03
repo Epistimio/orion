@@ -64,7 +64,7 @@ class Dimension(object):
 
     """
 
-    NO_DEFAULT_VALUE = object()
+    NO_DEFAULT_VALUE = None
 
     def __init__(self, name, prior, *args, **kwargs):
         """Init code which is common for `Dimension` subclasses.
