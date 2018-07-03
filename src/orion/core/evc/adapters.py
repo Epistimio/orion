@@ -626,11 +626,15 @@ class CodeChange(BaseAdapter):
             `CodeChange.UNSURE`.
 
         """
-        if change_type not in self.types:
-            raise ValueError("Invalid code change type '%s'. Should be one of %s" %
-                             (change_type, str(self.types)))
-
+        self.validate(change_type)
         self.change_type = change_type
+
+    @classmethod
+    def validate(cls, change_type):
+        """Validate change type and raise ValueError if invalid"""
+        if change_type not in cls.types:
+            raise ValueError("Invalid code change type '%s'. Should be one of %s" %
+                             (change_type, str(cls.types)))
 
     def forward(self, trials):
         """Filter out parent's trials if type of code change is BREAK.
