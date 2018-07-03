@@ -57,7 +57,6 @@ from orion.algo.space import Dimension
 from orion.core.evc import adapters
 from orion.core.io.database import Database
 from orion.core.io.space_builder import SpaceBuilder
-from orion.core.utils.cli import any_type
 from orion.core.utils.diff import colored_diff
 from orion.core.utils.format_trials import standard_param_name
 
@@ -598,6 +597,8 @@ class NewDimensionConflict(Conflict):
             super(NewDimensionConflict.AddDimensionResolution, self).__init__(conflict)
             if default_value is Dimension.NO_DEFAULT_VALUE:
                 default_value = conflict.dimension.default_value
+            else:
+                default_value = conflict.dimension.cast(default_value)
 
             self.validate(default_value)
 
@@ -777,9 +778,11 @@ class MissingDimensionConflict(Conflict):
         if arguments:
             new_default_value = arguments.split(
                 MissingDimensionConflict.RemoveDimensionResolution.MARKER)[1]
-            new_default_value = any_type(new_default_value)
+
             if not new_default_value:
                 new_default_value = Dimension.NO_DEFAULT_VALUE
+            else:
+                new_default_value = self.dimension.cast(new_default_value)
 
             return {'default_value': new_default_value}
         return {}
@@ -974,6 +977,8 @@ class MissingDimensionConflict(Conflict):
             super(MissingDimensionConflict.RemoveDimensionResolution, self).__init__(conflict)
             if default_value is Dimension.NO_DEFAULT_VALUE:
                 default_value = conflict.dimension.default_value
+            else:
+                default_value = self.conflict.dimension.cast(default_value)
 
             self.validate(default_value)
             self.default_value = default_value

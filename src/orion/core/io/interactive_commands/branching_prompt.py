@@ -22,7 +22,6 @@ import traceback
 from orion.algo.space import Dimension
 from orion.core.evc import adapters, conflicts
 from orion.core.io.database import Database
-from orion.core.utils.cli import any_type
 from orion.core.utils.diff import green, red
 
 
@@ -142,13 +141,13 @@ class BranchingPrompt(cmd.Cmd):
     def _add_add_parser(self, subparsers):
         subparser = self._build_argument_parser(subparsers, 'add', help=self.do_add.__doc__)
         subparser.add_argument('dimension_name', metavar='dimension-name')
-        subparser.add_argument('--default-value', type=any_type, default=Dimension.NO_DEFAULT_VALUE)
+        subparser.add_argument('--default-value', default=Dimension.NO_DEFAULT_VALUE)
         return subparser
 
     def _add_remove_parser(self, subparsers):
         subparser = self._build_argument_parser(subparsers, 'remove', help=self.do_remove.__doc__)
         subparser.add_argument('dimension_name', metavar='dimension-name')
-        subparser.add_argument('--default-value', type=any_type, default=Dimension.NO_DEFAULT_VALUE)
+        subparser.add_argument('--default-value', default=Dimension.NO_DEFAULT_VALUE)
         return subparser
 
     def _add_rename_parser(self, subparsers):

@@ -88,7 +88,7 @@ class TestAddDimensionResolution(object):
         with pytest.raises(ValueError) as exc:
             new_dimension_conflict.AddDimensionResolution(new_dimension_conflict,
                                                           default_value=default_value)
-        assert "Default value `{}` is outside of".format(default_value) in str(exc.value)
+        assert "could not convert string to float: 'bad'" in str(exc.value)
 
     def test_new_prior_no_default(self, new_dimension_conflict):
         """Verify prior string without default value"""

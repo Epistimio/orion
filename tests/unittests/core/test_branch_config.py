@@ -620,7 +620,7 @@ class TestResolutionsWithMarkers(object):
 
     def test_remove_missing_bad_default(self, parent_config, child_config):
         """Test if missing dimension conflict raises an error if marked with invalid default"""
-        child_config['metadata']['user_args'][1] = '-x~-\'-100\''
+        child_config['metadata']['user_args'][1] = '-x~--100'
         conflicts = detect_conflicts(parent_config, child_config)
         ExperimentBranchBuilder(conflicts)
 

@@ -67,7 +67,7 @@ class TestNewDimensionConflict(object):
         assert not new_dimension_conflict.is_resolved
         with pytest.raises(ValueError) as exc:
             new_dimension_conflict.try_resolve('bad-default')
-        assert "Default value `bad-default` is outside" in str(exc.value)
+        assert "could not convert string to float: 'bad-default'" in str(exc.value)
 
     def test_try_resolve_twice(self, new_dimension_conflict):
         """Verify that conflict cannot be resolved twice"""
@@ -152,8 +152,8 @@ class TestMissingDimensionConflict(object):
         """Verify that resolution fails if default value is invalid"""
         assert not missing_dimension_conflict.is_resolved
         with pytest.raises(ValueError) as exc:
-            missing_dimension_conflict.try_resolve(default_value='bad-default')
-        assert "Default value `bad-default` is outside" in str(exc.value)
+            missing_dimension_conflict.try_resolve(default_value='-100')
+        assert "Default value `-100.0` is outside" in str(exc.value)
 
     def test_try_resolve_renaming(self, missing_dimension_conflict, new_dimension_conflict):
         """Verify that resolution is a renaming when new_dimension_conflict is provided"""
