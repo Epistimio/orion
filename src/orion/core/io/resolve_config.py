@@ -163,14 +163,18 @@ def fetch_metadata(cmdargs):
     metadata['orion_version'] = orion.core.__version__
 
     # Move 'user_script' and 'user_args' to 'metadata' key
-    user_script = cmdargs.get('user_script', None)
+    user_args = cmdargs.get('user_args', [])
+    user_script = user_args[0] if user_args else None
+
     if user_script:
         abs_user_script = os.path.abspath(user_script)
         if is_exe(abs_user_script):
             user_script = abs_user_script
 
-    metadata['user_script'] = user_script
-    metadata['user_args'] = cmdargs.get('user_args', None)
+    if user_script:
+        metadata['user_script'] = user_script
+    if user_args:
+        metadata['user_args'] = user_args[1:]
 
     metadata['user'] = getpass.getuser()
 

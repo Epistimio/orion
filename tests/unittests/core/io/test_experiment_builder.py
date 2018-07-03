@@ -68,9 +68,9 @@ def test_fetch_full_config_new_config(config_file, exp_config, random_dt):
     """Verify full config with new config (causing branch)"""
     cmdargs = {'name': 'supernaedo2',
                'config': config_file,
-               'user_args': ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])",
-                             "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"],
-               'user_script': 'full_path/main.py'}
+               'user_args': ['full_path/main.py',
+                             "--encoding_layer~choices(['rnn', 'lstm', 'gru'])",
+                             "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]}
     full_config = ExperimentBuilder().fetch_full_config(cmdargs)
     cmdconfig = ExperimentBuilder().fetch_file_config(cmdargs)
 
@@ -89,9 +89,9 @@ def test_fetch_full_config_old_config(old_config_file, exp_config, random_dt):
     """Verify full config with old config (not causing branch)"""
     cmdargs = {'name': 'supernaedo2',
                'config': old_config_file,
-               'user_args': ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])",
-                             "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"],
-               'user_script': 'full_path/main.py'}
+               'user_args': ['full_path/main.py',
+                             "--encoding_layer~choices(['rnn', 'lstm', 'gru'])",
+                             "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]}
 
     full_config = ExperimentBuilder().fetch_full_config(cmdargs)
     cmdconfig = ExperimentBuilder().fetch_file_config(cmdargs)
@@ -154,7 +154,7 @@ def test_build_view_from(config_file, create_db_instance, exp_config, random_dt)
 def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_dt):
     """Try building experiment when not in db"""
     cmdargs = {'name': 'supernaekei', 'config': config_file,
-               'user_args': ['x~uniform(0,10)']}
+               'user_args': ['somescript.sh', 'x~uniform(0,10)']}
 
     with pytest.raises(ValueError) as exc_info:
         ExperimentBuilder().build_view_from(cmdargs)
@@ -168,7 +168,8 @@ def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_d
     assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
     assert exp.metadata['datetime'] == random_dt
     assert exp.metadata['user'] == 'tsirif'
-    assert exp.metadata['user_args'] == cmdargs['user_args']
+    assert exp.metadata['user_script'] == cmdargs['user_args'][0]
+    assert exp.metadata['user_args'] == cmdargs['user_args'][1:]
     assert exp._last_fetched == random_dt
     assert exp.pool_size == 1
     assert exp.max_trials == 100
@@ -180,9 +181,9 @@ def test_build_from_hit(old_config_file, create_db_instance, exp_config):
     """Try building experiment when in db (no branch)"""
     cmdargs = {'name': 'supernaedo2',
                'config': old_config_file,
-               'user_args': ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])",
-                             "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"],
-               'user_script': 'full_path/main.py'}
+               'user_args': ['full_path/main.py',
+                             "--encoding_layer~choices(['rnn', 'lstm', 'gru'])",
+                             "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]}
 
     # Test that experiment already exists
     ExperimentBuilder().build_view_from(cmdargs)
@@ -204,7 +205,7 @@ def test_build_from_hit(old_config_file, create_db_instance, exp_config):
 def test_build_from_config_no_hit(config_file, create_db_instance, exp_config, random_dt):
     """Try building experiment from config when not in db"""
     cmdargs = {'name': 'supernaekei', 'config': config_file,
-               'user_args': ['x~uniform(0,10)']}
+               'user_args': ['somescript.sh', '-x~uniform(0,10)']}
 
     with pytest.raises(ValueError) as exc_info:
         ExperimentBuilder().build_view_from(cmdargs)
@@ -219,7 +220,8 @@ def test_build_from_config_no_hit(config_file, create_db_instance, exp_config, r
     assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
     assert exp.metadata['datetime'] == random_dt
     assert exp.metadata['user'] == 'tsirif'
-    assert exp.metadata['user_args'] == cmdargs['user_args']
+    assert exp.metadata['user_script'] == cmdargs['user_args'][0]
+    assert exp.metadata['user_args'] == cmdargs['user_args'][1:]
     assert exp._last_fetched == random_dt
     assert exp.pool_size == 1
     assert exp.max_trials == 100

@@ -41,9 +41,8 @@ def test_user_group_arguments(database, monkeypatch):
 
     cli.get_user_args_group(parser)
     args = vars(parser.parse_args(args_list))
-    assert args['user_script'] == './black_box.py'
-    assert len(args['user_args']) == 1
-    assert args['user_args'] == ['-x~normal(50,50)']
+    assert len(args['user_args']) == 2
+    assert args['user_args'] == ['./black_box.py', '-x~normal(50,50)']
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -59,6 +58,5 @@ def test_common_and_user_group_arguments(database, monkeypatch):
     args = vars(parser.parse_args(args_list))
     assert args['name'] == 'test'
     assert args['config'].name == './orion_config_random.yaml'
-    assert args['user_script'] == './black_box.py'
-    assert len(args['user_args']) == 1
-    assert args['user_args'] == ['-x~normal(50,50)']
+    assert len(args['user_args']) == 2
+    assert args['user_args'] == ['./black_box.py', '-x~normal(50,50)']

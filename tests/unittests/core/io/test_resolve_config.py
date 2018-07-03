@@ -12,7 +12,7 @@ import orion.core.io.resolve_config as resolve_config
 
 @pytest.fixture
 def force_is_exe(monkeypatch):
-    """Force orion version XYZ on output of resolve_config.fetch_metadata"""
+    """Mock resolve_config to recognize any string as an executable script."""
     def is_exe(path):
         return True
 
@@ -62,14 +62,14 @@ def test_fetch_metadata_orion_version():
 @pytest.mark.usefixtures("force_is_exe")
 def test_fetch_metadata_executable_users_script():
     """Verify executable user script with absolute path"""
-    cmdargs = {'user_script': 'A'}
+    cmdargs = {'user_args': ['A']}
     metadata = resolve_config.fetch_metadata(cmdargs)
     assert metadata['user_script'] == os.path.abspath('A')
 
 
 def test_fetch_metadata_non_executable_users_script():
     """Verify executable user script keeps given path"""
-    cmdargs = {'user_script': 'A'}
+    cmdargs = {'user_args': ['A']}
     metadata = resolve_config.fetch_metadata(cmdargs)
     assert metadata['user_script'] == 'A'
 
@@ -77,10 +77,11 @@ def test_fetch_metadata_non_executable_users_script():
 @pytest.mark.usefixtures()
 def test_fetch_metadata_user_args():
     """Verify user args"""
-    user_args = range(10)
+    user_args = list(map(str, range(10)))
     cmdargs = {'user_args': user_args}
     metadata = resolve_config.fetch_metadata(cmdargs)
-    assert metadata['user_args'] == user_args
+    assert metadata['user_script'] == user_args[0]
+    assert metadata['user_args'] == user_args[1:]
 
 
 @pytest.mark.usefixtures("with_user_tsirif")

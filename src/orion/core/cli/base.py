@@ -102,13 +102,10 @@ def get_user_args_group(parser):
         description="These arguments determine user's script behaviour "
                     "and they can serve as orion's parameter declaration.")
 
-    usergroup.add_argument(
-        'user_script', type=str, metavar='path-to-script',
-        help="your experiment's script")
 
     usergroup.add_argument(
         'user_args', nargs=argparse.REMAINDER, metavar='...',
-        help="Command line arguments to your script (if any). A configuration "
+        help="Command line of user script. A configuration "
              "file intended to be used with 'userscript' must be given as a path "
              "in the **first positional** argument OR using `--config=<path>` "
              "keyword argument.")
