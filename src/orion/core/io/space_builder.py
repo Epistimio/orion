@@ -349,7 +349,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
                                     "and arguments.".format(namespace)
                         raise ValueError(error_msg) from exc
                 else:
-                    log.warning("Nameless '%s: %s' will not define a dimension.", namespace, stuff)
+                    log.info("Nameless '%s: %s' will not define a dimension.", namespace, stuff)
                     self.userconfig_nameless[namespace] = stuff
 
     def _build_from_args(self, cmd_args):
@@ -415,7 +415,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
                 # This branch targets the nameless and the ones that use `~`
                 # as the home directory in a shell path
                 # If it's nameless (positional) it cannot be a dimension
-                log.warning("Nameless argument '%s' will not define a dimension.", arg)
+                log.info("Nameless argument '%s' will not define a dimension.", arg)
                 self.userargs_tmpl['_' + get_next_pos_ns()] = arg
             elif not _should_not_be_built(expression):
                 # Otherwise it's a dimension; ikr
@@ -436,7 +436,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
         if not userconfig and '_0' in self.userargs_tmpl:
             if os.path.isfile(self.userargs_tmpl['_0']):
                 userconfig = self.userargs_tmpl['_0']
-                log.warning("Using '%s' as path to user script's configuration file!", userconfig)
+                log.info("Using '%s' as path to user script's configuration file!", userconfig)
                 # '_0' is 'config' now, replace key in the correct order
                 self.userargs_tmpl = replace_key_in_order(self.userargs_tmpl, '_0', 'config')
                 self.userargs_tmpl['config'] = ''
