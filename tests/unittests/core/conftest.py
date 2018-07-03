@@ -9,25 +9,12 @@ import pytest
 
 from orion.algo.space import (Categorical, Integer, Real, Space)
 from orion.core.io.convert import (JSONConverter, YAMLConverter)
-from orion.core.io.database import Database
 from orion.core.worker.experiment import Experiment
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, 'sample_config.yml')
 JSON_SAMPLE = os.path.join(TEST_DIR, 'sample_config.json')
 UNKNOWN_SAMPLE = os.path.join(TEST_DIR, 'sample_config.txt')
-
-
-@pytest.fixture()
-def create_db_instance(null_db_instances, clean_db):
-    """Create and save a singleton database instance."""
-    try:
-        db = Database(of_type='MongoDB', name='orion_test',
-                      username='user', password='pass')
-    except ValueError:
-        db = Database()
-
-    return db
 
 
 @pytest.fixture(scope='session')

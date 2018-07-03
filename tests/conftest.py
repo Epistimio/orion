@@ -142,3 +142,15 @@ def version_XYZ(monkeypatch):
         metadata['orion_version'] = 'XYZ'
         return metadata
     monkeypatch.setattr(resolve_config, "fetch_metadata", fetch_metadata)
+
+
+@pytest.fixture()
+def create_db_instance(null_db_instances, clean_db):
+    """Create and save a singleton database instance."""
+    try:
+        db = Database(of_type='MongoDB', name='orion_test',
+                      username='user', password='pass')
+    except ValueError:
+        db = Database()
+
+    return db
