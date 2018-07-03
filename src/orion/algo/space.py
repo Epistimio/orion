@@ -191,6 +191,20 @@ class Dimension(object):
             self.__class__.__name__, self.name, self._prior_name,
             self._args, self._kwargs, self.shape, self._default_value)
 
+    def get_prior_string(self):
+        """Build the string corresponding to current prior"""
+        args = list(map(str, self._args[:]))
+        args += ["{}={}".format(k, v) for k, v in self._kwargs.items()]
+        if self._shape is not None:
+            args += ['shape={}'.format(self._shape)]
+        if self.default_value is not self.NO_DEFAULT_VALUE:
+            args += ['default_value={}'.format(repr(self.default_value))]
+        return "{prior_name}({args})".format(prior_name=self._prior_name, args=", ".join(args))
+
+    def get_string(self):
+        """Build the string corresponding to current dimension"""
+        return "{name}~{prior}".format(name=self.name, prior=self.get_prior_string())
+
     @property
     def name(self):
         """See `Dimension` attributes."""
@@ -516,6 +530,27 @@ class Categorical(Dimension):
 
         return "Categorical(name={0}, prior={1}, shape={2}, default value={3})"\
                .format(self.name, prior, self.shape, self.default_value)
+
+    def get_prior_string(self):
+        """Build the string corresponding to current prior"""
+        args = list(map(str, self._args[:]))
+        args += ["{}={}".format(k, v) for k, v in self._kwargs.items()]
+        if self.default_value is not self.NO_DEFAULT_VALUE:
+            args += ['default_value={}'.format(self.default_value)]
+
+        cats = [repr(c) for c in self.categories]
+        if all(p == self._probs[0] for p in self._probs):
+            prior = '[{}]'.format(", ".join(cats))
+        else:
+            probs = list(zip(cats, self._probs))
+            prior = '{' + ", ".join('{0}: {1:.2f}'.format(c, p) for c, p in probs) + '}'
+
+        args = [prior]
+
+        if self.default_value is not self.NO_DEFAULT_VALUE:
+            args += ['default_value={}'.format(repr(self.default_value))]
+
+        return 'choices({args})'.format(args=', '.join(args))
 
 
 class Space(OrderedDict):
