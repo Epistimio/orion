@@ -17,6 +17,7 @@ import random
 import sys
 
 from orion.core.evc.adapters import Adapter, BaseAdapter
+from orion.core.evc.conflicts import detect_conflicts
 from orion.core.io.database import Database, DuplicateKeyError, ReadOnlyDB
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
@@ -82,7 +83,7 @@ class Experiment(object):
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
                  'algorithms', '_db', '_init_done', '_id', '_node', '_last_fetched')
-    non_forking_attrs = ('pool_size', 'max_trials')
+    non_branching_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name):
         """Initialize an Experiment object with primary key (:attr:`name`, :attr:`user`).
@@ -351,12 +352,13 @@ class Experiment(object):
             if self._init_done and attrname == "refers" and attribute.get("adapter"):
                 config[attrname] = copy.deepcopy(config[attrname])
                 config[attrname]['adapter'] = config[attrname]['adapter'].configuration
+
         # Reason for deepcopy is that some attributes are dictionaries
         # themselves, we don't want to accidentally change the state of this
         # object from a getter.
         return copy.deepcopy(config)
 
-    def configure(self, config):
+    def configure(self, config, enable_branching=True):
         """Set `Experiment` by overwriting current attributes.
 
         If `Experiment` was already set and an overwrite is needed, a *branch*
@@ -392,9 +394,19 @@ class Experiment(object):
             is_new = True
         else:
             # Branch if it is needed
-            is_new = self._is_different_from(experiment.configuration)
-            if is_new:
-                experiment._branch_config(self.configuration, config)
+            # TODO: When refactoring experiment managenent, is_different_from
+            # will be used when EVC is not available.
+            # is_new = self._is_different_from(experiment.configuration)
+            configuration = experiment.configuration
+            # TODO: Find out how we should pass those arguments (--config-change-type, etc)
+            configuration['branch'] = config.get('branch')
+            conflicts = detect_conflicts(self.configuration, configuration)
+            is_new = len(conflicts.get()) > 1 or config.get('branch')
+            if is_new and not enable_branching:
+                raise ValueError("Configuration is different and generate a "
+                                 "branching event")
+            elif is_new:
+                experiment._branch_config(conflicts, configuration)
 
         final_config = experiment.configuration
         self._instantiate_config(final_config)
@@ -517,7 +529,13 @@ class Experiment(object):
             setattr(self, section, value)
 
         try:
-            space = SpaceBuilder().build_from(config['metadata']['user_args'])
+            space_builder = SpaceBuilder()
+            space = space_builder.build_from(config['metadata']['user_args'])
+
+            if space_builder.userconfig:
+                with open(space_builder.userconfig) as f:
+                    self.metadata['script_config_file'] = f.read()
+
             if not space:
                 raise ValueError("Parameter space is empty. There is nothing to optimize.")
 
@@ -529,16 +547,16 @@ class Experiment(object):
         if self.refers and not isinstance(self.refers.get('adapter'), BaseAdapter):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
-    def _branch_config(self, original_config, config):
+    def _branch_config(self, conflicts, config):
         """Ask for a different identifier for this experiment. Set :attr:`refers`
         key to previous experiment's name, the one that we branched from.
 
         :param config: Conflicting configuration that will change based on prompt.
         """
-        self._ensure_branching_unique_name(config)
-        experiment_brancher = ExperimentBranchBuilder(original_config, config)
+        experiment_brancher = ExperimentBranchBuilder(
+            conflicts, auto_resolution=config.get('auto_resolution'))
 
-        if not experiment_brancher.is_solved:
+        if not experiment_brancher.is_resolved or experiment_brancher.auto_resolution:
             branching_prompt = BranchingPrompt(experiment_brancher)
             branching_prompt.cmdloop()
 
@@ -549,16 +567,6 @@ class Experiment(object):
         self._instantiate_config(config)
         self.refers['adapter'] = adapter
         self.refers['parent_id'] = self._id
-
-    def _ensure_branching_unique_name(self, config):
-        branching_name = config.get('branch')
-
-        if branching_name is not None:
-            query = dict(name=branching_name)
-
-            named_experiments = self._db.count('experiments', query)
-            if named_experiments > 0:
-                raise ValueError('Branching name already in use.')
 
     def _is_different_from(self, config):
         """Return True, if current `Experiment`'s configuration as described by
@@ -626,7 +634,17 @@ class ExperimentView(object):
                              "no view can be created." %
                              (self._experiment.name, self._experiment.metadata['user']))
 
-        self._experiment.configure(self._experiment.configuration)
+        try:
+            self._experiment.configure(self._experiment.configuration, enable_branching=False)
+        except ValueError as e:
+            if "Configuration is different and generate a branching event" in str(e):
+                raise RuntimeError(
+                    "Configuration in the database does not correspond to the one generated by "
+                    "Experiment object. This is likely due to a backward incompatible update in "
+                    "Oríon. Please repport to https://github.com/mila-udem/orion/issues.") from e
+
+            raise
+
         self._experiment._db = ReadOnlyDB(self._experiment._db)
 
     def __getattr__(self, name):

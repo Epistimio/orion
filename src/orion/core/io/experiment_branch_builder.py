@@ -6,162 +6,343 @@
 
 .. module:: experiment_branch_builder
    :platform: Unix
-   :synopsis: Create a list of Adapters from the conflicts between an experiment and it's parent.
+   :synopsis: Create a list of adapters from the conflicts between an experiment and its parent.
 
-Conflicts between two experiments arise when these experiments have different
-spaces but have the same name. Solving these conflicts require the creation of
-Adapters to bridge from the parent experiment and the child experiment.
+Conflicts between two experiments arise when those have different configuration but have the same
+name. Solving these conflicts require the creation of adapters to bridge from the parent experiment
+and the child experiment.
 
-Conflicting dimensions can be in one of three different states :
-    * New : this dimension is not present in the parent's space
-    * Changed : this dimension's prior has changed between the parent's and the child's space
-    * Missing : this dimension is not present in the child's space
+ .. seealso::
 
-To solve these conflicts, the builder object offers a public API to add, remove or rename
-dimensions.
+    :mod:`orion.core.evc.conflicts`
+    :mod:`orion.core.evc.adapters`
 
-For more info on Adapters :
-    ..seealso::
-        :meth:`orion.core.evc.Adapters.BaseAdapter`
 """
 
-import copy
 import logging
-import re
 
-import orion.core.evc.adapters as Adapters
-from orion.core.io.space_builder import SpaceBuilder
-from orion.core.worker.trial import Trial
+from orion.algo.space import Dimension
+from orion.core.evc import conflicts
+from orion.core.evc.adapters import CompositeAdapter
+
 
 log = logging.getLogger(__name__)
 
 
-def _create_param(dimension):
-    return Trial.Param(name=dimension.name, _type=dimension.type, value=dimension.default_value)
-
-
-def _get_expression(dim, args):
-    return list(filter(lambda arg: arg[1:].startswith(dim.name[1:]), args))[0].split('~')[1]
-
-
-def _concat_key_value(args):
-    return [] if args is None else map(lambda k: k + args[k], args)
-
-
-def _format_dimension_name(name):
-    if name[0] == '-':
-        name = name[1:]
-
-    return name if name.startswith('/') else '/' + name
-
-
-# pylint: disable=too-few-public-methods
-class Conflict:
-    """Represent a single conflict inside the configuration"""
-
-    def __init__(self, status, dimension, expression):
-        """Init conflict"""
-        self.is_solved = False
-        self.dimension = dimension
-        self.status = status
-        self.expression = expression
-
-
+# pylint: disable=too-many-public-methods
 class ExperimentBranchBuilder:
     """Build a new configuration for the experiment based on parent config."""
 
-    def __init__(self, experiment_config, conflicting_config):
+    def __init__(self, conflicts, auto_resolution=False):
         """
         Initialize the ExperimentBranchBuilder by populating a list of the conflicts inside
         the two configurations.
         """
-        self.experiment_config = experiment_config
-        self.conflicting_config = conflicting_config
-
-        self.conflicts = []
-        self.operations = {}
-        self._operations_mapping = {'add': self._add_adapter,
-                                    'rename': self._rename_adapter,
-                                    'remove': self._remove_adapter}
-
-        self.special_keywords = {'~new': 'new',
-                                 '~changed': 'changed',
-                                 '~missing': 'missing'}
-
-        self.commandline_keywords = {'~+': [], '~-': [], '~>': []}
-
-        self.cl_keywords_functions = {'~+': self.add_dimension,
-                                      '~-': self.remove_dimension,
-                                      '~>': self.rename_dimension}
-
-        self.cl_keywords_re = {'~+': re.compile(r'(.*)~\+'),
-                               '~-': re.compile(r'(.*)~\-'),
-                               '~>': re.compile(r'(.*)~\>([a-zA-Z_]+)')}
-
-        self.user_args = self.conflicting_config['metadata']['user_args']
-        self.experiment_args = self.experiment_config['metadata']['user_args']
-
-        self.extended_user_args = copy.deepcopy(self.user_args)
-        self.extended_experiment_args = copy.deepcopy(self.experiment_args)
-
-        self._build_spaces()
-        self._interpret_args()
-        self._find_conflicts()
-        self._solve_commandline_conflicts()
-
-        branching_name = conflicting_config.pop('branch', None)
-        if branching_name is not None:
-            self.change_experiment_name(branching_name)
-
-    def _interpret_args(self):
-        for arg in self.extended_user_args:
-            for keyword in self.commandline_keywords:
-                if keyword in arg:
-                    self.commandline_keywords[keyword].append(arg)
-
-    def _build_spaces(self):
-        self.experiment_space = SpaceBuilder().build_from(self.experiment_args)
-        self.extended_experiment_args.extend(_concat_key_value(SpaceBuilder().config_expressions))
-
-        self.conflicting_space = SpaceBuilder().build_from(self.user_args)
-        self.extended_user_args.extend(_concat_key_value(SpaceBuilder().config_expressions))
-
-    def _find_conflicts(self):
-        # Loop through the conflicting space and identify problematic dimensions
-        for dim in self.conflicting_space.values():
-            # If the name is inside the space but not the value the dimensions has changed
-            if dim.name in self.experiment_space:
-                if dim not in self.experiment_space.values():
-                    self.conflicts.append(Conflict('changed', dim,
-                                                   _get_expression(dim, self.extended_user_args)))
-            # If the name does not exist, it is a new dimension
-            else:
-                self.conflicts.append(Conflict('new', dim,
-                                               _get_expression(dim, self.extended_user_args)))
-
-        # In the same vein, if any dimension of the current space is not inside
-        # the conflicting space, it is missing
-        for dim in self.experiment_space.values():
-            if dim.name not in self.conflicting_space:
-                self.conflicts.append(Conflict('missing', dim,
-                                               _get_expression(dim, self.extended_experiment_args)))
-
-    def _solve_commandline_conflicts(self):
-        for keyword in self.commandline_keywords:
-            for dimension in self.commandline_keywords[keyword]:
-                value = self.cl_keywords_re[keyword].findall(dimension)
-                self.cl_keywords_functions[keyword](*value)
-
-    # API section
+        self.auto_resolution = auto_resolution
+        self.conflicts = conflicts
+        self.resolve_conflicts()
 
     @property
-    def is_solved(self):
-        """Return True if all the current conflicts have been solved"""
-        solved = list(self.filter_conflicts(lambda c: c.is_solved))
+    def experiment_config(self):
+        """Get configuration of the parent experiment"""
+        return self.conflicts.get()[0].old_config
 
-        experiment_name = self.experiment_config['name']
-        child_name = self.conflicting_config['name']
-        return len(solved) == len(self.conflicts) and experiment_name != child_name
+    @property
+    def conflicting_config(self):
+        """Get configuration of the child experiment"""
+        return self.conflicts.get()[0].new_config
+
+    # def _init_mappings(self):
+
+    #     self.cl_keywords_re = {'~+': re.compile(r'(.*)~\+'),
+    #                            '~-': re.compile(r'(.*)~\-'),
+    #                            '~>': re.compile(r'(.*)~\>([a-zA-Z_]+)')}
+
+    # def _build_spaces(self):
+    #     self.experiment_space = SpaceBuilder().build_from(self.experiment_args)
+    #     self.extended_experiment_args.extend(_concat_key_value(SpaceBuilder().config_expressions))
+
+    #     self.conflicting_space = SpaceBuilder().build_from(self._curate_user_args(self.user_args))
+
+    #     # self.conflicting_space = SpaceBuilder().build_from(self.user_args)
+    #     self.extended_user_args.extend(_concat_key_value(SpaceBuilder().config_expressions))
+
+    # def _curate_user_args(self, user_args):
+    #     curated_user_args = []
+    #     for user_arg in user_args:
+    #         if '~>' in user_arg:
+    #             continue
+    #             # value = self.cl_keywords_re['~>'].findall(user_arg)
+    #             # if value:
+    #             #     old_name, new_name = value[0]
+    #             #     marker = "{}~>{}".format(old_name.lstrip("-"), new_name)
+    #             #     user_arg = user_arg.replace(marker, new_name)
+
+    #         # TODO: replace with proper regex
+    #         elif "~+" in user_arg:
+    #             user_arg = user_arg.replace("~+", "~")
+    #         # TODO: replace with proper regex
+    #         elif "~-" in user_arg:
+    #             continue
+
+    #         curated_user_args.append(user_arg)
+
+    #     return curated_user_args
+
+    # def detect_conflicts(self):
+    #     self._build_spaces()
+
+    #     self.conflicts.add(
+    #         conflicts.ExperimentNameConflict(self.conflicting_config, self.experiment_config))
+
+    #     self._detect_conflicts_in_dimensions()
+    #     self._detect_missing_dimensions()
+    #     self._detect_conflicts_in_algo()
+    #     self._detect_conflicts_in_code()
+
+    # def resolve_commandline_conflicts(self):
+
+    #     # Use while-loop because some resolution might add new conflicts and a for-loop would not
+    #     # catch this.
+    #     ith_conflict = 0
+
+    #     while ith_conflict < len(self.conflicts.get()):
+
+    #         # TODO: Meh, ugly
+    #         conflict = self.conflicts.conflicts[ith_conflict]
+
+    #         resolution = self.try_resolve(
+    #             conflict, silence_errors=False,
+    #             **self._get_marked_arguments(self.conflicts.get()))
+
+    #        if resolution and not (self.auto_resolution or self._resolution_is_marked(resolution)):
+    #             self.resolutions.revert(resolution)
+
+    #         ith_conflict += 1
+
+    def resolve_conflicts(self, silence_errors=True):
+        """Automatically resolve conflicts if auto-resolution is True or resolutions are marked."""
+        ith_conflict = 0
+
+        while ith_conflict < len(self.conflicts.get()):
+
+            # TODO: Meh, ugly
+            conflict = self.conflicts.conflicts[ith_conflict]
+
+            resolution = self.conflicts.try_resolve(
+                conflict, silence_errors=silence_errors,
+                **conflict.get_marked_arguments(self.conflicts))
+
+            if resolution and not (self.auto_resolution or resolution.is_marked):
+                self.conflicts.revert(resolution)
+
+            ith_conflict += 1
+
+    # def _get_marked_arguments(self, conflict):
+    #     for fct in [self._get_renamed_marked_arguments,
+    #                 self._get_missing_marked_arguments]:
+    #         marked_arguments = fct(conflict)
+    #         if marked_arguments:
+    #             return marked_arguments
+
+    #     return marked_arguments
+
+    # def _get_missing_marked_arguments(self, conflict):
+    #     if not isinstance(conflict, conflicts.MissingDimensionConflict):
+    #         return {}
+
+    #     return {}
+
+    # def _get_renamed_marked_arguments(self, conflict):
+    #     if not isinstance(conflict, conflicts.MissingDimensionConflict):
+    #         return {}
+
+    #     marker = '{}{}'.format(conflict.dimension.name.lstrip("/"),
+    #                            resolutions.RenameDimensionResolution.MARKER)
+    #     user_args = [user_arg for user_arg in self.extended_user_args if marker in user_arg]
+    #     if user_args:
+    #         new_dimension_name = self.cl_keywords_re['~>'].findall(user_args[0])[0][1]
+
+    #         try:
+    #             conflict = self.conflicts.get([conflicts.NewDimensionConflict],
+    #                                           dimension_name=new_dimension_name)[0]
+    #         except ValueError as e:
+    #             if "Dimension name '{}' not found".format(new_dimension_name) not in str(e):
+    #                 return {}
+
+    #         new_dimension = copy.deepcopy(conflict.dimension)
+    #         new_dimension.name = "/" + new_dimension_name
+    #         conflict = conflicts.MissingDimensionConflict(
+    #             self.conflicting_config, new_dimension, conflict.prior)
+    #         self.conflicts.add(conflict)
+
+    #         print(new_dimension.get_string())
+    #         self.extended_user_args.append("-" + new_dimension.get_string())
+
+    #         # If dimension was already added
+    #         if conflict.is_resolved:
+    #             self.reset(str(conflict.resolution))
+
+    #         return {'new_dimension_conflict': conflict}
+
+    #     return {}
+
+    # def _resolution_is_marked(self, resolution):
+    #     if resolution.MARKER:
+    #         # TODO: Detect marked renaming and resolve properly
+    #         is_marked_by_user = any(arg.lstrip("-").startswith(resolution.prefix)
+    #                                 for arg in self.extended_user_args)
+    #     else:
+    #         is_marked_by_user = (_convert_arg_to_namespace(resolution.ARGUMENT)
+    #                              in self.conflicting_config)
+
+    #     is_algo = isinstance(resolution, resolutions.AlgorithmResolution)
+
+    #     return is_marked_by_user or is_algo
+
+    # API section
+    @property
+    def is_resolved(self):
+        """Return True if all the current conflicts have been resolved"""
+        return self.conflicts.are_resolved
+
+    # def set_resolution(self, resolution_string):
+    #     if RenameDimensionResolution.MARKER in resolution_string:
+    #         pass
+    #     elif resolution_string.beginswith(AlgorithmResolution.ARGUMENT):
+    #         pass
+    #     elif resolution_string.beginswith(CodeChange.ARGUMENT):
+    #         pass
+    #     elif resolution_string.beginswith(ExperimentNameResolution.ARGUMENT):
+    #         pass
+    #     else:
+    #         # any other..
+    #         types = [NewDimensionConflict, ChangedDimensionConflict, MissingDimensionConflict]
+    #         for conflict in self.get_remaining_conflicts(types):
+
+    # def _get_potential_renamings(self):
+    #     # if new
+    #     #     if another is missing:
+    #     #         names += [<new name>~><missing name>]
+    #     # missing_dim_conflicts = self.branch_builder.get_conflicts([MissingDimensionConflict])
+    #     # missing_names = [conflict.dimension.name.strip("/")
+    #     #                  for conflict in missing_dim_conflicts
+    #     #                  if not conflict.is_resolved]
+    #     # new_dim_conflicts = self.branch_builder.get_conflicts([NewDimensionConflict])
+    #     # new_names = [conflict.dimension.name.lstrip("/") for conflict in new_dim_conflicts
+    #     #              if not conflict.is_resolved]
+
+    #     # names = []
+    #     # for missing_name in missing_names:
+    #     #     for new_name in new_names:
+    #     #         names.append(
+    #                   "{}{}{}".format(missing_name, RenameDimensionResolution.MARKER, new_name))
+    #     missing_dim_conflicts = self.branch_builder.get_remaining_conflicts(
+    #         [MissingDimensionConflict])
+    #     new_dim_conflicts = self.branch_builder.get_remaining_conflicts(
+    #         [NewDimensionConflict])
+
+    #     names = []
+    #     for missing_dim_conflict in missing_dim_conflicts:
+    #         for new_dim_conflict in new_dim_conflicts:
+    #             resolution = missing_dim_conflict.try_resolve(new_dim_conflict)
+    #             names.append(str(resolution))
+    #             resolution.revert()
+    #
+    #     return names
+
+    # def _get_potential_additions(self):
+    #     new_dim_conflicts = self.branch_builder.get_remaining_conflicts(
+    #         [NewDimensionConflict])
+    #     names = []
+    #     for conflict in new_dim_conflicts:
+    #         resolution = conflict.try_resolve()
+    #         names.append(str(resolution))
+    #         names.append(str(resolution).rstrip(")") + ", default_value=")
+    #         resolution.revert()
+
+    #     return names
+
+    # def _get_potential_changes(self):
+    #     changed_dim_conflicts = self.branch_builder.get_remaining_conflicts(
+    #         [ChangedDimensionConflict])
+    #     names = []
+    #     for conflict in changed_dim_conflicts:
+    #         resolution = conflict.try_resolve()
+    #         names.append(str(resolution))
+    #         resolution.revert()
+
+    #     return names
+
+    # def _get_potential_removes(self):
+    #     missing_dim_conflicts = self.branch_builder.get_remaining_conflicts(
+    #         [MissingDimensionConflict])
+    #     names = []
+    #     for conflict in missing_dim_conflicts:
+    #         resolution = conflict.try_resolve()
+    #         names.append(str(resolution))
+    #         names.append(str(resolution).rstrip(")") + "'")
+    #         resolution.revert()
+
+    #     return names
+
+    # def _get_potential_algo(self):
+    #     algo_conflicts = self.branch_builder.get_remaining_conflicts([AlgorithmConflict])
+    #     names = []
+    #     for conflict in algo_conflicts:
+    #         resolution = conflict.try_resolve()
+    #         names.append(str(resolution))
+    #         resolution.revert()
+
+    #     return names
+
+    # def _get_potential_codes(self):
+    #     code_conflicts = self.branch_builder.get_remaining_conflicts([CodeConflict])
+    #     names = []
+    #     for conflict in code_conflicts:
+    #         for change_type in evc.adapters.CodeChange.change_types:
+    #             resolution = conflict.try_resolve(change_type)
+    #             names.append(str(resolution))
+    #             resolution.revert()
+
+    #     return names
+
+    # def _get_potential_branch_name(self):
+    #     exp_name_conflicts = self.branch_builder.get_remaining_conflicts([ExperimentNameConflict])
+    #     if not exp_name_conflicts:
+    #         return []
+
+    #     query = {'refers.root_id': self.branch_builder.experiment_config['refers']['root_id'],
+    #              'metadata.user': self.branch_builder.experiment_config['metadata']['user']}
+    #     # names = [experiment['name'] for experiment in Database().read('experiments', query)]
+    #     names = ["--branch {}".format(experiment['name'])
+    #              for experiment in Database().read('experiments', query)]
+
+    #     return names
+    #     # if name
+    #     #     names += ['--branch <names>']
+
+    # def get_potential_resolution_strings(self):
+    #     return (self._get_potential_renamings() +
+    #             self._get_potential_additions() +
+    #             self._get_potential_changes() +
+    #             self._get_potential_removes() +
+    #             self._get_potential_algo() +
+    #             self._get_potential_codes() +
+    #             self._get_potential_branch_name())
+
+    # def add_resolution(self, resolution):
+    #     if resolution is None:
+    #         return
+
+    #     self.resolutions.append(resolution)
+    #     self.conflicts += resolution.new_conflicts
+
+    # def try_resolve(self, conflict, *args, **kwargs):
+    #     resolution = self.conflicts.try_resolve(conflict, *args, **kwargs)
+    #     if resolution:
+    #         self.resolutions.add(resolution)
+    #     return resolution
 
     def change_experiment_name(self, name):
         """Change the child's experiment name to `name`
@@ -171,233 +352,220 @@ class ExperimentBranchBuilder:
         name: str
            New name for the child experiment. Must be different from the parent's name
 
+        Raises
+        ------
+        ValueError
+            If name already exists in database for current user.
+        RuntimeError
+            If there is no code change conflict left to resolve.
+
         """
-        if name != self.experiment_config['name']:
-            self.conflicting_config['name'] = name
+        exp_name_conflicts = self.conflicts.get_remaining([conflicts.ExperimentNameConflict])
+        if not exp_name_conflicts:
+            raise RuntimeError('No experiment name conflict to solve')
 
-    def add_dimension(self, args):
-        """Add the dimensions whose name's are inside the args input string to the
-        child's space by solving their respective conflicts.
+        self.conflicts.try_resolve(exp_name_conflicts[0], name)
 
-        Only dimensions with the `new` or `changed` conflicting state may be added.
+    def set_code_change_type(self, change_type):
+        """Set code change type
 
         Parameters
         ----------
-        args: str
-            String containing dimensions' name separated by a whitespace.
+        change_type: string
+            One of the types defined in `orion.core.evc.adapters.CodeChange.types`.
+
+        Raises
+        ------
+        ValueError
+            If change_type is not in `orion.core.evc.adapters.CodeChange.types`.
+        RuntimeError
+            If there is no code change conflict left to resolve.
 
         """
-        self._do_basic(args, ['new', 'changed'], 'add')
+        code_conflicts = self.conflicts.get_remaining([conflicts.CodeConflict])
+        if not code_conflicts:
+            raise RuntimeError('No code conflicts to solve')
 
-    def remove_dimension(self, name):
-        """Remove the dimensions whose name's are inside the args input string from the
-        child's space by solving their respective conflicts.
+        self.conflicts.try_resolve(code_conflicts[0], change_type)
 
-        Only dimensions with the `missing` conflicting state may be removed.
+    def set_cli_change_type(self, change_type):
+        """Set cli change type
 
         Parameters
         ----------
-        args: str
-            String containing dimensions' name separated by a whitespace.
+        change_type: string
+            One of the types defined in `orion.core.evc.adapters.CommandLineChange.types`.
+
+        Raises
+        ------
+        ValueError
+            If change_type is not in `orion.core.evc.adapters.CommandLineChange.types`.
+        RuntimeError
+            If there is no cli conflict left to resolve.
 
         """
-        self._do_basic(name, ['missing'], 'remove')
+        cli_conflicts = self.conflicts.get_remaining([conflicts.CommandLineConflict])
+        if not cli_conflicts:
+            raise RuntimeError('No command line conflicts to solve')
 
-    def _do_basic(self, name, status, operation):
-        for _name in self._get_names(name, status):
-            conflict = self._mark_as_solved(_name, status)
-            self._put_operation(operation, (conflict))
+        self.conflicts.try_resolve(cli_conflicts[0], change_type)
 
-    def reset_dimension(self, arg):
-        """Remove the dimensions whose name's are inside the args input string from the
-        solved conflicts list.
+    def set_script_config_change_type(self, change_type):
+        """Set script config change type
 
         Parameters
         ----------
-        args: str
-            String containing dimensions' name separated by a whitespace.
+        change_type: string
+            One of the types defined in `orion.core.evc.adapters.ScriptConfigChange.types`.
+
+        Raises
+        ------
+        ValueError
+            If change_type is not in `orion.core.evc.adapters.ScriptConfigChange.types`.
+        RuntimeError
+            If there is no script config conflict left to resolve.
 
         """
-        status = ['missing', 'new', 'changed']
-        for _name in self._get_names(arg, status):
-            conflict = self._mark_as(arg, status, False)
-            self._remove_from_operations(conflict)
+        script_config_conflicts = self.conflicts.get_remaining([conflicts.ScriptConfigConflict])
+        if not script_config_conflicts:
+            raise RuntimeError('No script\'s config conflicts to solve')
 
-    def rename_dimension(self, args):
-        """Rename the first dimension inside the args tuple from the parent's space
-        to the second dimension inside the args tuple from the child's space.
+        self.conflicts.try_resolve(script_config_conflicts[0], change_type)
 
-        Only a `missing` dimension can be renamed. It can only be renamed to a `new`
-        dimension.
+    def set_algo(self):
+        """Set algorithm resolution
 
-        Parameters
-        ----------
-        args: tuple of two str
-            Tuple containing the old dimension's name and the new dimension's name (in this order)
+        Raises
+        ------
+        RuntimeError
+            If there is no algorithm conflict left to resolve.
 
         """
-        old, new = args
+        algo_conflicts = self.conflicts.get_remaining([conflicts.AlgorithmConflict])
+        if not algo_conflicts:
+            raise RuntimeError('No conflict to solve')
 
-        old_index, missing_conflicts = self._assert_has_status(old, 'missing')
-        new_index, new_conflicts = self._assert_has_status(new, 'new')
+        self.conflicts.try_resolve(algo_conflicts[0])
 
-        old_conflict = missing_conflicts[old_index]
-        new_conflict = new_conflicts[new_index]
+    def add_dimension(self, name, default_value=Dimension.NO_DEFAULT_VALUE):
+        """Add dimension with given `name`
 
-        if new_conflict.is_solved or old_conflict.is_solved:
-            raise ValueError('Only dimensions with an unsolved conflict may be renamed')
-
-        old_conflict.is_solved = True
-        new_conflict.is_solved = True
-        self._put_operation('rename', (old_conflict, new_conflict))
-
-    def get_dimension_conflict(self, name):
-        """Return the conflict object related to the dimension of name `name`
+        Only dimensions with conflict type `NewDimensionConflict` or `ChangedDimensionConflict` may
+        be added.
 
         Parameters
         ----------
         name: str
-            Name of the dimension
+            Name of the dimension to add
+        default_value: object
+            Default value for the new dimension. Defaults to `Dimension.NO_DEFAULT_VALUE`.
+            If conflict is ChangedDimensionConflict, default_value is ignored.
+
+        Raises
+        ------
+        ValueError
+            If name is not present in non-resolved conflicts or if default_value is invalid for the
+            corresponding dimension.
 
         """
-        prefixed_name = _format_dimension_name(name)
-        index = list(map(lambda c: c.dimension.name, self.conflicts)).index(prefixed_name)
-        return self.conflicts[index]
+        conflict = self.conflicts.get_remaining(
+            [conflicts.NewDimensionConflict, conflicts.ChangedDimensionConflict],
+            dimension_name=name)[0]
 
-    def get_old_dimension_value(self, name):
-        """Return the Dimension object with name `name` from the parent experiment
+        if isinstance(conflict, conflicts.NewDimensionConflict):
+            self.conflicts.try_resolve(conflict, default_value=default_value)
+        else:
+            self.conflicts.try_resolve(conflict)
+
+    def remove_dimension(self, name, default_value=Dimension.NO_DEFAULT_VALUE):
+        """Remove dimension with given `name`
+
+        Only dimensions with conflict type `MissingDimensionConflict may be added.
 
         Parameters
         ----------
         name: str
-            Name of the dimension
+            Name of the dimension to add
+        default_value: object
+            Default value for the missing dimension. Defaults to `Dimension.NO_DEFAULT_VALUE`.
+
+        Raises
+        ------
+        ValueError
+            If name is not present in non-resolved conflicts or if default_value is invalid for the
+            corresponding dimension.
 
         """
-        if name in self.experiment_space:
-            return self.experiment_space[name]
+        conflict = self.conflicts.get_remaining(
+            [conflicts.MissingDimensionConflict], dimension_name=name)[0]
 
-        return None
+        self.conflicts.try_resolve(conflict, default_value=default_value)
 
-    def filter_conflicts(self, filter_function):
-        """Return a sublist of the conflicts filtered by the filter_function
+    def rename_dimension(self, old_name, new_name):
+        """Rename dimension `old_name` to `new_name`
+
+        Only dimensions with conflict type `MissingDimensionConflict` may be renamed,
+        and it can only be renamed to dimensions with conflict type `NewDimensionConflict`.
 
         Parameters
         ----------
-        filter_function: callable
-            Function which returns a boolean for the `filter` call
+        old_name: str
+            Name of the dimension to rename
+        new_name: str
+            Name of the target dimension
+
+        Raises
+        ------
+        ValueError
+            If name is not present in non-resolved conflicts.
+
+        Notes
+        -----
+        This may create a new conflict if the target dimension has a different prior.
 
         """
-        return filter(filter_function, self.conflicts)
+        potential_conflicts = self.conflicts.get_remaining(
+            [conflicts.MissingDimensionConflict], dimension_name=old_name)
+
+        assert len(potential_conflicts) == 1, ("Many missing dimensions with the same name: "
+                                               "{}".format(", ".join(potential_conflicts)))
+
+        old_dim_conflict = potential_conflicts[0]
+
+        potential_conflicts = self.conflicts.get_remaining(
+            [conflicts.NewDimensionConflict], dimension_name=new_name)
+
+        assert len(potential_conflicts) == 1, ("Many new dimensions with the same name: "
+                                               "{}".format(", ".join(potential_conflicts)))
+
+        new_dim_conflict = potential_conflicts[0]
+
+        self.conflicts.try_resolve(old_dim_conflict, new_dimension_conflict=new_dim_conflict)
+
+    def reset(self, name):
+        """Revert a resolution and reset its corresponding conflicts
+
+        Parameters
+        ----------
+        name: str
+            String representing the resolution as provided in the prompt
+
+        Raises
+        ------
+        ValueError
+            If name does not correspond to one of the current resolutions.
+
+        Notes
+        -----
+        Side-effect conflicts generated by a reverted resolution will be deleted.
+
+        """
+        self.conflicts.revert(name)
 
     def create_adapters(self):
-        """Return a list of Adapters for every single dimension"""
+        """Return a list of adapters for every resolution"""
         adapters = []
-        for operation in self.operations:
-            for conflict in self.operations[operation]:
-                adapters.append(self._operations_mapping[operation](conflict))
+        for resolution in self.conflicts.get_resolutions():
+            adapters += resolution.get_adapters()
 
-        return Adapters.CompositeAdapter(*adapters)
-
-    # Helper functions
-    def _get_names(self, name, status):
-        args = name.split(' ')
-        names = []
-
-        for arg in args:
-            if arg in self.special_keywords:
-                self._extend_special_keywords(arg, names)
-            elif '*' in arg:
-                self._extend_wildcard(arg, names, status)
-            else:
-                names = [arg]
-
-        return names
-
-    def _extend_special_keywords(self, arg, names):
-        conflicts = self._filter_conflicts_status([self.special_keywords[arg]])
-        names.extend(list(map(lambda c: c.dimension.name[1:], conflicts)))
-
-    def _extend_wildcard(self, arg, names, status):
-        prefix = _format_dimension_name(arg.split('*')[0])
-        filtered_conflicts = self.filter_conflicts(lambda c:
-                                                   c.dimension.name
-                                                   .startswith(prefix) and c.status in status)
-        names.extend(list(map(lambda c: c.dimension.name[1:], filtered_conflicts)))
-
-    def _mark_as_solved(self, name, status):
-        return self._mark_as(name, status, True)
-
-    def _mark_as(self, name, status, is_solved):
-        index, conflicts = self._assert_has_status(name, status)
-        conflict = conflicts[index]
-        conflict.is_solved = is_solved
-
-        return conflict
-
-    def _assert_has_status(self, name, status):
-        prefixed_name = _format_dimension_name(name)
-        conflicts = list(self._filter_conflicts_status(status))
-        index = list(map(lambda c: c.dimension.name, conflicts)).index(prefixed_name)
-
-        return index, conflicts
-
-    def _put_operation(self, operation_name, args):
-        if operation_name not in self.operations:
-            self.operations[operation_name] = []
-
-        if args not in self.operations[operation_name]:
-            self.operations[operation_name].append(args)
-
-    def _remove_from_operations(self, arg):
-        for operation in self.operations:
-            if operation == 'rename':
-                for value in self.operations[operation]:
-                    old, new = value
-                    if arg in value:
-                        old.is_solved = False
-                        new.is_solved = False
-                        self.operations[operation].remove(value)
-
-            elif arg in self.operations[operation]:
-                arg.is_solved = False
-                self.operations[operation].remove(arg)
-
-    def _filter_conflicts_status(self, status):
-        def filter_status(conflict):
-            """Filter the conflict having status inside the `status` list"""
-            return conflict.status in status
-
-        return self.filter_conflicts(filter_status)
-
-    def _add_adapter(self, conflict):
-        if conflict.status == 'changed':
-            adapter = self._changed_adapter(conflict)
-        else:
-            adapter = Adapters.DimensionAddition(_create_param(conflict.dimension))
-
-        return adapter
-
-    def _changed_adapter(self, dimensions):
-        if isinstance(dimensions, tuple):
-            old_prior, new_prior = [c.expression.replace('+', '') for c in dimensions]
-            return Adapters.DimensionPriorChange(dimensions[1].dimension.name, old_prior, new_prior)
-
-        dim = self.get_old_dimension_value(dimensions.dimension.name)
-        old_conflict = Conflict("", dim, _get_expression(dim, self.experiment_args))
-        return self._changed_adapter((old_conflict, dimensions))
-
-    def _rename_adapter(self, conflict):
-        old, new = conflict
-        old_dim = old.dimension
-        new_dim = new.dimension
-
-        rename = Adapters.DimensionRenaming(old_dim.name, new_dim.name)
-
-        if old.expression != new.expression:
-            rename = Adapters.CompositeAdapter(rename, self._changed_adapter(conflict))
-
-        return rename
-
-    @staticmethod
-    def _remove_adapter(conflict):
-        return Adapters.DimensionDeletion(_create_param(conflict.dimension))
+        return CompositeAdapter(*adapters)

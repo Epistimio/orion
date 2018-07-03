@@ -59,3 +59,8 @@ def get_trial_results(trial):
     results['gradient'] = tuple(grad.value) if grad else None
 
     return results
+
+
+def standard_param_name(name):
+    """Convert parameter name to namespace format"""
+    return name.lstrip("/").lstrip("-").replace("-", "_")
