@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa: D102
-# pylint: disable=missing-docstring,no-self-use
+# pylint: disable=no-self-use
 """
-:mod:`orion.core.worker.transformer` -- Perform operations on Dimensions
-========================================================================
+:mod:`orion.core.worker.transformer` -- Perform transformations on Dimensions
+=============================================================================
 
 .. module:: transformer
    :platform: Unix
@@ -15,7 +15,7 @@ from abc import (ABCMeta, abstractmethod)
 
 import numpy
 
-from orion.algo.space import Space
+from orion.algo.space import (Dimension, Space)
 
 
 def build_required_space(requirements, original_space):
@@ -113,29 +113,38 @@ class Identity(Transformer):
     """Implement an identity transformation. Everything as it is."""
 
     def __init__(self, domain_type=None):
+        """Initialize an identity transformation. Domain type is equal to target type."""
         self._domain_type = domain_type
 
     def transform(self, point):
+        """Return `point` as it is."""
         return point
 
     def reverse(self, transformed_point):
+        """Return `transformed_point` as it is."""
         return transformed_point
 
     def repr_format(self, what):
+        """Format a string for calling ``__repr__`` in `TransformedDimension`."""
         return what
 
     @property
     def domain_type(self):
+        """Return declared domain type on initialization."""
         return self._domain_type
 
     @property
     def target_type(self):
+        """Return domain type as this will be the target in a identity transformation."""
         return self.domain_type
 
 
 class Compose(Transformer):
+    """Implement a composite transformation."""
 
     def __init__(self, transformers, base_domain_type=None):
+        """Initialize composite transformer with a list of `Transformer` objects
+        and domain type on which it will be applied."""
         try:
             self.apply = transformers.pop()
         except IndexError:
@@ -148,26 +157,32 @@ class Compose(Transformer):
             self.composition.target_type == self.apply.domain_type
 
     def transform(self, point):
+        """Apply transformers in the increasing order of the `transformers` list."""
         point = self.composition.transform(point)
         return self.apply.transform(point)
 
     def reverse(self, transformed_point):
+        """Reverse transformation by reversing in the opposite order of the `transformers` list."""
         transformed_point = self.apply.reverse(transformed_point)
         return self.composition.reverse(transformed_point)
 
     def infer_target_shape(self, shape):
+        """Return the shape of the dimension after transformation."""
         shape = self.composition.infer_target_shape(shape)
         return self.apply.infer_target_shape(shape)
 
     def repr_format(self, what):
+        """Format a string for calling ``__repr__`` in `TransformedDimension`."""
         return self.apply.repr_format(self.composition.repr_format(what))
 
     @property
     def domain_type(self):
+        """Return base domain type."""
         return self.composition.domain_type
 
     @property
     def target_type(self):
+        """Infer type of the tranformation target."""
         type_before = self.composition.target_type
         type_after = self.apply.target_type
         return type_after if type_after else type_before
@@ -177,24 +192,33 @@ class Reverse(Transformer):
     """Apply the reverse transformation that another one would do."""
 
     def __init__(self, transformer: Transformer):
+        """Initialize object with an existing `transformer`.
+
+        This will apply `transformer`'s methods in reverse.
+        """
         assert not isinstance(transformer, OneHotEncode), "real to categorical is pointless"
         self.transformer = transformer
 
     def transform(self, point):
+        """Use `reserve` of composed `transformer`."""
         return self.transformer.reverse(point)
 
     def reverse(self, transformed_point):
+        """Use `transform` of composed `transformer`."""
         return self.transformer.transform(transformed_point)
 
     def repr_format(self, what):
+        """Format a string for calling ``__repr__`` in `TransformedDimension`."""
         return "{}{}".format(self.__class__.__name__, self.transformer.repr_format(what))
 
     @property
     def target_type(self):
+        """Return `domain_type` of composed `transformer`."""
         return self.transformer.domain_type
 
     @property
     def domain_type(self):
+        """Return `target_type` of composed `transformer`."""
         return self.transformer.target_type
 
 
@@ -205,28 +229,42 @@ class Quantize(Transformer):
     target_type = 'integer'
 
     def transform(self, point):
+        """Cast `point` to the floor and then to integers, as numpy arrays."""
         return numpy.floor(numpy.asarray(point)).astype(int)
 
     def reverse(self, transformed_point):
+        """Cast `transformed_point` to floats, as numpy arrays."""
         return numpy.asarray(transformed_point).astype(float)
 
 
 class Enumerate(Transformer):
-    """Enumerate categories."""
+    """Enumerate categories.
+
+    Effectively transform from a list of objects to a range of integers.
+    """
 
     domain_type = 'categorical'
     target_type = 'integer'
 
     def __init__(self, categories):
+        """Initialize `Enumerate` transformation with a list of `categories`."""
         self.categories = categories
         map_dict = {cat: i for i, cat in enumerate(categories)}
         self._map = numpy.vectorize(lambda x: map_dict[x], otypes='i')
         self._imap = numpy.vectorize(lambda x: categories[x], otypes=[numpy.object])
 
     def transform(self, point):
+        """Return integers corresponding uniquely to the categories in `point`.
+
+        :rtype: numpy.ndarray, integer
+        """
         return self._map(point)
 
     def reverse(self, transformed_point):
+        """Return categories corresponding to their positions inside `transformed_point`.
+
+        :rtype: numpy.ndarray, numpy.object
+        """
         return self._imap(transformed_point)
 
 
@@ -237,9 +275,19 @@ class OneHotEncode(Transformer):
     target_type = 'real'
 
     def __init__(self, bound: int):
+        """Initialize `OneHotEncode` transformer, so that it can construct
+        a `bound`-dimensional real vector representation of some integer less than `bound`.
+        """
         self.num_cats = bound
 
     def transform(self, point):
+        """Match a `point` containing integers to real vector representations of them.
+
+        If the upper bound of integers supported by an instance of `OneHotEncode`
+        is less or equal to 2, then cast them to floats.
+
+        .. note:: This transformation possibly appends one more tensor dimension to `point`.
+        """
         point_ = numpy.asarray(point)
         assert numpy.all(point_ < self.num_cats) and numpy.all(point_ >= 0) and\
             numpy.all(point_ % 1 == 0)
@@ -254,6 +302,16 @@ class OneHotEncode(Transformer):
         return hot
 
     def reverse(self, transformed_point):
+        """Match real vector representations to integers using an argmax function.
+
+        If the number of dimensions is exactly 2, then use 0.5 as a decision boundary,
+        and convert representation to integers 0 or 1.
+
+        If the number of dimensions is exactly 1, then return zeros.
+
+        .. note:: This reverse transformation possibly removes the last tensor dimension
+           from `transformed_point`.
+        """
         point_ = numpy.asarray(transformed_point)
         if self.num_cats == 2:
             return (point_ > 0.5).astype(int)
@@ -264,19 +322,31 @@ class OneHotEncode(Transformer):
         return point_.argmax(axis=-1)
 
     def infer_target_shape(self, shape):
+        """Infer that transformed points will have one more tensor dimension,
+        if the number of supported integers to transform is larger than 2.
+        """
         return tuple(list(shape) + [self.num_cats]) if self.num_cats > 2 else shape
 
 
 class TransformedDimension(object):
+    """Duck-type `Dimension` to mimic its functionality,
+    while transform automatically and appropriately an underlying `Dimension` object
+    according to a `Transformer` object.
+    """
 
-    def __init__(self, transformer, original_dimension):
+    def __init__(self, transformer: Transformer, original_dimension: Dimension):
+        """Initialize a `TransformedDimension` with an `original_dimension` object
+        and the `transformer` that will be used.
+        """
         self.original_dimension = original_dimension
         self.transformer = transformer
 
     def transform(self, point):
+        """Expose `Transformer.transform` interface from underlying instance."""
         return self.transformer.transform(point)
 
     def reverse(self, transformed_point):
+        """Expose `Transformer.reverse` interface from underlying instance."""
         return self.transformer.reverse(transformed_point)
 
     def sample(self, n_samples=1, seed=None):
