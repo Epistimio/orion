@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=too-many-lines
 """
 :mod:`orion.algo.space` -- Objects describing a problem's domain
 ==================================================================
@@ -160,6 +161,14 @@ class Dimension(object):
                                   random_state=seed,
                                   **self._kwargs) for _ in range(n_samples)]
         return samples
+
+    def cast(self, point):
+        """Cast a point to dimension's type
+
+        If casted point will stay a list or a numpy array depending on the
+        given point's type.
+        """
+        raise NotImplementedError
 
     def interval(self, alpha=1.0):
         """Return a tuple containing lower and upper bound for parameters.
@@ -355,6 +364,20 @@ class Real(Dimension):
 
         return samples
 
+    # pylint:disable=no-self-use
+    def cast(self, point):
+        """Cast a point to float
+
+        If casted point will stay a list or a numpy array depending on the
+        given point's type.
+        """
+        casted_point = numpy.asarray(point).astype(float)
+
+        if not isinstance(point, numpy.ndarray):
+            return casted_point.tolist()
+
+        return casted_point
+
 
 class _Discrete(Dimension):
 
@@ -430,7 +453,22 @@ class Integer(Real, _Discrete):
         point_ = numpy.asarray(point)
         if not numpy.all(numpy.equal(numpy.mod(point_, 1), 0)):
             return False
+
         return super(Integer, self).__contains__(point)
+
+    # pylint:disable=no-self-use
+    def cast(self, point):
+        """Cast a point to int
+
+        If casted point will stay a list or a numpy array depending on the
+        given point's type.
+        """
+        casted_point = numpy.asarray(point).astype(int)
+
+        if not isinstance(point, numpy.ndarray):
+            return casted_point.tolist()
+
+        return casted_point
 
 
 class Categorical(Dimension):
@@ -551,6 +589,36 @@ class Categorical(Dimension):
             args += ['default_value={}'.format(repr(self.default_value))]
 
         return 'choices({args})'.format(args=', '.join(args))
+
+    def cast(self, point):
+        """Cast a point to some category
+
+        Casted point will stay a list or a numpy array depending on the
+        given point's type.
+
+        Raises
+        ------
+        ValueError
+            If one of the category in `point` is not present in current Categorical Dimension.
+
+        """
+        categorical_strings = {str(c): c for c in self.categories}
+
+        def get_category(value):
+            """Return category corresponding to a string else return singleton object"""
+            if str(value) not in categorical_strings:
+                raise ValueError("Invalid category: {}".format(value))
+
+            return categorical_strings[str(value)]
+
+        point_ = numpy.asarray(point, dtype=numpy.object)
+        cast = numpy.vectorize(get_category, otypes=[numpy.object])
+        casted_point = cast(point_)
+
+        if not isinstance(point, numpy.ndarray):
+            return casted_point.tolist()
+
+        return casted_point
 
 
 class Space(OrderedDict):
