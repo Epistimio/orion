@@ -86,6 +86,7 @@ hierarchy. From the more global to the more specific, there is:
   argument to `orion` itself as well as the user's script name and its arguments.
 
 """
+import copy
 import logging
 
 from orion.core.io import resolve_config
@@ -136,6 +137,7 @@ class ExperimentBuilder(object):
         except ValueError as e:
             if "No experiment with given name" in str(e):
                 return {}
+            raise
 
         return experiment_view.configuration
 
@@ -174,7 +176,12 @@ class ExperimentBuilder(object):
         metadata = dict(metadata=self.fetch_metadata(cmdargs))
 
         exp_config = resolve_config.merge_configs(
-            default_options, env_vars, config_from_db, cmdconfig, cmdargs, metadata)
+            default_options, env_vars, copy.deepcopy(config_from_db), cmdconfig, cmdargs, metadata)
+
+        # TODO: Find a better solution
+        if isinstance(exp_config['algorithms'], dict) and len(exp_config['algorithms']) > 1:
+            for key in list(config_from_db['algorithms'].keys()):
+                exp_config['algorithms'].pop(key)
 
         return exp_config
 
