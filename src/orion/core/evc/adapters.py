@@ -181,7 +181,15 @@ class CompositeAdapter(BaseAdapter):
 
             :meth:`orion.core.evc.BaseAdapter.configuration`
         """
-        return [adapter.to_dict() for adapter in self.adapters]
+        if len(self.adapters) > 1:
+            return [adapter.configuration
+                    if len(adapter.configuration) > 1
+                    else adapter.configuration[0]
+                    for adapter in self.adapters]
+        elif self.adapters:
+            return self.adapters[0].configuration
+
+        return []
 
 
 def apply_if_valid(name, trial, callback=None, raise_if_not=True):
