@@ -118,7 +118,8 @@ class Dimension(object):
                              "Can't set default value.".format(self.default_value))
 
     def __hashable_members(self):
-        return (self.name, self.shape, self.type, self.default_value, self.prior)
+        return (self.name, self.shape, self.type, tuple(self._args), self._kwargs,
+                self.default_value, self._prior_name)
 
     # pylint:disable=protected-access
     def __eq__(self, other):
