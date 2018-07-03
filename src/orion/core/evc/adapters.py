@@ -281,7 +281,7 @@ class DimensionAddition(BaseAdapter):
                                    (self.param.name, trial))
 
             adapted_trial = copy.deepcopy(trial)
-            adapted_trial.params.append(self.param)
+            adapted_trial.params.append(copy.deepcopy(self.param))
             adapted_trials.append(adapted_trial)
 
         return adapted_trials
