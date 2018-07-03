@@ -63,6 +63,8 @@ class Dimension(object):
 
     """
 
+    NO_DEFAULT_VALUE = None
+
     def __init__(self, name, prior, *args, **kwargs):
         """Init code which is common for `Dimension` subclasses.
 
@@ -88,12 +90,6 @@ class Dimension(object):
         self._name = None
         self.name = name
 
-        if 'random_state' in kwargs or 'seed' in kwargs:
-            raise ValueError("random_state/seed cannot be set in a "
-                             "parameter's definition! Set seed globally!")
-        if 'discrete' in kwargs:
-            raise ValueError("Do not use kwarg 'discrete' on `Dimension`, "
-                             "use pure `_Discrete` class instead!")
         if isinstance(prior, str):
             self._prior_name = prior
             self.prior = getattr(distributions, prior)
@@ -102,20 +98,24 @@ class Dimension(object):
             self.prior = prior
         self._args = args
         self._kwargs = kwargs
-        # Default shape `None` corresponds to 0-dim (scalar) or shape == ().
-        # Read about ``size`` argument in
-        # `scipy.stats._distn_infrastructure.rv_generic._argcheck_rvs`
-        if 'size' in kwargs:
+        self._default_value = kwargs.pop('default_value', self.NO_DEFAULT_VALUE)
+        self._shape = kwargs.pop('shape', None)
+        self.validate()
+
+    def validate(self):
+        """Validate dimension arguments"""
+        if 'random_state' in self._kwargs or 'seed' in self._kwargs:
+            raise ValueError("random_state/seed cannot be set in a "
+                             "parameter's definition! Set seed globally!")
+        if 'discrete' in self._kwargs:
+            raise ValueError("Do not use kwarg 'discrete' on `Dimension`, "
+                             "use pure `_Discrete` class instead!")
+        if 'size' in self._kwargs:
             raise ValueError("Use 'shape' keyword only instead of 'size'.")
-        self._shape = self._kwargs.pop('shape', None)
 
-        default_value = self._kwargs.pop('default_value', None)
-
-        if default_value is not None and default_value not in self:
+        if self.default_value is not self.NO_DEFAULT_VALUE and self.default_value not in self:
             raise ValueError("{} is not a valid value for this Dimension. "
-                             "Can't set default value.".format(default_value))
-
-        self._default_value = default_value
+                             "Can't set default value.".format(self.default_value))
 
     def __hashable_members(self):
         return (self.name, self.shape, self.type, self.default_value, self.prior)
@@ -155,7 +155,7 @@ class Dimension(object):
            across many samples.
 
         """
-        samples = [self.prior.rvs(*self._args, size=self._shape,
+        samples = [self.prior.rvs(*self._args, size=self.shape,
                                   random_state=seed,
                                   **self._kwargs) for _ in range(n_samples)]
         return samples
@@ -216,6 +216,9 @@ class Dimension(object):
     @property
     def shape(self):
         """Return the shape of dimension."""
+        # Default shape `None` corresponds to 0-dim (scalar) or shape == ().
+        # Read about ``size`` argument in
+        # `scipy.stats._distn_infrastructure.rv_generic._argcheck_rvs`
         _, _, _, size = self.prior._parse_args_rvs(*self._args,  # pylint:disable=protected-access
                                                    size=self._shape,
                                                    **self._kwargs)
