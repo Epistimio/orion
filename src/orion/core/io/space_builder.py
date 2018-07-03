@@ -256,7 +256,8 @@ class SpaceBuilder(object, metaclass=SingletonType):
         self.userconfig = None
         self.userargs_tmpl = None
         self.userconfig_tmpl = None
-        self.config_expressions = None
+        self.userconfig_expressions = collections.OrderedDict()
+        self.userconfig_nameless = collections.OrderedDict()
         self.positional_args_count = 0
 
         self.dimbuilder = DimensionBuilder()
@@ -291,7 +292,8 @@ class SpaceBuilder(object, metaclass=SingletonType):
         """
         self.userargs_tmpl = None
         self.userconfig_tmpl = None
-        self.config_expressions = None
+        self.userconfig_expressions = collections.OrderedDict()
+        self.userconfig_nameless = collections.OrderedDict()
 
         self.commands_tmpl = None
         self.space = Space()
@@ -307,10 +309,11 @@ class SpaceBuilder(object, metaclass=SingletonType):
         return self.space
 
     def _build_from_config(self, config_path):
-        self.config_expressions = collections.OrderedDict()
         self.converter = infer_converter_from_file_type(config_path,
                                                         default_keyword=self.USERCONFIG_KEYWORD)
         self.userconfig_tmpl = self.converter.parse(config_path)
+        self.userconfig_expressions = collections.OrderedDict()
+        self.userconfig_nameless = collections.OrderedDict()
 
         stack = collections.deque()
         stack.append(('', self.userconfig_tmpl))
@@ -330,7 +333,8 @@ class SpaceBuilder(object, metaclass=SingletonType):
                     expression = stuff[len(self.USERCONFIG_KEYWORD):]
 
                     # Store the expression before it is modified for the dimension builder
-                    self.config_expressions[namespace] = '~' + expression
+                    self.userconfig_expressions[namespace] = (
+                        self.USERCONFIG_KEYWORD[-1] + expression)
 
                     if _should_not_be_built(expression):
                         break
@@ -344,6 +348,9 @@ class SpaceBuilder(object, metaclass=SingletonType):
                         error_msg = "Conflict for name '{}' in script configuration "\
                                     "and arguments.".format(namespace)
                         raise ValueError(error_msg) from exc
+                else:
+                    log.warning("Nameless '%s: %s' will not define a dimension.", namespace, stuff)
+                    self.userconfig_nameless[namespace] = stuff
 
     def _build_from_args(self, cmd_args):
         """Build templates from arguments found in the original cli.
