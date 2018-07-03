@@ -29,13 +29,6 @@ from orion.core.utils.diff import green, red
 readline.set_completer_delims(' ')
 
 
-# def get_string(fct, filearg, initial_value='', newline='\n', **fct_kwargs):
-#     output = io.StringIO(initial_value=initial_value, newline=newline)
-#     fct_kwargs[filearg] = output
-#     fct(**fct_kwargs)
-#     return output.getvalue()
-
-
 def wrap_autocomplete(f):
     """Wrap autocomplete to catch errors and print stacktrace"""
     @functools.wraps(f)
@@ -209,7 +202,6 @@ class BranchingPrompt(cmd.Cmd):
             print(file=output)
             for conflict in unsolved_conflicts:
                 print("    ", red(str(conflict)), file=output)
-                # print("        ", conflict.get_hint(), file=output)
             print(file=output)
         else:
             print(file=output)
@@ -266,12 +258,6 @@ class BranchingPrompt(cmd.Cmd):
     def do_name(self, options):
         """Change the name of the experiment"""
         self.branch_builder.change_experiment_name(options.experiment_name)
-
-        # if resolution is None:
-        #     user = self.branch_builder.conflicting_config['metadata']['user']
-        #     print('Error: Name \'{0}\' already exist for user '
-        #           '\'{1}\''.format(options.experiment_name, user))
-        #     return
 
         print('TIP: You can use the \'-b\' or \'--branch\' command-line '
               'argument to automate the naming process.')
@@ -460,25 +446,6 @@ class BranchingPrompt(cmd.Cmd):
         names = [conflict.dimension.name.lstrip('/') for conflict in potential_conflicts]
 
         return self._get_completions(names, text)
-
-    # def do_set(self, arg):
-    #     """Resolve conflicts using command-line like markers"""
-    #     self.branch_builder.set_resolution(arg)
-
-    # def complete_set(self, text, line, begidx, endidx):
-    #     try:
-    #         names = self._get_potential_resolutions()
-    #         if len(line.split(" ")) <= 2:
-    #             completions = [f
-    #                            for f in names
-    #                            if f.startswith(text)
-    #                            ]
-    #         else:
-    #             completions = []
-    #     except BaseException as e:
-    #         print(str(e))
-
-    #     return completions
 
     @parse_command
     def do_reset(self, options):
