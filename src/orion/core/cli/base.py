@@ -102,7 +102,6 @@ def get_user_args_group(parser):
         description="These arguments determine user's script behaviour "
                     "and they can serve as orion's parameter declaration.")
 
-
     usergroup.add_argument(
         'user_args', nargs=argparse.REMAINDER, metavar='...',
         help="Command line of user script. A configuration "
