@@ -148,7 +148,7 @@ def _build_from_config(config_path):
 def _build_from_args(cmd_args):
     userconfig = None
     is_userconfig_an_option = None
-    userargs_search = r'\W*([a-zA-Z0-9_-]+)=([a-zA-Z0-9_]+)'
+    userargs_search = r'\W*([a-zA-Z0-9_-]+)=([^ ]+)'
     userargs_regex_tmpl = r'(.*)=(.*)'
     userconfig_option = "--config="
 
