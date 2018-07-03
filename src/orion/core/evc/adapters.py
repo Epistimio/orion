@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=too-many-lines
 """
 :mod:`orion.core.evc.adapters` -- Adapters to connect experiments within the EVC system
 =======================================================================================
@@ -650,6 +651,168 @@ class CodeChange(BaseAdapter):
 
     def backward(self, trials):
         """Filter out child's trials if type of code change is UNSURE or BREAK.
+
+        .. seealso::
+
+            :meth:`orion.core.evc.BaseAdapter.backward`
+        """
+        if self.change_type in [self.BREAK, self.UNSURE]:
+            return []
+
+        return trials
+
+    def to_dict(self):
+        """Provide the configuration of the adapter as a dictionary
+
+        .. seealso::
+
+            :meth:`orion.core.evc.adapters.BaseAdapter.to_dict`
+        """
+        ret = dict(
+            of_type=self.__class__.__name__.lower(),
+            change_type=self.change_type)
+        return ret
+
+
+class CommandLineChange(BaseAdapter):
+    """Adapter which filters parent's trials based on the type of command line change
+
+    This adapter let pass all trials if the command line change didn't break the compatibility with
+    parent's experiment. If the effect of the change is UNSURE, the trials may only pass from parent
+    to child but not from child to parent. This is to ensure parent experiment does not get
+    corrupted with possibly incompatible results.
+
+    On forward, the adapter filters out parent's trials if type of change is BREAK.
+    On backward, the adapter filters out child's trials if type of change is UNSURE or BREAK.
+
+    Attributes
+    ----------
+    change_type: `str`
+        Type of change of the command line. Can be one of `CommandLineChange.NOEFFET`,
+        `CommandLineChange.BREAK` or `CommandLineChange.UNSURE`.
+
+    """
+
+    NOEFFECT = "noeffect"
+    BREAK = "break"
+    UNSURE = "unsure"
+    types = [NOEFFECT, BREAK, UNSURE]
+
+    def __init__(self, change_type):
+        """Initialize and check change type's validity
+
+        Parameters
+        ----------
+        change_type: `str`
+            Type of change of the command line. Can be one of `Change.NOEFFET`,
+            `CommandLineChange.BREAK` or `CommandLineChange.UNSURE`.
+
+        """
+        self.validate(change_type)
+        self.change_type = change_type
+
+    @classmethod
+    def validate(cls, change_type):
+        """Validate change type and raise ValueError if invalid"""
+        if change_type not in cls.types:
+            raise ValueError("Invalid cli change type '%s'. Should be one of %s" %
+                             (change_type, str(cls.types)))
+
+    def forward(self, trials):
+        """Filter out parent's trials if type of cli change is BREAK.
+
+        .. seealso::
+
+            :meth:`orion.core.evc.BaseAdapter.forward`
+        """
+        if self.change_type == self.BREAK:
+            return []
+
+        return trials
+
+    def backward(self, trials):
+        """Filter out child's trials if type of cli change is UNSURE or BREAK.
+
+        .. seealso::
+
+            :meth:`orion.core.evc.BaseAdapter.backward`
+        """
+        if self.change_type in [self.BREAK, self.UNSURE]:
+            return []
+
+        return trials
+
+    def to_dict(self):
+        """Provide the configuration of the adapter as a dictionary
+
+        .. seealso::
+
+            :meth:`orion.core.evc.adapters.BaseAdapter.to_dict`
+        """
+        ret = dict(
+            of_type=self.__class__.__name__.lower(),
+            change_type=self.change_type)
+        return ret
+
+
+class ScriptConfigChange(BaseAdapter):
+    """Adapter which filters parent's trials based on the type of user's script's config change
+
+    This adapter let pass all trials if the change in the user's script's configuration file
+    didn't break the compatibility with parent's experiment. If the effect of the change is UNSURE,
+    the trials may only pass from parent to child but not from child to parent. This is to ensure
+    parent experiment does not get corrupted with possibly incompatible results.
+
+    On forward, the adapter filters out parent's trials if type of change is BREAK.
+    On backward, the adapter filters out child's trials if type of change is UNSURE or BREAK.
+
+    Attributes
+    ----------
+    change_type: `str`
+        Type of change of the command line. Can be one of `ScriptConfigChange.NOEFFET`,
+        `ScriptConfigChange.BREAK` or `ScriptConfigChange.UNSURE`.
+
+    """
+
+    NOEFFECT = "noeffect"
+    BREAK = "break"
+    UNSURE = "unsure"
+    types = [NOEFFECT, BREAK, UNSURE]
+
+    def __init__(self, change_type):
+        """Initialize and check change type's validity
+
+        Parameters
+        ----------
+        change_type: `str`
+            Type of change of the script's config. Can be one of `ScriptConfigChange.NOEFFET`,
+            `ScriptConfigChange.BREAK` or `ScriptConfigChange.UNSURE`.
+
+        """
+        self.validate(change_type)
+        self.change_type = change_type
+
+    @classmethod
+    def validate(cls, change_type):
+        """Validate change type and raise ValueError if invalid"""
+        if change_type not in cls.types:
+            raise ValueError("Invalid script's config change type '%s'. Should be one of %s" %
+                             (change_type, str(cls.types)))
+
+    def forward(self, trials):
+        """Filter out parent's trials if type of script's config change is BREAK.
+
+        .. seealso::
+
+            :meth:`orion.core.evc.BaseAdapter.forward`
+        """
+        if self.change_type == self.BREAK:
+            return []
+
+        return trials
+
+    def backward(self, trials):
+        """Filter out child's trials if type of script's config change is UNSURE or BREAK.
 
         .. seealso::
 
