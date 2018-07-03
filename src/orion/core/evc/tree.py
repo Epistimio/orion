@@ -193,8 +193,10 @@ class TreeNode(object):
         self._parent = None
         self._children = []
 
-        self.set_parent(parent)
-        self.add_children(*children)
+        if parent is not None:
+            self.set_parent(parent)
+        if children:
+            self.add_children(*children)
 
     @property
     def item(self):
