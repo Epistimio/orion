@@ -13,10 +13,6 @@ join = os.path.join
 
 def test_infer_versioning_metadata():
     os.chdir('../')
-    try:
-        shutil.rmtree('dummy_orion')
-    except:
-        pass
     if not os.path.exists('dummy_orion'):
         os.makedirs('dummy_orion')
         os.chdir('dummy_orion')
