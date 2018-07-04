@@ -16,7 +16,7 @@ def init_full_x(clean_db, monkeypatch):
     """Init original experiment"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     name = "full_x"
-    orion.core.cli.main(("init_only -n {name} --config ./orion_config.yaml ./black_box.py "
+    orion.core.cli.main(("init_only -n {name} --config orion_config.yaml ./black_box.py "
                          "-x~uniform(-10,10)").format(name=name).split(" "))
     orion.core.cli.main("insert -n {name} script -x=0".format(name=name).split(" "))
 
@@ -137,6 +137,30 @@ def init_full_x_remove_z_default_4(init_full_x_rename_y_z):
          "-x~uniform(-10,10) -z~-4").format(name=name, branch=branch).split(" "))
     orion.core.cli.main("insert -n {name} script -x=9".format(name=branch).split(" "))
     orion.core.cli.main("insert -n {name} script -x=-9".format(name=branch).split(" "))
+
+
+@pytest.fixture
+def init_full_x_new_algo(init_full_x):
+    """Remove z from full x full z and give a default value of 4"""
+    name = "full_x"
+    branch = "full_x_new_algo"
+    orion.core.cli.main(
+        ("init_only -n {name} --branch {branch} --algorithm-change --config new_algo_config.yaml "
+         "./black_box.py -x~uniform(-10,10)").format(name=name, branch=branch).split(" "))
+    orion.core.cli.main("insert -n {name} script -x=1.1".format(name=branch).split(" "))
+    orion.core.cli.main("insert -n {name} script -x=-1.1".format(name=branch).split(" "))
+
+
+@pytest.fixture
+def init_full_x_new_cli(init_full_x):
+    """Remove z from full x full z and give a default value of 4"""
+    name = "full_x"
+    branch = "full_x_new_cli"
+    orion.core.cli.main(
+        ("init_only -n {name} --branch {branch} --cli-change-type noeffect ./black_box_new.py "
+         "-x~uniform(-10,10) --a-new argument").format(name=name, branch=branch).split(" "))
+    orion.core.cli.main("insert -n {name} script -x=1.2".format(name=branch).split(" "))
+    orion.core.cli.main("insert -n {name} script -x=-1.2".format(name=branch).split(" "))
 
 
 @pytest.fixture
@@ -362,7 +386,7 @@ def test_run_entire_full_x_full_y(init_entire, create_db_instance):
     assert len(experiment.fetch_trials({})) == 4
 
     orion.core.cli.main(("-vv hunt --max-trials 20 --pool-size 1 -n full_x_full_y "
-                         "--config ./orion_config.yaml ./black_box_with_y.py "
+                         "./black_box_with_y.py "
                          "-x~uniform(-10,10) "
                          "-y~uniform(-10,10,default_value=1)").split(" "))
 
@@ -376,8 +400,93 @@ def test_run_entire_full_x_full_y_no_args(init_entire, create_db_instance):
     assert len(experiment.fetch_trials_tree({})) == 23
     assert len(experiment.fetch_trials({})) == 4
 
-    orion.core.cli.main(("-vv hunt --max-trials 20 --pool-size 1 -n full_x_full_y "
-                         "--config ./orion_config.yaml").split(" "))
+    orion.core.cli.main(("-vv hunt --max-trials 20 --pool-size 1 -n full_x_full_y").split(" "))
 
     assert len(experiment.fetch_trials_tree({})) == 39
     assert len(experiment.fetch_trials({})) == 20
+
+
+def test_new_algo(init_full_x_new_algo):
+    """Test that new algo conflict is automatically resolved"""
+    experiment = EVCBuilder().build_view_from({'name': 'full_x_new_algo'})
+    assert len(experiment.fetch_trials_tree({})) == 3
+    assert len(experiment.fetch_trials({})) == 2
+
+    orion.core.cli.main(("-vv hunt --max-trials 20 --pool-size 1 -n full_x_new_algo").split(" "))
+
+    assert len(experiment.fetch_trials_tree({})) == 21
+    assert len(experiment.fetch_trials({})) == 20
+
+
+def test_new_algo_not_resolved(init_full_x):
+    """Test that new algo conflict is not automatically resolved"""
+    name = "full_x"
+    branch = "full_x_new_algo"
+    with pytest.raises(OSError) as exc:
+        orion.core.cli.main(
+            ("init_only -n {name} --branch {branch} --config new_algo_config.yaml "
+             "./black_box.py -x~uniform(-10,10)").format(name=name, branch=branch).split(" "))
+    assert "reading from stdin while output is captured" in str(exc.value)
+
+
+def test_new_cli(init_full_x_new_cli):
+    """Test that new cli conflict is automatically resolved"""
+    experiment = EVCBuilder().build_view_from({'name': 'full_x_new_cli'})
+    assert len(experiment.fetch_trials_tree({})) == 3
+    assert len(experiment.fetch_trials({})) == 2
+
+    orion.core.cli.main(("-vv hunt --max-trials 20 --pool-size 1 -n full_x_new_cli").split(" "))
+
+    assert len(experiment.fetch_trials_tree({})) == 21
+    assert len(experiment.fetch_trials({})) == 20
+
+
+def test_new_cli_not_resolved(init_full_x):
+    """Test that new cli conflict is not automatically resolved"""
+    name = "full_x"
+    branch = "full_x_new_cli"
+    with pytest.raises(OSError) as exc:
+        orion.core.cli.main(
+            ("init_only -n {name} --branch {branch} ./black_box.py "
+             "-x~uniform(-10,10) --a-new argument").format(name=name, branch=branch).split(" "))
+    assert "reading from stdin while output is captured" in str(exc.value)
+
+
+def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
+    """Test that auto-resolution does resolve all conflicts"""
+    # Patch cmdloop to avoid autoresolution's prompt
+    def _do_nothing(self):
+        pass
+    from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
+    monkeypatch.setattr(BranchingPrompt, "cmdloop", _do_nothing)
+
+    name = "full_x_full_y"
+    branch = "half_x_no_y_new_w"
+    # If autoresolution was not succesfull, this to fail with a sys.exit without registering the
+    # experiment
+    orion.core.cli.main(
+        ("init_only -n {name} --branch {branch} --auto-resolution ./black_box_with_y.py "
+         "-x~uniform(0,10) "
+         "-w~choices(['a','b'],default_value='a')").format(name=name, branch=branch).split(" "))
+    orion.core.cli.main("insert -n {name} script -x=2 -w=b".format(name=branch).split(" "))
+    orion.core.cli.main("insert -n {name} script -x=1".format(name=branch).split(" "))
+
+
+def test_auto_resolution_forces_prompt(init_full_x_full_y, monkeypatch):
+    """Test that auto-resolution forces prompt"""
+    name = "full_x_full_y"
+    branch = "new_full_x_full_y"
+
+    # No conflict, it does not prompt
+    orion.core.cli.main(
+        ("init_only -n {name} --auto-resolution ./black_box.py "
+         "-x~uniform(-10,10) "
+         "-y~+uniform(-10,10,default_value=1)").format(name=name).split(" "))
+
+    # No conflicts, but forced branching, it forces prompt
+    with pytest.raises(OSError) as exc:
+        orion.core.cli.main(
+            ("init_only -n {name} --branch {branch} --auto-resolution ./black_box.py "
+             "-x~uniform(-10,10) "
+             "-y~+uniform(-10,10,default_value=1)").format(name=name, branch=branch).split(" "))
+    assert "reading from stdin while output is captured" in str(exc.value)

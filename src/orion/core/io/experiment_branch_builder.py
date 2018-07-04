@@ -33,13 +33,14 @@ log = logging.getLogger(__name__)
 class ExperimentBranchBuilder:
     """Build a new configuration for the experiment based on parent config."""
 
-    def __init__(self, conflicts, auto_resolution=False):
+    def __init__(self, conflicts, branching_configuration):
         """
         Initialize the ExperimentBranchBuilder by populating a list of the conflicts inside
         the two configurations.
         """
-        self.auto_resolution = auto_resolution
+        self.auto_resolution = branching_configuration.pop('auto_resolution', False)
         self.conflicts = conflicts
+        self.conflicting_config.update(branching_configuration)
         self.resolve_conflicts()
 
     @property

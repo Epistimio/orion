@@ -12,6 +12,7 @@
 import logging
 
 from orion.core.cli import base as cli
+from orion.core.cli import evc as evc_cli
 from orion.core.io.experiment_builder import ExperimentBuilder
 
 log = logging.getLogger(__name__)
@@ -21,7 +22,9 @@ def add_subparser(parser):
     """Return the parser that needs to be used for this command"""
     init_only_parser = parser.add_parser('init_only', help='init_only help')
 
-    cli.get_basic_args_group(init_only_parser, add_branching=True)
+    cli.get_basic_args_group(init_only_parser)
+
+    evc_cli.get_branching_args_group(init_only_parser)
 
     cli.get_user_args_group(init_only_parser)
 

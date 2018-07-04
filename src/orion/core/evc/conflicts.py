@@ -81,7 +81,6 @@ def _build_extended_user_args(config):
 
 def _build_space(config):
     """Build an optimization space based on given configuration"""
-
     space_builder = SpaceBuilder()
     space = space_builder.build_from(config['metadata']['user_args'])
 
@@ -447,18 +446,18 @@ class Resolution(object, metaclass=ABCMeta):
         """Validate arguments and raise a ValueError if they are invalid"""
         pass
 
-    @property
-    def namespace(self):
+    @classmethod
+    def namespace(cls):
         """Return namespace corresponding to self.ARGUMENT
 
         ARGUMENT is a command line argument, thus something in the style of `--code-change-type`.
         When arguments are passed they are saved in namespace in the style of `code_change_type`.
         This property converts command-line style to namespace style.
         """
-        if not self.ARGUMENT:
+        if not cls.ARGUMENT:
             return None
 
-        return self.ARGUMENT.lstrip("-").replace("-", "_")
+        return cls.ARGUMENT.lstrip("-").replace("-", "_")
 
     def revert(self):
         """Reset conflict as well as side-effect conflicts and return the latter for deprecation"""
@@ -489,7 +488,7 @@ class Resolution(object, metaclass=ABCMeta):
                     marked_argument = arg
                     break
         else:
-            marked_argument = new_config.get(self.namespace, None)
+            marked_argument = new_config.get(self.namespace(), None)
 
         return marked_argument
 
@@ -498,7 +497,7 @@ class Resolution(object, metaclass=ABCMeta):
         """If this resolution is specifically marked in commandline arguments or configuration
         arguments
         """
-        return self.find_marked_argument() is not None
+        return self.find_marked_argument() not in [None, False]
 
 
 class NewDimensionConflict(Conflict):
@@ -1096,8 +1095,7 @@ class CodeConflict(Conflict):
             :meth:`orion.core.evc.conflicts.Conflict.get_marked_arguments`
 
         """
-        # TODO Use resolution's string
-        change_type = self.new_config.get('code_change_type')
+        change_type = self.new_config.get(self.CodeResolution.namespace())
 
         if change_type:
             return dict(change_type=change_type)
@@ -1227,8 +1225,7 @@ class CommandLineConflict(Conflict):
             :meth:`orion.core.evc.conflicts.Conflict.get_marked_arguments`
 
         """
-        # TODO Use resolution's string
-        change_type = self.new_config.get('cli_change_type')
+        change_type = self.new_config.get(self.CommandLineResolution.namespace())
 
         if change_type:
             return dict(change_type=change_type)
@@ -1356,8 +1353,7 @@ class ScriptConfigConflict(Conflict):
             :meth:`orion.core.evc.conflicts.Conflict.get_marked_arguments`
 
         """
-        # TODO Use resolution's string
-        change_type = self.new_config.get('config_change_type')
+        change_type = self.new_config.get(self.ScriptConfigResolution.namespace())
 
         if change_type:
             return dict(change_type=change_type)
@@ -1473,7 +1469,7 @@ class ExperimentNameConflict(Conflict):
             :meth:`orion.core.evc.conflicts.Conflict.get_marked_arguments`
 
         """
-        new_name = self.new_config.get('branch')
+        new_name = self.new_config.get(self.ExperimentNameResolution.namespace())
 
         if new_name:
             return dict(new_name=new_name)
