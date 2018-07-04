@@ -249,7 +249,7 @@ class BranchingPrompt(cmd.Cmd):
     def do_auto(self, options):
         """Automatically solve conflicts when no feedback from user is necessary."""
         self.branch_builder.auto_resolution = True
-        self.branch_builder.resolve_commandline_conflicts()
+        self.branch_builder.resolve_conflicts()
 
         self.do_status("")
 
@@ -281,10 +281,6 @@ class BranchingPrompt(cmd.Cmd):
     @parse_command
     def do_code(self, options):
         """Set the type of the code change"""
-        if not self.branch_builder.conflicts.get_remaining([conflicts.CodeConflict]):
-            print('No conflict to solve')
-            return
-
         self.branch_builder.set_code_change_type(options.change_type)
 
         self.do_status("")
@@ -300,12 +296,7 @@ class BranchingPrompt(cmd.Cmd):
     @parse_command
     def do_commandline(self, options):
         """Set the type of the commandline change"""
-        if not self.branch_builder.conflicts.get_remaining([conflicts.CommandLineConflict]):
-            print('No conflict to solve')
-            return
-
         self.branch_builder.set_cli_change_type(options.change_type)
-
         self.do_status("")
 
     @wrap_autocomplete
@@ -319,12 +310,7 @@ class BranchingPrompt(cmd.Cmd):
     @parse_command
     def do_config(self, options):
         """Set the type of the commandline change"""
-        if not self.branch_builder.conflicts.get_remaining([conflicts.ScriptConfigConflict]):
-            print('No conflict to solve')
-            return
-
         self.branch_builder.set_script_config_change_type(options.change_type)
-
         self.do_status("")
 
     @wrap_autocomplete
@@ -449,7 +435,7 @@ class BranchingPrompt(cmd.Cmd):
     def do_reset(self, options):
         """Revert a resolution and mark the conflict as non-resolved"""
         for resolution in options.resolutions:
-            self.branch_builder.reset(resolution.strip("'").replace('"', "'"))
+            self.branch_builder.reset(resolution.strip("' ").replace('"', "'"))
 
         self.do_status("")
 

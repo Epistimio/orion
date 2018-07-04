@@ -119,7 +119,7 @@ class ExperimentBranchBuilder:
         if not code_conflicts:
             raise RuntimeError('No code conflicts to solve')
 
-        self.conflicts.try_resolve(code_conflicts[0], change_type)
+        self.conflicts.try_resolve(code_conflicts[0], change_type=change_type)
 
     def set_cli_change_type(self, change_type):
         """Set cli change type
@@ -176,7 +176,7 @@ class ExperimentBranchBuilder:
         """
         algo_conflicts = self.conflicts.get_remaining([conflicts.AlgorithmConflict])
         if not algo_conflicts:
-            raise RuntimeError('No conflict to solve')
+            raise RuntimeError('No algo conflict to solve')
 
         self.conflicts.try_resolve(algo_conflicts[0])
 

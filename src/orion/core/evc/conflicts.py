@@ -260,6 +260,8 @@ class Conflicts(object):
         except KeyboardInterrupt:
             raise
         except Exception:  # pylint:disable=broad-except
+            conflict.resolution = None
+            conflict._is_resolved = None  # pylint:disable=protected-access
             if not silence_errors:
                 print(traceback.format_exc())
             return None
