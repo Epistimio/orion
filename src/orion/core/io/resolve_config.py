@@ -164,6 +164,11 @@ def fetch_metadata(cmdargs):
 
     # Move 'user_script' and 'user_args' to 'metadata' key
     user_args = cmdargs.get('user_args', [])
+
+    # Trailing white space are catched by argparse as an empty argument
+    if len(user_args) == 1 and user_args[0] == '':
+        user_args = []
+
     user_script = user_args[0] if user_args else None
 
     if user_script:
