@@ -238,6 +238,78 @@ class TestCodeConflict(object):
         assert repr(code_conflict) == "Old hash commit 'old' != new hash commit 'new'"
 
 
+class TestCommandLineConflict(object):
+    """Tests methods related to code conflicts"""
+
+    def test_try_resolve_twice(self, cli_conflict):
+        """Verify that conflict cannot be resolved twice"""
+        assert not cli_conflict.is_resolved
+        assert isinstance(cli_conflict.try_resolve(evc.adapters.CommandLineChange.BREAK),
+                          cli_conflict.CommandLineResolution)
+        assert cli_conflict.is_resolved
+        assert cli_conflict.try_resolve() is None
+
+    def test_try_resolve(self, cli_conflict):
+        """Verify that resolution is achievable with valid cli change-type input"""
+        assert not cli_conflict.is_resolved
+        resolution = cli_conflict.try_resolve(evc.adapters.CommandLineChange.UNSURE)
+        assert isinstance(resolution, cli_conflict.CommandLineResolution)
+        assert cli_conflict.is_resolved
+        assert resolution.conflict is cli_conflict
+        assert resolution.type == evc.adapters.CommandLineChange.UNSURE
+
+    def test_try_resolve_bad_cli(self, cli_conflict):
+        """Verify that resolution fails if cli is invalid"""
+        assert not cli_conflict.is_resolved
+        with pytest.raises(ValueError) as exc:
+            cli_conflict.try_resolve()
+        assert "Invalid cli change type 'None'" in str(exc.value)
+
+        with pytest.raises(ValueError) as exc:
+            cli_conflict.try_resolve("bad-change-type")
+        assert "Invalid cli change type 'bad-change-type'" in str(exc.value)
+
+    def test_repr(self, cli_conflict):
+        """Verify the representation of conflict for user interface"""
+        assert repr(cli_conflict) == "Old arguments '' != new arguments '--some-new=args'"
+
+
+class TestScriptConfigConflict(object):
+    """Tests methods related to code conflicts"""
+
+    def test_try_resolve_twice(self, config_conflict):
+        """Verify that conflict cannot be resolved twice"""
+        assert not config_conflict.is_resolved
+        assert isinstance(config_conflict.try_resolve(evc.adapters.ScriptConfigChange.BREAK),
+                          config_conflict.ScriptConfigResolution)
+        assert config_conflict.is_resolved
+        assert config_conflict.try_resolve() is None
+
+    def test_try_resolve(self, config_conflict):
+        """Verify that resolution is achievable with valid config change-type input"""
+        assert not config_conflict.is_resolved
+        resolution = config_conflict.try_resolve(evc.adapters.ScriptConfigChange.UNSURE)
+        assert isinstance(resolution, config_conflict.ScriptConfigResolution)
+        assert config_conflict.is_resolved
+        assert resolution.conflict is config_conflict
+        assert resolution.type == evc.adapters.ScriptConfigChange.UNSURE
+
+    def test_try_resolve_bad_config(self, config_conflict):
+        """Verify that resolution fails if config is invalid"""
+        assert not config_conflict.is_resolved
+        with pytest.raises(ValueError) as exc:
+            config_conflict.try_resolve()
+        assert "Invalid script's config change type 'None'" in str(exc.value)
+
+        with pytest.raises(ValueError) as exc:
+            config_conflict.try_resolve("bad-change-type")
+        assert "Invalid script's config change type 'bad-change-type'" in str(exc.value)
+
+    def test_repr(self, config_conflict):
+        """Verify the representation of conflict for user interface"""
+        assert repr(config_conflict) == "Script's configuration file changed"
+
+
 @pytest.mark.usefixtures("create_db_instance")
 class TestExperimentNameConflict(object):
     """Tests methods related to experiment name conflicts"""
@@ -276,9 +348,6 @@ class TestExperimentNameConflict(object):
         """Verify the representation of conflict for user interface"""
         assert (repr(experiment_name_conflict) ==
                 "Experiment name 'test' already exist for user 'some_user_name'")
-
-
-# TODO : Add tests for ScriptConfigConflict and CommandLineConflict
 
 
 class TestConflicts(object):

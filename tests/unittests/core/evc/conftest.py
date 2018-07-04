@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """Common fixtures and utils for evc unit-tests."""
+import copy
+
 import pytest
 
 from orion.core.evc import conflicts
@@ -101,6 +103,20 @@ def algorithm_conflict(old_config, new_config):
 def code_conflict(old_config, new_config):
     """Generate a code conflict"""
     return conflicts.CodeConflict(old_config, new_config)
+
+
+@pytest.fixture
+def cli_conflict(old_config, new_config):
+    """Generate a commandline conflict"""
+    new_config = copy.deepcopy(new_config)
+    new_config['metadata']['user_args'].append("--some-new=args")
+    return conflicts.CommandLineConflict(old_config, new_config)
+
+
+@pytest.fixture
+def config_conflict(old_config, new_config):
+    """Generate a script config conflict"""
+    return conflicts.ScriptConfigConflict(old_config, new_config)
 
 
 @pytest.fixture

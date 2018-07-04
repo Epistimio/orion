@@ -388,7 +388,6 @@ class BranchingPrompt(cmd.Cmd):
     @wrap_autocomplete
     def complete_remove(self, text, line, begidx, endidx):
         """Auto-complete deletion of missing dimensions"""
-        # TODO: Does not work !!!! * * * * FIX  FIX FIX
         return self._complete_dim([conflicts.MissingDimensionConflict], text, line, begidx, endidx)
 
     def _complete_dim(self, conflict_types, text, line, begidx, endidx):
@@ -496,8 +495,5 @@ class BranchingPrompt(cmd.Cmd):
 
         new_name = self.branch_builder.conflicting_config['name']
         print('Registering experiment branch \'{0}\'.'.format(new_name))
-
-        # TODO: Give the new command line to call to avoid further branching!!!
-        #       Huh, really?
 
         return True
