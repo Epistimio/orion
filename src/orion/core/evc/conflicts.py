@@ -71,19 +71,20 @@ def _build_extended_user_args(config):
     user's script's configuration file.
     """
     user_args = config['metadata']['user_args']
-    # SpaceBuilder.instance = None
+
     space_builder = SpaceBuilder()
     space_builder.build_from(user_args)
-    # SpaceBuilder.instance = None
+
     return user_args + [standard_param_name(key) + value
                         for key, value in space_builder.userconfig_expressions.items()]
 
 
 def _build_space(config):
     """Build an optimization space based on given configuration"""
-    # SpaceBuilder.instance = None
-    space = SpaceBuilder().build_from(config['metadata']['user_args'])
-    # SpaceBuilder.instance = None
+
+    space_builder = SpaceBuilder()
+    space = space_builder.build_from(config['metadata']['user_args'])
+
     return space
 
 
@@ -1201,13 +1202,12 @@ class CommandLineConflict(Conflict):
     @classmethod
     def get_nameless_args(cls, config):
         """Get user's commandline arguments which are not dimension definitions"""
-        SpaceBuilder.instance = None
         space_builder = SpaceBuilder()
         space_builder.build_from(config['metadata']['user_args'])
         nameless_args = dict((key, value)
                              for (key, value) in space_builder.userargs_tmpl.items()
                              if key.startswith('_'))
-        SpaceBuilder.instance = None
+
         return " ".join(arg for key, arg in sorted(nameless_args.items(), key=lambda a: a[0]))
 
     @classmethod
@@ -1332,13 +1332,11 @@ class ScriptConfigConflict(Conflict):
     @classmethod
     def get_nameless_config(cls, config):
         """Get configuration dict of user's script without dimension definitions"""
-        SpaceBuilder.instance = None
         space_builder = SpaceBuilder()
         space_builder.build_from(config['metadata']['user_args'])
-
         nameless_config = dict((key, value)
                                for (key, value) in space_builder.userconfig_nameless.items())
-        SpaceBuilder.instance = None
+
         return nameless_config
 
     @classmethod

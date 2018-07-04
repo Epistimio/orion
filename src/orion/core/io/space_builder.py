@@ -47,7 +47,6 @@ from scipy.stats import distributions as sp_dists
 
 from orion.algo.space import (Categorical, Integer, Real, Space)
 from orion.core.io.convert import infer_converter_from_file_type
-from orion.core.utils import SingletonType
 
 log = logging.getLogger(__name__)
 
@@ -88,7 +87,7 @@ def _remove_marker(expression, marker='+'):
     return expression.replace(marker, '', 1) if expression.startswith(marker) else expression
 
 
-class DimensionBuilder(object, metaclass=SingletonType):
+class DimensionBuilder(object):
     """Create `Dimension` objects using a name for it and an string expression
     which encodes prior and dimension information.
 
@@ -240,7 +239,7 @@ class DimensionBuilder(object, metaclass=SingletonType):
         return dimension
 
 
-class SpaceBuilder(object, metaclass=SingletonType):
+class SpaceBuilder(object):
     """Build a `Space` object form user's configuration."""
 
     # TODO Expose these 4 USER oriented goodfellows to a orion configuration file :)
