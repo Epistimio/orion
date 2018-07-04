@@ -257,7 +257,6 @@ def test_run_with_name_only(database, monkeypatch):
     assert len(trials) == 20
 
 
-
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
 def test_run_with_name_only_with_trailing_whitespace(database, monkeypatch):
@@ -266,7 +265,8 @@ def test_run_with_name_only_with_trailing_whitespace(database, monkeypatch):
     orion.core.cli.main(["init_only", "--config", "./orion_config_random.yaml",
                          "./black_box.py", "-x~uniform(-50, 50)"])
 
-    orion.core.cli.main(["hunt", "--max-trials", "20", "--config", "./orion_config_random.yaml", ""])
+    orion.core.cli.main(["hunt", "--max-trials", "20",
+                         "--config", "./orion_config_random.yaml", ""])
 
     exp = list(database.experiments.find({'name': 'demo_random_search'}))
     assert len(exp) == 1
