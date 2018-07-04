@@ -23,22 +23,24 @@ Conflict objects may build different resolutions based on the input given. For i
 is passed to `try_resolve`, otherwise the resolution will be `RemoveDimensionResolution`.
 
 In short, conflict knows:
-- How to detect themselves in pair old_config, new_config (`Conflict.detect()`)
-- How to resolve themselves (but may lack information for doing so) (`conflict.try_resolve()`)
-- How to build a diff for user interface (`conflict.diff`)
-- How to build a string to represent themselves in user interface (`repr(conflict)`)
-- How to find resolutions markers and their corresponding arguments
-  (`conflict.get_marked_arguments`)
+
+#. How to detect themselves in pair old_config, new_config (`Conflict.detect()`)
+#. How to resolve themselves (but may lack information for doing so) (`conflict.try_resolve()`)
+#. How to build a diff for user interface (`conflict.diff`)
+#. How to build a string to represent themselves in user interface (`repr(conflict)`)
+#. How to find resolutions markers and their corresponding arguments
+   (`conflict.get_marked_arguments`)
 
 while resolution knows:
-- How to create adapters (`resolution.get_adapters()`)
-- How to find marked arguments for themselves (determining if this resolution was marked by user)
-  (`resolution.find_marked_argument()`)
-- How to revert themselves and resetting the corresponding conflicts (`resolution.revert()`)
-- How to validate themselves on instantiation (`resolution.validate()`)
-- How to build a string to represent themselves in user interface (`repr(resolution)`)
-  (note: this string is the one a user would use to mark the resolution in command line or in
-         configuration file)
+
+#. How to create adapters (`resolution.get_adapters()`)
+#. How to find marked arguments for themselves (determining if this resolution was marked by user)
+   (`resolution.find_marked_argument()`)
+#. How to revert themselves and resetting the corresponding conflicts (`resolution.revert()`)
+#. How to validate themselves on instantiation (`resolution.validate()`)
+#. How to build a string to represent themselves in user interface (`repr(resolution)`)
+   (note: this string is the one a user would use to mark the resolution in command line or in
+   configuration file)
 
 The class Conflicts is provided for convenience. It provides interface to register, fetch or
 deprecate (remove) conflicts. Additionaly, it provides a helper method with wraps `try_resolve` of
@@ -275,14 +277,16 @@ class Conflict(object, metaclass=ABCMeta):
     resolve itself and to represent itself in user interface.
 
     A conflict must provide implementations of:
-    1. `detect()` -- How it is detected in a pair (old_config, new_config).
-    2. `try_resolve()` -- How to resolve itself.
-    4. `__repr__()` -- How to represent itself in user interface.
+
+    #. `detect()` -- How it is detected in a pair (old_config, new_config).
+    #. `try_resolve()` -- How to resolve itself.
+    #. `__repr__()` -- How to represent itself in user interface.
 
     Additionaly, it may also provide implementations of:
-    1. `diff()` -- How to compute diff string.
-    2. `get_marked_arguments()` -- How to find resolutions markers and their corresponding arguments
-        in `new_config`.
+
+    #. `diff()` -- How to compute diff string.
+    #. `get_marked_arguments()` -- How to find resolutions markers and their corresponding arguments
+       in `new_config`.
 
     Attributes
     ----------
@@ -397,14 +401,16 @@ class Resolution(object, metaclass=ABCMeta):
     to resolve automatically a conflict.
 
     A resolution must provide implementations of:
-    1. `get_adapters()` --  How to adapt trials from the two experiments.
-    2. `__repr__()` -- How to represent itself in user interface. Note: this should correspond to
+
+    #. `get_adapters()` --  How to adapt trials from the two experiments.
+    #. `__repr__()` -- How to represent itself in user interface. Note: this should correspond to
         what user should enter in command-line for automatic resolution.
 
     Additionaly, it may also provide implementations of:
-    1. `revert()` -- How to revert the resolution and reset corresponding conflicts
-    2. `_validate()` -- How to validate if arguments for the resolution are valid.
-    3. `find_marked_argument()` -- How to find marked arguments in commandline call or script
+
+    #. `revert()` -- How to revert the resolution and reset corresponding conflicts
+    #. `_validate()` -- How to validate if arguments for the resolution are valid.
+    #. `find_marked_argument()` -- How to find marked arguments in commandline call or script
         config
 
     Note that resolutions do not modify the configuration, with the exception of experiment name

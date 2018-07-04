@@ -213,7 +213,7 @@ class ExperimentBranchBuilder:
     def remove_dimension(self, name, default_value=Dimension.NO_DEFAULT_VALUE):
         """Remove dimension with given `name`
 
-        Only dimensions with conflict type `MissingDimensionConflict may be added.
+        Only dimensions with conflict type `MissingDimensionConflict` may be added.
 
         Parameters
         ----------
