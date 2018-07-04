@@ -12,15 +12,6 @@ from scipy.stats import distributions as dists
 from orion.algo.space import (Categorical, Dimension, Integer, Real, Space)
 
 
-@pytest.fixture(scope='function')
-def seed():
-    """Return a fixed ``numpy.random.RandomState`` and global seed."""
-    seed = 5
-    rng = np.random.RandomState(seed)
-    np.random.seed(seed)
-    return rng
-
-
 class TestDimension(object):
     """Test methods of a Dimension object."""
 
