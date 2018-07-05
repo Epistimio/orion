@@ -118,8 +118,8 @@ class Dimension(object):
             raise ValueError("{} is not a valid value for this Dimension. "
                              "Can't set default value.".format(self.default_value))
 
-    def __hashable_members(self):
-        return (self.name, self.shape, self.type, tuple(self._args), self._kwargs,
+    def _get_hashable_members(self):
+        return (self.name, self.shape, self.type, tuple(self._args), tuple(self._kwargs.items()),
                 self.default_value, self._prior_name)
 
     # pylint:disable=protected-access
@@ -128,11 +128,11 @@ class Dimension(object):
         if not isinstance(other, Dimension):
             return False
 
-        return self.__hashable_members() == other.__hashable_members()
+        return self._get_hashable_members() == other._get_hashable_members()
 
     def __hash__(self):
         """Return the hash of the hashable members"""
-        return hash(self.__hashable_members())
+        return hash(self._get_hashable_members())
 
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.

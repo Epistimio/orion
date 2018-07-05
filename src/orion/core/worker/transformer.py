@@ -108,6 +108,16 @@ class Transformer(object, metaclass=ABCMeta):
         """Format a string for calling ``__repr__`` in `TransformedDimension`."""
         return "{}({})".format(self.__class__.__name__, what)
 
+    def _get_hashable_members(self):
+        print((self.__class__.__name__, self.domain_type, self.target_type))
+        return (self.__class__.__name__, self.domain_type, self.target_type)
+
+    def __eq__(self, other):
+        """Return True if other is the same transformed dimension as self"""
+        if not isinstance(other, Transformer):
+            return False
+        return self._get_hashable_members() == other._get_hashable_members()
+
 
 class Identity(Transformer):
     """Implement an identity transformation. Everything as it is."""
@@ -186,6 +196,11 @@ class Compose(Transformer):
         type_before = self.composition.target_type
         type_after = self.apply.target_type
         return type_after if type_after else type_before
+
+    def _get_hashable_members(self):
+        return ((self.__class__.__name__, ) +
+                self.apply._get_hashable_members() +
+                self.composition._get_hashable_members())
 
 
 class Reverse(Transformer):
@@ -327,6 +342,9 @@ class OneHotEncode(Transformer):
         """
         return tuple(list(shape) + [self.num_cats]) if self.num_cats > 2 else shape
 
+    def _get_hashable_members(self):
+        return super(OneHotEncode, self)._get_hashable_members() + (self.num_cats, )
+
 
 class TransformedDimension(object):
     """Duck-type `Dimension` to mimic its functionality,
@@ -377,6 +395,23 @@ class TransformedDimension(object):
     def __repr__(self):
         """Represent the object as a string."""
         return self.transformer.repr_format(repr(self.original_dimension))
+
+    def __eq__(self, other):
+        """Return True if other is the same transformed dimension as self"""
+        if not (hasattr(other, "transformer") and hasattr(other, "original_dimension")):
+            return False
+
+        return (self.transformer == other.transformer and
+                self.original_dimension == other.original_dimension)
+
+    def __hash__(self):
+        return hash(self._get_hashable_members())
+
+    def _get_hashable_members(self):
+        print(self.transformer._get_hashable_members())
+        print(self.original_dimension._get_hashable_members())
+        return (self.transformer._get_hashable_members() +
+                self.original_dimension._get_hashable_members())
 
     @property
     def name(self):

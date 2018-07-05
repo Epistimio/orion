@@ -420,12 +420,8 @@ class TestTransformedDimension(object):
         """Mimic `Dimension`.
         Set of `Dimension`'s methods are subset of `TransformedDimension`.
         """
-        for thing in Dimension.__dict__:
-            assert thing in TransformedDimension.__dict__
-        for thing in TransformedDimension.__dict__:
-            if thing in ('transform', 'reverse'):
-                continue
-            assert thing in Dimension.__dict__
+        assert ((set(TransformedDimension.__dict__.keys()) - set(Dimension.__dict__.keys())) ==
+                set(['transform', 'reverse']))
 
     def test_sample(self, tdim, seed):
         """Check method `sample`."""
@@ -470,6 +466,25 @@ class TestTransformedDimension(object):
         assert (0, 0, 0, 1) in tdim2
         assert (0, 2, 0, 1) in tdim2
         assert (0, 2, 0) not in tdim2
+
+    def test_eq(self, tdim, tdim2):
+        """Return True if other is the same transformed dimension as self"""
+        assert tdim != tdim2
+        assert tdim == copy.deepcopy(tdim)
+
+    def test_hash(self, tdim, tdim2):
+        """Test that hash is consistent for identical and different transformed dimensions"""
+        assert hash(tdim) != hash(tdim2)
+        assert hash(tdim) == hash(copy.deepcopy(tdim))
+
+    def test_get_hashable_members(self, tdim, tdim2):
+        assert (tdim._get_hashable_members() ==
+                ('Compose', 'Quantize', 'real', 'integer', 'Identity', 'real', 'real',
+                 'yolo', (3, 2), 'real', (0.9,), (), None, 'norm'))
+        assert (tdim2._get_hashable_members() ==
+                ('Compose', 'OneHotEncode', 'integer', 'real', 4, 'Compose', 'Enumerate',
+                 'categorical', 'integer', 'Identity', 'categorical', 'categorical', 'yolo2', (),
+                 'categorical', (), (), None, 'Distribution'))
 
     def test_repr(self, tdim):
         """Check method `__repr__`."""
