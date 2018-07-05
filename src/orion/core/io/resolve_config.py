@@ -32,10 +32,11 @@ precedence is respected when building the settings dictionary:
 
 """
 import getpass
+import hashlib
 import logging
 import os
 import socket
-import hashlib
+import warnings
 
 import git
 from numpy import inf as infinity
@@ -247,7 +248,12 @@ def merge_configs(*configs):
 def fetch_user_repo(user_script):
     """Fetch the GIT repo and its root path given user's script."""
     dir_path = os.path.dirname(os.path.abspath(user_script))
-    git_repo = git.Repo(dir_path, search_parent_directories=True)
+    try:
+        git_repo = git.Repo(dir_path, search_parent_directories=True)
+    except git.exc.InvalidGitRepositoryError:
+        git_repo = None
+        warnings.warn('Your script is not a git repository. Orion'
+                      ' will not be able to infer your code versioning.', UserWarning)
     return git_repo
 
 
@@ -265,6 +271,8 @@ def infer_versioning_metadata(existing_metadata):
 
     """
     git_repo = fetch_user_repo(existing_metadata['user_script'])
+    if not git_repo:
+        return existing_metadata
     existing_metadata['VCS'] = {}
     existing_metadata['VCS']['is_dirty'] = git_repo.is_dirty()
     existing_metadata['VCS']['HEAD_sha'] = git_repo.head.object.hexsha
