@@ -35,9 +35,9 @@ import getpass
 import logging
 import os
 import socket
-import git
 import hashlib
 
+import git
 from numpy import inf as infinity
 import yaml
 
@@ -252,15 +252,16 @@ def fetch_user_repo(user_script):
 
 
 def infer_versioning_metadata(existing_metadata):
-    """Infer information about user's script versioning if available.
-       Fills the following information:
+    """
+    Infer information about user's script versioning if available.
+    Fills the following information:
 
-       `is_dirty` shows whether the git repo is at a clean state.
-       `HEAD_sha` gives the hash of head of the repo.
-       `active_branch` shows the active branch of the repo.
-       `diff_sha` shows the hash of the diff in the repo.
+    `is_dirty` shows whether the git repo is at a clean state.
+    `HEAD_sha` gives the hash of head of the repo.
+    `active_branch` shows the active branch of the repo.
+    `diff_sha` shows the hash of the diff in the repo.
 
-       :returns: the `existing_metadata` but filled with above info.
+    :returns: the `existing_metadata` but filled with above info.
 
     """
     git_repo = fetch_user_repo(existing_metadata['user_script'])

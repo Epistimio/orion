@@ -2,16 +2,22 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.resolve_config`."""
 
-import git
+import hashlib
 import os
 import shutil
+
+import git
+
 from orion.core.cli import resolve_config
-import hashlib
 
 join = os.path.join
 
 
 def test_infer_versioning_metadata():
+    """
+    Test how `infer_versioning_metadata` fills its different fields :
+    `is_dirty`, `HEAD_sha`, `active_branch` and `diff_sha`.
+    """
     os.chdir('../')
     if not os.path.exists('dummy_orion'):
         os.makedirs('dummy_orion')
