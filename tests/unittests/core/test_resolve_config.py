@@ -9,7 +9,7 @@ import shutil
 import git
 import pytest
 
-from orion.core.cli import resolve_config
+from orion.core.io import resolve_config
 
 join = os.path.join
 
@@ -77,5 +77,5 @@ def test_fetch_user_repo_on_non_repo():
     Test if `fetch_user_repo` raises a warning when user's script
     is not a git repo
     """
-    with pytest.warns(UserWarning):
+    with pytest.raises(Exception):
         resolve_config.fetch_user_repo('.')

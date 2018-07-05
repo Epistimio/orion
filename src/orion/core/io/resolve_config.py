@@ -36,7 +36,6 @@ import hashlib
 import logging
 import os
 import socket
-import warnings
 
 import git
 from numpy import inf as infinity
@@ -250,10 +249,9 @@ def fetch_user_repo(user_script):
     dir_path = os.path.dirname(os.path.abspath(user_script))
     try:
         git_repo = git.Repo(dir_path, search_parent_directories=True)
-    except git.exc.InvalidGitRepositoryError:
+    except git.exc.InvalidGitRepositoryError as e:
         git_repo = None
-        warnings.warn('Your script is not a git repository. Orion'
-                      ' will not be able to infer your code versioning.', UserWarning)
+        raise Exception('Script should be git repo') from e
     return git_repo
 
 
