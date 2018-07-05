@@ -112,6 +112,7 @@ class Transformer(object, metaclass=ABCMeta):
         print((self.__class__.__name__, self.domain_type, self.target_type))
         return (self.__class__.__name__, self.domain_type, self.target_type)
 
+    # pylint:disable=protected-access
     def __eq__(self, other):
         """Return True if other is the same transformed dimension as self"""
         if not isinstance(other, Transformer):
@@ -197,6 +198,7 @@ class Compose(Transformer):
         type_after = self.apply.target_type
         return type_after if type_after else type_before
 
+    # pylint:disable=protected-access
     def _get_hashable_members(self):
         return ((self.__class__.__name__, ) +
                 self.apply._get_hashable_members() +
@@ -346,11 +348,14 @@ class OneHotEncode(Transformer):
         return super(OneHotEncode, self)._get_hashable_members() + (self.num_cats, )
 
 
+# pylint:disable=too-many-public-methods
 class TransformedDimension(object):
     """Duck-type `Dimension` to mimic its functionality,
     while transform automatically and appropriately an underlying `Dimension` object
     according to a `Transformer` object.
     """
+
+    NO_DEFAULT_VALUE = Dimension.NO_DEFAULT_VALUE
 
     def __init__(self, transformer: Transformer, original_dimension: Dimension):
         """Initialize a `TransformedDimension` with an `original_dimension` object
@@ -396,6 +401,7 @@ class TransformedDimension(object):
         """Represent the object as a string."""
         return self.transformer.repr_format(repr(self.original_dimension))
 
+    # pylint:disable=protected-access
     def __eq__(self, other):
         """Return True if other is the same transformed dimension as self"""
         if not (hasattr(other, "transformer") and hasattr(other, "original_dimension")):
@@ -407,11 +413,26 @@ class TransformedDimension(object):
     def __hash__(self):
         return hash(self._get_hashable_members())
 
+    # pylint:disable=protected-access
     def _get_hashable_members(self):
         print(self.transformer._get_hashable_members())
         print(self.original_dimension._get_hashable_members())
         return (self.transformer._get_hashable_members() +
                 self.original_dimension._get_hashable_members())
+
+    def validate(self):
+        """Validate original_dimension"""
+        self.original_dimension.validate()
+
+    def get_prior_string(self):
+        """Do not change the prior string of original dimension."""
+        return self.transformer.repr_format(self.original_dimension.get_prior_string())
+
+    def get_string(self):
+        """Do not change the string of original dimension."""
+        original_prior = self.original_dimension.get_prior_string()
+        original_string = self.original_dimension.get_string()
+        return original_string.replace(original_prior, self.get_prior_string())
 
     @property
     def name(self):
@@ -434,6 +455,10 @@ class TransformedDimension(object):
         """Wrap original default value."""
         defval = self.original_dimension.default_value
         return self.transform(defval) if defval is not None else None
+
+    def cast(self, point):
+        """Cast a point according to original_dimension and then transform it"""
+        return self.transform(self.original_dimension.cast(point))
 
 
 class TransformedSpace(Space):
