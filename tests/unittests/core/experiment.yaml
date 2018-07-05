@@ -12,7 +12,7 @@
     user: tsirif
     datetime: 2017-11-22T20:00:00
     # from orion.__version__
-    orion_version: 0.1
+    orion_version: XYZ
     # from `orion`'s args
     user_script: full_path/main.py
     # from `orion`'s args
@@ -26,20 +26,13 @@
   # reuse their trial history
   # set defaults for their missing arguments
   refers:
-    name: supernaedo1
-    user: tsirif
-
-    params:
-      - name: decoding_layer
-        type: categorical
-        value: gru
+    root_id: supernaedo2
+    parent_id: null
+    adapter: []
 
   # orion's configuration
   pool_size: 2
   max_trials: 1000
-
-  # functional info
-  status: completed  # pending, done, broken
 
   # **complete** specification of algorithms used
   # user's configuration, but defaults are inferred
@@ -56,22 +49,44 @@
   metadata:
     user: tsirif
     datetime: 2017-11-22T21:00:00
-    orion_version: 0.1
+    orion_version: XYZ
     user_script: full_path/ieeeela.py
     user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
     user_vcs: git
     user_version: ~
     user_commit_hash: as5f7asf5asfa7sf
   refers:
-    name: supernaedo1
-    user: tsirif
-    params:
-      - name: decoding_layer
-        type: categorical
-        value: gru
+    root_id: supernaedo3
+    parent_id: null
+    adapter: []
   pool_size: 2
   max_trials: 1000
-  status: broken
+  algorithms:
+    dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
+      value: 5
+      scoring: 0
+      judgement: ~
+      suspend: False
+      done: False
+
+- name: supernaedo4
+
+  metadata:
+    user: tsirif
+    datetime: 2017-11-22T21:00:00
+    orion_version: XYZ
+    user_script: full_path/ieeeela.py
+    user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
+    user_vcs: git
+    user_version: ~
+    user_commit_hash: as5f7asf5asfa7sf
+  refers:
+    root_id: supernaedo4
+    parent_id: null
+    adapter: []
+  pool_size: 2
+  max_trials: 1
+  status: done
   algorithms:
     dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
       value: 5
@@ -85,22 +100,18 @@
   metadata:
     user: dendi
     datetime: 2017-11-22T20:00:00
-    orion_version: 0.1
+    orion_version: XYZ
     user_script: full_path/main.py
     user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
     user_vcs: git
     user_version: ~
     user_commit_hash: as5f7asf5asfa7sf
   refers:
-    name: supernaedo1
-    user: tsirif
-    params:
-      - name: decoding_layer
-        type: categorical
-        value: gru
+    root_id: supernaedo2
+    parent_id: null
+    adapter: []
   pool_size: 2
   max_trials: 1000
-  status: running
   algorithms:
     dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
       value: 5
@@ -108,6 +119,308 @@
       judgement: ~
       suspend: False
       done: False
+
+
+- name: supernaedo2.1
+
+  metadata:
+    # inferred from os
+    user: tsirif
+    datetime: 2017-11-22T20:00:00
+    # from orion.__version__
+    orion_version: 0.1
+    # from `orion`'s args
+    user_script: full_path/main.py
+    # from `orion`'s args
+    user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])"]
+    # from user's vsc, e.g. git
+    user_vcs: git
+    user_version: ~
+    user_commit_hash: as5f7asf5asfa7sf
+
+  refers:
+    root_id: supernaedo2
+    parent_id: supernaedo2
+    adapter:
+      - of_type: dimensiondeletion
+        param:
+          name: /decoding_layer
+          type: categorical
+          value: gru
+
+  # orion's configuration
+  pool_size: 2
+  max_trials: 1000
+
+  # functional info
+  status: pending  # pending, done, broken
+
+  # **complete** specification of algorithms used
+  # user's configuration, but defaults are inferred
+  algorithms:
+    random: {}
+  
+- name: supernaedo2.2
+
+  metadata:
+    # inferred from os
+    user: tsirif
+    datetime: 2017-11-22T20:00:00
+    # from orion.__version__
+    orion_version: 0.1
+    # from `orion`'s args
+    user_script: full_path/main.py
+    # from `orion`'s args
+    user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])"]
+    # from user's vsc, e.g. git
+    user_vcs: git
+    user_version: ~
+    user_commit_hash: as5f7asf5asfa7sf
+
+  refers:
+    root_id: supernaedo2
+    parent_id: supernaedo2
+    adapter:
+      - of_type: dimensiondeletion
+        param:
+          name: /decoding_layer
+          type: categorical
+          value: lstm_with_attention
+
+  # orion's configuration
+  pool_size: 2
+  max_trials: 1000
+
+  # functional info
+  status: pending  # pending, done, broken
+
+  # **complete** specification of algorithms used
+  # user's configuration, but defaults are inferred
+  algorithms:
+    random: {}
+
+- name: supernaedo2.3
+
+  metadata:
+    # inferred from os
+    user: tsirif
+    datetime: 2017-11-22T20:00:00
+    # from orion.__version__
+    orion_version: 0.1
+    # from `orion`'s args
+    user_script: full_path/main.py
+    # from `orion`'s args
+    user_args: ["--encoding~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
+    # from user's vsc, e.g. git
+    user_vcs: git
+    user_version: ~
+    user_commit_hash: as5f7asf5asfa7sf
+
+  refers:
+    root_id: supernaedo2
+    parent_id: supernaedo2
+    adapter:
+      - of_type: dimensionrenaming 
+        old_name: /encoding_layer
+        new_name: /encoding
+
+  # orion's configuration
+  pool_size: 2
+  max_trials: 1000
+
+  # functional info
+  status: pending  # pending, done, broken
+
+  # **complete** specification of algorithms used
+  # user's configuration, but defaults are inferred
+  algorithms: 
+    random: {}
+
+- name: supernaedo2.3.1
+
+  metadata:
+    # inferred from os
+    user: tsirif
+    datetime: 2017-11-22T20:00:00
+    # from orion.__version__
+    orion_version: 0.1
+    # from `orion`'s args
+    user_script: full_path/main.py
+    # from `orion`'s args
+    user_args: ["--encoding~choices(['rnn', 'lstm_with_attention', 'gru'])"]
+    # from user's vsc, e.g. git
+    user_vcs: git
+    user_version: ~
+    user_commit_hash: as5f7asf5asfa7sf
+
+  refers:
+    root_id: supernaedo2
+    parent_id: supernaedo2.3
+    adapter:
+      - of_type: dimensiondeletion
+        param:
+          name: /decoding_layer
+          type: categorical
+          value: lstm_with_attention
+      - of_type: dimensionpriorchange
+        name: /encoding
+        old_prior: "choices(['rnn', 'lstm', 'gru'])"
+        new_prior: "choices(['rnn', 'lstm_with_attention', 'gru'])"
+
+  # orion's configuration
+  pool_size: 2
+  max_trials: 1000
+
+  # functional info
+  status: pending  # pending, done, broken
+
+  # **complete** specification of algorithms used
+  # user's configuration, but defaults are inferred
+  algorithms: 
+    random: {}
+
+- name: supernaedo2.3.1.1
+
+  metadata:
+    # inferred from os
+    user: tsirif
+    datetime: 2017-11-22T20:00:00
+    # from orion.__version__
+    orion_version: 0.1
+    # from `orion`'s args
+    user_script: full_path/main.py
+    # from `orion`'s args
+    user_args: ["--encoding~choices(['rnn', 'lstm_with_attention', 'gru'])"]
+    # from user's vsc, e.g. git
+    user_vcs: git
+    user_version: ~
+    user_commit_hash: qwwoi2iu12e
+
+  refers:
+    root_id: supernaedo2
+    parent_id: supernaedo2.3.1
+    adapter:
+      - of_type: codechange
+        change_type: noeffect
+
+  # orion's configuration
+  pool_size: 2
+  max_trials: 1000
+
+  # functional info
+  status: pending  # pending, done, broken
+
+  # **complete** specification of algorithms used
+  # user's configuration, but defaults are inferred
+  algorithms: 
+    random: {}
+
+- name: supernaedo2.3.1.2
+
+  metadata:
+    # inferred from os
+    user: tsirif
+    datetime: 2017-11-22T20:00:00
+    # from orion.__version__
+    orion_version: 0.1
+    # from `orion`'s args
+    user_script: full_path/main.py
+    # from `orion`'s args
+    user_args: ["--encoding~choices(['rnn', 'lstm_with_attention', 'gru'])"]
+    # from user's vsc, e.g. git
+    user_vcs: git
+    user_version: ~
+    user_commit_hash: kqbwepuzxc
+
+  refers:
+    root_id: supernaedo2
+    parent_id: supernaedo2.3.1
+    adapter:
+      - of_type: codechange
+        change_type: unsure
+
+  # orion's configuration
+  pool_size: 2
+  max_trials: 1000
+
+  # functional info
+  status: pending  # pending, done, broken
+
+  # **complete** specification of algorithms used
+  # user's configuration, but defaults are inferred
+  algorithms: 
+    random: {}
+
+- name: supernaedo2.3.1.3
+
+  metadata:
+    # inferred from os
+    user: tsirif
+    datetime: 2017-11-22T20:00:00
+    # from orion.__version__
+    orion_version: 0.1
+    # from `orion`'s args
+    user_script: full_path/main.py
+    # from `orion`'s args
+    user_args: ["--encoding~choices(['rnn', 'lstm_with_attention', 'gru'])"]
+    # from user's vsc, e.g. git
+    user_vcs: git
+    user_version: ~
+    user_commit_hash: ioqwepiuqwe
+
+  refers:
+    root_id: supernaedo2
+    parent_id: supernaedo2.3.1
+    adapter:
+      - of_type: codechange
+        change_type: break
+
+  # orion's configuration
+  pool_size: 2
+  max_trials: 1000
+
+  # functional info
+  status: pending  # pending, done, broken
+
+  # **complete** specification of algorithms used
+  # user's configuration, but defaults are inferred
+  algorithms: 
+    random: {}
+
+- name: supernaedo2.2.1
+
+  metadata:
+    # inferred from os
+    user: tsirif
+    datetime: 2017-11-22T20:00:00
+    # from orion.__version__
+    orion_version: 0.1
+    # from `orion`'s args
+    user_script: full_path/main.py
+    # from `orion`'s args
+    user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])"]
+    # from user's vsc, e.g. git
+    user_vcs: git
+    user_version: ~
+    user_commit_hash: as5f7asf5asfa7sf
+
+  refers:
+    root_id: supernaedo2
+    parent_id: supernaedo2.2
+    adapter:
+      - of_type: algorithmchange
+
+  # orion's configuration
+  pool_size: 2
+  max_trials: 1000
+
+  # functional info
+  status: pending  # pending, done, broken
+
+  # TODO hack in fixtures since we can't define another valid algorithm as we only have random.
+  algorithms:
+    random: {}
+
 ---
 
 # Example of entries in `trials` collection
@@ -125,7 +438,7 @@
   params:
     - name: /encoding_layer
       type: categorical
-      value: rnn
+      value: lstm
     - name: /decoding_layer
       type: categorical
       value: rnn
@@ -173,7 +486,7 @@
       value: gru
     - name: /decoding_layer
       type: categorical
-      value: lstm_with_attention
+      value: gru
 - experiment: supernaedo2
 
   status: new
@@ -188,7 +501,7 @@
   params:
     - name: /encoding_layer
       type: categorical
-      value: lstm
+      value: gru
     - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
@@ -206,7 +519,7 @@
   params:
     - name: /encoding_layer
       type: categorical
-      value: lstm
+      value: rnn
     - name: /decoding_layer
       type: categorical
       value: lstm_with_attention
@@ -245,7 +558,30 @@
       value: lstm
     - name: /decoding_layer
       type: categorical
-      value: lstm_with_attention
+      value: gru
+
+- experiment: supernaedo4
+
+  status: completed
+  worker: 1251231
+  submit_time: 2017-11-22T23:00:00
+  start_time: ~
+  end_time: 2017-11-22T22:30:00
+  results:
+    - name: ~
+      type: objective  # objective, constraint
+      value: 2
+    - name: naedw_grad
+      type: gradient
+      value: [-0.1, 2]
+  params:
+    - name: /encoding_layer
+      type: categorical
+      value: rnn
+    - name: /decoding_layer
+      type: categorical
+      value: rnn
+
 ---
 
 # Example of entries in `workers` collection

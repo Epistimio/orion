@@ -81,6 +81,8 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
     """
 
+    requires = []
+
     def __init__(self, space, **kwargs):
         """Declare problem's parameter space and set up algo's hyperparameters.
 

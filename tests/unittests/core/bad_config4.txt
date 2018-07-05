@@ -1,0 +1,31 @@
+lalala~uniform(1, 3, shape=(100, 3))
+
+# here is the fault
+lala~normal(1, 3)
+/lala/la~uniform(1, 3, shape=(100, 3))
+
+a:
+   b:
+    [asdfa~/Iamapath/dont_capture_me,
+			~/Iamapath/dont_capture_me]
+
+yo:
+           aaalispera~normal(3, 1)
+
+[naedw]
+a_var=a~normal(5, 3)
+
+~
+
+[naekei:naedw]
+other_var = ~
+# Rename it who_names_their_variables_a_seriously
+a_var = b~>a_serious_name
+
+{'oups':
+# remove it
+'a_serious_name~-',
+'iela':'another_serious_name~loguniform(0.001, 0.5)'
+}
+
+lala/l2a~+gaussian(0, 0.1, shape=(100, 3))

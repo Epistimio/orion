@@ -47,7 +47,6 @@ from scipy.stats import distributions as sp_dists
 
 from orion.algo.space import (Categorical, Integer, Real, Space)
 from orion.core.io.convert import infer_converter_from_file_type
-from orion.core.utils import SingletonType
 
 log = logging.getLogger(__name__)
 
@@ -80,7 +79,15 @@ def replace_key_in_order(odict, key_prev, key_after):
     return tmp
 
 
-class DimensionBuilder(object, metaclass=SingletonType):
+def _should_not_be_built(expression):
+    return expression.startswith('-') or expression.startswith('>')
+
+
+def _remove_marker(expression, marker='+'):
+    return expression.replace(marker, '', 1) if expression.startswith(marker) else expression
+
+
+class DimensionBuilder(object):
     """Create `Dimension` objects using a name for it and an string expression
     which encodes prior and dimension information.
 
@@ -173,6 +180,7 @@ class DimensionBuilder(object, metaclass=SingletonType):
         """
         self.name = name
         _check_expr_to_eval(expression)
+
         prior, arg_string = re.findall(r'([a-z][a-z0-9_]*)\((.*)\)', expression)[0]
         globals_ = {'__builtins__': {}}
         try:
@@ -231,12 +239,12 @@ class DimensionBuilder(object, metaclass=SingletonType):
         return dimension
 
 
-class SpaceBuilder(object, metaclass=SingletonType):
+class SpaceBuilder(object):
     """Build a `Space` object form user's configuration."""
 
     # TODO Expose these 4 USER oriented goodfellows to a orion configuration file :)
     USERCONFIG_KEYWORD = 'orion~'
-    USERARGS_TMPL = r'(.*)~(.*)'
+    USERARGS_TMPL = r'(.*)~([\+\-\>]?.*)'
     USERARGS_NAMESPACE = r'\W*([a-zA-Z0-9_-]+)'
     USERARGS_CONFIG = '--config='
 
@@ -247,6 +255,8 @@ class SpaceBuilder(object, metaclass=SingletonType):
         self.userconfig = None
         self.userargs_tmpl = None
         self.userconfig_tmpl = None
+        self.userconfig_expressions = collections.OrderedDict()
+        self.userconfig_nameless = collections.OrderedDict()
         self.positional_args_count = 0
 
         self.dimbuilder = DimensionBuilder()
@@ -281,6 +291,8 @@ class SpaceBuilder(object, metaclass=SingletonType):
         """
         self.userargs_tmpl = None
         self.userconfig_tmpl = None
+        self.userconfig_expressions = collections.OrderedDict()
+        self.userconfig_nameless = collections.OrderedDict()
 
         self.commands_tmpl = None
         self.space = Space()
@@ -296,8 +308,11 @@ class SpaceBuilder(object, metaclass=SingletonType):
         return self.space
 
     def _build_from_config(self, config_path):
-        self.converter = infer_converter_from_file_type(config_path)
+        self.converter = infer_converter_from_file_type(config_path,
+                                                        default_keyword=self.USERCONFIG_KEYWORD)
         self.userconfig_tmpl = self.converter.parse(config_path)
+        self.userconfig_expressions = collections.OrderedDict()
+        self.userconfig_nameless = collections.OrderedDict()
 
         stack = collections.deque()
         stack.append(('', self.userconfig_tmpl))
@@ -314,14 +329,27 @@ class SpaceBuilder(object, metaclass=SingletonType):
                     stack.append(('/'.join([namespace, str(position)]), thing))
             elif isinstance(stuff, str):
                 if stuff.startswith(self.USERCONFIG_KEYWORD):
-                    dimension = self.dimbuilder.build(namespace,
-                                                      stuff[len(self.USERCONFIG_KEYWORD):])
+                    expression = stuff[len(self.USERCONFIG_KEYWORD):]
+
+                    # Store the expression before it is modified for the dimension builder
+                    self.userconfig_expressions[namespace] = (
+                        self.USERCONFIG_KEYWORD[-1] + expression)
+
+                    if _should_not_be_built(expression):
+                        break
+
+                    expression = _remove_marker(expression)
+
+                    dimension = self.dimbuilder.build(namespace, expression)
                     try:
                         self.space.register(dimension)
                     except ValueError as exc:
                         error_msg = "Conflict for name '{}' in script configuration "\
                                     "and arguments.".format(namespace)
                         raise ValueError(error_msg) from exc
+                else:
+                    log.info("Nameless '%s: %s' will not define a dimension.", namespace, stuff)
+                    self.userconfig_nameless[namespace] = stuff
 
     def _build_from_args(self, cmd_args):
         """Build templates from arguments found in the original cli.
@@ -386,12 +414,16 @@ class SpaceBuilder(object, metaclass=SingletonType):
                 # This branch targets the nameless and the ones that use `~`
                 # as the home directory in a shell path
                 # If it's nameless (positional) it cannot be a dimension
-                log.warning("Nameless argument '%s' will not define a dimension.", arg)
+                log.info("Nameless argument '%s' will not define a dimension.", arg)
                 self.userargs_tmpl['_' + get_next_pos_ns()] = arg
-            else:
+            elif not _should_not_be_built(expression):
                 # Otherwise it's a dimension; ikr
                 namespace = '/' + ns_search[0]
+
+                expression = _remove_marker(expression)
+
                 dimension = self.dimbuilder.build(namespace, expression)
+
                 self.space.register(dimension)
                 self.userargs_tmpl[namespace] = prefix + '='
 
@@ -403,7 +435,7 @@ class SpaceBuilder(object, metaclass=SingletonType):
         if not userconfig and '_0' in self.userargs_tmpl:
             if os.path.isfile(self.userargs_tmpl['_0']):
                 userconfig = self.userargs_tmpl['_0']
-                log.warning("Using '%s' as path to user script's configuration file!", userconfig)
+                log.info("Using '%s' as path to user script's configuration file!", userconfig)
                 # '_0' is 'config' now, replace key in the correct order
                 self.userargs_tmpl = replace_key_in_order(self.userargs_tmpl, '_0', 'config')
                 self.userargs_tmpl['config'] = ''

@@ -97,7 +97,7 @@ class TestDimensionBuilder(object):
     def test_build_fails_because_of_ValueError_on_run(self, dimbuilder):
         """Build fails because ValueError happens on init."""
         with pytest.raises(TypeError) as exc:
-            dimbuilder.build('yolo2', 'alpha(0.9, low=4, high=6, shape=2)')
+            dimbuilder.build('yolo2', 'alpha(0.9, low=5, high=6, shape=2)')
         assert 'Parameter' in str(exc.value)
         assert 'Improbable bounds' in str(exc.value.__cause__)
 
@@ -210,7 +210,21 @@ class TestSpaceBuilder(object):
         assert '/training/mbs' in space
         assert '/something-same' in space
 
-    def test_parse_equivalency(self, spacebuilder, yaml_sample_path, json_sample_path):
+    def test_build_from_unknown_config(self, spacebuilder, some_sample_path):
+        """Build space from a unknown config type only."""
+        space = spacebuilder.build_from([some_sample_path])
+        print(space)
+        assert spacebuilder.userconfig == some_sample_path
+        assert len(space) == 6
+        assert '/layers/1/width' in space
+        assert '/layers/1/type' in space
+        assert '/layers/2/type' in space
+        assert '/training/lr0' in space
+        assert '/training/mbs' in space
+        assert '/something-same' in space
+
+    def test_parse_equivalency(self, spacebuilder,
+                               yaml_sample_path, json_sample_path):
         """Templates found from json and yaml are the same."""
         spacebuilder.build_from([yaml_sample_path])
         dict_from_yaml = copy.deepcopy(spacebuilder.userconfig_tmpl)
@@ -386,6 +400,39 @@ class TestSpaceBuilder(object):
                                           {'width': 16, 'type': 'sigmoid'}],
                                'something-same': '3'}
 
+    def test_generate_only_with_unknown_config(self, spacebuilder,
+                                               some_sample_path, tmpdir):
+        """Build a space using only a unknown type config."""
+        spacebuilder.build_from(['--config=' + some_sample_path])
+        trial = Trial(params=[
+            {'name': '/layers/1/width', 'type': 'integer', 'value': 100},
+            {'name': '/layers/1/type', 'type': 'categorical', 'value': 'relu'},
+            {'name': '/layers/2/type', 'type': 'categorical', 'value': 'sigmoid'},
+            {'name': '/training/lr0', 'type': 'real', 'value': 0.032},
+            {'name': '/training/mbs', 'type': 'integer', 'value': 64},
+            {'name': '/something-same', 'type': 'categorical', 'value': '3'}])
+        output_file = str(tmpdir.join("output.lalal"))
+        cmd_inst = spacebuilder.build_to(output_file, trial)
+        assert cmd_inst == ['--config=' + output_file]
+        with open(output_file) as f:
+            output_data = f.read()
+        assert output_data == \
+            """yo: 5
+0.032
+64
+
+# some comments
+
+layers/0/width=64
+layers/0/type=relu
+100
+relu
+layers/2/width=16
+sigmoid
+
+3
+"""
+
     def test_generate_from_args_and_config(self, spacebuilder,
                                            json_sample_path, tmpdir, json_converter):
         """Build a space using definitions from cli arguments and a json file."""
@@ -424,7 +471,7 @@ class TestSpaceBuilder(object):
                     "--arch2~choices({'lala': 0.2, 'yolo': 0.8})",
                     "--name~trial.full_name"]
         spacebuilder.build_from(cmd_args)
-        trial = Trial(params=[
+        trial = Trial(experiment='supernaedo2', params=[
             {'name': '/yolo', 'type': 'real', 'value': -2.4},
             {'name': '/arch2', 'type': 'categorical', 'value': 'yolo'}])
         cmd_inst = spacebuilder.build_to(None, trial)

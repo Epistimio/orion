@@ -23,7 +23,9 @@ now what you have to do looks like this:
 
 ``orion -n experiment_name ./run.py --mini-batch~'randint(32, 256)'``
 
-Check out user's guide-101 for the simplest of demonstrations!
+Check out `user's guide-101`_ for the simplest of demonstrations!
+
+.. _user's guide-101: https://orion.readthedocs.io/en/latest/user/executing.html
 
 Features
 ========
@@ -49,7 +51,7 @@ Features
 
 .. _MongoDB: https://www.mongodb.com/
 .. _Skopt: https://scikit-optimize.github.io/
-.. _developer's guide-101: /developer/testing
+.. _developer's guide-101: https://orion.readthedocs.io/en/latest/developer/testing.html
 
 Installation
 ============
@@ -58,8 +60,9 @@ Install Oríon (beta) by running:
 
 ``pip install git+https://github.com/mila-udem/orion.git@master``
 
-For more information read the full installation docs.
-.. TODO Once website is published use a full hyperlink to the installation page
+For more information read the `full installation docs`_.
+
+.. _full installation docs: https://orion.readthedocs.io/en/latest/installing.html
 
 Contribute or Ask
 =================
@@ -68,8 +71,8 @@ Do you have a question or issues?
 Do you want to report a bug or suggest a feature? Name it!
 Please contact us by opening an issue in our repository below:
 
-- Issue Tracker: `github.com/mila-udem/orion/issues`
-- Source Code: `github.com/mila-udem/orion`
+- Issue Tracker: `<github.com/mila-udem/orion/issues>`_
+- Source Code: `<github.com/mila-udem/orion>`_
 
 Start by starring and forking our Github repo!
 

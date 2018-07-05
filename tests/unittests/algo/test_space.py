@@ -12,15 +12,6 @@ from scipy.stats import distributions as dists
 from orion.algo.space import (Categorical, Dimension, Integer, Real, Space)
 
 
-@pytest.fixture(scope='function')
-def seed():
-    """Return a fixed ``numpy.random.RandomState`` and global seed."""
-    seed = 5
-    rng = np.random.RandomState(seed)
-    np.random.seed(seed)
-    return rng
-
-
 class TestDimension(object):
     """Test methods of a Dimension object."""
 
@@ -204,6 +195,16 @@ class TestReal(object):
         dim = Real('yolo', 'uniform', -3, 4)
         assert dim.default_value is None
 
+    def test_cast_list(self):
+        """Make sure list are cast to float and returned as list of values"""
+        dim = Real('yolo', 'uniform', -3, 4)
+        assert dim.cast(['1', '2']) == [1.0, 2.0]
+
+    def test_cast_array(self):
+        """Make sure array are cast to float and returned as array of values"""
+        dim = Real('yolo', 'uniform', -3, 4)
+        assert np.all(dim.cast(np.array(['1', '2'])) == np.array([1.0, 2.0]))
+
 
 class TestInteger(object):
     """Test methods of a `Integer` object."""
@@ -271,6 +272,16 @@ class TestInteger(object):
         """Make sure the default value is None"""
         dim = Integer('yolo', 'uniform', -3, 4)
         assert dim.default_value is None
+
+    def test_cast_list(self):
+        """Make sure list are cast to int and returned as list of values"""
+        dim = Integer('yolo', 'uniform', -3, 4)
+        assert dim.cast(['1', '2']) == [1, 2]
+
+    def test_cast_array(self):
+        """Make sure array are cast to int and returned as array of values"""
+        dim = Integer('yolo', 'uniform', -3, 4)
+        assert np.all(dim.cast(np.array(['1', '2'])) == np.array([1, 2]))
 
 
 class TestCategorical(object):
@@ -406,6 +417,41 @@ class TestCategorical(object):
         categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
         dim = Categorical('yolo', categories)
         assert dim.default_value is None
+
+    def test_cast_list(self):
+        """Make sure list are cast to categories and returned as list"""
+        categories = {'asdfa': 0.1, 2: 0.2, 3.0: 0.3, 'lalala': 0.4}
+        dim = Categorical('yolo', categories)
+        assert dim.cast(['asdfa']) == ['asdfa']
+        assert dim.cast(['2']) == [2]
+        assert dim.cast(['3.0']) == [3.0]
+
+    def test_cast_list_multidim(self):
+        """Make sure array are cast to int and returned as array of values"""
+        categories = list(range(10))
+        categories[0] = 'asdfa'
+        categories[2] = 'lalala'
+        dim = Categorical('yolo', categories, shape=2)
+        sample = ['asdfa', '1']  # np.array(['asdfa', '1'], dtype=np.object)
+        assert dim.cast(sample) == ['asdfa', 1]
+
+    def test_cast_array_multidim(self):
+        """Make sure array are cast to int and returned as array of values"""
+        categories = list(range(10))
+        categories[0] = 'asdfa'
+        categories[2] = 'lalala'
+        dim = Categorical('yolo', categories, shape=2)
+        sample = np.array(['asdfa', '1'], dtype=np.object)
+        assert np.all(dim.cast(sample) == np.array(['asdfa', 1], dtype=np.object))
+
+    def test_cast_bad_category(self):
+        """Make sure array are cast to int and returned as array of values"""
+        categories = list(range(10))
+        dim = Categorical('yolo', categories, shape=2)
+        sample = np.array(['asdfa', '1'], dtype=np.object)
+        with pytest.raises(ValueError) as exc:
+            dim.cast(sample)
+        assert "Invalid category: asdfa" in str(exc.value)
 
 
 class TestSpace(object):

@@ -16,6 +16,8 @@ from orion.algo.base import BaseAlgorithm
 class Gradient_Descent(BaseAlgorithm):
     """Implement a gradient descent algorithm."""
 
+    requires = 'real'
+
     def __init__(self, space, learning_rate=1., dx_tolerance=1e-7):
         """Declare `learning_rate` as a hyperparameter of this algorithm."""
         super(Gradient_Descent, self).__init__(space,

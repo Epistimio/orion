@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=too-many-lines
 """
 :mod:`orion.algo.space` -- Objects describing a problem's domain
 ==================================================================
@@ -63,6 +64,8 @@ class Dimension(object):
 
     """
 
+    NO_DEFAULT_VALUE = None
+
     def __init__(self, name, prior, *args, **kwargs):
         """Init code which is common for `Dimension` subclasses.
 
@@ -88,12 +91,6 @@ class Dimension(object):
         self._name = None
         self.name = name
 
-        if 'random_state' in kwargs or 'seed' in kwargs:
-            raise ValueError("random_state/seed cannot be set in a "
-                             "parameter's definition! Set seed globally!")
-        if 'discrete' in kwargs:
-            raise ValueError("Do not use kwarg 'discrete' on `Dimension`, "
-                             "use pure `_Discrete` class instead!")
         if isinstance(prior, str):
             self._prior_name = prior
             self.prior = getattr(distributions, prior)
@@ -102,20 +99,40 @@ class Dimension(object):
             self.prior = prior
         self._args = args
         self._kwargs = kwargs
-        # Default shape `None` corresponds to 0-dim (scalar) or shape == ().
-        # Read about ``size`` argument in
-        # `scipy.stats._distn_infrastructure.rv_generic._argcheck_rvs`
-        if 'size' in kwargs:
+        self._default_value = kwargs.pop('default_value', self.NO_DEFAULT_VALUE)
+        self._shape = kwargs.pop('shape', None)
+        self.validate()
+
+    def validate(self):
+        """Validate dimension arguments"""
+        if 'random_state' in self._kwargs or 'seed' in self._kwargs:
+            raise ValueError("random_state/seed cannot be set in a "
+                             "parameter's definition! Set seed globally!")
+        if 'discrete' in self._kwargs:
+            raise ValueError("Do not use kwarg 'discrete' on `Dimension`, "
+                             "use pure `_Discrete` class instead!")
+        if 'size' in self._kwargs:
             raise ValueError("Use 'shape' keyword only instead of 'size'.")
-        self._shape = self._kwargs.pop('shape', None)
 
-        default_value = self._kwargs.pop('default_value', None)
-
-        if default_value is not None and default_value not in self:
+        if self.default_value is not self.NO_DEFAULT_VALUE and self.default_value not in self:
             raise ValueError("{} is not a valid value for this Dimension. "
-                             "Can't set default value.".format(default_value))
+                             "Can't set default value.".format(self.default_value))
 
-        self._default_value = default_value
+    def _get_hashable_members(self):
+        return (self.name, self.shape, self.type, tuple(self._args), tuple(self._kwargs.items()),
+                self.default_value, self._prior_name)
+
+    # pylint:disable=protected-access
+    def __eq__(self, other):
+        """Return True if other is the same dimension as self"""
+        if not isinstance(other, Dimension):
+            return False
+
+        return self._get_hashable_members() == other._get_hashable_members()
+
+    def __hash__(self):
+        """Return the hash of the hashable members"""
+        return hash(self._get_hashable_members())
 
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
@@ -140,10 +157,18 @@ class Dimension(object):
            across many samples.
 
         """
-        samples = [self.prior.rvs(*self._args, size=self._shape,
+        samples = [self.prior.rvs(*self._args, size=self.shape,
                                   random_state=seed,
                                   **self._kwargs) for _ in range(n_samples)]
         return samples
+
+    def cast(self, point):
+        """Cast a point to dimension's type
+
+        If casted point will stay a list or a numpy array depending on the
+        given point's type.
+        """
+        raise NotImplementedError
 
     def interval(self, alpha=1.0):
         """Return a tuple containing lower and upper bound for parameters.
@@ -175,6 +200,20 @@ class Dimension(object):
             self.__class__.__name__, self.name, self._prior_name,
             self._args, self._kwargs, self.shape, self._default_value)
 
+    def get_prior_string(self):
+        """Build the string corresponding to current prior"""
+        args = list(map(str, self._args[:]))
+        args += ["{}={}".format(k, v) for k, v in self._kwargs.items()]
+        if self._shape is not None:
+            args += ['shape={}'.format(self._shape)]
+        if self.default_value is not self.NO_DEFAULT_VALUE:
+            args += ['default_value={}'.format(repr(self.default_value))]
+        return "{prior_name}({args})".format(prior_name=self._prior_name, args=", ".join(args))
+
+    def get_string(self):
+        """Build the string corresponding to current dimension"""
+        return "{name}~{prior}".format(name=self.name, prior=self.get_prior_string())
+
     @property
     def name(self):
         """See `Dimension` attributes."""
@@ -201,6 +240,9 @@ class Dimension(object):
     @property
     def shape(self):
         """Return the shape of dimension."""
+        # Default shape `None` corresponds to 0-dim (scalar) or shape == ().
+        # Read about ``size`` argument in
+        # `scipy.stats._distn_infrastructure.rv_generic._argcheck_rvs`
         _, _, _, size = self.prior._parse_args_rvs(*self._args,  # pylint:disable=protected-access
                                                    size=self._shape,
                                                    **self._kwargs)
@@ -322,6 +364,20 @@ class Real(Dimension):
 
         return samples
 
+    # pylint:disable=no-self-use
+    def cast(self, point):
+        """Cast a point to float
+
+        If casted point will stay a list or a numpy array depending on the
+        given point's type.
+        """
+        casted_point = numpy.asarray(point).astype(float)
+
+        if not isinstance(point, numpy.ndarray):
+            return casted_point.tolist()
+
+        return casted_point
+
 
 class _Discrete(Dimension):
 
@@ -397,7 +453,22 @@ class Integer(Real, _Discrete):
         point_ = numpy.asarray(point)
         if not numpy.all(numpy.equal(numpy.mod(point_, 1), 0)):
             return False
+
         return super(Integer, self).__contains__(point)
+
+    # pylint:disable=no-self-use
+    def cast(self, point):
+        """Cast a point to int
+
+        If casted point will stay a list or a numpy array depending on the
+        given point's type.
+        """
+        casted_point = numpy.asarray(point).astype(int)
+
+        if not isinstance(point, numpy.ndarray):
+            return casted_point.tolist()
+
+        return casted_point
 
 
 class Categorical(Dimension):
@@ -498,9 +569,66 @@ class Categorical(Dimension):
         return "Categorical(name={0}, prior={1}, shape={2}, default value={3})"\
                .format(self.name, prior, self.shape, self.default_value)
 
+    def get_prior_string(self):
+        """Build the string corresponding to current prior"""
+        args = list(map(str, self._args[:]))
+        args += ["{}={}".format(k, v) for k, v in self._kwargs.items()]
+        if self.default_value is not self.NO_DEFAULT_VALUE:
+            args += ['default_value={}'.format(self.default_value)]
+
+        cats = [repr(c) for c in self.categories]
+        if all(p == self._probs[0] for p in self._probs):
+            prior = '[{}]'.format(", ".join(cats))
+        else:
+            probs = list(zip(cats, self._probs))
+            prior = '{' + ", ".join('{0}: {1:.2f}'.format(c, p) for c, p in probs) + '}'
+
+        args = [prior]
+
+        if self.default_value is not self.NO_DEFAULT_VALUE:
+            args += ['default_value={}'.format(repr(self.default_value))]
+
+        return 'choices({args})'.format(args=', '.join(args))
+
+    def cast(self, point):
+        """Cast a point to some category
+
+        Casted point will stay a list or a numpy array depending on the
+        given point's type.
+
+        Raises
+        ------
+        ValueError
+            If one of the category in `point` is not present in current Categorical Dimension.
+
+        """
+        categorical_strings = {str(c): c for c in self.categories}
+
+        def get_category(value):
+            """Return category corresponding to a string else return singleton object"""
+            if str(value) not in categorical_strings:
+                raise ValueError("Invalid category: {}".format(value))
+
+            return categorical_strings[str(value)]
+
+        point_ = numpy.asarray(point, dtype=numpy.object)
+        cast = numpy.vectorize(get_category, otypes=[numpy.object])
+        casted_point = cast(point_)
+
+        if not isinstance(point, numpy.ndarray):
+            return casted_point.tolist()
+
+        return casted_point
+
 
 class Space(OrderedDict):
-    """Represents the search space."""
+    """Represents the search space.
+
+    It is an ordered dictionary which :attr:`contains` `Dimension` objects.
+    That class attribute is used to perform checks on :meth:`register`.
+    """
+
+    contains = Dimension
 
     def register(self, dimension):
         """Register a new dimension to `Space`."""
@@ -559,13 +687,16 @@ class Space(OrderedDict):
         return values[key]
 
     def __setitem__(self, key, value):
-        """Wrap __setitem__ to allow only `Dimension`s values and string keys."""
+        """Wrap __setitem__ to allow only ``Space.contains`` class, e.g. `Dimension`,
+        values and string keys.
+        """
         if not isinstance(key, str):
-            raise TypeError("Keys registered to Space must be string types. "
-                            "Provided: {}".format(key))
-        if not isinstance(value, Dimension):
-            raise TypeError("Values registered to Space must be Dimension types. "
-                            "Provided: {}".format(value))
+            raise TypeError("Keys registered to {} must be string types. "
+                            "Provided: {}".format(self.__class__.__name__, key))
+        if not isinstance(value, self.contains):
+            raise TypeError("Values registered to {} must be {} types. "
+                            "Provided: {}".format(self.__class__.__name__,
+                                                  self.contains.__name__, value))
         if key in self:
             raise ValueError("There is already a Dimension registered with this name. "
                              "Register it with another name. Provided: {}".format(key))
@@ -601,3 +732,52 @@ class Space(OrderedDict):
         """Represent as a string the space and the dimensions it contains."""
         dims = list(self.values())
         return "Space([{}])".format(',\n       '.join(map(str, dims)))
+
+
+def pack_point(point, space):
+    """Take a list of points and pack it appropriately as a point from `space`.
+
+    :param point: array-like or list of numbers
+    :param space: problem's parameter definition,
+       instance of `orion.algo.space.Space`
+
+    .. note:: It works only if dimensions included in `space` have 0D or 1D shape.
+
+    :returns: list of numbers or tuples
+    """
+    packed = []
+    idx = 0
+    for dim in space.values():
+        shape = dim.shape
+        if shape:
+            assert len(shape) == 1
+            next_idx = idx + shape[0]
+            packed.append(tuple(point[idx:next_idx]))
+            idx = next_idx
+        else:
+            packed.append(point[idx])
+            idx += 1
+    assert packed in space
+    return packed
+
+
+def unpack_point(point, space):
+    """Flatten `point` in `space` and convert it to a 1D `numpy.ndarray`.
+
+    :param point: list of number or tuples, in `space`
+    :param space: problem's parameter definition,
+       instance of `orion.algo.space.Space`
+
+    .. note:: It works only if dimensions included in `space` have 0D or 1D shape.
+
+    :returns: a list of float numbers
+    """
+    unpacked = []
+    for subpoint, dim in zip(point, space.values()):
+        shape = dim.shape
+        if shape:
+            assert len(shape) == 1
+            unpacked.extend(subpoint)
+        else:
+            unpacked.append(subpoint)
+    return unpacked

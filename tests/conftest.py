@@ -3,13 +3,16 @@
 """Common fixtures and utils for unittests and functional tests."""
 import os
 
+import numpy
 from pymongo import MongoClient
 import pytest
 import yaml
 
 from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
+from orion.core.io import resolve_config
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
+from orion.core.worker.trial import Trial
 
 
 class DumbAlgo(BaseAlgorithm):
@@ -84,6 +87,10 @@ def exp_config():
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
               'unittests', 'core', 'experiment.yaml')) as f:
         exp_config = list(yaml.safe_load_all(f))
+
+    for i, t_dict in enumerate(exp_config[1]):
+        exp_config[1][i] = Trial(**t_dict).to_dict()
+
     return exp_config
 
 
@@ -110,17 +117,40 @@ def clean_db(database, exp_config):
 
 
 @pytest.fixture()
-def only_experiments_db(database, exp_config):
-    """Clean the database and insert only experiments."""
-    database.experiments.drop()
-    database.experiments.insert_many(exp_config[0])
-    database.trials.drop()
-    database.workers.drop()
-    database.resources.drop()
-
-
-@pytest.fixture()
 def null_db_instances():
     """Nullify singleton instance so that we can assure independent instantiation tests."""
     Database.instance = None
     MongoDB.instance = None
+
+
+@pytest.fixture(scope='function')
+def seed():
+    """Return a fixed ``numpy.random.RandomState`` and global seed."""
+    seed = 5
+    rng = numpy.random.RandomState(seed)
+    numpy.random.seed(seed)
+    return rng
+
+
+@pytest.fixture
+def version_XYZ(monkeypatch):
+    """Force orion version XYZ on output of resolve_config.fetch_metadata"""
+    non_patched_fetch_metadata = resolve_config.fetch_metadata
+
+    def fetch_metadata(cmdargs):
+        metadata = non_patched_fetch_metadata(cmdargs)
+        metadata['orion_version'] = 'XYZ'
+        return metadata
+    monkeypatch.setattr(resolve_config, "fetch_metadata", fetch_metadata)
+
+
+@pytest.fixture()
+def create_db_instance(null_db_instances, clean_db):
+    """Create and save a singleton database instance."""
+    try:
+        db = Database(of_type='MongoDB', name='orion_test',
+                      username='user', password='pass')
+    except ValueError:
+        db = Database()
+
+    return db

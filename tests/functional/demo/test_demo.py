@@ -32,7 +32,6 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     assert exp['name'] == 'default_algo'
     assert exp['pool_size'] == 10
     assert exp['max_trials'] == 30
-    assert exp['status'] == 'done'
     assert exp['algorithms'] == {'random': {}}
     assert 'user' in exp['metadata']
     assert 'datetime' in exp['metadata']
@@ -58,7 +57,6 @@ def test_demo(database, monkeypatch):
     assert exp['name'] == 'voila_voici'
     assert exp['pool_size'] == 1
     assert exp['max_trials'] == 100
-    assert exp['status'] == 'done'
     assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
                                                       'dx_tolerance': 1e-7}}
     assert 'user' in exp['metadata']
@@ -110,7 +108,6 @@ def test_demo_two_workers(database, monkeypatch):
     assert exp['name'] == 'two_workers_demo'
     assert exp['pool_size'] == 2
     assert exp['max_trials'] == 400
-    assert exp['status'] == 'done'
     assert exp['algorithms'] == {'random': {}}
     assert 'user' in exp['metadata']
     assert 'datetime' in exp['metadata']
@@ -162,7 +159,6 @@ def test_workon(database):
     assert exp['name'] == 'voila_voici'
     assert exp['pool_size'] == 1
     assert exp['max_trials'] == 100
-    assert exp['status'] == 'done'
     assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
                                                       'dx_tolerance': 1e-7}}
     assert 'user' in exp['metadata']
@@ -239,3 +235,44 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     assert len(os.listdir(str(tmpdir.join('lalala')))) == how_many
     assert len(trials_c) == how_many
     capfd.readouterr()  # Suppress fd level 1 & 2
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_run_with_name_only(database, monkeypatch):
+    """Test hunt can be executed with experiment name only"""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main(["init_only", "--config", "./orion_config_random.yaml",
+                         "./black_box.py", "-x~uniform(-50, 50)"])
+
+    orion.core.cli.main(["hunt", "--max-trials", "20", "--config", "./orion_config_random.yaml"])
+
+    exp = list(database.experiments.find({'name': 'demo_random_search'}))
+    assert len(exp) == 1
+    exp = exp[0]
+    print(exp['max_trials'])
+    assert '_id' in exp
+    exp_id = exp['_id']
+    trials = list(database.trials.find({'experiment': exp_id}))
+    assert len(trials) == 20
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_run_with_name_only_with_trailing_whitespace(database, monkeypatch):
+    """Test hunt can be executed with experiment name and trailing whitespace"""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main(["init_only", "--config", "./orion_config_random.yaml",
+                         "./black_box.py", "-x~uniform(-50, 50)"])
+
+    orion.core.cli.main(["hunt", "--max-trials", "20",
+                         "--config", "./orion_config_random.yaml", ""])
+
+    exp = list(database.experiments.find({'name': 'demo_random_search'}))
+    assert len(exp) == 1
+    exp = exp[0]
+    print(exp['max_trials'])
+    assert '_id' in exp
+    exp_id = exp['_id']
+    trials = list(database.trials.find({'experiment': exp_id}))
+    assert len(trials) == 20

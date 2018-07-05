@@ -1,0 +1,5 @@
+name: incomplete
+
+database:
+  type: 'incomplete'
+  host: 'mongodb://user:pass@localhost'

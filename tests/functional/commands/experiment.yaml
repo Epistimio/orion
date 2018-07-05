@@ -17,15 +17,11 @@
     user_version: ~
     user_commit_hash: as5f7asf5asfa7sf
   refers:
-    name: 
-    user: tsirif
-    params:
-      - name:
-        type: 
-        value:
+    adapter: [] 
+    root_id: test_insert_normal
+    parent_id: null
   pool_size: 2
   max_trials: 1000
-  status: running
   algorithms:
     random: {}
 
@@ -41,15 +37,11 @@
     user_version: ~
     user_commit_hash: as5f7asf5asfa7sf
   refers:
-    name: 
-    user: tsirif
-    params:
-      - name:
-        type: 
-        value:
+    adapter: [] 
+    root_id: test_insert_missing_default_value
+    parent_id: null
   pool_size: 2
   max_trials: 1000
-  status: running
   algorithms:
     random: {}
 
@@ -65,14 +57,10 @@
     user_version: ~
     user_commit_hash: as5f7asf5asfa7sf
   refers:
-    name: 
-    user: tsirif
-    params:
-      - name:
-        type: 
-        value:
+    adapter: [] 
+    root_id: test_insert_two_hyperparameters
+    parent_id: null
   pool_size: 2
   max_trials: 1000
-  status: running
   algorithms: 
     random: {}
