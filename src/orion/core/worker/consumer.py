@@ -50,6 +50,7 @@ class Consumer(object):
 
         # Fetch space builder
         self.template_builder = SpaceBuilder()
+        self.template_builder.build_from(experiment.metadata['user_args'])
         # Get path to user's script and infer trial configuration directory
         self.script_path = experiment.metadata['user_script']
         self.tmp_dir = os.path.join(tempfile.gettempdir(), 'orion')

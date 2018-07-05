@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.transformer`."""
 from collections import OrderedDict
+import copy
 
 import numpy
 import pytest
@@ -420,12 +421,8 @@ class TestTransformedDimension(object):
         """Mimic `Dimension`.
         Set of `Dimension`'s methods are subset of `TransformedDimension`.
         """
-        for thing in Dimension.__dict__:
-            assert thing in TransformedDimension.__dict__
-        for thing in TransformedDimension.__dict__:
-            if thing in ('transform', 'reverse'):
-                continue
-            assert thing in Dimension.__dict__
+        assert ((set(TransformedDimension.__dict__.keys()) - set(Dimension.__dict__.keys())) ==
+                set(['transform', 'reverse']))
 
     def test_sample(self, tdim, seed):
         """Check method `sample`."""
@@ -471,6 +468,60 @@ class TestTransformedDimension(object):
         assert (0, 2, 0, 1) in tdim2
         assert (0, 2, 0) not in tdim2
 
+    def test_eq(self, tdim, tdim2):
+        """Return True if other is the same transformed dimension as self"""
+        assert tdim != tdim2
+        assert tdim == copy.deepcopy(tdim)
+
+    def test_hash(self, tdim, tdim2):
+        """Test that hash is consistent for identical and different transformed dimensions"""
+        assert hash(tdim) != hash(tdim2)
+        assert hash(tdim) == hash(copy.deepcopy(tdim))
+
+    def test_get_hashable_members(self, tdim, tdim2):
+        """Test that hashable members of the transformed dimensions are the aggregation of
+        transformer's and original dimension's hashable members.
+        """
+        assert (tdim._get_hashable_members() ==
+                ('Compose', 'Quantize', 'real', 'integer', 'Identity', 'real', 'real',
+                 'yolo', (3, 2), 'real', (0.9,), (), None, 'norm'))
+        assert (tdim2._get_hashable_members() ==
+                ('Compose', 'OneHotEncode', 'integer', 'real', 4, 'Compose', 'Enumerate',
+                 'categorical', 'integer', 'Identity', 'categorical', 'categorical', 'yolo2', (),
+                 'categorical', (), (), None, 'Distribution'))
+
+    def test_validate(self, tdim, tdim2):
+        """Validate original_dimension"""
+        # It pass
+        tdim.validate()
+        tdim2.validate()
+
+        # We break it
+        tdim.original_dimension._kwargs['size'] = (2, )
+        tdim2.original_dimension._default_value = 'bad-default'
+
+        # It does not pass
+        with pytest.raises(ValueError) as exc:
+            tdim.validate()
+        assert "Use 'shape' keyword only instead of 'size'." in str(exc.value)
+
+        with pytest.raises(ValueError) as exc:
+            tdim2.validate()
+        assert "bad-default is not a valid value for this Dimension." in str(exc.value)
+
+        tdim.original_dimension._kwargs.pop('size')
+        tdim2.original_dimension._default_value = Dimension.NO_DEFAULT_VALUE
+
+    def test_get_prior_string(self, tdim, tdim2):
+        """Apply the transformation on top of the prior string of original dimension."""
+        assert tdim.get_prior_string() == "Quantize(norm(0.9, shape=(3, 2)))"
+        assert tdim2.get_prior_string() == "OneHotEncode(Enumerate(choices({'asdfa': 0.10, '2': 0.20, '3': 0.30, '4': 0.40})))"  # noqa
+
+    def test_get_string(self, tdim, tdim2):
+        """Apply the transformation only on top of the prior string of original dimension."""
+        assert tdim.get_string() == "yolo~Quantize(norm(0.9, shape=(3, 2)))"
+        assert tdim2.get_string() == "yolo2~OneHotEncode(Enumerate(choices({'asdfa': 0.10, '2': 0.20, '3': 0.30, '4': 0.40})))"  # noqa
+
     def test_repr(self, tdim):
         """Check method `__repr__`."""
         assert str(tdim) == "Quantize(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None))"  # noqa
@@ -497,6 +548,12 @@ class TestTransformedDimension(object):
         tdim2.original_dimension._default_value = '3'
         assert numpy.all(tdim2.default_value == (0., 0., 1., 0.))
         tdim2.original_dimension._default_value = None
+
+    def test_cast(self, tdim, tdim2):
+        """Check casting through transformers"""
+        assert tdim.cast(['10.1']) == [10.0]
+        assert numpy.all(tdim2.cast(['asdfa']) == numpy.array([[1, 0, 0, 0]]))
+        assert numpy.all(tdim2.cast(['3']) == numpy.array([[0, 0, 1, 0]]))
 
 
 @pytest.fixture(scope='module')

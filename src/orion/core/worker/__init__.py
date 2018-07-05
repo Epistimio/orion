@@ -9,7 +9,9 @@
       with parameter values suggested.
 
 """
+import io
 import logging
+import pprint
 
 from orion.core.io.database import Database
 from orion.core.worker.consumer import Consumer
@@ -48,6 +50,14 @@ def workon(experiment):
     stats = experiment.stats
     best = Database().read('trials', {'_id': stats['best_trials_id']})[0]
 
+    stats_stream = io.StringIO()
+    pprint.pprint(stats, stream=stats_stream)
+    stats_string = stats_stream.getvalue()
+
+    best_stream = io.StringIO()
+    pprint.pprint(best['params'], stream=best_stream)
+    best_string = best_stream.getvalue()
+
     log.info("#####  Search finished successfully  #####")
-    log.info("\nRESULTS\n=======\n%s\n", stats)
-    log.info("\nBEST PARAMETERS\n===============\n%s", best)
+    log.info("\nRESULTS\n=======\n%s\n", stats_string)
+    log.info("\nBEST PARAMETERS\n===============\n%s", best_string)

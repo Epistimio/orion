@@ -9,6 +9,7 @@ import pytest
 import yaml
 
 from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
+from orion.core.io import resolve_config
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.worker.trial import Trial
@@ -129,3 +130,27 @@ def seed():
     rng = numpy.random.RandomState(seed)
     numpy.random.seed(seed)
     return rng
+
+
+@pytest.fixture
+def version_XYZ(monkeypatch):
+    """Force orion version XYZ on output of resolve_config.fetch_metadata"""
+    non_patched_fetch_metadata = resolve_config.fetch_metadata
+
+    def fetch_metadata(cmdargs):
+        metadata = non_patched_fetch_metadata(cmdargs)
+        metadata['orion_version'] = 'XYZ'
+        return metadata
+    monkeypatch.setattr(resolve_config, "fetch_metadata", fetch_metadata)
+
+
+@pytest.fixture()
+def create_db_instance(null_db_instances, clean_db):
+    """Create and save a singleton database instance."""
+    try:
+        db = Database(of_type='MongoDB', name='orion_test',
+                      username='user', password='pass')
+    except ValueError:
+        db = Database()
+
+    return db

@@ -35,7 +35,6 @@ def test_hunt_command_full_parsing(database, monkeypatch):
     args = vars(parser.parse_args(args_list))
     assert args['name'] == 'test'
     assert args['config'].name == './orion_config_random.yaml'
-    assert args['user_script'] == './black_box.py'
-    assert args['user_args'] == ['-x~normal(1,1)']
+    assert args['user_args'] == ['./black_box.py', '-x~normal(1,1)']
     assert args['pool_size'] == 4
     assert args['max_trials'] == 400

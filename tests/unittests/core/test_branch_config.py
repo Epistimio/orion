@@ -1,0 +1,877 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""Collection of tests for :mod:`orion.core.io.experiment_branch_builder`."""
+
+import copy
+import os
+
+import pytest
+import yaml
+
+from orion.core import evc
+from orion.core.evc.conflicts import (
+    AlgorithmConflict, ChangedDimensionConflict, CodeConflict, CommandLineConflict,
+    detect_conflicts, ExperimentNameConflict, MissingDimensionConflict, NewDimensionConflict,
+    ScriptConfigConflict)
+from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
+
+
+def filter_true(c):
+    """Filter solved conflicts"""
+    return c.is_resolved is True
+
+
+def filter_false(c):
+    """Filter unsolved conflicts"""
+    return not filter_true(c)
+
+
+@pytest.fixture
+def user_config():
+    """Generate data dict for user's script's configuration file"""
+    data = {
+        'a': 'orion~uniform(-10,10)',
+        'some_other': 'test',
+        'b': 'orion~normal(0,1)',
+        'argument': 'value'}
+    return data
+
+
+@pytest.fixture
+def parent_config(user_config):
+    """Create a configuration that will not hit the database."""
+    config = dict(
+        name='test',
+        algorithms='random',
+        metadata={'hash_commit': 'old',
+                  'user_script': 'abs_path/black_box.py',
+                  'user_args':
+                  ['--nameless=option', '-x~uniform(0,1)', '-y~normal(0,1)', '-z~uniform(0,10)'],
+                  'user': 'some_user_name'})
+
+    config_file_path = "./parent_config.yaml"
+
+    with open(config_file_path, 'w') as f:
+        yaml.dump(user_config, f)
+
+    config['metadata']['user_args'].append('--config=%s' % config_file_path)
+
+    yield config
+    os.remove(config_file_path)
+
+
+@pytest.fixture
+def child_config(parent_config, create_db_instance):
+    """Create a child branching from the test experiment"""
+    config = copy.deepcopy(parent_config)
+    return config
+
+
+@pytest.fixture
+def missing_config(child_config):
+    """Create a child config with a missing dimension"""
+    del(child_config['metadata']['user_args'][1])  # del -x
+    del(child_config['metadata']['user_args'][1])  # del -y
+    return child_config
+
+
+@pytest.fixture
+def new_config(child_config):
+    """Create a child config with a new dimension"""
+    child_config['metadata']['user_args'].append('-w_d~normal(0,1)')
+    return child_config
+
+
+@pytest.fixture
+def changed_config(child_config):
+    """Create a child config with a changed dimension"""
+    second_element = child_config['metadata']['user_args'][2]
+    second_element = second_element.replace('normal', 'uniform')
+    child_config['metadata']['user_args'][2] = second_element
+    return child_config
+
+
+@pytest.fixture
+def changed_algo_config(child_config):
+    """Create a child config with a changed dimension"""
+    child_config['algorithms'] = 'stupid-grid'
+    return child_config
+
+
+@pytest.fixture
+def changed_code_config(child_config):
+    """Create a child config with a changed dimension"""
+    child_config['metadata']['hash_commit'] = 'new'
+    return child_config
+
+
+@pytest.fixture
+def same_userconfig_config(user_config, child_config):
+    """Create a child config with a changed dimension"""
+    config_file_path = "./same_config.yaml"
+    with open(config_file_path, 'w') as f:
+        yaml.dump(user_config, f)
+    child_config['metadata']['user_args'][-1] = '--config=%s' % config_file_path
+    yield child_config
+    os.remove(config_file_path)
+
+
+@pytest.fixture
+def changed_userconfig_config(user_config, child_config):
+    """Create a child config with a changed dimension"""
+    config_file_path = './changed_config.yaml'
+    user_config['b'] = 'orion~uniform(-20, 0)'
+    user_config['some_other'] = 'hello'
+    with open(config_file_path, 'w') as f:
+        yaml.dump(user_config, f)
+    child_config['metadata']['user_args'][-1] = '--config=%s' % config_file_path
+    yield child_config
+    os.remove(config_file_path)
+
+
+@pytest.fixture
+def changed_cli_config(child_config):
+    """Create a child config with a changed dimension"""
+    child_config['metadata']['user_args'] += ['-u=0', '--another=test', 'positional']
+    return child_config
+
+
+@pytest.fixture
+def cl_config(create_db_instance):
+    """Create a child config with markers for commandline solving"""
+    config = dict(
+        name='test',
+        branch='test2',
+        algorithms='random',
+        metadata={'hash_commit': 'old',
+                  'user_script': 'abs_path/black_box.py',
+                  'user_args':
+                  ['--nameless=option', '-x~>w_d', '-w_d~+normal(0,1)', '-y~+uniform(0,1)', '-z~-',
+                   '--omega~+normal(0,1)'],
+                  'user': 'some_user_name'})
+    return config
+
+
+class TestConflictDetection(object):
+    """Test detection of conflicts between two configurations"""
+
+    def test_no_conflicts(self, parent_config, child_config):
+        """Test the case where the child is the same as the parent"""
+        conflicts = detect_conflicts(parent_config, child_config)
+
+        assert len(conflicts.get()) == 1
+        assert isinstance(conflicts.get()[0], ExperimentNameConflict)
+
+    def test_missing_dim_conflict(self, parent_config, missing_config):
+        """Test if missing dimension is currently detected"""
+        conflicts = detect_conflicts(parent_config, missing_config)
+
+        assert len(conflicts.get()) == 3
+        conflict = conflicts.get()[1]
+
+        assert conflict.is_resolved is False
+        assert conflict.dimension.name == '/x'
+        assert isinstance(conflict, MissingDimensionConflict)
+
+    def test_new_dim_conflict(self, parent_config, new_config):
+        """Test if new dimension is currently detected"""
+        conflicts = detect_conflicts(parent_config, new_config)
+
+        assert len(conflicts.get()) == 2
+        conflict = conflicts.get()[1]
+
+        assert conflict.is_resolved is False
+        assert conflict.dimension.name == '/w_d'
+        assert isinstance(conflict, NewDimensionConflict)
+
+    def test_changed_dim_conflict(self, parent_config, changed_config):
+        """Test if changed dimension is currently detected"""
+        conflicts = detect_conflicts(parent_config, changed_config)
+
+        assert len(conflicts.get()) == 2
+        conflict = conflicts.get()[0]
+
+        assert conflict.is_resolved is False
+        assert conflict.dimension.name == '/y'
+        assert isinstance(conflict, ChangedDimensionConflict)
+
+    def test_changed_dim_userconfig_conflict(self, parent_config, changed_userconfig_config):
+        """Test if changed dimension from user's config is currently detected"""
+        conflicts = detect_conflicts(parent_config, changed_userconfig_config)
+
+        assert len(conflicts.get()) == 3
+        conflict = conflicts.get()[0]
+
+        assert conflict.is_resolved is False
+        assert conflict.dimension.name == '/b'
+        assert isinstance(conflict, ChangedDimensionConflict)
+
+    def test_algo_conflict(self, parent_config, changed_algo_config):
+        """Test if algorithm changes are currently detected"""
+        conflicts = detect_conflicts(parent_config, changed_algo_config)
+
+        assert len(conflicts.get()) == 2
+        conflict = conflicts.get()[0]
+
+        assert conflict.is_resolved is False
+        assert conflict.old_config['algorithms'] == 'random'
+        assert conflict.new_config['algorithms'] == 'stupid-grid'
+        assert isinstance(conflict, AlgorithmConflict)
+
+    def test_code_conflict(self, parent_config, changed_code_config):
+        """Test if code commit hash change is currently detected"""
+        conflicts = detect_conflicts(parent_config, changed_code_config)
+
+        assert len(conflicts.get()) == 2
+        conflict = conflicts.get()[0]
+
+        assert conflict.is_resolved is False
+        assert conflict.old_config['metadata']['hash_commit'] == 'old'
+        assert conflict.new_config['metadata']['hash_commit'] == 'new'
+        assert isinstance(conflict, CodeConflict)
+
+    def test_config_new_name_no_conflict(self, parent_config, same_userconfig_config):
+        """Test if same configuration file with a different name is not detected as a conflict"""
+        conflicts = detect_conflicts(parent_config, same_userconfig_config)
+
+        assert parent_config['metadata']['user_args'][-1].startswith('--config=')
+        assert same_userconfig_config['metadata']['user_args'][-1].startswith('--config=')
+        assert (parent_config['metadata']['user_args'][-1] !=
+                same_userconfig_config['metadata']['user_args'][-1])
+
+        assert len(conflicts.get()) == 1
+        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+
+    def test_config_non_dim_conflict(self, parent_config, changed_userconfig_config):
+        """Test if changed configuration file is detected as a conflict"""
+        conflicts = detect_conflicts(parent_config, changed_userconfig_config)
+
+        assert len(conflicts.get()) == 3
+        assert not conflicts.get([ChangedDimensionConflict])[0].is_resolved
+        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+        assert not conflicts.get([ScriptConfigConflict])[0].is_resolved
+
+    def test_cli_conflict(self, parent_config, changed_cli_config):
+        """Test if changed command line call is detected as a conflict"""
+        conflicts = detect_conflicts(parent_config, changed_cli_config)
+
+        assert len(conflicts.get()) == 2
+
+        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+        assert not conflicts.get([CommandLineConflict])[0].is_resolved
+
+
+class TestResolutions(object):
+    """Test resolution of conflicts"""
+
+    def test_add_single_hit(self, parent_config, new_config):
+        """Test if adding a dimension only touches the correct status"""
+        del new_config['metadata']['user_args'][1]
+        conflicts = detect_conflicts(parent_config, new_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+        branch_builder.add_dimension('w_d')
+
+        assert len(conflicts.get()) == 3
+        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+        assert conflicts.get([NewDimensionConflict])[0].is_resolved
+        assert not conflicts.get([MissingDimensionConflict])[0].is_resolved
+
+    def test_add_new(self, parent_config, new_config):
+        """Test if adding a new dimension solves the conflict"""
+        conflicts = detect_conflicts(parent_config, new_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+        branch_builder.add_dimension('w_d')
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.AddDimensionResolution)
+
+    def test_add_changed(self, parent_config, changed_config):
+        """Test if adding a changed dimension solves the conflict"""
+        conflicts = detect_conflicts(parent_config, changed_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+        branch_builder.add_dimension('y')
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.ChangeDimensionResolution)
+
+    def test_remove_missing(self, parent_config, missing_config):
+        """Test if removing a missing dimension solves the conflict"""
+        conflicts = detect_conflicts(parent_config, missing_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+        branch_builder.remove_dimension('x')
+
+        assert len(conflicts.get()) == 3
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.RemoveDimensionResolution)
+
+    def test_rename_missing(self, parent_config, missing_config):
+        """Test if renaming a dimension to another solves both conflicts"""
+        missing_config['metadata']['user_args'].append('-w_d~uniform(0,1)')
+        conflicts = detect_conflicts(parent_config, missing_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+        branch_builder.rename_dimension('x', 'w_d')
+
+        assert len(conflicts.get()) == 4
+
+        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+        assert conflicts.get([NewDimensionConflict])[0].is_resolved
+        assert conflicts.get([MissingDimensionConflict])[0].is_resolved
+        assert not conflicts.get([MissingDimensionConflict])[1].is_resolved
+
+        resolved_conflicts = conflicts.get_resolved()
+        assert len(resolved_conflicts) == 2
+        assert resolved_conflicts[0].resolution is resolved_conflicts[1].resolution
+        assert isinstance(resolved_conflicts[0].resolution,
+                          resolved_conflicts[0].RenameDimensionResolution)
+        assert resolved_conflicts[0].resolution.conflict.dimension.name == '/x'
+        assert resolved_conflicts[0].resolution.new_dimension_conflict.dimension.name == '/w_d'
+
+    def test_rename_missing_changed(self, parent_config, missing_config):
+        """Test if renaming a dimension to another with different prior solves both conflicts but
+        creates a new one which is not solved
+        """
+        missing_config['metadata']['user_args'].append('-w_d~normal(0,1)')
+        conflicts = detect_conflicts(parent_config, missing_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 4
+
+        branch_builder.rename_dimension('x', 'w_d')
+
+        assert len(conflicts.get()) == 5
+
+        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+        assert conflicts.get([NewDimensionConflict])[0].is_resolved
+        assert conflicts.get([MissingDimensionConflict])[0].is_resolved
+        assert not conflicts.get([MissingDimensionConflict])[1].is_resolved
+        assert not conflicts.get([ChangedDimensionConflict])[0].is_resolved
+
+        resolved_conflicts = conflicts.get_resolved()
+        assert len(resolved_conflicts) == 2
+        assert resolved_conflicts[0].resolution is resolved_conflicts[1].resolution
+        assert isinstance(resolved_conflicts[0].resolution,
+                          resolved_conflicts[0].RenameDimensionResolution)
+        assert resolved_conflicts[0].resolution.conflict.dimension.name == '/x'
+        assert resolved_conflicts[0].resolution.new_dimension_conflict.dimension.name == '/w_d'
+
+    def test_reset_dimension(self, parent_config, new_config):
+        """Test if resetting a dimension unsolves the conflict"""
+        conflicts = detect_conflicts(parent_config, new_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+
+        branch_builder.add_dimension('w_d')
+        assert len(conflicts.get_resolved()) == 1
+
+        with pytest.raises(ValueError) as exc:
+            branch_builder.reset('w_d~+')
+        assert "'w_d~+' is not in list" in str(exc.value)
+        assert len(conflicts.get_resolved()) == 1
+
+        branch_builder.reset('w_d~+norm(0, 1)')
+
+        assert len(conflicts.get()) == 2
+
+        conflict = conflicts.get(dimension_name='w_d')[0]
+
+        assert not conflict.is_resolved
+        assert isinstance(conflict, NewDimensionConflict)
+        assert len(conflicts.get_resolved()) == 0
+
+    def test_name_experiment(self, parent_config, child_config, create_db_instance):
+        """Test if changing the experiment names work for valid name"""
+        conflicts = detect_conflicts(parent_config, child_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 1
+        assert len(conflicts.get_resolved()) == 0
+
+        conflict = conflicts.get([ExperimentNameConflict])[0]
+
+        assert conflict.new_config['name'] == 'test'
+        assert not conflict.is_resolved
+        branch_builder.change_experiment_name('test2')
+        assert len(conflicts.get_resolved()) == 1
+        assert conflict.new_config['name'] == 'test2'
+        assert conflict.is_resolved
+
+    def test_bad_name_experiment(self, parent_config, child_config, create_db_instance):
+        """Test if changing the experiment names does not work for invalid name and revert
+        to old one
+        """
+        create_db_instance.write('experiments', parent_config)
+
+        conflicts = detect_conflicts(parent_config, child_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 1
+        assert len(conflicts.get_resolved()) == 0
+
+        conflict = conflicts.get([ExperimentNameConflict])[0]
+
+        conflict.new_config['name'] = 'should-not-be-overwritten'
+        assert not conflict.is_resolved
+        branch_builder.change_experiment_name('test')
+        assert len(conflicts.get_resolved()) == 0
+        assert conflict.new_config['name'] == 'should-not-be-overwritten'
+        assert not conflict.is_resolved
+
+    def test_algo_change(self, parent_config, changed_algo_config):
+        """Test if setting the algorithm conflict solves it"""
+        conflicts = detect_conflicts(parent_config, changed_algo_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 0
+
+        branch_builder.set_algo()
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.AlgorithmResolution)
+
+    def test_code_change(self, parent_config, changed_code_config):
+        """Test if giving a proper change-type solves the code conflict"""
+        conflicts = detect_conflicts(parent_config, changed_code_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 0
+
+        branch_builder.set_code_change_type(evc.adapters.CodeChange.types[0])
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+        assert conflict.is_resolved
+        assert isinstance(conflict, CodeConflict)
+
+    def test_bad_code_change(self, capsys, parent_config, changed_code_config):
+        """Test if giving an invalid change-type prints error message and do nothing"""
+        conflicts = detect_conflicts(parent_config, changed_code_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+        capsys.readouterr()
+        branch_builder.set_code_change_type('bad-type')
+        out, err = capsys.readouterr()
+        assert 'Invalid code change type' in out.split("\n")[-3]
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 0
+
+    def test_config_change(self, parent_config, changed_userconfig_config):
+        """Test if giving a proper change-type solves the user script config conflict"""
+        conflicts = detect_conflicts(parent_config, changed_userconfig_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 3
+        assert len(conflicts.get_resolved()) == 0
+
+        branch_builder.set_script_config_change_type(evc.adapters.ScriptConfigChange.types[0])
+
+        assert len(conflicts.get()) == 3
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+        assert conflict.is_resolved
+        assert isinstance(conflict, ScriptConfigConflict)
+
+    def test_bad_config_change(self, capsys, parent_config, changed_userconfig_config):
+        """Test if giving an invalid change-type prints error message and do nothing"""
+        conflicts = detect_conflicts(parent_config, changed_userconfig_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+        capsys.readouterr()
+        branch_builder.set_script_config_change_type('bad-type')
+        out, err = capsys.readouterr()
+        assert 'Invalid script\'s config change type' in out.split("\n")[-3]
+
+        assert len(conflicts.get()) == 3
+        assert len(conflicts.get_resolved()) == 0
+
+    def test_cli_change(self, parent_config, changed_cli_config):
+        """Test if giving a proper change-type solves the command line conflict"""
+        conflicts = detect_conflicts(parent_config, changed_cli_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 0
+
+        branch_builder.set_cli_change_type(evc.adapters.CommandLineChange.types[0])
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+        assert conflict.is_resolved
+        assert isinstance(conflict, CommandLineConflict)
+
+    def test_bad_cli_change(self, capsys, parent_config, changed_cli_config):
+        """Test if giving an invalid change-type prints error message and do nothing"""
+        conflicts = detect_conflicts(parent_config, changed_cli_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+        capsys.readouterr()
+        branch_builder.set_cli_change_type('bad-type')
+        out, err = capsys.readouterr()
+        assert 'Invalid cli change type' in out.split("\n")[-3]
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 0
+
+
+class TestResolutionsWithMarkers(object):
+    """Test resolution of conflicts with markers"""
+
+    def test_add_new(self, parent_config, new_config):
+        """Test if new dimension conflict is automatically resolved"""
+        new_config['metadata']['user_args'][-1] = '-w_d~+normal(0,1)'
+        conflicts = detect_conflicts(parent_config, new_config)
+        ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.AddDimensionResolution)
+
+    def test_add_new_default(self, parent_config, new_config):
+        """Test if new dimension conflict is automatically resolved"""
+        new_config['metadata']['user_args'][-1] = '-w_d~+normal(0,1,default_value=0)'
+        conflicts = detect_conflicts(parent_config, new_config)
+        ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.AddDimensionResolution)
+        assert conflict.resolution.default_value == 0.0
+
+    def test_add_bad_default(self, parent_config, new_config):
+        """Test if new dimension conflict raises an error if marked with invalid default value"""
+        new_config['metadata']['user_args'][-1] = '-w_d~+normal(0,1,default_value=\'a\')'
+        with pytest.raises(TypeError) as exc:
+            detect_conflicts(parent_config, new_config)
+        assert "Parameter \'/w_d\': Incorrect arguments." in str(exc.value)
+
+    def test_add_changed(self, parent_config, changed_config):
+        """Test if changed dimension conflict is automatically resolved"""
+        changed_config['metadata']['user_args'][2] = (
+            changed_config['metadata']['user_args'][2].replace("~", "~+"))
+        conflicts = detect_conflicts(parent_config, changed_config)
+        ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.ChangeDimensionResolution)
+
+    def test_remove_missing(self, parent_config, child_config):
+        """Test if missing dimension conflict is automatically resolved"""
+        child_config['metadata']['user_args'][1] = '-x~-'
+        conflicts = detect_conflicts(parent_config, child_config)
+        ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.RemoveDimensionResolution)
+
+    def test_remove_missing_default(self, parent_config, child_config):
+        """Test if missing dimension conflict is automatically resolved"""
+        child_config['metadata']['user_args'][1] = '-x~-0.5'
+        conflicts = detect_conflicts(parent_config, child_config)
+        ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.RemoveDimensionResolution)
+        assert conflict.resolution.default_value == 0.5
+
+    def test_remove_missing_bad_default(self, parent_config, child_config):
+        """Test if missing dimension conflict raises an error if marked with invalid default"""
+        child_config['metadata']['user_args'][1] = '-x~--100'
+        conflicts = detect_conflicts(parent_config, child_config)
+        ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 0
+
+        conflict = conflicts.get()[1]
+
+        assert not conflict.is_resolved
+        assert isinstance(conflict, MissingDimensionConflict)
+
+    def test_rename_missing(self, parent_config, child_config):
+        """Test if renaming is automatically applied with both conflicts resolved"""
+        child_config['metadata']['user_args'].append('-w_a~uniform(0,1)')
+        child_config['metadata']['user_args'].append('-w_b~normal(0,1)')
+        child_config['metadata']['user_args'][1] = '-x~>w_a'
+        conflicts = detect_conflicts(parent_config, child_config)
+        ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 4
+
+        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+        assert conflicts.get(dimension_name='x')[0].is_resolved
+        assert conflicts.get(dimension_name='w_a')[0].is_resolved
+        assert not conflicts.get(dimension_name='w_b')[0].is_resolved
+
+        resolved_conflicts = conflicts.get_resolved()
+        assert len(resolved_conflicts) == 2
+        assert resolved_conflicts[0].resolution is resolved_conflicts[1].resolution
+        assert isinstance(resolved_conflicts[0].resolution,
+                          resolved_conflicts[0].RenameDimensionResolution)
+        assert resolved_conflicts[0].resolution.conflict.dimension.name == '/x'
+        assert resolved_conflicts[0].resolution.new_dimension_conflict.dimension.name == '/w_a'
+
+    def test_rename_invalid(self, parent_config, child_config):
+        """Test if renaming to invalid dimension raises an error"""
+        child_config['metadata']['user_args'].append('-w_a~uniform(0,1)')
+        child_config['metadata']['user_args'].append('-w_b~uniform(0,1)')
+        child_config['metadata']['user_args'][1] = '-x~>w_c'
+        conflicts = detect_conflicts(parent_config, child_config)
+        with pytest.raises(ValueError) as exc:
+            ExperimentBranchBuilder(conflicts, {})
+        assert "Dimension name 'w_c' not found in conflicts" in str(exc.value)
+
+    def test_rename_missing_changed(self, parent_config, child_config):
+        """Test if renaming is automatically applied with both conflicts resolved,
+        but not the new one because of prior change
+        """
+        child_config['metadata']['user_args'].append('-w_a~uniform(0,1)')
+        child_config['metadata']['user_args'].append('-w_b~normal(0,1)')
+        child_config['metadata']['user_args'][1] = '-x~>w_b'
+        conflicts = detect_conflicts(parent_config, child_config)
+        ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 5
+
+        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+        assert conflicts.get(dimension_name='x')[0].is_resolved
+        assert conflicts.get([NewDimensionConflict], dimension_name='w_b')[0].is_resolved
+        assert not conflicts.get([ChangedDimensionConflict], dimension_name='w_b')[0].is_resolved
+        assert not conflicts.get(dimension_name='w_a')[0].is_resolved
+
+        resolved_conflicts = conflicts.get_resolved()
+        assert len(resolved_conflicts) == 2
+        assert resolved_conflicts[0].resolution is resolved_conflicts[1].resolution
+        assert isinstance(resolved_conflicts[0].resolution,
+                          resolved_conflicts[0].RenameDimensionResolution)
+        assert resolved_conflicts[0].resolution.conflict.dimension.name == '/x'
+        assert resolved_conflicts[0].resolution.new_dimension_conflict.dimension.name == '/w_b'
+
+    def test_rename_missing_changed_marked(self, parent_config, child_config):
+        """Test if renaming is automatically applied with all conflicts resolved including
+        the new one caused by prior change
+        """
+        child_config['metadata']['user_args'].append('-w_a~uniform(0,1)')
+        child_config['metadata']['user_args'].append('-w_b~+normal(0,1)')
+        child_config['metadata']['user_args'][1] = '-x~>w_b'
+        conflicts = detect_conflicts(parent_config, child_config)
+        ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 5
+
+        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+        assert conflicts.get(dimension_name='x')[0].is_resolved
+        assert conflicts.get([NewDimensionConflict], dimension_name='w_b')[0].is_resolved
+        assert conflicts.get([ChangedDimensionConflict], dimension_name='w_b')[0].is_resolved
+        assert not conflicts.get(dimension_name='w_a')[0].is_resolved
+
+        resolved_conflicts = conflicts.get_resolved()
+        assert len(resolved_conflicts) == 3
+        assert resolved_conflicts[0].resolution is resolved_conflicts[1].resolution
+        assert isinstance(resolved_conflicts[0].resolution,
+                          resolved_conflicts[0].RenameDimensionResolution)
+        assert resolved_conflicts[0].resolution.conflict.dimension.name == '/x'
+        assert resolved_conflicts[0].resolution.new_dimension_conflict.dimension.name == '/w_b'
+
+    def test_name_experiment(self, parent_config, child_config, create_db_instance):
+        """Test if experiment name conflict is automatically resolved"""
+        new_name = 'test2'
+        create_db_instance.write('experiments', parent_config)
+        conflicts = detect_conflicts(parent_config, child_config)
+        ExperimentBranchBuilder(conflicts, {'branch': new_name})
+
+        assert len(conflicts.get()) == 1
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get()[0]
+
+        assert conflict.resolution.new_name == new_name
+        assert conflict.new_config['name'] == new_name
+        assert conflict.is_resolved
+
+    def test_bad_name_experiment(self, parent_config, child_config, create_db_instance):
+        """Test if experiment name conflict is not resolved when invalid name is marked"""
+        new_name = 'test'
+        create_db_instance.write('experiments', parent_config)
+
+        conflicts = detect_conflicts(parent_config, child_config)
+        ExperimentBranchBuilder(conflicts, {'branch': new_name})
+
+        assert len(conflicts.get()) == 1
+        assert len(conflicts.get_resolved()) == 0
+
+    def test_code_change(self, parent_config, changed_code_config):
+        """Test if code conflict is resolved automatically"""
+        change_type = evc.adapters.CodeChange.types[0]
+        changed_code_config['code_change_type'] = change_type
+        conflicts = detect_conflicts(parent_config, changed_code_config)
+        ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.CodeResolution)
+        assert conflict.resolution.type == change_type
+
+    def test_algo_change(self, parent_config, changed_algo_config):
+        """Test if algorithm conflict is resolved automatically"""
+        changed_algo_config['algorithm_change'] = True
+        conflicts = detect_conflicts(parent_config, changed_algo_config)
+        ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.AlgorithmResolution)
+
+    def test_config_change(self, parent_config, changed_userconfig_config):
+        """Test if user's script's config conflict is resolved automatically"""
+        change_type = evc.adapters.ScriptConfigChange.types[0]
+        changed_userconfig_config['config_change_type'] = change_type
+        conflicts = detect_conflicts(parent_config, changed_userconfig_config)
+        ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 3
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.ScriptConfigResolution)
+        assert conflict.resolution.type == change_type
+
+    def test_cli_change(self, parent_config, changed_cli_config):
+        """Test if command line conflict is resolved automatically"""
+        change_type = evc.adapters.CommandLineChange.types[0]
+        changed_cli_config['cli_change_type'] = change_type
+        conflicts = detect_conflicts(parent_config, changed_cli_config)
+        ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get_resolved()[0]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.CommandLineResolution)
+        assert conflict.resolution.type == change_type
+
+
+class TestAdapters(object):
+    """Test creation of adapters"""
+
+    def test_adapter_add_new(self, parent_config, cl_config):
+        """Test if a DimensionAddition is created when solving a new conflict"""
+        cl_config['metadata']['user_args'] = ['-w_d~+normal(0,1)']
+
+        conflicts = detect_conflicts(parent_config, cl_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+
+        adapters = branch_builder.create_adapters().adapters
+
+        assert len(conflicts.get_resolved()) == 2
+        assert len(adapters) == 1
+        assert isinstance(adapters[0], evc.adapters.DimensionAddition)
+
+    def test_adapter_add_changed(self, parent_config, cl_config):
+        """Test if a DimensionPriorChange is created when solving a new conflict"""
+        cl_config['metadata']['user_args'] = ['-y~+uniform(0,1)']
+
+        conflicts = detect_conflicts(parent_config, cl_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+
+        adapters = branch_builder.create_adapters().adapters
+
+        assert len(conflicts.get_resolved()) == 2
+        assert len(adapters) == 1
+        assert isinstance(adapters[0], evc.adapters.DimensionPriorChange)
+
+    def test_adapter_remove_missing(self, parent_config, cl_config):
+        """Test if a DimensionDeletion is created when solving a new conflict"""
+        cl_config['metadata']['user_args'] = ['-z~-']
+
+        conflicts = detect_conflicts(parent_config, cl_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+
+        adapters = branch_builder.create_adapters().adapters
+
+        assert len(conflicts.get_resolved()) == 2
+        assert len(adapters) == 1
+        assert isinstance(adapters[0], evc.adapters.DimensionDeletion)
+
+    def test_adapter_rename_missing(self, parent_config, cl_config):
+        """Test if a DimensionRenaming is created when solving a new conflict"""
+        cl_config['metadata']['user_args'] = ['-x~>w_d', '-w_d~+uniform(0,1)']
+
+        conflicts = detect_conflicts(parent_config, cl_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+
+        adapters = branch_builder.create_adapters().adapters
+
+        assert len(conflicts.get_resolved()) == 3
+        assert len(adapters) == 1
+        assert isinstance(adapters[0], evc.adapters.DimensionRenaming)
+
+    def test_adapter_rename_different_prior(self, parent_config, cl_config):
+        """Test if a DimensionRenaming is created when solving a new conflict"""
+        cl_config['metadata']['user_args'] = ['-x~>w_d', '-w_d~+normal(0,1)']
+
+        conflicts = detect_conflicts(parent_config, cl_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+
+        adapters = branch_builder.create_adapters().adapters
+
+        assert len(conflicts.get_resolved()) == 4
+        assert len(adapters) == 2
+        assert isinstance(adapters[0], evc.adapters.DimensionRenaming)
+        assert isinstance(adapters[1], evc.adapters.DimensionPriorChange)

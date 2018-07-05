@@ -119,7 +119,6 @@ def new_config(random_dt):
         name='supernaekei',
         # refers is missing on purpose
         metadata={'user': 'tsirif',
-                  'datetime': random_dt,
                   'orion_version': 0.1,
                   'user_script': 'abs_path/to_yoyoy.py',
                   'user_config': 'abs_path/hereitis.yaml',
@@ -149,11 +148,10 @@ class TestInitExperiment(object):
         assert exp._db is create_db_instance
         assert exp._id is None
         assert exp.name == 'supernaekei'
-        assert exp.refers is None
+        assert exp.refers == {}
         assert exp.metadata['user'] == 'tsirif'
-        assert exp.metadata['datetime'] == random_dt
         assert exp._last_fetched == random_dt
-        assert len(exp.metadata) == 2
+        assert len(exp.metadata) == 1
         assert exp.pool_size is None
         assert exp.max_trials is None
         assert exp.algorithms is None
@@ -168,11 +166,10 @@ class TestInitExperiment(object):
         assert exp._db is create_db_instance
         assert exp._id is None
         assert exp.name == 'supernaedo2'
-        assert exp.refers is None
+        assert exp.refers == {}
         assert exp.metadata['user'] == 'bouthilx'
-        assert exp.metadata['datetime'] == random_dt
         assert exp._last_fetched == random_dt
-        assert len(exp.metadata) == 2
+        assert len(exp.metadata) == 1
         assert exp.pool_size is None
         assert exp.max_trials is None
         assert exp.algorithms is None
@@ -215,20 +212,19 @@ class TestConfigProperty(object):
 
         Before initialization is done, it can be the case that the pair (`name`,
         user's name) has not hit the database. return a yaml compliant form
-        of current state, to be used with :mod:`orion.core.resolve_config`.
+        of current state, to be used with :mod:`orion.core.io.resolve_config`.
         """
         exp = Experiment('supernaekei')
         cfg = exp.configuration
         assert cfg['name'] == 'supernaekei'
-        assert cfg['refers'] is None
+        assert cfg['refers'] == {}
         assert cfg['metadata']['user'] == 'tsirif'
-        assert cfg['metadata']['datetime'] == random_dt
-        assert len(cfg['metadata']) == 2
+        assert len(cfg['metadata']) == 1
         assert cfg['pool_size'] is None
         assert cfg['max_trials'] is None
         assert cfg['algorithms'] is None
 
-    @pytest.mark.xfail(reason="To be implemented...", raises=NotImplementedError)
+    @pytest.mark.skip(reason='Interactive prompt problems')
     def test_good_set_before_init_hit_with_diffs(self, exp_config):
         """Trying to set, and differences were found from the config pulled from db.
 
@@ -243,6 +239,7 @@ class TestConfigProperty(object):
         new_config = copy.deepcopy(exp_config[0][1])
         new_config['metadata']['user_version'] = 1.2
         exp = Experiment('supernaedo2')
+
         exp.configure(new_config)
 
     def test_good_set_before_init_hit_no_diffs_exc_max_trials(self, exp_config):
@@ -288,11 +285,14 @@ class TestConfigProperty(object):
         assert exp._init_done is True
         found_config = list(database.experiments.find({'name': 'supernaekei',
                                                        'metadata.user': 'tsirif'}))
+
+        new_config['metadata']['datetime'] = exp.metadata['datetime']
+
         assert len(found_config) == 1
         _id = found_config[0].pop('_id')
         assert _id != 'fasdfasfa'
         assert exp._id == _id
-        new_config['refers'] = None
+        new_config['refers'] = {}
         new_config.pop('_id')
         new_config.pop('something_to_be_ignored')
         new_config['algorithms']['dumbalgo']['done'] = False
@@ -300,9 +300,10 @@ class TestConfigProperty(object):
         new_config['algorithms']['dumbalgo']['scoring'] = 0
         new_config['algorithms']['dumbalgo']['suspend'] = False
         new_config['algorithms']['dumbalgo']['value'] = 5
+        new_config['refers'] = {'adapter': [], 'parent_id': None, 'root_id': _id}
         assert found_config[0] == new_config
         assert exp.name == new_config['name']
-        assert exp.refers is None
+        assert exp.configuration['refers'] == new_config['refers']
         assert exp.metadata == new_config['metadata']
         assert exp.pool_size == new_config['pool_size']
         assert exp.max_trials == new_config['max_trials']
@@ -324,20 +325,18 @@ class TestConfigProperty(object):
             exp.configure(new_config)
         assert 'inconsistent' in str(exc_info.value)
 
-    def test_inconsistent_3_set_before_init_no_hit(self, random_dt, new_config):
+    def test_not_inconsistent_3_set_before_init_no_hit(self, random_dt, new_config):
         """Test inconsistent configuration because of datetime."""
         exp = Experiment(new_config['name'])
         new_config['metadata']['datetime'] = 123
-        with pytest.raises(ValueError) as exc_info:
-            exp.configure(new_config)
-        assert 'inconsistent' in str(exc_info.value)
+        exp.configure(new_config)
 
     def test_get_after_init_plus_hit_no_diffs(self, exp_config):
         """Return a configuration dict according to an experiment object.
 
         Before initialization is done, it can be the case that the pair (`name`,
         user's name) has not hit the database. return a yaml compliant form
-        of current state, to be used with :mod:`orion.core.resolve_config`.
+        of current state, to be used with :mod:`orion.core.cli.esolve_config`.
         """
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
@@ -372,9 +371,11 @@ class TestConfigProperty(object):
         initialized and needs to be rebuilt.
         """
         exp = Experiment(new_config['name'])
+        assert exp.id is None
         # Another experiment gets configured first
         experiment_count_before = exp._db.count("experiments")
         naughty_little_exp = Experiment(new_config['name'])
+        assert naughty_little_exp.id is None
         naughty_little_exp.configure(new_config)
         assert naughty_little_exp._init_done is True
         assert exp._init_done is False
@@ -383,6 +384,40 @@ class TestConfigProperty(object):
         with pytest.raises(DuplicateKeyError) as exc_info:
             exp.configure(new_config)
         assert 'duplicate key error' in str(exc_info.value)
+
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+
+    def test_try_set_after_race_condition_with_hit(self, exp_config, new_config):
+        """Cannot set a configuration after init if config is built
+        from no-hit (without up-to-date db info) and new exp is hit
+
+        The experiment from process which first writes to db is initialized
+        properly. The experiment which looses the race condition cannot be
+        initialized and needs to be rebuilt.
+        """
+        # Another experiment gets configured first
+        naughty_little_exp = Experiment(new_config['name'])
+        assert naughty_little_exp.id is None
+        experiment_count_before = naughty_little_exp._db.count("experiments")
+        naughty_little_exp.configure(copy.deepcopy(new_config))
+        assert naughty_little_exp._init_done is True
+
+        exp = Experiment(new_config['name'])
+        assert exp._init_done is False
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        # Experiment with hit won't be able to be configured with config without db info
+        with pytest.raises(DuplicateKeyError) as exc_info:
+            exp.configure(new_config)
+        assert 'Cannot register an existing experiment with a new config' in str(exc_info.value)
+
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+
+        new_config['metadata']['datetime'] = naughty_little_exp.metadata['datetime']
+        exp = Experiment(new_config['name'])
+        assert exp._init_done is False
+        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        # New experiment will be able to be configured
+        exp.configure(new_config)
 
         assert (experiment_count_before + 1) == exp._db.count("experiments")
 
@@ -411,6 +446,7 @@ class TestConfigProperty(object):
         assert (experiment_count_before + 1) == exp._db.count("experiments")
 
         # Retry configuring the experiment
+        new_config['metadata']['datetime'] = naughty_little_exp.metadata['datetime']
         exp = Experiment(new_config['name'])
         exp.configure(new_config)
         assert exp._init_done is True
@@ -627,7 +663,7 @@ class TestInitExperimentView(object):
         assert exp._experiment._db._database is create_db_instance
         assert exp._id == exp_config[0][0]['_id']
         assert exp.name == exp_config[0][0]['name']
-        assert exp.refers == exp_config[0][0]['refers']
+        assert exp.configuration['refers'] == exp_config[0][0]['refers']
         assert exp.metadata == exp_config[0][0]['metadata']
         assert exp._experiment._last_fetched == exp_config[0][0]['metadata']['datetime']
         assert exp.pool_size == exp_config[0][0]['pool_size']
@@ -721,3 +757,43 @@ def test_experiment_view_db_read_only():
     exp._experiment._db._database.write
     with pytest.raises(AttributeError):
         exp._experiment._db.write
+
+
+class TestInitExperimentWithEVC(object):
+    """Create new Experiment instance with EVC."""
+
+    @pytest.mark.usefixtures("with_user_tsirif")
+    def test_new_experiment_with_parent(self, create_db_instance, random_dt, exp_config):
+        """Configure a branch experiment."""
+        exp = Experiment('supernaedo2.6')
+        exp.metadata = exp_config[0][4]['metadata']
+        exp.refers = exp_config[0][4]['refers']
+        exp.algorithms = exp_config[0][4]['algorithms']
+        exp.configure(exp.configuration)
+        assert exp._init_done is True
+        assert exp._db is create_db_instance
+        assert exp._id is not None
+        assert exp.name == 'supernaedo2.6'
+        assert exp.configuration['refers'] == exp_config[0][4]['refers']
+        exp_config[0][4]['metadata']['datetime'] = random_dt
+        assert exp.metadata == exp_config[0][4]['metadata']
+        assert exp._last_fetched == random_dt
+        assert exp.pool_size is None
+        assert exp.max_trials is None
+        assert exp.configuration['algorithms'] == {'random': {}}
+
+    @pytest.mark.usefixtures("with_user_tsirif")
+    def test_experiment_with_parent(self, create_db_instance, random_dt, exp_config):
+        """Configure an existing experiment with parent."""
+        exp = Experiment('supernaedo2.1')
+        exp.algorithms = {'random': {}}
+        exp.configure(exp.configuration)
+        assert exp._init_done is True
+        assert exp._db is create_db_instance
+        assert exp._id is not None
+        assert exp.name == 'supernaedo2.1'
+        assert exp.configuration['refers'] == exp_config[0][4]['refers']
+        assert exp.metadata == exp_config[0][4]['metadata']
+        assert exp.pool_size == 2
+        assert exp.max_trials == 1000
+        assert exp.configuration['algorithms'] == {'random': {}}

@@ -106,6 +106,10 @@ class Trial(object):
                 )
             return ret
 
+        def __eq__(self, other):
+            """Test equality based on self.to_dict()"""
+            return self.name == other.name and self.type == other.type and self.value == other.value
+
         def __str__(self):
             """Represent partially with a string."""
             ret = "{0}(name={1}, type={2}, value={3})".format(
@@ -132,6 +136,7 @@ class Trial(object):
         function or of an 'constraint' expression.
         """
 
+        __slots__ = ()
         allowed_types = ('objective', 'constraint', 'gradient')
 
     class Param(Value):
@@ -139,6 +144,7 @@ class Trial(object):
         floating precision numerical or a categorical expression (e.g. a string).
         """
 
+        __slots__ = ()
         allowed_types = ('integer', 'real', 'categorical')
 
     __slots__ = ('experiment', '_status', 'worker',

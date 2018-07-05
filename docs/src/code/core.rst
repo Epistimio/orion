@@ -10,6 +10,7 @@ Core of Oríon
    :caption: Core modules of Oríon
 
    core/worker
+   core/evc
    core/io
    core/cli
    core/utils
