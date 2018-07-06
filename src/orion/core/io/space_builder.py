@@ -390,7 +390,21 @@ class SpaceBuilder(object):
             self.positional_args_count += 1
             return ns
 
-        for arg in cmd_args:
+        args_value = collections.OrderedDict()
+        i = 0
+        while i < len(cmd_args):
+            args_value[cmd_args[i]] = None
+
+            if cmd_args[i].startswith('-') and i < len(cmd_args) - 1:
+                if not cmd_args[i + 1].startswith('-'):
+                    args_value[cmd_args[i]] = cmd_args[i + 1]
+                    i += 1
+            i += 1
+
+        for arg, value in args_value.items():
+            if value is not None:
+                arg = arg + "=" + value
+
             found = args_pattern.findall(arg)
             if len(found) != 1:
                 if arg.startswith(self.USERARGS_CONFIG):
