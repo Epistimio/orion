@@ -2,11 +2,18 @@
 Example with ikostrikov/pytorch-a2c-ppo-acktr
 ***********************************************
 
-# Intro
+.. note ::
+
+    If database not setup or Oríon not installed, follow setup instructions: :doc:`../installing` and :doc:`../database`
+
+Intro
+========
 
 Here, we are looking to update the ikostrikov/pytorch-a2c-ppo-acktr Reinforcement Learning algorithm implementations to use Oríon to find the best hyperparameters while trying to prevent overfitting via a validation set of random evaluation seeds in the environment.
 
-# What changed?
+What to change
+===============
+
 
 To get the original repository of [ikostrikov](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr) to work using Orion, we make a couple of changes.
 
@@ -55,7 +62,8 @@ And then simply add a registration for the evaluation after training our algorit
 
 Now we're ready to go to run orion's hyperparameter optimization!
 
-## How to search for hyperparameters
+How to search for hyperparameters
+====================================
 
 .. code-block:: bash
 

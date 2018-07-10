@@ -2,7 +2,9 @@
 Example with pytorch-cifar
 **************************
 
-# Link to database setup if not done
+.. note ::
+
+    If database not setup or Oríon not installed, follow setup instructions: :doc:`../installing` and :doc:`../database`
 
 pip3 install torch torchvision
 
