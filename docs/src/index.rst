@@ -13,7 +13,6 @@
    :caption: User's Guide
    :maxdepth: 1
 
-   user/pytorch
    user/executing
    user/configuring
    user/defining
@@ -24,6 +23,7 @@
    :maxdepth: 1
 
    examples/pytorch_cifar
+   examples/pytorch_a2c_ppo
 
 .. toctree::
    :caption: Plugin development's Guide
