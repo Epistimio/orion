@@ -4,7 +4,14 @@ Example with pytorch-cifar
 
 .. note ::
 
-    If database not setup or Oríon not installed, follow setup instructions: :doc:`../installing` and :doc:`../database`
+    If Oríon not installed: pip install orion.core
+
+    If the database is not setup, you can follow the instructions here:
+    :doc:`../database`.
+
+    Alternatively, you can test the example without setting up a database by
+    using the option `--debug`, but note that all data gathered during an
+    execution will be lost at the end of it.
 
 pip3 install torch torchvision
 

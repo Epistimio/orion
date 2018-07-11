@@ -1,23 +1,37 @@
-***********************************************
+*********************************************
 Example with ikostrikov/pytorch-a2c-ppo-acktr
-***********************************************
+*********************************************
 
 .. note ::
 
-    If database not setup or Oríon not installed, follow setup instructions: :doc:`../installing` and :doc:`../database`
+    If Oríon not installed: pip install orion.core
+
+    If the database is not setup, you can follow the instructions here:
+    :doc:`../database`.
+
+    Alternatively, you can test the example without setting up a database by
+    using the option `--debug`, but note that all data gathered during an
+    execution will be lost at the end of it.
+
 
 Intro
-========
+=====
 
-Here, we are looking to update the ikostrikov/pytorch-a2c-ppo-acktr Reinforcement Learning algorithm implementations to use Oríon to find the best hyperparameters while trying to prevent overfitting via a validation set of random evaluation seeds in the environment.
+Here, we are looking to update the ikostrikov/pytorch-a2c-ppo-acktr
+Reinforcement Learning algorithm implementations to use Oríon to find the best
+hyperparameters while trying to prevent overfitting via a validation set of
+random evaluation seeds in the environment.
 
 What to change
-===============
+==============
 
 
-To get the original repository of [ikostrikov](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr) to work using Orion, we make a couple of changes.
+To get the original repository of
+[ikostrikov](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr)
+to work using Orion, we make a couple of changes.
 
-First, we fork the original repo at commit hash: 4d95ec364c7303566c6a52fb0a254640e931609d
+First, we fork the original repo at commit hash:
+4d95ec364c7303566c6a52fb0a254640e931609d
 
 To the top of
 
@@ -41,19 +55,35 @@ and then we run
 
 To make it executable.
 
-Then, we ensure that we evaluate on a separate set of hold out random seeds for the environment (which should be different than the test set and training seed). For MuJoCo environments where the random seed has an effect, we can simply set the random seed before a rollout. In Atari, we would have to create a new validation set of rollouts perhaps with different human starts.
+Then, we ensure that we evaluate on a separate set of hold out random seeds for
+the environment (which should be different than the test set and training seed).
+For MuJoCo environments where the random seed has an effect, we can simply set
+the random seed before a rollout. In Atari, we would have to create a new
+validation set of rollouts perhaps with different human starts.
 
-We create a file with functions for evaluation:
+The original repository doesn't separate training/validation/testing so we add
+the required methods as follows. We create a file with functions for evaluation:
 
 .. code-block:: bash
 
     eval.py
 
-And then simply add a registration for the evaluation after training our algorithm:
+.. note ::
+
+  The execution with Oríon does not require the added evaluation methods for
+  a validation set and could use the final training performance. However, for
+  sake if adhering to best practices, we create a validation set method in
+  eval.py.
+
+And then simply add a registration for the evaluation after training our
+algorithm:
 
 .. code-block:: python
 
-    validation_returns = evaluate_with_seeds(eval_env, actor_critic, args.cuda, eval_env_seeds)
+    validation_returns = evaluate_with_seeds(eval_env,
+                                             actor_critic,
+                                             args.cuda,
+                                             eval_env_seeds)
 
     report_results([dict(
         name='validation_return',
@@ -63,7 +93,7 @@ And then simply add a registration for the evaluation after training our algorit
 Now we're ready to go to run orion's hyperparameter optimization!
 
 How to search for hyperparameters
-====================================
+=================================
 
 .. code-block:: bash
 
@@ -75,7 +105,9 @@ How to search for hyperparameters
     --num-frames 1000000 --eval-env-seeds-file ./seeds.json --no-vis \
     --log-dir~trial.hash_name
 
-Notice that this will search over the learning rates and gamma values, while setting the log directory name to be the hashed trial name provided in the orion database.
+Notice that this will search over the learning rates and gamma values,
+while setting the log directory name to be the hashed trial name provided
+in the orion database.
 
 The full modified codebase for use with Oríon can be found on Gihub:
 
