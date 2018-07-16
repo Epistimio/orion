@@ -27,6 +27,10 @@ def nesteddict():
     return defaultdict(nesteddict)
 
 
+def get_qualified_name(package, name):
+    return package + '.' + name
+
+
 class SingletonError(ValueError):
     """Exception to be raised when someone provides arguments to build
     an object from a already-instantiated `SingletonType` class.
@@ -81,10 +85,11 @@ class Factory(ABCMeta):
         cls.modules = []
         base = import_module(cls.__base__.__module__)
         try:
-            py_files = glob(os.path.abspath(os.path.join(base.__path__[0], '[A-Za-z]*.py')))
-            py_mods = map(lambda x: '.' + os.path.split(os.path.splitext(x)[0])[1], py_files)
+            py_files = glob(os.path.abspath(os.path.join(base.__path__[0] + '/**/',
+                                                         '[A-Za-z]*.py')), recursive=True)
+            py_mods = map(lambda x: x.split('orion/src/')[1].replace('/', '.')[:-3], py_files)
             for py_mod in py_mods:
-                cls.modules.append(import_module(py_mod, package=cls.__base__.__module__))
+                cls.modules.append(import_module(py_mod))
         except AttributeError:
             # This means that base class and implementations reside in a module
             # itself and not a subpackage.
@@ -109,7 +114,8 @@ class Factory(ABCMeta):
 
         cls.types = list(get_all_subclasses(cls.__base__))
         cls.types = [class_ for class_ in cls.types if class_.__name__ != cls.__name__]
-        cls.typenames = list(map(lambda x: x.__name__.lower(), cls.types))
+        cls.typenames = list(map(lambda x: get_qualified_name(x.__module__,
+                                                              x.__name__).lower(), cls.types))
         log.debug("Implementations found: %s", cls.typenames)
 
     def __call__(cls, of_type, *args, **kwargs):
@@ -131,12 +137,17 @@ class Factory(ABCMeta):
 
         :return: The object which was created on the first call.
         """
+        module, name = of_type
+        qualified_name = get_qualified_name(module, name).lower()
+
         for inherited_class in cls.types:
-            if inherited_class.__name__.lower() == of_type.lower():
+            inh_qualified_name = get_qualified_name(inherited_class.__module__,
+                                                    inherited_class.__name__).lower()
+            if inh_qualified_name == qualified_name:
                 return inherited_class.__call__(*args, **kwargs)
 
         error = "Could not find implementation of {0}, type = '{1}'".format(
-            cls.__base__.__name__, of_type)
+            cls.__base__.__name__, qualified_name)
         error += "\nCurrently, there is an implementation for types:\n"
         error += str(cls.typenames)
         raise NotImplementedError(error)
