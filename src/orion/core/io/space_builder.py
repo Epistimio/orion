@@ -390,16 +390,7 @@ class SpaceBuilder(object):
             self.positional_args_count += 1
             return ns
 
-        args_value = collections.OrderedDict()
-        i = 0
-        while i < len(cmd_args):
-            args_value[cmd_args[i]] = None
-
-            if cmd_args[i].startswith('-') and i < len(cmd_args) - 1:
-                if not cmd_args[i + 1].startswith('-'):
-                    args_value[cmd_args[i]] = cmd_args[i + 1]
-                    i += 1
-            i += 1
+        args_value = self.expand_arguments(cmd_args)
 
         for arg, value in args_value.items():
             if value is not None:
@@ -460,6 +451,24 @@ class SpaceBuilder(object):
                 self.userargs_tmpl['config'] = ''
 
         return userconfig
+
+    def expand_arguments(self, cmd_args):
+        """
+        Expand whitespace separated pairs of field/value to Orion's pattern for future detection.
+        Ex: --config user_script_config.yaml -> --config=user_script_config.yaml
+        """
+        args_value = collections.OrderedDict()
+        i = 0
+        while i < len(cmd_args):
+            args_value[cmd_args[i]] = None
+
+            if cmd_args[i].startswith('-') and i < len(cmd_args) - 1:
+                if cmd_args[i + 1][0] not in ['-', '~']:
+                    args_value[cmd_args[i]] = cmd_args[i + 1]
+                    i += 1
+            i += 1
+
+        return args_value
 
     def build_to(self, config_path, trial, experiment=None):
         """Use templates saved from `build_from` to generate a config file (if needed)
