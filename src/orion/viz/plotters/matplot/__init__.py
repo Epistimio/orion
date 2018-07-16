@@ -19,8 +19,17 @@ log = logging.getLogger(__name__)
 
 
 class Matplot(BasePlotter):
-    def __init__(self, analysis, save_format, plotter_config):
-        super(Matplot, self).__init__(analysis, save_format, plotter_config)
+    def __init__(self, analysis, save_format, **plotter_config):
+        self.plotter = None
+        super(Matplot, self).__init__(analysis, save_format, module_addendum='matplot',
+                                      plotter=plotter_config)
+
+    def plot(self):
+        return self.plotter.plot()
+
+    @property
+    def required_analysis(self):
+        return self.plotter.required_analysis
 
     def __setattr__(self, name, value):
         if hasattr(pyplot, name):
@@ -28,3 +37,5 @@ class Matplot(BasePlotter):
             print(name)
             print(value)
             proxy_call(**value)
+        else:
+            self.__dict__[name] = value
