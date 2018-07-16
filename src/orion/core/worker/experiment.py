@@ -15,10 +15,10 @@ import getpass
 import logging
 import random
 
+from orion.algo import PrimaryAlgo
 from orion.core.io.database import Database
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
-from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.trial import Trial
 from orion.core.worker.trials_history import TrialsHistory
 
