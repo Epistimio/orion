@@ -357,3 +357,18 @@ def test_fetch_user_repo_on_non_repo():
     """
     with pytest.raises(Exception):
         resolve_config.fetch_user_repo('.')
+
+
+def test_infer_versioning_metadata_on_detached_head(repo):
+    """Test in the case of a detached head."""
+    with open('README.md', 'w+') as f:
+        f.write('dummy contentt')
+    repo.git.add('README.md')
+    repo.index.commit('2nd commit')
+    existing_metadata = {}
+    existing_metadata['user_script'] = '.git'
+    repo.head.reference = repo.commit('HEAD~1')
+    assert repo.head.is_detached
+    existing_metadata = resolve_config.infer_versioning_metadata(existing_metadata)
+    os.chdir('../')
+    shutil.rmtree('dummy_orion')

@@ -274,7 +274,10 @@ def infer_versioning_metadata(existing_metadata):
     existing_metadata['VCS'] = {}
     existing_metadata['VCS']['is_dirty'] = git_repo.is_dirty()
     existing_metadata['VCS']['HEAD_sha'] = git_repo.head.object.hexsha
-    existing_metadata['VCS']['active_branch'] = git_repo.active_branch.name
+    if git_repo.head.is_detached:
+        existing_metadata['VCS']['active_branch'] = None
+    else:
+        existing_metadata['VCS']['active_branch'] = git_repo.active_branch.name
     # The 'diff' of the current version from the latest commit
     diff = git_repo.git.diff(git_repo.head.commit.tree).encode('utf-8')
     diff_sha = hashlib.sha256(diff).hexdigest()
