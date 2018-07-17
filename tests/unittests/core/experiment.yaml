@@ -18,9 +18,13 @@
     # from `orion`'s args
     user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
     # from user's vsc, e.g. git
-    user_vcs: git
-    user_version: ~
-    user_commit_hash: as5f7asf5asfa7sf
+    VCS:
+      type: git
+      is_dirty: False
+      HEAD_sha: "d44aecee634f0fadb08c0dbe96cc6c8202b77bc8"
+      active_branch: master
+      diff_sha: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
 
   # TODO: enable references to other experiments
   # reuse their trial history

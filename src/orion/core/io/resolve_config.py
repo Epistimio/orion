@@ -251,7 +251,9 @@ def fetch_user_repo(user_script):
         git_repo = git.Repo(dir_path, search_parent_directories=True)
     except git.exc.InvalidGitRepositoryError as e:
         git_repo = None
-        raise Exception('Script should be git repo') from e
+        raise Exception('Script should be a git repo') from e
+    except git.exc.NoSuchPathError as e:
+        git_repo = None
     return git_repo
 
 
@@ -268,6 +270,8 @@ def infer_versioning_metadata(existing_metadata):
     :returns: the `existing_metadata` but filled with above info.
 
     """
+    if 'user_script' not in existing_metadata:
+        return existing_metadata
     git_repo = fetch_user_repo(existing_metadata['user_script'])
     if not git_repo:
         return existing_metadata
