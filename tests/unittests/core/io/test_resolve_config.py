@@ -283,15 +283,6 @@ def test_merge_sub_configs_update_three():
     assert m == {'a': 1, 'b': {'c': {'e': 5}, 'd': 3}}
 
 
-def test_infer_versioning_metadata():
-    """Verify infer_versioning_metadata does nothing so far
-
-    Test should be broken once the function is implemented
-    """
-    metadata = {'hello': {'world': 0}}
-    assert resolve_config.infer_versioning_metadata(metadata) == metadata
-
-
 @pytest.fixture
 def repo():
     """Create a dummy repo for the tests."""
@@ -308,6 +299,7 @@ def repo():
     yield repo
     os.chdir('../')
     shutil.rmtree('dummy_orion')
+    os.chdir('orion')
 
 
 def test_infer_versioning_metadata_on_clean_repo(repo):
@@ -370,5 +362,4 @@ def test_infer_versioning_metadata_on_detached_head(repo):
     repo.head.reference = repo.commit('HEAD~1')
     assert repo.head.is_detached
     existing_metadata = resolve_config.infer_versioning_metadata(existing_metadata)
-    os.chdir('../')
-    shutil.rmtree('dummy_orion')
+    assert existing_metadata['VCS']['active_branch'] is None
