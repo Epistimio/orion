@@ -8,6 +8,7 @@
    :synopsis: Orion main parser class and helper functions to parse command-line options
 
 """
+import argcomplete
 import argparse
 import logging
 import textwrap
@@ -54,6 +55,7 @@ class OrionArgsParser:
 
     def parse(self, argv):
         """Call argparse and generate a dictionary of arguments' value"""
+        argcomplete.autocomplete(self.parser)
         args = vars(self.parser.parse_args(argv))
 
         verbose = args.pop('verbose', 0)
