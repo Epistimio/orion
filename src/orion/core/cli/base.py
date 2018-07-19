@@ -73,6 +73,14 @@ class OrionArgsParser:
         function(args)
 
 
+def exp_name_completer(prefix, action, parser, parsed_args):
+    from argcomplete import warn
+    warn(prefix)
+    names = ['exp1', 'exp2', 'exp3', 'mnist']
+    names = [name for name in names if name.startswith(prefix)]
+    return names
+
+
 def get_basic_args_group(parser):
     """Return the basic arguments for any command."""
     basic_args_group = parser.add_argument_group(
@@ -83,7 +91,7 @@ def get_basic_args_group(parser):
         '-n', '--name',
         type=str, metavar='stringID',
         help="experiment's unique name; "
-             "(default: None - specified either here or in a config)")
+             "(default: None - specified either here or in a config)").completer = exp_name_completer
 
     basic_args_group.add_argument('-c', '--config', type=argparse.FileType('r'),
                                   metavar='path-to-config', help="user provided "
