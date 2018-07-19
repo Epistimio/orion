@@ -57,10 +57,10 @@ class OrionArgsParser:
         args = vars(self.parser.parse_args(argv))
 
         verbose = args.pop('verbose', 0)
-        if verbose == 1:
-            logging.basicConfig(level=logging.INFO)
-        elif verbose == 2:
-            logging.basicConfig(level=logging.DEBUG)
+        levels = {0: logging.WARNING,
+                  1: logging.INFO,
+                  2: logging.DEBUG}
+        logging.basicConfig(level=levels.get(verbose, logging.DEBUG))
 
         function = args.pop('func')
         return args, function
