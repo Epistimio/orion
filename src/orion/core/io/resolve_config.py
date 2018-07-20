@@ -252,8 +252,6 @@ def fetch_user_repo(user_script):
     except git.exc.InvalidGitRepositoryError as e:
         git_repo = None
         raise Exception('Script should be a git repo') from e
-    except git.exc.NoSuchPathError as e:
-        git_repo = None
     return git_repo
 
 
