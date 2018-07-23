@@ -71,8 +71,8 @@ Do you have a question or issues?
 Do you want to report a bug or suggest a feature? Name it!
 Please contact us by opening an issue in our repository below:
 
-- Issue Tracker: `<github.com/mila-udem/orion/issues>`_
-- Source Code: `<github.com/mila-udem/orion>`_
+- Issue Tracker: `<https://github.com/mila-udem/orion/issues>`_
+- Source Code: `<https://github.com/mila-udem/orion>`_
 
 Start by starring and forking our Github repo!
 
