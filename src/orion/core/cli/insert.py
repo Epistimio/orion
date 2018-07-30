@@ -20,6 +20,7 @@ from orion.core.cli import resolve_config
 from orion.core.io.convert import infer_converter_from_file_type
 from orion.core.io.database import Database
 from orion.core.io.space_builder import SpaceBuilder
+from orion.core.utils import get_qualified_name
 from orion.core.utils.format_trials import tuple_to_trial
 from orion.core.worker.experiment import Experiment
 
@@ -152,7 +153,7 @@ def _infer_experiment(cmd_args, file_config):
     dbtype = db_opts.pop('type')
 
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
-    Database(of_type=dbtype, **db_opts)
+    Database(of_type=(get_qualified_name('orion.core.io.database', dbtype), dbtype), **db_opts)
 
     # Information should be enough to infer experiment's name.
     exp_name = tmpconfig['name']
