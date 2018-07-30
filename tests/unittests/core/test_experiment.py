@@ -538,7 +538,7 @@ class TestReserveTrial(object):
     def test_reserve_none(self):
         """Find nothing, return None."""
         try:
-            Database(of_type='MongoDB', name='orion_test',
+            Database(of_type=('orion.core.io.database.mongodb', 'MongoDB'), name='orion_test',
                      username='user', password='pass')
         except (TypeError, ValueError):
             pass

@@ -4,7 +4,7 @@
 
 import pytest
 
-from orion.core.worker.primary_algo import PrimaryAlgo
+from orion.algo.base import PrimaryAlgo
 
 
 @pytest.fixture()
