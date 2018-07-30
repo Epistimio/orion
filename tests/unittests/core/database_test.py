@@ -8,6 +8,11 @@ from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
 
 
+@pytest.fixture
+def oftype_mongodb():
+    return ('orion.core.io.database.mongodb', 'MongoDB')
+
+
 @pytest.mark.usefixtures("null_db_instances")
 class TestDatabaseFactory(object):
     """Test the creation of a determinate `Database` type, by a complete spefication
@@ -32,12 +37,12 @@ class TestDatabaseFactory(object):
     def test_notfound_type_first_call(self):
         """Raise when supplying not implemented wrapper name."""
         with pytest.raises(NotImplementedError) as exc_info:
-            Database('notfound')
+            Database(('notfound', ''))
         assert 'AbstractDB' in str(exc_info.value)
 
-    def test_instatiation_and_singleton(self):
+    def test_instatiation_and_singleton(self, oftype_mongodb):
         """Test create just one object, that object persists between calls."""
-        database = Database(of_type='MongoDB', name='orion_test',
+        database = Database(of_type=oftype_mongodb, name='orion_test',
                             username='user', password='pass')
 
         assert isinstance(database, MongoDB)

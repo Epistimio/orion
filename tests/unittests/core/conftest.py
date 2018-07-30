@@ -20,7 +20,7 @@ JSON_SAMPLE = os.path.join(TEST_DIR, 'sample_config.json')
 @pytest.fixture()
 def create_db_instance(null_db_instances, clean_db):
     """Create and save a singleton database instance."""
-    database = Database(of_type='MongoDB', name='orion_test',
+    database = Database(of_type=('orion.core.io.database.mongodb', 'MongoDB'), name='orion_test',
                         username='user', password='pass')
     return database
 
@@ -107,7 +107,7 @@ def hacked_exp(with_user_dendi, random_dt, clean_db):
     fake database.
     """
     try:
-        Database(of_type='MongoDB', name='orion_test',
+        Database(of_type=('orion.core.io.database.mongodb', 'MongoDB'), name='orion_test',
                  username='user', password='pass')
     except (TypeError, ValueError):
         pass
