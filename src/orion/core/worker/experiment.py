@@ -15,7 +15,7 @@ import getpass
 import logging
 import random
 
-from orion.algo import PrimaryAlgo
+from orion.algo.base import PrimaryAlgo
 from orion.core.io.database import Database
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
