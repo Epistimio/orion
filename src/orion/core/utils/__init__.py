@@ -89,7 +89,7 @@ class Factory(ABCMeta):
             pass
 
         # Get types advertised through entry points!
-        for entry_point in pkg_resources.iter_entry_points(cls.__name__):
+        for entry_point in pkg_resources.iter_entry_points(cls.__base__.__name__):
             entry_point.load()
             log.debug("Found a %s %s from distribution: %s=%s",
                       entry_point.name, cls.__name__,
@@ -150,3 +150,51 @@ class SingletonFactory(AbstractSingletonType, Factory):
     """Wrapping `Factory` with `SingletonType`. Keep compatibility with `AbstractSingletonType`."""
 
     pass
+
+
+class Concept(object):
+    """Define an abstract concept. Be it an algorithm, a plotter or whatever."""
+    def __init__(self, *args, **kwargs):
+        """Create a specifig instance of said concept"""
+
+        # Get base class information
+        base_class = type(self).__base__
+        name = base_class.name
+        module = getattr(base_class, "implementation_module", self.__module__)
+        module = getattr(self, "implementation_module", module)
+        module_addendum = getattr(base_class, 'module_addendum', '')
+
+        # Create a factory instance for the base class
+        self.factory = Factory('Factory', (base_class,), globals())
+
+        log.debug("Creating %s object of %s type with parameters:\n%s",
+                  name, type(self).__name__, kwargs)
+
+        if module_addendum != '' and not module.endswith(module_addendum):
+            module += '.' + module_addendum
+
+        for varname, param in kwargs.items():
+            if isinstance(param, dict) and len(param) > 0:
+                try:
+                    sub_type = list(param)[0]
+                    sub_kwargs = param[sub_type]
+
+                    if isinstance(sub_kwargs, dict):
+                        qualified_name = get_qualified_name(module, sub_type)
+
+                        param = self.factory((qualified_name, sub_type),
+                                             *args, **sub_kwargs)
+
+                    if isinstance(param, dict) and len(param) > 1:
+                        for subvar, subparam, in param.items()[1:]:
+                            setattr(self, subvar, subparam)
+
+                except NotImplementedError:
+                    pass
+
+            elif isinstance(param, str) and \
+                    get_qualified_name(get_qualified_name(module, param), param) \
+                    in self.factory.typenames:
+                param = self.factory((get_qualified_name(module, param), param), *args)
+
+            setattr(self, varname, param)
