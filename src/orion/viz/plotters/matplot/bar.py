@@ -21,14 +21,14 @@ log = logging.getLogger(__name__)
 
 class Bar(BasePlotter):
 
-    def __init__(self, analysis, save_format, **bar_args):
-        super(Bar, self).__init__(analysis, save_format, '', bar_args=bar_args)
+    def __init__(self, analysis, save_formats, **bar_args):
+        super(Bar, self).__init__(analysis, save_formats, bar_args=bar_args)
 
     def plot(self):
         pyplot.bar(range(len(self.analysis.value.keys())), self.analysis.value.values(),
                    **self.bar_args)
 
-        for format_type in self.save_format:
+        for format_type in self.save_formats:
             pyplot.savefig('title', format=format_type)
 
         pyplot.clf()

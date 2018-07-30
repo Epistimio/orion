@@ -12,13 +12,15 @@
 from abc import (ABCMeta, abstractmethod)
 import logging
 
-from orion.core.utils import (Factory, get_qualified_name)
+from orion.core.utils import Concept
 
 log = logging.getLogger(__name__)
 
 
-class BaseAnalyser(object, metaclass=ABCMeta):
+class BaseAnalyser(Concept, metaclass=ABCMeta):
     """Base class describing what a data analyzer can do."""
+
+    name = "Analyser"
 
     def __init__(self, trials, experiment, **kwargs):
         """Create an analyser with all the necessary tools for it to do its thing.
@@ -39,29 +41,8 @@ class BaseAnalyser(object, metaclass=ABCMeta):
         self._trials = trials
         self._experiment = experiment
         self._space = experiment.space
-        self._param_names = list(kwargs.keys())
 
-        # Instantiate tunable parameters of an algorithm
-        for varname, param in kwargs.items():
-            # Check if tunable element is another algorithm
-            if isinstance(param, dict) and len(param) == 1:
-                subanalyser_type = list(param)[0]
-                subanalyser_kwargs = param[subanalyser_type]
-                if isinstance(subanalyser_kwargs, dict):
-                    try:
-                        qualified_name = get_qualified_name(self.__module__, subanalyser_type)
-                        param = AnalyserFactory((qualified_name, subanalyser_type),
-                                                trials, experiment, **subanalyser_kwargs)
-                    except NotImplementedError:
-                        pass
-            elif isinstance(param, str) and \
-                    get_qualified_name(get_qualified_name(self.__module__, param),
-                                       param) in AnalyserFactory.typenames:
-                # pylint: disable=too-many-function-args
-                param = AnalyserFactory((get_qualified_name(self.__module__, param),
-                                        param), trials, experiment)
-
-            setattr(self, varname, param)
+        super(BaseAnalyser, self).__init__(trials, experiment, **kwargs)
 
     @abstractmethod
     def analyse(self, of_type=None):
@@ -94,16 +75,6 @@ class BaseAnalyser(object, metaclass=ABCMeta):
     def available_analysis(self):
         """Return the type of analysis this analyser provides."""
         return []
-
-
-# pylint: disable=too-few-public-methods,abstract-method
-class AnalyserFactory(BaseAnalyser, metaclass=Factory):
-    """Class used to inject dependency on a data analyser implementation.
-
-    .. seealso:: `orion.core.utils.Factory` metaclass and `BaseAnalyser` interface.
-    """
-
-    pass
 
 
 class AnalyserWrapper(BaseAnalyser):
