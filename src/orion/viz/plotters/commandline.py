@@ -20,8 +20,8 @@ log = logging.getLogger(__name__)
 class Commandline(BasePlotter):
     """Prints analysis"""
 
-    def __init__(self, analysis):
-        super(Commandline, self).__init__(analysis)
+    def __init__(self, analysis, save_formats):
+        super(Commandline, self).__init__(analysis, save_formats)
 
     def plot(self):
         print(self.analysis.value)
