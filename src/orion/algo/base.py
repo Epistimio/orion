@@ -12,12 +12,12 @@
 from abc import (ABCMeta, abstractmethod)
 import logging
 
-from orion.core.utils import (Factory, get_qualified_name)
+from orion.core.utils import Concept
 
 log = logging.getLogger(__name__)
 
 
-class BaseAlgorithm(object, metaclass=ABCMeta):
+class BaseAlgorithm(Concept, metaclass=ABCMeta):
     """Base class describing what an algorithm can do.
 
     Notes
@@ -81,6 +81,9 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
     """
 
+    name = "Algorithm"
+    implementation_module = "orion.algo"
+
     def __init__(self, space, **kwargs):
         """Declare problem's parameter space and set up algo's hyperparameters.
 
@@ -93,28 +96,9 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
            hyperparameter names to values.
 
         """
-        log.debug("Creating Algorithm object of %s type with parameters:\n%s",
-                  type(self).__name__, kwargs)
         self._space = space
         self._param_names = list(kwargs.keys())
-        # Instantiate tunable parameters of an algorithm
-        for varname, param in kwargs.items():
-            # Check if tunable element is another algorithm
-            if isinstance(param, dict) and len(param) == 1:
-                subalgo_type = list(param)[0]
-                subalgo_kwargs = param[subalgo_type]
-                if isinstance(subalgo_kwargs, dict):
-                    qualified_name = get_qualified_name(self.__module__, subalgo_type)
-                    param = OptimizationAlgorithm((qualified_name, subalgo_type),
-                                                  space, **subalgo_kwargs)
-            elif isinstance(param, str) and \
-                    get_qualified_name(get_qualified_name(self.__module__, param),
-                                       param) in OptimizationAlgorithm.typenames:
-                # pylint: disable=too-many-function-args
-                qualified_name = get_qualified_name(self.__module__, param)
-                param = OptimizationAlgorithm((qualified_name, param), space)
-
-            setattr(self, varname, param)
+        super(BaseAlgorithm, self).__init__(space, **kwargs)
 
     @abstractmethod
     def suggest(self, num=1):
@@ -232,16 +216,6 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         for attr in self.__dict__.values():
             if isinstance(attr, BaseAlgorithm):
                 attr.space = space_
-
-
-# pylint: disable=too-few-public-methods,abstract-method
-class OptimizationAlgorithm(BaseAlgorithm, metaclass=Factory):
-    """Class used to inject dependency on an algorithm implementation.
-
-    .. seealso:: `orion.core.utils.Factory` metaclass and `BaseAlgorithm` interface.
-    """
-
-    pass
 
 
 class PrimaryAlgo(BaseAlgorithm):
