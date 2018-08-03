@@ -83,7 +83,8 @@ class Experiment(object):
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
-                 'algorithms', '_db', '_init_done', '_id', '_node', '_last_fetched')
+                 'algorithms', 'producer', '_db', '_init_done', '_id',
+                 '_node', '_last_fetched')
     non_branching_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name):
@@ -114,6 +115,7 @@ class Experiment(object):
         self.pool_size = None
         self.max_trials = None
         self.algorithms = None
+        self.producer = None
 
         config = self._db.read('experiments',
                                {'name': name, 'metadata.user': user})
@@ -570,6 +572,7 @@ class Experiment(object):
 
             # Instantiate algorithms
             self.algorithms = PrimaryAlgo(space, self.algorithms)
+
         except KeyError:
             pass
 
