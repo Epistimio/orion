@@ -589,7 +589,8 @@ def test_register_trials(database, random_dt, hacked_exp):
         Trial(params=[{'name': 'a', 'type': 'integer', 'value': 5}]),
         Trial(params=[{'name': 'b', 'type': 'integer', 'value': 6}]),
         ]
-    hacked_exp.register_trials(trials)
+    for trial in trials:
+        hacked_exp.register_trial(trial)
     yo = list(database.trials.find({'experiment': hacked_exp._id}))
     assert len(yo) == len(trials)
     assert yo[0]['params'] == list(map(lambda x: x.to_dict(), trials[0].params))
@@ -603,7 +604,7 @@ def test_register_trials(database, random_dt, hacked_exp):
 def test_fetch_all_trials(hacked_exp, exp_config, random_dt):
     """Fetch a list of all trials"""
     query = dict()
-    trials = hacked_exp._fetch_trials(query)
+    trials = hacked_exp.fetch_trials(query)
     assert len(trials) == 7
     for i in range(7):
         assert trials[i].to_dict() == exp_config[1][i]
