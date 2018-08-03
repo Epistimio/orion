@@ -257,7 +257,6 @@ class Trial(object):
 
         .. note:: Two trials that have the same `params` must have the same `hash_name`.
         """
-<<<<<<< HEAD
         if not self.params and not self.experiment:
             raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
                              "have not been set.")
@@ -266,16 +265,6 @@ class Trial(object):
     def __hash__(self):
         """Return the hashname for this trial"""
         return self.hash_name
-=======
-        if not self.params:
-            raise ValueError("Cannot distinguish this trial, as 'params' have not been set.")
-        key = self.params_repr().encode('utf-8')
-        # Trial may have different fake objective throughout optimization so that should
-        # be discernable.
-        key += self._repr_values(self.lie)
-
-        return hashlib.md5(key).hexdigest()
->>>>>>> Add lie to Trial -- rephrase
 
     @property
     def full_name(self):

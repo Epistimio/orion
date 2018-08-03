@@ -114,7 +114,6 @@ class Experiment(object):
         self.pool_size = None
         self.max_trials = None
         self.algorithms = None
-        self.parallel_strategy = None #TODO(mnoukhov) where to init this
 
         config = self._db.read('experiments',
                                {'name': name, 'metadata.user': user})
@@ -286,17 +285,6 @@ class Experiment(object):
 
         self._db.write('trials', trial.to_dict())
 
-    def _fetch_trials(self, query):
-        """Fetch trials for this `Experiment` that fulfill the query
-        requirements
-
-        :return: list of completed `Trial` objects
-        """
-        query.update(experiment=self._id)
-        trials = Trial.build(self._db.read('trials', query))
-
-        return trials
-
     def fetch_completed_trials(self):
         """Fetch recent completed trials that this `Experiment` instance has not
         yet seen.
@@ -323,7 +311,7 @@ class Experiment(object):
         query = dict(
             status={'$in': ['new', 'interrupted']}
         )
-        active_trials = self._fetch_trials(query)
+        active_trials = self.fetch_trials_tree(query)
         return active_trials
 
     # pylint: disable=invalid-name

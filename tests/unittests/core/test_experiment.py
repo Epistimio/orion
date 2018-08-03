@@ -604,7 +604,7 @@ def test_register_trials(database, random_dt, hacked_exp):
 def test_fetch_all_trials(hacked_exp, exp_config, random_dt):
     """Fetch a list of all trials"""
     query = dict()
-    trials = hacked_exp._fetch_trials(query)
+    trials = hacked_exp.fetch_trials(query)
     assert len(trials) == 7
     for i in range(7):
         assert trials[i].to_dict() == exp_config[1][i]
