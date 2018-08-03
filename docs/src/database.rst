@@ -36,18 +36,18 @@ way described in your distribution's web pages.
    * `Tutorialspoint <https://www.tutorialspoint.com/mongodb/mongodb_create_database.htm>`_
    * `ArchLinux wiki <https://wiki.archlinux.org/index.php/MongoDB>`_
 Setup MongoDB without root access
--------------------------------
+---------------------------------
 
 As mentioned in  `Mongo docs <https://docs.mongodb.com/manual/tutorial/install-mongodb-on-debian/#using-tgz-tarballs>`_ download MongoDB, extract it and make sure the binaries are in a directory listed in your PATH environment variable. Next create the database using::
 
       mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
    
-To start MongoDb::
+To start MongoDb, create a directory to contain the database::
 
       mongod --dbpath /path/to/database
 
 Setup MongoDB with root access
-----------------
+------------------------------
 Follow the instructions described in  `Mongo docs <https://docs.mongodb.com/manual/administration/install-on-linux/>`_. If you have root access you can invoke the following command as you can read `here <https://docs.mongodb.com/manual/reference/method/db.createUser/>`_::
 
    mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
