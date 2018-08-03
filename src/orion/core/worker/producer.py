@@ -8,6 +8,7 @@
    :synopsis: Suggest new parameter sets which optimize the objective.
 
 """
+from abc import (ABC, abstractmethod)
 import logging
 
 from orion.core.utils import format_trials
@@ -25,15 +26,26 @@ def get_objective(trial):
     return objectives[0]
 
 
-class ParallelStrategy(object):
+class BaseParallelStrategy(ABC):
+    @abstractmethod
     def observe(self, trials):
-        self.trials += trials
+        """observe completed trials"""
+        pass
+
+    @abstractmethod
+    def lie(self, trials):
+        """construct fake results for uncompleted trials"""
+        pass
+
+class NoParallelStrategy(BaseParallelStrategy):
+    def observe(self, trials):
+        pass
 
     def lie(self, trials):
-        return trials
+        pass
 
 
-class MaxParallelStrategy(ParallelStrategy):
+class MaxParallelStrategy(BaseParallelStrategy):
     def observe(self, points, results):
         super(MaxParallelStrategy, self).observe(points, results)
         self.max_result = max(result['objective'] for result in results)
@@ -41,14 +53,14 @@ class MaxParallelStrategy(ParallelStrategy):
     def lie(self, trials):
         for trial in trials:
             if get_objective(trial):
-                raise RuntimeError("Trial %d is completed but should not.", trial.id)
+                raise RuntimeError("Trial %d is completed but should not be.", trial.id)
 
-            trial.results.append(Trial.Result(name='lie', type='objective', value=self.max_result))
+            trial.results.append(Trial.Result(name='lie', type='lie', value=self.max_result))
 
         return trials
 
 
-class MeanParallelStrategy(ParallelStrategy):
+class MeanParallelStrategy(BaseParallelStrategy):
     def observe(self, points, results):
         super(MeanParallelStrategy, self).observe(points, results)
         self.mean_result = sum(result['objective'] for result in results) / float(len(results))
@@ -56,9 +68,9 @@ class MeanParallelStrategy(ParallelStrategy):
     def lie(self, trials):
         for trial in trials:
             if get_objective(trial):
-                raise RuntimeError("Trial %d is completed but should not.", trial.id)
+                raise RuntimeError("Trial %d is completed but should not be.", trial.id)
 
-            trial.results.append(Trial.Result(name='lie', type='objective', value=self.mean_result))
+            trial.results.append(Trial.Result(name='lie', type='lie', value=self.mean_result))
 
         return trials
 
@@ -124,7 +136,7 @@ class Producer(object):
 
     def _produces_lies(self):
         log.debug("### Fetch trials to observe:")
-        non_completed_trials = self.experiment._fetch_trials({'status': {'$neq': 'completed'}})
+        non_completed_trials = self.experiment.fetch_active_trials()
         log.debug("### %s", non_completed_trials)
         if non_completed_trials:
             log.debug("### Use defined ParallelStrategy to assign them fake results.")
