@@ -8,71 +8,11 @@
    :synopsis: Suggest new parameter sets which optimize the objective.
 
 """
-from abc import (ABC, abstractmethod)
 import logging
 
 from orion.core.utils import format_trials
 
 log = logging.getLogger(__name__)
-
-
-def get_objective(trial):
-    objectives = [result['value'] for result in trial.results
-                  if result['type'] == 'objective']
-
-    if len(objectives) > 1:
-        raise RuntimeError("Trial %d has %d objectives", trial.id, len(objectives))
-
-    return objectives[0]
-
-
-class BaseParallelStrategy(ABC):
-    @abstractmethod
-    def observe(self, trials):
-        """observe completed trials"""
-        pass
-
-    @abstractmethod
-    def lie(self, trials):
-        """construct fake results for uncompleted trials"""
-        pass
-
-class NoParallelStrategy(BaseParallelStrategy):
-    def observe(self, trials):
-        pass
-
-    def lie(self, trials):
-        pass
-
-
-class MaxParallelStrategy(BaseParallelStrategy):
-    def observe(self, points, results):
-        super(MaxParallelStrategy, self).observe(points, results)
-        self.max_result = max(result['objective'] for result in results)
-
-    def lie(self, trials):
-        for trial in trials:
-            if get_objective(trial):
-                raise RuntimeError("Trial %d is completed but should not be.", trial.id)
-
-            trial.results.append(Trial.Result(name='lie', type='lie', value=self.max_result))
-
-        return trials
-
-
-class MeanParallelStrategy(BaseParallelStrategy):
-    def observe(self, points, results):
-        super(MeanParallelStrategy, self).observe(points, results)
-        self.mean_result = sum(result['objective'] for result in results) / float(len(results))
-
-    def lie(self, trials):
-        for trial in trials:
-            if get_objective(trial):
-                raise RuntimeError("Trial %d is completed but should not be.", trial.id)
-
-            trial.results.append(Trial.Result(name='lie', type='lie', value=self.mean_result))
-
-        return trials
 
 
 class Producer(object):
@@ -98,7 +38,7 @@ class Producer(object):
             raise RuntimeError("Experiment object provided to Producer has not yet completed"
                                " initialization.")
         self.algorithm = experiment.algorithms
-        self.parallel_strategy = experiment.parallel_strategy  # TODO: Where should we define this
+        self.parallel_strategy = experiment.parallel_strategy
         self.naive_algorithm = None
 
     def produce(self):

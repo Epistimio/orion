@@ -131,6 +131,7 @@ def new_config(random_dt):
         pool_size=10,
         max_trials=1000,
         algorithms={'dumbalgo': {}},
+        producer={'strategy': 'NoParallelStrategy'},
         # attrs starting with '_' also
         _id='fasdfasfa',
         # and in general anything which is not in Experiment's slots
