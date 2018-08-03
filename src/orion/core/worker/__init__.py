@@ -10,6 +10,7 @@
 
 """
 import io
+import itertools
 import logging
 import pprint
 
@@ -20,13 +21,18 @@ from orion.core.worker.producer import Producer
 log = logging.getLogger(__name__)
 
 
-def workon(experiment):
+def workon(experiment, worker_trials=None):
     """Try to find solution to the search problem defined in `experiment`."""
     producer = Producer(experiment)
     consumer = Consumer(experiment)
 
     log.debug("#####  Init Experiment  #####")
-    while True:
+    try:
+        iterator = range(int(worker_trials))
+    except (OverflowError, TypeError):
+        # When worker_trials is inf
+        iterator = itertools.count()
+    for _ in iterator:
         log.debug("#### Try to reserve a new trial to evaluate.")
         trial = experiment.reserve_trial(score_handle=producer.algorithm.score)
 
