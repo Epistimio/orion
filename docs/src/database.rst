@@ -66,12 +66,12 @@ Atlas MongoDB
 6. Add the IP of your compuer to the whitelist or "Allow access from anywhere."
 7. Click on "Connect your application".
 8. Orion supports MongoDB drive 3.4, so choose driver 3.4.
-9. Copy the generated SRV address and replace "USERNAME" and "PASSWORD" with your Atals MongoDB username and password.
+9. Copy the generated SRV address and replace "USERNAME" and "PASSWORD" with your Atlas MongoDB username and password.
 10. Test with::
 
-   mongo "mongodb+srv://orion-efjp0.mongodb.net/test" --username YOUR_USER_NAME
+   mongo [your uri] --username YOUR_USER_NAME
 
-11. Configure Oríon's YAML file.
+11. Configure Oríon's YAML file (See next section).
 
 
 Configuring Oríon's Database
