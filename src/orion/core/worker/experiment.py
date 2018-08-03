@@ -114,6 +114,7 @@ class Experiment(object):
         self.pool_size = None
         self.max_trials = None
         self.algorithms = None
+        self.parallel_strategy = None #TODO(mnoukhov) where to init this
 
         config = self._db.read('experiments',
                                {'name': name, 'metadata.user': user})
@@ -292,9 +293,9 @@ class Experiment(object):
         :return: list of completed `Trial` objects
         """
         query.update(experiment=self._id)
-        trials = trial.build(self._db.read('trials', query))
+        trials = Trial.build(self._db.read('trials', query))
 
-        return completed_trials
+        return trials
 
     def fetch_completed_trials(self):
         """Fetch recent completed trials that this `Experiment` instance has not
@@ -315,6 +316,15 @@ class Experiment(object):
         self._last_fetched = datetime.datetime.utcnow()
 
         return completed_trials
+
+    def fetch_active_trials(self):
+        # TODO(mnoukhov): add reserved to query?
+        # TODO(mnoukhov): fetch only those started after last query?
+        query = dict(
+            status={'$in': ['new', 'interrupted']}
+        )
+        active_trials = self._fetch_trials(query)
+        return active_trials
 
     # pylint: disable=invalid-name
     @property

@@ -601,6 +601,15 @@ def test_register_trials(database, random_dt, hacked_exp):
     assert yo[1]['submit_time'] == random_dt
 
 
+def test_fetch_all_trials(hacked_exp, exp_config, random_dt):
+    """Fetch a list of all trials"""
+    query = dict()
+    trials = hacked_exp._fetch_trials(query)
+    assert len(trials) == 7
+    for i in range(7):
+        assert trials[i].to_dict() == exp_config[1][i]
+
+
 def test_fetch_completed_trials(hacked_exp, exp_config, random_dt):
     """Fetch a list of the unseen yet completed trials."""
     trials = hacked_exp.fetch_completed_trials()
@@ -609,6 +618,18 @@ def test_fetch_completed_trials(hacked_exp, exp_config, random_dt):
     assert trials[0].to_dict() == exp_config[1][0]
     assert trials[1].to_dict() == exp_config[1][1]
     assert trials[2].to_dict() == exp_config[1][2]
+
+
+def test_fetch_active_trials(hacked_exp, exp_config):
+    """Fetch a list of the trials that are currently running
+
+    trials.status in ['new', 'interrupted']
+    """
+    trials = hacked_exp.fetch_active_trials()
+    assert len(trials) == 3
+    assert trials[0].to_dict() == exp_config[1][5]
+    assert trials[1].to_dict() == exp_config[1][3]
+    assert trials[2].to_dict() == exp_config[1][4]
 
 
 def test_is_done_property(hacked_exp):
