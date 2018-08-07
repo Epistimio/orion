@@ -25,7 +25,7 @@ Local Installation
 
 Supposing we are in a Linux machine, follow the installation process
 (preferably respecting the package manager of your distribution) discussed in
-`Mongo docs <https://docs.mongodb.com/manual/administration/install-on-linux/>`_. If
+`Mongo docs <https://docs.mongodb.com/manual/administration/install-on-linux/>`__. If
 your Linux distribution is not enlisted in this link, then follow the preferred
 way described in your distribution's web pages.
 
@@ -36,12 +36,48 @@ way described in your distribution's web pages.
    * `Tutorialspoint <https://www.tutorialspoint.com/mongodb/mongodb_create_database.htm>`_
    * `ArchLinux wiki <https://wiki.archlinux.org/index.php/MongoDB>`_
 
-Create a MongoDB
-----------------
+Setup MongoDB without root access
+---------------------------------
 
-Invoke the following command as you can read `here <https://docs.mongodb.com/manual/reference/method/db.createUser/>`_::
+As mentioned in  `Mongo docs <https://docs.mongodb.com/manual/tutorial/install-mongodb-on-debian/#using-tgz-tarballs>`__ download MongoDB, extract it and make sure the binaries are in a directory listed in your PATH environment variable. Next create the database using::
+
+      mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
+
+To start MongoDb, create a directory to contain the database::
+
+      mongod --dbpath /path/to/database
+
+Setup MongoDB with root access
+------------------------------
+Follow the instructions described in  `Mongo docs <https://docs.mongodb.com/manual/administration/install-on-linux/>`_. If you have root access you can invoke the following command as you can read `here <https://docs.mongodb.com/manual/reference/method/db.createUser/>`__::
 
    mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
+
+And start MongoDB::
+
+   sudo service mongod start
+
+Atlas MongoDB
+=============
+1. Create an account `here <https://www.mongodb.com/cloud/atlas>`_.
+2. Follow the defaults to create a free cluster.
+3. Add cluster name and click on "Create Cluster".
+4. Wait for the cluster to be created.
+5. In "Overview" tab, click on "CONNECT".
+6. Add the IP of your compuer to the whitelist or "Allow access from anywhere."
+7. Click on "Connect your application".
+8. Orion supports MongoDB drive 3.4, so choose driver 3.4.
+9. Copy the generated SRV address and replace "USERNAME" and "PASSWORD" with your
+   Atlas MongoDB username and password.
+10. To test, move to the first page, select "connect", and then choose "Connect
+    with your the Mongo Shell". Select your operating system and copy the URL:
+
+    .. code-block:: sh
+
+      mongo YOUR_URL --username YOUR_USER_NAME
+
+11. Configure Oríon's YAML file (See next section).
+
 
 Configuring Oríon's Database
 ============================
@@ -75,56 +111,3 @@ locations, and configuration files provided via executable's cli precede
 environmentals.
 
 .. _MongoDB: https://www.mongodb.com/
-
-
-
-Atlas MongoDB
-=============
-
-https://www.mongodb.com/cloud/atlas
-
-
-NEXT: CLUSTER TIER
-
-NEXT: ADDITIONAL SETTINGS
-
-NEXT: CLUSTER NAME
-
-Some cluster name...
-
-Create Cluster
-
-Security tab
-MongoDB users
-
-user name
-autogen pass: Hx6yN2Dp40GgTirF
-
-
-https://docs.atlas.mongodb.com/getting-started/
-
-IP whitelist
-(option: Add current ip address)
-
-
-On Clusters/Overview tab:
-Connect
-
-
-
-https://docs.atlas.mongodb.com/mongo-shell-connection/
-
-Test with
-mongo "mongodb+srv://orion-efjp0.mongodb.net/test" --username bouthilx
-
-
-Connect Your Application
-Orion supports MongoDB drive 3.4
-Copy the address
-
-database:
-    type: 'mongodb'
-    name: 'name_of_db'
-    host: <URI>
-
-Done.
