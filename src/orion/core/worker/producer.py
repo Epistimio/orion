@@ -8,6 +8,7 @@
    :synopsis: Suggest new parameter sets which optimize the objective.
 
 """
+import copy
 import logging
 
 from orion.core.utils import format_trials
@@ -75,6 +76,10 @@ class Producer(object):
             self.parallel_strategy.observe(points, results)
 
     def _produces_lies(self):
+        """Add fake objective results to incomplete trials
+
+        Then register the trials in the db
+        """
         log.debug("### Fetch trials to observe:")
         incomplete_trials = self.experiment.fetch_active_trials()
         log.debug("### %s", incompleted_trials)
