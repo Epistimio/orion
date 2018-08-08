@@ -12,6 +12,7 @@ from orion.core.worker.trial import Trial
 
 @pytest.fixture
 def observations():
+    """10 objective observations"""
     points = [i for i in range(10)]
     results = [Trial.Result(name='foo', type='objective', value=points[i])
                for i in range(10)]
@@ -21,11 +22,14 @@ def observations():
 
 @pytest.fixture
 def incomplete_trial():
+    """A single trial without results"""
     return Trial(params=[{'name': 'a', 'type': 'integer', 'value': 6}])
 
 
 class TestStrategyBuild:
+    """Test creating a strategy class with the build method"""
     def test_strategy_build_no(self):
+        """Test creating a NoParallelStrategy class"""
         strategy = Strategy.build({
             'of_type': 'NoParallelStrategy',
         })
@@ -33,7 +37,9 @@ class TestStrategyBuild:
 
 
 class TestParallelStrategies:
+    """Test the different parallel strategy methods"""
     def test_max_parallel_strategy(self, observations, incomplete_trial):
+        """Test that MaxParallelStrategy lies using the max"""
         points, results = observations
 
         strategy = MaxParallelStrategy()
@@ -46,6 +52,7 @@ class TestParallelStrategies:
         assert lying_result.value == max_value
 
     def test_mean_parallel_strategy(self, observations, incomplete_trial):
+        """Test that MeanParallelStrategy lies using the mean"""
         points, results = observations
 
         strategy = MeanParallelStrategy()
@@ -59,6 +66,7 @@ class TestParallelStrategies:
         assert lying_result.value == mean_value
 
     def test_no_parallel_strategy(self, observations, incomplete_trial):
+        """Test that NoParallelStrategy lies outputs None"""
         points, results = observations
 
         strategy = NoParallelStrategy()

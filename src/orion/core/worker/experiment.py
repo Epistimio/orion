@@ -309,8 +309,11 @@ class Experiment(object):
         return completed_trials
 
     def fetch_active_trials(self):
+        """Fetch currently incomplete trials for this `Experiment`
+
+        :return: list of incomplete `Trial` objects
+        """
         # TODO(mnoukhov): add reserved to query?
-        # TODO(mnoukhov): fetch only those started after last query?
         query = dict(
             status={'$in': ['new', 'interrupted']}
         )
