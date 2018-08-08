@@ -25,6 +25,7 @@ from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
+from orion.core.worker.strategies import Strategy
 from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
@@ -561,12 +562,14 @@ class Experiment(object):
 
             # Instantiate algorithms
             self.algorithms = PrimaryAlgo(space, self.algorithms)
-
         except KeyError:
             pass
 
         if self.refers and not isinstance(self.refers.get('adapter'), BaseAdapter):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
+
+        #TODO(mnoukhov) do we need an if statement similar to above
+        self.producer['strategy'] = Strategy.build(self.producer['strategy'])
 
     def _branch_config(self, conflicts, branching_configuration):
         """Ask for a different identifier for this experiment. Set :attr:`refers`
