@@ -5,7 +5,8 @@ Simple example
 Installation and setup
 ======================
 
-Assume :doc:`/installing` and :doc:`/database` done.
+First, install Oríon follwing :doc:`/installing` and configure the database (:doc:`/database`).
+Then install `pytorch`, `torchvision` and clone the PyTorch [examples repository](https://github.com/pytorch/examples):
 
 .. code-block:: bash
 
@@ -13,31 +14,33 @@ Assume :doc:`/installing` and :doc:`/database` done.
     $ git clone git@github.com:pytorch/examples.git
 
 
-Adapting the code
-=================
+Adapting the code of MNIST example
+==================================
 
 .. code-block:: bash
 
     $ cd examples/mnist
+
+In your favourite editor add a line `#!/usr/bin/env python` to the `main.py` and make it executable, for example:
 
 .. code-block:: bash
 
     $ sed -i '1s/^/#!/usr/bin/env python/' main.py
     $ chmod +x main.py
 
-Add in top
+Add imports on top:
 
 .. code-block:: python
 
     from orion.client import report_results
 
-Add to last line of test()
+Propagate the performance of the model adding this to last line of test():
 
 .. code-block:: python
 
     return 1 - (correct / len(test_loader.dataset))
 
-Last line of the main() function
+Report the performance to Oríon adding this to the last line of the main() function:
 
 .. code-block:: python
 

@@ -14,6 +14,8 @@ We support currently only argparse_ arguments, like::
 
    orion -v -n demo tests/functional/demo/black_box.py -x~'normal(30, 3)'
 
+The list of supported distributions can be found [here](https://docs.scipy.org/doc/scipy/reference/stats.html).
+
 Parameters by configuration files
 =================================
 
