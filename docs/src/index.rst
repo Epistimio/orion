@@ -5,8 +5,9 @@
    :caption: Installation Guide
    :maxdepth: 1
 
-   installing
-   database
+   install/core
+   install/database
+   install/plugins
 
 
 .. toctree::

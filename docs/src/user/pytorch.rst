@@ -5,8 +5,8 @@ Simple example
 Installation and setup
 ======================
 
-First, install Oríon follwing :doc:`/installing` and configure the database (:doc:`/database`).
-Then install `pytorch`, `torchvision` and clone the PyTorch
+First, install Oríon follwing :doc:`/install/core` and configure the database
+(:doc:`/install/database`).  Then install `pytorch`, `torchvision` and clone the PyTorch
 [examples repository](https://github.com/pytorch/examples):
 
 .. code-block:: bash
