@@ -26,7 +26,7 @@ def test_hunt_command_full_parsing(database, monkeypatch):
     parser, subparsers = _create_parser()
     args_list = ["hunt", "-n", "test",
                  "--config", "./orion_config_random.yaml",
-                 "--max-trials", "400", "--pool-size", "4",
+                 "--max-trials", "400", "--pool-size", "4", "--worker-trials", "5",
                  "./black_box.py", "-x~normal(1,1)"]
 
     hunt.add_subparser(subparsers)
@@ -38,3 +38,4 @@ def test_hunt_command_full_parsing(database, monkeypatch):
     assert args['user_args'] == ['./black_box.py', '-x~normal(1,1)']
     assert args['pool_size'] == 4
     assert args['max_trials'] == 400
+    assert args['worker_trials'] == 5

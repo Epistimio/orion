@@ -55,6 +55,7 @@ log = logging.getLogger(__name__)
 
 # Default settings for command line arguments (option, description)
 DEF_CMD_MAX_TRIALS = (infinity, 'inf/until preempted')
+DEF_CMD_WORKER_TRIALS = (infinity, 'inf/until preempted')
 DEF_CMD_POOL_SIZE = (10, str(10))
 
 DEF_CONFIG_FILES_PATHS = [
@@ -106,6 +107,7 @@ def fetch_default_options():
     # get some defaults
     default_config['name'] = None
     default_config['max_trials'] = DEF_CMD_MAX_TRIALS[0]
+    default_config['worker_trials'] = DEF_CMD_WORKER_TRIALS[0]
     default_config['pool_size'] = DEF_CMD_POOL_SIZE[0]
     default_config['algorithms'] = 'random'
 
