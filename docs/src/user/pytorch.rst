@@ -6,7 +6,8 @@ Installation and setup
 ======================
 
 First, install Oríon follwing :doc:`/installing` and configure the database (:doc:`/database`).
-Then install `pytorch`, `torchvision` and clone the PyTorch [examples repository](https://github.com/pytorch/examples):
+Then install `pytorch`, `torchvision` and clone the PyTorch
+[examples repository](https://github.com/pytorch/examples):
 
 .. code-block:: bash
 
@@ -21,7 +22,8 @@ Adapting the code of MNIST example
 
     $ cd examples/mnist
 
-In your favourite editor add a line `#!/usr/bin/env python` to the `main.py` and make it executable, for example:
+In your favourite editor add a line `#!/usr/bin/env python` to the `main.py` and make it
+executable, for example:
 
 .. code-block:: bash
 
