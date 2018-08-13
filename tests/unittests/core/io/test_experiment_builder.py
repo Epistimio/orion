@@ -65,7 +65,8 @@ def test_fetch_config_from_db_hit(config_file, exp_config, random_dt):
     assert db_config['algorithms'] == exp_config[0][0]['algorithms']
 
 
-@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif", "mock_infer_versioning_metadata")
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif",
+                         "mock_infer_versioning_metadata")
 def test_fetch_full_config_new_config(config_file, exp_config, random_dt, script_path):
     """Verify full config with new config (causing branch)"""
     cmdargs = {'name': 'supernaedo2',
@@ -86,7 +87,8 @@ def test_fetch_full_config_new_config(config_file, exp_config, random_dt, script
     assert full_config['algorithms'] == cmdconfig['algorithms']
 
 
-@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif", "mock_infer_versioning_metadata")
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif",
+                         "mock_infer_versioning_metadata")
 def test_fetch_full_config_old_config(old_config_file, exp_config, random_dt, script_path):
     """Verify full config with old config (not causing branch)"""
     cmdargs = {'name': 'supernaedo2',
@@ -178,7 +180,8 @@ def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_d
     assert exp.algorithms.configuration == {'random': {}}
 
 
-@pytest.mark.usefixtures("version_XYZ", "clean_db", "null_db_instances", "with_user_tsirif", "mock_infer_versioning_metadata")
+@pytest.mark.usefixtures("version_XYZ", "clean_db", "null_db_instances", "with_user_tsirif",
+                         "mock_infer_versioning_metadata")
 def test_build_from_hit(old_config_file, create_db_instance, exp_config, script_path):
     """Try building experiment when in db (no branch)"""
     cmdargs = {'name': 'supernaedo2',
