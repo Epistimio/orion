@@ -6,13 +6,16 @@ Installation and setup
 ======================
 
 First, install Oríon follwing :doc:`/install/core` and configure the database
-(:doc:`/install/database`).  Then install `pytorch`, `torchvision` and clone the PyTorch
-[examples repository](https://github.com/pytorch/examples):
+(:doc:`/install/database`).  Then install `pytorch`, `torchvision` and clone the
+PyTorch `examples repository`_ :
 
 .. code-block:: bash
 
     $ pip3 install torch torchvision
     $ git clone git@github.com:pytorch/examples.git
+
+
+.. _examples repository: https://github.com/pytorch/examples
 
 
 Adapting the code of MNIST example
