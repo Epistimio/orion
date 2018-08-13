@@ -90,6 +90,9 @@ def exp_config():
 
     for i, t_dict in enumerate(exp_config[1]):
         exp_config[1][i] = Trial(**t_dict).to_dict()
+    for i, t_dict in enumerate(exp_config[0]):
+        exp_config[0][i]["metadata"]["user_script"] = os.path.join(
+            os.path.dirname(__file__), exp_config[0][i]["metadata"]["user_script"])
 
     return exp_config
 
@@ -154,3 +157,21 @@ def create_db_instance(null_db_instances, clean_db):
         db = Database()
 
     return db
+
+
+@pytest.fixture()
+def script_path():
+    return os.path.join(os.path.dirname(__file__), "functional/demo/black_box.py")
+
+
+@pytest.fixture()
+def mock_infer_versioning_metadata(monkeypatch):
+    def fixed_dictionary(user_script):
+        VCS = {}
+        VCS['type'] = 'git'
+        VCS['is_dirty'] = False
+        VCS['HEAD_sha'] = "test"
+        VCS['active_branch'] = None
+        VCS['diff_sha'] = "diff"
+        return VCS
+    monkeypatch.setattr(resolve_config, "infer_versioning_metadata", fixed_dictionary)

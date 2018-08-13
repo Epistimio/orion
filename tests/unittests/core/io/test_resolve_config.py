@@ -66,16 +66,16 @@ def test_fetch_metadata_orion_version():
 @pytest.mark.usefixtures("force_is_exe")
 def test_fetch_metadata_executable_users_script():
     """Verify executable user script with absolute path"""
-    cmdargs = {'user_args': ['A']}
+    cmdargs = {'user_args': ['tests/functional/demo/black_box.py']}
     metadata = resolve_config.fetch_metadata(cmdargs)
-    assert metadata['user_script'] == os.path.abspath('A')
+    assert metadata['user_script'] == os.path.abspath('tests/functional/demo/black_box.py')
 
 
 def test_fetch_metadata_non_executable_users_script():
     """Verify executable user script keeps given path"""
-    cmdargs = {'user_args': ['A']}
+    cmdargs = {'user_args': ['tests/functional/demo/black_box.py']}
     metadata = resolve_config.fetch_metadata(cmdargs)
-    assert metadata['user_script'] == 'A'
+    assert metadata['user_script'] == 'tests/functional/demo/black_box.py'
 
 
 @pytest.mark.usefixtures()
@@ -308,13 +308,11 @@ def test_infer_versioning_metadata_on_clean_repo(repo):
     when the user's repo is clean:
     `is_dirty`, `active_branch` and `diff_sha`.
     """
-    existing_metadata = {}
-    existing_metadata['user_script'] = '.git'
-    existing_metadata = resolve_config.infer_versioning_metadata(existing_metadata)
-    assert not existing_metadata['VCS']['is_dirty']
-    assert existing_metadata['VCS']['active_branch'] == 'master'
+    vcs = resolve_config.infer_versioning_metadata('.git')
+    assert not vcs['is_dirty']
+    assert vcs['active_branch'] == 'master'
     # the diff should be empty so the diff_sha should be equal to the diff sha of an empty string
-    assert existing_metadata['VCS']['diff_sha'] == hashlib.sha256(''.encode('utf-8')).hexdigest()
+    assert vcs['diff_sha'] == hashlib.sha256(''.encode('utf-8')).hexdigest()
 
 
 def test_infer_versioning_metadata_on_dirty_repo(repo):
@@ -325,21 +323,21 @@ def test_infer_versioning_metadata_on_dirty_repo(repo):
     """
     existing_metadata = {}
     existing_metadata['user_script'] = '.git'
-    existing_metadata = resolve_config.infer_versioning_metadata(existing_metadata)
+    vcs = resolve_config.infer_versioning_metadata('.git')
     repo.create_head('feature')
     repo.git.checkout('feature')
     with open('README.md', 'w+') as f:
         f.write('dummy dummy content')
-    existing_metadata = resolve_config.infer_versioning_metadata(existing_metadata)
-    assert existing_metadata['VCS']['is_dirty']
-    assert existing_metadata['VCS']['active_branch'] == 'feature'
-    assert existing_metadata['VCS']['diff_sha'] != hashlib.sha256(''.encode('utf-8')).hexdigest()
+    vcs = resolve_config.infer_versioning_metadata('.git')
+    assert vcs['is_dirty']
+    assert vcs['active_branch'] == 'feature'
+    assert vcs['diff_sha'] != hashlib.sha256(''.encode('utf-8')).hexdigest()
     repo.git.add('README.md')
     commit = repo.index.commit('Added dummy_file')
-    existing_metadata = resolve_config.infer_versioning_metadata(existing_metadata)
-    assert not existing_metadata['VCS']['is_dirty']
-    assert existing_metadata['VCS']['HEAD_sha'] == commit.hexsha
-    assert existing_metadata['VCS']['diff_sha'] == hashlib.sha256(''.encode('utf-8')).hexdigest()
+    vcs = resolve_config.infer_versioning_metadata('.git')
+    assert not vcs['is_dirty']
+    assert vcs['HEAD_sha'] == commit.hexsha
+    assert vcs['diff_sha'] == hashlib.sha256(''.encode('utf-8')).hexdigest()
 
 
 def test_fetch_user_repo_on_non_repo():
@@ -361,5 +359,5 @@ def test_infer_versioning_metadata_on_detached_head(repo):
     existing_metadata['user_script'] = '.git'
     repo.head.reference = repo.commit('HEAD~1')
     assert repo.head.is_detached
-    existing_metadata = resolve_config.infer_versioning_metadata(existing_metadata)
-    assert existing_metadata['VCS']['active_branch'] is None
+    vcs = resolve_config.infer_versioning_metadata('.git')
+    assert vcs['active_branch'] is None

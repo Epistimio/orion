@@ -180,14 +180,19 @@ def fetch_metadata(cmdargs):
         if is_exe(abs_user_script):
             user_script = abs_user_script
 
+    if user_script and not os.path.exists(user_script):
+        raise Exception(
+            'The path {} specified for the script does not exist'.format(user_script))
+
     if user_script:
         metadata['user_script'] = user_script
+        metadata['VCS'] = infer_versioning_metadata(metadata['user_script'])
+
     if user_args:
         metadata['user_args'] = user_args[1:]
 
     metadata['user'] = getpass.getuser()
-
-    return infer_versioning_metadata(metadata)
+    return metadata
 
 
 def merge_configs(*configs):
@@ -255,33 +260,32 @@ def fetch_user_repo(user_script):
     return git_repo
 
 
-def infer_versioning_metadata(existing_metadata):
+def infer_versioning_metadata(user_script):
     """
     Infer information about user's script versioning if available.
-    Fills the following information:
+    Fills the following information in VCS:
 
     `is_dirty` shows whether the git repo is at a clean state.
     `HEAD_sha` gives the hash of head of the repo.
     `active_branch` shows the active branch of the repo.
     `diff_sha` shows the hash of the diff in the repo.
 
-    :returns: the `existing_metadata` but filled with above info.
+    :returns: the `VCS` but filled with above info.
 
     """
-    if 'user_script' not in existing_metadata:
-        return existing_metadata
-    git_repo = fetch_user_repo(existing_metadata['user_script'])
+    git_repo = fetch_user_repo(user_script)
     if not git_repo:
-        return existing_metadata
-    existing_metadata['VCS'] = {}
-    existing_metadata['VCS']['is_dirty'] = git_repo.is_dirty()
-    existing_metadata['VCS']['HEAD_sha'] = git_repo.head.object.hexsha
+        return {}
+    VCS = {}
+    VCS['type'] = 'git'
+    VCS['is_dirty'] = git_repo.is_dirty()
+    VCS['HEAD_sha'] = git_repo.head.object.hexsha
     if git_repo.head.is_detached:
-        existing_metadata['VCS']['active_branch'] = None
+        VCS['active_branch'] = None
     else:
-        existing_metadata['VCS']['active_branch'] = git_repo.active_branch.name
+        VCS['active_branch'] = git_repo.active_branch.name
     # The 'diff' of the current version from the latest commit
     diff = git_repo.git.diff(git_repo.head.commit.tree).encode('utf-8')
     diff_sha = hashlib.sha256(diff).hexdigest()
-    existing_metadata['VCS']['diff_sha'] = diff_sha
-    return existing_metadata
+    VCS['diff_sha'] = diff_sha
+    return VCS

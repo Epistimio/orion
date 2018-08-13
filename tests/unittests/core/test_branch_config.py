@@ -43,7 +43,12 @@ def parent_config(user_config):
     config = dict(
         name='test',
         algorithms='random',
-        metadata={'hash_commit': 'old',
+        metadata={'VCS': {"type": "git",
+                          "is_dirty": False,
+                          "HEAD_sha": "test",
+                          "active_branch": None,
+                          "diff_sha": "diff",
+                          },
                   'user_script': 'abs_path/black_box.py',
                   'user_args':
                   ['--nameless=option', '-x~uniform(0,1)', '-y~normal(0,1)', '-z~uniform(0,10)'],
@@ -101,7 +106,7 @@ def changed_algo_config(child_config):
 @pytest.fixture
 def changed_code_config(child_config):
     """Create a child config with a changed dimension"""
-    child_config['metadata']['hash_commit'] = 'new'
+    child_config['metadata']['VCS']['HEAD_sha'] = 'new_test'
     return child_config
 
 
@@ -226,8 +231,8 @@ class TestConflictDetection(object):
         conflict = conflicts.get()[0]
 
         assert conflict.is_resolved is False
-        assert conflict.old_config['metadata']['hash_commit'] == 'old'
-        assert conflict.new_config['metadata']['hash_commit'] == 'new'
+        assert conflict.old_config['metadata']['VCS']['HEAD_sha'] == 'test'
+        assert conflict.new_config['metadata']['VCS']['HEAD_sha'] == 'new_test'
         assert isinstance(conflict, CodeConflict)
 
     def test_config_new_name_no_conflict(self, parent_config, same_userconfig_config):

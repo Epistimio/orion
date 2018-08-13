@@ -1090,9 +1090,10 @@ class CodeConflict(Conflict):
     @classmethod
     def detect(cls, old_config, new_config):
         """Detect if commit hash in `new_config` differs from `old_config`"""
-        old_hash_commit = old_config['metadata'].get('hash_commit')
-        new_hash_commit = new_config['metadata'].get('hash_commit')
-        if old_hash_commit != new_hash_commit:
+        old_hash_commit = old_config['metadata'].get('VCS', None)
+        new_hash_commit = new_config['metadata'].get('VCS')
+
+        if not old_hash_commit or old_hash_commit != new_hash_commit:
             yield cls(old_config, new_config)
 
     def get_marked_arguments(self, conflicts):
