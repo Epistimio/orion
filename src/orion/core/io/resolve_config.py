@@ -276,16 +276,16 @@ def infer_versioning_metadata(user_script):
     git_repo = fetch_user_repo(user_script)
     if not git_repo:
         return {}
-    VCS = {}
-    VCS['type'] = 'git'
-    VCS['is_dirty'] = git_repo.is_dirty()
-    VCS['HEAD_sha'] = git_repo.head.object.hexsha
+    vcs = {}
+    vcs['type'] = 'git'
+    vcs['is_dirty'] = git_repo.is_dirty()
+    vcs['HEAD_sha'] = git_repo.head.object.hexsha
     if git_repo.head.is_detached:
-        VCS['active_branch'] = None
+        vcs['active_branch'] = None
     else:
-        VCS['active_branch'] = git_repo.active_branch.name
+        vcs['active_branch'] = git_repo.active_branch.name
     # The 'diff' of the current version from the latest commit
     diff = git_repo.git.diff(git_repo.head.commit.tree).encode('utf-8')
     diff_sha = hashlib.sha256(diff).hexdigest()
-    VCS['diff_sha'] = diff_sha
-    return VCS
+    vcs['diff_sha'] = diff_sha
+    return vcs
