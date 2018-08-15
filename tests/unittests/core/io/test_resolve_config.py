@@ -63,25 +63,24 @@ def test_fetch_metadata_orion_version():
     assert metadata['orion_version'] == 'XYZ'
 
 
-@pytest.mark.usefixtures("force_is_exe")
-def test_fetch_metadata_executable_users_script():
+def test_fetch_metadata_executable_users_script(script_path):
     """Verify executable user script with absolute path"""
-    cmdargs = {'user_args': ['tests/functional/demo/black_box.py']}
+    cmdargs = {'user_args': [script_path]}
     metadata = resolve_config.fetch_metadata(cmdargs)
-    assert metadata['user_script'] == os.path.abspath('tests/functional/demo/black_box.py')
+    assert metadata['user_script'] == os.path.abspath(script_path)
 
 
 def test_fetch_metadata_non_executable_users_script():
     """Verify executable user script keeps given path"""
-    cmdargs = {'user_args': ['tests/functional/demo/black_box.py']}
+    cmdargs = {'user_args': ['tests/functional/demo/orion_config.yaml']}
     metadata = resolve_config.fetch_metadata(cmdargs)
-    assert metadata['user_script'] == 'tests/functional/demo/black_box.py'
+    assert metadata['user_script'] == 'tests/functional/demo/orion_config.yaml'
 
 
 @pytest.mark.usefixtures()
-def test_fetch_metadata_user_args():
+def test_fetch_metadata_user_args(script_path):
     """Verify user args"""
-    user_args = list(map(str, range(10)))
+    user_args = [os.path.abspath(script_path)] + list(map(str, range(10)))
     cmdargs = {'user_args': user_args}
     metadata = resolve_config.fetch_metadata(cmdargs)
     assert metadata['user_script'] == user_args[0]
