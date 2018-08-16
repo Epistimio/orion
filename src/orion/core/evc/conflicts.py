@@ -1134,8 +1134,8 @@ class CodeConflict(Conflict):
     def diff(self):
         """Produce human-readable differences"""
         return colored_diff(
-            self.old_config['metadata'].get('hash_commit'),
-            self.new_config['metadata'].get('hash_commit'))
+            self.old_config['metadata'].get('VCS', None),
+            self.new_config['metadata'].get('VCS'))
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
