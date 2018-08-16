@@ -236,9 +236,10 @@ class TestCodeConflict(object):
     @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_repr(self, code_conflict):
         """Verify the representation of conflict for user interface"""
-        assert repr(code_conflict) == "Old hash commit '{'type': 'git', 'is_dirty': False,"\
-                                      " 'HEAD_sha': 'test', 'active_branch': None, 'diff_sha':"\
-                                      " 'diff'}' != new hash commit 'to be changed'"
+        assert repr(code_conflict) == "Old hash commit '{'type': 'git', "\
+                                      "'is_dirty': False, 'HEAD_sha': 'test',"\
+                                      " 'active_branch': None, 'diff_sha': 'diff'}'"\
+                                      " != new hash commit 'to be changed'"
 
 
 class TestCommandLineConflict(object):
