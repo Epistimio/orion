@@ -91,7 +91,7 @@ def version_XYZ(monkeypatch):
 def create_db_instance(null_db_instances, clean_db):
     """Create and save a singleton database instance."""
     try:
-        db = Database(of_type='MongoDB', name='orion_test',
+        db = Database(of_type=("orion.core.io.database.mongodb", 'MongoDB'), name='orion_test',
                       username='user', password='pass')
     except ValueError:
         db = Database()
