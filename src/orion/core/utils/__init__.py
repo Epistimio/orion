@@ -28,7 +28,7 @@ def nesteddict():
 
 
 def get_qualified_name(package, name):
-    return package + '.' + name
+    return package.lower() + '.' + name.lower()
 
 
 class SingletonError(ValueError):
