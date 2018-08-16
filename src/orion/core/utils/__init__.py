@@ -167,9 +167,7 @@ class Concept(object):
         # Get base class information
         base_class = type(self).__base__
         name = base_class.name
-        module = getattr(base_class, "implementation_module", self.__module__)
-        module = getattr(self, "implementation_module", module)
-        module_addendum = getattr(base_class, 'module_addendum', '')
+        module = self._get_module(base_class)
 
         # Create a factory instance for the base class
         self.factory = Factory('Factory', (base_class,), globals())
@@ -177,18 +175,22 @@ class Concept(object):
         log.debug("Creating %s object of %s type with parameters:\n%s",
                   name, type(self).__name__, kwargs)
 
-        if module_addendum != '' and not module.endswith(module_addendum):
-            module += '.' + module_addendum
-
         for varname, param in kwargs.items():
+            # A dict might indicate an implementation type to instanciate
             if isinstance(param, dict) and len(param) > 0:
                 try:
+                    # First key of the dict should be the implementation type
                     sub_type = list(param)[0]
+                    # And its arguments
                     sub_kwargs = param[sub_type]
 
+                    # If indeed we find a dictionary of arguments, we must try to create the type
                     if isinstance(sub_kwargs, dict):
+                        # The qualified name will construct the class module path
                         qualified_name = get_qualified_name(module, sub_type)
 
+                        # The factory will try to instantiate the type from the module,
+                        # the name and the args
                         param = self.factory((qualified_name, sub_type),
                                              *args, **sub_kwargs)
 
@@ -199,9 +201,19 @@ class Concept(object):
                 except NotImplementedError:
                     pass
 
+            # If the param is only a string, we try to instantiate it with only
+            # positional arguments
             elif isinstance(param, str) and \
                     get_qualified_name(get_qualified_name(module, param), param) \
                     in self.factory.typenames:
                 param = self.factory((get_qualified_name(module, param), param), *args)
 
+            # Then we set the attribute
             setattr(self, varname, param)
+
+    def _get_module(self, base_class):
+        # Implementation module might be redefined at concept or wrapper level
+        module = getattr(base_class, "implementation_module", self.__module__)
+        module = getattr(self, "implementation_module", module)
+        
+        return module
