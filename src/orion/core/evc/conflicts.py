@@ -1140,8 +1140,8 @@ class CodeConflict(Conflict):
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
         return "Old hash commit '{0}'  != new hash commit '{1}'".format(
-               pprint.pformat(self.old_config['metadata'].get('VCS', None)).replace("\n", ""),
-               pprint.pformat(self.new_config['metadata'].get('VCS')).replace("\n", ""))
+            pprint.pformat(self.old_config['metadata'].get('VCS', None)).replace("\n", ""),
+            pprint.pformat(self.new_config['metadata'].get('VCS')).replace("\n", ""))
 
     class CodeResolution(Resolution):
         """Representation of an code change resolution
