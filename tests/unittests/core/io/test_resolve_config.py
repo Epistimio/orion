@@ -77,6 +77,13 @@ def test_fetch_metadata_non_executable_users_script():
     assert metadata['user_script'] == 'tests/functional/demo/orion_config.yaml'
 
 
+def test_fetch_metadata_not_existed_path():
+    """Verfiy the raise of error when user_script path does not exist"""
+    cmdargs = {'user_args': ['dummy/path']}
+    with pytest.raises(Exception):
+        resolve_config.fetch_metadata(cmdargs)
+
+
 @pytest.mark.usefixtures()
 def test_fetch_metadata_user_args(script_path):
     """Verify user args"""
