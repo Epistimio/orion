@@ -32,12 +32,13 @@ class TestDatabaseFactory(object):
     def test_notfound_type_first_call(self):
         """Raise when supplying not implemented wrapper name."""
         with pytest.raises(NotImplementedError) as exc_info:
-            Database('notfound')
+            Database(("", 'notfound'))
         assert 'AbstractDB' in str(exc_info.value)
 
     def test_instatiation_and_singleton(self):
         """Test create just one object, that object persists between calls."""
-        database = Database(of_type='MongoDB', name='orion_test',
+        of_type = ('orion.core.io.database.mongodb', 'MongoDB')
+        database = Database(of_type=of_type, name='orion_test',
                             username='user', password='pass')
 
         assert isinstance(database, MongoDB)
