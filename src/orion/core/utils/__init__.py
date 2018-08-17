@@ -28,6 +28,11 @@ def nesteddict():
 
 
 def get_qualified_name(package, name):
+    """Return the qualified name of the module and the class inside that module.
+    Ex. package: orion.algo.random
+    name: Random
+    returns: orion.algo.random.random
+    """
     return package.lower() + '.' + name.lower()
 
 
@@ -159,61 +164,70 @@ class SingletonFactory(AbstractSingletonType, Factory):
     pass
 
 
-class Concept(object):
-    """Define an abstract concept. Be it an algorithm, a plotter or whatever."""
-    def __init__(self, *args, **kwargs):
-        """Create a specifig instance of said concept"""
+class Concept(object):  # pylint: disable=too-few-public-methods
+    """Provide a base class for an abstract Concept (like an Algorithm or a DataAnalyser)."""
 
+    def __init__(self, *args, **kwargs):
+        """Initialize the object and instanciate any parameters inside the configuration dictionary
+        to the correct type using the custom factory for this particular Concept.
+        """
         # Get base class information
-        base_class = type(self).__base__
-        name = base_class.name
-        module = self._get_module(base_class)
+        self.base_class = type(self).__base__
+        self.name = self.base_class.name  # Descriptor name for log outputs
+        self.module = self._get_module()  # Determine where the implementations live
 
         # Create a factory instance for the base class
-        self.factory = Factory('Factory', (base_class,), globals())
+        self.factory = Factory('Factory', (self.base_class,), globals())
 
         log.debug("Creating %s object of %s type with parameters:\n%s",
-                  name, type(self).__name__, kwargs)
+                  self.name, type(self).__name__, kwargs)
 
         for varname, param in kwargs.items():
             # A dict might indicate an implementation type to instanciate
-            if isinstance(param, dict) and len(param) > 0:
+            if isinstance(param, dict) and param:
                 try:
-                    # First key of the dict should be the implementation type
-                    sub_type = list(param)[0]
-                    # And its arguments
-                    sub_kwargs = param[sub_type]
-
-                    # If indeed we find a dictionary of arguments, we must try to create the type
-                    if isinstance(sub_kwargs, dict):
-                        # The qualified name will construct the class module path
-                        qualified_name = get_qualified_name(module, sub_type)
-
-                        # The factory will try to instantiate the type from the module,
-                        # the name and the args
-                        param = self.factory((qualified_name, sub_type),
-                                             *args, **sub_kwargs)
-
-                    if isinstance(param, dict) and len(param) > 1:
-                        for subvar, subparam, in param.items()[1:]:
-                            setattr(self, subvar, subparam)
+                    param = self._instantiate_param(param, *args)
 
                 except NotImplementedError:
+                    # TODO fix this so that invalid instantiations fail but valid
+                    # dictionary arguments for param works
                     pass
 
             # If the param is only a string, we try to instantiate it with only
             # positional arguments
             elif isinstance(param, str) and \
-                    get_qualified_name(get_qualified_name(module, param), param) \
+                    get_qualified_name(get_qualified_name(self.module, param), param) \
                     in self.factory.typenames:
-                param = self.factory((get_qualified_name(module, param), param), *args)
+                param = self.factory((get_qualified_name(self.module, param), param), *args)
 
             # Then we set the attribute
             setattr(self, varname, param)
 
-    def _get_module(self, base_class):
+    def _get_module(self):
         # Implementation module might be redefined at concept or wrapper level
-        module = getattr(base_class, "implementation_module", self.__module__)
+        module = getattr(self.base_class, "implementation_module", self.__module__)
         module = getattr(self, "implementation_module", module)
-        
+
         return module
+
+    def _instantiate_param(self, param, *args):
+        # First key of the dict should be the implementation type
+        sub_type = list(param)[0]
+        # And its arguments
+        sub_kwargs = param[sub_type]
+
+        # If indeed we find a dictionary of arguments, we must try to create the type
+        if isinstance(sub_kwargs, dict):
+            # The qualified name will construct the class module path
+            qualified_name = get_qualified_name(self.module, sub_type)
+
+            # The factory will try to instantiate the type from the module,
+            # the name and the args
+            param = self.factory((qualified_name, sub_type),
+                                 *args, **sub_kwargs)
+
+        if isinstance(param, dict) and len(param) > 1:
+            for subvar, subparam, in param.items()[1:]:
+                setattr(self, subvar, subparam)
+
+        return param
