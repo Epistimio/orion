@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
-from orion.core.utils import Concept
+# flake8: noqa
 from abc import ABCMeta
+
+from orion.core.utils import Concept
 
 
 class BaseConcept(Concept, metaclass=ABCMeta):
-    """Define a dummy concept with local implementation for test purposes"""
+    """Define a dummy base concept with for test purposes"""
 
-    name = "LocalConcept"
+    name = "BaseConcept"
     implementation_module = "orion.concepts"
 
     def __init__(self, **kwargs):
@@ -15,10 +17,10 @@ class BaseConcept(Concept, metaclass=ABCMeta):
 
 
 class BaseConceptWrapper(BaseConcept):
-    """Define a wrapper for the local concept"""
+    """Define a wrapper for the concept"""
 
     def __init__(self, concept):
-        """Initialize the local concept"""
+        """Initialize the concept"""
         self.concept = None
 
         super(BaseConceptWrapper, self).__init__(concept=concept)
