@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Example usage and tests for :mod:`orion.core.worker.primary_algo`."""
+"""Example usage and tests for :mod:`orion.algo.base.primary_algo`."""
 
 import pytest
 

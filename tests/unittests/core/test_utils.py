@@ -9,6 +9,7 @@ from orion.core.utils import Factory
 
 @pytest.fixture
 def module():
+    """Return current module"""
     return "test_utils"
 
 
