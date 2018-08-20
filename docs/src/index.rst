@@ -13,6 +13,7 @@
    :caption: User's Guide
    :maxdepth: 1
 
+   user/pytorch
    user/executing
    user/configuring
    user/defining
