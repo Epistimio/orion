@@ -24,13 +24,13 @@ class DumbAlgo(BaseAlgorithm):
         """Configure returns, allow for variable variables."""
         self._times_called_suspend = 0
         self._times_called_is_done = 0
-        self._num = None
+        self._num = 0
         self._points = None
         self._results = None
         self._score_point = None
         self._judge_point = None
         self._measurements = None
-        self.possible_values = []
+        self.possible_values = [value]
         super(DumbAlgo, self).__init__(space, value=value,
                                        scoring=scoring, judgement=judgement,
                                        suspend=suspend,
@@ -39,12 +39,18 @@ class DumbAlgo(BaseAlgorithm):
 
     def suggest(self, num=1):
         """Suggest based on `value`."""
-        self._num = num
+        self._num += num
 
-        if len(self.possible_values) < num:
-            return [self.value] * num
+        rval = []
+        while len(rval) < num:
+            if len(self.possible_values) > 1:
+                value = self.possible_values.pop(0)
+            else:
+                value = self.possible_values[0]
 
-        return [self.possible_values.pop(0)] * num
+            rval.append(value)
+
+        return rval
 
     def observe(self, points, results):
         """Log inputs."""

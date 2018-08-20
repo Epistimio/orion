@@ -60,7 +60,7 @@ class TestPrimaryAlgoWraps(object):
         """Suggest wraps suggested."""
         assert palgo.suggest() == [fixed_suggestion]
         assert palgo.suggest(4) == [fixed_suggestion] * 4
-        palgo.algorithm.value = (5,)
+        palgo.algorithm.possible_values = [(5,)]
         with pytest.raises(AssertionError):
             palgo.suggest()
 
