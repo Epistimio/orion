@@ -25,8 +25,8 @@ class DumbAlgo(BaseAlgorithm):
         self._times_called_suspend = 0
         self._times_called_is_done = 0
         self._num = 0
-        self._points = None
-        self._results = None
+        self._points = []
+        self._results = []
         self._score_point = None
         self._judge_point = None
         self._measurements = None
@@ -50,12 +50,14 @@ class DumbAlgo(BaseAlgorithm):
 
             rval.append(value)
 
+        self._suggested = rval
+
         return rval
 
     def observe(self, points, results):
         """Log inputs."""
-        self._points = points
-        self._results = results
+        self._points += points
+        self._results += results
 
     def score(self, point):
         """Log and return stab."""

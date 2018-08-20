@@ -535,6 +535,7 @@
       type: categorical
       value: lstm_with_attention
   parents: []
+
 - experiment: supernaedo2
 
   status: new
@@ -554,6 +555,7 @@
       type: categorical
       value: rnn
   parents: []
+
 - experiment: supernaedo2
 
   status: new  # new, reserved, suspended, completed, broken

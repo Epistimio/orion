@@ -26,8 +26,9 @@ def producer(hacked_exp, random_dt, exp_config, categorical_values):
     return Producer(hacked_exp)
 
 
-def test_update(producer):
-    """Test functionality of producer.update()."""
+def test_algo_observe_completed(producer):
+    """Test that algo only observes completed trials"""
+    assert len(producer.experiment.fetch_trials({})) > 3
     producer.update()
     # Algorithm must have received completed points and their results
     obs_points = producer.algorithm.algorithm._points
@@ -52,7 +53,6 @@ def test_update(producer):
         'gradient': (5, 3),
         'constraint': [1.2]
         }
-
 
 @pytest.mark.skip(reason="To be implemented...")
 def test_update_algorithm(producer):
@@ -112,6 +112,7 @@ def test_update_and_produce(producer, database, random_dt):
         ]
 
 
+@pytest.mark.skip(reason="Waiting for rebase on non-blocking design PR...")
 def test_concurent_producers(producer, database, random_dt):
     """Test concurrent production of new trials."""
     trials_in_db_before = database.trials.count()
@@ -167,6 +168,7 @@ def test_concurent_producers(producer, database, random_dt):
         ]
 
 
+@pytest.mark.skip(reason="Waiting for rebase on non-blocking design PR...")
 def test_duplicate_within_pool(producer, database, random_dt):
     """Test that an algo suggesting multiple points can have a few registered even
     if one of them is a duplicate.
@@ -213,6 +215,7 @@ def test_duplicate_within_pool(producer, database, random_dt):
         ]
 
 
+@pytest.mark.skip(reason="Waiting for rebase on non-blocking design PR...")
 def test_duplicate_within_pool_and_db(producer, database, random_dt):
     """Test that an algo suggesting multiple points can have a few registered even
     if one of them is a duplicate with db.
@@ -259,6 +262,7 @@ def test_duplicate_within_pool_and_db(producer, database, random_dt):
         ]
 
 
+@pytest.mark.skip(reason="Waiting for rebase on non-blocking design PR...")
 def test_exceed_max_attempts(producer, database, random_dt):
     """Test that RuntimeError is raised when algo keep suggesting the same points"""
     producer.max_attempts = 10  # to limit run-time, default would work as well.
