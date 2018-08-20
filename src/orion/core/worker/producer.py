@@ -25,7 +25,7 @@ class Producer(object):
 
     """
 
-    def __init__(self, experiment):
+    def __init__(self, experiment, max_attempts=100):
         """Initialize a producer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -33,37 +33,50 @@ class Producer(object):
         """
         log.debug("Creating Producer object.")
         self.experiment = experiment
-        self.num_new_trials = experiment.pool_size
         self.space = experiment.space
         if self.space is None:
             raise RuntimeError("Experiment object provided to Producer has not yet completed"
                                " initialization.")
         self.algorithm = experiment.algorithms
+        self.max_attempts = max_attempts
+
+    @property
+    def pool_size(self):
+        """Pool-size of the experiment"""
+        return self.experiment.pool_size
 
     def produce(self):
         """Create and register new trials."""
-        needs_to_sample = True
-        max_samples = 100
-        current_samples = 0
+        sampled_points = 0
+        n_attempts = 0
 
-        while needs_to_sample and current_samples < max_samples:
-            current_samples = current_samples + 1
-            log.debug("### Suggest new ones.")
+        while sampled_points < self.pool_size and n_attempts < self.max_attempts:
+            n_attempts += 1
+            log.debug("### Algorithm suggests new points.")
 
-            new_points = self.algorithm.suggest(self.num_new_trials)
+            new_points = self.algorithm.suggest(self.pool_size)
 
-            log.debug("### Convert them to `Trial` objects.")
+            log.debug("### Convert points to `Trial` objects.")
             new_trials = list(map(lambda data: format_trials.tuple_to_trial(data, self.space),
                                   new_points))
 
-            log.debug("### Register to database: %s", new_trials)
+            for new_trial in new_trials:
+                try:
+                    self.experiment.register_trial(new_trial)
+                    log.debug("### Register new trial to database: %s", new_trial)
+                    sampled_points += 1
+                except DuplicateKeyError:
+                    log.debug("#### Duplicate sample. Updating algo to produce new ones.")
+                    self.update()
 
-            try:
-                self.experiment.register_trials(new_trials)
-                needs_to_sample = False
-            except DuplicateKeyError:
-                log.debug("#### Bad sample. Producing new one")
-                self.update()
+        if n_attempts >= self.max_attempts:
+            raise RuntimeError("Looks like the algorithm keeps suggesting trial configurations"
+                               "that already exist in the database. Could be that you reached "
+                               "a point of convergence and the algorithm cannot find anything "
+                               "better. Or... something is broken. Try increasing `max_attempts` "
+                               "or please report this error on "
+                               "https://github.com/mila-udem/orion/issues if something looks "
+                               "wrong.")
 
     def update(self):
         """Pull newest completed trials to update local model."""

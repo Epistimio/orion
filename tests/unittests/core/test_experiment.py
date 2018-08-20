@@ -589,7 +589,8 @@ def test_register_trials(database, random_dt, hacked_exp):
         Trial(params=[{'name': 'a', 'type': 'integer', 'value': 5}]),
         Trial(params=[{'name': 'b', 'type': 'integer', 'value': 6}]),
         ]
-    hacked_exp.register_trials(trials)
+    for trial in trials:
+        hacked_exp.register_trial(trial)
     yo = list(database.trials.find({'experiment': hacked_exp._id}))
     assert len(yo) == len(trials)
     assert yo[0]['params'] == list(map(lambda x: x.to_dict(), trials[0].params))
@@ -681,7 +682,7 @@ class TestInitExperimentView(object):
             exp.push_completed_trial
 
         with pytest.raises(AttributeError):
-            exp.register_trials
+            exp.register_trial
 
         with pytest.raises(AttributeError):
             exp.reserve_trial
