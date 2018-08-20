@@ -31,6 +31,7 @@ precedence is respected when building the settings dictionary:
 .. note:: `Optimization` entries are required, `Dynamic` entry is optional.
 
 """
+import errno
 import getpass
 import hashlib
 import logging
@@ -181,8 +182,8 @@ def fetch_metadata(cmdargs):
             user_script = abs_user_script
 
     if user_script and not os.path.exists(user_script):
-        raise Exception(
-            'The path {} specified for the script does not exist'.format(user_script))
+        raise OSError(
+            errno.ENOENT, "The path {} specified for the script does not exist".format(user_script))
 
     if user_script:
         metadata['user_script'] = user_script
@@ -256,7 +257,8 @@ def fetch_user_repo(user_script):
         git_repo = git.Repo(dir_path, search_parent_directories=True)
     except git.exc.InvalidGitRepositoryError as e:
         git_repo = None
-        raise Exception('Script should be a git repo') from e
+        raise RuntimeError('Script {} should be in a git repository.'.format(
+            os.path.abspath(user_script))) from e
     return git_repo
 
 

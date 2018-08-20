@@ -79,9 +79,11 @@ def test_fetch_metadata_non_executable_users_script():
 
 def test_fetch_metadata_not_existed_path():
     """Verfiy the raise of error when user_script path does not exist"""
-    cmdargs = {'user_args': ['dummy/path']}
-    with pytest.raises(Exception):
+    path = 'dummy/path'
+    cmdargs = {'user_args': [path]}
+    with pytest.raises(OSError) as exc_info:
         resolve_config.fetch_metadata(cmdargs)
+    assert "The path {} specified for the script does not exist".format(path) in str(exc_info.value)
 
 
 @pytest.mark.usefixtures()
@@ -351,8 +353,9 @@ def test_fetch_user_repo_on_non_repo():
     Test if `fetch_user_repo` raises a warning when user's script
     is not a git repo
     """
-    with pytest.raises(Exception):
+    with pytest.raises(RuntimeError) as exc_info:
         resolve_config.fetch_user_repo('.')
+    assert "Script {} should be in a git repository".format(os.getcwd()) in str(exc_info.value)
 
 
 def test_infer_versioning_metadata_on_detached_head(repo):
