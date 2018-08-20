@@ -83,7 +83,7 @@ def test_fetch_metadata_not_existed_path():
     cmdargs = {'user_args': [path]}
     with pytest.raises(OSError) as exc_info:
         resolve_config.fetch_metadata(cmdargs)
-    assert "The path {} specified for the script does not exist".format(path) in str(exc_info.value)
+    assert "The path specified for the script does not exist" in str(exc_info.value)
 
 
 @pytest.mark.usefixtures()

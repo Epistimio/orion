@@ -182,8 +182,7 @@ def fetch_metadata(cmdargs):
             user_script = abs_user_script
 
     if user_script and not os.path.exists(user_script):
-        raise OSError(
-            errno.ENOENT, "The path {} specified for the script does not exist".format(user_script))
+        raise OSError(errno.ENOENT, "The path specified for the script does not exist", user_script)
 
     if user_script:
         metadata['user_script'] = user_script
