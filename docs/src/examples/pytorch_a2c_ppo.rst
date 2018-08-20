@@ -72,7 +72,7 @@ the required methods as follows. We create a file with functions for evaluation:
 
   The execution with Oríon does not require the added evaluation methods for
   a validation set and could use the final training performance. However, for
-  sake if adhering to best practices, we create a validation set method in
+  sake of adhering to best practices, we create a validation set method in
   eval.py.
 
 And then simply add a registration for the evaluation after training our
