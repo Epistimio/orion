@@ -204,7 +204,7 @@ class Trial(object):
 
     __repr__ = __str__
 
-    def _fetch_all_ancestors(self, current_ancestors=None):
+    def _fetch_all_ancestors(self, current_ancestors):
         for parent in self.parents:
             if parent in current_ancestors:
                 continue
@@ -220,7 +220,7 @@ class Trial(object):
         """Return a list composed of the ID of all the ancestors of this Trial"""
         current_ancestors = []
         self._fetch_all_ancestors(current_ancestors)
-        current_ancestors.pop()
+        current_ancestors.pop()  # remove itself from ancestors
 
         return current_ancestors
 
