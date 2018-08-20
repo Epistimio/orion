@@ -30,13 +30,13 @@ def test_insert_invalid_experiment(database, monkeypatch):
 
 @pytest.mark.usefixtures("only_experiments_db")
 @pytest.mark.usefixtures("null_db_instances")
-def test_insert_single_trial(database, monkeypatch):
+def test_insert_single_trial(database, monkeypatch, script_path):
     """Try to insert a single trial"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     monkeypatch.setattr("getpass.getuser", get_user_corneau)
 
     orion.core.cli.main(["insert", "-n", "test_insert_normal",
-                         "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1"])
+                         "-c", "./orion_config_random.yaml", script_path, "-x=1"])
 
     exp = list(database.experiments.find({"name": "test_insert_normal"}))
     assert len(exp) == 1
