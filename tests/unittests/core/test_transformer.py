@@ -421,7 +421,12 @@ class TestTransformedDimension(object):
         """Mimic `Dimension`.
         Set of `Dimension`'s methods are subset of `TransformedDimension`.
         """
-        assert ((set(TransformedDimension.__dict__.keys()) - set(Dimension.__dict__.keys())) ==
+        transformed_dimension_keys = set(TransformedDimension.__dict__.keys())
+        # For some reason running all tests have the side-effect of adding an attribute
+        # __slotnames__ to TransformedDimension. This attribute is not present when running
+        # tests found in test_transformer.py only.
+        transformed_dimension_keys.discard('__slotnames__')
+        assert ((transformed_dimension_keys ^ set(Dimension.__dict__.keys())) ==
                 set(['transform', 'reverse']))
 
     def test_sample(self, tdim, seed):
