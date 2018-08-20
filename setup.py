@@ -50,7 +50,7 @@ setup_args = dict(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description=orion.__descr__,
-    long_description=open(os.path.join(repo_root, "README.rst")).read(),
+    long_description=open(os.path.join(repo_root, "README.rst"), 'rt', encoding='utf8').read(),
     license=orion.__license__,
     author=orion.__author__,
     author_email=orion.__author_email__,

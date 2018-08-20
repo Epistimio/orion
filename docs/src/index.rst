@@ -24,6 +24,7 @@
    :maxdepth: 1
 
    examples/pytorch_cifar
+   examples/pytorch_a2c_ppo
 
 .. toctree::
    :caption: Plugin development's Guide
