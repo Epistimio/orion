@@ -173,6 +173,7 @@ class SingletonFactory(AbstractSingletonType, Factory):
 class Concept(object):  # pylint: disable=too-few-public-methods
     """Provide a base class for an abstract Concept (like an Algorithm or a DataAnalyser)."""
 
+    # pylint: disable=unused-argument
     def __init__(self, *args, **kwargs):
         """Initialize the object and instanciate any parameters inside the configuration dictionary
         to the correct type using the custom factory for this particular Concept.
@@ -180,60 +181,84 @@ class Concept(object):  # pylint: disable=too-few-public-methods
         # Get base class information
         self.base_class = type(self).__base__
         self.name = self.base_class.name  # Descriptor name for log outputs
-        self.module = self._get_module()  # Determine where the implementations live
-
-        # Create a factory instance for the base class
-        self.factory = Factory('Factory', (self.base_class,), globals())
 
         log.debug("Creating %s object of %s type with parameters:\n%s",
                   self.name, type(self).__name__, kwargs)
 
         for varname, param in kwargs.items():
-            # A dict might indicate an implementation type to instanciate
-            if isinstance(param, dict) and param:
-                try:
-                    param = self._instantiate_param(param, *args)
-
-                except NotImplementedError:
-                    # TODO fix this so that invalid instantiations fail but valid
-                    # dictionary arguments for param works
-                    pass
-
-            # If the param is only a string, we try to instantiate it with only
-            # positional arguments
-            elif isinstance(param, str) and \
-                    get_qualified_name(get_qualified_name(self.module, param), param) \
-                    in self.factory.typenames:
-                param = self.factory((get_qualified_name(self.module, param), param), *args)
-
-            # Then we set the attribute
             setattr(self, varname, param)
+
+
+class Wrapper(object):
+    """Provide a base class for wrappers to act as proxy for the wrapped object"""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the wrapped object by creating a Factory for the wrapped object's type
+        then instantiating the object with the config passed.
+        """
+        self.module = self._get_module()
+        self.factory = self.factory_type('Factory', (self.wraps,), globals())
+
+        for key, item in kwargs.items():
+
+            if isinstance(item, dict) and item:
+                item = self._instantiate_dict(item, *args)
+
+            elif isinstance(item, str):
+                item = self._instantiate_str(item, *args)
+
+            setattr(self, key, item)
+
+    @property
+    def factory_type(self):
+        """Return the type of factory to be use for the wrapped type"""
+        return Factory
+
+    @property
+    def wraps(self):
+        """Return the type of object this wrapper wraps"""
+        raise NotImplementedError
 
     def _get_module(self):
         # Implementation module might be redefined at concept or wrapper level
-        module = getattr(self.base_class, "implementation_module", self.__module__)
-        module = getattr(self, "implementation_module", module)
+        module = getattr(self, "implementation_module", self.__module__)
 
         return module
 
-    def _instantiate_param(self, param, *args):
-        # First key of the dict should be the implementation type
-        sub_type = list(param)[0]
-        # And its arguments
-        sub_kwargs = param[sub_type]
+    def _instantiate_dict(self, item, *args):
+        has_instantiated = False
+        for subkey, subitem in item.items():
+            try:
+                # Check for dictionary, because Factory needs a mapping
+                if isinstance(subitem, dict):
+                    # Build the module's name for the object
+                    qualified_name = get_qualified_name(self.module, subkey)
 
-        # If indeed we find a dictionary of arguments, we must try to create the type
-        if isinstance(sub_kwargs, dict):
-            # The qualified name will construct the class module path
-            qualified_name = get_qualified_name(self.module, sub_type)
+                    item = self.factory((qualified_name, subkey), *args, **subitem)
 
-            # The factory will try to instantiate the type from the module,
-            # the name and the args
-            param = self.factory((qualified_name, sub_type),
-                                 *args, **sub_kwargs)
+                    # We can't instantiate more than one object of the wrapped type
+                    if has_instantiated:
+                        raise RuntimeError("Can only instantiate once")
 
-        if isinstance(param, dict) and len(param) > 1:
-            for subvar, subparam, in param.items()[1:]:
-                setattr(self, subvar, subparam)
+                    has_instantiated = True
+                else:
+                    # If we don't have a dictionary, this means its an attribute
+                    setattr(self, subkey, subitem)
 
-        return param
+            except NotImplementedError:
+                # If we couldn't instantiate it, this means its an attribute
+                setattr(self, subkey, subitem)
+
+        if not has_instantiated:
+            raise NotImplementedError("No implementation detected for type {}".format(self.wraps))
+
+        return item
+
+    def _instantiate_str(self, item, *args):
+        qualified_tuple = (get_qualified_name(self.module, item), item)
+        qualified_name = get_qualified_name(*qualified_tuple)
+
+        if qualified_name in self.factory.typenames:
+            item = self.factory(qualified_tuple, *args)
+
+        return item
