@@ -14,7 +14,7 @@ def producer(hacked_exp, random_dt, exp_config):
     # insert fake point
     fake_point = ('gru', 'rnn')
     assert fake_point in hacked_exp.space
-    hacked_exp.algorithms.algorithm.value = fake_point
+    hacked_exp.algorithms.instance.value = fake_point
     return Producer(hacked_exp)
 
 
@@ -22,8 +22,8 @@ def test_update(producer):
     """Test functionality of producer.update()."""
     producer.update()
     # Algorithm must have received completed points and their results
-    obs_points = producer.algorithm.algorithm._points
-    obs_results = producer.algorithm.algorithm._results
+    obs_points = producer.algorithm.instance._points
+    obs_results = producer.algorithm.instance._results
     assert len(obs_points) == 3
     assert obs_points[0] == ('lstm', 'rnn')
     assert obs_points[1] == ('rnn', 'rnn')
@@ -56,7 +56,7 @@ def test_update_and_produce(producer, database, random_dt):
     producer.produce()
 
     # Algorithm was ordered to suggest some trials
-    num_new_points = producer.algorithm.algorithm._num
+    num_new_points = producer.algorithm.instance._num
     assert num_new_points == 2  # pool size
 
     # `num_new_points` new trials were registered at database

@@ -196,6 +196,7 @@ class Wrapper(object):
         """Initialize the wrapped object by creating a Factory for the wrapped object's type
         then instantiating the object with the config passed.
         """
+        self.instance = None
         self.module = self._get_module()
         self.factory = self.factory_type('Factory', (self.wraps,), globals())
 
@@ -218,6 +219,23 @@ class Wrapper(object):
     def wraps(self):
         """Return the type of object this wrapper wraps"""
         raise NotImplementedError
+
+    @property
+    def __class__(self):
+        return self.instance.__class__
+
+    def __instancecheck__(self, instance):
+        """Proxy the instance check to the database object"""
+        return isinstance(self.instancd, instance)
+
+    def __subclasscheck__(self, instance):
+        """Proxy the subclass check to the database"""
+        return issubclass(self.instance, instance)
+
+    def __getattr__(self, name):
+        if hasattr(self.instance, name):
+            return getattr(self.instance, name)
+        return self.__getattribute__(name)
 
     def _get_module(self):
         # Implementation module might be redefined at concept or wrapper level
