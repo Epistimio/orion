@@ -92,7 +92,13 @@ class Factory(ABCMeta):
         try:
             py_files = glob(os.path.abspath(os.path.join(base.__path__[0] + '/**/',
                                                          '[A-Za-z]*.py')), recursive=True)
-            py_mods = map(lambda x: x.split('orion/src/')[1].replace('/', '.')[:-3], py_files)
+
+            def _f(path):
+                name = 'orion' + path.split('orion')[-1]
+                return name.replace('/', '.')[:-3]
+
+            py_mods = map(_f, py_files)
+
             for py_mod in py_mods:
                 cls.modules.append(import_module(py_mod))
         except AttributeError:
