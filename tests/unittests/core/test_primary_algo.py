@@ -12,10 +12,6 @@ def palgo(dumbalgo, space, fixed_suggestion):
     """Set up a PrimaryAlgo with dumb configuration."""
     algo_config = {'DumbAlgo': {
         'value': fixed_suggestion,
-        'subone': {'DumbAlgo': dict(
-            value=6,
-            scoring=5
-            )}
         }}
     palgo = PrimaryAlgo(space, algo_config)
 
@@ -38,15 +34,6 @@ class TestPrimaryAlgoWraps(object):
                 'judgement': None,
                 'suspend': False,
                 'done': False,
-                'subone': {
-                    'dumbalgo': {
-                        'value': 6,
-                        'scoring': 5,
-                        'judgement': None,
-                        'suspend': False,
-                        'done': False,
-                        }
-                    }
                 }
             }
 
