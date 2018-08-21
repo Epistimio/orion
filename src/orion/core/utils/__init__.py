@@ -222,6 +222,9 @@ class Wrapper(object):
 
     @property
     def __class__(self):
+        """Change the type check behavior of the wrapper to check has the
+        underlying instance type
+        """
         return self.instance.__class__
 
     def __instancecheck__(self, instance):
@@ -233,6 +236,10 @@ class Wrapper(object):
         return issubclass(self.instance, instance)
 
     def __getattr__(self, name):
+        """Proxy the call to `__getattr__` to the underlying object. If the
+        wrapped instance does not have this attribute, return it from the wrapper
+        instead
+        """
         if hasattr(self.instance, name):
             return getattr(self.instance, name)
         return self.__getattribute__(name)
