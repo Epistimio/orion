@@ -12,7 +12,7 @@
 from abc import (ABCMeta, abstractmethod)
 import logging
 
-from orion.core.utils import Concept
+from orion.core.utils import (Concept, Wrapper)
 from orion.core.worker.transformer import build_required_space
 
 
@@ -231,7 +231,7 @@ class BaseAlgorithm(Concept, metaclass=ABCMeta):
                 attr.space = space_
 
 
-class PrimaryAlgo(BaseAlgorithm):
+class PrimaryAlgo(Wrapper):
     """Perform checks on points and transformations. Wrap the primary algorithm.
 
     1. Checks requirements on the parameter space from algorithms and create the
@@ -240,6 +240,8 @@ class PrimaryAlgo(BaseAlgorithm):
     2. Checks whether incoming and outcoming points are compliant with a space.
 
     """
+
+    implementation_module = "orion.algo"
 
     def __init__(self, space, algorithm_config):
         """
@@ -254,10 +256,16 @@ class PrimaryAlgo(BaseAlgorithm):
 
         """
         self.algorithm = None
+        self._space = space
         super(PrimaryAlgo, self).__init__(space, algorithm=algorithm_config)
         requirements = self.algorithm.requires
         self.transformed_space = build_required_space(requirements, self.space)
         self.algorithm.space = self.transformed_space
+
+    @property
+    def wraps(self):
+        """Return the type of object this wrapper wraps"""
+        return BaseAlgorithm
 
     def suggest(self, num=1):
         """Suggest a `num` of new sets of parameters.
