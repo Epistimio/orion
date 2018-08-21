@@ -91,7 +91,6 @@ import logging
 
 from orion.core.io import resolve_config
 from orion.core.io.database import Database, DuplicateKeyError
-from orion.core.utils import get_qualified_name
 from orion.core.worker.experiment import Experiment, ExperimentView
 
 
@@ -211,9 +210,8 @@ class ExperimentBuilder(object):
         # Information should be enough to infer experiment's name.
         log.debug("Creating %s database client with args: %s", dbtype, db_opts)
 
-        of_type = get_qualified_name('orion.core.io.database', dbtype)
         try:
-            Database(of_type=(of_type, dbtype), **db_opts)
+            Database(dbtype, **db_opts)
         except ValueError:
             if Database().__class__.__name__.lower() != dbtype.lower():
                 raise
