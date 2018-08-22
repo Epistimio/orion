@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.algo.base` -- What is a search algorithm, optimizer of a process
-==============================================================================
+:mod:`orion.algo` -- What is a search algorithm, optimizer of a process
+=======================================================================
 
-.. module:: base
+.. module:: algo
    :platform: Unix
    :synopsis: Formulation of a general search algorithm with respect to some
       objective.
@@ -101,7 +101,6 @@ class BaseAlgorithm(Concept, metaclass=ABCMeta):
         """
         self._space = space
         self._param_names = list(kwargs.keys())
-
         super(BaseAlgorithm, self).__init__(space, **kwargs)
 
     @abstractmethod

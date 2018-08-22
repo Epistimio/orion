@@ -12,7 +12,7 @@
 from abc import (ABCMeta, abstractmethod)
 import logging
 
-from orion.core.utils import Factory
+from orion.core.utils import (Factory, get_qualified_name)
 
 log = logging.getLogger(__name__)
 
@@ -49,14 +49,17 @@ class BaseAnalyser(object, metaclass=ABCMeta):
                 subanalyser_kwargs = param[subanalyser_type]
                 if isinstance(subanalyser_kwargs, dict):
                     try:
-                        param = AnalyserFactory(subanalyser_type,
+                        qualified_name = get_qualified_name(self.__module__, subanalyser_type)
+                        param = AnalyserFactory((qualified_name, subanalyser_type),
                                                 trials, experiment, **subanalyser_kwargs)
                     except NotImplementedError:
                         pass
             elif isinstance(param, str) and \
-                    param.lower() in AnalyserFactory.typenames:
+                    get_qualified_name(get_qualified_name(self.__module__, param),
+                                       param) in AnalyserFactory.typenames:
                 # pylint: disable=too-many-function-args
-                param = AnalyserFactory(param, trials, experiment)
+                param = AnalyserFactory((get_qualified_name(self.__module__, param),
+                                        param), trials, experiment)
 
             setattr(self, varname, param)
 
