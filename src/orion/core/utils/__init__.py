@@ -152,9 +152,9 @@ class Factory(ABCMeta):
         qualified_name = get_qualified_name(module, name).lower()
 
         for inherited_class in cls.types:
-            inh_qualified_name = get_qualified_name(inherited_class.__module__,
+            inherited_qualified_name = get_qualified_name(inherited_class.__module__,
                                                     inherited_class.__name__).lower()
-            if inh_qualified_name == qualified_name:
+            if inherited_qualified_name == qualified_name:
                 return inherited_class.__call__(*args, **kwargs)
 
         error = "Could not find implementation of {0}, type = '{1}'".format(
