@@ -11,7 +11,7 @@
 
 import logging
 
-from orion.viz.plotters.matplot import Matplot
+from orion.viz.plotters import BasePlotter
 from orion.viz.analysis import TimeSeriesAnalysis
 
 from matplotlib import pyplot
@@ -19,15 +19,23 @@ from matplotlib import pyplot
 log = logging.getLogger(__name__)
 
 
-class Bar(Matplot):
+class Bar(BasePlotter):
 
     def __init__(self, analysis, save_format, **bar_args):
-        super(Bar, self).__init__(analysis, save_format=save_format, bar_args=bar_args)
+        super(Bar, self).__init__(analysis, save_format, '', bar_args=bar_args)
 
     def plot(self):
-        pyplot.bar(range(len(self.analysis.keys())), self.value.values(), **self.bar_args)
+        pyplot.bar(range(len(self.analysis.value.keys())), self.analysis.value.values(),
+                   **self.bar_args)
+
+        for format_type in self.save_format:
+            pyplot.savefig('title', format=format_type)
+
         pyplot.clf()
 
     @property
     def required_analysis(self):
         return [TimeSeriesAnalysis]
+
+    def __setattr__(self, name, value):
+        self.__dict__[name] = value
