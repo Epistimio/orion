@@ -70,6 +70,7 @@ def _execute(cmd_args, file_config):
     analyser = AnalyserWrapper(trials, experiment, analyser_config)
 
     print(analyser_config)
+    print(plotter_config)
     plotter = PlotterWrapper(analyser.analyse(), ['png'], plotter_config)
     plotter.plot()
 
