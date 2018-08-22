@@ -9,7 +9,7 @@
 
 """
 
-from orion.algo import BaseAlgorithm
+from orion.algo.base import BaseAlgorithm
 
 
 class Random(BaseAlgorithm):
