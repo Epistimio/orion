@@ -46,7 +46,7 @@ import re
 from scipy.stats import distributions as sp_dists
 
 from orion.algo.space import (Categorical, Integer, Real, Space)
-from orion.core.io.convert import infer_converter_from_file_type
+from orion.core.io.converters.base import Converter
 
 log = logging.getLogger(__name__)
 
@@ -308,8 +308,7 @@ class SpaceBuilder(object):
         return self.space
 
     def _build_from_config(self, config_path):
-        self.converter = infer_converter_from_file_type(config_path,
-                                                        default_keyword=self.USERCONFIG_KEYWORD)
+        self.converter = Converter(config_path, default_keyword=self.USERCONFIG_KEYWORD)
         self.userconfig_tmpl = self.converter.parse(config_path)
         self.userconfig_expressions = collections.OrderedDict()
         self.userconfig_nameless = collections.OrderedDict()

@@ -16,7 +16,7 @@ import os
 import re
 
 from orion.core.cli import base as cli
-from orion.core.io.convert import infer_converter_from_file_type
+from orion.core.io.converters.base import Converter
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.format_trials import tuple_to_trial
 
@@ -115,7 +115,7 @@ def _build_from(cmd_args):
 
 
 def _build_from_config(config_path):
-    converter = infer_converter_from_file_type(config_path)
+    converter = Converter(config_path)
     userconfig_tmpl = converter.parse(config_path)
     userconfig_keyword = 'orion='
 
