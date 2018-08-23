@@ -11,7 +11,7 @@
 
 import logging
 
-from orion.viz.plotters import BasePlotter
+from orion.viz.plotters.base import BasePlotter
 from orion.viz.analysis import TimeSeriesAnalysis
 
 from matplotlib import pyplot
@@ -36,6 +36,3 @@ class Bar(BasePlotter):
     @property
     def required_analysis(self):
         return [TimeSeriesAnalysis]
-
-    def __setattr__(self, name, value):
-        self.__dict__[name] = value

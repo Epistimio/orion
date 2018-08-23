@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.viz.analysers` -- Base interface, factory and wrapper for DataAdapter
-=================================================================================
+:mod:`orion.viz.analysers.base` -- Base interface, factory and wrapper for a data analyser
+==========================================================================================
 
 .. module:: analysers
    :platform: Unix
@@ -12,7 +12,7 @@
 from abc import (ABCMeta, abstractmethod)
 import logging
 
-from orion.core.utils import Concept
+from orion.core.utils import (Concept, Wrapper)
 
 log = logging.getLogger(__name__)
 
@@ -41,7 +41,6 @@ class BaseAnalyser(Concept, metaclass=ABCMeta):
         self._trials = trials
         self._experiment = experiment
         self._space = experiment.space
-
         super(BaseAnalyser, self).__init__(trials, experiment, **kwargs)
 
     @abstractmethod
@@ -77,14 +76,13 @@ class BaseAnalyser(Concept, metaclass=ABCMeta):
         return []
 
 
-class AnalyserWrapper(BaseAnalyser):
-    def __init__(self, trials, experiment, analyser_config):
-        self.analyser = None
-        super(AnalyserWrapper, self).__init__(trials, experiment, analyser=analyser_config)
+class AnalyserWrapper(Wrapper):
 
-    def analyse(self, of_type=None):
-        return self.analyser.analyse(of_type)
+    implementation_module = "orion.viz.analysers"
+
+    def __init__(self, trials, experiment, analyser_config):
+        super(AnalyserWrapper, self).__init__(trials, experiment, instance=analyser_config)
 
     @property
-    def available_analysis(self):
-        return self.analyser.available_analysis
+    def wraps(self):
+        return BaseAnalyser

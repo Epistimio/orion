@@ -13,25 +13,17 @@ import logging
 
 from matplotlib import pyplot
 
-from orion.viz.plotters import BasePlotter
+from orion.viz.plotters.base import Library
 
 log = logging.getLogger(__name__)
 
 
-class Matplot(BasePlotter):
+class Matplot(Library):
 
-    module_addendum = "matplot"
+    module_addendum = "orion.viz.plotters.matplot"
 
     def __init__(self, analysis, save_format, **plotter_config):
-        self.plotter = None
-        super(Matplot, self).__init__(analysis, save_format, plotter=plotter_config)
-
-    def plot(self):
-        return self.plotter.plot()
-
-    @property
-    def required_analysis(self):
-        return self.plotter.required_analysis
+        super(Matplot, self).__init__(analysis, save_format, instance=plotter_config)
 
     def __setattr__(self, name, value):
         if hasattr(pyplot, name):

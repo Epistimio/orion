@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.viz.analysers.commandline` -- Default analyser for debug purposes
-======================================================================================
+=============================================================================
 
 .. module:: commandline
    :platform: Unix
@@ -11,7 +11,7 @@
 
 import logging
 
-from orion.viz.analysers import BaseAnalyser
+from orion.viz.analysers.base import BaseAnalyser
 from orion.viz.analysis import SingleValueAnalysis
 
 log = logging.getLogger(__name__)

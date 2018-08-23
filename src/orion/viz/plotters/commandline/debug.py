@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.viz.plotters.commandline` -- Default plotter for debug purposes
-===========================================================================
+:mod:`orion.viz.plotters.commandline.debug` -- Default plotter for debug purposes
+=================================================================================
 
 .. module:: commandline
    :platform: Unix
@@ -11,17 +11,17 @@
 
 import logging
 
-from orion.viz.plotters import BasePlotter
+from orion.viz.plotters.base import BasePlotter
 from orion.viz.analysis import Analysis
 
 log = logging.getLogger(__name__)
 
 
-class Commandline(BasePlotter):
+class Debug(BasePlotter):
     """Prints analysis"""
 
     def __init__(self, analysis, save_formats):
-        super(Commandline, self).__init__(analysis, save_formats)
+        super(Debug, self).__init__(analysis, save_formats)
 
     def plot(self):
         print(self.analysis.value)

@@ -13,7 +13,7 @@ import logging
 
 import numpy as np
 
-from orion.viz.analysers import BaseAnalyser
+from orion.viz.analysers.base import BaseAnalyser
 from orion.viz.analysis import TimeSeriesAnalysis
 
 from sklearn.ensemble import AdaBoostRegressor, BaggingRegressor, \
