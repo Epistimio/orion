@@ -1,0 +1,30 @@
+{% set version = os.popen("python -c 'import versioneer; print(versioneer.get_version())'").read() %}
+
+package:
+  name: orion
+  version: {{ version }}
+
+source:
+  path: ../
+
+build:
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  host:
+    - python {{ python }}
+    - setuptools
+    - pytest-runner
+  run:
+    - python
+    - numpy
+    - scipy
+    - pyyaml
+    - pymongo >=3
+
+test:
+  import:
+    - orion.core
+    - orion.core.cli
+    - orion.algo
+    - orion.client
