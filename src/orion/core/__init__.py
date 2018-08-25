@@ -11,7 +11,7 @@ fast and efficient hyperparameter tuning, and secondly to provide secondary APIs
 for more advanced features, such as dynamically reporting validation scores on
 training time for automatic early stopping or on-the-fly reconfiguration.
 
-Start by having a look here: https://github.com/mila-udem/orion
+Start by having a look here: https://github.com/epistimio/orion
 """
 from ._version import get_versions
 from .utils._appdirs import AppDirs
@@ -30,7 +30,7 @@ __authors__ = {
     'tsirif': ('Christos Tsirigotis', 'tsirif@gmail.com'),
     'bouthilx': ('Xavier Bouthillier', 'xavier.bouthillier@gmail.com'),
 }
-__url__ = 'https://github.com/mila-udem/orion'
+__url__ = 'https://github.com/epistimio/orion'
 
 DIRS = AppDirs(__name__, __author_short__)
 del AppDirs

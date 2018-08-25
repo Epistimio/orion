@@ -16,17 +16,17 @@ Continuous Integration
 
 We use **TravisCI** and **CodeCov**.
 
-.. image:: https://travis-ci.org/mila-udem/orion.svg?branch=master
-   :target: https://travis-ci.org/mila-udem/orion
+.. image:: https://travis-ci.org/epistimio/orion.svg?branch=master
+   :target: https://travis-ci.org/epistimio/orion
 
-.. image:: https://codecov.io/gh/mila-udem/orion/branch/master/graphs/badge.svg?branch=master
-   :target: https://codecov.io/gh/mila-udem/orion
+.. image:: https://codecov.io/gh/epistimio/orion/branch/master/graphs/badge.svg?branch=master
+   :target: https://codecov.io/gh/epistimio/orion
 
 Continuous Testing
 ==================
 
 Using ``tox`` we can automate many processes of continuous testing into macros.
-All contexts are defined in `/tox.ini <https://github.com/mila-udem/orion/blob/master/tox.ini>`_.
+All contexts are defined in `/tox.ini <https://github.com/epistimio/orion/blob/master/tox.ini>`_.
 
 By calling::
 

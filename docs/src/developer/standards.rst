@@ -48,10 +48,10 @@ Fork and Pull Request
 =====================
 
 Fork Oríon remotely to your Github_ account now, and start by submitting a
-`Pull Request <https://github.com/mila-udem/orion/pulls>`_ to us or by
-discussing an `issue <https://github.com/mila-udem/orion/issues>`_ with us.
+`Pull Request <https://github.com/epistimio/orion/pulls>`_ to us or by
+discussing an `issue <https://github.com/epistimio/orion/issues>`_ with us.
 
-.. image:: https://img.shields.io/github/forks/mila-udem/orion.svg?style=social&label=Fork
-   :target: https://github.com/mila-udem/orion/network
+.. image:: https://img.shields.io/github/forks/epistimio/orion.svg?style=social&label=Fork
+   :target: https://github.com/epistimio/orion/network
 
 .. _Github: https://github.com

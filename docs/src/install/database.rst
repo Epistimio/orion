@@ -95,7 +95,7 @@ Oríon configuration files.
       export ORION_DB_NAME=orion_test
       export ORION_DB_TYPE=MongoDB
 
-   2. By creating a section in an Oríon's configuration YAML file, like `this one <https://github.com/mila-udem/orion/blob/master/tests/functional/demo/orion_config_random.yaml>`_
+   2. By creating a section in an Oríon's configuration YAML file, like `this one <https://github.com/epistimio/orion/blob/master/tests/functional/demo/orion_config_random.yaml>`_
       used by our functional tests.
 
    .. code-block:: yaml

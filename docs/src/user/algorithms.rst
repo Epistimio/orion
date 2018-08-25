@@ -9,7 +9,7 @@ Default algorithm is a random search based on the probability
 distribution given to a search parameter's definition.
 
 In the examples given below actual functional tests will be demonstrated,
-in `demo <https://github.com/mila-udem/orion/tree/master/tests/functional/demo>`_.
+in `demo <https://github.com/epistimio/orion/tree/master/tests/functional/demo>`_.
 
 Selecting and Configuring
 =========================

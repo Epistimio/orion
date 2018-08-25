@@ -27,8 +27,8 @@ Currently we support YAML_ or JSON_ file types.
 
 Here are example files which correspond to the same configuration:
 
-   * `YAML example <https://github.com/mila-udem/orion/blob/master/tests/unittests/core/sample_config.yml>`_
-   * `JSON example <https://github.com/mila-udem/orion/blob/master/tests/unittests/core/sample_config.json>`_
+   * `YAML example <https://github.com/epistimio/orion/blob/master/tests/unittests/core/sample_config.yml>`_
+   * `JSON example <https://github.com/epistimio/orion/blob/master/tests/unittests/core/sample_config.json>`_
 
 The configuration file passed as an input template and as problem domain
 definition must be either **the first positional argument** accepted by an

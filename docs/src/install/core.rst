@@ -43,7 +43,7 @@ also recommended, but not necessary. Example:
 .. code-block:: sh
 
    <Create and navigate to the directory where local repo will reside>
-   git clone https://github.com/mila-udem/orion.git --branch develop
+   git clone https://github.com/epistimio/orion.git --branch develop
    mkvirtualenv -a $PWD/orion orion
    python setup.py develop --optimize=1
    <Do your job>
@@ -51,6 +51,6 @@ also recommended, but not necessary. Example:
 
 Begin reading instructions for developing it in :doc:`/developer/testing`.
 
-.. _repository: https://github.com/mila-udem/orion
+.. _repository: https://github.com/epistimio/orion
 .. _virtual environment: https://virtualenvwrapper.readthedocs.io/en/latest/command_ref.html#mkvirtualenv
 .. _development mode: https://setuptools.readthedocs.io/en/latest/setuptools.html#development-mode
