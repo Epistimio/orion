@@ -7,23 +7,23 @@ matrix:
   fast_finish: true
   include:
     - env: TOXENV=flake8
-      python: 3.6
+      python: 3.7
     - env: TOXENV=pylint
-      python: 3.6
+      python: 3.7
     - env: TOXENV=doc8
-      python: 3.6
+      python: 3.7
     - env: TOXENV=packaging
-      python: 3.6
+      python: 3.7
     - env: TOXENV=docs
-      python: 3.6
-    - env: TOXENV=py34
-      python: 3.4
+      python: 3.7
     - env: TOXENV=py35
       python: 3.5
     - env: TOXENV=py36
       python: 3.6
+    - env: TOXENV=py37
+      python: 3.7
     - env: TOXENV=demo_random
-      python: 3.6
+      python: 3.7
 
 install:
   - pip install tox
