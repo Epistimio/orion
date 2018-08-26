@@ -7,25 +7,15 @@ matrix:
   fast_finish: true
   include:
     - env: TOXENV=flake8
-      python: 3.7
-      dist: xenial
-      sudo: true
+      python: 3.6
     - env: TOXENV=pylint
-      python: 3.7
-      dist: xenial
-      sudo: true
+      python: 3.6
     - env: TOXENV=doc8
-      python: 3.7
-      dist: xenial
-      sudo: true
+      python: 3.6
     - env: TOXENV=packaging
-      python: 3.7
-      dist: xenial
-      sudo: true
+      python: 3.6
     - env: TOXENV=docs
-      python: 3.7
-      dist: xenial
-      sudo: true
+      python: 3.6
     - env: TOXENV=py35
       python: 3.5
     - env: TOXENV=py36
@@ -35,9 +25,7 @@ matrix:
       dist: xenial
       sudo: true
     - env: TOXENV=demo_random
-      python: 3.7
-      dist: xenial
-      sudo: true
+      python: 3.6
 
 install:
   - pip install tox
