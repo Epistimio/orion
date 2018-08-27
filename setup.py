@@ -35,7 +35,8 @@ def find_data_files():
 
 
 tests_require = [
-    'pytest>=3.0.0'
+    'pytest>=3.0.0',
+    'pytest-runner>=2.0,<3dev'
     ]
 
 
@@ -69,7 +70,7 @@ setup_args = dict(
         },
     install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython'],
     tests_require=tests_require,
-    setup_requires=['setuptools', 'pytest-runner>=2.0,<3dev'],
+    setup_requires=['setuptools'],
     extras_require=dict(test=tests_require),
     # "Zipped eggs don't play nicely with namespace packaging"
     # from https://github.com/pypa/sample-namespace-packages
