@@ -12,9 +12,10 @@ build:
 
 requirements:
   host:
-    - python
+    - python {{ python }}
     - setuptools
   run:
+    - python
     - numpy
     - scipy
     - pyyaml
