@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.worker.strategies` -- register objectives for incomplete trials
+:mod:`orion.core.worker.strategy` -- register objectives for incomplete trials
 ========================================================================
 
-.. module:: strategies
+.. module:: strategy
    :platform: Unix
    :synopsis: Strategies to register objectives for incomplete trials.
 
@@ -38,6 +38,7 @@ def get_objective(trial):
 
 class BaseParallelStrategy(object, metaclass=ABCMeta):
     """Strategy to give intermediate results for incomplete trials"""
+
     @abstractmethod
     def observe(self, points, results):
         """Observe completed trials
@@ -63,8 +64,18 @@ class BaseParallelStrategy(object, metaclass=ABCMeta):
         """
         pass
 
+    @property
+    def configuration(self):
+        """Provide the configuration of the strategy as a dictionary.
+
+        """
+        # TODO(mnoukhov): change to dict {of_type: __name__} ?
+        return self.__class__.__name__
+
 
 class NoParallelStrategy(BaseParallelStrategy):
+    """No parallel strategy"""
+
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
         pass
@@ -75,10 +86,12 @@ class NoParallelStrategy(BaseParallelStrategy):
 
 
 class MaxParallelStrategy(BaseParallelStrategy):
+    """Parallel strategy that uses the max of completed objectives"""
+
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
         super(MaxParallelStrategy, self).observe(points, results)
-        #TODO(mnoukhov): observe all types or just objective?
+        # TODO(mnoukhov): observe all types or just objective?
         self.max_result = max(result.value for result in results
                               if result.type == 'objective')
 
@@ -91,6 +104,8 @@ class MaxParallelStrategy(BaseParallelStrategy):
 
 
 class MeanParallelStrategy(BaseParallelStrategy):
+    """Parallel strategy that uses the mean of completed objectives"""
+
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
         super(MeanParallelStrategy, self).observe(points, results)
@@ -110,14 +125,4 @@ class Strategy(BaseParallelStrategy, metaclass=Factory):
 
     .. seealso:: `orion.core.utils.Factory` metaclass and `BaseParallelStrategy` interface.
     """
-
-    @classmethod
-    def build(cls, strategy_dict):
-        """Builder method for a parallel strategy
-
-        :param strategy_dict: dict
-            Strategy representation in dict form
-        :return: `orion.core.worker.BaseParallelStrategy`
-            An instantiated parallel strategy class
-        """
-        return cls(**strategy_dict)
+    pass

@@ -25,7 +25,8 @@ from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
-from orion.core.worker.strategies import Strategy
+from orion.core.worker.strategy import (BaseParallelStrategy,
+                                        Strategy)
 from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
@@ -379,6 +380,10 @@ class Experiment(object):
                 config[attrname] = copy.deepcopy(config[attrname])
                 config[attrname]['adapter'] = config[attrname]['adapter'].configuration
 
+            if self._init_done and attrname == "producer" and attribute.get("strategy"):
+                config[attrname] = copy.deepcopy(config[attrname])
+                config[attrname]['strategy'] = config[attrname]['strategy'].configuration
+
         # Reason for deepcopy is that some attributes are dictionaries
         # themselves, we don't want to accidentally change the state of this
         # object from a getter.
@@ -571,8 +576,10 @@ class Experiment(object):
         if self.refers and not isinstance(self.refers.get('adapter'), BaseAdapter):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
-        #TODO(mnoukhov) do we need an if statement similar to above
-        self.producer['strategy'] = Strategy.build(self.producer['strategy'])
+        if self.producer and not isinstance(self.producer.get('strategy'), BaseParallelStrategy):
+            self.producer = {'strategy': Strategy(of_type=self.producer['strategy'])}
+        else:
+            self.producer = {'strategy': Strategy(of_type="NoParallelStrategy")}
 
     def _branch_config(self, conflicts, branching_configuration):
         """Ask for a different identifier for this experiment. Set :attr:`refers`

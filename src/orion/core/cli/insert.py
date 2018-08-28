@@ -48,7 +48,7 @@ def main(args):
 
     trial = tuple_to_trial(values, exp_space)
 
-    ExperimentBuilder().build_from_config(experiment_view.configuration).register_trials([trial])
+    ExperimentBuilder().build_from_config(experiment_view.configuration).register_trial(trial)
 
 
 def _validate_dimensions(transformed_args, exp_space):

@@ -5,6 +5,8 @@ max_trials: 100
 
 algorithms: 'random'
 
+producer: {}
+
 database:
   type: 'mongodb'
   name: 'orion_test'

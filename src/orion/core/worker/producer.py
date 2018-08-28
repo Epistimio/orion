@@ -39,7 +39,7 @@ class Producer(object):
             raise RuntimeError("Experiment object provided to Producer has not yet completed"
                                " initialization.")
         self.algorithm = experiment.algorithms
-        self.parallel_strategy = experiment.parallel_strategy
+        self.strategy = experiment.producer['strategy']
         self.naive_algorithm = None
 
     def produce(self):
@@ -73,26 +73,26 @@ class Producer(object):
 
             log.debug("### Observe them.")
             self.algorithm.observe(points, results)
-            self.parallel_strategy.observe(points, results)
+            self.strategy.observe(points, results)
 
     def _produces_lies(self):
         """Add fake objective results to incomplete trials
 
         Then register the trials in the db
         """
-        log.debug("### Fetch trials to observe:")
+        log.debug("### Fetch active trials to observe:")
         incomplete_trials = self.experiment.fetch_active_trials()
-        log.debug("### %s", incompleted_trials)
+        log.debug("### %s", incomplete_trials)
 
-        for trials in incomplete_trials:
+        for trial in incomplete_trials:
             log.debug("### Use defined ParallelStrategy to assign them fake results.")
-            lying_result = self.parallel_strategy.lie(trial)
+            lying_result = self.strategy.lie(trial)
             if lying_result is not None:
                 trial.results.append(lying_result)
             log.debug("### Register lie to database: %s", trial)
             self.experiment.register_trial(trial)
 
-        return trials
+        return incomplete_trials
 
     def _update_naive_algorithm(self):
         """Pull all non completed trials to update naive model."""

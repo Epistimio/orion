@@ -3,10 +3,10 @@
 """Collection of tests for :mod:`orion.core.worker.strategies`."""
 import pytest
 
-from orion.core.worker.strategies import (Strategy,
-                                          MaxParallelStrategy,
-                                          MeanParallelStrategy,
-                                          NoParallelStrategy)
+from orion.core.worker.strategy import (MaxParallelStrategy,
+                                        MeanParallelStrategy,
+                                        NoParallelStrategy,
+                                        Strategy)
 from orion.core.worker.trial import Trial
 
 
@@ -22,12 +22,13 @@ def observations():
 
 @pytest.fixture
 def incomplete_trial():
-    """A single trial without results"""
+    """Return a single trial without results"""
     return Trial(params=[{'name': 'a', 'type': 'integer', 'value': 6}])
 
 
 class TestStrategyBuild:
     """Test creating a strategy class with the build method"""
+
     def test_strategy_build_no(self):
         """Test creating a NoParallelStrategy class"""
         strategy = Strategy.build({
@@ -38,6 +39,7 @@ class TestStrategyBuild:
 
 class TestParallelStrategies:
     """Test the different parallel strategy methods"""
+
     def test_max_parallel_strategy(self, observations, incomplete_trial):
         """Test that MaxParallelStrategy lies using the max"""
         points, results = observations
@@ -61,8 +63,8 @@ class TestParallelStrategies:
 
         objective_results = [result for result in results
                              if result.type == 'objective']
-        mean_value = (sum(result.value for result in objective_results)
-                      / float(len(objective_results)))
+        mean_value = (sum(result.value for result in objective_results) /
+                      float(len(objective_results)))
         assert lying_result.value == mean_value
 
     def test_no_parallel_strategy(self, observations, incomplete_trial):
@@ -72,7 +74,4 @@ class TestParallelStrategies:
         strategy = NoParallelStrategy()
         strategy.observe(points, results)
         lying_result = strategy.lie(incomplete_trial)
-
-        assert lying_result == None
-
-
+        assert lying_result is None
