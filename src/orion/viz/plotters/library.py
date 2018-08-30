@@ -1,9 +1,19 @@
+# -*- coding: utf-8 -*-
+"""
+:mod:`orion.viz.plotters.library` -- Wrapper over `BasePlotter` objects for different libraries
+===============================================================================================
+
+.. module:: library
+   :platform: Unix
+   :synopsis: Wrapper for different `BasePlotter`
+
+"""
 from orion.core.utils import Wrapper
 from orion.viz.plotters.base import BasePlotter
 
 
 class Library(Wrapper):
-    """Wrapper use to wrap different plotting libraries"""
+    """Wrapper use create `BasePlotter` objects while providing library-specific calls"""
 
     implementation_module = "orion.viz.plotters"
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Common fixtures and utils for unittests and functional tests."""
+import datetime
 import os
 
 import numpy
@@ -19,6 +20,20 @@ from orion.core.worker.trial import Trial
 def dumbalgo():
     """Return stab algorithm class."""
     return DumbAlgo
+
+
+@pytest.fixture()
+def random_dt(monkeypatch):
+    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
+    random_dt = datetime.datetime(1903, 4, 25, 0, 0, 0)
+
+    class MockDatetime(datetime.datetime):
+        @classmethod
+        def utcnow(cls):
+            return random_dt
+
+    monkeypatch.setattr(datetime, 'datetime', MockDatetime)
+    return random_dt
 
 
 @pytest.fixture()

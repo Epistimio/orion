@@ -35,7 +35,9 @@ def find_data_files():
 
 
 tests_require = [
-    'pytest>=3.0.0'
+    'pytest>=3.0.0',
+    'sklearn',
+    'matplotlib'
     ]
 
 

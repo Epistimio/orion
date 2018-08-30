@@ -106,20 +106,6 @@ def with_user_dendi(monkeypatch):
 
 
 @pytest.fixture()
-def random_dt(monkeypatch):
-    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    random_dt = datetime.datetime(1903, 4, 25, 0, 0, 0)
-
-    class MockDatetime(datetime.datetime):
-        @classmethod
-        def utcnow(cls):
-            return random_dt
-
-    monkeypatch.setattr(datetime, 'datetime', MockDatetime)
-    return random_dt
-
-
-@pytest.fixture()
 def hacked_exp(with_user_dendi, random_dt, clean_db, create_db_instance):
     """Return an `Experiment` instance with hacked _id to find trials in
     fake database.

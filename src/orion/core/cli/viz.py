@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=eval-used,protected-access
 """
-:mod:`orion.core.cli.insert` -- Module to insert new trials
-===========================================================
+:mod:`orion.core.cli.viz` -- Module to visual optimization data
+===============================================================
 
-.. module:: insert
+.. module:: viz
    :platform: Unix
-   :synopsis: Insert creates new trials for a given experiment with fixed values
+   :synopsis: Create an analyser and plotter of the given type and generate the corresponding plot
 
 """
 import logging
@@ -36,12 +36,12 @@ def add_subparser(parser):
 
 
 def main(args):
+    """Get the analyser and the plotter from the config file, recover the experiment
+    and the trials from the database and plot the analysis.
+    """
     analyser_config = ExperimentBuilder().fetch_full_config(args)['analyser']
     plotter_config = ExperimentBuilder().fetch_full_config(args)['plotter']
     experiment = EVCBuilder().build_from(args)
-
-    print(analyser_config)
-    print(plotter_config)
 
     trials = Trial.build(experiment._db.read('trials', dict(experiment=experiment.id)))
     analyser = AnalyserWrapper(trials, experiment, analyser_config)

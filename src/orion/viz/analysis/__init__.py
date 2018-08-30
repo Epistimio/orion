@@ -16,6 +16,7 @@ class Analysis(object, metaclass=ABCMeta):
 
     @property
     def value(self):
+        """Return the stored data of the analysis"""
         return None
 
 

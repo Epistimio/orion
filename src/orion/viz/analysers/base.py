@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.viz.analysers.base` -- Base interface, factory and wrapper for a data analyser
-==========================================================================================
+:mod:`orion.viz.analysers.base` -- Base interface and wrapper for a data analyser
+=================================================================================
 
-.. module:: analysers
+.. module:: base
    :platform: Unix
    :synopsis: Formulation of a general interface for a data analyser to provide
    information to a plotter object
@@ -18,7 +18,11 @@ log = logging.getLogger(__name__)
 
 
 class BaseAnalyser(Concept, metaclass=ABCMeta):
-    """Base class describing what a data analyzer can do."""
+    """The base class for analyser defines the main API of a data analyser.
+    Every data analyser needs to implement the `analyse` method to return a
+    :mod:`orion.viz.analysis.Analysis` object. The type of analysis provided (and thus, returned)
+    by the analyser need to be a list of subclasses of the :mod:`orion.viz.analysis.Analysis` class.
+    """
 
     name = "Analyser"
 
@@ -27,17 +31,14 @@ class BaseAnalyser(Concept, metaclass=ABCMeta):
 
         Parameters
         ----------
-        trials : List of `orion.core.worker.trial.Trial`
+        trials : List of :mod:`orion.core.worker.trial.Trial`
             All the trials to be analyse.
-        experiment : `orion.core.worker.experiment.Experiment`
+        experiment : :mod:`orion.core.worker.experiment.Experiment`
             Current experiment being analyzed.
-        kwargs : dict
+        kwargs : `dict`
             Tunable elements of a particular data analyser.
 
         """
-        log.debug("Creating Algorithm object of %s type with parameters:\n%s",
-                  type(self).__name__, kwargs)
-
         self._trials = trials
         self._experiment = experiment
         self._space = experiment.space
@@ -45,11 +46,11 @@ class BaseAnalyser(Concept, metaclass=ABCMeta):
 
     @abstractmethod
     def analyse(self, of_type=None):
-        """Return a `orion.viz.analysis.Analysis` object containing the results of the analyse.
+        """Return a :mod:`orion.viz.analysis.Analysis` object containing the results of the analyse.
 
         Parameters
         ----------
-        of_type : Subclass of `orion.viz.analysis.Analysis`
+        of_type : Subclass of :mod:`orion.viz.analysis.Analysis`
             If the data analyser provides different type of analyses, this tells the
             object which one we want.
         """
@@ -72,17 +73,27 @@ class BaseAnalyser(Concept, metaclass=ABCMeta):
 
     @property
     def available_analysis(self):
-        """Return the type of analysis this analyser provides."""
+        """Return the types of analysis this analyser provides."""
         return []
 
 
 class AnalyserWrapper(Wrapper):
+    """Basic wrapper for analysers"""
 
     implementation_module = "orion.viz.analysers"
 
     def __init__(self, trials, experiment, analyser_config):
+        """Forward the initialization to `Wrapper`"""
         super(AnalyserWrapper, self).__init__(trials, experiment, instance=analyser_config)
 
     @property
     def wraps(self):
+        """Wrap `orion.viz.analysers.base.BaseAnalyser"""
         return BaseAnalyser
+
+    def analyse(self, of_type=None):
+        """Wrap the analyse function call by asserting that the requested type is valid."""
+        if of_type is not None:
+            assert type(of_type) in self.instance.available_analysis
+
+        self.instance.analyse(of_type)
