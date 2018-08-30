@@ -117,7 +117,7 @@ class Experiment(object):
         self.pool_size = None
         self.max_trials = None
         self.algorithms = None
-        self.producer = None
+        self.producer = {'strategy': None}
 
         config = self._db.read('experiments',
                                {'name': name, 'metadata.user': user})
@@ -131,7 +131,7 @@ class Experiment(object):
             config = sorted(config, key=lambda x: x['metadata']['datetime'],
                             reverse=True)[0]
             for attrname in self.__slots__:
-                if not attrname.startswith('_'):
+                if not attrname.startswith('_') and attrname in config:
                     setattr(self, attrname, config[attrname])
             self._id = config['_id']
 
@@ -288,6 +288,9 @@ class Experiment(object):
         trial.submit_time = stamp
 
         self._db.write('trials', trial.to_dict())
+
+    def dummy_func(self):
+        print('here')
 
     def fetch_completed_trials(self):
         """Fetch recent completed trials that this `Experiment` instance has not
@@ -587,10 +590,10 @@ class Experiment(object):
         if self.refers and not isinstance(self.refers.get('adapter'), BaseAdapter):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
-        if self.producer and not isinstance(self.producer.get('strategy'), BaseParallelStrategy):
-            self.producer = {'strategy': Strategy(of_type=self.producer['strategy'])}
-        else:
+        if not self.producer.get('strategy'):
             self.producer = {'strategy': Strategy(of_type="NoParallelStrategy")}
+        elif not isinstance(self.producer.get('strategy'), BaseParallelStrategy):
+            self.producer = {'strategy': Strategy(of_type=self.producer['strategy'])}
 
     def _branch_config(self, conflicts, branching_configuration):
         """Ask for a different identifier for this experiment. Set :attr:`refers`
