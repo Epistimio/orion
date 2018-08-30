@@ -10,7 +10,8 @@ import pytest
 
 from orion.algo.space import (Categorical, Integer, Real, Space)
 from orion.core.evc import conflicts
-from orion.core.io.convert import (JSONConverter, YAMLConverter)
+from orion.core.io.converters.jsonconverter import JSONConverter
+from orion.core.io.converters.yamlconverter import YAMLConverter
 from orion.core.io.database.base import Database
 from orion.core.io.space_builder import DimensionBuilder
 from orion.core.worker.experiment import Experiment

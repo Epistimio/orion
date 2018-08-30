@@ -37,8 +37,6 @@ class BaseConverter(Concept, metaclass=ABCMeta):
 
     """
 
-    file_extensions = []
-
     name = "Converter"
 
     @abstractmethod
@@ -64,13 +62,15 @@ class Converter(Wrapper):
 
     implementation_module = "orion.core.io.converters"
 
-    conversion_matrix = {'yml': 'yaml', 'yaml': 'yaml', 'json': 'json'}
+    file_extensions = {'.yml': 'yaml', '.yaml': 'yaml', '.json': 'json'}
 
     def __init__(self, config_path, regex=None, default_keyword=''):
         _, ext_type = os.path.splitext(os.path.abspath(config_path))
 
         classname = self.file_extensions.get(ext_type, 'generic') + 'converter'
 
+        print(regex)
+        print(default_keyword)
         instance_dict = {classname: dict(regex=regex, expression_prefix=default_keyword)}
         super(Converter, self).__init__(instance=instance_dict)
 

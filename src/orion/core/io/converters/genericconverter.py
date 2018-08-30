@@ -22,13 +22,16 @@ class GenericConverter(BaseConverter):
 
     """
 
-    def __init__(self, regex=r'([\/]?[\w|\/|-]+)~([\+]?.*\)|\-|\>[A-Za-z_]\w*)',
-                 expression_prefix=''):
+    def __init__(self, regex=None, expression_prefix=''):
         """Initialize with the regex expression which will be searched for
         to define a `Dimension`.
         """
         self.re_module = importlib.import_module('re')
-        self.regex = self.re_module.compile(regex)
+
+        if regex is not None:
+            self.regex = self.re_module.compile(regex)
+        else:
+            self.regex = self.re_module.compile(r'([\/]?[\w|\/|-]+)~([\+]?.*\)|\-|\>[A-Za-z_]\w*)')
         self.expression_prefix = expression_prefix
         self.template = None
         self.has_leading = defaultdict(str)

@@ -5,8 +5,10 @@ import os
 
 import pytest
 
-from orion.core.io.convert import (GenericConverter, infer_converter_from_file_type,
-                                   JSONConverter, YAMLConverter)
+from orion.core.io.converters.genericconverter import GenericConverter
+from orion.core.io.converters.jsonconverter import JSONConverter
+from orion.core.io.converters.yamlconverter import YAMLConverter
+from orion.core.io.converters.base import Converter
 
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -14,19 +16,19 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def test_infer_a_yaml_converter(yaml_sample_path):
     """Infer a YAMLConverter from file path string."""
-    yaml = infer_converter_from_file_type(yaml_sample_path)
+    yaml = Converter(yaml_sample_path)
     assert isinstance(yaml, YAMLConverter)
 
 
 def test_infer_a_json_converter(json_sample_path):
     """Infer a JSONConverter from file path string."""
-    json = infer_converter_from_file_type(json_sample_path)
+    json = Converter(json_sample_path)
     assert isinstance(json, JSONConverter)
 
 
 def test_unknown_file_ext(unknown_type_sample_path):
     """Check what happens if an unknown config type is given."""
-    converter = infer_converter_from_file_type(unknown_type_sample_path)
+    converter = Converter(unknown_type_sample_path)
     assert isinstance(converter, GenericConverter)
 
 
