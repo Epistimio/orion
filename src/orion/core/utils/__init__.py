@@ -14,6 +14,7 @@ from glob import glob
 from importlib import import_module
 import logging
 import os
+import sys
 
 import pkg_resources
 
@@ -69,6 +70,14 @@ class AbstractSingletonType(SingletonType, ABCMeta):
     pass
 
 
+def _get_module_path(module):
+    try:
+        path = sys.modules[module].__file__
+        return path[:path.rfind('/')]
+    except AttributeError:
+        return ""
+
+
 class Factory(ABCMeta):
     """Instantiate appropriate wrapper for the infrastructure based on input
     argument, ``of_type``.
@@ -88,9 +97,9 @@ class Factory(ABCMeta):
         super(Factory, cls).__init__(names, bases, dictionary)
 
         cls.modules = []
-        base = import_module(cls.__base__.__module__)
+        path = _get_module_path(cls.__base__.__module__)
         try:
-            py_files = glob(os.path.abspath(os.path.join(base.__path__[0] + '/**/',
+            py_files = glob(os.path.abspath(os.path.join(path + '/**/',
                                                          '[A-Za-z]*.py')), recursive=True)
 
             def _f(path):
@@ -101,10 +110,10 @@ class Factory(ABCMeta):
 
             for py_mod in py_mods:
                 cls.modules.append(import_module(py_mod))
-        except AttributeError:
+        except AttributeError as ex:
             # This means that base class and implementations reside in a module
             # itself and not a subpackage.
-            pass
+            print(str(ex))
 
         # Get types advertised through entry points!
         for entry_point in pkg_resources.iter_entry_points(cls.__base__.__name__):
@@ -155,7 +164,7 @@ class Factory(ABCMeta):
             inherited_qualified_name = get_qualified_name(inherited_class.__module__,
                                                           inherited_class.__name__).lower()
             if inherited_qualified_name == qualified_name:
-                return inherited_class.__call__(*args, **kwargs)
+                return inherited_class(*args, **kwargs)
 
         error = "Could not find implementation of {0}, type = '{1}'".format(
             cls.__base__.__name__, qualified_name)
@@ -209,6 +218,9 @@ class Wrapper(object):
                 item = self._instantiate_str(item, *args)
 
             setattr(self, key, item)
+
+    def __call__(self):
+        return self.instance
 
     @property
     def factory_type(self):
@@ -275,7 +287,8 @@ class Wrapper(object):
                 setattr(self, subkey, subitem)
 
         if not has_instantiated:
-            raise NotImplementedError("No implementation detected for type {}".format(self.wraps))
+            raise NotImplementedError("No implementation detected for type {} from {}"
+                                      .format(self.wraps, item))
 
         return item
 
