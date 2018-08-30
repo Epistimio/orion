@@ -15,7 +15,7 @@ import sys
 import tempfile
 
 from orion.core.io.converters.jsonconverter import JSONConverter
-from orion.core.io.database import Database
+from orion.core.io.database.base import Database
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.trial import Trial
 

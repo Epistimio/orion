@@ -20,7 +20,7 @@ from orion.algo.base import PrimaryAlgo
 from orion.core.cli.evc import fetch_branching_configuration
 from orion.core.evc.adapters import Adapter, BaseAdapter
 from orion.core.evc.conflicts import detect_conflicts
-from orion.core.io.database import Database, DuplicateKeyError, ReadOnlyDB
+from orion.core.io.database.base import Database, DuplicateKeyError, ReadOnlyDB
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
@@ -155,7 +155,7 @@ class Experiment(object):
 
         .. seealso::
 
-            :meth:`orion.core.io.database.AbstractDB.read` for more information about the
+            :meth:`orion.core.io.database.base.AbstractDB.read` for more information about the
             arguments.
 
         """

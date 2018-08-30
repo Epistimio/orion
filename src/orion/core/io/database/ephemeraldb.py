@@ -11,7 +11,7 @@
 from collections import defaultdict
 import copy
 
-from orion.core.io.database import AbstractDB, DuplicateKeyError
+from orion.core.io.database.base import AbstractDB, DuplicateKeyError
 
 
 class EphemeralDB(AbstractDB):

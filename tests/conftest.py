@@ -10,7 +10,7 @@ import yaml
 
 from orion.algo.dumbalgo import DumbAlgo
 from orion.core.io import resolve_config
-from orion.core.io.database import Database
+from orion.core.io.database.base import Database
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.worker.trial import Trial
 

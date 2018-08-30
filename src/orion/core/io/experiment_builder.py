@@ -90,7 +90,7 @@ import copy
 import logging
 
 from orion.core.io import resolve_config
-from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.io.database.base import Database, DuplicateKeyError
 from orion.core.worker.experiment import Experiment, ExperimentView
 
 

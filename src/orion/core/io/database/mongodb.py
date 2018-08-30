@@ -12,7 +12,7 @@ import functools
 
 import pymongo
 
-from orion.core.io.database import (
+from orion.core.io.database.base import (
     AbstractDB, DatabaseError, DuplicateKeyError)
 
 

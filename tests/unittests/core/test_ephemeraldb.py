@@ -6,7 +6,7 @@ from datetime import datetime
 
 import pytest
 
-from orion.core.io.database import Database
+from orion.core.io.database.base import Database
 from orion.core.io.database.ephemeraldb import EphemeralDB
 
 

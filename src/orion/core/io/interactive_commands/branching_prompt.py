@@ -21,7 +21,7 @@ import traceback
 
 from orion.algo.space import Dimension
 from orion.core.evc import adapters, conflicts
-from orion.core.io.database import Database
+from orion.core.io.database.base import Database
 from orion.core.utils.diff import green, red
 
 

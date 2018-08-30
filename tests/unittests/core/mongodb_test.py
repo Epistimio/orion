@@ -9,7 +9,7 @@ import pymongo
 from pymongo import MongoClient
 import pytest
 
-from orion.core.io.database import Database, DatabaseError, DuplicateKeyError
+from orion.core.io.database.base import Database, DatabaseError, DuplicateKeyError
 from orion.core.io.database.mongodb import AUTH_FAILED_MESSAGES, MongoDB
 
 

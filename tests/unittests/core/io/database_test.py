@@ -4,7 +4,7 @@
 
 import pytest
 
-from orion.core.io.database import Database, ReadOnlyDB
+from orion.core.io.database.base import Database, ReadOnlyDB
 from orion.core.io.database.mongodb import MongoDB
 
 

@@ -14,7 +14,7 @@ import itertools
 import logging
 import pprint
 
-from orion.core.io.database import Database
+from orion.core.io.database.base import Database
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer
 

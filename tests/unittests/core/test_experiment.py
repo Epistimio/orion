@@ -8,7 +8,7 @@ import random
 import pytest
 
 from orion.algo.base import BaseAlgorithm
-from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.io.database.base import Database, DuplicateKeyError
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
 

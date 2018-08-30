@@ -20,7 +20,7 @@ import functools
 import logging
 
 from orion.core.evc.tree import TreeNode
-from orion.core.io.database import Database
+from orion.core.io.database.base import Database
 from orion.core.worker.experiment import ExperimentView
 
 log = logging.getLogger(__name__)

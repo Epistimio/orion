@@ -57,7 +57,7 @@ import traceback
 
 from orion.algo.space import Dimension
 from orion.core.evc import adapters
-from orion.core.io.database import Database
+from orion.core.io.database.base import Database
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.diff import colored_diff
 from orion.core.utils.format_trials import standard_param_name

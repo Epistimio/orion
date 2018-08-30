@@ -259,6 +259,8 @@ class Database(Wrapper, metaclass=SingletonType):
     ASCENDING = 0
     DESCENDING = 1
 
+    implementation_module = "orion.core.io.database"
+
     def __init__(self, of_type="", **db_opts):
         """Initialize the database instance"""
         database_dict = {of_type: db_opts}
