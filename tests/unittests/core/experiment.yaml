@@ -47,6 +47,8 @@
       judgement: ~
       suspend: False
       done: False
+  producer:
+    strategy: NoParallelStrategy
 
 - name: supernaedo3
 
@@ -75,6 +77,8 @@
       judgement: ~
       suspend: False
       done: False
+  producer:
+    strategy: NoParallelStrategy
 
 - name: supernaedo4
 
@@ -104,6 +108,8 @@
       judgement: ~
       suspend: False
       done: False
+  producer:
+    strategy: NoParallelStrategy
 
 - name: supernaedo2
 

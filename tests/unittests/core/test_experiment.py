@@ -260,6 +260,7 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
         exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
 
@@ -278,6 +279,7 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
         exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
 
@@ -351,6 +353,7 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
         exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
         assert experiment_count_before == exp._db.count("experiments")
@@ -482,7 +485,7 @@ class TestConfigProperty(object):
         new_config['algorithms']['dumbalgo']['suspend'] = False
         new_config['algorithms']['dumbalgo']['value'] = 5
         assert exp._id == new_config.pop('_id')
-        assert exp.configuration == new_config
+        assert exp.configuration['algorithms'] == new_config['algorithms']
 
     @pytest.mark.usefixtures("trial_id_substitution")
     def test_status_is_pending_when_increase_max_trials(self, exp_config):

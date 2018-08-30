@@ -31,9 +31,7 @@ class TestStrategyBuild:
 
     def test_strategy_build_no(self):
         """Test creating a NoParallelStrategy class"""
-        strategy = Strategy.build({
-            'of_type': 'NoParallelStrategy',
-        })
+        strategy = Strategy('NoParallelStrategy')
         assert isinstance(strategy, NoParallelStrategy)
 
 
