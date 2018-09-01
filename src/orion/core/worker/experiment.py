@@ -289,9 +289,6 @@ class Experiment(object):
 
         self._db.write('trials', trial.to_dict())
 
-    def dummy_func(self):
-        print('here')
-
     def fetch_completed_trials(self):
         """Fetch recent completed trials that this `Experiment` instance has not
         yet seen.
@@ -591,6 +588,8 @@ class Experiment(object):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
         if not self.producer.get('strategy'):
+            log.warning('You have not set a producer strategy, the basic '
+                        'NoParallelStrategy will be used')
             self.producer = {'strategy': Strategy(of_type="NoParallelStrategy")}
         elif not isinstance(self.producer.get('strategy'), BaseParallelStrategy):
             self.producer = {'strategy': Strategy(of_type=self.producer['strategy'])}

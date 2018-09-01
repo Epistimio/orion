@@ -5,7 +5,8 @@ max_trials: 400
 
 algorithms: random
 
-producer: {}
+producer:
+    strategy: NoParallelStrategy
 
 database:
   type: 'mongodb'
