@@ -8,6 +8,9 @@ algorithms:
     learning_rate: 0.1
     # dx_tolerance: 1e-7
 
+producer:
+    strategy: NoParallelStrategy
+
 database:
   type: 'mongodb'
   name: 'orion_test'
