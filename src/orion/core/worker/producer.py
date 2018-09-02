@@ -82,17 +82,20 @@ class Producer(object):
         """
         log.debug("### Fetch active trials to observe:")
         incomplete_trials = self.experiment.fetch_active_trials()
+        lying_trials = []
         log.debug("### %s", incomplete_trials)
 
         for trial in incomplete_trials:
             log.debug("### Use defined ParallelStrategy to assign them fake results.")
             lying_result = self.strategy.lie(trial)
             if lying_result is not None:
-                trial.results.append(lying_result)
-            log.debug("### Register lie to database: %s", trial)
-            self.experiment.register_trial(trial)
+                lying_trial = copy.deepcopy(trial)
+                lying_trial.results.append(lying_result)
+                lying_trials.append(lying_trial)
+                log.debug("### Register lie to database: %s", lying_trial)
+                self.experiment.register_trial(lying_trial)
 
-        return incomplete_trials
+        return lying_trials
 
     def _update_naive_algorithm(self):
         """Pull all non completed trials to update naive model."""
