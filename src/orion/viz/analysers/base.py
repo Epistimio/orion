@@ -96,4 +96,4 @@ class AnalyserWrapper(Wrapper):
         if of_type is not None:
             assert type(of_type) in self.instance.available_analysis
 
-        self.instance.analyse(of_type)
+        return self.instance.analyse(of_type)
