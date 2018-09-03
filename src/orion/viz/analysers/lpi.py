@@ -14,7 +14,7 @@ import logging
 import numpy as np
 
 from orion.viz.analysers.base import BaseAnalyser
-from orion.viz.analysis import TimeSeriesAnalysis
+from orion.viz.analysis import CategoricalAnalysis
 
 from sklearn.ensemble import AdaBoostRegressor, BaggingRegressor, \
     ExtraTreesRegressor, GradientBoostingRegressor, RandomForestRegressor
@@ -121,8 +121,8 @@ class LPI(BaseAnalyser):
         params_grid = self.transform_categorical(params_grid)
         scores = self.compute_scores(epm, params_grid)
         var_scores = np.array([np.var(score) for score in scores])
-        return TimeSeriesAnalysis(dict(zip(params_key, self.lpi(var_scores))))
+        return CategoricalAnalysis(dict(zip(params_key, self.lpi(var_scores))))
 
     @property
     def available_analysis(self):
-        return [TimeSeriesAnalysis]
+        return [CategoricalAnalysis]

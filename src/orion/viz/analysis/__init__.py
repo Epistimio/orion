@@ -13,11 +13,7 @@ from abc import ABCMeta
 
 class Analysis(object, metaclass=ABCMeta):
     """Base class for an analysis"""
-
-    @property
-    def value(self):
-        """Return the stored data of the analysis"""
-        return None
+    pass
 
 
 class SingleValueAnalysis(Analysis):
@@ -30,7 +26,7 @@ class SingleValueAnalysis(Analysis):
         return self._value
 
 
-class TimeSeriesAnalysis(Analysis):
+class CategoricalAnalysis(Analysis):
     def __init__(self, value):
         self._value = value
 

@@ -13,7 +13,7 @@ import logging
 
 from matplotlib import pyplot
 
-from orion.viz.analysis import TimeSeriesAnalysis
+from orion.viz.analysis import CategoricalAnalysis
 from orion.viz.plotters.base import BasePlotter
 
 log = logging.getLogger(__name__)
@@ -38,5 +38,5 @@ class Bar(BasePlotter):
 
     @property
     def required_analysis(self):
-        """Plot `TimeSeriesAnalsysis` only"""
-        return [TimeSeriesAnalysis]
+        """Plot `CategoricalAnalsysis` only"""
+        return [CategoricalAnalysis]

@@ -25,7 +25,8 @@ def base_trial(exp, random_dt):
     return dict(experiment=exp.id,
                 results=[dict(name="example_objective", type="objective", value=0)],
                 params=[dict(name="/x", type="real", value=0),
-                        dict(name="/y", type="real", value=0)], status='completed', end_time=random_dt)
+                        dict(name="/y", type="real", value=0)],
+                status='completed', end_time=random_dt)
 
 
 @pytest.fixture
