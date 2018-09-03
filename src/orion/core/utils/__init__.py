@@ -220,6 +220,7 @@ class Wrapper(object):
             setattr(self, key, item)
 
     def __call__(self):
+        """Return the instance"""
         return self.instance
 
     @property

@@ -4,10 +4,9 @@
 from orion.viz.analysis import SingleValueAnalysis
 from orion.viz.plotters.plotterwrapper import PlotterWrapper
 
-import pytest
-
 
 def test_commandline(capsys):
+    """Test if the debug commandline correctly outputs the text"""
     analysis = SingleValueAnalysis(1)
     plotter = PlotterWrapper(analysis, [], {'commandline': {'debug': {}}})
 

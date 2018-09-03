@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.worker.convert` -- Parse and generate user script's configuration
-==================================================================================
+:mod:`orion.core.io.converters.base` -- Parse and generate user script's configuration
+======================================================================================
 
-.. module:: convert
+.. module:: base
    :platform: Unix
    :synopsis: Defines and instantiates a converter for configuration file types.
 
@@ -14,11 +14,6 @@ file types.
 Currently supported:
     - YAML
     - JSON
-    - See below, for configuration agnostic parsing
-
-A `GenericConverter` is provided that tries and parses configuration
-files, regardless of their type, according to predefined Oríon's markers.
-
 """
 from abc import (ABCMeta, abstractmethod)
 import os
@@ -59,21 +54,22 @@ class BaseConverter(Concept, metaclass=ABCMeta):
 
 # pylint: disable=too-few-public-methods,abstract-method
 class Converter(Wrapper):
+    """Wrapper for the different converters"""
 
     implementation_module = "orion.core.io.converters"
 
     file_extensions = {'.yml': 'yaml', '.yaml': 'yaml', '.json': 'json'}
 
     def __init__(self, config_path, regex=None, default_keyword=''):
+        """Determine the correct converter to use depending on file extension"""
         _, ext_type = os.path.splitext(os.path.abspath(config_path))
 
         classname = self.file_extensions.get(ext_type, 'generic') + 'converter'
 
-        print(regex)
-        print(default_keyword)
         instance_dict = {classname: dict(regex=regex, expression_prefix=default_keyword)}
         super(Converter, self).__init__(instance=instance_dict)
 
     @property
     def wraps(self):
+        """Wrap `BaseConverter`"""
         return BaseConverter

@@ -45,8 +45,9 @@ class BaseAnalyser(Concept, metaclass=ABCMeta):
         super(BaseAnalyser, self).__init__(trials, experiment, **kwargs)
 
     @abstractmethod
-    def analyse(self, of_type=None):
-        """Return a :mod:`orion.viz.analysis.Analysis` object containing the results of the analyse.
+    def analyse(self, of_type=None):  # noqa: D413
+        """
+        Return a :mod:`orion.viz.analysis.Analysis` object containing the results of the analyse.
 
         Parameters
         ----------

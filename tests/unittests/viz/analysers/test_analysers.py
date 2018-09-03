@@ -3,15 +3,16 @@
 """Example usage and tests for =mod:`orion.viz.analysers`."""
 import copy
 
+import pytest
+
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.worker.trial import Trial
 from orion.viz.analysers.base import AnalyserWrapper
 
-import pytest
-
 
 @pytest.fixture
 def exp(clean_db):
+    """Return a new experiment with no trials associated with it"""
     config = dict(name="analysis_exp", user="tsirif", datetime="2017-11-22T20=00:00",
                   user_args=["", "-x~normal(0,10)", "-y~uniform(0,10)"], algorithms="random",
                   database=dict(type='mongodb', name='orion_test',
@@ -22,6 +23,7 @@ def exp(clean_db):
 
 @pytest.fixture
 def base_trial(exp, random_dt):
+    """Return a trial with basic information filled in"""
     return dict(experiment=exp.id,
                 results=[dict(name="example_objective", type="objective", value=0)],
                 params=[dict(name="/x", type="real", value=0),
@@ -31,6 +33,7 @@ def base_trial(exp, random_dt):
 
 @pytest.fixture
 def trials(base_trial, database):
+    """Initialize trials to deterministic values and insert them into the database"""
     trials = []
     for i in range(3):
         trial = copy.deepcopy(base_trial)
@@ -49,6 +52,7 @@ def trials(base_trial, database):
 
 @pytest.fixture
 def lpi_config():
+    """Return configuration dictionary for the LPI analyser"""
     return {'lpi': {'regressor_name': 'RandomForestRegressor',
                     'target_name': 'error_rate',
                     'target_args': ['example_objective'],
@@ -56,6 +60,7 @@ def lpi_config():
 
 
 def test_commandline(trials, exp):
+    """Test the commandline analyser (best trial ID)"""
     analyser = AnalyserWrapper(trials, exp, {'commandline': {}})
     result = analyser.analyse()
     stats = exp.stats
@@ -64,6 +69,7 @@ def test_commandline(trials, exp):
 
 
 def test_lpi(trials, exp, lpi_config):
+    """Test the LPI analyser"""
     analyser = AnalyserWrapper(trials, exp, lpi_config)
     result = analyser.analyse().value
 

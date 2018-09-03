@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+:mod:`orion.core.io.converters.jsonconverter` -- Parse JSON file
+================================================================
+
+.. module:: jsonconverter
+   :platform: Unix
+   :synopsis: Defines and instantiates a converter for configuration file types.
+"""
 import importlib
 
 from orion.core.io.converters.base import BaseConverter

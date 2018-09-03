@@ -1,3 +1,16 @@
+# -*- coding: utf-8 -*-
+"""
+:mod:`orion.core.io.converters.generericconverter` -- Generic converter for text file
+=====================================================================================
+
+.. module:: genericconverter
+   :platform: Unix
+   :synopsis: Defines and instantiates a converter for configuration file types.
+
+A `GenericConverter` is provided that tries and parses configuration
+files, regardless of their type, according to predefined Oríon's markers.
+
+"""
 from collections import (defaultdict, deque)
 import importlib
 

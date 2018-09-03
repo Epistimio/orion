@@ -5,10 +5,10 @@ import os
 
 import pytest
 
+from orion.core.io.converters.base import Converter
 from orion.core.io.converters.genericconverter import GenericConverter
 from orion.core.io.converters.jsonconverter import JSONConverter
 from orion.core.io.converters.yamlconverter import YAMLConverter
-from orion.core.io.converters.base import Converter
 
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
