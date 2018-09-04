@@ -339,7 +339,7 @@ class TestSpaceBuilder(object):
                     "--something-same~choices({'lala': 0.2, 'yolo': 0.8})"]
         with pytest.raises(ValueError) as exc:
             spacebuilder.build_from(cmd_args)
-        assert 'Already' in str(exc.value)
+        assert 'Conflict' in str(exc.value)
 
     def test_build_with_nothing(self, spacebuilder):
         """Return an empty space if nothing is provided."""
@@ -497,3 +497,33 @@ sigmoid
         with pytest.raises(TypeError) as exc:
             spacebuilder.build_from(cmd_args)
         assert 'trial.asdfad' in str(exc.value)
+
+    def test_positional_args_one_expansion(self, spacebuilder, yaml_sample_path):
+        """Build the space builder from command args when having positional args
+        without a `=` in the middle.
+        """
+        cmd_args = ["-x~normal(0, 1)", "--config", yaml_sample_path]
+        space = spacebuilder.build_from(cmd_args)
+        assert spacebuilder.userconfig == yaml_sample_path
+        assert len(space) == 7
+        assert '/layers/1/width' in space
+        assert '/layers/1/type' in space
+        assert '/layers/2/type' in space
+        assert '/training/lr0' in space
+        assert '/training/mbs' in space
+        assert '/something-same' in space
+
+    def test_positional_args_with_end_argument(self, spacebuilder, yaml_sample_path):
+        """Build the space builder from command args when having positional args
+        without a `=` in the middle but with a free argument at the end.
+        """
+        cmd_args = ["-x~normal(0, 1)", "--config", yaml_sample_path, "allo"]
+        space = spacebuilder.build_from(cmd_args)
+        assert spacebuilder.userconfig == yaml_sample_path
+        assert len(space) == 7
+        assert '/layers/1/width' in space
+        assert '/layers/1/type' in space
+        assert '/layers/2/type' in space
+        assert '/training/lr0' in space
+        assert '/training/mbs' in space
+        assert '/something-same' in space
