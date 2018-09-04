@@ -307,6 +307,19 @@ class Experiment(object):
         return self._id
 
     @property
+    def node(self):
+        """Node of the experiment in the version control tree.
+
+        Value is `None` if the experiment is not connected to the version control tree.
+
+        .. seealso::
+
+            :py:meth:`orion.core.worker.experiment.Experiment.connect_to_version_control_tree`
+
+        """
+        return self._node
+
+    @property
     def is_done(self):
         """Return True, if this experiment is considered to be finished.
 
@@ -607,7 +620,7 @@ class ExperimentView(object):
     #                     Attributes
     valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials"] +
                         # Properties
-                        ["id", "is_done", "space", "algorithms", "stats", "configuration"] +
+                        ["id", "node", "is_done", "space", "algorithms", "stats", "configuration"] +
                         # Methods
                         ["fetch_trials", "fetch_trials_tree", "fetch_completed_trials",
                          "connect_to_version_control_tree"])
