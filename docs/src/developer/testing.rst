@@ -33,7 +33,7 @@ By calling::
    tox
 
 one attempts to call all contexts that matter for our Continuous Integration in
-the same call. Those are *py34*, *py35*, *py36*, *py37* for running tests and
+the same call. Those are *py35*, *py36*, *py37* for running tests and
 checking coverage, *flake8*, *pylint*, *doc8*, *packaging* for linting code,
 documentation and Python packaging-related files, and finally *docs* for
 building the Sphinx documentation.
