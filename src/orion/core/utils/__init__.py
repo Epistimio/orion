@@ -153,7 +153,7 @@ class Factory(ABCMeta):
 
         for inherited_class in cls.types:
             inherited_qualified_name = get_qualified_name(inherited_class.__module__,
-                                                    inherited_class.__name__).lower()
+                                                          inherited_class.__name__).lower()
             if inherited_qualified_name == qualified_name:
                 return inherited_class.__call__(*args, **kwargs)
 
