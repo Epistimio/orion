@@ -25,11 +25,15 @@ class CmdlineParser(object):
         self._already_parsed = False
         self.template = []
 
+    def format(self, configuration):
+        return " ".join(self.template).format(**configuration)
+
     def parse(self, commandline):
         if not commandline:
             return self.arguments
 
-        self.parse_arguments(commandline)
+        self.arguments = OrderedDict()
+        self._parse_arguments(commandline)
 
         for key, value in self.arguments.items():
             # TODO: Support passing the same commandline but slightly different
@@ -42,7 +46,7 @@ class CmdlineParser(object):
 
             # Handle optional ones
             else:
-                key_name = self.key_to_arg(key)
+                key_name = self._key_to_arg(key)
 
                 if key_name in self.template:
                     continue
@@ -64,9 +68,9 @@ class CmdlineParser(object):
 
         self._already_parsed = True
 
-        return self.configuration
+        return self.arguments
 
-    def key_to_arg(self, key):
+    def _key_to_arg(self, key):
         arg = key.replace("!!", "_").replace("??", "-")
 
         if len(arg) > 1:
@@ -74,7 +78,7 @@ class CmdlineParser(object):
 
         return "-" + arg
 
-    def parse_arguments(self, arguments):
+    def _parse_arguments(self, arguments):
         argument_name = None
 
         for arg in arguments:
@@ -82,7 +86,7 @@ class CmdlineParser(object):
             if arg.startswith("-"):
                 # Recover the argument name
                 arg_parts = arg.split("=")
-                argument_name = self.arg_to_key(arg_parts)
+                argument_name = self._arg_to_key(arg)
 
                 # Make sure we're not defining the same argument twice
                 if argument_name in self.arguments.keys():
@@ -109,11 +113,12 @@ class CmdlineParser(object):
             elif isinstance(value, list) and len(value) == 1:
                 value = value[0]
 
-            value = self.parse_paths(value)
+            value = self._parse_paths(value)
 
             self.arguments[key] = value
 
-    def arg_to_key(self, arg_parts):
+    def _arg_to_key(self, full_arg):
+        arg_parts = full_arg.split("=")
         arg = arg_parts[0]
 
         if arg.startswith("--") and len(arg) == 3:
@@ -126,9 +131,9 @@ class CmdlineParser(object):
 
         return arg.lstrip("-").replace("_", "!!").replace("-", "??")
 
-    def parse_paths(self, value):
+    def _parse_paths(self, value):
         if isinstance(value, list):
-            return [self.parse_paths(item) for item in value]
+            return [self._parse_paths(item) for item in value]
 
         if isinstance(value, str) and os.path.exists(value):
             return os.path.abspath(value)
