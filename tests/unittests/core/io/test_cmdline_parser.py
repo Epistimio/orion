@@ -11,6 +11,7 @@ from orion.core.io.cmdline_parser import CmdlineParser
 
 @pytest.fixture
 def basic_config():
+    """Return a simple configuration"""
     config = OrderedDict()
 
     config['_pos_0'] = 'python'
@@ -26,6 +27,7 @@ def basic_config():
 
 
 def test_arg_to_key():
+    """Test the arg_to_key function"""
     cmdline_parser = CmdlineParser()
     assert cmdline_parser._arg_to_key("-c") == "c"
     assert cmdline_parser._arg_to_key("--test") == "test"
@@ -39,6 +41,7 @@ def test_arg_to_key():
 
 
 def test_bad_arg_to_key():
+    """Test the fail cases of arg_to_key"""
     cmdline_parser = CmdlineParser()
     with pytest.raises(ValueError):
         assert cmdline_parser._arg_to_key("-c-c")
@@ -51,6 +54,7 @@ def test_bad_arg_to_key():
 
 
 def test_key_to_arg():
+    """Test the key to arg function"""
     cmdline_parser = CmdlineParser()
     assert cmdline_parser._key_to_arg("c") == "-c"
     assert cmdline_parser._key_to_arg("test") == "--test"
@@ -64,6 +68,7 @@ def test_key_to_arg():
 
 
 def test_parse_paths(monkeypatch):
+    """Test the parse_paths function"""
     monkeypatch.chdir(os.path.dirname(__file__))
     cmdline_parser = CmdlineParser()
     assert cmdline_parser._parse_paths(__file__) == os.path.abspath(__file__)
@@ -77,6 +82,7 @@ def test_parse_paths(monkeypatch):
 
 
 def test_parse_arguments(basic_config):
+    """Test the parsing of the commandline arguments"""
     cmdline_parser = CmdlineParser()
     cmdline_parser._parse_arguments(
         "python script.py some pos args "
@@ -85,16 +91,8 @@ def test_parse_arguments(basic_config):
     assert cmdline_parser.arguments == basic_config
 
 
-def test_parse_arguments_configuration(basic_config):
-    cmdline_parser = CmdlineParser()
-
-    configuration = cmdline_parser.parse(
-        "python script.py some pos args "
-        "--with args --and multiple args --plus --booleans".split(" "))
-    assert configuration == basic_config
-
-
 def test_parse_arguments_template():
+    """Test the creation of the template for arguments"""
     cmdline_parser = CmdlineParser()
 
     cmdline_parser.parse(
@@ -108,6 +106,7 @@ def test_parse_arguments_template():
 
 
 def test_parse_arguments_bad_command():
+    """Test the fail cases of parsing"""
     cmdline_parser = CmdlineParser()
 
     with pytest.raises(ValueError) as exc_info:
@@ -120,6 +119,7 @@ def test_parse_arguments_bad_command():
 
 
 def test_parse_branching_arguments_template():
+    """Test the branching of args"""
     cmdline_parser = CmdlineParser()
 
     command = ("python script.py some pos args "
@@ -144,6 +144,7 @@ def test_parse_branching_arguments_template():
 
 
 def test_parse_branching_arguments_format(monkeypatch):
+    """The the template from the branching"""
     monkeypatch.chdir(os.path.dirname(__file__))
 
     cmdline_parser = CmdlineParser()
@@ -152,13 +153,9 @@ def test_parse_branching_arguments_format(monkeypatch):
                "--with args --and multiple args --plus --booleans ")
 
     configuration = cmdline_parser.parse(command.split(" "))
-    print(cmdline_parser.template)
     assert cmdline_parser.format(configuration) == command.strip(" ")
 
     branch_configuration = cmdline_parser.parse("--with something --to update".split(" "))
-    print(configuration)
-    print(cmdline_parser.template)
-    print(branch_configuration)
     configuration.update(branch_configuration)
 
     assert (

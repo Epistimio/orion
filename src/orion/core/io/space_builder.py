@@ -447,6 +447,7 @@ class SpaceBuilder(object):
 
         return userconfig
 
+    # pylint: disable=no-self-use
     def expand_arguments(self, cmd_args):
         """
         Expand whitespace separated pairs of field/value to Orion's pattern for future detection.

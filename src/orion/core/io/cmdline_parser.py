@@ -20,15 +20,30 @@ import os
 
 
 class CmdlineParser(object):
+    """CmdlineParser is aimed at providing a simple tool to interpret commandline arguments
+    for the purposes of Orion. It can transform a list of string representing arguments to their
+    corresponding values. It can also recreate that string from the values by maintaing a template
+    of the way the arguments were passed.
+    """
+
     def __init__(self):
+        """Initialize the OrderedDict of arguments and the template list"""
         self.arguments = OrderedDict()
         self._already_parsed = False
         self.template = []
 
     def format(self, configuration):
+        """Recreate the string of argument using the template made at parse-time.
+        The `configuration` argument must be a `dict` compatible with the template.
+        """
         return " ".join(self.template).format(**configuration)
 
     def parse(self, commandline):
+        """Parse the `commandline` argument to create an OrderedDict where the keys are the
+        names of the arguments and the values are the actual values of the each argument.
+        The arguments can be a single value or a list of values. This also supports positional
+        arguments.
+        """
         if not commandline:
             return self.arguments
 
@@ -36,12 +51,8 @@ class CmdlineParser(object):
         self._parse_arguments(commandline)
 
         for key, value in self.arguments.items():
-            # TODO: Support passing the same commandline but slightly different
             # Handle positional arguments
             if key.startswith("_"):
-                if self._already_parsed:
-                    raise RuntimeError("Cannot branch using positional arguments.")
-
                 self.template.append("{" + key + "}")
 
             # Handle optional ones
@@ -62,7 +73,7 @@ class CmdlineParser(object):
                     self.template.append(template)
                     continue
 
-                for pos, item in enumerate(value):
+                for pos in range(len(value)):
                     template = "{" + key + "[" + str(pos) + "]}"
                     self.template.append(template)
 
@@ -70,6 +81,7 @@ class CmdlineParser(object):
 
         return self.arguments
 
+    # pylint: disable=no-self-use
     def _key_to_arg(self, key):
         arg = key.replace("!!", "_").replace("??", "-")
 
@@ -117,6 +129,7 @@ class CmdlineParser(object):
 
             self.arguments[key] = value
 
+    # pylint: disable=no-self-use
     def _arg_to_key(self, full_arg):
         arg_parts = full_arg.split("=")
         arg = arg_parts[0]
