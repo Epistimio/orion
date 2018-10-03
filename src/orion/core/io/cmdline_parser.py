@@ -47,8 +47,10 @@ class CmdlineParser(object):
         self._already_parsed = False
         self.template = []
 
-        if parsing_tokens is None:
-            parsing_tokens = {'-': '??', '_': '!!'}
+        parsing_tokens = {'-': '??', '_': '!!'}
+
+        if parsing_tokens is not None:
+            parsing_tokens.update(parsing_tokens)
 
         self._dash_token = parsing_tokens['-']
         self._underscore_token = parsing_tokens['_']
