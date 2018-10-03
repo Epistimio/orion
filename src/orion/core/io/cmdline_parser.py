@@ -20,29 +20,102 @@ import os
 
 
 class CmdlineParser(object):
-    """CmdlineParser is aimed at providing a simple tool to interpret commandline arguments
+    """Simple class for commandline arguments parsing.
+
+    CmdlineParser aims at providing a simple class to interpret commandline arguments
     for the purposes of Orion. It can transform a list of string representing arguments to their
     corresponding values. It can also recreate that string from the values by maintaing a template
     of the way the arguments were passed.
+
+    Parameters
+    ----------
+    parsing_tokens : dict, optional
+        Dictionary containing the tokens to use when parsing `-` and `_`.
+
+    Attributes
+    ----------
+    arguments : OrderedDict
+        Commandline arguments' name and value(s).
+    template : list
+        List of template-ready strings (in the form 'something_{0}') for formatting.
+
     """
 
-    def __init__(self):
-        """Initialize the OrderedDict of arguments and the template list"""
+    def __init__(self, parsing_tokens=None):
+        """See `CmdlineParser` description"""
         self.arguments = OrderedDict()
         self._already_parsed = False
         self.template = []
 
+        if parsing_tokens is None:
+            parsing_tokens = {'-': '??', '_': '!!'}
+
+        self._dash_token = parsing_tokens['-']
+        self._underscore_token = parsing_tokens['_']
+
     def format(self, configuration):
-        """Recreate the string of argument using the template made at parse-time.
-        The `configuration` argument must be a `dict` compatible with the template.
+        """Format the current template.
+
+        Recreate the string of argument using the template made at parse-time and
+        the values inside the `configuration` argument.
+
+        Parameters
+        ----------
+        configuration : dict
+            Dictionary storing the keys and values to be passed to the `format` function.
+            This would typically be `parser.arguments` where `parser` is a `CmdlineParser`
+            instance.
+
+        Returns
+        -------
+        str
+            A recreated string of the commandline passed to Orion.
+
         """
         return " ".join(self.template).format(**configuration)
 
     def parse(self, commandline):
-        """Parse the `commandline` argument to create an OrderedDict where the keys are the
-        names of the arguments and the values are the actual values of the each argument.
-        The arguments can be a single value or a list of values. This also supports positional
-        arguments.
+        """Parse the `commandline` argument.
+
+        Create an OrderedDict where the keys are the names of the arguments and the values
+        are the actual values of the each argument. The arguments can be a single value or a
+        list of values. This also supports positional arguments.
+
+        Parameters
+        ----------
+        commandline : list
+            List of string representing the commmandline arguments.
+
+        Returns
+        -------
+        OrderedDict
+            Dictionary holding the values of every argument. The keys are the arguments' name.
+
+        Raises
+        ------
+        ValueError
+            If there is a duplicate argument
+
+        Notes
+        -----
+        By default, all values are `str` unless their types have been changed in the meantime.
+        Unnamed arguments's key follow the format '_X' where `X` is the index of that argument
+        in the list. For example, `val1 val2` would be parsed as
+        `{'_pos_0': 'val1', '_pos_1': 'val2}`.
+
+        Arrays are parsed starting at the first named argument until the next one. For example :
+        `--arg1 value1 value2 --arg2 value3 value4` will be parsed as :
+        `{'arg1': ['value1', 'value2'], 'arg2': ['value3', 'value4']}`.
+
+        File paths are extended to their absolute forms.
+
+        If the commandline contains optional arguments before a subcommand, the arguments
+        will be wrongly parsed : `somecommand --optional argument subcommand --another argument`
+        will be parsed as `{'optional': ['argument', 'subcommand'], 'another': 'argument'}`
+
+        When dealing with an empty list (of the form `--args`), the value is a boolean.
+        This indicates to the parsing process to skip this particular argument.
+
         """
         if not commandline:
             return self.arguments
@@ -83,7 +156,7 @@ class CmdlineParser(object):
 
     # pylint: disable=no-self-use
     def _key_to_arg(self, key):
-        arg = key.replace("!!", "_").replace("??", "-")
+        arg = key.replace(self._underscore_token, "_").replace(self._dash_token, "-")
 
         if len(arg) > 1:
             return "--" + arg
@@ -106,8 +179,8 @@ class CmdlineParser(object):
 
                 self.arguments[argument_name] = []
 
-                if len(arg_parts) > 1 and "=".join(arg[1:]).strip(" "):
-                    self.arguments[argument_name].append("=".join(arg[1:]))
+                if len(arg_parts) > 1 and "=".join(arg_parts[1:]).strip(" "):
+                    self.arguments[argument_name].append("=".join(arg_parts[1:]))
 
             # If the argument did not start with `-` but we have an argument name
             # That means that this value belongs to that argument name list
@@ -129,7 +202,6 @@ class CmdlineParser(object):
 
             self.arguments[key] = value
 
-    # pylint: disable=no-self-use
     def _arg_to_key(self, full_arg):
         arg_parts = full_arg.split("=")
         arg = arg_parts[0]
@@ -142,7 +214,8 @@ class CmdlineParser(object):
             raise ValueError(
                 "Arguments with one dashes should have only one letter: {}".format(arg))
 
-        return arg.lstrip("-").replace("_", "!!").replace("-", "??")
+        return arg.lstrip("-").replace("_", self._underscore_token) \
+                              .replace("-", self._dash_token)
 
     def _parse_paths(self, value):
         if isinstance(value, list):

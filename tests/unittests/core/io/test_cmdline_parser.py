@@ -118,33 +118,8 @@ def test_parse_arguments_bad_command():
     assert "Two arguments have the same name: and" in str(exc_info.value)
 
 
-def test_parse_branching_arguments_template():
-    """Test the branching of args"""
-    cmdline_parser = CmdlineParser()
-
-    command = ("python script.py some pos args "
-               "--with args --and multiple args --plus --booleans ")
-
-    cmdline_parser.parse(command.split(" "))
-    assert (
-        cmdline_parser.template ==
-        ['{_pos_0}', '{_pos_1}', '{_pos_2}', '{_pos_3}', '{_pos_4}', '--with', '{with}', '--and',
-         '{and[0]}', '{and[1]}', '--plus', '--booleans'])
-
-    branch_configuration = cmdline_parser.parse("--with something --to update".split(" "))
-
-    assert branch_configuration == {
-        'with': 'something',
-        'to': 'update'}
-
-    assert (
-        cmdline_parser.template ==
-        ['{_pos_0}', '{_pos_1}', '{_pos_2}', '{_pos_3}', '{_pos_4}', '--with', '{with}', '--and',
-         '{and[0]}', '{and[1]}', '--plus', '--booleans', '--to', '{to}'])
-
-
 def test_parse_branching_arguments_format(monkeypatch):
-    """The the template from the branching"""
+    """Test the template from the branching"""
     monkeypatch.chdir(os.path.dirname(__file__))
 
     cmdline_parser = CmdlineParser()
