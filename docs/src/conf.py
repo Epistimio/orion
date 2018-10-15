@@ -183,7 +183,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'orion.tex', u'Oríon Documentation',
-     u'Oríon Team - MILA, Université de Montréal', 'manual'),
+     u'Epistímio Team', 'manual'),
 ]
 
 
