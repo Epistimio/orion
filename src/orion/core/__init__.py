@@ -23,6 +23,7 @@ __descr__ = 'Asynchronous [black-box] Optimization'
 __version__ = VERSIONS['version']
 __license__ = 'BSD-3-Clause'
 __author__ = u'Epistímio Team'
+__author_short__ = u'Epistímio Team'
 __author_email__ = 'xavier.bouthillier@umontreal.ca'
 __copyright__ = u'2017-2018, Epistímio Team'
 __url__ = 'https://github.com/epistimio/orion'
