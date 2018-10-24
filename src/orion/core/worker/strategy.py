@@ -87,6 +87,7 @@ class MaxParallelStrategy(BaseParallelStrategy):
     """Parallel strategy that uses the max of completed objectives"""
 
     def __init__(self, default_result=float('inf')):
+        """Initialize the maximum result used to lie"""
         self.max_result = default_result
 
     def observe(self, points, results):
@@ -107,6 +108,7 @@ class MeanParallelStrategy(BaseParallelStrategy):
     """Parallel strategy that uses the mean of completed objectives"""
 
     def __init__(self, default_result=float('inf')):
+        """Initialize the mean result used to lie"""
         self.mean_result = default_result
 
     def observe(self, points, results):
