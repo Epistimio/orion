@@ -7,7 +7,7 @@ Example with ikostrikov/pytorch-a2c-ppo-acktr
     If Oríon not installed: pip install orion.core
 
     If the database is not setup, you can follow the instructions here:
-    :doc:`../database`.
+    :doc:`/install/database`.
 
     Alternatively, you can test the example without setting up a database by
     using the option `--debug`, but note that all data gathered during an
@@ -26,9 +26,10 @@ What to change
 ==============
 
 
-To get the original repository of
-[ikostrikov](https://github.com/ikostrikov/pytorch-a2c-ppo-acktr)
+To get the original repository of `ikostrikov`_
 to work using Orion, we make a couple of changes.
+
+.. _ikostrikov: https://github.com/ikostrikov/pytorch-a2c-ppo-acktr
 
 First, we fork the original repo at commit hash:
 4d95ec364c7303566c6a52fb0a254640e931609d

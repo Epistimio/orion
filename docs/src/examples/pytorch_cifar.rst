@@ -7,7 +7,7 @@ Example with pytorch-cifar
     If Oríon not installed: pip install orion.core
 
     If the database is not setup, you can follow the instructions here:
-    :doc:`../database`.
+    :doc:`/install/database`.
 
     Alternatively, you can test the example without setting up a database by
     using the option `--debug`, but note that all data gathered during an
