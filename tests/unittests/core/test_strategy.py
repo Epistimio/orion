@@ -26,13 +26,18 @@ def incomplete_trial():
     return Trial(params=[{'name': 'a', 'type': 'integer', 'value': 6}])
 
 
-class TestStrategyBuild:
-    """Test creating a strategy class with the build method"""
+class TestStrategyFactory:
+    """Test creating a parallel strategy with the Strategy class"""
 
-    def test_strategy_build_no(self):
+    def test_create_noparallel(self):
         """Test creating a NoParallelStrategy class"""
         strategy = Strategy('NoParallelStrategy')
         assert isinstance(strategy, NoParallelStrategy)
+
+    def test_create_meanparallel(self):
+        """Test creating a MeanParallelStrategy class"""
+        strategy = Strategy('MeanParallelStrategy')
+        assert isinstance(strategy, MeanParallelStrategy)
 
 
 class TestParallelStrategies:

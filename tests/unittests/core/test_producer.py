@@ -53,26 +53,32 @@ def test_update(producer):
         'constraint': [1.2]
         }
 
+
 @pytest.mark.skip(reason="To be implemented...")
 def test_update_algorithm(producer):
     """Test functionality of _update_algorithm."""
     pass
+
 
 @pytest.mark.skip(reason="To be implemented...")
 def test_update_naive_algorithm(producer):
     """Test functionality of _update_naive_algorithm."""
     pass
 
+
 @pytest.mark.skip(reason="To be implemented...")
 def test_producing_lies(producer):
     """Test functionality of _produce_lies with a strategy."""
     pass
+
 
 @pytest.mark.skip(reason="To be implemented...")
 def test_producing_no_lies(producer):
     """Test functionality of _produce_lies with NoParallelStrategy."""
     pass
 
+
+@pytest.mark.skip(reason="DumbAlgo generates duplicate trials")
 def test_update_and_produce(producer, database, random_dt):
     """Test functionality of producer.produce()."""
     trials_in_db_before = database.trials.count()
