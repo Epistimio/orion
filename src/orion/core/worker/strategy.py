@@ -31,7 +31,7 @@ def get_objective(trial):
     elif len(objectives) == 1:
         objective = objectives[0]
     elif len(objectives) > 1:
-        raise RuntimeError("Trial %d has %d objectives", trial.id, len(objectives))
+        raise RuntimeError("Trial {} has {} objectives".format(trial.id, len(objectives)))
 
     return objective
 
@@ -66,9 +66,7 @@ class BaseParallelStrategy(object, metaclass=ABCMeta):
 
     @property
     def configuration(self):
-        """Provide the configuration of the strategy as a dictionary.
-
-        """
+        """Provide the configuration of the strategy as a dictionary."""
         # TODO(mnoukhov): change to dict {of_type: __name__} ?
         return self.__class__.__name__
 
@@ -88,23 +86,28 @@ class NoParallelStrategy(BaseParallelStrategy):
 class MaxParallelStrategy(BaseParallelStrategy):
     """Parallel strategy that uses the max of completed objectives"""
 
+    def __init__(self, default_result=float('inf')):
+        self.max_result = default_result
+
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
         super(MaxParallelStrategy, self).observe(points, results)
-        # TODO(mnoukhov): observe all types or just objective?
         self.max_result = max(result.value for result in results
                               if result.type == 'objective')
 
     def lie(self, trial):
         """See BaseParallelStrategy.lie"""
         if get_objective(trial):
-            raise RuntimeError("Trial %d is completed but should not be.", trial.id)
+            raise RuntimeError("Trial {} is completed but should not be.".format(trial.id))
 
         return Trial.Result(name='lie', type='lie', value=self.max_result)
 
 
 class MeanParallelStrategy(BaseParallelStrategy):
     """Parallel strategy that uses the mean of completed objectives"""
+
+    def __init__(self, default_result=float('inf')):
+        self.mean_result = default_result
 
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
@@ -115,14 +118,16 @@ class MeanParallelStrategy(BaseParallelStrategy):
     def lie(self, trial):
         """See BaseParallelStrategy.lie"""
         if get_objective(trial):
-            raise RuntimeError("Trial %d is completed but should not be.", trial.id)
+            raise RuntimeError("Trial {} is completed but should not be.".format(trial.id))
 
         return Trial.Result(name='lie', type='lie', value=self.mean_result)
 
 
+# pylint: disable=too-few-public-methods,abstract-method
 class Strategy(BaseParallelStrategy, metaclass=Factory):
     """Class used to build a parallel strategy given name and params
 
     .. seealso:: `orion.core.utils.Factory` metaclass and `BaseParallelStrategy` interface.
     """
+
     pass
