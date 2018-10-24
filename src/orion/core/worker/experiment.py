@@ -274,7 +274,7 @@ class Experiment(object):
         trial.status = 'new'
         trial.submit_time = stamp
 
-        trial.parents = self._trials_history.parents
+        trial.parents = self._trials_history.children
 
         self._db.write('trials', trial.to_dict())
 
@@ -308,9 +308,9 @@ class Experiment(object):
         """
         return self._id
 
-    def update_parents(self, completed_trials):
-        """Update the parents inside trials history"""
-        self._trials_history.update_parents(completed_trials)
+    def update_history(self, completed_trials):
+        """Update the trials history"""
+        self._trials_history.update(completed_trials)
 
     @property
     def node(self):

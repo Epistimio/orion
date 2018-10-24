@@ -16,13 +16,18 @@ class TrialsHistory:
 
     def __init__(self):
         """Create empty trials history"""
-        self.parents = []
+        self.children = []
 
-    def update_parents(self, trials):
+    def update(self, trials):
+        """Update the list of children trials
+
+        This history only keeps children. Current children that are now ancestors of
+        the new nodes are discarded from the history. This is because we can rebuild the entire
+        history from the current children, therefore we only need to keep those.
         """
-        Update the current parents by discarding any old ones while keeping the ones that don't
-        have children
-        """
+        descendents = set(self.children)
         for trial in trials:
-            self.parents = [parent for parent in self.parents if parent not in trial.parents]
-        self.parents.extend([trial._id for trial in trials])
+            descendents -= set(trial.parents)
+            descendents.add(trial._id)
+
+        self.children = list(sorted(descendents))
