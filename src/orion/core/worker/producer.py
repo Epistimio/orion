@@ -56,18 +56,17 @@ class Producer(object):
 
             new_points = self.algorithm.suggest(self.pool_size)
 
-            log.debug("### Convert points to `Trial` objects.")
-            new_trials = list(map(lambda data: format_trials.tuple_to_trial(data, self.space),
-                                  new_points))
-
-            for new_trial in new_trials:
+            for new_point in new_points:
+                log.debug("#### Convert point to `Trial` object.")
+                new_trial = format_trials.tuple_to_trial(new_point, self.space)
                 try:
                     self.experiment.register_trial(new_trial)
-                    log.debug("### Register new trial to database: %s", new_trial)
+                    log.debug("#### Register new trial to database: %s", new_trial)
                     sampled_points += 1
                 except DuplicateKeyError:
                     log.debug("#### Duplicate sample. Updating algo to produce new ones.")
                     self.update()
+                    break
 
         if n_attempts >= self.max_attempts:
             raise RuntimeError("Looks like the algorithm keeps suggesting trial configurations"
@@ -75,7 +74,7 @@ class Producer(object):
                                "a point of convergence and the algorithm cannot find anything "
                                "better. Or... something is broken. Try increasing `max_attempts` "
                                "or please report this error on "
-                               "https://github.com/mila-udem/orion/issues if something looks "
+                               "https://github.com/epistimio/orion/issues if something looks "
                                "wrong.")
 
     def update(self):
