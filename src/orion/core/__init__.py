@@ -11,7 +11,7 @@ fast and efficient hyperparameter tuning, and secondly to provide secondary APIs
 for more advanced features, such as dynamically reporting validation scores on
 training time for automatic early stopping or on-the-fly reconfiguration.
 
-Start by having a look here: https://github.com/mila-udem/orion
+Start by having a look here: https://github.com/epistimio/orion
 """
 from ._version import get_versions
 from .utils._appdirs import AppDirs
@@ -22,15 +22,11 @@ del get_versions
 __descr__ = 'Asynchronous [black-box] Optimization'
 __version__ = VERSIONS['version']
 __license__ = 'BSD-3-Clause'
-__author__ = u'Oríon Team - MILA, Université de Montréal'
-__author_short__ = 'MILA'
-__author_email__ = 'lisa_labo@iro.umontreal.ca'
-__copyright__ = u'2017-2018, Oríon Team - MILA, Université de Montréal'
-__authors__ = {
-    'tsirif': ('Christos Tsirigotis', 'tsirif@gmail.com'),
-    'bouthilx': ('Xavier Bouthillier', 'xavier.bouthillier@gmail.com'),
-}
-__url__ = 'https://github.com/mila-udem/orion'
+__author__ = u'Epistímio'
+__author_short__ = u'Epistímio'
+__author_email__ = 'xavier.bouthillier@umontreal.ca'
+__copyright__ = u'2017-2018, Epistímio'
+__url__ = 'https://github.com/epistimio/orion'
 
 DIRS = AppDirs(__name__, __author_short__)
 del AppDirs
