@@ -229,7 +229,10 @@ class MongoDB(AbstractDB):
 
         """
         dbcollection = self._db[collection_name]
-        return dbcollection.count_documents(filter=query if query else {})
+        if hasattr(dbcollection, 'count_documents'):
+            return dbcollection.count_documents(filter=query if query else {})
+
+        return dbcollection.count(filter=query)
 
     def remove(self, collection_name, query):
         """Delete from a collection document[s] which match the `query`.
