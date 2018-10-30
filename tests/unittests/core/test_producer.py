@@ -319,6 +319,38 @@ def test_naive_algo_trained_on_all_non_completed_trials(producer, database, rand
     assert len(producer.naive_algorithm.algorithm._points) == (1 + 6)
 
 
+def test_naive_algo_is_discared(producer, database, monkeypatch):
+    """Verify that naive algo is discarded and recopied from original algo"""
+    # Get rid of the mock on datetime.datetime.utcnow() otherwise fetch_completed_trials always
+    # fetch all trials since _last_fetched never changes.
+    monkeypatch.undo()
+
+    # Set values for predictions
+    producer.experiment.pool_size = 1
+    producer.experiment.algorithms.algorithm.possible_values = [('rnn', 'gru')]
+
+    producer.update()
+    assert len(producer._produce_lies()) == 4
+
+    first_naive_algorithm = producer.naive_algorithm
+
+    assert len(producer.algorithm.algorithm._points) == 3
+    assert len(first_naive_algorithm.algorithm._points) == (3 + 4)
+
+    producer.produce()
+
+    # Only update the original algo, naive algo is still not discarded
+    producer._update_algorithm()
+    assert len(producer.algorithm.algorithm._points) == 3
+    assert first_naive_algorithm == producer.naive_algorithm
+    assert len(producer.naive_algorithm.algorithm._points) == (3 + 4)
+
+    # Discard naive algo and create a new one, now trained on 5 points.
+    producer._update_naive_algorithm()
+    assert first_naive_algorithm != producer.naive_algorithm
+    assert len(producer.naive_algorithm.algorithm._points) == (3 + 5)
+
+
 @pytest.mark.skip(reason="Waiting for rebase on non-blocking design PR...")
 def test_concurent_producers(producer, database, random_dt):
     """Test concurrent production of new trials."""
