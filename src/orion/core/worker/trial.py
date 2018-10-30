@@ -260,7 +260,10 @@ class Trial(object):
         if not self.params and not self.experiment:
             raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
                              "have not been set.")
-        return hashlib.md5((self.params_repr() + str(self.experiment)).encode('utf-8')).hexdigest()
+        params_repr = self.params_repr()
+        experiment_repr = str(self.experiment)
+        lie_repr = self._repr_values([self.lie]) if self.lie else ""
+        return hashlib.md5((params_repr + experiment_repr + lie_repr).encode('utf-8')).hexdigest()
 
     def __hash__(self):
         """Return the hashname for this trial"""

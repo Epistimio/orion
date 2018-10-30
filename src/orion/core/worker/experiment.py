@@ -263,6 +263,33 @@ class Experiment(object):
         trial.status = 'completed'
         self._db.write('trials', trial.to_dict(), query={'_id': trial.id})
 
+    def register_lie(self, lying_trial):
+        """Register a *fake* trial created by the strategist.
+
+        The main difference between fake trial and orignal ones is the addition of a fake objective
+        result, and status being set to completed. The id of the fake trial is different than the id
+        of the original trial, but the original id can be computed using the hashcode on parameters
+        of the fake trial. See mod:`orion.core.worker.strategy` for more information and the
+        Strategist object and generation of fake trials.
+
+        Parameters
+        ----------
+        trials: `Trial` object
+            Fake trial to register in the database
+
+        Raises
+        ------
+        orion.core.io.database.DuplicateKeyError
+            If a trial with the same id already exist in the database. Since the id is computed
+            based on a hashing of the trial, this should mean that an identical trial already exist
+            in the database.
+
+        """
+        lying_trial.status = 'completed'
+        lying_trial.end_time = datetime.datetime.utcnow()
+
+        self._db.write('lying_trials', lying_trial.to_dict())
+
     def register_trial(self, trial):
         """Register new trial in the database.
 

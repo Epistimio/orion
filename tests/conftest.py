@@ -132,6 +132,7 @@ def clean_db(database, exp_config):
     """Clean insert example experiment entries to collections."""
     database.experiments.drop()
     database.experiments.insert_many(exp_config[0])
+    database.lying_trials.drop()
     database.trials.drop()
     database.trials.insert_many(exp_config[1])
     database.workers.drop()

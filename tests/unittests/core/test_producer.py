@@ -199,6 +199,87 @@ def test_lies_generation(producer, database, random_dt):
         assert lies[i].to_dict() == trials_non_completed[i]
 
 
+def test_register_lies(producer, database, random_dt):
+    """Verify that lies are registed in DB properly"""
+    query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
+    trials_non_completed = list(database.trials.find(query))
+    assert len(trials_non_completed) == 4
+
+    producer.update()
+    producer._produce_lies()
+
+    lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
+    assert len(lying_trials) == 4
+
+    for i in range(4):
+        trials_non_completed[i]['_id'] = lying_trials[i]['_id']
+        trials_non_completed[i]['status'] = 'completed'
+        trials_non_completed[i]['end_time'] = random_dt
+        trials_non_completed[i]['results'].append(producer.strategy._lie.to_dict())
+        assert lying_trials[i] == trials_non_completed[i]
+
+
+def test_register_duplicate_lies(producer, database, random_dt):
+    """Verify that duplicate lies are not registered twice in DB"""
+    query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
+    trials_non_completed = list(database.trials.find(query))
+    assert len(trials_non_completed) == 4
+
+    # Overwrite value of lying result of the strategist so that all lying trials have the same value
+    # otherwise they would not be exact duplicates.
+    producer.strategy._value = 4
+
+    # Set specific output value for to algo to ensure successful creation of a new trial.
+    producer.experiment.pool_size = 1
+    producer.experiment.algorithms.algorithm.possible_values = [('rnn', 'gru')]
+
+    producer.update()
+    assert len(producer._produce_lies()) == 4
+    lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
+    assert len(lying_trials) == 4
+
+    # Create a new point to make sure additional non-completed trials increase number of lying
+    # trials generated
+    producer.produce()
+
+    trials_non_completed = list(database.trials.find(query))
+    assert len(trials_non_completed) == 5
+
+    producer.update()
+
+    assert len(producer._produce_lies()) == 5
+    lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
+    assert len(lying_trials) == 5
+
+    # Make sure trying to generate again does not add more fake trials since they are identical
+    assert len(producer._produce_lies()) == 5
+    lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
+    assert len(lying_trials) == 5
+
+
+def test_register_duplicate_lies_with_different_results(producer, database, random_dt):
+    """Verify that duplicate lies with different results are all registered in DB"""
+    query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
+    trials_non_completed = list(database.trials.find(query))
+    assert len(trials_non_completed) == 4
+
+    # Overwrite value of lying result to force different results.
+    producer.strategy._value = 11
+
+    assert len(producer._produce_lies()) == 4
+    lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
+    assert len(lying_trials) == 4
+
+    # Overwrite value of lying result to force different results.
+    producer.strategy._value = new_lying_value = 12
+
+    lying_trials = producer._produce_lies()
+    assert len(lying_trials) == 4
+    nb_lying_trials = database.lying_trials.count({'experiment': producer.experiment.id})
+    assert nb_lying_trials == 4 + 4
+    assert lying_trials[0].lie.value == new_lying_value
+
+
 def test_naive_algo_not_trained_when_all_trials_completed(producer, database, random_dt):
     """Verify that naive algo is not trained on additional trials when all completed"""
     query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
