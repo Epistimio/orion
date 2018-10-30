@@ -6,6 +6,27 @@ import copy
 import pytest
 
 from orion.core.worker.producer import Producer
+from orion.core.worker.trial import Trial
+
+
+class DumbParallelStrategy:
+    """Mock object for parallel strategy"""
+
+    def observe(self, points, results):
+        """See BaseParallelStrategy.observe"""
+        self._observed_points = points
+        self._observed_results = results
+        self._value = None
+
+    def lie(self, trial):
+        """See BaseParallelStrategy.lie"""
+        if self._value:
+            value = self._value
+        else:
+            value = len(self._observed_points)
+
+        self._lie = lie = Trial.Result(name='lie', type='lie', value=value)
+        return lie
 
 
 @pytest.fixture()
@@ -23,6 +44,9 @@ def producer(hacked_exp, random_dt, exp_config, categorical_values):
     hacked_exp.configure(exp_config[0][3])
     hacked_exp.pool_size = 1
     hacked_exp.algorithms.algorithm.possible_values = categorical_values
+
+    hacked_exp.producer['strategy'] = DumbParallelStrategy()
+
     return Producer(hacked_exp)
 
 
@@ -54,33 +78,65 @@ def test_algo_observe_completed(producer):
         'constraint': [1.2]
         }
 
-@pytest.mark.skip(reason="To be implemented...")
-def test_update_algorithm(producer):
-    """Test functionality of _update_algorithm."""
-    pass
+
+def test_strategist_observe_completed(producer):
+    """Test that strategist only observes completed trials"""
+    assert len(producer.experiment.fetch_trials({})) > 3
+    producer.update()
+    # Algorithm must have received completed points and their results
+    obs_points = producer.strategy._observed_points
+    obs_results = producer.strategy._observed_results
+    assert len(obs_points) == 3
+    assert obs_points[0] == ('lstm', 'rnn')
+    assert obs_points[1] == ('rnn', 'rnn')
+    assert obs_points[2] == ('gru', 'lstm_with_attention')
+    assert len(obs_results) == 3
+    assert obs_results[0] == {
+        'objective': 3,
+        'gradient': None,
+        'constraint': []
+        }
+    assert obs_results[1] == {
+        'objective': 2,
+        'gradient': (-0.1, 2),
+        'constraint': []
+        }
+    assert obs_results[2] == {
+        'objective': 10,
+        'gradient': (5, 3),
+        'constraint': [1.2]
+        }
 
 
-@pytest.mark.skip(reason="To be implemented...")
-def test_update_naive_algorithm(producer):
-    """Test functionality of _update_naive_algorithm."""
-    pass
+def test_naive_algorithm_is_producing(producer, database, random_dt):
+    """Verify naive algo is used to produce, not original algo"""
+    producer.experiment.pool_size = 1
+    producer.experiment.algorithms.algorithm.possible_values = [('rnn', 'gru')]
+    producer.update()
+    producer.produce()
+
+    assert producer.naive_algorithm.algorithm._num == 1  # pool size
+    assert producer.algorithm.algorithm._num == 0
 
 
-@pytest.mark.skip(reason="To be implemented...")
-def test_producing_lies(producer):
-    """Test functionality of _produce_lies with a strategy."""
-    pass
-
-
-@pytest.mark.skip(reason="To be implemented...")
-def test_producing_no_lies(producer):
-    """Test functionality of _produce_lies with NoParallelStrategy."""
-    pass
-
-
-@pytest.mark.skip(reason="DumbAlgo generates duplicate trials")
 def test_update_and_produce(producer, database, random_dt):
-    """Test functionality of producer.produce()."""
+    """Test new trials are properly produced"""
+    possible_values = [('rnn', 'gru')]
+    producer.experiment.pool_size = 1
+    producer.experiment.algorithms.algorithm.possible_values = possible_values
+
+    producer.update()
+    producer.produce()
+
+    # Algorithm was ordered to suggest some trials
+    num_new_points = producer.naive_algorithm.algorithm._num
+    assert num_new_points == 1  # pool size
+
+    assert producer.naive_algorithm.algorithm._suggested == possible_values
+
+
+def test_register_new_trials(producer, database, random_dt):
+    """Test new trials are properly registered"""
     trials_in_db_before = database.trials.count()
     new_trials_in_db_before = database.trials.count({'status': 'new'})
 
@@ -91,7 +147,11 @@ def test_update_and_produce(producer, database, random_dt):
     producer.produce()
 
     # Algorithm was ordered to suggest some trials
+<<<<<<< HEAD
     num_new_points = producer.algorithm.algorithm._num
+=======
+    num_new_points = producer.naive_algorithm.algorithm._num
+>>>>>>> ef20a56... Add top-level unit-tests for producer
     assert num_new_points == 1  # pool size
 
     # `num_new_points` new trials were registered at database
