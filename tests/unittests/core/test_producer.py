@@ -147,11 +147,7 @@ def test_register_new_trials(producer, database, random_dt):
     producer.produce()
 
     # Algorithm was ordered to suggest some trials
-<<<<<<< HEAD
-    num_new_points = producer.algorithm.algorithm._num
-=======
     num_new_points = producer.naive_algorithm.algorithm._num
->>>>>>> ef20a56... Add top-level unit-tests for producer
     assert num_new_points == 1  # pool size
 
     # `num_new_points` new trials were registered at database
@@ -170,6 +166,76 @@ def test_register_new_trials(producer, database, random_dt):
          'type': 'categorical',
          'value': 'gru'}
         ]
+
+
+def test_no_lies_if_all_trials_completed(producer, database, random_dt):
+    """Verify that no lies are created if all trials are completed"""
+    query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
+    database.trials.remove(query)
+    trials_in_db_before = database.trials.count({'experiment': producer.experiment.id})
+    assert trials_in_db_before == 3
+
+    producer.update()
+
+    assert len(producer._produce_lies()) == 0
+
+
+def test_lies_generation(producer, database, random_dt):
+    """Verify that lies are created properly"""
+    query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
+    trials_non_completed = list(database.trials.find(query))
+    assert len(trials_non_completed) == 4
+
+    producer.update()
+
+    lies = producer._produce_lies()
+    assert len(lies) == 4
+
+    for i in range(4):
+        trials_non_completed[i]['_id'] = lies[i].id
+        trials_non_completed[i]['status'] = 'completed'
+        trials_non_completed[i]['end_time'] = random_dt
+        trials_non_completed[i]['results'].append(producer.strategy._lie.to_dict())
+        assert lies[i].to_dict() == trials_non_completed[i]
+
+
+def test_naive_algo_not_trained_when_all_trials_completed(producer, database, random_dt):
+    """Verify that naive algo is not trained on additional trials when all completed"""
+    query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
+    database.trials.remove(query)
+    trials_in_db_before = database.trials.count({'experiment': producer.experiment.id})
+    assert trials_in_db_before == 3
+
+    producer.update()
+
+    assert len(producer.algorithm.algorithm._points) == 3
+    assert len(producer.naive_algorithm.algorithm._points) == 3
+
+
+def test_naive_algo_trained_on_all_non_completed_trials(producer, database, random_dt):
+    """Verify that naive algo is trained on additional trials"""
+    # Set two of completed trials to broken and reserved to have all possible status
+    query = {'status': 'completed', 'experiment': producer.experiment.id}
+    completed_trials = database.trials.find(query)
+    database.trials.update({'_id': completed_trials[0]['_id']}, {'$set': {'status': 'broken'}})
+    database.trials.update({'_id': completed_trials[1]['_id']}, {'$set': {'status': 'reserved'}})
+
+    # Make sure non completed trials and completed trials are set properly for the unit-test
+    query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
+    non_completed_trials = list(database.trials.find(query))
+    assert len(non_completed_trials) == 6
+    # Make sure we have all type of status except completed
+    assert (set(trial['status'] for trial in non_completed_trials) ==
+            set(['new', 'reserved', 'suspended', 'interrupted', 'broken']))
+    query = {'status': 'completed', 'experiment': producer.experiment.id}
+    assert database.trials.count(query) == 1
+
+    # Executing the actual test
+    producer.update()
+    assert len(producer._produce_lies()) == 6
+
+    assert len(producer.algorithm.algorithm._points) == 1
+    assert len(producer.naive_algorithm.algorithm._points) == (1 + 6)
 
 
 @pytest.mark.skip(reason="Waiting for rebase on non-blocking design PR...")

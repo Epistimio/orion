@@ -624,16 +624,36 @@ def test_fetch_completed_trials(hacked_exp, exp_config, random_dt):
     assert trials[2].to_dict() == exp_config[1][2]
 
 
-def test_fetch_active_trials(hacked_exp, exp_config):
-    """Fetch a list of the trials that are currently running
+def test_fetch_non_completed_trials(hacked_exp, exp_config):
+    """Fetch a list of the trials that are not completed
 
-    trials.status in ['new', 'interrupted']
+    trials.status in ['new', 'interrupted', 'suspended', 'broken']
     """
-    trials = hacked_exp.fetch_active_trials()
-    assert len(trials) == 3
-    assert trials[0].to_dict() == exp_config[1][5]
-    assert trials[1].to_dict() == exp_config[1][3]
-    assert trials[2].to_dict() == exp_config[1][4]
+    # Set two of completed trials to broken and reserved to have all possible status
+    query = {'status': 'completed', 'experiment': hacked_exp.id}
+    database = hacked_exp._db._db
+    completed_trials = database.trials.find(query)
+    exp_config[1][0]['status'] = 'broken'
+    database.trials.update({'_id': completed_trials[0]['_id']}, {'$set': {'status': 'broken'}})
+    exp_config[1][2]['status'] = 'reserved'
+    database.trials.update({'_id': completed_trials[1]['_id']}, {'$set': {'status': 'reserved'}})
+
+    # Make sure non completed trials and completed trials are set properly for the unit-test
+    query = {'status': {'$ne': 'completed'}, 'experiment': hacked_exp.id}
+    non_completed_trials = list(database.trials.find(query))
+    assert len(non_completed_trials) == 6
+    # Make sure we have all type of status except completed
+    assert (set(trial['status'] for trial in non_completed_trials) ==
+            set(['new', 'reserved', 'suspended', 'interrupted', 'broken']))
+
+    trials = hacked_exp.fetch_noncompleted_trials()
+    assert len(trials) == 6
+    assert trials[0].to_dict() == exp_config[1][0]
+    assert trials[1].to_dict() == exp_config[1][2]
+    assert trials[2].to_dict() == exp_config[1][3]
+    assert trials[3].to_dict() == exp_config[1][4]
+    assert trials[4].to_dict() == exp_config[1][5]
+    assert trials[5].to_dict() == exp_config[1][6]
 
 
 def test_is_done_property(hacked_exp):

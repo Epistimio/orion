@@ -108,13 +108,13 @@ class Producer(object):
             self.algorithm.observe(points, results)
             self.strategy.observe(points, results)
 
-    def _produces_lies(self):
+    def _produce_lies(self):
         """Add fake objective results to incomplete trials
 
         Then register the trials in the db
         """
         log.debug("### Fetch active trials to observe:")
-        incomplete_trials = self.experiment.fetch_active_trials()
+        incomplete_trials = self.experiment.fetch_noncompleted_trials()
         lying_trials = []
         log.debug("### %s", incomplete_trials)
 
@@ -136,7 +136,7 @@ class Producer(object):
         self.naive_algorithm = copy.deepcopy(self.algorithm)
         self.naive_trials_history = copy.deepcopy(self.trials_history)
         log.debug("### Create fake trials to observe:")
-        lying_trials = self._produces_lies()
+        lying_trials = self._produce_lies()
         log.debug("### %s", lying_trials)
         if lying_trials:
             log.debug("### Convert them to list of points and their results.")

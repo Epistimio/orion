@@ -309,17 +309,21 @@ class Experiment(object):
 
         return completed_trials
 
-    def fetch_active_trials(self):
-        """Fetch currently incomplete trials for this `Experiment`
+    def fetch_noncompleted_trials(self):
+        """Fetch non-completed trials of this `Experiment` instance.
 
-        :return: list of incomplete `Trial` objects
+        .. note::
+
+            It will return all non-completed trials, including new, reserved, suspended,
+            interruped and broken ones.
+
+        :return: list of non-completed `Trial` objects
         """
-        # TODO(mnoukhov): add reserved to query?
         query = dict(
-            status={'$in': ['new', 'interrupted']}
-        )
-        active_trials = self.fetch_trials_tree(query)
-        return active_trials
+            status={'$ne': 'completed'}
+            )
+
+        return self.fetch_trials_tree(query)
 
     # pylint: disable=invalid-name
     @property
