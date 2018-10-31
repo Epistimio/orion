@@ -28,6 +28,6 @@ class TrialsHistory:
         descendents = set(self.children)
         for trial in trials:
             descendents -= set(trial.parents)
-            descendents.add(trial._id)
+            descendents.add(trial.id)
 
         self.children = list(sorted(descendents))

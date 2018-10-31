@@ -10,7 +10,7 @@ class DummyTrial(object):
 
     def __init__(self, trial_id, parents):
         """Init _id and parents only"""
-        self._id = trial_id
+        self.id = trial_id
         self.parents = parents
 
 
@@ -30,7 +30,7 @@ def test_added_children_with_ancestors():
     trials_history.update(trials)
     assert trials_history.children == [0, 1, 2]
 
-    trials = [DummyTrial(i, [trials[i % 3]._id]) for i in range(3, 6)]
+    trials = [DummyTrial(i, [trials[i % 3].id]) for i in range(3, 6)]
     trials_history.update(trials)
     assert len(set(trials_history.children) & set([3, 4, 5])) == 3
 
@@ -45,7 +45,7 @@ def test_discarded_children():
     trials_history.update(trials)
     assert trials_history.children == [0, 1, 2]
 
-    trials = [DummyTrial(i, [trials[i % 3]._id]) for i in range(3, 6)]
+    trials = [DummyTrial(i, [trials[i % 3].id]) for i in range(3, 6)]
     trials_history.update(trials)
     assert trials_history.children == [3, 4, 5]
 
@@ -57,8 +57,8 @@ def test_discarded_duplicate_children():
     trials_history.update(trials)
     assert trials_history.children == [0, 1, 2]
 
-    trials = [DummyTrial(i, [trials[i]._id]) for i in range(3)]
-    assert all(trial._id == trial.parents[0] for trial in trials)
+    trials = [DummyTrial(i, [trials[i].id]) for i in range(3)]
+    assert all(trial.id == trial.parents[0] for trial in trials)
     trials_history.update(trials)
     assert trials_history.children == [0, 1, 2]
 
