@@ -49,9 +49,6 @@ def test_bad_arg_to_key():
     with pytest.raises(ValueError):
         assert cmdline_parser._arg_to_key("--c")
 
-    with pytest.raises(ValueError):
-        assert cmdline_parser._arg_to_key("--c")
-
 
 def test_key_to_arg():
     """Test the key to arg function"""
