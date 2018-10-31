@@ -37,16 +37,14 @@ minimal intrusion to user's workflow as possible by:
      script's execution in each hyperiteration.
 
 """
-import collections
+from collections import OrderedDict
 import copy
 import logging
-import os
 import re
 
 from scipy.stats import distributions as sp_dists
 
 from orion.algo.space import (Categorical, Integer, Real, Space)
-from orion.core.io.convert import infer_converter_from_file_type
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +68,7 @@ def replace_key_in_order(odict, key_prev, key_after):
     while leaving its value and the rest of the dictionary intact and in the
     same order.
     """
-    tmp = collections.OrderedDict()
+    tmp = OrderedDict()
     for k, v in odict.items():
         if k == key_prev:
             tmp[key_after] = v
@@ -181,10 +179,11 @@ class DimensionBuilder(object):
         self.name = name
         _check_expr_to_eval(expression)
 
-        prior, arg_string = re.findall(r'([a-z][a-z0-9_]*)\((.*)\)', expression)[0]
+        _expression = '~'.join(expression.split('~')[1:])
+        prior, arg_string = re.findall(r'([a-z][a-z0-9_]*)\((.*)\)', _expression)[0]
         globals_ = {'__builtins__': {}}
         try:
-            dimension = eval("self." + expression, globals_, {'self': self})
+            dimension = eval("self." + _expression, globals_, {'self': self})
 
             return dimension
         except AttributeError:
@@ -255,8 +254,8 @@ class SpaceBuilder(object):
         self.userconfig = None
         self.userargs_tmpl = None
         self.userconfig_tmpl = None
-        self.userconfig_expressions = collections.OrderedDict()
-        self.userconfig_nameless = collections.OrderedDict()
+        self.userconfig_expressions = OrderedDict()
+        self.userconfig_nameless = OrderedDict()
         self.positional_args_count = 0
 
         self.dimbuilder = DimensionBuilder()
@@ -266,7 +265,7 @@ class SpaceBuilder(object):
 
         self.converter = None
 
-    def build_from(self, cmd_args):
+    def build(self, configuration):
         """Create a definition of the problem's search space, using information
         from the user's script configuration (if provided) and command line arguments.
 
@@ -289,182 +288,21 @@ class SpaceBuilder(object):
            first positional argument.
 
         """
-        self.userargs_tmpl = None
-        self.userconfig_tmpl = None
-        self.userconfig_expressions = collections.OrderedDict()
-        self.userconfig_nameless = collections.OrderedDict()
-
-        self.commands_tmpl = None
         self.space = Space()
-
-        self.userconfig = self._build_from_args(cmd_args)
-
-        if self.userconfig:
-            self._build_from_config(self.userconfig)
-
-        log.debug("Configuration and command line arguments were parsed and "
-                  "a `Space` object was built successfully:\n%s", self.space)
-
-        return self.space
-
-    def _build_from_config(self, config_path):
-        self.converter = infer_converter_from_file_type(config_path,
-                                                        default_keyword=self.USERCONFIG_KEYWORD)
-        self.userconfig_tmpl = self.converter.parse(config_path)
-        self.userconfig_expressions = collections.OrderedDict()
-        self.userconfig_nameless = collections.OrderedDict()
-
-        stack = collections.deque()
-        stack.append(('', self.userconfig_tmpl))
-        while True:
-            try:
-                namespace, stuff = stack.pop()
-            except IndexError:
-                break
-            if isinstance(stuff, dict):
-                for k, v in stuff.items():
-                    stack.append(('/'.join([namespace, str(k)]), v))
-            elif isinstance(stuff, list):
-                for position, thing in enumerate(stuff):
-                    stack.append(('/'.join([namespace, str(position)]), thing))
-            elif isinstance(stuff, str):
-                if stuff.startswith(self.USERCONFIG_KEYWORD):
-                    expression = stuff[len(self.USERCONFIG_KEYWORD):]
-
-                    # Store the expression before it is modified for the dimension builder
-                    self.userconfig_expressions[namespace] = (
-                        self.USERCONFIG_KEYWORD[-1] + expression)
-
-                    if _should_not_be_built(expression):
-                        break
-
-                    expression = _remove_marker(expression)
-
-                    dimension = self.dimbuilder.build(namespace, expression)
-                    try:
-                        self.space.register(dimension)
-                    except ValueError as exc:
-                        error_msg = "Conflict for name '{}' in script configuration "\
-                                    "and arguments.".format(namespace)
-                        raise ValueError(error_msg) from exc
-                else:
-                    log.info("Nameless '%s: %s' will not define a dimension.", namespace, stuff)
-                    self.userconfig_nameless[namespace] = stuff
-
-    def _build_from_args(self, cmd_args):
-        """Build templates from arguments found in the original cli.
-
-        Rules for namespacing:
-           1. Prefix ``'/'`` is given to parameter dimensions.
-           2. Prefix ``'$'`` is given to substitutions from exposed properties.
-           3. Prefix ``'_'`` is given to arguments which do not interact with.
-              Suffix is a unique integer.
-           4. ``'config'`` is given to user's script configuration file template
-
-        User script configuration file argument is treated specially, trying to
-        recognise a ``--config`` option or by checking the first positional
-        argument, if not found elsewhere. Only one is allowed.
-
-        .. note:: Positional arguments cannot define a parameter
-           dimension, because no **meaningful** name can be assigned.
-
-        .. note:: Templates preserve given argument order.
-
-        """
-        userconfig = None
-        self.userargs_tmpl = collections.OrderedDict()
-        self.commands_tmpl = collections.OrderedDict()
-        args_pattern = re.compile(self.USERARGS_TMPL)
-        args_namespace_pattern = re.compile(self.USERARGS_NAMESPACE)
-
-        self.positional_args_count = 0
-
-        def get_next_pos_ns():
-            """Generate next namespace for a positional argument."""
-            ns = str(self.positional_args_count)
-            self.positional_args_count += 1
-            return ns
-
-        args_value = self.expand_arguments(cmd_args)
-
-        for arg, value in args_value.items():
-            if value is not None:
-                arg = arg + "=" + value
-
-            found = args_pattern.findall(arg)
-            if len(found) != 1:
-                if arg.startswith(self.USERARGS_CONFIG):
-                    if not userconfig:
-                        userconfig = arg[len(self.USERARGS_CONFIG):]
-                        self.userargs_tmpl['config'] = self.USERARGS_CONFIG
-                    else:
-                        raise ValueError(
-                            "Already found one configuration file in: %s" %
-                            userconfig
-                            )
-                else:
-                    self.userargs_tmpl['_' + get_next_pos_ns()] = arg
+        for namespace, expression in configuration.items():
+            if _should_not_be_built(expression):
                 continue
 
-            prefix, expression = found[0]
-            ns_search = args_namespace_pattern.findall(prefix)
-            if expression in self.EXPOSED_PROPERTIES:
-                # It's a experiment/trial management command
-                namespace = '$'
-                namespace += ns_search[0] if ns_search else get_next_pos_ns()
-                objname, attrname = expression.split('.')
-                self.commands_tmpl[namespace] = (objname, attrname)
-                self.userargs_tmpl[namespace] = prefix + '=' if ns_search else ''
-            elif not ns_search or not expression or expression[0] == '/':
-                # This branch targets the nameless and the ones that use `~`
-                # as the home directory in a shell path
-                # If it's nameless (positional) it cannot be a dimension
-                log.info("Nameless argument '%s' will not define a dimension.", arg)
-                self.userargs_tmpl['_' + get_next_pos_ns()] = arg
-            elif not _should_not_be_built(expression):
-                # Otherwise it's a dimension; ikr
-                namespace = '/' + ns_search[0]
+            expression = _remove_marker(expression)
+            dimension = self.dimbuilder.build(namespace, expression)
 
-                expression = _remove_marker(expression)
-
-                dimension = self.dimbuilder.build(namespace, expression)
-
+            try:
                 self.space.register(dimension)
-                self.userargs_tmpl[namespace] = prefix + '='
+            except ValueError as exc:
+                error_msg = 'Conflict for name \'{}\' in parameters'.format(namespace)
+                raise ValueError(error_msg) from exc
 
-        # Risky assumption about the first non-interacting argument being a
-        # user's script configuration file. May be dropped in the future.
-        # Quite surely if TODO @221 is implemented because user can specify
-        # how their configuration is supposed to be parsed, so ciao.
-        # For now issue a warning if this is going to happen.
-        if not userconfig and '_0' in self.userargs_tmpl:
-            if os.path.isfile(self.userargs_tmpl['_0']):
-                userconfig = self.userargs_tmpl['_0']
-                log.info("Using '%s' as path to user script's configuration file!", userconfig)
-                # '_0' is 'config' now, replace key in the correct order
-                self.userargs_tmpl = replace_key_in_order(self.userargs_tmpl, '_0', 'config')
-                self.userargs_tmpl['config'] = ''
-
-        return userconfig
-
-    # pylint: disable=no-self-use
-    def expand_arguments(self, cmd_args):
-        """
-        Expand whitespace separated pairs of field/value to Orion's pattern for future detection.
-        Ex: --config user_script_config.yaml -> --config=user_script_config.yaml
-        """
-        args_value = collections.OrderedDict()
-        i = 0
-        while i < len(cmd_args):
-            args_value[cmd_args[i]] = None
-
-            if cmd_args[i].startswith('-') and i < len(cmd_args) - 1:
-                if cmd_args[i + 1][0] not in ['-', '~']:
-                    args_value[cmd_args[i]] = cmd_args[i + 1]
-                    i += 1
-            i += 1
-
-        return args_value
+        return self.space
 
     def build_to(self, config_path, trial, experiment=None):
         """Use templates saved from `build_from` to generate a config file (if needed)
