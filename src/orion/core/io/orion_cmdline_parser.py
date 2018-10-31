@@ -15,6 +15,8 @@ the command line.
 CmdlineParser provides an interface to parse command line arguments from input but also
 utility functions to build it again as a list or an already formatted string.
 """
+import copy
+
 from collections import OrderedDict
 
 from orion.core.io.cmdline_parser import CmdlineParser
@@ -49,6 +51,9 @@ class OrionCmdlineParser():
         replaced = self._replace_priors(commandline)
         configuration = self.parser.parse(replaced)
         self._build_priors_only(configuration)
+
+        self.augmented_config = copy.deepcopy(self.file_config)
+        self.augmented_config.update(self.priors_only)
 
     def _replace_priors(self, args):
         """Change directly name priors to more general form.
@@ -165,7 +170,7 @@ class OrionCmdlineParser():
 
     def _extract_file_string(self, current_depth, value):
         """Extract the prior from a string
-        
+
         This is used alongside `_extract_list` and `_extract_dict` to iterate through
         a config file and extract the prior corresponding to a string.
 
@@ -209,6 +214,10 @@ class OrionCmdlineParser():
             return
 
         name, expression = prior.groups(2)
+
+        if not name.startswith('/'):
+            name = '/' + name
+
         insert_into[name] = expression
 
     def format(self, trial, configuration):
