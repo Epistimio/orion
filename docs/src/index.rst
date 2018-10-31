@@ -15,6 +15,7 @@
    :maxdepth: 1
 
    user/pytorch
+   user/evc
    user/executing
    user/configuring
    user/defining
