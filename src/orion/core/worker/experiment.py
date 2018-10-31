@@ -22,6 +22,7 @@ from orion.core.evc.conflicts import detect_conflicts
 from orion.core.io.database import Database, DuplicateKeyError, ReadOnlyDB
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
+from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
@@ -114,6 +115,7 @@ class Experiment(object):
         self.pool_size = None
         self.max_trials = None
         self.algorithms = None
+        self.parser = OrionCmdlineParser()
 
         config = self._db.read('experiments',
                                {'name': name, 'metadata.user': user})
@@ -528,11 +530,13 @@ class Experiment(object):
             setattr(self, section, value)
 
         try:
-            space_builder = SpaceBuilder()
-            space = space_builder.build_from(config['metadata']['user_args'])
+            self.parser.parse(config['metadata']['user_args'])
 
-            if space_builder.userconfig:
-                with open(space_builder.userconfig) as f:
+            space_builder = SpaceBuilder()
+            space = space_builder.build_from(self.parser.augmented_config)
+
+            if self.parser.file_config_path:
+                with open(self.parser.file_config_path) as f:
                     self.metadata['script_config_file'] = f.read()
 
             if not space:
