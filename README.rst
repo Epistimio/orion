@@ -45,7 +45,7 @@ now what you have to do looks like this:
 
 Check out `user's guide-101`_ for the simplest of demonstrations!
 
-.. _user's guide-101: https://orion.readthedocs.io/en/latest/user/executing.html
+.. _user's guide-101: https://orion.readthedocs.io/en/latest/user/pytorch.html
 
 Features
 ========

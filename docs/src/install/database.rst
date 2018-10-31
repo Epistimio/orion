@@ -1,5 +1,3 @@
-.. contents:: User's Guide 104: Database
-
 **************
 Setup Database
 **************
