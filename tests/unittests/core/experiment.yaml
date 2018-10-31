@@ -635,6 +635,7 @@
     - name: /decoding_layer
       type: categorical
       value: rnn
+  parents: []
 
 ---
 

@@ -127,7 +127,10 @@ class Producer(object):
                 lying_trials.append(lying_trial)
                 log.debug("### Register lie to database: %s", lying_trial)
                 lying_trial.parents = self.trials_history.children
-                self.experiment.register_lie(lying_trial)
+                try:
+                    self.experiment.register_lie(lying_trial)
+                except DuplicateKeyError:
+                    log.debug("#### Duplicate lie. No need to register a duplicate in DB.")
 
         return lying_trials
 
