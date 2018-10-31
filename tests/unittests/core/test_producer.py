@@ -185,6 +185,9 @@ def test_lies_generation(producer, database, random_dt):
     query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
     trials_non_completed = list(database.trials.find(query))
     assert len(trials_non_completed) == 4
+    query = {'status': 'completed', 'experiment': producer.experiment.id}
+    trials_completed = list(database.trials.find(query))
+    assert len(trials_completed) == 3
 
     producer.update()
 
@@ -196,7 +199,10 @@ def test_lies_generation(producer, database, random_dt):
         trials_non_completed[i]['status'] = 'completed'
         trials_non_completed[i]['end_time'] = random_dt
         trials_non_completed[i]['results'].append(producer.strategy._lie.to_dict())
-        assert lies[i].to_dict() == trials_non_completed[i]
+        trials_non_completed[i]['parents'] = set([trial['_id'] for trial in trials_completed])
+        lies_dict = lies[i].to_dict()
+        lies_dict['parents'] = set(lies_dict['parents'])
+        assert lies_dict == trials_non_completed[i]
 
 
 def test_register_lies(producer, database, random_dt):
@@ -204,6 +210,9 @@ def test_register_lies(producer, database, random_dt):
     query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
     trials_non_completed = list(database.trials.find(query))
     assert len(trials_non_completed) == 4
+    query = {'status': 'completed', 'experiment': producer.experiment.id}
+    trials_completed = list(database.trials.find(query))
+    assert len(trials_completed) == 3
 
     producer.update()
     producer._produce_lies()
@@ -216,6 +225,8 @@ def test_register_lies(producer, database, random_dt):
         trials_non_completed[i]['status'] = 'completed'
         trials_non_completed[i]['end_time'] = random_dt
         trials_non_completed[i]['results'].append(producer.strategy._lie.to_dict())
+        trials_non_completed[i]['parents'] = set([trial['_id'] for trial in trials_completed])
+        lying_trials[i]['parents'] = set(lying_trials[i]['parents'])
         assert lying_trials[i] == trials_non_completed[i]
 
 
