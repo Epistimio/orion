@@ -229,6 +229,9 @@ class MongoDB(AbstractDB):
 
         """
         dbcollection = self._db[collection_name]
+        if hasattr(dbcollection, 'count_documents'):
+            return dbcollection.count_documents(filter=query if query else {})
+
         return dbcollection.count(filter=query)
 
     def remove(self, collection_name, query):
