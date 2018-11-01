@@ -648,12 +648,20 @@ def test_fetch_non_completed_trials(hacked_exp, exp_config):
 
     trials = hacked_exp.fetch_noncompleted_trials()
     assert len(trials) == 6
-    assert trials[0].to_dict() == exp_config[1][0]
-    assert trials[1].to_dict() == exp_config[1][2]
-    assert trials[2].to_dict() == exp_config[1][3]
-    assert trials[3].to_dict() == exp_config[1][4]
-    assert trials[4].to_dict() == exp_config[1][5]
-    assert trials[5].to_dict() == exp_config[1][6]
+
+    def find_and_compare(trial_config):
+        """Find the trial corresponding to given config and compare it"""
+        trial = [trial for trial in trials if trial.id == trial_config['_id']]
+        assert len(trial) == 1
+        trial = trial[0]
+        assert trial.to_dict() == trial_config
+
+    find_and_compare(exp_config[1][0])
+    find_and_compare(exp_config[1][2])
+    find_and_compare(exp_config[1][3])
+    find_and_compare(exp_config[1][4])
+    find_and_compare(exp_config[1][5])
+    find_and_compare(exp_config[1][6])
 
 
 def test_is_done_property(hacked_exp):
