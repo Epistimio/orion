@@ -28,3 +28,5 @@ test:
     - orion.core.cli
     - orion.algo
     - orion.client
+  commands:
+    - orion --help
