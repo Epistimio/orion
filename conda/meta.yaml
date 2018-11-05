@@ -21,6 +21,7 @@ requirements:
     - scipy
     - pyyaml
     - pymongo >=3
+    - gitpython
 
 test:
   import:
