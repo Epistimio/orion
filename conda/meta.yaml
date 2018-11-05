@@ -31,3 +31,8 @@ test:
     - orion.client
   commands:
     - orion --help
+
+about:
+  home: http://github.com/epistimio/orion
+  license: BSD
+  license_file: LICENSE
