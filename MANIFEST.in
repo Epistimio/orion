@@ -14,6 +14,7 @@ exclude *-requirements.txt
 exclude .pylintrc
 exclude codecov.yml
 exclude .mailmap
+prune conda/
 
 # Include src, tests, docs
 recursive-include docs *.rst *.py *.gitkeep
