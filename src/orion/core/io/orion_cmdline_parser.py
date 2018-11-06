@@ -77,6 +77,10 @@ class OrionCmdlineParser():
         for item in args:
             if item.startswith('-'):
                 parts = item.split('~')
+
+                if parts[0].startswith('--') and len(parts[0]) == 3:
+                    parts[0] = parts[0][1:]
+
                 replaced.append(parts[0])
 
                 if len(parts) > 1:
