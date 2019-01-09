@@ -44,6 +44,8 @@ class CmdlineParser(object):
     def __init__(self, parsing_tokens=None):
         """See `CmdlineParser` description"""
         self.arguments = OrderedDict()
+
+        # TODO Handle parsing twice.
         self._already_parsed = False
         self.template = []
 
@@ -80,8 +82,9 @@ class CmdlineParser(object):
         """Parse the `commandline` argument.
 
         Create an OrderedDict where the keys are the names of the arguments and the values
-        are the actual values of the each argument. The arguments can be a single value or a
-        list of values. This also supports positional arguments.
+        are the actual values of the each argument and a template to be formatted later by the
+        user to recover the original commandline with priors replaced by value. The arguments
+        can be a single value or a list of values. This also supports positional arguments.
 
         Parameters
         ----------
@@ -115,8 +118,9 @@ class CmdlineParser(object):
         will be wrongly parsed : `somecommand --optional argument subcommand --another argument`
         will be parsed as `{'optional': ['argument', 'subcommand'], 'another': 'argument'}`
 
+        Warning
+        -------
         When dealing with an empty list (of the form `--args`), the value is a boolean.
-        This indicates to the parsing process to skip this particular argument.
 
         """
         if not commandline:
@@ -156,7 +160,6 @@ class CmdlineParser(object):
 
         return self.arguments
 
-    # pylint: disable=no-self-use
     def _key_to_arg(self, key):
         arg = key.replace(self._underscore_token, "_").replace(self._dash_token, "-")
 
@@ -189,7 +192,7 @@ class CmdlineParser(object):
             elif argument_name is not None and arg.strip(" "):
                 self.arguments[argument_name].append(arg)
 
-            # No argument name means we have reached them yet, so we're still in the
+            # No argument name means we have not reached them yet, so we're still in the
             # Positional arguments part
             elif argument_name is None:
                 self.arguments["_pos_{}".format(len(self.arguments))] = arg
