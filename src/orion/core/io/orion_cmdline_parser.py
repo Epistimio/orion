@@ -89,7 +89,7 @@ class OrionCmdlineParser():
     def _build_priors_only(self, configuration):
         """Create OrderedDict from priors only.
 
-        Loop through every commandline arguments and check if it might correspond the a prior.
+        Loop through every commandline arguments and check if it might correspond to a prior.
         If it does, extract the name and expression from it and insert them into the corresponding
         OrderedDict.
 
@@ -199,11 +199,11 @@ class OrionCmdlineParser():
 
         Parameters
         ----------
-        key: string
+        key: str
             Current key for the element inside the `OrderedDict` of commandline arguments.
         Will correspond to `orion` if it is related to priors.
 
-        value: string
+        value: str
             Possible parameter to parse through the regex.
 
         insert_into: OrderedDict
