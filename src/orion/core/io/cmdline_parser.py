@@ -27,11 +27,6 @@ class CmdlineParser(object):
     corresponding values. It can also recreate that string from the values by maintaing a template
     of the way the arguments were passed.
 
-    Parameters
-    ----------
-    parsing_tokens : dict, optional
-        Dictionary containing the tokens to use when parsing `-` and `_`.
-
     Attributes
     ----------
     arguments : OrderedDict
@@ -41,21 +36,13 @@ class CmdlineParser(object):
 
     """
 
-    def __init__(self, parsing_tokens=None):
+    def __init__(self):
         """See `CmdlineParser` description"""
         self.arguments = OrderedDict()
 
         # TODO Handle parsing twice.
         self._already_parsed = False
         self.template = []
-
-        parsing_tokens = {'-': '??', '_': '!!'}
-
-        if parsing_tokens is not None:
-            parsing_tokens.update(parsing_tokens)
-
-        self._dash_token = parsing_tokens['-']
-        self._underscore_token = parsing_tokens['_']
 
     def format(self, configuration):
         """Format the current template.

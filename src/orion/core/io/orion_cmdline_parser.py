@@ -26,10 +26,46 @@ import re
 
 
 class OrionCmdlineParser():
+    """Python interface commandline parser
 
-    def __init__(self, config_prefix='--config', parsing_tokens=None):
-        self.parser = CmdlineParser(parsing_tokens=parsing_tokens)
-        self.original = OrderedDict()
+    The `OrionCmdlineParser` is used as a way to obtain the parsing process of Orion
+    through a Python interface. It provides different dictionaries containing information
+    for different parts of the parsing process. It also exposes methods to retrieve the
+    command line with formatted values for parameters.
+
+    Parameters
+    ----------
+    config_prefix : str, optional
+        Prefix for the configuration file used by the parser to identify it.
+
+    Attributes
+    ----------
+    parser : CmdlineParser
+        Parser that will be used to parse the commandline.
+    priors_only : OrderedDict
+        An OrderedDict containing only the priors inside the commandline.
+    file_config : OrderedDict
+        An OrderedDict obtained by parsing the config file, if one was found.
+    augmented_config : OrderedDict
+        An OrderedDict obtained from merging `priors_only` and `file_config`.
+    config_prefix : str
+        Prefix for the configuration file used by the parser to identify it.
+    file_config_path : str
+        If a config file was found, this file contain the path. `None` otherwise.
+    converter : BaseConverter
+        A BaseConverter object to parse the config file.
+
+    Methods
+    -------
+    parse(commandline)
+        Parses the commandline and populate the OrderedDict
+    format(trial, experiment) : str
+        Return the commandline with replaced values for priors
+
+    """
+
+    def __init__(self, config_prefix='--config'):
+        self.parser = CmdlineParser()
         self.priors_only = OrderedDict()
         self.file_config = OrderedDict()
         self.augmented_config = OrderedDict()
