@@ -135,15 +135,11 @@ class OrionCmdlineParser():
             The original configuration from which to extract OrderedDict.
         """
         for key, value in configuration.items():
-            if isinstance(value, list):
-                for item in value:
-                    self._extract_prior(item, self.priors_only)
+            if key == self.config_prefix:
+                self.file_config_path = value
+                self._load_config(value)
             else:
-                if key == self.config_prefix:
-                    self.file_config_path = value
-                    self._load_config(value)
-                else:
-                    self._extract_prior(value, self.priors_only)
+                self._extract_prior(key, value, self.priors_only)
 
     def _load_config(self, path):
         """Load configuration file.
@@ -226,7 +222,7 @@ class OrionCmdlineParser():
         expression = current_depth + '~' + righthand_side
         self._extract_prior(expression, self.file_config)
 
-    def _extract_prior(self, value, insert_into):
+    def _extract_prior(self, key, value, insert_into):
         """Insert parameters if it has a prior.
 
         Match the regex for priors with the `value` argument to extract the information
@@ -249,8 +245,10 @@ class OrionCmdlineParser():
         if prior is None:
             return
 
-        name, expression = prior.groups(2)
+        # Skip first group because it will always correspond to `orion`.
+        _, expression = prior.groups(2)
 
+        name = key
         if not name.startswith('/'):
             name = '/' + name
 
