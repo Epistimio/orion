@@ -123,12 +123,12 @@ class CmdlineParser(object):
 
             # Handle optional ones
             else:
-                key_name = self._key_to_arg(key)
+                arg = self._key_to_arg(key)
 
-                if key_name in self.template:
+                if arg in self.template:
                     continue
 
-                self.template.append(key_name)
+                self.template.append(arg)
 
                 # Ignore value as key is a boolean argument
                 if isinstance(value, bool):
@@ -147,67 +147,47 @@ class CmdlineParser(object):
 
         return self.arguments
 
-    def _key_to_arg(self, key):
-        arg = key.replace(self._underscore_token, "_").replace(self._dash_token, "-")
-
+    def _key_to_arg(self, arg):
         if len(arg) > 1:
             return "--" + arg
 
         return "-" + arg
 
-    def _parse_arguments(self, arguments):
+    def _parse_arguments(self, commandline):
         argument_name = None
 
-        for arg in arguments:
+        for item in commandline:
             # Handle keyworded arguments
-            if arg.startswith("-"):
-                # Recover the argument name
-                arg_parts = arg.split("=")
-                argument_name = self._arg_to_key(arg)
-
+            if item.startswith("-"):
                 # Make sure we're not defining the same argument twice
+                argument_name = item.lstrip('-')
                 if argument_name in self.arguments.keys():
                     raise ValueError("Two arguments have the same name: {}".format(argument_name))
 
                 self.arguments[argument_name] = []
 
-                if len(arg_parts) > 1 and "=".join(arg_parts[1:]).strip(" "):
-                    self.arguments[argument_name].append("=".join(arg_parts[1:]))
-
             # If the argument did not start with `-` but we have an argument name
             # That means that this value belongs to that argument name list
-            elif argument_name is not None and arg.strip(" "):
-                self.arguments[argument_name].append(arg)
+            elif argument_name is not None and item.strip(" "):
+                self.arguments[argument_name].append(item)
 
             # No argument name means we have not reached them yet, so we're still in the
             # Positional arguments part
             elif argument_name is None:
-                self.arguments["_pos_{}".format(len(self.arguments))] = arg
+                self.arguments["_pos_{}".format(len(self.arguments))] = item
 
         for key, value in self.arguments.items():
-            if not value:
-                value = True
-            elif isinstance(value, list) and len(value) == 1:
-                value = value[0]
+            # Loop through the items and check if their value is a list
+            # If it is, and the length is 0, that means it is a boolean args.
+            # If its value is 1, it only has a single element and we unpack it.
+            if isinstance(value, list):
+                if not len(value):
+                    value = True
+                elif len(value) == 1:
+                    value = value[0]
 
             value = self._parse_paths(value)
-
             self.arguments[key] = value
-
-    def _arg_to_key(self, full_arg):
-        arg_parts = full_arg.split("=")
-        arg = arg_parts[0]
-
-        if arg.startswith("--") and len(arg) == 3:
-            raise ValueError(
-                "Arguments with two dashes should have more than one letter: {}".format(arg))
-
-        elif not arg.startswith("--") and arg.startswith("-") and len(arg) > 2:
-            raise ValueError(
-                "Arguments with one dashes should have only one letter: {}".format(arg))
-
-        return arg.lstrip("-").replace("_", self._underscore_token) \
-                              .replace("-", self._dash_token)
 
     def _parse_paths(self, value):
         if isinstance(value, list):
