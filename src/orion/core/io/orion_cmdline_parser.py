@@ -254,5 +254,51 @@ class OrionCmdlineParser():
 
         insert_into[name] = expression
 
-    def format(self, trial, configuration):
-        pass
+    def _should_not_be_built(self, expression):
+        """Check if an expression should be built or not.
+
+        When parsing priors, we might encounter ones that use the conflicts solving notation.
+        Some of these tokens need to be removed (like the `+` sign) so that the prior can be built
+        whilst other must not be built because they do not add another dimension to the Space.
+        Such tokens are: `-` and `>`.
+
+        Parameters
+        ----------
+        expression: str
+            The expression to be evaluated.
+        """
+        for token in self._invalid_priors_tokens:
+            if expression.startswith(token):
+                return True
+
+        return False
+
+    def format(self, config_path, trial, experiment):
+        if self.file_config_path:
+            self._create_config_file(config_path, trial, experiment)
+
+        return self.parser.format(self.parser.arguments, trial, experiment)
+
+    def _create_config_file(self, config_path, trial, experiment):
+        config_instance = copy.deepcopy(self.file_config)
+
+        for param in trial.params:
+            stuff = config_instance
+            path = param.name.split('/')
+            for key in path[1:]:
+                if isinstance(stuff, list):
+                    key = int(key)
+                    try:
+                        stuff[key]
+                    except IndexError:
+                        break
+                else:
+                    if key not in stuff:
+                        break
+
+                if isinstance(stuff[key], str):
+                    stuff[key] = param.value
+                else:
+                    stuff = stuff[key]
+
+        self.converter.generate(config_path, config_instance)
