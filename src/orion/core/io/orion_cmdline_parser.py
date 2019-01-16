@@ -74,6 +74,7 @@ class OrionCmdlineParser():
         self.file_config_path = None
         self.converter = None
 
+        # Extraction methods for the file parsing part.
         self._extraction_method = {dict: self._extract_dict,
                                    list: self._extract_list,
                                    str: self._extract_file_string}
@@ -82,8 +83,6 @@ class OrionCmdlineParser():
         self.prior_regex = re.compile(r'(.+)~([\+\-\>]?.+)')
 
     def parse(self, commandline):
-        self.original = self.parser.parse(commandline)
-
         replaced = self._replace_priors(commandline)
         configuration = self.parser.parse(replaced)
         self._build_priors_only(configuration)
@@ -112,6 +111,7 @@ class OrionCmdlineParser():
         replaced = []
         for item in args:
             if item.startswith('-'):
+                # Get the prior part after the `~`
                 parts = item.split('~')
                 replaced.append(parts[0])
 
