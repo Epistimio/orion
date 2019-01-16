@@ -45,6 +45,7 @@ import re
 from scipy.stats import distributions as sp_dists
 
 from orion.algo.space import (Categorical, Integer, Real, Space)
+from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 
 log = logging.getLogger(__name__)
 
@@ -179,11 +180,10 @@ class DimensionBuilder(object):
         self.name = name
         _check_expr_to_eval(expression)
 
-        _expression = '~'.join(expression.split('~')[1:])
-        prior, arg_string = re.findall(r'([a-z][a-z0-9_]*)\((.*)\)', _expression)[0]
+        prior, arg_string = re.findall(r'([a-z][a-z0-9_]*)\((.*)\)', expression)[0]
         globals_ = {'__builtins__': {}}
         try:
-            dimension = eval("self." + _expression, globals_, {'self': self})
+            dimension = eval("self." + expression, globals_, {'self': self})
 
             return dimension
         except AttributeError:
@@ -251,19 +251,19 @@ class SpaceBuilder(object):
 
     def __init__(self):
         """Initialize a `SpaceBuilder`."""
-        self.userconfig = None
-        self.userargs_tmpl = None
-        self.userconfig_tmpl = None
-        self.userconfig_expressions = OrderedDict()
-        self.userconfig_nameless = OrderedDict()
-        self.positional_args_count = 0
-
         self.dimbuilder = DimensionBuilder()
         self.space = None
 
         self.commands_tmpl = None
 
         self.converter = None
+        self.parser = None
+
+    def build_from(self, config):
+        self.parser = OrionCmdlineParser()
+        self.parser.parse(config)
+
+        return self.build(self.parser.augmented_config)
 
     def build(self, configuration):
         """Create a definition of the problem's search space, using information
@@ -321,6 +321,7 @@ class SpaceBuilder(object):
            script's execution.
 
         """
+        self.parser
         if self.userconfig:
             self._build_to_config(config_path, trial)
         return self._build_to_args(config_path, trial, experiment)
