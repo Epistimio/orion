@@ -63,7 +63,15 @@ class CmdlineParser(object):
             A recreated string of the commandline passed to Orion.
 
         """
-        return " ".join(self.template).format(**configuration)
+        # It is easier to build the command line and return a list this way
+        formatted = []
+        for item in self.template:
+            if item.startswith('-'):
+                formatted.append(item)
+            else:
+                formatted.append(item.format(**configuration))
+
+        return formatted
 
     def parse(self, commandline):
         """Parse the `commandline` argument.

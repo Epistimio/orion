@@ -38,7 +38,6 @@ minimal intrusion to user's workflow as possible by:
 
 """
 from collections import OrderedDict
-import copy
 import logging
 import re
 
@@ -321,53 +320,4 @@ class SpaceBuilder(object):
            script's execution.
 
         """
-        self.parser
-        if self.userconfig:
-            self._build_to_config(config_path, trial)
-        return self._build_to_args(config_path, trial, experiment)
-
-    def _build_to_config(self, config_path, trial):
-        config_instance = copy.deepcopy(self.userconfig_tmpl)
-
-        for param in trial.params:
-            stuff = config_instance
-            path = param.name.split('/')
-            for key in path[1:]:
-                # Parameter name may correspond to stuff in cmd args
-                if isinstance(stuff, list):
-                    key = int(key)
-                    try:
-                        stuff[key]
-                    except IndexError:
-                        break
-                else:  # isinstance(stuff, dict):
-                    if key not in stuff:
-                        break
-
-                if isinstance(stuff[key], str):
-                    stuff[key] = param.value
-                else:
-                    stuff = stuff[key]
-
-        self.converter.generate(config_path, config_instance)
-
-    def _build_to_args(self, config_path, trial, experiment=None):
-        cmd_args = []
-        # objects whose properties can be fetched to fill a cli argument
-        exposed_objects = {'trial': trial, 'exp': experiment}
-        param_names = [trial.params[i].name for i in range(len(trial.params))]
-
-        for namespace, prefix in self.userargs_tmpl.items():
-            if namespace == 'config':
-                cmd_args.append(prefix + config_path)
-            elif namespace.startswith('/'):
-                param_idx = param_names.index(namespace)
-                cmd_args.append(prefix + str(trial.params[param_idx].value))
-            elif namespace.startswith('$'):
-                objname, attrname = self.commands_tmpl[namespace]
-                item = getattr(exposed_objects[objname], attrname)
-                cmd_args.append(prefix + item)
-            elif namespace.startswith('_'):
-                cmd_args.append(prefix)
-
-        return cmd_args
+        return self.parser.format(config_path, trial, experiment)

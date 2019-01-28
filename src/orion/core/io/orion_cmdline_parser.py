@@ -21,8 +21,13 @@ from collections import OrderedDict
 
 from orion.core.io.cmdline_parser import CmdlineParser
 from orion.core.io.convert import infer_converter_from_file_type
+from collections import defaultdict
 
 import re
+
+
+def _is_nonprior_wave(arg):
+    return arg.startswith('/') or arg == ''
 
 
 class OrionCmdlineParser():
@@ -64,11 +69,12 @@ class OrionCmdlineParser():
 
     """
 
-    def __init__(self, config_prefix='--config'):
+    def __init__(self, config_prefix='config'):
         self.parser = CmdlineParser()
         self.priors_only = OrderedDict()
         self.file_config = OrderedDict()
         self.augmented_config = OrderedDict()
+        self.extracted_config = None
 
         self.config_prefix = config_prefix
         self.file_config_path = None
@@ -76,6 +82,7 @@ class OrionCmdlineParser():
 
         # Extraction methods for the file parsing part.
         self._extraction_method = {dict: self._extract_dict,
+                                   defaultdict: self._extract_defaultdict,
                                    list: self._extract_list,
                                    str: self._extract_file_string}
 
@@ -86,6 +93,10 @@ class OrionCmdlineParser():
         replaced = self._replace_priors(commandline)
         configuration = self.parser.parse(replaced)
         self._build_priors_only(configuration)
+
+        for key in self.priors_only.keys():
+            if key in self.file_config.keys():
+                raise ValueError("Conflict: definition of same prior in commandline and config")
 
         self.augmented_config = copy.deepcopy(self.file_config)
         self.augmented_config.update(self.priors_only)
@@ -114,6 +125,12 @@ class OrionCmdlineParser():
                 # Get the prior part after the `~`
                 parts = item.split('~')
 
+                if len(parts) > 1 and _is_nonprior_wave(parts[1]):
+                    replaced.append(item)
+                    continue
+
+                # If the argument was defined has a long one but only has a single letter
+                # then it needs to be shortened.
                 if parts[0].startswith('--') and len(parts[0]) == 3:
                     parts[0] = parts[0][1:]
 
@@ -159,8 +176,19 @@ class OrionCmdlineParser():
             Path to the configuration file.
         """
         self.converter = infer_converter_from_file_type(path)
-        self.file_config = self.converter.parse(path)
-        self._extraction_method[type(self.file_config)]("", self.file_config)
+        self.extracted_config = self.converter.parse(path)
+        self._extraction_method[type(self.extracted_config)]("", self.extracted_config)
+
+    def _extract_defaultdict(self, current_depth, ex_dict):
+        for key, value in ex_dict.items():
+            sub_depth = current_depth + '/' + str(key)
+
+            try:
+                if isinstance(value, str):
+                    value = 'orion~' + value
+                self._extraction_method[type(value)](sub_depth, value)
+            except KeyError:
+                pass
 
     def _extract_dict(self, current_depth, ex_dict):
         """Recursively extract data from dictionary.
@@ -222,9 +250,7 @@ class OrionCmdlineParser():
         if len(substrings) == 1:
             return
 
-        righthand_side = '~'.join(substrings[1:])
-        expression = current_depth + '~' + righthand_side
-        self._extract_prior(expression, self.file_config)
+        self._extract_prior(current_depth, value, self.file_config)
 
     def _extract_prior(self, key, value, insert_into):
         """Insert parameters if it has a prior.
@@ -239,12 +265,15 @@ class OrionCmdlineParser():
             Current key for the element inside the `OrderedDict` of commandline arguments.
         Will correspond to `orion` if it is related to priors.
 
-        value: str
+        value:
             Possible parameter to parse through the regex.
 
         insert_into: OrderedDict
             Collections into which to insert the current prior.
         """
+        if not isinstance(value, str):
+            return
+
         prior = self.prior_regex.match(value)
         if prior is None:
             return
@@ -280,29 +309,60 @@ class OrionCmdlineParser():
     def format(self, config_path, trial, experiment):
         if self.file_config_path:
             self._create_config_file(config_path, trial, experiment)
+        configuration = self._build_configuration(trial)
 
-        return self.parser.format(self.parser.arguments, trial, experiment)
+        if config_path is not None:
+            configuration['config'] = config_path
+
+        configuration['trial'] = trial
+        configuration['exp'] = experiment
+
+        return self.parser.format(configuration)
 
     def _create_config_file(self, config_path, trial, experiment):
-        config_instance = copy.deepcopy(self.file_config)
+        # Create a copy of the template
+        instance = copy.deepcopy(self.extracted_config)
 
         for param in trial.params:
-            stuff = config_instance
-            path = param.name.split('/')
-            for key in path[1:]:
-                if isinstance(stuff, list):
-                    key = int(key)
-                    try:
-                        stuff[key]
-                    except IndexError:
-                        break
-                else:
-                    if key not in stuff:
-                        break
+            # The param will only correspond to config keyd
+            # that require a prior, so we make sure to skip
+            # the ones that do not.
+            if param.name not in self.file_config.keys():
+                continue
 
-                if isinstance(stuff[key], str):
-                    stuff[key] = param.value
-                else:
-                    stuff = stuff[key]
+            # Since namespace start with '/', we must skip
+            # the first element of the list.
+            path = param.name.split('/')[1:]
+            current_depth = instance
 
-        self.converter.generate(config_path, config_instance)
+            for key in path:
+                # If we meet a list, the key might correspond
+                # to the index of a dictionary in that list
+                if isinstance(current_depth, list):
+                    if key.isdigit():
+                        key = int(key)
+
+                        # Make sure the key is not out of bound
+                        try:
+                            current_depth[key]
+                        except IndexError:
+                            break
+
+                if isinstance(current_depth[key], str):
+                    current_depth[key] = param.value
+                else:
+                    current_depth = current_depth[key]
+
+        self.converter.generate(config_path, instance)
+
+    def _build_configuration(self, trial):
+        configuration = copy.deepcopy(self.parser.arguments)
+
+        for param in trial.params:
+            name = param.name.lstrip('/')
+            configuration[name] = param.value
+
+        return configuration
+
+    def priors_to_normal(self):
+        return {key.lstrip('/'): arg for key, arg in self.priors_only.items()}
