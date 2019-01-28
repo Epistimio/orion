@@ -27,10 +27,20 @@ def yaml_sample_path():
     return os.path.abspath(YAML_SAMPLE)
 
 
+@pytest.fixture
+def yaml_config(yaml_sample_path):
+    return ['--config', yaml_sample_path]
+
+
 @pytest.fixture(scope='session')
 def json_sample_path():
     """Return path with a json sample file."""
     return JSON_SAMPLE
+
+
+@pytest.fixture
+def json_config(json_sample_path):
+    return ['--config', json_sample_path]
 
 
 @pytest.fixture(scope='session')
@@ -43,6 +53,11 @@ def unknown_type_sample_path():
 def some_sample_path():
     """Return path with a sample file of unknown configuration filetype."""
     return os.path.join(TEST_DIR, 'some_sample_config.txt')
+
+
+@pytest.fixture
+def some_sample_config(some_sample_path):
+    return ['--config', some_sample_path]
 
 
 @pytest.fixture(scope='session')

@@ -26,42 +26,18 @@ def basic_config():
     return config
 
 
-def test_arg_to_key():
-    """Test the arg_to_key function"""
-    cmdline_parser = CmdlineParser()
-    assert cmdline_parser._arg_to_key("-c") == "c"
-    assert cmdline_parser._arg_to_key("--test") == "test"
-    assert cmdline_parser._arg_to_key("--test.test") == "test.test"
-    assert cmdline_parser._arg_to_key("--test_test") == "test!!test"
-    assert cmdline_parser._arg_to_key("--test__test") == "test!!!!test"
-    assert cmdline_parser._arg_to_key("--test-test") == "test??test"
-    assert cmdline_parser._arg_to_key("--test-some=thing") == "test??some"
-    assert cmdline_parser._arg_to_key("--test.some=thing") == "test.some"
-    assert cmdline_parser._arg_to_key("--test-some=thing=is=weird") == "test??some"
-
-
-def test_bad_arg_to_key():
-    """Test the fail cases of arg_to_key"""
-    cmdline_parser = CmdlineParser()
-    with pytest.raises(ValueError):
-        assert cmdline_parser._arg_to_key("-c-c")
-
-    with pytest.raises(ValueError):
-        assert cmdline_parser._arg_to_key("--c")
-
-
 def test_key_to_arg():
     """Test the key to arg function"""
     cmdline_parser = CmdlineParser()
     assert cmdline_parser._key_to_arg("c") == "-c"
     assert cmdline_parser._key_to_arg("test") == "--test"
     assert cmdline_parser._key_to_arg("test.test") == "--test.test"
-    assert cmdline_parser._key_to_arg("test!!test") == "--test_test"
-    assert cmdline_parser._key_to_arg("test!!!!test") == "--test__test"
-    assert cmdline_parser._key_to_arg("test??test") == "--test-test"
-    assert cmdline_parser._key_to_arg("test??some") == "--test-some"
+    assert cmdline_parser._key_to_arg("test_test") == "--test_test"
+    assert cmdline_parser._key_to_arg("test__test") == "--test__test"
+    assert cmdline_parser._key_to_arg("test-test") == "--test-test"
+    assert cmdline_parser._key_to_arg("test-some") == "--test-some"
     assert cmdline_parser._key_to_arg("test.some") == "--test.some"
-    assert cmdline_parser._key_to_arg("test!!some") == "--test_some"
+    assert cmdline_parser._key_to_arg("test_some") == "--test_some"
 
 
 def test_parse_paths(monkeypatch):
@@ -112,7 +88,7 @@ def test_parse_arguments_bad_command():
             "--with args --and multiple args --plus --booleans "
             "--and dummy.yaml".split(" "))
 
-    assert "Two arguments have the same name: and" in str(exc_info.value)
+    assert "Conflict: two arguments have the same name: and" in str(exc_info.value)
 
 
 def test_parse_branching_arguments_format(monkeypatch):
@@ -125,11 +101,11 @@ def test_parse_branching_arguments_format(monkeypatch):
                "--with args --and multiple args --plus --booleans ")
 
     configuration = cmdline_parser.parse(command.split(" "))
-    assert cmdline_parser.format(configuration) == command.strip(" ")
+    assert " ".join(cmdline_parser.format(configuration)) == command.strip(" ")
 
     branch_configuration = cmdline_parser.parse("--with something --to update".split(" "))
     configuration.update(branch_configuration)
 
     assert (
-        cmdline_parser.format(configuration) ==
+        " ".join(cmdline_parser.format(configuration)) ==
         command.replace("--with args", "--with something").strip(" ") + " --to update")
