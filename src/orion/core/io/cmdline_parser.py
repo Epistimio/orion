@@ -161,10 +161,18 @@ class CmdlineParser(object):
             if item.startswith("-"):
                 # Make sure we're not defining the same argument twice
                 argument_name = item.lstrip('-')
+                # If the argument is in the form of `--name=value`
+                argument_parts = argument_name.split('=')
+                argument_name = argument_parts[0]
+
                 if argument_name in self.arguments.keys():
-                    raise ValueError("Two arguments have the same name: {}".format(argument_name))
+                    raise ValueError("Conflict: two arguments have the same name: {}"
+                                     .format(argument_name))
 
                 self.arguments[argument_name] = []
+
+                if len(argument_parts) > 1:
+                    self.arguments[argument_name].append(argument_parts[-1])
 
             # If the argument did not start with `-` but we have an argument name
             # That means that this value belongs to that argument name list
