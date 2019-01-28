@@ -143,7 +143,10 @@ class CmdlineParser(object):
                     continue
 
                 if not isinstance(value, list):
-                    template = "{" + key + "}"
+                    if 'trial.' in value or 'exp.' in value:
+                        template = "{" + value + "}"
+                    else:
+                        template = "{" + key + "}"
                     self.template.append(template)
                     continue
 
