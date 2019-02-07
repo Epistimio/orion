@@ -38,7 +38,7 @@ class CmdlineParser(object):
     See Also
     --------
     parse : Parse the list of string and defines the form of the template.
-    
+
     Notes
     -----
     Subcommands are not supported and will be likely lead to bad interpretation of the commandline.
@@ -68,11 +68,12 @@ class CmdlineParser(object):
         Returns
         -------
         list
-            A list ressembling the one given to the `parse` method but with values of `configuration`.
+            A list ressembling the one given to the `parse` method but with values of
+            `configuration`.
 
         """
         # Arguments with spaces are broken if we use ' '.join(template).format().split(' ').
-        # Hence we iterate over the list as-is and format on each item separately. 
+        # Hence we iterate over the list as-is and format on each item separately.
         formatted = []
         for item in self.template:
             if item.startswith('-'):
@@ -149,8 +150,11 @@ class CmdlineParser(object):
         OrderedDict([('_pos_0', 'python'), ('arg', 'value')])
 
         """
-        if not commandline or self._already_parsed:
+        if not commandline:
             return self.arguments
+
+        if self._already_parsed:
+            raise RuntimeError("The commandline has already been parsed.")
 
         self.arguments = OrderedDict()
         self._parse_arguments(commandline)

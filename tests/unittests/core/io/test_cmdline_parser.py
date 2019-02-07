@@ -104,24 +104,15 @@ def test_parse_arguments_bad_command():
     assert "Conflict: two arguments have the same name: and" in str(exc_info.value)
 
 
-def test_parse_branching_arguments_format(monkeypatch):
+def test_has_already_been_parsed():
     """Test the template from the branching"""
-    monkeypatch.chdir(os.path.dirname(__file__))
-
     cmdline_parser = CmdlineParser()
 
     command = "python script.py some pos args " \
               "--with args --and multiple args --plus --booleans "
 
-    configuration = cmdline_parser.parse(command.split(" "))
-    assert " ".join(cmdline_parser.format(configuration)) == command.strip(" ")
+    cmdline_parser.parse(command.split(' '))
+    with pytest.raises(RuntimeError) as exc_info:
+        cmdline_parser.parse(command.split(' '))
 
-    cmdline_parser = CmdlineParser()
-    command2 = "python script.py some pos args " \
-               "--with something --and multiple args --plus --booleans --to update"
-    branch_configuration = cmdline_parser.parse(command2.split(" "))
-    configuration.update(branch_configuration)
-
-    assert (
-        " ".join(cmdline_parser.format(configuration)) ==
-        command.replace("--with args", "--with something").strip(" ") + " --to update")
+    assert "already" in str(exc_info)
