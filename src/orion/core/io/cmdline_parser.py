@@ -22,17 +22,22 @@ import os
 class CmdlineParser(object):
     """Simple class for commandline arguments parsing.
 
-    CmdlineParser aims at providing a simple class to interpret commandline arguments
-    for the purposes of Orion. It can transform a list of string representing arguments to their
-    corresponding values. It can also recreate that string from the values by maintaing a template
-    of the way the arguments were passed.
+    `CmdlineParser` aims at providing a simple interface to interpret commandline arguments
+    for a general purpose. This class exposes an interface to transform a list of strings
+    representing the commandline in a dictionary of key-value conserving the order of
+    the arguments, the value of named arguments, be it boolean, single-valued or multiple ones,
+    as well as handling the definition of argument through the `=` sign.
 
     Attributes
     ----------
     arguments : OrderedDict
         Commandline arguments' name and value(s).
     template : list
-        List of template-ready strings (in the form 'something_{0}') for formatting.
+        List of template-ready strings for formatting.
+
+    See Also
+    --------
+    parse : Parse the list of string and defines the form of the template.
 
     """
 
@@ -47,20 +52,18 @@ class CmdlineParser(object):
     def format(self, configuration):
         """Format the current template.
 
-        Recreate the string of argument using the template made at parse-time and
-        the values inside the `configuration` argument.
+        Return a list of string where the arguments have been given the values inside
+        the `configuration` argument.
 
         Parameters
         ----------
         configuration : dict
-            Dictionary storing the keys and values to be passed to the `format` function.
-            This would typically be `parser.arguments` where `parser` is a `CmdlineParser`
-            instance.
+            Dictionary containing the keys and values for each argument of the commandline.
 
         Returns
         -------
-        str
-            A recreated string of the commandline passed to Orion.
+        list
+            A list ressembling the one given to the `parse` method where every argument has a value.
 
         """
         # It is easier to build the command line and return a list this way
@@ -76,10 +79,10 @@ class CmdlineParser(object):
     def parse(self, commandline):
         """Parse the `commandline` argument.
 
-        Create an OrderedDict where the keys are the names of the arguments and the values
-        are the actual values of the each argument and a template to be formatted later by the
-        user to recover the original commandline with priors replaced by value. The arguments
-        can be a single value or a list of values. This also supports positional arguments.
+        This function will go through the list of strings and create a dictionary
+        mapping every argument to its value(s). It will also form a template to recreate such a
+        list. If `commandline` is empty or the `parse` function has already been called, it
+        will return the dictionary of the already-parsed arguments.
 
         Parameters
         ----------
@@ -89,36 +92,58 @@ class CmdlineParser(object):
         Returns
         -------
         OrderedDict
-            Dictionary holding the values of every argument. The keys are the arguments' name.
+            Dictionary holding the values of every argument. The keys are the name of the arguments.
 
         Raises
         ------
         ValueError
-            If there is a duplicate argument
+            This exception is raised then the parser detects a duplicate argument.
 
         Notes
         -----
-        By default, all values are `str` unless their types have been changed in the meantime.
-        Unnamed arguments's key follow the format '_X' where `X` is the index of that argument
-        in the list. For example, `val1 val2` would be parsed as
-        `{'_pos_0': 'val1', '_pos_1': 'val2}`.
+        Each argument is stored inside an `OrderedDict` to preserve its position inside the
+        commandline string. Inside that dictionary, the keys are created following these rules:
 
-        Arrays are parsed starting at the first named argument until the next one. For example :
-        `--arg1 value1 value2 --arg2 value3 value4` will be parsed as :
-        `{'arg1': ['value1', 'value2'], 'arg2': ['value3', 'value4']}`.
+        -If the argument is a positional one, its key will be `'_pos_x'` where `x` is its index
+        inside the list.
+        -Otherwise, the key will be equal to the name of the argument minus the prefixed dashes.
 
-        File paths are extended to their absolute forms.
+        The values are stored in the following ways:
 
-        If the commandline contains optional arguments before a subcommand, the arguments
-        will be wrongly parsed : `somecommand --optional argument subcommand --another argument`
-        will be parsed as `{'optional': ['argument', 'subcommand'], 'another': 'argument'}`
+        -If the argument is a positional one, its value is simply its value inside the commandline.
+        -If the argument is a named, boolean argument, its value is simply `True`.
+        -If the argument is a named, single-valued argument, its value is stored as-is.
+        -If the argument is a named, multi-valued argument, its value is a list containing each
+        value following it until the next named argument.
 
-        Warning
-        -------
-        When dealing with an empty list (of the form `--args`), the value is a boolean.
+        Positional arguments following a named argument are not currently supported.
+
+        Examples
+        --------
+
+        Positional and named arguments:
+
+        >>> parser = CmdlineParser()
+        >>> parser.parse('python 1 --arg value'.split(' '))
+        OrderedDict([('_pos_0', 'python'), ('_pos_1', '1'), ('arg', 'value')])
+
+        Named boolean argument:
+
+        >>> parser.parse('python --boolean'.split(' '))
+        OrderedDict([('_pos_0', 'python'), ('boolean', True)])
+
+        Named multi-valued argument:
+
+        >>> parser.parse('python --args value1 value2'.split(' '))
+        OrderedDict([('_pos_0', 'python'), ('args', ['value1', 'value2'])])
+
+        Named argument defined with `=`:
+
+        >>> parser.parse('python --arg=value'.split(' '))
+        OrderedDict([('_pos_0', 'python'), ('arg', 'value')])
 
         """
-        if not commandline:
+        if not commandline or self._already_parsed:
             return self.arguments
 
         self.arguments = OrderedDict()

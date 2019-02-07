@@ -23,7 +23,14 @@ def basic_config():
     config['and'] = ['multiple', 'args']
     config['plus'] = True
     config['booleans'] = True
+    config['equal'] = 'value'
+
     return config
+
+
+@pytest.fixture
+def to_format():
+    return "python 1 --arg value --args value1 value2 --boolean"
 
 
 def test_key_to_arg():
@@ -31,13 +38,7 @@ def test_key_to_arg():
     cmdline_parser = CmdlineParser()
     assert cmdline_parser._key_to_arg("c") == "-c"
     assert cmdline_parser._key_to_arg("test") == "--test"
-    assert cmdline_parser._key_to_arg("test.test") == "--test.test"
-    assert cmdline_parser._key_to_arg("test_test") == "--test_test"
-    assert cmdline_parser._key_to_arg("test__test") == "--test__test"
     assert cmdline_parser._key_to_arg("test-test") == "--test-test"
-    assert cmdline_parser._key_to_arg("test-some") == "--test-some"
-    assert cmdline_parser._key_to_arg("test.some") == "--test.some"
-    assert cmdline_parser._key_to_arg("test_some") == "--test_some"
 
 
 def test_parse_paths(monkeypatch):
@@ -58,8 +59,8 @@ def test_parse_arguments(basic_config):
     """Test the parsing of the commandline arguments"""
     cmdline_parser = CmdlineParser()
     cmdline_parser._parse_arguments(
-        "python script.py some pos args "
-        "--with args --and multiple args --plus --booleans".split(" "))
+        "python script.py some pos args --with args --and multiple args "
+        "--plus --booleans --equal=value".split(" "))
 
     assert cmdline_parser.arguments == basic_config
 
@@ -70,12 +71,23 @@ def test_parse_arguments_template():
 
     cmdline_parser.parse(
         "python script.py some pos args "
-        "--with args --and multiple args --plus --booleans".split(" "))
+        "--with args --and multiple args --plus --booleans --equal=value".split(" "))
 
     assert (
         cmdline_parser.template ==
         ['{_pos_0}', '{_pos_1}', '{_pos_2}', '{_pos_3}', '{_pos_4}', '--with', '{with}', '--and',
-         '{and[0]}', '{and[1]}', '--plus', '--booleans'])
+         '{and[0]}', '{and[1]}', '--plus', '--booleans', '--equal', '{equal}'])
+
+
+def test_format(to_format):
+    """Test that the format method assigns the correc values"""
+    cmdline_parser = CmdlineParser()
+
+    cmdline_parser.parse(to_format.split(' '))
+
+    formatted = cmdline_parser.format(cmdline_parser.arguments)
+
+    assert formatted == to_format.split(' ')
 
 
 def test_parse_arguments_bad_command():
@@ -97,13 +109,16 @@ def test_parse_branching_arguments_format(monkeypatch):
 
     cmdline_parser = CmdlineParser()
 
-    command = ("python script.py some pos args "
-               "--with args --and multiple args --plus --booleans ")
+    command = "python script.py some pos args " \
+              "--with args --and multiple args --plus --booleans "
 
     configuration = cmdline_parser.parse(command.split(" "))
     assert " ".join(cmdline_parser.format(configuration)) == command.strip(" ")
 
-    branch_configuration = cmdline_parser.parse("--with something --to update".split(" "))
+    cmdline_parser = CmdlineParser()
+    command2 = "python script.py some pos args " \
+              "--with something --and multiple args --plus --booleans --to update"
+    branch_configuration = cmdline_parser.parse(command2.split(" "))
     configuration.update(branch_configuration)
 
     assert (
