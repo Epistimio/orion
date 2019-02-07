@@ -13,7 +13,7 @@ are stored in the format `_X` where `X` represent the index of that argument ins
 the command line.
 
 CmdlineParser provides an interface to parse command line arguments from input but also
-facilities to build it again as a list or an already formatted string.
+templates to build it again as a list or an already formatted string.
 """
 from collections import OrderedDict
 import os
@@ -22,8 +22,8 @@ import os
 class CmdlineParser(object):
     """Simple class for commandline arguments parsing.
 
-    `CmdlineParser` aims at providing a simple interface to interpret commandline arguments
-    for a general purpose. This class exposes an interface to transform a list of strings
+    `CmdlineParser` provides a simple interface to interpret commandline arguments
+    and create new commandlines. This class exposes an interface to transform a list of strings
     representing the commandline in a dictionary of key-value conserving the order of
     the arguments, the value of named arguments, be it boolean, single-valued or multiple ones,
     as well as handling the definition of argument through the `=` sign.
@@ -38,6 +38,11 @@ class CmdlineParser(object):
     See Also
     --------
     parse : Parse the list of string and defines the form of the template.
+    
+    Notes
+    -----
+    Subcommands are not supported and will be likely lead to bad interpretation of the commandline.
+    Aggregation of single characters arguments is not supported yet. Ex: `-xzvf`
 
     """
 
@@ -63,10 +68,11 @@ class CmdlineParser(object):
         Returns
         -------
         list
-            A list ressembling the one given to the `parse` method where every argument has a value.
+            A list ressembling the one given to the `parse` method but with values of `configuration`.
 
         """
-        # It is easier to build the command line and return a list this way
+        # Arguments with spaces are broken if we use ' '.join(template).format().split(' ').
+        # Hence we iterate over the list as-is and format on each item separately. 
         formatted = []
         for item in self.template:
             if item.startswith('-'):
@@ -117,6 +123,7 @@ class CmdlineParser(object):
         value following it until the next named argument.
 
         Positional arguments following a named argument are not currently supported.
+        Aggregation of single characters arguments is not supported yet. Ex: `-xzvf`
 
         Examples
         --------
