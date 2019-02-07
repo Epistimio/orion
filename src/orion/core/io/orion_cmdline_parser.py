@@ -314,10 +314,14 @@ class OrionCmdlineParser():
         if config_path is not None:
             configuration['config'] = config_path
 
-        configuration['trial'] = trial
-        configuration['exp'] = experiment
+        templated = self.parser.format(configuration)
 
-        return self.parser.format(configuration)
+        trial_and_exp = dict(trial=trial, exp=experiment)
+
+        for idx, item in enumerate(templated):
+            templated[idx] = item.format(**trial_and_exp)
+
+        return templated
 
     def _create_config_file(self, config_path, trial, experiment):
         # Create a copy of the template
