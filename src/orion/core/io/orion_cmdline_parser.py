@@ -155,6 +155,7 @@ class OrionCmdlineParser():
         configuration: OrderedDict
             The original configuration from which to extract OrderedDict.
         """
+        # TODO: Remove this method but still create config file.
         for key, value in configuration.items():
             if key == self.config_prefix:
                 self.file_config_path = value
