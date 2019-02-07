@@ -30,6 +30,7 @@ def basic_config():
 
 @pytest.fixture
 def to_format():
+    """Return a commandline to format"""
     return "python 1 --arg value --args value1 value2 --boolean"
 
 
@@ -117,7 +118,7 @@ def test_parse_branching_arguments_format(monkeypatch):
 
     cmdline_parser = CmdlineParser()
     command2 = "python script.py some pos args " \
-              "--with something --and multiple args --plus --booleans --to update"
+               "--with something --and multiple args --plus --booleans --to update"
     branch_configuration = cmdline_parser.parse(command2.split(" "))
     configuration.update(branch_configuration)
 

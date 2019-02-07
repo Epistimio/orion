@@ -120,7 +120,6 @@ class CmdlineParser(object):
 
         Examples
         --------
-
         Positional and named arguments:
 
         >>> parser = CmdlineParser()
@@ -180,7 +179,8 @@ class CmdlineParser(object):
 
         return self.arguments
 
-    def _key_to_arg(self, arg):
+    @staticmethod
+    def _key_to_arg(arg):
         if len(arg) > 1:
             return "--" + arg
 
@@ -222,7 +222,7 @@ class CmdlineParser(object):
             # If it is, and the length is 0, that means it is a boolean args.
             # If its value is 1, it only has a single element and we unpack it.
             if isinstance(value, list):
-                if not len(value):
+                if not value:
                     value = True
                 elif len(value) == 1:
                     value = value[0]
