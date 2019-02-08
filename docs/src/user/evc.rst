@@ -26,9 +26,9 @@ be created which points to the previous one, the one without momentum in this ca
 
     If you are unfamiliar with this process, you can type `help` to print the help message.
     You can also type `abort` or `(q)uit` at any moment to quit without saving.
-    
+
     Remaining conflicts:
-    
+
        Experiment name 'orion-tutorial' already exist for user 'bouthilx'
        New momentum
 
@@ -42,7 +42,7 @@ autocomplete it. Since we only have ``momentum`` in this case, it will be fully 
 you hit tab twice again, the option ``--default-value`` will be added to the line, with which you
 can set a default-value for the momentum. If you only enter ``add momentum``, the new experiment
 won't be able to fetch trials from the parent experiment, because it cannot know what was the
-implicit value of ``momentum`` on those trials. If you know there was a default value 
+implicit value of ``momentum`` on those trials. If you know there was a default value
 for ``momentum``, you should tell so with ``--default-value``.
 
 
@@ -57,7 +57,7 @@ for ``momentum``, you should tell so with ``--default-value``.
 
          momentum~+uniform(0, 1, default_value=0.0)
 
-   
+
     Remaining conflicts:
 
          Experiment name 'orion-tutorial' already exist for user 'bouthilx'
@@ -72,12 +72,12 @@ change our commandline like this.
 
     $ orion hunt -n orion-tutorial ./main.py --lr~'loguniform(1e-5, 1.0)' --momentum~+'uniform(0, 1)'
 
-Let's look back at the prompt above. Following the resolution of ``momentum`` conflict we see that it is now
-marked as resolved in the `Resolutions` list, while the experiment name is still marked as a
-conflict. Notice that the prior distribution is slightly different than the one specified in
-commandline. This is because we added a default value inside the prompt. Notice also that the
-resolution is marked as how you would resolve this conflict in commandline. There is hints
-everywhere to help you learn without looking at the documentation.
+Let's look back at the prompt above. Following the resolution of ``momentum`` conflict we see
+that it is now marked as resolved in the `Resolutions` list, while the experiment name is still
+marked as aconflict. Notice that the prior distribution is slightly different than the one
+specified in commandline. This is because we added a default value inside the prompt. Notice
+also that the resolution is marked as how you would resolve this conflict in commandline.
+There is hints everywhere to help you learn without looking at the documentation.
 
 Now for the experiment name conflict. Remember that experiment names must be unique, that means that
 when an experiment branching occur we need to give a new name to the child experiment. You can do so
@@ -95,7 +95,7 @@ simply append some version number like ``1.2`` at the end. Let's add ``-with-mom
          --branch orion-tutorial-with-momentum
          momentum~+uniform(0, 1, default_value=0.0)
 
-   
+
     Hooray, there is no more conflicts!
     You can enter 'commit' to leave this prompt and register the new branch
 
@@ -122,7 +122,7 @@ Or as always by only specifying the experiment name.
 
     $ orion hunt -n orion-tutorial-with-momentum
 
-If you are unhappy with some resolutions, you can type ``reset`` and hit tab twice. Oríon will 
+If you are unhappy with some resolutions, you can type ``reset`` and hit tab twice. Oríon will
 offer autocompletions of the possible resolutions to reset.
 
 .. code-block:: text
@@ -136,7 +136,7 @@ offer autocompletions of the possible resolutions to reset.
 
          momentum~+uniform(0, 1, default_value=0.0)
 
-   
+
     Remaining conflicts:
 
          Experiment name 'orion-tutorial' already exist for user 'bouthilx'
@@ -168,7 +168,7 @@ Iterative Results
 =================
 
 You can retrieve results from different experiments in the same project using
-the Experiment Version Control (EVC) system. The only difference 
+the Experiment Version Control (EVC) system. The only difference
 with ``ExperimentBuilder`` is that ``EVCBuilder`` will connect the experiment
 to the EVC system, accessible through the ``node`` attribute.
 

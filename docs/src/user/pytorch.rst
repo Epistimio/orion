@@ -27,7 +27,7 @@ After cloning pytorch examples repository, cd to mnist folder:
 
     $ cd examples/mnist
 
-In your favourite editor add a shebang line `#!/usr/bin/env python` to 
+In your favourite editor add a shebang line `#!/usr/bin/env python` to
 the `main.py` and make it executable, for example:
 
 .. code-block:: bash
@@ -42,7 +42,7 @@ orion.client.report_results():
 
     from orion.client import report_results
 
-We are almost done now. We need to add a line to the function `test()` so that 
+We are almost done now. We need to add a line to the function `test()` so that
 it returns the error rate.
 
 .. code-block:: python
