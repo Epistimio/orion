@@ -106,7 +106,8 @@ class CmdlineParser(object):
         ValueError
             This exception is raised then the parser detects a duplicate argument.
         RuntimeError
-            This exception is raised if the parser already parsed a commandline and contains a template.
+            This exception is raised if the parser already parsed a commandline and contains a
+            template.
 
         Notes
         -----
