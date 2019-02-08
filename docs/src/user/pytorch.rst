@@ -7,8 +7,8 @@ Installation and setup
 
 In this tutorial you will run a very simple MNIST example in pytorch using Oríon.
 First, install Oríon follwing :doc:`/install/core` and configure the database
-(:doc:`/install/database`). Then install `pytorch`, `torchvision` and clone the
-PyTorch [examples repository](https://github.com/pytorch/examples):
+(:doc:`/install/database`). Then install ``pytorch``, ``torchvision`` and clone the
+PyTorch `examples repository`_:
 
 .. code-block:: bash
 
@@ -27,8 +27,8 @@ After cloning pytorch examples repository, cd to mnist folder:
 
     $ cd examples/mnist
 
-In your favourite editor add a shebang line `#!/usr/bin/env python` to
-the `main.py` and make it executable, for example:
+In your favourite editor add a shebang line ``#!/usr/bin/env python`` to
+the ``main.py`` and make it executable, for example:
 
 .. code-block:: bash
 
@@ -36,13 +36,13 @@ the `main.py` and make it executable, for example:
     $ chmod +x main.py
 
 At the top of the file, below the imports, add one line of import the helper function
-orion.client.report_results():
+``orion.client.report_results()``:
 
 .. code-block:: python
 
     from orion.client import report_results
 
-We are almost done now. We need to add a line to the function `test()` so that
+We are almost done now. We need to add a line to the function ``test()`` so that
 it returns the error rate.
 
 .. code-block:: python
