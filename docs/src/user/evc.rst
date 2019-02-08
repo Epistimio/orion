@@ -3,8 +3,8 @@ Experiment Version Control
 ****************************
 
 Oríon comes with an Experiment Version Control (EVC) system that makes it possible to reuse results
-from your previous experiments in a given project for the current one. This means a new experiment could
-pre-train on all prior data resulting in a much more efficient optimization algorithm. Another
+from your previous experiments in a given project for the current one. This means a new experiment
+could pre-train on all prior data resulting in a much more efficient optimization algorithm. Another
 advantage of the EVC system is that it provides a systematic way to organize research and the
 possibility to go back in time and compare the evolution of performance throughout your research.
 
@@ -17,7 +17,8 @@ also optimize the ``momentum``.
 
 This cannot be the same as the experiment ``orion-tutorial`` since the space of optimization is now
 different. Such a call will trigger an experiment branching, meaning that a new experiment will
-be created which points to the previous one, ``orion-tutorial``, the one without momentum in this case.
+be created which points to the previous one, ``orion-tutorial``, the one without momentum in this
+case.
 
 .. code-block:: text
 
