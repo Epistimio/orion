@@ -16,9 +16,6 @@
 
    user/pytorch
    user/evc
-   user/executing
-   user/configuring
-   user/defining
    user/algorithms
 
 .. toctree::
