@@ -29,6 +29,23 @@ in `scikit optimize`_. For more information about algorithms configuration and u
 
    pip install orion.algo.skopt
 
+
+Next we define the file ``bayes.yaml`` as this
+
+.. code-block:: yaml
+
+     name: orion-with-bayes
+     algorithms: BayesianOptimizer
+
+Then call ``orion hunt`` with the configuration file.
+
+.. code-block:: bash
+
+    $ orion hunt --config bayes.yaml ./script.sh --lr~'loguniform(1e-5, 1.0)'
+
+Now, we have a Bayesian optimizer sampling learning-rate values to optimize the error rate.
+
+
 Database backend
 ================
 

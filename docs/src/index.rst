@@ -15,9 +15,7 @@
    :maxdepth: 1
 
    user/pytorch
-   user/executing
-   user/configuring
-   user/defining
+   user/evc
    user/algorithms
 
 .. toctree::

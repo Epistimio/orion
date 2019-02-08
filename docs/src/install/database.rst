@@ -1,5 +1,3 @@
-.. contents:: User's Guide 104: Database
-
 **************
 Setup Database
 **************
@@ -105,9 +103,56 @@ Oríon configuration files.
           name: 'orion_test'
           host: 'mongodb://user:pass@localhost'
 
-As it will be referenced with detail in :doc:`configuration's documentation </user/configuring>`,
+As it will be referenced with detail in configuration's documentation (TODO),
 the environmental variable definitions precede the ones within files in default
 locations, and configuration files provided via executable's cli precede
 environmentals.
+
+
+Test connection
+---------------
+
+You can first check that everything works as expected by testing with the
+``debug`` mode. This mode bypass the database in the configuration. If you run
+the following command, you should get the following error.
+
+.. code-block:: bash
+
+    $ orion --debug hunt -n dummy
+    ...
+    AttributeError: 'str' object has no attribute 'configuration'
+
+That's a terrible error message. -_- Note to ourselves; Improve this error message. What this should
+tell is that the connection to database was successful but Oríon could not find any script to
+optimize.
+
+Now remove the option ``--debug`` to test the database. If it fails to connect,
+you will get the following error. Otherwise, you'll get the (terrible) error above again
+if it succeeded. Note that a connection failure will hang for approximately 60
+seconds before giving up.
+
+.. code-block:: bash
+
+    $ orion hunt -n dummy
+    ...
+    orion.core.io.database.DatabaseError: Connection Failure: database not found on specified uri
+
+If it fails, try running with ``-vv`` and make sure your configuration file is
+properly found. Suppose your file path is ``/u/user/.config/orion.config/orion_config.yaml``,
+then you should **NOT** see the following line in the output otherwise it means it is not found.
+
+.. code-block:: bash
+
+    DEBUG:orion.core.io.resolve_config:[Errno 2] No such file or directory: '/u/user/.config/orion.config/orion_config.yaml'
+
+When you are sure the configuration file is found, look for the configuration
+used by Oríon to initiate the DB connection.
+
+.. code-block:: bash
+
+    DEBUG:orion.core.io.experiment_builder:Creating mongodb database client with args: {'name': 'user', 'host': 'mongodb://user:pass@localhost'}
+
+Make sure you have the proper database name, database type and host URI.
+
 
 .. _MongoDB: https://www.mongodb.com/
