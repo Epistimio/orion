@@ -137,7 +137,7 @@ class Trial(object):
         """
 
         __slots__ = ()
-        allowed_types = ('objective', 'constraint', 'gradient')
+        allowed_types = ('objective', 'constraint', 'gradient', 'statistic', 'lie')
 
     class Param(Value):
         """Types for a `Param` can be either an integer (discrete value),
@@ -147,14 +147,14 @@ class Trial(object):
         __slots__ = ()
         allowed_types = ('integer', 'real', 'categorical')
 
-    __slots__ = ('experiment', '_status', 'worker',
-                 'submit_time', 'start_time', 'end_time', 'results', 'params')
+    __slots__ = ('experiment', '_id', '_status', 'worker',
+                 'submit_time', 'start_time', 'end_time', 'results', 'params', 'parents')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
 
     def __init__(self, **kwargs):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
         for attrname in self.__slots__:
-            if attrname in ('results', 'params'):
+            if attrname in ('results', 'params', 'parents'):
                 setattr(self, attrname, list())
             else:
                 setattr(self, attrname, None)
@@ -181,7 +181,6 @@ class Trial(object):
         trial_dictionary = dict()
 
         for attrname in self.__slots__:
-
             attrname = attrname.lstrip("_")
             trial_dictionary[attrname] = getattr(self, attrname)
 
@@ -191,7 +190,7 @@ class Trial(object):
             trial_dictionary[attrname] = list(map(lambda x: x.to_dict(),
                                                   getattr(self, attrname)))
 
-        trial_dictionary['_id'] = self.id
+        trial_dictionary['_id'] = trial_dictionary.pop('id')
 
         return trial_dictionary
 
@@ -229,6 +228,14 @@ class Trial(object):
         return self._fetch_one_result_of_type('objective')
 
     @property
+    def lie(self):
+        """Return this trial's fake objective value if it was set, else None.
+
+        :rtype: `Trial.Result`
+        """
+        return self._fetch_one_result_of_type('lie')
+
+    @property
     def gradient(self):
         """Return this trial's gradient value if it is evaluated, else None.
 
@@ -253,7 +260,10 @@ class Trial(object):
         if not self.params and not self.experiment:
             raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
                              "have not been set.")
-        return hashlib.md5((self.params_repr() + str(self.experiment)).encode('utf-8')).hexdigest()
+        params_repr = self.params_repr()
+        experiment_repr = str(self.experiment)
+        lie_repr = self._repr_values([self.lie]) if self.lie else ""
+        return hashlib.md5((params_repr + experiment_repr + lie_repr).encode('utf-8')).hexdigest()
 
     def __hash__(self):
         """Return the hashname for this trial"""

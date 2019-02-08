@@ -5,6 +5,9 @@ max_trials: 400
 
 algorithms: random
 
+producer:
+    strategy: NoParallelStrategy
+
 database:
   type: 'mongodb'
   name: 'orion_test'

@@ -24,12 +24,13 @@ class DumbAlgo(BaseAlgorithm):
         """Configure returns, allow for variable variables."""
         self._times_called_suspend = 0
         self._times_called_is_done = 0
-        self._num = None
-        self._points = None
-        self._results = None
+        self._num = 0
+        self._points = []
+        self._results = []
         self._score_point = None
         self._judge_point = None
         self._measurements = None
+        self.possible_values = [value]
         super(DumbAlgo, self).__init__(space, value=value,
                                        scoring=scoring, judgement=judgement,
                                        suspend=suspend,
@@ -38,13 +39,25 @@ class DumbAlgo(BaseAlgorithm):
 
     def suggest(self, num=1):
         """Suggest based on `value`."""
-        self._num = num
-        return [self.value] * num
+        self._num += num
+
+        rval = []
+        while len(rval) < num:
+            if len(self.possible_values) > 1:
+                value = self.possible_values.pop(0)
+            else:
+                value = self.possible_values[0]
+
+            rval.append(value)
+
+        self._suggested = rval
+
+        return rval
 
     def observe(self, points, results):
         """Log inputs."""
-        self._points = points
-        self._results = results
+        self._points += points
+        self._results += results
 
     def score(self, point):
         """Log and return stab."""
@@ -82,6 +95,14 @@ def dumbalgo():
 
 
 @pytest.fixture()
+def categorical_values():
+    """Return a list of all the categorical points possible for `supernaedo2` and `supernaedo3`"""
+    return [('rnn', 'rnn'), ('rnn', 'lstm_with_attention'), ('rnn', 'gru'),
+            ('gru', 'rnn'), ('gru', 'lstm_with_attention'), ('gru', 'gru'),
+            ('lstm', 'rnn'), ('lstm', 'lstm_with_attention'), ('lstm', 'gru')]
+
+
+@pytest.fixture()
 def exp_config():
     """Load an example database."""
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -111,6 +132,7 @@ def clean_db(database, exp_config):
     """Clean insert example experiment entries to collections."""
     database.experiments.drop()
     database.experiments.insert_many(exp_config[0])
+    database.lying_trials.drop()
     database.trials.drop()
     database.trials.insert_many(exp_config[1])
     database.workers.drop()

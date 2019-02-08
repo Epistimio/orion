@@ -1,7 +1,7 @@
 algorithms:
   gradient_descent:
     learning_rate: 0.23
-    dx_tolerance: 0
+    dx_tolerance: 1.0e-7
 
 database:
   type: 'mongodb'

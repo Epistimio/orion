@@ -194,7 +194,7 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     """
     # XXX: return and complete test when there is a way to control random
     # seed of Oríon
-    how_many = 1000
+    how_many = 50
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["hunt", "--max-trials={}".format(how_many),
                          "--pool-size=1",

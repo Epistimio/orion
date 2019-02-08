@@ -131,6 +131,7 @@ def new_config(random_dt):
         pool_size=10,
         max_trials=1000,
         algorithms={'dumbalgo': {}},
+        producer={'strategy': 'NoParallelStrategy'},
         # attrs starting with '_' also
         _id='fasdfasfa',
         # and in general anything which is not in Experiment's slots
@@ -259,6 +260,7 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
         exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
 
@@ -277,6 +279,7 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
         exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
 
@@ -350,6 +353,7 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
         exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
         assert experiment_count_before == exp._db.count("experiments")
@@ -481,7 +485,7 @@ class TestConfigProperty(object):
         new_config['algorithms']['dumbalgo']['suspend'] = False
         new_config['algorithms']['dumbalgo']['value'] = 5
         assert exp._id == new_config.pop('_id')
-        assert exp.configuration == new_config
+        assert exp.configuration['algorithms'] == new_config['algorithms']
 
     @pytest.mark.usefixtures("trial_id_substitution")
     def test_status_is_pending_when_increase_max_trials(self, exp_config):
@@ -589,7 +593,8 @@ def test_register_trials(database, random_dt, hacked_exp):
         Trial(params=[{'name': 'a', 'type': 'integer', 'value': 5}]),
         Trial(params=[{'name': 'b', 'type': 'integer', 'value': 6}]),
         ]
-    hacked_exp.register_trials(trials)
+    for trial in trials:
+        hacked_exp.register_trial(trial)
     yo = list(database.trials.find({'experiment': hacked_exp._id}))
     assert len(yo) == len(trials)
     assert yo[0]['params'] == list(map(lambda x: x.to_dict(), trials[0].params))
@@ -600,6 +605,15 @@ def test_register_trials(database, random_dt, hacked_exp):
     assert yo[1]['submit_time'] == random_dt
 
 
+def test_fetch_all_trials(hacked_exp, exp_config, random_dt):
+    """Fetch a list of all trials"""
+    query = dict()
+    trials = hacked_exp.fetch_trials(query)
+    assert len(trials) == 7
+    for i in range(7):
+        assert trials[i].to_dict() == exp_config[1][i]
+
+
 def test_fetch_completed_trials(hacked_exp, exp_config, random_dt):
     """Fetch a list of the unseen yet completed trials."""
     trials = hacked_exp.fetch_completed_trials()
@@ -608,6 +622,46 @@ def test_fetch_completed_trials(hacked_exp, exp_config, random_dt):
     assert trials[0].to_dict() == exp_config[1][0]
     assert trials[1].to_dict() == exp_config[1][1]
     assert trials[2].to_dict() == exp_config[1][2]
+
+
+def test_fetch_non_completed_trials(hacked_exp, exp_config):
+    """Fetch a list of the trials that are not completed
+
+    trials.status in ['new', 'interrupted', 'suspended', 'broken']
+    """
+    # Set two of completed trials to broken and reserved to have all possible status
+    query = {'status': 'completed', 'experiment': hacked_exp.id}
+    database = hacked_exp._db._db
+    completed_trials = database.trials.find(query)
+    exp_config[1][0]['status'] = 'broken'
+    database.trials.update({'_id': completed_trials[0]['_id']}, {'$set': {'status': 'broken'}})
+    exp_config[1][2]['status'] = 'reserved'
+    database.trials.update({'_id': completed_trials[1]['_id']}, {'$set': {'status': 'reserved'}})
+
+    # Make sure non completed trials and completed trials are set properly for the unit-test
+    query = {'status': {'$ne': 'completed'}, 'experiment': hacked_exp.id}
+    non_completed_trials = list(database.trials.find(query))
+    assert len(non_completed_trials) == 6
+    # Make sure we have all type of status except completed
+    assert (set(trial['status'] for trial in non_completed_trials) ==
+            set(['new', 'reserved', 'suspended', 'interrupted', 'broken']))
+
+    trials = hacked_exp.fetch_noncompleted_trials()
+    assert len(trials) == 6
+
+    def find_and_compare(trial_config):
+        """Find the trial corresponding to given config and compare it"""
+        trial = [trial for trial in trials if trial.id == trial_config['_id']]
+        assert len(trial) == 1
+        trial = trial[0]
+        assert trial.to_dict() == trial_config
+
+    find_and_compare(exp_config[1][0])
+    find_and_compare(exp_config[1][2])
+    find_and_compare(exp_config[1][3])
+    find_and_compare(exp_config[1][4])
+    find_and_compare(exp_config[1][5])
+    find_and_compare(exp_config[1][6])
 
 
 def test_is_done_property(hacked_exp):
@@ -681,7 +735,7 @@ class TestInitExperimentView(object):
             exp.push_completed_trial
 
         with pytest.raises(AttributeError):
-            exp.register_trials
+            exp.register_trial
 
         with pytest.raises(AttributeError):
             exp.reserve_trial
