@@ -2,8 +2,8 @@
 Experiment Version Control
 ****************************
 
-Oríon comes an Experiment Version Control (EVC) system that makes it possible to reuse results
-from your first experiment in a given project to the current one. This means a new experiment could
+Oríon comes with an Experiment Version Control (EVC) system that makes it possible to reuse results
+from your previous experiments in a given project for the current one. This means a new experiment could
 pre-train on all prior data resulting in a much more efficient optimization algorithm. Another
 advantage of the EVC system is that it provides a systematic way to organize research and the
 possibility to go back in time and compare the evolution of performance throughout your research.
@@ -17,7 +17,7 @@ also optimize the ``momentum``.
 
 This cannot be the same as the experiment ``orion-tutorial`` since the space of optimization is now
 different. Such a call will trigger an experiment branching, meaning that a new experiment will
-be created which points to the previous one, the one without momentum in this case.
+be created which points to the previous one, ``orion-tutorial``, the one without momentum in this case.
 
 .. code-block:: text
 
@@ -74,10 +74,10 @@ change our commandline like this.
 
 Let's look back at the prompt above. Following the resolution of ``momentum`` conflict we see
 that it is now marked as resolved in the `Resolutions` list, while the experiment name is still
-marked as aconflict. Notice that the prior distribution is slightly different than the one
+marked as a conflict. Notice that the prior distribution is slightly different than the one
 specified in commandline. This is because we added a default value inside the prompt. Notice
 also that the resolution is marked as how you would resolve this conflict in commandline.
-There is hints everywhere to help you learn without looking at the documentation.
+There are hints everywhere to help you learn without looking at the documentation.
 
 Now for the experiment name conflict. Remember that experiment names must be unique, that means that
 when an experiment branching occur we need to give a new name to the child experiment. You can do so
@@ -158,7 +158,7 @@ conflicts, code conflicts, command-line conflicts and configuration file conflic
 Source of conflicts
 -------------------
 
-1. Code modification (not yet release, candidate for v0.1.1)
+1. Code modification
 2. Commandline modification
 3. Script configuration file modification
 4. Optimization space modification (new hyper-parameters or change of prior distribution)
