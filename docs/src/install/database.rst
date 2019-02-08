@@ -103,7 +103,7 @@ Oríon configuration files.
           name: 'orion_test'
           host: 'mongodb://user:pass@localhost'
 
-As it will be referenced with detail in :doc:`configuration's documentation </user/configuring>`,
+As it will be referenced with detail in configuration's documentation (TODO),
 the environmental variable definitions precede the ones within files in default
 locations, and configuration files provided via executable's cli precede
 environmentals.
