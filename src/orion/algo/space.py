@@ -387,7 +387,7 @@ class _Discrete(Dimension):
         Discretizes with `numpy.floor` the results from `Dimension.sample`.
 
         .. seealso:: `Dimension.sample`
-        .. seealso:: Discussion in https://github.com/mila-udem/orion/issues/56
+        .. seealso:: Discussion in https://github.com/epistimio/orion/issues/56
            if you want to understand better how this `Integer` diamond inheritance
            works.
 

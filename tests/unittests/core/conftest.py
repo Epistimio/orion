@@ -167,7 +167,7 @@ def new_config():
     return dict(
         name='test',
         algorithms='fancy',
-        metadata={'hash_commit': 'new',
+        metadata={'VCS': 'to be changed',
                   'user_script': 'abs_path/black_box.py',
                   'user_args':
                   ['--new~normal(0,2)', '--changed~normal(0,2)'],
@@ -180,7 +180,12 @@ def old_config(create_db_instance):
     config = dict(
         name='test',
         algorithms='random',
-        metadata={'hash_commit': 'old',
+        metadata={'VCS': {"type": "git",
+                          "is_dirty": False,
+                          "HEAD_sha": "test",
+                          "active_branch": None,
+                          "diff_sha": "diff",
+                          },
                   'user_script': 'abs_path/black_box.py',
                   'user_args':
                   ['--missing~uniform(-10,10)', '--changed~uniform(-10,10)'],

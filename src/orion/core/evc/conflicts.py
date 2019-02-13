@@ -1090,9 +1090,10 @@ class CodeConflict(Conflict):
     @classmethod
     def detect(cls, old_config, new_config):
         """Detect if commit hash in `new_config` differs from `old_config`"""
-        old_hash_commit = old_config['metadata'].get('hash_commit')
-        new_hash_commit = new_config['metadata'].get('hash_commit')
-        if old_hash_commit != new_hash_commit:
+        old_hash_commit = old_config['metadata'].get('VCS', None)
+        new_hash_commit = new_config['metadata'].get('VCS')
+
+        if not old_hash_commit or old_hash_commit != new_hash_commit:
             yield cls(old_config, new_config)
 
     def get_marked_arguments(self, conflicts):
@@ -1133,14 +1134,14 @@ class CodeConflict(Conflict):
     def diff(self):
         """Produce human-readable differences"""
         return colored_diff(
-            self.old_config['metadata'].get('hash_commit'),
-            self.new_config['metadata'].get('hash_commit'))
+            self.old_config['metadata'].get('VCS', None),
+            self.new_config['metadata'].get('VCS'))
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
-        return "Old hash commit \'{0}\' != new hash commit \'{1}\'".format(
-            self.old_config['metadata'].get('hash_commit'),
-            self.new_config['metadata'].get('hash_commit'))
+        return "Old hash commit '{0}'  != new hash commit '{1}'".format(
+            pprint.pformat(self.old_config['metadata'].get('VCS', None)).replace("\n", ""),
+            pprint.pformat(self.new_config['metadata'].get('VCS')).replace("\n", ""))
 
     class CodeResolution(Resolution):
         """Representation of an code change resolution

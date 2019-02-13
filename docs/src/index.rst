@@ -5,8 +5,9 @@
    :caption: Installation Guide
    :maxdepth: 1
 
-   installing
-   database
+   install/core
+   install/database
+   install/plugins
 
 
 .. toctree::
@@ -14,9 +15,7 @@
    :maxdepth: 1
 
    user/pytorch
-   user/executing
-   user/configuring
-   user/defining
+   user/evc
    user/algorithms
 
 .. toctree::
@@ -24,6 +23,7 @@
    :maxdepth: 1
 
    examples/pytorch_cifar
+   examples/pytorch_a2c_ppo
 
 .. toctree::
    :caption: Plugin development's Guide

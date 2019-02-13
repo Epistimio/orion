@@ -2,11 +2,31 @@
 Oríon
 *****
 
-.. image:: https://travis-ci.org/mila-udem/orion.svg?branch=master
-   :target: https://travis-ci.org/mila-udem/orion
+|pypi| |py_versions| |license| |rtfd| |codecov| |travis|
 
-.. image:: https://codecov.io/gh/mila-udem/orion/branch/master/graphs/badge.svg?branch=master
-   :target: https://codecov.io/gh/mila-udem/orion
+.. |pypi| image:: https://img.shields.io/pypi/v/orion.core.svg
+    :target: https://pypi.python.org/pypi/orion.core
+    :alt: Current PyPi Version
+
+.. |py_versions| image:: https://img.shields.io/pypi/pyversions/orion.core.svg
+    :target: https://pypi.python.org/pypi/orion.core
+    :alt: Supported Python Versions
+
+.. |license| image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
+    :target: https://opensource.org/licenses/BSD-3-Clause
+    :alt: BSD 3-clause license
+
+.. |rtfd| image:: https://readthedocs.org/projects/orion/badge/?version=latest
+    :target: https://orion.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
+.. |codecov| image:: https://codecov.io/gh/Epistimio/orion/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/Epistimio/orion
+    :alt: Codecov Report
+
+.. |travis| image:: https://travis-ci.org/Epistimio/orion.svg?branch=master
+    :target: https://travis-ci.org/Epistimio/orion
+    :alt: Travis tests
 
 Oríon is an asynchronous framework for black-box function optimization.
 
@@ -25,7 +45,7 @@ now what you have to do looks like this:
 
 Check out `user's guide-101`_ for the simplest of demonstrations!
 
-.. _user's guide-101: https://orion.readthedocs.io/en/latest/user/executing.html
+.. _user's guide-101: https://orion.readthedocs.io/en/latest/user/pytorch.html
 
 Features
 ========
@@ -58,7 +78,7 @@ Installation
 
 Install Oríon (beta) by running:
 
-``pip install git+https://github.com/mila-udem/orion.git@master``
+``pip install git+https://github.com/epistimio/orion.git@master``
 
 For more information read the `full installation docs`_.
 
@@ -71,8 +91,8 @@ Do you have a question or issues?
 Do you want to report a bug or suggest a feature? Name it!
 Please contact us by opening an issue in our repository below:
 
-- Issue Tracker: `<github.com/mila-udem/orion/issues>`_
-- Source Code: `<github.com/mila-udem/orion>`_
+- Issue Tracker: `<https://github.com/epistimio/orion/issues>`_
+- Source Code: `<https://github.com/epistimio/orion>`_
 
 Start by starring and forking our Github repo!
 

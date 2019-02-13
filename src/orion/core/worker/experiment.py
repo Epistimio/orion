@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=protected-access
+# pylint:disable=protected-access,too-many-public-methods
 """
 :mod:`orion.core.worker.experiment` -- Description of an optimization attempt
 =============================================================================
@@ -25,6 +25,8 @@ from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
+from orion.core.worker.strategy import (BaseParallelStrategy,
+                                        Strategy)
 from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
@@ -83,7 +85,8 @@ class Experiment(object):
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
-                 'algorithms', '_db', '_init_done', '_id', '_node', '_last_fetched')
+                 'algorithms', 'producer', '_db', '_init_done', '_id',
+                 '_node', '_last_fetched')
     non_branching_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name):
@@ -114,6 +117,7 @@ class Experiment(object):
         self.pool_size = None
         self.max_trials = None
         self.algorithms = None
+        self.producer = {'strategy': None}
 
         config = self._db.read('experiments',
                                {'name': name, 'metadata.user': user})
@@ -127,7 +131,7 @@ class Experiment(object):
             config = sorted(config, key=lambda x: x['metadata']['datetime'],
                             reverse=True)[0]
             for attrname in self.__slots__:
-                if not attrname.startswith('_'):
+                if not attrname.startswith('_') and attrname in config:
                     setattr(self, attrname, config[attrname])
             self._id = config['_id']
 
@@ -259,22 +263,58 @@ class Experiment(object):
         trial.status = 'completed'
         self._db.write('trials', trial.to_dict(), query={'_id': trial.id})
 
-    def register_trials(self, trials):
-        """Inform database about *new* suggested trial with specific parameter
-        values. Each of them correspond to a different possible run.
+    def register_lie(self, lying_trial):
+        """Register a *fake* trial created by the strategist.
 
-        :type trials: list of `Trial`
+        The main difference between fake trial and orignal ones is the addition of a fake objective
+        result, and status being set to completed. The id of the fake trial is different than the id
+        of the original trial, but the original id can be computed using the hashcode on parameters
+        of the fake trial. See mod:`orion.core.worker.strategy` for more information and the
+        Strategist object and generation of fake trials.
+
+        Parameters
+        ----------
+        trials: `Trial` object
+            Fake trial to register in the database
+
+        Raises
+        ------
+        orion.core.io.database.DuplicateKeyError
+            If a trial with the same id already exist in the database. Since the id is computed
+            based on a hashing of the trial, this should mean that an identical trial already exist
+            in the database.
+
         """
-        try:
-            stamp = datetime.datetime.utcnow()
-            for trial in trials:
-                trial.experiment = self._id
-                trial.status = 'new'
-                trial.submit_time = stamp
-            trials_dicts = list(map(lambda x: x.to_dict(), trials))
-            self._db.write('trials', trials_dicts)
-        except DuplicateKeyError:
-            pass
+        lying_trial.status = 'completed'
+        lying_trial.end_time = datetime.datetime.utcnow()
+
+        self._db.write('lying_trials', lying_trial.to_dict())
+
+    def register_trial(self, trial):
+        """Register new trial in the database.
+
+        Inform database about *new* suggested trial with specific parameter values. Trials may only
+        be registered one at a time to avoid registration of duplicates.
+
+        Parameters
+        ----------
+        trials: `Trial` object
+            Trial to register in the database
+
+        Raises
+        ------
+        orion.core.io.database.DuplicateKeyError
+            If a trial with the same id already exist in the database. Since the id is computed
+            based on a hashing of the trial, this should mean that an identical trial already exist
+            in the database.
+
+        """
+        stamp = datetime.datetime.utcnow()
+        trial.experiment = self._id
+        trial.status = 'new'
+        trial.submit_time = stamp
+
+        self._db.write('trials', trial.to_dict())
 
     def fetch_completed_trials(self):
         """Fetch recent completed trials that this `Experiment` instance has not
@@ -288,7 +328,6 @@ class Experiment(object):
         :return: list of completed `Trial` objects
         """
         query = dict(
-            experiment=self._id,
             status='completed',
             end_time={'$gte': self._last_fetched}
             )
@@ -296,6 +335,22 @@ class Experiment(object):
         self._last_fetched = datetime.datetime.utcnow()
 
         return completed_trials
+
+    def fetch_noncompleted_trials(self):
+        """Fetch non-completed trials of this `Experiment` instance.
+
+        .. note::
+
+            It will return all non-completed trials, including new, reserved, suspended,
+            interruped and broken ones.
+
+        :return: list of non-completed `Trial` objects
+        """
+        query = dict(
+            status={'$ne': 'completed'}
+            )
+
+        return self.fetch_trials_tree(query)
 
     # pylint: disable=invalid-name
     @property
@@ -305,6 +360,19 @@ class Experiment(object):
         Value is `None` if the experiment is not configured.
         """
         return self._id
+
+    @property
+    def node(self):
+        """Node of the experiment in the version control tree.
+
+        Value is `None` if the experiment is not connected to the version control tree.
+
+        .. seealso::
+
+            :py:meth:`orion.core.worker.experiment.Experiment.connect_to_version_control_tree`
+
+        """
+        return self._node
 
     @property
     def is_done(self):
@@ -353,6 +421,10 @@ class Experiment(object):
             if self._init_done and attrname == "refers" and attribute.get("adapter"):
                 config[attrname] = copy.deepcopy(config[attrname])
                 config[attrname]['adapter'] = config[attrname]['adapter'].configuration
+
+            if self._init_done and attrname == "producer" and attribute.get("strategy"):
+                config[attrname] = copy.deepcopy(config[attrname])
+                config[attrname]['strategy'] = config[attrname]['strategy'].configuration
 
         # Reason for deepcopy is that some attributes are dictionaries
         # themselves, we don't want to accidentally change the state of this
@@ -546,6 +618,13 @@ class Experiment(object):
         if self.refers and not isinstance(self.refers.get('adapter'), BaseAdapter):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
+        if not self.producer.get('strategy'):
+            log.warning('You have not set a producer strategy, the basic '
+                        'NoParallelStrategy will be used')
+            self.producer = {'strategy': Strategy(of_type="NoParallelStrategy")}
+        elif not isinstance(self.producer.get('strategy'), BaseParallelStrategy):
+            self.producer = {'strategy': Strategy(of_type=self.producer['strategy'])}
+
     def _branch_config(self, conflicts, branching_configuration):
         """Ask for a different identifier for this experiment. Set :attr:`refers`
         key to previous experiment's name, the one that we branched from.
@@ -607,7 +686,7 @@ class ExperimentView(object):
     #                     Attributes
     valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials"] +
                         # Properties
-                        ["id", "is_done", "space", "algorithms", "stats", "configuration"] +
+                        ["id", "node", "is_done", "space", "algorithms", "stats", "configuration"] +
                         # Methods
                         ["fetch_trials", "fetch_trials_tree", "fetch_completed_trials",
                          "connect_to_version_control_tree"])
@@ -635,11 +714,11 @@ class ExperimentView(object):
         try:
             self._experiment.configure(self._experiment.configuration, enable_branching=False)
         except ValueError as e:
-            if "Configuration is different and generate a branching event" in str(e):
+            if "Configuration is different and generates a branching event" in str(e):
                 raise RuntimeError(
                     "Configuration in the database does not correspond to the one generated by "
                     "Experiment object. This is likely due to a backward incompatible update in "
-                    "Oríon. Please repport to https://github.com/mila-udem/orion/issues.") from e
+                    "Oríon. Please report to https://github.com/epistimio/orion/issues.") from e
 
             raise
 

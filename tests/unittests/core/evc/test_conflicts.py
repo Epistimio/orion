@@ -233,9 +233,13 @@ class TestCodeConflict(object):
             code_conflict.try_resolve("bad-change-type")
         assert "Invalid code change type 'bad-change-type'" in str(exc.value)
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_repr(self, code_conflict):
         """Verify the representation of conflict for user interface"""
-        assert repr(code_conflict) == "Old hash commit 'old' != new hash commit 'new'"
+        assert repr(code_conflict) == "Old hash commit '{'HEAD_sha': 'test', "\
+                                      "'active_branch': None, 'diff_sha': 'diff', "\
+                                      "'is_dirty': False, 'type': 'git'}'  "\
+                                      "!= new hash commit ''to be changed''"
 
 
 class TestCommandLineConflict(object):

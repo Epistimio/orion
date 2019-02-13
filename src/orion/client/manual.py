@@ -54,4 +54,6 @@ def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
     new_trials = list(
         map(lambda data: format_trials.tuple_to_trial(data, experiment_view.space),
             valid_points))
-    ExperimentBuilder().build_from(experiment_view.configuration).register_trials(new_trials)
+
+    for new_trial in new_trials:
+        ExperimentBuilder().build_from(experiment_view.configuration).register_trial(new_trial)
