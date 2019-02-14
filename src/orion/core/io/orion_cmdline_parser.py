@@ -307,7 +307,7 @@ class OrionCmdlineParser():
 
         return False
 
-    def format(self, config_path, trial, experiment):
+    def format(self, config_path=None, trial=None, experiment=None):
         if self.file_config_path:
             self._create_config_file(config_path, trial, experiment)
         configuration = self._build_configuration(trial)
