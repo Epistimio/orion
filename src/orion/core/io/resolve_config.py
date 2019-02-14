@@ -254,10 +254,10 @@ def fetch_user_repo(user_script):
     dir_path = os.path.dirname(os.path.abspath(user_script))
     try:
         git_repo = git.Repo(dir_path, search_parent_directories=True)
-    except git.exc.InvalidGitRepositoryError as e:
+    except git.exc.InvalidGitRepositoryError:
         git_repo = None
-        raise RuntimeError('Script {} should be in a git repository.'.format(
-            os.path.abspath(user_script))) from e
+        logging.warning('Script %s is not in a git repository. Code modification '
+                        'won\'t be detected.', os.path.abspath(user_script))
     return git_repo
 
 
