@@ -27,7 +27,6 @@ def basic_config():
 
     return config
 
-<<<<<<< HEAD
 
 @pytest.fixture
 def to_format():
@@ -35,24 +34,12 @@ def to_format():
     return "python 1 --arg value --args value1 value2 --boolean"
 
 
-=======
->>>>>>> 02ddc20... Fix tests to work with new commandline parser
 def test_key_to_arg():
     """Test the key to arg function"""
     cmdline_parser = CmdlineParser()
     assert cmdline_parser._key_to_arg("c") == "-c"
     assert cmdline_parser._key_to_arg("test") == "--test"
-<<<<<<< HEAD
     assert cmdline_parser._key_to_arg("test-test") == "--test-test"
-=======
-    assert cmdline_parser._key_to_arg("test.test") == "--test.test"
-    assert cmdline_parser._key_to_arg("test_test") == "--test_test"
-    assert cmdline_parser._key_to_arg("test__test") == "--test__test"
-    assert cmdline_parser._key_to_arg("test-test") == "--test-test"
-    assert cmdline_parser._key_to_arg("test-some") == "--test-some"
-    assert cmdline_parser._key_to_arg("test.some") == "--test.some"
-    assert cmdline_parser._key_to_arg("test_some") == "--test_some"
->>>>>>> 02ddc20... Fix tests to work with new commandline parser
 
 
 def test_parse_paths(monkeypatch):

@@ -119,7 +119,6 @@ class Experiment(object):
         self.max_trials = None
         self.algorithms = None
         self.producer = {'strategy': None}
-        self.parser = OrionCmdlineParser()
 
         config = self._db.read('experiments',
                                {'name': name, 'metadata.user': user})
