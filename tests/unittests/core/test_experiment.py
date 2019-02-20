@@ -880,3 +880,17 @@ class TestInitExperimentWithEVC(object):
         assert exp.pool_size == 2
         assert exp.max_trials == 1000
         assert exp.configuration['algorithms'] == {'random': {'seed': None}}
+
+    @pytest.mark.usefixtures("with_user_tsirif")
+    def test_experiment_non_interactive_branching(self, create_db_instance, random_dt, exp_config,
+                                                  monkeypatch):
+        """Configure an existing experiment with parent."""
+        monkeypatch.setattr('sys.__stdin__.isatty', lambda: True)
+        exp = Experiment('supernaedo2.1')
+        exp.algorithms = {'dumbalgo': {}}
+        with pytest.raises(OSError):
+            exp.configure(exp.configuration)
+        monkeypatch.undo()
+        with pytest.raises(ValueError) as exc_info:
+            exp.configure(exp.configuration)
+        assert "Configuration is different and generates a branching" in str(exc_info.value)
