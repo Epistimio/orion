@@ -583,12 +583,12 @@ class Experiment(object):
         # Just overwrite everything else given
         for section, value in config.items():
             if section not in self.__slots__:
-                log.warning("Found section '%s' in configuration. Experiments "
-                            "do not support this option. Ignoring.", section)
+                log.info("Found section '%s' in configuration. Experiments "
+                         "do not support this option. Ignoring.", section)
                 continue
             if section.startswith('_'):
-                log.warning("Found section '%s' in configuration. "
-                            "Cannot set private attributes. Ignoring.", section)
+                log.info("Found section '%s' in configuration. "
+                         "Cannot set private attributes. Ignoring.", section)
                 continue
 
             # Copy sub configuration to value confusing side-effects
