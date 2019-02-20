@@ -26,7 +26,7 @@ Recommended for users
 
 .. code-block:: sh
 
-   pip install git+https://github.com/mila-udem/orion.git@develop
+   pip install git+https://github.com/epistimio/orion.git@develop
 
 Note that the bleeding-edge branch is develop. The master branch is the same as the latest version
 on PyPI.
