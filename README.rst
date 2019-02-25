@@ -82,7 +82,7 @@ Install Oríon (beta) by running:
 
 For more information read the `full installation docs`_.
 
-.. _full installation docs: https://orion.readthedocs.io/en/latest/installing.html
+.. _full installation docs: https://orion.readthedocs.io/en/latest/install/core.html
 
 Contribute or Ask
 =================
