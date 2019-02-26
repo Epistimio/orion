@@ -18,6 +18,9 @@ import numpy
 from orion.algo.space import (Categorical, Dimension, Fidelity, Integer, Real, Space)
 
 
+NON_LINEAR = ['loguniform', 'reciprocal']
+
+
 # pylint: disable=too-many-branches
 def build_required_space(requirements, original_space):
     """Build a `Space` object which agrees to the `requirements` imposed
@@ -51,19 +54,30 @@ def build_required_space(requirements, original_space):
     for dim in original_space.values():
         transformers = []
         type_ = dim.type
+        prior_name = dim._prior_name  # pylint: disable=protected-access
         base_domain_type = type_
         for requirement in requirements:
-            if type_ == 'real' and requirement in ('real', None) and dim.precision is not None:
+            # Real Dimensions
+            if type_ == 'real' and requirement == 'linear' and prior_name in NON_LINEAR:
+                transformers.append(Linearize())
+            # NOTE: Not elif, because we stack a Precision above Linearize if necessary.
+            if (type_ == 'real' and
+                    (requirement in ('real', 'linear', None)) and
+                    (dim.precision is not None)):
                 transformers.append(Precision(dim.precision))
-            elif type_ == 'real' and requirement in ('real', None):
-                pass
             elif type_ == 'real' and requirement == 'integer':
                 transformers.append(Quantize())
-            elif type_ == 'integer' and requirement in ('integer', None):
-                pass
+            # Integer Dimensions
             elif type_ == 'integer' and requirement == 'real':
                 transformers.append(Reverse(Quantize()))
-            elif type_ == 'categorical' and requirement == 'real':
+            elif type_ == 'integer' and requirement == 'linear' and prior_name in NON_LINEAR:
+                transformers.extend([Reverse(Quantize()), Linearize()])
+            elif type_ == 'integer' and requirement == 'linear':
+                transformers.append(Reverse(Quantize()))
+            elif type_ == 'integer' and requirement in ('integer', None):
+                pass
+            # Categorical Dimensions
+            elif type_ == 'categorical' and requirement in ('real', 'linear'):
                 transformers.extend([Enumerate(dim.categories),
                                      OneHotEncode(len(dim.categories))])
             elif type_ == 'categorical' and requirement == 'integer':
@@ -401,6 +415,21 @@ class OneHotEncode(Transformer):
 
     def _get_hashable_members(self):
         return super(OneHotEncode, self)._get_hashable_members() + (self.num_cats, )
+
+
+class Linearize(Transformer):
+    """Transform real numbers from loguniform to linear."""
+
+    domain_type = 'real'
+    target_type = 'real'
+
+    def transform(self, point):
+        """Linearize logarithmic distribution."""
+        return numpy.log(numpy.asarray(point))
+
+    def reverse(self, transformed_point):
+        """Turn linear distribution to logarithmic distribution."""
+        return numpy.exp(numpy.asarray(transformed_point))
 
 
 # pylint:disable=too-many-public-methods
