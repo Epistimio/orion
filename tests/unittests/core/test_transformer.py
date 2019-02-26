@@ -9,7 +9,7 @@ import pytest
 
 from orion.algo.space import (Categorical, Dimension, Integer, Real, Space,)
 from orion.core.worker.transformer import (build_required_space,
-                                           Compose, Enumerate, Identity,
+                                           Compose, Enumerate, Identity, Linearize,
                                            OneHotEncode, Precision, Quantize, Reverse,
                                            TransformedDimension, TransformedSpace,)
 
@@ -454,10 +454,52 @@ class TestOneHotEncode(object):
         assert t.repr_format('asfa') == 'OneHotEncode(asfa)'
 
 
+class TestLinearize(object):
+    """Test subclasses of `Linearize` transformation."""
+
+    def test_domain_and_target_type(self):
+        """Check if attribute-like `domain_type` and `target_type` do
+        what's expected.
+        """
+        t = Linearize()
+        assert t.domain_type == 'real'
+        assert t.target_type == 'real'
+
+    def test_transform(self):
+        """Check if it transforms properly."""
+        t = Linearize()
+        assert t.transform(numpy.e) == 1
+        t.transform(0)
+
+    def test_reverse(self):
+        """Check if it reverses `transform` properly."""
+        t = Linearize()
+        assert t.reverse(1) == numpy.e
+
+    def test_repr_format(self):
+        """Check representation of a transformed dimension."""
+        t = Linearize()
+        assert t.repr_format(1.0) == 'Linearize(1.0)'
+
+
 @pytest.fixture(scope='module')
 def dim():
     """Create an example of `Dimension`."""
     dim = Real('yolo', 'norm', 0.9, shape=(3, 2))
+    return dim
+
+
+@pytest.fixture(scope='module')
+def logdim():
+    """Create an log example of `Dimension`."""
+    dim = Real('yolo4', 'reciprocal', 1.0, 10.0, shape=(3, 2))
+    return dim
+
+
+@pytest.fixture(scope='module')
+def logintdim():
+    """Create an log integer example of `Dimension`."""
+    dim = Integer('yolo5', 'reciprocal', 1, 10, shape=(3, 2))
     return dim
 
 
@@ -694,11 +736,13 @@ class TestTransformedSpace(object):
 
 
 @pytest.fixture(scope='module')
-def space_each_type(dim, dim2):
+def space_each_type(dim, dim2, logdim, logintdim):
     """Create an example `Space`."""
     space = Space()
     space.register(dim)
     space.register(dim2)
+    space.register(logdim)
+    space.register(logintdim)
     space.register(Integer('yolo3', 'randint', 3, 10))
     return space
 
@@ -715,47 +759,83 @@ class TestRequiredSpaceBuilder(object):
     def test_no_requirement(self, space_each_type):
         """Check what is built using 'None' requirement."""
         tspace = build_required_space(None, space_each_type)
-        assert len(tspace) == 3
+        assert len(tspace) == 5
         assert tspace[0].type == 'real'
         assert tspace[1].type == 'categorical'
+        # NOTE:HEAD
         assert tspace[2].type == 'integer'
         assert (str(tspace) ==
                 "Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
                 "       Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None),\n"  # noqa
                 "       Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None)])")  # noqa
+        # TODO: Remove
+        # assert tspace[2].type == 'real'
+        # assert tspace[3].type == 'integer'
+        # assert tspace[4].type == 'integer'
+        # assert str(tspace) == str(space_each_type)
 
         tspace = build_required_space([], space_each_type)
-        assert len(tspace) == 3
+        assert len(tspace) == 5
         assert tspace[0].type == 'real'
         assert tspace[1].type == 'categorical'
+        # NOTE:HEAD
         assert tspace[2].type == 'integer'
         assert (str(tspace) ==
                 "Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
                 "       Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None),\n"  # noqa
                 "       Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None)])")  # noqa
+        # TODO: Remove
+        # assert tspace[2].type == 'real'
+        # assert tspace[3].type == 'integer'
+        # assert tspace[4].type == 'integer'
+        # assert str(tspace) == str(space_each_type)
 
     def test_integer_requirement(self, space_each_type):
         """Check what is built using 'integer' requirement."""
         tspace = build_required_space('integer', space_each_type)
-        assert len(tspace) == 3
+        assert len(tspace) == 5
         assert tspace[0].type == 'integer'
         assert tspace[1].type == 'integer'
         assert tspace[2].type == 'integer'
+        assert tspace[3].type == 'integer'
+        assert tspace[4].type == 'integer'
         assert(str(tspace) ==
                "Space([Quantize(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
                "       Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None)),\n"  # noqa
+               "       Quantize(Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None)),\n" # noqa
+               "       Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None),\n" # noqa
                "       Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None)])")  # noqa
 
     def test_real_requirement(self, space_each_type):
         """Check what is built using 'real' requirement."""
         tspace = build_required_space('real', space_each_type)
-        assert len(tspace) == 3
+        assert len(tspace) == 5
         assert tspace[0].type == 'real'
         assert tspace[1].type == 'real'
         assert tspace[2].type == 'real'
+        assert tspace[3].type == 'real'
+        assert tspace[4].type == 'real'
+        assert(str(tspace) ==
+               "Space([Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None),\n"  # noqa
+               "       OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None))),\n"  # noqa
+               "       Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None),\n" # noqa
+               "       ReverseQuantize(Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)),\n" # noqa
+               "       ReverseQuantize(Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None))])")  # noqa
+
+    def test_linear_requirement(self, space_each_type):
+        """Check what is built using 'linear' requirement."""
+        tspace = build_required_space('linear', space_each_type)
+        assert len(tspace) == 5
+        assert tspace[0].type == 'real'
+        assert tspace[1].type == 'real'
+        assert tspace[2].type == 'real'
+        assert tspace[3].type == 'real'
+        assert tspace[4].type == 'real'
         assert(str(tspace) ==
                "Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
                "       OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None))),\n"  # noqa
+               "       Linearize(Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None)),\n" # noqa
+               "       Linearize(ReverseQuantize(Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None))),\n" # noqa
                "       ReverseQuantize(Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None))])")  # noqa
 
     def test_capacity(self, space_each_type):
