@@ -206,8 +206,8 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
                          "--config", "./stress_gradient.yaml",
                          "./dir_per_trial.py",
                          "--dir={}".format(str(tmpdir)),
-                         "--other-name", "exp.name",
-                         "--name", "trial.hash_name",
+                         "--other-name", "{exp.name}",
+                         "--name", "{trial.hash_name}",
                          "-x~gaussian(30, 10)"])
 
     exp = list(database.experiments.find({'name': 'lalala'}))

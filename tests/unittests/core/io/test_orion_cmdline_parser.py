@@ -42,7 +42,7 @@ def commandline_fluff(commandline):
 def cmd_with_properties(commandline):
     """Add extra arguments that use `trial` and `exp` properties"""
     cmd_args = commandline
-    cmd_args.extend(["--trial-name", "{trial.name}", "--exp-name", "{exp.name}"])
+    cmd_args.extend(["--trial-name", "{trial.hash_name}", "--exp-name", "{exp.name}"])
 
     return cmd_args
 
@@ -187,7 +187,7 @@ def test_format_commandline_and_config(parser, commandline, json_config, tmpdir,
 
     cmd_inst = parser.format(output_file, trial)
 
-    assert cmd_inst == ["--seed", "555", "--lr", "-2.4", '--config', output_file,
+    assert cmd_inst == ['--config', output_file, "--seed", "555", "--lr", "-2.4",
                         "--non-prior", "choices({'sgd': 0.2, 'adam': 0.8})", "--prior", "sgd"]
 
     output_data = json_converter.parse(output_file)
@@ -202,11 +202,11 @@ def test_format_with_properties(parser, cmd_with_properties, hacked_exp):
     """Test if format correctly puts the value of `trial` and `exp` when used as properties"""
     parser.parse(cmd_with_properties)
 
-    trial = Trial(name='trial_test', params=[
+    trial = Trial(experiment='trial_test', params=[
         {'name': '/lr', 'type': 'real', 'value': -2.4},
         {'name': '/prior', 'type': 'categorical', 'value': 'sgd'}])
 
-    cmd_line = parser.parse(None, trial=trial, exp=hacked_exp)
+    cmd_line = parser.format(None, trial=trial, experiment=hacked_exp)
 
-    assert 'trial_test' in cmd_line
+    assert trial.hash_name in cmd_line
     assert 'supernaedo2' in cmd_line
