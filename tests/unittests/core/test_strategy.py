@@ -14,8 +14,7 @@ from orion.core.worker.trial import Trial
 def observations():
     """10 objective observations"""
     points = [i for i in range(10)]
-    results = [Trial.Result(name='foo', type='objective', value=points[i])
-               for i in range(10)]
+    results = [{'objective': points[i]} for i in range(10)]
 
     return points, results
 
@@ -51,9 +50,7 @@ class TestParallelStrategies:
         strategy.observe(points, results)
         lying_result = strategy.lie(incomplete_trial)
 
-        objective_results = [result for result in results
-                             if result.type == 'objective']
-        max_value = max(result.value for result in objective_results)
+        max_value = max(result['objective'] for result in results)
         assert lying_result.value == max_value
 
     def test_mean_parallel_strategy(self, observations, incomplete_trial):
@@ -64,10 +61,8 @@ class TestParallelStrategies:
         strategy.observe(points, results)
         lying_result = strategy.lie(incomplete_trial)
 
-        objective_results = [result for result in results
-                             if result.type == 'objective']
-        mean_value = (sum(result.value for result in objective_results) /
-                      float(len(objective_results)))
+        mean_value = (sum(result['objective'] for result in results) /
+                      float(len(results)))
         assert lying_result.value == mean_value
 
     def test_no_parallel_strategy(self, observations, incomplete_trial):
