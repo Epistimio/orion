@@ -260,6 +260,7 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
         exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        exp_config[0][0]['algorithms']['dumbalgo']['seed'] = None
         exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
@@ -279,6 +280,7 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
         exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        exp_config[0][0]['algorithms']['dumbalgo']['seed'] = None
         exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
@@ -305,6 +307,7 @@ class TestConfigProperty(object):
         new_config['algorithms']['dumbalgo']['scoring'] = 0
         new_config['algorithms']['dumbalgo']['suspend'] = False
         new_config['algorithms']['dumbalgo']['value'] = 5
+        new_config['algorithms']['dumbalgo']['seed'] = None
         new_config['refers'] = {'adapter': [], 'parent_id': None, 'root_id': _id}
         assert found_config[0] == new_config
         assert exp.name == new_config['name']
@@ -353,6 +356,7 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
         exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        exp_config[0][0]['algorithms']['dumbalgo']['seed'] = None
         exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
@@ -484,6 +488,7 @@ class TestConfigProperty(object):
         new_config['algorithms']['dumbalgo']['scoring'] = 0
         new_config['algorithms']['dumbalgo']['suspend'] = False
         new_config['algorithms']['dumbalgo']['value'] = 5
+        new_config['algorithms']['dumbalgo']['seed'] = None
         assert exp._id == new_config.pop('_id')
         assert exp.configuration['algorithms'] == new_config['algorithms']
 
@@ -836,13 +841,13 @@ class TestInitExperimentWithEVC(object):
         assert exp._last_fetched == random_dt
         assert exp.pool_size is None
         assert exp.max_trials is None
-        assert exp.configuration['algorithms'] == {'random': {}}
+        assert exp.configuration['algorithms'] == {'random': {'seed': None}}
 
     @pytest.mark.usefixtures("with_user_tsirif")
     def test_experiment_with_parent(self, create_db_instance, random_dt, exp_config):
         """Configure an existing experiment with parent."""
         exp = Experiment('supernaedo2.1')
-        exp.algorithms = {'random': {}}
+        exp.algorithms = {'random': {'seed': None}}
         exp.configure(exp.configuration)
         assert exp._init_done is True
         assert exp._db is create_db_instance
@@ -852,4 +857,4 @@ class TestInitExperimentWithEVC(object):
         assert exp.metadata == exp_config[0][4]['metadata']
         assert exp.pool_size == 2
         assert exp.max_trials == 1000
-        assert exp.configuration['algorithms'] == {'random': {}}
+        assert exp.configuration['algorithms'] == {'random': {'seed': None}}

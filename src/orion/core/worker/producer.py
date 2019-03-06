@@ -63,14 +63,16 @@ class Producer(object):
             log.debug("### Algorithm suggests new points.")
 
             new_points = self.naive_algorithm.suggest(self.pool_size)
+            # Dummy sample to keep the original algorithm's rng state incrementing.
+            self.algorithm.suggest(self.pool_size)
 
             for new_point in new_points:
                 log.debug("#### Convert point to `Trial` object.")
                 new_trial = format_trials.tuple_to_trial(new_point, self.space)
                 try:
                     new_trial.parents = self.naive_trials_history.children
-                    self.experiment.register_trial(new_trial)
                     log.debug("#### Register new trial to database: %s", new_trial)
+                    self.experiment.register_trial(new_trial)
                     sampled_points += 1
                 except DuplicateKeyError:
                     log.debug("#### Duplicate sample. Updating algo to produce new ones.")

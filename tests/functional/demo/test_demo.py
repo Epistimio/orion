@@ -6,6 +6,7 @@ import subprocess
 
 import numpy
 import pytest
+import yaml
 
 import orion.core.cli
 from orion.core.io.database import Database
@@ -32,7 +33,7 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     assert exp['name'] == 'default_algo'
     assert exp['pool_size'] == 10
     assert exp['max_trials'] == 30
-    assert exp['algorithms'] == {'random': {}}
+    assert exp['algorithms'] == {'random': {'seed': None}}
     assert 'user' in exp['metadata']
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
@@ -108,7 +109,7 @@ def test_demo_two_workers(database, monkeypatch):
     assert exp['name'] == 'two_workers_demo'
     assert exp['pool_size'] == 2
     assert exp['max_trials'] == 400
-    assert exp['algorithms'] == {'random': {}}
+    assert exp['algorithms'] == {'random': {'seed': None}}
     assert 'user' in exp['metadata']
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
