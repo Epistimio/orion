@@ -1,0 +1,9 @@
+name: strategy_demo
+
+producer:
+    strategy: NoParallelStrategy
+
+database:
+  type: 'mongodb'
+  name: 'orion_test'
+  host: 'mongodb://user:pass@localhost'

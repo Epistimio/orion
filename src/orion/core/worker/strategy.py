@@ -52,6 +52,9 @@ class BaseParallelStrategy(object, metaclass=ABCMeta):
            Contains the result of an evaluation; partial information about the
            black-box function at each point in `params`.
         """
+        # NOTE: In future points and results will be converted to trials for coherence with
+        # `Strategy.lie()` as well as for coherence with `Algorithm.observe` which will also be
+        # converted to expect trials instead of lists and dictionaries.
         pass
 
     @abstractmethod
@@ -93,8 +96,8 @@ class MaxParallelStrategy(BaseParallelStrategy):
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
         super(MaxParallelStrategy, self).observe(points, results)
-        self.max_result = max(result.value for result in results
-                              if result.type == 'objective')
+        self.max_result = max(result['objective'] for result in results
+                              if result['objective'] is not None)
 
     def lie(self, trial):
         """See BaseParallelStrategy.lie"""
@@ -114,7 +117,8 @@ class MeanParallelStrategy(BaseParallelStrategy):
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
         super(MeanParallelStrategy, self).observe(points, results)
-        objective_values = [result.value for result in results if result.type == 'objective']
+        objective_values = [result['objective'] for result in results
+                            if result['objective'] is not None]
         self.mean_result = sum(value for value in objective_values) / float(len(objective_values))
 
     def lie(self, trial):
