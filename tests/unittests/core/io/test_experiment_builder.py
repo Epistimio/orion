@@ -178,7 +178,7 @@ def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_d
     assert exp._last_fetched == random_dt
     assert exp.pool_size == 1
     assert exp.max_trials == 100
-    assert exp.algorithms.configuration == {'random': {}}
+    assert exp.algorithms.configuration == {'random': {'seed': None}}
 
 
 @pytest.mark.usefixtures("version_XYZ", "clean_db", "null_db_instances", "with_user_tsirif",
@@ -234,7 +234,7 @@ def test_build_from_config_no_hit(config_file, create_db_instance, exp_config, r
     assert exp.pool_size == 1
     assert exp.max_trials == 100
     assert not exp.is_done
-    assert exp.algorithms.configuration == {'random': {}}
+    assert exp.algorithms.configuration == {'random': {'seed': None}}
 
 
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
