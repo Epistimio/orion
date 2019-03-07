@@ -109,6 +109,7 @@ def fetch_default_options():
 
     # get some defaults
     default_config['name'] = None
+    default_config['user'] = getpass.getuser()
     default_config['max_trials'] = DEF_CMD_MAX_TRIALS[0]
     default_config['worker_trials'] = DEF_CMD_WORKER_TRIALS[0]
     default_config['pool_size'] = DEF_CMD_POOL_SIZE[0]

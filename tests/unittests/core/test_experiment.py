@@ -3,6 +3,7 @@
 """Collection of tests for :mod:`orion.core.worker.experiment`."""
 
 import copy
+import getpass
 import random
 
 import pytest
@@ -508,6 +509,27 @@ class TestConfigProperty(object):
         exp.configure(exp_config[0][2])
 
         assert not exp.is_done
+
+
+@pytest.mark.usefixtures("create_db_instance", "with_user_bouthilx")
+def test_forcing_user(exp_config):
+    """Trying to set by forcing user so that NO differences are found."""
+    assert getpass.getuser() == 'bouthilx'
+    exp = Experiment('supernaedo2')
+    assert exp.metadata['user'] == 'bouthilx'
+    exp = Experiment('supernaedo2', 'tsirif')
+    # Deliver an external configuration to finalize init
+    exp_config[0][0]['max_trials'] = 5000
+    exp.configure(exp_config[0][0])
+    exp_config[0][0]['algorithms']['dumbalgo']['done'] = False
+    exp_config[0][0]['algorithms']['dumbalgo']['judgement'] = None
+    exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
+    exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
+    exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+    exp_config[0][0]['algorithms']['dumbalgo']['seed'] = None
+    exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
+    assert exp._id == exp_config[0][0].pop('_id')
+    assert exp.configuration == exp_config[0][0]
 
 
 class TestReserveTrial(object):
