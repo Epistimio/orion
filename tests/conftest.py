@@ -54,8 +54,6 @@ class DumbAlgo(BaseAlgorithm):
         rval = []
         while len(rval) < num:
             value = self.possible_values[min(self._index, len(self.possible_values) - 1)]
-            print(self.possible_values)
-            print(self._index, value)
             self._index += 1
             rval.append(value)
 
