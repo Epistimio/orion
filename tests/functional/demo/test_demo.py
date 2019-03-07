@@ -251,7 +251,6 @@ def test_run_with_name_only(database, monkeypatch):
     exp = list(database.experiments.find({'name': 'demo_random_search'}))
     assert len(exp) == 1
     exp = exp[0]
-    print(exp['max_trials'])
     assert '_id' in exp
     exp_id = exp['_id']
     trials = list(database.trials.find({'experiment': exp_id}))
@@ -272,7 +271,6 @@ def test_run_with_name_only_with_trailing_whitespace(database, monkeypatch):
     exp = list(database.experiments.find({'name': 'demo_random_search'}))
     assert len(exp) == 1
     exp = exp[0]
-    print(exp['max_trials'])
     assert '_id' in exp
     exp_id = exp['_id']
     trials = list(database.trials.find({'experiment': exp_id}))
@@ -295,9 +293,6 @@ def test_run_with_parallel_strategy(database, monkeypatch, strategy):
         config['producer']['strategy'] = strategy
         f.write(yaml.dump(config))
 
-    with open(config_file, 'r') as f:
-        print(yaml.load(f.read()))
-
     orion.core.cli.main(["hunt", "--max-trials", "20", "--pool-size", "1",
                          "--config", config_file,
                          "./black_box.py", "-x~uniform(-50, 50)"])
@@ -308,7 +303,6 @@ def test_run_with_parallel_strategy(database, monkeypatch, strategy):
     assert len(exp) == 1
     exp = exp[0]
     assert exp['producer']['strategy'] == strategy
-    print(exp['max_trials'])
     assert '_id' in exp
     exp_id = exp['_id']
     trials = list(database.trials.find({'experiment': exp_id}))

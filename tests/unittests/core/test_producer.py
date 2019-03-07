@@ -387,8 +387,6 @@ def test_concurent_producers(producer, database, random_dt):
     trials_in_db_before = database.trials.count()
     new_trials_in_db_before = database.trials.count({'status': 'new'})
 
-    print(producer.experiment.fetch_trials({}))
-
     # Set so that first producer's algorithm generate valid point on first time
     # And second producer produce same point and thus must produce next one two.
     # Hence, we know that producer algo will have _num == 1 and
@@ -405,11 +403,7 @@ def test_concurent_producers(producer, database, random_dt):
     producer.update()
     second_producer.update()
 
-    print(producer.algorithm.algorithm._index)
-    print(second_producer.algorithm.algorithm._index)
     producer.produce()
-    print(producer.algorithm.algorithm._index)
-    print(second_producer.algorithm.algorithm._index)
     second_producer.produce()
 
     # Algorithm was required to suggest some trials
