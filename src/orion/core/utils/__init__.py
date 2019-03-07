@@ -198,7 +198,7 @@ class Wrapper(object):
         """
         self.instance = None
         self.module = self._get_module()
-        self.factory = self.factory_type('Factory', (self.wraps,), globals())
+        self.factory = self.factory_type('Factory', (self.wraps,), {})
 
         for key, item in kwargs.items():
 
