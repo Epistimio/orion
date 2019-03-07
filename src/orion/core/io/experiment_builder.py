@@ -178,6 +178,9 @@ class ExperimentBuilder(object):
         exp_config = resolve_config.merge_configs(
             default_options, env_vars, copy.deepcopy(config_from_db), cmdconfig, cmdargs, metadata)
 
+        if 'user' in exp_config:
+            exp_config['metadata']['user'] = exp_config['user']
+
         # TODO: Find a better solution
         if isinstance(exp_config['algorithms'], dict) and len(exp_config['algorithms']) > 1:
             for key in list(config_from_db['algorithms'].keys()):
@@ -218,7 +221,7 @@ class ExperimentBuilder(object):
                                "Please use either `name` cmd line arg or provide "
                                "one in orion's configuration file.")
 
-        return ExperimentView(local_config["name"])
+        return ExperimentView(local_config["name"], local_config.get('user', None))
 
     def build_from(self, cmdargs):
         """Build a fully configured (and writable) experiment based on full configuration.
@@ -264,7 +267,7 @@ class ExperimentBuilder(object):
         config.pop('database', None)
         config.pop('resources', None)
 
-        experiment = Experiment(config['name'])
+        experiment = Experiment(config['name'], config.get('user', None))
 
         # Finish experiment's configuration and write it to database.
         experiment.configure(config)
