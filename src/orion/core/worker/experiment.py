@@ -620,9 +620,7 @@ class Experiment(object):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
         if not self.producer.get('strategy'):
-            log.warning('You have not set a producer strategy, the basic '
-                        'NoParallelStrategy will be used')
-            self.producer = {'strategy': Strategy(of_type="NoParallelStrategy")}
+            self.producer = {'strategy': Strategy(of_type="MaxParallelStrategy")}
         elif not isinstance(self.producer.get('strategy'), BaseParallelStrategy):
             self.producer = {'strategy': Strategy(of_type=self.producer['strategy'])}
 
