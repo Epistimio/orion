@@ -33,6 +33,7 @@ class TestPrimaryAlgoWraps(object):
         assert isinstance(palgo.algorithm, dumbalgo)
         assert palgo.configuration == {
             'dumbalgo': {
+                'seed': None,
                 'value': fixed_suggestion,
                 'scoring': 0,
                 'judgement': None,
@@ -40,6 +41,7 @@ class TestPrimaryAlgoWraps(object):
                 'done': False,
                 'subone': {
                     'dumbalgo': {
+                        'seed': None,
                         'value': 6,
                         'scoring': 5,
                         'judgement': None,

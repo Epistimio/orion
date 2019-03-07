@@ -20,11 +20,12 @@ class DumbAlgo(BaseAlgorithm):
 
     def __init__(self, space, value=5,
                  scoring=0, judgement=None,
-                 suspend=False, done=False, **nested_algo):
+                 suspend=False, done=False, seed=None, **nested_algo):
         """Configure returns, allow for variable variables."""
         self._times_called_suspend = 0
         self._times_called_is_done = 0
         self._num = 0
+        self._index = 0
         self._points = []
         self._results = []
         self._score_point = None
@@ -35,7 +36,16 @@ class DumbAlgo(BaseAlgorithm):
                                        scoring=scoring, judgement=judgement,
                                        suspend=suspend,
                                        done=done,
+                                       seed=seed,
                                        **nested_algo)
+
+    def seed(self, seed):
+        """Set the index to seed.
+
+        Setting the seed as an index so that unit-tests can force the algorithm to suggest the same
+        values as if seeded.
+        """
+        self._index = seed if seed is not None else 0
 
     def suggest(self, num=1):
         """Suggest based on `value`."""
@@ -43,11 +53,8 @@ class DumbAlgo(BaseAlgorithm):
 
         rval = []
         while len(rval) < num:
-            if len(self.possible_values) > 1:
-                value = self.possible_values.pop(0)
-            else:
-                value = self.possible_values[0]
-
+            value = self.possible_values[min(self._index, len(self.possible_values) - 1)]
+            self._index += 1
             rval.append(value)
 
         self._suggested = rval

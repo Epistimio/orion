@@ -44,6 +44,7 @@ def producer(hacked_exp, random_dt, exp_config, categorical_values):
     hacked_exp.configure(exp_config[0][3])
     hacked_exp.pool_size = 1
     hacked_exp.algorithms.algorithm.possible_values = categorical_values
+    hacked_exp.algorithms.seed_rng(0)
 
     hacked_exp.producer['strategy'] = DumbParallelStrategy()
 
@@ -111,12 +112,31 @@ def test_strategist_observe_completed(producer):
 def test_naive_algorithm_is_producing(producer, database, random_dt):
     """Verify naive algo is used to produce, not original algo"""
     producer.experiment.pool_size = 1
-    producer.experiment.algorithms.algorithm.possible_values = [('rnn', 'gru')]
+    producer.algorithm.algorithm.possible_values = [('rnn', 'gru')]
     producer.update()
+    producer.algorithm.algorithm.possible_values = [('gru', 'gru')]
     producer.produce()
 
     assert producer.naive_algorithm.algorithm._num == 1  # pool size
-    assert producer.algorithm.algorithm._num == 0
+    assert producer.algorithm.algorithm._num == 1
+    assert producer.naive_algorithm.algorithm._suggested == [('rnn', 'gru')]
+    assert producer.algorithm.algorithm._suggested == [('gru', 'gru')]
+
+    # Make sure the registered trial is the one sampled from naive not original algo
+    new_trials = list(database.trials.find({'status': 'new', 'submit_time': random_dt}))
+    assert len(new_trials) == 1
+    assert new_trials[0]['experiment'] == producer.experiment.name
+    assert new_trials[0]['start_time'] is None
+    assert new_trials[0]['end_time'] is None
+    assert new_trials[0]['results'] == []
+    assert new_trials[0]['params'] == [
+        {'name': '/encoding_layer',
+         'type': 'categorical',
+         'value': 'rnn'},
+        {'name': '/decoding_layer',
+         'type': 'categorical',
+         'value': 'gru'}
+        ]
 
 
 def test_update_and_produce(producer, database, random_dt):
@@ -362,17 +382,20 @@ def test_naive_algo_is_discared(producer, database, monkeypatch):
     assert len(producer.naive_algorithm.algorithm._points) == (3 + 5)
 
 
-@pytest.mark.skip(reason="Waiting for rebase on non-blocking design PR...")
 def test_concurent_producers(producer, database, random_dt):
     """Test concurrent production of new trials."""
     trials_in_db_before = database.trials.count()
     new_trials_in_db_before = database.trials.count({'status': 'new'})
 
+    print(producer.experiment.fetch_trials({}))
+
     # Set so that first producer's algorithm generate valid point on first time
     # And second producer produce same point and thus must produce next one two.
     # Hence, we know that producer algo will have _num == 1 and
     # second producer algo will have _num == 2
-    producer.experiment.algorithms.algorithm.possible_values = [('rnn', 'gru'), ('gru', 'gru')]
+    producer.algorithm.algorithm.possible_values = [('rnn', 'gru'), ('gru', 'gru')]
+    # Make sure it starts from index 0
+    producer.algorithm.seed_rng(0)
 
     assert producer.experiment.pool_size == 1
 
@@ -382,7 +405,11 @@ def test_concurent_producers(producer, database, random_dt):
     producer.update()
     second_producer.update()
 
+    print(producer.algorithm.algorithm._index)
+    print(second_producer.algorithm.algorithm._index)
     producer.produce()
+    print(producer.algorithm.algorithm._index)
+    print(second_producer.algorithm.algorithm._index)
     second_producer.produce()
 
     # Algorithm was required to suggest some trials
@@ -418,7 +445,6 @@ def test_concurent_producers(producer, database, random_dt):
         ]
 
 
-@pytest.mark.skip(reason="Waiting for rebase on non-blocking design PR...")
 def test_duplicate_within_pool(producer, database, random_dt):
     """Test that an algo suggesting multiple points can have a few registered even
     if one of them is a duplicate.
@@ -465,7 +491,6 @@ def test_duplicate_within_pool(producer, database, random_dt):
         ]
 
 
-@pytest.mark.skip(reason="Waiting for rebase on non-blocking design PR...")
 def test_duplicate_within_pool_and_db(producer, database, random_dt):
     """Test that an algo suggesting multiple points can have a few registered even
     if one of them is a duplicate with db.
@@ -512,7 +537,6 @@ def test_duplicate_within_pool_and_db(producer, database, random_dt):
         ]
 
 
-@pytest.mark.skip(reason="Waiting for rebase on non-blocking design PR...")
 def test_exceed_max_attempts(producer, database, random_dt):
     """Test that RuntimeError is raised when algo keep suggesting the same points"""
     producer.max_attempts = 10  # to limit run-time, default would work as well.
@@ -525,3 +549,32 @@ def test_exceed_max_attempts(producer, database, random_dt):
     with pytest.raises(RuntimeError) as exc_info:
         producer.produce()
     assert "Looks like the algorithm keeps suggesting" in str(exc_info.value)
+
+
+def test_original_seeding(producer, database):
+    """Verify that rng state in original algo changes when duplicate trials is discarded"""
+    assert producer.experiment.pool_size == 1
+
+    producer.algorithm.seed_rng(0)
+
+    assert producer.algorithm.algorithm._index == 0
+
+    producer.update()
+    producer.produce()
+
+    prev_index = producer.algorithm.algorithm._index
+    prev_suggested = producer.algorithm.algorithm._suggested
+    assert prev_index > 0
+
+    # Force the algo back to 1 to make sure the RNG state of original algo keeps incrementing.
+    # This is necessary because naive_algo is recopied from original algo and thus would always get
+    # the same RNG state if the original algo RNG state would not increment.
+    # See `Producer.produce` to observe the dummy `self.algorith.suggest()` used to increment
+    # original algo's RNG state.
+    producer.algorithm.seed_rng(0)
+
+    producer.update()
+    producer.produce()
+
+    assert prev_suggested != producer.algorithm.algorithm._suggested
+    assert prev_index < producer.algorithm.algorithm._index

@@ -41,6 +41,10 @@ class PrimaryAlgo(BaseAlgorithm):
         self.transformed_space = build_required_space(requirements, self.space)
         self.algorithm.space = self.transformed_space
 
+    def seed_rng(self, seed):
+        """Seed the state of the algorithm's random number generator."""
+        self.algorithm.seed_rng(seed)
+
     def suggest(self, num=1):
         """Suggest a `num` of new sets of parameters.
 

@@ -34,6 +34,7 @@ def test_configuration(dumbalgo):
     config = algo.configuration
     assert config == {
         'dumbalgo': {
+            'seed': None,
             'value': 1,
             'scoring': 0,
             'judgement': None,
@@ -41,6 +42,7 @@ def test_configuration(dumbalgo):
             'done': False,
             'subone': {
                 'dumbalgo': {
+                    'seed': None,
                     'value': 6,
                     'scoring': 5,
                     'judgement': None,
