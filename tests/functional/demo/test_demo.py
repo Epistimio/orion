@@ -10,7 +10,6 @@ import yaml
 
 import orion.core.cli
 from orion.core.io.database import Database
-import orion.core.io.resolve_config as resolve_config
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
 
@@ -32,7 +31,7 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     exp = exp[0]
     assert '_id' in exp
     assert exp['name'] == 'default_algo'
-    assert exp['pool_size'] == resolve_config.DEF_CMD_POOL_SIZE[0]
+    assert exp['pool_size'] == 1
     assert exp['max_trials'] == 30
     assert exp['algorithms'] == {'random': {'seed': None}}
     assert 'user' in exp['metadata']
