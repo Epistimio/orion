@@ -41,7 +41,7 @@ def test_fetch_local_config_from_incomplete_config(incomplete_config_file):
     assert local_config['database']['type'] == 'incomplete'
     assert local_config['max_trials'] == float('inf')
     assert local_config['name'] == 'incomplete'
-    assert local_config['pool_size'] == 10
+    assert local_config['pool_size'] == resolve_config.DEF_CMD_POOL_SIZE[0]
 
 
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
