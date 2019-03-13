@@ -21,6 +21,24 @@ from orion.core.worker.producer import Producer
 log = logging.getLogger(__name__)
 
 
+def reserve_trial(experiment, producer):
+    """Reserve a new trial, or produce and reserve a trial if non are available."""
+    trial = experiment.reserve_trial(score_handle=producer.algorithm.score)
+
+    if trial is None:
+        log.debug("#### Failed to pull a new trial from database.")
+
+        log.debug("#### Fetch most recent completed trials and update algorithm.")
+        producer.update()
+
+        log.debug("#### Produce new trials.")
+        producer.produce()
+
+        return reserve_trial(experiment, producer)
+
+    return trial
+
+
 def workon(experiment, worker_trials=None):
     """Try to find solution to the search problem defined in `experiment`."""
     producer = Producer(experiment)
@@ -32,28 +50,24 @@ def workon(experiment, worker_trials=None):
     except (OverflowError, TypeError):
         # When worker_trials is inf
         iterator = itertools.count()
+
     for _ in iterator:
+        log.debug("#### Poll for experiment termination.")
+        if experiment.is_done:
+            break
+
         log.debug("#### Try to reserve a new trial to evaluate.")
-        trial = experiment.reserve_trial(score_handle=producer.algorithm.score)
+        trial = reserve_trial(experiment, producer)
 
-        if trial is None:
-            log.debug("#### Failed to pull a new trial from database.")
-
-            log.debug("#### Fetch most recent completed trials and update algorithm.")
-            producer.update()
-
-            log.debug("#### Poll for experiment termination.")
-            if experiment.is_done:
-                break
-
-            log.debug("#### Produce new trials.")
-            producer.produce()
-
-        else:
-            log.debug("#### Successfully reserved %s to evaluate. Consuming...", trial)
-            consumer.consume(trial)
+        log.debug("#### Successfully reserved %s to evaluate. Consuming...", trial)
+        consumer.consume(trial)
 
     stats = experiment.stats
+
+    if not stats:
+        log.info("No trials completed.")
+        return
+
     best = Database().read('trials', {'_id': stats['best_trials_id']})[0]
 
     stats_stream = io.StringIO()
