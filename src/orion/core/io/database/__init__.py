@@ -278,7 +278,4 @@ class Database(Wrapper, metaclass=SingletonType):
         """Get attribute from wrapped database."""
         instance = Database.__getattribute__(self, 'instance')
 
-        if hasattr(instance, name):
-            return getattr(instance, name)
-
-        raise AttributeError(name)
+        return getattr(instance, name)
