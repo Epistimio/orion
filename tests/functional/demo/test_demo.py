@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Perform a functional test for demo purposes."""
+from collections import defaultdict
 import os
 import subprocess
 
@@ -68,7 +69,7 @@ def test_demo(database, monkeypatch):
     assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
 
     trials = list(database.trials.find({'experiment': exp_id}))
-    assert len(trials) < 15
+    assert len(trials) <= 15
     assert trials[-1]['status'] == 'completed'
     for result in trials[-1]['results']:
         assert result['type'] != 'constraint'
@@ -94,6 +95,7 @@ def test_demo_two_workers(database, monkeypatch):
     for _ in range(2):
         process = subprocess.Popen(["orion", "hunt", "-n", "two_workers_demo",
                                     "--config", "./orion_config_random.yaml",
+                                    "--max-trials", "100",
                                     "./black_box.py", "-x~norm(34, 3)"])
         processes.append(process)
 
@@ -108,7 +110,7 @@ def test_demo_two_workers(database, monkeypatch):
     exp_id = exp['_id']
     assert exp['name'] == 'two_workers_demo'
     assert exp['pool_size'] == 2
-    assert exp['max_trials'] == 400
+    assert exp['max_trials'] == 100
     assert exp['algorithms'] == {'random': {'seed': None}}
     assert 'user' in exp['metadata']
     assert 'datetime' in exp['metadata']
@@ -118,10 +120,11 @@ def test_demo_two_workers(database, monkeypatch):
     assert exp['metadata']['user_args'] == ['-x~norm(34, 3)']
 
     trials = list(database.trials.find({'experiment': exp_id}))
+    status = defaultdict(int)
     for trial in trials:
-        assert trial['status'] == 'completed'
-    assert len(trials) >= 400
-    assert len(trials) <= 402
+        status[trial['status']] += 1
+    assert 100 <= status['completed'] <= 101
+    assert status['new'] < 5
     params = trials[-1]['params']
     assert len(params) == 1
     assert params[0]['name'] == '/x'
@@ -169,7 +172,7 @@ def test_workon(database):
     assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
 
     trials = list(database.trials.find({'experiment': exp_id}))
-    assert len(trials) < 15
+    assert len(trials) <= 15
     assert trials[-1]['status'] == 'completed'
     for result in trials[-1]['results']:
         assert result['type'] != 'constraint'
@@ -313,3 +316,40 @@ def test_run_with_parallel_strategy(database, monkeypatch, strategy):
     exp_id = exp['_id']
     trials = list(database.trials.find({'experiment': exp_id}))
     assert len(trials) == 20
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_worker_trials(database, monkeypatch):
+    """Test number of trials executed is limited based on worker-trials"""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+    assert len(list(database.experiments.find({'name': 'demo_random_search'}))) == 0
+
+    orion.core.cli.main(["hunt", "--config", "./orion_config_random.yaml", "--pool-size", "1",
+                         "--worker-trials", "0",
+                         "./black_box.py", "-x~uniform(-50, 50)"])
+
+    exp = list(database.experiments.find({'name': 'demo_random_search'}))
+    assert len(exp) == 1
+    exp = exp[0]
+    assert '_id' in exp
+    exp_id = exp['_id']
+
+    assert len(list(database.trials.find({'experiment': exp_id}))) == 0
+
+    # Test only executes 2 trials
+    orion.core.cli.main(["hunt", "--name", "demo_random_search", "--worker-trials", "2"])
+
+    assert len(list(database.trials.find({'experiment': exp_id}))) == 2
+
+    # Test only executes 3 more trials
+    orion.core.cli.main(["hunt", "--name", "demo_random_search", "--worker-trials", "3"])
+
+    assert len(list(database.trials.find({'experiment': exp_id}))) == 5
+
+    # Test that max-trials has precedence over worker-trials
+    orion.core.cli.main(["hunt", "--name", "demo_random_search", "--worker-trials", "5",
+                         "--max-trials", "6"])
+
+    assert len(list(database.trials.find({'experiment': exp_id}))) == 6
