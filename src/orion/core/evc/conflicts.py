@@ -78,7 +78,7 @@ def _build_extended_user_args(config):
     space_builder.build_from(user_args)
 
     return user_args + [standard_param_name(key) + value
-                        for key, value in space_builder.parser.file_config.items()]
+                        for key, value in space_builder.parser.config_file_data.items()]
 
 
 def _build_space(config):
@@ -1345,7 +1345,7 @@ class ScriptConfigConflict(Conflict):
         space_builder = SpaceBuilder()
         space_builder.build_from(config['metadata']['user_args'])
         nameless_config = dict((key, value)
-                               for (key, value) in space_builder.parser.file_config.items()
+                               for (key, value) in space_builder.parser.config_file_data.items()
                                if not value.startswith('orion~'))
 
         return nameless_config

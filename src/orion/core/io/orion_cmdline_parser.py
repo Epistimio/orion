@@ -45,12 +45,12 @@ class OrionCmdlineParser():
     ----------
     parser : CmdlineParser
         Parser that will be used to parse the commandline.
-    priors_only : OrderedDict
+    cmd_priors : OrderedDict
         An OrderedDict containing only the priors inside the commandline.
-    file_config : OrderedDict
+    file_priors : OrderedDict
         An OrderedDict obtained by parsing the config file, if one was found.
-    augmented_config : OrderedDict
-        An OrderedDict obtained from merging `priors_only` and `file_config`.
+    priors : OrderedDict
+        An OrderedDict obtained from merging `cmd_priors` and `file_priors`.
     config_prefix : str
         Prefix for the configuration file used by the parser to identify it.
     file_config_path : str
@@ -63,17 +63,16 @@ class OrionCmdlineParser():
     parse(commandline)
         Parses the commandline and populate the OrderedDict
     format(trial, experiment) : str
-        Return the commandline with replaced values for priors
+        Return the commandline with replaced values for priors and attributes
 
     """
 
     def __init__(self, config_prefix='config'):
         """Create an `OrionCmdlineParser`."""
         self.parser = CmdlineParser()
-        self.priors_only = OrderedDict()
-        self.file_config = OrderedDict()
-        self.augmented_config = OrderedDict()
-        self.extracted_config = None
+        self.cmd_priors = OrderedDict()
+        self.file_priors = OrderedDict()
+        self.config_file_data = {}
 
         self.config_prefix = config_prefix
         self.file_config_path = None
@@ -93,7 +92,7 @@ class OrionCmdlineParser():
 
         Parse the commandline for priors and check if a specific key is found to parse
         an additional configuration file. Then the definition of the priors are stored
-        inside the `augmented_config` attribute.
+        inside the `priors` attribute.
 
         Raises
         ------
@@ -103,14 +102,19 @@ class OrionCmdlineParser():
         """
         replaced = self._replace_priors(commandline)
         configuration = self.parser.parse(replaced)
-        self._build_priors_only(configuration)
+        self._build_priors(configuration)
 
-        for key in self.priors_only.keys():
-            if key in self.file_config.keys():
-                raise ValueError("Conflict: definition of same prior in commandline and config")
+        duplicated_priors = set(self.cmd_priors.keys()) & set(self.file_priors.keys())
+        if duplicated_priors:
+            raise ValueError("Conflict: definition of same prior in commandline and config: "
+                             "{}".format(duplicated_priors))
 
-        self.augmented_config = copy.deepcopy(self.file_config)
-        self.augmented_config.update(self.priors_only)
+    @property
+    def priors(self):
+        """Return an OrderedDict obtained from merging `cmd_priors` and `file_priors`."""
+        priors = copy.deepcopy(self.file_priors)
+        priors.update(self.cmd_priors)
+        return priors
 
     @staticmethod
     def _replace_priors(args):
@@ -156,12 +160,12 @@ class OrionCmdlineParser():
 
         return replaced
 
-    def _build_priors_only(self, configuration):
+    def _build_priors(self, configuration):
         """Create OrderedDict from priors only.
 
-        Loop through every commandline arguments and check if it might correspond to a prior.
-        If it does, extract the name and expression from it and insert them into the corresponding
-        OrderedDict.
+        Loop through every commandline arguments and check if it might correspond to a prior or a
+        configuration file. Configuration file is parsed with `_load_config` while cmdline priors
+        are extracted with `_extract_prior`.
 
         Parameters
         ----------
@@ -169,20 +173,19 @@ class OrionCmdlineParser():
             The original configuration from which to extract OrderedDict.
 
         """
-        # TODO: Remove this method but still create config file.
         for key, value in configuration.items():
             if key == self.config_prefix:
                 self.file_config_path = value
                 self._load_config(value)
             else:
-                self._extract_prior(key, value, self.priors_only)
+                self._extract_prior(key, value, self.cmd_priors)
 
     def _load_config(self, path):
         """Load configuration file.
 
         Load the configuration file associated with the `config` key. Will try to resolve a
         valid converter for the file extension (yaml, json or other). Content will be put
-        inside the `self.file_config` attribute. Once the data has been parsed from the file,
+        inside the `self.file_priors` attribute. Once the data has been parsed from the file,
         the corresponding configuration will be created.
 
         Parameters
@@ -192,8 +195,8 @@ class OrionCmdlineParser():
 
         """
         self.converter = infer_converter_from_file_type(path)
-        self.extracted_config = self.converter.parse(path)
-        self._extraction_method[type(self.extracted_config)]("", self.extracted_config)
+        self.config_file_data = self.converter.parse(path)
+        self._extraction_method[type(self.config_file_data)]("", self.config_file_data)
 
     def _extract_defaultdict(self, current_depth, ex_dict):
         for key, value in ex_dict.items():
@@ -269,14 +272,14 @@ class OrionCmdlineParser():
         if len(substrings) == 1:
             return
 
-        self._extract_prior(current_depth, value, self.file_config)
+        self._extract_prior(current_depth, value, self.file_priors)
 
     def _extract_prior(self, key, value, insert_into):
         """Insert parameters if it has a prior.
 
         Match the regex for priors with the `value` argument to extract the information
         regarding the prior. If it posseses such information, insert the parameters inside
-        the `priors_only` attribute.
+        the `cmd_priors` attribute.
 
         Parameters
         ----------
@@ -338,7 +341,7 @@ class OrionCmdlineParser():
         Parameters
         ----------
         config_path: str
-            Path to the temporary config file.
+            Path to the temporary config file. Must be given if the parser has a `file_config_path`.
         trial: `orion.core.worker.trial.Trial`
             A `Trial` object containing the values for the priors.
         experiment: `orion.core.worker.experiment.Experiment`
@@ -368,13 +371,13 @@ class OrionCmdlineParser():
 
     def _create_config_file(self, config_path, trial):
         # Create a copy of the template
-        instance = copy.deepcopy(self.extracted_config)
+        instance = copy.deepcopy(self.config_file_data)
 
         for param in trial.params:
             # The param will only correspond to config keyd
             # that require a prior, so we make sure to skip
             # the ones that do not.
-            if param.name not in self.file_config.keys():
+            if param.name not in self.file_priors.keys():
                 continue
 
             # Since namespace start with '/', we must skip
@@ -415,4 +418,4 @@ class OrionCmdlineParser():
 
     def priors_to_normal(self):
         """Remove the namespace `/` prefix from priors."""
-        return {key.lstrip('/'): arg for key, arg in self.priors_only.items()}
+        return {key.lstrip('/'): arg for key, arg in self.cmd_priors.items()}

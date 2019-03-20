@@ -50,7 +50,7 @@ def cmd_with_properties(commandline):
 def test_parse_from_yaml_config(parser, yaml_config):
     """Parse from a yaml config only."""
     parser.parse(yaml_config)
-    config = parser.augmented_config
+    config = parser.priors
 
     assert len(config.keys()) == 6
     assert '/layers/1/width' in config
@@ -64,7 +64,7 @@ def test_parse_from_yaml_config(parser, yaml_config):
 def test_parse_from_json_config(parser, json_config):
     """Parse from a json config only."""
     parser.parse(json_config)
-    config = parser.augmented_config
+    config = parser.priors
 
     assert len(config.keys()) == 6
     assert '/layers/1/width' in config
@@ -78,7 +78,7 @@ def test_parse_from_json_config(parser, json_config):
 def test_parse_from_unknown_config(parser, some_sample_config):
     """Parse from a unknown config type only."""
     parser.parse(some_sample_config)
-    config = parser.augmented_config
+    config = parser.priors
 
     assert len(config.keys()) == 6
     assert '/layers/1/width' in config
@@ -93,11 +93,11 @@ def test_parse_equivalency(yaml_config, json_config):
     """Templates found from json and yaml are the same."""
     parser_yaml = OrionCmdlineParser()
     parser_yaml.parse(yaml_config)
-    dict_from_yaml = parser_yaml.extracted_config
+    dict_from_yaml = parser_yaml.config_file_data
 
     parser_json = OrionCmdlineParser()
     parser_json.parse(json_config)
-    dict_from_json = parser_json.extracted_config
+    dict_from_json = parser_json.config_file_data
     assert dict_from_json == dict_from_yaml
 
 
@@ -107,10 +107,10 @@ def test_parse_from_args_only(parser, commandline_fluff):
 
     parser.parse(cmd_args)
 
-    assert not len(parser.file_config.keys())
-    assert len(parser.priors_only) == 2
-    assert '/lr' in parser.priors_only
-    assert '/prior' in parser.priors_only
+    assert not parser.config_file_data
+    assert len(parser.cmd_priors) == 2
+    assert '/lr' in parser.cmd_priors
+    assert '/prior' in parser.cmd_priors
     assert parser.parser.template == \
         ['--seed', '{seed}', '--lr', '{lr}', '--non-prior', '{non-prior}', '--prior', '{prior}',
          '--some-path', '{some-path}', '--home-path', '{home-path[0]}', '{home-path[1]}']
@@ -122,7 +122,7 @@ def test_parse_from_args_and_config_yaml(parser, commandline, yaml_config):
     cmd_args.extend(commandline)
 
     parser.parse(cmd_args)
-    config = parser.augmented_config
+    config = parser.priors
 
     assert len(config) == 8
     assert '/lr' in config

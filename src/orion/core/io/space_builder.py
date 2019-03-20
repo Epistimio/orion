@@ -270,7 +270,7 @@ class SpaceBuilder(object):
         self.parser = OrionCmdlineParser()
         self.parser.parse(config)
 
-        return self.build(self.parser.augmented_config)
+        return self.build(self.parser.priors)
 
     def build(self, configuration):
         """Create a definition of the problem's search space.
