@@ -89,7 +89,7 @@ class Experiment(object):
                  '_node', '_last_fetched')
     non_branching_attrs = ('pool_size', 'max_trials')
 
-    def __init__(self, name):
+    def __init__(self, name, user=None):
         """Initialize an Experiment object with primary key (:attr:`name`, :attr:`user`).
 
         Try to find an entry in `Database` with such a key and config this object
@@ -112,7 +112,8 @@ class Experiment(object):
         self.name = name
         self._node = None
         self.refers = {}
-        user = getpass.getuser()
+        if user is None:
+            user = getpass.getuser()
         self.metadata = {'user': user}
         self.pool_size = None
         self.max_trials = None
@@ -691,7 +692,7 @@ class ExperimentView(object):
                         ["fetch_trials", "fetch_trials_tree", "fetch_completed_trials",
                          "connect_to_version_control_tree"])
 
-    def __init__(self, name):
+    def __init__(self, name, user=None):
         """Initialize viewed experiment object with primary key (:attr:`name`, :attr:`user`).
 
         Build an experiment from configuration found in `Database` with a key (name, user).
@@ -704,7 +705,7 @@ class ExperimentView(object):
         :param name: Describe a configuration with a unique identifier per :attr:`user`.
         :type name: str
         """
-        self._experiment = Experiment(name)
+        self._experiment = Experiment(name, user)
 
         if self._experiment.id is None:
             raise ValueError("No experiment with given name '%s' for user '%s' inside database, "

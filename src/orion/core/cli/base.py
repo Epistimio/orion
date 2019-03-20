@@ -83,6 +83,12 @@ def get_basic_args_group(parser):
         help="experiment's unique name; "
              "(default: None - specified either here or in a config)")
 
+    basic_args_group.add_argument(
+        '-u', '--user',
+        type=str,
+        help="user associated to experiment's unique name; "
+             "(default: $USER - can be overriden either here or in a config)")
+
     basic_args_group.add_argument('-c', '--config', type=argparse.FileType('r'),
                                   metavar='path-to-config', help="user provided "
                                   "orion configuration file")
