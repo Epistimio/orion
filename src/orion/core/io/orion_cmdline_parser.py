@@ -370,4 +370,5 @@ class OrionCmdlineParser():
         return configuration
 
     def priors_to_normal(self):
+        """Remove the namespace `/` prefix from priors."""
         return {key.lstrip('/'): arg for key, arg in self.priors_only.items()}
