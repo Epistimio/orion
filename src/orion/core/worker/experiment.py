@@ -16,6 +16,7 @@ import logging
 import random
 import sys
 
+from orion.algo.base import PrimaryAlgo
 from orion.core.cli.evc import fetch_branching_configuration
 from orion.core.evc.adapters import Adapter, BaseAdapter
 from orion.core.evc.conflicts import detect_conflicts
