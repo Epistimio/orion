@@ -469,7 +469,7 @@ class TestConfigProperty(object):
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
         exp.configure(exp_config[0][0])
-        assert isinstance(exp.algorithms, BaseAlgorithm)
+        assert isinstance(exp.algorithms.algorithm, BaseAlgorithm)
 
     @pytest.mark.skip(reason="To be implemented...")
     def test_after_init_refers_are_objects(self, exp_config):

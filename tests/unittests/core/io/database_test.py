@@ -25,24 +25,23 @@ class TestDatabaseFactory(object):
 
         Type indeterminate <-> type abstracted from its property <-> No type
         """
-        with pytest.raises(TypeError) as exc_info:
+        with pytest.raises(NotImplementedError) as exc_info:
             Database()
-        assert 'positional argument' in str(exc_info.value)
+        assert 'No' in str(exc_info.value)
 
     def test_notfound_type_first_call(self):
         """Raise when supplying not implemented wrapper name."""
         with pytest.raises(NotImplementedError) as exc_info:
-            Database(("", 'notfound'))
+            Database('notfound')
         assert 'AbstractDB' in str(exc_info.value)
 
-    def test_instatiation_and_singleton(self):
+    def test_instantiation_and_singleton(self):
         """Test create just one object, that object persists between calls."""
-        of_type = ('orion.core.io.database.mongodb', 'MongoDB')
-        database = Database(of_type=of_type, name='orion_test',
+        database = Database('MongoDB', name='orion_test',
                             username='user', password='pass')
 
         assert isinstance(database, MongoDB)
-        assert database is MongoDB()
+        assert database.database is MongoDB()
         assert database is Database()
         with pytest.raises(ValueError) as exc_info:
             Database('fire', [], {'it_matters': 'it\'s singleton'})
