@@ -634,8 +634,17 @@ class Experiment(object):
         """
         experiment_brancher = ExperimentBranchBuilder(conflicts, branching_configuration)
 
-        if not experiment_brancher.is_resolved or experiment_brancher.auto_resolution:
+        needs_manual_resolution = (not experiment_brancher.is_resolved or
+                                   experiment_brancher.auto_resolution)
+
+        if needs_manual_resolution:
             branching_prompt = BranchingPrompt(experiment_brancher)
+
+            if not sys.__stdin__.isatty():
+                raise ValueError(
+                    "Configuration is different and generates a branching event:\n{}".format(
+                        branching_prompt.get_status()))
+
             branching_prompt.cmdloop()
 
             if branching_prompt.abort or not experiment_brancher.is_resolved:
