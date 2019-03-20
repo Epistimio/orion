@@ -549,6 +549,8 @@ class Experiment(object):
             'params': 1
             }
         completed_trials = self.fetch_trials(query, selection)
+        if not completed_trials:
+            return dict()
         stats = dict()
         stats['trials_completed'] = len(completed_trials)
         stats['best_trials_id'] = None
