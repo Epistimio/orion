@@ -245,14 +245,6 @@ class DimensionBuilder(object):
 class SpaceBuilder(object):
     """Build a `Space` object form user's configuration."""
 
-    # TODO Expose these 4 USER oriented goodfellows to a orion configuration file :)
-    USERCONFIG_KEYWORD = 'orion~'
-    USERARGS_TMPL = r'(.*)~([\+\-\>]?.*)'
-    USERARGS_NAMESPACE = r'\W*([a-zA-Z0-9_-]+)'
-    USERARGS_CONFIG = '--config='
-
-    EXPOSED_PROPERTIES = ['trial.hash_name', 'trial.full_name', 'exp.name']
-
     def __init__(self):
         """Initialize a `SpaceBuilder`."""
         self.dimbuilder = DimensionBuilder()
@@ -264,32 +256,38 @@ class SpaceBuilder(object):
         self.parser = None
 
     def build_from(self, config):
+        """Build a `Space` object from a configuration.
+
+        Initialize a new parser for this commandline and parse the given config then
+        build a `Space` object from that configuration.
+
+        Returns
+        -------
+        `orion.algo.space.Space`
+            The problem's search space definition.
+
+        """
         self.parser = OrionCmdlineParser()
         self.parser.parse(config)
 
         return self.build(self.parser.augmented_config)
 
     def build(self, configuration):
-        """Create a definition of the problem's search space, using information
-        from the user's script configuration (if provided) and command line arguments.
+        """Create a definition of the problem's search space.
 
-        This method is also responsible for parsing semantics which allow
-        information from the `Experiment` or a `Trial` object to be passed
-        to user's script. For example, a command line option like
-        ``--name~trial.hash_name`` will be parsed to mean that a unique hash
-        identifier of the trial that defines an execution shall be passed to
-        the option ``--name``. Usage of these properties are not obligatory,
-        but it helps integrating with solutions which help experiment
-        reproducibility and resumability. See :attr:`EXPOSED_PROPERTIES` to
-        check which properties are supported.
+        Using information from the user's script configuration (if provided) and the
+        command line arguments, will create a `Space` object defining the problem's
+        search space.
 
-        :param cmd_args: A list of command line arguments provided for the user's script.
+        Parameters
+        ----------
+        configuration: OrderedDict
+            An OrderedDict containing the name and the expression of the parameters.
 
-        :rtype: `orion.algo.space.Space`
-
-        .. note:: A template configuration file complementing user's script can be
-           provided either by explicitly using the prefix '--config=' or by being the
-           first positional argument.
+        Returns
+        -------
+        `orion.algo.space.Space`
+            The problem's search space definition.
 
         """
         self.space = Space()
@@ -309,20 +307,25 @@ class SpaceBuilder(object):
         return self.space
 
     def build_to(self, config_path, trial, experiment=None):
-        """Use templates saved from `build_from` to generate a config file (if needed)
-        and command line arguments to correspond to specific parameter selections.
+        """Create the configuration for the user's script.
 
-        :param config_path: Path in which the configuration file instance
-           will be created.
-        :param trial: A `orion.core.worker.trial.Trial` object with concrete
-           parameter values for the defined `Space`. It may be used to retrieve
-           managerial information from it.
-        :param experiment: An `orion.core.worker.experiment.Experiment` object.
-           It may be used to retrieve managerial information from it. See
-           :attr:`EXPOSED_PROPERTIES`.
+        Using the configuration parser, create the commandline associated with the
+        user's script while replacing the correct instances of parameter distributions by
+        their actual values. If needed, the parser will also create a configuration file.
 
-        :returns: A list with the command line arguments that must be given to
-           script's execution.
+        Parameters
+        ----------
+        config_path: str
+            Path in which the configuration file instance will be created.
+        trial: `orion.core.worker.trial.Trial`
+            Object with concrete parameter values for the defined `Space`.
+        experiment: `orion.core.worker.experiment.Experiment`, optional
+            Object with information related to the current experiment.
+
+        Returns
+        -------
+        list
+            The commandline arguments that must be given to script for execution.
 
         """
         return self.parser.format(config_path, trial, experiment)
