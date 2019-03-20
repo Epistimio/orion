@@ -15,15 +15,13 @@ the command line.
 CmdlineParser provides an interface to parse command line arguments from input but also
 utility functions to build it again as a list or an already formatted string.
 """
-import copy
 
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
+import copy
+import re
 
 from orion.core.io.cmdline_parser import CmdlineParser
 from orion.core.io.convert import infer_converter_from_file_type
-from collections import defaultdict
-
-import re
 
 
 def _is_nonprior_wave(arg):
@@ -70,6 +68,7 @@ class OrionCmdlineParser():
     """
 
     def __init__(self, config_prefix='config'):
+        """Create an `OrionCmdlineParser`."""
         self.parser = CmdlineParser()
         self.priors_only = OrderedDict()
         self.file_config = OrderedDict()
@@ -90,6 +89,18 @@ class OrionCmdlineParser():
         self.prior_regex = re.compile(r'(.+)~([\+\-\>]?.+)')
 
     def parse(self, commandline):
+        """Parse the commandline given for the definition of priors.
+
+        Parse the commandline for priors and check if a specific key is found to parse
+        an additional configuration file. Then the definition of the priors are stored
+        inside the `augmented_config` attribute.
+
+        Raises
+        ------
+        ValueError
+            If a prior inside the commandline and the config file have the same name.
+
+        """
         replaced = self._replace_priors(commandline)
         configuration = self.parser.parse(replaced)
         self._build_priors_only(configuration)
@@ -101,7 +112,8 @@ class OrionCmdlineParser():
         self.augmented_config = copy.deepcopy(self.file_config)
         self.augmented_config.update(self.priors_only)
 
-    def _replace_priors(self, args):
+    @staticmethod
+    def _replace_priors(args):
         """Change directly name priors to more general form.
 
         Pass through the current commandline arguments and replace priors of the form
@@ -118,6 +130,7 @@ class OrionCmdlineParser():
         list
             A list composed of the same elements as `args` augmented with the new form
             of the priors.
+
         """
         replaced = []
         for item in args:
@@ -154,6 +167,7 @@ class OrionCmdlineParser():
         ----------
         configuration: OrderedDict
             The original configuration from which to extract OrderedDict.
+
         """
         # TODO: Remove this method but still create config file.
         for key, value in configuration.items():
@@ -175,6 +189,7 @@ class OrionCmdlineParser():
         ----------
         path: string
             Path to the configuration file.
+
         """
         self.converter = infer_converter_from_file_type(path)
         self.extracted_config = self.converter.parse(path)
@@ -203,6 +218,7 @@ class OrionCmdlineParser():
             String corresponding to the namespace at the current depth.
         ex_dict: dict
             Dictionary to loop through.
+
         """
         for key, value in ex_dict.items():
             sub_depth = current_depth + '/' + str(key)
@@ -224,6 +240,7 @@ class OrionCmdlineParser():
             String corresponding to the namespace at the current depth.
         ex_list: list
             List to loop through.
+
         """
         for i, value in enumerate(ex_list):
             sub_depth = current_depth + '/' + str(i)
@@ -245,6 +262,7 @@ class OrionCmdlineParser():
             String corresponding to the namespace at the current depth.
         value: string
             Value from which to extract a prior.
+
         """
         substrings = value.split('~')
 
@@ -271,6 +289,7 @@ class OrionCmdlineParser():
 
         insert_into: OrderedDict
             Collections into which to insert the current prior.
+
         """
         if not isinstance(value, str):
             return
@@ -300,6 +319,7 @@ class OrionCmdlineParser():
         ----------
         expression: str
             The expression to be evaluated.
+
         """
         for token in self._invalid_priors_tokens:
             if expression.startswith(token):
@@ -308,8 +328,30 @@ class OrionCmdlineParser():
         return False
 
     def format(self, config_path=None, trial=None, experiment=None):
+        """Create the commandline for the user's script.
+
+        Recreate the commandline passed to Orion for the user's script by replacing the instances
+        of priors' expression by their actual value inside the `trial`. If a `config_path` is given,
+        use the config file template to generate a new temporary one. Any templated argument of the
+        form `{trial.xxx}` or `{exp.xxx}` will be replaced by their corresponding value.
+
+        Parameters
+        ----------
+        config_path: str
+            Path to the temporary config file.
+        trial: `orion.core.worker.trial.Trial`
+            A `Trial` object containing the values for the priors.
+        experiment: `orion.core.worker.experiment.Experiment`
+            An `Experiment` object containing information relative to the `trial`'s experiment.
+
+        Returns
+        -------
+        list
+            The commandline arguments.
+
+        """
         if self.file_config_path:
-            self._create_config_file(config_path, trial, experiment)
+            self._create_config_file(config_path, trial)
         configuration = self._build_configuration(trial)
 
         if config_path is not None:
@@ -324,7 +366,7 @@ class OrionCmdlineParser():
 
         return templated
 
-    def _create_config_file(self, config_path, trial, experiment):
+    def _create_config_file(self, config_path, trial):
         # Create a copy of the template
         instance = copy.deepcopy(self.extracted_config)
 
@@ -344,14 +386,16 @@ class OrionCmdlineParser():
                 # If we meet a list, the key might correspond
                 # to the index of a dictionary in that list
                 if isinstance(current_depth, list):
-                    if key.isdigit():
-                        key = int(key)
+                    if not key.isdigit():
+                        continue
 
-                        # Make sure the key is not out of bound
-                        try:
-                            current_depth[key]
-                        except IndexError:
-                            break
+                    key = int(key)
+
+                    # Make sure the key is not out of bound
+                    try:
+                        current_depth[key]
+                    except IndexError:
+                        break
 
                 if isinstance(current_depth[key], str):
                     current_depth[key] = param.value

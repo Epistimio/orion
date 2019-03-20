@@ -29,6 +29,7 @@ def yaml_sample_path():
 
 @pytest.fixture
 def yaml_config(yaml_sample_path):
+    """Return a list containing the key and the sample path for a yaml config."""
     return ['--config', yaml_sample_path]
 
 
@@ -40,6 +41,7 @@ def json_sample_path():
 
 @pytest.fixture
 def json_config(json_sample_path):
+    """Return a list containing the key and the sample path for a json config."""
     return ['--config', json_sample_path]
 
 
@@ -57,6 +59,7 @@ def some_sample_path():
 
 @pytest.fixture
 def some_sample_config(some_sample_path):
+    """Return a list containing the key and the sample path for some config."""
     return ['--config', some_sample_path]
 
 
