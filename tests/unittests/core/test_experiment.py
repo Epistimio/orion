@@ -469,7 +469,7 @@ class TestConfigProperty(object):
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
         exp.configure(exp_config[0][0])
-        assert isinstance(exp.algorithms.algorithm, BaseAlgorithm)
+        assert isinstance(exp.algorithms.instance, BaseAlgorithm)
 
     @pytest.mark.skip(reason="To be implemented...")
     def test_after_init_refers_are_objects(self, exp_config):
@@ -703,7 +703,7 @@ def test_is_done_property_with_algo(hacked_exp):
     # Configure experiment to have instantiated algo
     hacked_exp.configure(hacked_exp.configuration)
     assert hacked_exp.is_done is False
-    hacked_exp.algorithms.algorithm.done = True
+    hacked_exp.algorithms.instance.done = True
     assert hacked_exp.is_done is True
 
 
@@ -811,7 +811,7 @@ def test_view_algo_is_done_property(hacked_exp):
 
     assert experiment_view.is_done is False
 
-    hacked_exp.algorithms.algorithm.done = True
+    hacked_exp.algorithms.instance.done = True
 
     assert experiment_view.is_done is True
 

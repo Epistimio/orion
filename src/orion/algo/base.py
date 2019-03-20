@@ -255,12 +255,11 @@ class PrimaryAlgo(Wrapper):
            Configuration for the algorithm.
 
         """
-        self.algorithm = None
         self._space = space
-        super(PrimaryAlgo, self).__init__(space, algorithm=algorithm_config)
-        requirements = self.algorithm.requires
+        super(PrimaryAlgo, self).__init__(space, instance=algorithm_config)
+        requirements = self.instance.requires
         self.transformed_space = build_required_space(requirements, self.space)
-        self.algorithm.space = self.transformed_space
+        self.instance.space = self.transformed_space
 
     @property
     def wraps(self):
@@ -275,7 +274,7 @@ class PrimaryAlgo(Wrapper):
         .. note:: New parameters must be compliant with the problem's domain
            `orion.algo.space.Space`.
         """
-        points = self.algorithm.suggest(num)
+        points = self.instance.suggest(num)
         for point in points:
             assert point in self.transformed_space
         return [self.transformed_space.reverse(point) for point in points]
@@ -291,12 +290,12 @@ class PrimaryAlgo(Wrapper):
         for point in points:
             assert point in self.space
             tpoints.append(self.transformed_space.transform(point))
-        self.algorithm.observe(tpoints, results)
+        self.instance.observe(tpoints, results)
 
     @property
     def is_done(self):
         """Return True, if an algorithm holds that there can be no further improvement."""
-        return self.algorithm.is_done
+        return self.instance.is_done
 
     def score(self, point):
         """Allow algorithm to evaluate `point` based on a prediction about
@@ -306,7 +305,7 @@ class PrimaryAlgo(Wrapper):
         By default, return the same score any parameter (no preference).
         """
         assert point in self.space
-        return self.algorithm.score(self.transformed_space.transform(point))
+        return self.instance.score(self.transformed_space.transform(point))
 
     def judge(self, point, measurements):
         """Inform an algorithm about online `measurements` of a running trial.
@@ -316,8 +315,8 @@ class PrimaryAlgo(Wrapper):
 
         """
         assert point in self._space
-        return self.algorithm.judge(self.transformed_space.transform(point),
-                                    measurements)
+        return self.instance.judge(self.transformed_space.transform(point),
+                                   measurements)
 
     @property
     def should_suspend(self):
@@ -326,14 +325,14 @@ class PrimaryAlgo(Wrapper):
         `judge` method.
 
         """
-        return self.algorithm.should_suspend
+        return self.instance.should_suspend
 
     @property
     def configuration(self):
         """Return tunable elements of this algorithm in a dictionary form
         appropriate for saving.
         """
-        return self.algorithm.configuration
+        return self.instance.configuration
 
     @property
     def space(self):

@@ -41,7 +41,7 @@ class TestDatabaseFactory(object):
                             username='user', password='pass')
 
         assert isinstance(database, MongoDB)
-        assert database.database is MongoDB()
+        assert database.instance is MongoDB()
         assert database is Database()
         with pytest.raises(ValueError) as exc_info:
             Database('fire', [], {'it_matters': 'it\'s singleton'})

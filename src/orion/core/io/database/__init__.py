@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.io.database` -- Wrappers for database frameworks
+:mod:`orion.core.io.instance` -- Wrappers for database frameworks
 =================================================================
 
 .. module:: database
@@ -10,7 +10,7 @@
 Contains :class:`AbstractDB`, an interface for databases.
 Currently, implemented wrappers:
 
-   - :class:`orion.core.io.database.mongodb.MongoDB`
+   - :class:`orion.core.io.instance.mongodb.MongoDB`
 
 """
 from abc import abstractmethod, abstractproperty
@@ -212,7 +212,7 @@ class ReadOnlyDB(object):
 
     .. seealso::
 
-        :py:class:`orion.core.io.database.AbstractDB`
+        :py:class:`orion.core.io.instance.AbstractDB`
     """
 
     __slots__ = ('_database', )
@@ -261,10 +261,8 @@ class Database(Wrapper, metaclass=SingletonType):
 
     def __init__(self, of_type="", **db_opts):
         """Initialize the database instance"""
-        self.database = None
-
         database_dict = {of_type: db_opts}
-        super(Database, self).__init__(database=database_dict)
+        super(Database, self).__init__(instance=database_dict)
 
     @property
     def wraps(self):
@@ -276,28 +274,9 @@ class Database(Wrapper, metaclass=SingletonType):
         """Return a SingletonFactory for the SingletonType AbstractDB"""
         return SingletonFactory
 
-    @property
-    def __class__(self):
-        """Proxy the class type check to the underlying database one"""
-        return self.database.__class__
-
-    def __getattr__(self, name):
-        """Proxy the attribute getting to the database instance if it exists"""
-        if hasattr(self.database, name):
-            return getattr(self.database, name)
-        return self.__getattribute__(name)
-
-    def __instancecheck__(self, instance):
-        """Proxy the instance check to the database object"""
-        return isinstance(self.database, instance)
-
-    def __subclasscheck__(self, instance):
-        """Proxy the subclass check to the database"""
-        return issubclass(self.database, instance)
-
     def is_connected(self):
         """True, if practical connection has been achieved."""
-        return self.database.is_connected
+        return self.instance.is_connected
 
     def initiate_connection(self):
         """Connect to database, unless `AbstractDB` `is_connected`.
@@ -305,11 +284,11 @@ class Database(Wrapper, metaclass=SingletonType):
         :raises :exc:`DatabaseError`: if connection or authentication fails
 
         """
-        self.database.initiate_connection()
+        self.instance.initiate_connection()
 
     def close_connection(self):
         """Disconnect from database, if `AbstractDB` `is_connected`."""
-        self.database.close_connection()
+        self.instance.close_connection()
 
     def ensure_index(self, collection_name, keys, unique=False):
         """Create given indexes if they do not already exist in database.
@@ -335,7 +314,7 @@ class Database(Wrapper, metaclass=SingletonType):
             before the indexes are totally built.
 
         """
-        self.database.ensure_index(collection_name, keys, unique=unique)
+        self.instance.ensure_index(collection_name, keys, unique=unique)
 
     def write(self, collection_name, data, query=None):
         """Write new information to a collection. Perform insert or update.
@@ -365,7 +344,7 @@ class Database(Wrapper, metaclass=SingletonType):
             information about indexes.
 
         """
-        return self.database.write(collection_name, data, query=query)
+        return self.instance.write(collection_name, data, query=query)
 
     def read(self, collection_name, query=None, selection=None):
         """Read a collection and return a value according to the query.
@@ -382,7 +361,7 @@ class Database(Wrapper, metaclass=SingletonType):
         :return: list of matched document[s]
 
         """
-        return self.database.read(collection_name, query=query, selection=selection)
+        return self.instance.read(collection_name, query=query, selection=selection)
 
     def read_and_write(self, collection_name, query, data, selection=None):
         """Read a collection's document and update the found document.
@@ -410,7 +389,7 @@ class Database(Wrapper, metaclass=SingletonType):
             information about indexes.
 
         """
-        return self.database.read_and_write(collection_name, query, data, selection=selection)
+        return self.instance.read_and_write(collection_name, query, data, selection=selection)
 
     def count(self, collection_name, query=None):
         """Count the number of documents in a collection which match the `query`.
@@ -423,7 +402,7 @@ class Database(Wrapper, metaclass=SingletonType):
            Filter entries in collection.
 
         """
-        return self.database.count(collection_name, query=query)
+        return self.instance.count(collection_name, query=query)
 
     def remove(self, collection_name, query):
         """Delete from a collection document[s] which match the `query`.
@@ -438,4 +417,4 @@ class Database(Wrapper, metaclass=SingletonType):
         :return: operation success.
 
         """
-        return self.database.remove(collection_name, query)
+        return self.instance.remove(collection_name, query)
