@@ -198,6 +198,31 @@ def test_format_commandline_and_config(parser, commandline, json_config, tmpdir,
                            'something-same': '3'}
 
 
+def test_format_without_config_path(parser, commandline, json_config, tmpdir, json_converter):
+    """Verify that parser.format() raises ValueError when config path not passed."""
+    cmd_args = json_config
+    cmd_args.extend(commandline)
+
+    parser.parse(cmd_args)
+
+    trial = Trial(params=[
+        {'name': '/lr', 'type': 'real', 'value': -2.4},
+        {'name': '/prior', 'type': 'categorical', 'value': 'sgd'},
+        {'name': '/layers/1/width', 'type': 'integer', 'value': 100},
+        {'name': '/layers/1/type', 'type': 'categorical', 'value': 'relu'},
+        {'name': '/layers/2/type', 'type': 'categorical', 'value': 'sigmoid'},
+        {'name': '/training/lr0', 'type': 'real', 'value': 0.032},
+        {'name': '/training/mbs', 'type': 'integer', 'value': 64},
+        {'name': '/something-same', 'type': 'categorical', 'value': '3'}])
+
+    output_file = str(tmpdir.join("output.json"))
+
+    with pytest.raises(ValueError) as exc_info:
+        cmd_inst = parser.format(trial=trial)
+
+    assert "Cannot format without a `config_path` argument." in str(exc_info.value)
+
+
 def test_format_with_properties(parser, cmd_with_properties, hacked_exp):
     """Test if format correctly puts the value of `trial` and `exp` when used as properties"""
     parser.parse(cmd_with_properties)

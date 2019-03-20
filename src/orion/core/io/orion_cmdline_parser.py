@@ -352,8 +352,17 @@ class OrionCmdlineParser():
         list
             The commandline arguments.
 
+        Raises
+        ------
+        ValueError
+            If the configuration contains a config file but `format()` is called without the
+            argument `config_path`.
+
         """
-        if self.file_config_path:
+        if self.file_config_path and config_path is None:
+            raise ValueError('The configuration contains a config file. '
+                             'Cannot format without a `config_path` argument.')
+        elif self.file_config_path:
             self._create_config_file(config_path, trial)
         configuration = self._build_configuration(trial)
 
