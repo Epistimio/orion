@@ -59,7 +59,7 @@ log = logging.getLogger(__name__)
 # Default settings for command line arguments (option, description)
 DEF_CMD_MAX_TRIALS = (infinity, 'inf/until preempted')
 DEF_CMD_WORKER_TRIALS = (infinity, 'inf/until preempted')
-DEF_CMD_POOL_SIZE = (10, str(10))
+DEF_CMD_POOL_SIZE = (1, str(1))
 
 DEF_CONFIG_FILES_PATHS = [
     os.path.join(orion.core.DIRS.site_data_dir, 'orion_config.yaml.example'),

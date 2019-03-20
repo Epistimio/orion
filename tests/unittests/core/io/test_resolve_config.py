@@ -35,7 +35,7 @@ def test_fetch_default_options():
 
     assert default_config['max_trials'] == float('inf')
     assert default_config['name'] is None
-    assert default_config['pool_size'] == 10
+    assert default_config['pool_size'] == 1
 
 
 def test_fetch_env_vars():
