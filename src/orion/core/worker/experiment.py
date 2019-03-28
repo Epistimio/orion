@@ -620,9 +620,13 @@ class Experiment(object):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
         if not self.producer.get('strategy'):
-            self.producer = {'strategy': Strategy(of_type="MaxParallelStrategy")}
+            log.warning('You have not set a producer strategy, the basic '
+                        'NoParallelStrategy will be used')
+            strategy = Strategy({"NoParallelStrategy": {}})
+            self.producer = {'strategy': strategy}
         elif not isinstance(self.producer.get('strategy'), BaseParallelStrategy):
-            self.producer = {'strategy': Strategy(of_type=self.producer['strategy'])}
+            strategy = Strategy({self.producer['strategy']: {}})
+            self.producer = {'strategy': strategy}
 
     def _branch_config(self, conflicts, branching_configuration):
         """Ask for a different identifier for this experiment. Set :attr:`refers`
