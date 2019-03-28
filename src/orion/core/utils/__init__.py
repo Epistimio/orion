@@ -89,6 +89,10 @@ class Factory(ABCMeta):
 
         cls.modules = []
         base = import_module(cls.__base__.__module__)
+
+        if hasattr(cls, "implementation_module"):
+            import_module(cls.implementation_module)
+
         try:
             py_files = glob(os.path.abspath(os.path.join(base.__path__[0] + '/**/',
                                                          '[A-Za-z]*.py')), recursive=True)
@@ -154,7 +158,8 @@ class Factory(ABCMeta):
         for inherited_class in cls.types:
             inherited_qualified_name = get_qualified_name(inherited_class.__module__,
                                                           inherited_class.__name__).lower()
-            if inherited_qualified_name == qualified_name:
+            if inherited_qualified_name == qualified_name or \
+               module == inherited_qualified_name:
                 return inherited_class.__call__(*args, **kwargs)
 
         error = "Could not find implementation of {0}, type = '{1}'".format(
