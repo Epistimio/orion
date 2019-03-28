@@ -92,10 +92,12 @@ class Strategy(Wrapper):
     implementation_module = 'orion.core.worker.strategy'
 
     def __init__(self, strategy_config):
+        """Initialize wrapper for strategies"""
         super(Strategy, self).__init__(instance=strategy_config)
 
     @property
     def wraps(self):
+        """Wrap `BaeParallelStrategy`"""
         return BaseParallelStrategy
 
 
@@ -117,6 +119,7 @@ class MaxParallelStrategy(BaseParallelStrategy):
     def __init__(self, default_result=float('inf')):
         """Initialize the maximum result used to lie"""
         self.max_result = default_result
+        super(MaxParallelStrategy, self).__init__(default_result=default_result)
 
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
@@ -138,6 +141,7 @@ class MeanParallelStrategy(BaseParallelStrategy):
     def __init__(self, default_result=float('inf')):
         """Initialize the mean result used to lie"""
         self.mean_result = default_result
+        super(MeanParallelStrategy, self).__init__(default_result=default_result)
 
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
