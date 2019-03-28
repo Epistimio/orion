@@ -234,7 +234,7 @@ class Wrapper(object):
 
     def __instancecheck__(self, instance):
         """Proxy the instance check to the database object"""
-        return isinstance(self.instancd, instance)
+        return isinstance(self.instance, instance)
 
     def __subclasscheck__(self, instance):
         """Proxy the subclass check to the database"""
@@ -245,9 +245,10 @@ class Wrapper(object):
         wrapped instance does not have this attribute, return it from the wrapper
         instead
         """
-        if hasattr(self.instance, name):
-            return getattr(self.instance, name)
-        return self.__getattribute__(name)
+        if name == 'instance':
+            raise AttributeError()
+
+        return getattr(self.instance, name)
 
     def _get_module(self):
         # Implementation module might be redefined at concept or wrapper level

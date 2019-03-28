@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.utils.Wrapper`."""
+from copy import deepcopy
 
 import pytest
 
@@ -117,3 +118,10 @@ def test_dict_depth_wrappers(dict_depth_wrappers):
     assert isinstance(wrapper, DepthWrapper)
     assert isinstance(wrapper.instance, SubWrapper)
     assert isinstance(wrapper.instance.instance, ConceptImpl)
+
+
+def test_deepcopy(string_config):
+    """Test if the instantiation through string works"""
+    wrapper = WrapperTest(string_config)
+
+    deepcopy(wrapper)
