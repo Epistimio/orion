@@ -16,7 +16,7 @@ class DumbAlgo(BaseAlgorithm):
 
     def __init__(self, space, value=5,
                  scoring=0, judgement=None,
-                 suspend=False, done=False, seed=None, **nested_algo):
+                 suspend=False, done=False, seed=None):
         """Configure returns, allow for variable variables."""
         self._times_called_suspend = 0
         self._times_called_is_done = 0
@@ -32,8 +32,7 @@ class DumbAlgo(BaseAlgorithm):
                                        scoring=scoring, judgement=judgement,
                                        suspend=suspend,
                                        done=done,
-                                       seed=seed,
-                                       **nested_algo)
+                                       seed=seed)
 
     def seed(self, seed):
         """Set the index to seed.

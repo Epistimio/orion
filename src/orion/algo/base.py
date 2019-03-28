@@ -87,7 +87,7 @@ class BaseAlgorithm(Concept, metaclass=ABCMeta):
     name = "Algorithm"
     implementation_module = "orion.algo"
 
-    def __init__(self, space, **kwargs):
+    def __init__(self, space, seed=None, **kwargs):
         """Declare problem's parameter space and set up algo's hyperparameters.
 
         Parameters
@@ -100,9 +100,11 @@ class BaseAlgorithm(Concept, metaclass=ABCMeta):
 
         """
         self._space = space
-        self._param_names = list(kwargs.keys())
+        self._param_names = ['seed'] + list(kwargs.keys())
 
-        super(BaseAlgorithm, self).__init__(space, **kwargs)
+        super(BaseAlgorithm, self).__init__(space, seed=seed, **kwargs)
+
+        self.seed_rng(seed)
 
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
@@ -266,11 +268,13 @@ class PrimaryAlgo(Wrapper):
         """Return the type of object this wrapper wraps"""
         return BaseAlgorithm
 
+    def seed_rng(self, seed):
+        """Seed the state of the algorithm's random number generator."""
+        self.instance.seed_rng(seed)
+
     def suggest(self, num=1):
         """Suggest a `num` of new sets of parameters.
-
         :param num: how many sets to be suggested.
-
         .. note:: New parameters must be compliant with the problem's domain
            `orion.algo.space.Space`.
         """
@@ -282,7 +286,6 @@ class PrimaryAlgo(Wrapper):
     def observe(self, points, results):
         """Observe evaluation `results` corresponding to list of `points` in
         space.
-
         .. seealso:: `orion.algo.base.BaseAlgorithm.observe`
         """
         assert len(points) == len(results)
@@ -301,7 +304,6 @@ class PrimaryAlgo(Wrapper):
         """Allow algorithm to evaluate `point` based on a prediction about
         this parameter set's performance. Return a subjective measure of expected
         performance.
-
         By default, return the same score any parameter (no preference).
         """
         assert point in self.space
@@ -309,21 +311,17 @@ class PrimaryAlgo(Wrapper):
 
     def judge(self, point, measurements):
         """Inform an algorithm about online `measurements` of a running trial.
-
         The algorithm can return a dictionary of data which will be provided
         as a response to the running environment. Default is None response.
-
         """
         assert point in self._space
-        return self.instance.judge(self.transformed_space.transform(point),
-                                   measurements)
+        return self.instance.judge(self.transformed_space.transform(point), measurements)
 
     @property
     def should_suspend(self):
         """Allow algorithm to decide whether a particular running trial is still
         worth to complete its evaluation, based on information provided by the
         `judge` method.
-
         """
         return self.instance.should_suspend
 
@@ -337,7 +335,6 @@ class PrimaryAlgo(Wrapper):
     @property
     def space(self):
         """Domain of problem associated with this algorithm's instance.
-
         .. note:: Redefining property here without setter, denies base class' setter.
         """
         return self._space
