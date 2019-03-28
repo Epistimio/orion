@@ -215,10 +215,8 @@ def test_format_without_config_path(parser, commandline, json_config, tmpdir, js
         {'name': '/training/mbs', 'type': 'integer', 'value': 64},
         {'name': '/something-same', 'type': 'categorical', 'value': '3'}])
 
-    output_file = str(tmpdir.join("output.json"))
-
     with pytest.raises(ValueError) as exc_info:
-        cmd_inst = parser.format(trial=trial)
+        parser.format(trial=trial)
 
     assert "Cannot format without a `config_path` argument." in str(exc_info.value)
 
