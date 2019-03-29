@@ -59,7 +59,7 @@ log = logging.getLogger(__name__)
 # Default settings for command line arguments (option, description)
 DEF_CMD_MAX_TRIALS = (infinity, 'inf/until preempted')
 DEF_CMD_WORKER_TRIALS = (infinity, 'inf/until preempted')
-DEF_CMD_POOL_SIZE = (10, str(10))
+DEF_CMD_POOL_SIZE = (1, str(1))
 
 DEF_CONFIG_FILES_PATHS = [
     os.path.join(orion.core.DIRS.site_data_dir, 'orion_config.yaml.example'),
@@ -109,6 +109,7 @@ def fetch_default_options():
 
     # get some defaults
     default_config['name'] = None
+    default_config['user'] = getpass.getuser()
     default_config['max_trials'] = DEF_CMD_MAX_TRIALS[0]
     default_config['worker_trials'] = DEF_CMD_WORKER_TRIALS[0]
     default_config['pool_size'] = DEF_CMD_POOL_SIZE[0]
@@ -254,10 +255,10 @@ def fetch_user_repo(user_script):
     dir_path = os.path.dirname(os.path.abspath(user_script))
     try:
         git_repo = git.Repo(dir_path, search_parent_directories=True)
-    except git.exc.InvalidGitRepositoryError as e:
+    except git.exc.InvalidGitRepositoryError:
         git_repo = None
-        raise RuntimeError('Script {} should be in a git repository.'.format(
-            os.path.abspath(user_script))) from e
+        logging.warning('Script %s is not in a git repository. Code modification '
+                        'won\'t be detected.', os.path.abspath(user_script))
     return git_repo
 
 

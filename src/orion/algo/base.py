@@ -112,8 +112,19 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
                     param.lower() in OptimizationAlgorithm.typenames:
                 # pylint: disable=too-many-function-args
                 param = OptimizationAlgorithm(param, space)
+            elif varname == 'seed':
+                self.seed_rng(param)
 
             setattr(self, varname, param)
+
+    def seed_rng(self, seed):
+        """Seed the state of the random number generator.
+
+        :param seed: Integer seed for the random number generator.
+
+        .. note:: This methods does nothing if the algorithm is deterministic.
+        """
+        pass
 
     @abstractmethod
     def suggest(self, num=1):

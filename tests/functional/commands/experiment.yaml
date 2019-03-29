@@ -26,7 +26,8 @@
   pool_size: 2
   max_trials: 1000
   algorithms:
-    random: {}
+    random:
+      seed: null
 
 - name: test_insert_missing_default_value
 
@@ -49,7 +50,8 @@
   pool_size: 2
   max_trials: 1000
   algorithms:
-    random: {}
+    random:
+      seed: null
 
 - name: test_insert_two_hyperparameters
 
@@ -72,4 +74,5 @@
   pool_size: 2
   max_trials: 1000
   algorithms: 
-    random: {}
+    random:
+      seed: null

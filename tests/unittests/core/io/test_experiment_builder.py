@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.experiment_builder`."""
+import getpass
 
 import pytest
 
@@ -40,7 +41,7 @@ def test_fetch_local_config_from_incomplete_config(incomplete_config_file):
     assert local_config['database']['type'] == 'incomplete'
     assert local_config['max_trials'] == float('inf')
     assert local_config['name'] == 'incomplete'
-    assert local_config['pool_size'] == 10
+    assert local_config['pool_size'] == 1
 
 
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
@@ -154,6 +155,21 @@ def test_build_view_from(config_file, create_db_instance, exp_config, random_dt)
     assert exp_view.algorithms.configuration == exp_config[0][0]['algorithms']
 
 
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_bouthilx")
+def test_build_view_from_force_user(config_file, create_db_instance, exp_config, random_dt):
+    """Try building experiment view when in db"""
+    # Verify default behavior properly fetches bouthilx
+    assert getpass.getuser() == 'bouthilx'
+    cmdargs = {'name': 'supernaedo2', 'config': config_file}
+    with pytest.raises(ValueError) as exc_info:
+        exp_view = ExperimentBuilder().build_view_from(cmdargs)
+    assert "No experiment with given name 'supernaedo2' for user 'bouthilx'" in str(exc_info.value)
+
+    cmdargs['user'] = 'tsirif'
+    exp_view = ExperimentBuilder().build_view_from(cmdargs)
+    assert exp_view.metadata['user'] == 'tsirif'
+
+
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
 def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_dt, script_path):
     """Try building experiment when not in db"""
@@ -178,7 +194,7 @@ def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_d
     assert exp._last_fetched == random_dt
     assert exp.pool_size == 1
     assert exp.max_trials == 100
-    assert exp.algorithms.configuration == {'random': {}}
+    assert exp.algorithms.configuration == {'random': {'seed': None}}
 
 
 @pytest.mark.usefixtures("version_XYZ", "clean_db", "null_db_instances", "with_user_tsirif",
@@ -205,6 +221,15 @@ def test_build_from_hit(old_config_file, create_db_instance, exp_config, script_
     assert exp.pool_size == exp_config[0][0]['pool_size']
     assert exp.max_trials == exp_config[0][0]['max_trials']
     assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
+
+
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_bouthilx")
+def test_build_from_force_user(old_config_file, create_db_instance, exp_config, random_dt):
+    """Try building experiment view when in db"""
+    cmdargs = {'name': 'supernaedo2', 'config': old_config_file}
+    cmdargs['user'] = 'tsirif'
+    exp_view = ExperimentBuilder().build_from(cmdargs)
+    assert exp_view.metadata['user'] == 'tsirif'
 
 
 @pytest.mark.usefixtures("version_XYZ", "clean_db", "null_db_instances", "with_user_tsirif")
@@ -234,7 +259,7 @@ def test_build_from_config_no_hit(config_file, create_db_instance, exp_config, r
     assert exp.pool_size == 1
     assert exp.max_trials == 100
     assert not exp.is_done
-    assert exp.algorithms.configuration == {'random': {}}
+    assert exp.algorithms.configuration == {'random': {'seed': None}}
 
 
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")

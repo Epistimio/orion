@@ -3,6 +3,7 @@
 """Collection of tests for :mod:`orion.core.worker.experiment`."""
 
 import copy
+import getpass
 import random
 
 import pytest
@@ -260,6 +261,7 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
         exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        exp_config[0][0]['algorithms']['dumbalgo']['seed'] = None
         exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
@@ -279,6 +281,7 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
         exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        exp_config[0][0]['algorithms']['dumbalgo']['seed'] = None
         exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
@@ -305,6 +308,7 @@ class TestConfigProperty(object):
         new_config['algorithms']['dumbalgo']['scoring'] = 0
         new_config['algorithms']['dumbalgo']['suspend'] = False
         new_config['algorithms']['dumbalgo']['value'] = 5
+        new_config['algorithms']['dumbalgo']['seed'] = None
         new_config['refers'] = {'adapter': [], 'parent_id': None, 'root_id': _id}
         assert found_config[0] == new_config
         assert exp.name == new_config['name']
@@ -353,6 +357,7 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
         exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+        exp_config[0][0]['algorithms']['dumbalgo']['seed'] = None
         exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
@@ -484,6 +489,7 @@ class TestConfigProperty(object):
         new_config['algorithms']['dumbalgo']['scoring'] = 0
         new_config['algorithms']['dumbalgo']['suspend'] = False
         new_config['algorithms']['dumbalgo']['value'] = 5
+        new_config['algorithms']['dumbalgo']['seed'] = None
         assert exp._id == new_config.pop('_id')
         assert exp.configuration['algorithms'] == new_config['algorithms']
 
@@ -503,6 +509,27 @@ class TestConfigProperty(object):
         exp.configure(exp_config[0][2])
 
         assert not exp.is_done
+
+
+@pytest.mark.usefixtures("create_db_instance", "with_user_bouthilx")
+def test_forcing_user(exp_config):
+    """Trying to set by forcing user so that NO differences are found."""
+    assert getpass.getuser() == 'bouthilx'
+    exp = Experiment('supernaedo2')
+    assert exp.metadata['user'] == 'bouthilx'
+    exp = Experiment('supernaedo2', 'tsirif')
+    # Deliver an external configuration to finalize init
+    exp_config[0][0]['max_trials'] = 5000
+    exp.configure(exp_config[0][0])
+    exp_config[0][0]['algorithms']['dumbalgo']['done'] = False
+    exp_config[0][0]['algorithms']['dumbalgo']['judgement'] = None
+    exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
+    exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
+    exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
+    exp_config[0][0]['algorithms']['dumbalgo']['seed'] = None
+    exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
+    assert exp._id == exp_config[0][0].pop('_id')
+    assert exp.configuration == exp_config[0][0]
 
 
 class TestReserveTrial(object):
@@ -836,13 +863,13 @@ class TestInitExperimentWithEVC(object):
         assert exp._last_fetched == random_dt
         assert exp.pool_size is None
         assert exp.max_trials is None
-        assert exp.configuration['algorithms'] == {'random': {}}
+        assert exp.configuration['algorithms'] == {'random': {'seed': None}}
 
     @pytest.mark.usefixtures("with_user_tsirif")
     def test_experiment_with_parent(self, create_db_instance, random_dt, exp_config):
         """Configure an existing experiment with parent."""
         exp = Experiment('supernaedo2.1')
-        exp.algorithms = {'random': {}}
+        exp.algorithms = {'random': {'seed': None}}
         exp.configure(exp.configuration)
         assert exp._init_done is True
         assert exp._db is create_db_instance
@@ -852,4 +879,18 @@ class TestInitExperimentWithEVC(object):
         assert exp.metadata == exp_config[0][4]['metadata']
         assert exp.pool_size == 2
         assert exp.max_trials == 1000
-        assert exp.configuration['algorithms'] == {'random': {}}
+        assert exp.configuration['algorithms'] == {'random': {'seed': None}}
+
+    @pytest.mark.usefixtures("with_user_tsirif")
+    def test_experiment_non_interactive_branching(self, create_db_instance, random_dt, exp_config,
+                                                  monkeypatch):
+        """Configure an existing experiment with parent."""
+        monkeypatch.setattr('sys.__stdin__.isatty', lambda: True)
+        exp = Experiment('supernaedo2.1')
+        exp.algorithms = {'dumbalgo': {}}
+        with pytest.raises(OSError):
+            exp.configure(exp.configuration)
+        monkeypatch.undo()
+        with pytest.raises(ValueError) as exc_info:
+            exp.configure(exp.configuration)
+        assert "Configuration is different and generates a branching" in str(exc_info.value)

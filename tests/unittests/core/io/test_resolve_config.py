@@ -3,6 +3,7 @@
 """Example usage and tests for :mod:`orion.core.io.resolve_config`."""
 
 import hashlib
+import logging
 import os
 import shutil
 import socket
@@ -34,7 +35,7 @@ def test_fetch_default_options():
 
     assert default_config['max_trials'] == float('inf')
     assert default_config['name'] is None
-    assert default_config['pool_size'] == 10
+    assert default_config['pool_size'] == 1
 
 
 def test_fetch_env_vars():
@@ -348,14 +349,13 @@ def test_infer_versioning_metadata_on_dirty_repo(repo):
     assert vcs['diff_sha'] == hashlib.sha256(''.encode('utf-8')).hexdigest()
 
 
-def test_fetch_user_repo_on_non_repo():
-    """
-    Test if `fetch_user_repo` raises a warning when user's script
-    is not a git repo
-    """
-    with pytest.raises(RuntimeError) as exc_info:
+def test_fetch_user_repo_on_non_repo(caplog):
+    """Test if `fetch_user_repo` logs a warning when user's script is not a git repo."""
+    with caplog.at_level(logging.WARNING):
         resolve_config.fetch_user_repo('.')
-    assert "Script {} should be in a git repository".format(os.getcwd()) in str(exc_info.value)
+    messages = [rec.message for rec in caplog.records]
+    assert len(messages) == 1
+    assert "Script {} is not in a git repository".format(os.getcwd()) in messages[0]
 
 
 def test_infer_versioning_metadata_on_detached_head(repo):

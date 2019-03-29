@@ -10,6 +10,7 @@ algorithms:
         scoring: 0
         suspend: False
         value: 5
+        seed: null
 
 database:
   type: 'mongodb'

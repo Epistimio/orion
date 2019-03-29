@@ -100,8 +100,8 @@ Oríon configuration files.
 
       database:
         type: 'mongodb'
-          name: 'orion_test'
-          host: 'mongodb://user:pass@localhost'
+        name: 'orion_test'
+        host: 'mongodb://user:pass@localhost'
 
 As it will be referenced with detail in configuration's documentation (TODO),
 the environmental variable definitions precede the ones within files in default

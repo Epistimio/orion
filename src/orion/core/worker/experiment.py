@@ -89,7 +89,7 @@ class Experiment(object):
                  '_node', '_last_fetched')
     non_branching_attrs = ('pool_size', 'max_trials')
 
-    def __init__(self, name):
+    def __init__(self, name, user=None):
         """Initialize an Experiment object with primary key (:attr:`name`, :attr:`user`).
 
         Try to find an entry in `Database` with such a key and config this object
@@ -112,7 +112,8 @@ class Experiment(object):
         self.name = name
         self._node = None
         self.refers = {}
-        user = getpass.getuser()
+        if user is None:
+            user = getpass.getuser()
         self.metadata = {'user': user}
         self.pool_size = None
         self.max_trials = None
@@ -548,6 +549,8 @@ class Experiment(object):
             'params': 1
             }
         completed_trials = self.fetch_trials(query, selection)
+        if not completed_trials:
+            return dict()
         stats = dict()
         stats['trials_completed'] = len(completed_trials)
         stats['best_trials_id'] = None
@@ -583,12 +586,12 @@ class Experiment(object):
         # Just overwrite everything else given
         for section, value in config.items():
             if section not in self.__slots__:
-                log.warning("Found section '%s' in configuration. Experiments "
-                            "do not support this option. Ignoring.", section)
+                log.info("Found section '%s' in configuration. Experiments "
+                         "do not support this option. Ignoring.", section)
                 continue
             if section.startswith('_'):
-                log.warning("Found section '%s' in configuration. "
-                            "Cannot set private attributes. Ignoring.", section)
+                log.info("Found section '%s' in configuration. "
+                         "Cannot set private attributes. Ignoring.", section)
                 continue
 
             # Copy sub configuration to value confusing side-effects
@@ -619,9 +622,7 @@ class Experiment(object):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
         if not self.producer.get('strategy'):
-            log.warning('You have not set a producer strategy, the basic '
-                        'NoParallelStrategy will be used')
-            self.producer = {'strategy': Strategy(of_type="NoParallelStrategy")}
+            self.producer = {'strategy': Strategy(of_type="MaxParallelStrategy")}
         elif not isinstance(self.producer.get('strategy'), BaseParallelStrategy):
             self.producer = {'strategy': Strategy(of_type=self.producer['strategy'])}
 
@@ -633,8 +634,17 @@ class Experiment(object):
         """
         experiment_brancher = ExperimentBranchBuilder(conflicts, branching_configuration)
 
-        if not experiment_brancher.is_resolved or experiment_brancher.auto_resolution:
+        needs_manual_resolution = (not experiment_brancher.is_resolved or
+                                   experiment_brancher.auto_resolution)
+
+        if needs_manual_resolution:
             branching_prompt = BranchingPrompt(experiment_brancher)
+
+            if not sys.__stdin__.isatty():
+                raise ValueError(
+                    "Configuration is different and generates a branching event:\n{}".format(
+                        branching_prompt.get_status()))
+
             branching_prompt.cmdloop()
 
             if branching_prompt.abort or not experiment_brancher.is_resolved:
@@ -691,7 +701,7 @@ class ExperimentView(object):
                         ["fetch_trials", "fetch_trials_tree", "fetch_completed_trials",
                          "connect_to_version_control_tree"])
 
-    def __init__(self, name):
+    def __init__(self, name, user=None):
         """Initialize viewed experiment object with primary key (:attr:`name`, :attr:`user`).
 
         Build an experiment from configuration found in `Database` with a key (name, user).
@@ -704,7 +714,7 @@ class ExperimentView(object):
         :param name: Describe a configuration with a unique identifier per :attr:`user`.
         :type name: str
         """
-        self._experiment = Experiment(name)
+        self._experiment = Experiment(name, user)
 
         if self._experiment.id is None:
             raise ValueError("No experiment with given name '%s' for user '%s' inside database, "

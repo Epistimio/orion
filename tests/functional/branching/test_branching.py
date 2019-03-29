@@ -422,11 +422,11 @@ def test_new_algo_not_resolved(init_full_x):
     """Test that new algo conflict is not automatically resolved"""
     name = "full_x"
     branch = "full_x_new_algo"
-    with pytest.raises(OSError) as exc:
+    with pytest.raises(ValueError) as exc:
         orion.core.cli.main(
             ("init_only -n {name} --branch {branch} --config new_algo_config.yaml "
              "./black_box.py -x~uniform(-10,10)").format(name=name, branch=branch).split(" "))
-    assert "reading from stdin while output is captured" in str(exc.value)
+    assert "Configuration is different and generates a branching event" in str(exc.value)
 
 
 def test_new_cli(init_full_x_new_cli):
@@ -445,11 +445,11 @@ def test_new_cli_not_resolved(init_full_x):
     """Test that new cli conflict is not automatically resolved"""
     name = "full_x"
     branch = "full_x_new_cli"
-    with pytest.raises(OSError) as exc:
+    with pytest.raises(ValueError) as exc:
         orion.core.cli.main(
             ("init_only -n {name} --branch {branch} ./black_box.py "
              "-x~uniform(-10,10) --a-new argument").format(name=name, branch=branch).split(" "))
-    assert "reading from stdin while output is captured" in str(exc.value)
+    assert "Configuration is different and generates a branching event" in str(exc.value)
 
 
 def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
@@ -459,6 +459,7 @@ def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
         pass
     from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
     monkeypatch.setattr(BranchingPrompt, "cmdloop", _do_nothing)
+    monkeypatch.setattr('sys.__stdin__.isatty', lambda: True)
 
     name = "full_x_full_y"
     branch = "half_x_no_y_new_w"
@@ -484,9 +485,9 @@ def test_auto_resolution_forces_prompt(init_full_x_full_y, monkeypatch):
          "-y~+uniform(-10,10,default_value=1)").format(name=name).split(" "))
 
     # No conflicts, but forced branching, it forces prompt
-    with pytest.raises(OSError) as exc:
+    with pytest.raises(ValueError) as exc:
         orion.core.cli.main(
             ("init_only -n {name} --branch {branch} --auto-resolution ./black_box.py "
              "-x~uniform(-10,10) "
              "-y~+uniform(-10,10,default_value=1)").format(name=name, branch=branch).split(" "))
-    assert "reading from stdin while output is captured" in str(exc.value)
+    assert "Configuration is different and generates a branching event" in str(exc.value)
