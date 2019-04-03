@@ -274,9 +274,12 @@ class PrimaryAlgo(Wrapper):
 
     def suggest(self, num=1):
         """Suggest a `num` of new sets of parameters.
+
         :param num: how many sets to be suggested.
+
         .. note:: New parameters must be compliant with the problem's domain
            `orion.algo.space.Space`.
+
         """
         points = self.instance.suggest(num)
         for point in points:
