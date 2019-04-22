@@ -83,6 +83,11 @@ class MongoDB(AbstractDB):
         self.options = {'authSource': name}
         self.uri = None
 
+        if port is not None:
+            port = int(port)
+        else:
+            port = pymongo.MongoClient.PORT
+
         super(MongoDB, self).__init__(host, name, port, username, password)
 
     @mongodb_exception_wrapper
@@ -249,7 +254,7 @@ class MongoDB(AbstractDB):
         """Sanitize attributes using MongoDB's 'uri_parser' module."""
         try:
             # Host can be a valid MongoDB URI
-            settings = pymongo.uri_parser.parse_uri(self.host)
+            settings = pymongo.uri_parser.parse_uri(self.host, default_port=self.port)
         except pymongo.errors.InvalidURI:  # host argument was a hostname
             if self.port is None:
                 self.port = pymongo.MongoClient.PORT

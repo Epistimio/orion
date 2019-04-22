@@ -91,6 +91,20 @@ class TestConnection(object):
         assert orion_db.password == 'pass'
         assert orion_db.name == 'orion_test'
 
+    def test_overwrite_partial_uri(self, monkeypatch):
+        """Check the case when connecting with partial `uri`."""
+        monkeypatch.setattr(MongoDB, 'initiate_connection', lambda self: None)
+
+        orion_db = MongoDB('mongodb://localhost',
+                           port=1231, name='orion', username='lala',
+                           password='none')
+        orion_db._sanitize_attrs()
+        assert orion_db.host == 'localhost'
+        assert orion_db.port == 1231
+        assert orion_db.username == 'lala'
+        assert orion_db.password == 'none'
+        assert orion_db.name == 'orion'
+
     def test_singleton(self):
         """Test that MongoDB class is a singleton."""
         orion_db = MongoDB(username='user', password='pass', name='orion_test')

@@ -32,6 +32,7 @@ def test_fetch_default_options():
     assert default_config['database']['host'] == socket.gethostbyname(socket.gethostname())
     assert default_config['database']['name'] == 'orion'
     assert default_config['database']['type'] == 'MongoDB'
+    assert default_config['database']['port'] == '27017'
 
     assert default_config['max_trials'] == float('inf')
     assert default_config['name'] is None
