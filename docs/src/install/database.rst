@@ -92,6 +92,7 @@ Oríon configuration files.
       export ORION_DB_ADDRESS=mongodb://user:pass@localhost
       export ORION_DB_NAME=orion_test
       export ORION_DB_TYPE=MongoDB
+      export ORION_DB_PORT=27017
 
    2. By creating a section in an Oríon's configuration YAML file, like `this one <https://github.com/epistimio/orion/blob/master/tests/functional/demo/orion_config_random.yaml>`_
       used by our functional tests.

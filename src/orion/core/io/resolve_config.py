@@ -72,7 +72,8 @@ DEF_CONFIG_FILES_PATHS = [
 ENV_VARS_DB = [
     ('ORION_DB_NAME', 'name', 'orion'),
     ('ORION_DB_TYPE', 'type', 'MongoDB'),
-    ('ORION_DB_ADDRESS', 'host', socket.gethostbyname(socket.gethostname()))
+    ('ORION_DB_ADDRESS', 'host', socket.gethostbyname(socket.gethostname())),
+    ('ORION_DB_PORT', 'port', '27017')
     ]
 
 # TODO: Default resource from environmental (localhost)

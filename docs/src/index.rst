@@ -24,6 +24,7 @@
 
    examples/pytorch_cifar
    examples/pytorch_a2c_ppo
+   examples/cluster
 
 .. toctree::
    :caption: Plugin development's Guide
