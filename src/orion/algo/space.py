@@ -621,6 +621,28 @@ class Categorical(Dimension):
         return casted_point
 
 
+class Fidelity(Dimension):
+    """Subclass of `Dimension` for representing real parameters.
+
+    Attributes
+    ----------
+    name : str
+    type : str
+
+    """
+
+    def __init__(self, name):
+        """Search space dimension that can represent a fidelity value.
+
+        Parameters
+        ----------
+        name : str
+
+        """
+        super(Fidelity, self).__init__(name, None, *args, **kwargs)
+
+
+
 class Space(OrderedDict):
     """Represents the search space.
 
