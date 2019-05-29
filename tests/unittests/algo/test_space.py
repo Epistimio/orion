@@ -9,7 +9,7 @@ from numpy.testing import assert_array_equal as assert_eq
 import pytest
 from scipy.stats import distributions as dists
 
-from orion.algo.space import (Categorical, Dimension, Integer, Real, Space)
+from orion.algo.space import (Categorical, Dimension, Fidelity, Integer, Real, Space)
 
 
 class TestDimension(object):
@@ -459,6 +459,38 @@ class TestCategorical(object):
         with pytest.raises(ValueError) as exc:
             dim.cast(sample)
         assert "Invalid category: asdfa" in str(exc.value)
+
+
+class TestFidelity(object):
+    """Test methods of a Fidelity object."""
+
+    def test_simple_instance(self, seed):
+        """Test Fidelity.__init__."""
+        dim = Fidelity('epoch')
+
+        assert str(dim) == "Fidelity(name=epoch, prior={None: (), {}}, " + \
+                           "shape=None, default value=None)"
+        assert dim.name == 'epoch'
+        assert dim.type == 'fidelity'
+        assert dim.shape is None
+
+    def test_sample(self):
+        """Check that error is being raised."""
+        dim = Fidelity('epoch')
+        with pytest.raises(NotImplementedError):
+            dim.sample()
+
+    def test_interval(self):
+        """Check that error is being raised."""
+        dim = Fidelity('epoch')
+        with pytest.raises(NotImplementedError):
+            dim.interval()
+
+    def test_cast(self):
+        """Check that error is being raised."""
+        dim = Fidelity('epoch')
+        with pytest.raises(NotImplementedError):
+            dim.cast()
 
 
 class TestSpace(object):

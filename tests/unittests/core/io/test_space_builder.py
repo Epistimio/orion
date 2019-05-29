@@ -6,7 +6,7 @@ import copy
 import pytest
 from scipy.stats import distributions as dists
 
-from orion.algo.space import (Categorical, Integer, Real)
+from orion.algo.space import (Categorical, Fidelity, Integer, Real)
 from orion.core.io.space_builder import (DimensionBuilder, SpaceBuilder)
 from orion.core.worker.trial import Trial
 
@@ -79,6 +79,14 @@ class TestDimensionBuilder(object):
         assert dim.name == 'yolo3'
         assert dim._prior_name == 'alpha'
         assert isinstance(dim.prior, dists.alpha_gen)
+
+    def test_build_a_good_fidelity(self, dimbuilder):
+        """Check that a Fidelity dimension is correctly built."""
+        dim = dimbuilder.build('epoch', 'fidelity()')
+        assert isinstance(dim, Fidelity)
+        assert dim.name == 'epoch'
+        assert dim._prior_name == 'None'
+        assert dim.prior is None
 
     def test_build_fails_because_of_name(self, dimbuilder):
         """Build fails because distribution name is not supported..."""

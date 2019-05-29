@@ -142,7 +142,8 @@ class DimensionBuilder(object):
 
         return Categorical(name, args, **kwargs)
 
-    def fidelity(self, *args, **kwargs):
+    def fidelity(self):
+        """Create a `Fidelity` dimension."""
         name = self.name
         return Fidelity(name)
 
