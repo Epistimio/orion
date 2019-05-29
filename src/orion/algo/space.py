@@ -645,11 +645,14 @@ class Fidelity(Dimension):
         name : str
 
         """
-        super(Fidelity, self).__init__(name, None)
+        self.name = name
+        self.prior = None
+        self._prior_name = 'None'
+        self.shape = None
 
     def validate(self):
         """Do not do anything."""
-        pass
+        raise NotImplementedError
 
     def sample(self, n_samples=1, seed=None):
         """Do not do anything."""
