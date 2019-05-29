@@ -94,6 +94,9 @@ class Dimension(object):
         if isinstance(prior, str):
             self._prior_name = prior
             self.prior = getattr(distributions, prior)
+        elif prior is None:
+            self._prior_name = "None"
+            self.prior = prior
         else:
             self._prior_name = prior.name
             self.prior = prior
@@ -243,6 +246,9 @@ class Dimension(object):
         # Default shape `None` corresponds to 0-dim (scalar) or shape == ().
         # Read about ``size`` argument in
         # `scipy.stats._distn_infrastructure.rv_generic._argcheck_rvs`
+        if self.prior is None:
+            return None
+
         _, _, _, size = self.prior._parse_args_rvs(*self._args,  # pylint:disable=protected-access
                                                    size=self._shape,
                                                    **self._kwargs)

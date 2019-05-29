@@ -117,6 +117,13 @@ class TestDimension(object):
         dim = Dimension('yolo', 'uniform', -3, 4)
         assert dim.default_value is None
 
+    def test_no_prior(self):
+        """Test the giving a null prior defaults prior_name to `None`."""
+        dim = Dimension('yolo', None)
+        print(dim._prior_name)
+        assert dim.prior is None
+        assert dim._prior_name is 'None'
+
 
 class TestReal(object):
     """Test methods of a `Real` object."""
