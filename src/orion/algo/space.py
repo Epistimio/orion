@@ -472,7 +472,7 @@ class Integer(Real, _Discrete):
 
 
 class Categorical(Dimension):
-    """Subclass of `Dimension` for representing integer parameters.
+    """Subclass of `Dimension` for representing categorical parameters.
 
     Attributes
     ----------
