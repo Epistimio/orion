@@ -645,8 +645,23 @@ class Fidelity(Dimension):
         name : str
 
         """
-        super(Fidelity, self).__init__(name, None, *args, **kwargs)
+        super(Fidelity, self).__init__(name, None)
 
+    def validate(self):
+        """Do not do anything."""
+        pass
+
+    def sample(self, n_samples=1, seed=None):
+        """Do not do anything."""
+        pass
+
+    def interval(self, alpha=1.0):
+        """Do not do anything."""
+        raise NotImplementedError
+
+    def cast(self, point=0):
+        """Do not do anything."""
+        raise NotImplementedError
 
 
 class Space(OrderedDict):
