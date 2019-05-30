@@ -473,12 +473,6 @@ class TestFidelity(object):
         assert dim.type == 'fidelity'
         assert dim.shape is None
 
-    def test_sample(self):
-        """Check that error is being raised."""
-        dim = Fidelity('epoch')
-        with pytest.raises(NotImplementedError):
-            dim.sample()
-
     def test_interval(self):
         """Check that error is being raised."""
         dim = Fidelity('epoch')

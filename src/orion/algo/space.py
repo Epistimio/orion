@@ -630,6 +630,11 @@ class Categorical(Dimension):
 class Fidelity(Dimension):
     """Fidelity `Dimension` for representing multi-fidelity.
 
+    Fidelity dimensions are not optimized by the algorithms. If it supports multi-fidelity, the
+    algorithm will select a fidelity level for which it will sample hyper-parameter values to
+    explore a low fidelity space. This class is used as a place-holder so that algorithms can
+    discern fidelity dimensions from hyper-parameter dimensions.
+
     Attributes
     ----------
     name : str
@@ -637,7 +642,7 @@ class Fidelity(Dimension):
 
     """
 
-    #pylint:disable=super-init-not-called
+    # pylint:disable=super-init-not-called
     def __init__(self, name):
         """Fidelity dimension that can represent a fidelity level.
 
@@ -649,7 +654,6 @@ class Fidelity(Dimension):
         self.name = name
         self.prior = None
         self._prior_name = 'None'
-        self.shape = None
 
     def validate(self):
         """Do not do anything."""
@@ -670,7 +674,6 @@ class Fidelity(Dimension):
     def __repr__(self):
         """Represent the object as a string."""
         return "{0}(name={1})".format(self.__class__.__name__, self.name)
-
 
 
 class Space(OrderedDict):
