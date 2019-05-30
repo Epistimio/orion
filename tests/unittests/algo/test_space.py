@@ -118,7 +118,7 @@ class TestDimension(object):
         assert dim.default_value is None
 
     def test_no_prior(self):
-        """Test the giving a null prior defaults prior_name to `None`."""
+        """Test that giving a null prior defaults prior_name to `None`."""
         dim = Dimension('yolo', None)
         print(dim._prior_name)
         assert dim.prior is None
@@ -468,8 +468,7 @@ class TestFidelity(object):
         """Test Fidelity.__init__."""
         dim = Fidelity('epoch')
 
-        assert str(dim) == "Fidelity(name=epoch, prior={None: (), {}}, " + \
-                           "shape=None, default value=None)"
+        assert str(dim) == "Fidelity(name=epoch)"
         assert dim.name == 'epoch'
         assert dim.type == 'fidelity'
         assert dim.shape is None
