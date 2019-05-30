@@ -628,7 +628,7 @@ class Categorical(Dimension):
 
 
 class Fidelity(Dimension):
-    """Subclass of `Dimension` for representing real parameters.
+    """Fidelity `Dimension` for representing multi-fidelity.
 
     Attributes
     ----------
@@ -637,8 +637,9 @@ class Fidelity(Dimension):
 
     """
 
+    #pylint:disable=super-init-not-called
     def __init__(self, name):
-        """Search space dimension that can represent a fidelity value.
+        """Fidelity dimension that can represent a fidelity level.
 
         Parameters
         ----------
