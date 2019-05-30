@@ -667,6 +667,11 @@ class Fidelity(Dimension):
         """Do not do anything."""
         raise NotImplementedError
 
+    def __repr__(self):
+        """Represent the object as a string."""
+        return "{0}(name={1})".format(self.__class__.__name__, self.name)
+
+
 
 class Space(OrderedDict):
     """Represents the search space.
