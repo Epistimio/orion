@@ -94,6 +94,9 @@ class Dimension(object):
         if isinstance(prior, str):
             self._prior_name = prior
             self.prior = getattr(distributions, prior)
+        elif prior is None:
+            self._prior_name = "None"
+            self.prior = prior
         else:
             self._prior_name = prior.name
             self.prior = prior
@@ -243,6 +246,9 @@ class Dimension(object):
         # Default shape `None` corresponds to 0-dim (scalar) or shape == ().
         # Read about ``size`` argument in
         # `scipy.stats._distn_infrastructure.rv_generic._argcheck_rvs`
+        if self.prior is None:
+            return None
+
         _, _, _, size = self.prior._parse_args_rvs(*self._args,  # pylint:disable=protected-access
                                                    size=self._shape,
                                                    **self._kwargs)
@@ -472,7 +478,7 @@ class Integer(Real, _Discrete):
 
 
 class Categorical(Dimension):
-    """Subclass of `Dimension` for representing integer parameters.
+    """Subclass of `Dimension` for representing categorical parameters.
 
     Attributes
     ----------
@@ -619,6 +625,55 @@ class Categorical(Dimension):
             return casted_point.tolist()
 
         return casted_point
+
+
+class Fidelity(Dimension):
+    """Fidelity `Dimension` for representing multi-fidelity.
+
+    Fidelity dimensions are not optimized by the algorithms. If it supports multi-fidelity, the
+    algorithm will select a fidelity level for which it will sample hyper-parameter values to
+    explore a low fidelity space. This class is used as a place-holder so that algorithms can
+    discern fidelity dimensions from hyper-parameter dimensions.
+
+    Attributes
+    ----------
+    name : str
+    type : str
+
+    """
+
+    # pylint:disable=super-init-not-called
+    def __init__(self, name):
+        """Fidelity dimension that can represent a fidelity level.
+
+        Parameters
+        ----------
+        name : str
+
+        """
+        self.name = name
+        self.prior = None
+        self._prior_name = 'None'
+
+    def validate(self):
+        """Do not do anything."""
+        raise NotImplementedError
+
+    def sample(self, n_samples=1, seed=None):
+        """Do not do anything."""
+        pass
+
+    def interval(self, alpha=1.0):
+        """Do not do anything."""
+        raise NotImplementedError
+
+    def cast(self, point=0):
+        """Do not do anything."""
+        raise NotImplementedError
+
+    def __repr__(self):
+        """Represent the object as a string."""
+        return "{0}(name={1})".format(self.__class__.__name__, self.name)
 
 
 class Space(OrderedDict):

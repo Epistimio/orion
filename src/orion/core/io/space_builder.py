@@ -45,7 +45,7 @@ import re
 
 from scipy.stats import distributions as sp_dists
 
-from orion.algo.space import (Categorical, Integer, Real, Space)
+from orion.algo.space import (Categorical, Fidelity, Integer, Real, Space)
 from orion.core.io.convert import infer_converter_from_file_type
 
 log = logging.getLogger(__name__)
@@ -141,6 +141,11 @@ class DimensionBuilder(object):
                             "Expected argument with categories.".format(name)) from exc
 
         return Categorical(name, args, **kwargs)
+
+    def fidelity(self):
+        """Create a `Fidelity` dimension."""
+        name = self.name
+        return Fidelity(name)
 
     def uniform(self, *args, **kwargs):
         """Create an `Integer` or `Real` uniformly distributed dimension.
