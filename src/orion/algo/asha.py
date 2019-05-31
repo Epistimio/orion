@@ -3,20 +3,23 @@
 :mod:`orion.algo.asha` -- TODO
 ======================================================================
 
-.. module:: asha 
+.. module:: asha
    :platform: Unix
    :synopsis: TODO
 
 """
+import hashlib
+
 import numpy
 
 from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Fidelity
 
 
 class ASHA(BaseAlgorithm):
-    """Implement a algorithm that samples randomly from the problem's space."""
+    """Implement an algorithm that samples randomly from the problem's space."""
 
-    def __init__(self, space, seed=None, max_resources=100, grace_period=0, reduction_factor=4,
+    def __init__(self, space, seed=None, max_resources=100, grace_period=1, reduction_factor=4,
                  brackets=1):
         """Random sampler takes no other hyperparameter than the problem's space
         itself.
@@ -58,18 +61,24 @@ class ASHA(BaseAlgorithm):
             if candidate:
                 return candidate
 
-        # TODO: Add fidelity here based on `space`
         point = self.space.sample(num, seed=self.rng.randint(0, 10000))
 
         sizes = numpy.array([len(b.rungs) for b in self.brackets])
         probs = numpy.e**(sizes - sizes.max())
         normalized = probs / probs.sum()
         idx = numpy.random.choice(len(self.brackets), p=normalized)
-        #  TODO: Hash point (without fidelity) to get a unique trial id
-        self.trial_info[point] = self.brackets[idx]
+
+        point[self.fidelity_index] = self.brackets[idx].rungs[-1][0]
+        self.trial_info[self._get_id(point)] = self.brackets[idx]
         # NOTE: The point is not registered in bracket here, until in `observe()`
 
         return point
+
+    def _get_id(self, point):
+        non_fidelity_dims = point[0:self.fidelity_index]
+        non_fidelity_dims.extend(point[self.fidelity_index + 1:])
+
+        return hashlib.md5((non_fidelity_dims).encode('utf-8')).hexdigest()
 
     def observe(self, points, results):
         """Observe evaluation `results` corresponding to list of `points` in
@@ -77,16 +86,36 @@ class ASHA(BaseAlgorithm):
 
         A simple random sampler though does not take anything into account.
         """
-
-
         for point, result in zip(points, results):
 
-            # TODO find which bracket containts the point. If none,
-            #      randomly select one. WARNING, the fidelity may not match the bracket, test for it
+            _id = self._get_id(point)
+
+            if _id not in self.trial_info:
+                fidelity = point[self.fidelity_index]
+                bracket = None
+
+                for _bracket in self.brackets:
+                    budget = _bracket.rungs[-1][0]
+
+                    if fidelity == budget:
+                        bracket = _bracket
+                        break
+
+                if bracket is None:
+                    raise RuntimeError("No bracket found for point {0} with fidelity {1}".format(
+                                       _id, fidelity)
+                                       )
+            else:
+                bracket = self.trial_info[_id]
+
             bracket.register(point, result)
 
     def is_done(self):
         return all(bracket.is_done for bracket in self.brackets)
+
+    @property
+    def fidelity_index(self):
+        return [i for i, dim in enumerate(self.space.values()) if isinstance(dim, Fidelity)][0]
 
 
 class _Bracket():
@@ -94,18 +123,18 @@ class _Bracket():
         self.asha = asha
         self.reduction_factor = reduction_factor
         max_rungs = int(numpy.log(max_t / min_t) / numpy.log(reduction_factor) - s + 1)
-        self.rungs = [(min(min_t * reduction_factor**(k + s), max_t), set())
+        self.rungs = [(min(min_t * reduction_factor**(k + s), max_t), dict())
                       for k in reversed(range(max_rungs + 1))]
 
         if self.rungs[0][0] == self.rungs[1][0]:
             del self.rungs[0]
 
     def register(self, point, objective):
-        self.rungs[-1][1].add((objective, point))
+        self.rungs[-1][1][self.asha._get_id(point)] = (objective, point)
 
     def get_candidate(self, rung_id):
         budget, rung = self.rungs[rung_id]
-        next_rung = self.rungs[rung_id - 1][1]
+        next_rung = self.rungs[rung_id + 1][1]
 
         k = len(rung) // self.reduction_factor
         rung = list(sorted(rung))
@@ -129,6 +158,7 @@ class _Bracket():
         Notes
         -----
             All trials are part of the rungs, for any state. Only completed trials
+            :sp
             are eligible for promotion, i.e., only completed trials can be part of top-k.
             Lookup for promotion in rung l + 1 contains trials of any status.
         """
@@ -137,6 +167,7 @@ class _Bracket():
             candidate, objective = self.get_candidate(rung_id)
 
             if candidate:
-                self.rungs[rung_id - 1][1].add(candidate)
+                self.rungs[rung_id + 1][1][self.asha._get_id(candidate)] = (objective, candidate)
+                candidate[self.asha.fidelity_index] = self.rungs[-1][0]
 
                 return candidate
