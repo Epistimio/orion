@@ -91,6 +91,7 @@ import logging
 
 from orion.core.io import resolve_config
 from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.utils.exceptions import NoConfigurationError
 from orion.core.worker.experiment import Experiment, ExperimentView
 
 
@@ -270,6 +271,10 @@ class ExperimentBuilder(object):
         experiment = Experiment(config['name'], config.get('user', None))
 
         # Finish experiment's configuration and write it to database.
-        experiment.configure(config)
+        try:
+            experiment.configure(config)
+        except AttributeError as ex:
+            if 'user_script' not in config['metadata']:
+                raise NoConfigurationError from ex
 
         return experiment
