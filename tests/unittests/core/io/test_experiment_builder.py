@@ -7,6 +7,7 @@ import pytest
 
 from orion.core.io import resolve_config
 from orion.core.io.experiment_builder import ExperimentBuilder
+from orion.core.utils.exceptions import NoConfigurationError
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -260,6 +261,15 @@ def test_build_from_config_no_hit(config_file, create_db_instance, exp_config, r
     assert exp.max_trials == 100
     assert not exp.is_done
     assert exp.algorithms.configuration == {'random': {'seed': None}}
+
+
+def test_build_from_config_no_commandline_config(config_file):
+    """Try building experiment with no commandline configuration."""
+    cmdargs = {'name': 'supernaekei', 'config': config_file}
+    full_config = ExperimentBuilder().fetch_full_config(cmdargs)
+
+    with pytest.raises(NoConfigurationError):
+        ExperimentBuilder().build_from_config(full_config)
 
 
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")

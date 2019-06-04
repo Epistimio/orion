@@ -11,4 +11,5 @@
 
 class NoConfigurationError(Exception):
     """Raise when commandline configuration is empty."""
+
     pass
