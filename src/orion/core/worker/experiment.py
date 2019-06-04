@@ -606,10 +606,6 @@ class Experiment(object):
             space_builder = SpaceBuilder()
             space = space_builder.build_from(config['metadata']['user_args'])
 
-            if space_builder.userconfig:
-                with open(space_builder.userconfig) as f:
-                    self.metadata['script_config_file'] = f.read()
-
             if not space:
                 raise ValueError("Parameter space is empty. There is nothing to optimize.")
 
