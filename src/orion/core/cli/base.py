@@ -71,7 +71,7 @@ class OrionArgsParser:
         try:
             args, function = self.parse(argv)
             function(args)
-        except NoConfigurationError as ex:
+        except NoConfigurationError:
             print("Error: No commandline configuration found for new experiment.")
 
 

@@ -297,3 +297,32 @@ def test_build_from_config_hit(old_config_file, create_db_instance, exp_config, 
     assert exp.pool_size == exp_config[0][0]['pool_size']
     assert exp.max_trials == exp_config[0][0]['max_trials']
     assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
+
+
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
+def test_build_without_config_hit(old_config_file, create_db_instance, exp_config, script_path):
+    """Try building experiment without commandline config when in db (no branch)"""
+    cmdargs = {'name': 'supernaedo2',
+               'config': old_config_file,
+               'user_args': [script_path,
+                             "--encoding_layer~choices(['rnn', 'lstm', 'gru'])",
+                             "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]}
+
+    # Test that experiment already exists
+    ExperimentBuilder().build_view_from(cmdargs)
+
+    cmdargs = {'name': 'supernaedo2'}
+
+    exp_view = ExperimentBuilder().build_view_from(cmdargs)
+    exp = ExperimentBuilder().build_from_config(exp_view.configuration)
+
+    assert exp._init_done is True
+    assert exp._db is create_db_instance
+    assert exp._id == exp_config[0][0]['_id']
+    assert exp.name == exp_config[0][0]['name']
+    assert exp.configuration['refers'] == exp_config[0][0]['refers']
+    assert exp.metadata == exp_config[0][0]['metadata']
+    assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
+    assert exp.pool_size == exp_config[0][0]['pool_size']
+    assert exp.max_trials == exp_config[0][0]['max_trials']
+    assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
