@@ -132,10 +132,14 @@ class _Bracket():
         self.reduction_factor = reduction_factor
         max_rungs = int(numpy.log(max_t / min_t) / numpy.log(reduction_factor) - s + 1)
         self.rungs = [(min_t * reduction_factor**(k + s), dict())
-                      for k in reversed(range(max_rungs + 1))]
+                      for k in range(max_rungs + 1)]
 
     def register(self, point, objective):
-        self.rungs[-1][1][self.asha._get_id(point)] = (objective, point)
+        if point[self.asha.fidelity_index] != self.rungs[0][0]:
+            raise AttributeError("Point {} budget different than rung 0.".format(
+                                 self.asha._get_id(point)))
+
+        self.rungs[0][1][self.asha._get_id(point)] = (objective, point)
 
     def get_candidate(self, rung_id):
         budget, rung = self.rungs[rung_id]
@@ -166,7 +170,7 @@ class _Bracket():
             Lookup for promotion in rung l + 1 contains trials of any status.
         """
         # NOTE: There should be base + 1 rungs
-        for rung_id in range(1, len(self.rungs)):
+        for rung_id in range(len(self.rungs) - 1, 0, -1):
             candidate, objective = self.get_candidate(rung_id)
 
             if candidate:
