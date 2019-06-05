@@ -31,6 +31,9 @@ class ASHA(BaseAlgorithm):
             space, seed=seed, max_resources=max_resources, grace_period=grace_period,
             reduction_factor=reduction_factor, brackets=brackets)
 
+        if reduction_factor < 2:
+            raise AttributeError("Reduction factor for ASHA needs to be at least 2.")
+
         self.trial_info = {}  # Stores Trial -> Bracket
 
         # Tracks state for new trial add
@@ -120,14 +123,16 @@ class ASHA(BaseAlgorithm):
 
 class _Bracket():
     def __init__(self, asha, min_t, max_t, reduction_factor, s):
+        if min_t <= 0:
+            raise AttributeError("Minimum resources must be a positive number.")
+        elif min_t > max_t:
+            raise AttributeError("Minimum resources must be smaller than maximum resources.")
+
         self.asha = asha
         self.reduction_factor = reduction_factor
         max_rungs = int(numpy.log(max_t / min_t) / numpy.log(reduction_factor) - s + 1)
-        self.rungs = [(min(min_t * reduction_factor**(k + s), max_t), dict())
+        self.rungs = [(min_t * reduction_factor**(k + s), dict())
                       for k in reversed(range(max_rungs + 1))]
-
-        if self.rungs[0][0] == self.rungs[1][0]:
-            del self.rungs[0]
 
     def register(self, point, objective):
         self.rungs[-1][1][self.asha._get_id(point)] = (objective, point)
@@ -138,13 +143,12 @@ class _Bracket():
 
         k = len(rung) // self.reduction_factor
         rung = list(sorted(rung))
-        i = 0
         k = min(k, len(rung))
-        while i < k:
+
+        for i in range(k):
             objective, point = rung[i]
             if point not in next_rung:
                 return point, objective
-            i += 1
 
         return None, None
 
@@ -158,7 +162,6 @@ class _Bracket():
         Notes
         -----
             All trials are part of the rungs, for any state. Only completed trials
-            :sp
             are eligible for promotion, i.e., only completed trials can be part of top-k.
             Lookup for promotion in rung l + 1 contains trials of any status.
         """
