@@ -135,6 +135,7 @@ class TestBracket():
 
         assert objective is None
         assert point is None
+<<<<<<< HEAD
 
     def test_no_promotion_if_not_enough_points(self, asha, bracket):
         """Test the get_candidate return None if there is not enough points ready."""
@@ -175,3 +176,5 @@ class TestBracket():
         candidate = bracket.update_rungs()
 
         assert candidate is None
+=======
+>>>>>>> b0eb25f... Add test for `get_candidate`
