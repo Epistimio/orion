@@ -81,7 +81,7 @@ class ASHA(BaseAlgorithm):
         non_fidelity_dims = point[0:self.fidelity_index]
         non_fidelity_dims.extend(point[self.fidelity_index + 1:])
 
-        return hashlib.md5((non_fidelity_dims).encode('utf-8')).hexdigest()
+        return hashlib.md5(str(non_fidelity_dims).encode('utf-8')).hexdigest()
 
     def observe(self, points, results):
         """Observe evaluation `results` corresponding to list of `points` in
@@ -132,7 +132,7 @@ class _Bracket():
         self.reduction_factor = reduction_factor
         max_rungs = int(numpy.log(max_t / min_t) / numpy.log(reduction_factor) - s + 1)
         self.rungs = [(min_t * reduction_factor**(k + s), dict())
-                      for k in range(max_rungs + 1)]
+                      for k in range(max_rungs)]
 
     def register(self, point, objective):
         if point[self.asha.fidelity_index] != self.rungs[0][0]:
@@ -146,13 +146,14 @@ class _Bracket():
         next_rung = self.rungs[rung_id + 1][1]
 
         k = len(rung) // self.reduction_factor
-        rung = list(sorted(rung))
+        rung = list(sorted(rung.values()))
         k = min(k, len(rung))
 
         for i in range(k):
             objective, point = rung[i]
-            if point not in next_rung:
-                return point, objective
+            _id = self.asha._get_id(point)
+            if _id not in next_rung:
+                return objective, point
 
         return None, None
 
@@ -171,7 +172,7 @@ class _Bracket():
         """
         # NOTE: There should be base + 1 rungs
         for rung_id in range(len(self.rungs) - 1, 0, -1):
-            candidate, objective = self.get_candidate(rung_id)
+            objective, candidate = self.get_candidate(rung_id)
 
             if candidate:
                 self.rungs[rung_id + 1][1][self.asha._get_id(candidate)] = (objective, candidate)
