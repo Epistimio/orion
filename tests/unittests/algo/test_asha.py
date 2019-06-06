@@ -49,7 +49,7 @@ def rung_0():
 def rung_1(rung_0):
     """Create fake points and objectives for rung 1."""
     return (3, {hashlib.md5(str([value[0]]).encode('utf-8')).hexdigest(): value for value in
-                sorted(rung_0[1].values())})
+            map(lambda v: (v[0], [v[0], 3]), sorted(rung_0[1].values()))})
 
 
 class TestBracket():
@@ -124,3 +124,12 @@ class TestBracket():
 
         assert objective is None
         assert point is None
+
+    def test_is_done(self, bracket, rung_0):
+        """Test that the `is_done` property works."""
+        assert not bracket.is_done
+
+        # Actual value of the point is not important here
+        bracket.rungs[2] = (9, {'1': [0.0, 1]})
+
+        assert bracket.is_done

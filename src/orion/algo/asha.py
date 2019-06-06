@@ -159,7 +159,7 @@ class _Bracket():
 
     @property
     def is_done(self):
-        return len(self.rungs[0][1])
+        return len(self.rungs[-1][1])
 
     def update_rungs(self):
         """
