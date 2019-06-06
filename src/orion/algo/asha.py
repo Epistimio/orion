@@ -171,9 +171,8 @@ class _Bracket():
             Lookup for promotion in rung l + 1 contains trials of any status.
         """
         # NOTE: There should be base + 1 rungs
-        for rung_id in range(len(self.rungs) - 1, 0, -1):
+        for rung_id in range(len(self.rungs) - 2, 0, -1):
             objective, candidate = self.get_candidate(rung_id)
-
             if candidate:
                 self.rungs[rung_id + 1][1][self.asha._get_id(candidate)] = (objective, candidate)
                 candidate[self.asha.fidelity_index] = self.rungs[-1][0]
