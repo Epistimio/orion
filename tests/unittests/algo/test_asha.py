@@ -166,7 +166,7 @@ class TestBracket():
         candidate = bracket.update_rungs()
 
         assert point_hash in bracket.rungs[2][1]
-        assert bracket.rungs[1][1][point_hash] == (0.0, [0.0, 9])
+        assert bracket.rungs[1][1][point_hash] == (0.0, [0.0, 3])
         assert candidate[1] == 9
 
     def test_update_rungs_return_no_candidate(self, asha, bracket, rung_1):
