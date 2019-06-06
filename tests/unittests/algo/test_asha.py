@@ -12,6 +12,7 @@ from orion.algo.space import Real, Fidelity, Space
 
 @pytest.fixture
 def space():
+    """Create a Space with a real dimension and a fidelity value."""
     space = Space()
     space.register(Real('lr', 'uniform', 0, 1))
     space.register(Fidelity('epoch'))
@@ -133,3 +134,23 @@ class TestBracket():
         bracket.rungs[2] = (9, {'1': [0.0, 1]})
 
         assert bracket.is_done
+
+    def test_update_rungs_return_candidate(self, asha, bracket, rung_1):
+        """Check if a valid modified candidate is returned by update_rungs."""
+        bracket.asha = asha
+        bracket.rungs[1] = rung_1
+        point_hash = hashlib.md5(str([0.0]).encode('utf-8')).hexdigest()
+
+        candidate = bracket.update_rungs()
+
+        assert point_hash in bracket.rungs[2][1]
+        assert bracket.rungs[1][1][point_hash] == (0.0, [0.0, 9])
+        assert candidate[1] == 9
+
+    def test_update_rungs_return_no_candidate(self, asha, bracket, rung_1):
+        """Check if no candidate is returned by update_rungs."""
+        bracket.asha = asha
+
+        candidate = bracket.update_rungs()
+
+        assert candidate is None
