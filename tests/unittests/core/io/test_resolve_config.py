@@ -3,6 +3,7 @@
 """Example usage and tests for :mod:`orion.core.io.resolve_config`."""
 
 import hashlib
+import importlib
 import logging
 import os
 import shutil
@@ -37,6 +38,21 @@ def test_fetch_default_options():
     assert default_config['max_trials'] == float('inf')
     assert default_config['name'] is None
     assert default_config['pool_size'] == 1
+
+
+def test_socket_on_osx(monkeypatch):
+    """Verify that default hostname is set properly on OSX"""
+    resolve_config.DEF_CONFIG_FILES_PATHS = []
+    default_config = resolve_config.fetch_default_options()
+    assert default_config['database']['host'] == socket.gethostbyname(socket.gethostname())
+    assert socket.gethostbyname(socket.gethostname()) != 'localhost'
+
+    monkeypatch.setattr(socket, 'gethostname', lambda: 'wrong_name_on_osx')
+    importlib.reload(resolve_config)
+
+    resolve_config.DEF_CONFIG_FILES_PATHS = []
+    default_config = resolve_config.fetch_default_options()
+    assert default_config['database']['host'] == 'localhost'
 
 
 def test_fetch_env_vars():
