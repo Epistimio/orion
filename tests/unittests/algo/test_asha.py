@@ -81,6 +81,27 @@ class TestBracket():
 
         assert 'smaller' in str(ex)
 
+    def test_register(self, asha, bracket):
+        """Check that a point is correctly registered inside a bracket."""
+        bracket.asha = asha
+        point = [0.0, 1]
+        point_hash = hashlib.md5(str([0.0]).encode('utf-8')).hexdigest()
+
+        bracket.register(point, 0.0)
+
+        assert len(bracket.rungs[0])
+        assert point_hash in bracket.rungs[0][1]
+        assert (0.0, point) == bracket.rungs[0][1][point_hash]
+
+    def test_bad_register(self, asha, bracket):
+        """Check that a non-valid point is not registered."""
+        bracket.asha = asha
+
+        with pytest.raises(AttributeError) as ex:
+            bracket.register([0.0, 3], 0.0)
+
+        assert 'Point' in str(ex)
+
     def test_candidate_promotion(self, asha, bracket, rung_0):
         """Test that correct point is promoted."""
         bracket.asha = asha
