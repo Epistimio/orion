@@ -8,6 +8,7 @@
    :synopsis: TODO
 
 """
+import copy
 import hashlib
 
 import numpy
@@ -174,7 +175,8 @@ class _Bracket():
         for rung_id in range(len(self.rungs) - 2, 0, -1):
             objective, candidate = self.get_candidate(rung_id)
             if candidate:
+                candidate = copy.deepcopy(candidate)
                 self.rungs[rung_id + 1][1][self.asha._get_id(candidate)] = (objective, candidate)
-                candidate[self.asha.fidelity_index] = self.rungs[-1][0]
+                candidate[self.asha.fidelity_index] = self.rungs[rung_id + 1][0]
 
                 return candidate
