@@ -121,6 +121,30 @@ class TestTrial(object):
         assert str(t.params[0]) == "Param(name='/encoding_layer', "\
                                    "type='categorical', value='gru')"
 
+    def test_invalid_result(self, exp_config):
+        """Test that invalid objectives cannot be set"""
+        t = Trial(**exp_config[1][2])
+
+        # Make sure valid ones pass
+        t.results = [Trial.Result(name='asfda', type='constraint', value=None),
+                     Trial.Result(name='asfdb', type='objective', value=1e-5)]
+
+        # No results at all
+        with pytest.raises(ValueError) as exc:
+            t.results = []
+        assert 'No objective found' in str(exc.value)
+
+        # No objectives
+        with pytest.raises(ValueError) as exc:
+            t.results = [Trial.Result(name='asfda', type='constraint', value=None)]
+        assert 'No objective found' in str(exc.value)
+
+        # Bad objective type
+        with pytest.raises(ValueError) as exc:
+            t.results = [Trial.Result(name='asfda', type='constraint', value=None),
+                         Trial.Result(name='asfdb', type='objective', value=None)]
+        assert 'Results must contain' in str(exc.value)
+
     def test_objective_property(self, exp_config):
         """Check property `Trial.objective`."""
         # 1 results in `results` list
