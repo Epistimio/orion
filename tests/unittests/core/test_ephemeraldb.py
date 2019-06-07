@@ -127,6 +127,20 @@ class TestRead(object):
              'submit_time': {'$gt': datetime(2017, 11, 23, 0, 0, 0)}})
         assert value == exp_config[1][3:7]
 
+    def test_null_comp(self, exp_config, orion_db):
+        """Fetch value(s) from an entry."""
+        all_values = orion_db.read(
+            'trials',
+            {'experiment': 'supernaedo2',
+             'end_time': {'$gte': datetime(2017, 11, 1, 0, 0, 0)}})
+
+        orion_db._db['trials']._documents[0]._data['end_time'] = None
+        values = orion_db.read(
+            'trials',
+            {'experiment': 'supernaedo2',
+             'end_time': {'$gte': datetime(2017, 11, 1, 0, 0, 0)}})
+        assert len(values) == len(all_values) - 1
+
 
 @pytest.mark.usefixtures("clean_db")
 class TestWrite(object):
