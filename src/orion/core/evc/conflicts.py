@@ -1218,7 +1218,7 @@ class CommandLineConflict(Conflict):
         nameless_args = {key: arg for key, arg in parser.parser.arguments.items()
                          if key in nameless_keys}
 
-        return " ".join(" ".join([key, arg]) for key, arg in
+        return " ".join(" ".join([key, str(arg)]) for key, arg in
                         sorted(nameless_args.items(), key=lambda a: a[0]))
 
     @classmethod

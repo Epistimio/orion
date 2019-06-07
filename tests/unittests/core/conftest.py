@@ -286,6 +286,7 @@ def cli_conflict(old_config, new_config):
     """Generate a commandline conflict"""
     new_config = copy.deepcopy(new_config)
     new_config['metadata']['user_args'].append("--some-new=args")
+    new_config['metadata']['user_args'].append("--bool-arg")
     return conflicts.CommandLineConflict(old_config, new_config)
 
 
