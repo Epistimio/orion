@@ -601,9 +601,7 @@ class TestReserveTrial(object):
 def test_push_completed_trial(hacked_exp, database, random_dt):
     """Successfully push a completed trial into database."""
     trial = hacked_exp.reserve_trial()
-    trial.results = []
-    res = Trial.Result(name='yolo', type='objective', value='3')
-    trial.results.append(res)
+    trial.results = [Trial.Result(name='yolo', type='objective', value=3)]
     hacked_exp.push_completed_trial(trial)
     yo = database.trials.find_one({'_id': trial.id})
     assert len(yo['results']) == len(trial.results)
