@@ -80,7 +80,7 @@ class MongoDB(AbstractDB):
     def __init__(self, host='localhost', name=None,
                  port=None, username=None, password=None):
         """Init method, see attributes of :class:`AbstractDB`."""
-        self.options = {'authSource': name}
+        self.options['authSource'] = name
         self.uri = None
 
         if port is not None:
