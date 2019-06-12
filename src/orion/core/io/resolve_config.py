@@ -127,6 +127,9 @@ def fetch_default_options():
         for _, key, default_value in env_vars:
             default_config[signifier][key] = default_value
 
+    if 'serverSelectionTimeoutMS' not in default_config['database']:
+        default_config['database']['serverSelectionTimeoutMS'] = 1000
+
     # fetch options from default configuration files
     for configpath in DEF_CONFIG_FILES_PATHS:
         try:
