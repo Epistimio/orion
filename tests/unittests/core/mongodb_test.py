@@ -117,7 +117,8 @@ class TestConnection(object):
 
     def test_change_server_timeout(self):
         """Test that the server timeout is correctly changed."""
-        orion_db = MongoDB(username='user', password='pass', name='orion_test', server_timeout=6000)
+        orion_db = MongoDB(username='user', password='pass', name='orion_test',
+                           serverSelectionTimeoutMS=6000)
         assert 6000 in str(orion_db)
 
 
