@@ -85,7 +85,7 @@ class Experiment(object):
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
-                 'algorithms', 'producer', '_db', '_init_done', '_id',
+                 'algorithms', 'producer', 'working_dir', '_db', '_init_done', '_id',
                  '_node', '_last_fetched')
     non_branching_attrs = ('pool_size', 'max_trials')
 
@@ -118,6 +118,7 @@ class Experiment(object):
         self.pool_size = None
         self.max_trials = None
         self.algorithms = None
+        self.working_dir = None
         self.producer = {'strategy': None}
 
         config = self._db.read('experiments',

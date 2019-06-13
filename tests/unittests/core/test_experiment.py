@@ -131,6 +131,7 @@ def new_config(random_dt):
                           "diff_sha": "diff"}},
         pool_size=10,
         max_trials=1000,
+        working_dir=None,
         algorithms={'dumbalgo': {}},
         producer={'strategy': 'NoParallelStrategy'},
         # attrs starting with '_' also
@@ -159,6 +160,7 @@ class TestInitExperiment(object):
         assert exp.pool_size is None
         assert exp.max_trials is None
         assert exp.algorithms is None
+        assert exp.working_dir is None
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
@@ -177,6 +179,7 @@ class TestInitExperiment(object):
         assert exp.pool_size is None
         assert exp.max_trials is None
         assert exp.algorithms is None
+        assert exp.working_dir is None
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
@@ -194,6 +197,7 @@ class TestInitExperiment(object):
         assert exp.pool_size == exp_config[0][0]['pool_size']
         assert exp.max_trials == exp_config[0][0]['max_trials']
         assert exp.algorithms == exp_config[0][0]['algorithms']
+        assert exp.working_dir == exp_config[0][0]['working_dir']
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
@@ -227,6 +231,7 @@ class TestConfigProperty(object):
         assert cfg['pool_size'] is None
         assert cfg['max_trials'] is None
         assert cfg['algorithms'] is None
+        assert cfg['working_dir'] is None
 
     @pytest.mark.skip(reason='Interactive prompt problems')
     def test_good_set_before_init_hit_with_diffs(self, exp_config):
@@ -316,7 +321,24 @@ class TestConfigProperty(object):
         assert exp.metadata == new_config['metadata']
         assert exp.pool_size == new_config['pool_size']
         assert exp.max_trials == new_config['max_trials']
+        assert exp.working_dir == new_config['working_dir']
         #  assert exp.algorithms == new_config['algorithms']
+
+    def test_working_dir_is_correctly_set(self, database, new_config):
+        """Check if working_dir is correctly changed."""
+        exp = Experiment(new_config['name'])
+        exp.configure(new_config)
+        assert exp._init_done is True
+        database.experiments.update_one({'name': 'supernaekei', 'metadata.user': 'tsirif'},
+                                        {'$set': {'working_dir': './'}})
+        found_config = list(database.experiments.find({'name': 'supernaekei',
+                                                       'metadata.user': 'tsirif'}))
+
+        print(found_config)
+        found_config = found_config[0]
+        exp = Experiment(found_config['name'])
+        exp.configure(found_config)
+        assert exp.working_dir == './'
 
     def test_inconsistent_1_set_before_init_no_hit(self, random_dt, new_config):
         """Test inconsistent configuration because of name."""

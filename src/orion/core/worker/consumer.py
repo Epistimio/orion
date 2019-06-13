@@ -52,9 +52,13 @@ class Consumer(object):
         self.template_builder = SpaceBuilder()
         self.template_builder.build_from(experiment.metadata['user_args'])
         # Get path to user's script and infer trial configuration directory
+
         self.script_path = experiment.metadata['user_script']
-        self.tmp_dir = os.path.join(tempfile.gettempdir(), 'orion')
-        os.makedirs(self.tmp_dir, exist_ok=True)
+
+        self.dir = experiment.working_dir if experiment.working_dir else \
+            os.path.join(tempfile.gettempdir(), 'orion')
+
+        os.makedirs(self.dir, exist_ok=True)
 
         self.converter = JSONConverter()
 
@@ -65,9 +69,9 @@ class Consumer(object):
         :type trial: `orion.core.worker.trial.Trial`
 
         """
-        log.debug("### Create new temporary directory at '%s':", self.tmp_dir)
+        log.debug("### Create new temporary directory at '%s':", self.dir)
         with tempfile.TemporaryDirectory(prefix=self.experiment.name + '_',
-                                         dir=self.tmp_dir) as workdirname:
+                                         dir=self.dir) as workdirname:
             log.debug("## New temp consumer context: %s", workdirname)
             completed_trial = self._consume(trial, workdirname)
 
