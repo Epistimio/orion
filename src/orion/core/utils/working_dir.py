@@ -11,8 +11,8 @@ import os
 import tempfile
 
 
+# pylint: disable=too-few-public-methods
 class WorkingDir:
-
     """ContextManager class for temporary or permanent directory."""
 
     def __init__(self, working_dir, temp=True, suffix=None, prefix=None):
@@ -28,18 +28,20 @@ class WorkingDir:
         self._temp = temp
         self._suffix = suffix
         self._prefix = prefix
+        self._tmpdir = None
 
     def __enter__(self):
-        """Create the directory if non-existing."""
+        """Create the a permanent directory or a temporary one."""
         if not self._temp:
             path = os.path.join(self.working_dir, self._prefix)
             os.makedirs(path, exist_ok=True)
             return path
-        else:
-            self._tmpdir = tempfile.TemporaryDirectory(suffix=self._suffix, prefix=self._prefix,
-                                                       dir=self.working_dir)
-            return self._tmpdir.name
+
+        self._tmpdir = tempfile.TemporaryDirectory(suffix=self._suffix, prefix=self._prefix,
+                                                   dir=self.working_dir)
+        return self._tmpdir.name
 
     def __exit__(self, exc_type, exc_value, traceback):
+        """Cleanup temporary directory."""
         if self._temp:
             self._tmpdir.cleanup()

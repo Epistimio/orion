@@ -76,9 +76,9 @@ class Consumer(object):
         temp_dir = self.experiment.working_dir is None
         prefix = self.experiment.name + "_"
 
-        with WorkingDir(self.dir, temp_dir, prefix=prefix) as w:
-            log.debug("## New consumer context: %s", w)
-            completed_trial = self._consume(trial, w)
+        with WorkingDir(self.dir, temp_dir, prefix=prefix) as workdirname:
+            log.debug("## New consumer context: %s", workdirname)
+            completed_trial = self._consume(trial, workdirname)
 
         if completed_trial is not None:
             log.debug("### Register successfully evaluated %s.", completed_trial)
