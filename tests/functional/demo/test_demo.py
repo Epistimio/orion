@@ -243,6 +243,36 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
 
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
+def test_working_dir_argument_cmdline(database, monkeypatch, tmp_path):
+    """Check that a permanent directory is used instead of tmpdir"""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main(["hunt", "-n", "allo", "--working-dir", str(tmp_path / "test"),
+                         "--max-trials", "2", "--config", "./database_config.yaml",
+                         "./black_box.py", "-x~uniform(-50,50)"])
+
+    exp = list(database.experiments.find({'name': 'allo'}))[0]
+    assert exp['working_dir'] == str(tmp_path / "test")
+    assert os.path.exists(tmp_path / "test")
+    assert os.listdir(tmp_path / "test")
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_working_dir_argument_config(database, monkeypatch):
+    """Check that a permanent directory is used instead of tmpdir"""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main(["hunt", "-n", "allo", "--max-trials", "2",
+                         "--config", "./working_dir_config.yaml", "./black_box.py",
+                         "-x~uniform(-50,50)"])
+
+    exp = list(database.experiments.find({'name': 'allo'}))[0]
+    assert exp['working_dir'] == "/tmp/orion/test"
+    assert os.path.exists("/tmp/orion/test")
+    assert os.listdir("/tmp/orion/test")
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
 def test_run_with_name_only(database, monkeypatch):
     """Test hunt can be executed with experiment name only"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
