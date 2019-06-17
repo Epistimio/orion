@@ -6,13 +6,12 @@
 
 .. module:: test_db
    :platform: Unix
-   :synopsis: Gets an experiment and iterates over it until one of the exit conditions is met
+   :synopsis: Runs multiple checks to see if the database was correctly setup.
 
 """
+import argparse
 import logging
-import types
 
-from orion.core.cli import base as cli
 import orion.core.cli.database_checks as db_check
 
 log = logging.getLogger(__name__)
@@ -22,7 +21,9 @@ def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
     test_db_parser = parser.add_parser('test_db', help='test_db help')
 
-    cli.get_basic_args_group(test_db_parser)
+    test_db_parser.add_argument('-c', '--config', type=argparse.FileType('r'),
+                                metavar='path-to-config', help="user provided "
+                                "orion configuration file")
 
     test_db_parser.set_defaults(func=main)
 
@@ -32,10 +33,8 @@ def add_subparser(parser):
 def main(args):
     """Run through all checks for database."""
     shared_dict = args
-    checks = [getattr(db_check, func) for func in dir(db_check)
-              if isinstance(getattr(db_check, func), types.FunctionType)]
 
-    checks = sorted(checks, key=lambda x: hex(id(x)))
+    checks = db_check.config_checks()
 
     for check in checks:
         print(check.__doc__, end="")
