@@ -106,3 +106,30 @@ def check_read(shared_dict):
         return True, "Expected 'value', received {}.".format(value)
 
     return False, ""
+
+
+@_register_check(_CONFIG_CHECKS)
+def check_count(shared_dict):
+    """Check if database supports count operation... """
+    database = shared_dict['instance']
+
+    count = database.count('test', {'index': 'value'})
+
+    if count != 1:
+        return True, "Expected 1 hit, received {}.".format(count)
+
+    return False, ""
+
+
+@_register_check(_CONFIG_CHECKS)
+def check_remove(shared_dict):
+    """Check if database supports delete operation... """
+    database = shared_dict['instance']
+
+    database.remove('test', {'index': 'value'})
+    remaining = database.count('test', {'index': 'value'})
+
+    if remaining:
+        return True, "{} items remaining.".format(remaining)
+
+    return False, ""
