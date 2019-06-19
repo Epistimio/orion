@@ -12,7 +12,11 @@
 import argparse
 import logging
 
-import orion.core.cli.database_checks as db_check
+from orion.core.cli.checks.presence import PresenceStage
+from orion.core.cli.checks.creation import CreationStage
+from orion.core.cli.checks.operations import OperationsStage
+from orion.core.io.experiment_builder import ExperimentBuilder
+from orion.core.utils.exceptions import CheckError
 
 log = logging.getLogger(__name__)
 
@@ -32,16 +36,22 @@ def add_subparser(parser):
 
 def main(args):
     """Run through all checks for database."""
-    shared_dict = args
+    experiment_builder = ExperimentBuilder()
+    presence_stage = PresenceStage(experiment_builder, args)
+    creation_stage = CreationStage(presence_stage)
+    operations_stage = OperationsStage(creation_stage)
+    stages = [presence_stage, creation_stage, operations_stage]
 
-    checks = db_check.config_checks()
+    try:
+        for stage in stages:
+            for check in stage.checks():
+                print(check.__doc__, end='')
+                status, msg = check(stage)
+                print(status)
 
-    for check in checks:
-        print(check.__doc__, end="")
-        error, msg = check(shared_dict)
-        if error:
-            print("Failure")
-            print(msg)
-            return
-        else:
-            print("Success")
+                if status == "Skipping":
+                    print(msg)
+
+    except CheckError as ex:
+        print("Failure")
+        print(ex)
