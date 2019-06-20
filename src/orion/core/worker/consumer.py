@@ -56,13 +56,6 @@ class Consumer(object):
 
         self.script_path = experiment.metadata['user_script']
 
-        if experiment.working_dir:
-            self.dir = os.path.abspath(experiment.working_dir)
-        else:
-            self.dir = os.path.join(tempfile.gettempdir(), 'orion')
-
-        os.makedirs(self.dir, exist_ok=True)
-
         self.converter = JSONConverter()
 
     def consume(self, trial):
@@ -77,7 +70,8 @@ class Consumer(object):
         prefix = self.experiment.name + "_"
         suffix = "{}".format(trial.id) if self.dir else ""
 
-        with WorkingDir(self.dir, temp_dir, prefix=prefix, suffix=suffix) as workdirname:
+        with WorkingDir(self.experiment.working_dir, temp_dir,
+                        prefix=prefix, suffix=suffix) as workdirname:
             log.debug("## New consumer context: %s", workdirname)
             completed_trial = self._consume(trial, workdirname)
 

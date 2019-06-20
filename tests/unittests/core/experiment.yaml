@@ -480,7 +480,6 @@
   # orion's configuration
   pool_size: 2
   max_trials: 1000
-  working_dir: 
 
   # functional info
   status: pending  # pending, done, broken
