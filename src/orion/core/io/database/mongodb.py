@@ -78,9 +78,8 @@ class MongoDB(AbstractDB):
     """
 
     def __init__(self, host='localhost', name=None,
-                 port=None, username=None, password=None):
+                 port=None, username=None, password=None, serverSelectionTimeoutMS=5000):
         """Init method, see attributes of :class:`AbstractDB`."""
-        self.options = {'authSource': name}
         self.uri = None
 
         if port is not None:
@@ -88,7 +87,9 @@ class MongoDB(AbstractDB):
         else:
             port = pymongo.MongoClient.PORT
 
-        super(MongoDB, self).__init__(host, name, port, username, password)
+        super(MongoDB, self).__init__(host, name, port, username, password,
+                                      serverSelectionTimeoutMS=serverSelectionTimeoutMS,
+                                      authSource=name)
 
     @mongodb_exception_wrapper
     def initiate_connection(self):

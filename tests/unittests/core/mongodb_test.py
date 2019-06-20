@@ -4,6 +4,7 @@
 
 from datetime import datetime
 import functools
+from timeit import timeit
 
 import pymongo
 from pymongo import MongoClient
@@ -107,11 +108,18 @@ class TestConnection(object):
 
     def test_singleton(self):
         """Test that MongoDB class is a singleton."""
-        orion_db = MongoDB(username='user', password='pass', name='orion_test')
+        orion_db = MongoDB('mongodb://localhost',
+                           port=27017, name='orion_test', username='user',
+                           password='pass')
         # reinit connection does not change anything
         orion_db.initiate_connection()
         orion_db.close_connection()
         assert MongoDB() is orion_db
+
+    def test_change_server_timeout(self):
+        """Test that the server timeout is correctly changed."""
+        assert timeit(lambda: MongoDB(username='user', password='pass', name='orion_test',
+                                      serverSelectionTimeoutMS=1000), number=1) <= 2
 
 
 @pytest.mark.usefixtures("clean_db")

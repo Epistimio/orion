@@ -13,6 +13,7 @@ import logging
 import textwrap
 
 import orion
+from orion.core.io.database import DatabaseError
 from orion.core.utils.exceptions import NoConfigurationError
 
 
@@ -73,6 +74,8 @@ class OrionArgsParser:
             function(args)
         except NoConfigurationError:
             print("Error: No commandline configuration found for new experiment.")
+        except DatabaseError as e:
+            print(e)
 
 
 def get_basic_args_group(parser):
