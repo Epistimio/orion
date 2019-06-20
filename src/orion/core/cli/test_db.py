@@ -45,12 +45,14 @@ def main(args):
     try:
         for stage in stages:
             for check in stage.checks():
-                print(check.__doc__, end='')
+                print(check.msg, end='')
                 status, msg = check(stage)
                 print(status)
 
                 if status == "Skipping":
                     print(msg)
+
+            stage.post_stage()
 
     except CheckError as ex:
         print("Failure")
