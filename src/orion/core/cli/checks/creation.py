@@ -37,9 +37,8 @@ class CreationStage:
     def checks():
         return _Checks.checks
 
-    @register_check(_Checks.checks)
+    @register_check(_Checks.checks, "Check if database of specified type can be created... ")
     def check_database_creation(self):
-        """Check if database of specified type can be created... """
         database = self.p_stage.db_config
         db_type = database.pop('type')
 
@@ -54,3 +53,7 @@ class CreationStage:
         self.instance = db
 
         return "Success", ""
+
+    def post_stage(self):
+        """Print the created database."""
+        print(self.instance)
