@@ -339,6 +339,21 @@ class TestConfigProperty(object):
         exp.configure(found_config)
         assert exp.working_dir == './'
 
+    def test_working_dir_works_when_db_absent(self, database, new_config):
+        """Check if working_dir is correctly when absent from the database."""
+        exp = Experiment(new_config['name'])
+        exp.configure(new_config)
+        assert exp._init_done is True
+        database.experiments.update_one({'name': 'supernaekei', 'metadata.user': 'tsirif'},
+                                        {'$unset': {'working_dir': ''}})
+        found_config = list(database.experiments.find({'name': 'supernaekei',
+                                                       'metadata.user': 'tsirif'}))
+
+        found_config = found_config[0]
+        exp = Experiment(found_config['name'])
+        exp.configure(found_config)
+        assert exp.working_dir is None
+
     def test_inconsistent_1_set_before_init_no_hit(self, random_dt, new_config):
         """Test inconsistent configuration because of name."""
         exp = Experiment(new_config['name'])
