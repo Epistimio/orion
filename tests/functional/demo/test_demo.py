@@ -3,6 +3,7 @@
 """Perform a functional test for demo purposes."""
 from collections import defaultdict
 import os
+import shutil
 import subprocess
 
 import numpy
@@ -246,6 +247,7 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
 def test_working_dir_argument_cmdline(database, monkeypatch, tmp_path):
     """Check that a permanent directory is used instead of tmpdir"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    assert not os.path.exists(tmp_path / "test")
     orion.core.cli.main(["hunt", "-n", "allo", "--working-dir", str(tmp_path / "test"),
                          "--max-trials", "2", "--config", "./database_config.yaml",
                          "./black_box.py", "-x~uniform(-50,50)"])
@@ -255,12 +257,15 @@ def test_working_dir_argument_cmdline(database, monkeypatch, tmp_path):
     assert os.path.exists(tmp_path / "test")
     assert os.listdir(tmp_path / "test")
 
+    shutil.rmtree(tmp_path / "test")
+
 
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
 def test_working_dir_argument_config(database, monkeypatch):
     """Check that a permanent directory is used instead of tmpdir"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    assert not os.path.exists("/tmp/orion/test")
     orion.core.cli.main(["hunt", "-n", "allo", "--max-trials", "2",
                          "--config", "./working_dir_config.yaml", "./black_box.py",
                          "-x~uniform(-50,50)"])
@@ -269,6 +274,8 @@ def test_working_dir_argument_config(database, monkeypatch):
     assert exp['working_dir'] == "/tmp/orion/test"
     assert os.path.exists("/tmp/orion/test")
     assert os.listdir("/tmp/orion/test")
+
+    shutil.rmtree("/tmp/orion/test")
 
 
 @pytest.mark.usefixtures("clean_db")

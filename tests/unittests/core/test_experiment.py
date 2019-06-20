@@ -334,7 +334,6 @@ class TestConfigProperty(object):
         found_config = list(database.experiments.find({'name': 'supernaekei',
                                                        'metadata.user': 'tsirif'}))
 
-        print(found_config)
         found_config = found_config[0]
         exp = Experiment(found_config['name'])
         exp.configure(found_config)
