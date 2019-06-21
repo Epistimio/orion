@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=protected-access,too-many-public-methods
+# pylint:disable=protected-access,too-many-public-methods,too-many-lines
 """
 :mod:`orion.core.worker.experiment` -- Description of an optimization attempt
 =============================================================================
@@ -155,6 +155,8 @@ class Experiment(object):
     def fetch_trials(self, query, selection=None):
         """Fetch trials of the experiment in the database
 
+        Trials are sorted based on `Trial.submit_time`
+
         .. note::
 
             The query is always updated with `{"experiment": self._id}`
@@ -167,7 +169,15 @@ class Experiment(object):
         """
         query["experiment"] = self._id
 
-        return Trial.build(self._db.read('trials', query, selection))
+        trials = Trial.build(self._db.read('trials', query, selection))
+
+        def _get_submit_time(trial):
+            if trial.submit_time:
+                return trial.submit_time
+
+            return datetime.datetime.utcnow()
+
+        return list(sorted(trials, key=_get_submit_time))
 
     def fetch_trials_tree(self, query, selection=None):
         """Fetch trials recursively in the EVC tree
@@ -321,6 +331,8 @@ class Experiment(object):
     def fetch_completed_trials(self):
         """Fetch recent completed trials that this `Experiment` instance has not
         yet seen.
+
+        Trials are sorted based on `Trial.submit_time`
 
         .. note::
 

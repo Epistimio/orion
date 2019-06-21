@@ -110,20 +110,20 @@ class TestTrial(object):
 
     def test_str_trial(self, exp_config):
         """Test representation of `Trial`."""
-        t = Trial(**exp_config[1][2])
+        t = Trial(**exp_config[1][1])
         assert str(t) == "Trial(experiment='supernaedo2', status='completed',\n"\
                          "      params=/encoding_layer:gru\n"\
                          "             /decoding_layer:lstm_with_attention)"
 
     def test_str_value(self, exp_config):
         """Test representation of `Trial.Value`."""
-        t = Trial(**exp_config[1][2])
+        t = Trial(**exp_config[1][1])
         assert str(t.params[0]) == "Param(name='/encoding_layer', "\
                                    "type='categorical', value='gru')"
 
     def test_invalid_result(self, exp_config):
         """Test that invalid objectives cannot be set"""
-        t = Trial(**exp_config[1][2])
+        t = Trial(**exp_config[1][1])
 
         # Make sure valid ones pass
         t.results = [Trial.Result(name='asfda', type='constraint', value=None),
@@ -148,58 +148,58 @@ class TestTrial(object):
     def test_objective_property(self, exp_config):
         """Check property `Trial.objective`."""
         # 1 results in `results` list
-        t = Trial(**exp_config[1][2])
+        t = Trial(**exp_config[1][1])
         assert isinstance(t.objective, Trial.Result)
         assert t.objective.name == 'yolo'
         assert t.objective.type == 'objective'
         assert t.objective.value == 10
 
         # 0 results in `results` list
-        tmp = exp_config[1][2]['results'].pop(0)
-        t = Trial(**exp_config[1][2])
+        tmp = exp_config[1][1]['results'].pop(0)
+        t = Trial(**exp_config[1][1])
         assert t.objective is None
-        exp_config[1][2]['results'].append(tmp)
+        exp_config[1][1]['results'].append(tmp)
 
         # >1 results in `results` list
-        exp_config[1][2]['results'].append(dict(name='yolo2',
+        exp_config[1][1]['results'].append(dict(name='yolo2',
                                                 type='objective',
                                                 value=12))
-        t = Trial(**exp_config[1][2])
+        t = Trial(**exp_config[1][1])
         assert isinstance(t.objective, Trial.Result)
         assert t.objective.name == 'yolo'
         assert t.objective.type == 'objective'
         assert t.objective.value == 10
-        tmp = exp_config[1][2]['results'].pop()
+        tmp = exp_config[1][1]['results'].pop()
 
     def test_gradient_property(self, exp_config):
         """Check property `Trial.gradient`."""
         # 1 results in `results` list
-        t = Trial(**exp_config[1][2])
+        t = Trial(**exp_config[1][1])
         assert isinstance(t.gradient, Trial.Result)
         assert t.gradient.name == 'naedw_grad'
         assert t.gradient.type == 'gradient'
         assert t.gradient.value == [5, 3]
 
         # 0 results in `results` list
-        tmp = exp_config[1][2]['results'].pop()
-        t = Trial(**exp_config[1][2])
+        tmp = exp_config[1][1]['results'].pop()
+        t = Trial(**exp_config[1][1])
         assert t.gradient is None
-        exp_config[1][2]['results'].append(tmp)
+        exp_config[1][1]['results'].append(tmp)
 
         # >1 results in `results` list
-        exp_config[1][2]['results'].append(dict(name='yolo2',
+        exp_config[1][1]['results'].append(dict(name='yolo2',
                                                 type='gradient',
                                                 value=[12, 15]))
-        t = Trial(**exp_config[1][2])
+        t = Trial(**exp_config[1][1])
         assert isinstance(t.gradient, Trial.Result)
         assert t.gradient.name == 'naedw_grad'
         assert t.gradient.type == 'gradient'
         assert t.gradient.value == [5, 3]
-        tmp = exp_config[1][2]['results'].pop()
+        tmp = exp_config[1][1]['results'].pop()
 
     def test_params_repr_property(self, exp_config):
         """Check property `Trial.params_repr`."""
-        t = Trial(**exp_config[1][2])
+        t = Trial(**exp_config[1][1])
         assert t.params_repr() == "/encoding_layer:gru,/decoding_layer:lstm_with_attention"
         assert t.params_repr(sep='\n') == "/encoding_layer:gru\n/decoding_layer:lstm_with_attention"
 
@@ -208,7 +208,7 @@ class TestTrial(object):
 
     def test_hash_name_property(self, exp_config):
         """Check property `Trial.hash_name`."""
-        t = Trial(**exp_config[1][2])
+        t = Trial(**exp_config[1][1])
         assert t.hash_name == "af737340845fb882e625d119968fd922"
 
         t = Trial()
@@ -218,7 +218,7 @@ class TestTrial(object):
 
     def test_full_name_property(self, exp_config):
         """Check property `Trial.full_name`."""
-        t = Trial(**exp_config[1][2])
+        t = Trial(**exp_config[1][1])
         assert t.full_name == ".encoding_layer:gru-.decoding_layer:lstm_with_attention"
 
         t = Trial()
