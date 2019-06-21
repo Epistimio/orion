@@ -145,7 +145,7 @@ class Trial(object):
         """
 
         __slots__ = ()
-        allowed_types = ('integer', 'real', 'categorical')
+        allowed_types = ('integer', 'real', 'categorical', 'fidelity')
 
     __slots__ = ('experiment', '_id', '_status', 'worker',
                  'submit_time', 'start_time', 'end_time', '_results', 'params', 'parents')
