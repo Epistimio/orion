@@ -24,17 +24,11 @@ class WorkingDir:
             Name of the directory. If empty, will create a temporary one.
 
         """
+        self.working_dir = working_dir
         self._temp = temp
         self._suffix = suffix
         self._prefix = prefix
         self._tmpdir = None
-
-        if working_dir:
-            self.working_dir = os.path.abspath(working_dir)
-        else:
-            self.working_dir = os.path.join(tempfile.gettempdir(), 'orion')
-
-        os.makedirs(self.working_dir, exist_ok=True)
 
     def __enter__(self):
         """Create the a permanent directory or a temporary one."""
