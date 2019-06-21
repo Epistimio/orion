@@ -197,6 +197,10 @@ def test_lies_generation(producer, database, random_dt):
     lies = producer._produce_lies()
     assert len(lies) == 4
 
+    trials_non_completed = list(
+        sorted(trials_non_completed,
+               key=lambda trial: trial.get('submit_time', datetime.datetime.utcnow())))
+
     for i in range(4):
         trials_non_completed[i]['_id'] = lies[i].id
         trials_non_completed[i]['status'] = 'completed'
