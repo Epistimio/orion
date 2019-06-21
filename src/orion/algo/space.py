@@ -655,13 +655,17 @@ class Fidelity(Dimension):
         self.prior = None
         self._prior_name = 'None'
 
+    def get_prior_string(self):
+        """Build the string corresponding to current prior"""
+        return 'fidelity()'
+
     def validate(self):
         """Do not do anything."""
         raise NotImplementedError
 
     def sample(self, n_samples=1, seed=None):
         """Do not do anything."""
-        pass
+        return ['fidelity']
 
     def interval(self, alpha=1.0):
         """Do not do anything."""
@@ -674,6 +678,18 @@ class Fidelity(Dimension):
     def __repr__(self):
         """Represent the object as a string."""
         return "{0}(name={1})".format(self.__class__.__name__, self.name)
+
+    def __contains__(self, value):
+        """Check if constraints hold for this `point` of `Dimension`.
+
+        .. note ::
+
+            Always True for Fidelity.
+
+        :param point: a parameter corresponding to this `Dimension`.
+        :type point: numeric or array-like
+        """
+        return True
 
 
 class Space(OrderedDict):

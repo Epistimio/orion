@@ -464,7 +464,7 @@ class TestCategorical(object):
 class TestFidelity(object):
     """Test methods of a Fidelity object."""
 
-    def test_simple_instance(self, seed):
+    def test_simple_instance(self):
         """Test Fidelity.__init__."""
         dim = Fidelity('epoch')
 
@@ -472,6 +472,20 @@ class TestFidelity(object):
         assert dim.name == 'epoch'
         assert dim.type == 'fidelity'
         assert dim.shape is None
+
+    def test_sampling(self):
+        """Make sure Fidelity simply returns `fidelity`"""
+        dim = Fidelity('epoch')
+
+        assert dim.sample() == ['fidelity']
+
+    def test_contains(self):
+        """Make sure fidelity.__contains__ always returns True"""
+        dim = Fidelity('epoch')
+
+        assert None in dim
+        assert 0 in dim
+        assert object() in dim
 
     def test_interval(self):
         """Check that error is being raised."""
