@@ -53,6 +53,10 @@ class Consumer(object):
         self.template_builder = SpaceBuilder()
         self.template_builder.build_from(experiment.metadata['user_args'])
         # Get path to user's script and infer trial configuration directory
+        if experiment.working_dir:
+            self.working_dir = os.path.abspath(experiment.working_dir)
+        else:
+            self.working_dir = os.path.join(tempfile.gettempdir(), 'orion')
 
         self.script_path = experiment.metadata['user_script']
 
@@ -65,12 +69,12 @@ class Consumer(object):
         :type trial: `orion.core.worker.trial.Trial`
 
         """
-        log.debug("### Create new directory at '%s':", self.dir)
-        temp_dir = self.experiment.working_dir is None
+        log.debug("### Create new directory at '%s':", self.working_dir)
+        temp_dir = self.working_dir is None
         prefix = self.experiment.name + "_"
-        suffix = "{}".format(trial.id) if self.dir else ""
+        suffix = "{}".format(trial.id) if self.working_dir else ""
 
-        with WorkingDir(self.experiment.working_dir, temp_dir,
+        with WorkingDir(self.working_dir, temp_dir,
                         prefix=prefix, suffix=suffix) as workdirname:
             log.debug("## New consumer context: %s", workdirname)
             completed_trial = self._consume(trial, workdirname)
