@@ -72,7 +72,7 @@ class Consumer(object):
         log.debug("### Create new directory at '%s':", self.working_dir)
         temp_dir = self.working_dir is None
         prefix = self.experiment.name + "_"
-        suffix = "{}".format(trial.id) if self.working_dir else ""
+        suffix = "{}".format(trial.id)
 
         with WorkingDir(self.working_dir, temp_dir,
                         prefix=prefix, suffix=suffix) as workdirname:

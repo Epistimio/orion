@@ -24,7 +24,7 @@ class WorkingDir:
             Name of the directory. If empty, will create a temporary one.
 
         """
-        self.working_dir = working_dir
+        self.working_dir = str(working_dir)
         self._temp = temp
         self._suffix = suffix
         self._prefix = prefix
