@@ -21,7 +21,7 @@ class ASHA(BaseAlgorithm):
     """Implement an algorithm that samples randomly from the problem's space."""
 
     def __init__(self, space, seed=None, max_resources=100, grace_period=1, reduction_factor=4,
-                 brackets=1):
+                 num_brackets=1):
         """Random sampler takes no other hyperparameter than the problem's space
         itself.
 
@@ -30,7 +30,7 @@ class ASHA(BaseAlgorithm):
         """
         super(ASHA, self).__init__(
             space, seed=seed, max_resources=max_resources, grace_period=grace_period,
-            reduction_factor=reduction_factor, brackets=brackets)
+            reduction_factor=reduction_factor, num_brackets=num_brackets)
 
         if reduction_factor < 2:
             raise AttributeError("Reduction factor for ASHA needs to be at least 2.")
@@ -40,7 +40,7 @@ class ASHA(BaseAlgorithm):
         # Tracks state for new trial add
         self.brackets = [
             _Bracket(self, grace_period, max_resources, reduction_factor, s)
-            for s in range(brackets)
+            for s in range(num_brackets)
         ]
 
     def seed_rng(self, seed):
