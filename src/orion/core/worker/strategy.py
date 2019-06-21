@@ -129,6 +129,25 @@ class MeanParallelStrategy(BaseParallelStrategy):
         return Trial.Result(name='lie', type='lie', value=self.mean_result)
 
 
+class StubParallelStrategy(BaseParallelStrategy):
+    """Parallel strategy that returns static objective value for incompleted trials."""
+
+    def __init__(self, stub_value=None):
+        """Initialize the stub value"""
+        self.stub_value = stub_value
+
+    def observe(self, points, results):
+        """See BaseParallelStrategy.observe"""
+        pass
+
+    def lie(self, trial):
+        """See BaseParallelStrategy.lie"""
+        if get_objective(trial):
+            raise RuntimeError("Trial {} is completed but should not be.".format(trial.id))
+
+        return Trial.Result(name='lie', type='lie', value=self.stub_value)
+
+
 # pylint: disable=too-few-public-methods,abstract-method
 class Strategy(BaseParallelStrategy, metaclass=Factory):
     """Class used to build a parallel strategy given name and params
