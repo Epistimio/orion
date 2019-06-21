@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.producer`."""
 import copy
+import datetime
 
 import pytest
 
@@ -226,6 +227,10 @@ def test_register_lies(producer, database, random_dt):
 
     lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
     assert len(lying_trials) == 4
+
+    trials_non_completed = list(
+        sorted(trials_non_completed,
+               key=lambda trial: trial.get('submit_time', datetime.datetime.utcnow())))
 
     for i in range(4):
         trials_non_completed[i]['_id'] = lying_trials[i]['_id']

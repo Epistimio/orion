@@ -72,6 +72,7 @@ def test_demo(database, monkeypatch):
     trials = list(database.trials.find({'experiment': exp_id}))
     assert len(trials) <= 15
     assert trials[-1]['status'] == 'completed'
+    trials = list(sorted(trials, key=lambda trial: trial['submit_time']))
     for result in trials[-1]['results']:
         assert result['type'] != 'constraint'
         if result['type'] == 'objective':
@@ -174,6 +175,7 @@ def test_workon(database):
 
     trials = list(database.trials.find({'experiment': exp_id}))
     assert len(trials) <= 15
+    trials = list(sorted(trials, key=lambda trial: trial['submit_time']))
     assert trials[-1]['status'] == 'completed'
     for result in trials[-1]['results']:
         assert result['type'] != 'constraint'
