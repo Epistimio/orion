@@ -18,7 +18,17 @@ from orion.algo.space import Fidelity
 
 
 class ASHA(BaseAlgorithm):
-    """Implement an algorithm that samples randomly from the problem's space."""
+    """Asynchronous Successive Halving Algorithm
+
+        A simple and robust hyperparameter tuning algorithm with solid theoretical underpinnings
+        that exploits parallelism and aggressive early-stopping.
+
+    For more information on the algorithm, see original paper at https://arxiv.org/abs/1810.05934.
+
+    Li, Liam, et al. "Massively parallel hyperparameter tuning."
+    arXiv preprint arXiv:1810.05934 (2018)
+
+    """
 
     def __init__(self, space, seed=None, max_resources=100, grace_period=1, reduction_factor=4,
                  num_brackets=1):
