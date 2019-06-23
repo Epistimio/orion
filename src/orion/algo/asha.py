@@ -17,6 +17,12 @@ from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Fidelity
 
 
+REGISTRATION_ERROR = """
+Bad fidelity level {fidelity}. Should be in {budgets}.
+Params: {params}
+"""
+
+
 class ASHA(BaseAlgorithm):
     """Asynchronous Successive Halving Algorithm
 
@@ -187,7 +193,7 @@ class Bracket():
         rungs = [rung for budget, rung in self.rungs if budget == fidelity]
         if not rungs:
             budgets = [budget for budget, rung in self.rungs]
-            raise IndexError('Bad fidelity level {}. Should be in {}'.format(fidelity, budgets))
+            raise IndexError(REGISTRATION_ERROR).format(fidelity, budgets, point)
 
         rungs[0][self.asha.get_id(point)] = (objective, point)
 
