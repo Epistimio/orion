@@ -193,7 +193,7 @@ class Bracket():
         rungs = [rung for budget, rung in self.rungs if budget == fidelity]
         if not rungs:
             budgets = [budget for budget, rung in self.rungs]
-            raise IndexError(REGISTRATION_ERROR).format(fidelity, budgets, point)
+            raise IndexError(REGISTRATION_ERROR.format(fidelity=fidelity, budgets=budgets, params=point))
 
         rungs[0][self.asha.get_id(point)] = (objective, point)
 
