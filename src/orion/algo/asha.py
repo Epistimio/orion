@@ -80,8 +80,10 @@ class ASHA(BaseAlgorithm):
         self.rng.set_state(state_dict['rng_state'])
 
     def suggest(self, num=1):
-        """Suggest a `num` of new sets of parameters. Randomly draw samples
-        from the import space and return them.
+        """Suggest a `num` of new sets of parameters.
+
+        Promote a trial if possible, otherwise randomly draw samples from the space and
+        randomly assign to a bracket.
 
         :param num: how many sets to be suggested.
 

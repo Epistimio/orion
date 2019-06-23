@@ -138,6 +138,7 @@ class Experiment(object):
             self._id = config['_id']
 
         self._last_fetched = self.metadata.get("datetime", datetime.datetime.utcnow())
+        self._completed_buffer = set()
 
     def _setup_db(self):
         self._db.ensure_index('experiments',
@@ -343,12 +344,20 @@ class Experiment(object):
         """
         query = dict(
             status='completed',
-            end_time={'$gte': self._last_fetched}
+            end_time={'$gte': self._last_fetched - datetime.timedelta(minutes=1)}
             )
         completed_trials = self.fetch_trials_tree(query)
-        self._last_fetched = datetime.datetime.utcnow()
 
-        return completed_trials
+        if completed_trials:
+            self._last_fetched = max(trial.end_time for trial in completed_trials)
+
+        new_completed_trials = [trial for trial in completed_trials
+                                if trial.id not in self._completed_buffer]
+
+        if new_completed_trials:
+            self._completed_buffer |= set(trial.id for trial in new_completed_trials)
+
+        return new_completed_trials
 
     def fetch_noncompleted_trials(self):
         """Fetch non-completed trials of this `Experiment` instance.
