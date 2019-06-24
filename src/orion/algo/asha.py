@@ -189,8 +189,8 @@ class Bracket():
 
         self.asha = asha
         self.reduction_factor = reduction_factor
-        max_rungs = int(numpy.log(max_t / min_t) / numpy.log(reduction_factor) - s + 1)
-        self.rungs = [(min_t * reduction_factor**(k + s), dict())
+        max_rungs = int(numpy.ceil(numpy.log(max_t / min_t) / numpy.log(reduction_factor) - s + 1))
+        self.rungs = [(min(min_t * reduction_factor**(k + s), max_t), dict())
                       for k in range(max_rungs)]
 
         logger.debug('Bracket budgets: {}'.format([rung[0] for rung in self.rungs]))
