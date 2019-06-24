@@ -10,11 +10,15 @@
 """
 import copy
 import hashlib
+import logging
 
 import numpy
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Fidelity
+
+
+logger = logging.getLogger(__name__)
 
 
 REGISTRATION_ERROR = """
@@ -188,6 +192,8 @@ class Bracket():
         max_rungs = int(numpy.log(max_t / min_t) / numpy.log(reduction_factor) - s + 1)
         self.rungs = [(min_t * reduction_factor**(k + s), dict())
                       for k in range(max_rungs)]
+
+        logger.debug('Bracket budgets: {}'.format([rung[0] for rung in self.rungs]))
 
     def register(self, point, objective):
         """Register a point in the corresponding rung"""
