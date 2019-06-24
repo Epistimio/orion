@@ -330,37 +330,22 @@ class Experiment(object):
         self._db.write('trials', trial.to_dict())
 
     def fetch_completed_trials(self):
-        """Fetch recent completed trials that this `Experiment` instance has not
-        yet seen.
+        """Fetch completed trials of this `Experiment` instance.
 
         Trials are sorted based on `Trial.submit_time`
-
-        .. note::
-
-            It will return only those with `Trial.end_time` after `_last_fetched`, for performance
-            reasons.
 
         :return: list of completed `Trial` objects
         """
         query = dict(
             status='completed',
-            end_time={'$gte': self._last_fetched - datetime.timedelta(minutes=1)}
             )
-        completed_trials = self.fetch_trials_tree(query)
 
-        if completed_trials:
-            self._last_fetched = max(trial.end_time for trial in completed_trials)
-
-        new_completed_trials = [trial for trial in completed_trials
-                                if trial.id not in self._completed_buffer]
-
-        if new_completed_trials:
-            self._completed_buffer |= set(trial.id for trial in new_completed_trials)
-
-        return new_completed_trials
+        return self.fetch_trials_tree(query)
 
     def fetch_noncompleted_trials(self):
         """Fetch non-completed trials of this `Experiment` instance.
+
+        Trials are sorted based on `Trial.submit_time`
 
         .. note::
 
