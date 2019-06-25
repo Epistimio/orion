@@ -247,7 +247,7 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
 def test_working_dir_argument_cmdline(database, monkeypatch, tmp_path):
     """Check that a permanent directory is used instead of tmpdir"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    path = tmp_path + "/test"
+    path = str(tmp_path) + "/test"
     assert not os.path.exists(path)
     orion.core.cli.main(["hunt", "-n", "allo", "--working-dir", path,
                          "--max-trials", "2", "--config", "./database_config.yaml",
