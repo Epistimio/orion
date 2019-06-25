@@ -72,6 +72,7 @@ class Producer(object):
                 new_trial = format_trials.tuple_to_trial(new_point, self.space)
                 try:
                     new_trial.parents = self.naive_trials_history.children
+                    new_trial.index = len(self.naive_trials_history.full)
                     log.debug("#### Register new trial to database: %s", new_trial)
                     self.experiment.register_trial(new_trial)
                     sampled_points += 1

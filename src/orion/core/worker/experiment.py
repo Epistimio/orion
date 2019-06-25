@@ -147,7 +147,10 @@ class Experiment(object):
                               unique=True)
         self._db.ensure_index('experiments', 'metadata.datetime')
 
-        self._db.ensure_index('trials', 'experiment')
+        self._db.ensure_index('trials',
+                              [('experiment', Database.ASCENDING),
+                               ('index', Database.ASCENDING)],
+                              unique=True)
         self._db.ensure_index('trials', 'status')
         self._db.ensure_index('trials', 'results')
         self._db.ensure_index('trials', 'start_time')
