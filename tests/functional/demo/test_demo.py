@@ -263,6 +263,20 @@ def test_working_dir_argument_cmdline(database, monkeypatch, tmp_path):
 
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
+def test_tmpdir_is_deleted(database, monkeypatch, tmp_path):
+    """Check that a permanent directory is used instead of tmpdir"""
+    if os.path.exists("/tmp/orion"):
+        shutil.rmtree("/tmp/orion")
+
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main(["hunt", "-n", "allo", "--max-trials", "2", "--config",
+                         "./database_config.yaml", "./black_box.py", "-x~uniform(-50,50)"])
+
+    assert not os.listdir("/tmp/orion")
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
 def test_working_dir_argument_config(database, monkeypatch):
     """Check that a permanent directory is used instead of tmpdir"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
