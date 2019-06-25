@@ -58,6 +58,8 @@ class Consumer(object):
         else:
             self.working_dir = os.path.join(tempfile.gettempdir(), 'orion')
 
+        os.makedirs(self.working_dir, exist_ok=True)
+
         self.script_path = experiment.metadata['user_script']
 
         self.converter = JSONConverter()
