@@ -32,12 +32,13 @@ class WorkingDir:
 
     def __enter__(self):
         """Create the a permanent directory or a temporary one."""
+        os.makedirs(self.working_dir, exist_ok=True)
+
         if not self._temp:
             path = os.path.join(self.working_dir, self._prefix + self._suffix)
             os.makedirs(path, exist_ok=True)
             return path
 
-        print(self.working_dir)
         self._tmpdir = tempfile.TemporaryDirectory(suffix=self._suffix, prefix=self._prefix,
                                                    dir=self.working_dir)
         return self._tmpdir.name
