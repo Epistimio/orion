@@ -1,9 +1,10 @@
 from orion.core.worker.protocols.debug import DebugProtocol
-
+from orion.core.worker.protocols.track import TrackProtocol
 
 _protocols = {
     '__default__': DebugProtocol,
-    'debug': DebugProtocol
+    'debug': DebugProtocol,
+    'track': TrackProtocol
 }
 
 

@@ -41,7 +41,7 @@ def reserve_trial(experiment, producer):
 
 def workon(experiment, worker_trials=None):
     """Try to find solution to the search problem defined in `experiment`."""
-    producer = Producer(experiment, protocol='debug:')
+    producer = Producer(experiment, protocol='track:file://orion_results.json')
     consumer = Consumer(experiment)
 
     log.debug("#####  Init Experiment  #####")

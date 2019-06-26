@@ -220,11 +220,11 @@ class Experiment(object):
             return None
 
         if score_handle is not None and self.space:
-            scores = list(map(score_handle,
-                              map(lambda x: trial_to_tuple(x, self.space), new_trials)))
+            scores = list(map(score_handle, map(lambda x: trial_to_tuple(x, self.space), new_trials)))
             scored_trials = zip(scores, new_trials)
             best_trials = filter(lambda st: st[0] == max(scores), scored_trials)
             new_trials = list(zip(*best_trials))[1]
+
         elif score_handle is not None:
             log.warning("While reserving trial: `score_handle` was provided, but "
                         "parameter space has not been defined yet.")
