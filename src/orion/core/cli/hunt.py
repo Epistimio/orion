@@ -43,12 +43,23 @@ def add_subparser(parser):
              "(default: %s)" % resolve_config.DEF_CMD_WORKER_TRIALS[1])
 
     orion_group.add_argument(
-        "--pool-size", type=int, metavar='#',
+        '--pool-size', type=int, metavar='#',
         help="number of simultaneous trials the algorithm should suggest. "
              "This is useful if many workers are executed in parallel and the algorithm has a "
              "strategy to sample non-independant trials simultaneously. Otherwise, it is better "
              "to leave `pool_size` to 1 and set a Strategy for Oríon's producer. "
              "(default: %s)" % resolve_config.DEF_CMD_POOL_SIZE[1])
+
+    orion_group.add_argument(
+        '--metric', type=str, metavar='#',
+        help="metric name to base our optimisation one")
+
+    orion_group.add_argument(
+        '--protocol', type=str, metavar='#', default='debug',
+        help="protocol used to communicate between orion and the experiment"
+        "   debug: use orion internal file"
+        "   track:cockroach://"
+    )
 
     evc_cli.get_branching_args_group(hunt_parser)
 
@@ -65,5 +76,6 @@ def main(args):
     args['leafs'] = []
     # TODO: simplify when parameter parsing is refactored
     worker_trials = ExperimentBuilder().fetch_full_config(args)['worker_trials']
+
     experiment = EVCBuilder().build_from(args)
     workon(experiment, worker_trials)

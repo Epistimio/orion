@@ -14,6 +14,7 @@ import logging
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
 from orion.core.worker.trials_history import TrialsHistory
+from orion.core.worker.protocols import make_protocol
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class Producer(object):
 
     """
 
-    def __init__(self, experiment, max_attempts=100):
+    def __init__(self, experiment, max_attempts=100, protocol='debug'):
         """Initialize a producer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -47,11 +48,15 @@ class Producer(object):
         #       Strategist and Scheduler.
         self.trials_history = TrialsHistory()
         self.naive_trials_history = None
+        self.protocol = make_protocol(protocol, experiment=experiment)
 
     @property
     def pool_size(self):
         """Pool-size of the experiment"""
         return self.experiment.pool_size
+
+    def reserve_trial(self, score_handle=None):
+        return self.protocol.select_trial(score_handle=score_handle)
 
     def produce(self):
         """Create and register new trials."""
@@ -72,7 +77,10 @@ class Producer(object):
                 try:
                     new_trial.parents = self.naive_trials_history.children
                     log.debug("#### Register new trial to database: %s", new_trial)
-                    self.experiment.register_trial(new_trial)
+
+                    self.protocol.create_trial(new_trial)
+                    # self.experiment.register_trial(new_trial)
+
                     sampled_points += 1
                 except DuplicateKeyError:
                     log.debug("#### Duplicate sample. Updating algo to produce new ones.")
@@ -96,7 +104,9 @@ class Producer(object):
     def _update_algorithm(self):
         """Pull newest completed trials to update local model."""
         log.debug("### Fetch trials to observe:")
-        completed_trials = self.experiment.fetch_completed_trials()
+        # completed_trials = self.experiment.fetch_completed_trials()
+
+        completed_trials = self.protocol.fetch_completed_trials()
         log.debug("### %s", completed_trials)
 
         if completed_trials:
