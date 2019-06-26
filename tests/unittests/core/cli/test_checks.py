@@ -3,11 +3,11 @@
 """Collection of tests for :mod:`orion.core.cli.checks`."""
 import pytest
 
-from orion.core.cli.checks.presence import PresenceStage
-from orion.core.cli.checks.operations import OperationsStage
 from orion.core.cli.checks.creation import CreationStage
-from orion.core.io.experiment_builder import ExperimentBuilder
+from orion.core.cli.checks.operations import OperationsStage
+from orion.core.cli.checks.presence import PresenceStage
 from orion.core.io.database.mongodb import MongoDB
+from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.exceptions import CheckError
 
 
@@ -39,11 +39,13 @@ def creation(create_db_instance):
 
 @pytest.fixture
 def operation(creation):
+    """Return an OperationStage instance."""
     return OperationsStage(creation)
 
 
 @pytest.fixture
 def clean_test(database):
+    """Remove the test collection from database."""
     database.test.drop()
 
 
@@ -266,7 +268,7 @@ def test_operation_count_fails(monkeypatch, operation, clean_test):
 
 
 def test_operation_remove_pass(operation, clean_test):
-    """check if test passes when remove operation works."""
+    """Check if test passes when remove operation works."""
     operation.c_stage.instance.write('test', {'index': 'value'})
     result, msg = operation.check_remove()
 
