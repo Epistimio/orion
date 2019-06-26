@@ -12,9 +12,9 @@
 import argparse
 import logging
 
-from orion.core.cli.checks.presence import PresenceStage
 from orion.core.cli.checks.creation import CreationStage
 from orion.core.cli.checks.operations import OperationsStage
+from orion.core.cli.checks.presence import PresenceStage
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.exceptions import CheckError
 

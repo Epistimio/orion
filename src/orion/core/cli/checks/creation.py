@@ -36,10 +36,12 @@ class CreationStage:
 
     @staticmethod
     def checks():
+        """Return checklist."""
         return _Checks.checks
 
     @register_check(_Checks.checks, "Check if database of specified type can be created... ")
     def check_database_creation(self):
+        """Check if database of specified type can be created."""
         database = self.p_stage.db_config
         db_type = database.pop('type')
 

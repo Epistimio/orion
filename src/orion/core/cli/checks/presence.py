@@ -39,8 +39,9 @@ class PresenceStage:
         """Return the registered checks."""
         return _Checks.checks
 
-    @register_check(_Checks.checks, "Check if Oríon's default options are present... ")
+    @register_check(_Checks.checks, "check if oríon's default options are present... ")
     def check_default_config(self):
+        """Check if database supports delete operation."""
         config = self.builder.fetch_default_options()
 
         if 'database' not in config:
@@ -50,8 +51,9 @@ class PresenceStage:
 
         return "Success", ""
 
-    @register_check(_Checks.checks, "Check if Oríon's environment variables have been set... ")
+    @register_check(_Checks.checks, "check if oríon's environment variables have been set... ")
     def check_environment_vars(self):
+        """Check if database supports delete operation."""
         config = self.builder.fetch_env_vars()
 
         config = config['database']
@@ -66,9 +68,9 @@ class PresenceStage:
         return "Success", ""
 
     @register_check(_Checks.checks, "Check if configuration file has"
-
                                     " valid database configuration... """)
     def check_configuration_file(self):
+        """Check if configuration file has valid database configuration."""
         config = self.builder.fetch_file_config(self.cmdargs)
 
         try:

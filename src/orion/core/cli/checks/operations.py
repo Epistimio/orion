@@ -34,10 +34,12 @@ class OperationsStage:
 
     @staticmethod
     def checks():
+        """Return checklist."""
         return _Checks.checks
 
     @register_check(_Checks.checks, "Check if database supports write operation... ")
     def check_write(self):
+        """Check if database supports write operation."""
         database = self.c_stage.instance
 
         try:
@@ -49,6 +51,7 @@ class OperationsStage:
 
     @register_check(_Checks.checks, "Check if database supports read operation... ")
     def check_read(self):
+        """Check if database supports read operation."""
         database = self.c_stage.instance
 
         try:
@@ -61,8 +64,9 @@ class OperationsStage:
 
         return "Success", ""
 
-    @register_check(_Checks.checks, "Check if database supports count operation... ")
+    @register_check(_Checks.checks, "check if database supports count operation... ")
     def check_count(self):
+        """Check if database supports read operation."""
         database = self.c_stage.instance
 
         count = database.count('test', {'index': 'value'})
@@ -74,6 +78,7 @@ class OperationsStage:
 
     @register_check(_Checks.checks, "Check if database supports delete operation... ")
     def check_remove(self):
+        """Check if database supports delete operation."""
         database = self.c_stage.instance
 
         database.remove('test', {'index': 'value'})
@@ -85,4 +90,5 @@ class OperationsStage:
         return "Success", ""
 
     def post_stage(self):
+        """Do nothing."""
         pass
