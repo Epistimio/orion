@@ -8,7 +8,7 @@ def register_check(check_list, msg):
         func.msg = msg
 
         def wrapped_func(*args):
-            func(*args)
+            return func(*args)
 
         return wrapped_func
     return wrap
