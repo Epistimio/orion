@@ -42,6 +42,9 @@ def add_subparser(parser):
              "did not reach its maximum number of trials "
              "(default: %s)" % resolve_config.DEF_CMD_WORKER_TRIALS[1])
 
+    orion_group.add_argument('--working-dir', type=str,
+                             help="Set working directory for running experiment.")
+
     orion_group.add_argument(
         '--pool-size', type=int, metavar='#',
         help="number of simultaneous trials the algorithm should suggest. "
