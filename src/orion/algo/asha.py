@@ -104,7 +104,13 @@ class ASHA(BaseAlgorithm):
                 logger.debug('Promoting')
                 return [candidate]
 
-        point = list(self.space.sample(num, seed=self.rng.randint(0, 10000))[0])
+        for attempt in range(100):
+            point = list(self.space.sample(num, seed=self.rng.randint(0, 10000))[0])
+            if self.get_id(point) not in self.trial_info:
+                break
+
+        if self.get_id(point) in self.trial_info:
+            raise RuntimeError('Keeps sampling already existing points')
 
         sizes = numpy.array([len(b.rungs) for b in self.brackets])
         probs = numpy.e**(sizes - sizes.max())
