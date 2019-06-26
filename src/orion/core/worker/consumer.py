@@ -17,6 +17,7 @@ import tempfile
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database
 from orion.core.io.space_builder import SpaceBuilder
+from orion.core.utils.working_dir import WorkingDir
 from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
@@ -52,9 +53,12 @@ class Consumer(object):
         self.template_builder = SpaceBuilder()
         self.template_builder.build_from(experiment.metadata['user_args'])
         # Get path to user's script and infer trial configuration directory
+        if experiment.working_dir:
+            self.working_dir = os.path.abspath(experiment.working_dir)
+        else:
+            self.working_dir = os.path.join(tempfile.gettempdir(), 'orion')
+
         self.script_path = experiment.metadata['user_script']
-        self.tmp_dir = os.path.join(tempfile.gettempdir(), 'orion')
-        os.makedirs(self.tmp_dir, exist_ok=True)
 
         self.converter = JSONConverter()
 
@@ -65,10 +69,14 @@ class Consumer(object):
         :type trial: `orion.core.worker.trial.Trial`
 
         """
-        log.debug("### Create new temporary directory at '%s':", self.tmp_dir)
-        with tempfile.TemporaryDirectory(prefix=self.experiment.name + '_',
-                                         dir=self.tmp_dir) as workdirname:
-            log.debug("## New temp consumer context: %s", workdirname)
+        log.debug("### Create new directory at '%s':", self.working_dir)
+        temp_dir = self.experiment.working_dir is None
+        prefix = self.experiment.name + "_"
+        suffix = trial.id
+
+        with WorkingDir(self.working_dir, temp_dir,
+                        prefix=prefix, suffix=suffix) as workdirname:
+            log.debug("## New consumer context: %s", workdirname)
             completed_trial = self._consume(trial, workdirname)
 
         if completed_trial is not None:
