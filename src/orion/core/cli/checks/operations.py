@@ -56,9 +56,8 @@ class OperationsStage:
         except Exception as ex:
             raise CheckError(str(ex))
 
-        value = result[0]['index']
-        if value != 'value':
-            raise CheckError("Expected 'value', received {}.".format(value))
+        if not len(result):
+            raise CheckError("Expected 'value', received nothing.")
 
         return "Success", ""
 

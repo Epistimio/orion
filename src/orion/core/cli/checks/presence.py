@@ -22,7 +22,7 @@ class PresenceStage:
     """The presence stage of the checks."""
 
     def __init__(self, experiment_builder, cmdargs):
-        """Create an intance of the stage.
+        """Create an instance of the stage.
 
         Parameters
         ----------
@@ -54,12 +54,20 @@ class PresenceStage:
     def check_environment_vars(self):
         config = self.builder.fetch_env_vars()
 
-        if not all(config.values()):
-            return "Skipping", "No environment variables found."
+        config = config['database']
+        names = ['type', 'name', 'host']
 
-        self.db_config = config['database']
+        for name in names:
+            if name not in config or config[name] is None:
+                return "Skipping", "Missing {} environment variable.".format(name)
 
-    @register_check(_Checks.checks, "Check if configuration file has valid database configuration... """)
+        self.db_config = config
+
+        return "Success", ""
+
+    @register_check(_Checks.checks, "Check if configuration file has"
+
+                                    " valid database configuration... """)
     def check_configuration_file(self):
         config = self.builder.fetch_file_config(self.cmdargs)
 
@@ -77,7 +85,7 @@ class PresenceStage:
                 if name not in config or config[name] is None:
                     raise CheckError("Missing {} inside configuration.".format(name))
         except CheckError as ex:
-            if len(self.db_config):
+            if self.db_config is not None:
                 return "Skipping", "No configuration file found, using previous."
             else:
                 raise ex

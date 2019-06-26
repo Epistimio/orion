@@ -32,6 +32,7 @@ class CreationStage:
 
         """
         self.p_stage = presence_stage
+        self.instance = None
 
     @staticmethod
     def checks():
