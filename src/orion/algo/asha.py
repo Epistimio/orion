@@ -101,6 +101,7 @@ class ASHA(BaseAlgorithm):
             candidate = bracket.update_rungs()
 
             if candidate:
+                logger.debug('Promoting')
                 return [candidate]
 
         point = list(self.space.sample(num, seed=self.rng.randint(0, 10000))[0])
@@ -112,6 +113,8 @@ class ASHA(BaseAlgorithm):
 
         point[self.fidelity_index] = self.brackets[idx].rungs[0][0]
         self.trial_info[self.get_id(point)] = self.brackets[idx]
+
+        logger.debug('Sampling for bracket {} {}'.format(idx, self.brackets[idx]))
 
         return [tuple(point)]
 
@@ -246,9 +249,20 @@ class Bracket():
         for rung_id in range(len(self.rungs) - 2, -1, -1):
             candidate = self.get_candidate(rung_id)
             if candidate:
+
+                logger.debug(
+                    'Promoting {point} from rung {past_rung} with fidelity {past_fidelity} to '
+                    'rung {new_rung} with fidelity {new_fidelity}'.format(
+                        point=candidate, past_rung=rung_id,
+                        past_fidelity=candidate[self.asha.fidelity_index],
+                        new_rung=rung_id + 1, new_fidelity=self.rungs[rung_id + 1][0]))
+
                 candidate = list(copy.deepcopy(candidate))
                 candidate[self.asha.fidelity_index] = self.rungs[rung_id + 1][0]
 
                 return tuple(candidate)
 
         return None
+
+    def __repr__(self):
+        return 'Bracket({})'.format([rung[0] for rung in self.rungs])
