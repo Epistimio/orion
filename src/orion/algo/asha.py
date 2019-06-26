@@ -105,12 +105,14 @@ class ASHA(BaseAlgorithm):
                 return [candidate]
 
         for attempt in range(100):
-            point = list(self.space.sample(num, seed=self.rng.randint(0, 10000))[0])
+            point = list(self.space.sample(num, seed=self.rng.randint(0, 1000000))[0])
             if self.get_id(point) not in self.trial_info:
                 break
 
         if self.get_id(point) in self.trial_info:
-            raise RuntimeError('Keeps sampling already existing points')
+            raise RuntimeError(
+                'ASHA keeps sampling already existing points. '
+                'Please report this to https://github.com/Epistimio/orion/issues')
 
         sizes = numpy.array([len(b.rungs) for b in self.brackets])
         probs = numpy.e**(sizes - sizes.max())
@@ -155,10 +157,10 @@ class ASHA(BaseAlgorithm):
             try:
                 bracket.register(point, result['objective'])
             except IndexError as e:
-                raise RuntimeError('Point registered to wrong bracket. This is likely due '
-                                   'to a corrupted database, where trials of different fidelity '
-                                   'have a wrong timestamps. Please report this to '
-                                   'https://github.com/Epistimio/orion/issues') from e
+                logger.warning('Point registered to wrong bracket. This is likely due '
+                               'to a corrupted database, where trials of different fidelity '
+                               'have a wrong timestamps.')
+                continue
 
             if _id not in self.trial_info:
                 self.trial_info[_id] = bracket
