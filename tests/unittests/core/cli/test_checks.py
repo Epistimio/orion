@@ -73,7 +73,7 @@ def test_check_default_config_skip(monkeypatch, presence):
     result, msg = presence.check_default_config()
     assert result == "Skipping"
     assert "No" in msg
-    assert presence.db_config is None
+    assert presence.db_config == {}
 
 
 def test_envvar_config_pass(monkeypatch, presence):
@@ -91,14 +91,11 @@ def test_envvar_config_pass(monkeypatch, presence):
 
 def test_envvar_config_skip(monkeypatch, presence):
     """Check if test skips when missing an environment variable."""
-    monkeypatch.setenv('ORION_DB_NAME', 'orion')
-    monkeypatch.setenv('ORION_DB_TYPE', 'mongodb')
-
     result, msg = presence.check_environment_vars()
 
     assert result == "Skipping"
-    assert 'host' in msg
-    assert presence.db_config is None
+    assert 'No' in msg
+    assert presence.db_config == {}
 
 
 def test_config_file_config_pass(monkeypatch, presence, config):
@@ -122,10 +119,11 @@ def test_config_file_fails_missing_config(monkeypatch, presence, config):
 
     monkeypatch.setattr(presence.builder, "fetch_file_config", mock_file_config)
 
-    with pytest.raises(CheckError) as ex:
-        presence.check_configuration_file()
+    status, msg = presence.check_configuration_file()
 
-    assert "Missing" in str(ex)
+    assert status == "Skipping"
+    assert "Missing" in msg
+    assert presence.db_config == {}
 
 
 def test_config_file_fails_missing_database(monkeypatch, presence, config):
@@ -135,23 +133,25 @@ def test_config_file_fails_missing_database(monkeypatch, presence, config):
 
     monkeypatch.setattr(presence.builder, "fetch_file_config", mock_file_config)
 
-    with pytest.raises(CheckError) as ex:
-        presence.check_configuration_file()
+    status, msg = presence.check_configuration_file()
 
-    assert "No database" in str(ex)
+    assert status == "Skipping"
+    assert "No database" in msg
+    assert presence.db_config == {}
 
 
 def test_config_file_fails_missing_value(monkeypatch, presence, config):
     """Check if test fails with missing value in database configuration."""
     def mock_file_config(self):
-        return {'database': {'host': 'localhost', 'type': 'mongodb'}}
+        return {'database': {}}
 
     monkeypatch.setattr(presence.builder, "fetch_file_config", mock_file_config)
 
-    with pytest.raises(CheckError) as ex:
-        presence.check_configuration_file()
+    status, msg = presence.check_configuration_file()
 
-    assert "name" in str(ex)
+    assert status == "Skipping"
+    assert "No configuration" in msg
+    assert presence.db_config == {}
 
 
 def test_config_file_skips(monkeypatch, presence, config):
@@ -165,7 +165,7 @@ def test_config_file_skips(monkeypatch, presence, config):
     result, msg = presence.check_configuration_file()
 
     assert result == "Skipping"
-    assert "previous" in msg
+    assert presence.db_config == config['database']
 
 
 @pytest.mark.usefixtures('null_db_instances')
