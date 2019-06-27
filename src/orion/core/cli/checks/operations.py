@@ -10,12 +10,7 @@
 
 """
 
-from orion.core.utils.decorators import register_check
 from orion.core.utils.exceptions import CheckError
-
-
-class _Checks:
-    checks = []
 
 
 class OperationsStage:
@@ -32,12 +27,13 @@ class OperationsStage:
         """
         self.c_stage = creation_stage
 
-    @staticmethod
-    def checks():
-        """Return checklist."""
-        return _Checks.checks
+    def checks(self):
+        """Return checks."""
+        yield self.check_write
+        yield self.check_read
+        yield self.check_count
+        yield self.check_remove
 
-    @register_check(_Checks.checks)
     def check_write(self):
         """Check if database supports write operation."""
         database = self.c_stage.instance
@@ -49,7 +45,6 @@ class OperationsStage:
 
         return "Success", ""
 
-    @register_check(_Checks.checks)
     def check_read(self):
         """Check if database supports read operation."""
         database = self.c_stage.instance
@@ -64,7 +59,6 @@ class OperationsStage:
 
         return "Success", ""
 
-    @register_check(_Checks.checks)
     def check_count(self):
         """Check if database supports count operation."""
         database = self.c_stage.instance
@@ -76,7 +70,6 @@ class OperationsStage:
 
         return "Success", ""
 
-    @register_check(_Checks.checks)
     def check_remove(self):
         """Check if database supports delete operation."""
         database = self.c_stage.instance
