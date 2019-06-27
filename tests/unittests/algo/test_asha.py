@@ -108,7 +108,7 @@ class TestBracket():
         with pytest.raises(IndexError) as ex:
             bracket.register((0.0, 55), 0.0)
 
-        assert 'Bad fidelity level 55' in str(ex)
+        assert 'Bad fidelity level 55' in str(ex.value)
 
     def test_candidate_promotion(self, asha, bracket, rung_0):
         """Test that correct point is promoted."""
@@ -194,6 +194,15 @@ class TestBracket():
         candidate = bracket.update_rungs()
 
         assert candidate is None
+
+    def test_repr(self, bracket, rung_0, rung_1, rung_2):
+        """Test the string representation of Bracket"""
+
+        bracket.rungs[0] = rung_0
+        bracket.rungs[1] = rung_1
+        bracket.rungs[2] = rung_2
+
+        assert str(bracket) == 'Bracket([1, 3, 9])'
 
 
 class TestASHA():
@@ -287,7 +296,7 @@ class TestASHA():
 
         assert 'No bracket found for point' in str(ex)
 
-    def test_register_corrupted_db(self, space, b_config):
+    def test_register_corrupted_db(self, caplog, space, b_config):
         """Check that a point cannot registered if passed in order diff than fidelity."""
         asha = ASHA(space, max_resources=b_config['R'], grace_period=b_config['r'],
                     reduction_factor=b_config['eta'], num_brackets=3)
@@ -297,14 +306,14 @@ class TestASHA():
         point = (value, fidelity)
 
         asha.observe([point], [{'objective': 0.0}])
+        assert 'Point registered to wrong bracket' not in caplog.text
 
         fidelity = 1
         point = [value, fidelity]
 
-        with pytest.raises(RuntimeError) as ex:
-            asha.observe([point], [{'objective': 0.0}])
-
-        assert 'Point registered to wrong bracket' in str(ex)
+        caplog.clear()
+        asha.observe([point], [{'objective': 0.0}])
+        assert 'Point registered to wrong bracket' in caplog.text
 
     def test_get_id(self, space, b_config):
         """Test valid id of points"""
@@ -343,6 +352,55 @@ class TestASHA():
 
         assert points == [(0.5, 1)]
 
+    def test_suggest_duplicates(self, monkeypatch, asha, bracket, rung_0, rung_1, rung_2):
+        """Test that sampling collisions are handled."""
+        asha.brackets = [bracket]
+        bracket.asha = asha
+
+        # Fill rungs to force sampling
+        bracket.rungs[0] = rung_0
+        bracket.rungs[1] = rung_1
+        bracket.rungs[2] = rung_2
+
+        duplicate_point = (0.0, 'fidelity')
+        new_point = (0.5, 'fidelity')
+
+        asha.trial_info[asha.get_id(duplicate_point)] = bracket
+
+        points = [duplicate_point, new_point]
+
+        def sample(num=1, seed=None):
+            return [points.pop(0)]
+
+        monkeypatch.setattr(asha.space, 'sample', sample)
+
+        assert asha.suggest()[0][0] == new_point[0]
+        assert len(points) == 0
+
+    def test_suggest_inf_duplicates(self, monkeypatch, asha, bracket, rung_0, rung_1, rung_2):
+        """Test that sampling inf collisions raises runtime error."""
+
+        asha.brackets = [bracket]
+        bracket.asha = asha
+
+        # Fill rungs to force sampling
+        bracket.rungs[0] = rung_0
+        bracket.rungs[1] = rung_1
+        bracket.rungs[2] = rung_2
+
+        zhe_point = (0.0, 'fidelity')
+        asha.trial_info[asha.get_id(zhe_point)] = bracket
+
+        def sample(num=1, seed=None):
+            return [zhe_point]
+
+        monkeypatch.setattr(asha.space, 'sample', sample)
+
+        with pytest.raises(RuntimeError) as exc:
+            asha.suggest()
+
+        assert 'ASHA keeps sampling already existing points.' in str(exc.value)
+
     def test_suggest_promote(self, asha, bracket, rung_0):
         """Test that correct point is promoted and returned."""
         asha.brackets = [bracket]
@@ -366,8 +424,8 @@ class TestASHA():
         """Test that state is reset properly"""
         asha.seed_rng(1)
         state = asha.state_dict
-        a = asha.suggest(1)[0]
-        assert not np.allclose(a, asha.suggest(1)[0])
+        point = asha.suggest(1)[0]
+        assert not np.allclose(point, asha.suggest(1)[0])
 
         asha.set_state(state)
-        assert np.allclose(a, asha.suggest(1)[0])
+        assert point == asha.suggest(1)[0]

@@ -105,7 +105,7 @@ class ASHA(BaseAlgorithm):
                 return [candidate]
 
         for attempt in range(100):
-            point = list(self.space.sample(1, seed=tuple(self.rng.randint(0, 1000000, size=3))))
+            point = list(self.space.sample(1, seed=tuple(self.rng.randint(0, 1000000, size=3)))[0])
             if self.get_id(point) not in self.trial_info:
                 break
 
@@ -120,7 +120,6 @@ class ASHA(BaseAlgorithm):
         idx = self.rng.choice(len(self.brackets), p=normalized)
 
         point[self.fidelity_index] = self.brackets[idx].rungs[0][0]
-        self.trial_info[self.get_id(point)] = self.brackets[idx]
 
         logger.debug('Sampling for bracket {} {}'.format(idx, self.brackets[idx]))
 
