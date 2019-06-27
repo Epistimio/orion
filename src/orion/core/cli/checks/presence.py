@@ -41,7 +41,7 @@ class PresenceStage:
 
     @register_check(_Checks.checks, "check if oríon's default options are present... ")
     def check_default_config(self):
-        """Check if database supports delete operation."""
+        """Check for a configuration inside the default paths."""
         config = self.builder.fetch_default_options()
 
         if 'database' not in config:
@@ -53,7 +53,7 @@ class PresenceStage:
 
     @register_check(_Checks.checks, "check if oríon's environment variables have been set... ")
     def check_environment_vars(self):
-        """Check if database supports delete operation."""
+        """Check for a configuration inside the environment variables."""
         config = self.builder.fetch_env_vars()
 
         config = config['database']
