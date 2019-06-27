@@ -55,7 +55,8 @@ def ask_question(question, default=None):
     return answer
 
 
-def main():
+# pylint: disable = unused-argument
+def main(*args):
     """Build a configuration file."""
     _type = ask_question("Enter the database type: ", "mongodb")
     name = ask_question("Enter the database name: ", "test")
