@@ -36,8 +36,15 @@ from collections import OrderedDict
 import numbers
 
 import numpy
-from scipy._lib._util import check_random_state
 from scipy.stats import distributions
+
+
+def check_random_state(seed):
+    """Return numpy global rng or RandomState if seed is specified"""
+    if seed is None:
+        return numpy.random.mtrand._rand  # pylint:disable=protected-access
+
+    return numpy.random.RandomState(seed)
 
 
 # helper class to be able to print [1, ..., 4] instead of [1, '...', 4]
@@ -46,7 +53,7 @@ class _Ellipsis:  # pylint:disable=too-few-public-methods
         return '...'
 
 
-class Dimension(object):
+class Dimension:
     """Base class for search space dimensions.
 
     Attributes
