@@ -11,12 +11,7 @@
 """
 
 from orion.core.io.database import Database
-from orion.core.utils.decorators import register_check
 from orion.core.utils.exceptions import CheckError
-
-
-class _Checks:
-    checks = []
 
 
 class CreationStage:
@@ -34,12 +29,10 @@ class CreationStage:
         self.p_stage = presence_stage
         self.instance = None
 
-    @staticmethod
-    def checks():
-        """Return checklist."""
-        return _Checks.checks
+    def checks(self):
+        """Return checks."""
+        yield self.check_database_creation
 
-    @register_check(_Checks.checks)
     def check_database_creation(self):
         """Check if database of specified type can be created."""
         database = self.p_stage.db_config

@@ -6,15 +6,9 @@
 
 .. module:: presence
     :platform: Unix
-    :synopsis: Checks for the creation of a `Database` object.
+    :synopsis: Checks for the presence of a configuration.
 
 """
-
-from orion.core.utils.decorators import register_check
-
-
-class _Checks:
-    checks = []
 
 
 class PresenceStage:
@@ -33,12 +27,12 @@ class PresenceStage:
         self.cmdargs = cmdargs
         self.db_config = {}
 
-    @staticmethod
-    def checks():
+    def checks(self):
         """Return the registered checks."""
-        return _Checks.checks
+        yield self.check_default_config
+        yield self.check_environment_vars
+        yield self.check_configuration_file
 
-    @register_check(_Checks.checks)
     def check_default_config(self):
         """Check for a configuration inside the default paths."""
         config = self.builder.fetch_default_options()
@@ -51,7 +45,6 @@ class PresenceStage:
 
         return "Success", ""
 
-    @register_check(_Checks.checks)
     def check_environment_vars(self):
         """Check for a configuration inside the environment variables."""
         config = self.builder.fetch_env_vars()
@@ -67,7 +60,6 @@ class PresenceStage:
 
         return "Success", ""
 
-    @register_check(_Checks.checks)
     def check_configuration_file(self):
         """Check if configuration file has valid database configuration."""
         config = self.builder.fetch_file_config(self.cmdargs)
