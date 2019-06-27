@@ -49,7 +49,7 @@ def ask_question(question, default=None):
 
     answer = input(question)
 
-    if answer == "":
+    if answer.strip() == "":
         return default
 
     return answer
