@@ -14,7 +14,6 @@ import logging
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
 from orion.core.worker.trials_history import TrialsHistory
-from orion.core.worker.protocols import make_protocol
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ class Producer(object):
 
     """
 
-    def __init__(self, experiment, max_attempts=100, protocol='debug'):
+    def __init__(self, experiment, protocol, max_attempts=100):
         """Initialize a producer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -48,7 +47,7 @@ class Producer(object):
         #       Strategist and Scheduler.
         self.trials_history = TrialsHistory()
         self.naive_trials_history = None
-        self.protocol = make_protocol(protocol, experiment=experiment)
+        self.protocol = protocol
 
     @property
     def pool_size(self):

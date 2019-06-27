@@ -15,8 +15,10 @@ import logging
 import pprint
 
 from orion.core.io.database import Database
+from orion.core.worker.protocols import make_protocol
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer
+
 
 log = logging.getLogger(__name__)
 
@@ -41,8 +43,13 @@ def reserve_trial(experiment, producer):
 
 def workon(experiment, worker_trials=None):
     """Try to find solution to the search problem defined in `experiment`."""
-    producer = Producer(experiment, protocol='track:file://orion_results.json')
-    consumer = Consumer(experiment)
+    # backend = 'debug:'
+    backend = 'track:file://orion_results.json'
+
+    protocol = make_protocol(backend, experiment=experiment)
+
+    producer = Producer(experiment, protocol=protocol)
+    consumer = Consumer(experiment, protocol=protocol)
 
     log.debug("#####  Init Experiment  #####")
     try:
@@ -53,7 +60,7 @@ def workon(experiment, worker_trials=None):
 
     for _ in iterator:
         log.debug("#### Poll for experiment termination.")
-        if experiment.is_done:
+        if protocol.is_done(experiment):
             break
 
         log.debug("#### Try to reserve a new trial to evaluate.")
@@ -62,13 +69,13 @@ def workon(experiment, worker_trials=None):
         log.debug("#### Successfully reserved %s to evaluate. Consuming...", trial)
         consumer.consume(trial)
 
-    stats = experiment.stats
+    stats = protocol.get_stats()
 
     if not stats:
         log.info("No trials completed.")
         return
 
-    best = Database().read('trials', {'_id': stats['best_trials_id']})[0]
+    best = protocol.get_trial(stats['best_trials_id']).to_dict()
 
     stats_stream = io.StringIO()
     pprint.pprint(stats, stream=stats_stream)

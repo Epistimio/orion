@@ -15,10 +15,8 @@ import sys
 import tempfile
 
 from orion.core.io.convert import JSONConverter
-from orion.core.io.database import Database
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.working_dir import WorkingDir
-from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +34,7 @@ class Consumer(object):
 
     """
 
-    def __init__(self, experiment):
+    def __init__(self, experiment, protocol):
         """Initialize a consumer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -61,6 +59,7 @@ class Consumer(object):
         self.script_path = experiment.metadata['user_script']
 
         self.converter = JSONConverter()
+        self.protocol = protocol
 
     def consume(self, trial):
         """Execute user's script as a block box using the options contained
@@ -77,18 +76,18 @@ class Consumer(object):
         with WorkingDir(self.working_dir, temp_dir,
                         prefix=prefix, suffix=suffix) as workdirname:
             log.debug("## New consumer context: %s", workdirname)
-            completed_trial = self._consume(trial, workdirname)
+            completed_trial = self._consume(trial, workdirname, env=dict(TRACK_TRIAL_UID=trial.id))
 
         if completed_trial is not None:
             log.debug("### Register successfully evaluated %s.", completed_trial)
-            self.experiment.push_completed_trial(completed_trial)
+
+            self.protocol.push_completed_trial(completed_trial)
+
         else:
             log.debug("### Save %s as broken.", trial)
-            trial.status = 'broken'
-            Database().write('trials', trial.to_dict(),
-                             query={'_id': trial.id})
+            self.protocol.mark_as_broken(trial)
 
-    def _consume(self, trial, workdirname):
+    def _consume(self, trial, workdirname, env=None):
         config_file = tempfile.NamedTemporaryFile(mode='w', prefix='trial_',
                                                   suffix='.conf', dir=workdirname,
                                                   delete=False)
@@ -104,7 +103,7 @@ class Consumer(object):
         cmd_args = self.template_builder.build_to(config_file.name, trial, self.experiment)
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
-        script_process = self.launch_process(results_file.name, cmd_args)
+        script_process = self.launch_process(results_file.name, cmd_args, env)
 
         if script_process is None:
             return None
@@ -119,18 +118,16 @@ class Consumer(object):
             return None
 
         log.debug("## Parse results from file and fill corresponding Trial object.")
-        results = self.converter.parse(results_file.name)
+        # Read updated trial
+        return self.protocol.get_trial(trial.id)
 
-        trial.results = [Trial.Result(name=res['name'],
-                                      type=res['type'],
-                                      value=res['value']) for res in results]
-
-        return trial
-
-    def launch_process(self, results_filename, cmd_args):
+    def launch_process(self, results_filename, cmd_args, env_overrides):
         """Facilitate launching a black-box trial."""
+
         env = dict(os.environ)
+        env.update(env_overrides)
         env['ORION_RESULTS_PATH'] = str(results_filename)
+
         command = [self.script_path] + cmd_args
         process = subprocess.Popen(command, env=env)
         returncode = process.poll()

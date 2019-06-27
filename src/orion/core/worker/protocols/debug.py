@@ -1,4 +1,5 @@
 import warnings
+from orion.core.io.database import Database
 
 
 class DebugProtocol:
@@ -22,3 +23,21 @@ class DebugProtocol:
     def fetch_completed_trials(self):
         return self.experiment.fetch_completed_trials()
 
+    def is_done(self, experiment):
+        return self.experiment.is_done
+
+    def push_completed_trial(self, trial):
+        self.experiment.push_completed_trial(trial)
+
+    def mark_as_broken(self, trial):
+        trial.status = 'broken'
+        Database().write(
+            'trials',
+            trial.to_dict(),
+            query={
+                '_id': trial.id
+            }
+        )
+
+    def get_stats(self):
+        return self.experiment.stats

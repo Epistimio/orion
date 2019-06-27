@@ -15,4 +15,8 @@ def make_protocol(uri, **kwargs):
     if proto is None:
         proto = _protocols.get('__default__')
 
-    return proto(uri=values[1:], **kwargs)
+    uri=None
+    if len(values) == 2:
+        uri = values[1]
+
+    return proto(uri=uri, **kwargs)
