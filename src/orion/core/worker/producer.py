@@ -45,7 +45,6 @@ class Producer(object):
         self.naive_algorithm = None
         # TODO: Move trials_history into PrimaryAlgo during the refactoring of Algorithm with
         #       Strategist and Scheduler.
-        self._completed_buffer = set()
         self.trials_history = TrialsHistory()
         self.naive_trials_history = None
 
@@ -100,19 +99,16 @@ class Producer(object):
         log.debug("### Fetch completed trials to observe:")
         completed_trials = self.experiment.fetch_completed_trials()
 
-        new_completed_trials = [trial for trial in completed_trials
-                                if trial.id not in self.trials_history]
+        log.debug("### %s", completed_trials)
 
-        log.debug("### %s", new_completed_trials)
-
-        if new_completed_trials:
+        if completed_trials:
             log.debug("### Convert them to list of points and their results.")
             points = list(map(lambda trial: format_trials.trial_to_tuple(trial, self.space),
-                              new_completed_trials))
-            results = list(map(format_trials.get_trial_results, new_completed_trials))
+                              completed_trials))
+            results = list(map(format_trials.get_trial_results, completed_trials))
 
             log.debug("### Observe them.")
-            self.trials_history.update(new_completed_trials)
+            self.trials_history.update(completed_trials)
             self.algorithm.observe(points, results)
             self.strategy.observe(points, results)
 
