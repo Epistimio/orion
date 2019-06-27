@@ -45,7 +45,7 @@ def main(args):
     try:
         for stage in stages:
             for check in stage.checks():
-                print(check.msg, end='')
+                print(check.__doc__, end='.. ')
                 status, msg = check(stage)
                 print(status)
 

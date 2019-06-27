@@ -9,12 +9,11 @@
 """
 
 
-def register_check(check_list, msg):
+def register_check(check_list):
     """Decorate a function by adding it to a list."""
     def wrap(func):
         """Wrapper."""
         check_list.append(func)
-        func.msg = msg
 
         def wrapped_func(*args):
             """Wrap function."""
