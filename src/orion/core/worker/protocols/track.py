@@ -2,9 +2,11 @@ import warnings
 import datetime
 import random
 
+from orion.core.worker.experiment import Experiment as OrionExp
+
 from collections import defaultdict
 from track.persistence import get_protocol
-from track.structure import Trial as TrackTrial, CustomStatus, Status as TrackStatus
+from track.structure import Trial as TrackTrial, CustomStatus, Status as TrackStatus, TrialGroup, Project
 
 
 _status = [
@@ -31,6 +33,7 @@ class TrialAdapter:
     def __init__(self, storage_trial, orion_trial):
         self.storage = storage_trial
         self.memory = orion_trial
+        self.session_group = None
 
 
 class TrackProtocol:
@@ -38,16 +41,31 @@ class TrackProtocol:
         self.experiment = experiement
         self.uri = uri
         self.protocol = get_protocol(uri)
+        self.session_group = None
+        self.project = None
+
+        self.create_session(self.experiment)
 
     def refresh(self):
         self.protocol = get_protocol(self.uri)
+
+    # In Track we call an experiment a Session
+    def create_session(self, experiment: OrionExp):
+        self.project = self.protocol.get_project(Project(
+            name=experiment.name
+        ))
+
+        self.session_group = self.protocol.get_trial_group(TrialGroup(
+            name=f'session_{experiment.name}',
+            project_id=self.project.uid
+        ))
 
     def create_trial(self, trial):
         self.refresh()
 
         # self.experiment.register_trial(trial)
         metadata = dict()
-        metadata['params_types'] = {p.name: p.type for p in trial.params}
+        metadata['params_types'] = {p.name: p.type for p in trial. params}
         metadata['submit_time'] = trial.submit_time
         metadata['start_time'] = trial.start_time
         metadata['end_time'] = trial.end_time
@@ -64,7 +82,7 @@ class TrackProtocol:
             status=get_track_status(trial.status),
             params={p.name: p.value for p in trial.params},
             metrics=metrics,
-            #group_id=trial.experiment
+            group_id=self.session_group.uid
         ))
         self.protocol.commit()
         return TrialAdapter(backend_trial, trial)
@@ -74,7 +92,7 @@ class TrackProtocol:
         return self.create_trial(trial)
 
     def fetch_trials(self, query):
-        return []
+        return self.protocol.fetch_trials(query)
 
     # ----
     def reserve_trial(self, *args, **kwargs):
@@ -84,10 +102,13 @@ class TrackProtocol:
     def select_trial(self, *args, **kwargs):
         self.refresh()
         query = dict(
-            project_id=self._id,
-            status={'$in': ['new', 'suspended', 'interrupted']}
+            project_id=self.project.uid,
+            status={'$in': [
+                get_track_status('new'),
+                get_track_status('suspended'),
+                get_track_status('interrupted')
+            ]}
         )
-
         new_trials = self.fetch_trials(query)
 
         if not new_trials:
