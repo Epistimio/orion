@@ -90,7 +90,7 @@ def test_envvar_config_pass(monkeypatch, presence):
 
 
 def test_envvar_config_skip(monkeypatch, presence):
-    """Check if test skips when missing an environment variable."""
+    """Check if test skips when there is no environment variable."""
     result, msg = presence.check_environment_vars()
 
     assert result == "Skipping"
