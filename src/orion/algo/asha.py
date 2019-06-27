@@ -105,14 +105,14 @@ class ASHA(BaseAlgorithm):
                 return [candidate]
 
         for attempt in range(100):
-            point = list(self.space.sample(num, seed=self.rng.randint(0, 1000000))[0])
+            point = list(self.space.sample(1, seed=tuple(self.rng.randint(0, 1000000, size=3))))
             if self.get_id(point) not in self.trial_info:
                 break
 
         if self.get_id(point) in self.trial_info:
             raise RuntimeError(
-                'ASHA keeps sampling already existing points. '
-                'Please report this to https://github.com/Epistimio/orion/issues')
+                'ASHA keeps sampling already existing points. This should not happen, '
+                'please report this error to https://github.com/Epistimio/orion/issues')
 
         sizes = numpy.array([len(b.rungs) for b in self.brackets])
         probs = numpy.e**(sizes - sizes.max())
