@@ -96,7 +96,7 @@ Oríon configuration files.
 
    2. By using the utility command `orion setup` which will automatically create a default 
       configuration through its prompt or by doing it yourself and creating a section in an Oríon's
-      configuration YAML file, like `this one <https://github.com/epistimio/orion/blob/master/tests/functional/demo/orion_config_random.yaml>`_
+      configuration YAML file, like `this one <https://github.com/epistimio/orion/blob/master/tests/functional/demo/database_config.yaml>`
       used by our functional tests.
 
    .. code-block:: yaml
