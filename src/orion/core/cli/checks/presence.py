@@ -11,7 +11,6 @@
 """
 
 from orion.core.utils.decorators import register_check
-from orion.core.utils.exceptions import CheckError
 
 
 class _Checks:
@@ -32,7 +31,7 @@ class PresenceStage:
         """
         self.builder = experiment_builder
         self.cmdargs = cmdargs
-        self.db_config = None
+        self.db_config = {}
 
     @staticmethod
     def checks():
@@ -48,6 +47,7 @@ class PresenceStage:
             return "Skipping", "No default configuration found for database."
 
         self.db_config = config['database']
+        print(self.db_config)
 
         return "Success", ""
 
@@ -59,11 +59,11 @@ class PresenceStage:
         config = config['database']
         names = ['type', 'name', 'host']
 
-        for name in names:
-            if name not in config or config[name] is None:
-                return "Skipping", "Missing {} environment variable.".format(name)
+        if not any(name in config for name in names):
+            return "Skipping", "No environment variables found."
 
-        self.db_config = config
+        self.db_config.update(config)
+        print(self.db_config)
 
         return "Success", ""
 
@@ -72,26 +72,20 @@ class PresenceStage:
         """Check if configuration file has valid database configuration."""
         config = self.builder.fetch_file_config(self.cmdargs)
 
-        try:
-            if not len(config):
-                raise CheckError("Missing configuration file.")
+        if not len(config):
+            return "Skipping", "Missing configuration file."
 
-            if 'database' not in config:
-                raise CheckError("No database found in configuration file.")
+        if 'database' not in config:
+            return "Skipping", "No database found in configuration file."
 
-            config = config['database']
-            names = ['type', 'name', 'host']
+        config = config['database']
+        names = ['type', 'name', 'host']
 
-            for name in names:
-                if name not in config or config[name] is None:
-                    raise CheckError("Missing {} inside configuration.".format(name))
-        except CheckError as ex:
-            if self.db_config is not None:
-                return "Skipping", "No configuration file found, using previous."
-            else:
-                raise ex
+        if not any(name in config for name in names):
+            return "Skipping", "No configuration value found inside `database`."
 
-        self.db_config = config
+        self.db_config.update(config)
+
         return "Success", ""
 
     def post_stage(self):
