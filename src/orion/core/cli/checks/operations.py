@@ -66,7 +66,7 @@ class OperationsStage:
 
     @register_check(_Checks.checks, "check if database supports count operation... ")
     def check_count(self):
-        """Check if database supports read operation."""
+        """Check if database supports count operation."""
         database = self.c_stage.instance
 
         count = database.count('test', {'index': 'value'})
