@@ -37,7 +37,7 @@ class OperationsStage:
         """Return checklist."""
         return _Checks.checks
 
-    @register_check(_Checks.checks, "Check if database supports write operation... ")
+    @register_check(_Checks.checks)
     def check_write(self):
         """Check if database supports write operation."""
         database = self.c_stage.instance
@@ -49,7 +49,7 @@ class OperationsStage:
 
         return "Success", ""
 
-    @register_check(_Checks.checks, "Check if database supports read operation... ")
+    @register_check(_Checks.checks)
     def check_read(self):
         """Check if database supports read operation."""
         database = self.c_stage.instance
@@ -64,7 +64,7 @@ class OperationsStage:
 
         return "Success", ""
 
-    @register_check(_Checks.checks, "check if database supports count operation... ")
+    @register_check(_Checks.checks)
     def check_count(self):
         """Check if database supports count operation."""
         database = self.c_stage.instance
@@ -76,7 +76,7 @@ class OperationsStage:
 
         return "Success", ""
 
-    @register_check(_Checks.checks, "Check if database supports delete operation... ")
+    @register_check(_Checks.checks)
     def check_remove(self):
         """Check if database supports delete operation."""
         database = self.c_stage.instance

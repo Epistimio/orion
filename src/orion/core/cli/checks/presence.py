@@ -39,7 +39,7 @@ class PresenceStage:
         """Return the registered checks."""
         return _Checks.checks
 
-    @register_check(_Checks.checks, "check if oríon's default options are present... ")
+    @register_check(_Checks.checks)
     def check_default_config(self):
         """Check for a configuration inside the default paths."""
         config = self.builder.fetch_default_options()
@@ -51,7 +51,7 @@ class PresenceStage:
 
         return "Success", ""
 
-    @register_check(_Checks.checks, "check if oríon's environment variables have been set... ")
+    @register_check(_Checks.checks)
     def check_environment_vars(self):
         """Check for a configuration inside the environment variables."""
         config = self.builder.fetch_env_vars()
@@ -67,8 +67,7 @@ class PresenceStage:
 
         return "Success", ""
 
-    @register_check(_Checks.checks, "Check if configuration file has"
-                                    " valid database configuration... """)
+    @register_check(_Checks.checks)
     def check_configuration_file(self):
         """Check if configuration file has valid database configuration."""
         config = self.builder.fetch_file_config(self.cmdargs)

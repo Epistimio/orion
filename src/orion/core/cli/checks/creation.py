@@ -39,7 +39,7 @@ class CreationStage:
         """Return checklist."""
         return _Checks.checks
 
-    @register_check(_Checks.checks, "Check if database of specified type can be created... ")
+    @register_check(_Checks.checks)
     def check_database_creation(self):
         """Check if database of specified type can be created."""
         database = self.p_stage.db_config
