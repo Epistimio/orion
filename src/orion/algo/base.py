@@ -17,6 +17,7 @@ from orion.core.utils import Factory
 log = logging.getLogger(__name__)
 
 
+# pylint: disable=too-many-public-methods
 class BaseAlgorithm(object, metaclass=ABCMeta):
     """Base class describing what an algorithm can do.
 
@@ -123,6 +124,18 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         :param seed: Integer seed for the random number generator.
 
         .. note:: This methods does nothing if the algorithm is deterministic.
+        """
+        pass
+
+    @property
+    def state_dict(self):
+        """Return a state dict that can be used to reset the state of the algorithm."""
+        return {}
+
+    def set_state(self, state_dict):
+        """Reset the state of the algorithm based on the given state_dict
+
+        :param state_dict: Dictionary representing state of an algorithm
         """
         pass
 

@@ -13,6 +13,7 @@ from orion.algo.base import BaseAlgorithm
 from orion.core.worker.transformer import build_required_space
 
 
+# pylint: disable=too-many-public-methods
 class PrimaryAlgo(BaseAlgorithm):
     """Perform checks on points and transformations. Wrap the primary algorithm.
 
@@ -44,6 +45,18 @@ class PrimaryAlgo(BaseAlgorithm):
     def seed_rng(self, seed):
         """Seed the state of the algorithm's random number generator."""
         self.algorithm.seed_rng(seed)
+
+    @property
+    def state_dict(self):
+        """Return a state dict that can be used to reset the state of the algorithm."""
+        return self.algorithm.state_dict
+
+    def set_state(self, state_dict):
+        """Reset the state of the algorithm based on the given state_dict
+
+        :param state_dict: Dictionary representing state of an algorithm
+        """
+        self.algorithm.set_state(state_dict)
 
     def suggest(self, num=1):
         """Suggest a `num` of new sets of parameters.
