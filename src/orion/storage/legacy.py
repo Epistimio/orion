@@ -2,7 +2,7 @@ import warnings
 from orion.core.io.database import Database
 
 
-class DebugProtocol:
+class LegacyProtocol:
     def __init__(self, experiment, uri=None):
         self.experiment = experiment
 

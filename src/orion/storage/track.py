@@ -289,15 +289,23 @@ class TrackProtocol:
     def push_completed_trial(self, trial):
         self.refresh()
         trial = self.get_trial(trial.id)
+        self.session_group = self.protocol.get_trial_group(TrialGroup(_uid=self.session_group.uid))
 
         curent_obj = trial.objective.value
+        try:
+            if len(curent_obj) > 0:
+                curent_obj = curent_obj[-1]
+        except:
+            pass
+
         best_obj = self.session_group.tags.get('best_evaluation')
 
-        if best_obj is None or best_obj < curent_obj:
+        if best_obj is None or best_obj > curent_obj:
             self.session_group.tags['best_trials_id'] = trial.id
             self.session_group.tags['best_evaluation'] = curent_obj
 
         self.session_group.tags['trials_completed'] += 1
+        self.protocol.commit()
 
     def mark_as_broken(self, trial):
         self.protocol.set_trial_status(TrackTrial(hash=trial.id), get_track_status('broken'))
