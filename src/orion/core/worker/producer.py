@@ -58,6 +58,7 @@ class Producer(object):
         return self.experiment.pool_size
 
     def reserve_trial(self, score_handle=None):
+        """Fetch trials that are still pending to be run"""
         return self.protocol.select_trial(score_handle=score_handle)
 
     def produce(self):

@@ -161,8 +161,9 @@ class Conflicts(object):
                     return False
                 if types and not isinstance(conflict, tuple(types)):
                     return False
-                if (dimension_name is not None and (not hasattr(conflict, "dimension") or
-                        standard_param_name(conflict.dimension.name) != dimension_name)):
+                if (dimension_name is not None and
+                        (not hasattr(conflict, "dimension") or
+                         standard_param_name(conflict.dimension.name) != dimension_name)):
                     return False
 
                 return True

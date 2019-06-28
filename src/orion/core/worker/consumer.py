@@ -32,7 +32,6 @@ class Consumer(object):
     options. It expects results to be written in a **JSON** file, whose path
     has been defined in a special orion environmental variable which is set
     into the child process' environment.
-
     """
 
     def __init__(self, experiment, protocol=None):
@@ -125,7 +124,6 @@ class Consumer(object):
 
     def launch_process(self, results_filename, cmd_args, env_overrides):
         """Facilitate launching a black-box trial."""
-
         env = dict(os.environ)
         env.update(env_overrides)
         env['ORION_RESULTS_PATH'] = str(results_filename)

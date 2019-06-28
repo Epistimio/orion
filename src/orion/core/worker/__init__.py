@@ -14,10 +14,9 @@ import itertools
 import logging
 import pprint
 
-from orion.storage.base import StorageProtocol
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer
-
+from orion.storage.base import StorageProtocol
 
 log = logging.getLogger(__name__)
 
