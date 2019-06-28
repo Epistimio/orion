@@ -68,7 +68,6 @@ setup_args = dict(
             'random = orion.algo.random:Random',
             ],
         'StorageProtocol': [
-            'track = orion.storage.track:Track',
             'legacy = orion.storage.legacy:Legacy'
             ]
         },
