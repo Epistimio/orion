@@ -45,7 +45,7 @@ def ask_question(question, default=None):
 
     """
     if default is not None:
-        question = question + " (default: {})".format(default)
+        question = question + " (default: {}) ".format(default)
 
     answer = input(question)
 
@@ -58,13 +58,22 @@ def ask_question(question, default=None):
 # pylint: disable = unused-argument
 def main(*args):
     """Build a configuration file."""
+    default_file = resolve_config.DEF_CONFIG_FILES_PATHS[-1]
+
+    if os.path.exists(default_file):
+        cancel = ''
+        while cancel.strip().lower() not in ['y', 'n']:
+            cancel = ask_question(
+                "This will overwrite {}, do you want to proceed? (y/n) ".format(default_file), "n")
+
+        if cancel.strip().lower() == 'n':
+            return
+
     _type = ask_question("Enter the database type: ", "mongodb")
     name = ask_question("Enter the database name: ", "test")
     host = ask_question("Enter the database host: ", "localhost")
 
     config = {'database': {'type': _type, 'name': name, 'host': host}}
-
-    default_file = resolve_config.DEF_CONFIG_FILES_PATHS[-1]
 
     print("Default configuration file will be saved at: ")
     print(default_file)
