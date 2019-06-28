@@ -68,8 +68,8 @@ setup_args = dict(
             'random = orion.algo.random:Random',
             ],
         'StorageProtocol': [
-            'track = orion.storage.track:TrackProtocol',
-            'legacy = orion.storage.legacy:LegacyProtocol'
+            'track = orion.storage.track:Track',
+            'legacy = orion.storage.legacy:Legacy'
             ]
         },
     install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython'],

@@ -19,7 +19,7 @@ import pkg_resources
 
 
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
+
 
 # Define type of arbitrary nested defaultdicts
 def nesteddict():

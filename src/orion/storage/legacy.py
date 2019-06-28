@@ -1,11 +1,15 @@
 import warnings
+
 from orion.storage.base import BaseStorageProtocol
 from orion.core.io.database import Database
+from orion.core.io.convert import JSONConverter
+from orion.core.worker.trial import Trial
 
 
-class LegacyProtocol(BaseStorageProtocol):
+class Legacy(BaseStorageProtocol):
     def __init__(self, experiment, uri=None):
         self.experiment = experiment
+        self.converter = JSONConverter()
 
     def create_trial(self, trial):
         self.experiment.register_trial(trial)
@@ -42,3 +46,17 @@ class LegacyProtocol(BaseStorageProtocol):
 
     def get_stats(self):
         return self.experiment.stats
+
+    def update_trial(self, trial, results_file=None, **kwargs):
+        results = self.converter.parse(results_file.name)
+
+        trial.results = [
+            Trial.Result(
+                name=res['name'],
+                type=res['type'],
+                value=res['value']) for res in results
+        ]
+        return trial
+
+    def get_trial(self, uid):
+        return Trial(**Database().read('trials', {'_id': uid})[0])

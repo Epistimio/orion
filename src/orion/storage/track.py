@@ -7,25 +7,29 @@ from orion.core.worker.experiment import Experiment as OrionExp
 from orion.core.worker.trial import Trial as OrionTrial
 
 from collections import defaultdict
-from track.persistence import get_protocol
-from track.structure import Trial as TrackTrial, CustomStatus, Status as TrackStatus, TrialGroup, Project
 
+try:
+    from track.persistence import get_protocol
+    from track.structure import Trial as TrackTrial, CustomStatus, Status as TrackStatus, TrialGroup, Project
 
-_status = [
-    CustomStatus('new', TrackStatus.CreatedGroup.value + 1),
-    CustomStatus('reserved', TrackStatus.CreatedGroup.value + 2),
+    _status = [
+        CustomStatus('new', TrackStatus.CreatedGroup.value + 1),
+        CustomStatus('reserved', TrackStatus.CreatedGroup.value + 2),
 
-    CustomStatus('suspended', TrackStatus.FinishedGroup.value + 1),
-    CustomStatus('completed', TrackStatus.FinishedGroup.value + 2),
+        CustomStatus('suspended', TrackStatus.FinishedGroup.value + 1),
+        CustomStatus('completed', TrackStatus.FinishedGroup.value + 2),
 
-    CustomStatus('interrupted', TrackStatus.ErrorGroup.value + 1),
-    CustomStatus('broken', TrackStatus.ErrorGroup.value + 3)
-]
+        CustomStatus('interrupted', TrackStatus.ErrorGroup.value + 1),
+        CustomStatus('broken', TrackStatus.ErrorGroup.value + 3)
+    ]
 
-_status_dict = {
-    s.name: s for s in _status
-}
-_status_dict['completed'] = TrackStatus.Completed
+    _status_dict = {
+        s.name: s for s in _status
+    }
+    _status_dict['completed'] = TrackStatus.Completed
+
+except ImportError:
+    pass
 
 
 def get_track_status(val):
@@ -129,10 +133,8 @@ class TrialAdapter:
         return []
 
 
-class TrackProtocol(BaseStorageProtocol):
+class Track(BaseStorageProtocol):
     def __init__(self, experiment, uri=None, objective='epoch_loss'):
-        super(TrackProtocol, self).__init__()
-
         self.experiment = experiment
         self.uri = uri
         self.protocol = get_protocol(uri)
@@ -206,9 +208,13 @@ class TrackProtocol(BaseStorageProtocol):
         self.refresh()
         return self.protocol.fetch_trials(query)
 
-    def get_trial(self, uid):
+    def get_trial(self, trial):
         self.refresh()
-        return TrialAdapter(self.protocol.fetch_trials([('uid', uid)])[0], objective=self.objective)
+        return TrialAdapter(self.protocol.fetch_trials([('uid', trial.id)])[0], objective=self.objective)
+
+    def update_trial(self, trial, **kwargs):
+        self.refresh()
+        return TrialAdapter(self.protocol.fetch_trials([('uid', trial.id)])[0], objective=self.objective)
 
     def fetch_completed_trials(self):
         query = [

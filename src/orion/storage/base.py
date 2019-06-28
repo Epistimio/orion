@@ -1,12 +1,7 @@
-from abc import (ABCMeta, abstractmethod)
-import logging
-
 from orion.core.utils import Factory
 
-log = logging.getLogger(__name__)
 
-
-class BaseStorageProtocol(object, metaclass=ABCMeta):
+class BaseStorageProtocol:
     def create_trial(self, trial):
         raise NotImplementedError()
 
@@ -32,6 +27,12 @@ class BaseStorageProtocol(object, metaclass=ABCMeta):
         raise NotImplementedError()
 
     def get_stats(self):
+        raise NotImplementedError()
+
+    def update_trial(self, trial, **kwargs):
+        raise NotImplementedError()
+
+    def get_trial(self, trial):
         raise NotImplementedError()
 
 

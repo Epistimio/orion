@@ -14,9 +14,10 @@ import subprocess
 import sys
 import tempfile
 
-from orion.core.io.convert import JSONConverter
+
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.working_dir import WorkingDir
+from orion.storage.base import StorageProtocol
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class Consumer(object):
 
     """
 
-    def __init__(self, experiment, protocol):
+    def __init__(self, experiment, protocol=None):
         """Initialize a consumer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -58,8 +59,9 @@ class Consumer(object):
 
         self.script_path = experiment.metadata['user_script']
 
-        self.converter = JSONConverter()
         self.protocol = protocol
+        if protocol is None:
+            self.protocol = StorageProtocol('legacy', experiment=experiment)
 
     def consume(self, trial):
         """Execute user's script as a block box using the options contained
@@ -119,7 +121,7 @@ class Consumer(object):
 
         log.debug("## Parse results from file and fill corresponding Trial object.")
         # Read updated trial
-        return self.protocol.get_trial(trial.id)
+        return self.protocol.update_trial(trial, results_file=results_file)
 
     def launch_process(self, results_filename, cmd_args, env_overrides):
         """Facilitate launching a black-box trial."""
