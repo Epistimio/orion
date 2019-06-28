@@ -684,7 +684,7 @@ def test_fetch_all_trials(hacked_exp, exp_config, random_dt):
 def test_fetch_completed_trials(hacked_exp, exp_config, random_dt):
     """Fetch a list of the unseen yet completed trials."""
     trials = hacked_exp.fetch_completed_trials()
-    assert hacked_exp._last_fetched == random_dt
+    assert hacked_exp._last_fetched == max(trial.end_time for trial in trials)
     assert len(trials) == 3
     # Trials are sorted based on submit time
     assert trials[0].to_dict() == exp_config[1][0]
@@ -815,7 +815,7 @@ def test_fetch_completed_trials_from_view(hacked_exp, exp_config, random_dt):
     experiment_view._experiment = hacked_exp
 
     trials = experiment_view.fetch_completed_trials()
-    assert experiment_view._experiment._last_fetched == random_dt
+    assert experiment_view._experiment._last_fetched == max(trial.end_time for trial in trials)
     assert len(trials) == 3
     assert trials[0].to_dict() == exp_config[1][0]
     assert trials[1].to_dict() == exp_config[1][2]

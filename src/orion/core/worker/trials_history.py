@@ -17,10 +17,6 @@ class TrialsHistory:
     def __init__(self):
         """Create empty trials history"""
         self.children = []
-        self.full = set()
-
-    def __contains__(self, trial_id):
-        return trial_id in self.full
 
     def update(self, trials):
         """Update the list of children trials
@@ -33,7 +29,5 @@ class TrialsHistory:
         for trial in trials:
             descendents -= set(trial.parents)
             descendents.add(trial.id)
-
-        self.full |= descendents
 
         self.children = list(sorted(descendents))
