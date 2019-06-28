@@ -42,7 +42,7 @@ from scipy.stats import distributions
 def check_random_state(seed):
     """Return numpy global rng or RandomState if seed is specified"""
     if seed is None:
-        return numpy.random.mtrand._rand  # pylint:disable=protected-access
+        return numpy.random.mtrand._rand  # pylint:disable=protected-access,c-extension-no-member
 
     return numpy.random.RandomState(seed)
 

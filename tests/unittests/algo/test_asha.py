@@ -197,7 +197,6 @@ class TestBracket():
 
     def test_repr(self, bracket, rung_0, rung_1, rung_2):
         """Test the string representation of Bracket"""
-
         bracket.rungs[0] = rung_0
         bracket.rungs[1] = rung_1
         bracket.rungs[2] = rung_2
@@ -379,7 +378,6 @@ class TestASHA():
 
     def test_suggest_inf_duplicates(self, monkeypatch, asha, bracket, rung_0, rung_1, rung_2):
         """Test that sampling inf collisions raises runtime error."""
-
         asha.brackets = [bracket]
         bracket.asha = asha
 
