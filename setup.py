@@ -67,7 +67,7 @@ setup_args = dict(
             'random = orion.algo.random:Random',
             ],
         },
-    install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython'],
+    install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython', 'filelock'],
     tests_require=tests_require,
     setup_requires=['setuptools', 'pytest-runner'],
     extras_require=dict(test=tests_require),
