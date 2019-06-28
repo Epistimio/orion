@@ -43,6 +43,7 @@ packages = [
     'orion.core',
     'orion.client',
     'orion.algo',
+    'orion.storage'
     ]
 
 setup_args = dict(

@@ -19,7 +19,7 @@ import pkg_resources
 
 
 log = logging.getLogger(__name__)
-
+logging.basicConfig(level=logging.DEBUG)
 
 # Define type of arbitrary nested defaultdicts
 def nesteddict():
@@ -110,7 +110,7 @@ class Factory(ABCMeta):
         cls.types = list(get_all_subclasses(cls.__base__))
         cls.types = [class_ for class_ in cls.types if class_.__name__ != cls.__name__]
         cls.typenames = list(map(lambda x: x.__name__.lower(), cls.types))
-        log.debug("Implementations found: %s", cls.typenames)
+        log.debug("Implementations found: %s (type: %s)", cls.typenames, cls.__name__)
 
     def __call__(cls, of_type, *args, **kwargs):
         """Create an object, instance of ``cls.__base__``, on first call.

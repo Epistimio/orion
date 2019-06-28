@@ -1,8 +1,9 @@
 import warnings
+from orion.storage.base import BaseStorageProtocol
 from orion.core.io.database import Database
 
 
-class LegacyProtocol:
+class LegacyProtocol(BaseStorageProtocol):
     def __init__(self, experiment, uri=None):
         self.experiment = experiment
 

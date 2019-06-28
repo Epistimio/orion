@@ -2,7 +2,7 @@ import warnings
 import datetime
 import random
 
-
+from orion.storage.base import BaseStorageProtocol
 from orion.core.worker.experiment import Experiment as OrionExp
 from orion.core.worker.trial import Trial as OrionTrial
 
@@ -129,8 +129,10 @@ class TrialAdapter:
         return []
 
 
-class TrackProtocol:
+class TrackProtocol(BaseStorageProtocol):
     def __init__(self, experiment, uri=None, objective='epoch_loss'):
+        super(TrackProtocol, self).__init__()
+
         self.experiment = experiment
         self.uri = uri
         self.protocol = get_protocol(uri)

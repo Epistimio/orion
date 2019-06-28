@@ -1,7 +1,12 @@
+from abc import (ABCMeta, abstractmethod)
+import logging
+
 from orion.core.utils import Factory
 
+log = logging.getLogger(__name__)
 
-class BaseProtocol:
+
+class BaseStorageProtocol(object, metaclass=ABCMeta):
     def create_trial(self, trial):
         raise NotImplementedError()
 
@@ -31,7 +36,7 @@ class BaseProtocol:
 
 
 # pylint: disable=too-few-public-methods,abstract-method
-class Protocol(BaseProtocol, metaclass=Factory):
+class StorageProtocol(BaseStorageProtocol, metaclass=Factory):
     """
 
         Protocol('track', uri='file://orion_test.json')

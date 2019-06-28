@@ -14,7 +14,7 @@ import itertools
 import logging
 import pprint
 
-from orion.storage.base import Protocol
+from orion.storage.base import StorageProtocol
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer
 
@@ -43,7 +43,7 @@ def reserve_trial(experiment, producer):
 def workon(experiment, worker_trials=None):
     """Try to find solution to the search problem defined in `experiment`."""
     # backend = 'debug:'
-    protocol = Protocol('track', experiment=experiment, uri='file://orion_results.json')
+    protocol = StorageProtocol('trackprotocol', experiment=experiment, uri='file://orion_results.json')
 
     producer = Producer(experiment, protocol=protocol)
     consumer = Consumer(experiment, protocol=protocol)
