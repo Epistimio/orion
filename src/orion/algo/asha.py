@@ -104,7 +104,7 @@ class ASHA(BaseAlgorithm):
                 logger.debug('Promoting')
                 return [candidate]
 
-        for attempt in range(100):
+        for _attempt in range(100):
             point = list(self.space.sample(1, seed=tuple(self.rng.randint(0, 1000000, size=3)))[0])
             if self.get_id(point) not in self.trial_info:
                 break
@@ -121,7 +121,7 @@ class ASHA(BaseAlgorithm):
 
         point[self.fidelity_index] = self.brackets[idx].rungs[0][0]
 
-        logger.debug('Sampling for bracket {} {}'.format(idx, self.brackets[idx]))
+        logger.debug('Sampling for bracket %s %s', idx, self.brackets[idx])
 
         return [tuple(point)]
 
@@ -155,7 +155,7 @@ class ASHA(BaseAlgorithm):
 
             try:
                 bracket.register(point, result['objective'])
-            except IndexError as e:
+            except IndexError:
                 logger.warning('Point registered to wrong bracket. This is likely due '
                                'to a corrupted database, where trials of different fidelity '
                                'have a wrong timestamps.')
@@ -203,7 +203,7 @@ class Bracket():
         self.rungs = [(min(min_t * reduction_factor**(k + s), max_t), dict())
                       for k in range(max_rungs)]
 
-        logger.debug('Bracket budgets: {}'.format([rung[0] for rung in self.rungs]))
+        logger.debug('Bracket budgets: %s', str([rung[0] for rung in self.rungs]))
 
     def register(self, point, objective):
         """Register a point in the corresponding rung"""
@@ -211,7 +211,8 @@ class Bracket():
         rungs = [rung for budget, rung in self.rungs if budget == fidelity]
         if not rungs:
             budgets = [budget for budget, rung in self.rungs]
-            raise IndexError(REGISTRATION_ERROR.format(fidelity=fidelity, budgets=budgets, params=point))
+            raise IndexError(REGISTRATION_ERROR.format(fidelity=fidelity, budgets=budgets,
+                                                       params=point))
 
         rungs[0][self.asha.get_id(point)] = (objective, point)
 
@@ -257,6 +258,7 @@ class Bracket():
             candidate = self.get_candidate(rung_id)
             if candidate:
 
+                # pylint: disable=logging-format-interpolation
                 logger.debug(
                     'Promoting {point} from rung {past_rung} with fidelity {past_fidelity} to '
                     'rung {new_rung} with fidelity {new_fidelity}'.format(
@@ -272,4 +274,5 @@ class Bracket():
         return None
 
     def __repr__(self):
+        """Return representation of bracket with fidelity levels"""
         return 'Bracket({})'.format([rung[0] for rung in self.rungs])
