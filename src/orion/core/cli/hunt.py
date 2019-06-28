@@ -53,17 +53,6 @@ def add_subparser(parser):
              "to leave `pool_size` to 1 and set a Strategy for Oríon's producer. "
              "(default: %s)" % resolve_config.DEF_CMD_POOL_SIZE[1])
 
-    orion_group.add_argument(
-        '--metric', type=str, metavar='#',
-        help="metric name to base our optimisation one")
-
-    orion_group.add_argument(
-        '--protocol', type=str, metavar='#', default='debug',
-        help="protocol used to communicate between orion and the experiment"
-        "   debug: use orion internal file"
-        "   track:cockroach://"
-    )
-
     evc_cli.get_branching_args_group(hunt_parser)
 
     cli.get_user_args_group(hunt_parser)
