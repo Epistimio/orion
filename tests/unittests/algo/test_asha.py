@@ -78,7 +78,7 @@ class TestBracket():
         with pytest.raises(AttributeError) as ex:
             Bracket(None, b_config['r'], b_config['R'], b_config['eta'], 0)
 
-        assert 'positive' in str(ex)
+        assert 'positive' in str(ex.value)
 
     def test_min_resources_greater_than_max(self, b_config):
         """Test to see if `Bracket` handles minimum resources too high."""
@@ -87,7 +87,7 @@ class TestBracket():
         with pytest.raises(AttributeError) as ex:
             Bracket(None, b_config['r'], b_config['R'], b_config['eta'], 0)
 
-        assert 'smaller' in str(ex)
+        assert 'smaller' in str(ex.value)
 
     def test_register(self, asha, bracket):
         """Check that a point is correctly registered inside a bracket."""
@@ -293,7 +293,7 @@ class TestASHA():
         with pytest.raises(ValueError) as ex:
             asha.observe([point], [{'objective': 0.0}])
 
-        assert 'No bracket found for point' in str(ex)
+        assert 'No bracket found for point' in str(ex.value)
 
     def test_register_corrupted_db(self, caplog, space, b_config):
         """Check that a point cannot registered if passed in order diff than fidelity."""
