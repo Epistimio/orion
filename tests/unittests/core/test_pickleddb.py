@@ -115,7 +115,7 @@ class TestRead(object):
             'trials',
             {'experiment': 'supernaedo2',
              'submit_time': {'$gte': datetime(2017, 11, 23, 0, 0, 0)}})
-        assert value == exp_config[1][2:7]
+        assert value == [exp_config[1][1]] + exp_config[1][3:7]
 
         value = orion_db.read(
             'trials',
