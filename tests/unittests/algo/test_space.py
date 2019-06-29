@@ -9,7 +9,40 @@ from numpy.testing import assert_array_equal as assert_eq
 import pytest
 from scipy.stats import distributions as dists
 
-from orion.algo.space import (Categorical, Dimension, Fidelity, Integer, Real, Space)
+from orion.algo.space import (
+    Categorical, check_random_state, Dimension, Fidelity, Integer, Real, Space)
+
+
+class TestCheckRandomState:
+    """Test `orion.algo.space.check_random_state`"""
+
+    def test_rng_null(self):
+        """Test that passing None returns numpy._rand"""
+        assert check_random_state(None) is np.random.mtrand._rand
+
+    def test_rng_random_state(self):
+        """Test that passing RandomState returns itself"""
+        rng = np.random.RandomState(1)
+        assert check_random_state(rng) is rng
+
+    def test_rng_int(self):
+        """Test that passing int returns RandomState"""
+        rng = check_random_state(1)
+        assert isinstance(rng, np.random.RandomState)
+        assert rng is not np.random.mtrand._rand
+
+    def test_rng_tuple(self):
+        """Test that passing int returns RandomState"""
+        rng = check_random_state((1, 12, 123))
+        assert isinstance(rng, np.random.RandomState)
+        assert rng is not np.random.mtrand._rand
+
+    def test_rng_invalid_value(self):
+        """Test that passing int returns RandomState"""
+        with pytest.raises(ValueError) as exc:
+            check_random_state('oh_no_oh_no')
+
+        assert '\'oh_no_oh_no\' cannot be used to seed' in str(exc.value)
 
 
 class TestDimension(object):

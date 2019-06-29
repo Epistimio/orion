@@ -41,10 +41,18 @@ from scipy.stats import distributions
 
 def check_random_state(seed):
     """Return numpy global rng or RandomState if seed is specified"""
-    if seed is None:
-        return numpy.random.mtrand._rand  # pylint:disable=protected-access,c-extension-no-member
+    if seed is None or seed is numpy.random:
+        rng = numpy.random.mtrand._rand  # pylint:disable=protected-access,c-extension-no-member
+    elif isinstance(seed, numpy.random.RandomState):
+        rng = seed
+    else:
+        try:
+            rng = numpy.random.RandomState(seed)
+        except Exception as e:
+            raise ValueError('%r cannot be used to seed a numpy.random.RandomState'
+                             ' instance' % seed) from e
 
-    return numpy.random.RandomState(seed)
+    return rng
 
 
 # helper class to be able to print [1, ..., 4] instead of [1, '...', 4]
