@@ -192,7 +192,7 @@ def test_creation_fails(monkeypatch, presence, config):
     with pytest.raises(CheckError) as ex:
         creation.check_database_creation()
 
-    assert "failed" in str(ex)
+    assert "failed" in str(ex.value)
 
 
 def test_operation_write_pass(operation):
@@ -213,7 +213,7 @@ def test_operation_write_fails(monkeypatch, operation):
     with pytest.raises(CheckError) as ex:
         operation.check_write()
 
-    assert "Not working" in str(ex)
+    assert "Not working" in str(ex.value)
 
 
 def test_operation_read_pass(operation, clean_test):
@@ -235,7 +235,7 @@ def test_operation_read_fail_not_working(monkeypatch, operation):
     with pytest.raises(CheckError) as ex:
         operation.check_read()
 
-    assert "Not working" in str(ex)
+    assert "Not working" in str(ex.value)
 
 
 def test_operation_read_fail_unexpected_value(operation, clean_test):
@@ -245,7 +245,7 @@ def test_operation_read_fail_unexpected_value(operation, clean_test):
     with pytest.raises(CheckError) as ex:
         operation.check_read()
 
-    assert "value" in str(ex)
+    assert "value" in str(ex.value)
 
 
 def test_operation_count_pass(operation, clean_test):
@@ -264,7 +264,7 @@ def test_operation_count_fails(monkeypatch, operation, clean_test):
     with pytest.raises(CheckError) as ex:
         operation.check_count()
 
-    assert "2" in str(ex)
+    assert "2" in str(ex.value)
 
 
 def test_operation_remove_pass(operation, clean_test):
@@ -289,4 +289,4 @@ def test_operation_remove_fails(monkeypatch, operation, clean_test, database):
     with pytest.raises(CheckError) as ex:
         operation.check_remove()
 
-    assert "1" in str(ex)
+    assert "1" in str(ex.value)

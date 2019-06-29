@@ -115,4 +115,4 @@ def test_has_already_been_parsed():
     with pytest.raises(RuntimeError) as exc_info:
         cmdline_parser.parse(command.split(' '))
 
-    assert "already" in str(exc_info)
+    assert "already" in str(exc_info.value)
