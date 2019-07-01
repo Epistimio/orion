@@ -180,7 +180,7 @@ Arguments
 
 ``host``
 
-File path where the database is saved. All workers requires access to this file for parallel
+File path where the database is saved. All workers require access to this file for parallel
 optimisation so make sure it is on a shared file system.
 
 EphemeralDB
@@ -197,49 +197,71 @@ EphemeralDB is the `in-memory` database used when executing Oríon with the argu
 EphemeralDB has no arguments.
 
 Test connection
----------------
+===============
 
-You can first check that everything works as expected by testing with the
-``debug`` mode. This mode bypass the database in the configuration. If you run
-the following command, you should get the following error.
+You can use the command ``orion test-db`` to test the setup of your database backend.
 
-.. code-block:: bash
+.. code-block:: sh
 
-    $ orion --debug hunt -n dummy
-    ...
-    AttributeError: 'str' object has no attribute 'configuration'
+   $ orion test-db
 
-That's a terrible error message. -_- Note to ourselves; Improve this error message. What this should
-tell is that the connection to database was successful but Oríon could not find any script to
-optimize.
+   Check for a configuration inside the default paths...
+       {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
+   Success
+   Check for a configuration inside the environment variables... Skipping
+   No environment variables found.
+   Check if configuration file has valid database configuration... Skipping
+   Missing configuration file.
+   Using configuration: {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
+   Check if database of specified type can be created... Success
+   DB instance <orion.core.io.database.mongodb.MongoDB object at 0x7f86d70067f0>
+   Check if database supports write operation... Success
+   Check if database supports read operation... Success
+   Check if database supports count operation... Success
+   Check if database supports delete operation... Success
 
-Now remove the option ``--debug`` to test the database. If it fails to connect,
-you will get the following error. Otherwise, you'll get the (terrible) error above again
-if it succeeded. Note that a connection failure will hang for approximately 60
-seconds before giving up.
+The tests goes throught 3 phases. First one is the aggregation of the configuration across
+global, environment variable and local configuration (note that you can pass ``--config`` to include
+a local configuration in the tests). The tests will print the resulting configuration at each
+stage. Here's an example including all three configuration methods.
 
-.. code-block:: bash
+.. code-block:: sh
 
-    $ orion hunt -n dummy
-    ...
-    orion.core.io.database.DatabaseError: Connection Failure: database not found on specified uri
+   $ ORION_DB_PORT=27018 orion test_db --config local.yaml
 
-If it fails, try running with ``-vv`` and make sure your configuration file is
-properly found. Suppose your file path is ``/u/user/.config/orion.config/orion_config.yaml``,
-then you should **NOT** see the following line in the output otherwise it means it is not found.
+   Check for a configuration inside the global paths...
+       {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
+   Success
+   Check for a configuration inside the environment variables...
+       {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost', 'port': '27018'}
+   Success
+   Check if configuration file has valid database configuration...
+       {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost', 'port': '27017'}
+   Success
 
-.. code-block:: bash
+The second phase is the creation of the database, which prints out the final configuration
+that will be used and then prints the instance created to confirm the database type.
 
-    DEBUG:orion.core.io.resolve_config:[Errno 2] No such file or directory: '/u/user/.config/orion.config/orion_config.yaml'
+.. code-block:: sh
 
-When you are sure the configuration file is found, look for the configuration
-used by Oríon to initiate the DB connection.
+   $ orion test-db
 
-.. code-block:: bash
+   [...]
 
-    DEBUG:orion.core.io.experiment_builder:Creating mongodb database client with args: {'name': 'user', 'host': 'mongodb://user:pass@localhost'}
+   Using configuration: {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
+   Check if database of specified type can be created... Success
+   DB instance <orion.core.io.database.mongodb.MongoDB object at 0x7f86d70067f0>
 
-Make sure you have the proper database name, database type and host URI.
+The third phase verifies if all operations are supported by the database. It is possible that these
+tests fail because of insufficient user access rights on the database.
 
+.. code-block:: sh
 
-.. _MongoDB: https://www.mongodb.com/
+   $ orion test-db
+
+   [...]
+
+   Check if database supports write operation... Success
+   Check if database supports read operation... Success
+   Check if database supports count operation... Success
+   Check if database supports delete operation... Success

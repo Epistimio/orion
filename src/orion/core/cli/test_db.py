@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 
 def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
-    test_db_parser = parser.add_parser('test_db', help='test_db help')
+    test_db_parser = parser.add_parser('test-db', help='test_db help')
 
     test_db_parser.add_argument('-c', '--config', type=argparse.FileType('r'),
                                 metavar='path-to-config', help="user provided "
@@ -46,7 +46,7 @@ def main(args):
         for stage in stages:
             for check in stage.checks():
                 print(check.__doc__, end='.. ')
-                status, msg = check(stage)
+                status, msg = check()
                 print(status)
 
                 if status == "Skipping":

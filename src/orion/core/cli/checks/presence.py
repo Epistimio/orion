@@ -41,7 +41,7 @@ class PresenceStage:
             return "Skipping", "No default configuration found for database."
 
         self.db_config = config['database']
-        print(self.db_config)
+        print('\n   ', self.db_config)
 
         return "Success", ""
 
@@ -50,13 +50,13 @@ class PresenceStage:
         config = self.builder.fetch_env_vars()
 
         config = config['database']
-        names = ['type', 'name', 'host']
+        names = ['type', 'name', 'host', 'port']
 
         if not any(name in config for name in names):
             return "Skipping", "No environment variables found."
 
         self.db_config.update(config)
-        print(self.db_config)
+        print('\n   ', self.db_config)
 
         return "Success", ""
 
@@ -71,12 +71,14 @@ class PresenceStage:
             return "Skipping", "No database found in configuration file."
 
         config = config['database']
-        names = ['type', 'name', 'host']
+        names = ['type', 'name', 'host', 'port']
 
         if not any(name in config for name in names):
             return "Skipping", "No configuration value found inside `database`."
 
         self.db_config.update(config)
+
+        print('\n   ', config)
 
         return "Success", ""
 
