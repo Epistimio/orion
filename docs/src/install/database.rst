@@ -2,6 +2,13 @@
 Setup Database
 **************
 
+.. note::
+
+   You can avoid the complexity of setting up a MongoDB server and give a try to the simple
+   alternative we are currently integrating in Oríon following the configuration steps
+   :ref:`here <Database Configuration>` for :ref:`PickledDB <PickledDB Config>`.
+   We plan to make PickledDB the default database backend in release v0.2.0.
+
 We are currently using a MongoDB_ dependent API
 to persistently record history changes and have it serve as
 a central worker to the asynchronous communication between the
@@ -18,8 +25,8 @@ database locally.
 
    This is the same database required to be setup in order to run the tests.
 
-Local Installation
-==================
+Local MongoDB Installation
+==========================
 
 Supposing we are in a Linux machine, follow the installation process
 (preferably respecting the package manager of your distribution) discussed in
@@ -77,27 +84,15 @@ Atlas MongoDB
 11. Configure Oríon's YAML file (See next section).
 
 
+.. _Database Configuration:
+
 Configuring Oríon's Database
 ============================
 
-There are two possible ways that database attributes can be configured.
-The first one is by using environmental variables and the second one is by using
-Oríon configuration files.
-
-   1. By setting appropriate environmental variables of the shell used to call
-      Oríon's executable.
-
-   .. code-block:: sh
-
-      export ORION_DB_ADDRESS=mongodb://user:pass@localhost
-      export ORION_DB_NAME=orion_test
-      export ORION_DB_TYPE=MongoDB
-      export ORION_DB_PORT=27017
-
-   2. By using the utility command `orion setup` which will automatically create a default
-      configuration through its prompt or by doing it yourself and creating a section in an Oríon's
-      configuration YAML file, like `this one <https://github.com/epistimio/orion/blob/master/tests/functional/demo/database_config.yaml>`
-      used by our functional tests.
+There are different ways that database backend attributes can be configured.
+The first one is by using a global configuration file, which can easily be done
+using the command ``orion setup``. This will create a yaml file
+of the following format.
 
    .. code-block:: yaml
 
@@ -106,11 +101,100 @@ Oríon configuration files.
         name: 'orion_test'
         host: 'mongodb://user:pass@localhost'
 
-As it will be referenced with detail in configuration's documentation (TODO),
-the environmental variable definitions precede the ones within files in default
-locations, and configuration files provided via executable's cli precede
-environmentals.
+The file is typically located at ``$HOME/.config/orion.core/orion_config.yaml`` but it may differ
+based on your operating system.
 
+The second way of configuring the database backend is to use environment variables such as
+
+   .. code-block:: sh
+
+       ORION_DB_ADDRESS=mongodb://user:pass@localhost
+       ORION_DB_NAME=orion_test
+       ORION_DB_TYPE=MongoDB
+       ORION_DB_PORT=27017
+
+Note that both configuration methods can be used together, environment variables that are set will
+overwrite the corresponding values in the global configuration. This is useful if you need to define
+some of them dynamically, such as picking the database port randomly at runtime based on port
+availability for ssh tunnels.
+
+The third configuration method is to use a local configuration file which will be passed to Oríon
+using the ``--config`` argument.
+
+   .. code-block:: sh
+
+       orion hunt --config=my_local_config.yaml...
+
+As described above, local configuration file can be used in combination with global and environment
+variable definitions. Local configuration values will overwrite configuration from both other
+methods.
+
+MongoDB
+-------
+
+   .. code-block:: yaml
+
+      database:
+        type: 'mongodb'
+        name: 'orion_test'
+        host: 'mongodb://user:pass@localhost'
+
+MongoDB backend is the recommended one for large scale parallel optimisation, where
+number of workers gets higher than 50.
+
+Arguments
+~~~~~~~~~
+
+``name``
+
+Name of the mongodb database.
+
+``host``
+
+Can be either the host address  (hostname or IP address) or a mongodb URI. Default is ``localhost``.
+
+``port``
+
+Port that database servers listens to for requests. Default is 27017.
+
+
+
+.. _PickledDB Config:
+
+PickledDB
+---------
+
+   .. code-block:: yaml
+
+      database:
+        type: 'pickleddb'
+        host: '/some/path/to/a/file/to/save.pkl'
+
+PickledDB is recommended for its simplicity to setup but it is generally not suited
+for parallel optimisation with more than 50 workers. This is however just a rule of thumb and
+you may find PickledDB to work properly with more workers if your tasks take a significant
+amount of time to execute.
+
+Arguments
+~~~~~~~~~
+
+``host``
+
+File path where the database is saved. All workers requires access to this file for parallel
+optimisation so make sure it is on a shared file system.
+
+EphemeralDB
+-----------
+
+   .. code-block:: yaml
+
+      database:
+        type: 'ephemeraldb'
+
+EphemeralDB is the `in-memory` database used when executing Oríon with the argument
+``--debug``. It is wiped out of memory at end of execution.
+
+EphemeralDB has no arguments.
 
 Test connection
 ---------------
