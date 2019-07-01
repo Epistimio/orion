@@ -63,6 +63,11 @@ character ``%`` (ex: ``#SBATCH --array=1-100%10``).
 SSH tunnels
 ===========
 
+.. note:
+
+   MongoDB does not play nicely with ssh tunnels. You can try using ``PickledDB`` instead, following
+   the configuration steps describded :ref:`here <Database Configuration>`.
+
 Some HPC infrastructure does not provide access to internet from the compute nodes. To get access to
 the database from the compute nodes, it is necessary to open ssh tunnels to a gateway (typically
 login nodes). The ssh tunnel will redirect traffic from different address and port, therefore the
@@ -132,3 +137,31 @@ These lines can then be added to the script to submit workers in parallel.
 
     orion hunt -n parallel-exp --worker-trials 1 ./main.py --lr~'loguniform(1e-5, 1.0)'
 
+
+Notes for MongoDB
+-----------------
+
+You may experience problems with MongoDB if you are using an encrypted connection with SSL and
+if you are using replica sets
+(both of which are highly recommended for security and high availability).
+
+SSL
+~~~
+
+You will need to set the variable
+``ssl_match_hostname=false`` in your URI to bypass the SSL hostname check. This is because
+the address used with the tunnel is ``localhost`` and this won't be recognised by your SSL
+certificate. From pymongo's documentation
+
+    Think very carefully before setting this to False as that could make your application
+    vulnerable to man-in-the-middle attacks
+
+Replica Sets
+~~~~~~~~~~~~
+
+So far, we know no simple methods to use replica sets with ssh tunnels and therefore we cannot
+recommend anything better than not setting up replica set in your MongoDB servers if you need to use
+ssh tunnels.  When dealing with replica sets, the local process tries to open direct connection to
+each secondary servers (replica sets), which are normally on different hosts. These connections,
+which are pointing to different addresses, cannot pass through the ssh tunnel that was opened for
+the address of the primany mongodb server.
