@@ -136,7 +136,7 @@ don't use ``--debug`` you will likely quickly fill your database with broken exp
 Hunting Options
 ---------------
 
-.. code-block:: bash
+.. code-block:: console
 
     $ orion hunt --help
 
@@ -146,6 +146,8 @@ Hunting Options
       -n stringID, --name stringID
                             experiment's unique name; (default: None - specified
                             either here or in a config)
+      -u USER, --user USER  user associated to experiment's unique name; (default:
+                            $USER - can be overriden either here or in a config)
       -c path-to-config, --config path-to-config
                             user provided orion configuration file
       --max-trials #        number of trials to be completed for the experiment.
@@ -157,6 +159,8 @@ Hunting Options
                             the experiment is completed, the worker will die even
                             if it did not reach its maximum number of trials
                             (default: inf/until preempted)
+      --working-dir WORKING_DIR
+                            Set working directory for running experiment.
       --pool-size #         number of simultaneous trials the algorithm should
                             suggest. This is useful if many workers are executed
                             in parallel and the algorithm has a strategy to sample
@@ -167,6 +171,11 @@ Hunting Options
 ``name``
 
 The unique name of the experiment.
+
+``user``
+
+Username used to identify the experiments of a user. The default value is the systems username
+$USER.
 
 ``config``
 
@@ -180,6 +189,11 @@ The maximum number of trials tried during an experiment.
 ``worker-trials``
 
 The maximum number of trials to be executed by a worker (a single call to ``orion hunt [...]``).
+
+``working-dir``
+
+The directory where temporary configuration files are created. If not specified, Oríon will create a
+temporary directory that will be removed at end of execution of the trial.
 
 ``pool-size``
 
