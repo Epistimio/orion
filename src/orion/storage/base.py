@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=protected-access,too-many-public-methods
 """
 :mod:`orion.storage.base -- Generic Storage Protocol
 =============================================================================
