@@ -14,3 +14,4 @@ TODO
    algo/space
    algo/base
    algo/random
+   algo/asha
