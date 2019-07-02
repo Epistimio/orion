@@ -41,9 +41,6 @@ def reserve_trial(experiment, producer):
 
 def workon(experiment, worker_trials=None):
     """Try to find solution to the search problem defined in `experiment`."""
-    # backend = 'debug:'
-    # protocol = StorageProtocol('track', experiment=experiment, uri='file://orion_results.json')
-
     protocol = StorageProtocol('legacy', experiment=experiment)
 
     producer = Producer(experiment, protocol=protocol)
