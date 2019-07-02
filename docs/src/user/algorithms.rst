@@ -20,8 +20,8 @@ In this particular example, the name of the algorithm extension class to be
 imported and instantiated is ``Gradient_Descent``, so the lower-case identifier
 corresponds to it.
 
-All algorithms have default arguments that should work reasonably in general.
-To tune the algorithm for a specific problem, use can set those arguments in the
+All algorithms have default arguments that should work reasonably well in general.
+To tune the algorithm for a specific problem, you can set those arguments in the
 yaml file as shown above with ``learning_rate``.
 
 Included Algorithms
@@ -60,7 +60,7 @@ with low-fidelity and promotes the most promising ones to the next fidelity leve
 This makes it possible to only execute one trial with full fidelity, leading
 to very optimal resource usage.
 
-The most common way of using ASHA is to reduce number of epochs,
+The most common way of using ASHA is to reduce the number of epochs,
 but the algorithm is generic and can be applied to any multi-fidelity setting.
 That is, you can use training time, specifying the fidelity with ``--epochs~fidelity()``
 (assuming your script takes this argument in commandline), but you could also use other fidelity
@@ -96,12 +96,12 @@ Seed for the random number generator used to sample new trials. Default is ``Non
 
 ``max_resources``
 
-Maximum amount of resource that will be assigned to trials by ASHA. Only the best
+Maximum amount of resources that will be assigned to trials by ASHA. Only the best
 performing trial will be assigned the maximum amount of resources. Default is 100.
 
 ``grace_period``
 
-The minimum number of resource assigned to each trial. Default is 1.
+The minimum number of resources assigned to each trial. Default is 1.
 
 ``reduction_factor``
 
@@ -178,7 +178,7 @@ docs for details.
 
 Value added to the diagonal of the kernel matrix during fitting.
 Larger values correspond to increased noise level in the observations
-and reduce potential numerical issue during fitting. If an array is
+and reduce potential numerical issues during fitting. If an array is
 passed, it must have the same number of entries as the data used for
 fitting and is used as datapoint-dependent noise level. Note that this
 is equivalent to adding a WhiteKernel with c=alpha. Allowing to specify
