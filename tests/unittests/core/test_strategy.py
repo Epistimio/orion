@@ -3,10 +3,8 @@
 """Collection of tests for :mod:`orion.core.worker.strategies`."""
 import pytest
 
-from orion.core.worker.strategy import (MaxParallelStrategy,
-                                        MeanParallelStrategy,
-                                        NoParallelStrategy,
-                                        Strategy)
+from orion.core.worker.strategy import (
+    MaxParallelStrategy, MeanParallelStrategy, NoParallelStrategy, Strategy, StubParallelStrategy)
 from orion.core.worker.trial import Trial
 
 
@@ -73,3 +71,12 @@ class TestParallelStrategies:
         strategy.observe(points, results)
         lying_result = strategy.lie(incomplete_trial)
         assert lying_result is None
+
+    def test_stub_parallel_strategy(self, observations, incomplete_trial):
+        """Test that NoParallelStrategy lies outputs None"""
+        points, results = observations
+
+        strategy = StubParallelStrategy()
+        strategy.observe(points, results)
+        lying_result = strategy.lie(incomplete_trial)
+        assert lying_result.value is None

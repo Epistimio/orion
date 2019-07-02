@@ -54,7 +54,7 @@ class Random(BaseAlgorithm):
         .. note:: New parameters must be compliant with the problem's domain
            `orion.algo.space.Space`.
         """
-        return self.space.sample(num, seed=self.rng.randint(0, 10000))
+        return self.space.sample(num, seed=tuple(self.rng.randint(0, 1000000, size=3)))
 
     def observe(self, points, results):
         """Observe evaluation `results` corresponding to list of `points` in

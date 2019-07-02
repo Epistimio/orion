@@ -65,6 +65,7 @@ setup_args = dict(
             ],
         'OptimizationAlgorithm': [
             'random = orion.algo.random:Random',
+            'asha = orion.algo.asha:ASHA',
             ],
         },
     install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython', 'filelock'],

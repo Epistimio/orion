@@ -95,8 +95,9 @@ class Producer(object):
 
     def _update_algorithm(self):
         """Pull newest completed trials to update local model."""
-        log.debug("### Fetch trials to observe:")
+        log.debug("### Fetch completed trials to observe:")
         completed_trials = self.experiment.fetch_completed_trials()
+
         log.debug("### %s", completed_trials)
 
         if completed_trials:
