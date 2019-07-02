@@ -174,7 +174,7 @@ The unique name of the experiment.
 
 ``user``
 
-Username used to identify the experiments of a user. The default value is the systems username
+Username used to identify the experiments of a user. The default value is the system's username
 $USER.
 
 ``config``
@@ -192,7 +192,7 @@ The maximum number of trials to be executed by a worker (a single call to ``orio
 
 ``working-dir``
 
-The directory where temporary configuration files are created. If not specified, Oríon will create a
+The directory where configuration files are created. If not specified, Oríon will create a
 temporary directory that will be removed at end of execution of the trial.
 
 ``pool-size``
