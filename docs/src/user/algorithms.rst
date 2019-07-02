@@ -37,7 +37,7 @@ Configuration
 
 .. code-block:: yaml
 
-     algorithms: 
+     algorithms:
         random:
            seed: null
 
