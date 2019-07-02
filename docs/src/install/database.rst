@@ -94,7 +94,9 @@ Oríon configuration files.
       export ORION_DB_TYPE=MongoDB
       export ORION_DB_PORT=27017
 
-   2. By creating a section in an Oríon's configuration YAML file, like `this one <https://github.com/epistimio/orion/blob/master/tests/functional/demo/orion_config_random.yaml>`_
+   2. By using the utility command `orion setup` which will automatically create a default
+      configuration through its prompt or by doing it yourself and creating a section in an Oríon's
+      configuration YAML file, like `this one <https://github.com/epistimio/orion/blob/master/tests/functional/demo/database_config.yaml>`
       used by our functional tests.
 
    .. code-block:: yaml
