@@ -30,24 +30,43 @@ Params: {params}
 class ASHA(BaseAlgorithm):
     """Asynchronous Successive Halving Algorithm
 
-        A simple and robust hyperparameter tuning algorithm with solid theoretical underpinnings
-        that exploits parallelism and aggressive early-stopping.
+    `A simple and robust hyperparameter tuning algorithm with solid theoretical underpinnings
+    that exploits parallelism and aggressive early-stopping.`
 
     For more information on the algorithm, see original paper at https://arxiv.org/abs/1810.05934.
 
     Li, Liam, et al. "Massively parallel hyperparameter tuning."
     arXiv preprint arXiv:1810.05934 (2018)
 
+    Parameters
+    ----------
+    space: bla
+    seed: None, int or sequence of int
+        Seed for the random number generator used to sample new trials.
+        Default: ``None``
+    max_resources: int
+        Maximum amount of resource that will be assigned to trials by ASHA. Only the
+        best performing trial will be assigned the maximum amount of resources.
+        Default: 100
+    grace_period: int
+        The minimum number of resource assigned to each trial.
+        Default: 1
+    reduction_factor: int
+        The factor by which ASHA promotes trials. If the reduction factor is 4,
+        it means the number of trials from one fidelity level to the next one is roughly
+        divided by 4, and each fidelity level has 4 times more resources than the prior one.
+        Default: 4
+    num_brackets: int
+        Using a grace period that is too small may bias ASHA too strongly towards
+        fast converging trials that do not lead to best results at convergence (stagglers). To
+        overcome this, you can increase the number of brackets, which increases the amount of
+        resource required for optimisation but decreases the bias towards stragglers.
+        Default: 1
+
     """
 
     def __init__(self, space, seed=None, max_resources=100, grace_period=1, reduction_factor=4,
                  num_brackets=1):
-        """Random sampler takes no other hyperparameter than the problem's space
-        itself.
-
-        :param space: `orion.algo.space.Space` of optimization.
-        :param seed: Integer seed for the random number generator.
-        """
         super(ASHA, self).__init__(
             space, seed=seed, max_resources=max_resources, grace_period=grace_period,
             reduction_factor=reduction_factor, num_brackets=num_brackets)
