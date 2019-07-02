@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.algo.asha` -- TODO
-======================================================================
+:mod:`orion.algo.asha` -- Asynchronous Successive Halving Algorithm
+===================================================================
 
 .. module:: asha
    :platform: Unix
-   :synopsis: TODO
+   :synopsis: Asynchronous Successive Halving Algorithm
 
 """
 import copy
@@ -40,16 +40,17 @@ class ASHA(BaseAlgorithm):
 
     Parameters
     ----------
-    space: bla
+    space: `orion.algo.space.Space`
+        Optimisation space with priors for each dimension.
     seed: None, int or sequence of int
         Seed for the random number generator used to sample new trials.
         Default: ``None``
     max_resources: int
-        Maximum amount of resource that will be assigned to trials by ASHA. Only the
+        Maximum amount of resources that will be assigned to trials by ASHA. Only the
         best performing trial will be assigned the maximum amount of resources.
         Default: 100
     grace_period: int
-        The minimum number of resource assigned to each trial.
+        The minimum number of resources assigned to each trial.
         Default: 1
     reduction_factor: int
         The factor by which ASHA promotes trials. If the reduction factor is 4,
@@ -272,7 +273,6 @@ class Bracket():
             Lookup for promotion in rung l + 1 contains trials of any status.
 
         """
-        # NOTE: There should be base + 1 rungs
         for rung_id in range(len(self.rungs) - 2, -1, -1):
             candidate = self.get_candidate(rung_id)
             if candidate:
