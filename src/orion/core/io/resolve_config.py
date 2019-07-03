@@ -67,12 +67,18 @@ DEF_CONFIG_FILES_PATHS = [
     os.path.join(orion.core.DIRS.user_config_dir, 'orion_config.yaml')
     ]
 
+try:
+    DEFAULT_HOST = socket.gethostbyname(socket.gethostname())
+except socket.gaierror:
+    DEFAULT_HOST = 'localhost'
+
 # list containing tuples of
 # (environmental variable names, configuration keys, default values)
 ENV_VARS_DB = [
     ('ORION_DB_NAME', 'name', 'orion'),
     ('ORION_DB_TYPE', 'type', 'MongoDB'),
-    ('ORION_DB_ADDRESS', 'host', socket.gethostbyname(socket.gethostname()))
+    ('ORION_DB_ADDRESS', 'host', DEFAULT_HOST),
+    ('ORION_DB_PORT', 'port', '27017')
     ]
 
 # TODO: Default resource from environmental (localhost)

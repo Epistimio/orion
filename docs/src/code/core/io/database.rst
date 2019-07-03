@@ -6,6 +6,8 @@ Databases
    :caption: Modules
 
    database/mongodb
+   database/pickleddb
+   database/ephemeraldb
 
 .. automodule:: orion.core.io.database
    :members:

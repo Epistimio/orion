@@ -27,10 +27,22 @@ def yaml_sample_path():
     return os.path.abspath(YAML_SAMPLE)
 
 
+@pytest.fixture
+def yaml_config(yaml_sample_path):
+    """Return a list containing the key and the sample path for a yaml config."""
+    return ['--config', yaml_sample_path]
+
+
 @pytest.fixture(scope='session')
 def json_sample_path():
     """Return path with a json sample file."""
     return JSON_SAMPLE
+
+
+@pytest.fixture
+def json_config(json_sample_path):
+    """Return a list containing the key and the sample path for a json config."""
+    return ['--config', json_sample_path]
 
 
 @pytest.fixture(scope='session')
@@ -43,6 +55,12 @@ def unknown_type_sample_path():
 def some_sample_path():
     """Return path with a sample file of unknown configuration filetype."""
     return os.path.join(TEST_DIR, 'some_sample_config.txt')
+
+
+@pytest.fixture
+def some_sample_config(some_sample_path):
+    """Return a list containing the key and the sample path for some config."""
+    return ['--config', some_sample_path]
 
 
 @pytest.fixture(scope='session')
@@ -268,6 +286,7 @@ def cli_conflict(old_config, new_config):
     """Generate a commandline conflict"""
     new_config = copy.deepcopy(new_config)
     new_config['metadata']['user_args'].append("--some-new=args")
+    new_config['metadata']['user_args'].append("--bool-arg")
     return conflicts.CommandLineConflict(old_config, new_config)
 
 

@@ -4,6 +4,7 @@
 
 from datetime import datetime
 import functools
+from timeit import timeit
 
 import pymongo
 from pymongo import MongoClient
@@ -91,13 +92,34 @@ class TestConnection(object):
         assert orion_db.password == 'pass'
         assert orion_db.name == 'orion_test'
 
+    def test_overwrite_partial_uri(self, monkeypatch):
+        """Check the case when connecting with partial `uri`."""
+        monkeypatch.setattr(MongoDB, 'initiate_connection', lambda self: None)
+
+        orion_db = MongoDB('mongodb://localhost',
+                           port=1231, name='orion', username='lala',
+                           password='none')
+        orion_db._sanitize_attrs()
+        assert orion_db.host == 'localhost'
+        assert orion_db.port == 1231
+        assert orion_db.username == 'lala'
+        assert orion_db.password == 'none'
+        assert orion_db.name == 'orion'
+
     def test_singleton(self):
         """Test that MongoDB class is a singleton."""
-        orion_db = MongoDB(username='user', password='pass', name='orion_test')
+        orion_db = MongoDB('mongodb://localhost',
+                           port=27017, name='orion_test', username='user',
+                           password='pass')
         # reinit connection does not change anything
         orion_db.initiate_connection()
         orion_db.close_connection()
         assert MongoDB() is orion_db
+
+    def test_change_server_timeout(self):
+        """Test that the server timeout is correctly changed."""
+        assert timeit(lambda: MongoDB(username='user', password='pass', name='orion_test',
+                                      serverSelectionTimeoutMS=1000), number=1) <= 2
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -250,7 +272,7 @@ class TestRead(object):
             'trials',
             {'experiment': 'supernaedo2',
              'submit_time': {'$gte': datetime(2017, 11, 23, 0, 0, 0)}})
-        assert value == exp_config[1][2:7]
+        assert value == [exp_config[1][1]] + exp_config[1][3:7]
 
         value = orion_db.read(
             'trials',

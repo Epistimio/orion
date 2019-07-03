@@ -30,3 +30,16 @@ def test_seeding(space):
 
     random_search.seed_rng(1)
     assert numpy.allclose(a, random_search.suggest(1)[0])
+
+
+def test_set_state(space):
+    """Verify that resetting state makes sampling deterministic"""
+    random_search = Random(space)
+
+    random_search.seed_rng(1)
+    state = random_search.state_dict
+    a = random_search.suggest(1)[0]
+    assert not numpy.allclose(a, random_search.suggest(1)[0])
+
+    random_search.set_state(state)
+    assert numpy.allclose(a, random_search.suggest(1)[0])

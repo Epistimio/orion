@@ -145,16 +145,16 @@ class Trial(object):
         """
 
         __slots__ = ()
-        allowed_types = ('integer', 'real', 'categorical')
+        allowed_types = ('integer', 'real', 'categorical', 'fidelity')
 
     __slots__ = ('experiment', '_id', '_status', 'worker',
-                 'submit_time', 'start_time', 'end_time', 'results', 'params', 'parents')
+                 'submit_time', 'start_time', 'end_time', '_results', 'params', 'parents')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
 
     def __init__(self, **kwargs):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
         for attrname in self.__slots__:
-            if attrname in ('results', 'params', 'parents'):
+            if attrname in ('_results', 'params', 'parents'):
                 setattr(self, attrname, list())
             else:
                 setattr(self, attrname, None)
@@ -201,6 +201,24 @@ class Trial(object):
         return ret
 
     __repr__ = __str__
+
+    @property
+    def results(self):
+        """List of results of the trial"""
+        return self._results
+
+    @results.setter
+    def results(self, results):
+        """Verify results before setting the property"""
+        objective = self._fetch_one_result_of_type('objective', results)
+
+        if objective is None:
+            raise ValueError('No objective found in results: {}'.format(results))
+        if not isinstance(objective.value, (float, int)):
+            raise ValueError(
+                'Results must contain a type `objective` with type float/int: {}'.format(objective))
+
+        self._results = results
 
     @property
     def status(self):
@@ -277,9 +295,11 @@ class Trial(object):
                              "have not been set.")
         return self.params_repr(sep='-').replace('/', '.')
 
-    def _fetch_one_result_of_type(self, result_type):
-        value = [result for result in self.results
-                 if result.type == result_type]
+    def _fetch_one_result_of_type(self, result_type, results=None):
+        if results is None:
+            results = self.results
+
+        value = [result for result in results if result.type == result_type]
 
         if not value:
             return None

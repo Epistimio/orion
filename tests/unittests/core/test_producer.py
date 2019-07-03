@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.producer`."""
 import copy
+import datetime
 
 import pytest
 
@@ -109,34 +110,17 @@ def test_strategist_observe_completed(producer):
         }
 
 
-def test_naive_algorithm_is_producing(producer, database, random_dt):
+def test_naive_algorithm_is_producing(monkeypatch, producer, database, random_dt):
     """Verify naive algo is used to produce, not original algo"""
     producer.experiment.pool_size = 1
     producer.algorithm.algorithm.possible_values = [('rnn', 'gru')]
     producer.update()
+    monkeypatch.setattr(producer.algorithm.algorithm, 'set_state', lambda value: None)
     producer.algorithm.algorithm.possible_values = [('gru', 'gru')]
     producer.produce()
 
     assert producer.naive_algorithm.algorithm._num == 1  # pool size
-    assert producer.algorithm.algorithm._num == 1
-    assert producer.naive_algorithm.algorithm._suggested == [('rnn', 'gru')]
-    assert producer.algorithm.algorithm._suggested == [('gru', 'gru')]
-
-    # Make sure the registered trial is the one sampled from naive not original algo
-    new_trials = list(database.trials.find({'status': 'new', 'submit_time': random_dt}))
-    assert len(new_trials) == 1
-    assert new_trials[0]['experiment'] == producer.experiment.name
-    assert new_trials[0]['start_time'] is None
-    assert new_trials[0]['end_time'] is None
-    assert new_trials[0]['results'] == []
-    assert new_trials[0]['params'] == [
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'rnn'},
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'}
-        ]
+    assert producer.algorithm.algorithm._num == 0
 
 
 def test_update_and_produce(producer, database, random_dt):
@@ -214,6 +198,10 @@ def test_lies_generation(producer, database, random_dt):
     lies = producer._produce_lies()
     assert len(lies) == 4
 
+    trials_non_completed = list(
+        sorted(trials_non_completed,
+               key=lambda trial: trial.get('submit_time', datetime.datetime.utcnow())))
+
     for i in range(4):
         trials_non_completed[i]['_id'] = lies[i].id
         trials_non_completed[i]['status'] = 'completed'
@@ -239,6 +227,10 @@ def test_register_lies(producer, database, random_dt):
 
     lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
     assert len(lying_trials) == 4
+
+    trials_non_completed = list(
+        sorted(trials_non_completed,
+               key=lambda trial: trial.get('submit_time', datetime.datetime.utcnow())))
 
     for i in range(4):
         trials_non_completed[i]['_id'] = lying_trials[i]['_id']

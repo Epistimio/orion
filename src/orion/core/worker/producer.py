@@ -63,8 +63,8 @@ class Producer(object):
             log.debug("### Algorithm suggests new points.")
 
             new_points = self.naive_algorithm.suggest(self.pool_size)
-            # Dummy sample to keep the original algorithm's rng state incrementing.
-            self.algorithm.suggest(self.pool_size)
+            # Sync state of original algo so that state continues evolving.
+            self.algorithm.set_state(self.naive_algorithm.state_dict)
 
             for new_point in new_points:
                 log.debug("#### Convert point to `Trial` object.")
@@ -95,8 +95,9 @@ class Producer(object):
 
     def _update_algorithm(self):
         """Pull newest completed trials to update local model."""
-        log.debug("### Fetch trials to observe:")
+        log.debug("### Fetch completed trials to observe:")
         completed_trials = self.experiment.fetch_completed_trials()
+
         log.debug("### %s", completed_trials)
 
         if completed_trials:

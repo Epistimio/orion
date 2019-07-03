@@ -3,6 +3,7 @@
 """Collection of tests for :mod:`orion.core.worker.experiment`."""
 
 import copy
+import datetime
 import getpass
 import random
 
@@ -21,9 +22,9 @@ def patch_sample(monkeypatch):
         assert type(a_list) == list
         assert len(a_list) >= 1
         # Part of `TestReserveTrial.test_reserve_success`
-        assert a_list[0].status == 'interrupted'
+        assert a_list[0].status == 'new'
         assert a_list[1].status == 'new'
-        assert a_list[2].status == 'new'
+        assert a_list[2].status == 'interrupted'
         assert a_list[3].status == 'suspended'
         assert should_be_one == 1
         return [a_list[0]]
@@ -38,9 +39,9 @@ def patch_sample2(monkeypatch):
         assert type(a_list) == list
         assert len(a_list) >= 1
         # Part of `TestReserveTrial.test_reserve_success2`
-        assert a_list[0].status == 'interrupted'
+        assert a_list[0].status == 'new'
         assert a_list[1].status == 'new'
-        assert a_list[2].status == 'new'
+        assert a_list[2].status == 'interrupted'
         assert a_list[3].status == 'suspended'
         assert should_be_one == 1
         return [a_list[-1]]
@@ -56,11 +57,11 @@ def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
         assert len(a_list) >= 1
         # Part of `TestReserveTrial.test_reserve_race_condition`
         if len(a_list) == 4:
-            assert a_list[0].status == 'interrupted'
+            assert a_list[0].status == 'new'
         if len(a_list) == 3:
             assert a_list[0].status == 'new'
         if len(a_list) == 2:
-            assert a_list[0].status == 'new'
+            assert a_list[0].status == 'interrupted'
         if len(a_list) == 1:
             assert a_list[0].status == 'suspended'
 
@@ -89,11 +90,11 @@ def patch_sample_concurrent2(monkeypatch, create_db_instance, exp_config):
         assert len(a_list) >= 1
         # Part of `TestReserveTrial.test_reserve_dead_race_condition`
         if len(a_list) == 4:
-            assert a_list[0].status == 'interrupted'
+            assert a_list[0].status == 'new'
         if len(a_list) == 3:
             assert a_list[0].status == 'new'
         if len(a_list) == 2:
-            assert a_list[0].status == 'new'
+            assert a_list[0].status == 'interrupted'
         if len(a_list) == 1:
             assert a_list[0].status == 'suspended'
 
@@ -131,6 +132,7 @@ def new_config(random_dt):
                           "diff_sha": "diff"}},
         pool_size=10,
         max_trials=1000,
+        working_dir=None,
         algorithms={'dumbalgo': {}},
         producer={'strategy': 'NoParallelStrategy'},
         # attrs starting with '_' also
@@ -159,6 +161,7 @@ class TestInitExperiment(object):
         assert exp.pool_size is None
         assert exp.max_trials is None
         assert exp.algorithms is None
+        assert exp.working_dir is None
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
@@ -177,6 +180,7 @@ class TestInitExperiment(object):
         assert exp.pool_size is None
         assert exp.max_trials is None
         assert exp.algorithms is None
+        assert exp.working_dir is None
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
@@ -194,6 +198,7 @@ class TestInitExperiment(object):
         assert exp.pool_size == exp_config[0][0]['pool_size']
         assert exp.max_trials == exp_config[0][0]['max_trials']
         assert exp.algorithms == exp_config[0][0]['algorithms']
+        assert exp.working_dir == exp_config[0][0]['working_dir']
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
@@ -227,6 +232,7 @@ class TestConfigProperty(object):
         assert cfg['pool_size'] is None
         assert cfg['max_trials'] is None
         assert cfg['algorithms'] is None
+        assert cfg['working_dir'] is None
 
     @pytest.mark.skip(reason='Interactive prompt problems')
     def test_good_set_before_init_hit_with_diffs(self, exp_config):
@@ -316,7 +322,38 @@ class TestConfigProperty(object):
         assert exp.metadata == new_config['metadata']
         assert exp.pool_size == new_config['pool_size']
         assert exp.max_trials == new_config['max_trials']
+        assert exp.working_dir == new_config['working_dir']
         #  assert exp.algorithms == new_config['algorithms']
+
+    def test_working_dir_is_correctly_set(self, database, new_config):
+        """Check if working_dir is correctly changed."""
+        exp = Experiment(new_config['name'])
+        exp.configure(new_config)
+        assert exp._init_done is True
+        database.experiments.update_one({'name': 'supernaekei', 'metadata.user': 'tsirif'},
+                                        {'$set': {'working_dir': './'}})
+        found_config = list(database.experiments.find({'name': 'supernaekei',
+                                                       'metadata.user': 'tsirif'}))
+
+        found_config = found_config[0]
+        exp = Experiment(found_config['name'])
+        exp.configure(found_config)
+        assert exp.working_dir == './'
+
+    def test_working_dir_works_when_db_absent(self, database, new_config):
+        """Check if working_dir is correctly when absent from the database."""
+        exp = Experiment(new_config['name'])
+        exp.configure(new_config)
+        assert exp._init_done is True
+        database.experiments.update_one({'name': 'supernaekei', 'metadata.user': 'tsirif'},
+                                        {'$unset': {'working_dir': ''}})
+        found_config = list(database.experiments.find({'name': 'supernaekei',
+                                                       'metadata.user': 'tsirif'}))
+
+        found_config = found_config[0]
+        exp = Experiment(found_config['name'])
+        exp.configure(found_config)
+        assert exp.working_dir is None
 
     def test_inconsistent_1_set_before_init_no_hit(self, random_dt, new_config):
         """Test inconsistent configuration because of name."""
@@ -550,8 +587,9 @@ class TestReserveTrial(object):
     def test_reserve_success(self, exp_config, hacked_exp, random_dt):
         """Successfully find new trials in db and reserve one at 'random'."""
         trial = hacked_exp.reserve_trial()
-        exp_config[1][5]['status'] = 'reserved'
-        assert trial.to_dict() == exp_config[1][5]
+        exp_config[1][3]['status'] = 'reserved'
+        exp_config[1][3]['start_time'] = random_dt
+        assert trial.to_dict() == exp_config[1][3]
 
     @pytest.mark.usefixtures("patch_sample2")
     def test_reserve_success2(self, exp_config, hacked_exp):
@@ -568,9 +606,9 @@ class TestReserveTrial(object):
     def test_reserve_race_condition(self, exp_config, hacked_exp, random_dt):
         """Get its trials reserved before by another process once."""
         trial = hacked_exp.reserve_trial()
-        exp_config[1][3]['status'] = 'reserved'
-        exp_config[1][3]['start_time'] = random_dt
-        assert trial.to_dict() == exp_config[1][3]
+        exp_config[1][4]['status'] = 'reserved'
+        exp_config[1][4]['start_time'] = random_dt
+        assert trial.to_dict() == exp_config[1][4]
 
     @pytest.mark.usefixtures("patch_sample_concurrent2")
     def test_reserve_dead_race_condition(self, exp_config, hacked_exp):
@@ -601,9 +639,7 @@ class TestReserveTrial(object):
 def test_push_completed_trial(hacked_exp, database, random_dt):
     """Successfully push a completed trial into database."""
     trial = hacked_exp.reserve_trial()
-    trial.results = []
-    res = Trial.Result(name='yolo', type='objective', value='3')
-    trial.results.append(res)
+    trial.results = [Trial.Result(name='yolo', type='objective', value=3)]
     hacked_exp.push_completed_trial(trial)
     yo = database.trials.find_one({'_id': trial.id})
     assert len(yo['results']) == len(trial.results)
@@ -636,19 +672,24 @@ def test_fetch_all_trials(hacked_exp, exp_config, random_dt):
     """Fetch a list of all trials"""
     query = dict()
     trials = hacked_exp.fetch_trials(query)
+    sorted_exp_config = list(
+        sorted(exp_config[1][0:7],
+               key=lambda trial: trial.get('submit_time', datetime.datetime.utcnow())))
+
     assert len(trials) == 7
     for i in range(7):
-        assert trials[i].to_dict() == exp_config[1][i]
+        assert trials[i].to_dict() == sorted_exp_config[i]
 
 
 def test_fetch_completed_trials(hacked_exp, exp_config, random_dt):
     """Fetch a list of the unseen yet completed trials."""
     trials = hacked_exp.fetch_completed_trials()
-    assert hacked_exp._last_fetched == random_dt
+    assert hacked_exp._last_fetched == max(trial.end_time for trial in trials)
     assert len(trials) == 3
+    # Trials are sorted based on submit time
     assert trials[0].to_dict() == exp_config[1][0]
-    assert trials[1].to_dict() == exp_config[1][1]
-    assert trials[2].to_dict() == exp_config[1][2]
+    assert trials[1].to_dict() == exp_config[1][2]
+    assert trials[2].to_dict() == exp_config[1][1]
 
 
 def test_fetch_non_completed_trials(hacked_exp, exp_config):
@@ -711,10 +752,10 @@ def test_experiment_stats(hacked_exp, exp_config, random_dt):
     """Check that property stats is returning a proper summary of experiment's results."""
     stats = hacked_exp.stats
     assert stats['trials_completed'] == 3
-    assert stats['best_trials_id'] == exp_config[1][1]['_id']
+    assert stats['best_trials_id'] == exp_config[1][2]['_id']
     assert stats['best_evaluation'] == 2
     assert stats['start_time'] == exp_config[0][3]['metadata']['datetime']
-    assert stats['finish_time'] == exp_config[1][2]['end_time']
+    assert stats['finish_time'] == exp_config[1][1]['end_time']
     assert stats['duration'] == stats['finish_time'] - stats['start_time']
     assert len(stats) == 6
 
@@ -774,11 +815,11 @@ def test_fetch_completed_trials_from_view(hacked_exp, exp_config, random_dt):
     experiment_view._experiment = hacked_exp
 
     trials = experiment_view.fetch_completed_trials()
-    assert experiment_view._experiment._last_fetched == random_dt
+    assert experiment_view._experiment._last_fetched == max(trial.end_time for trial in trials)
     assert len(trials) == 3
     assert trials[0].to_dict() == exp_config[1][0]
-    assert trials[1].to_dict() == exp_config[1][1]
-    assert trials[2].to_dict() == exp_config[1][2]
+    assert trials[1].to_dict() == exp_config[1][2]
+    assert trials[2].to_dict() == exp_config[1][1]
 
 
 def test_view_is_done_property(hacked_exp):
@@ -823,10 +864,10 @@ def test_experiment_view_stats(hacked_exp, exp_config, random_dt):
 
     stats = experiment_view.stats
     assert stats['trials_completed'] == 3
-    assert stats['best_trials_id'] == exp_config[1][1]['_id']
+    assert stats['best_trials_id'] == exp_config[1][2]['_id']
     assert stats['best_evaluation'] == 2
     assert stats['start_time'] == exp_config[0][3]['metadata']['datetime']
-    assert stats['finish_time'] == exp_config[1][2]['end_time']
+    assert stats['finish_time'] == exp_config[1][1]['end_time']
     assert stats['duration'] == stats['finish_time'] - stats['start_time']
     assert len(stats) == 6
 

@@ -9,7 +9,40 @@ from numpy.testing import assert_array_equal as assert_eq
 import pytest
 from scipy.stats import distributions as dists
 
-from orion.algo.space import (Categorical, Dimension, Integer, Real, Space)
+from orion.algo.space import (
+    Categorical, check_random_state, Dimension, Fidelity, Integer, Real, Space)
+
+
+class TestCheckRandomState:
+    """Test `orion.algo.space.check_random_state`"""
+
+    def test_rng_null(self):
+        """Test that passing None returns numpy._rand"""
+        assert check_random_state(None) is np.random.mtrand._rand
+
+    def test_rng_random_state(self):
+        """Test that passing RandomState returns itself"""
+        rng = np.random.RandomState(1)
+        assert check_random_state(rng) is rng
+
+    def test_rng_int(self):
+        """Test that passing int returns RandomState"""
+        rng = check_random_state(1)
+        assert isinstance(rng, np.random.RandomState)
+        assert rng is not np.random.mtrand._rand
+
+    def test_rng_tuple(self):
+        """Test that passing int returns RandomState"""
+        rng = check_random_state((1, 12, 123))
+        assert isinstance(rng, np.random.RandomState)
+        assert rng is not np.random.mtrand._rand
+
+    def test_rng_invalid_value(self):
+        """Test that passing int returns RandomState"""
+        with pytest.raises(ValueError) as exc:
+            check_random_state('oh_no_oh_no')
+
+        assert '\'oh_no_oh_no\' cannot be used to seed' in str(exc.value)
 
 
 class TestDimension(object):
@@ -116,6 +149,13 @@ class TestDimension(object):
         """Test that no giving a default value assigns None"""
         dim = Dimension('yolo', 'uniform', -3, 4)
         assert dim.default_value is None
+
+    def test_no_prior(self):
+        """Test that giving a null prior defaults prior_name to `None`."""
+        dim = Dimension('yolo', None)
+        print(dim._prior_name)
+        assert dim.prior is None
+        assert dim._prior_name is 'None'
 
 
 class TestReal(object):
@@ -452,6 +492,45 @@ class TestCategorical(object):
         with pytest.raises(ValueError) as exc:
             dim.cast(sample)
         assert "Invalid category: asdfa" in str(exc.value)
+
+
+class TestFidelity(object):
+    """Test methods of a Fidelity object."""
+
+    def test_simple_instance(self):
+        """Test Fidelity.__init__."""
+        dim = Fidelity('epoch')
+
+        assert str(dim) == "Fidelity(name=epoch)"
+        assert dim.name == 'epoch'
+        assert dim.type == 'fidelity'
+        assert dim.shape is None
+
+    def test_sampling(self):
+        """Make sure Fidelity simply returns `fidelity`"""
+        dim = Fidelity('epoch')
+
+        assert dim.sample() == ['fidelity']
+
+    def test_contains(self):
+        """Make sure fidelity.__contains__ always returns True"""
+        dim = Fidelity('epoch')
+
+        assert None in dim
+        assert 0 in dim
+        assert object() in dim
+
+    def test_interval(self):
+        """Check that error is being raised."""
+        dim = Fidelity('epoch')
+        with pytest.raises(NotImplementedError):
+            dim.interval()
+
+    def test_cast(self):
+        """Check that error is being raised."""
+        dim = Fidelity('epoch')
+        with pytest.raises(NotImplementedError):
+            dim.cast()
 
 
 class TestSpace(object):

@@ -42,13 +42,14 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
     DESCENDING = 1
 
     def __init__(self, host='localhost', name=None,
-                 port=None, username=None, password=None):
+                 port=None, username=None, password=None, **kwargs):
         """Init method, see attributes of :class:`AbstractDB`."""
         self.host = host
         self.name = name
         self.port = port
         self.username = username
         self.password = password
+        self.options = kwargs
 
         self._db = None
         self._conn = None

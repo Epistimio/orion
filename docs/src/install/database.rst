@@ -2,6 +2,13 @@
 Setup Database
 **************
 
+.. note::
+
+   You can avoid the complexity of setting up a MongoDB server and give a try to the simple
+   alternative we are currently integrating in Oríon following the configuration steps
+   :ref:`here <Database Configuration>` for :ref:`PickledDB <PickledDB Config>`.
+   We plan to make PickledDB the default database backend in release v0.2.0.
+
 We are currently using a MongoDB_ dependent API
 to persistently record history changes and have it serve as
 a central worker to the asynchronous communication between the
@@ -18,8 +25,8 @@ database locally.
 
    This is the same database required to be setup in order to run the tests.
 
-Local Installation
-==================
+Local MongoDB Installation
+==========================
 
 Supposing we are in a Linux machine, follow the installation process
 (preferably respecting the package manager of your distribution) discussed in
@@ -77,24 +84,15 @@ Atlas MongoDB
 11. Configure Oríon's YAML file (See next section).
 
 
+.. _Database Configuration:
+
 Configuring Oríon's Database
 ============================
 
-There are two possible ways that database attributes can be configured.
-The first one is by using environmental variables and the second one is by using
-Oríon configuration files.
-
-   1. By setting appropriate environmental variables of the shell used to call
-      Oríon's executable.
-
-   .. code-block:: sh
-
-      export ORION_DB_ADDRESS=mongodb://user:pass@localhost
-      export ORION_DB_NAME=orion_test
-      export ORION_DB_TYPE=MongoDB
-
-   2. By creating a section in an Oríon's configuration YAML file, like `this one <https://github.com/epistimio/orion/blob/master/tests/functional/demo/orion_config_random.yaml>`_
-      used by our functional tests.
+There are different ways that database backend attributes can be configured.
+The first one is by using a global configuration file, which can easily be done
+using the command ``orion setup``. This will create a yaml file
+of the following format.
 
    .. code-block:: yaml
 
@@ -103,56 +101,167 @@ Oríon configuration files.
         name: 'orion_test'
         host: 'mongodb://user:pass@localhost'
 
-As it will be referenced with detail in configuration's documentation (TODO),
-the environmental variable definitions precede the ones within files in default
-locations, and configuration files provided via executable's cli precede
-environmentals.
+The file is typically located at ``$HOME/.config/orion.core/orion_config.yaml`` but it may differ
+based on your operating system.
 
+The second way of configuring the database backend is to use environment variables such as
+
+   .. code-block:: sh
+
+       ORION_DB_ADDRESS=mongodb://user:pass@localhost
+       ORION_DB_NAME=orion_test
+       ORION_DB_TYPE=MongoDB
+       ORION_DB_PORT=27017
+
+Note that both configuration methods can be used together, environment variables that are set will
+overwrite the corresponding values in the global configuration. This is useful if you need to define
+some of them dynamically, such as picking the database port randomly at runtime based on port
+availability for ssh tunnels.
+
+The third configuration method is to use a local configuration file which will be passed to Oríon
+using the ``--config`` argument.
+
+   .. code-block:: sh
+
+       orion hunt --config=my_local_config.yaml...
+
+As described above, local configuration file can be used in combination with global and environment
+variable definitions. Local configuration values will overwrite configuration from both other
+methods.
+
+MongoDB
+-------
+
+   .. code-block:: yaml
+
+      database:
+        type: 'mongodb'
+        name: 'orion_test'
+        host: 'mongodb://user:pass@localhost'
+
+MongoDB backend is the recommended one for large scale parallel optimisation, where
+number of workers gets higher than 50.
+
+Arguments
+~~~~~~~~~
+
+``name``
+
+Name of the mongodb database.
+
+``host``
+
+Can be either the host address  (hostname or IP address) or a mongodb URI. Default is ``localhost``.
+
+``port``
+
+Port that database servers listens to for requests. Default is 27017.
+
+
+
+.. _PickledDB Config:
+
+PickledDB
+---------
+
+   .. code-block:: yaml
+
+      database:
+        type: 'pickleddb'
+        host: '/some/path/to/a/file/to/save.pkl'
+
+PickledDB is recommended for its simplicity to setup but it is generally not suited
+for parallel optimisation with more than 50 workers. This is however just a rule of thumb and
+you may find PickledDB to work properly with more workers if your tasks take a significant
+amount of time to execute.
+
+Arguments
+~~~~~~~~~
+
+``host``
+
+File path where the database is saved. All workers require access to this file for parallel
+optimisation so make sure it is on a shared file system.
+
+EphemeralDB
+-----------
+
+   .. code-block:: yaml
+
+      database:
+        type: 'ephemeraldb'
+
+EphemeralDB is the `in-memory` database used when executing Oríon with the argument
+``--debug``. It is wiped out of memory at end of execution.
+
+EphemeralDB has no arguments.
 
 Test connection
----------------
+===============
 
-You can first check that everything works as expected by testing with the
-``debug`` mode. This mode bypass the database in the configuration. If you run
-the following command, you should get the following error.
+You can use the command ``orion test-db`` to test the setup of your database backend.
 
-.. code-block:: bash
+.. code-block:: sh
 
-    $ orion --debug hunt -n dummy
-    ...
-    AttributeError: 'str' object has no attribute 'configuration'
+   $ orion test-db
 
-That's a terrible error message. -_- Note to ourselves; Improve this error message. What this should
-tell is that the connection to database was successful but Oríon could not find any script to
-optimize.
+   Check for a configuration inside the default paths...
+       {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
+   Success
+   Check for a configuration inside the environment variables... Skipping
+   No environment variables found.
+   Check if configuration file has valid database configuration... Skipping
+   Missing configuration file.
+   Using configuration: {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
+   Check if database of specified type can be created... Success
+   DB instance <orion.core.io.database.mongodb.MongoDB object at 0x7f86d70067f0>
+   Check if database supports write operation... Success
+   Check if database supports read operation... Success
+   Check if database supports count operation... Success
+   Check if database supports delete operation... Success
 
-Now remove the option ``--debug`` to test the database. If it fails to connect,
-you will get the following error. Otherwise, you'll get the (terrible) error above again
-if it succeeded. Note that a connection failure will hang for approximately 60
-seconds before giving up.
+The tests goes throught 3 phases. First one is the aggregation of the configuration across
+global, environment variable and local configuration (note that you can pass ``--config`` to include
+a local configuration in the tests). The tests will print the resulting configuration at each
+stage. Here's an example including all three configuration methods.
 
-.. code-block:: bash
+.. code-block:: sh
 
-    $ orion hunt -n dummy
-    ...
-    orion.core.io.database.DatabaseError: Connection Failure: database not found on specified uri
+   $ ORION_DB_PORT=27018 orion test_db --config local.yaml
 
-If it fails, try running with ``-vv`` and make sure your configuration file is
-properly found. Suppose your file path is ``/u/user/.config/orion.config/orion_config.yaml``,
-then you should **NOT** see the following line in the output otherwise it means it is not found.
+   Check for a configuration inside the global paths...
+       {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
+   Success
+   Check for a configuration inside the environment variables...
+       {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost', 'port': '27018'}
+   Success
+   Check if configuration file has valid database configuration...
+       {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost', 'port': '27017'}
+   Success
 
-.. code-block:: bash
+The second phase is the creation of the database, which prints out the final configuration
+that will be used and then prints the instance created to confirm the database type.
 
-    DEBUG:orion.core.io.resolve_config:[Errno 2] No such file or directory: '/u/user/.config/orion.config/orion_config.yaml'
+.. code-block:: sh
 
-When you are sure the configuration file is found, look for the configuration
-used by Oríon to initiate the DB connection.
+   $ orion test-db
 
-.. code-block:: bash
+   [...]
 
-    DEBUG:orion.core.io.experiment_builder:Creating mongodb database client with args: {'name': 'user', 'host': 'mongodb://user:pass@localhost'}
+   Using configuration: {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
+   Check if database of specified type can be created... Success
+   DB instance <orion.core.io.database.mongodb.MongoDB object at 0x7f86d70067f0>
 
-Make sure you have the proper database name, database type and host URI.
+The third phase verifies if all operations are supported by the database. It is possible that these
+tests fail because of insufficient user access rights on the database.
 
+.. code-block:: sh
 
-.. _MongoDB: https://www.mongodb.com/
+   $ orion test-db
+
+   [...]
+
+   Check if database supports write operation... Success
+   Check if database supports read operation... Success
+   Check if database supports count operation... Success
+   Check if database supports delete operation... Success

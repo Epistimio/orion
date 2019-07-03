@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=protected-access,too-many-public-methods
+# pylint:disable=protected-access,too-many-public-methods,too-many-lines
 """
 :mod:`orion.core.worker.experiment` -- Description of an optimization attempt
 =============================================================================
@@ -85,7 +85,7 @@ class Experiment(object):
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
-                 'algorithms', 'producer', '_db', '_init_done', '_id',
+                 'algorithms', 'producer', 'working_dir', '_db', '_init_done', '_id',
                  '_node', '_last_fetched')
     non_branching_attrs = ('pool_size', 'max_trials')
 
@@ -118,6 +118,7 @@ class Experiment(object):
         self.pool_size = None
         self.max_trials = None
         self.algorithms = None
+        self.working_dir = None
         self.producer = {'strategy': None}
 
         config = self._db.read('experiments',
@@ -154,6 +155,8 @@ class Experiment(object):
     def fetch_trials(self, query, selection=None):
         """Fetch trials of the experiment in the database
 
+        Trials are sorted based on `Trial.submit_time`
+
         .. note::
 
             The query is always updated with `{"experiment": self._id}`
@@ -166,7 +169,15 @@ class Experiment(object):
         """
         query["experiment"] = self._id
 
-        return Trial.build(self._db.read('trials', query, selection))
+        trials = Trial.build(self._db.read('trials', query, selection))
+
+        def _get_submit_time(trial):
+            if trial.submit_time:
+                return trial.submit_time
+
+            return datetime.datetime.utcnow()
+
+        return list(sorted(trials, key=_get_submit_time))
 
     def fetch_trials_tree(self, query, selection=None):
         """Fetch trials recursively in the EVC tree
@@ -318,8 +329,9 @@ class Experiment(object):
         self._db.write('trials', trial.to_dict())
 
     def fetch_completed_trials(self):
-        """Fetch recent completed trials that this `Experiment` instance has not
-        yet seen.
+        """Fetch recent completed trials that this `Experiment` instance has not yet seen.
+
+        Trials are sorted based on `Trial.submit_time`
 
         .. note::
 
@@ -330,15 +342,20 @@ class Experiment(object):
         """
         query = dict(
             status='completed',
-            end_time={'$gte': self._last_fetched}
+            end_time={'$gt': self._last_fetched}
             )
+
         completed_trials = self.fetch_trials_tree(query)
-        self._last_fetched = datetime.datetime.utcnow()
+
+        if completed_trials:
+            self._last_fetched = max(trial.end_time for trial in completed_trials)
 
         return completed_trials
 
     def fetch_noncompleted_trials(self):
         """Fetch non-completed trials of this `Experiment` instance.
+
+        Trials are sorted based on `Trial.submit_time`
 
         .. note::
 
@@ -605,10 +622,6 @@ class Experiment(object):
         try:
             space_builder = SpaceBuilder()
             space = space_builder.build_from(config['metadata']['user_args'])
-
-            if space_builder.userconfig:
-                with open(space_builder.userconfig) as f:
-                    self.metadata['script_config_file'] = f.read()
 
             if not space:
                 raise ValueError("Parameter space is empty. There is nothing to optimize.")

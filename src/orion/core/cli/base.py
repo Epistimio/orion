@@ -13,6 +13,8 @@ import logging
 import textwrap
 
 import orion
+from orion.core.io.database import DatabaseError
+from orion.core.utils.exceptions import NoConfigurationError
 
 
 CLI_DOC_HEADER = """
@@ -67,8 +69,13 @@ class OrionArgsParser:
 
     def execute(self, argv):
         """Execute main function of the subparser"""
-        args, function = self.parse(argv)
-        function(args)
+        try:
+            args, function = self.parse(argv)
+            function(args)
+        except NoConfigurationError:
+            print("Error: No commandline configuration found for new experiment.")
+        except DatabaseError as e:
+            print(e)
 
 
 def get_basic_args_group(parser):

@@ -6,8 +6,23 @@ from datetime import datetime
 
 import pytest
 
-from orion.core.io.database import Database
-from orion.core.io.database.ephemeraldb import EphemeralDB
+from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.io.database.ephemeraldb import EphemeralCollection, EphemeralDB, EphemeralDocument
+
+
+@pytest.fixture()
+def document():
+    """Return EphemeralDocument."""
+    return EphemeralDocument({'_id': 1, 'hello': 'there', 'mighty': 'duck'})
+
+
+@pytest.fixture()
+def collection(document):
+    """Return EphemeralCollection."""
+    collection = EphemeralCollection()
+    collection.insert_many([document.to_dict()])
+
+    return collection
 
 
 @pytest.fixture()
@@ -43,30 +58,24 @@ class TestEnsureIndex(object):
 
     def test_new_index(self, orion_db):
         """Index should be added to ephemeral database"""
-        assert ("status", ) not in orion_db._db['trials']._indexes
+        assert ("new_field", ) not in orion_db._db['new_collection']._indexes
 
-        orion_db.ensure_index('trials', 'status', unique=False)
-        assert ("status", ) not in orion_db._db['trials']._indexes
+        orion_db.ensure_index('new_collection', 'new_field', unique=False)
+        assert ("new_field", ) not in orion_db._db['new_collection']._indexes
 
-        orion_db.ensure_index('trials', 'status', unique=True)
-        assert ("status", ) in orion_db._db['trials']._indexes
+        orion_db.ensure_index('new_collection', 'new_field', unique=True)
+        assert ("new_field", ) in orion_db._db['new_collection']._indexes
 
     def test_existing_index(self, orion_db):
         """Index should be added to ephemeral database and reattempt should do nothing"""
-        assert ("status", ) not in orion_db._db['trials']._indexes
+        assert ("new_field", ) not in orion_db._db['new_collection']._indexes
 
-        orion_db.ensure_index('trials', 'status', unique=True)
-        assert ("status", ) in orion_db._db['trials']._indexes
+        orion_db.ensure_index('new_collection', 'new_field', unique=True)
+        assert ("new_field", ) in orion_db._db['new_collection']._indexes
 
         # reattempt
-        orion_db.ensure_index('trials', 'status', unique=True)
-        assert ("status", ) in orion_db._db['trials']._indexes
-
-    def test_ordered_index(self, orion_db):
-        """Sort order should be added to index"""
-        assert ("end_time", ) not in orion_db._db['trials']._indexes
-        orion_db.ensure_index('trials', [('end_time', Database.DESCENDING)], unique=True)
-        assert ("end_time", ) in orion_db._db['trials']._indexes
+        orion_db.ensure_index('new_collection', 'new_field', unique=True)
+        assert ("new_field", ) in orion_db._db['new_collection']._indexes
 
     def test_compound_index(self, orion_db):
         """Tuple of Index should be added as a compound index."""
@@ -119,13 +128,27 @@ class TestRead(object):
             'trials',
             {'experiment': 'supernaedo2',
              'submit_time': {'$gte': datetime(2017, 11, 23, 0, 0, 0)}})
-        assert value == exp_config[1][2:7]
+        assert value == [exp_config[1][1]] + exp_config[1][3:7]
 
         value = orion_db.read(
             'trials',
             {'experiment': 'supernaedo2',
              'submit_time': {'$gt': datetime(2017, 11, 23, 0, 0, 0)}})
         assert value == exp_config[1][3:7]
+
+    def test_null_comp(self, exp_config, orion_db):
+        """Fetch value(s) from an entry."""
+        all_values = orion_db.read(
+            'trials',
+            {'experiment': 'supernaedo2',
+             'end_time': {'$gte': datetime(2017, 11, 1, 0, 0, 0)}})
+
+        orion_db._db['trials']._documents[0]._data['end_time'] = None
+        values = orion_db.read(
+            'trials',
+            {'experiment': 'supernaedo2',
+             'end_time': {'$gte': datetime(2017, 11, 1, 0, 0, 0)}})
+        assert len(values) == len(all_values) - 1
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -195,6 +218,17 @@ class TestWrite(object):
         assert len(value[0]) == 2
         assert value[0]['_id'] == 'lalalathisisnew'
         assert value[0]['pool_size'] == 66
+
+    def test_insert_duplicate(self, database, orion_db):
+        """Verify that duplicates cannot by inserted if index is unique"""
+        orion_db.ensure_index('some_doc', 'unique_field', unique=True)
+        # call interface
+        orion_db.write('some_doc', {'unique_field': 1})
+
+        with pytest.raises(DuplicateKeyError) as exc:
+            orion_db.write('some_doc', {'unique_field': 1})
+
+        assert 'unique_field' in str(exc.value)
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -296,3 +330,59 @@ class TestCount(object):
         """Call with argument that will not find anything."""
         found = orion_db.count('experiments', {'name': 'lalalanotfound'})
         assert found == 0
+
+
+@pytest.mark.usefixtures("clean_db")
+class TestIndex(object):
+    """Test index for :meth:`orion.core.io.database.ephemeraldb.EphemeralCollection`."""
+
+    def test_create_index(self, collection):
+        """Test if new index added property."""
+        collection.create_index('hello')
+        assert collection._indexes == {('_id',): {(1, )}}
+
+        collection.create_index('hello', unique=True)
+        assert collection._indexes == {('_id',): {(1, )}, ('hello', ): {('there', )}}
+
+    def test_track_index(self, collection):
+        """Test if index values are tracked property."""
+        collection.create_index('hello', unique=True)
+        collection.insert_many([{'hello': 'here'}, {'hello': 2}])
+        assert (
+            collection._indexes ==
+            {('_id',): {(1, ), (2, ), (3, )}, ('hello', ): {('there', ), ('here', ), (2, )}})
+
+
+@pytest.mark.usefixtures("clean_db")
+class TestSelect(object):
+    """Calls :meth:`orion.core.io.database.ephemeraldb.EphemeralDocument.select`."""
+
+    def test_select_all(self, document):
+        """Select only one field."""
+        assert document.select({}) == {'_id': 1, 'hello': 'there', 'mighty': 'duck'}
+
+    def test_select_id(self, document):
+        """Select only one field."""
+        assert document.select({'_id': 1}) == {'_id': 1}
+
+    def test_select_one(self, document):
+        """Select only one field."""
+        assert document.select({'hello': 1}) == {'_id': 1, 'hello': 'there'}
+
+    def test_select_two(self, document):
+        """Select only two field."""
+        assert (
+            document.select({'hello': 1, 'mighty': 1}) ==
+            {'_id': 1, 'hello': 'there', 'mighty': 'duck'})
+
+    def test_unselect_one(self, document):
+        """Unselect only one field."""
+        assert document.select({'hello': 0}) == {'_id': 1, 'mighty': 'duck'}
+
+    def test_unselect_two(self, document):
+        """Unselect two field."""
+        assert document.select({'_id': 0, 'hello': 0}) == {'mighty': 'duck'}
+
+    def test_mixed_select(self, document):
+        """Select one field and unselect _id."""
+        assert document.select({'_id': 0, 'hello': 1}) == {'hello': 'there'}

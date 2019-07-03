@@ -7,6 +7,7 @@ import pytest
 
 from orion.core.io import resolve_config
 from orion.core.io.experiment_builder import ExperimentBuilder
+from orion.core.utils.exceptions import NoConfigurationError
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -262,6 +263,15 @@ def test_build_from_config_no_hit(config_file, create_db_instance, exp_config, r
     assert exp.algorithms.configuration == {'random': {'seed': None}}
 
 
+def test_build_from_config_no_commandline_config(config_file):
+    """Try building experiment with no commandline configuration."""
+    cmdargs = {'name': 'supernaekei', 'config': config_file}
+    full_config = ExperimentBuilder().fetch_full_config(cmdargs)
+
+    with pytest.raises(NoConfigurationError):
+        ExperimentBuilder().build_from_config(full_config)
+
+
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
 def test_build_from_config_hit(old_config_file, create_db_instance, exp_config, script_path):
     """Try building experiment from config when in db (no branch)"""
@@ -273,6 +283,35 @@ def test_build_from_config_hit(old_config_file, create_db_instance, exp_config, 
 
     # Test that experiment already exists
     ExperimentBuilder().build_view_from(cmdargs)
+
+    exp_view = ExperimentBuilder().build_view_from(cmdargs)
+    exp = ExperimentBuilder().build_from_config(exp_view.configuration)
+
+    assert exp._init_done is True
+    assert exp._db is create_db_instance
+    assert exp._id == exp_config[0][0]['_id']
+    assert exp.name == exp_config[0][0]['name']
+    assert exp.configuration['refers'] == exp_config[0][0]['refers']
+    assert exp.metadata == exp_config[0][0]['metadata']
+    assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
+    assert exp.pool_size == exp_config[0][0]['pool_size']
+    assert exp.max_trials == exp_config[0][0]['max_trials']
+    assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
+
+
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
+def test_build_without_config_hit(old_config_file, create_db_instance, exp_config, script_path):
+    """Try building experiment without commandline config when in db (no branch)"""
+    cmdargs = {'name': 'supernaedo2',
+               'config': old_config_file,
+               'user_args': [script_path,
+                             "--encoding_layer~choices(['rnn', 'lstm', 'gru'])",
+                             "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]}
+
+    # Test that experiment already exists
+    ExperimentBuilder().build_view_from(cmdargs)
+
+    cmdargs = {'name': 'supernaedo2'}
 
     exp_view = ExperimentBuilder().build_view_from(cmdargs)
     exp = ExperimentBuilder().build_from_config(exp_view.configuration)
