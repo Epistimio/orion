@@ -20,14 +20,14 @@ class BaseStorageProtocol:
     def create_experiment(self):
         raise NotImplementedError()
 
-    def fetch_experiments(self):
+    def fetch_experiments(self, query):
         raise NotImplementedError()
 
     def register_trial(self, trial):
         """Create a new trial to be executed"""
         raise NotImplementedError()
 
-    def reserve_trial(self, score_handle, *args, **kwargs):
+    def reserve_trial(self, *args, **kwargs):
         raise NotImplementedError()
 
     def fetch_trials(self, query):
@@ -57,15 +57,9 @@ class BaseStorageProtocol:
         """Try to read the result of the trial and update the trial.results attribute"""
         raise NotImplementedError()
 
-    # def push_completed_trial(self, trial):
-    #     """Process a trial and set it as a completed
-    #     This also registers some statistics for the experiment (best trial, runtime etc...)
-    #     """
-    #     raise NotImplementedError()
-    #
-    # def mark_as_broken(self, trial):
-    #     """When a trial fails we set it as broken. It means it will to be re ran again."""
-    #     raise NotImplementedError()
+    def retrieve_result(self, trial, results_file=None, **kwargs):
+        """Read the results from the trial and append it to the trial object"""
+        raise NotImplementedError()
 
 
 # pylint: disable=too-few-public-methods,abstract-method

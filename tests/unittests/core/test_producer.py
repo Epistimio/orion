@@ -8,6 +8,10 @@ import pytest
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
+
 
 class DumbParallelStrategy:
     """Mock object for parallel strategy"""
@@ -53,11 +57,18 @@ def producer(hacked_exp, random_dt, exp_config, categorical_values):
 
 def test_algo_observe_completed(producer):
     """Test that algo only observes completed trials"""
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+
     assert len(producer.experiment.fetch_trials({})) > 3
     producer.update()
     # Algorithm must have received completed points and their results
     obs_points = producer.algorithm.algorithm._points
     obs_results = producer.algorithm.algorithm._results
+
+    print(obs_points)
+    print(obs_results)
+
     assert len(obs_points) == 3
     assert obs_points[0] == ('lstm', 'rnn')
     assert obs_points[1] == ('rnn', 'rnn')
@@ -561,3 +572,4 @@ def test_original_seeding(producer, database):
 
     assert prev_suggested != producer.algorithm.algorithm._suggested
     assert prev_index < producer.algorithm.algorithm._index
+

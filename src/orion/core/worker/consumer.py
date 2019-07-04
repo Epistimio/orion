@@ -34,7 +34,7 @@ class Consumer(object):
     into the child process' environment.
     """
 
-    def __init__(self, experiment, protocol=None):
+    def __init__(self, experiment):
         """Initialize a consumer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -58,10 +58,6 @@ class Consumer(object):
 
         self.script_path = experiment.metadata['user_script']
 
-        self.protocol = protocol
-        if protocol is None:
-            self.protocol = StorageProtocol('legacy', experiment=experiment)
-
     def consume(self, trial):
         """Execute user's script as a block box using the options contained
         within `trial`.
@@ -82,11 +78,11 @@ class Consumer(object):
         if completed_trial is not None:
             log.debug("### Register successfully evaluated %s.", completed_trial)
 
-            self.protocol.push_completed_trial(completed_trial)
+            self.experiment.push_completed_trial(completed_trial)
 
         else:
             log.debug("### Save %s as broken.", trial)
-            self.protocol.mark_as_broken(trial)
+            self.experiment.mark_as_broken(trial)
 
     def _consume(self, trial, workdirname, env=None):
         config_file = tempfile.NamedTemporaryFile(mode='w', prefix='trial_',
@@ -120,7 +116,7 @@ class Consumer(object):
 
         log.debug("## Parse results from file and fill corresponding Trial object.")
         # Read updated trial
-        return self.protocol.update_trial(trial, results_file=results_file)
+        return self.experiment.retrieve_result(trial, results_file=results_file)
 
     def launch_process(self, results_filename, cmd_args, env_overrides):
         """Facilitate launching a black-box trial."""

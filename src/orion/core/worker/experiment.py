@@ -28,6 +28,7 @@ from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
                                         Strategy)
 from orion.core.worker.trial import Trial
+from orion.storage.base import StorageProtocol
 
 log = logging.getLogger(__name__)
 
@@ -86,7 +87,7 @@ class Experiment(object):
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
                  'algorithms', 'producer', 'working_dir', '_db', '_init_done', '_id',
-                 '_node', '_last_fetched')
+                 '_node', '_last_fetched', '_protocol')
     non_branching_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name, user=None):
@@ -105,8 +106,8 @@ class Experiment(object):
         """
         log.debug("Creating Experiment object with name: %s", name)
         self._init_done = False
-        self._db = Database()  # fetch database instance
-        self._setup_db()  # build indexes for collections
+        # self._db = Database()  # fetch database instance
+        # self._setup_db()  # build indexes for collections
 
         self._id = None
         self.name = name
@@ -120,9 +121,11 @@ class Experiment(object):
         self.algorithms = None
         self.working_dir = None
         self.producer = {'strategy': None}
+        self._protocol = StorageProtocol('legacy')
 
-        config = self._db.read('experiments',
-                               {'name': name, 'metadata.user': user})
+        # self._db.read('experiments',  {'name': name, 'metadata.user': user})
+        config = self._protocol.fetch_experiments({'name': name, 'metadata.user': user})
+
         if config:
             log.debug("Found existing experiment, %s, under user, %s, registered in database.",
                       name, user)
@@ -139,52 +142,15 @@ class Experiment(object):
 
         self._last_fetched = self.metadata.get("datetime", datetime.datetime.utcnow())
 
-    def _setup_db(self):
-        self._db.ensure_index('experiments',
-                              [('name', Database.ASCENDING),
-                               ('metadata.user', Database.ASCENDING)],
-                              unique=True)
-        self._db.ensure_index('experiments', 'metadata.datetime')
+    def retrieve_result(self, trial, results_file=None, **kwargs):
+        """Read the results from the trial and append it to the trial object"""
+        return self._protocol.retrieve_result(trial, results_file, **kwargs)
 
-        self._db.ensure_index('trials', 'experiment')
-        self._db.ensure_index('trials', 'status')
-        self._db.ensure_index('trials', 'results')
-        self._db.ensure_index('trials', 'start_time')
-        self._db.ensure_index('trials', [('end_time', Database.DESCENDING)])
+    def __getattr__(self, item):
+        if hasattr(self._protocol, item):
+            return getattr(self._protocol, item)
 
-    def fetch_trials(self, query, selection=None):
-        """Fetch trials of the experiment in the database
-
-        .. note::
-
-            The query is always updated with `{"experiment": self._id}`
-
-        .. seealso::
-
-            :meth:`orion.core.io.database.AbstractDB.read` for more information about the
-            arguments.
-
-        """
-        query["experiment"] = self._id
-
-        return Trial.build(self._db.read('trials', query, selection))
-
-    def fetch_trials_tree(self, query, selection=None):
-        """Fetch trials recursively in the EVC tree
-
-        .. seealso::
-
-            :meth:`orion.core.worker.Experiment.fetch_trials` for more information about the
-            arguments.
-
-            :class:`orion.core.evc.experiment.ExperimentNode` for more information about the EVC
-            tree.
-
-        """
-        if self._node is None:
-            return self.fetch_trials(query, selection)
-
-        return self._node.fetch_trials(query, selection)
+        raise AttributeError(item)
 
     def connect_to_version_control_tree(self, node):
         """Connect the experiment to its node in a version control tree
@@ -197,163 +163,6 @@ class Experiment(object):
         :type name: None or `ExperimentNode`
         """
         self._node = node
-
-    def reserve_trial(self, score_handle=None):
-        """Find *new* trials that exist currently in database and select one of
-        them based on the highest score return from `score_handle` callable.
-
-        :param score_handle: A way to decide which trial out of the *new* ones to
-           to pick as *reserved*, defaults to a random choice.
-        :type score_handle: callable
-        :return: selected `Trial` object, None if could not find any.
-        """
-        if score_handle is not None and not callable(score_handle):
-            raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
-
-        query = dict(
-            experiment=self._id,
-            status={'$in': ['new', 'suspended', 'interrupted']}
-            )
-        new_trials = self.fetch_trials(query)
-
-        if not new_trials:
-            return None
-
-        if score_handle is not None and self.space:
-            scores = list(map(score_handle,
-                              map(lambda x: trial_to_tuple(x, self.space), new_trials)))
-            scored_trials = zip(scores, new_trials)
-            best_trials = filter(lambda st: st[0] == max(scores), scored_trials)
-            new_trials = list(zip(*best_trials))[1]
-
-        elif score_handle is not None:
-            log.warning("While reserving trial: `score_handle` was provided, but "
-                        "parameter space has not been defined yet.")
-
-        selected_trial = random.sample(new_trials, 1)[0]
-
-        # Query on status to ensure atomicity. If another process change the
-        # status meanwhile, read_and_write will fail, because query will fail.
-        query = {'_id': selected_trial.id, 'status': selected_trial.status}
-
-        update = dict(status='reserved')
-
-        if selected_trial.status == 'new':
-            update["start_time"] = datetime.datetime.utcnow()
-
-        selected_trial_dict = self._db.read_and_write(
-            'trials', query=query, data=update)
-
-        if selected_trial_dict is None:
-            selected_trial = self.reserve_trial(score_handle=score_handle)
-        else:
-            selected_trial = Trial(**selected_trial_dict)
-
-        return selected_trial
-
-    def push_completed_trial(self, trial):
-        """Inform database about an evaluated `trial` with results.
-
-        :param trial: Corresponds to a successful evaluation of a particular run.
-        :type trial: `Trial`
-
-        .. note::
-
-            Change status from *reserved* to *completed*.
-
-        """
-        trial.end_time = datetime.datetime.utcnow()
-        trial.status = 'completed'
-        self._db.write('trials', trial.to_dict(), query={'_id': trial.id})
-
-    def register_lie(self, lying_trial):
-        """Register a *fake* trial created by the strategist.
-
-        The main difference between fake trial and orignal ones is the addition of a fake objective
-        result, and status being set to completed. The id of the fake trial is different than the id
-        of the original trial, but the original id can be computed using the hashcode on parameters
-        of the fake trial. See mod:`orion.core.worker.strategy` for more information and the
-        Strategist object and generation of fake trials.
-
-        Parameters
-        ----------
-        trials: `Trial` object
-            Fake trial to register in the database
-
-        Raises
-        ------
-        orion.core.io.database.DuplicateKeyError
-            If a trial with the same id already exist in the database. Since the id is computed
-            based on a hashing of the trial, this should mean that an identical trial already exist
-            in the database.
-
-        """
-        lying_trial.status = 'completed'
-        lying_trial.end_time = datetime.datetime.utcnow()
-
-        self._db.write('lying_trials', lying_trial.to_dict())
-
-    def register_trial(self, trial):
-        """Register new trial in the database.
-
-        Inform database about *new* suggested trial with specific parameter values. Trials may only
-        be registered one at a time to avoid registration of duplicates.
-
-        Parameters
-        ----------
-        trials: `Trial` object
-            Trial to register in the database
-
-        Raises
-        ------
-        orion.core.io.database.DuplicateKeyError
-            If a trial with the same id already exist in the database. Since the id is computed
-            based on a hashing of the trial, this should mean that an identical trial already exist
-            in the database.
-
-        """
-        stamp = datetime.datetime.utcnow()
-        trial.experiment = self._id
-        trial.status = 'new'
-        trial.submit_time = stamp
-
-        self._db.write('trials', trial.to_dict())
-
-    def fetch_completed_trials(self):
-        """Fetch recent completed trials that this `Experiment` instance has not
-        yet seen.
-
-        .. note::
-
-            It will return only those with `Trial.end_time` after `_last_fetched`, for performance
-            reasons.
-
-        :return: list of completed `Trial` objects
-        """
-        query = dict(
-            status='completed',
-            end_time={'$gte': self._last_fetched}
-            )
-        completed_trials = self.fetch_trials_tree(query)
-        self._last_fetched = datetime.datetime.utcnow()
-
-        return completed_trials
-
-    def fetch_noncompleted_trials(self):
-        """Fetch non-completed trials of this `Experiment` instance.
-
-        .. note::
-
-            It will return all non-completed trials, including new, reserved, suspended,
-            interruped and broken ones.
-
-        :return: list of non-completed `Trial` objects
-        """
-        query = dict(
-            status={'$ne': 'completed'}
-            )
-
-        return self.fetch_trials_tree(query)
 
     # pylint: disable=invalid-name
     @property
@@ -376,27 +185,6 @@ class Experiment(object):
 
         """
         return self._node
-
-    @property
-    def is_done(self):
-        """Return True, if this experiment is considered to be finished.
-
-        1. Count how many trials have been completed and compare with `max_trials`.
-        2. Ask `algorithms` if they consider there is a chance for further improvement.
-
-        .. note::
-
-            To be used as a terminating condition in a ``Worker``.
-
-        """
-        query = dict(
-            experiment=self._id,
-            status='completed'
-            )
-        num_completed_trials = self._db.count('trials', query)
-
-        return ((num_completed_trials >= self.max_trials) or
-                (self._init_done and self.algorithms.is_done))
 
     @property
     def space(self):
@@ -484,7 +272,6 @@ class Experiment(object):
 
         final_config = experiment.configuration
         self._instantiate_config(final_config)
-
         self._init_done = True
 
         # If everything is alright, push new config to database
@@ -514,6 +301,27 @@ class Experiment(object):
             # `(name, metadata.user)`
             final_config.pop("name")
             self._db.write('experiments', final_config, {'_id': self._id})
+
+    @property
+    def is_done(self):
+        """Return True, if this experiment is considered to be finished.
+
+        1. Count how many trials have been completed and compare with `max_trials`.
+        2. Ask `algorithms` if they consider there is a chance for further improvement.
+
+        .. note::
+
+            To be used as a terminating condition in a ``Worker``.
+
+        """
+        query = dict(
+            experiment=self._id,
+            status='completed'
+            )
+        num_completed_trials = len(self._protocol.fetch_trials(query))
+
+        return ((num_completed_trials >= self.max_trials) or
+                (self._init_done and self.algorithms.is_done))
 
     @property
     def stats(self):
@@ -573,6 +381,185 @@ class Experiment(object):
         stats['duration'] = stats['finish_time'] - stats['start_time']
 
         return stats
+
+    def fetch_trials(self, query, selection=None):
+        query["experiment"] = self._id
+        return self._protocol.fetch_trials(query, selection)
+
+    def fetch_trials_tree(self, query, selection=None):
+        """Fetch trials recursively in the EVC tree
+
+        .. seealso::
+
+            :meth:`orion.core.worker.Experiment.fetch_trials` for more information about the
+            arguments.
+
+            :class:`orion.core.evc.experiment.ExperimentNode` for more information about the EVC
+            tree.
+
+        """
+        if self._node is None:
+            return self.fetch_trials(query, selection)
+
+        return self._node.fetch_trials(query, selection)
+
+    def reserve_trial(self, score_handle=None):
+        """Find *new* trials that exist currently in database and select one of
+        them based on the highest score return from `score_handle` callable.
+
+        :param score_handle: A way to decide which trial out of the *new* ones to
+           to pick as *reserved*, defaults to a random choice.
+        :type score_handle: callable
+        :return: selected `Trial` object, None if could not find any.
+        """
+        if score_handle is not None and not callable(score_handle):
+            raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
+
+        query = dict(
+            experiment=self._id,
+            status={'$in': ['new', 'suspended', 'interrupted']}
+            )
+        new_trials = self.fetch_trials(query)
+
+        if not new_trials:
+            return None
+
+        if score_handle is not None and self.space:
+            scores = list(map(score_handle,
+                              map(lambda x: trial_to_tuple(x, self.space), new_trials)))
+            scored_trials = zip(scores, new_trials)
+            best_trials = filter(lambda st: st[0] == max(scores), scored_trials)
+            new_trials = list(zip(*best_trials))[1]
+
+        elif score_handle is not None:
+            log.warning("While reserving trial: `score_handle` was provided, but "
+                        "parameter space has not been defined yet.")
+
+        selected_trial = random.sample(new_trials, 1)[0]
+
+        # Query on status to ensure atomicity. If another process change the
+        # status meanwhile, read_and_write will fail, because query will fail.
+        query = {'_id': selected_trial.id, 'status': selected_trial.status}
+
+        update = dict(status='reserved')
+
+        if selected_trial.status == 'new':
+            update["start_time"] = datetime.datetime.utcnow()
+
+        selected_trial_dict = self._db.read_and_write(
+            'trials', query=query, data=update)
+
+        if selected_trial_dict is None:
+            selected_trial = self.reserve_trial(score_handle=score_handle)
+        else:
+            selected_trial = Trial(**selected_trial_dict)
+
+        return selected_trial
+
+    def push_completed_trial(self, trial):
+        """Inform database about an evaluated `trial` with results.
+
+        :param trial: Corresponds to a successful evaluation of a particular run.
+        :type trial: `Trial`
+
+        .. note::
+
+            Change status from *reserved* to *completed*.
+
+        """
+        trial.end_time = datetime.datetime.utcnow()
+        trial.status = 'completed'
+        self._protocol.update_trial(trial, query={'_id': trial.id})
+
+    def register_lie(self, lying_trial):
+        """Register a *fake* trial created by the strategist.
+
+        The main difference between fake trial and orignal ones is the addition of a fake objective
+        result, and status being set to completed. The id of the fake trial is different than the id
+        of the original trial, but the original id can be computed using the hashcode on parameters
+        of the fake trial. See mod:`orion.core.worker.strategy` for more information and the
+        Strategist object and generation of fake trials.
+
+        Parameters
+        ----------
+        trials: `Trial` object
+            Fake trial to register in the database
+
+        Raises
+        ------
+        orion.core.io.database.DuplicateKeyError
+            If a trial with the same id already exist in the database. Since the id is computed
+            based on a hashing of the trial, this should mean that an identical trial already exist
+            in the database.
+
+        """
+        lying_trial.status = 'completed'
+        lying_trial.end_time = datetime.datetime.utcnow()
+
+        # FIXME
+        self._db.write('lying_trials', lying_trial.to_dict())
+
+    def register_trial(self, trial):
+        """Register new trial in the database.
+
+        Inform database about *new* suggested trial with specific parameter values. Trials may only
+        be registered one at a time to avoid registration of duplicates.
+
+        Parameters
+        ----------
+        trials: `Trial` object
+            Trial to register in the database
+
+        Raises
+        ------
+        orion.core.io.database.DuplicateKeyError
+            If a trial with the same id already exist in the database. Since the id is computed
+            based on a hashing of the trial, this should mean that an identical trial already exist
+            in the database.
+
+        """
+        stamp = datetime.datetime.utcnow()
+        trial.experiment = self._id
+        trial.status = 'new'
+        trial.submit_time = stamp
+
+        self._protocol.register_trial(trial)
+
+    def fetch_completed_trials(self):
+        """Fetch recent completed trials that this `Experiment` instance has not
+        yet seen.
+
+        .. note::
+
+            It will return only those with `Trial.end_time` after `_last_fetched`, for performance
+            reasons.
+
+        :return: list of completed `Trial` objects
+        """
+        query = dict(
+            status='completed',
+            end_time={'$gte': self._last_fetched}
+            )
+        completed_trials = self.fetch_trials_tree(query)
+        self._last_fetched = datetime.datetime.utcnow()
+
+        return completed_trials
+
+    def fetch_noncompleted_trials(self):
+        """Fetch non-completed trials of this `Experiment` instance.
+
+        .. note::
+
+            It will return all non-completed trials, including new, reserved, suspended,
+            interruped and broken ones.
+
+        :return: list of non-completed `Trial` objects
+        """
+        query = dict(
+            status={'$ne': 'completed'}
+            )
+
+        return self.fetch_trials_tree(query)
 
     def _instantiate_config(self, config):
         """Check before dispatching experiment whether configuration corresponds

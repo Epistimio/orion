@@ -9,7 +9,9 @@
 
 """
 import copy
+import datetime
 import logging
+
 
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
@@ -28,7 +30,7 @@ class Producer(object):
 
     """
 
-    def __init__(self, experiment, protocol=None, max_attempts=100):
+    def __init__(self, experiment, max_attempts=100):
         """Initialize a producer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -48,9 +50,7 @@ class Producer(object):
         #       Strategist and Scheduler.
         self.trials_history = TrialsHistory()
         self.naive_trials_history = None
-        self.protocol = protocol
-        if protocol is None:
-            self.protocol = StorageProtocol('legacy', experiment=experiment)
+        self._last_fetched = datetime.datetime.utcnow()
 
     @property
     def pool_size(self):
@@ -59,7 +59,19 @@ class Producer(object):
 
     def reserve_trial(self, score_handle=None):
         """Fetch trials that are still pending to be run"""
-        return self.protocol.select_trial(score_handle=score_handle)
+        return self.experiment.reserve_trial(score_handle=score_handle)
+
+    def fetch_completed_trials(self):
+        """Fetch all the trials that are marked as completed"""
+
+        query = dict(
+            status='completed',
+            end_time={'$gte': self._last_fetched}
+        )
+
+        completed_trials = self.experiment.fetch_trials(query)
+        self._last_fetched = datetime.datetime.utcnow()
+        return completed_trials
 
     def produce(self):
         """Create and register new trials."""
@@ -81,8 +93,7 @@ class Producer(object):
                     new_trial.parents = self.naive_trials_history.children
                     log.debug("#### Register new trial to database: %s", new_trial)
 
-                    self.protocol.create_trial(new_trial)
-                    # self.experiment.register_trial(new_trial)
+                    self.experiment.register_trial(new_trial)
 
                     sampled_points += 1
                 except DuplicateKeyError:
@@ -109,7 +120,8 @@ class Producer(object):
         log.debug("### Fetch trials to observe:")
         # completed_trials = self.experiment.fetch_completed_trials()
 
-        completed_trials = self.protocol.fetch_completed_trials()
+        completed_trials = self.fetch_completed_trials()
+        print(completed_trials)
         log.debug("### %s", completed_trials)
 
         if completed_trials:
@@ -129,7 +141,10 @@ class Producer(object):
         Then register the trials in the db
         """
         log.debug("### Fetch active trials to observe:")
-        incomplete_trials = self.experiment.fetch_noncompleted_trials()
+
+        # self.experiment.fetch_noncompleted_trials()
+        incomplete_trials = self.experiment.fetch_trials(dict(status={'$ne': 'completed'}))
+
         lying_trials = []
         log.debug("### %s", incomplete_trials)
 

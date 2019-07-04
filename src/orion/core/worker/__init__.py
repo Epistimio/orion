@@ -16,7 +16,6 @@ import pprint
 
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer
-from orion.storage.base import StorageProtocol
 
 log = logging.getLogger(__name__)
 
@@ -41,10 +40,8 @@ def reserve_trial(experiment, producer):
 
 def workon(experiment, worker_trials=None):
     """Try to find solution to the search problem defined in `experiment`."""
-    protocol = StorageProtocol('legacy', experiment=experiment)
-
-    producer = Producer(experiment, protocol=protocol)
-    consumer = Consumer(experiment, protocol=protocol)
+    producer = Producer(experiment)
+    consumer = Consumer(experiment)
 
     log.debug("#####  Init Experiment  #####")
     try:
@@ -55,7 +52,8 @@ def workon(experiment, worker_trials=None):
 
     for _ in iterator:
         log.debug("#### Poll for experiment termination.")
-        if protocol.is_done(experiment):
+
+        if experiment.is_done:
             break
 
         log.debug("#### Try to reserve a new trial to evaluate.")
@@ -64,13 +62,13 @@ def workon(experiment, worker_trials=None):
         log.debug("#### Successfully reserved %s to evaluate. Consuming...", trial)
         consumer.consume(trial)
 
-    stats = protocol.get_stats()
+    stats = experiment.stats
 
     if not stats:
         log.info("No trials completed.")
         return
 
-    best = protocol.get_trial(stats['best_trials_id']).to_dict()
+    best = experiment.fetch_trials({'_id': stats['best_trials_id']})[0].to_dict()
 
     stats_stream = io.StringIO()
     pprint.pprint(stats, stream=stats_stream)
