@@ -8,7 +8,8 @@
    :synopsis: Old Storage implementation
 
 """
-import warnings
+import datetime
+import random
 
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database
@@ -23,36 +24,75 @@ class Legacy(BaseStorageProtocol):
         """INIT METHOD"""
         self.experiment = experiment
         self.converter = JSONConverter()
-
-    def create_trial(self, trial):
-        """Create a trial to be ran in the future"""
-        self.experiment.register_trial(trial)
+        self._last_fetched = None
 
     def register_trial(self, trial):
         """Legacy function @see create_trial"""
-        warnings.warn("deprecated", DeprecationWarning)
-        return self.create_trial(trial)
 
-    def select_trial(self, *args, **kwargs):
-        """Select pending trials that should be ran next"""
-        return self.experiment.reserve_trial(*args, **kwargs)
+        stamp = datetime.datetime.utcnow()
+        trial.experiment = self.experiment._id
+        trial.status = 'new'
+        trial.submit_time = stamp
 
-    def reserve_trial(self, *args, **kwargs):
+        Database().write('trials', trial.to_dict())
+        return trial
+
+    def reserve_trial(self, score_handle, *args, **kwargs):
         """Legacy function mark a trial as reserved since it will be ran shortly"""
-        warnings.warn("deprecated", DeprecationWarning)
-        return self.select_trial(*args, **kwargs)
+        if score_handle is not None and not callable(score_handle):
+            raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
+
+        query = dict(
+            experiment=self.experiment._id,
+            status={'$in': ['new', 'suspended', 'interrupted']}
+        )
+        new_trials = self.fetch_trials(query)
+
+        if not new_trials:
+            return None
+
+        selected_trial = random.sample(new_trials, 1)[0]
+
+        # Query on status to ensure atomicity. If another process change the
+        # status meanwhile, read_and_write will fail, because query will fail.
+        query = {'_id': selected_trial.id, 'status': selected_trial.status}
+
+        update = dict(status='reserved')
+
+        if selected_trial.status == 'new':
+            update["start_time"] = datetime.datetime.utcnow()
+
+        selected_trial_dict = Database().read_and_write(
+            'trials', query=query, data=update)
+
+        if selected_trial_dict is None:
+            selected_trial = self.reserve_trial(score_handle=score_handle)
+        else:
+            selected_trial = Trial(**selected_trial_dict)
+
+        return selected_trial
 
     def fetch_completed_trials(self):
         """Fetch all the trials that are marked as completed"""
-        return self.experiment.fetch_completed_trials()
 
-    def is_done(self, experiment):
-        """Check if we have reached the maximum number of completed trials"""
-        return self.experiment.is_done
+        query = dict(
+            status='completed',
+            end_time={'$gte': self._last_fetched}
+        )
+        completed_trials = self.fetch_trials(query)
+        self._last_fetched = datetime.datetime.utcnow()
+
+        return completed_trials
+
+    # def is_done(self, experiment):
+    #     """Check if we have reached the maximum number of completed trials"""
+    #     return self.experiment.is_done
 
     def push_completed_trial(self, trial):
         """Make the trial as complete and update experiment statistics"""
-        self.experiment.push_completed_trial(trial)
+        trial.end_time = datetime.datetime.utcnow()
+        trial.status = 'completed'
+        Database().write('trials', trial.to_dict(), query={'_id': trial.id})
 
     def mark_as_broken(self, trial):
         """Mark the trial as broken to avoid retrying a failing trial"""
