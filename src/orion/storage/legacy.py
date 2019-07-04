@@ -39,6 +39,9 @@ class Legacy(BaseStorageProtocol):
         self._db.ensure_index('trials', 'start_time')
         self._db.ensure_index('trials', [('end_time', Database.DESCENDING)])
 
+    def create_experiment(self):
+        raise NotImplementedError()
+
     def fetch_experiments(self, query):
         return self._db.read('experiments', query)
 
