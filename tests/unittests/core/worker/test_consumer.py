@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.consumer`."""
+import os
+import signal
 import subprocess
 
 import pytest
@@ -30,7 +32,7 @@ def test_trials_interrupted_keyboard_int(config, monkeypatch):
 
     exp = ExperimentBuilder().build_from(config)
 
-    monkeypatch.setattr(subprocess, "Popen", mock_Popen)
+    monkeypatch.setattr(consumer.subprocess, "Popen", mock_Popen)
 
     trial = tuple_to_trial((1.0,), exp.space)
 
@@ -43,3 +45,28 @@ def test_trials_interrupted_keyboard_int(config, monkeypatch):
 
     trials = exp.fetch_trials({'status': 'interrupted'})
     assert len(trials)
+    assert trials[0].id == trial.id
+
+
+@pytest.mark.usefixtures("create_db_instance")
+def test_trials_interrupted_sigterm(config, monkeypatch):
+    """Check if a trial is set as interrupted when a KeyboardInterrupt is raised."""
+    def mock_popen(*args, **kwargs):
+        os.kill(os.getpid(), signal.SIGTERM)
+
+    exp = ExperimentBuilder().build_from(config)
+
+    monkeypatch.setattr(subprocess.Popen, "wait", mock_popen)
+
+    trial = tuple_to_trial((1.0,), exp.space)
+
+    exp.register_trial(trial)
+
+    con = Consumer(exp)
+
+    with pytest.raises(KeyboardInterrupt):
+        con.consume(trial)
+
+    trials = exp.fetch_trials({'status': 'interrupted'})
+    assert len(trials)
+    assert trials[0].id == trial.id
