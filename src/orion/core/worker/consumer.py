@@ -26,7 +26,6 @@ log = logging.getLogger(__name__)
 # pylint: disable = unused-argument
 def _handler(signum, frame):
     log.error('Oríon has been interrupted.')
-    print("Allo")
     raise KeyboardInterrupt
 
 
