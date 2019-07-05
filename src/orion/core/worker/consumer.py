@@ -22,6 +22,7 @@ from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
+
 # pylint: disable = unused-argument
 def _handler(signum, frame):
     log.error('Oríon has been interrupted.')
