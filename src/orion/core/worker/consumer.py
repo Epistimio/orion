@@ -10,6 +10,7 @@
 """
 import logging
 import os
+import signal
 import subprocess
 import tempfile
 
@@ -20,6 +21,12 @@ from orion.core.utils.working_dir import WorkingDir
 from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
+
+# pylint: disable = unused-argument
+def _handler(signum, frame):
+    log.error('Oríon has been interrupted.')
+    print("Allo")
+    raise KeyboardInterrupt
 
 
 class Consumer(object):
@@ -91,6 +98,7 @@ class Consumer(object):
             trial.status = 'broken'
             Database().write('trials', trial.to_dict(),
                              query={'_id': trial.id})
+            raise
         else:
             log.debug("### Register successfully evaluated %s.", trial)
             self.experiment.push_completed_trial(trial)
@@ -126,9 +134,12 @@ class Consumer(object):
         env = dict(os.environ)
         env['ORION_RESULTS_PATH'] = str(results_filename)
         command = [self.script_path] + cmd_args
+
+        signal.signal(signal.SIGTERM, _handler)
         process = subprocess.Popen(command, env=env)
 
         return_code = process.wait()
+        print(return_code)
         if return_code != 0:
             raise RuntimeError("Something went wrong. Check logs. Process "
                                "returned with code {} !".format(return_code))
