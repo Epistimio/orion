@@ -11,7 +11,6 @@
 import logging
 import os
 import subprocess
-import sys
 import tempfile
 
 from orion.core.io.convert import JSONConverter
@@ -62,6 +61,8 @@ class Consumer(object):
 
         self.converter = JSONConverter()
 
+        self.current_trial = None
+
     def consume(self, trial):
         """Execute user's script as a block box using the options contained
         within `trial`.
@@ -74,19 +75,25 @@ class Consumer(object):
         prefix = self.experiment.name + "_"
         suffix = trial.id
 
-        with WorkingDir(self.working_dir, temp_dir,
-                        prefix=prefix, suffix=suffix) as workdirname:
-            log.debug("## New consumer context: %s", workdirname)
-            completed_trial = self._consume(trial, workdirname)
-
-        if completed_trial is not None:
-            log.debug("### Register successfully evaluated %s.", completed_trial)
-            self.experiment.push_completed_trial(completed_trial)
-        else:
+        try:
+            with WorkingDir(self.working_dir, temp_dir,
+                            prefix=prefix, suffix=suffix) as workdirname:
+                log.debug("## New consumer context: %s", workdirname)
+                self._consume(trial, workdirname)
+        except KeyboardInterrupt:
+            log.debug("### Save %s as interrupted.", trial)
+            trial.status = 'interrupted'
+            Database().write('trials', trial.to_dict(),
+                             query={'_id': trial.id})
+            raise
+        except RuntimeError:
             log.debug("### Save %s as broken.", trial)
             trial.status = 'broken'
             Database().write('trials', trial.to_dict(),
                              query={'_id': trial.id})
+        else:
+            log.debug("### Register successfully evaluated %s.", trial)
+            self.experiment.push_completed_trial(trial)
 
     def _consume(self, trial, workdirname):
         config_file = tempfile.NamedTemporaryFile(mode='w', prefix='trial_',
@@ -104,19 +111,8 @@ class Consumer(object):
         cmd_args = self.template_builder.build_to(config_file.name, trial, self.experiment)
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
-        script_process = self.launch_process(results_file.name, cmd_args)
 
-        if script_process is None:
-            return None
-
-        returncode = script_process.wait()
-
-        if returncode != 0:
-            log.error("Something went wrong. Check logs. Process "
-                      "returned with code %d !", returncode)
-            if returncode == 2:
-                sys.exit(2)
-            return None
+        self.execute_process(results_file.name, cmd_args)
 
         log.debug("## Parse results from file and fill corresponding Trial object.")
         results = self.converter.parse(results_file.name)
@@ -125,18 +121,14 @@ class Consumer(object):
                                       type=res['type'],
                                       value=res['value']) for res in results]
 
-        return trial
-
-    def launch_process(self, results_filename, cmd_args):
+    def execute_process(self, results_filename, cmd_args):
         """Facilitate launching a black-box trial."""
         env = dict(os.environ)
         env['ORION_RESULTS_PATH'] = str(results_filename)
         command = [self.script_path] + cmd_args
         process = subprocess.Popen(command, env=env)
-        returncode = process.poll()
-        if returncode is not None and returncode < 0:
-            log.error("Failed to execute script to evaluate trial. Process "
-                      "returned with code %d !", returncode)
-            return None
 
-        return process
+        return_code = process.wait()
+        if return_code != 0:
+            raise RuntimeError("Something went wrong. Check logs. Process "
+                               "returned with code {} !".format(return_code))

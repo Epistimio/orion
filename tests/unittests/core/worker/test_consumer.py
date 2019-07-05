@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.consumer`."""
+import subprocess
 
 import pytest
 
@@ -29,7 +30,7 @@ def test_trials_interrupted_keyboard_int(config, monkeypatch):
 
     exp = ExperimentBuilder().build_from(config)
 
-    monkeypatch.setattr(consumer.subprocess, "Popen", mock_Popen)
+    monkeypatch.setattr(subprocess, "Popen", mock_Popen)
 
     trial = tuple_to_trial((1.0,), exp.space)
 
