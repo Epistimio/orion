@@ -28,6 +28,7 @@ from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
                                         Strategy)
 from orion.core.worker.trial import Trial
+from orion.core.worker.trial_monitor import TrialMonitor
 
 log = logging.getLogger(__name__)
 
@@ -245,7 +246,7 @@ class Experiment(object):
         # status meanwhile, read_and_write will fail, because query will fail.
         query = {'_id': selected_trial.id, 'status': selected_trial.status}
 
-        update = dict(status='reserved')
+        update = dict(status='reserved', heartbeat=datetime.datetime.utcnow())
 
         if selected_trial.status == 'new':
             update["start_time"] = datetime.datetime.utcnow()
@@ -258,10 +259,11 @@ class Experiment(object):
         else:
             selected_trial = Trial(**selected_trial_dict)
 
+        TrialMonitor(self, selected_trial.id).start()
         return selected_trial
 
     def push_completed_trial(self, trial):
-        """Inform database about an evaluated `trial` with results.
+        """Inform database about an evaluated `trial` with resultlts.
 
         :param trial: Corresponds to a successful evaluation of a particular run.
         :type trial: `Trial`
