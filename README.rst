@@ -76,9 +76,9 @@ Features
 Installation
 ============
 
-Install Oríon (beta) by running:
+Install Oríon by running:
 
-``pip install git+https://github.com/epistimio/orion.git@master``
+``pip install orion.core``
 
 For more information read the `full installation docs`_.
 
@@ -97,6 +97,11 @@ Please contact us by opening an issue in our repository below:
 Start by starring and forking our Github repo!
 
 Thanks for the support!
+
+Roadmap
+========
+
+You can find our roadmap here: `<https://github.com/Epistimio/orion/blob/master/ROADMAP.md>`_
 
 License
 =======
