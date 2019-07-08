@@ -139,7 +139,6 @@ class Consumer(object):
         process = subprocess.Popen(command, env=env)
 
         return_code = process.wait()
-        print(return_code)
         if return_code != 0:
             raise RuntimeError("Something went wrong. Check logs. Process "
                                "returned with code {} !".format(return_code))
