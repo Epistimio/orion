@@ -50,7 +50,7 @@ def test_trials_interrupted_keyboard_int(config, monkeypatch):
 
 @pytest.mark.usefixtures("create_db_instance")
 def test_trials_interrupted_sigterm(config, monkeypatch):
-    """Check if a trial is set as interrupted when a KeyboardInterrupt is raised."""
+    """Check if a trial is set as interrupted when a signal is raised."""
     def mock_popen(*args, **kwargs):
         os.kill(os.getpid(), signal.SIGTERM)
 
