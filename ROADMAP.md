@@ -11,7 +11,7 @@ Handle interrupted or lost trials so that they can be automatically resumed by r
 
 #### Command line tools to monitor experiments
 
-See #125 
+See [#125](https://github.com/Epistimio/orion/issues/125)
 
 ### v0.1.5
 
