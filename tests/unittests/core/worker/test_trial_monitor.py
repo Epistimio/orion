@@ -36,7 +36,7 @@ def test_trial_update_heartbeat(config):
     trial_monitor = TrialMonitor(exp, trial.id, wait_time=1)
 
     trial_monitor.start()
-    time.sleep(1)
+    time.sleep(2)
 
     trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
 
@@ -44,7 +44,7 @@ def test_trial_update_heartbeat(config):
 
     heartbeat = trials[0].heartbeat
 
-    time.sleep(1)
+    time.sleep(2)
 
     trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
 
@@ -67,7 +67,7 @@ def test_trial_heartbeat_not_updated(config):
     trial_monitor = TrialMonitor(exp, trial.id, wait_time=1)
 
     trial_monitor.start()
-    time.sleep(1)
+    time.sleep(2)
 
     trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
 
@@ -76,7 +76,7 @@ def test_trial_heartbeat_not_updated(config):
     data = {'status': 'interrupted'}
     Database().write('trials', data, query=dict(_id=trial.id))
 
-    time.sleep(1)
+    time.sleep(2)
 
     trial_monitor.join()
     assert 1
