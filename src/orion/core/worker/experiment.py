@@ -258,8 +258,8 @@ class Experiment(object):
             selected_trial = self.reserve_trial(score_handle=score_handle)
         else:
             selected_trial = Trial(**selected_trial_dict)
+            TrialMonitor(self, selected_trial.id).start()
 
-        TrialMonitor(self, selected_trial.id).start()
         return selected_trial
 
     def push_completed_trial(self, trial):
