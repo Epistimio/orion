@@ -13,7 +13,6 @@ from orion.core.cli import base as cli
 from orion.core.io.database import Database
 from orion.core.io.evc_builder import EVCBuilder
 from orion.core.io.experiment_builder import ExperimentBuilder
-from orion.core.utils.pptree import print_tree
 
 log = logging.getLogger(__name__)
 
