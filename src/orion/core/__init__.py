@@ -13,6 +13,8 @@ training time for automatic early stopping or on-the-fly reconfiguration.
 
 Start by having a look here: https://github.com/epistimio/orion
 """
+import logging
+
 from ._version import get_versions
 from .utils._appdirs import AppDirs
 
@@ -30,3 +32,6 @@ __url__ = 'https://github.com/epistimio/orion'
 
 DIRS = AppDirs(__name__, __author_short__)
 del AppDirs
+
+# set per-module log level
+logging.getLogger('filelock').setLevel('ERROR')
