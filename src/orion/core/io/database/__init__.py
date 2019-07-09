@@ -13,6 +13,7 @@ Currently, implemented wrappers:
    - :class:`orion.core.io.database.mongodb.MongoDB`
 
 """
+import logging
 from abc import abstractmethod, abstractproperty
 
 from orion.core.utils import (AbstractSingletonType, SingletonFactory)
@@ -264,3 +265,7 @@ class Database(AbstractDB, metaclass=SingletonFactory):
     """
 
     pass
+
+
+# set per-module log level
+logging.getLogger('filelock').setLevel('ERROR')
