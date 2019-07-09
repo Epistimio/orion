@@ -21,6 +21,7 @@ class TestTrial(object):
         assert t.end_time is None
         assert t.results == []
         assert t.params == []
+        assert t.working_dir is None
 
     def test_init_full(self, exp_config):
         """Initialize with a dictionary with complete specification."""
@@ -36,6 +37,7 @@ class TestTrial(object):
         assert t.results[0].type == exp_config[1][1]['results'][0]['type']
         assert t.results[0].value == exp_config[1][1]['results'][0]['value']
         assert list(map(lambda x: x.to_dict(), t.params)) == exp_config[1][1]['params']
+        assert t.working_dir is None
 
     def test_bad_access(self):
         """Other than `Trial.__slots__` are not allowed."""
