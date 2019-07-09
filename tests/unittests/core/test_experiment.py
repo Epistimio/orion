@@ -748,6 +748,20 @@ def test_is_done_property_with_algo(hacked_exp):
     assert hacked_exp.is_done is True
 
 
+def test_broken_property(hacked_exp):
+    """Check experiment stopping conditions for maximum number of broken."""
+    assert not hacked_exp.is_broken
+    trials = hacked_exp.fetch_trials({})[:3]
+
+    query = {'experiment': hacked_exp.id}
+
+    for trial in trials:
+        query['_id'] = trial.id
+        Database().write('trials', {'status': 'broken'}, query)
+
+    assert hacked_exp.is_broken
+
+
 def test_experiment_stats(hacked_exp, exp_config, random_dt):
     """Check that property stats is returning a proper summary of experiment's results."""
     stats = hacked_exp.stats

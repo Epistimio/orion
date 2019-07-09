@@ -414,6 +414,20 @@ class Experiment(object):
                 (self._init_done and self.algorithms.is_done))
 
     @property
+    def is_broken(self):
+        """Return True, if this experiment is considered to be broken.
+
+        Count how many trials are broken and return True if that number has reached
+        as given threshold.
+
+
+        """
+        query = {'experiment': self._id, 'status': 'broken'}
+        num_broken_trials = self._db.count('trials', query)
+
+        return num_broken_trials >= 3
+
+    @property
     def space(self):
         """Return problem's parameter `orion.algo.space.Space`.
 
