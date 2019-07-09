@@ -147,7 +147,7 @@ class Trial(object):
         __slots__ = ()
         allowed_types = ('integer', 'real', 'categorical', 'fidelity')
 
-    __slots__ = ('experiment', '_id', '_status', 'worker',
+    __slots__ = ('experiment', '_id', '_status', 'worker', '_working_dir',
                  'submit_time', 'start_time', 'end_time', '_results', 'params', 'parents')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
 
@@ -181,6 +181,9 @@ class Trial(object):
         trial_dictionary = dict()
 
         for attrname in self.__slots__:
+            if attrname == "_working_dir":
+                continue
+
             attrname = attrname.lstrip("_")
             trial_dictionary[attrname] = getattr(self, attrname)
 
@@ -219,6 +222,16 @@ class Trial(object):
                 'Results must contain a type `objective` with type float/int: {}'.format(objective))
 
         self._results = results
+
+    @property
+    def working_dir(self):
+        """Return the current working directory of the trial."""
+        return self._working_dir
+
+    @working_dir.setter
+    def working_dir(self, value):
+        """Change the current working directory of the trial."""
+        self._working_dir = value
 
     @property
     def status(self):
