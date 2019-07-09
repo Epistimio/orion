@@ -105,7 +105,7 @@ def test_trial_heartbeat_not_updated_inbetween(config):
 
     heartbeat = trials[0].heartbeat
 
-    time.sleep(4)
+    time.sleep(6)
 
     trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
 
