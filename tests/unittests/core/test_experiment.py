@@ -589,10 +589,11 @@ class TestReserveTrial(object):
         trial = hacked_exp.reserve_trial()
         exp_config[1][3]['status'] = 'reserved'
         exp_config[1][3]['start_time'] = random_dt
+        exp_config[1][3]['heartbeat'] = random_dt
         assert trial.to_dict() == exp_config[1][3]
 
     @pytest.mark.usefixtures("patch_sample2")
-    def test_reserve_success2(self, exp_config, hacked_exp):
+    def test_reserve_success2(self, exp_config, hacked_exp, random_dt):
         """Successfully find new trials in db and reserve one at 'random'.
 
         Version that start_time does not get written, because the selected trial
@@ -600,6 +601,7 @@ class TestReserveTrial(object):
         """
         trial = hacked_exp.reserve_trial()
         exp_config[1][6]['status'] = 'reserved'
+        exp_config[1][6]['heartbeat'] = random_dt
         assert trial.to_dict() == exp_config[1][6]
 
     @pytest.mark.usefixtures("patch_sample_concurrent")
@@ -608,6 +610,7 @@ class TestReserveTrial(object):
         trial = hacked_exp.reserve_trial()
         exp_config[1][4]['status'] = 'reserved'
         exp_config[1][4]['start_time'] = random_dt
+        exp_config[1][4]['heartbeat'] = random_dt
         assert trial.to_dict() == exp_config[1][4]
 
     @pytest.mark.usefixtures("patch_sample_concurrent2")
@@ -626,12 +629,13 @@ class TestReserveTrial(object):
         self.times_called += 1
         return self.times_called
 
-    def test_reserve_with_score(self, hacked_exp, exp_config):
+    def test_reserve_with_score(self, hacked_exp, exp_config, random_dt):
         """Reserve with a score object that can do its job."""
         self.times_called = 0
         hacked_exp.configure(exp_config[0][3])
         trial = hacked_exp.reserve_trial(score_handle=self.fake_handle)
         exp_config[1][6]['status'] = 'reserved'
+        exp_config[1][6]['heartbeat'] = random_dt
         assert trial.to_dict() == exp_config[1][6]
 
 
