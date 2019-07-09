@@ -68,7 +68,7 @@ setup_args = dict(
             'asha = orion.algo.asha:ASHA',
             ],
         },
-    install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython', 'filelock'],
+    install_requires=['pptree', 'PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython', 'filelock'],
     tests_require=tests_require,
     setup_requires=['setuptools', 'pytest-runner'],
     extras_require=dict(test=tests_require),
