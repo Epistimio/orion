@@ -13,8 +13,8 @@ Currently, implemented wrappers:
    - :class:`orion.core.io.database.mongodb.MongoDB`
 
 """
-import logging
 from abc import abstractmethod, abstractproperty
+import logging
 
 from orion.core.utils import (AbstractSingletonType, SingletonFactory)
 
