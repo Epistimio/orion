@@ -72,7 +72,8 @@ def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
             # another process right after the call to orion_db.read()
             create_db_instance.write(
                 "trials",
-                data={"status": "reserved"},
+                data={"status": "reserved",
+                      "heartbeat": datetime.datetime.utcnow()},
                 query={"_id": a_list[0].id})
             trial = create_db_instance.read("trials", {"_id": a_list[0].id})
             assert trial[0]['status'] == 'reserved'
@@ -104,7 +105,7 @@ def patch_sample_concurrent2(monkeypatch, create_db_instance, exp_config):
         # another process right after the call to orion_db.read()
         create_db_instance.write(
             "trials",
-            data={"status": "reserved"},
+            data={"status": "reserved", 'heartbeat': datetime.datetime.utcnow()},
             query={"_id": a_list[0].id})
         trial = create_db_instance.read("trials", {"_id": a_list[0].id})
         assert trial[0]['status'] == 'reserved'
@@ -637,6 +638,30 @@ class TestReserveTrial(object):
         exp_config[1][6]['status'] = 'reserved'
         exp_config[1][6]['heartbeat'] = random_dt
         assert trial.to_dict() == exp_config[1][6]
+
+    def test_fix_lost_trials(self, hacked_exp):
+        """Test that a running trial with an old heartbeat is set to interrupted."""
+        exp_query = {'experiment': hacked_exp.id}
+        trial = hacked_exp.fetch_trials(exp_query)[0]
+        heartbeat = datetime.datetime.strptime('2000-01-01T00:00:00', '%Y-%m-%dT%H:%M:%S')
+
+        Database().write('trials', {'status': 'reserved', 'heartbeat': heartbeat},
+                         {'experiment': hacked_exp.id, '_id': trial.id})
+
+        exp_query['status'] = {'$in': ['reserved']}
+        exp_query['_id'] = trial.id
+
+        assert hacked_exp.fetch_trials(exp_query)
+
+        hacked_exp.fix_lost_trials()
+
+        assert not hacked_exp.fetch_trials(exp_query)
+
+        exp_query.pop('status')
+
+        trial = hacked_exp.fetch_trials(exp_query)[0]
+
+        assert trial.status == 'interrupted'
 
 
 @pytest.mark.usefixtures("patch_sample")
