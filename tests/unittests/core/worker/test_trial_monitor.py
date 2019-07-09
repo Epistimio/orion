@@ -78,6 +78,7 @@ def test_trial_heartbeat_not_updated(config):
 
     time.sleep(2)
 
+    # `join` blocks until all thread have finish executing. So, the test will hang if it fails.
     trial_monitor.join()
     assert 1
 
