@@ -265,17 +265,9 @@ class TestReadAndWrite(object):
 
     def test_logging_when_getting_file_lock(self, caplog, orion_db):
         """When logging.level is ERROR, there should be no logging."""
-        caplog.set_level(logging.INFO)
+        logging.basicConfig(level=logging.INFO)
         caplog.clear()
-        # any operation will trigger the lock.
-        orion_db.read(
-            'experiments',
-            {'name': 'supernaedo2', 'metadata.user': 'dendi'})
-
-        assert 'acquired on orion_db.pkl.lock' in caplog.text
-
         caplog.set_level(logging.ERROR)
-        caplog.clear()
         # any operation will trigger the lock.
         orion_db.read(
             'experiments',
