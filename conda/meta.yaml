@@ -23,6 +23,7 @@ requirements:
     - pymongo >=3
     - gitpython
     - filelock
+    - pptree
 
 test:
   import:
