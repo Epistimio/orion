@@ -3,7 +3,7 @@ Last update July 5th, 2019
 
 ## Next releases - Short-Term
 
-### v0.1.4
+### v0.1.5
 
 #### Trial interruption/suspension/resumption
 
@@ -13,7 +13,7 @@ Handle interrupted or lost trials so that they can be automatically resumed by r
 
 See [#125](https://github.com/Epistimio/orion/issues/125)
 
-### v0.1.5
+### v0.1.6
 
 #### Auto-resolution of EVC
 
