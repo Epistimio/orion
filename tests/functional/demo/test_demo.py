@@ -13,6 +13,7 @@ import yaml
 
 import orion.core.cli
 from orion.core.io.database import Database
+from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
 
@@ -412,3 +413,16 @@ def test_worker_trials(database, monkeypatch):
                          "--max-trials", "6"])
 
     assert len(list(database.trials.find({'experiment': exp_id}))) == 6
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_resilience(monkeypatch):
+    """Test if Oríon stops after enough broken trials."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+    orion.core.cli.main(["hunt", "--config", "./orion_config_random.yaml", "./broken_box.py",
+                         "-x~uniform(-50, 50)"])
+
+    exp = ExperimentBuilder().build_from({'name': 'demo_random_search'})
+    assert len(exp.fetch_trials({'status': 'broken'})) == 3
