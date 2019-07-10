@@ -18,7 +18,7 @@ Algorithms
 Skopt algorithms
 ----------------
 
-`orion.algo.skopt` provides a wrapper for `Bayesian optimizer`_ using Gaussian process implemented
+``orion.algo.skopt`` provides a wrapper for `Bayesian optimizer`_ using Gaussian process implemented
 in `scikit optimize`_. For more information about algorithms configuration and usage please refer to
 :doc:`/user/algorithms`.
 

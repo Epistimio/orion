@@ -21,7 +21,7 @@ class TrialsHistory:
     def update(self, trials):
         """Update the list of children trials
 
-        This history only keeps children. Current children that are now ancestors of
+        The children history only keeps children. Current children that are now ancestors of
         the new nodes are discarded from the history. This is because we can rebuild the entire
         history from the current children, therefore we only need to keep those.
         """

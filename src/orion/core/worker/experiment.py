@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pylint:disable=protected-access,too-many-public-methods
+# pylint:disable=protected-access,too-many-public-methods,too-many-lines
 """
 :mod:`orion.core.worker.experiment` -- Description of an optimization attempt
 =============================================================================
@@ -141,12 +141,6 @@ class Experiment(object):
     def retrieve_result(self, trial, results_file=None, **kwargs):
         """Read the results from the trial and append it to the trial object"""
         return self._protocol.retrieve_result(trial, results_file, **kwargs)
-
-    def __getattr__(self, item):
-        if hasattr(self._protocol, item):
-            return getattr(self._protocol, item)
-
-        raise AttributeError(item)
 
     def connect_to_version_control_tree(self, node):
         """Connect the experiment to its node in a version control tree

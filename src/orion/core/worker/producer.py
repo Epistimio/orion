@@ -50,7 +50,6 @@ class Producer(object):
         #       Strategist and Scheduler.
         self.trials_history = TrialsHistory()
         self.naive_trials_history = None
-        self._last_fetched = datetime.datetime.utcnow()
 
     @property
     def pool_size(self):
@@ -60,18 +59,6 @@ class Producer(object):
     def reserve_trial(self, score_handle=None):
         """Fetch trials that are still pending to be run"""
         return self.experiment.reserve_trial(score_handle=score_handle)
-
-    def fetch_completed_trials(self):
-        """Fetch all the trials that are marked as completed"""
-
-        query = dict(
-            status='completed',
-            end_time={'$gte': self._last_fetched}
-        )
-
-        completed_trials = self.experiment.fetch_trials(query)
-        self._last_fetched = datetime.datetime.utcnow()
-        return completed_trials
 
     def produce(self):
         """Create and register new trials."""
@@ -117,11 +104,9 @@ class Producer(object):
 
     def _update_algorithm(self):
         """Pull newest completed trials to update local model."""
-        log.debug("### Fetch trials to observe:")
-        # completed_trials = self.experiment.fetch_completed_trials()
+        log.debug("### Fetch completed trials to observe:")
+        completed_trials = self.experiment.fetch_completed_trials()
 
-        completed_trials = self.fetch_completed_trials()
-        print(completed_trials)
         log.debug("### %s", completed_trials)
 
         if completed_trials:

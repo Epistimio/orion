@@ -66,12 +66,13 @@ setup_args = dict(
             ],
         'OptimizationAlgorithm': [
             'random = orion.algo.random:Random',
+            'asha = orion.algo.asha:ASHA',
             ],
         'StorageProtocol': [
             'legacy = orion.storage.legacy:Legacy'
             ]
         },
-    install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython'],
+    install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython', 'filelock'],
     tests_require=tests_require,
     setup_requires=['setuptools', 'pytest-runner'],
     extras_require=dict(test=tests_require),
@@ -101,7 +102,7 @@ setup_args['classifiers'] = [
     'Topic :: Scientific/Engineering',
     'Topic :: Scientific/Engineering :: Artificial Intelligence',
 ] + [('Programming Language :: Python :: %s' % x)
-     for x in '3 3.4 3.5 3.6'.split()]
+     for x in '3 3.5 3.6 3.7'.split()]
 
 if __name__ == '__main__':
     setup(**setup_args)
