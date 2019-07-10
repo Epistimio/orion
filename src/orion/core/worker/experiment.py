@@ -19,7 +19,7 @@ import sys
 from orion.core.cli.evc import fetch_branching_configuration
 from orion.core.evc.adapters import Adapter, BaseAdapter
 from orion.core.evc.conflicts import detect_conflicts
-from orion.core.io.database import DuplicateKeyError, ReadOnlyDB
+from orion.core.io.database import DuplicateKeyError, ReadOnlyDB, Database
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
@@ -106,6 +106,7 @@ class Experiment(object):
         log.debug("Creating Experiment object with name: %s", name)
         self._init_done = False
 
+        self._db = Database()
         self._id = None
         self.name = name
         self._node = None
@@ -393,7 +394,7 @@ class Experiment(object):
 
         return self._node.fetch_trials(query, selection)
 
-    def reserve_trial(self, score_handle=None):
+    def reserve_trial(self, score_handle=None, depth=1):
         """Find *new* trials that exist currently in database and select one of
         them based on the highest score return from `score_handle` callable.
 
@@ -402,6 +403,8 @@ class Experiment(object):
         :type score_handle: callable
         :return: selected `Trial` object, None if could not find any.
         """
+        log.debug(f'reserving a trial (try: {depth})')
+
         if score_handle is not None and not callable(score_handle):
             raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
 
@@ -426,6 +429,8 @@ class Experiment(object):
                         "parameter space has not been defined yet.")
 
         selected_trial = random.sample(new_trials, 1)[0]
+        log.debug(f'Selected trial (id: {selected_trial._id})')
+
         update = dict(status='reserved')
 
         if selected_trial.status == 'new':
@@ -443,8 +448,10 @@ class Experiment(object):
 
         # if none it means the trial was not found, i.e a process already reserved it
         if selected_trial is None:
-            selected_trial = self.reserve_trial(score_handle=score_handle)
+            log.debug('as not able to reserve trial')
+            selected_trial = self.reserve_trial(score_handle=score_handle, depth=depth + 1)
 
+        log.debug('trial as reserved')
         return selected_trial
 
     def push_completed_trial(self, trial):

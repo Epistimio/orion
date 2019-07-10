@@ -96,10 +96,11 @@ class Legacy(BaseStorageProtocol):
             where = dict()
 
         where['_id'] = trial.id
-        try:
-            was_success = self._db.write('trials', q, query=where)
-        except DuplicateKeyError:
-            return None
+        # try:
+        was_success = self._db.write('trials', q, query=where)
+        print(was_success)
+        # except DuplicateKeyError:
+        #     return None
 
         if not was_success:
             return None
