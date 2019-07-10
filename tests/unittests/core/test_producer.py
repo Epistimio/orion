@@ -66,9 +66,6 @@ def test_algo_observe_completed(producer):
     obs_points = producer.algorithm.algorithm._points
     obs_results = producer.algorithm.algorithm._results
 
-    print(obs_points)
-    print(obs_results)
-
     assert len(obs_points) == 3
     assert obs_points[0] == ('lstm', 'rnn')
     assert obs_points[1] == ('rnn', 'rnn')

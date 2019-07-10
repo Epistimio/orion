@@ -121,7 +121,7 @@ class Producer(object):
         # completed_trials = self.experiment.fetch_completed_trials()
 
         completed_trials = self.fetch_completed_trials()
-        print(completed_trials)
+
         log.debug("### %s", completed_trials)
 
         if completed_trials:
