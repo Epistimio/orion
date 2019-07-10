@@ -23,6 +23,8 @@ class Trial(object):
     experiment : str
        Unique identifier for the experiment that produced this trial.
        Same as an `Experiment._id`.
+    heartbeat : datetime.datetime
+        Last time trial was identified as being alive.
     status : str
        Indicates how this trial is currently being used. Can take the following
        values:
@@ -147,7 +149,7 @@ class Trial(object):
         __slots__ = ()
         allowed_types = ('integer', 'real', 'categorical', 'fidelity')
 
-    __slots__ = ('experiment', '_id', '_status', 'worker', '_working_dir',
+    __slots__ = ('experiment', '_id', '_status', 'worker', '_working_dir', 'heartbeat',
                  'submit_time', 'start_time', 'end_time', '_results', 'params', 'parents')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
 
