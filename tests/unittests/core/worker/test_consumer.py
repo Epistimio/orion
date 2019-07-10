@@ -21,6 +21,7 @@ def config(exp_config):
     config = exp_config[0][0]
     config['metadata']['user_args'] = ['--x~uniform(-50, 50)']
     config['name'] = 'exp'
+    config['working_dir'] = "/tmp/orion"
     return config
 
 
@@ -70,3 +71,19 @@ def test_trials_interrupted_sigterm(config, monkeypatch):
     trials = exp.fetch_trials({'status': 'interrupted'})
     assert len(trials)
     assert trials[0].id == trial.id
+
+
+@pytest.mark.usefixtures("create_db_instance")
+def test_trial_working_dir_is_changed(config, monkeypatch):
+    """Check that trial has its working_dir attribute changed."""
+    exp = ExperimentBuilder().build_from(config)
+
+    trial = tuple_to_trial((1.0,), exp.space)
+
+    exp.register_trial(trial)
+
+    con = Consumer(exp)
+    con.consume(trial)
+
+    assert trial.working_dir is not None
+    assert trial.working_dir == con.working_dir + "/exp_" + trial.id
