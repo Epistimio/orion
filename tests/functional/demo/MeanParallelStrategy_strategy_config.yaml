@@ -1,0 +1,7 @@
+database:
+  host: mongodb://user:pass@localhost
+  name: orion_test
+  type: mongodb
+name: strategy_demo
+producer:
+  strategy: MeanParallelStrategy

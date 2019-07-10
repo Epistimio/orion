@@ -86,8 +86,8 @@ class Experiment(object):
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
-                 'algorithms', 'producer', 'working_dir', '_db', '_init_done', '_id',
-                 '_node', '_last_fetched', '_protocol')
+                 'algorithms', 'producer', 'working_dir', '_init_done', '_id',
+                 '_node', '_last_fetched', '_protocol', '_db')
     non_branching_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name, user=None):
@@ -106,8 +106,6 @@ class Experiment(object):
         """
         log.debug("Creating Experiment object with name: %s", name)
         self._init_done = False
-        # self._db = Database()  # fetch database instance
-        # self._setup_db()  # build indexes for collections
 
         self._id = None
         self.name = name
@@ -122,8 +120,6 @@ class Experiment(object):
         self.working_dir = None
         self.producer = {'strategy': None}
         self._protocol = StorageProtocol('legacy')
-
-        # self._db.read('experiments',  {'name': name, 'metadata.user': user})
         config = self._protocol.fetch_experiments({'name': name, 'metadata.user': user})
 
         if config:
@@ -278,10 +274,11 @@ class Experiment(object):
         if is_new:
             final_config['metadata']['datetime'] = datetime.datetime.utcnow()
             self.metadata['datetime'] = final_config['metadata']['datetime']
+
             # This will raise DuplicateKeyError if a concurrent experiment with
             # identical (name, metadata.user) is written first in the database.
+            self._protocol.create_experiment(final_config)
 
-            self._db.write('experiments', final_config)
             # XXX: Reminder for future DB implementations:
             # MongoDB, updates an inserted dict with _id, so should you :P
             self._id = final_config['_id']
@@ -290,8 +287,7 @@ class Experiment(object):
             if not self.refers:
                 self.refers = {'root_id': self._id, 'parent_id': None, 'adapter': []}
                 update = {'refers': self.refers}
-                query = {'_id': self._id}
-                self._db.write('experiments', data=update, query=query)
+                self._protocol.update_experiment(self, fields=update)
 
         else:
             # Writing the final config to an already existing experiment raises
@@ -300,7 +296,7 @@ class Experiment(object):
             # `db.write()`, thus seamingly breaking  the compound index
             # `(name, metadata.user)`
             final_config.pop("name")
-            self._db.write('experiments', final_config, {'_id': self._id})
+            self._protocol.update_experiment(self, fields=final_config)
 
     @property
     def is_done(self):
@@ -436,23 +432,24 @@ class Experiment(object):
                         "parameter space has not been defined yet.")
 
         selected_trial = random.sample(new_trials, 1)[0]
-
-        # Query on status to ensure atomicity. If another process change the
-        # status meanwhile, read_and_write will fail, because query will fail.
-        query = {'_id': selected_trial.id, 'status': selected_trial.status}
-
         update = dict(status='reserved')
 
         if selected_trial.status == 'new':
             update["start_time"] = datetime.datetime.utcnow()
 
-        selected_trial_dict = self._db.read_and_write(
-            'trials', query=query, data=update)
+        selected_trial = self._protocol.update_trial(
+            selected_trial,
+            fields=update,
+            # Query on status to ensure atomicity. If another process change the
+            # status meanwhile, read_and_write will fail, because query will fail.
+            where={
+                'status': selected_trial.status
+            }
+        )
 
-        if selected_trial_dict is None:
+        # if none it means the trial was not found, i.e a process already reserved it
+        if selected_trial is None:
             selected_trial = self.reserve_trial(score_handle=score_handle)
-        else:
-            selected_trial = Trial(**selected_trial_dict)
 
         return selected_trial
 
@@ -469,7 +466,7 @@ class Experiment(object):
         """
         trial.end_time = datetime.datetime.utcnow()
         trial.status = 'completed'
-        self._protocol.update_trial(trial, query={'_id': trial.id})
+        return self._protocol.update_trial(trial, fields=trial.to_dict())
 
     def register_lie(self, lying_trial):
         """Register a *fake* trial created by the strategist.

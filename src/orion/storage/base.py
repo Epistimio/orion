@@ -11,16 +11,41 @@
 """
 from orion.core.utils import Factory
 
+from typing import Optional
+
 
 class BaseStorageProtocol:
     """Implement a generic protocol to allow Orion to communicate using
     different storage backend
     """
 
-    def create_experiment(self):
+    def create_experiment(self, config):
+        """Insert a new experiment inside the database"""
+        raise NotImplementedError()
+
+    def update_experiment(self, experiment: 'Experiment', fields: Optional[dict] = None, **kwargs):
+        """Update a the fields of a given trials
+
+        Parameters
+        ----------
+
+        :param experiment: Experiment object to update
+        :param fields: Optional[dict] a dictionary of fields to update
+        :param kwargs: a dictionary of fields to update
+
+        Example
+        -------
+
+        >>> query = {'status': 'RUNNING'}
+        >>> self.update_experiment(experiment, fields=query)
+
+
+        >>> self.update_experiment(experiment, status='RUNNING')
+        """
         raise NotImplementedError()
 
     def fetch_experiments(self, query):
+        """Fetch all experiments that match the query"""
         raise NotImplementedError()
 
     def register_trial(self, trial):
@@ -28,33 +53,34 @@ class BaseStorageProtocol:
         raise NotImplementedError()
 
     def reserve_trial(self, *args, **kwargs):
+        """Select a pending trial and book it for the executor"""
         raise NotImplementedError()
 
     def fetch_trials(self, query):
+        """Feetch all the trials that match the query"""
         raise NotImplementedError()
 
-    # def select_trial(self, *args, **kwargs):
-    #     """Select a pending trial to be ran"""
-    #     raise NotImplementedError()
-    #       fetch_trials()
+    def update_trial(self, trial: 'Trial', fields: Optional[dict] = None, **kwargs) -> 'Trial':
+        """Update a the fields of a given trials
 
-    # def fetch_completed_trials(self):
-    #     """Fetch the latest completed trials of this experiment that were not yet observed"""
-    #     raise NotImplementedError()
+        Parameters
+        ----------
 
-    # def is_done(self, experiment):
-    #     """Check if we have reached the maximum number of trials.
-    #     This only takes into account completed trials.
-    #     So if trials do not complete this may never return True
-    #     """
-    #     raise NotImplementedError()
+        :param trial: Trial object to update
+        :param fields: Optional[dict] a dictionary of fields to update
+        :param kwargs: a dictionary of fields to update
 
-    # def get_trial(self, trial):
-    #     """Fetch a trial inside storage using its id"""
-    #     raise NotImplementedError()
+        :return the updated trial
 
-    def update_trial(self, trial, **kwargs):
-        """Try to read the result of the trial and update the trial.results attribute"""
+        Example
+        -------
+
+        >>> query = {'status': 'RUNNING'}
+        >>> self.update_trial(trial, fields=query)
+
+
+        >>> self.update_trial(trial, status='RUNNING')
+        """
         raise NotImplementedError()
 
     def retrieve_result(self, trial, results_file=None, **kwargs):
