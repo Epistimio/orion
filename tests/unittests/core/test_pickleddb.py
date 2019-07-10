@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.io.database.pickleddb`."""
-
 from datetime import datetime
+import logging
 from multiprocessing import Pool
 import os
 
@@ -262,6 +262,26 @@ class TestReadAndWrite(object):
             {'pool_size': 'lalala'})
 
         assert loaded_config is None
+
+    def test_logging_when_getting_file_lock(self, caplog, orion_db):
+        """When logging.level is ERROR, there should be no logging."""
+        caplog.set_level(logging.INFO)
+        caplog.clear()
+        """Any operation will trigger the lock."""
+        orion_db.read(
+            'experiments',
+            {'name': 'supernaedo2', 'metadata.user': 'dendi'})
+
+        assert 'acquired on orion_db.pkl.lock' in caplog.text
+
+        caplog.set_level(logging.ERROR)
+        caplog.clear()
+        """Any operation will trigger the lock."""
+        orion_db.read(
+            'experiments',
+            {'name': 'supernaedo2', 'metadata.user': 'dendi'})
+
+        assert 'acquired on orion_db.pkl.lock' not in caplog.text
 
 
 @pytest.mark.usefixtures("clean_db")
