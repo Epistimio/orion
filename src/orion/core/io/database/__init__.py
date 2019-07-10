@@ -14,6 +14,7 @@ Currently, implemented wrappers:
 
 """
 from abc import abstractmethod, abstractproperty
+import logging
 
 from orion.core.utils import (AbstractSingletonType, SingletonFactory)
 
@@ -264,3 +265,7 @@ class Database(AbstractDB, metaclass=SingletonFactory):
     """
 
     pass
+
+
+# set per-module log level
+logging.getLogger('filelock').setLevel('ERROR')

@@ -285,7 +285,7 @@ class Experiment(object):
             self._db.write('trials', {'status': 'interrupted'}, query)
 
     def push_completed_trial(self, trial):
-        """Inform database about an evaluated `trial` with results.
+        """Inform database about an evaluated `trial` with resultlts.
 
         :param trial: Corresponds to a successful evaluation of a particular run.
         :type trial: `Trial`
