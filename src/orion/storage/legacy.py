@@ -8,13 +8,13 @@
    :synopsis: Old Storage implementation
 
 """
-from orion.core.io.convert import JSONConverter
-from orion.core.io.database import Database
-from orion.core.worker.trial import Trial
-from orion.core.io.database import DuplicateKeyError
-from orion.storage.base import BaseStorageProtocol
 
 from typing import Optional
+
+from orion.core.io.convert import JSONConverter
+from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.worker.trial import Trial
+from orion.storage.base import BaseStorageProtocol
 
 
 class Legacy(BaseStorageProtocol):
@@ -27,7 +27,7 @@ class Legacy(BaseStorageProtocol):
         self._setup_db()
 
     def _setup_db(self):
-        """Internal setup"""
+        """Database index setup"""
         self._db.ensure_index('experiments',
                               [('name', Database.ASCENDING),
                                ('metadata.user', Database.ASCENDING)],
@@ -81,7 +81,8 @@ class Legacy(BaseStorageProtocol):
         ]
         return trial
 
-    def update_trial(self, trial: Trial, fields: Optional[dict] = None, where: Optional[dict] = None, **kwargs) -> Trial:
+    def update_trial(self, trial: Trial, fields: Optional[dict] = None,
+                     where: Optional[dict] = None, **kwargs) -> Trial:
         """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
         q = {}
 

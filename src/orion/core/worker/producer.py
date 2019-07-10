@@ -16,7 +16,6 @@ import logging
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
 from orion.core.worker.trials_history import TrialsHistory
-from orion.storage.base import StorageProtocol
 
 log = logging.getLogger(__name__)
 
@@ -63,7 +62,6 @@ class Producer(object):
 
     def fetch_completed_trials(self):
         """Fetch all the trials that are marked as completed"""
-
         query = dict(
             status='completed',
             end_time={'$gte': self._last_fetched}

@@ -17,7 +17,6 @@ import tempfile
 
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.working_dir import WorkingDir
-from orion.storage.base import StorageProtocol
 
 log = logging.getLogger(__name__)
 

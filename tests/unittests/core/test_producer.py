@@ -8,10 +8,6 @@ import pytest
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial
 
-import logging
-logging.basicConfig(level=logging.DEBUG)
-
-
 
 class DumbParallelStrategy:
     """Mock object for parallel strategy"""
@@ -569,4 +565,3 @@ def test_original_seeding(producer, database):
 
     assert prev_suggested != producer.algorithm.algorithm._suggested
     assert prev_index < producer.algorithm.algorithm._index
-

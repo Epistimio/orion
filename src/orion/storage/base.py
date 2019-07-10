@@ -9,9 +9,9 @@
    different storage backend
 
 """
-from orion.core.utils import Factory
-
 from typing import Optional
+
+from orion.core.utils import Factory
 
 
 class BaseStorageProtocol:
@@ -28,19 +28,18 @@ class BaseStorageProtocol:
 
         Parameters
         ----------
-
-        :param experiment: Experiment object to update
-        :param fields: Optional[dict] a dictionary of fields to update
-        :param kwargs: a dictionary of fields to update
+        experiment: Experiment object to update
+        fields: Optional[dict] a dictionary of fields to update
+        kwargs: a dictionary of fields to update
 
         Example
         -------
+        .. code-block:: python
+            query = {'status': 'RUNNING'}
+            BaseStorageProtocol.update_experiment(experiment, fields=query)
 
-        >>> query = {'status': 'RUNNING'}
-        >>> self.update_experiment(experiment, fields=query)
+            BaseStorageProtocol.update_experiment(experiment, status='RUNNING')
 
-
-        >>> self.update_experiment(experiment, status='RUNNING')
         """
         raise NotImplementedError()
 
@@ -56,30 +55,31 @@ class BaseStorageProtocol:
         """Select a pending trial and book it for the executor"""
         raise NotImplementedError()
 
-    def fetch_trials(self, query):
+    def fetch_trials(self, query, *args, **kwargs):
         """Feetch all the trials that match the query"""
         raise NotImplementedError()
 
-    def update_trial(self, trial: 'Trial', fields: Optional[dict] = None, **kwargs) -> 'Trial':
+    def update_trial(self, trial: 'Trial', fields: Optional[dict] = None,
+                     where: Optional[dict] = None, **kwargs) -> 'Trial':
         """Update a the fields of a given trials
 
         Parameters
         ----------
+        trial: Trial object to update
+        fields: Optional[dict] a dictionary of fields to update
+        where: constraint trial must respect
+        kwargs: a dictionary of fields to update
 
-        :param trial: Trial object to update
-        :param fields: Optional[dict] a dictionary of fields to update
-        :param kwargs: a dictionary of fields to update
-
-        :return the updated trial
+        returns the updated trial
 
         Example
         -------
+        .. code-block:: python
+            query = {'status': 'RUNNING'}
+            BaseStorageProtocol.update_trial(trial, fields=query)
 
-        >>> query = {'status': 'RUNNING'}
-        >>> self.update_trial(trial, fields=query)
+            BaseStorageProtocol.update_trial(trial, status='RUNNING')
 
-
-        >>> self.update_trial(trial, status='RUNNING')
         """
         raise NotImplementedError()
 

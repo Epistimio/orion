@@ -19,7 +19,7 @@ import sys
 from orion.core.cli.evc import fetch_branching_configuration
 from orion.core.evc.adapters import Adapter, BaseAdapter
 from orion.core.evc.conflicts import detect_conflicts
-from orion.core.io.database import Database, DuplicateKeyError, ReadOnlyDB
+from orion.core.io.database import DuplicateKeyError, ReadOnlyDB
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
@@ -27,7 +27,6 @@ from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
                                         Strategy)
-from orion.core.worker.trial import Trial
 from orion.storage.base import StorageProtocol
 
 log = logging.getLogger(__name__)
@@ -141,12 +140,6 @@ class Experiment(object):
     def retrieve_result(self, trial, results_file=None, **kwargs):
         """Read the results from the trial and append it to the trial object"""
         return self._protocol.retrieve_result(trial, results_file, **kwargs)
-
-    def __getattr__(self, item):
-        if hasattr(self._protocol, item):
-            return getattr(self._protocol, item)
-
-        raise AttributeError(item)
 
     def connect_to_version_control_tree(self, node):
         """Connect the experiment to its node in a version control tree
@@ -379,6 +372,7 @@ class Experiment(object):
         return stats
 
     def fetch_trials(self, query, selection=None):
+        """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
         query["experiment"] = self._id
         return self._protocol.fetch_trials(query, selection)
 
