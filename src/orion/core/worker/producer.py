@@ -56,21 +56,6 @@ class Producer(object):
         """Pool-size of the experiment"""
         return self.experiment.pool_size
 
-    def reserve_trial(self, score_handle=None):
-        """Fetch trials that are still pending to be run"""
-        return self.experiment.reserve_trial(score_handle=score_handle)
-
-    def fetch_completed_trials(self):
-        """Fetch all the trials that are marked as completed"""
-        query = dict(
-            status='completed',
-            end_time={'$gte': self._last_fetched}
-        )
-
-        completed_trials = self.experiment.fetch_trials(query)
-        self._last_fetched = datetime.datetime.utcnow()
-        return completed_trials
-
     def produce(self):
         """Create and register new trials."""
         sampled_points = 0
@@ -116,9 +101,7 @@ class Producer(object):
     def _update_algorithm(self):
         """Pull newest completed trials to update local model."""
         log.debug("### Fetch trials to observe:")
-        # completed_trials = self.experiment.fetch_completed_trials()
-
-        completed_trials = self.fetch_completed_trials()
+        completed_trials = self.experiment.fetch_completed_trials()
 
         log.debug("### %s", completed_trials)
 
@@ -140,8 +123,7 @@ class Producer(object):
         """
         log.debug("### Fetch active trials to observe:")
 
-        # self.experiment.fetch_noncompleted_trials()
-        incomplete_trials = self.experiment.fetch_trials(dict(status={'$ne': 'completed'}))
+        incomplete_trials = self.experiment.fetch_noncompleted_trials()
 
         lying_trials = []
         log.debug("### %s", incomplete_trials)
