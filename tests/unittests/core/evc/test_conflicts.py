@@ -244,10 +244,10 @@ class TestCodeConflict(object):
 
     def test_hash_commit_compar(self):
         """Test that old config hash commit evals to empty."""
-        old_config = {'metadata': {}}
-        new_config = {'metadata': {'VCS': ''}}
+        old_config = {'metadata': {'VCS': {}}}
+        new_config = {'metadata': {'VCS': {}}}
 
-        assert conflict.CodeConflict(old_config, new_config) is not None
+        assert list(conflict.CodeConflict.detect(old_config, new_config)) == []
 
 
 class TestCommandLineConflict(object):
