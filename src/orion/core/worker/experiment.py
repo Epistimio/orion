@@ -273,16 +273,16 @@ class Experiment(object):
         trials and set them as interrupted so they can be launched again.
 
         """
-        query = {'experiment': self._id, 'status': {'$in': ['reserved']}}
+        # TODO: Configure this
+        threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=60 * 2)
+        lte_comparison = {'$lte': threshold}
+        query = {'experiment': self._id, 'status': 'reserved', 'heartbeat': lte_comparison}
 
         trials = self.fetch_trials(query)
 
         for trial in trials:
-            difference = (datetime.datetime.utcnow() - trial.heartbeat).total_seconds()
-            if abs(difference) >= 120:
-                query['_id'] = trial.id
-                print(query)
-                self._db.write('trials', {'status': 'interrupted'}, query)
+            query['_id'] = trial.id
+            self._db.write('trials', {'status': 'interrupted'}, query)
 
     def push_completed_trial(self, trial):
         """Inform database about an evaluated `trial` with results.
