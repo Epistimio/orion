@@ -267,7 +267,7 @@ class TestReadAndWrite(object):
         """When logging.level is ERROR, there should be no logging."""
         caplog.set_level(logging.INFO)
         caplog.clear()
-        """Any operation will trigger the lock."""
+        # any operation will trigger the lock.
         orion_db.read(
             'experiments',
             {'name': 'supernaedo2', 'metadata.user': 'dendi'})
@@ -276,7 +276,7 @@ class TestReadAndWrite(object):
 
         caplog.set_level(logging.ERROR)
         caplog.clear()
-        """Any operation will trigger the lock."""
+        # any operation will trigger the lock.
         orion_db.read(
             'experiments',
             {'name': 'supernaedo2', 'metadata.user': 'dendi'})
