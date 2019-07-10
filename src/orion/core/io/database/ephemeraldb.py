@@ -278,7 +278,8 @@ class EphemeralDocument(object):
     operators = {
         "$in": (lambda a, b: a in b),
         "$gte": (lambda a, b: a is not None and a >= b),
-        "$gt": (lambda a, b: a is not None and a > b)
+        "$gt": (lambda a, b: a is not None and a > b),
+        "$lte": (lambda a, b: a is not None and a <= b),
     }
 
     def __init__(self, data):
