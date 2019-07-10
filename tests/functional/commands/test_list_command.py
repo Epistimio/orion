@@ -40,6 +40,7 @@ def three_experiments(monkeypatch, two_experiments):
     orion.core.cli.main(['init_only', '-n', 'test_list_single', '-c', './orion_config_random.yaml',
                          './black_box.py', '--x~uniform(0,1)'])
 
+
 def test_no_exp(no_experiment, monkeypatch, capsys):
     """Test that nothing is printed when there are no experiments."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
