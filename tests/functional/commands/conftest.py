@@ -8,6 +8,7 @@ import pytest
 import yaml
 
 from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
+import orion.core.cli
 
 
 class DumbAlgo(BaseAlgorithm):
@@ -111,3 +112,36 @@ def only_experiments_db(database, exp_config):
     database.trials.drop()
     database.workers.drop()
     database.resources.drop()
+
+
+@pytest.fixture
+def no_experiment(database):
+    """Make sure there is no experiment."""
+    database.experiments.drop()
+
+
+@pytest.fixture
+def one_experiment(monkeypatch, no_experiment):
+    """Create a single experiment."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main(['init_only', '-n', 'test_list_single', '-c', './orion_config_random.yaml',
+                         './black_box.py', '--x~uniform(0,1)'])
+
+
+@pytest.fixture
+def two_experiments(monkeypatch, no_experiment):
+    """Create an experiment and its child."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main(['init_only', '-n', 'test_list_double', '-c', './orion_config_random.yaml',
+                         './black_box.py', '--x~uniform(0,1)'])
+    orion.core.cli.main(['init_only', '-n', 'test_list_double', '-c', './orion_config_random.yaml',
+                         '--branch', 'test_list_double_child', './black_box.py',
+                         '--x~uniform(0,1)', '--y~+uniform(0,1)'])
+
+
+@pytest.fixture
+def three_experiments(monkeypatch, two_experiments):
+    """Create a single experiment and an experiment and its child."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main(['init_only', '-n', 'test_list_single', '-c', './orion_config_random.yaml',
+                         './black_box.py', '--x~uniform(0,1)'])

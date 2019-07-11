@@ -55,7 +55,7 @@ def main(args):
             print_status_recursively(exp, all_trials=args.get('all'))
     else:
         for exp in experiments:
-            print_status(exp, recursive=True, all_trials=args.get('all'))
+            print_status(exp, all_trials=args.get('all'))
 
 
 def get_experiments(args):
@@ -76,13 +76,33 @@ def get_experiments(args):
 
 
 def print_status_recursively(exp, depth=0, **kwargs):
-    print_status(exp, recursive=False, offset=depth * 2, **kwargs)
+    """Print the status recursively of the children of the current experiment.
+
+    Parameters
+    ----------
+    exp: `orion.core.worker.Experiment`
+        The current experiment to print.
+    depth: int
+        The current depth of the tree.
+
+    """
+    print_status(exp, offset=depth * 2, **kwargs)
 
     for child in exp.node.children:
         print_status_recursively(child.item, depth + 1)
 
 
-def print_status(exp, recursive, offset=0, all_trials=False):
+def print_status(exp, offset=0, all_trials=False):
+    """Print the status of the current experiment.
+
+    Parameters
+    ----------
+    offset: int, optional
+        The number of tabs to the right this experiment is.
+    all_trials: bool, optional
+        Print all trials individually
+
+    """
     if all_trials:
         print_all_trials(exp, offset=offset)
     else:
@@ -90,6 +110,14 @@ def print_status(exp, recursive, offset=0, all_trials=False):
 
 
 def print_summary(exp, offset=0):
+    """Print a summary of the current experiment.
+
+    Parameters
+    ----------
+    offset: int, optional
+        The number of tabs to the right this experiment is.
+
+    """
     status_dict = collections.defaultdict(list)
     name = exp.name
     trials = exp.fetch_trials({})
@@ -121,6 +149,14 @@ def print_summary(exp, offset=0):
 
 
 def print_all_trials(exp, offset=0):
+    """Print all trials of the current experiment individually.
+
+    Parameters
+    ----------
+    offset: int, optional
+        The number of tabs to the right this experiment is.
+
+    """
     name = exp.name
     trials = exp.fetch_trials({})
 
