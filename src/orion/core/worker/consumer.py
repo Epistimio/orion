@@ -68,8 +68,6 @@ class Consumer(object):
 
         self.converter = JSONConverter()
 
-        self.current_trial = None
-
     def consume(self, trial):
         """Execute user's script as a block box using the options contained
         within `trial`.
@@ -86,6 +84,7 @@ class Consumer(object):
             with WorkingDir(self.working_dir, temp_dir,
                             prefix=prefix, suffix=suffix) as workdirname:
                 log.debug("## New consumer context: %s", workdirname)
+                trial.working_dir = workdirname
                 self._consume(trial, workdirname)
         except KeyboardInterrupt:
             log.debug("### Save %s as interrupted.", trial)

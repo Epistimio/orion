@@ -8,6 +8,7 @@ import pytest
 
 from orion.algo.space import Dimension
 from orion.core import evc
+from orion.core.evc import conflicts as conflict
 
 
 @pytest.fixture
@@ -240,6 +241,13 @@ class TestCodeConflict(object):
                                       "'active_branch': None, 'diff_sha': 'diff', "\
                                       "'is_dirty': False, 'type': 'git'}'  "\
                                       "!= new hash commit ''to be changed''"
+
+    def test_hash_commit_compar(self):
+        """Test that old config hash commit evals to empty."""
+        old_config = {'metadata': {'VCS': {}}}
+        new_config = {'metadata': {'VCS': {}}}
+
+        assert list(conflict.CodeConflict.detect(old_config, new_config)) == []
 
 
 class TestCommandLineConflict(object):
