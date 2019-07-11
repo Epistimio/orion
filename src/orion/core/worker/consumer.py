@@ -97,7 +97,6 @@ class Consumer(object):
             trial.status = 'broken'
             Database().write('trials', trial.to_dict(),
                              query={'_id': trial.id})
-            raise
         else:
             log.debug("### Register successfully evaluated %s.", trial)
             self.experiment.push_completed_trial(trial)
