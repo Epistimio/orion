@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# pylint: disable=eval-used,protected-access
 """
 :mod:`orion.core.cli.list` -- Module to list experiments
 ========================================================
