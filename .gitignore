@@ -6,6 +6,8 @@
 .spyproject
 .ropeproject
 *.log
+*.pkl
+*.lock
 
 # StarUML documentation
 *.mdj

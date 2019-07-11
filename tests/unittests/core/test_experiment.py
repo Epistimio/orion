@@ -72,7 +72,8 @@ def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
             # another process right after the call to orion_db.read()
             create_db_instance.write(
                 "trials",
-                data={"status": "reserved"},
+                data={"status": "reserved",
+                      "heartbeat": datetime.datetime.utcnow()},
                 query={"_id": a_list[0].id})
             trial = create_db_instance.read("trials", {"_id": a_list[0].id})
             assert trial[0]['status'] == 'reserved'
@@ -104,7 +105,7 @@ def patch_sample_concurrent2(monkeypatch, create_db_instance, exp_config):
         # another process right after the call to orion_db.read()
         create_db_instance.write(
             "trials",
-            data={"status": "reserved"},
+            data={"status": "reserved", 'heartbeat': datetime.datetime.utcnow()},
             query={"_id": a_list[0].id})
         trial = create_db_instance.read("trials", {"_id": a_list[0].id})
         assert trial[0]['status'] == 'reserved'
@@ -589,10 +590,11 @@ class TestReserveTrial(object):
         trial = hacked_exp.reserve_trial()
         exp_config[1][3]['status'] = 'reserved'
         exp_config[1][3]['start_time'] = random_dt
+        exp_config[1][3]['heartbeat'] = random_dt
         assert trial.to_dict() == exp_config[1][3]
 
     @pytest.mark.usefixtures("patch_sample2")
-    def test_reserve_success2(self, exp_config, hacked_exp):
+    def test_reserve_success2(self, exp_config, hacked_exp, random_dt):
         """Successfully find new trials in db and reserve one at 'random'.
 
         Version that start_time does not get written, because the selected trial
@@ -600,6 +602,7 @@ class TestReserveTrial(object):
         """
         trial = hacked_exp.reserve_trial()
         exp_config[1][6]['status'] = 'reserved'
+        exp_config[1][6]['heartbeat'] = random_dt
         assert trial.to_dict() == exp_config[1][6]
 
     @pytest.mark.usefixtures("patch_sample_concurrent")
@@ -608,6 +611,7 @@ class TestReserveTrial(object):
         trial = hacked_exp.reserve_trial()
         exp_config[1][4]['status'] = 'reserved'
         exp_config[1][4]['start_time'] = random_dt
+        exp_config[1][4]['heartbeat'] = random_dt
         assert trial.to_dict() == exp_config[1][4]
 
     @pytest.mark.usefixtures("patch_sample_concurrent2")
@@ -626,13 +630,63 @@ class TestReserveTrial(object):
         self.times_called += 1
         return self.times_called
 
-    def test_reserve_with_score(self, hacked_exp, exp_config):
+    def test_reserve_with_score(self, hacked_exp, exp_config, random_dt):
         """Reserve with a score object that can do its job."""
         self.times_called = 0
         hacked_exp.configure(exp_config[0][3])
         trial = hacked_exp.reserve_trial(score_handle=self.fake_handle)
         exp_config[1][6]['status'] = 'reserved'
+        exp_config[1][6]['heartbeat'] = random_dt
         assert trial.to_dict() == exp_config[1][6]
+
+    def test_fix_lost_trials(self, hacked_exp, random_dt):
+        """Test that a running trial with an old heartbeat is set to interrupted."""
+        exp_query = {'experiment': hacked_exp.id}
+        trial = hacked_exp.fetch_trials(exp_query)[0]
+        heartbeat = random_dt - datetime.timedelta(seconds=180)
+
+        Database().write('trials', {'status': 'reserved', 'heartbeat': heartbeat},
+                         {'experiment': hacked_exp.id, '_id': trial.id})
+
+        exp_query['status'] = 'reserved'
+        exp_query['_id'] = trial.id
+
+        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+
+        hacked_exp.fix_lost_trials()
+
+        assert len(hacked_exp.fetch_trials(exp_query)) == 0
+
+        exp_query['status'] = 'interrupted'
+
+        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+
+    def test_fix_only_lost_trials(self, hacked_exp, random_dt):
+        """Test that an old trial is set to interrupted but not a recent one."""
+        exp_query = {'experiment': hacked_exp.id}
+        trials = hacked_exp.fetch_trials(exp_query)
+        lost = trials[0]
+        not_lost = trials[1]
+
+        heartbeat = random_dt - datetime.timedelta(seconds=180)
+
+        Database().write('trials', {'status': 'reserved', 'heartbeat': heartbeat},
+                         {'experiment': hacked_exp.id, '_id': lost.id})
+        Database().write('trials', {'status': 'reserved', 'heartbeat': random_dt},
+                         {'experiment': hacked_exp.id, '_id': not_lost.id})
+
+        exp_query['status'] = 'reserved'
+        exp_query['_id'] = {'$in': [lost.id, not_lost.id]}
+
+        assert len(hacked_exp.fetch_trials(exp_query)) == 2
+
+        hacked_exp.fix_lost_trials()
+
+        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+
+        exp_query['status'] = 'interrupted'
+
+        assert len(hacked_exp.fetch_trials(exp_query)) == 1
 
 
 @pytest.mark.usefixtures("patch_sample")
@@ -746,6 +800,20 @@ def test_is_done_property_with_algo(hacked_exp):
     assert hacked_exp.is_done is False
     hacked_exp.algorithms.algorithm.done = True
     assert hacked_exp.is_done is True
+
+
+def test_broken_property(hacked_exp):
+    """Check experiment stopping conditions for maximum number of broken."""
+    assert not hacked_exp.is_broken
+    trials = hacked_exp.fetch_trials({})[:3]
+
+    query = {'experiment': hacked_exp.id}
+
+    for trial in trials:
+        query['_id'] = trial.id
+        Database().write('trials', {'status': 'broken'}, query)
+
+    assert hacked_exp.is_broken
 
 
 def test_experiment_stats(hacked_exp, exp_config, random_dt):

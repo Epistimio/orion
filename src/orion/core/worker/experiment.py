@@ -28,6 +28,7 @@ from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
                                         Strategy)
 from orion.core.worker.trial import Trial
+from orion.core.worker.trial_monitor import TrialMonitor
 
 log = logging.getLogger(__name__)
 
@@ -220,6 +221,8 @@ class Experiment(object):
         if score_handle is not None and not callable(score_handle):
             raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
 
+        self.fix_lost_trials()
+
         query = dict(
             experiment=self._id,
             status={'$in': ['new', 'suspended', 'interrupted']}
@@ -245,7 +248,7 @@ class Experiment(object):
         # status meanwhile, read_and_write will fail, because query will fail.
         query = {'_id': selected_trial.id, 'status': selected_trial.status}
 
-        update = dict(status='reserved')
+        update = dict(status='reserved', heartbeat=datetime.datetime.utcnow())
 
         if selected_trial.status == 'new':
             update["start_time"] = datetime.datetime.utcnow()
@@ -257,11 +260,32 @@ class Experiment(object):
             selected_trial = self.reserve_trial(score_handle=score_handle)
         else:
             selected_trial = Trial(**selected_trial_dict)
+            TrialMonitor(self, selected_trial.id).start()
 
         return selected_trial
 
+    def fix_lost_trials(self):
+        """Find lost trials and set them to interrupted.
+
+        A lost trial is defined as a trial whose heartbeat as not been updated since two times
+        the wait time for monitoring. This usually means that the trial is stalling or has been
+        interrupted in some way without its status being changed. This functions finds such
+        trials and set them as interrupted so they can be launched again.
+
+        """
+        # TODO: Configure this
+        threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=60 * 2)
+        lte_comparison = {'$lte': threshold}
+        query = {'experiment': self._id, 'status': 'reserved', 'heartbeat': lte_comparison}
+
+        trials = self.fetch_trials(query)
+
+        for trial in trials:
+            query['_id'] = trial.id
+            self._db.write('trials', {'status': 'interrupted'}, query)
+
     def push_completed_trial(self, trial):
-        """Inform database about an evaluated `trial` with results.
+        """Inform database about an evaluated `trial` with resultlts.
 
         :param trial: Corresponds to a successful evaluation of a particular run.
         :type trial: `Trial`
@@ -412,6 +436,20 @@ class Experiment(object):
 
         return ((num_completed_trials >= self.max_trials) or
                 (self._init_done and self.algorithms.is_done))
+
+    @property
+    def is_broken(self):
+        """Return True, if this experiment is considered to be broken.
+
+        Count how many trials are broken and return True if that number has reached
+        as given threshold.
+
+
+        """
+        query = {'experiment': self._id, 'status': 'broken'}
+        num_broken_trials = self._db.count('trials', query)
+
+        return num_broken_trials >= 3
 
     @property
     def space(self):

@@ -53,6 +53,10 @@ def workon(experiment, worker_trials=None):
 
     for _ in iterator:
         log.debug("#### Poll for experiment termination.")
+        if experiment.is_broken:
+            log.info("#### Experiment has reached broken trials threshold, terminating.")
+            return
+
         if experiment.is_done:
             break
 
