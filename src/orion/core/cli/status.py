@@ -6,7 +6,7 @@
 
 .. module:: status
    :platform: Unix
-   :synopsis: List experiments in termnial
+   :synopsis: List experiments in terminal
 
 """
 import collections
@@ -16,8 +16,8 @@ import tabulate
 
 from orion.core.io.database import Database
 from orion.core.cli import base as cli
+from orion.core.io.evc_builder import EVCBuilder
 from orion.core.io.experiment_builder import ExperimentBuilder
-from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
@@ -37,10 +37,6 @@ def add_subparser(parser):
         help="Divide trials per experiments hierarchically. Otherwise they are all aggregated in "
              "parent experiment")
 
-    status_parser.add_argument(
-        '-l', '--local', action="store_true",
-        help="Show only trials which are running or were running on current machine")
-
     status_parser.set_defaults(func=main)
 
     return status_parser
@@ -52,78 +48,52 @@ def main(args):
     local_config = builder.fetch_full_config(args, use_db=False)
     builder.setup_database(local_config)
 
-    projection = {'name': 1, 'refers': 1}
+    experiments = get_experiments(args)
 
-    experiments = Database().read("experiments", {}, projection)
-
-    # trials = _build_trials()
-
-    # if args.get('name'):
-    #     root_experiments = [e for e in experiments if e['name'] == args['name']]
-    # else:
-    #     root_experiments = [e for e in experiments
-    #                         if e.get('refers') and e['refers']['root_id'] == e['_id']]
-
-    # trees = []
-    # for root_experiment in root_experiments:
-    #     trees.append(build_experiment_tree(root_experiment, experiments, trials))
-
-    trees = [builder.build_from({'name': exp['name']}) for exp in experiments]
     if args.get('recursive'):
-        for tree in trees:
-            print_status_recursively(tree, all_trials=args.get('all'))
+        for exp in filter(lambda e: e.refers['parent_id'] is None, experiments):
+            print_status_recursively(exp, all_trials=args.get('all'))
     else:
-        for tree in trees:
-            # name, (subtree, trials) = next(iter(tree.items()))
-            name = tree.name
-            trials = tree.fetch_trials({})
-            print_status(name, trials, recursive=True, all_trials=args.get('all'))
+        for exp in experiments:
+            print_status(exp, recursive=True, all_trials=args.get('all'))
 
 
-def _build_trials():
-    projection = {'results': 1, 'experiment': 1, 'status': 1}
+def get_experiments(args):
+    """Return the different experiments.
 
-    trials = Database().read("trials", {}, projection)
-    return set(Trial.build(trials))
+    Parameters
+    ----------
+    args: dict
+        Commandline arguments.
 
+    """
+    projection = {'name': 1}
 
-def build_experiment_tree(node, experiments, trials):
-    return {node['name']: _build_experiment_tree(node, experiments, trials)}
+    query = {'name': args['name']} if args.get('name') else {}
+    experiments = Database().read("experiments", query, projection)
 
-
-def _build_experiment_tree(node, experiments, trials):
-    children = {}
-    trials = pop_trials(node['_id'], trials)
-
-    for experiment in experiments:
-
-        if (not experiment.get('refers') or
-                experiment['refers']['parent_id'] != node['_id'] or
-                experiment['_id'] == node['_id']):
-            continue
-
-        children[experiment['name']] = _build_experiment_tree(experiment, experiments, trials)
-
-    return (children, trials)
+    return [EVCBuilder().build_from({'name': exp['name']}) for exp in experiments]
 
 
-def print_status_recursively(tree, depth=0, **kwargs):
-    name, (subtrees, trials) = next(iter(tree.items()))
-    print_status(name, trials, recursive=False, offset=depth * 2, **kwargs)
+def print_status_recursively(exp, depth=0, **kwargs):
+    print_status(exp, recursive=False, offset=depth * 2, **kwargs)
 
-    for name, [subtree, trials] in subtrees.items():
-        print_status_recursively({name: (subtree, trials)}, depth + 1)
+    for child in exp.node.children:
+        print_status_recursively(child.item, depth + 1)
 
 
-def print_status(name, trials, recursive, offset=0, all_trials=False):
+def print_status(exp, recursive, offset=0, all_trials=False):
     if all_trials:
-        print_all_trials(name, trials, offset=offset)
+        print_all_trials(exp, offset=offset)
     else:
-        print_summary(name, trials, offset=offset)
+        print_summary(exp, offset=offset)
 
 
-def print_summary(name, trials, offset=0):
+def print_summary(exp, offset=0):
     status_dict = collections.defaultdict(list)
+    name = exp.name
+    trials = exp.fetch_trials({})
+
     for trial in trials:
         status_dict[trial.status].append(trial)
 
@@ -135,9 +105,11 @@ def print_summary(name, trials, offset=0):
     lines = []
     for status, trials in sorted(status_dict.items()):
         line = [status, len(trials)]
+
         if trials[0].objective:
             headers.append('min {}'.format(trials[0].objective.name))
             line.append(min(trial.objective.value for trial in trials))
+
         lines.append(line)
 
     if trials:
@@ -148,13 +120,18 @@ def print_summary(name, trials, offset=0):
     print("\n")
 
 
-def print_all_trials(name, trials, offset=0):
+def print_all_trials(exp, offset=0):
+    name = exp.name
+    trials = exp.fetch_trials({})
+
     print(" " * offset, name, sep="")
     print(" " * offset, "=" * len(name), sep="")
     headers = ['id', 'status', 'best objective']
     lines = []
+
     for trial in sorted(trials, key=lambda t: t.status):
         line = [trial.id, trial.status]
+
         if trial.objective:
             headers[-1] = 'min {}'.format(trial.objective.name)
             line.append(trial.objective.value)
@@ -164,12 +141,3 @@ def print_all_trials(name, trials, offset=0):
     print(("\n" + (" " * offset)).join(tabulate.tabulate(lines, headers=headers).split("\n")))
 
     print("\n")
-
-
-def pop_trials(experiment_id, trials):
-    experiment_trials = set()
-    for trial in trials.copy():
-        if trial.experiment == experiment_id:
-            trials.remove(trial)
-            experiment_trials.add(trial)
-    return experiment_trials
