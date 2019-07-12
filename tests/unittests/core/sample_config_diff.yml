@@ -1,0 +1,16 @@
+yo: 5
+training:
+  lr0: orion~loguniform(0.0001, 0.3)
+  mbs: orion~uniform(32, 256, discrete=True)
+
+# some comments
+
+layers:
+  - width: 128
+    type: relu
+  - width: orion~uniform(32, 128, discrete=True)
+    type: orion~choices('relu', 'sigmoid', 'selu', 'leaky')
+  - width: 16
+    type: orion~choices('relu', 'sigmoid', 'selu', 'leaky')
+
+something-same: orion~choices([1, 2, 3, 4, 5])

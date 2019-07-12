@@ -17,6 +17,7 @@ from orion.core.worker.experiment import Experiment
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, 'sample_config.yml')
+YAML_DIFF_SAMPLE = os.path.join(TEST_DIR, 'sample_config_diff.yml')
 JSON_SAMPLE = os.path.join(TEST_DIR, 'sample_config.json')
 UNKNOWN_SAMPLE = os.path.join(TEST_DIR, 'sample_config.txt')
 
@@ -27,10 +28,22 @@ def yaml_sample_path():
     return os.path.abspath(YAML_SAMPLE)
 
 
+@pytest.fixture(scope='session')
+def yaml_diff_sample_path():
+    """Return path with a different yaml sample file."""
+    return os.path.abspath(YAML_DIFF_SAMPLE)
+
+
 @pytest.fixture
 def yaml_config(yaml_sample_path):
     """Return a list containing the key and the sample path for a yaml config."""
     return ['--config', yaml_sample_path]
+
+
+@pytest.fixture
+def yaml_diff_config(yaml_diff_sample_path):
+    """Return a list containing the key and the sample path for a different yaml config."""
+    return ['--config', yaml_diff_sample_path]
 
 
 @pytest.fixture(scope='session')
