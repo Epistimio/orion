@@ -17,6 +17,13 @@ def document():
 
 
 @pytest.fixture()
+def subdocument():
+    """Return EphemeralDocument with a subdocument."""
+    return EphemeralDocument({'_id': 1, 'hello': 'there', 'mighty': 'duck',
+                              'and': {'the': 'drake'}})
+
+
+@pytest.fixture()
 def collection(document):
     """Return EphemeralCollection."""
     collection = EphemeralCollection()
@@ -374,3 +381,52 @@ class TestSelect(object):
     def test_mixed_select(self, document):
         """Select one field and unselect _id."""
         assert document.select({'_id': 0, 'hello': 1}) == {'hello': 'there'}
+
+
+@pytest.mark.usefixtures('clean_db')
+class TestMatch:
+    """Calls :meth:`orion.core.io.database.ephemeraldb.EphemeralDocument.match`."""
+
+    def test_match_eq(self, document):
+        """Test eq operator"""
+        assert document.match({'hello': 'there'})
+        assert not document.match({'hello': 'not there'})
+
+    def test_match_sub_eq(self, subdocument):
+        """Test eq operator with sub document"""
+        assert subdocument.match({'and.the': 'drake'})
+        assert not subdocument.match({'and.no': 'drake'})
+
+    def test_match_in(self, subdocument):
+        """Test $in operator with document"""
+        assert subdocument.match({'hello': {'$in': ['there', 'here']}})
+        assert not subdocument.match({'hello': {'$in': ['ici', 'here']}})
+
+    def test_match_sub_in(self, subdocument):
+        """Test $in operator with sub document"""
+        assert subdocument.match({'and.the': {'$in': ['duck', 'drake']}})
+        assert not subdocument.match({'and.the': {'$in': ['hyppo', 'lion']}})
+
+    def test_match_gte(self, document):
+        """Test $gte operator with document"""
+        assert document.match({'_id': {'$gte': 1}})
+        assert document.match({'_id': {'$gte': 0}})
+        assert not document.match({'_id': {'$gte': 2}})
+
+    def test_match_gt(self, document):
+        """Test $gt operator with document"""
+        assert document.match({'_id': {'$gt': 0}})
+        assert not document.match({'_id': {'$gt': 1}})
+
+    def test_match_lte(self, document):
+        """Test $lte operator with document"""
+        assert document.match({'_id': {'$lte': 2}})
+        assert document.match({'_id': {'$lte': 1}})
+        assert not document.match({'_id': {'$lte': 0}})
+
+    def test_match_bad_operator(self, document):
+        """Test invalid operator handling"""
+        with pytest.raises(ValueError) as exc:
+            document.match({'_id': {'$voici_voila': 0}})
+
+        assert 'Operator \'$voici_voila\' is not supported' in str(exc.value)
