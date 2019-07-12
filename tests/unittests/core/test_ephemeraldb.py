@@ -424,6 +424,11 @@ class TestMatch:
         assert document.match({'_id': {'$lte': 1}})
         assert not document.match({'_id': {'$lte': 0}})
 
+    def test_match_ne(self, document):
+        """Test $ne operator with document"""
+        assert document.match({'hello': {'$ne': 'here'}})
+        assert not document.match({'hello': {'$ne': 'there'}})
+
     def test_match_bad_operator(self, document):
         """Test invalid operator handling"""
         with pytest.raises(ValueError) as exc:

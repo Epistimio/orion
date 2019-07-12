@@ -283,6 +283,7 @@ class EphemeralDocument(object):
     """
 
     operators = {
+        "$ne": (lambda a, b: a != b),
         "$in": (lambda a, b: a in b),
         "$gte": (lambda a, b: a is not None and a >= b),
         "$gt": (lambda a, b: a is not None and a > b),
@@ -309,8 +310,9 @@ class EphemeralDocument(object):
         return key.split(".")[-1].startswith('$')
 
     def _get_key_operator(self, key):
-        operator = key.split(".")[-1]
-        key = ".".join(key.split(".")[:-1])
+        path = key.split(".")
+        operator = path[-1]
+        key = ".".join(path[:-1])
 
         if operator not in self.operators:
             raise ValueError('Operator \'{}\' is not supported by EphemeralDB'.format(operator))
@@ -322,7 +324,7 @@ class EphemeralDocument(object):
         value based on the operator defined within the key.
 
         Default operator is equal when no operator is defined.
-        Other operators could be $in, $gte, $gt or $lte. They are defined
+        Other operators could be $ne, $in, $gte, $gt or $lte. They are defined
         in the last section of the key. For example: `abc.def.$in` or `abc.def.$gte`.
         """
         if self._is_operator(key):
