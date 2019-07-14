@@ -487,7 +487,7 @@ class Experiment(object):
         # object from a getter.
         return copy.deepcopy(config)
 
-    def configure(self, config, enable_branching=True):
+    def configure(self, config, enable_branching=True, enable_update=True):
         """Set `Experiment` by overwriting current attributes.
 
         If `Experiment` was already set and an overwrite is needed, a *branch*
@@ -539,6 +539,9 @@ class Experiment(object):
         self._instantiate_config(final_config)
 
         self._init_done = True
+
+        if not enable_update:
+            return
 
         # If everything is alright, push new config to database
         if is_new:
@@ -773,7 +776,8 @@ class ExperimentView(object):
                              (self._experiment.name, self._experiment.metadata['user']))
 
         try:
-            self._experiment.configure(self._experiment.configuration, enable_branching=False)
+            self._experiment.configure(self._experiment.configuration, enable_branching=False,
+                                       enable_update=False)
         except ValueError as e:
             if "Configuration is different and generates a branching event" in str(e):
                 raise RuntimeError(
