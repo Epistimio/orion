@@ -98,16 +98,21 @@ class Producer(object):
         log.debug("### Fetch completed trials to observe:")
         completed_trials = self.experiment.fetch_completed_trials()
 
-        log.debug("### %s", completed_trials)
+        new_completed_trials = []
+        for trial in completed_trials:
+            if trial not in self.trials_history:
+                new_completed_trials.append(trial)
 
-        if completed_trials:
+        log.debug("### %s", new_completed_trials)
+
+        if new_completed_trials:
             log.debug("### Convert them to list of points and their results.")
             points = list(map(lambda trial: format_trials.trial_to_tuple(trial, self.space),
-                              completed_trials))
-            results = list(map(format_trials.get_trial_results, completed_trials))
+                              new_completed_trials))
+            results = list(map(format_trials.get_trial_results, new_completed_trials))
 
             log.debug("### Observe them.")
-            self.trials_history.update(completed_trials)
+            self.trials_history.update(new_completed_trials)
             self.algorithm.observe(points, results)
             self.strategy.observe(points, results)
 

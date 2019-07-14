@@ -14,6 +14,29 @@ class DummyTrial(object):
         self.parents = parents
 
 
+def test_history_contains_new_child():
+    """Verify that __contains__ return True for a new child"""
+    trials_history = TrialsHistory()
+    new_child = DummyTrial(1, [])
+    assert new_child not in trials_history
+    trials_history.update([new_child])
+    assert new_child in trials_history
+
+
+def test_history_contains_old_child():
+    """Verify that __contains__ return True for a new child"""
+    trials_history = TrialsHistory()
+    old_child = DummyTrial(1, [])
+    trials_history.update([old_child])
+    new_child = DummyTrial(2, [old_child.id])
+    assert new_child not in trials_history
+    trials_history.update([new_child])
+    assert old_child.id not in trials_history.children
+    assert old_child in trials_history
+    assert new_child.id in trials_history.children
+    assert new_child in trials_history
+
+
 def test_added_children_without_ancestors():
     """Verify that children are added to history"""
     trials_history = TrialsHistory()

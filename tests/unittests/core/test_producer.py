@@ -344,10 +344,6 @@ def test_naive_algo_trained_on_all_non_completed_trials(producer, database, rand
 
 def test_naive_algo_is_discared(producer, database, monkeypatch):
     """Verify that naive algo is discarded and recopied from original algo"""
-    # Get rid of the mock on datetime.datetime.utcnow() otherwise fetch_completed_trials always
-    # fetch all trials since _last_fetched never changes.
-    monkeypatch.undo()
-
     # Set values for predictions
     producer.experiment.pool_size = 1
     producer.experiment.algorithms.algorithm.possible_values = [('rnn', 'gru')]
