@@ -14,6 +14,9 @@ from orion.core.io.database import Database, DuplicateKeyError
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 
 @pytest.fixture()
 def patch_sample(monkeypatch):
@@ -51,7 +54,10 @@ def patch_sample2(monkeypatch):
 
 @pytest.fixture()
 def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
-    """Patch ``random.sample`` to return the first one and check call."""
+    """Patch ``random.sample`` to return the first one and check call.
+
+    The first trial is marked as new, but in DB it is reserved.
+    """
     def mock_sample(a_list, should_be_one):
         assert type(a_list) == list
         assert len(a_list) >= 1
@@ -85,7 +91,10 @@ def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
 
 @pytest.fixture()
 def patch_sample_concurrent2(monkeypatch, create_db_instance, exp_config):
-    """Patch ``random.sample`` to return the first one and check call."""
+    """Patch ``random.sample`` to return the first one and check call.
+
+    All trials are marked as new, but in DB they are reserved.
+    """
     def mock_sample(a_list, should_be_one):
         assert type(a_list) == list
         assert len(a_list) >= 1
@@ -145,16 +154,19 @@ def new_config(random_dt):
 
 
 def assert_protocol(exp):
+    """Transitional method to move away from mongodb"""
     # assert exp._protocol._db is create_db_instance
     pass
 
 
 def count_experiment(exp):
+    """Transitional method to move away from mongodb"""
     # return count_experiment(exp)
     return exp._protocol._db.count("experiments")
 
 
 def get_underlying_db(exp):
+    """Transitional method to move away from mongodb"""
     return exp._protocol._db._db
 
 
@@ -701,6 +713,25 @@ class TestReserveTrial(object):
         exp_query['status'] = 'interrupted'
 
         assert len(hacked_exp.fetch_trials(exp_query)) == 1
+
+    def test_fix_lost_trials_race_condition(self, hacked_exp, random_dt, monkeypatch):
+        """Test that a lost trial fixed by a concurrent process does not cause error."""
+        exp_query = {'experiment': hacked_exp.id}
+        trial = hacked_exp.fetch_trials(exp_query)[0]
+        heartbeat = random_dt - datetime.timedelta(seconds=180)
+
+        Database().write('trials', {'status': 'interrupted', 'heartbeat': heartbeat},
+                         {'experiment': hacked_exp.id, '_id': trial.id})
+
+        assert hacked_exp.fetch_trials(exp_query)[0].status == 'interrupted'
+
+        def fetch_lost_trials(self, query):
+            trial.status = 'reserved'
+            return [trial]
+
+        with monkeypatch.context() as m:
+            m.setattr(hacked_exp.__class__, 'fetch_trials', fetch_lost_trials)
+            hacked_exp.fix_lost_trials()
 
 
 @pytest.mark.usefixtures("patch_sample")

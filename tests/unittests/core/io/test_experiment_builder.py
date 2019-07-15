@@ -10,6 +10,16 @@ from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.exceptions import NoConfigurationError
 
 
+def get_db(exp):
+    """Transitional method to move away from mongodb"""
+    return exp._protocol._db
+
+
+def get_view_db(exp):
+    """Transitional method to move away from mongodb"""
+    return exp._experiment._protocol._protocol._db
+
+
 @pytest.mark.usefixtures("clean_db")
 def test_fetch_local_config(config_file):
     """Test local config (default, env_vars, cmdconfig, cmdargs)"""
@@ -145,7 +155,7 @@ def test_build_view_from(config_file, create_db_instance, exp_config, random_dt)
     exp_view = ExperimentBuilder().build_view_from(cmdargs)
 
     assert exp_view._experiment._init_done is True
-    assert exp_view._experiment._db._database is create_db_instance
+    assert get_view_db(exp_view) is create_db_instance
     assert exp_view._id == exp_config[0][0]['_id']
     assert exp_view.name == exp_config[0][0]['name']
     assert exp_view.configuration['refers'] == exp_config[0][0]['refers']
@@ -185,7 +195,7 @@ def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_d
     exp = ExperimentBuilder().build_from(cmdargs)
 
     assert exp._init_done is True
-    assert exp._db is create_db_instance
+    assert get_db(exp) is create_db_instance
     assert exp.name == cmdargs['name']
     assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
     assert exp.metadata['datetime'] == random_dt
@@ -213,7 +223,7 @@ def test_build_from_hit(old_config_file, create_db_instance, exp_config, script_
     exp = ExperimentBuilder().build_from(cmdargs)
 
     assert exp._init_done is True
-    assert exp._db is create_db_instance
+    assert get_db(exp) is create_db_instance
     assert exp._id == exp_config[0][0]['_id']
     assert exp.name == exp_config[0][0]['name']
     assert exp.configuration['refers'] == exp_config[0][0]['refers']
@@ -249,7 +259,7 @@ def test_build_from_config_no_hit(config_file, create_db_instance, exp_config, r
     exp = ExperimentBuilder().build_from_config(full_config)
 
     assert exp._init_done is True
-    assert exp._db is create_db_instance
+    assert get_db(exp) is create_db_instance
     assert exp.name == cmdargs['name']
     assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
     assert exp.metadata['datetime'] == random_dt
@@ -288,7 +298,7 @@ def test_build_from_config_hit(old_config_file, create_db_instance, exp_config, 
     exp = ExperimentBuilder().build_from_config(exp_view.configuration)
 
     assert exp._init_done is True
-    assert exp._db is create_db_instance
+    assert get_db(exp) is create_db_instance
     assert exp._id == exp_config[0][0]['_id']
     assert exp.name == exp_config[0][0]['name']
     assert exp.configuration['refers'] == exp_config[0][0]['refers']
@@ -317,7 +327,7 @@ def test_build_without_config_hit(old_config_file, create_db_instance, exp_confi
     exp = ExperimentBuilder().build_from_config(exp_view.configuration)
 
     assert exp._init_done is True
-    assert exp._db is create_db_instance
+    assert get_db(exp) is create_db_instance
     assert exp._id == exp_config[0][0]['_id']
     assert exp.name == exp_config[0][0]['name']
     assert exp.configuration['refers'] == exp_config[0][0]['refers']

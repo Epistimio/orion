@@ -14,7 +14,6 @@ import itertools
 import logging
 import pprint
 
-from orion.core.io.database import Database
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer
 
@@ -73,14 +72,14 @@ def workon(experiment, worker_trials=None):
         return
 
     # Database().read('trials', {'_id': stats['best_trials_id']})[0]
-    best = experiment.fetch_trials()
+    best = experiment.fetch_trials({'_id': stats['best_trials_id']})[0]
 
     stats_stream = io.StringIO()
     pprint.pprint(stats, stream=stats_stream)
     stats_string = stats_stream.getvalue()
 
     best_stream = io.StringIO()
-    pprint.pprint(best['params'], stream=best_stream)
+    pprint.pprint(best.params, stream=best_stream)
     best_string = best_stream.getvalue()
 
     log.info("#####  Search finished successfully  #####")

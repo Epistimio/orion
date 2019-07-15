@@ -27,7 +27,6 @@ from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
                                         Strategy)
-from orion.core.worker.trial import Trial
 from orion.core.worker.trial_monitor import TrialMonitor
 from orion.storage.base import StorageProtocol, ReadOnlyStorageProtocol
 
@@ -200,15 +199,23 @@ class Experiment(object):
         """
         self._node = node
 
-    def reserve_trial(self, score_handle=None):
+    def retrieve_result(self, trial, *args, **kwargs):
+        return self._protocol.retrieve_result(trial, *args, **kwargs)
+
+    def update_trial(self, *args, **kwargs):
+        return self._protocol.update_trial(*args, **kwargs)
+
+    def reserve_trial(self, score_handle=None, _depth=1):
         """Find *new* trials that exist currently in database and select one of
         them based on the highest score return from `score_handle` callable.
 
         :param score_handle: A way to decide which trial out of the *new* ones to
            to pick as *reserved*, defaults to a random choice.
         :type score_handle: callable
+        :param _depth: recursion depth only used for logging purposes can be ignored
         :return: selected `Trial` object, None if could not find any.
         """
+        log.debug(f'{">" * _depth} Reserving trial with (score: {score_handle})')
         if score_handle is not None and not callable(score_handle):
             raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
 
@@ -218,9 +225,12 @@ class Experiment(object):
             experiment=self._id,
             status={'$in': ['new', 'suspended', 'interrupted']}
             )
-        new_trials = self._protocol.fetch_trials(query)
+
+        new_trials = self.fetch_trials(query)
+        log.debug(f'{">" * _depth} Fetched (trials: {len(new_trials)})')
 
         if not new_trials:
+            log.debug(f'{"<" * _depth} No new trials found')
             return None
 
         if score_handle is not None and self.space:
@@ -233,7 +243,9 @@ class Experiment(object):
             log.warning("While reserving trial: `score_handle` was provided, but "
                         "parameter space has not been defined yet.")
 
+        log.debug(f'{">" * _depth} going to select')
         selected_trial = random.sample(new_trials, 1)[0]
+        log.debug(f'{">" * _depth} selected (trial: {selected_trial})')
 
         update = dict(status='reserved', heartbeat=datetime.datetime.utcnow())
 
@@ -244,14 +256,20 @@ class Experiment(object):
         # status meanwhile, update will fail, because query will fail.
         # This relies on the atomicity of document updates.
         # /!\ This is not atomic if you are using monogo db replica set !
-        selected_trial = self._protocol.update_trial(
+
+        # reserved = self._db.write('trials', query=query, data=update)
+        log.debug(f'{">" * _depth} trying to reverse trial')
+        reserved = self._protocol.update_trial(
             selected_trial, fields=update, where={'status': selected_trial.status})
 
-        if selected_trial is None:
-            selected_trial = self.reserve_trial(score_handle=score_handle)
+        if not reserved:
+            selected_trial = self.reserve_trial(score_handle=score_handle, _depth=_depth+1)
         else:
+            log.debug(f'{">" * _depth} found suitable trial')
+            selected_trial = self.fetch_trials({'_id': selected_trial.id})[0]
             TrialMonitor(self, selected_trial.id).start()
 
+        log.debug(f'{"<" * _depth} Reserved trial (trial: {selected_trial})')
         return selected_trial
 
     def fix_lost_trials(self):
@@ -271,8 +289,13 @@ class Experiment(object):
         trials = self.fetch_trials(query)
 
         for trial in trials:
-            self._protocol.update_trial(trial, status='interrupted', where=query)
-            # self._db.write('trials', {'status': 'interrupted'}, query)
+            query['_id'] = trial.id
+            log.debug('Setting lost trial %s status to interrupted...', trial.id)
+
+            updated = self._protocol.update_trial(trial, status='interrupted', where=query)
+            # updated = self._db.write('trials', {'status': 'interrupted'}, query)
+
+            log.debug('success' if updated else 'failed')
 
     def push_completed_trial(self, trial):
         """Inform database about an evaluated `trial` with resultlts.
@@ -314,7 +337,8 @@ class Experiment(object):
         lying_trial.status = 'completed'
         lying_trial.end_time = datetime.datetime.utcnow()
 
-        self._db.write('lying_trials', lying_trial.to_dict())
+        # FIXME
+        self._protocol._db.write('lying_trials', lying_trial.to_dict())
 
     def register_trial(self, trial):
         """Register new trial in the database.
