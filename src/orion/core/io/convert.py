@@ -94,7 +94,7 @@ class YAMLConverter(BaseConverter):
 
         """
         with open(filepath) as f:
-            return self.yaml.load(stream=f)
+            return self.yaml.safe_load(stream=f)
 
     def generate(self, filepath, data):
         """Create a configuration file at `filepath` using dictionary `data`."""

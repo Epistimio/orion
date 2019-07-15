@@ -253,13 +253,12 @@ class Experiment(object):
         if selected_trial.status == 'new':
             update["start_time"] = datetime.datetime.utcnow()
 
-        selected_trial_dict = self._db.read_and_write(
-            'trials', query=query, data=update)
+        reserved = self._db.write('trials', query=query, data=update)
 
-        if selected_trial_dict is None:
+        if not reserved:
             selected_trial = self.reserve_trial(score_handle=score_handle)
         else:
-            selected_trial = Trial(**selected_trial_dict)
+            selected_trial = self.fetch_trials({'_id': selected_trial.id})[0]
             TrialMonitor(self, selected_trial.id).start()
 
         return selected_trial
@@ -282,7 +281,9 @@ class Experiment(object):
 
         for trial in trials:
             query['_id'] = trial.id
-            self._db.write('trials', {'status': 'interrupted'}, query)
+            log.debug('Setting lost trial %s status to interrupted...', trial.id)
+            updated = self._db.write('trials', {'status': 'interrupted'}, query)
+            log.debug('success' if updated else 'failed')
 
     def push_completed_trial(self, trial):
         """Inform database about an evaluated `trial` with resultlts.
@@ -487,7 +488,7 @@ class Experiment(object):
         # object from a getter.
         return copy.deepcopy(config)
 
-    def configure(self, config, enable_branching=True):
+    def configure(self, config, enable_branching=True, enable_update=True):
         """Set `Experiment` by overwriting current attributes.
 
         If `Experiment` was already set and an overwrite is needed, a *branch*
@@ -539,6 +540,9 @@ class Experiment(object):
         self._instantiate_config(final_config)
 
         self._init_done = True
+
+        if not enable_update:
+            return
 
         # If everything is alright, push new config to database
         if is_new:
@@ -773,7 +777,8 @@ class ExperimentView(object):
                              (self._experiment.name, self._experiment.metadata['user']))
 
         try:
-            self._experiment.configure(self._experiment.configuration, enable_branching=False)
+            self._experiment.configure(self._experiment.configuration, enable_branching=False,
+                                       enable_update=False)
         except ValueError as e:
             if "Configuration is different and generates a branching event" in str(e):
                 raise RuntimeError(

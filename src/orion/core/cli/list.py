@@ -35,9 +35,17 @@ def main(args):
     config = builder.fetch_full_config(args, use_db=False)
     builder.setup_database(config)
 
-    experiments = Database().read("experiments", {})
+    query = {}
 
-    root_experiments = [exp for exp in experiments if exp['refers']['root_id'] == exp['_id']]
+    if args['name']:
+        query['name'] = args['name']
+
+    experiments = Database().read("experiments", query)
+
+    if args['name']:
+        root_experiments = experiments
+    else:
+        root_experiments = [exp for exp in experiments if exp['refers']['root_id'] == exp['_id']]
 
     for root_experiment in root_experiments:
         root = EVCBuilder().build_view_from({'name': root_experiment['name']}).node
