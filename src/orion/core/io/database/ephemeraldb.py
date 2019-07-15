@@ -166,8 +166,11 @@ class EphemeralCollection(object):
     def _validate_index(self, document, indexes=None):
         """Validate index values of a document
 
-        :raises: :exc:`DuplicateKeyError`: if the document contains unique indexes which are already
-        present in the database.
+        Raises
+        ------
+        DuplicateKeyError
+            If the document contains unique indexes which are already present in the database.
+
         """
         if indexes is None:
             indexes = self._indexes.keys()
@@ -191,8 +194,11 @@ class EphemeralCollection(object):
         If the documents do not have a keys `_id`, they are assigned by default
         the max id + 1.
 
-        :raises: :exc:`DuplicateKeyError`: if the document contains unique indexes which are
-            already present in the database.
+        Raises
+        ------
+        DuplicateKeyError
+            If the document contains unique indexes which are already present in the database.
+
         """
         for document in documents:
             if '_id' not in document:
@@ -202,16 +208,16 @@ class EphemeralCollection(object):
             self._documents.append(ephemeral_document)
             self._register_keys(ephemeral_document)
 
-        return True
+        return len(documents)
 
     def update_many(self, query, update):
-        """Update documents or upsert if not found.
+        """Update documents matching the query
 
-        If the document is not found, a new document which is the merge of query and update will be
-        inserted in the database.
+        Raises
+        ------
+        DuplicateKeyError
+            If the update creates a duplication of unique indexes in the database.
 
-        :raises: :exc:`DuplicateKeyError`: if the update creates a duplication of unique indexes in
-            the database.
         """
         updates = 0
         for document in self._documents:
@@ -219,10 +225,7 @@ class EphemeralCollection(object):
                 document.update(update)
                 updates += 1
 
-        if not updates:
-            self._upsert(query, update)
-
-        return True
+        return updates
 
     def _upsert(self, query, update):
         """Insert the document when query was not found.
@@ -242,6 +245,7 @@ class EphemeralCollection(object):
         """Count the number of documents in a collection which match the `query`.
 
         .. seealso:: :meth:`AbstractDB.count` for argument documentation.
+
         """
         return len(self.find(query))
 
@@ -251,14 +255,17 @@ class EphemeralCollection(object):
         .. seealso:: :meth:`AbstractDB.remove` for argument documentation.
 
         """
+        deleted = 0
         retained_documents = []
         for document in self._documents:
             if not document.match(query):
                 retained_documents.append(document)
+            else:
+                deleted += 1
 
         self._documents = retained_documents
 
-        return True
+        return deleted
 
     def drop(self):
         """Drop the collection, removing all documents and indexes."""
