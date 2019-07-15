@@ -1344,9 +1344,10 @@ class ScriptConfigConflict(Conflict):
         """Get configuration dict of user's script without dimension definitions"""
         space_builder = SpaceBuilder()
         space_builder.build_from(config['metadata']['user_args'])
+
         nameless_config = dict((key, value)
                                for (key, value) in space_builder.parser.config_file_data.items()
-                               if not value.startswith('orion~'))
+                               if not (isinstance(value, str) and value.startswith('orion~')))
 
         return nameless_config
 

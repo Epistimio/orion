@@ -28,19 +28,17 @@ class PickledDB(AbstractDB):
     This is a very simple and inefficient implementation of a permanent database on disk for Oríon.
     The data is loaded from disk for every operation, and every operation is protected with a
     filelock.
+
+    Parameters
+    ----------
+    host: str
+        File path to save pickled ephemeraldb.  Default is {user data dir}/orion/orion_db.pkl ex:
+        $HOME/.local/share/orion/orion_db.pkl
+
     """
 
     # pylint: disable=unused-argument
     def __init__(self, host=DEFAULT_HOST, *args, **kwargs):
-        """Initialize the DB
-
-        Base folder defined by `host` is created during init.
-
-        :param host: File path to save pickled ephemeraldb.
-                     Default is {user data dir}/orion/orion_db.pkl
-                     ex: $HOME/.local/share/orion/orion_db.pkl
-        :type host: str
-        """
         super(PickledDB, self).__init__(host)
 
         if os.path.dirname(host):
