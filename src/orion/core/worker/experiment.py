@@ -29,6 +29,7 @@ from orion.core.worker.strategy import (BaseParallelStrategy,
                                         Strategy)
 from orion.core.worker.trial import Trial
 from orion.core.worker.trial_monitor import TrialMonitor
+from orion.storage.base import StorageProtocol, ReadOnlyStorageProtocol
 
 log = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ class Experiment(object):
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
                  'algorithms', 'producer', 'working_dir', '_db', '_init_done', '_id',
-                 '_node', '_last_fetched')
+                 '_node', '_last_fetched', '_protocol')
     non_branching_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name, user=None):
@@ -106,8 +107,9 @@ class Experiment(object):
         """
         log.debug("Creating Experiment object with name: %s", name)
         self._init_done = False
-        self._db = Database()  # fetch database instance
-        self._setup_db()  # build indexes for collections
+        self._protocol = StorageProtocol('legacy')
+        # self._db = Database()  # fetch database instance
+        # self._setup_db()  # build indexes for collections
 
         self._id = None
         self.name = name
@@ -122,8 +124,9 @@ class Experiment(object):
         self.working_dir = None
         self.producer = {'strategy': None}
 
-        config = self._db.read('experiments',
-                               {'name': name, 'metadata.user': user})
+        # config = self._db.read('experiments',  {'name': name, 'metadata.user': user})
+        config = self._protocol.fetch_experiments({'name': name, 'metadata.user': user})
+
         if config:
             log.debug("Found existing experiment, %s, under user, %s, registered in database.",
                       name, user)
@@ -139,19 +142,6 @@ class Experiment(object):
             self._id = config['_id']
 
         self._last_fetched = self.metadata.get("datetime", datetime.datetime.utcnow())
-
-    def _setup_db(self):
-        self._db.ensure_index('experiments',
-                              [('name', Database.ASCENDING),
-                               ('metadata.user', Database.ASCENDING)],
-                              unique=True)
-        self._db.ensure_index('experiments', 'metadata.datetime')
-
-        self._db.ensure_index('trials', 'experiment')
-        self._db.ensure_index('trials', 'status')
-        self._db.ensure_index('trials', 'results')
-        self._db.ensure_index('trials', 'start_time')
-        self._db.ensure_index('trials', [('end_time', Database.DESCENDING)])
 
     def fetch_trials(self, query, selection=None):
         """Fetch trials of the experiment in the database
@@ -170,7 +160,8 @@ class Experiment(object):
         """
         query["experiment"] = self._id
 
-        trials = Trial.build(self._db.read('trials', query, selection))
+        # trials = Trial.build(self._db.read('trials', query, selection))
+        trials = self._protocol.fetch_trials(query, selection)
 
         def _get_submit_time(trial):
             if trial.submit_time:
@@ -227,7 +218,7 @@ class Experiment(object):
             experiment=self._id,
             status={'$in': ['new', 'suspended', 'interrupted']}
             )
-        new_trials = self.fetch_trials(query)
+        new_trials = self._protocol.fetch_trials(query)
 
         if not new_trials:
             return None
@@ -244,22 +235,21 @@ class Experiment(object):
 
         selected_trial = random.sample(new_trials, 1)[0]
 
-        # Query on status to ensure atomicity. If another process change the
-        # status meanwhile, read_and_write will fail, because query will fail.
-        query = {'_id': selected_trial.id, 'status': selected_trial.status}
-
         update = dict(status='reserved', heartbeat=datetime.datetime.utcnow())
 
         if selected_trial.status == 'new':
             update["start_time"] = datetime.datetime.utcnow()
 
-        selected_trial_dict = self._db.read_and_write(
-            'trials', query=query, data=update)
+        # Query on status to ensure atomicity. If another process change the
+        # status meanwhile, update will fail, because query will fail.
+        # This relies on the atomicity of document updates.
+        # /!\ This is not atomic if you are using monogo db replica set !
+        selected_trial = self._protocol.update_trial(
+            selected_trial, fields=update, where={'status': selected_trial.status})
 
-        if selected_trial_dict is None:
+        if selected_trial is None:
             selected_trial = self.reserve_trial(score_handle=score_handle)
         else:
-            selected_trial = Trial(**selected_trial_dict)
             TrialMonitor(self, selected_trial.id).start()
 
         return selected_trial
@@ -281,8 +271,8 @@ class Experiment(object):
         trials = self.fetch_trials(query)
 
         for trial in trials:
-            query['_id'] = trial.id
-            self._db.write('trials', {'status': 'interrupted'}, query)
+            self._protocol.update_trial(trial, status='interrupted', where=query)
+            # self._db.write('trials', {'status': 'interrupted'}, query)
 
     def push_completed_trial(self, trial):
         """Inform database about an evaluated `trial` with resultlts.
@@ -297,7 +287,7 @@ class Experiment(object):
         """
         trial.end_time = datetime.datetime.utcnow()
         trial.status = 'completed'
-        self._db.write('trials', trial.to_dict(), query={'_id': trial.id})
+        self._protocol.update_trial(trial, **trial.to_dict())
 
     def register_lie(self, lying_trial):
         """Register a *fake* trial created by the strategist.
@@ -350,7 +340,7 @@ class Experiment(object):
         trial.status = 'new'
         trial.submit_time = stamp
 
-        self._db.write('trials', trial.to_dict())
+        self._protocol.register_trial(trial)
 
     def fetch_completed_trials(self):
         """Fetch recent completed trials that this `Experiment` instance has not yet seen.
@@ -432,7 +422,7 @@ class Experiment(object):
             experiment=self._id,
             status='completed'
             )
-        num_completed_trials = self._db.count('trials', query)
+        num_completed_trials = len(self._protocol.fetch_trials(query))
 
         return ((num_completed_trials >= self.max_trials) or
                 (self._init_done and self.algorithms.is_done))
@@ -447,7 +437,8 @@ class Experiment(object):
 
         """
         query = {'experiment': self._id, 'status': 'broken'}
-        num_broken_trials = self._db.count('trials', query)
+        # num_broken_trials = self._db.count('trials', query)
+        num_broken_trials = len(self._protocol.fetch_trials(query))
 
         return num_broken_trials >= 3
 
@@ -550,7 +541,9 @@ class Experiment(object):
             # This will raise DuplicateKeyError if a concurrent experiment with
             # identical (name, metadata.user) is written first in the database.
 
-            self._db.write('experiments', final_config)
+            self._protocol.create_experiment(final_config)
+            # self._db.write('experiments', final_config)
+
             # XXX: Reminder for future DB implementations:
             # MongoDB, updates an inserted dict with _id, so should you :P
             self._id = final_config['_id']
@@ -558,9 +551,7 @@ class Experiment(object):
             # Update refers in db if experiment is root
             if not self.refers:
                 self.refers = {'root_id': self._id, 'parent_id': None, 'adapter': []}
-                update = {'refers': self.refers}
-                query = {'_id': self._id}
-                self._db.write('experiments', data=update, query=query)
+                self._protocol.update_experiment(self, refers=self.refers)
 
         else:
             # Writing the final config to an already existing experiment raises
@@ -569,7 +560,8 @@ class Experiment(object):
             # `db.write()`, thus seamingly breaking  the compound index
             # `(name, metadata.user)`
             final_config.pop("name")
-            self._db.write('experiments', final_config, {'_id': self._id})
+            self._protocol.update_experiment(self, **final_config)
+            # self._db.write('experiments', final_config, {'_id': self._id})
 
     @property
     def stats(self):
@@ -787,7 +779,7 @@ class ExperimentView(object):
 
             raise
 
-        self._experiment._db = ReadOnlyDB(self._experiment._db)
+        self._experiment._protocol = ReadOnlyStorageProtocol(self._experiment._protocol)
 
     def __getattr__(self, name):
         """Get attribute only if valid"""

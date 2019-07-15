@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 :mod:`orion.core.worker.consumer` -- Evaluate objective on a set of parameters
 ==============================================================================
@@ -14,11 +15,9 @@ import signal
 import subprocess
 import tempfile
 
-from orion.core.io.convert import JSONConverter
-from orion.core.io.database import Database
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.working_dir import WorkingDir
-from orion.core.worker.trial import Trial
+
 
 log = logging.getLogger(__name__)
 
@@ -66,8 +65,6 @@ class Consumer(object):
 
         self.script_path = experiment.metadata['user_script']
 
-        self.converter = JSONConverter()
-
     def consume(self, trial):
         """Execute user's script as a block box using the options contained
         within `trial`.
@@ -86,17 +83,20 @@ class Consumer(object):
                 log.debug("## New consumer context: %s", workdirname)
                 trial.working_dir = workdirname
                 self._consume(trial, workdirname)
+
         except KeyboardInterrupt:
             log.debug("### Save %s as interrupted.", trial)
             trial.status = 'interrupted'
-            Database().write('trials', trial.to_dict(),
-                             query={'_id': trial.id})
+
+            # FIXME: do we need to push all the attributes, or only pushing the status is enough ?
+            self.experiment.update_trial(trial, **trial.to_dict())
             raise
         except RuntimeError:
             log.debug("### Save %s as broken.", trial)
             trial.status = 'broken'
-            Database().write('trials', trial.to_dict(),
-                             query={'_id': trial.id})
+
+            # FIXME: do we need to push all the attributes, or only pushing the status is enough ?
+            self.experiment.update_trial(trial, **trial.to_dict())
         else:
             log.debug("### Register successfully evaluated %s.", trial)
             self.experiment.push_completed_trial(trial)
@@ -121,11 +121,7 @@ class Consumer(object):
         self.execute_process(results_file.name, cmd_args)
 
         log.debug("## Parse results from file and fill corresponding Trial object.")
-        results = self.converter.parse(results_file.name)
-
-        trial.results = [Trial.Result(name=res['name'],
-                                      type=res['type'],
-                                      value=res['value']) for res in results]
+        return self.experiment.retrieve_result(trial, results_file)
 
     def execute_process(self, results_filename, cmd_args):
         """Facilitate launching a black-box trial."""

@@ -144,6 +144,20 @@ def new_config(random_dt):
     return new_config
 
 
+def assert_protocol(exp):
+    # assert exp._protocol._db is create_db_instance
+    pass
+
+
+def count_experiment(exp):
+    # return count_experiment(exp)
+    return exp._protocol._db.count("experiments")
+
+
+def get_underlying_db(exp):
+    return exp._protocol._db._db
+
+
 class TestInitExperiment(object):
     """Create new Experiment instance."""
 
@@ -152,7 +166,7 @@ class TestInitExperiment(object):
         """Hit user name, but exp_name does not hit the db, create new entry."""
         exp = Experiment('supernaekei')
         assert exp._init_done is False
-        assert exp._db is create_db_instance
+        assert_protocol(exp)
         assert exp._id is None
         assert exp.name == 'supernaekei'
         assert exp.refers == {}
@@ -171,7 +185,7 @@ class TestInitExperiment(object):
         """Hit exp_name, but user's name does not hit the db, create new entry."""
         exp = Experiment('supernaedo2')
         assert exp._init_done is False
-        assert exp._db is create_db_instance
+        assert_protocol(exp)
         assert exp._id is None
         assert exp.name == 'supernaedo2'
         assert exp.refers == {}
@@ -190,7 +204,7 @@ class TestInitExperiment(object):
         """Hit exp_name + user's name in the db, fetch most recent entry."""
         exp = Experiment('supernaedo2')
         assert exp._init_done is False
-        assert exp._db is create_db_instance
+        assert_protocol(exp)
         assert exp._id == exp_config[0][0]['_id']
         assert exp.name == exp_config[0][0]['name']
         assert exp.refers == exp_config[0][0]['refers']
@@ -387,7 +401,7 @@ class TestConfigProperty(object):
         """
         exp = Experiment('supernaedo2')
         # Deliver an external configuration to finalize init
-        experiment_count_before = exp._db.count("experiments")
+        experiment_count_before = count_experiment(exp)
         exp.configure(exp_config[0][0])
         assert exp._init_done is True
         exp_config[0][0]['algorithms']['dumbalgo']['done'] = False
@@ -399,7 +413,7 @@ class TestConfigProperty(object):
         exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
-        assert experiment_count_before == exp._db.count("experiments")
+        assert experiment_count_before == count_experiment(exp)
 
     def test_try_set_after_init(self, exp_config):
         """Cannot set a configuration after init (currently)."""
@@ -422,19 +436,19 @@ class TestConfigProperty(object):
         exp = Experiment(new_config['name'])
         assert exp.id is None
         # Another experiment gets configured first
-        experiment_count_before = exp._db.count("experiments")
+        experiment_count_before = count_experiment(exp)
         naughty_little_exp = Experiment(new_config['name'])
         assert naughty_little_exp.id is None
         naughty_little_exp.configure(new_config)
         assert naughty_little_exp._init_done is True
         assert exp._init_done is False
-        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        assert (experiment_count_before + 1) == count_experiment(exp)
         # First experiment won't be able to be configured
         with pytest.raises(DuplicateKeyError) as exc_info:
             exp.configure(new_config)
         assert 'duplicate key error' in str(exc_info.value)
 
-        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        assert (experiment_count_before + 1) == count_experiment(exp)
 
     def test_try_set_after_race_condition_with_hit(self, exp_config, new_config):
         """Cannot set a configuration after init if config is built
@@ -447,28 +461,28 @@ class TestConfigProperty(object):
         # Another experiment gets configured first
         naughty_little_exp = Experiment(new_config['name'])
         assert naughty_little_exp.id is None
-        experiment_count_before = naughty_little_exp._db.count("experiments")
+        experiment_count_before = count_experiment(naughty_little_exp)
         naughty_little_exp.configure(copy.deepcopy(new_config))
         assert naughty_little_exp._init_done is True
 
         exp = Experiment(new_config['name'])
         assert exp._init_done is False
-        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        assert (experiment_count_before + 1) == count_experiment(exp)
         # Experiment with hit won't be able to be configured with config without db info
         with pytest.raises(DuplicateKeyError) as exc_info:
             exp.configure(new_config)
         assert 'Cannot register an existing experiment with a new config' in str(exc_info.value)
 
-        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        assert (experiment_count_before + 1) == count_experiment(exp)
 
         new_config['metadata']['datetime'] = naughty_little_exp.metadata['datetime']
         exp = Experiment(new_config['name'])
         assert exp._init_done is False
-        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        assert (experiment_count_before + 1) == count_experiment(exp)
         # New experiment will be able to be configured
         exp.configure(new_config)
 
-        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        assert (experiment_count_before + 1) == count_experiment(exp)
 
     def test_try_reset_after_race_condition(self, exp_config, new_config):
         """Cannot set a configuration after init if it looses a race condition,
@@ -480,26 +494,26 @@ class TestConfigProperty(object):
         """
         exp = Experiment(new_config['name'])
         # Another experiment gets configured first
-        experiment_count_before = exp._db.count("experiments")
+        experiment_count_before = count_experiment(exp)
         naughty_little_exp = Experiment(new_config['name'])
         naughty_little_exp.configure(new_config)
         assert naughty_little_exp._init_done is True
         assert exp._init_done is False
-        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        assert (experiment_count_before + 1) == count_experiment(exp)
         # First experiment won't be able to be configured
         with pytest.raises(DuplicateKeyError) as exc_info:
             exp.configure(new_config)
         assert 'duplicate key error' in str(exc_info.value)
 
         # Still not more experiment in DB
-        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        assert (experiment_count_before + 1) == count_experiment(exp)
 
         # Retry configuring the experiment
         new_config['metadata']['datetime'] = naughty_little_exp.metadata['datetime']
         exp = Experiment(new_config['name'])
         exp.configure(new_config)
         assert exp._init_done is True
-        assert (experiment_count_before + 1) == exp._db.count("experiments")
+        assert (experiment_count_before + 1) == count_experiment(exp)
         assert exp.configuration == naughty_little_exp.configuration
 
     def test_after_init_algorithms_are_objects(self, exp_config):
@@ -753,7 +767,7 @@ def test_fetch_non_completed_trials(hacked_exp, exp_config):
     """
     # Set two of completed trials to broken and reserved to have all possible status
     query = {'status': 'completed', 'experiment': hacked_exp.id}
-    database = hacked_exp._db._db
+    database = get_underlying_db(hacked_exp)
     completed_trials = database.trials.find(query)
     exp_config[1][0]['status'] = 'broken'
     database.trials.update({'_id': completed_trials[0]['_id']}, {'$set': {'status': 'broken'}})
@@ -852,7 +866,7 @@ class TestInitExperimentView(object):
         """Hit exp_name + user's name in the db, fetch most recent entry."""
         exp = ExperimentView('supernaedo2')
         assert exp._experiment._init_done is True
-        assert exp._experiment._db._database is create_db_instance
+
         assert exp._id == exp_config[0][0]['_id']
         assert exp.name == exp_config[0][0]['name']
         assert exp.configuration['refers'] == exp_config[0][0]['refers']
@@ -971,15 +985,27 @@ def test_experiment_view_stats(hacked_exp, exp_config, random_dt):
     assert len(stats) == 6
 
 
+#
+# @pytest.mark.usefixtures("with_user_tsirif")
+# def test_experiment_view_db_read_only():
+#     """Verify that wrapper experiments' database is read-only"""
+#     exp = ExperimentView('supernaedo2')
+#
+#     # Test that database.write indeed exists
+#     exp._experiment._db._database.write
+#     with pytest.raises(AttributeError):
+#         exp._experiment._db.write
+
+
 @pytest.mark.usefixtures("with_user_tsirif")
-def test_experiment_view_db_read_only():
+def test_experiment_view_protocol_read_only():
     """Verify that wrapper experiments' database is read-only"""
     exp = ExperimentView('supernaedo2')
 
-    # Test that database.write indeed exists
-    exp._experiment._db._database.write
+    # Test that _protocol.update_trials indeed exists
+    exp._experiment._protocol._protocol.update_trial
     with pytest.raises(AttributeError):
-        exp._experiment._db.write
+        exp._experiment._protocol.update_trial
 
 
 class TestInitExperimentWithEVC(object):
@@ -994,7 +1020,7 @@ class TestInitExperimentWithEVC(object):
         exp.algorithms = exp_config[0][4]['algorithms']
         exp.configure(exp.configuration)
         assert exp._init_done is True
-        assert exp._db is create_db_instance
+        assert_protocol(exp)
         assert exp._id is not None
         assert exp.name == 'supernaedo2.6'
         assert exp.configuration['refers'] == exp_config[0][4]['refers']
@@ -1012,7 +1038,7 @@ class TestInitExperimentWithEVC(object):
         exp.algorithms = {'random': {'seed': None}}
         exp.configure(exp.configuration)
         assert exp._init_done is True
-        assert exp._db is create_db_instance
+        assert_protocol(exp)
         assert exp._id is not None
         assert exp.name == 'supernaedo2.1'
         assert exp.configuration['refers'] == exp_config[0][4]['refers']
