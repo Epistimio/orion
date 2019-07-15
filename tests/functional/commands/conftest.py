@@ -9,6 +9,7 @@ import yaml
 
 from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
 import orion.core.cli
+from orion.core.io.database import Database
 
 
 class DumbAlgo(BaseAlgorithm):
@@ -96,7 +97,7 @@ def database():
 
 
 @pytest.fixture()
-def clean_db(database, exp_config):
+def clean_db(database, db_instance):
     """Clean insert example experiment entries to collections."""
     database.experiments.drop()
     database.lying_trials.drop()
@@ -106,36 +107,45 @@ def clean_db(database, exp_config):
 
 
 @pytest.fixture()
+def db_instance(null_db_instances):
+    """Create and save a singleton database instance."""
+    try:
+        db = Database(of_type='MongoDB', name='orion_test',
+                      username='user', password='pass')
+    except ValueError:
+        db = Database()
+
+    return db
+
+
+@pytest.fixture
 @pytest.mark.usefixtures('clean_db')
 def only_experiments_db(exp_config):
     """Clean the database and insert only experiments."""
     database.experiments.insert_many(exp_config[0])
 
 
+# Experiments combinations fixtures
 @pytest.fixture
-@pytest.mark.usefixtures('clean_db')
-def one_experiment(monkeypatch, create_db_instance):
+def one_experiment(monkeypatch, db_instance):
     """Create a single experiment."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(['init_only', '-n', 'test_list_single',
+    orion.core.cli.main(['init_only', '-n', 'test_single_exp',
                          './black_box.py', '--x~uniform(0,1)'])
 
 
 @pytest.fixture
-@pytest.mark.usefixtures('clean_db')
-def two_experiments(monkeypatch):
+def two_experiments(monkeypatch, db_instance):
     """Create an experiment and its child."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(['init_only', '-n', 'test_list_double',
+    orion.core.cli.main(['init_only', '-n', 'test_double_exp',
                          './black_box.py', '--x~uniform(0,1)'])
-    orion.core.cli.main(['init_only', '-n', 'test_list_double',
-                         '--branch', 'test_list_double_child', './black_box.py',
+    orion.core.cli.main(['init_only', '-n', 'test_double_exp',
+                         '--branch', 'test_double_exp_child', './black_box.py',
                          '--x~uniform(0,1)', '--y~+uniform(0,1)'])
 
 
 @pytest.fixture
-def three_experiments(monkeypatch, two_experiments):
+def three_experiments(monkeypatch, two_experiments, one_experiment):
     """Create a single experiment and an experiment and its child."""
-    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(['init_only', '-n', 'test_list_single',
-                         './black_box.py', '--x~uniform(0,1)'])
+    pass

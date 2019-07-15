@@ -3,13 +3,10 @@
 """perform a functional test of the list command."""
 import os
 
-import pytest
-
 import orion.core.cli
 
 
-@pytest.mark.usefixtures('clean_db')
-def test_no_exp(monkeypatch, capsys):
+def test_no_exp(monkeypatch, clean_db, capsys):
     """Test that nothing is printed when there are no experiments."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(['list'])
@@ -19,35 +16,35 @@ def test_no_exp(monkeypatch, capsys):
     assert captured == ""
 
 
-def test_single_exp(capsys, one_experiment):
+def test_single_exp(capsys, clean_db, one_experiment):
     """Test that the name of the experiment is printed when there is one experiment."""
     orion.core.cli.main(['list'])
 
     captured = capsys.readouterr().out
 
-    assert captured == " test_list_single\n"
+    assert captured == " test_single_exp\n"
 
 
-def test_two_exp(capsys, two_experiments):
+def test_two_exp(capsys, clean_db, two_experiments):
     """Test that experiment and child are printed."""
     orion.core.cli.main(['list'])
 
     captured = capsys.readouterr().out
 
-    assert captured == " test_list_double┐\n                 └test_list_double_child\n"
+    assert captured == " test_double_exp┐\n                └test_double_exp_child\n"
 
 
-def test_three_exp(capsys, three_experiments):
+def test_three_exp(capsys, clean_db, three_experiments):
     """Test that experiment, child  and grand-child are printed."""
     orion.core.cli.main(['list'])
 
     captured = capsys.readouterr().out
 
-    assert captured == " test_list_double┐\n                 └test_list_double_child\n \
-test_list_single\n"
+    assert captured == " test_double_exp┐\n                └test_double_exp_child\n \
+test_single_exp\n"
 
 
-def test_no_exp_name(three_experiments, monkeypatch, capsys):
+def test_no_exp_name(clean_db, three_experiments, monkeypatch, capsys):
     """Test that nothing is printed when there are no experiments with a given name."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(['list', '--name', 'I don\'t exist'])
@@ -57,31 +54,31 @@ def test_no_exp_name(three_experiments, monkeypatch, capsys):
     assert captured == ""
 
 
-def test_exp_name(three_experiments, monkeypatch, capsys):
+def test_exp_name(clean_db, three_experiments, monkeypatch, capsys):
     """Test that only the specified experiment is printed."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(['list', '--name', 'test_list_single'])
+    orion.core.cli.main(['list', '--name', 'test_single_exp'])
 
     captured = capsys.readouterr().out
 
-    assert captured == " test_list_single\n"
+    assert captured == " test_single_exp\n"
 
 
-def test_exp_name_with_child(three_experiments, monkeypatch, capsys):
+def test_exp_name_with_child(clean_db, three_experiments, monkeypatch, capsys):
     """Test that only the specified experiment is printed, and with its child."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(['list', '--name', 'test_list_double'])
+    orion.core.cli.main(['list', '--name', 'test_double_exp'])
 
     captured = capsys.readouterr().out
 
-    assert captured == " test_list_double┐\n                 └test_list_double_child\n"
+    assert captured == " test_double_exp┐\n                └test_double_exp_child\n"
 
 
-def test_exp_name_child(three_experiments, monkeypatch, capsys):
+def test_exp_name_child(clean_db, three_experiments, monkeypatch, capsys):
     """Test that only the specified child experiment is printed."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(['list', '--name', 'test_list_double_child'])
+    orion.core.cli.main(['list', '--name', 'test_double_exp_child'])
 
     captured = capsys.readouterr().out
 
-    assert captured == " test_list_double_child\n"
+    assert captured == " test_double_exp_child\n"
