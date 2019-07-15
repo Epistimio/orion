@@ -402,3 +402,99 @@ suspended             1
 """
 
     assert captured == expected
+
+
+def test_three_related_w_r_wout_a(clean_db, three_family_with_trials, capsys):
+    """Test three related experiments with --recursive."""
+    orion.core.cli.main(['status', '--recursive'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_double_exp
+===============
+status         quantity
+-----------  ----------
+broken                1
+completed             1
+interrupted           1
+new                   1
+reserved              1
+suspended             1
+
+
+  test_double_exp_child
+  =====================
+status         quantity
+  -----------  ----------
+  broken                1
+  completed             1
+  interrupted           1
+  new                   1
+  reserved              1
+  suspended             1
+
+
+  test_double_exp_child2
+  ======================
+status         quantity
+  -----------  ----------
+  broken                1
+  completed             1
+  interrupted           1
+  new                   1
+  reserved              1
+  suspended             1
+
+
+"""
+
+    assert captured == expected
+
+
+def test_three_related_branch_w_r_wout_a(clean_db, three_family_branch_with_trials, capsys):
+    """Test three related experiments with --recursive."""
+    orion.core.cli.main(['status', '--recursive'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_double_exp
+===============
+status         quantity
+-----------  ----------
+broken                1
+completed             1
+interrupted           1
+new                   1
+reserved              1
+suspended             1
+
+
+  test_double_exp_child
+  =====================
+status         quantity
+  -----------  ----------
+  broken                1
+  completed             1
+  interrupted           1
+  new                   1
+  reserved              1
+  suspended             1
+
+
+    test_double_exp_grand_child
+    ===========================
+status         quantity
+    -----------  ----------
+    broken                1
+    completed             1
+    interrupted           1
+    new                   1
+    reserved              1
+    suspended             1
+
+
+"""
+
+    assert captured == expected

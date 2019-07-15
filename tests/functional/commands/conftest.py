@@ -237,7 +237,7 @@ def three_experiments_with_trials(family_with_trials, single_with_trials):
 
 
 @pytest.fixture
-def three_experiments_family(two_experiments):
+def three_experiments_family(two_experiments, db_instance):
     """Create three experiments, one of which is the parent of the other two."""
     orion.core.cli.main(['init_only', '-n', 'test_double_exp',
                          '--branch', 'test_double_exp_child2', './black_box.py',
@@ -262,7 +262,7 @@ def three_family_with_trials(three_experiments_family, family_with_trials):
 
 
 @pytest.fixture
-def three_experiments_family_branch(two_experiments):
+def three_experiments_family_branch(two_experiments, db_instance):
     """Create three experiments, each parent of the following one."""
     orion.core.cli.main(['init_only', '-n', 'test_double_exp_child',
                          '--branch', 'test_double_exp_grand_child', './black_box.py',
