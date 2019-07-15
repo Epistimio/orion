@@ -92,6 +92,51 @@ def test_demo(database, monkeypatch):
 
 
 @pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_demo_with_script_config(database, monkeypatch):
+    """Test a simple usage scenario."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main(["hunt", "--config", "./orion_config.yaml",
+                         "./black_box_w_config.py", "--config", "script_config.yaml"])
+
+    exp = list(database.experiments.find({'name': 'voila_voici'}))
+    assert len(exp) == 1
+    exp = exp[0]
+    assert '_id' in exp
+    exp_id = exp['_id']
+    assert exp['name'] == 'voila_voici'
+    assert exp['pool_size'] == 1
+    assert exp['max_trials'] == 100
+    assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
+                                                      'dx_tolerance': 1e-7}}
+    assert 'user' in exp['metadata']
+    assert 'datetime' in exp['metadata']
+    assert 'orion_version' in exp['metadata']
+    assert 'user_script' in exp['metadata']
+    assert os.path.isabs(exp['metadata']['user_script'])
+    assert exp['metadata']['user_args'] == ['--config', 'script_config.yaml']
+
+    trials = list(database.trials.find({'experiment': exp_id}))
+    assert len(trials) <= 15
+    assert trials[-1]['status'] == 'completed'
+    trials = list(sorted(trials, key=lambda trial: trial['submit_time']))
+    for result in trials[-1]['results']:
+        assert result['type'] != 'constraint'
+        if result['type'] == 'objective':
+            assert abs(result['value'] - 23.4) < 1e-6
+            assert result['name'] == 'example_objective'
+        elif result['type'] == 'gradient':
+            res = numpy.asarray(result['value'])
+            assert 0.1 * numpy.sqrt(res.dot(res)) < 1e-7
+            assert result['name'] == 'example_gradient'
+    params = trials[-1]['params']
+    assert len(params) == 1
+    assert params[0]['name'] == '/x'
+    assert params[0]['type'] == 'real'
+    assert (params[0]['value'] - 34.56789) < 1e-5
+
+
+@pytest.mark.usefixtures("clean_db")
 def test_demo_two_workers(database, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
