@@ -161,7 +161,7 @@ class TestWrite(object):
                 'user': 'tsirif'}
         count_before = database['experiments'].count()
         # call interface
-        assert orion_db.write('experiments', item) is True
+        assert orion_db.write('experiments', item) == 1
         assert database['experiments'].count() == count_before + 1
         value = database['experiments'].find({'exp_name': 'supernaekei'})[0]
         assert value == item
@@ -174,7 +174,7 @@ class TestWrite(object):
                  'user': 'tsirif'}]
         count_before = database['experiments'].count()
         # call interface
-        assert orion_db.write('experiments', item) is True
+        assert orion_db.write('experiments', item) == 2
         assert database['experiments'].count() == count_before + 2
         value = database['experiments'].find({'exp_name': 'supernaekei2'})[0]
         assert value == item[0]
@@ -185,8 +185,9 @@ class TestWrite(object):
         """Should match existing entries, and update some of their keys."""
         filt = {'metadata.user': 'tsirif'}
         count_before = database['experiments'].count()
+        count_query = database['experiments'].count(filt)
         # call interface
-        assert orion_db.write('experiments', {'pool_size': 16}, filt) is True
+        assert orion_db.write('experiments', {'pool_size': 16}, filt) == count_query
         assert database['experiments'].count() == count_before
         value = list(database['experiments'].find({}))
         assert value[0]['pool_size'] == 16
@@ -199,25 +200,12 @@ class TestWrite(object):
         filt = {'_id': exp_config[0][1]['_id']}
         count_before = database['experiments'].count()
         # call interface
-        assert orion_db.write('experiments', {'pool_size': 36}, filt) is True
+        assert orion_db.write('experiments', {'pool_size': 36}, filt) == 1
         assert database['experiments'].count() == count_before
         value = list(database['experiments'].find())
         assert value[0]['pool_size'] == 2
         assert value[1]['pool_size'] == 36
         assert value[2]['pool_size'] == 2
-
-    def test_upsert_with_id(self, database, orion_db):
-        """Query with a non-existent ``_id`` should upsert something."""
-        filt = {'_id': 'lalalathisisnew'}
-        count_before = database['experiments'].count()
-        # call interface
-        assert orion_db.write('experiments', {'pool_size': 66}, filt) is True
-        assert database['experiments'].count() == count_before + 1
-        value = list(database['experiments'].find(filt))
-        assert len(value) == 1
-        assert len(value[0]) == 2
-        assert value[0]['_id'] == 'lalalathisisnew'
-        assert value[0]['pool_size'] == 66
 
     def test_insert_duplicate(self, database, orion_db):
         """Verify that duplicates cannot by inserted if index is unique"""
@@ -291,7 +279,7 @@ class TestRemove(object):
         count_before = database['experiments'].count()
         count_filt = database['experiments'].count(filt)
         # call interface
-        assert orion_db.remove('experiments', filt) is True
+        assert orion_db.remove('experiments', filt) == count_filt
         assert database['experiments'].count() == count_before - count_filt
         assert database['experiments'].count() == 1
         assert list(database['experiments'].find()) == [exp_config[0][3]]
@@ -302,7 +290,7 @@ class TestRemove(object):
 
         count_before = database['experiments'].count()
         # call interface
-        assert orion_db.remove('experiments', filt) is True
+        assert orion_db.remove('experiments', filt) == 1
         assert database['experiments'].count() == count_before - 1
         assert database['experiments'].find() == exp_config[0][1:]
 
