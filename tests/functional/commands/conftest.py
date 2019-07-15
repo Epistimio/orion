@@ -10,6 +10,8 @@ import yaml
 from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
 import orion.core.cli
 from orion.core.io.database import Database
+from orion.core.io.experiment_builder import ExperimentBuilder
+from orion.core.worker.trial import Trial
 
 
 class DumbAlgo(BaseAlgorithm):
@@ -128,10 +130,37 @@ def only_experiments_db(exp_config):
 # Experiments combinations fixtures
 @pytest.fixture
 def one_experiment(monkeypatch, db_instance):
-    """Create a single experiment."""
+    """Create an experiment without trials."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(['init_only', '-n', 'test_single_exp',
                          './black_box.py', '--x~uniform(0,1)'])
+
+
+@pytest.fixture
+def single_without_success(one_experiment):
+    """Create an experiment without a succesful trial."""
+    statuses = Trial.allowed_stati
+    statuses.remove('completed')
+
+    exp = ExperimentBuilder().build_from({'name': 'test_single_exp'})
+    x = {'name': '/x', 'type': 'real'}
+
+    x_value = 1
+    for status in statuses:
+        x['value'] = x_value
+        trial = Trial(experiment=exp.id, params=[x], status=status)
+        x_value += 1
+        Database().write('trials', trial.to_dict())
+
+
+@pytest.fixture
+def single_with_trials(single_without_success):
+    """Create an experiment with all types of trials."""
+    exp = ExperimentBuilder().build_from({'name': 'test_single_exp'})
+
+    x = {'name': '/x', 'type': 'real', 'value': 0}
+    trial = Trial(experiment=exp.id, params=[x], status='completed')
+    Database().write('trials', trial.to_dict())
 
 
 @pytest.fixture
@@ -146,6 +175,94 @@ def two_experiments(monkeypatch, db_instance):
 
 
 @pytest.fixture
-def three_experiments(monkeypatch, two_experiments, one_experiment):
+def family_with_trials(two_experiment):
+    """Create two related experiments with all types of trials."""
+    exp = ExperimentBuilder().build_from({'name': 'test_double_exp'})
+    exp2 = ExperimentBuilder().build_from({'name': 'test_double_exp_child'})
+    x = {'name': '/x', 'type': 'real'}
+    y = {'name': '/y', 'type': 'real'}
+
+    x_value = 0
+    for status in Trial.allowed_stati:
+        x['value'] = x_value
+        y['value'] = x_value
+        trial = Trial(experiment=exp.id, params=[x], status=status)
+        x['value'] = x_value * 10
+        trial2 = Trial(experiment=exp2.id, params=[x, y], status=status)
+        x_value += 1
+        Database().write('trials', trial.to_dict())
+        Database().write('trials', trial2.to_dict())
+
+
+@pytest.fixture
+def unrelated_with_trials(family_with_trials, single_with_trials):
+    """Create two unrelated experiments with all types of trials."""
+    exp = ExperimentBuilder().build_from({'name': 'test_double_exp_child'})
+
+    Database().remove('trials', {'experiment': exp.id})
+    Database().remove('experiments', {'_id': exp.id})
+
+
+@pytest.fixture
+def three_experiments(two_experiments, one_experiment):
     """Create a single experiment and an experiment and its child."""
     pass
+
+
+@pytest.fixture
+def three_experiments_with_trials(family_with_trials, single_with_trials):
+    """Create three experiments, two unrelated, with all types of trials."""
+    pass
+
+
+@pytest.fixture
+def three_experiments_family(two_experiments):
+    """Create three experiments, one of which is the parent of the other two."""
+    orion.core.cli.main(['init_only', '-n', 'test_double_exp',
+                         '--branch', 'test_double_exp_child2', './black_box.py',
+                         '--x~uniform(0,1)', '--z~+uniform(0,1)'])
+
+
+@pytest.fixture
+def three_family_with_trials(three_experiments_family, family_with_trials):
+    """Create three experiments, all related, two direct children, with all types of trials."""
+    exp = ExperimentBuilder().build_from({'name': 'test_double_exp_child2'})
+    x = {'name': '/x', 'type': 'real'}
+    z = {'name': '/z', 'type': 'real'}
+
+    x_value = 0
+    for status in Trial.allowed_stati:
+        x['value'] = x_value
+        z['value'] = x_value * 100
+        trial = Trial(experiment=exp.id, params=[x, z], status=status)
+        x_value += 1
+        Database().write('trials', trial.to_dict())
+
+
+@pytest.fixture
+def three_experiments_family_branch(two_experiments):
+    """Create three experiments, each parent of the following one."""
+    orion.core.cli.main(['init_only', '-n', 'test_double_exp_child',
+                         '--branch', 'test_double_exp_grand_child', './black_box.py',
+                         '--x~uniform(0,1)', '--y~uniform(0,1)', '--z~+uniform(0,1)'])
+
+
+@pytest.fixture
+def three_family_branch_with_trials(three_experiments_family_branch, family_with_trials):
+    """Create three experiments, all related, one child and one grandchild,
+    with all types of trials.
+
+    """
+    exp = ExperimentBuilder().build_from({'name': 'test_double_exp_grand_child'})
+    x = {'name': '/x', 'type': 'real'}
+    y = {'name': '/y', 'type': 'real'}
+    z = {'name': '/z', 'type': 'real'}
+
+    x_value = 0
+    for status in Trial.allowed_stati:
+        x['value'] = x_value
+        y['value'] = x_value * 10
+        z['value'] = x_value * 100
+        trial = Trial(experiment=exp.id, params=[x, y, z], status=status)
+        x_value += 1
+        Database().write('trials', trial.to_dict())
