@@ -127,6 +127,23 @@ def only_experiments_db(exp_config):
     database.experiments.insert_many(exp_config[0])
 
 
+def ensure_deterministic_id(name, db_instance, parent=None, root=None):
+    """Change the id of experiment `name` to `name`."""
+    experiment = db_instance.read('experiments', {'name': name})[0]
+    db_instance.remove('experiments', {'_id': experiment['_id']})
+    experiment['_id'] = name
+    experiment['refers']['root_id'] = name
+
+    if parent is not None and root is None:
+        experiment['refers']['parent_id'] = parent
+        experiment['refers']['root_id'] = parent
+    if root is not None:
+        experiment['refers']['parent_id'] = parent
+        experiment['refers']['root_id'] = root
+
+    db_instance.write('experiments', experiment)
+
+
 # Experiments combinations fixtures
 @pytest.fixture
 def one_experiment(monkeypatch, db_instance):
@@ -134,12 +151,13 @@ def one_experiment(monkeypatch, db_instance):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(['init_only', '-n', 'test_single_exp',
                          './black_box.py', '--x~uniform(0,1)'])
+    ensure_deterministic_id('test_single_exp', db_instance)
 
 
 @pytest.fixture
 def single_without_success(one_experiment):
     """Create an experiment without a succesful trial."""
-    statuses = Trial.allowed_stati
+    statuses = list(Trial.allowed_stati)
     statuses.remove('completed')
 
     exp = ExperimentBuilder().build_from({'name': 'test_single_exp'})
@@ -159,7 +177,8 @@ def single_with_trials(single_without_success):
     exp = ExperimentBuilder().build_from({'name': 'test_single_exp'})
 
     x = {'name': '/x', 'type': 'real', 'value': 0}
-    trial = Trial(experiment=exp.id, params=[x], status='completed')
+    results = {"name": "obj", "type": "objective", "value": 0}
+    trial = Trial(experiment=exp.id, params=[x], status='completed', results=[results])
     Database().write('trials', trial.to_dict())
 
 
@@ -172,10 +191,12 @@ def two_experiments(monkeypatch, db_instance):
     orion.core.cli.main(['init_only', '-n', 'test_double_exp',
                          '--branch', 'test_double_exp_child', './black_box.py',
                          '--x~uniform(0,1)', '--y~+uniform(0,1)'])
+    ensure_deterministic_id('test_double_exp', db_instance)
+    ensure_deterministic_id('test_double_exp_child', db_instance, 'test_double_exp')
 
 
 @pytest.fixture
-def family_with_trials(two_experiment):
+def family_with_trials(two_experiments):
     """Create two related experiments with all types of trials."""
     exp = ExperimentBuilder().build_from({'name': 'test_double_exp'})
     exp2 = ExperimentBuilder().build_from({'name': 'test_double_exp_child'})
@@ -221,6 +242,7 @@ def three_experiments_family(two_experiments):
     orion.core.cli.main(['init_only', '-n', 'test_double_exp',
                          '--branch', 'test_double_exp_child2', './black_box.py',
                          '--x~uniform(0,1)', '--z~+uniform(0,1)'])
+    ensure_deterministic_id('test_double_exp', db_instance)
 
 
 @pytest.fixture
@@ -245,6 +267,8 @@ def three_experiments_family_branch(two_experiments):
     orion.core.cli.main(['init_only', '-n', 'test_double_exp_child',
                          '--branch', 'test_double_exp_grand_child', './black_box.py',
                          '--x~uniform(0,1)', '--y~uniform(0,1)', '--z~+uniform(0,1)'])
+    ensure_deterministic_id('test_double_exp_grand_child', db_instance, 'test_double_exp_child',
+                            'test_double_exp')
 
 
 @pytest.fixture
