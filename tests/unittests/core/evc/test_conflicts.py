@@ -322,6 +322,21 @@ class TestScriptConfigConflict(object):
         """Verify the representation of conflict for user interface"""
         assert repr(config_conflict) == "Script's configuration file changed"
 
+    def test_comparison(self, yaml_config, yaml_diff_config):
+        """Test that different configs are detected as conflict."""
+        old_config = {'metadata': {'user_args': yaml_config}}
+        new_config = {'metadata': {'user_args': yaml_diff_config}}
+
+        conflicts = list(conflict.ScriptConfigConflict.detect(old_config, new_config))
+        assert len(conflicts) == 1
+
+    def test_comparison_idem(self, yaml_config):
+        """Test that identical configs are not detected as conflict."""
+        old_config = {'metadata': {'user_args': yaml_config}}
+        new_config = {'metadata': {'user_args': yaml_config + ['--other', 'args']}}
+
+        assert list(conflict.ScriptConfigConflict.detect(old_config, new_config)) == []
+
 
 @pytest.mark.usefixtures("create_db_instance")
 class TestExperimentNameConflict(object):
