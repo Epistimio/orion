@@ -51,7 +51,10 @@ def patch_sample2(monkeypatch):
 
 @pytest.fixture()
 def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
-    """Patch ``random.sample`` to return the first one and check call."""
+    """Patch ``random.sample`` to return the first one and check call.
+
+    The first trial is marked as new, but in DB it is reserved.
+    """
     def mock_sample(a_list, should_be_one):
         assert type(a_list) == list
         assert len(a_list) >= 1
@@ -85,7 +88,10 @@ def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
 
 @pytest.fixture()
 def patch_sample_concurrent2(monkeypatch, create_db_instance, exp_config):
-    """Patch ``random.sample`` to return the first one and check call."""
+    """Patch ``random.sample`` to return the first one and check call.
+
+    All trials are marked as new, but in DB they are reserved.
+    """
     def mock_sample(a_list, should_be_one):
         assert type(a_list) == list
         assert len(a_list) >= 1
@@ -688,6 +694,25 @@ class TestReserveTrial(object):
 
         assert len(hacked_exp.fetch_trials(exp_query)) == 1
 
+    def test_fix_lost_trials_race_condition(self, hacked_exp, random_dt, monkeypatch):
+        """Test that a lost trial fixed by a concurrent process does not cause error."""
+        exp_query = {'experiment': hacked_exp.id}
+        trial = hacked_exp.fetch_trials(exp_query)[0]
+        heartbeat = random_dt - datetime.timedelta(seconds=180)
+
+        Database().write('trials', {'status': 'interrupted', 'heartbeat': heartbeat},
+                         {'experiment': hacked_exp.id, '_id': trial.id})
+
+        assert hacked_exp.fetch_trials(exp_query)[0].status == 'interrupted'
+
+        def fetch_lost_trials(self, query):
+            trial.status = 'reserved'
+            return [trial]
+
+        with monkeypatch.context() as m:
+            m.setattr(hacked_exp.__class__, 'fetch_trials', fetch_lost_trials)
+            hacked_exp.fix_lost_trials()
+
 
 @pytest.mark.usefixtures("patch_sample")
 def test_push_completed_trial(hacked_exp, database, random_dt):
@@ -875,6 +900,37 @@ class TestInitExperimentView(object):
 
         with pytest.raises(AttributeError):
             exp.reserve_trial
+
+    @pytest.mark.usefixtures("with_user_tsirif", "create_db_instance")
+    def test_existing_experiment_view_not_modified(self, exp_config, monkeypatch):
+        """Experiment should not be modified if fetched in another verion of Oríon.
+
+        When loading a view the original config is used to configure the experiment, but
+        this process may modify the config if the version of Oríon is different. This should not be
+        saved in database.
+        """
+        terrible_message = 'oh no, I have been modified!'
+        original_configuration = ExperimentView('supernaedo2').configuration
+
+        def modified_configuration(self):
+            mocked_config = copy.deepcopy(original_configuration)
+            mocked_config['metadata']['datetime'] = terrible_message
+            return mocked_config
+
+        with monkeypatch.context() as m:
+            m.setattr(Experiment, 'configuration', property(modified_configuration))
+            exp = ExperimentView('supernaedo2')
+
+            # The mock is still in place and overwrites the configuration
+            assert exp.configuration['metadata']['datetime'] == terrible_message
+
+        # The mock is reverted and original config is returned, but modification is still in
+        # metadata
+        assert exp.metadata['datetime'] == terrible_message
+
+        # Loading again from DB confirms the DB was not overwritten
+        reloaded_exp = ExperimentView('supernaedo2')
+        assert reloaded_exp.configuration['metadata']['datetime'] != terrible_message
 
 
 def test_fetch_completed_trials_from_view(hacked_exp, exp_config, random_dt):

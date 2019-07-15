@@ -186,14 +186,14 @@ class MongoDB(AbstractDB):
             if type(data) not in (list, tuple):
                 data = [data]
             result = dbcollection.insert_many(documents=data)
-            return result.acknowledged
+            return len(result.inserted_ids)
 
         update_data = {'$set': data}
 
         result = dbcollection.update_many(filter=query,
                                           update=update_data,
-                                          upsert=True)
-        return result.acknowledged
+                                          upsert=False)
+        return result.modified_count
 
     def read(self, collection_name, query=None, selection=None):
         """Read a collection and return a value according to the query.
@@ -249,7 +249,7 @@ class MongoDB(AbstractDB):
         dbcollection = self._db[collection_name]
 
         result = dbcollection.delete_many(filter=query)
-        return result.acknowledged
+        return result.deleted_count
 
     def _sanitize_attrs(self):
         """Sanitize attributes using MongoDB's 'uri_parser' module."""
