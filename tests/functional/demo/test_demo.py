@@ -5,6 +5,7 @@ from collections import defaultdict
 import os
 import shutil
 import subprocess
+import tempfile
 
 import numpy
 import pytest
@@ -12,6 +13,7 @@ import yaml
 
 import orion.core.cli
 from orion.core.io.database import Database
+from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
 
@@ -72,6 +74,7 @@ def test_demo(database, monkeypatch):
     trials = list(database.trials.find({'experiment': exp_id}))
     assert len(trials) <= 15
     assert trials[-1]['status'] == 'completed'
+    trials = list(sorted(trials, key=lambda trial: trial['submit_time']))
     for result in trials[-1]['results']:
         assert result['type'] != 'constraint'
         if result['type'] == 'objective':
@@ -174,6 +177,7 @@ def test_workon(database):
 
     trials = list(database.trials.find({'experiment': exp_id}))
     assert len(trials) <= 15
+    trials = list(sorted(trials, key=lambda trial: trial['submit_time']))
     assert trials[-1]['status'] == 'completed'
     for result in trials[-1]['results']:
         assert result['type'] != 'constraint'
@@ -265,14 +269,15 @@ def test_working_dir_argument_cmdline(database, monkeypatch, tmp_path):
 @pytest.mark.usefixtures("null_db_instances")
 def test_tmpdir_is_deleted(database, monkeypatch, tmp_path):
     """Check that a permanent directory is used instead of tmpdir"""
-    if os.path.exists("/tmp/orion"):
-        shutil.rmtree("/tmp/orion")
+    tmp_path = os.path.join(tempfile.gettempdir(), 'orion')
+    if os.path.exists(tmp_path):
+        shutil.rmtree(tmp_path)
 
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["hunt", "-n", "allo", "--max-trials", "2", "--config",
                          "./database_config.yaml", "./black_box.py", "-x~uniform(-50,50)"])
 
-    assert not os.listdir("/tmp/orion")
+    assert not os.listdir(tmp_path)
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -280,17 +285,20 @@ def test_tmpdir_is_deleted(database, monkeypatch, tmp_path):
 def test_working_dir_argument_config(database, monkeypatch):
     """Check that a permanent directory is used instead of tmpdir"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    assert not os.path.exists("/tmp/orion/test")
+    dir_path = os.path.join('orion', 'test')
+    if os.path.exists(dir_path):
+        shutil.rmtree(dir_path)
+
     orion.core.cli.main(["hunt", "-n", "allo", "--max-trials", "2",
                          "--config", "./working_dir_config.yaml", "./black_box.py",
                          "-x~uniform(-50,50)"])
 
     exp = list(database.experiments.find({'name': 'allo'}))[0]
-    assert exp['working_dir'] == "/tmp/orion/test"
-    assert os.path.exists("/tmp/orion/test")
-    assert os.listdir("/tmp/orion/test")
+    assert exp['working_dir'] == dir_path
+    assert os.path.exists(dir_path)
+    assert os.listdir(dir_path)
 
-    shutil.rmtree("/tmp/orion/test")
+    shutil.rmtree(dir_path)
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -405,3 +413,16 @@ def test_worker_trials(database, monkeypatch):
                          "--max-trials", "6"])
 
     assert len(list(database.trials.find({'experiment': exp_id}))) == 6
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_resilience(monkeypatch):
+    """Test if Oríon stops after enough broken trials."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+    orion.core.cli.main(["hunt", "--config", "./orion_config_random.yaml", "./broken_box.py",
+                         "-x~uniform(-50, 50)"])
+
+    exp = ExperimentBuilder().build_from({'name': 'demo_random_search'})
+    assert len(exp.fetch_trials({'status': 'broken'})) == 3

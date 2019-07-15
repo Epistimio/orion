@@ -514,28 +514,6 @@
 - experiment: supernaedo2
 
   status: completed
-  worker: 1251231
-  submit_time: 2017-11-22T23:00:00
-  start_time: ~
-  end_time: 2017-11-22T22:30:00
-  results:
-    - name: ~
-      type: objective  # objective, constraint
-      value: 2
-    - name: naedw_grad
-      type: gradient
-      value: [-0.1, 2]
-  params:
-    - name: /encoding_layer
-      type: categorical
-      value: rnn
-    - name: /decoding_layer
-      type: categorical
-      value: rnn
-  parents: []
-- experiment: supernaedo2
-
-  status: completed
   worker: 23415151
   submit_time: 2017-11-23T00:00:00
   start_time: 150
@@ -558,6 +536,30 @@
       type: categorical
       value: lstm_with_attention
   parents: []
+
+- experiment: supernaedo2
+
+  status: completed
+  worker: 1251231
+  submit_time: 2017-11-22T23:00:00
+  start_time: ~
+  end_time: 2017-11-22T22:30:00
+  results:
+    - name: ~
+      type: objective  # objective, constraint
+      value: 2
+    - name: naedw_grad
+      type: gradient
+      value: [-0.1, 2]
+  params:
+    - name: /encoding_layer
+      type: categorical
+      value: rnn
+    - name: /decoding_layer
+      type: categorical
+      value: rnn
+  parents: []
+
 
 - experiment: supernaedo2
 

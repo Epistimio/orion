@@ -52,4 +52,4 @@ class CreationStage:
 
     def post_stage(self):
         """Print the created database."""
-        print(self.instance)
+        print('DB instance', self.instance)

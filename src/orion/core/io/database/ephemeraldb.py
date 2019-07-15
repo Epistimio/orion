@@ -139,7 +139,16 @@ class EphemeralCollection(object):
 
         keys = tuple(key for (key, order) in keys)
         if unique and keys not in self._indexes:
-            self._indexes[keys] = []
+            self._indexes[keys] = set()
+
+            for document in self._documents:
+                self._validate_index(document, indexes=[keys])
+                self._indexes[keys].add(tuple(document[key] for key in keys))
+
+    def _register_keys(self, document):
+        """Register index values of a new document"""
+        for index, values in self._indexes.items():
+            values.add(tuple(document[key] for key in index))
 
     def find(self, query=None, selection=None):
         """Find documents in the collection and return a value according to the query.
@@ -154,22 +163,20 @@ class EphemeralCollection(object):
 
         return found_documents
 
-    def _validate_index(self, document):
+    def _validate_index(self, document, indexes=None):
         """Validate index values of a document
 
         :raises: :exc:`DuplicateKeyError`: if the document contains unique indexes which are already
         present in the database.
         """
-        for index, values in self._indexes.items():
-            document_values = document.select({key: 1 for key in index})
-            if document_values in values:
+        if indexes is None:
+            indexes = self._indexes.keys()
+
+        for index in indexes:
+            document_values = tuple(document[key] for key in index)
+            if document_values in self._indexes[index]:
                 raise DuplicateKeyError(
                     "Duplicate key error: index={} value={}".format(index, document_values))
-
-    def _register_keys(self, document):
-        """Register index values of a new document"""
-        for index, values in self._indexes.items():
-            values.append(document.select({key: 1 for key in index}))
 
     def _get_new_id(self):
         """Return max id + 1"""
@@ -271,7 +278,8 @@ class EphemeralDocument(object):
     operators = {
         "$in": (lambda a, b: a in b),
         "$gte": (lambda a, b: a is not None and a >= b),
-        "$gt": (lambda a, b: a is not None and a > b)
+        "$gt": (lambda a, b: a is not None and a > b),
+        "$lte": (lambda a, b: a is not None and a <= b),
     }
 
     def __init__(self, data):
@@ -315,16 +323,22 @@ class EphemeralDocument(object):
 
             _id is set to 1 if not specified. Only _id may be set to 0 if other keys are set to 1.
         """
+        if len(keys) == 1 and keys.get('_id', 0) == 1:
+            return keys
+
         keys_without_id = [key for key in keys if key != '_id']
         n_keys = sum(keys[key] for key in keys_without_id)
         if n_keys != 0 and n_keys != len(keys_without_id):
             raise ValueError(
                 'Cannot mix selection with 1 and 0s except for _id: {}'.format(keys))
 
+        # All given keys are 0 (with possible exception of _id)
         if n_keys == 0:
             new_keys = dict((key, 1) for key in self._data.keys() if key not in keys)
             new_keys['_id'] = keys.get('_id', 1)
             keys = new_keys
+
+        keys.setdefault('_id', 1)
 
         return keys
 
@@ -335,7 +349,8 @@ class EphemeralDocument(object):
         while value=1 means it will.
 
         All specified keys should be 0 or 1. They cannot have different values with the exception
-        of _id which can be specified to 0 while the others are at 1.
+        of _id which can be specified to 0 while the others are at 1. The _id field is always
+        returned unless specified with 0.
 
         Parameters
         ----------

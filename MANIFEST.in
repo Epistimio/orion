@@ -1,6 +1,7 @@
 # General info
 include LICENSE
 include *.rst
+include ROADMAP.md
 exclude RESEARCH.md
 
 # Control and setup helpers

@@ -1,6 +1,6 @@
 name: allo
 
-working_dir: /tmp/orion/test
+working_dir: orion/test
 
 database:
   type: 'mongodb'
