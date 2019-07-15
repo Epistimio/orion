@@ -217,7 +217,7 @@ class Experiment(object):
         :param _depth: recursion depth only used for logging purposes can be ignored
         :return: selected `Trial` object, None if could not find any.
         """
-        log.debug(f'{">" * _depth} Reserving trial with (score: {score_handle})')
+        # log.debug(f'{">" * _depth} Reserving trial with (score: {score_handle})')
         if score_handle is not None and not callable(score_handle):
             raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
 
@@ -229,10 +229,10 @@ class Experiment(object):
             )
 
         new_trials = self.fetch_trials(query)
-        log.debug(f'{">" * _depth} Fetched (trials: {len(new_trials)})')
+        # log.debug(f'{">" * _depth} Fetched (trials: {len(new_trials)})')
 
         if not new_trials:
-            log.debug(f'{"<" * _depth} No new trials found')
+            # log.debug(f'{"<" * _depth} No new trials found')
             return None
 
         if score_handle is not None and self.space:
@@ -245,9 +245,8 @@ class Experiment(object):
             log.warning("While reserving trial: `score_handle` was provided, but "
                         "parameter space has not been defined yet.")
 
-        log.debug(f'{">" * _depth} going to select')
         selected_trial = random.sample(new_trials, 1)[0]
-        log.debug(f'{">" * _depth} selected (trial: {selected_trial})')
+        # log.debug(f'{">" * _depth} selected (trial: {selected_trial})')
 
         update = dict(status='reserved', heartbeat=datetime.datetime.utcnow())
 
@@ -260,18 +259,18 @@ class Experiment(object):
         # /!\ This is not atomic if you are using monogo db replica set !
 
         # reserved = self._db.write('trials', query=query, data=update)
-        log.debug(f'{">" * _depth} trying to reverse trial')
+        # log.debug(f'{">" * _depth} trying to reverse trial')
         reserved = self._protocol.update_trial(
             selected_trial, fields=update, where={'status': selected_trial.status})
 
         if not reserved:
             selected_trial = self.reserve_trial(score_handle=score_handle, _depth=_depth + 1)
         else:
-            log.debug(f'{">" * _depth} found suitable trial')
+            # log.debug(f'{">" * _depth} found suitable trial')
             selected_trial = self.fetch_trials({'_id': selected_trial.id})[0]
             TrialMonitor(self, selected_trial.id).start()
 
-        log.debug(f'{"<" * _depth} Reserved trial (trial: {selected_trial})')
+        # log.debug(f'{"<" * _depth} Reserved trial (trial: {selected_trial})')
         return selected_trial
 
     def fix_lost_trials(self):
