@@ -3,11 +3,13 @@
 """perform a functional test of the list command."""
 import os
 
+import pytest
+
 import orion.core.cli
-from orion.core.io.database import Database
 
 
-def test_no_exp(no_experiment, monkeypatch, capsys):
+@pytest.mark.usefixtures('clean_db')
+def test_no_exp(monkeypatch, capsys):
     """Test that nothing is printed when there are no experiments."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(['list'])

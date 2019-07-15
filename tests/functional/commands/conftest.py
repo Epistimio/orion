@@ -99,40 +99,21 @@ def database():
 def clean_db(database, exp_config):
     """Clean insert example experiment entries to collections."""
     database.experiments.drop()
+    database.lying_trials.drop()
     database.trials.drop()
     database.workers.drop()
     database.resources.drop()
 
 
 @pytest.fixture()
-def only_experiments_db(database, exp_config):
+@pytest.mark.usefixtures('clean_db')
+def only_experiments_db(exp_config):
     """Clean the database and insert only experiments."""
-    database.experiments.drop()
     database.experiments.insert_many(exp_config[0])
-    database.trials.drop()
-    database.workers.drop()
-    database.resources.drop()
 
 
 @pytest.fixture
-def no_experiment(database):
-    """Create and save a singleton for an empty database instance."""
-    database.experiments.drop()
-    database.lying_trials.drop()
-    database.trials.drop()
-    database.workers.drop()
-    database.resources.drop()
-
-    try:
-        db = Database(of_type='MongoDB', name='orion_test',
-                      username='user', password='pass')
-    except ValueError:
-        db = Database()
-
-    return db
-
-
-@pytest.fixture
+@pytest.mark.usefixtures('clean_db')
 def one_experiment(monkeypatch, create_db_instance):
     """Create a single experiment."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -141,7 +122,8 @@ def one_experiment(monkeypatch, create_db_instance):
 
 
 @pytest.fixture
-def two_experiments(monkeypatch, no_experiment):
+@pytest.mark.usefixtures('clean_db')
+def two_experiments(monkeypatch):
     """Create an experiment and its child."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(['init_only', '-n', 'test_list_double',
