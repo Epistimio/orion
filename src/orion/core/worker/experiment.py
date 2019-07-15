@@ -19,7 +19,7 @@ import sys
 from orion.core.cli.evc import fetch_branching_configuration
 from orion.core.evc.adapters import Adapter, BaseAdapter
 from orion.core.evc.conflicts import detect_conflicts
-from orion.core.io.database import Database, DuplicateKeyError, ReadOnlyDB
+from orion.core.io.database import DuplicateKeyError
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
@@ -28,7 +28,7 @@ from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
                                         Strategy)
 from orion.core.worker.trial_monitor import TrialMonitor
-from orion.storage.base import StorageProtocol, ReadOnlyStorageProtocol
+from orion.storage.base import ReadOnlyStorageProtocol, StorageProtocol
 
 log = logging.getLogger(__name__)
 
@@ -200,9 +200,11 @@ class Experiment(object):
         self._node = node
 
     def retrieve_result(self, trial, *args, **kwargs):
+        """See :func:`~orion.storage.BaseStorageProtocol.retrieve_result`"""
         return self._protocol.retrieve_result(trial, *args, **kwargs)
 
     def update_trial(self, *args, **kwargs):
+        """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
         return self._protocol.update_trial(*args, **kwargs)
 
     def reserve_trial(self, score_handle=None, _depth=1):
@@ -263,7 +265,7 @@ class Experiment(object):
             selected_trial, fields=update, where={'status': selected_trial.status})
 
         if not reserved:
-            selected_trial = self.reserve_trial(score_handle=score_handle, _depth=_depth+1)
+            selected_trial = self.reserve_trial(score_handle=score_handle, _depth=_depth + 1)
         else:
             log.debug(f'{">" * _depth} found suitable trial')
             selected_trial = self.fetch_trials({'_id': selected_trial.id})[0]

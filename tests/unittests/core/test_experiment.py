@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.experiment`."""
 
+
 import copy
 import datetime
 import getpass
+import logging
 import random
 
 import pytest
@@ -14,7 +16,7 @@ from orion.core.io.database import Database, DuplicateKeyError
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
 
-import logging
+
 logging.basicConfig(level=logging.DEBUG)
 
 
