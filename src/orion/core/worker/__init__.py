@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 def reserve_trial(experiment, producer):
     """Reserve a new trial, or produce and reserve a trial if none are available."""
-    trial = producer.reserve_trial(score_handle=producer.algorithm.score)
+    trial = experiment.reserve_trial(score_handle=producer.algorithm.score)
 
     if trial is None:
         log.debug("#### Failed to pull a new trial from database.")
