@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.experiment`."""
 
-
 import copy
 import datetime
 import getpass
@@ -742,7 +741,7 @@ def test_update_completed_trial(hacked_exp, database, random_dt):
     trial = hacked_exp.reserve_trial()
 
     results_file = tempfile.NamedTemporaryFile(
-        mode='w', prefix='results_', suffix='.log', dir='.', delete=False
+        mode='w', prefix='results_', suffix='.log', dir='.', delete=True
     )
 
     # Generate fake result
@@ -764,7 +763,7 @@ def test_update_completed_trial(hacked_exp, database, random_dt):
     assert yo['status'] == 'completed'
     assert yo['end_time'] == random_dt
 
-    results_file.delete
+    results_file.close()
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
