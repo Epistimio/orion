@@ -18,10 +18,18 @@ from orion.storage.base import BaseStorageProtocol
 
 
 class Legacy(BaseStorageProtocol):
-    """Legacy protocol, forward most request to experiment"""
+    """Legacy protocol, forward most request to experiment
+
+    Parameters
+    ----------
+
+    uri: str
+        database uri specifying how to connect to the database
+        the uri follows the following format
+        `mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[database][?options]]`
+    """
 
     def __init__(self, uri=None):
-        """INIT METHOD"""
         self.converter = JSONConverter()
         self._db = Database()
         self._setup_db()
