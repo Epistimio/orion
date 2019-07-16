@@ -98,23 +98,10 @@ def algorithm_dict():
 
 
 def test_format_title():
-    """Test title formatting with custom template"""
+    """Test title formatting template"""
     result = """Test\n===="""
 
     assert format_title('Test') == result
-
-
-def test_format_title_custom():
-    """Test title formatting with custom template"""
-    template = """{empty:-<{title_len}}\n{title}\n{empty:-<{title_len}}"""
-    result = """------\nCustom\n------"""
-
-    assert format_title('Custom', templates=dict(title=template)) == result
-
-    template = """{title}\n---"""
-    result = """Custom\n---"""
-
-    assert format_title('Custom', templates=dict(title=template)) == result
 
 
 @pytest.mark.parametrize("depth", [0, 1, 2])
@@ -387,21 +374,6 @@ executing.sh --some random --command line arguments
 """
 
 
-def test_format_commandline_custom():
-    """Test commandline section with custom formatting"""
-    experiment = DummyExperiment()
-    commandline = ['executing.sh', '--some', 'random', '--command', 'line', 'arguments']
-    experiment.metadata = {'user_args': commandline}
-    templates = dict(
-        title=" {title}\n+{empty:-<{title_len}}+",
-        commandline="{title}\ncommandline: {commandline}")
-
-    assert format_commandline(experiment, templates) == """\
- Commandline
-+-----------+
-commandline: executing.sh --some random --command line arguments"""
-
-
 def test_format_config(monkeypatch):
     """Test config section formatting"""
     experiment = DummyExperiment()
@@ -413,21 +385,6 @@ Config
 pool size: 10
 max trials: 100
 """
-
-
-def test_format_config_custom(monkeypatch):
-    """Test config section with custom formatting"""
-    experiment = DummyExperiment()
-    experiment.pool_size = 10
-    experiment.max_trials = 100
-    templates = dict(
-        title="{title}\n{empty:+<{title_len}}",
-        config="{title}\n(pool_size={experiment.pool_size}, max_trials={experiment.max_trials})")
-
-    assert format_config(experiment, templates) == """\
-Config
-++++++
-(pool_size=10, max_trials=100)"""
 
 
 def test_format_algorithm(algorithm_dict):
@@ -446,28 +403,6 @@ bayesianoptimizer:
 """
 
 
-def test_format_algorithm_custom(algorithm_dict):
-    """Test algorithm section with custom formatting"""
-    experiment = DummyExperiment()
-    experiment.configuration = {'algorithms': algorithm_dict}
-    templates = dict(
-        title="{title}\n{empty:~<{title_len}}",
-        algorithm="{title}\n{{\n  {configuration}\n}}")
-
-    assert format_algorithm(experiment, templates) == """\
-Algorithm
-~~~~~~~~~
-{
-  bayesianoptimizer:
-    acq_func: gp_hedge
-    alpha: 1e-10
-    n_initial_points: 10
-    n_restarts_optimizer: 0
-    normalize_y: False
-    strategy: cl_min
-}"""
-
-
 def test_format_space():
     """Test space section formatting"""
     experiment = DummyExperiment()
@@ -483,25 +418,6 @@ Space
 """
 
 
-def test_format_space_custom():
-    """Test space section with custom formatting"""
-    experiment = DummyExperiment()
-    commandline = ['executing.sh', '--some~choices(["random", "or", "not"])',
-                   '--command~uniform(0, 1)']
-    space = SpaceBuilder().build_from(commandline)
-    experiment.space = space
-    templates = dict(
-        title="{title}\n{empty:-<{title_len}}",
-        space="{title}\nparams:\n{params}")
-
-    assert format_space(experiment, templates) == """\
-Space
------
-params:
-/some: choices(['random', 'or', 'not'])
-/command: uniform(0, 1)"""
-
-
 def test_format_metadata():
     """Test metadata section formatting"""
     experiment = DummyExperiment()
@@ -515,29 +431,6 @@ Meta-data
 user: user
 datetime: now
 orion version: 1.0.1
-"""
-
-
-def test_format_metadata_custom():
-    """Test metadata section with custom formatting"""
-    experiment = DummyExperiment()
-    experiment.metadata = dict(
-        user='user',
-        datetime='now',
-        orion_version='1.0.1')
-    templates = dict(
-        title="{title}\n{empty:*<{title_len}}",
-        metadata="""\
-{title}
-orion={experiment.metadata[orion_version]}
-when={experiment.metadata[datetime]}
-""")
-
-    assert format_metadata(experiment, templates) == """\
-Meta-data
-*********
-orion=1.0.1
-when=now
 """
 
 
@@ -598,53 +491,6 @@ adapter:
 """  # noqa: W291
 
 
-def test_format_refers_custom():
-    """Test refers section with custom formatting"""
-    ROOT_NAME = 'root-name'
-    PARENT_NAME = 'parent-name'
-
-    root = DummyExperiment()
-    root.name = ROOT_NAME
-
-    parent = DummyExperiment()
-    parent.name = PARENT_NAME
-
-    child = DummyExperiment()
-    child.node = DummyExperiment()
-    child.node.parent = parent
-    child.node.root = root
-
-    adapter = DummyExperiment()
-    adapter.configuration = dict(
-        adummy='dict',
-        foran='adapter')
-
-    child.refers = dict(adapter=adapter)
-
-    # experiment.refers = dict(
-    #     parent='user',
-    #     datetime='now',
-    #     orion_version='1.0.1')
-    templates = dict(
-        title="| {title} |\n+-{empty:-<{title_len}}-+",
-        refers="""\
-{title}
-parent: {parent}
-adapter:
-{adapter}
-""")
-
-    assert format_refers(child, templates) == """\
-| Parent experiment |
-+-------------------+
-parent: parent-name
-adapter:
-
-  adummy: dict
-  foran: adapter
-"""
-
-
 def test_get_trial_params_empty():
     """Test failing to fetch trials does not fail"""
     experiment = DummyExperiment()
@@ -685,37 +531,6 @@ best evaluation: 0.1
 start time: yesterday
 finish time: now
 duration: way too long
-"""
-
-
-def test_format_stats_custom(dummy_trial):
-    """Test stats section with custom formatting"""
-    experiment = DummyExperiment()
-    experiment.stats = dict(
-        best_trials_id='dummy',
-        trials_completed=10,
-        best_evaluation=0.1,
-        start_time='yesterday',
-        finish_time='now',
-        duration='way too long')
-    experiment.fetch_trials = lambda query: [dummy_trial]
-    templates = dict(
-        title="* {title} *\n**{empty:*<{title_len}}**",
-        stats="""\
-{title}
-best trial:
-{best_params}
-corresponding evaluation: {stats[best_evaluation]}
-""")
-
-    assert format_stats(experiment, templates) == """\
-* Stats *
-*********
-best trial:
-  a: 0.0
-  b: 1
-  c: Some
-corresponding evaluation: 0.1
 """
 
 
@@ -819,128 +634,5 @@ best evaluation: 0.1
 start time: yesterday
 finish time: now
 duration: way too long
-
-"""  # noqa: W291
-
-
-def test_format_info_custom(algorithm_dict, dummy_trial):
-    """Test full info string with custom formatting"""
-    experiment = DummyExperiment()
-    commandline = ['executing.sh', '--some~choices(["random", "or", "not"])',
-                   '--command~uniform(0, 1)']
-    experiment.metadata = {'user_args': commandline}
-    experiment.pool_size = 10
-    experiment.max_trials = 100
-    experiment.configuration = {'algorithms': algorithm_dict}
-
-    space = SpaceBuilder().build_from(commandline)
-    experiment.space = space
-    print(space)
-    experiment.metadata.update(dict(
-        user='user',
-        datetime='now',
-        orion_version='1.0.1'))
-
-    ROOT_NAME = 'root-name'
-    PARENT_NAME = 'parent-name'
-
-    root = DummyExperiment()
-    root.name = ROOT_NAME
-
-    parent = DummyExperiment()
-    parent.name = PARENT_NAME
-
-    experiment.node = DummyExperiment()
-    experiment.node.parent = parent
-    experiment.node.root = root
-
-    adapter = DummyExperiment()
-    adapter.configuration = dict(
-        adummy='dict',
-        foran='adapter')
-
-    experiment.refers = dict(adapter=adapter)
-    experiment.stats = dict(
-        best_trials_id='dummy',
-        trials_completed=10,
-        best_evaluation=0.1,
-        start_time='yesterday',
-        finish_time='now',
-        duration='way too long')
-    experiment.fetch_trials = lambda query: [dummy_trial]
-
-    templates = dict(
-        title=" {title} \n+{empty:-<{title_len}}+",
-        commandline="{title}\ncommandline: {commandline}",
-        config="{title}\n(pool_size={experiment.pool_size}, max_trials={experiment.max_trials})",
-        algorithm="{title}\n{{\n  {configuration}\n}}",
-        space="{title}\nparams:\n{params}",
-        metadata="""\
-{title}
-orion={experiment.metadata[orion_version]}
-when={experiment.metadata[datetime]}
-""",
-        refers="""\
-{title}
-parent: {parent}
-adapter:
-{adapter}
-""",
-        stats="""\
-{title}
-best trial:
-{best_params}
-corresponding evaluation: {stats[best_evaluation]}
-""")
-
-    assert format_info(experiment, templates) == """\
- Commandline 
-+-----------+
-commandline: executing.sh --some~choices(["random", "or", "not"]) --command~uniform(0, 1)
-
- Config 
-+------+
-(pool_size=10, max_trials=100)
-
- Algorithm 
-+---------+
-{
-  bayesianoptimizer:
-    acq_func: gp_hedge
-    alpha: 1e-10
-    n_initial_points: 10
-    n_restarts_optimizer: 0
-    normalize_y: False
-    strategy: cl_min
-}
-
- Space 
-+-----+
-params:
-/some: choices(['random', 'or', 'not'])
-/command: uniform(0, 1)
-
- Meta-data 
-+---------+
-orion=1.0.1
-when=now
-
-
- Parent experiment 
-+-----------------+
-parent: parent-name
-adapter:
-
-  adummy: dict
-  foran: adapter
-
-
- Stats 
-+-----+
-best trial:
-  a: 0.0
-  b: 1
-  c: Some
-corresponding evaluation: 0.1
 
 """  # noqa: W291
