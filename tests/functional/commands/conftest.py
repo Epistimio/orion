@@ -242,7 +242,7 @@ def three_experiments_family(two_experiments, db_instance):
     orion.core.cli.main(['init_only', '-n', 'test_double_exp',
                          '--branch', 'test_double_exp_child2', './black_box.py',
                          '--x~uniform(0,1)', '--z~+uniform(0,1)'])
-    ensure_deterministic_id('test_double_exp', db_instance)
+    ensure_deterministic_id('test_double_exp_child2', db_instance)
 
 
 @pytest.fixture
