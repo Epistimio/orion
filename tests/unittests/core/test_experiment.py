@@ -157,7 +157,7 @@ def new_config(random_dt):
 
 def assert_protocol(exp, create_db_instance):
     """Transitional method to move away from mongodb"""
-    assert exp._protocol._db is create_db_instance
+    assert exp._storage._db is create_db_instance
     pass
 
 
