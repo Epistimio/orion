@@ -22,7 +22,8 @@ def test_experiment_without_trials_wout_ar(clean_db, one_experiment, capsys):
 
     captured = capsys.readouterr().out
 
-    expected = """test_single_exp
+    expected = """\
+test_single_exp
 ===============
 empty
 
@@ -37,7 +38,8 @@ def test_experiment_wout_success_wout_ar(clean_db, single_without_success, capsy
 
     captured = capsys.readouterr().out
 
-    expected = """test_single_exp
+    expected = """\
+test_single_exp
 ===============
 status         quantity
 -----------  ----------

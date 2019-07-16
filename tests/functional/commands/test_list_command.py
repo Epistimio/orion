@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""perform a functional test of the list command."""
+"""Perform a functional test of the list command."""
 import os
 
 import orion.core.cli
