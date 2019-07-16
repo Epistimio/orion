@@ -23,16 +23,13 @@ class BaseStorageProtocol:
         """Insert a new experiment inside the database"""
         raise NotImplementedError()
 
-    def update_experiment(self, experiment, fields=None, where=None, **kwargs):
+    def update_experiment(self, experiment, where=None, **kwargs):
         """Update a the fields of a given trials
 
         Parameters
         ----------
         experiment: Experiment
             Experiment object to update
-
-        fields: Optional[dict]
-            a dictionary of fields to update
 
         where: Optional[dict]
             constraint experiment must respect
@@ -59,16 +56,13 @@ class BaseStorageProtocol:
         """Fetch all the trials that match the query"""
         raise NotImplementedError()
 
-    def update_trial(self, trial, fields=None, where=None, **kwargs):
+    def update_trial(self, trial, where=None, **kwargs):
         """Update the fields of a given trials
 
         Parameters
         ----------
         trial: Trial
             Trial object to update
-
-        fields: Optional[dict]
-            A dictionary of fields to update
 
         where: Optional[dict]
             constraint trial must respect

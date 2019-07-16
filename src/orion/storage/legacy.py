@@ -49,21 +49,17 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.create_experiment`"""
         return self._db.write('experiments', config)
 
-    def update_experiment(self, experiment, fields=None, where=None, **kwargs):
+    def update_experiment(self, experiment, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
-        q = {}
 
-        if fields is not None and isinstance(fields, dict):
-            q = fields
-
-        elif fields is None:
-            q = kwargs
+        if not kwargs:
+            return True
 
         if where is None:
             where = dict()
 
         where['_id'] = experiment._id
-        return self._db.write('experiments', data=q, query=where)
+        return self._db.write('experiments', data=kwargs, query=where)
 
     def fetch_experiments(self, query):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_experiments`"""
@@ -101,21 +97,17 @@ class Legacy(BaseStorageProtocol):
         ]
         return trial
 
-    def update_trial(self, trial: Trial, fields=None, where=None, **kwargs) -> Trial:
+    def update_trial(self, trial: Trial, where=None, **kwargs) -> Trial:
         """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
-        q = {}
 
-        if fields is not None and isinstance(fields, dict):
-            q = fields
-
-        elif fields is None:
-            q = kwargs
+        if not kwargs:
+            return trial
 
         if where is None:
             where = dict()
 
         where['_id'] = trial.id
-        was_success = self._db.write('trials', data=q, query=where)
+        was_success = self._db.write('trials', data=kwargs, query=where)
 
         if not was_success:
             return None

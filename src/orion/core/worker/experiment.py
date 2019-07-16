@@ -255,7 +255,7 @@ class Experiment(object):
 
         log.debug('%s trying to reverse trial', '<' * _depth)
         reserved = self._storage.update_trial(
-            selected_trial, fields=update, where={'status': selected_trial.status})
+            selected_trial, **update, where={'status': selected_trial.status})
 
         if not reserved:
             selected_trial = self.reserve_trial(score_handle=score_handle, _depth=_depth + 1)
