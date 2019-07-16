@@ -50,24 +50,16 @@ INFO_TEMPLATE = """\
 """
 
 
-def format_info(experiment, templates=None):
-    """Render a string for all info of experiment
-
-    Parameters
-    ----------
-    experiment: `orion.core.worker.experiment.Experiment`
-    templates: dict
-        Templates for all sections and titles
-
-    """
+def format_info(experiment):
+    """Render a string for all info of experiment"""
     info_string = INFO_TEMPLATE.format(
-        commandline=format_commandline(experiment, templates),
-        configuration=format_config(experiment, templates),
-        algorithm=format_algorithm(experiment, templates),
-        space=format_space(experiment, templates),
-        metadata=format_metadata(experiment, templates),
-        refers=format_refers(experiment, templates),
-        stats=format_stats(experiment, templates))
+        commandline=format_commandline(experiment),
+        configuration=format_config(experiment),
+        algorithm=format_algorithm(experiment),
+        space=format_space(experiment),
+        metadata=format_metadata(experiment),
+        refers=format_refers(experiment),
+        stats=format_stats(experiment))
 
     return info_string
 
@@ -78,23 +70,9 @@ TITLE_TEMPLATE = """\
 """
 
 
-def format_title(title, templates=None):
-    r"""Render a title above an horizontal bar
-
-    Parameters
-    ----------
-    title: string
-    templates: dict
-        Templates for `title`, `leaf` and `dict_node`.
-        Default is "{title}\n{empty:=<{title_len}}"
-
-    """
-    if templates is None:
-        templates = dict()
-
-    title_template = templates.get('title', TITLE_TEMPLATE)
-
-    title_string = title_template.format(
+def format_title(title):
+    """Render a title above an horizontal bar"""
+    title_string = TITLE_TEMPLATE.format(
         title=title,
         title_len=len(title),
         empty='')
@@ -265,24 +243,10 @@ COMMANDLINE_TEMPLATE = """\
 """
 
 
-def format_commandline(experiment, templates=None):
-    """Render a string for commandline section
-
-    Parameters
-    ----------
-    experiment: `orion.core.worker.experiment.Experiment`
-    templates: dict
-        templates for the title and `commandline`.
-        See `format_title` for more info.
-
-    """
-    if templates is None:
-        templates = dict()
-
-    commandline_template = templates.get('commandline', COMMANDLINE_TEMPLATE)
-
-    commandline_string = commandline_template.format(
-        title=format_title("Commandline", templates=templates),
+def format_commandline(experiment):
+    """Render a string for commandline section"""
+    commandline_string = COMMANDLINE_TEMPLATE.format(
+        title=format_title("Commandline"),
         commandline=" ".join(experiment.metadata['user_args']))
 
     return commandline_string
@@ -295,24 +259,10 @@ max trials: {experiment.max_trials}
 """
 
 
-def format_config(experiment, templates=None):
-    """Render a string for config section
-
-    Parameters
-    ----------
-    experiment: `orion.core.worker.experiment.Experiment`
-    templates: dict
-        templates for the title and `config`.
-        See `format_title` for more info.
-
-    """
-    if templates is None:
-        templates = dict()
-
-    config_template = templates.get('config', CONFIG_TEMPLATE)
-
-    config_string = config_template.format(
-        title=format_title("Config", templates),
+def format_config(experiment):
+    """Render a string for config section"""
+    config_string = CONFIG_TEMPLATE.format(
+        title=format_title("Config"),
         experiment=experiment)
 
     return config_string
@@ -324,24 +274,10 @@ ALGORITHM_TEMPLATE = """\
 """
 
 
-def format_algorithm(experiment, templates=None):
-    """Render a string for algorithm section
-
-    Parameters
-    ----------
-    experiment: `orion.core.worker.experiment.Experiment`
-    templates: dict
-        templates for the title and `algorithm`.
-        See `format_title` for more info.
-
-    """
-    if templates is None:
-        templates = dict()
-
-    algorithm_template = templates.get('algorithm', ALGORITHM_TEMPLATE)
-
-    algorithm_string = algorithm_template.format(
-        title=format_title("Algorithm", templates),
+def format_algorithm(experiment):
+    """Render a string for algorithm section"""
+    algorithm_string = ALGORITHM_TEMPLATE.format(
+        title=format_title("Algorithm"),
         configuration=format_dict(experiment.configuration['algorithms']))
 
     return algorithm_string
@@ -353,24 +289,10 @@ SPACE_TEMPLATE = """\
 """
 
 
-def format_space(experiment, templates=None):
-    """Render a string for space section
-
-    Parameters
-    ----------
-    experiment: `orion.core.worker.experiment.Experiment`
-    templates: dict
-        templates for the title and `space`.
-        See `format_title` for more info.
-
-    """
-    if templates is None:
-        templates = dict()
-
-    space_template = templates.get('space', SPACE_TEMPLATE)
-
-    space_string = space_template.format(
-        title=format_title("Space", templates),
+def format_space(experiment):
+    """Render a string for space section"""
+    space_string = SPACE_TEMPLATE.format(
+        title=format_title("Space"),
         params="\n".join(name + ": " + experiment.space[name].get_prior_string()
                          for name in experiment.space.keys()))
 
@@ -385,24 +307,10 @@ orion version: {experiment.metadata[orion_version]}
 """
 
 
-def format_metadata(experiment, templates=None):
-    """Render a string for metadata section
-
-    Parameters
-    ----------
-    experiment: `orion.core.worker.experiment.Experiment`
-    templates: dict
-        templates for the title and `metadata`.
-        See `format_title` for more info.
-
-    """
-    if templates is None:
-        templates = dict()
-
-    metadata_template = templates.get('metadata', METADATA_TEMPLATE)
-
-    metadata_string = metadata_template.format(
-        title=format_title("Meta-data", templates),
+def format_metadata(experiment):
+    """Render a string for metadata section"""
+    metadata_string = METADATA_TEMPLATE.format(
+        title=format_title("Meta-data"),
         experiment=experiment)
 
     return metadata_string
@@ -416,22 +324,8 @@ adapter: {adapter}
 """
 
 
-def format_refers(experiment, templates=None):
-    """Render a string for refers section
-
-    Parameters
-    ----------
-    experiment: `orion.core.worker.experiment.Experiment`
-    templates: dict
-        templates for the title and `refers`.
-        See `format_title` for more info.
-
-    """
-    if templates is None:
-        templates = dict()
-
-    refers_template = templates.get('refers', REFERS_TEMPLATE)
-
+def format_refers(experiment):
+    """Render a string for refers section"""
     if experiment.node.root is experiment.node:
         root = ''
         parent = ''
@@ -441,8 +335,8 @@ def format_refers(experiment, templates=None):
         parent = experiment.node.parent.name
         adapter = "\n" + format_dict(experiment.refers['adapter'].configuration, depth=1, width=2)
 
-    refers_string = refers_template.format(
-        title=format_title("Parent experiment", templates),
+    refers_string = REFERS_TEMPLATE.format(
+        title=format_title("Parent experiment"),
         root=root,
         parent=parent,
         adapter=adapter)
@@ -468,7 +362,7 @@ No trials executed...
 """
 
 
-def format_stats(experiment, templates=None):
+def format_stats(experiment):
     """Render a string for stat section
 
     Parameters
@@ -479,20 +373,15 @@ def format_stats(experiment, templates=None):
         See `format_title` for more info.
 
     """
-    if templates is None:
-        templates = dict()
-
-    stats_template = templates.get('stats', STATS_TEMPLATE)
-
     stats = experiment.stats
     if not stats:
         return NO_STATS_TEMPLATE.format(
-            title=format_title("Stats", templates))
+            title=format_title("Stats"))
 
     best_params = get_trial_params(stats['best_trials_id'], experiment)
 
-    stats_string = stats_template.format(
-        title=format_title("Stats", templates),
+    stats_string = STATS_TEMPLATE.format(
+        title=format_title("Stats"),
         stats=stats,
         best_params=format_dict(best_params, depth=1, width=2))
 
