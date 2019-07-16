@@ -30,7 +30,6 @@ class Legacy(BaseStorageProtocol):
     """
 
     def __init__(self, uri=None):
-        self.converter = JSONConverter()
         self._db = Database()
         self._setup_db()
 
@@ -83,7 +82,7 @@ class Legacy(BaseStorageProtocol):
 
     def retrieve_result(self, trial, results_file=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.retrieve_result`"""
-        results = self.converter.parse(results_file.name)
+        results = JSONConverter().parse(results_file.name)
 
         trial.results = [
             Trial.Result(

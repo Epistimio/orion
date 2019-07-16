@@ -155,19 +155,18 @@ def new_config(random_dt):
     return new_config
 
 
-def assert_protocol(exp):
+def assert_protocol(exp, create_db_instance):
     """Transitional method to move away from mongodb"""
-    # assert exp._protocol._db is create_db_instance
+    assert exp._protocol._db is create_db_instance
     pass
 
 
 def count_experiment(exp):
     """Transitional method to move away from mongodb"""
-    # return count_experiment(exp)
     return exp._storage._db.count("experiments")
 
 
-def get_underlying_db(exp):
+def get_db_from_view(exp):
     """Transitional method to move away from mongodb"""
     return exp._storage._db._db
 
@@ -180,7 +179,7 @@ class TestInitExperiment(object):
         """Hit user name, but exp_name does not hit the db, create new entry."""
         exp = Experiment('supernaekei')
         assert exp._init_done is False
-        assert_protocol(exp)
+        assert_protocol(exp, create_db_instance)
         assert exp._id is None
         assert exp.name == 'supernaekei'
         assert exp.refers == {}
@@ -199,7 +198,7 @@ class TestInitExperiment(object):
         """Hit exp_name, but user's name does not hit the db, create new entry."""
         exp = Experiment('supernaedo2')
         assert exp._init_done is False
-        assert_protocol(exp)
+        assert_protocol(exp, create_db_instance)
         assert exp._id is None
         assert exp.name == 'supernaedo2'
         assert exp.refers == {}
@@ -218,7 +217,7 @@ class TestInitExperiment(object):
         """Hit exp_name + user's name in the db, fetch most recent entry."""
         exp = Experiment('supernaedo2')
         assert exp._init_done is False
-        assert_protocol(exp)
+        assert_protocol(exp, create_db_instance)
         assert exp._id == exp_config[0][0]['_id']
         assert exp.name == exp_config[0][0]['name']
         assert exp.refers == exp_config[0][0]['refers']
@@ -800,7 +799,7 @@ def test_fetch_non_completed_trials(hacked_exp, exp_config):
     """
     # Set two of completed trials to broken and reserved to have all possible status
     query = {'status': 'completed', 'experiment': hacked_exp.id}
-    database = get_underlying_db(hacked_exp)
+    database = get_db_from_view(hacked_exp)
     completed_trials = database.trials.find(query)
     exp_config[1][0]['status'] = 'broken'
     database.trials.update({'_id': completed_trials[0]['_id']}, {'$set': {'status': 'broken'}})
@@ -1018,18 +1017,6 @@ def test_experiment_view_stats(hacked_exp, exp_config, random_dt):
     assert len(stats) == 6
 
 
-#
-# @pytest.mark.usefixtures("with_user_tsirif")
-# def test_experiment_view_db_read_only():
-#     """Verify that wrapper experiments' database is read-only"""
-#     exp = ExperimentView('supernaedo2')
-#
-#     # Test that database.write indeed exists
-#     exp._experiment._db._database.write
-#     with pytest.raises(AttributeError):
-#         exp._experiment._db.write
-
-
 @pytest.mark.usefixtures("with_user_tsirif")
 def test_experiment_view_protocol_read_only():
     """Verify that wrapper experiments' database is read-only"""
@@ -1053,7 +1040,7 @@ class TestInitExperimentWithEVC(object):
         exp.algorithms = exp_config[0][4]['algorithms']
         exp.configure(exp.configuration)
         assert exp._init_done is True
-        assert_protocol(exp)
+        assert_protocol(exp, create_db_instance)
         assert exp._id is not None
         assert exp.name == 'supernaedo2.6'
         assert exp.configuration['refers'] == exp_config[0][4]['refers']
@@ -1071,7 +1058,7 @@ class TestInitExperimentWithEVC(object):
         exp.algorithms = {'random': {'seed': None}}
         exp.configure(exp.configuration)
         assert exp._init_done is True
-        assert_protocol(exp)
+        assert_protocol(exp, create_db_instance)
         assert exp._id is not None
         assert exp.name == 'supernaedo2.1'
         assert exp.configuration['refers'] == exp_config[0][4]['refers']
