@@ -6,8 +6,10 @@
 import copy
 import datetime
 import getpass
+import json
 import logging
 import random
+import tempfile
 
 import pytest
 
@@ -732,6 +734,37 @@ class TestReserveTrial(object):
         with monkeypatch.context() as m:
             m.setattr(hacked_exp.__class__, 'fetch_trials', fetch_lost_trials)
             hacked_exp.fix_lost_trials()
+
+
+@pytest.mark.usefixtures("patch_sample")
+def test_update_completed_trial(hacked_exp, database, random_dt):
+    """Successfully push a completed trial into database."""
+    trial = hacked_exp.reserve_trial()
+
+    results_file = tempfile.NamedTemporaryFile(
+        mode='w', prefix='results_', suffix='.log', dir='.', delete=False
+    )
+
+    # Generate fake result
+    with open(results_file.name, 'w') as file:
+        json.dump([{
+            'name': 'loss',
+            'type': 'objective',
+            'value': 2}],
+            file
+        )
+    # --
+
+    hacked_exp.update_completed_trial(trial, results_file=results_file)
+
+    yo = database.trials.find_one({'_id': trial.id})
+
+    assert len(yo['results']) == len(trial.results)
+    assert yo['results'][0] == trial.results[0].to_dict()
+    assert yo['status'] == 'completed'
+    assert yo['end_time'] == random_dt
+
+    results_file.delete
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
