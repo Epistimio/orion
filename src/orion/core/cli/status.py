@@ -89,7 +89,7 @@ def print_status_recursively(exp, depth=0, **kwargs):
     print_status(exp, offset=depth * 2, **kwargs)
 
     for child in exp.node.children:
-        print_status_recursively(child.item, depth + 1)
+        print_status_recursively(child.item, depth + 1, **kwargs)
 
 
 def print_status(exp, offset=0, all_trials=False):
