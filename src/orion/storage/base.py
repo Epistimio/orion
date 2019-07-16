@@ -9,7 +9,6 @@
    different storage backend
 
 """
-from typing import Optional
 
 from orion.core.utils import Factory
 
@@ -17,6 +16,7 @@ from orion.core.utils import Factory
 class BaseStorageProtocol:
     """Implement a generic protocol to allow Orion to communicate using
     different storage backend
+
     """
 
     def create_experiment(self, config):
@@ -77,6 +77,7 @@ class BaseStorageProtocol:
             a dictionary of fields to update
 
         returns the updated trial
+
         """
         raise NotImplementedError()
 
@@ -94,9 +95,9 @@ class StorageProtocol(BaseStorageProtocol, metaclass=Factory):
 
     Examples
     --------
-
     >>> StorageProtocol('track', uri='file://orion_test.json')
     >>> StorageProtocol('legacy', experiment=...)
+
     """
 
     pass

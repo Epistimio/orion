@@ -225,10 +225,10 @@ class Experiment(object):
             )
 
         new_trials = self.fetch_trials(query)
-        log.debug('<' * _depth + ' Fetched (trials: {len(new_trials)})')
+        log.debug('%s Fetched (trials: %s)', '<' * _depth, len(new_trials))
 
         if not new_trials:
-            log.debug('<' * _depth + ' No new trials found')
+            log.debug('%s no new trials found', '<' * _depth)
             return None
 
         if score_handle is not None and self.space:
@@ -242,7 +242,7 @@ class Experiment(object):
                         "parameter space has not been defined yet.")
 
         selected_trial = random.sample(new_trials, 1)[0]
-        log.debug('<' * _depth + ' selected (trial: {selected_trial})')
+        log.debug('%s selected (trial: %s)', '<' * _depth, selected_trial)
 
         update = dict(status='reserved', heartbeat=datetime.datetime.utcnow())
 
@@ -253,18 +253,18 @@ class Experiment(object):
         # status meanwhile, update will fail, because query will fail.
         # This relies on the atomicity of document updates.
 
-        log.debug('<' * _depth + 'trying to reverse trial')
+        log.debug('%s trying to reverse trial', '<' * _depth)
         reserved = self._storage.update_trial(
             selected_trial, fields=update, where={'status': selected_trial.status})
 
         if not reserved:
             selected_trial = self.reserve_trial(score_handle=score_handle, _depth=_depth + 1)
         else:
-            log.debug('<' * _depth + 'found suitable trial')
+            log.debug('%s found suitable trial', '<' * _depth)
             selected_trial = self.fetch_trials({'_id': selected_trial.id})[0]
             TrialMonitor(self, selected_trial.id).start()
 
-        log.debug('<' * _depth + 'Reserved trial (trial: {selected_trial})')
+        log.debug('%s reserved trial (trial: %s)', '<' * _depth, selected_trial)
         return selected_trial
 
     def fix_lost_trials(self):
