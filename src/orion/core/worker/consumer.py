@@ -81,7 +81,11 @@ class Consumer(object):
                             prefix=prefix, suffix=suffix) as workdirname:
                 log.debug("## New consumer context: %s", workdirname)
                 trial.working_dir = workdirname
-                self._consume(trial, workdirname)
+
+                results_file = self._consume(trial, workdirname)
+
+                log.debug("## Parse results from file and fill corresponding Trial object.")
+                self.experiment.update_completed_trial(trial, results_file)
 
         except KeyboardInterrupt:
             log.debug("### Save %s as interrupted.", trial)
@@ -93,10 +97,6 @@ class Consumer(object):
             log.debug("### Save %s as broken.", trial)
             trial.status = 'broken'
             self.experiment.update_trial(trial, status=trial.status)
-
-        else:
-            log.debug("### Register successfully evaluated %s.", trial)
-            self.experiment.push_completed_trial(trial)
 
     def _consume(self, trial, workdirname):
         config_file = tempfile.NamedTemporaryFile(mode='w', prefix='trial_',
@@ -116,9 +116,7 @@ class Consumer(object):
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
         self.execute_process(results_file.name, cmd_args)
-
-        log.debug("## Parse results from file and fill corresponding Trial object.")
-        return self.experiment.retrieve_result(trial, results_file)
+        return results_file
 
     def execute_process(self, results_filename, cmd_args):
         """Facilitate launching a black-box trial."""

@@ -37,6 +37,10 @@ class BaseStorageProtocol:
         kwargs: dict
             a dictionary of fields to update
 
+        Returns
+        -------
+        returns true if the underlying storage was updated
+
         """
         raise NotImplementedError()
 
@@ -46,6 +50,23 @@ class BaseStorageProtocol:
 
     def register_trial(self, trial):
         """Create a new trial to be executed"""
+        raise NotImplementedError()
+
+    def register_lie(self, trial):
+        """Register a *fake* trial created by the strategist.
+
+        The main difference between fake trial and orignal ones is the addition of a fake objective
+        result, and status being set to completed. The id of the fake trial is different than the id
+        of the original trial, but the original id can be computed using the hashcode on parameters
+        of the fake trial. See mod:`orion.core.worker.strategy` for more information and the
+        Strategist object and generation of fake trials.
+
+        Parameters
+        ----------
+        trial: `Trial` object
+            Fake trial to register in the database
+
+        """
         raise NotImplementedError()
 
     def reserve_trial(self, *args, **kwargs):
@@ -70,14 +91,16 @@ class BaseStorageProtocol:
         kwargs: dict
             a dictionary of fields to update
 
-        returns the updated trial
+        Returns
+        -------
+        returns true if the underlying storage was updated
 
         """
         raise NotImplementedError()
 
     def retrieve_result(self, trial, **kwargs):
         """Fetch the result from a given medium (file, db, socket, etc..) for a given trial and
-        insert it into the db
+        insert it into the trial object
         """
         raise NotImplementedError()
 

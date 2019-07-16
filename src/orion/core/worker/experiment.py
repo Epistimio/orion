@@ -290,7 +290,7 @@ class Experiment(object):
             updated = self._storage.update_trial(trial, status='interrupted', where=query)
             log.debug('success' if updated else 'failed')
 
-    def push_completed_trial(self, trial):
+    def update_completed_trial(self, trial, results_file):
         """Inform database about an evaluated `trial` with resultlts.
 
         :param trial: Corresponds to a successful evaluation of a particular run.
@@ -301,6 +301,8 @@ class Experiment(object):
             Change status from *reserved* to *completed*.
 
         """
+        self._storage.retrieve_result(trial, results_file)
+
         trial.end_time = datetime.datetime.utcnow()
         trial.status = 'completed'
         self._storage.update_trial(trial, **trial.to_dict())
@@ -329,9 +331,7 @@ class Experiment(object):
         """
         lying_trial.status = 'completed'
         lying_trial.end_time = datetime.datetime.utcnow()
-
-        # FIXME: find a way to implement lying_trials differently
-        self._storage._db.write('lying_trials', lying_trial.to_dict())
+        self._storage.register_lie(lying_trial)
 
     def register_trial(self, trial):
         """Register new trial in the database.
