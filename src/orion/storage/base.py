@@ -34,7 +34,7 @@ class BaseStorageProtocol:
         where: Optional[dict]
             constraint experiment must respect
 
-        kwargs: dict
+        **kwargs: dict
             a dictionary of fields to update
 
         """
