@@ -734,19 +734,6 @@ class TestReserveTrial(object):
             hacked_exp.fix_lost_trials()
 
 
-@pytest.mark.usefixtures("patch_sample")
-def test_push_completed_trial(hacked_exp, database, random_dt):
-    """Successfully push a completed trial into database."""
-    trial = hacked_exp.reserve_trial()
-    trial.results = [Trial.Result(name='yolo', type='objective', value=3)]
-    hacked_exp.push_completed_trial(trial)
-    yo = database.trials.find_one({'_id': trial.id})
-    assert len(yo['results']) == len(trial.results)
-    assert yo['results'][0] == trial.results[0].to_dict()
-    assert yo['status'] == 'completed'
-    assert yo['end_time'] == random_dt
-
-
 @pytest.mark.usefixtures("with_user_tsirif")
 def test_register_trials(database, random_dt, hacked_exp):
     """Register a list of newly proposed trials/parameters."""
@@ -910,10 +897,10 @@ class TestInitExperimentView(object):
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
-        # Test that experiment.push_completed_trial indeed exists
-        exp._experiment.push_completed_trial
+        # Test that experiment.update_completed_trial indeed exists
+        exp._experiment.update_completed_trial
         with pytest.raises(AttributeError):
-            exp.push_completed_trial
+            exp.update_completed_trial
 
         with pytest.raises(AttributeError):
             exp.register_trial
