@@ -16,7 +16,7 @@ def test_no_exp(monkeypatch, clean_db, capsys):
     assert captured == ""
 
 
-def test_single_exp(capsys, clean_db, one_experiment):
+def test_single_exp(clean_db, one_experiment, capsys):
     """Test that the name of the experiment is printed when there is one experiment."""
     orion.core.cli.main(['list'])
 

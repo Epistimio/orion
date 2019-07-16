@@ -121,8 +121,7 @@ def db_instance(null_db_instances):
 
 
 @pytest.fixture
-@pytest.mark.usefixtures('clean_db')
-def only_experiments_db(exp_config):
+def only_experiments_db(clean_db, database, exp_config):
     """Clean the database and insert only experiments."""
     database.experiments.insert_many(exp_config[0])
 
@@ -132,6 +131,9 @@ def ensure_deterministic_id(name, db_instance):
     experiment = db_instance.read('experiments', {'name': name})[0]
     db_instance.remove('experiments', {'_id': experiment['_id']})
     experiment['_id'] = name
+
+    if experiment['refers']['parent_id'] is None:
+        experiment['refers']['root_id'] = name
 
     db_instance.write('experiments', experiment)
 
