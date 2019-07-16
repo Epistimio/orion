@@ -6,7 +6,7 @@
 
 .. module:: status
    :platform: Unix
-   :synopsis: List experiments in terminal
+   :synopsis: List the trials and their statuses for experiments.
 
 """
 import collections
@@ -34,8 +34,8 @@ def add_subparser(parser):
 
     status_parser.add_argument(
         '-r', '--recursive', action="store_true",
-        help="Divide trials per experiments hierarchically. Otherwise they are all aggregated in "
-             "parent experiment")
+        help="Divide trials per experiments hierarchically. Otherwise they are all print on the \
+              same tab level.")
 
     status_parser.set_defaults(func=main)
 
