@@ -127,19 +127,11 @@ def only_experiments_db(exp_config):
     database.experiments.insert_many(exp_config[0])
 
 
-def ensure_deterministic_id(name, db_instance, parent=None, root=None):
-    """Change the id of experiment `name` to `name`."""
+def ensure_deterministic_id(name, db_instance):
+    """Change the id of experiment to its name."""
     experiment = db_instance.read('experiments', {'name': name})[0]
     db_instance.remove('experiments', {'_id': experiment['_id']})
     experiment['_id'] = name
-    experiment['refers']['root_id'] = name
-
-    if parent is not None and root is None:
-        experiment['refers']['parent_id'] = parent
-        experiment['refers']['root_id'] = parent
-    if root is not None:
-        experiment['refers']['parent_id'] = parent
-        experiment['refers']['root_id'] = root
 
     db_instance.write('experiments', experiment)
 
@@ -188,11 +180,12 @@ def two_experiments(monkeypatch, db_instance):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(['init_only', '-n', 'test_double_exp',
                          './black_box.py', '--x~uniform(0,1)'])
+    ensure_deterministic_id('test_double_exp', db_instance)
+
     orion.core.cli.main(['init_only', '-n', 'test_double_exp',
                          '--branch', 'test_double_exp_child', './black_box.py',
                          '--x~uniform(0,1)', '--y~+uniform(0,1)'])
-    ensure_deterministic_id('test_double_exp', db_instance)
-    ensure_deterministic_id('test_double_exp_child', db_instance, 'test_double_exp')
+    ensure_deterministic_id('test_double_exp_child', db_instance)
 
 
 @pytest.fixture
@@ -267,8 +260,7 @@ def three_experiments_family_branch(two_experiments, db_instance):
     orion.core.cli.main(['init_only', '-n', 'test_double_exp_child',
                          '--branch', 'test_double_exp_grand_child', './black_box.py',
                          '--x~uniform(0,1)', '--y~uniform(0,1)', '--z~+uniform(0,1)'])
-    ensure_deterministic_id('test_double_exp_grand_child', db_instance, 'test_double_exp_child',
-                            'test_double_exp')
+    ensure_deterministic_id('test_double_exp_grand_child', db_instance)
 
 
 @pytest.fixture
