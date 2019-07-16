@@ -44,8 +44,7 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.create_experiment`"""
         return self._db.write('experiments', config)
 
-    def update_experiment(self, experiment: 'Experiment', fields: Optional[dict] = None,
-                          where: Optional[dict] = None, **kwargs):
+    def update_experiment(self, experiment, fields=None, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
         q = {}
 
@@ -86,8 +85,7 @@ class Legacy(BaseStorageProtocol):
         ]
         return trial
 
-    def update_trial(self, trial: Trial, fields: Optional[dict] = None,
-                     where: Optional[dict] = None, **kwargs) -> Trial:
+    def update_trial(self, trial: Trial, fields=None, where=None, **kwargs) -> Trial:
         """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
         q = {}
 

@@ -71,7 +71,6 @@ def workon(experiment, worker_trials=None):
         log.info("No trials completed.")
         return
 
-    # Database().read('trials', {'_id': stats['best_trials_id']})[0]
     best = experiment.fetch_trials({'_id': stats['best_trials_id']})[0]
 
     stats_stream = io.StringIO()
@@ -79,7 +78,7 @@ def workon(experiment, worker_trials=None):
     stats_string = stats_stream.getvalue()
 
     best_stream = io.StringIO()
-    pprint.pprint(best.params, stream=best_stream)
+    pprint.pprint(best.to_dict()['params'], stream=best_stream)
     best_string = best_stream.getvalue()
 
     log.info("#####  Search finished successfully  #####")

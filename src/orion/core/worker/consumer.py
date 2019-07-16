@@ -86,16 +86,14 @@ class Consumer(object):
         except KeyboardInterrupt:
             log.debug("### Save %s as interrupted.", trial)
             trial.status = 'interrupted'
+            self.experiment.update_trial(trial, status=trial.status)
 
-            # FIXME: do we need to push all the attributes, or only pushing the status is enough ?
-            self.experiment.update_trial(trial, **trial.to_dict())
             raise
         except RuntimeError:
             log.debug("### Save %s as broken.", trial)
             trial.status = 'broken'
+            self.experiment.update_trial(trial, status=trial.status)
 
-            # FIXME: do we need to push all the attributes, or only pushing the status is enough ?
-            self.experiment.update_trial(trial, **trial.to_dict())
         else:
             log.debug("### Register successfully evaluated %s.", trial)
             self.experiment.push_completed_trial(trial)

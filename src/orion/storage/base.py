@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.storage.base -- Generic Storage Protocol
-=============================================================================
+====================================================
 
 .. module:: base
    :platform: Unix
@@ -23,24 +23,22 @@ class BaseStorageProtocol:
         """Insert a new experiment inside the database"""
         raise NotImplementedError()
 
-    def update_experiment(self, experiment: 'Experiment', fields: Optional[dict] = None,
-                          where: Optional[dict] = None, **kwargs):
+    def update_experiment(self, experiment, fields=None, where=None, **kwargs):
         """Update a the fields of a given trials
 
         Parameters
         ----------
-        experiment: Experiment object to update
-        fields: Optional[dict] a dictionary of fields to update
-        where: constraint experiment must respect
-        kwargs: a dictionary of fields to update
+        experiment: Experiment
+            Experiment object to update
 
-        Example
-        -------
-        .. code-block:: python
-            query = {'status': 'RUNNING'}
-            BaseStorageProtocol.update_experiment(experiment, fields=query)
+        fields: Optional[dict]
+            a dictionary of fields to update
 
-            BaseStorageProtocol.update_experiment(experiment, status='RUNNING')
+        where: Optional[dict]
+            constraint experiment must respect
+
+        kwargs: dict
+            a dictionary of fields to update
 
         """
         raise NotImplementedError()
@@ -54,39 +52,38 @@ class BaseStorageProtocol:
         raise NotImplementedError()
 
     def reserve_trial(self, *args, **kwargs):
-        """Select a pending trial and book it for the executor"""
+        """Select a pending trial and reserve it for the worker"""
         raise NotImplementedError()
 
     def fetch_trials(self, query, *args, **kwargs):
-        """Feetch all the trials that match the query"""
+        """Fetch all the trials that match the query"""
         raise NotImplementedError()
 
-    def update_trial(self, trial: 'Trial', fields: Optional[dict] = None,
-                     where: Optional[dict] = None, **kwargs) -> 'Trial':
-        """Update a the fields of a given trials
+    def update_trial(self, trial, fields=None, where=None, **kwargs):
+        """Update the fields of a given trials
 
         Parameters
         ----------
-        trial: Trial object to update
-        fields: Optional[dict] a dictionary of fields to update
-        where: constraint trial must respect
-        kwargs: a dictionary of fields to update
+        trial: Trial
+            Trial object to update
+
+        fields: Optional[dict]
+            A dictionary of fields to update
+
+        where: Optional[dict]
+            constraint trial must respect
+
+        kwargs: dict
+            a dictionary of fields to update
 
         returns the updated trial
-
-        Example
-        -------
-        .. code-block:: python
-            query = {'status': 'RUNNING'}
-            BaseStorageProtocol.update_trial(trial, fields=query)
-
-            BaseStorageProtocol.update_trial(trial, status='RUNNING')
-
         """
         raise NotImplementedError()
 
-    def retrieve_result(self, trial, results_file=None, **kwargs):
-        """Read the results from the trial and append it to the trial object"""
+    def retrieve_result(self, trial, **kwargs):
+        """Fetch the result from a given medium (file, db, socket, etc..) for a given trial and
+        insert it into the db
+        """
         raise NotImplementedError()
 
 
@@ -95,8 +92,11 @@ class StorageProtocol(BaseStorageProtocol, metaclass=Factory):
     """Storage protocol is a generic way of allowing Orion to interface with different storage.
     MongoDB, track, cometML, MLFLow, etc...
 
-    Protocol('track', uri='file://orion_test.json')
-    Protocol('legacy', experiment=experiment)
+    Examples
+    --------
+
+    >>> StorageProtocol('track', uri='file://orion_test.json')
+    >>> StorageProtocol('legacy', experiment=...)
     """
 
     pass
@@ -104,23 +104,23 @@ class StorageProtocol(BaseStorageProtocol, metaclass=Factory):
 
 # pylint: disable=too-few-public-methods
 class ReadOnlyStorageProtocol(object):
-    """Read-only view on a database.
+    """Read-only interface from a storage protocol.
 
     .. seealso::
 
-        :py:class:`orion.core.io.database.AbstractDB`
+        :py:class:`orion.core.storage.BaseStorageProtocol`
     """
 
-    __slots__ = ('_protocol', )
+    __slots__ = ('_storage', )
     valid_attributes = {"fetch_trials", "fetch_experiments"}
 
     def __init__(self, protocol):
-        """Init method, see attributes of :class:`AbstractDB`."""
-        self._protocol = protocol
+        """Init method, see attributes of :class:`BaseStorageProtocol`."""
+        self._storage = protocol
 
     def __getattr__(self, attr):
         """Get attribute only if valid"""
         if attr not in self.valid_attributes:
-            raise AttributeError("Cannot access attribute %s on view-only experiments." % attr)
+            raise AttributeError("Cannot access attribute %s on ReadOnlyStorageProtocol." % attr)
 
-        return getattr(self._protocol, attr)
+        return getattr(self._storage, attr)

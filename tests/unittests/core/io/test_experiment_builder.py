@@ -12,12 +12,12 @@ from orion.core.utils.exceptions import NoConfigurationError
 
 def get_db(exp):
     """Transitional method to move away from mongodb"""
-    return exp._protocol._db
+    return exp._storage._db
 
 
 def get_view_db(exp):
     """Transitional method to move away from mongodb"""
-    return exp._experiment._protocol._protocol._db
+    return exp._experiment._storage._storage._db
 
 
 @pytest.mark.usefixtures("clean_db")

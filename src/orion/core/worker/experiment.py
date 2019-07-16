@@ -86,8 +86,8 @@ class Experiment(object):
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
-                 'algorithms', 'producer', 'working_dir', '_db', '_init_done', '_id',
-                 '_node', '_last_fetched', '_protocol')
+                 'algorithms', 'producer', 'working_dir', '_init_done', '_id',
+                 '_node', '_last_fetched', '_storage')
     non_branching_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name, user=None):
@@ -106,9 +106,7 @@ class Experiment(object):
         """
         log.debug("Creating Experiment object with name: %s", name)
         self._init_done = False
-        self._protocol = StorageProtocol('legacy')
-        # self._db = Database()  # fetch database instance
-        # self._setup_db()  # build indexes for collections
+        self._storage = StorageProtocol('legacy')
 
         self._id = None
         self.name = name
@@ -123,8 +121,7 @@ class Experiment(object):
         self.working_dir = None
         self.producer = {'strategy': None}
 
-        # config = self._db.read('experiments',  {'name': name, 'metadata.user': user})
-        config = self._protocol.fetch_experiments({'name': name, 'metadata.user': user})
+        config = self._storage.fetch_experiments({'name': name, 'metadata.user': user})
 
         if config:
             log.debug("Found existing experiment, %s, under user, %s, registered in database.",
@@ -159,8 +156,7 @@ class Experiment(object):
         """
         query["experiment"] = self._id
 
-        # trials = Trial.build(self._db.read('trials', query, selection))
-        trials = self._protocol.fetch_trials(query, selection)
+        trials = self._storage.fetch_trials(query, selection)
 
         def _get_submit_time(trial):
             if trial.submit_time:
@@ -201,11 +197,11 @@ class Experiment(object):
 
     def retrieve_result(self, trial, *args, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.retrieve_result`"""
-        return self._protocol.retrieve_result(trial, *args, **kwargs)
+        return self._storage.retrieve_result(trial, *args, **kwargs)
 
     def update_trial(self, *args, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
-        return self._protocol.update_trial(*args, **kwargs)
+        return self._storage.update_trial(*args, **kwargs)
 
     def reserve_trial(self, score_handle=None, _depth=1):
         """Find *new* trials that exist currently in database and select one of
@@ -217,7 +213,7 @@ class Experiment(object):
         :param _depth: recursion depth only used for logging purposes can be ignored
         :return: selected `Trial` object, None if could not find any.
         """
-        # log.debug(f'{">" * _depth} Reserving trial with (score: {score_handle})')
+        log.debug('<' * _depth + ' Reserving trial with (score: {score_handle})')
         if score_handle is not None and not callable(score_handle):
             raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
 
@@ -229,10 +225,10 @@ class Experiment(object):
             )
 
         new_trials = self.fetch_trials(query)
-        # log.debug(f'{">" * _depth} Fetched (trials: {len(new_trials)})')
+        log.debug('<' * _depth + ' Fetched (trials: {len(new_trials)})')
 
         if not new_trials:
-            # log.debug(f'{"<" * _depth} No new trials found')
+            log.debug('<' * _depth + ' No new trials found')
             return None
 
         if score_handle is not None and self.space:
@@ -246,7 +242,7 @@ class Experiment(object):
                         "parameter space has not been defined yet.")
 
         selected_trial = random.sample(new_trials, 1)[0]
-        # log.debug(f'{">" * _depth} selected (trial: {selected_trial})')
+        log.debug('<' * _depth + ' selected (trial: {selected_trial})')
 
         update = dict(status='reserved', heartbeat=datetime.datetime.utcnow())
 
@@ -256,21 +252,19 @@ class Experiment(object):
         # Query on status to ensure atomicity. If another process change the
         # status meanwhile, update will fail, because query will fail.
         # This relies on the atomicity of document updates.
-        # /!\ This is not atomic if you are using monogo db replica set !
 
-        # reserved = self._db.write('trials', query=query, data=update)
-        # log.debug(f'{">" * _depth} trying to reverse trial')
-        reserved = self._protocol.update_trial(
+        log.debug('<' * _depth + 'trying to reverse trial')
+        reserved = self._storage.update_trial(
             selected_trial, fields=update, where={'status': selected_trial.status})
 
         if not reserved:
             selected_trial = self.reserve_trial(score_handle=score_handle, _depth=_depth + 1)
         else:
-            # log.debug(f'{">" * _depth} found suitable trial')
+            log.debug('<' * _depth + 'found suitable trial')
             selected_trial = self.fetch_trials({'_id': selected_trial.id})[0]
             TrialMonitor(self, selected_trial.id).start()
 
-        # log.debug(f'{"<" * _depth} Reserved trial (trial: {selected_trial})')
+        log.debug('<' * _depth + 'Reserved trial (trial: {selected_trial})')
         return selected_trial
 
     def fix_lost_trials(self):
@@ -293,9 +287,7 @@ class Experiment(object):
             query['_id'] = trial.id
             log.debug('Setting lost trial %s status to interrupted...', trial.id)
 
-            updated = self._protocol.update_trial(trial, status='interrupted', where=query)
-            # updated = self._db.write('trials', {'status': 'interrupted'}, query)
-
+            updated = self._storage.update_trial(trial, status='interrupted', where=query)
             log.debug('success' if updated else 'failed')
 
     def push_completed_trial(self, trial):
@@ -311,7 +303,7 @@ class Experiment(object):
         """
         trial.end_time = datetime.datetime.utcnow()
         trial.status = 'completed'
-        self._protocol.update_trial(trial, **trial.to_dict())
+        self._storage.update_trial(trial, **trial.to_dict())
 
     def register_lie(self, lying_trial):
         """Register a *fake* trial created by the strategist.
@@ -338,8 +330,8 @@ class Experiment(object):
         lying_trial.status = 'completed'
         lying_trial.end_time = datetime.datetime.utcnow()
 
-        # FIXME
-        self._protocol._db.write('lying_trials', lying_trial.to_dict())
+        # FIXME: find a way to implement lying_trials differently
+        self._storage._db.write('lying_trials', lying_trial.to_dict())
 
     def register_trial(self, trial):
         """Register new trial in the database.
@@ -365,7 +357,7 @@ class Experiment(object):
         trial.status = 'new'
         trial.submit_time = stamp
 
-        self._protocol.register_trial(trial)
+        self._storage.register_trial(trial)
 
     def fetch_completed_trials(self):
         """Fetch recent completed trials that this `Experiment` instance has not yet seen.
@@ -447,7 +439,7 @@ class Experiment(object):
             experiment=self._id,
             status='completed'
             )
-        num_completed_trials = len(self._protocol.fetch_trials(query))
+        num_completed_trials = len(self._storage.fetch_trials(query))
 
         return ((num_completed_trials >= self.max_trials) or
                 (self._init_done and self.algorithms.is_done))
@@ -462,8 +454,7 @@ class Experiment(object):
 
         """
         query = {'experiment': self._id, 'status': 'broken'}
-        # num_broken_trials = self._db.count('trials', query)
-        num_broken_trials = len(self._protocol.fetch_trials(query))
+        num_broken_trials = len(self._storage.fetch_trials(query))
 
         return num_broken_trials >= 3
 
@@ -566,8 +557,7 @@ class Experiment(object):
             # This will raise DuplicateKeyError if a concurrent experiment with
             # identical (name, metadata.user) is written first in the database.
 
-            self._protocol.create_experiment(final_config)
-            # self._db.write('experiments', final_config)
+            self._storage.create_experiment(final_config)
 
             # XXX: Reminder for future DB implementations:
             # MongoDB, updates an inserted dict with _id, so should you :P
@@ -576,7 +566,7 @@ class Experiment(object):
             # Update refers in db if experiment is root
             if not self.refers:
                 self.refers = {'root_id': self._id, 'parent_id': None, 'adapter': []}
-                self._protocol.update_experiment(self, refers=self.refers)
+                self._storage.update_experiment(self, refers=self.refers)
 
         else:
             # Writing the final config to an already existing experiment raises
@@ -585,8 +575,7 @@ class Experiment(object):
             # `db.write()`, thus seamingly breaking  the compound index
             # `(name, metadata.user)`
             final_config.pop("name")
-            self._protocol.update_experiment(self, **final_config)
-            # self._db.write('experiments', final_config, {'_id': self._id})
+            self._storage.update_experiment(self, **final_config)
 
     @property
     def stats(self):
@@ -804,7 +793,7 @@ class ExperimentView(object):
 
             raise
 
-        self._experiment._protocol = ReadOnlyStorageProtocol(self._experiment._protocol)
+        self._experiment._storage = ReadOnlyStorageProtocol(self._experiment._storage)
 
     def __getattr__(self, name):
         """Get attribute only if valid"""

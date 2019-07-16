@@ -164,12 +164,12 @@ def assert_protocol(exp):
 def count_experiment(exp):
     """Transitional method to move away from mongodb"""
     # return count_experiment(exp)
-    return exp._protocol._db.count("experiments")
+    return exp._storage._db.count("experiments")
 
 
 def get_underlying_db(exp):
     """Transitional method to move away from mongodb"""
-    return exp._protocol._db._db
+    return exp._storage._db._db
 
 
 class TestInitExperiment(object):
@@ -1036,9 +1036,9 @@ def test_experiment_view_protocol_read_only():
     exp = ExperimentView('supernaedo2')
 
     # Test that _protocol.update_trials indeed exists
-    exp._experiment._protocol._protocol.update_trial
+    exp._experiment._storage._storage.update_trial
     with pytest.raises(AttributeError):
-        exp._experiment._protocol.update_trial
+        exp._experiment._storage.update_trial
 
 
 class TestInitExperimentWithEVC(object):
