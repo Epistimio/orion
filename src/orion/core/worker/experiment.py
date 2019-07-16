@@ -213,7 +213,7 @@ class Experiment(object):
         :param _depth: recursion depth only used for logging purposes can be ignored
         :return: selected `Trial` object, None if could not find any.
         """
-        log.debug('<' * _depth + ' Reserving trial with (score: {score_handle})')
+        log.debug('%s reserving trial with (score: %s)', '<' * _depth, score_handle)
         if score_handle is not None and not callable(score_handle):
             raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
 
