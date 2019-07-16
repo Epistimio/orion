@@ -14,8 +14,8 @@ import logging
 
 import tabulate
 
-from orion.core.io.database import Database
 from orion.core.cli import base as cli
+from orion.core.io.database import Database
 from orion.core.io.evc_builder import EVCBuilder
 from orion.core.io.experiment_builder import ExperimentBuilder
 
@@ -141,7 +141,9 @@ def print_summary(exp, offset=0):
         lines.append(line)
 
     if trials:
-        print(("\n" + (" " * offset)).join(tabulate.tabulate(lines, headers=headers).split("\n")))
+        grid = tabulate.tabulate(lines, headers=headers)
+        tab = " " * offset
+        print(tab + ("\n" + tab).join(grid.split("\n")))
     else:
         print(" " * offset, 'empty', sep="")
 
@@ -174,6 +176,8 @@ def print_all_trials(exp, offset=0):
 
         lines.append(line)
 
-    print(("\n" + (" " * offset)).join(tabulate.tabulate(lines, headers=headers).split("\n")))
+    grid = tabulate.tabulate(lines, headers=headers)
+    tab = " " * offset
+    print(tab + ("\n" + tab).join(grid.split("\n")))
 
     print("\n")

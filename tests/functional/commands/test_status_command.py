@@ -32,7 +32,7 @@ empty
 
 
 def test_experiment_wout_success_wout_ar(clean_db, single_without_success, capsys):
-    """test status with only one experiment and no successful trial."""
+    """Test status with only one experiment and no successful trial."""
     orion.core.cli.main(['status'])
 
     captured = capsys.readouterr().out
@@ -318,7 +318,7 @@ suspended             1
 
   test_double_exp_child
   =====================
-status         quantity
+  status         quantity
   -----------  ----------
   broken                1
   completed             1
@@ -354,7 +354,7 @@ suspended             1
 
   test_double_exp_child
   =====================
-status         quantity
+  status         quantity
   -----------  ----------
   broken                1
   completed             1
@@ -402,7 +402,7 @@ suspended             1
 
   test_double_exp_child
   =====================
-status         quantity
+  status         quantity
   -----------  ----------
   broken                1
   completed             1
@@ -414,7 +414,7 @@ status         quantity
 
   test_double_exp_child2
   ======================
-status         quantity
+  status         quantity
   -----------  ----------
   broken                1
   completed             1
@@ -450,7 +450,7 @@ suspended             1
 
   test_double_exp_child
   =====================
-status         quantity
+  status         quantity
   -----------  ----------
   broken                1
   completed             1
@@ -462,7 +462,7 @@ status         quantity
 
     test_double_exp_grand_child
     ===========================
-status         quantity
+    status         quantity
     -----------  ----------
     broken                1
     completed             1
@@ -534,7 +534,7 @@ b9f1506db880645a25ad9b5d2cfa0f37  suspended
 
   test_double_exp_child
   =====================
-id                                status
+  id                                status
   --------------------------------  -----------
   b55c5a82050dc30a6b0c9614b1eb05e5  broken
   649e09b84128c2f8821b9225ebcc139b  completed
@@ -570,7 +570,7 @@ b9f1506db880645a25ad9b5d2cfa0f37  suspended
 
   test_double_exp_child
   =====================
-id                                status
+  id                                status
   --------------------------------  -----------
   b55c5a82050dc30a6b0c9614b1eb05e5  broken
   649e09b84128c2f8821b9225ebcc139b  completed
@@ -618,7 +618,7 @@ b9f1506db880645a25ad9b5d2cfa0f37  suspended
 
   test_double_exp_child
   =====================
-id                                status
+  id                                status
   --------------------------------  -----------
   b55c5a82050dc30a6b0c9614b1eb05e5  broken
   649e09b84128c2f8821b9225ebcc139b  completed
@@ -630,7 +630,7 @@ id                                status
 
   test_double_exp_child2
   ======================
-id                                status
+  id                                status
   --------------------------------  -----------
   d0f4aa931345bfd864201b7dd93ae667  broken
   5005c35be98025a24731d7dfdf4423de  completed
@@ -666,7 +666,7 @@ b9f1506db880645a25ad9b5d2cfa0f37  suspended
 
   test_double_exp_child
   =====================
-id                                status
+  id                                status
   --------------------------------  -----------
   b55c5a82050dc30a6b0c9614b1eb05e5  broken
   649e09b84128c2f8821b9225ebcc139b  completed
@@ -678,7 +678,7 @@ id                                status
 
     test_double_exp_grand_child
     ===========================
-id                                status
+    id                                status
     --------------------------------  -----------
     994602c021c470989d6f392b06cb37dd  broken
     24c228352de31010d8d3bf253604a82d  completed
