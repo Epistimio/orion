@@ -184,7 +184,6 @@ class TestInitExperiment(object):
         assert exp.name == 'supernaekei'
         assert exp.refers == {}
         assert exp.metadata['user'] == 'tsirif'
-        assert exp._last_fetched == random_dt
         assert len(exp.metadata) == 1
         assert exp.pool_size is None
         assert exp.max_trials is None
@@ -203,7 +202,6 @@ class TestInitExperiment(object):
         assert exp.name == 'supernaedo2'
         assert exp.refers == {}
         assert exp.metadata['user'] == 'bouthilx'
-        assert exp._last_fetched == random_dt
         assert len(exp.metadata) == 1
         assert exp.pool_size is None
         assert exp.max_trials is None
@@ -222,7 +220,6 @@ class TestInitExperiment(object):
         assert exp.name == exp_config[0][0]['name']
         assert exp.refers == exp_config[0][0]['refers']
         assert exp.metadata == exp_config[0][0]['metadata']
-        assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
         assert exp.pool_size == exp_config[0][0]['pool_size']
         assert exp.max_trials == exp_config[0][0]['max_trials']
         assert exp.algorithms == exp_config[0][0]['algorithms']
@@ -802,7 +799,6 @@ def test_fetch_all_trials(hacked_exp, exp_config, random_dt):
 def test_fetch_completed_trials(hacked_exp, exp_config, random_dt):
     """Fetch a list of the unseen yet completed trials."""
     trials = hacked_exp.fetch_completed_trials()
-    assert hacked_exp._last_fetched == max(trial.end_time for trial in trials)
     assert len(trials) == 3
     # Trials are sorted based on submit time
     assert trials[0].to_dict() == exp_config[1][0]
@@ -921,7 +917,6 @@ class TestInitExperimentView(object):
         assert exp.name == exp_config[0][0]['name']
         assert exp.configuration['refers'] == exp_config[0][0]['refers']
         assert exp.metadata == exp_config[0][0]['metadata']
-        assert exp._experiment._last_fetched == exp_config[0][0]['metadata']['datetime']
         assert exp.pool_size == exp_config[0][0]['pool_size']
         assert exp.max_trials == exp_config[0][0]['max_trials']
         # TODO: Views are not fully configured until configuration is refactored
@@ -980,7 +975,6 @@ def test_fetch_completed_trials_from_view(hacked_exp, exp_config, random_dt):
     experiment_view._experiment = hacked_exp
 
     trials = experiment_view.fetch_completed_trials()
-    assert experiment_view._experiment._last_fetched == max(trial.end_time for trial in trials)
     assert len(trials) == 3
     assert trials[0].to_dict() == exp_config[1][0]
     assert trials[1].to_dict() == exp_config[1][2]
@@ -1066,7 +1060,6 @@ class TestInitExperimentWithEVC(object):
         assert exp.configuration['refers'] == exp_config[0][4]['refers']
         exp_config[0][4]['metadata']['datetime'] = random_dt
         assert exp.metadata == exp_config[0][4]['metadata']
-        assert exp._last_fetched == random_dt
         assert exp.pool_size is None
         assert exp.max_trials is None
         assert exp.configuration['algorithms'] == {'random': {'seed': None}}

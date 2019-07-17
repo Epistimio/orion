@@ -87,7 +87,7 @@ class Experiment(object):
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
                  'algorithms', 'producer', 'working_dir', '_init_done', '_id',
-                 '_node', '_last_fetched', '_storage')
+                 '_node', '_storage')
     non_branching_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name, user=None):
@@ -136,8 +136,6 @@ class Experiment(object):
                 if not attrname.startswith('_') and attrname in config:
                     setattr(self, attrname, config[attrname])
             self._id = config['_id']
-
-        self._last_fetched = self.metadata.get("datetime", datetime.datetime.utcnow())
 
     def fetch_trials(self, query, selection=None):
         """Fetch trials of the experiment in the database
@@ -360,28 +358,13 @@ class Experiment(object):
         self._storage.register_trial(trial)
 
     def fetch_completed_trials(self):
-        """Fetch recent completed trials that this `Experiment` instance has not yet seen.
+        """Fetch all completed trials.
 
         Trials are sorted based on `Trial.submit_time`
 
-        .. note::
-
-            It will return only those with `Trial.end_time` after `_last_fetched`, for performance
-            reasons.
-
         :return: list of completed `Trial` objects
         """
-        query = dict(
-            status='completed',
-            end_time={'$gt': self._last_fetched}
-            )
-
-        completed_trials = self.fetch_trials_tree(query)
-
-        if completed_trials:
-            self._last_fetched = max(trial.end_time for trial in completed_trials)
-
-        return completed_trials
+        return self.fetch_trials_tree(dict(status='completed'))
 
     def fetch_noncompleted_trials(self):
         """Fetch non-completed trials of this `Experiment` instance.
