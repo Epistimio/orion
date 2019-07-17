@@ -154,7 +154,7 @@ def test_build_view_from(config_file, create_db_instance, exp_config, random_dt)
     cmdargs = {'name': 'supernaedo2', 'config': config_file}
     exp_view = ExperimentBuilder().build_view_from(cmdargs)
 
-    assert exp_view._experiment._init_done is True
+    assert exp_view._experiment._init_done is False
     assert get_view_db(exp_view) is create_db_instance
     assert exp_view._id == exp_config[0][0]['_id']
     assert exp_view.name == exp_config[0][0]['name']
@@ -162,7 +162,8 @@ def test_build_view_from(config_file, create_db_instance, exp_config, random_dt)
     assert exp_view.metadata == exp_config[0][0]['metadata']
     assert exp_view.pool_size == exp_config[0][0]['pool_size']
     assert exp_view.max_trials == exp_config[0][0]['max_trials']
-    assert exp_view.algorithms.configuration == exp_config[0][0]['algorithms']
+    # TODO: Views are not fully configured until configuration is refactored
+    # assert exp_view.algorithms.configuration == exp_config[0][0]['algorithms']
 
 
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_bouthilx")

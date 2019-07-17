@@ -39,16 +39,19 @@ def add_subparser(parser):
 def main(args):
     """Fetch config and insert new point"""
     command_line_user_args = args.pop('user_args', [None])[1:]
-    experiment_view = ExperimentBuilder().build_view_from(args)
+    # TODO: Views are not fully configured until configuration is refactored
+    experiment = ExperimentBuilder().build_view_from(args)
+    # TODO: Remove this line when views gets fully configured
+    experiment = ExperimentBuilder().build_from(args)
 
     transformed_args = _build_from(command_line_user_args)
-    exp_space = experiment_view.space
+    exp_space = experiment.space
 
     values = _create_tuple_from_values(transformed_args, exp_space)
 
     trial = tuple_to_trial(values, exp_space)
 
-    ExperimentBuilder().build_from_config(experiment_view.configuration).register_trial(trial)
+    experiment.register_trial(trial)
 
 
 def _validate_dimensions(transformed_args, exp_space):
