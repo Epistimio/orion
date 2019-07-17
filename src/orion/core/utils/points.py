@@ -46,7 +46,7 @@ def regroup_dims(point, space):
 
 
 def flatten_dims(point, space):
-    """Flatten `point` in `space` and convert it to a 1D `numpy.ndarray`.
+    """Flatten `point` in `space` and convert it to a list.
 
     Parameters
     ----------
