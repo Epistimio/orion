@@ -36,9 +36,9 @@ def tuple_to_trial(data, space):
     assert len(data) == len(space)
     params = []
     for i, dim in enumerate(space.values()):
-        try:
-            datum = data[i].tolist()  # if it is numpy.ndarray
-        except AttributeError:
+        if hasattr(data[i], 'tolist'):
+            datum = data[i].tolist()
+        else:
             datum = data[i]
         params.append(dict(
             name=dim.name,
