@@ -160,7 +160,6 @@ def test_build_view_from(config_file, create_db_instance, exp_config, random_dt)
     assert exp_view.name == exp_config[0][0]['name']
     assert exp_view.configuration['refers'] == exp_config[0][0]['refers']
     assert exp_view.metadata == exp_config[0][0]['metadata']
-    assert exp_view._experiment._last_fetched == exp_config[0][0]['metadata']['datetime']
     assert exp_view.pool_size == exp_config[0][0]['pool_size']
     assert exp_view.max_trials == exp_config[0][0]['max_trials']
     assert exp_view.algorithms.configuration == exp_config[0][0]['algorithms']
@@ -202,7 +201,6 @@ def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_d
     assert exp.metadata['user'] == 'tsirif'
     assert exp.metadata['user_script'] == cmdargs['user_args'][0]
     assert exp.metadata['user_args'] == cmdargs['user_args'][1:]
-    assert exp._last_fetched == random_dt
     assert exp.pool_size == 1
     assert exp.max_trials == 100
     assert exp.algorithms.configuration == {'random': {'seed': None}}
@@ -228,7 +226,6 @@ def test_build_from_hit(old_config_file, create_db_instance, exp_config, script_
     assert exp.name == exp_config[0][0]['name']
     assert exp.configuration['refers'] == exp_config[0][0]['refers']
     assert exp.metadata == exp_config[0][0]['metadata']
-    assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
     assert exp.pool_size == exp_config[0][0]['pool_size']
     assert exp.max_trials == exp_config[0][0]['max_trials']
     assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
@@ -266,7 +263,6 @@ def test_build_from_config_no_hit(config_file, create_db_instance, exp_config, r
     assert exp.metadata['user'] == 'tsirif'
     assert exp.metadata['user_script'] == cmdargs['user_args'][0]
     assert exp.metadata['user_args'] == cmdargs['user_args'][1:]
-    assert exp._last_fetched == random_dt
     assert exp.pool_size == 1
     assert exp.max_trials == 100
     assert not exp.is_done
@@ -303,7 +299,6 @@ def test_build_from_config_hit(old_config_file, create_db_instance, exp_config, 
     assert exp.name == exp_config[0][0]['name']
     assert exp.configuration['refers'] == exp_config[0][0]['refers']
     assert exp.metadata == exp_config[0][0]['metadata']
-    assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
     assert exp.pool_size == exp_config[0][0]['pool_size']
     assert exp.max_trials == exp_config[0][0]['max_trials']
     assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
@@ -332,7 +327,6 @@ def test_build_without_config_hit(old_config_file, create_db_instance, exp_confi
     assert exp.name == exp_config[0][0]['name']
     assert exp.configuration['refers'] == exp_config[0][0]['refers']
     assert exp.metadata == exp_config[0][0]['metadata']
-    assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
     assert exp.pool_size == exp_config[0][0]['pool_size']
     assert exp.max_trials == exp_config[0][0]['max_trials']
     assert exp.algorithms.configuration == exp_config[0][0]['algorithms']

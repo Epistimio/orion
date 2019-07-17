@@ -30,6 +30,21 @@ class DumbParallelStrategy:
         return lie
 
 
+def produce_lies(producer):
+    """Wrap production of lies outside of `Producer.update`"""
+    return producer._produce_lies(producer.experiment.fetch_noncompleted_trials())
+
+
+def update_algorithm(producer):
+    """Wrap update of algorithm outside of `Producer.update`"""
+    return producer._update_algorithm(producer.experiment.fetch_completed_trials())
+
+
+def update_naive_algorithm(producer):
+    """Wrap update of naive algorithm outside of `Producer.update`"""
+    return producer._update_naive_algorithm(producer.experiment.fetch_noncompleted_trials())
+
+
 @pytest.fixture()
 def producer(hacked_exp, random_dt, exp_config, categorical_values):
     """Return a setup `Producer`."""
@@ -181,7 +196,7 @@ def test_no_lies_if_all_trials_completed(producer, database, random_dt):
 
     producer.update()
 
-    assert len(producer._produce_lies()) == 0
+    assert len(produce_lies(producer)) == 0
 
 
 def test_lies_generation(producer, database, random_dt):
@@ -195,7 +210,7 @@ def test_lies_generation(producer, database, random_dt):
 
     producer.update()
 
-    lies = producer._produce_lies()
+    lies = produce_lies(producer)
     assert len(lies) == 4
 
     trials_non_completed = list(
@@ -223,7 +238,7 @@ def test_register_lies(producer, database, random_dt):
     assert len(trials_completed) == 3
 
     producer.update()
-    producer._produce_lies()
+    produce_lies(producer)
 
     lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
     assert len(lying_trials) == 4
@@ -257,7 +272,7 @@ def test_register_duplicate_lies(producer, database, random_dt):
     producer.experiment.algorithms.algorithm.possible_values = [('rnn', 'gru')]
 
     producer.update()
-    assert len(producer._produce_lies()) == 4
+    assert len(produce_lies(producer)) == 4
     lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
     assert len(lying_trials) == 4
 
@@ -270,12 +285,12 @@ def test_register_duplicate_lies(producer, database, random_dt):
 
     producer.update()
 
-    assert len(producer._produce_lies()) == 5
+    assert len(produce_lies(producer)) == 5
     lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
     assert len(lying_trials) == 5
 
     # Make sure trying to generate again does not add more fake trials since they are identical
-    assert len(producer._produce_lies()) == 5
+    assert len(produce_lies(producer)) == 5
     lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
     assert len(lying_trials) == 5
 
@@ -289,14 +304,14 @@ def test_register_duplicate_lies_with_different_results(producer, database, rand
     # Overwrite value of lying result to force different results.
     producer.strategy._value = 11
 
-    assert len(producer._produce_lies()) == 4
+    assert len(produce_lies(producer)) == 4
     lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
     assert len(lying_trials) == 4
 
     # Overwrite value of lying result to force different results.
     producer.strategy._value = new_lying_value = 12
 
-    lying_trials = producer._produce_lies()
+    lying_trials = produce_lies(producer)
     assert len(lying_trials) == 4
     nb_lying_trials = database.lying_trials.count({'experiment': producer.experiment.id})
     assert nb_lying_trials == 4 + 4
@@ -336,7 +351,7 @@ def test_naive_algo_trained_on_all_non_completed_trials(producer, database, rand
 
     # Executing the actual test
     producer.update()
-    assert len(producer._produce_lies()) == 6
+    assert len(produce_lies(producer)) == 6
 
     assert len(producer.algorithm.algorithm._points) == 1
     assert len(producer.naive_algorithm.algorithm._points) == (1 + 6)
@@ -344,16 +359,12 @@ def test_naive_algo_trained_on_all_non_completed_trials(producer, database, rand
 
 def test_naive_algo_is_discared(producer, database, monkeypatch):
     """Verify that naive algo is discarded and recopied from original algo"""
-    # Get rid of the mock on datetime.datetime.utcnow() otherwise fetch_completed_trials always
-    # fetch all trials since _last_fetched never changes.
-    monkeypatch.undo()
-
     # Set values for predictions
     producer.experiment.pool_size = 1
     producer.experiment.algorithms.algorithm.possible_values = [('rnn', 'gru')]
 
     producer.update()
-    assert len(producer._produce_lies()) == 4
+    assert len(produce_lies(producer)) == 4
 
     first_naive_algorithm = producer.naive_algorithm
 
@@ -363,13 +374,13 @@ def test_naive_algo_is_discared(producer, database, monkeypatch):
     producer.produce()
 
     # Only update the original algo, naive algo is still not discarded
-    producer._update_algorithm()
+    update_algorithm(producer)
     assert len(producer.algorithm.algorithm._points) == 3
     assert first_naive_algorithm == producer.naive_algorithm
     assert len(producer.naive_algorithm.algorithm._points) == (3 + 4)
 
     # Discard naive algo and create a new one, now trained on 5 points.
-    producer._update_naive_algorithm()
+    update_naive_algorithm(producer)
     assert first_naive_algorithm != producer.naive_algorithm
     assert len(producer.naive_algorithm.algorithm._points) == (3 + 5)
 
