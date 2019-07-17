@@ -89,14 +89,16 @@ class Producer(object):
                                "wrong.")
 
     def update(self):
-        """Pull newest completed trials and all non completed trials to update naive model."""
-        self._update_algorithm()
-        self._update_naive_algorithm()
+        """Pull all trials to update model with completed ones and naive model with non completed
+        ones.
+        """
+        trials = self.experiment.fetch_trials({})
+        self._update_algorithm([trial for trial in trials if trial.status == 'completed'])
+        self._update_naive_algorithm([trial for trial in trials if trial.status != 'completed'])
 
-    def _update_algorithm(self):
+    def _update_algorithm(self, completed_trials):
         """Pull newest completed trials to update local model."""
         log.debug("### Fetch completed trials to observe:")
-        completed_trials = self.experiment.fetch_completed_trials()
 
         new_completed_trials = []
         for trial in completed_trials:
@@ -116,13 +118,12 @@ class Producer(object):
             self.algorithm.observe(points, results)
             self.strategy.observe(points, results)
 
-    def _produce_lies(self):
+    def _produce_lies(self, incomplete_trials):
         """Add fake objective results to incomplete trials
 
         Then register the trials in the db
         """
         log.debug("### Fetch active trials to observe:")
-        incomplete_trials = self.experiment.fetch_noncompleted_trials()
         lying_trials = []
         log.debug("### %s", incomplete_trials)
 
@@ -142,12 +143,12 @@ class Producer(object):
 
         return lying_trials
 
-    def _update_naive_algorithm(self):
+    def _update_naive_algorithm(self, incomplete_trials):
         """Pull all non completed trials to update naive model."""
         self.naive_algorithm = copy.deepcopy(self.algorithm)
         self.naive_trials_history = copy.deepcopy(self.trials_history)
         log.debug("### Create fake trials to observe:")
-        lying_trials = self._produce_lies()
+        lying_trials = self._produce_lies(incomplete_trials)
         log.debug("### %s", lying_trials)
         if lying_trials:
             log.debug("### Convert them to list of points and their results.")
