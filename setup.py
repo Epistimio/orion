@@ -72,7 +72,8 @@ setup_args = dict(
             'legacy = orion.storage.legacy:Legacy'
             ]
         },
-    install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython', 'filelock'],
+    install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython', 'filelock',
+                      'tabulate'],
     tests_require=tests_require,
     setup_requires=['setuptools', 'pytest-runner'],
     extras_require=dict(test=tests_require),
