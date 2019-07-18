@@ -8,7 +8,7 @@ as described in previous section. The only difference
 is we need to use :class:`EVCBuilder <orion.core.io.evc_builder.EVCBuilder>` instead of
 :class:`ExperimentBuilder <orion.core.io.experiment_builder.ExperimentBuilder>`.
 The :class:`EVCBuilder <orion.core.io.evc_builder.EVCBuilder>` will connect the experiment
-to the EVC tree, accessible through the 
+to the EVC tree, accessible through the
 :attr:`node <orion.core.worker.experiment.Experiment.node>` attribute.
 All trials of the tree can be fetched
 with :meth:`fetch_trials_tree() <orion.core.worker.experiment.Experiment.fetch_trials_tree>`, while

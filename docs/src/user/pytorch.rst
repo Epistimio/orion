@@ -224,5 +224,5 @@ following statistics if Oríon is called with ``-v`` or ``-vv``.
     ===============
     [{'name': '/lr', 'type': 'real', 'value': 0.012027705702344259}]
 
-These results can be printed in terminal latter on with the command :ref:`info <cli-info>` or
+These results can be printed in terminal later on with the command :ref:`info <cli-info>` or
 fetched using the :ref:`library API <library-api-results>`.

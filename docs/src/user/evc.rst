@@ -171,4 +171,5 @@ Iterative Results
 .. note:: TODO: Set link when status command is documented.
 
 Results from the EVC tree can be queried in aggregation with the command
-`status --collapse <idontexist>`_ or fetching using the :ref:`library API <library-api-evc-results>`.
+`status --collapse <idontexist>`_ or fetching using the
+:ref:`library API <library-api-evc-results>`.
