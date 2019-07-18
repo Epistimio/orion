@@ -1,7 +1,7 @@
 ``info`` Detailed informations about experiments
 ------------------------------------------------
 
-This commands gives a detailed description of a given experiment.
+This command gives a detailed description of a given experiment.
 Here is an example of all the sections provided by the command.
 
 .. code-block:: console
@@ -58,4 +58,4 @@ Here is an example of all the sections provided by the command.
 
 
 The last section contains information about the best trial so far, providing its
-hyper-parameter values and the corresponding objective
+hyperparameter values and the corresponding objective.
