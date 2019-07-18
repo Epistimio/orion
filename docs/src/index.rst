@@ -15,8 +15,9 @@
    :maxdepth: 1
 
    user/pytorch
-   user/evc
+   user/monitoring
    user/algorithms
+   user/evc
 
 .. toctree::
    :caption: Examples

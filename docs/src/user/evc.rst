@@ -168,28 +168,8 @@ Source of conflicts
 Iterative Results
 =================
 
-You can retrieve results from different experiments in the same project using
-the Experiment Version Control (EVC) system. The only difference
-with ``ExperimentBuilder`` is that ``EVCBuilder`` will connect the experiment
-to the EVC system, accessible through the ``node`` attribute.
+.. note:: TODO: Set link when status command is documented.
 
-.. code-block:: python
-
-   import pprint
-   from orion.core.io.evc_builder import EVCBuilder
-
-   experiment = EVCBuilder().build_view_from(
-       {"name": "orion-tutorial-with-momentum"})
-
-   print(experiment.name)
-   pprint.pprint(experiment.stats)
-
-   parent_experiment = experiment.node.parent.item
-   print(parent_experiment.name)
-   pprint.pprint(parent_experiment.stats)
-
-   for child in experiment.node.children:
-       child_experiment = child.item
-       print(child_experiment.name)
-       pprint.pprint(child_experiment.stats)
-
+Results from the EVC tree can be queried in aggregation with the command
+`status --collapse <idontexist>`_ or fetching using the
+:ref:`library API <library-api-evc-results>`.
