@@ -46,6 +46,8 @@ Configuration
 
 Seed for the random number generator used to sample new trials. Default is ``None``.
 
+.. _ASHA:
+
 ASHA
 ----
 
