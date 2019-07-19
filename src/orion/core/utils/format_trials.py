@@ -36,14 +36,10 @@ def tuple_to_trial(data, space):
     assert len(data) == len(space)
     params = []
     for i, dim in enumerate(space.values()):
-        try:
-            datum = data[i].tolist()  # if it is numpy.ndarray
-        except AttributeError:
-            datum = data[i]
         params.append(dict(
             name=dim.name,
             type=dim.type,
-            value=datum
+            value=data[i]
             ))
     return Trial(params=params)
 
