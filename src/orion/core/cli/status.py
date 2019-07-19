@@ -141,12 +141,12 @@ def print_summary(trials, offset=0):
     headers = ['status', 'quantity']
 
     lines = []
-    for status, trials in sorted(status_dict.items()):
-        line = [status, len(trials)]
+    for status, c_trials in sorted(status_dict.items()):
+        line = [status, len(c_trials)]
 
-        if trials[0].objective:
-            headers.append('min {}'.format(trials[0].objective.name))
-            line.append(min(trial.objective.value for trial in trials))
+        if c_trials[0].objective:
+            headers.append('min {}'.format(c_trials[0].objective.name))
+            line.append(min(trial.objective.value for trial in c_trials))
 
         lines.append(line)
 
@@ -169,8 +169,6 @@ def print_all_trials(trials, offset=0):
         Trials to list in terminal.
     offset: int, optional
         The number of tabs to the right this experiment is.
-    fetch_tree: bool, optional
-        Fetch trials for entire EVCTree. Defaults to False.
 
     """
     headers = ['id', 'status', 'best objective']
