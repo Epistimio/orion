@@ -72,7 +72,7 @@ def get_experiments(args):
     query = {'name': args['name']} if args.get('name') else {}
     experiments = Database().read("experiments", query, projection)
 
-    return [EVCBuilder().build_from({'name': exp['name']}) for exp in experiments]
+    return [EVCBuilder().build_view_from({'name': exp['name']}) for exp in experiments]
 
 
 def print_status_recursively(exp, depth=0, **kwargs):
