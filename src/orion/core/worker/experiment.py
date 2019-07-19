@@ -27,7 +27,7 @@ from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
                                         Strategy)
-from orion.storage.base import get_storage, ReadOnlyStorageProtocol
+from orion.storage.base import get_storage, ReadOnlyStorageProtocol, Storage
 
 log = logging.getLogger(__name__)
 
@@ -107,6 +107,14 @@ class Experiment:
         """
         log.debug("Creating Experiment object with name: %s", name)
         self._init_done = False
+        # --
+        # Pending config Refactoring
+        import os
+        # ORION_STORAGE=track:file://test.json
+        uri = os.environ.get('ORION_STORAGE', 'legacy:..')
+        proto, proto_args = uri.split(':', 1)
+        self._storage = Storage(proto, proto_args)
+        # --
 
         self._id = None
         self.name = name
@@ -223,12 +231,7 @@ class Experiment:
 
         self.fix_lost_trials()
 
-        query = dict(
-            experiment=self._id,
-            status={'$in': ['new', 'suspended', 'interrupted']}
-            )
-
-        new_trials = self.fetch_trials(query)
+        new_trials = self._storage.fetch_pending_trials(self)
         log.debug('%s Fetched (trials: %s)', '<' * _depth, len(new_trials))
 
         if not new_trials:

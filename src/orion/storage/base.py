@@ -20,7 +20,13 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
     """
 
     def create_experiment(self, config):
-        """Insert a new experiment inside the database"""
+        """Insert a new experiment inside the database
+
+        Note
+        ----
+        Reminder for implementers
+        MongoDB, updates the inserted dict with _id, so should you :P
+        """
         raise NotImplementedError()
 
     def update_experiment(self, experiment, where=None, **kwargs):
@@ -102,6 +108,10 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """Fetch the result from a given medium (file, db, socket, etc..) for a given trial and
         insert it into the trial object
         """
+        raise NotImplementedError()
+
+    def fetch_pending_trials(self, experiment):
+        """Fetch trials that have not run yet"""
         raise NotImplementedError()
 
 
