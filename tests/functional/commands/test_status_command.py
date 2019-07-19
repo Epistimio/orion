@@ -404,42 +404,6 @@ c2df0712319b5e91c1b4176e961a07a7  reserved
     assert captured == expected
 
 
-def test_two_related_w_a_wout_C(clean_db, family_with_trials, capsys):
-    """Test two related experiments with and --all."""
-    orion.core.cli.main(['status', '--all'])
-
-    captured = capsys.readouterr().out
-
-    expected = """\
-test_double_exp
-===============
-id                                status
---------------------------------  -----------
-a8f8122af9e5162e1e2328fdd5dd75db  broken
-ab82b1fa316de5accb4306656caa07d0  completed
-c187684f7c7d9832ba953f246900462d  interrupted
-1497d4f27622520439c4bc132c6046b1  new
-bd0999e1a3b00bf8658303b14867b30e  reserved
-b9f1506db880645a25ad9b5d2cfa0f37  suspended
-
-
-  test_double_exp_child
-  =====================
-  id                                status
-  --------------------------------  -----------
-  b55c5a82050dc30a6b0c9614b1eb05e5  broken
-  649e09b84128c2f8821b9225ebcc139b  completed
-  bac4e23fae8fe316d6f763ac901569af  interrupted
-  5f4a9c92b8f7c26654b5b37ecd3d5d32  new
-  c2df0712319b5e91c1b4176e961a07a7  reserved
-  382400953aa6e8769e11aceae9be09d7  suspended
-
-
-"""
-
-    assert captured == expected
-
-
 def test_three_unrelated_w_a_wout_C(clean_db, three_experiments_with_trials, capsys):
     """Test three unrelated experiments with --all."""
     orion.core.cli.main(['status', '--all'])
@@ -488,8 +452,6 @@ caf6afc856536f6d061676e63d14c948  reserved
     assert captured == expected
 
 
-
-
 def test_three_related_w_a_wout_C(clean_db, three_family_with_trials, capsys):
     """Test three related experiments with --all."""
     orion.core.cli.main(['status', '--all'])
@@ -536,9 +498,6 @@ b9f1506db880645a25ad9b5d2cfa0f37  suspended
 """
 
     assert captured == expected
-
-
-
 
 
 def test_three_related_branch_w_a_wout_C(clean_db, three_family_branch_with_trials, capsys):
