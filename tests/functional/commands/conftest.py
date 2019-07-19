@@ -186,7 +186,7 @@ def two_experiments(monkeypatch, db_instance):
 
     orion.core.cli.main(['init_only', '-n', 'test_double_exp',
                          '--branch', 'test_double_exp_child', './black_box.py',
-                         '--x~uniform(0,1)', '--y~+uniform(0,1,default_value=0)'])
+                         '--x~+uniform(0,1,default_value=0)', '--y~+uniform(0,1,default_value=0)'])
     ensure_deterministic_id('test_double_exp_child', db_instance)
 
 
@@ -236,7 +236,7 @@ def three_experiments_family(two_experiments, db_instance):
     """Create three experiments, one of which is the parent of the other two."""
     orion.core.cli.main(['init_only', '-n', 'test_double_exp',
                          '--branch', 'test_double_exp_child2', './black_box.py',
-                         '--x~uniform(0,1)', '--z~+uniform(0,1,default_value=0)'])
+                         '--x~+uniform(0,1,default_value=0)', '--z~+uniform(0,1,default_value=0)'])
     ensure_deterministic_id('test_double_exp_child2', db_instance)
 
 
@@ -261,7 +261,7 @@ def three_experiments_family_branch(two_experiments, db_instance):
     """Create three experiments, each parent of the following one."""
     orion.core.cli.main(['init_only', '-n', 'test_double_exp_child',
                          '--branch', 'test_double_exp_grand_child', './black_box.py',
-                         '--x~uniform(0,1)', '--y~uniform(0,1,default_value=0)',
+                         '--x~+uniform(0,1,default_value=0)', '--y~uniform(0,1,default_value=0)',
                          '--z~+uniform(0,1,default_value=0)'])
     ensure_deterministic_id('test_double_exp_grand_child', db_instance)
 
