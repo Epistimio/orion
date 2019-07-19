@@ -42,8 +42,8 @@ on and so forth. We provide an example output to illustrate this:
 
 The ``--all`` Argument
 ~~~~~~~~~~~~~~~~~~~~~~
-The basic status command combines statistics of all trials for each status. However, if you want to see
-every individual trial, with its id and its status, you can use the ``--all``
+The basic status command combines statistics of all trials for each status. However, if you want to
+see every individual trial, with its id and its status, you can use the ``--all``
 argument which will print out every single trial for each experiment with their full information.
 Here is a sample output using the same experiments and trials as before:
 
