@@ -65,9 +65,6 @@ def workon(experiment, worker_trials=None):
         log.debug("#### Successfully reserved %s to evaluate. Consuming...", trial)
         consumer.consume(trial)
 
-        import sys
-        sys.exit(1)
-
     stats = experiment.stats
 
     if not stats:
