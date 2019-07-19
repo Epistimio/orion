@@ -8,9 +8,12 @@
    :synopsis: Implement a storage protocol to allow Orion to use track as a storage method
 
 """
-import uuid
-import datetime
+
 from collections import defaultdict
+
+import datetime
+import logging
+import uuid
 
 from orion.core.worker.trial import Trial as OrionTrial
 from orion.storage.base import BaseStorageProtocol
@@ -19,14 +22,17 @@ from track.serialization import to_json
 from track.client import TrackClient
 from track.structure import Trial as TrackTrial, TrialGroup, Project
 from track.structure import CustomStatus, Status as TrackStatus
+from track.persistence.utils import parse_uri
 
+
+log = logging.getLogger(__name__)
 
 _status = [
     CustomStatus('new', TrackStatus.CreatedGroup.value + 1),
     CustomStatus('reserved', TrackStatus.CreatedGroup.value + 2),
 
     CustomStatus('suspended', TrackStatus.FinishedGroup.value + 1),
-    CustomStatus('completed', TrackStatus.FinishedGroup.value + 2),
+    # CustomStatus('completed', TrackStatus.FinishedGroup.value + 2),
 
     CustomStatus('interrupted', TrackStatus.ErrorGroup.value + 1),
     CustomStatus('broken', TrackStatus.ErrorGroup.value + 3)
@@ -113,9 +119,6 @@ class TrialAdapter:
     def to_dict(self):
         import copy
 
-        if self.memory is not None:
-            return self.memory.to_dict()
-
         trial = copy.deepcopy(self.storage.metadata)
         trial.update({
             'results': self.storage.metrics,
@@ -135,15 +138,25 @@ class TrialAdapter:
         if self.objective_key is None:
             raise RuntimeError('not objective was defined!')
 
-        if self.objectives_values is None:
-            self.objectives_values = []
+        self.objectives_values = []
 
+        data = self.storage.metrics[self.objective_key]
+
+        # objective was pushed without step data (already sorted)
+        if isinstance(data, list):
+            self.objectives_values = data
+
+        # objective was pushed with step data
+        elif isinstance(data, dict):
             for k, v in self.storage.metrics[self.objective_key].items():
                 self.objectives_values.append((int(k), v))
 
             self.objectives_values.sort(key=lambda x: x[0])
 
-        return OrionTrial.Result(name=self.objective_key, value=self.objectives_values[-1], type='objective')
+        if not self.objectives_values:
+            return None
+
+        return OrionTrial.Result(name=self.objective_key, value=self.objectives_values[-1][1], type='objective')
 
     @property
     def results(self):
@@ -165,6 +178,14 @@ class TrialAdapter:
     def submit_time(self):
         return self.storage.metadata.get('submit_time')
 
+    @property
+    def end_time(self):
+        return self.storage.metadata.get('end_time')
+
+    @end_time.setter
+    def end_time(self, value):
+        self.storage.metadata['end_time'] = value
+
 
 class Track(BaseStorageProtocol):
     """Implement a generic protocol to allow Orion to communicate using
@@ -179,11 +200,16 @@ class Track(BaseStorageProtocol):
 
     def __init__(self, uri):
         self.uri = uri
+        self.options = parse_uri(uri)['query']
+
         self.client = TrackClient(uri)
         self.backend = self.client.protocol
         self.project = None
         self.group = None
         self.current_trial = None
+
+        self.objective = self.options.get('objective')
+        assert self.objective is not None, 'An objective should be defined!'
 
     def create_experiment(self, config):
         """Insert a new experiment inside the database"""
@@ -250,7 +276,7 @@ class Track(BaseStorageProtocol):
             metadata=metadata,
             metrics=metrics
         ))
-        return TrialAdapter(self.current_trial)
+        return TrialAdapter(self.current_trial, objective=self.objective)
 
     def register_lie(self, trial):
         """Register a *fake* trial created by the strategist.
@@ -272,19 +298,28 @@ class Track(BaseStorageProtocol):
     def fetch_trials(self, query, *args, **kwargs):
         """Fetch all the trials that match the query"""
         query = to_json(query)
+
         new_query = {}
         for k, v in query.items():
             if k == 'experiment':
                 new_query['group_id'] = v
+
             elif k == 'heartbeat':
                 new_query['metadata.heartbeat'] = v
+
             elif k == '_id':
                 new_query['uid'] = v
+
+            elif k == 'end_time':
+                new_query['metadata.end_time'] = v
+
             else:
                 new_query[k] = v
 
-        results = [TrialAdapter(t) for t in self.backend.fetch_trials(new_query)]
+        results = [TrialAdapter(t, objective=self.objective) for t in self.backend.fetch_trials(new_query)]
         return results
+
+    _ignore_updates_for = {'results', 'params', '_id'}
 
     def update_trial(self, trial, where=None, **kwargs):
         """Update the fields of a given trials
@@ -312,6 +347,8 @@ class Track(BaseStorageProtocol):
             for key, value in kwargs.items():
                 if key == 'status':
                     self.backend.set_trial_status(trial, get_track_status(value))
+                elif key in self._ignore_updates_for:
+                    continue
                 else:
                     pair = {key: to_json(value)}
                     self.backend.log_trial_metadata(trial, **pair)
@@ -328,12 +365,13 @@ class Track(BaseStorageProtocol):
         if isinstance(trial, TrialAdapter):
             trial = trial.storage
 
-        self.client = TrackClient(self.uri)
-        self.backend = self.client.protocol
+        refreshed_trial = self.backend.get_trial(trial)[0]
+        new_trial = TrialAdapter(refreshed_trial, objective=self.objective)
 
-        refreshed_trial = self.backend.get_trial(trial)
-        print(refreshed_trial)
-        return TrialAdapter(refreshed_trial)
+        assert new_trial.objective is not None, 'Trial should have returned an objective value!'
+
+        log.info("trial objective is (%s: %s)", self.objective, new_trial.objective.value)
+        return new_trial
 
     def fetch_pending_trials(self, experiment):
         """Fetch trials that have not run yet"""

@@ -133,9 +133,7 @@ class Legacy(BaseStorageProtocol):
                 value=res['value']) for res in results
         ]
 
-        if not trial.results:
-            raise RuntimeError('Trial did not return a result!')
-
+        assert trial.objective is not None, 'Trial should have returned an objective value!'
         return trial
 
     def update_trial(self, trial: Trial, where=None, **kwargs) -> Trial:
