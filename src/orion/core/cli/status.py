@@ -33,9 +33,9 @@ def add_subparser(parser):
         help="Show all trials line by line. Otherwise, they are all aggregated by status")
 
     status_parser.add_argument(
-        '-r', '--recursive', action="store_true",
-        help="Divide trials per experiments hierarchically. Otherwise they are all print on the \
-              same tab level.")
+        '-C', '--collapse', action="store_true",
+        help=("Aggregate together results of all child experiments. Otherwise they are all "
+              "printed hierarchically"))
 
     status_parser.set_defaults(func=main)
 
@@ -50,12 +50,15 @@ def main(args):
 
     experiments = get_experiments(args)
 
-    if args.get('recursive'):
-        for exp in filter(lambda e: e.refers['parent_id'] is None, experiments):
+    if args.get('name'):
+        print_status(experiments[0], all_trials=args.get('all'), collapse=args.get('collapse'))
+        return
+
+    for exp in filter(lambda e: e.refers.get('parent_id') is None, experiments):
+        if args.get('collapse'):
+            print_status(exp, all_trials=args.get('all'), collapse=True)
+        else:
             print_status_recursively(exp, all_trials=args.get('all'))
-    else:
-        for exp in experiments:
-            print_status(exp, all_trials=args.get('all'))
 
 
 def get_experiments(args):
@@ -92,7 +95,7 @@ def print_status_recursively(exp, depth=0, **kwargs):
         print_status_recursively(child.item, depth + 1, **kwargs)
 
 
-def print_status(exp, offset=0, all_trials=False):
+def print_status(exp, offset=0, all_trials=False, collapse=False):
     """Print the status of the current experiment.
 
     Parameters
@@ -101,42 +104,49 @@ def print_status(exp, offset=0, all_trials=False):
         The number of tabs to the right this experiment is.
     all_trials: bool, optional
         Print all trials individually
+    collapse: bool, optional
+        Fetch trials for entire EVCTree. Defaults to False.
 
     """
-    if all_trials:
-        print_all_trials(exp, offset=offset)
+    if collapse:
+        trials = exp.fetch_trials_tree({})
     else:
-        print_summary(exp, offset=offset)
+        trials = exp.fetch_trials({})
+
+    print(" " * offset, exp.name, sep="")
+    print(" " * offset, "=" * len(exp.name), sep="")
+
+    if all_trials:
+        print_all_trials(trials, offset=offset)
+    else:
+        print_summary(trials, offset=offset)
 
 
-def print_summary(exp, offset=0):
+def print_summary(trials, offset=0):
     """Print a summary of the current experiment.
 
     Parameters
     ----------
+    trials: list
+        Trials to summarize.
     offset: int, optional
         The number of tabs to the right this experiment is.
 
     """
     status_dict = collections.defaultdict(list)
-    name = exp.name
-    trials = exp.fetch_trials({})
 
     for trial in trials:
         status_dict[trial.status].append(trial)
 
-    print(" " * offset, name, sep="")
-    print(" " * offset, "=" * len(name), sep="")
-
     headers = ['status', 'quantity']
 
     lines = []
-    for status, trials in sorted(status_dict.items()):
-        line = [status, len(trials)]
+    for status, c_trials in sorted(status_dict.items()):
+        line = [status, len(c_trials)]
 
-        if trials[0].objective:
-            headers.append('min {}'.format(trials[0].objective.name))
-            line.append(min(trial.objective.value for trial in trials))
+        if c_trials[0].objective:
+            headers.append('min {}'.format(c_trials[0].objective.name))
+            line.append(min(trial.objective.value for trial in c_trials))
 
         lines.append(line)
 
@@ -150,20 +160,17 @@ def print_summary(exp, offset=0):
     print("\n")
 
 
-def print_all_trials(exp, offset=0):
+def print_all_trials(trials, offset=0):
     """Print all trials of the current experiment individually.
 
     Parameters
     ----------
+    trials: list
+        Trials to list in terminal.
     offset: int, optional
         The number of tabs to the right this experiment is.
 
     """
-    name = exp.name
-    trials = exp.fetch_trials({})
-
-    print(" " * offset, name, sep="")
-    print(" " * offset, "=" * len(name), sep="")
     headers = ['id', 'status', 'best objective']
     lines = []
 

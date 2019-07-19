@@ -16,6 +16,7 @@
 
    user/pytorch
    user/monitoring
+   user/searchspace
    user/algorithms
    user/evc
 

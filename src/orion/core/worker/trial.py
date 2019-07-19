@@ -15,7 +15,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class Trial(object):
+class Trial:
     """Represents an entry in database/trials collection.
 
     Attributes
@@ -74,7 +74,7 @@ class Trial(object):
             trials.append(cls(**entry))
         return trials
 
-    class Value(object):
+    class Value:
         """Container for a value object.
 
         Attributes
@@ -98,6 +98,13 @@ class Trial(object):
                 setattr(self, attrname, None)
             for attrname, value in kwargs.items():
                 setattr(self, attrname, value)
+
+            self._ensure_no_ndarray()
+
+        def _ensure_no_ndarray(self):
+            """Make sure the current value is not a `numpy.ndarray`."""
+            if hasattr(self, 'value') and hasattr(self.value, 'tolist'):
+                self.value = self.value.tolist()
 
         def to_dict(self):
             """Needed to be able to convert `Value` to `dict` form."""
