@@ -103,7 +103,7 @@ class Trial:
 
         def _ensure_no_ndarray(self):
             """Make sure the current value is not a `numpy.ndarray`."""
-            if hasattr(self.value, 'tolist'):
+            if hasattr(self, 'value') and hasattr(self.value, 'tolist'):
                 self.value = self.value.tolist()
 
         def to_dict(self):

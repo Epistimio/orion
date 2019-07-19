@@ -11,7 +11,8 @@
 
 
 def regroup_dims(point, space):
-    """Take a list of points and regroup them appropriately as a point from `space`.
+    """Take a list of items representing a point and regroup them appropriately as
+    a point from `space`.
 
     Parameters
     ----------
@@ -57,7 +58,7 @@ def flatten_dims(point, space):
 
     Returns
     -------
-    list or tuple
+    list
 
     """
     flattened = []
