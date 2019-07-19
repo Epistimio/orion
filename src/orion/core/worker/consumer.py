@@ -98,6 +98,51 @@ class Consumer(object):
             trial.status = 'broken'
             self.experiment.update_trial(trial, status=trial.status)
 
+    def get_execution_environment(self, trial, results_file='results.log'):
+        """Set a few environment variables to allow users and
+        underlying processes to know if they are running under orion
+
+        Parameters
+        ----------
+        results_file: str
+           file used to store results, this is only used by the legacy protocol
+
+        trial: Trial
+           reference to the trial object that is going to be run
+
+        Note
+        ----
+        This functions define the environment variables described below
+
+        ORION_PROJECT: str
+           name of the project the user is currently working on.
+           it defaults to `orion` is no project name was defined
+
+        ORION_EXPERIMENT: str
+           current experiment id that this trial belong to
+
+        ORION_TRIAL_ID: str
+           current trial id that is currently being ran in this process
+
+        ORION_WORKING_DIRECTORY: str
+           orion current working directory
+
+        ORION_RESULTS_PATH: str
+           orion results file that is read by the legacy protocol to get the results of the trial
+           after a successful run
+
+        """
+        env = dict(os.environ)
+
+        env['ORION_PROJECT'] = 'orion'
+        env['ORION_EXPERIMENT'] = self.experiment.name
+        env['ORION_TRIAL_ID'] = str(trial.id)
+
+        env['ORION_WORKING_DIR'] = str(trial.working_dir)
+        env['ORION_RESULTS_PATH'] = str(results_file)
+
+        return env
+
     def _consume(self, trial, workdirname):
         config_file = tempfile.NamedTemporaryFile(mode='w', prefix='trial_',
                                                   suffix='.conf', dir=workdirname,
@@ -115,17 +160,17 @@ class Consumer(object):
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
-        self.execute_process(results_file.name, cmd_args)
+        env = self.get_execution_environment(trial, results_file.name)
+
+        self.execute_process(cmd_args, env)
         return results_file
 
-    def execute_process(self, results_filename, cmd_args):
+    def execute_process(self, cmd_args, overrides):
         """Facilitate launching a black-box trial."""
-        env = dict(os.environ)
-        env['ORION_RESULTS_PATH'] = str(results_filename)
         command = [self.script_path] + cmd_args
 
         signal.signal(signal.SIGTERM, _handler)
-        process = subprocess.Popen(command, env=env)
+        process = subprocess.Popen(command, env=overrides)
 
         return_code = process.wait()
         if return_code != 0:

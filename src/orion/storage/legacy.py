@@ -103,6 +103,9 @@ class Legacy(BaseStorageProtocol):
                 value=res['value']) for res in results
         ]
 
+        if not trial.results:
+            raise RuntimeError('Trial did not return a result!')
+
         return trial
 
     def update_trial(self, trial: Trial, where=None, **kwargs) -> Trial:
@@ -112,3 +115,12 @@ class Legacy(BaseStorageProtocol):
 
         where['_id'] = trial.id
         return self._db.write('trials', data=kwargs, query=where)
+
+    def fetch_pending_trials(self, experiment):
+        """Fetch trials that have not run yet"""
+        query = dict(
+            experiment=experiment._id,
+            status={'$in': ['new', 'suspended', 'interrupted']}
+        )
+        return self.fetch_trials(query)
+

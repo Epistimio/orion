@@ -20,7 +20,13 @@ class BaseStorageProtocol:
     """
 
     def create_experiment(self, config):
-        """Insert a new experiment inside the database"""
+        """Insert a new experiment inside the database
+
+        Note
+        ----
+        Reminder for implementers
+        MongoDB, updates the inserted dict with _id, so should you :P
+        """
         raise NotImplementedError()
 
     def update_experiment(self, experiment, where=None, **kwargs):
@@ -69,10 +75,6 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def reserve_trial(self, *args, **kwargs):
-        """Select a pending trial and reserve it for the worker"""
-        raise NotImplementedError()
-
     def fetch_trials(self, query, *args, **kwargs):
         """Fetch all the trials that match the query"""
         raise NotImplementedError()
@@ -102,6 +104,10 @@ class BaseStorageProtocol:
         """Fetch the result from a given medium (file, db, socket, etc..) for a given trial and
         insert it into the trial object
         """
+        raise NotImplementedError()
+
+    def fetch_pending_trials(self, experiment):
+        """Fetch trials that have not run yet"""
         raise NotImplementedError()
 
 

@@ -106,7 +106,15 @@ class Experiment(object):
         """
         log.debug("Creating Experiment object with name: %s", name)
         self._init_done = False
-        self._storage = StorageProtocol('legacy')
+
+        # --
+        # Pending config Refactoring
+        import os
+        # ORION_STORAGE=track:file://test.json
+        uri = os.environ.get('ORION_STORAGE', 'legacy:..')
+        proto, proto_args = uri.split(':', 1)
+        self._storage = StorageProtocol(proto, proto_args)
+        # --
 
         self._id = None
         self.name = name
@@ -219,12 +227,7 @@ class Experiment(object):
 
         self.fix_lost_trials()
 
-        query = dict(
-            experiment=self._id,
-            status={'$in': ['new', 'suspended', 'interrupted']}
-            )
-
-        new_trials = self.fetch_trials(query)
+        new_trials = self._storage.fetch_pending_trials(self)
         log.debug('%s Fetched (trials: %s)', '<' * _depth, len(new_trials))
 
         if not new_trials:
