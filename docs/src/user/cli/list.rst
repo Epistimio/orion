@@ -38,7 +38,7 @@ The ``--name`` argument
 The last example showed you how to print every experiments inside the database in a tree. However,
 if you wish to have an overview of the tree of a single experiment, you can add the ``--name``
 argument to the call to ``list`` and only the experiment with the provided name and its children
-will be shown. Here's to example using the same set of experiments as above:
+will be shown. Here's two examples using the same set of experiments as above:
 
 .. code-block:: bash
 

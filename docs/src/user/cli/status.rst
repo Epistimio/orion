@@ -15,7 +15,7 @@ configuration file if needed. This will then output a list of all the experiment
 database with the count of every type of trials related to them. If an experiment has at least one
 ``completed`` trial associated with it, the objective value of the best one will be printed as well.
 Children experiments are printed below their parent and are indicated through a different tab
-alignment then their parent, mainly, one tab further. This continues on for grand-children, and so
+alignment than their parent, mainly, one tab further. This continues on for grand-children, and so
 on and so forth. We provide an example output to illustrate this:
 
 .. code-block:: bash
@@ -42,8 +42,8 @@ on and so forth. We provide an example output to illustrate this:
 
 The ``--all`` Argument
 ~~~~~~~~~~~~~~~~~~~~~~
-This basic status command collapses all trials into a single status. However, if you want to see
-every individual trial, with its id, its parameters and its status, you can use the ``--all``
+The basic status command combines statistics of all trials for each status. However, if you want to see
+every individual trial, with its id and its status, you can use the ``--all``
 argument which will print out every single trial for each experiment with their full information.
 Here is a sample output using the same experiments and trials as before:
 
@@ -89,7 +89,7 @@ Here is a sample output using the same experiments and trials as before:
 
 The ``--collapse`` Argument
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-On the other end, if you wish to only get an overview of the experiments and the amount of trials
+On the other hand, if you wish to only get an overview of the experiments and the amount of trials
 linked to them without looking through the whole EVC tree, you can use the ``--collapse``
 option. As its name indicates, it will collapse every children into the root experiment and make a
 total count of the amount of trials `in that EVC tree`. As always, we provide an output to
