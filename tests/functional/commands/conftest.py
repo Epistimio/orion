@@ -157,7 +157,7 @@ def single_without_success(one_experiment):
     exp = ExperimentBuilder().build_from({'name': 'test_single_exp'})
     x = {'name': '/x', 'type': 'real'}
 
-    x_value = 1
+    x_value = 0
     for status in statuses:
         x['value'] = x_value
         trial = Trial(experiment=exp.id, params=[x], status=status)
@@ -170,7 +170,7 @@ def single_with_trials(single_without_success):
     """Create an experiment with all types of trials."""
     exp = ExperimentBuilder().build_from({'name': 'test_single_exp'})
 
-    x = {'name': '/x', 'type': 'real', 'value': 0}
+    x = {'name': '/x', 'type': 'real', 'value': 100}
     results = {"name": "obj", "type": "objective", "value": 0}
     trial = Trial(experiment=exp.id, params=[x], status='completed', results=[results])
     Database().write('trials', trial.to_dict())
@@ -186,7 +186,7 @@ def two_experiments(monkeypatch, db_instance):
 
     orion.core.cli.main(['init_only', '-n', 'test_double_exp',
                          '--branch', 'test_double_exp_child', './black_box.py',
-                         '--x~uniform(0,1)', '--y~+uniform(0,1)'])
+                         '--x~uniform(0,1)', '--y~+uniform(0,1,default_value=0)'])
     ensure_deterministic_id('test_double_exp_child', db_instance)
 
 
@@ -203,7 +203,7 @@ def family_with_trials(two_experiments):
         x['value'] = x_value
         y['value'] = x_value
         trial = Trial(experiment=exp.id, params=[x], status=status)
-        x['value'] = x_value * 10
+        x['value'] = x_value
         trial2 = Trial(experiment=exp2.id, params=[x, y], status=status)
         x_value += 1
         Database().write('trials', trial.to_dict())
@@ -236,7 +236,7 @@ def three_experiments_family(two_experiments, db_instance):
     """Create three experiments, one of which is the parent of the other two."""
     orion.core.cli.main(['init_only', '-n', 'test_double_exp',
                          '--branch', 'test_double_exp_child2', './black_box.py',
-                         '--x~uniform(0,1)', '--z~+uniform(0,1)'])
+                         '--x~uniform(0,1,default_value=0)', '--z~+uniform(0,1,default_value=0)'])
     ensure_deterministic_id('test_double_exp_child2', db_instance)
 
 
@@ -261,7 +261,8 @@ def three_experiments_family_branch(two_experiments, db_instance):
     """Create three experiments, each parent of the following one."""
     orion.core.cli.main(['init_only', '-n', 'test_double_exp_child',
                          '--branch', 'test_double_exp_grand_child', './black_box.py',
-                         '--x~uniform(0,1)', '--y~uniform(0,1)', '--z~+uniform(0,1)'])
+                         '--x~uniform(0,1,default_value=0)', '--y~uniform(0,1,default_value=0)',
+                         '--z~+uniform(0,1,default_value=0)'])
     ensure_deterministic_id('test_double_exp_grand_child', db_instance)
 
 
