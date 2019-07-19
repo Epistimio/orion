@@ -1,12 +1,12 @@
-Status
-------
+``status`` Overview of trials for experiments
+---------------------------------------------
 
 When you reach a certain amount of trials, it becomes hard to keep track of them. This is where the
 ``status`` command comes into play. The ``status`` command outputs the status of the different
-trials inside every experiment or a specific experiment tree. It can either give you an overview of
+trials inside every experiment or a specific EVC tree. It can either give you an overview of
 the different trials status, i.e., the number of currently ``completed`` trials and so on, or, it
 can give you a deeper view of the experiments by outlining every single trial, its status and its
-points.
+objective.
 
 Basic Usage
 ~~~~~~~~~~~
@@ -42,10 +42,10 @@ on and so forth. We provide an example output to illustrate this:
 
 The ``--all`` Argument
 ~~~~~~~~~~~~~~~~~~~~~~
-This basic status command collapses all trials into a single type. However, if you want to see every
-individual trial, with its id, its points and its status, you can the ``--all`` argument which will
-print out every single trial for each experiment with their full information. Here is a sample
-output using the same experiments and trials as before:
+This basic status command collapses all trials into a single status. However, if you want to see
+every individual trial, with its id, its parameters and its status, you can use the ``--all``
+argument which will print out every single trial for each experiment with their full information.
+Here is a sample output using the same experiments and trials as before:
 
 .. code-block:: console
 
@@ -90,9 +90,9 @@ output using the same experiments and trials as before:
 The ``--collapse`` Argument
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 On the other end, if you wish to only get an overview of the experiments and the amount of trials
-linked to them without looking through the whole experiment tree, you can use the ``--collapse``
+linked to them without looking through the whole EVC tree, you can use the ``--collapse``
 option. As its name indicates, it will collapse every children into the root experiment and make a
-total count of the amount of trials `in that experiment tree`. As always, we provide an output to
+total count of the amount of trials `in that EVC tree`. As always, we provide an output to
 give you an example:
 
 
@@ -111,12 +111,12 @@ give you an example:
     ==========
     status       quantity    min example_objective
     ---------  ----------  -----------------------
-    completed          10                  4543.73
+    completed           5                  4543.73
 
 
 The ``--name`` Argument
 ~~~~~~~~~~~~~~~~~~~~~~~
-If you wish to isolate a single experiment tree and look at their trials instead of listing every
+If you wish to isolate a single EVC tree and look at their trials instead of listing every
 single experiments, you can use the ``--name`` argument by itself or combine it with the ones above
 to obtain the same results, but constrained. Once again, some examples for each type of scenrario is
 given:

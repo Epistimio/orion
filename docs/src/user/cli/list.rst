@@ -1,5 +1,5 @@
-List
-----
+``list`` Overview of all experiments
+------------------------------------
 
 Once you have launched a certain amount of experiments, you might start to lose track of some of
 them. You might forget their name and whether or not they are the children of some other experiment
