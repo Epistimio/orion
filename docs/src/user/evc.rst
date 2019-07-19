@@ -1,6 +1,8 @@
-****************************
+.. _EVC system:
+
+**************************
 Experiment Version Control
-****************************
+**************************
 
 Oríon comes with an Experiment Version Control (EVC) system that makes it possible to reuse results
 from your previous experiments in a given project for the current one. This means a new experiment
