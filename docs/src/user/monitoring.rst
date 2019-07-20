@@ -10,6 +10,8 @@ Commands for terminal
 =====================
 
 .. _cli-info:
+.. include:: cli/list.rst
+.. include:: cli/status.rst
 .. include:: cli/info.rst
 
 Library API
