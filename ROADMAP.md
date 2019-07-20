@@ -3,21 +3,17 @@ Last update July 5th, 2019
 
 ## Next releases - Short-Term
 
-### v0.1.5
-
-#### Trial interruption/suspension/resumption
-
-Handle interrupted or lost trials so that they can be automatically resumed by running workers.
-
-#### Command line tools to monitor experiments
-
-See [#125](https://github.com/Epistimio/orion/issues/125)
-
 ### v0.1.6
 
 #### Auto-resolution of EVC
 
 Make branching events automatically solved with sane defaults.
+
+### v0.1.7
+
+#### Preliminary Python API
+
+Library API to simplify usage of algorithms without Oríon's worker.
 
 ## Next releases - Mid-Term
 
