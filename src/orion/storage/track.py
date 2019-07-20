@@ -148,6 +148,9 @@ class TrialAdapter:
 
     @property
     def objective(self):
+        def result(val):
+            return OrionTrial.Result(name=self.objective_key, value=val, type='objective')
+
         if self.objective_key is None:
             raise RuntimeError('not objective was defined!')
 
@@ -158,6 +161,7 @@ class TrialAdapter:
         # objective was pushed without step data (already sorted)
         if isinstance(data, list):
             self.objectives_values = data
+            return result(self.objectives_values[-1])
 
         # objective was pushed with step data
         elif isinstance(data, dict):
@@ -165,11 +169,9 @@ class TrialAdapter:
                 self.objectives_values.append((int(k), v))
 
             self.objectives_values.sort(key=lambda x: x[0])
+            return result(self.objectives_values[-1][1])
 
-        if not self.objectives_values:
-            return None
-
-        return OrionTrial.Result(name=self.objective_key, value=self.objectives_values[-1][1], type='objective')
+        return None
 
     @property
     def results(self):
@@ -189,7 +191,7 @@ class TrialAdapter:
 
     @property
     def submit_time(self):
-        return self.storage.metadata.get('submit_time')
+        return datetime.datetime.utcfromtimestamp(self.storage.metadata.get('submit_time'))
 
     @property
     def end_time(self):
