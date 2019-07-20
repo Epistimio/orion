@@ -52,6 +52,20 @@ def convert_track_status(status):
     return status.name.lower()
 
 
+def remove_leading_slash(name):
+    # if name[0] == '/':
+    #     return name[1:]
+    # return name
+    return name
+
+
+def add_leading_slash(name):
+    # if name[0] == '/':
+    #     return name
+    # return '/' + name
+    return name
+
+
 class TrialAdapter:
     def __init__(self, storage_trial, orion_trial=None, objective=None):
         self.storage = storage_trial
@@ -94,14 +108,13 @@ class TrialAdapter:
         if self.memory is not None:
             return self.memory.params
 
-        if self._params is None:
-            types = self.storage.metadata['params_types']
-            params = self.storage.parameters
+        types = self.storage.metadata['params_types']
+        params = self.storage.parameters
 
-            self._params = [
-                OrionTrial.Param(name=name, value=params.get(name), type=vtype)
-                for name, vtype in types.items()
-            ]
+        self._params = [
+            OrionTrial.Param(name=add_leading_slash(name), value=params.get(name), type=vtype)
+            for name, vtype in types.items()
+        ]
 
         return self._params
 
@@ -180,7 +193,7 @@ class TrialAdapter:
 
     @property
     def end_time(self):
-        return self.storage.metadata.get('end_time')
+        return datetime.datetime.utcfromtimestamp(self.storage.metadata.get('end_time'))
 
     @end_time.setter
     def end_time(self, value):
@@ -220,7 +233,13 @@ class Track(BaseStorageProtocol):
             if self.project is None:
                 self.project = self.backend.new_project(Project(name=config['name']))
 
-        self.group = self.backend.new_trial_group(TrialGroup(name=str(uuid.uuid4()), project_id=self.project.uid))
+        self.group = self.backend.new_trial_group(
+            TrialGroup(
+                name=str(uuid.uuid4()),
+                project_id=self.project.uid,
+                metadata=to_json(config)
+            )
+        )
 
         config['_id'] = self.group.uid
         return config
@@ -257,11 +276,12 @@ class Track(BaseStorageProtocol):
         trial.submit_time = stamp
 
         metadata = dict()
-        metadata['params_types'] = {p.name: p.type for p in trial. params}
+        metadata['params_types'] = {remove_leading_slash(p.name): p.type for p in trial. params}
         metadata['submit_time'] = to_json(trial.submit_time)
         metadata['end_time'] = to_json(trial.end_time)
         metadata['worker'] = trial.worker
-        metadata['metric_types'] = {p.name: p.type for p in trial.results}
+        metadata['metric_types'] = {remove_leading_slash(p.name): p.type for p in trial.results}
+        metadata['metric_types'][self.objective] = 'objective'
 
         metrics = defaultdict(list)
         for p in trial.results:
@@ -312,6 +332,9 @@ class Track(BaseStorageProtocol):
 
             elif k == 'end_time':
                 new_query['metadata.end_time'] = v
+
+            elif k == 'status' and isinstance(v, str):
+                new_query['status'] = get_track_status(v)
 
             else:
                 new_query[k] = v
