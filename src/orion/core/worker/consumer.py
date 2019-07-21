@@ -16,7 +16,7 @@ import tempfile
 
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.working_dir import WorkingDir
-
+from orion.core.worker.trial_monitor import TrialMonitor
 
 log = logging.getLogger(__name__)
 
@@ -115,7 +115,13 @@ class Consumer(object):
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
-        self.execute_process(results_file.name, cmd_args)
+        peacemaker = TrialMonitor(self.experiment, trial.id).start()
+        try:
+            self.execute_process(results_file.name, cmd_args)
+        finally:
+            # merciless
+            peacemaker.stop()
+
         return results_file
 
     def execute_process(self, results_filename, cmd_args):

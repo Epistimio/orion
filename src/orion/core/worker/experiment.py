@@ -27,7 +27,6 @@ from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
                                         Strategy)
-from orion.core.worker.trial_monitor import TrialMonitor
 from orion.storage.base import ReadOnlyStorageProtocol, StorageProtocol
 
 log = logging.getLogger(__name__)
@@ -260,7 +259,6 @@ class Experiment(object):
         else:
             log.debug('%s found suitable trial', '<' * _depth)
             selected_trial = self.fetch_trials({'_id': selected_trial.id})[0]
-            TrialMonitor(self, selected_trial.id).start()
 
         log.debug('%s reserved trial (trial: %s)', '<' * _depth, selected_trial)
         return selected_trial
