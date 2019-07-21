@@ -47,7 +47,10 @@ class TrialMonitor(threading.Thread):
         trials = self.exp.fetch_trials(query)
 
         if trials:
-            update = dict(heartbeat=datetime.datetime.utcnow())
-            Database().write('trials', update, query)
+            now = datetime.datetime.utcnow()
+
+            for t in trials:
+                self.exp.update_trial(t, heardbeat=now)
+
         else:
             self.stopped.set()
