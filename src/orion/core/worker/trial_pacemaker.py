@@ -10,12 +10,10 @@
 import datetime
 import threading
 
-from orion.core.io.database import Database
 
-
-class TrialMonitor(threading.Thread):
+class TrialPacemaker(threading.Thread):
     """Monitor a given trial inside a thread, updating its heartbeat
-    at a given interval  of time.
+    at a given interval of time.
 
     Parameters
     ----------
@@ -25,7 +23,6 @@ class TrialMonitor(threading.Thread):
     """
 
     def __init__(self, exp, trial_id, wait_time=60):
-        """Initialize a TrialMonitor."""
         threading.Thread.__init__(self)
         self.stopped = threading.Event()
         self.exp = exp
@@ -47,7 +44,8 @@ class TrialMonitor(threading.Thread):
         trials = self.exp.fetch_trials(query)
 
         if trials:
-            update = dict(heartbeat=datetime.datetime.utcnow())
-            Database().write('trials', update, query)
+            update = datetime.datetime.utcnow()
+            if not self.exp.update_trial(trials[0], where=query, heartbeat=update):
+                self.stopped.set()
         else:
             self.stopped.set()
