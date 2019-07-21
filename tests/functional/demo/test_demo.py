@@ -471,3 +471,16 @@ def test_resilience(monkeypatch):
 
     exp = ExperimentBuilder().build_from({'name': 'demo_random_search'})
     assert len(exp.fetch_trials({'status': 'broken'})) == 3
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_demo_with_shutdown_quickly(monkeypatch):
+    """Check simple pipeline with random search is reasonably fast."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+    process = subprocess.Popen(
+        ["orion", "hunt", "--config", "./orion_config_random.yaml", "--max-trials", "30",
+         "./black_box.py", "-x~uniform(-50, 50)"])
+
+    assert process.wait(timeout=10) == 0

@@ -9,7 +9,7 @@ import pytest
 from orion.core.io.database import Database
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.format_trials import tuple_to_trial
-from orion.core.worker.trial_monitor import TrialMonitor
+from orion.core.worker.trial_pacemaker import TrialPacemaker
 
 
 @pytest.fixture
@@ -21,19 +21,30 @@ def config(exp_config):
     return config
 
 
-@pytest.mark.usefixtures("create_db_instance")
-def test_trial_update_heartbeat(config):
-    """Test that the heartbeat of a trial has been updated."""
-    exp = ExperimentBuilder().build_from(config)
+@pytest.fixture
+def exp(config):
+    """Return an Experiment."""
+    return ExperimentBuilder().build_from(config)
+
+
+@pytest.fixture
+def trial(exp):
+    """Return a Trial which is registered in DB."""
     trial = tuple_to_trial((1.0,), exp.space)
     heartbeat = datetime.datetime.utcnow()
+    trial.experiment = exp.id
+    trial.status = 'reserved'
     trial.heartbeat = heartbeat
 
-    data = {'_id': trial.id, 'status': 'reserved', 'heartbeat': heartbeat, 'experiment': exp.id}
+    Database().write('trials', trial.to_dict())
 
-    Database().write('trials', data)
+    return trial
 
-    trial_monitor = TrialMonitor(exp, trial.id, wait_time=1)
+
+@pytest.mark.usefixtures("create_db_instance")
+def test_trial_update_heartbeat(exp, trial):
+    """Test that the heartbeat of a trial has been updated."""
+    trial_monitor = TrialPacemaker(exp, trial.id, wait_time=1)
 
     trial_monitor.start()
     time.sleep(2)
@@ -53,18 +64,9 @@ def test_trial_update_heartbeat(config):
 
 
 @pytest.mark.usefixtures("create_db_instance")
-def test_trial_heartbeat_not_updated(config):
+def test_trial_heartbeat_not_updated(exp, trial):
     """Test that the heartbeat of a trial is not updated when trial is not longer reserved."""
-    exp = ExperimentBuilder().build_from(config)
-    trial = tuple_to_trial((1.0,), exp.space)
-    heartbeat = datetime.datetime.utcnow()
-    trial.heartbeat = heartbeat
-
-    data = {'_id': trial.id, 'status': 'reserved', 'heartbeat': heartbeat, 'experiment': exp.id}
-
-    Database().write('trials', data)
-
-    trial_monitor = TrialMonitor(exp, trial.id, wait_time=1)
+    trial_monitor = TrialPacemaker(exp, trial.id, wait_time=1)
 
     trial_monitor.start()
     time.sleep(2)
@@ -84,24 +86,15 @@ def test_trial_heartbeat_not_updated(config):
 
 
 @pytest.mark.usefixtures("create_db_instance")
-def test_trial_heartbeat_not_updated_inbetween(config):
+def test_trial_heartbeat_not_updated_inbetween(exp, trial):
     """Test that the heartbeat of a trial is not updated before wait time."""
-    exp = ExperimentBuilder().build_from(config)
-    trial = tuple_to_trial((1.0,), exp.space)
-    heartbeat = datetime.datetime.utcnow().replace(microsecond=0)
-    trial.heartbeat = heartbeat
-
-    data = {'_id': trial.id, 'status': 'reserved', 'heartbeat': heartbeat, 'experiment': exp.id}
-
-    Database().write('trials', data)
-
-    trial_monitor = TrialMonitor(exp, trial.id, wait_time=5)
+    trial_monitor = TrialPacemaker(exp, trial.id, wait_time=5)
 
     trial_monitor.start()
     time.sleep(1)
 
     trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
-    assert trial.heartbeat == trials[0].heartbeat
+    assert trial.heartbeat.replace(microsecond=0) == trials[0].heartbeat.replace(microsecond=0)
 
     heartbeat = trials[0].heartbeat
 
