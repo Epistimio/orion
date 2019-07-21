@@ -156,7 +156,9 @@ class TrialAdapter:
 
         self.objectives_values = []
 
-        data = self.storage.metrics[self.objective_key]
+        data = self.storage.metrics.get(self.objective_key)
+        if data is None:
+            return None
 
         # objective was pushed without step data (already sorted)
         if isinstance(data, list):
@@ -284,6 +286,7 @@ class Track(BaseStorageProtocol):
         metadata['worker'] = trial.worker
         metadata['metric_types'] = {remove_leading_slash(p.name): p.type for p in trial.results}
         metadata['metric_types'][self.objective] = 'objective'
+        metadata['heartbeat'] = stamp
 
         metrics = defaultdict(list)
         for p in trial.results:
