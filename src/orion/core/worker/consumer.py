@@ -115,7 +115,8 @@ class Consumer(object):
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
-        peacemaker = TrialMonitor(self.experiment, trial.id).start()
+        peacemaker = TrialMonitor(self.experiment, trial.id)
+        peacemaker.start()
         try:
             self.execute_process(results_file.name, cmd_args)
         finally:
