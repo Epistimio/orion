@@ -83,8 +83,8 @@ class TrialAdapter:
     def __str__(self):
         """Represent partially with a string."""
         param_rep = ','.join(map(lambda value: "{0.name}:{0.value}".format(value), self.params))
-        ret = "TrialAdapter(experiment={0}, status={1}, params={2})".format(
-            repr(self.experiment), repr(self.status), param_rep)
+        ret = "TrialAdapter(uid={3}, experiment={0}, status={1}, params={2})".format(
+            repr(self.experiment[:10]), repr(self.status), param_rep, self.storage.uid)
         return ret
 
     __repr__ = __str__

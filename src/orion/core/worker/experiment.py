@@ -265,6 +265,7 @@ class Experiment:
             selected_trial, **update, where={'status': selected_trial.status})
 
         if not reserved:
+            log.debug('%s trial was not reserved (reserved: %s)', '>' * _depth, reserved)
             selected_trial = self.reserve_trial(score_handle=score_handle, _depth=_depth + 1)
         else:
             log.debug('%s found suitable trial', '<' * _depth)
