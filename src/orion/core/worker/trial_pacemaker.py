@@ -46,7 +46,7 @@ class TrialPacemaker(threading.Thread):
 
         if trials:
             update = datetime.datetime.utcnow()
-            for t in trials:
-                self.exp.update_trial(t, heartbeat=update)
+            for trial in trials:
+                self.exp.update_trial(trial, heartbeat=update)
         else:
             self.stopped.set()
