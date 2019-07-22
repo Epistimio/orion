@@ -9,7 +9,7 @@ import pytest
 from orion.core.io.database import Database
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.format_trials import tuple_to_trial
-from orion.core.worker.trial_monitor import TrialMonitor
+from orion.core.worker.trial_pacemaker import TrialMonitor
 
 
 @pytest.fixture
