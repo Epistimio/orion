@@ -10,8 +10,6 @@
 import datetime
 import threading
 
-from orion.core.io.database import Database
-
 
 class TrialPacemaker(threading.Thread):
     """Monitor a given trial inside a thread, updating its heartbeat

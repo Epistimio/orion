@@ -6,8 +6,8 @@ import multiprocessing
 import os
 import shutil
 import subprocess
-import time
 import tempfile
+import time
 
 import numpy
 import pytest
