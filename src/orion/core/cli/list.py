@@ -45,7 +45,8 @@ def main(args):
     if args['name']:
         root_experiments = experiments
     else:
-        root_experiments = [exp for exp in experiments if exp['refers']['root_id'] == exp['_id']]
+        root_experiments = [exp for exp in experiments
+                            if exp['refers'].get('root_id', exp['_id']) == exp['_id']]
 
     for root_experiment in root_experiments:
         root = EVCBuilder().build_view_from({'name': root_experiment['name']}).node
