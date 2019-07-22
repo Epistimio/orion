@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 """Perform a functional test for demo purposes."""
 from collections import defaultdict
+import multiprocessing
 import os
 import shutil
 import subprocess
+import time
 import tempfile
 
 import numpy
@@ -471,3 +473,26 @@ def test_resilience(monkeypatch):
 
     exp = ExperimentBuilder().build_from({'name': 'demo_random_search'})
     assert len(exp.fetch_trials({'status': 'broken'})) == 3
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_demo_with_shutdown_quickly(database, monkeypatch):
+    """Check that random algorithm is used, when no algo is chosen explicitly."""
+    def run():
+        monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+        monkeypatch.setenv('ORION_DB_NAME', 'orion_test')
+        monkeypatch.setenv('ORION_DB_ADDRESS', 'mongodb://user:pass@localhost')
+
+        orion.core.cli.main(["hunt", "-n", "default_algo",
+                             "--max-trials", "30",
+                             "./black_box.py", "-x~uniform(-50, 50)"])
+
+    process = multiprocessing.Process(target=run)
+    start_time = time.time()
+    process.start()
+
+    process.join()
+    end_time = time.time()
+
+    assert end_time - start_time < 60
