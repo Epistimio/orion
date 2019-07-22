@@ -9,7 +9,7 @@ import pytest
 from orion.core.io.database import Database
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.format_trials import tuple_to_trial
-from orion.core.worker.trial_pacemaker import TrialMonitor
+from orion.core.worker.trial_pacemaker import TrialPacemaker
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def test_trial_update_heartbeat(config):
 
     Database().write('trials', data)
 
-    trial_monitor = TrialMonitor(exp, trial.id, wait_time=1)
+    trial_monitor = TrialPacemaker(exp, trial.id, wait_time=1)
 
     trial_monitor.start()
     time.sleep(2)
@@ -64,7 +64,7 @@ def test_trial_heartbeat_not_updated(config):
 
     Database().write('trials', data)
 
-    trial_monitor = TrialMonitor(exp, trial.id, wait_time=1)
+    trial_monitor = TrialPacemaker(exp, trial.id, wait_time=1)
 
     trial_monitor.start()
     time.sleep(2)
@@ -95,7 +95,7 @@ def test_trial_heartbeat_not_updated_inbetween(config):
 
     Database().write('trials', data)
 
-    trial_monitor = TrialMonitor(exp, trial.id, wait_time=5)
+    trial_monitor = TrialPacemaker(exp, trial.id, wait_time=5)
 
     trial_monitor.start()
     time.sleep(1)
