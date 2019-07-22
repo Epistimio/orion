@@ -16,7 +16,7 @@ import tempfile
 
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.working_dir import WorkingDir
-from orion.core.worker.trial_pacemaker import TrialMonitor
+from orion.core.worker.trial_pacemaker import TrialPacemaker
 
 log = logging.getLogger(__name__)
 
