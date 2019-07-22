@@ -547,8 +547,8 @@ class Experiment(object):
             self._id = final_config['_id']
 
             # Update refers in db if experiment is root
-            if not self.refers:
-                self.refers = {'root_id': self._id, 'parent_id': None, 'adapter': []}
+            if self.refers['parent_id'] is None:
+                self.refers['root_id'] = self._id
                 self._storage.update_experiment(self, refers=self.refers)
 
         else:
@@ -661,7 +661,10 @@ class Experiment(object):
         except KeyError:
             pass
 
-        if self.refers and not isinstance(self.refers.get('adapter'), BaseAdapter):
+        self.refers.setdefault('parent_id', None)
+        self.refers.setdefault('root_id', self._id)
+        self.refers.setdefault('adapter', [])
+        if self.refers['adapter'] and not isinstance(self.refers.get('adapter'), BaseAdapter):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
         if not self.producer.get('strategy'):
@@ -767,8 +770,11 @@ class ExperimentView(object):
         # TODO: Views are not fully configured until configuration is refactored
         #       This snippet is to instantiate adapters anyhow, because it is required for
         #       experiment views in EVC.
-        if self.refers and not isinstance(self.refers.get('adapter'), BaseAdapter):
-            self._experiment.refers['adapter'] = Adapter.build(self.refers['adapter'])
+        self.refers.setdefault('parent_id', None)
+        self.refers.setdefault('root_id', self._id)
+        self.refers.setdefault('adapter', [])
+        if self.refers['adapter'] and not isinstance(self.refers.get('adapter'), BaseAdapter):
+            self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
         # try:
         #     self._experiment.configure(self._experiment.configuration, enable_branching=False,
