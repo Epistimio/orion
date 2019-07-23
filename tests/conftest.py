@@ -135,6 +135,7 @@ def exp_config():
     for i, _ in enumerate(exp_config[0]):
         exp_config[0][i]["metadata"]["user_script"] = os.path.join(
             os.path.dirname(__file__), exp_config[0][i]["metadata"]["user_script"])
+        exp_config[0][i]['version'] = 1
 
     return exp_config
 
