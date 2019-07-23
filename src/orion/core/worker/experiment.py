@@ -481,6 +481,65 @@ class Experiment:
         # object from a getter.
         return copy.deepcopy(config)
 
+    @property
+    def stats(self):
+        """Calculate a stats dictionary for this particular experiment.
+
+        Returns
+        -------
+        stats : dict
+
+        Stats
+        -----
+        trials_completed : int
+           Number of completed trials
+        best_trials_id : int
+           Unique identifier of the `Trial` object in the database which achieved
+           the best known objective result.
+        best_evaluation : float
+           Evaluation score of the best trial
+        start_time : `datetime.datetime`
+           When Experiment was first dispatched and started running.
+        finish_time : `datetime.datetime`
+           When Experiment reached terminating condition and stopped running.
+        duration : `datetime.timedelta`
+           Elapsed time.
+
+        """
+        query = dict(
+            experiment=self._id,
+            status='completed'
+            )
+        selection = {
+            'end_time': 1,
+            'results': 1,
+            'experiment': 1,
+            'params': 1
+            }
+        completed_trials = self.fetch_trials(query, selection)
+        if not completed_trials:
+            return dict()
+        stats = dict()
+        stats['trials_completed'] = len(completed_trials)
+        stats['best_trials_id'] = None
+        trial = completed_trials[0]
+        stats['best_evaluation'] = trial.objective.value
+        stats['best_trials_id'] = trial.id
+        stats['start_time'] = self.metadata['datetime']
+        stats['finish_time'] = stats['start_time']
+        for trial in completed_trials:
+            # All trials are going to finish certainly after the start date
+            # of the experiment they belong to
+            if trial.end_time > stats['finish_time']:  # pylint:disable=no-member
+                stats['finish_time'] = trial.end_time
+            objective = trial.objective.value
+            if objective < stats['best_evaluation']:
+                stats['best_evaluation'] = objective
+                stats['best_trials_id'] = trial.id
+        stats['duration'] = stats['finish_time'] - stats['start_time']
+
+        return stats
+
     def configure(self, config, enable_branching=True, enable_update=True):
         """Set `Experiment` by overwriting current attributes.
 
@@ -563,65 +622,6 @@ class Experiment:
             # `(name, metadata.user)`
             final_config.pop("name")
             self._storage.update_experiment(self, **final_config)
-
-    @property
-    def stats(self):
-        """Calculate a stats dictionary for this particular experiment.
-
-        Returns
-        -------
-        stats : dict
-
-        Stats
-        -----
-        trials_completed : int
-           Number of completed trials
-        best_trials_id : int
-           Unique identifier of the `Trial` object in the database which achieved
-           the best known objective result.
-        best_evaluation : float
-           Evaluation score of the best trial
-        start_time : `datetime.datetime`
-           When Experiment was first dispatched and started running.
-        finish_time : `datetime.datetime`
-           When Experiment reached terminating condition and stopped running.
-        duration : `datetime.timedelta`
-           Elapsed time.
-
-        """
-        query = dict(
-            experiment=self._id,
-            status='completed'
-            )
-        selection = {
-            'end_time': 1,
-            'results': 1,
-            'experiment': 1,
-            'params': 1
-            }
-        completed_trials = self.fetch_trials(query, selection)
-        if not completed_trials:
-            return dict()
-        stats = dict()
-        stats['trials_completed'] = len(completed_trials)
-        stats['best_trials_id'] = None
-        trial = completed_trials[0]
-        stats['best_evaluation'] = trial.objective.value
-        stats['best_trials_id'] = trial.id
-        stats['start_time'] = self.metadata['datetime']
-        stats['finish_time'] = stats['start_time']
-        for trial in completed_trials:
-            # All trials are going to finish certainly after the start date
-            # of the experiment they belong to
-            if trial.end_time > stats['finish_time']:  # pylint:disable=no-member
-                stats['finish_time'] = trial.end_time
-            objective = trial.objective.value
-            if objective < stats['best_evaluation']:
-                stats['best_evaluation'] = objective
-                stats['best_trials_id'] = trial.id
-        stats['duration'] = stats['finish_time'] - stats['start_time']
-
-        return stats
 
     def _instantiate_config(self, config):
         """Check before dispatching experiment whether configuration corresponds
