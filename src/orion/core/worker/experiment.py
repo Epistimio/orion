@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 
 
 # pylint: disable=too-many-public-methods
-class Experiment(object):
+class Experiment:
     """Represents an entry in database/experiments collection.
 
     Attributes
@@ -48,6 +48,8 @@ class Experiment(object):
        trials we want to add in the history of completed trials we want to re-use.
        For convenience and database effiency purpose, all experiments of a common tree shares
        `refers[root_id]`, with the root experiment refering to itself.
+    version: int
+        Current version of this experiment.
     metadata : dict
        Contains managerial information about this `Experiment`.
     pool_size : int
@@ -84,7 +86,7 @@ class Experiment(object):
 
     """
 
-    __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
+    __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials', 'version',
                  'algorithms', 'producer', 'working_dir', '_init_done', '_id',
                  '_node', '_storage')
     non_branching_attrs = ('pool_size', 'max_trials')
@@ -119,16 +121,20 @@ class Experiment(object):
         self.algorithms = None
         self.working_dir = None
         self.producer = {'strategy': None}
+        self.version = 1
 
         config = self._storage.fetch_experiments({'name': name, 'metadata.user': user})
 
         if config:
             log.debug("Found existing experiment, %s, under user, %s, registered in database.",
                       name, user)
+
             if len(config) > 1:
-                log.warning("Many (%s) experiments for (%s, %s) are available but "
-                            "only the most recent one can be accessed. "
-                            "Experiment branches will be supported soon.", len(config), name, user)
+                version = max(map(lambda exp: exp['version'], config))
+                log.info("Many versions for experiment %s have been found. Using latest\
+                          version %s.", name, version)
+                config = filter(lambda exp: exp['version'] == version, config)
+
             config = sorted(config, key=lambda x: x['metadata']['datetime'],
                             reverse=True)[0]
             for attrname in self.__slots__:
@@ -502,7 +508,7 @@ class Experiment(object):
         experiment._init_done = True
 
         # If id is None in this object, then database did not hit a config
-        # with same (name, user's name) pair. Everything depends on the user's
+        # with same (name, user's name, version) pair. Everything depends on the user's
         # orion_config to set.
         if self._id is None:
             if config['name'] != self.name or \
@@ -738,7 +744,8 @@ class ExperimentView(object):
     __slots__ = ('_experiment', )
 
     #                     Attributes
-    valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials"] +
+    valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials",
+                         "version"] +
                         # Properties
                         ["id", "node", "is_done", "space", "algorithms", "stats", "configuration"] +
                         # Methods
