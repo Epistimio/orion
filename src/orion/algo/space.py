@@ -33,10 +33,16 @@ unless noted otherwise!
 """
 
 from collections import OrderedDict
+import logging
 import numbers
 
 import numpy
 from scipy.stats import distributions
+
+from orion.core.utils.points import flatten_dims, regroup_dims
+
+
+logger = logging.getLogger(__name__)
 
 
 def check_random_state(seed):
@@ -818,3 +824,25 @@ class Space(OrderedDict):
         """Represent as a string the space and the dimensions it contains."""
         dims = list(self.values())
         return "Space([{}])".format(',\n       '.join(map(str, dims)))
+
+
+def pack_point(point, space):
+    """Take a list of points and pack it appropriately as a point from `space`.
+
+    This function is deprecated and will be removed in v0.2.0. Use
+    `orion.core.utils.points.regroup_dims` instead.
+    """
+    logger.warning('`pack_point` is deprecated and will be removed in v0.2.0. Use '
+                   '`orion.core.utils.points.regroup_dims` instead.')
+    return regroup_dims(point, space)
+
+
+def unpack_point(point, space):
+    """Flatten `point` in `space` and convert it to a 1D `numpy.ndarray`.
+
+    This function is deprecated and will be removed in v0.2.0. Use
+    `orion.core.utils.points.flatten_dims` instead.
+    """
+    logger.warning('`unpack_point` is deprecated and will be removed in v0.2.0. Use '
+                   '`orion.core.utils.points.regroup_dims` instead.')
+    return flatten_dims(point, space)
