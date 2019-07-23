@@ -16,7 +16,7 @@ import tempfile
 
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.working_dir import WorkingDir
-
+from orion.core.worker.trial_pacemaker import TrialPacemaker
 
 log = logging.getLogger(__name__)
 
@@ -63,6 +63,8 @@ class Consumer(object):
             self.working_dir = os.path.join(tempfile.gettempdir(), 'orion')
 
         self.script_path = experiment.metadata['user_script']
+
+        self.pacemaker = None
 
     def consume(self, trial):
         """Execute user's script as a block box using the options contained
@@ -115,7 +117,14 @@ class Consumer(object):
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
-        self.execute_process(results_file.name, cmd_args)
+        self.pacemaker = TrialPacemaker(self.experiment, trial.id)
+        self.pacemaker.start()
+        try:
+            self.execute_process(results_file.name, cmd_args)
+        finally:
+            # merciless
+            self.pacemaker.stop()
+
         return results_file
 
     def execute_process(self, results_filename, cmd_args):
