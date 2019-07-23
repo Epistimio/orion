@@ -8,6 +8,7 @@ import pytest
 
 from orion.algo.space import Dimension
 from orion.core import evc
+from orion.core.evc import conflicts as conflict
 
 
 @pytest.fixture
@@ -241,6 +242,13 @@ class TestCodeConflict(object):
                                       "'is_dirty': False, 'type': 'git'}'  "\
                                       "!= new hash commit ''to be changed''"
 
+    def test_hash_commit_compar(self):
+        """Test that old config hash commit evals to empty."""
+        old_config = {'metadata': {'VCS': {}}}
+        new_config = {'metadata': {'VCS': {}}}
+
+        assert list(conflict.CodeConflict.detect(old_config, new_config)) == []
+
 
 class TestCommandLineConflict(object):
     """Tests methods related to code conflicts"""
@@ -313,6 +321,21 @@ class TestScriptConfigConflict(object):
     def test_repr(self, config_conflict):
         """Verify the representation of conflict for user interface"""
         assert repr(config_conflict) == "Script's configuration file changed"
+
+    def test_comparison(self, yaml_config, yaml_diff_config):
+        """Test that different configs are detected as conflict."""
+        old_config = {'metadata': {'user_args': yaml_config}}
+        new_config = {'metadata': {'user_args': yaml_diff_config}}
+
+        conflicts = list(conflict.ScriptConfigConflict.detect(old_config, new_config))
+        assert len(conflicts) == 1
+
+    def test_comparison_idem(self, yaml_config):
+        """Test that identical configs are not detected as conflict."""
+        old_config = {'metadata': {'user_args': yaml_config}}
+        new_config = {'metadata': {'user_args': yaml_config + ['--other', 'args']}}
+
+        assert list(conflict.ScriptConfigConflict.detect(old_config, new_config)) == []
 
 
 @pytest.mark.usefixtures("create_db_instance")

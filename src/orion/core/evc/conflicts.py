@@ -1093,7 +1093,7 @@ class CodeConflict(Conflict):
         old_hash_commit = old_config['metadata'].get('VCS', None)
         new_hash_commit = new_config['metadata'].get('VCS')
 
-        if not old_hash_commit or old_hash_commit != new_hash_commit:
+        if old_hash_commit is None or old_hash_commit != new_hash_commit:
             yield cls(old_config, new_config)
 
     def get_marked_arguments(self, conflicts):
@@ -1344,9 +1344,10 @@ class ScriptConfigConflict(Conflict):
         """Get configuration dict of user's script without dimension definitions"""
         space_builder = SpaceBuilder()
         space_builder.build_from(config['metadata']['user_args'])
+
         nameless_config = dict((key, value)
                                for (key, value) in space_builder.parser.config_file_data.items()
-                               if not value.startswith('orion~'))
+                               if not (isinstance(value, str) and value.startswith('orion~')))
 
         return nameless_config
 

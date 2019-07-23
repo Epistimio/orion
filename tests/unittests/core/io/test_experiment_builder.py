@@ -10,6 +10,16 @@ from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.exceptions import NoConfigurationError
 
 
+def get_db(exp):
+    """Transitional method to move away from mongodb"""
+    return exp._storage._db
+
+
+def get_view_db(exp):
+    """Transitional method to move away from mongodb"""
+    return exp._experiment._storage._storage._db
+
+
 @pytest.mark.usefixtures("clean_db")
 def test_fetch_local_config(config_file):
     """Test local config (default, env_vars, cmdconfig, cmdargs)"""
@@ -144,16 +154,16 @@ def test_build_view_from(config_file, create_db_instance, exp_config, random_dt)
     cmdargs = {'name': 'supernaedo2', 'config': config_file}
     exp_view = ExperimentBuilder().build_view_from(cmdargs)
 
-    assert exp_view._experiment._init_done is True
-    assert exp_view._experiment._db._database is create_db_instance
+    assert exp_view._experiment._init_done is False
+    assert get_view_db(exp_view) is create_db_instance
     assert exp_view._id == exp_config[0][0]['_id']
     assert exp_view.name == exp_config[0][0]['name']
     assert exp_view.configuration['refers'] == exp_config[0][0]['refers']
     assert exp_view.metadata == exp_config[0][0]['metadata']
-    assert exp_view._experiment._last_fetched == exp_config[0][0]['metadata']['datetime']
     assert exp_view.pool_size == exp_config[0][0]['pool_size']
     assert exp_view.max_trials == exp_config[0][0]['max_trials']
-    assert exp_view.algorithms.configuration == exp_config[0][0]['algorithms']
+    # TODO: Views are not fully configured until configuration is refactored
+    # assert exp_view.algorithms.configuration == exp_config[0][0]['algorithms']
 
 
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_bouthilx")
@@ -185,14 +195,13 @@ def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_d
     exp = ExperimentBuilder().build_from(cmdargs)
 
     assert exp._init_done is True
-    assert exp._db is create_db_instance
+    assert get_db(exp) is create_db_instance
     assert exp.name == cmdargs['name']
     assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
     assert exp.metadata['datetime'] == random_dt
     assert exp.metadata['user'] == 'tsirif'
     assert exp.metadata['user_script'] == cmdargs['user_args'][0]
     assert exp.metadata['user_args'] == cmdargs['user_args'][1:]
-    assert exp._last_fetched == random_dt
     assert exp.pool_size == 1
     assert exp.max_trials == 100
     assert exp.algorithms.configuration == {'random': {'seed': None}}
@@ -213,12 +222,11 @@ def test_build_from_hit(old_config_file, create_db_instance, exp_config, script_
     exp = ExperimentBuilder().build_from(cmdargs)
 
     assert exp._init_done is True
-    assert exp._db is create_db_instance
+    assert get_db(exp) is create_db_instance
     assert exp._id == exp_config[0][0]['_id']
     assert exp.name == exp_config[0][0]['name']
     assert exp.configuration['refers'] == exp_config[0][0]['refers']
     assert exp.metadata == exp_config[0][0]['metadata']
-    assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
     assert exp.pool_size == exp_config[0][0]['pool_size']
     assert exp.max_trials == exp_config[0][0]['max_trials']
     assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
@@ -249,14 +257,13 @@ def test_build_from_config_no_hit(config_file, create_db_instance, exp_config, r
     exp = ExperimentBuilder().build_from_config(full_config)
 
     assert exp._init_done is True
-    assert exp._db is create_db_instance
+    assert get_db(exp) is create_db_instance
     assert exp.name == cmdargs['name']
     assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
     assert exp.metadata['datetime'] == random_dt
     assert exp.metadata['user'] == 'tsirif'
     assert exp.metadata['user_script'] == cmdargs['user_args'][0]
     assert exp.metadata['user_args'] == cmdargs['user_args'][1:]
-    assert exp._last_fetched == random_dt
     assert exp.pool_size == 1
     assert exp.max_trials == 100
     assert not exp.is_done
@@ -288,12 +295,11 @@ def test_build_from_config_hit(old_config_file, create_db_instance, exp_config, 
     exp = ExperimentBuilder().build_from_config(exp_view.configuration)
 
     assert exp._init_done is True
-    assert exp._db is create_db_instance
+    assert get_db(exp) is create_db_instance
     assert exp._id == exp_config[0][0]['_id']
     assert exp.name == exp_config[0][0]['name']
     assert exp.configuration['refers'] == exp_config[0][0]['refers']
     assert exp.metadata == exp_config[0][0]['metadata']
-    assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
     assert exp.pool_size == exp_config[0][0]['pool_size']
     assert exp.max_trials == exp_config[0][0]['max_trials']
     assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
@@ -317,12 +323,11 @@ def test_build_without_config_hit(old_config_file, create_db_instance, exp_confi
     exp = ExperimentBuilder().build_from_config(exp_view.configuration)
 
     assert exp._init_done is True
-    assert exp._db is create_db_instance
+    assert get_db(exp) is create_db_instance
     assert exp._id == exp_config[0][0]['_id']
     assert exp.name == exp_config[0][0]['name']
     assert exp.configuration['refers'] == exp_config[0][0]['refers']
     assert exp.metadata == exp_config[0][0]['metadata']
-    assert exp._last_fetched == exp_config[0][0]['metadata']['datetime']
     assert exp.pool_size == exp_config[0][0]['pool_size']
     assert exp.max_trials == exp_config[0][0]['max_trials']
     assert exp.algorithms.configuration == exp_config[0][0]['algorithms']

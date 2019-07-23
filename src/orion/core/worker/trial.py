@@ -15,7 +15,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class Trial(object):
+class Trial:
     """Represents an entry in database/trials collection.
 
     Attributes
@@ -23,6 +23,8 @@ class Trial(object):
     experiment : str
        Unique identifier for the experiment that produced this trial.
        Same as an `Experiment._id`.
+    heartbeat : datetime.datetime
+        Last time trial was identified as being alive.
     status : str
        Indicates how this trial is currently being used. Can take the following
        values:
@@ -72,7 +74,7 @@ class Trial(object):
             trials.append(cls(**entry))
         return trials
 
-    class Value(object):
+    class Value:
         """Container for a value object.
 
         Attributes
@@ -96,6 +98,13 @@ class Trial(object):
                 setattr(self, attrname, None)
             for attrname, value in kwargs.items():
                 setattr(self, attrname, value)
+
+            self._ensure_no_ndarray()
+
+        def _ensure_no_ndarray(self):
+            """Make sure the current value is not a `numpy.ndarray`."""
+            if hasattr(self, 'value') and hasattr(self.value, 'tolist'):
+                self.value = self.value.tolist()
 
         def to_dict(self):
             """Needed to be able to convert `Value` to `dict` form."""
@@ -147,7 +156,7 @@ class Trial(object):
         __slots__ = ()
         allowed_types = ('integer', 'real', 'categorical', 'fidelity')
 
-    __slots__ = ('experiment', '_id', '_status', 'worker',
+    __slots__ = ('experiment', '_id', '_status', 'worker', '_working_dir', 'heartbeat',
                  'submit_time', 'start_time', 'end_time', '_results', 'params', 'parents')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
 
@@ -181,6 +190,9 @@ class Trial(object):
         trial_dictionary = dict()
 
         for attrname in self.__slots__:
+            if attrname == "_working_dir":
+                continue
+
             attrname = attrname.lstrip("_")
             trial_dictionary[attrname] = getattr(self, attrname)
 
@@ -219,6 +231,16 @@ class Trial(object):
                 'Results must contain a type `objective` with type float/int: {}'.format(objective))
 
         self._results = results
+
+    @property
+    def working_dir(self):
+        """Return the current working directory of the trial."""
+        return self._working_dir
+
+    @working_dir.setter
+    def working_dir(self, value):
+        """Change the current working directory of the trial."""
+        self._working_dir = value
 
     @property
     def status(self):

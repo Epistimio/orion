@@ -206,7 +206,6 @@ value 1.
 Results
 =======
 
-
 When an experiment reaches its termination criterion, basically ``max-trials``, it will print the
 following statistics if Oríon is called with ``-v`` or ``-vv``.
 
@@ -225,65 +224,5 @@ following statistics if Oríon is called with ``-v`` or ``-vv``.
     ===============
     [{'name': '/lr', 'type': 'real', 'value': 0.012027705702344259}]
 
-
-You can also fetch the results using python code. You do not need to understand MongoDB since
-you can fetch results using the ``Experiment`` object. The class `ExperimentBuilder` provides
-simple methods to fetch experiments using their unique names. You do not need to explicitly
-open a connection to the database when using the `ExperimentBuilder` since it will automatically
-infer its configuration from the global configuration file as when calling Oríon in commandline.
-Otherwise you can pass other arguments to ``ExperimentBuilder().build_view_from()`` using the same
-dictionary structure as in the configuration file.
-
-.. code-block:: python
-
-   # Database automatically inferred
-   ExperimentBuilder().build_view_from(
-       {"name": "orion-tutorial"})
-
-   # Database manually set
-   ExperimentBuilder().build_view_from(
-       {"name": "orion-tutorial",
-        "dataset": {
-            "type": "mongodb",
-            "name": "myother",
-            "host": "localhost"}})
-
-For a complete example, here's how you can fetch trials from a given experiment.
-
-.. code-block:: python
-
-   import datetime
-   import pprint
-
-   from orion.core.io.experiment_builder import ExperimentBuilder
-
-   some_datetime = datetime.datetime.now() - datetime.timedelta(minutes=5)
-
-   experiment = ExperimentBuilder().build_view_from({"name": "orion-tutorial"})
-
-   pprint.pprint(experiment.stats)
-
-   for trial in experiment.fetch_trials({}):
-       print(trial.id)
-       print(trial.status)
-       print(trial.params)
-       print(trial.results)
-       print()
-       pprint.pprint(trial.to_dict())
-
-   # Fetches only the completed trials
-   for trial in experiment.fetch_trials({'status': 'completed'}):
-       print(trial.objective)
-
-   # Fetches only the most recent trials using mongodb-like syntax
-   for trial in experiment.fetch_trials({'end_time': {'$gte': some_datetime}}):
-       print(trial.id)
-       print(trial.end_time)
-
-You can pass queries to ``fetch_trials()``, where queries can be a simple dictionary of values to
-match like ``{'status': 'completed'}``, in which case it would return all trials where
-``trial.status == 'completed'``, or they can be more complex using `mongodb-like syntax`_.
-
-.. _`mongodb-like syntax`: https://docs.mongodb.com/manual/reference/method/db.collection.find/
-
-
+These results can be printed in terminal later on with the command :ref:`info <cli-info>` or
+fetched using the :ref:`library API <library-api-results>`.

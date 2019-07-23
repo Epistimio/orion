@@ -19,7 +19,7 @@ import sys
 from orion.core.cli.evc import fetch_branching_configuration
 from orion.core.evc.adapters import Adapter, BaseAdapter
 from orion.core.evc.conflicts import detect_conflicts
-from orion.core.io.database import Database, DuplicateKeyError, ReadOnlyDB
+from orion.core.io.database import DuplicateKeyError
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
@@ -27,7 +27,7 @@ from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
                                         Strategy)
-from orion.core.worker.trial import Trial
+from orion.storage.base import ReadOnlyStorageProtocol, StorageProtocol
 
 log = logging.getLogger(__name__)
 
@@ -85,8 +85,8 @@ class Experiment(object):
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
-                 'algorithms', 'producer', 'working_dir', '_db', '_init_done', '_id',
-                 '_node', '_last_fetched')
+                 'algorithms', 'producer', 'working_dir', '_init_done', '_id',
+                 '_node', '_storage')
     non_branching_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name, user=None):
@@ -105,8 +105,7 @@ class Experiment(object):
         """
         log.debug("Creating Experiment object with name: %s", name)
         self._init_done = False
-        self._db = Database()  # fetch database instance
-        self._setup_db()  # build indexes for collections
+        self._storage = StorageProtocol('legacy')
 
         self._id = None
         self.name = name
@@ -121,8 +120,8 @@ class Experiment(object):
         self.working_dir = None
         self.producer = {'strategy': None}
 
-        config = self._db.read('experiments',
-                               {'name': name, 'metadata.user': user})
+        config = self._storage.fetch_experiments({'name': name, 'metadata.user': user})
+
         if config:
             log.debug("Found existing experiment, %s, under user, %s, registered in database.",
                       name, user)
@@ -136,21 +135,6 @@ class Experiment(object):
                 if not attrname.startswith('_') and attrname in config:
                     setattr(self, attrname, config[attrname])
             self._id = config['_id']
-
-        self._last_fetched = self.metadata.get("datetime", datetime.datetime.utcnow())
-
-    def _setup_db(self):
-        self._db.ensure_index('experiments',
-                              [('name', Database.ASCENDING),
-                               ('metadata.user', Database.ASCENDING)],
-                              unique=True)
-        self._db.ensure_index('experiments', 'metadata.datetime')
-
-        self._db.ensure_index('trials', 'experiment')
-        self._db.ensure_index('trials', 'status')
-        self._db.ensure_index('trials', 'results')
-        self._db.ensure_index('trials', 'start_time')
-        self._db.ensure_index('trials', [('end_time', Database.DESCENDING)])
 
     def fetch_trials(self, query, selection=None):
         """Fetch trials of the experiment in the database
@@ -169,7 +153,7 @@ class Experiment(object):
         """
         query["experiment"] = self._id
 
-        trials = Trial.build(self._db.read('trials', query, selection))
+        trials = self._storage.fetch_trials(query, selection)
 
         def _get_submit_time(trial):
             if trial.submit_time:
@@ -208,25 +192,40 @@ class Experiment(object):
         """
         self._node = node
 
-    def reserve_trial(self, score_handle=None):
+    def retrieve_result(self, trial, *args, **kwargs):
+        """See :func:`~orion.storage.BaseStorageProtocol.retrieve_result`"""
+        return self._storage.retrieve_result(trial, *args, **kwargs)
+
+    def update_trial(self, *args, **kwargs):
+        """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
+        return self._storage.update_trial(*args, **kwargs)
+
+    def reserve_trial(self, score_handle=None, _depth=1):
         """Find *new* trials that exist currently in database and select one of
         them based on the highest score return from `score_handle` callable.
 
         :param score_handle: A way to decide which trial out of the *new* ones to
            to pick as *reserved*, defaults to a random choice.
         :type score_handle: callable
+        :param _depth: recursion depth only used for logging purposes can be ignored
         :return: selected `Trial` object, None if could not find any.
         """
+        log.debug('%s reserving trial with (score: %s)', '<' * _depth, score_handle)
         if score_handle is not None and not callable(score_handle):
             raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
+
+        self.fix_lost_trials()
 
         query = dict(
             experiment=self._id,
             status={'$in': ['new', 'suspended', 'interrupted']}
             )
+
         new_trials = self.fetch_trials(query)
+        log.debug('%s Fetched (trials: %s)', '<' * _depth, len(new_trials))
 
         if not new_trials:
+            log.debug('%s no new trials found', '<' * _depth)
             return None
 
         if score_handle is not None and self.space:
@@ -240,28 +239,55 @@ class Experiment(object):
                         "parameter space has not been defined yet.")
 
         selected_trial = random.sample(new_trials, 1)[0]
+        log.debug('%s selected (trial: %s)', '<' * _depth, selected_trial)
 
-        # Query on status to ensure atomicity. If another process change the
-        # status meanwhile, read_and_write will fail, because query will fail.
-        query = {'_id': selected_trial.id, 'status': selected_trial.status}
-
-        update = dict(status='reserved')
+        update = dict(status='reserved', heartbeat=datetime.datetime.utcnow())
 
         if selected_trial.status == 'new':
             update["start_time"] = datetime.datetime.utcnow()
 
-        selected_trial_dict = self._db.read_and_write(
-            'trials', query=query, data=update)
+        # Query on status to ensure atomicity. If another process change the
+        # status meanwhile, update will fail, because query will fail.
+        # This relies on the atomicity of document updates.
 
-        if selected_trial_dict is None:
-            selected_trial = self.reserve_trial(score_handle=score_handle)
+        log.debug('%s trying to reverse trial', '<' * _depth)
+        reserved = self._storage.update_trial(
+            selected_trial, **update, where={'status': selected_trial.status})
+
+        if not reserved:
+            selected_trial = self.reserve_trial(score_handle=score_handle, _depth=_depth + 1)
         else:
-            selected_trial = Trial(**selected_trial_dict)
+            log.debug('%s found suitable trial', '<' * _depth)
+            selected_trial = self.fetch_trials({'_id': selected_trial.id})[0]
 
+        log.debug('%s reserved trial (trial: %s)', '<' * _depth, selected_trial)
         return selected_trial
 
-    def push_completed_trial(self, trial):
-        """Inform database about an evaluated `trial` with results.
+    def fix_lost_trials(self):
+        """Find lost trials and set them to interrupted.
+
+        A lost trial is defined as a trial whose heartbeat as not been updated since two times
+        the wait time for monitoring. This usually means that the trial is stalling or has been
+        interrupted in some way without its status being changed. This functions finds such
+        trials and set them as interrupted so they can be launched again.
+
+        """
+        # TODO: Configure this
+        threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=60 * 2)
+        lte_comparison = {'$lte': threshold}
+        query = {'experiment': self._id, 'status': 'reserved', 'heartbeat': lte_comparison}
+
+        trials = self.fetch_trials(query)
+
+        for trial in trials:
+            query['_id'] = trial.id
+            log.debug('Setting lost trial %s status to interrupted...', trial.id)
+
+            updated = self._storage.update_trial(trial, status='interrupted', where=query)
+            log.debug('success' if updated else 'failed')
+
+    def update_completed_trial(self, trial, results_file):
+        """Inform database about an evaluated `trial` with resultlts.
 
         :param trial: Corresponds to a successful evaluation of a particular run.
         :type trial: `Trial`
@@ -271,9 +297,11 @@ class Experiment(object):
             Change status from *reserved* to *completed*.
 
         """
+        self._storage.retrieve_result(trial, results_file)
+
         trial.end_time = datetime.datetime.utcnow()
         trial.status = 'completed'
-        self._db.write('trials', trial.to_dict(), query={'_id': trial.id})
+        self._storage.update_trial(trial, **trial.to_dict())
 
     def register_lie(self, lying_trial):
         """Register a *fake* trial created by the strategist.
@@ -299,8 +327,7 @@ class Experiment(object):
         """
         lying_trial.status = 'completed'
         lying_trial.end_time = datetime.datetime.utcnow()
-
-        self._db.write('lying_trials', lying_trial.to_dict())
+        self._storage.register_lie(lying_trial)
 
     def register_trial(self, trial):
         """Register new trial in the database.
@@ -326,31 +353,16 @@ class Experiment(object):
         trial.status = 'new'
         trial.submit_time = stamp
 
-        self._db.write('trials', trial.to_dict())
+        self._storage.register_trial(trial)
 
     def fetch_completed_trials(self):
-        """Fetch recent completed trials that this `Experiment` instance has not yet seen.
+        """Fetch all completed trials.
 
         Trials are sorted based on `Trial.submit_time`
 
-        .. note::
-
-            It will return only those with `Trial.end_time` after `_last_fetched`, for performance
-            reasons.
-
         :return: list of completed `Trial` objects
         """
-        query = dict(
-            status='completed',
-            end_time={'$gt': self._last_fetched}
-            )
-
-        completed_trials = self.fetch_trials_tree(query)
-
-        if completed_trials:
-            self._last_fetched = max(trial.end_time for trial in completed_trials)
-
-        return completed_trials
+        return self.fetch_trials_tree(dict(status='completed'))
 
     def fetch_noncompleted_trials(self):
         """Fetch non-completed trials of this `Experiment` instance.
@@ -408,10 +420,24 @@ class Experiment(object):
             experiment=self._id,
             status='completed'
             )
-        num_completed_trials = self._db.count('trials', query)
+        num_completed_trials = len(self._storage.fetch_trials(query))
 
         return ((num_completed_trials >= self.max_trials) or
                 (self._init_done and self.algorithms.is_done))
+
+    @property
+    def is_broken(self):
+        """Return True, if this experiment is considered to be broken.
+
+        Count how many trials are broken and return True if that number has reached
+        as given threshold.
+
+
+        """
+        query = {'experiment': self._id, 'status': 'broken'}
+        num_broken_trials = len(self._storage.fetch_trials(query))
+
+        return num_broken_trials >= 3
 
     @property
     def space(self):
@@ -436,7 +462,7 @@ class Experiment(object):
             else:
                 config[attrname] = attribute
 
-            if self._init_done and attrname == "refers" and attribute.get("adapter"):
+            if attrname == "refers" and isinstance(attribute.get("adapter"), BaseAdapter):
                 config[attrname] = copy.deepcopy(config[attrname])
                 config[attrname]['adapter'] = config[attrname]['adapter'].configuration
 
@@ -449,7 +475,7 @@ class Experiment(object):
         # object from a getter.
         return copy.deepcopy(config)
 
-    def configure(self, config, enable_branching=True):
+    def configure(self, config, enable_branching=True, enable_update=True):
         """Set `Experiment` by overwriting current attributes.
 
         If `Experiment` was already set and an overwrite is needed, a *branch*
@@ -502,6 +528,9 @@ class Experiment(object):
 
         self._init_done = True
 
+        if not enable_update:
+            return
+
         # If everything is alright, push new config to database
         if is_new:
             final_config['metadata']['datetime'] = datetime.datetime.utcnow()
@@ -509,17 +538,16 @@ class Experiment(object):
             # This will raise DuplicateKeyError if a concurrent experiment with
             # identical (name, metadata.user) is written first in the database.
 
-            self._db.write('experiments', final_config)
+            self._storage.create_experiment(final_config)
+
             # XXX: Reminder for future DB implementations:
             # MongoDB, updates an inserted dict with _id, so should you :P
             self._id = final_config['_id']
 
             # Update refers in db if experiment is root
-            if not self.refers:
-                self.refers = {'root_id': self._id, 'parent_id': None, 'adapter': []}
-                update = {'refers': self.refers}
-                query = {'_id': self._id}
-                self._db.write('experiments', data=update, query=query)
+            if self.refers['parent_id'] is None:
+                self.refers['root_id'] = self._id
+                self._storage.update_experiment(self, refers=self.refers)
 
         else:
             # Writing the final config to an already existing experiment raises
@@ -528,7 +556,7 @@ class Experiment(object):
             # `db.write()`, thus seamingly breaking  the compound index
             # `(name, metadata.user)`
             final_config.pop("name")
-            self._db.write('experiments', final_config, {'_id': self._id})
+            self._storage.update_experiment(self, **final_config)
 
     @property
     def stats(self):
@@ -631,7 +659,10 @@ class Experiment(object):
         except KeyError:
             pass
 
-        if self.refers and not isinstance(self.refers.get('adapter'), BaseAdapter):
+        self.refers.setdefault('parent_id', None)
+        self.refers.setdefault('root_id', self._id)
+        self.refers.setdefault('adapter', [])
+        if self.refers['adapter'] and not isinstance(self.refers.get('adapter'), BaseAdapter):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
         if not self.producer.get('strategy'):
@@ -734,18 +765,26 @@ class ExperimentView(object):
                              "no view can be created." %
                              (self._experiment.name, self._experiment.metadata['user']))
 
-        try:
-            self._experiment.configure(self._experiment.configuration, enable_branching=False)
-        except ValueError as e:
-            if "Configuration is different and generates a branching event" in str(e):
-                raise RuntimeError(
-                    "Configuration in the database does not correspond to the one generated by "
-                    "Experiment object. This is likely due to a backward incompatible update in "
-                    "Oríon. Please report to https://github.com/epistimio/orion/issues.") from e
+        # TODO: Views are not fully configured until configuration is refactored
+        #       This snippet is to instantiate adapters anyhow, because it is required for
+        #       experiment views in EVC.
+        self.refers.setdefault('parent_id', None)
+        self.refers.setdefault('root_id', self._id)
+        self.refers.setdefault('adapter', [])
+        if self.refers['adapter'] and not isinstance(self.refers.get('adapter'), BaseAdapter):
+            self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
-            raise
-
-        self._experiment._db = ReadOnlyDB(self._experiment._db)
+        # try:
+        #     self._experiment.configure(self._experiment.configuration, enable_branching=False,
+        #                                enable_update=False)
+        # except ValueError as e:
+        #     if "Configuration is different and generates a branching event" in str(e):
+        #         raise RuntimeError(
+        #             "Configuration in the database does not correspond to the one generated by "
+        #             "Experiment object. This is likely due to a backward incompatible update in "
+        #             "Oríon. Please report to https://github.com/epistimio/orion/issues.") from e
+        #     raise
+        self._experiment._storage = ReadOnlyStorageProtocol(self._experiment._storage)
 
     def __getattr__(self, name):
         """Get attribute only if valid"""

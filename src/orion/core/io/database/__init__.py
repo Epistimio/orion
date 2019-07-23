@@ -14,6 +14,7 @@ Currently, implemented wrappers:
 
 """
 from abc import abstractmethod, abstractproperty
+import logging
 
 from orion.core.utils import (AbstractSingletonType, SingletonFactory)
 
@@ -64,7 +65,10 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
     def initiate_connection(self):
         """Connect to database, unless `AbstractDB` `is_connected`.
 
-        :raises :exc:`DatabaseError`: if connection or authentication fails
+        Raises
+        ------
+        DatabaseError
+            If connection or authentication fails
 
         """
         pass
@@ -93,10 +97,11 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
            `DuplicateKeyError`.
            Defaults to False.
 
-        .. note::
-            Depending on the backend, the indexing operation might operate in
-            background. This means some operations on the database might occur
-            before the indexes are totally built.
+        Notes
+        -----
+        Depending on the backend, the indexing operation might operate in
+        background. This means some operations on the database might occur
+        before the indexes are totally built.
 
         """
         pass
@@ -114,20 +119,25 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         query : dict, optional
            Assumes an update operation: filter entries in collection to be updated.
 
-        :return: operation success.
+        Returns
+        -------
+        int
+            Number of new documents if no query, otherwise number of modified documents.
 
-        .. note::
-           In the case of an insert operation, `data` variable will be updated
-           to contain a unique *_id* key.
+        Notes
+        -----
+        In the case of an insert operation, `data` variable will be updated
+        to contain a unique *_id* key.
 
-        .. note::
-           In the case of an update operation, if `query` fails to find a
-           document that matches, insert of `data` will be performed instead.
+        In the case of an update operation, if `query` fails to find a
+        document that matches, no operation is performed.
 
-        :raises :exc:`DuplicateKeyError`: if the operation is creating duplicate
-            keys in two different documents. Only occurs if the keys have
-            unique indexes. See :meth:`AbstractDB.ensure_index` for more
-            information about indexes.
+        Raises
+        ------
+        DuplicateKeyError
+            If the operation is creating duplicate keys in two different documents. Only occurs if
+            the keys have unique indexes. See :meth:`AbstractDB.ensure_index` for more information
+            about indexes.
 
         """
         pass
@@ -145,7 +155,10 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         selection : dict, optional
            Elements of matched entries to return, the projection.
 
-        :return: list of matched document[s]
+        Returns
+        -------
+        list
+            List of matched document[s]
 
         """
         pass
@@ -169,12 +182,17 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         selection : dict, optional
            Elements of matched entries to return, the projection.
 
-        :return: updated first matched document or None if nothing found
+        Returns
+        -------
+        dict or None
+            Updated first matched document or None if nothing found
 
-        :raises :exc:`DuplicateKeyError`: if the operation is creating duplicate
-            keys in two different documents. Only occurs if the keys have
-            unique indexes. See :meth:`AbstractDB.ensure_index` for more
-            information about indexes.
+        Raises
+        ------
+        DuplicateKeyError
+            If the operation is creating duplicate keys in two different documents. Only occurs if
+            the keys have unique indexes. See :meth:`AbstractDB.ensure_index` for more information
+            about indexes.
 
         """
         pass
@@ -204,7 +222,10 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         query : dict
            Filter entries in collection.
 
-        :return: operation success.
+        Returns
+        -------
+        int
+            Number of documents removed
 
         """
         pass
@@ -212,12 +233,7 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
 
 # pylint: disable=too-few-public-methods
 class ReadOnlyDB(object):
-    """Read-only view on a database.
-
-    .. seealso::
-
-        :py:class:`orion.core.io.database.AbstractDB`
-    """
+    """Read-only view on a database."""
 
     __slots__ = ('_database', )
 
@@ -258,9 +274,10 @@ class DuplicateKeyError(DatabaseError):
 
 # pylint: disable=too-few-public-methods,abstract-method
 class Database(AbstractDB, metaclass=SingletonFactory):
-    """Class used to inject dependency on a database framework.
-
-    .. seealso:: `Factory` metaclass and `AbstractDB` interface.
-    """
+    """Class used to inject dependency on a database framework."""
 
     pass
+
+
+# set per-module log level
+logging.getLogger('filelock').setLevel('ERROR')

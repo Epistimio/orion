@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.trial`."""
 
+import numpy
 import pytest
 
 from orion.core.worker.trial import Trial
@@ -21,6 +22,7 @@ class TestTrial(object):
         assert t.end_time is None
         assert t.results == []
         assert t.params == []
+        assert t.working_dir is None
 
     def test_init_full(self, exp_config):
         """Initialize with a dictionary with complete specification."""
@@ -36,6 +38,16 @@ class TestTrial(object):
         assert t.results[0].type == exp_config[1][1]['results'][0]['type']
         assert t.results[0].value == exp_config[1][1]['results'][0]['value']
         assert list(map(lambda x: x.to_dict(), t.params)) == exp_config[1][1]['params']
+        assert t.working_dir is None
+
+    def test_higher_shapes_not_ndarray(self):
+        """Test that `numpy.ndarray` values are converted to list."""
+        value = numpy.zeros([3])
+        expected = value.tolist()
+        params = [dict(name='/x', type='real', value=value)]
+        trial = Trial(params=params)
+
+        assert trial.params[0].value == expected
 
     def test_bad_access(self):
         """Other than `Trial.__slots__` are not allowed."""

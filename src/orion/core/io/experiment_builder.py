@@ -202,20 +202,9 @@ class ExperimentBuilder(object):
         """
         local_config = self.fetch_full_config(cmdargs, use_db=False)
 
-        db_opts = local_config['database']
-        dbtype = db_opts.pop('type')
-
-        if local_config.get("debug"):
-            dbtype = "EphemeralDB"
+        self.setup_database(local_config)
 
         # Information should be enough to infer experiment's name.
-        log.debug("Creating %s database client with args: %s", dbtype, db_opts)
-        try:
-            Database(of_type=dbtype, **db_opts)
-        except ValueError:
-            if Database().__class__.__name__.lower() != dbtype.lower():
-                raise
-
         exp_name = local_config['name']
         if exp_name is None:
             raise RuntimeError("Could not infer experiment's name. "
@@ -278,3 +267,25 @@ class ExperimentBuilder(object):
                 raise NoConfigurationError from ex
 
         return experiment
+
+    def setup_database(self, config):
+        """Create the Database instance from a configuration.
+
+        Parameters
+        ----------
+        config: dict
+            Configuration for the database.
+
+        """
+        db_opts = config['database']
+        dbtype = db_opts.pop('type')
+
+        if config.get("debug"):
+            dbtype = "EphemeralDB"
+
+        log.debug("Creating %s database client with args: %s", dbtype, db_opts)
+        try:
+            Database(of_type=dbtype, **db_opts)
+        except ValueError:
+            if Database().__class__.__name__.lower() != dbtype.lower():
+                raise
