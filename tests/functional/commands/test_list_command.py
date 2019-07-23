@@ -25,6 +25,15 @@ def test_single_exp(clean_db, one_experiment, capsys):
     assert captured == " test_single_exp\n"
 
 
+def test_broken_refers(clean_db, broken_refers, capsys):
+    """Test that experiment without refers dict can be handled properly."""
+    orion.core.cli.main(['list'])
+
+    captured = capsys.readouterr().out
+
+    assert captured == " test_single_exp\n"
+
+
 def test_two_exp(capsys, clean_db, two_experiments):
     """Test that experiment and child are printed."""
     orion.core.cli.main(['list'])

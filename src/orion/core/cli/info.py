@@ -29,8 +29,8 @@ def add_subparser(parser):
 
 def main(args):
     """Fetch config and info experiments"""
-    experiment_view = EVCBuilder().build_view_from(args)
-    print(format_info(experiment_view))
+    experiment = EVCBuilder().build_from(args)
+    print(format_info(experiment))
 
 
 INFO_TEMPLATE = """\
