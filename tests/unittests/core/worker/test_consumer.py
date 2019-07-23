@@ -4,6 +4,7 @@
 import os
 import signal
 import subprocess
+import time
 
 import pytest
 
@@ -71,6 +72,27 @@ def test_trials_interrupted_sigterm(config, monkeypatch):
     trials = exp.fetch_trials({'status': 'interrupted'})
     assert len(trials)
     assert trials[0].id == trial.id
+
+
+@pytest.mark.usefixtures("create_db_instance")
+def test_pacemaker_termination(config, monkeypatch):
+    """Check if pacemaker stops as soon as the trial completes."""
+    exp = ExperimentBuilder().build_from(config)
+
+    trial = tuple_to_trial((1.0,), exp.space)
+
+    exp.register_trial(trial)
+
+    con = Consumer(exp)
+
+    start = time.time()
+
+    con.consume(trial)
+    con.pacemaker.join()
+
+    duration = time.time() - start
+
+    assert duration < con.pacemaker.wait_time
 
 
 @pytest.mark.usefixtures("create_db_instance")
