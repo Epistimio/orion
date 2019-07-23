@@ -143,6 +143,7 @@ def new_config(random_dt):
                           "HEAD_sha": "fsa7df7a8sdf7a8s7",
                           "active_branch": None,
                           "diff_sha": "diff"}},
+        version=1,
         pool_size=10,
         max_trials=1000,
         working_dir=None,
@@ -189,6 +190,7 @@ class TestInitExperiment(object):
         assert exp.max_trials is None
         assert exp.algorithms is None
         assert exp.working_dir is None
+        assert exp.version == 1
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
@@ -207,6 +209,7 @@ class TestInitExperiment(object):
         assert exp.max_trials is None
         assert exp.algorithms is None
         assert exp.working_dir is None
+        assert exp.version == 1
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
@@ -224,6 +227,7 @@ class TestInitExperiment(object):
         assert exp.max_trials == exp_config[0][0]['max_trials']
         assert exp.algorithms == exp_config[0][0]['algorithms']
         assert exp.working_dir == exp_config[0][0]['working_dir']
+        assert exp.version == 1
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
@@ -239,6 +243,7 @@ class TestConfigProperty(object):
         """
         exp = Experiment('supernaedo2')
         exp_config[0][0].pop('_id')
+        exp_config[0][0]['version'] = 1
         assert exp.configuration == exp_config[0][0]
 
     def test_get_before_init_no_hit(self, exp_config, random_dt):
@@ -258,6 +263,7 @@ class TestConfigProperty(object):
         assert cfg['max_trials'] is None
         assert cfg['algorithms'] is None
         assert cfg['working_dir'] is None
+        assert cfg['version'] == 1
 
     @pytest.mark.skip(reason='Interactive prompt problems')
     def test_good_set_before_init_hit_with_diffs(self, exp_config):
@@ -348,6 +354,7 @@ class TestConfigProperty(object):
         assert exp.pool_size == new_config['pool_size']
         assert exp.max_trials == new_config['max_trials']
         assert exp.working_dir == new_config['working_dir']
+        assert exp.version == new_config['version']
         #  assert exp.algorithms == new_config['algorithms']
 
     def test_working_dir_is_correctly_set(self, database, new_config):
@@ -919,6 +926,7 @@ class TestInitExperimentView(object):
         assert exp.metadata == exp_config[0][0]['metadata']
         assert exp.pool_size == exp_config[0][0]['pool_size']
         assert exp.max_trials == exp_config[0][0]['max_trials']
+        assert exp.version == exp_config[0][0]['version']
         # TODO: Views are not fully configured until configuration is refactored
         # assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
 
@@ -1062,6 +1070,7 @@ class TestInitExperimentWithEVC(object):
         assert exp.metadata == exp_config[0][4]['metadata']
         assert exp.pool_size is None
         assert exp.max_trials is None
+        assert exp.version == 1
         assert exp.configuration['algorithms'] == {'random': {'seed': None}}
 
     @pytest.mark.usefixtures("with_user_tsirif")
@@ -1078,6 +1087,7 @@ class TestInitExperimentWithEVC(object):
         assert exp.metadata == exp_config[0][4]['metadata']
         assert exp.pool_size == 2
         assert exp.max_trials == 1000
+        assert exp.version == 1
         assert exp.configuration['algorithms'] == {'random': {'seed': None}}
 
     @pytest.mark.usefixtures("with_user_tsirif")
