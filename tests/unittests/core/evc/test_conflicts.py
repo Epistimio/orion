@@ -350,18 +350,6 @@ class TestExperimentNameConflict(object):
         assert experiment_name_conflict.is_resolved
         assert experiment_name_conflict.try_resolve() is None
 
-    def test_try_resolve_bad_name(self, experiment_name_conflict):
-        """Verify that resolution fails if name already exist in db"""
-        assert not experiment_name_conflict.is_resolved
-        with pytest.raises(ValueError) as exc:
-            experiment_name_conflict.try_resolve("test")
-        assert "Experiment name 'test' already exist" in str(exc.value)
-
-        assert not experiment_name_conflict.is_resolved
-        with pytest.raises(ValueError) as exc:
-            experiment_name_conflict.try_resolve()
-        assert "No new name provided." in str(exc.value)
-
     def test_try_resolve(self, experiment_name_conflict):
         """Verify that resolution is achievable with a valid name"""
         new_name = "dummy"
@@ -371,6 +359,16 @@ class TestExperimentNameConflict(object):
         assert experiment_name_conflict.is_resolved
         assert resolution.conflict is experiment_name_conflict
         assert resolution.new_name == new_name
+
+    def test_conflict_exp_no_child(self, exp_no_child_conflict):
+        """Verify the version number is incremented when exp has no child."""
+        new_name = "test"
+        assert not exp_no_child_conflict.is_resolved
+        resolution = exp_no_child_conflict.try_resolve(new_name)
+        assert isinstance(resolution, exp_no_child_conflict.ExperimentNameResolution)
+        assert exp_no_child_conflict.is_resolved
+        assert resolution.conflict is exp_no_child_conflict
+        assert resolution.new_version == 2
 
     def test_repr(self, experiment_name_conflict):
         """Verify the representation of conflict for user interface"""

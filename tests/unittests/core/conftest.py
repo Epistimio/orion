@@ -198,6 +198,7 @@ def new_config():
     return dict(
         name='test',
         algorithms='fancy',
+        version=1,
         metadata={'VCS': 'to be changed',
                   'user_script': 'abs_path/black_box.py',
                   'user_args':
@@ -211,6 +212,7 @@ def old_config(create_db_instance):
     config = dict(
         name='test',
         algorithms='random',
+        version=1,
         metadata={'VCS': {"type": "git",
                           "is_dirty": False,
                           "HEAD_sha": "test",

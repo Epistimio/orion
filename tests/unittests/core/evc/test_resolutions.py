@@ -386,9 +386,11 @@ class TestExperimentNameResolution(object):
         """Verify reverting resolution set conflict to unresolved and reset name in config"""
         assert experiment_name_conflict.is_resolved
         assert new_config['name'] == experiment_name_resolution.new_name
+        assert new_config['version'] == experiment_name_resolution.new_version
 
         assert experiment_name_resolution.revert() == []
 
         assert new_config['name'] == old_config['name']
+        assert new_config['version'] == old_config['version']
         assert not experiment_name_conflict.is_resolved
         assert experiment_name_conflict.resolution is None
