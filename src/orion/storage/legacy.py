@@ -93,7 +93,16 @@ class Legacy(BaseStorageProtocol):
 
     def fetch_trials(self, query, selection=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
-        return [Trial(**t) for t in self._db.read('trials', query=query, selection=selection)]
+
+        def sort_key(item):
+            submit_time = item.submit_time
+            if submit_time is None:
+                return 0
+            return submit_time
+
+        trials = Trial.build(self._db.read('trials', query=query, selection=selection))
+        trials.sort(key=sort_key)
+        return trials
 
     def register_trial(self, trial):
         """See :func:`~orion.storage.BaseStorageProtocol.register_trial`"""

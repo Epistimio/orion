@@ -21,12 +21,29 @@ from orion.storage.base import get_storage
 logging.basicConfig(level=logging.DEBUG)
 
 
+def check_sorted(trials):
+    """fetch_trials should return a list of sorted trials"""
+    def get_time(item):
+        sub_time = item.submit_time
+        if sub_time is None:
+            return 0
+        return sub_time
+
+    prev = trials[0]
+    for trial in trials[1:]:
+        assert get_time(trial) > get_time(prev), 'Trials should be in ASC order'
+
+    return trials
+
+
 @pytest.fixture()
 def patch_sample(monkeypatch):
     """Patch ``random.sample`` to return the first one and check call."""
     def mock_sample(a_list, should_be_one):
         assert type(a_list) == list
         assert len(a_list) >= 1
+        check_sorted(a_list)
+
         # Part of `TestReserveTrial.test_reserve_success`
         assert a_list[0].status == 'new'
         assert a_list[1].status == 'new'
@@ -44,6 +61,8 @@ def patch_sample2(monkeypatch):
     def mock_sample(a_list, should_be_one):
         assert type(a_list) == list
         assert len(a_list) >= 1
+        check_sorted(a_list)
+
         # Part of `TestReserveTrial.test_reserve_success2`
         assert a_list[0].status == 'new'
         assert a_list[1].status == 'new'
@@ -64,6 +83,8 @@ def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
     def mock_sample(a_list, should_be_one):
         assert type(a_list) == list
         assert len(a_list) >= 1
+        check_sorted(a_list)
+
         # Part of `TestReserveTrial.test_reserve_race_condition`
         if len(a_list) == 4:
             assert a_list[0].status == 'new'

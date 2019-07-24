@@ -80,7 +80,12 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         raise NotImplementedError()
 
     def fetch_trials(self, query, selection=None):
-        """Fetch all the trials that match the query"""
+        """Fetch all the trials that match the query
+
+        Note
+        ----
+        The trials are sorted by submit_time
+        """
         raise NotImplementedError()
 
     def update_trial(self, trial, where=None, **kwargs):

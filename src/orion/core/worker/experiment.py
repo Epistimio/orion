@@ -225,14 +225,14 @@ class Experiment:
         :param _depth: recursion depth only used for logging purposes can be ignored
         :return: selected `Trial` object, None if could not find any.
         """
-        log.debug('%s reserving trial with (score: %s)', '<' * _depth, score_handle)
+        log.debug('%s reserving trial with (score: %s)', '>' * _depth, score_handle)
         if score_handle is not None and not callable(score_handle):
             raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
 
         self.fix_lost_trials()
 
         new_trials = self._storage.fetch_pending_trials(self)
-        log.debug('%s Fetched (trials: %s)', '<' * _depth, len(new_trials))
+        log.debug('%s Fetched (trials: %s)', '>' * _depth, len(new_trials))
 
         if not new_trials:
             log.debug('%s no new trials found', '<' * _depth)
@@ -249,7 +249,7 @@ class Experiment:
                         "parameter space has not been defined yet.")
 
         selected_trial = random.sample(new_trials, 1)[0]
-        log.debug('%s selected (trial: %s)', '<' * _depth, selected_trial)
+        log.debug('%s selected (trial: %s)', '>' * _depth, selected_trial)
 
         update = dict(status='reserved', heartbeat=datetime.datetime.utcnow())
 
@@ -260,7 +260,7 @@ class Experiment:
         # status meanwhile, update will fail, because query will fail.
         # This relies on the atomicity of document updates.
 
-        log.debug('%s trying to reverse trial', '<' * _depth)
+        log.debug('%s trying to reverse trial', '>' * _depth)
         reserved = self._storage.update_trial(
             selected_trial, **update, where={'status': selected_trial.status})
 
