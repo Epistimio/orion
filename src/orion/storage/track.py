@@ -21,8 +21,10 @@ try:
     from track.serialization import to_json
     from track.structure import CustomStatus, Status as TrackStatus
     from track.structure import Project, Trial as TrackTrial, TrialGroup
+
+    HAS_TRACK = True
 except ImportError:
-    pass
+    HAS_TRACK = False
 
 from orion.core.worker.trial import Trial as OrionTrial
 from orion.storage.base import BaseStorageProtocol
@@ -30,21 +32,23 @@ from orion.storage.base import BaseStorageProtocol
 
 log = logging.getLogger(__name__)
 
-_status = [
-    CustomStatus('new', TrackStatus.CreatedGroup.value + 1),
-    CustomStatus('reserved', TrackStatus.CreatedGroup.value + 2),
 
-    CustomStatus('suspended', TrackStatus.FinishedGroup.value + 1),
-    # CustomStatus('completed', TrackStatus.FinishedGroup.value + 2),
+if HAS_TRACK:
+    _status = [
+        CustomStatus('new', TrackStatus.CreatedGroup.value + 1),
+        CustomStatus('reserved', TrackStatus.CreatedGroup.value + 2),
 
-    CustomStatus('interrupted', TrackStatus.ErrorGroup.value + 1),
-    CustomStatus('broken', TrackStatus.ErrorGroup.value + 3)
-]
+        CustomStatus('suspended', TrackStatus.FinishedGroup.value + 1),
+        # CustomStatus('completed', TrackStatus.FinishedGroup.value + 2),
 
-_status_dict = {
-    s.name: s for s in _status
-}
-_status_dict['completed'] = TrackStatus.Completed
+        CustomStatus('interrupted', TrackStatus.ErrorGroup.value + 1),
+        CustomStatus('broken', TrackStatus.ErrorGroup.value + 3)
+    ]
+
+    _status_dict = {
+        s.name: s for s in _status
+    }
+    _status_dict['completed'] = TrackStatus.Completed
 
 
 def get_track_status(val):
