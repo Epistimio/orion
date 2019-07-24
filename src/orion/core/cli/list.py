@@ -10,10 +10,10 @@
 import logging
 
 from orion.core.cli import base as cli
-from orion.core.io.database import Database
 from orion.core.io.evc_builder import EVCBuilder
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.pptree import print_tree
+from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ def main(args):
     if args['name']:
         query['name'] = args['name']
 
-    experiments = Database().read("experiments", query)
+    experiments = get_storage().fetch_experiments(query)
 
     if args['name']:
         root_experiments = experiments

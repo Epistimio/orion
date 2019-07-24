@@ -10,10 +10,10 @@
 
 """
 
-from orion.core.utils import Factory
+from orion.core.utils import (AbstractSingletonType, SingletonFactory)
 
 
-class BaseStorageProtocol:
+class BaseStorageProtocol(metaclass=AbstractSingletonType):
     """Implement a generic protocol to allow Orion to communicate using
     different storage backend
 
@@ -106,18 +106,21 @@ class BaseStorageProtocol:
 
 
 # pylint: disable=too-few-public-methods,abstract-method
-class StorageProtocol(BaseStorageProtocol, metaclass=Factory):
+class Storage(BaseStorageProtocol, metaclass=SingletonFactory):
     """Storage protocol is a generic way of allowing Orion to interface with different storage.
     MongoDB, track, cometML, MLFLow, etc...
 
     Examples
     --------
-    >>> StorageProtocol('track', uri='file://orion_test.json')
-    >>> StorageProtocol('legacy', experiment=...)
+    >>> Storage('track', uri='file://orion_test.json')
+    >>> Storage('legacy', experiment=...)
 
     """
 
     pass
+
+
+get_storage = Storage
 
 
 # pylint: disable=too-few-public-methods
@@ -142,3 +145,5 @@ class ReadOnlyStorageProtocol(object):
             raise AttributeError("Cannot access attribute %s on ReadOnlyStorageProtocol." % attr)
 
         return getattr(self._storage, attr)
+
+

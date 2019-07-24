@@ -57,10 +57,10 @@ import traceback
 
 from orion.algo.space import Dimension
 from orion.core.evc import adapters
-from orion.core.io.database import Database
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.diff import colored_diff
 from orion.core.utils.format_trials import standard_param_name
+from orion.storage.base import get_storage
 
 
 def _create_param(dimension, default_value):
@@ -1585,7 +1585,7 @@ class ExperimentNameConflict(Conflict):
             """Return True if given name is not in database for current user"""
             query = {'name': name, 'metadata.user': self.conflict.username}
 
-            named_experiments = Database().count('experiments', query)
+            named_experiments = len(get_storage().fetch_experiments(query))
             return named_experiments == 0
 
         def revert(self):

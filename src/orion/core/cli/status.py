@@ -15,9 +15,10 @@ import logging
 import tabulate
 
 from orion.core.cli import base as cli
-from orion.core.io.database import Database
 from orion.core.io.evc_builder import EVCBuilder
 from orion.core.io.experiment_builder import ExperimentBuilder
+from orion.storage.base import get_storage
+
 
 log = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ def get_experiments(args):
     projection = {'name': 1}
 
     query = {'name': args['name']} if args.get('name') else {}
-    experiments = Database().read("experiments", query, projection)
+    experiments = get_storage().fetch_experiments(query, projection)
 
     return [EVCBuilder().build_view_from({'name': exp['name']}) for exp in experiments]
 

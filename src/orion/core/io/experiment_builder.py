@@ -90,9 +90,10 @@ import copy
 import logging
 
 from orion.core.io import resolve_config
-from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import NoConfigurationError
 from orion.core.worker.experiment import Experiment, ExperimentView
+from orion.storage.base import Storage
 
 
 log = logging.getLogger(__name__)
@@ -285,7 +286,7 @@ class ExperimentBuilder(object):
 
         log.debug("Creating %s database client with args: %s", dbtype, db_opts)
         try:
-            Database(of_type=dbtype, **db_opts)
+            Storage(of_type=dbtype, **db_opts)
         except ValueError:
-            if Database().__class__.__name__.lower() != dbtype.lower():
+            if Storage().__class__.__name__.lower() != dbtype.lower():
                 raise
