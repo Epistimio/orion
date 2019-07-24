@@ -1565,8 +1565,10 @@ class ExperimentNameConflict(Conflict):
 
             self.new_name = new_name
             self.old_name = self.conflict.new_config['name']
+            self.version = 1
             self.validate(new_name)
             self.conflict.new_config['name'] = new_name
+            self.conflict.new_config['version'] = self.version
 
         def _validate(self, new_name):
             """Validate new_name is not in database for current user"""
@@ -1576,7 +1578,10 @@ class ExperimentNameConflict(Conflict):
             # TODO: WARNING!!! _name_is_unique could lead to race conditions,
             # The resolution may become invalid before the branching experiment is
             # registered. What should we do in such case?
-            if not self._name_is_unique(new_name):
+            if self._name_is_unique(new_name):
+                return
+
+            if self._check_for_children():
                 raise ValueError(
                     "Experiment name \'{0}\' already exist for user \'{1}\'".format(
                         new_name, self.conflict.username))
@@ -1587,6 +1592,21 @@ class ExperimentNameConflict(Conflict):
 
             named_experiments = Database().count('experiments', query)
             return named_experiments == 0
+
+        def _check_for_children(self):
+            """Check if experiment has children"""
+            query = {'name': self.new_name, 'metadata.user': self.conflict.username}
+            experiments = Database().find('experiments', query)
+            parent = max(experiments, key=lambda exp: exp['version'])
+
+            query = {'refers.parent_id': parent['_id']}
+            children = Database().count('experiments', query)
+
+            if children == 0:
+                self.version = parent['version'] + 1
+                return False
+
+            return True
 
         def revert(self):
             """Reset conflict set experiment name back to old one in new configuration"""
