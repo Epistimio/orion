@@ -1565,10 +1565,11 @@ class ExperimentNameConflict(Conflict):
 
             self.new_name = new_name
             self.old_name = self.conflict.new_config['name']
-            self.version = 1
+            self.old_version = self.conflict.new_config['version']
+            self.new_version = self.old_version
             self.validate(new_name)
             self.conflict.new_config['name'] = new_name
-            self.conflict.new_config['version'] = self.version
+            self.conflict.new_config['version'] = self.new_version
 
         def _validate(self, new_name):
             """Validate new_name is not in database for current user"""
@@ -1603,7 +1604,7 @@ class ExperimentNameConflict(Conflict):
             children = Database().count('experiments', query)
 
             if children == 0:
-                self.version = parent['version'] + 1
+                self.new_version = parent['version'] + 1
                 return False
 
             return True
@@ -1611,6 +1612,7 @@ class ExperimentNameConflict(Conflict):
         def revert(self):
             """Reset conflict set experiment name back to old one in new configuration"""
             self.conflict.new_config['name'] = self.old_name
+            self.conflict.new_config['version'] = self.old_version
             return super(ExperimentNameConflict.ExperimentNameResolution, self).revert()
 
         def get_adapters(self):
