@@ -15,14 +15,17 @@ import datetime
 import logging
 import uuid
 
+try:
+    from track.client import TrackClient
+    from track.persistence.utils import parse_uri
+    from track.serialization import to_json
+    from track.structure import CustomStatus, Status as TrackStatus
+    from track.structure import Project, Trial as TrackTrial, TrialGroup
+except ImportError:
+    pass
+
 from orion.core.worker.trial import Trial as OrionTrial
 from orion.storage.base import BaseStorageProtocol
-
-from track.serialization import to_json
-from track.client import TrackClient
-from track.structure import Trial as TrackTrial, TrialGroup, Project
-from track.structure import CustomStatus, Status as TrackStatus
-from track.persistence.utils import parse_uri
 
 
 log = logging.getLogger(__name__)
