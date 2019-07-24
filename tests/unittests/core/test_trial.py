@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.trial`."""
-
+import bson
 import numpy
 import pytest
 
@@ -237,3 +237,9 @@ class TestTrial(object):
         with pytest.raises(ValueError) as exc:
             t.full_name
         assert 'params' in str(exc.value)
+
+    def test_higher_shape_id_is_same(self):
+        """Check if a Trial with a shape > 1 has the same id once it has been through the DB."""
+        x = {'name': '/x', 'value': [1, 2], 'type': 'real'}
+        trial = Trial(params=[x])
+        assert trial.id == Trial(**bson.BSON.decode(bson.BSON.encode(trial.to_dict()))).id
