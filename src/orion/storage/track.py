@@ -329,6 +329,12 @@ class Track(BaseStorageProtocol):
 
     def fetch_trials(self, query, *args, **kwargs):
         """Fetch all the trials that match the query"""
+        def sort_key(item):
+            submit_time = item.submit_time
+            if submit_time is None:
+                return 0
+            return submit_time
+
         query = to_json(query)
 
         new_query = {}
@@ -351,8 +357,11 @@ class Track(BaseStorageProtocol):
             else:
                 new_query[k] = v
 
-        results = [TrialAdapter(t, objective=self.objective) for t in self.backend.fetch_trials(new_query)]
-        return results
+        trials = [
+            TrialAdapter(t, objective=self.objective) for t in self.backend.fetch_trials(new_query)
+        ]
+        trials.sort(key=sort_key)
+        return trials
 
     _ignore_updates_for = {'results', 'params', '_id'}
 
