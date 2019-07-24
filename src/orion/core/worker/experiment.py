@@ -567,25 +567,25 @@ class Experiment:
         experiment._init_done = True
 
         # If id is None in this object, then database did not hit a config
-        # with same (name, user's name, version) pair. Everything depends on the user's
+        # with same (name, user's name) pair. Everything depends on the user's
         # orion_config to set.
         if self._id is None:
             if config['name'] != self.name or \
                     config['metadata']['user'] != self.metadata['user']:
                 raise ValueError("Configuration given is inconsistent with this Experiment.")
-            is_new = True
+            must_branch = True
         else:
             # Branch if it is needed
             # TODO: When refactoring experiment managenent, is_different_from
             # will be used when EVC is not available.
-            # is_new = self._is_different_from(experiment.configuration)
+            # must_branch = self._is_different_from(experiment.configuration)
             branching_configuration = fetch_branching_configuration(config)
             conflicts = detect_conflicts(self.configuration, experiment.configuration)
-            is_new = len(conflicts.get()) > 1 or branching_configuration.get('branch')
-            if is_new and not enable_branching:
+            must_branch = len(conflicts.get()) > 1 or branching_configuration.get('branch')
+            if must_branch and not enable_branching:
                 raise ValueError("Configuration is different and generate a "
                                  "branching event")
-            elif is_new:
+            elif must_branch:
                 experiment._branch_config(conflicts, branching_configuration)
 
         final_config = experiment.configuration
@@ -597,12 +597,11 @@ class Experiment:
             return
 
         # If everything is alright, push new config to database
-        if is_new:
+        if must_branch:
             final_config['metadata']['datetime'] = datetime.datetime.utcnow()
             self.metadata['datetime'] = final_config['metadata']['datetime']
             # This will raise DuplicateKeyError if a concurrent experiment with
             # identical (name, metadata.user) is written first in the database.
-
             self._storage.create_experiment(final_config)
 
             # XXX: Reminder for future DB implementations:
