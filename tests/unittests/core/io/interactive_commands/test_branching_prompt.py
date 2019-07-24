@@ -432,6 +432,7 @@ class TestCommands(object):
         branch_solver_prompt.do_name("new-name")
         assert len(conflicts.get_resolved()) == 1
 
+    @pytest.mark.skip(reason="Reinstate once --version has been added.")
     def test_set_experiment_bad_name(self, capsys, conflicts, branch_solver_prompt):
         """Verify error message when attempting experiment name resolution with bad name"""
         assert len(conflicts.get_resolved()) == 0
