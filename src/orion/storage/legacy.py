@@ -93,7 +93,6 @@ class Legacy(BaseStorageProtocol):
 
     def fetch_trials(self, query, selection=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
-
         def sort_key(item):
             submit_time = item.submit_time
             if submit_time is None:
