@@ -1553,12 +1553,12 @@ class ExperimentNameConflict(Conflict):
                 The conflict which is resolved by this resolution.
             new_name: string
                 A new name for the branching experiment. A ValueError is raised if name is already
-                in database.
+                in database with a direct child.
 
             Raises
             ------
             ValueError
-                If name already exists in database for current user.
+                If name already exists in database with a direct child for current user.
 
             """
             super(ExperimentNameConflict.ExperimentNameResolution, self).__init__(conflict)
@@ -1572,7 +1572,7 @@ class ExperimentNameConflict(Conflict):
             self.conflict.new_config['version'] = self.new_version
 
         def _validate(self, new_name):
-            """Validate new_name is not in database for current user"""
+            """Validate new_name is not in database with a direct child for current user"""
             if new_name is None:
                 raise ValueError("No new name provided. Cannot resolve experiment name conflict.")
 
@@ -1597,7 +1597,7 @@ class ExperimentNameConflict(Conflict):
         def _check_for_children(self):
             """Check if experiment has children"""
             query = {'name': self.new_name, 'metadata.user': self.conflict.username}
-            experiments = Database().find('experiments', query)
+            experiments = Database().read('experiments', query)
             parent = max(experiments, key=lambda exp: exp['version'])
 
             query = {'refers.parent_id': parent['_id']}
