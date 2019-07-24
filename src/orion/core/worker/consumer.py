@@ -108,7 +108,10 @@ class Consumer(object):
         ----------
         results_file: str
            file used to store results, this is only used by the legacy protocol
+<<<<<<< HEAD
 
+=======
+>>>>>>> reinsert change that were rolledback
         trial: Trial
            reference to the trial object that is going to be run
 
@@ -163,6 +166,7 @@ class Consumer(object):
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
+        env = self.get_execution_environment(trial, results_file.name)
         self.pacemaker = TrialPacemaker(self.experiment, trial.id)
         self.pacemaker.start()
         try:
@@ -173,12 +177,12 @@ class Consumer(object):
 
         return results_file
 
-    def execute_process(self, cmd_args, overrides):
+    def execute_process(self, cmd_args, environ):
         """Facilitate launching a black-box trial."""
         command = [self.script_path] + cmd_args
 
         signal.signal(signal.SIGTERM, _handler)
-        process = subprocess.Popen(command, env=overrides)
+        process = subprocess.Popen(command, env=environ)
 
         return_code = process.wait()
         if return_code != 0:
