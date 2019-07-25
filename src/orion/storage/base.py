@@ -120,7 +120,27 @@ class Storage(BaseStorageProtocol, metaclass=SingletonFactory):
     pass
 
 
-get_storage = Storage
+def get_storage():
+    """return current storage
+
+    This is a wrapper around the Storage Singleton object to provide
+    better error message when it is used without being initialized.
+
+    Raises
+    ------
+    raises RuntimeError if the underlying storage
+    was not initialized prior to calling this function.
+
+    Note
+    ----
+    To initialize the underlying storage you mist call `Storage(...)`
+    with the appropriate arguments for the chosen backend
+
+    """
+    try:
+        return Storage()
+    except TypeError:
+        raise RuntimeError('Singleton `Storage` was not initialized!')
 
 
 # pylint: disable=too-few-public-methods
