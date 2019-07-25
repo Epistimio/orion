@@ -121,7 +121,7 @@ class Storage(BaseStorageProtocol, metaclass=SingletonFactory):
 
 
 def get_storage():
-    """return current storage
+    """Return current storage
 
     This is a wrapper around the Storage Singleton object to provide
     better error message when it is used without being initialized.
@@ -133,7 +133,7 @@ def get_storage():
 
     Note
     ----
-    To initialize the underlying storage you mist call `Storage(...)`
+    To initialize the underlying storage you must first call `Storage(...)`
     with the appropriate arguments for the chosen backend
 
     """
