@@ -895,9 +895,7 @@ def test_broken_property(hacked_exp):
     """Check experiment stopping conditions for maximum number of broken."""
     assert not hacked_exp.is_broken
     trials = hacked_exp.fetch_trials({})[:3]
-
-    query = {'experiment': hacked_exp.id}
-
+    
     for trial in trials:
         get_storage().update_trial(trial, status='broken')
 
