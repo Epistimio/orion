@@ -270,7 +270,7 @@ class ExperimentBuilder(object):
         return experiment
 
     def setup_database(self, config):
-        """"Create the storage instance from a configuration.
+        """Create the storage instance from a configuration.
 
         Note
         ----
