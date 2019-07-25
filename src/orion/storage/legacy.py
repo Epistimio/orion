@@ -15,19 +15,46 @@ from orion.core.worker.trial import Trial
 from orion.storage.base import BaseStorageProtocol
 
 
+def setup_database(config):
+    """Create the Database instance from a configuration.
+
+    Parameters
+    ----------
+    config: dict
+        Configuration for the database.
+
+    """
+    db_opts = config['database']
+    dbtype = db_opts.pop('type')
+
+    if config.get("debug"):
+        dbtype = "EphemeralDB"
+
+    log.debug("Creating %s database client with args: %s", dbtype, db_opts)
+    try:
+        Database(of_type=dbtype, **db_opts)
+    except ValueError:
+        if Database().__class__.__name__.lower() != dbtype.lower():
+            raise
+
+
 class Legacy(BaseStorageProtocol):
     """Legacy protocol, store all experiments and trials inside the Database()
 
     Parameters
     ----------
-    uri: str
-        database uri specifying how to connect to the database
-        the uri follows the following format
-        `mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[database][?options]]`
+    config: Dict
+        configuration definition passed from experiment_builder to storage factory to legacy constructor
+
+    kwargs: Dict
+        Storage additional args
 
     """
 
-    def __init__(self, uri=None):
+    def __init__(self, config=None, **kwargs):
+        if config is not None:
+            setup_database(config)
+
         self._db = Database()
         self._setup_db()
 
