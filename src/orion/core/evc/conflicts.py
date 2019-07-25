@@ -1564,8 +1564,8 @@ class ExperimentNameConflict(Conflict):
             super(ExperimentNameConflict.ExperimentNameResolution, self).__init__(conflict)
 
             self.new_name = new_name
-            self.old_name = self.conflict.new_config['name']
-            self.old_version = self.conflict.new_config['version']
+            self.old_name = self.conflict.old_config['name']
+            self.old_version = self.conflict.old_config.get('version', 1)
             self.new_version = self.old_version
             self.validate(new_name)
             self.conflict.new_config['name'] = new_name
