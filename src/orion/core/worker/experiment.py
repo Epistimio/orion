@@ -790,7 +790,7 @@ class ExperimentView(object):
         #             "Experiment object. This is likely due to a backward incompatible update in "
         #             "Oríon. Please report to https://github.com/epistimio/orion/issues.") from e
         #     raise
-        self._experiment._storage = ReadOnlyStorageProtocol(self._experiment._storage)
+        self._experiment._storage = ReadOnlyStorageProtocol(get_storage())
 
     def __getattr__(self, name):
         """Get attribute only if valid"""

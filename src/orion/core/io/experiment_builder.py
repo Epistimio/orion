@@ -278,7 +278,7 @@ class ExperimentBuilder(object):
             Configuration for the database.
 
         """
-        db_opts = config.get('protocol', 'legacy')
+        db_opts = config.get('protocol', {'type': 'legacy'})
         dbtype = db_opts.pop('type')
 
         log.debug("Creating %s database client with args: %s", dbtype, db_opts)
