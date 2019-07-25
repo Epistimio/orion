@@ -58,7 +58,7 @@ class Legacy(BaseStorageProtocol):
         where['_id'] = experiment._id
         return self._db.write('experiments', data=kwargs, query=where)
 
-    def fetch_experiments(self, query):
+    def fetch_experiments(self, query, selection=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_experiments`"""
         return self._db.read('experiments', query)
 

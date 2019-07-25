@@ -44,7 +44,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """
         raise NotImplementedError()
 
-    def fetch_experiments(self, query):
+    def fetch_experiments(self, query, *args, **kwargs):
         """Fetch all experiments that match the query"""
         raise NotImplementedError()
 
