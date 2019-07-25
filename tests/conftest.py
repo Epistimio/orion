@@ -13,6 +13,7 @@ from orion.core.io import resolve_config
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.worker.trial import Trial
+from orion.storage.base import Storage
 
 
 class DumbAlgo(BaseAlgorithm):
@@ -195,11 +196,21 @@ def version_XYZ(monkeypatch):
 def create_db_instance(null_db_instances, clean_db):
     """Create and save a singleton database instance."""
     try:
-        db = Database(of_type='MongoDB', name='orion_test',
-                      username='user', password='pass')
+        db = Storage(
+            of_type='legacy',
+            config=dict(
+                database=dict(
+                    type='MongoDB',
+                    name='orion_test',
+                    username='user',
+                    password='pass'
+                )
+            )
+         )
     except ValueError:
-        db = Database()
+        db = Storage()
 
+    db = db._db
     return db
 
 
