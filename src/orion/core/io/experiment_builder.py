@@ -90,7 +90,7 @@ import copy
 import logging
 
 from orion.core.io import resolve_config
-from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import NoConfigurationError
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.storage.base import Storage
@@ -268,6 +268,9 @@ class ExperimentBuilder(object):
                 raise NoConfigurationError from ex
 
         return experiment
+
+    def setup_database(self, config):
+        self.setup_protocol(config)
 
     def setup_protocol(self, config):
         """Create the storage instance from a configuration.
