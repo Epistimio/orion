@@ -115,6 +115,12 @@ class Storage(BaseStorageProtocol, metaclass=SingletonFactory):
     >>> Storage('track', uri='file://orion_test.json')
     >>> Storage('legacy', experiment=...)
 
+    Note
+    ----
+    When retrieving an already initialized Storage object you should use `get_storage`.
+    `Storage()` should only be used for initialization purposes as `get_storage`
+    raises more granular error messages.
+
     """
 
     pass

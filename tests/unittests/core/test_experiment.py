@@ -16,7 +16,7 @@ from orion.algo.base import BaseAlgorithm
 from orion.core.io.database import Database, DuplicateKeyError
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
-
+from orion.storage.base import get_storage
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -690,8 +690,10 @@ class TestReserveTrial(object):
         trial = hacked_exp.fetch_trials(exp_query)[0]
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        Database().write('trials', {'status': 'reserved', 'heartbeat': heartbeat},
-                         {'experiment': hacked_exp.id, '_id': trial.id})
+        get_storage().update_trial(trial,
+                                   status='reserved',
+                                   heartbeat=heartbeat,
+                                   where={'experiment': hacked_exp.id})
 
         exp_query['status'] = 'reserved'
         exp_query['_id'] = trial.id
@@ -715,10 +717,15 @@ class TestReserveTrial(object):
 
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        Database().write('trials', {'status': 'reserved', 'heartbeat': heartbeat},
-                         {'experiment': hacked_exp.id, '_id': lost.id})
-        Database().write('trials', {'status': 'reserved', 'heartbeat': random_dt},
-                         {'experiment': hacked_exp.id, '_id': not_lost.id})
+        get_storage().update_trial(lost,
+                                   status='reserved',
+                                   heartbeat=heartbeat,
+                                   where={'experiment': hacked_exp.id})
+
+        get_storage().update_trial(not_lost,
+                                   status='reserved',
+                                   heartbeat=random_dt,
+                                   where={'experiment': hacked_exp.id})
 
         exp_query['status'] = 'reserved'
         exp_query['_id'] = {'$in': [lost.id, not_lost.id]}
@@ -739,8 +746,9 @@ class TestReserveTrial(object):
         trial = hacked_exp.fetch_trials(exp_query)[0]
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        Database().write('trials', {'status': 'interrupted', 'heartbeat': heartbeat},
-                         {'experiment': hacked_exp.id, '_id': trial.id})
+        get_storage().update_trial(trial,
+                                   status='interrupted', heartbeat=heartbeat,
+                                   where={'experiment': hacked_exp.id})
 
         assert hacked_exp.fetch_trials(exp_query)[0].status == 'interrupted'
 
@@ -891,8 +899,7 @@ def test_broken_property(hacked_exp):
     query = {'experiment': hacked_exp.id}
 
     for trial in trials:
-        query['_id'] = trial.id
-        Database().write('trials', {'status': 'broken'}, query)
+        get_storage().update_trial(trial, status='broken')
 
     assert hacked_exp.is_broken
 
