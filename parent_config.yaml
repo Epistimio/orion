@@ -1,4 +1,0 @@
-a: orion~uniform(-10,10)
-argument: value
-b: orion~normal(0,1)
-some_other: test

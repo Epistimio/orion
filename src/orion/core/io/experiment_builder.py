@@ -99,6 +99,7 @@ from orion.storage.base import Storage
 log = logging.getLogger(__name__)
 
 
+# pylint: disable=too-many-public-methods
 class ExperimentBuilder(object):
     """Builder for :class:`orion.core.worker.experiment.Experiment`
     and :class:`orion.core.worker.experiment.ExperimentView`
