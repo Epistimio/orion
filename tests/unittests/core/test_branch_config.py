@@ -830,7 +830,7 @@ class TestAdapters(object):
 
         adapters = branch_builder.create_adapters().adapters
 
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
         assert len(adapters) == 1
         assert isinstance(adapters[0], evc.adapters.DimensionAddition)
 
@@ -843,7 +843,7 @@ class TestAdapters(object):
 
         adapters = branch_builder.create_adapters().adapters
 
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
         assert len(adapters) == 1
         assert isinstance(adapters[0], evc.adapters.DimensionPriorChange)
 
@@ -856,7 +856,7 @@ class TestAdapters(object):
 
         adapters = branch_builder.create_adapters().adapters
 
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
         assert len(adapters) == 1
         assert isinstance(adapters[0], evc.adapters.DimensionDeletion)
 
@@ -869,7 +869,7 @@ class TestAdapters(object):
 
         adapters = branch_builder.create_adapters().adapters
 
-        assert len(conflicts.get_resolved()) == 2
+        assert len(conflicts.get_resolved()) == 3
         assert len(adapters) == 1
         assert isinstance(adapters[0], evc.adapters.DimensionRenaming)
 
@@ -882,7 +882,7 @@ class TestAdapters(object):
 
         adapters = branch_builder.create_adapters().adapters
 
-        assert len(conflicts.get_resolved()) == 3
+        assert len(conflicts.get_resolved()) == 4
         assert len(adapters) == 2
         assert isinstance(adapters[0], evc.adapters.DimensionRenaming)
         assert isinstance(adapters[1], evc.adapters.DimensionPriorChange)
