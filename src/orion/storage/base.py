@@ -98,7 +98,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """
         raise NotImplementedError()
 
-    def retrieve_result(self, trial, **kwargs):
+    def retrieve_result(self, trial, *args, **kwargs):
         """Fetch the result from a given medium (file, db, socket, etc..) for a given trial and
         insert it into the trial object
         """
@@ -145,5 +145,3 @@ class ReadOnlyStorageProtocol(object):
             raise AttributeError("Cannot access attribute %s on ReadOnlyStorageProtocol." % attr)
 
         return getattr(self._storage, attr)
-
-
