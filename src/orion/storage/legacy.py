@@ -8,11 +8,14 @@
    :synopsis: Old Storage implementation
 
 """
+import logging
 
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database
 from orion.core.worker.trial import Trial
 from orion.storage.base import BaseStorageProtocol
+
+log = logging.getLogger(__name__)
 
 
 def setup_database(config):
