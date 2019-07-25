@@ -60,7 +60,7 @@ class Legacy(BaseStorageProtocol):
 
     def fetch_experiments(self, query, selection=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_experiments`"""
-        return self._db.read('experiments', query)
+        return self._db.read('experiments', query, selection)
 
     def fetch_trials(self, query, selection=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
