@@ -270,11 +270,13 @@ class ExperimentBuilder(object):
         return experiment
 
     def setup_database(self, config):
-        """Setup storage protocol
+        """"Create the storage instance from a configuration.
 
         Note
         ----
-        Deprecated API, but it is still used heavily in unittests see `setup_protocol`"""
+        Deprecated API, but it is still used heavily in unittests see `setup_protocol`
+
+        """
         self.setup_protocol(config)
 
     def setup_protocol(self, config):
