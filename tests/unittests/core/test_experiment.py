@@ -462,9 +462,21 @@ class TestConfigProperty(object):
         assert naughty_little_exp._init_done is True
         assert exp._init_done is False
         assert (experiment_count_before + 1) == count_experiment(exp)
+
+        from orion.storage.base import get_storage
+        exps = get_storage().fetch_experiments(None)
+        print('insert', new_config['name'])
+        for i, e in enumerate(exps):
+            print(i, '=>>', e['name'], e['metadata']['user'], e['version'])
+
         # First experiment won't be able to be configured
         with pytest.raises(DuplicateKeyError) as exc_info:
             exp.configure(new_config)
+
+        exps = get_storage().fetch_experiments(None)
+        for i, e in enumerate(exps):
+            print(i, '=>>', e['name'], e['metadata']['user'], e['version'])
+
         assert 'duplicate key error' in str(exc_info.value)
 
         assert (experiment_count_before + 1) == count_experiment(exp)

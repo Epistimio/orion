@@ -553,6 +553,7 @@ class Experiment:
             considered as done. But it can be called only once.
 
         """
+        log.debug('configuring (name: %s)', config['name'])
         if self._init_done:
             raise RuntimeError("Configuration is done; cannot reset an Experiment.")
 
@@ -599,6 +600,8 @@ class Experiment:
 
         # If everything is alright, push new config to database
         if is_new:
+            log.debug('inserting new experiment (name: %s)', config['name'])
+
             final_config['metadata']['datetime'] = datetime.datetime.utcnow()
             self.metadata['datetime'] = final_config['metadata']['datetime']
             # This will raise DuplicateKeyError if a concurrent experiment with
@@ -612,6 +615,7 @@ class Experiment:
 
             # Update refers in db if experiment is root
             if self.refers['parent_id'] is None:
+                log.debug('update refers (name: %s)', config['name'])
                 self.refers['root_id'] = self._id
                 self._storage.update_experiment(self, refers=self.refers)
 
@@ -621,6 +625,8 @@ class Experiment:
             # To avoid this `final_config["name"]` is popped out before
             # `db.write()`, thus seamingly breaking  the compound index
             # `(name, metadata.user)`
+            log.debug('updating experiment (name: %s)', config['name'])
+
             final_config.pop("name")
             self._storage.update_experiment(self, **final_config)
 

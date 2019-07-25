@@ -47,7 +47,8 @@ class Legacy(BaseStorageProtocol):
     Parameters
     ----------
     config: Dict
-        configuration definition passed from experiment_builder to storage factory to legacy constructor
+        configuration definition passed from experiment_builder
+        to storage factory to legacy constructor
 
     kwargs: Dict
         Storage additional args
@@ -78,7 +79,7 @@ class Legacy(BaseStorageProtocol):
 
     def create_experiment(self, config):
         """See :func:`~orion.storage.BaseStorageProtocol.create_experiment`"""
-        return self._db.write('experiments', config)
+        return self._db.write('experiments', data=config, query=None)
 
     def update_experiment(self, experiment, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
