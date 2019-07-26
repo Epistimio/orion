@@ -51,7 +51,8 @@ class SingletonType(type):
             try:
                 cls.instance = super(SingletonType, cls).__call__(*args, **kwargs)
             except TypeError:
-                raise TypeError('No singleton instance of (type: {}) was created'.format(cls.__name__))
+                raise TypeError('No singleton instance of (type: {}) was created'
+                                .format(cls.__name__))
         elif args or kwargs:
             raise ValueError("A singleton instance of (type: {}) has already been instantiated."
                              .format(cls.__name__))
