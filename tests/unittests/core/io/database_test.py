@@ -8,6 +8,7 @@ from orion.core.io.database import Database, ReadOnlyDB
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.utils import SingletonAlreadyInstantiatedError, SingletonNotInstantiatedError
 
+
 @pytest.mark.usefixtures("null_db_instances")
 class TestDatabaseFactory(object):
     """Test the creation of a determinate `Database` type, by a complete spefication

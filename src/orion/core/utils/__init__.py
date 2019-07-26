@@ -39,8 +39,12 @@ class SingletonAlreadyInstantiatedError(ValueError):
 
 
 class SingletonNotInstantiatedError(TypeError):
+    """Exception to be raised when someone try to access an instance
+    of a singleton that has not been instantiated yet
+    """
+
     def __init__(self, name):
-        """Pass the same constant message to ValueError underneath."""
+        """Pass the same constant message to TypeError underneath."""
         super().__init__("A singleton instance of (type: {}) has already been instantiated."
                          .format(name))
 
