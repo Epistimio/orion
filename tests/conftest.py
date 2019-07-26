@@ -172,7 +172,6 @@ def null_db_instances():
     Legacy.instance = None
     Database.instance = None
     MongoDB.instance = None
-    print('Singleton cleaned')
 
 
 @pytest.fixture(scope='function')
@@ -208,7 +207,6 @@ def create_db_instance(null_db_instances, clean_db):
                 'password': 'pass'
             }
         }
-        print('Start')
         db = Storage(of_type='legacy', config=config)
     except ValueError:
         db = Storage()

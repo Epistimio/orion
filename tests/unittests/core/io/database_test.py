@@ -6,7 +6,7 @@ import pytest
 
 from orion.core.io.database import Database, ReadOnlyDB
 from orion.core.io.database.mongodb import MongoDB
-
+from orion.core.utils import SingletonAlreadyInstantiatedError, SingletonNotInstantiatedError
 
 @pytest.mark.usefixtures("null_db_instances")
 class TestDatabaseFactory(object):
@@ -25,17 +25,17 @@ class TestDatabaseFactory(object):
 
         Type indeterminate <-> type abstracted from its property <-> No type
         """
-        with pytest.raises(TypeError) as exc_info:
+        with pytest.raises(SingletonNotInstantiatedError):
             Database()
-        assert 'positional argument' in str(exc_info.value)
 
     def test_notfound_type_first_call(self):
         """Raise when supplying not implemented wrapper name."""
         with pytest.raises(NotImplementedError) as exc_info:
             Database('notfound')
+
         assert 'AbstractDB' in str(exc_info.value)
 
-    def test_instatiation_and_singleton(self):
+    def test_instantiation_and_singleton(self):
         """Test create just one object, that object persists between calls."""
         database = Database(of_type='MongoDB', name='orion_test',
                             username='user', password='pass')
@@ -43,9 +43,9 @@ class TestDatabaseFactory(object):
         assert isinstance(database, MongoDB)
         assert database is MongoDB()
         assert database is Database()
-        with pytest.raises(ValueError) as exc_info:
+
+        with pytest.raises(SingletonAlreadyInstantiatedError):
             Database('fire', [], {'it_matters': 'it\'s singleton'})
-        assert 'singleton' in str(exc_info.value)
 
 
 @pytest.mark.usefixtures("null_db_instances", "clean_db")

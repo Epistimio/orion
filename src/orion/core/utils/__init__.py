@@ -27,14 +27,22 @@ def nesteddict():
     return defaultdict(nesteddict)
 
 
-class SingletonError(ValueError):
+class SingletonAlreadyInstantiatedError(ValueError):
     """Exception to be raised when someone provides arguments to build
     an object from a already-instantiated `SingletonType` class.
     """
 
-    def __init__(self):
+    def __init__(self, name):
         """Pass the same constant message to ValueError underneath."""
-        super().__init__("A singleton instance has already been instantiated.")
+        super().__init__('No singleton instance of (type: {}) was created'
+                         .format(name))
+
+
+class SingletonNotInstantiatedError(TypeError):
+    def __init__(self, name):
+        """Pass the same constant message to ValueError underneath."""
+        super().__init__("A singleton instance of (type: {}) has already been instantiated."
+                         .format(name))
 
 
 class SingletonType(type):
@@ -51,11 +59,11 @@ class SingletonType(type):
             try:
                 cls.instance = super(SingletonType, cls).__call__(*args, **kwargs)
             except TypeError:
-                raise TypeError('No singleton instance of (type: {}) was created'
-                                .format(cls.__name__))
+                raise SingletonNotInstantiatedError(cls.__name__)
+
         elif args or kwargs:
-            raise ValueError("A singleton instance of (type: {}) has already been instantiated."
-                             .format(cls.__name__))
+            raise SingletonAlreadyInstantiatedError(cls.__name__)
+
         return cls.instance
 
 
