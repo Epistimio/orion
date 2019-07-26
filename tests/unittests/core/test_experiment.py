@@ -465,10 +465,17 @@ class TestConfigProperty(object):
 
         from orion.storage.base import get_storage
         exps = get_storage().fetch_experiments(None)
+
         print('insert', new_config['name'])
         for i, e in enumerate(exps):
             print(i, '=>>', e['name'], e['metadata']['user'], e['version'])
 
+        import pprint
+        print('-' * 80)
+        pprint.pprint(new_config)
+        print('-' * 80)
+        pprint.pprint(naughty_little_exp)
+        print('-' * 80)
         # First experiment won't be able to be configured
         with pytest.raises(DuplicateKeyError) as exc_info:
             exp.configure(new_config)

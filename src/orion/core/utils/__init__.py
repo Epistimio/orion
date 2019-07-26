@@ -48,9 +48,13 @@ class SingletonType(type):
     def __call__(cls, *args, **kwargs):
         """Create an object if does not already exist, otherwise return what there is."""
         if cls.instance is None:
-            cls.instance = super(SingletonType, cls).__call__(*args, **kwargs)
+            try:
+                cls.instance = super(SingletonType, cls).__call__(*args, **kwargs)
+            except TypeError:
+                raise TypeError('No singleton instance of (type: {}) was created'.format(cls.__name__))
         elif args or kwargs:
-            raise ValueError("A singleton instance has already been instantiated.")
+            raise ValueError("A singleton instance of (type: {}) has already been instantiated."
+                             .format(cls.__name__))
         return cls.instance
 
 
