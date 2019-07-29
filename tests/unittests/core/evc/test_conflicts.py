@@ -360,14 +360,12 @@ class TestExperimentNameConflict(object):
         assert resolution.conflict is experiment_name_conflict
         assert resolution.new_name == new_name
 
-    def test_branch_w_existing_exp(self, exp_no_child_conflict, database):
+    def test_branch_w_existing_exp(self, existing_exp_conflict):
         """Test branching when an existing experiment with the new name already exists"""
-        database.write('experiments', {'name:': 'dummy'})
-
         with pytest.raises(ValueError) as exc:
-            exp_no_child_conflict.try_resolve("dummy")
+            existing_exp_conflict.try_resolve("dummy")
 
-        assert "Cannot" in str(exc)
+        assert "Cannot" in str(exc.value)
 
     def test_conflict_exp_no_child(self, exp_no_child_conflict):
         """Verify the version number is incremented when exp has no child."""
@@ -395,7 +393,7 @@ class TestExperimentNameConflict(object):
         with pytest.raises(ValueError) as exc:
             exp_w_child_as_parent_conflict.try_resolve(new_name)
 
-        assert "Experiment name" in str(exc)
+        assert "Experiment name" in str(exc.value)
 
     def test_conflict_exp_renamed(self, exp_w_child_as_parent_conflict):
         """Verify the version number is not incremented when exp is renamed."""
@@ -536,14 +534,15 @@ class TestConflicts(object):
             conflicts.deprecate(["dummy object"])
         assert "'dummy object' is not in list" in str(exc.value)
 
-    def test_try_resolve_silence_errors(self, capsys, experiment_name_conflict, conflicts):
+    def test_try_resolve_silence_errors(self, capsys, code_conflict, conflicts):
         """Verify try_resolve errors are silenced"""
-        conflicts.try_resolve(experiment_name_conflict)
+        conflicts.try_resolve(code_conflict)
         out, err = capsys.readouterr()
         assert (out.split("\n")[-3] ==
-                "ValueError: No new name provided. Cannot resolve experiment name conflict.")
+                "ValueError: Invalid code change type 'None'. Should be one of "
+                "['noeffect', 'break', 'unsure']")
 
-        conflicts.try_resolve(experiment_name_conflict, silence_errors=True)
+        conflicts.try_resolve(code_conflict, silence_errors=True)
         out, err = capsys.readouterr()
         assert out == ''
 
