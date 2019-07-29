@@ -49,3 +49,11 @@ def exp_w_child_as_parent_conflict(create_db_instance, parent_config, child_conf
     create_db_instance.write('experiments', parent_config)
     create_db_instance.write('experiments', child_config)
     return conflicts.ExperimentNameConflict(parent_config, parent_config)
+
+
+@pytest.fixture
+def existing_exp_conflict(create_db_instance, parent_config):
+    """Generate an experiment name conflict"""
+    create_db_instance.write('experiments', parent_config)
+    create_db_instance.write('experiments', {'name': 'dummy', 'metadata': {'user': 'corneauf'}})
+    return conflicts.ExperimentNameConflict(parent_config, parent_config)

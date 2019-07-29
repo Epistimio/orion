@@ -425,15 +425,15 @@ class TestResolutions(object):
         branch_builder = ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 1
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 0
 
         conflict = conflicts.get([ExperimentNameConflict])[0]
 
-        conflict.new_config['name'] = 'should-not-be-overwritten'
+        conflict.old_config['name'] = 'should-not-be-overwritten'
         assert not conflict.is_resolved
         branch_builder.change_experiment_name('test')
         assert len(conflicts.get_resolved()) == 0
-        assert conflict.new_config['name'] == 'should-not-be-overwritten'
+        assert conflict.old_config['name'] == 'should-not-be-overwritten'
         assert not conflict.is_resolved
 
     def test_algo_change(self, parent_config, changed_algo_config):
@@ -742,17 +742,6 @@ class TestResolutionsWithMarkers(object):
         assert conflict.resolution.new_name == new_name
         assert conflict.new_config['name'] == new_name
         assert conflict.is_resolved
-
-    def test_bad_name_experiment(self, parent_config, child_config, create_db_instance):
-        """Test if experiment name conflict is not resolved when invalid name is marked"""
-        new_name = 'test'
-        create_db_instance.write('experiments', parent_config)
-
-        conflicts = detect_conflicts(parent_config, child_config)
-        ExperimentBranchBuilder(conflicts, {'branch': new_name})
-
-        assert len(conflicts.get()) == 1
-        assert len(conflicts.get_resolved()) == 0
 
     def test_code_change(self, parent_config, changed_code_config):
         """Test if code conflict is resolved automatically"""
