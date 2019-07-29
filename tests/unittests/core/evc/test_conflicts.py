@@ -360,6 +360,15 @@ class TestExperimentNameConflict(object):
         assert resolution.conflict is experiment_name_conflict
         assert resolution.new_name == new_name
 
+    def test_branch_w_existing_exp(self, exp_no_child_conflict, database):
+        """Test branching when an existing experiment with the new name already exists"""
+        database.write('experiments', {'name:': 'dummy'})
+
+        with pytest.raises(ValueError) as exc:
+            exp_no_child_conflict.try_resolve("dummy")
+
+        assert "Cannot" in str(exc)
+
     def test_conflict_exp_no_child(self, exp_no_child_conflict):
         """Verify the version number is incremented when exp has no child."""
         new_name = "test"
@@ -371,7 +380,7 @@ class TestExperimentNameConflict(object):
         assert resolution.new_version == 2
 
     def test_conflict_exp_w_child(self, exp_w_child_conflict):
-        """Verify the version number is incremented when exp has a child."""
+        """Verify the version number is incremented from child when exp has a child."""
         new_name = "test"
         assert not exp_w_child_conflict.is_resolved
         resolution = exp_w_child_conflict.try_resolve(new_name)
@@ -381,17 +390,16 @@ class TestExperimentNameConflict(object):
         assert resolution.new_version == 3
 
     def test_conflict_exp_w_child_as_parent(self, exp_w_child_as_parent_conflict):
-        """Verify the version number is incremented when exp has a child."""
+        """Verify the version number is incremented from child when exp has a child."""
         new_name = "test"
-        assert not exp_w_child_as_parent_conflict.is_resolved
-        resolution = exp_w_child_as_parent_conflict.try_resolve(new_name)
-        assert isinstance(resolution, exp_w_child_as_parent_conflict.ExperimentNameResolution)
-        assert exp_w_child_as_parent_conflict.is_resolved
-        assert resolution.conflict is exp_w_child_as_parent_conflict
-        assert resolution.new_version == 3
+        with pytest.raises(ValueError) as exc:
+            exp_w_child_as_parent_conflict.try_resolve(new_name)
+
+        assert "Experiment name" in str(exc)
 
     def test_conflict_exp_renamed(self, exp_w_child_as_parent_conflict):
         """Verify the version number is not incremented when exp is renamed."""
+        # It increments from child
         new_name = "test2"
         assert not exp_w_child_as_parent_conflict.is_resolved
         resolution = exp_w_child_as_parent_conflict.try_resolve(new_name)

@@ -425,7 +425,7 @@ class TestResolutions(object):
         branch_builder = ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 1
-        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts.get_resolved()) == 1
 
         conflict = conflicts.get([ExperimentNameConflict])[0]
 

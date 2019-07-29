@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Common fixtures and utils for evc unit-tests."""
+import copy
 
 import pytest
 
@@ -7,7 +8,7 @@ from orion.core.evc import conflicts
 
 
 @pytest.fixture
-def parent_new_config():
+def parent_config():
     """Generate a new experiment configuration"""
     return dict(
         _id='test',
@@ -17,52 +18,34 @@ def parent_new_config():
 
 
 @pytest.fixture
-def parent_old_config(create_db_instance):
-    """Generate an old experiment configuration"""
-    config = dict(
-        _id='test',
-        name='test',
-        metadata={'user': 'corneauf'},
-        version=1)
+def child_config(parent_config):
+    """Generate a new experiment configuration"""
+    config = copy.deepcopy(parent_config)
+    config['_id'] = "test2"
+    config['refers'] = {'parent_id': 'test'}
+    config['version'] = 2
 
-    create_db_instance.write('experiments', config)
     return config
 
 
 @pytest.fixture
-def child_new_config(parent_new_config):
-    """Generate a new experiment configuration"""
-    parent_new_config['_id'] = "test2"
-    parent_new_config['refers'] = {'parent_id': 'test'}
-    parent_new_config['version'] = 2
-
-    return parent_new_config
-
-
-@pytest.fixture
-def child_old_config(create_db_instance, parent_old_config):
-    """Generate an old experiment configuration"""
-    parent_old_config['_id'] = "test2"
-    parent_old_config['refers'] = {'parent_id': 'test'}
-    parent_old_config['version'] = 2
-
-    create_db_instance.write('experiments', parent_old_config)
-    return parent_old_config
-
-
-@pytest.fixture
-def exp_no_child_conflict(parent_old_config, parent_new_config):
+def exp_no_child_conflict(create_db_instance, parent_config):
     """Generate an experiment name conflict"""
-    return conflicts.ExperimentNameConflict(parent_old_config, parent_new_config)
+    create_db_instance.write('experiments', parent_config)
+    return conflicts.ExperimentNameConflict(parent_config, parent_config)
 
 
 @pytest.fixture
-def exp_w_child_conflict(child_old_config, child_new_config):
+def exp_w_child_conflict(create_db_instance, parent_config, child_config):
     """Generate an experiment name conflict"""
-    return conflicts.ExperimentNameConflict(child_old_config, child_new_config)
+    create_db_instance.write('experiments', parent_config)
+    create_db_instance.write('experiments', child_config)
+    return conflicts.ExperimentNameConflict(child_config, child_config)
 
 
 @pytest.fixture
-def exp_w_child_as_parent_conflict(child_old_config, parent_new_config, parent_old_config):
+def exp_w_child_as_parent_conflict(create_db_instance, parent_config, child_config):
     """Generate an experiment name conflict"""
-    return conflicts.ExperimentNameConflict(parent_old_config, parent_new_config)
+    create_db_instance.write('experiments', parent_config)
+    create_db_instance.write('experiments', child_config)
+    return conflicts.ExperimentNameConflict(parent_config, parent_config)
