@@ -48,14 +48,12 @@ class Legacy(BaseStorageProtocol):
     ----------
     config: Dict
         configuration definition passed from experiment_builder
-        to storage factory to legacy constructor
-
-    kwargs: Dict
-        Storage additional args
+        to storage factory to legacy constructor.
+        See `~orion.io.database.Database` for more details
 
     """
 
-    def __init__(self, config=None, **kwargs):
+    def __init__(self, config=None):
         if config is not None:
             setup_database(config)
 

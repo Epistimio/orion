@@ -159,8 +159,6 @@ def new_config(random_dt):
 
 def assert_protocol(exp, create_db_instance):
     """Transitional method to move away from mongodb"""
-    print(exp._storage._db)
-    print(create_db_instance)
     assert exp._storage._db is create_db_instance
 
 
@@ -463,26 +461,9 @@ class TestConfigProperty(object):
         assert exp._init_done is False
         assert (experiment_count_before + 1) == count_experiment(exp)
 
-        from orion.storage.base import get_storage
-        exps = get_storage().fetch_experiments(None)
-
-        print('insert', new_config['name'])
-        for i, e in enumerate(exps):
-            print(i, '=>>', e['name'], e['metadata']['user'], e['version'])
-
-        import pprint
-        print('-' * 80)
-        pprint.pprint(new_config)
-        print('-' * 80)
-        pprint.pprint(naughty_little_exp)
-        print('-' * 80)
         # First experiment won't be able to be configured
         with pytest.raises(DuplicateKeyError) as exc_info:
             exp.configure(new_config)
-
-        exps = get_storage().fetch_experiments(None)
-        for i, e in enumerate(exps):
-            print(i, '=>>', e['name'], e['metadata']['user'], e['version'])
 
         assert 'duplicate key error' in str(exc_info.value)
 

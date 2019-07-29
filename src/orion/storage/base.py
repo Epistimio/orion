@@ -44,7 +44,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """
         raise NotImplementedError()
 
-    def fetch_experiments(self, query, *args, **kwargs):
+    def fetch_experiments(self, query, selection=None):
         """Fetch all experiments that match the query"""
         raise NotImplementedError()
 
@@ -73,7 +73,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """Select a pending trial and reserve it for the worker"""
         raise NotImplementedError()
 
-    def fetch_trials(self, query, *args, **kwargs):
+    def fetch_trials(self, query, selection=None):
         """Fetch all the trials that match the query"""
         raise NotImplementedError()
 
@@ -115,8 +115,8 @@ class Storage(BaseStorageProtocol, metaclass=SingletonFactory):
     >>> Storage('track', uri='file://orion_test.json')
     >>> Storage('legacy', experiment=...)
 
-    Note
-    ----
+    Notes
+    -----
     When retrieving an already initialized Storage object you should use `get_storage`.
     `Storage()` should only be used for initialization purposes as `get_storage`
     raises more granular error messages.
@@ -134,19 +134,19 @@ def get_storage():
 
     Raises
     ------
-    raises RuntimeError if the underlying storage
-    was not initialized prior to calling this function.
+    RuntimeError
+        If the underlying storage was not initialized prior to calling this function
 
-    Note
-    ----
+    Notes
+    -----
     To initialize the underlying storage you must first call `Storage(...)`
     with the appropriate arguments for the chosen backend
 
     """
     try:
         return Storage()
-    except TypeError:
-        raise RuntimeError('Singleton `Storage` was not initialized!')
+    except TypeError as exception:
+        raise RuntimeError('Singleton `Storage` was not initialized!') from exception
 
 
 # pylint: disable=too-few-public-methods

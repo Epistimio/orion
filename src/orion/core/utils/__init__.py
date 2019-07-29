@@ -62,8 +62,8 @@ class SingletonType(type):
         if cls.instance is None:
             try:
                 cls.instance = super(SingletonType, cls).__call__(*args, **kwargs)
-            except TypeError:
-                raise SingletonNotInstantiatedError(cls.__name__)
+            except TypeError as exception:
+                raise SingletonNotInstantiatedError(cls.__name__) from exception
 
         elif args or kwargs:
             raise SingletonAlreadyInstantiatedError(cls.__name__)

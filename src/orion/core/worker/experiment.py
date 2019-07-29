@@ -32,7 +32,7 @@ from orion.storage.base import get_storage, ReadOnlyStorageProtocol
 log = logging.getLogger(__name__)
 
 
-# pylint: disable=too-many-public-methods,no-self-use
+# pylint: disable=too-many-public-methods
 class Experiment:
     """Represents an entry in database/experiments collection.
 

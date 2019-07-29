@@ -47,7 +47,7 @@ def main(args):
     """Fetch config and status experiments"""
     builder = ExperimentBuilder()
     local_config = builder.fetch_full_config(args, use_db=False)
-    builder.setup_database(local_config)
+    builder.setup_storage(local_config)
 
     experiments = get_experiments(args)
 

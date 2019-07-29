@@ -33,7 +33,7 @@ def main(args):
     """List all experiments inside database."""
     builder = ExperimentBuilder()
     config = builder.fetch_full_config(args, use_db=False)
-    builder.setup_database(config)
+    builder.setup_storage(config)
 
     query = {}
 

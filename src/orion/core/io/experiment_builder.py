@@ -204,7 +204,7 @@ class ExperimentBuilder(object):
         """
         local_config = self.fetch_full_config(cmdargs, use_db=False)
 
-        self.setup_protocol(local_config)
+        self.setup_storage(local_config)
 
         # Information should be enough to infer experiment's name.
         exp_name = local_config['name']
@@ -270,17 +270,7 @@ class ExperimentBuilder(object):
 
         return experiment
 
-    def setup_database(self, config):
-        """Create the storage instance from a configuration.
-
-        Note
-        ----
-        Deprecated API, but it is still used heavily in unittests see `setup_protocol`
-
-        """
-        self.setup_protocol(config)
-
-    def setup_protocol(self, config):
+    def setup_storage(self, config):
         """Create the storage instance from a configuration.
 
         Parameters
@@ -289,6 +279,7 @@ class ExperimentBuilder(object):
             Configuration for the database.
 
         """
+        # TODO: Fix this in config refactoring
         db_opts = config.get('protocol', {'type': 'legacy'})
         dbtype = db_opts.pop('type')
 
