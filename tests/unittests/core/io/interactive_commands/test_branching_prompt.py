@@ -64,6 +64,14 @@ def conflicts(new_dimension_conflict, new_cat_dimension_conflict,
 
 
 @pytest.fixture
+def conflicts_exp_name(conflicts, failing_exp_name_conflict, experiment_name_conflict):
+    """Return a list of conflicts with an ExperimentNameConflict that fails."""
+    conflicts.deprecate([experiment_name_conflict])
+    conflicts.register(failing_exp_name_conflict)
+    return conflicts
+
+
+@pytest.fixture
 def branch_builder(conflicts):
     """Generate the experiment branch builder"""
     return ExperimentBranchBuilder(conflicts, {})
@@ -432,14 +440,13 @@ class TestCommands(object):
         branch_solver_prompt.do_name("new-name")
         assert len(conflicts.get_resolved()) == 1
 
-    @pytest.mark.skip(reason="Reinstate once --version has been added.")
-    def test_set_experiment_bad_name(self, capsys, conflicts, branch_solver_prompt):
+    def test_set_experiment_bad_name(self, capsys, conflicts_exp_name, branch_solver_prompt):
         """Verify error message when attempting experiment name resolution with bad name"""
-        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts_exp_name.get_resolved()) == 0
         branch_solver_prompt.do_name("test")
         out, err = capsys.readouterr()
         assert "Experiment name 'test' already exist for user" in out
-        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts_exp_name.get_resolved()) == 0
 
     def test_set_experiment_name_twice(self, capsys, conflicts, branch_solver_prompt):
         """Verify that error message is given trying to solve twice the same conflict"""
