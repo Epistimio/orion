@@ -441,7 +441,7 @@ class TestResolutions(object):
 
         conflict = conflicts.get([ExperimentNameConflict])[0]
 
-        conflict.old_config['name'] = 'should-not-be-overwritten'
+        conflict.new_config['name'] = 'should-not-be-overwritten'
         assert not conflict.is_resolved
         branch_builder.change_experiment_name('test')
         assert len(conflicts.get_resolved()) == 0
