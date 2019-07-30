@@ -375,6 +375,7 @@ class TestExperimentNameConflict(object):
         assert isinstance(resolution, exp_no_child_conflict.ExperimentNameResolution)
         assert exp_no_child_conflict.is_resolved
         assert resolution.conflict is exp_no_child_conflict
+        assert resolution.old_version == 1
         assert resolution.new_version == 2
 
     def test_conflict_exp_w_child(self, exp_w_child_conflict):
@@ -388,22 +389,23 @@ class TestExperimentNameConflict(object):
         assert resolution.new_version == 3
 
     def test_conflict_exp_w_child_as_parent(self, exp_w_child_as_parent_conflict):
-        """Verify the version number is incremented from child when exp has a child."""
+        """Verify that an error is raised when trying to branch from parent."""
         new_name = "test"
         with pytest.raises(ValueError) as exc:
             exp_w_child_as_parent_conflict.try_resolve(new_name)
 
         assert "Experiment name" in str(exc.value)
 
-    def test_conflict_exp_renamed(self, exp_w_child_as_parent_conflict):
+    def test_conflict_exp_renamed(self, exp_w_child_conflict):
         """Verify the version number is not incremented when exp is renamed."""
         # It increments from child
         new_name = "test2"
-        assert not exp_w_child_as_parent_conflict.is_resolved
-        resolution = exp_w_child_as_parent_conflict.try_resolve(new_name)
-        assert isinstance(resolution, exp_w_child_as_parent_conflict.ExperimentNameResolution)
-        assert exp_w_child_as_parent_conflict.is_resolved
-        assert resolution.conflict is exp_w_child_as_parent_conflict
+        assert not exp_w_child_conflict.is_resolved
+        resolution = exp_w_child_conflict.try_resolve(new_name)
+        assert isinstance(resolution, exp_w_child_conflict.ExperimentNameResolution)
+        assert exp_w_child_conflict.is_resolved
+        assert resolution.conflict is exp_w_child_conflict
+        assert resolution.old_version == 2
         assert resolution.new_version == 1
 
     def test_repr(self, experiment_name_conflict):
