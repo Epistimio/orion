@@ -91,7 +91,7 @@ class Experiment:
                  '_node', '_storage')
     non_branching_attrs = ('pool_size', 'max_trials')
 
-    def __init__(self, name, user=None):
+    def __init__(self, name, user=None, version=None):
         """Initialize an Experiment object with primary key (:attr:`name`, :attr:`user`).
 
         Try to find an entry in `Database` with such a key and config this object
@@ -131,10 +131,22 @@ class Experiment:
                       name, user)
 
             if len(config) > 1:
-                version = max(map(lambda exp: exp['version'], config))
+                max_version = max(map(lambda exp: exp['version'], config))
+
+                if version is None:
+                    self.version = max_version
+                else:
+                    self.version = version
+
+                if self.version > max_version:
+                    log.warning("Version %s was specified but most recent version is only %s. "
+                                "Using %s.", self.version, max_version, max_version)
+
+                self.version = min(self.version, max_version)
+
                 log.info("Many versions for experiment %s have been found. Using latest\
-                          version %s.", name, version)
-                config = filter(lambda exp: exp['version'] == version, config)
+                          version %s.", name, self.version)
+                config = filter(lambda exp: exp['version'] == self.version, config)
 
             config = sorted(config, key=lambda x: x['metadata']['datetime'],
                             reverse=True)[0]
