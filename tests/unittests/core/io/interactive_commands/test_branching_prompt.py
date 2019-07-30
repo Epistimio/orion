@@ -466,14 +466,13 @@ class TestCommands(object):
         branch_solver_prompt.do_reset("'{}'".format(str(conflicts.get_resolved()[0].resolution)))
         assert len(conflicts.get_resolved()) == 0
 
-    @pytest.mark.skip(reason="Fix once --version is introduced")
-    def test_commit_wont_quit_if_not_solved(self, conflicts, branch_solver_prompt):
+    def test_commit_wont_quit_if_not_solved(self, conflicts_exp_name, branch_solver_prompt):
         """Verify that commit will not quit if some conflicts are not resolved"""
-        assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
+        assert len(conflicts_exp_name.get_resolved()) == 0
+        assert len(conflicts_exp_name.get()) == 11
         branch_solver_prompt.do_auto("")
-        assert len(conflicts.get()) == 11
-        assert len(conflicts.get_resolved()) == 7
+        assert len(conflicts_exp_name.get()) == 11
+        assert len(conflicts_exp_name.get_resolved()) == 8
 
         assert branch_solver_prompt.do_commit("") is False
 
