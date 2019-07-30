@@ -157,6 +157,28 @@ def new_config(random_dt):
     return new_config
 
 
+@pytest.fixture
+def parent_version_config():
+    """Return a configuration for an experiment."""
+    return dict(_id='parent_config',
+                name="old_experiment",
+                version=1,
+                algorithms='random',
+                metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow()}
+                )
+
+
+@pytest.fixture
+def child_version_config(parent_version_config):
+    """Return a configuration for an experiment."""
+    config = copy.deepcopy(parent_version_config)
+    config['_id'] = 'child_config'
+    config['version'] = 2
+    config['refers'] = {'parent_id': 'parent_config'}
+    config['metadata']['datetime'] = datetime.datetime.utcnow()
+    return config
+
+
 def assert_protocol(exp, create_db_instance):
     """Transitional method to move away from mongodb"""
     assert exp._storage._db is create_db_instance
@@ -230,6 +252,43 @@ class TestInitExperiment(object):
         assert exp.version == 1
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
+
+    def test_new_experiment_wout_version(self, create_db_instance):
+        """Create a new and never-seen-before experiment without a version."""
+        exp = Experiment("exp_wout_version")
+        assert exp.version == 1
+
+    def test_new_experiment_w_version(self, create_db_instance):
+        """Create a new and never-seen-before experiment with a version."""
+        exp = Experiment("exp_wout_version", version=1)
+        assert exp.version == 1
+
+    def test_old_experiment_wout_version(self, create_db_instance, parent_version_config,
+                                         child_version_config):
+        """Create an already existing experiment without a version."""
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf")
+        assert exp.version == 2
+
+    def test_old_experiment_w_version(self, create_db_instance, parent_version_config,
+                                      child_version_config):
+        """Create an already existing experiment with a version."""
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf", version=1)
+        assert exp.version == 1
+
+    def test_old_experiment_w_version_bigger_than_max(self, create_db_instance,
+                                                      parent_version_config, child_version_config):
+        """Create an already existing experiment without a version."""
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf", version=8)
+        assert exp.version == 2
 
 
 @pytest.mark.usefixtures("create_db_instance", "with_user_tsirif")
