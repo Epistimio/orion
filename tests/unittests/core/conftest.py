@@ -315,3 +315,25 @@ def config_conflict(old_config, new_config):
 def experiment_name_conflict(old_config, new_config):
     """Generate an experiment name conflict"""
     return conflicts.ExperimentNameConflict(old_config, new_config)
+
+
+@pytest.fixture
+def bad_exp_parent_config():
+    """Generate a new experiment configuration"""
+    return dict(
+        _id='test',
+        name='test',
+        metadata={'user': 'corneauf', 'user_args': ['--x~normal(0,1)']},
+        version=1,
+        algorithms='random')
+
+
+@pytest.fixture
+def bad_exp_child_config(bad_exp_parent_config):
+    """Generate a new experiment configuration"""
+    config = copy.deepcopy(bad_exp_parent_config)
+    config['_id'] = "test2"
+    config['refers'] = {'parent_id': 'test'}
+    config['version'] = 2
+
+    return config
