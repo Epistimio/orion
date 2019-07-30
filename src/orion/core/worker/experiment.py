@@ -125,6 +125,7 @@ class Experiment:
         self._storage = get_storage()
 
         config = self._storage.fetch_experiments({'name': name, 'metadata.user': user})
+        print(config)
 
         if config:
             log.debug("Found existing experiment, %s, under user, %s, registered in database.",
