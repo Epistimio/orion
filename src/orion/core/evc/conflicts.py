@@ -1589,8 +1589,9 @@ class ExperimentNameConflict(Conflict):
             # the version of the experiment.
             elif self._check_for_children():
                 raise ValueError(
-                    "Experiment name \'{0}\' already exist for user \'{1}\'".format(
-                        self.new_name, self.conflict.username))
+                    "Experiment name \'{0}\' already exist for user \'{1}\' and has children. "
+                    "Version cannot be auto-incremented and a new name is required for branching."
+                    .format(self.new_name, self.conflict.username))
             else:
                 self.new_name = self.old_name
                 self.new_version = self.conflict.old_config['version'] + 1
@@ -1605,7 +1606,6 @@ class ExperimentNameConflict(Conflict):
         def _check_for_children(self):
             """Check if experiment has children"""
             # If we made it this far, new_name is actually the name of the parent.
-            query = {'name': self.new_name, 'metadata.user': self.conflict.username}
             parent = self.conflict.old_config
 
             query = {'refers.parent_id': parent['_id']}
