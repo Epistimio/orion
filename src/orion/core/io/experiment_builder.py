@@ -213,7 +213,10 @@ class ExperimentBuilder(object):
                                "Please use either `name` cmd line arg or provide "
                                "one in orion's configuration file.")
 
-        return ExperimentView(local_config["name"], local_config.get('user', None))
+        name = local_config['name']
+        user = local_config.get('user', None)
+        version = local_config.get('version', None)
+        return ExperimentView(name, user=user, version=version)
 
     def build_from(self, cmdargs):
         """Build a fully configured (and writable) experiment based on full configuration.
@@ -259,7 +262,8 @@ class ExperimentBuilder(object):
         config.pop('database', None)
         config.pop('resources', None)
 
-        experiment = Experiment(config['name'], config.get('user', None))
+        experiment = Experiment(config['name'], config.get('user', None),
+                                config.get('version', None))
 
         # Finish experiment's configuration and write it to database.
         try:
