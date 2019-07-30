@@ -408,12 +408,24 @@ class TestResolutions(object):
         assert isinstance(conflict, NewDimensionConflict)
         assert len(conflicts.get_resolved()) == 0
 
-    @pytest.mark.skip(reason="Reinstate once --version has been added.")
-    def test_name_experiment(self, parent_config, child_config, create_db_instance):
+    def test_name_experiment(self, bad_exp_parent_config, bad_exp_child_config, create_db_instance):
         """Test if having the same experiment name does not create a conflict."""
-        conflicts = detect_conflicts(parent_config, child_config)
+        create_db_instance.write('experiments', bad_exp_parent_config)
+        create_db_instance.write('experiments', bad_exp_child_config)
+        conflicts = detect_conflicts(bad_exp_parent_config, bad_exp_parent_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
 
-        assert len(conflicts.get()) == 0
+        assert len(conflicts.get()) == 1
+        assert len(conflicts.get_resolved()) == 0
+
+        conflict = conflicts.get([ExperimentNameConflict])[0]
+
+        assert conflict.new_config['name'] == 'test'
+        assert not conflict.is_resolved
+        branch_builder.change_experiment_name('test2')
+        assert len(conflicts.get_resolved()) == 1
+        assert conflict.new_config['name'] == 'test2'
+        assert conflict.is_resolved
 
     def test_bad_name_experiment(self, parent_config, child_config, create_db_instance):
         """Test if changing the experiment names does not work for invalid name and revert
@@ -433,7 +445,7 @@ class TestResolutions(object):
         assert not conflict.is_resolved
         branch_builder.change_experiment_name('test')
         assert len(conflicts.get_resolved()) == 0
-        assert conflict.old_config['name'] == 'should-not-be-overwritten'
+        assert conflict.new_config['name'] == 'should-not-be-overwritten'
         assert not conflict.is_resolved
 
     def test_algo_change(self, parent_config, changed_algo_config):
@@ -726,7 +738,6 @@ class TestResolutionsWithMarkers(object):
         assert resolved_conflicts[0].resolution.conflict.dimension.name == '/x'
         assert resolved_conflicts[0].resolution.new_dimension_conflict.dimension.name == '/w_b'
 
-    @pytest.mark.skip(reason="Reinstate this test once --version is added.")
     def test_name_experiment(self, parent_config, child_config, create_db_instance):
         """Test if experiment name conflict is automatically resolved"""
         new_name = 'test2'
