@@ -38,7 +38,7 @@ class ExperimentBranchBuilder:
         Initialize the ExperimentBranchBuilder by populating a list of the conflicts inside
         the two configurations.
         """
-        self.auto_resolution = branching_configuration.pop('auto_resolution', False)
+        self.manual_resolution = branching_configuration.pop('manual_resolution', False)
         self.conflicts = conflicts
         self.conflicting_config.update(branching_configuration)
         self.resolve_conflicts()
@@ -54,7 +54,7 @@ class ExperimentBranchBuilder:
         return self.conflicts.get()[0].new_config
 
     def resolve_conflicts(self, silence_errors=True):
-        """Automatically resolve conflicts if auto-resolution is True or resolutions are marked."""
+        """Automatically resolve conflicts unless manual-resolution is True."""
         ith_conflict = 0
 
         while ith_conflict < len(self.conflicts.get()):
@@ -66,7 +66,7 @@ class ExperimentBranchBuilder:
                 conflict, silence_errors=silence_errors,
                 **conflict.get_marked_arguments(self.conflicts))
 
-            if resolution and not (self.auto_resolution or resolution.is_marked):
+            if resolution and self.manual_resolution:
                 self.conflicts.revert(resolution)
 
             ith_conflict += 1

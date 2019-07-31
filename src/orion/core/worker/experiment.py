@@ -703,7 +703,7 @@ class Experiment:
         experiment_brancher = ExperimentBranchBuilder(conflicts, branching_configuration)
 
         needs_manual_resolution = (not experiment_brancher.is_resolved or
-                                   experiment_brancher.auto_resolution)
+                                   experiment_brancher.manual_resolution)
 
         if needs_manual_resolution:
             branching_prompt = BranchingPrompt(experiment_brancher)
