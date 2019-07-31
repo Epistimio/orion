@@ -294,7 +294,7 @@ class TestResolutions(object):
         branch_builder.add_dimension('w_d')
 
         assert len(conflicts.get()) == 3
-        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+        assert conflicts.get([ExperimentNameConflict])[0].is_resolved
         assert conflicts.get([NewDimensionConflict])[0].is_resolved
         assert not conflicts.get([MissingDimensionConflict])[0].is_resolved
 
@@ -305,9 +305,9 @@ class TestResolutions(object):
         branch_builder.add_dimension('w_d')
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
-        conflict = conflicts.get_resolved()[0]
+        conflict = conflicts.get_resolved()[1]
 
         assert conflict.is_resolved
         assert isinstance(conflict.resolution, conflict.AddDimensionResolution)
@@ -319,7 +319,7 @@ class TestResolutions(object):
         branch_builder.add_dimension('y')
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
         conflict = conflicts.get_resolved()[0]
 
@@ -333,9 +333,9 @@ class TestResolutions(object):
         branch_builder.remove_dimension('x')
 
         assert len(conflicts.get()) == 3
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
-        conflict = conflicts.get_resolved()[0]
+        conflict = conflicts.get_resolved()[1]
 
         assert conflict.is_resolved
         assert isinstance(conflict.resolution, conflict.RemoveDimensionResolution)
@@ -349,18 +349,18 @@ class TestResolutions(object):
 
         assert len(conflicts.get()) == 4
 
-        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+        assert conflicts.get([ExperimentNameConflict])[0].is_resolved
         assert conflicts.get([NewDimensionConflict])[0].is_resolved
         assert conflicts.get([MissingDimensionConflict])[0].is_resolved
         assert not conflicts.get([MissingDimensionConflict])[1].is_resolved
 
         resolved_conflicts = conflicts.get_resolved()
-        assert len(resolved_conflicts) == 2
-        assert resolved_conflicts[0].resolution is resolved_conflicts[1].resolution
-        assert isinstance(resolved_conflicts[0].resolution,
-                          resolved_conflicts[0].RenameDimensionResolution)
-        assert resolved_conflicts[0].resolution.conflict.dimension.name == '/x'
-        assert resolved_conflicts[0].resolution.new_dimension_conflict.dimension.name == '/w_d'
+        assert len(resolved_conflicts) == 3
+        assert resolved_conflicts[1].resolution is resolved_conflicts[2].resolution
+        assert isinstance(resolved_conflicts[1].resolution,
+                          resolved_conflicts[1].RenameDimensionResolution)
+        assert resolved_conflicts[1].resolution.conflict.dimension.name == '/x'
+        assert resolved_conflicts[1].resolution.new_dimension_conflict.dimension.name == '/w_d'
 
     def test_rename_missing_changed(self, parent_config, missing_config):
         """Test if renaming a dimension to another with different prior solves both conflicts but
@@ -376,19 +376,19 @@ class TestResolutions(object):
 
         assert len(conflicts.get()) == 5
 
-        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+        assert conflicts.get([ExperimentNameConflict])[0].is_resolved
         assert conflicts.get([NewDimensionConflict])[0].is_resolved
         assert conflicts.get([MissingDimensionConflict])[0].is_resolved
         assert not conflicts.get([MissingDimensionConflict])[1].is_resolved
         assert not conflicts.get([ChangedDimensionConflict])[0].is_resolved
 
         resolved_conflicts = conflicts.get_resolved()
-        assert len(resolved_conflicts) == 2
-        assert resolved_conflicts[0].resolution is resolved_conflicts[1].resolution
-        assert isinstance(resolved_conflicts[0].resolution,
-                          resolved_conflicts[0].RenameDimensionResolution)
-        assert resolved_conflicts[0].resolution.conflict.dimension.name == '/x'
-        assert resolved_conflicts[0].resolution.new_dimension_conflict.dimension.name == '/w_d'
+        assert len(resolved_conflicts) == 3
+        assert resolved_conflicts[1].resolution is resolved_conflicts[2].resolution
+        assert isinstance(resolved_conflicts[1].resolution,
+                          resolved_conflicts[1].RenameDimensionResolution)
+        assert resolved_conflicts[1].resolution.conflict.dimension.name == '/x'
+        assert resolved_conflicts[1].resolution.new_dimension_conflict.dimension.name == '/w_d'
 
     def test_reset_dimension(self, parent_config, new_config):
         """Test if resetting a dimension unsolves the conflict"""
@@ -396,12 +396,12 @@ class TestResolutions(object):
         branch_builder = ExperimentBranchBuilder(conflicts, {})
 
         branch_builder.add_dimension('w_d')
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
         with pytest.raises(ValueError) as exc:
             branch_builder.reset('w_d~+')
         assert "'w_d~+' is not in list" in str(exc.value)
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
         branch_builder.reset('w_d~+norm(0, 1)')
 
@@ -411,7 +411,7 @@ class TestResolutions(object):
 
         assert not conflict.is_resolved
         assert isinstance(conflict, NewDimensionConflict)
-        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts.get_resolved()) == 1
 
     def test_name_experiment(self, bad_exp_parent_config, bad_exp_child_config, create_db_instance):
         """Test if having the same experiment name does not create a conflict."""
@@ -439,8 +439,13 @@ class TestResolutions(object):
         def _is_unique(self, *args, **kwargs):
             return False
 
+        def _children(self, *args, **kwargs):
+            return True
+
         monkeypatch.setattr(ExperimentNameConflict.ExperimentNameResolution, "_name_is_unique",
                             _is_unique)
+        monkeypatch.setattr(ExperimentNameConflict.ExperimentNameResolution, "_check_for_children",
+                            _children)
 
         conflicts = detect_conflicts(parent_config, child_config)
         branch_builder = ExperimentBranchBuilder(conflicts, {})
@@ -462,12 +467,12 @@ class TestResolutions(object):
         branch_builder = ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts.get_resolved()) == 1
 
         branch_builder.set_algo()
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
         conflict = conflicts.get_resolved()[0]
 
@@ -480,12 +485,12 @@ class TestResolutions(object):
         branch_builder = ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts.get_resolved()) == 1
 
         branch_builder.set_code_change_type(evc.adapters.CodeChange.types[0])
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
         conflict = conflicts.get_resolved()[0]
         assert conflict.is_resolved
@@ -501,7 +506,7 @@ class TestResolutions(object):
         assert 'Invalid code change type' in out.split("\n")[-3]
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts.get_resolved()) == 1
 
     def test_config_change(self, parent_config, changed_userconfig_config):
         """Test if giving a proper change-type solves the user script config conflict"""
@@ -509,14 +514,14 @@ class TestResolutions(object):
         branch_builder = ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 4
-        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts.get_resolved()) == 1
 
         branch_builder.set_script_config_change_type(evc.adapters.ScriptConfigChange.types[0])
 
         assert len(conflicts.get()) == 4
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
-        conflict = conflicts.get_resolved()[0]
+        conflict = conflicts.get_resolved()[1]
         assert conflict.is_resolved
         assert isinstance(conflict, ScriptConfigConflict)
 
@@ -530,7 +535,7 @@ class TestResolutions(object):
         assert 'Invalid script\'s config change type' in out.split("\n")[-3]
 
         assert len(conflicts.get()) == 4
-        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts.get_resolved()) == 1
 
     @pytest.mark.skip(reason='Args defined with \'=\' are not supported currently.')
     def test_cli_change(self, parent_config, changed_cli_config):
@@ -539,14 +544,14 @@ class TestResolutions(object):
         branch_builder = ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts.get_resolved()) == 1
 
         branch_builder.set_cli_change_type(evc.adapters.CommandLineChange.types[0])
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
-        conflict = conflicts.get_resolved()[0]
+        conflict = conflicts.get_resolved()[1]
         assert conflict.is_resolved
         assert isinstance(conflict, CommandLineConflict)
 
@@ -561,7 +566,7 @@ class TestResolutions(object):
         assert 'Invalid cli change type' in out.split("\n")[-3]
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts.get_resolved()) == 1
 
 
 class TestResolutionsWithMarkers(object):
@@ -574,9 +579,9 @@ class TestResolutionsWithMarkers(object):
         ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
-        conflict = conflicts.get_resolved()[0]
+        conflict = conflicts.get_resolved()[1]
 
         assert conflict.is_resolved
         assert isinstance(conflict.resolution, conflict.AddDimensionResolution)
@@ -588,9 +593,9 @@ class TestResolutionsWithMarkers(object):
         ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
-        conflict = conflicts.get_resolved()[0]
+        conflict = conflicts.get_resolved()[1]
 
         assert conflict.is_resolved
         assert isinstance(conflict.resolution, conflict.AddDimensionResolution)
@@ -611,9 +616,9 @@ class TestResolutionsWithMarkers(object):
         ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
-        conflict = conflicts.get_resolved()[0]
+        conflict = conflicts.get_resolved()[1]
 
         assert conflict.is_resolved
         assert isinstance(conflict.resolution, conflict.ChangeDimensionResolution)
@@ -625,9 +630,9 @@ class TestResolutionsWithMarkers(object):
         ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
-        conflict = conflicts.get_resolved()[0]
+        conflict = conflicts.get_resolved()[1]
 
         assert conflict.is_resolved
         assert isinstance(conflict.resolution, conflict.RemoveDimensionResolution)
@@ -639,9 +644,9 @@ class TestResolutionsWithMarkers(object):
         ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
-        conflict = conflicts.get_resolved()[0]
+        conflict = conflicts.get_resolved()[1]
 
         assert conflict.is_resolved
         assert isinstance(conflict.resolution, conflict.RemoveDimensionResolution)
@@ -654,7 +659,7 @@ class TestResolutionsWithMarkers(object):
         ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts.get_resolved()) == 1
 
         conflict = conflicts.get()[1]
 
@@ -671,18 +676,18 @@ class TestResolutionsWithMarkers(object):
 
         assert len(conflicts.get()) == 4
 
-        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+        assert conflicts.get([ExperimentNameConflict])[0].is_resolved
         assert conflicts.get(dimension_name='x')[0].is_resolved
         assert conflicts.get(dimension_name='w_a')[0].is_resolved
         assert not conflicts.get(dimension_name='w_b')[0].is_resolved
 
         resolved_conflicts = conflicts.get_resolved()
-        assert len(resolved_conflicts) == 2
-        assert resolved_conflicts[0].resolution is resolved_conflicts[1].resolution
-        assert isinstance(resolved_conflicts[0].resolution,
-                          resolved_conflicts[0].RenameDimensionResolution)
-        assert resolved_conflicts[0].resolution.conflict.dimension.name == '/x'
-        assert resolved_conflicts[0].resolution.new_dimension_conflict.dimension.name == '/w_a'
+        assert len(resolved_conflicts) == 3
+        assert resolved_conflicts[1].resolution is resolved_conflicts[2].resolution
+        assert isinstance(resolved_conflicts[1].resolution,
+                          resolved_conflicts[1].RenameDimensionResolution)
+        assert resolved_conflicts[1].resolution.conflict.dimension.name == '/x'
+        assert resolved_conflicts[1].resolution.new_dimension_conflict.dimension.name == '/w_a'
 
     def test_rename_invalid(self, parent_config, child_config):
         """Test if renaming to invalid dimension raises an error"""
@@ -706,19 +711,19 @@ class TestResolutionsWithMarkers(object):
 
         assert len(conflicts.get()) == 5
 
-        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+        assert conflicts.get([ExperimentNameConflict])[0].is_resolved
         assert conflicts.get(dimension_name='x')[0].is_resolved
         assert conflicts.get([NewDimensionConflict], dimension_name='w_b')[0].is_resolved
         assert not conflicts.get([ChangedDimensionConflict], dimension_name='w_b')[0].is_resolved
         assert not conflicts.get(dimension_name='w_a')[0].is_resolved
 
         resolved_conflicts = conflicts.get_resolved()
-        assert len(resolved_conflicts) == 2
-        assert resolved_conflicts[0].resolution is resolved_conflicts[1].resolution
-        assert isinstance(resolved_conflicts[0].resolution,
-                          resolved_conflicts[0].RenameDimensionResolution)
-        assert resolved_conflicts[0].resolution.conflict.dimension.name == '/x'
-        assert resolved_conflicts[0].resolution.new_dimension_conflict.dimension.name == '/w_b'
+        assert len(resolved_conflicts) == 3
+        assert resolved_conflicts[1].resolution is resolved_conflicts[2].resolution
+        assert isinstance(resolved_conflicts[1].resolution,
+                          resolved_conflicts[1].RenameDimensionResolution)
+        assert resolved_conflicts[1].resolution.conflict.dimension.name == '/x'
+        assert resolved_conflicts[1].resolution.new_dimension_conflict.dimension.name == '/w_b'
 
     def test_rename_missing_changed_marked(self, parent_config, child_config):
         """Test if renaming is automatically applied with all conflicts resolved including
@@ -732,19 +737,19 @@ class TestResolutionsWithMarkers(object):
 
         assert len(conflicts.get()) == 5
 
-        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+        assert conflicts.get([ExperimentNameConflict])[0].is_resolved
         assert conflicts.get(dimension_name='x')[0].is_resolved
         assert conflicts.get([NewDimensionConflict], dimension_name='w_b')[0].is_resolved
         assert conflicts.get([ChangedDimensionConflict], dimension_name='w_b')[0].is_resolved
         assert not conflicts.get(dimension_name='w_a')[0].is_resolved
 
         resolved_conflicts = conflicts.get_resolved()
-        assert len(resolved_conflicts) == 3
-        assert resolved_conflicts[0].resolution is resolved_conflicts[1].resolution
-        assert isinstance(resolved_conflicts[0].resolution,
-                          resolved_conflicts[0].RenameDimensionResolution)
-        assert resolved_conflicts[0].resolution.conflict.dimension.name == '/x'
-        assert resolved_conflicts[0].resolution.new_dimension_conflict.dimension.name == '/w_b'
+        assert len(resolved_conflicts) == 4
+        assert resolved_conflicts[1].resolution is resolved_conflicts[2].resolution
+        assert isinstance(resolved_conflicts[1].resolution,
+                          resolved_conflicts[1].RenameDimensionResolution)
+        assert resolved_conflicts[1].resolution.conflict.dimension.name == '/x'
+        assert resolved_conflicts[1].resolution.new_dimension_conflict.dimension.name == '/w_b'
 
     def test_name_experiment(self, parent_config, child_config, create_db_instance):
         """Test if experiment name conflict is automatically resolved"""
@@ -784,7 +789,7 @@ class TestResolutionsWithMarkers(object):
         ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
         conflict = conflicts.get_resolved()[0]
 
@@ -799,7 +804,7 @@ class TestResolutionsWithMarkers(object):
         ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
         conflict = conflicts.get_resolved()[0]
 
@@ -814,9 +819,9 @@ class TestResolutionsWithMarkers(object):
         ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 4
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
-        conflict = conflicts.get_resolved()[0]
+        conflict = conflicts.get_resolved()[1]
 
         assert conflict.is_resolved
         assert isinstance(conflict.resolution, conflict.ScriptConfigResolution)
@@ -831,7 +836,7 @@ class TestResolutionsWithMarkers(object):
         ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 2
-        assert len(conflicts.get_resolved()) == 1
+        assert len(conflicts.get_resolved()) == 2
 
         conflict = conflicts.get_resolved()[0]
 
