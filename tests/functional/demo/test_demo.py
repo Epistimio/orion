@@ -12,44 +12,9 @@ import pytest
 import yaml
 
 import orion.core.cli
-from orion.core.io.database import Database
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
-from orion.storage.base import get_storage, Storage
-
-PICKLE_DB_HARDCODED = 'unittests.pkl'
-
-
-def remove(db):
-    """Remove a file if it exists else do nothing"""
-    try:
-        os.remove(db)
-    except FileNotFoundError:
-        pass
-
-
-@pytest.fixture()
-def storage(storage_type='legacy'):
-    """Returns test storage"""
-    try:
-        config = {
-            'database': {
-                'type': 'PickledDB',
-                'host': PICKLE_DB_HARDCODED
-            }
-        }
-        db = Storage(storage_type, config=config)
-    except ValueError:
-        db = Storage()
-    return db
-
-
-@pytest.fixture()
-def clean_storage():
-    """Returns a clean storage"""
-    remove(PICKLE_DB_HARDCODED)
-    return storage()
 
 
 @pytest.mark.usefixtures("clean_db")

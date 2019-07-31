@@ -13,7 +13,7 @@ import tempfile
 import pytest
 
 from orion.algo.base import BaseAlgorithm
-from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.io.database import DuplicateKeyError
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
