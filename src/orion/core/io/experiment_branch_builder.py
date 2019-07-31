@@ -66,7 +66,7 @@ class ExperimentBranchBuilder:
                 conflict, silence_errors=silence_errors,
                 **conflict.get_marked_arguments(self.conflicts))
 
-            if resolution and self.manual_resolution:
+            if resolution and (self.manual_resolution and not resolution.is_marked):
                 self.conflicts.revert(resolution)
 
             ith_conflict += 1
