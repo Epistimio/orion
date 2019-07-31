@@ -13,10 +13,10 @@ import tempfile
 import pytest
 
 from orion.algo.base import BaseAlgorithm
-from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.io.database import DuplicateKeyError
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
-
+from orion.storage.base import get_storage
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -460,9 +460,11 @@ class TestConfigProperty(object):
         assert naughty_little_exp._init_done is True
         assert exp._init_done is False
         assert (experiment_count_before + 1) == count_experiment(exp)
+
         # First experiment won't be able to be configured
         with pytest.raises(DuplicateKeyError) as exc_info:
             exp.configure(new_config)
+
         assert 'duplicate key error' in str(exc_info.value)
 
         assert (experiment_count_before + 1) == count_experiment(exp)
@@ -604,13 +606,9 @@ def test_forcing_user(exp_config):
 class TestReserveTrial(object):
     """Calls to interface `Experiment.reserve_trial`."""
 
+    @pytest.mark.usefixtures("create_db_instance")
     def test_reserve_none(self):
         """Find nothing, return None."""
-        try:
-            Database(of_type='MongoDB', name='orion_test',
-                     username='user', password='pass')
-        except (TypeError, ValueError):
-            pass
         exp = Experiment('supernaekei')
         trial = exp.reserve_trial()
         assert trial is None
@@ -676,8 +674,10 @@ class TestReserveTrial(object):
         trial = hacked_exp.fetch_trials(exp_query)[0]
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        Database().write('trials', {'status': 'reserved', 'heartbeat': heartbeat},
-                         {'experiment': hacked_exp.id, '_id': trial.id})
+        get_storage().update_trial(trial,
+                                   status='reserved',
+                                   heartbeat=heartbeat,
+                                   where={'experiment': hacked_exp.id})
 
         exp_query['status'] = 'reserved'
         exp_query['_id'] = trial.id
@@ -701,10 +701,15 @@ class TestReserveTrial(object):
 
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        Database().write('trials', {'status': 'reserved', 'heartbeat': heartbeat},
-                         {'experiment': hacked_exp.id, '_id': lost.id})
-        Database().write('trials', {'status': 'reserved', 'heartbeat': random_dt},
-                         {'experiment': hacked_exp.id, '_id': not_lost.id})
+        get_storage().update_trial(lost,
+                                   status='reserved',
+                                   heartbeat=heartbeat,
+                                   where={'experiment': hacked_exp.id})
+
+        get_storage().update_trial(not_lost,
+                                   status='reserved',
+                                   heartbeat=random_dt,
+                                   where={'experiment': hacked_exp.id})
 
         exp_query['status'] = 'reserved'
         exp_query['_id'] = {'$in': [lost.id, not_lost.id]}
@@ -725,8 +730,9 @@ class TestReserveTrial(object):
         trial = hacked_exp.fetch_trials(exp_query)[0]
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        Database().write('trials', {'status': 'interrupted', 'heartbeat': heartbeat},
-                         {'experiment': hacked_exp.id, '_id': trial.id})
+        get_storage().update_trial(trial,
+                                   status='interrupted', heartbeat=heartbeat,
+                                   where={'experiment': hacked_exp.id})
 
         assert hacked_exp.fetch_trials(exp_query)[0].status == 'interrupted'
 
@@ -874,11 +880,8 @@ def test_broken_property(hacked_exp):
     assert not hacked_exp.is_broken
     trials = hacked_exp.fetch_trials({})[:3]
 
-    query = {'experiment': hacked_exp.id}
-
     for trial in trials:
-        query['_id'] = trial.id
-        Database().write('trials', {'status': 'broken'}, query)
+        get_storage().update_trial(trial, status='broken')
 
     assert hacked_exp.is_broken
 

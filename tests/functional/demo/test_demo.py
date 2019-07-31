@@ -12,7 +12,6 @@ import pytest
 import yaml
 
 import orion.core.cli
-from orion.core.io.database import Database
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
@@ -180,14 +179,9 @@ def test_demo_two_workers(database, monkeypatch):
     assert params[0]['type'] == 'real'
 
 
-@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("create_db_instance")
 def test_workon(database):
     """Test scenario having a configured experiment already setup."""
-    try:
-        Database(of_type='MongoDB', name='orion_test',
-                 username='user', password='pass')
-    except (TypeError, ValueError):
-        pass
     experiment = Experiment('voila_voici')
     config = experiment.configuration
     config['algorithms'] = {

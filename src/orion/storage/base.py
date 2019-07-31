@@ -10,10 +10,10 @@
 
 """
 
-from orion.core.utils import Factory
+from orion.core.utils import (AbstractSingletonType, SingletonFactory)
 
 
-class BaseStorageProtocol:
+class BaseStorageProtocol(metaclass=AbstractSingletonType):
     """Implement a generic protocol to allow Orion to communicate using
     different storage backend
 
@@ -44,7 +44,7 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def fetch_experiments(self, query):
+    def fetch_experiments(self, query, selection=None):
         """Fetch all experiments that match the query"""
         raise NotImplementedError()
 
@@ -73,7 +73,7 @@ class BaseStorageProtocol:
         """Select a pending trial and reserve it for the worker"""
         raise NotImplementedError()
 
-    def fetch_trials(self, query, *args, **kwargs):
+    def fetch_trials(self, query, selection=None):
         """Fetch all the trials that match the query"""
         raise NotImplementedError()
 
@@ -98,7 +98,7 @@ class BaseStorageProtocol:
         """
         raise NotImplementedError()
 
-    def retrieve_result(self, trial, **kwargs):
+    def retrieve_result(self, trial, *args, **kwargs):
         """Fetch the result from a given medium (file, db, socket, etc..) for a given trial and
         insert it into the trial object
         """
@@ -106,18 +106,47 @@ class BaseStorageProtocol:
 
 
 # pylint: disable=too-few-public-methods,abstract-method
-class StorageProtocol(BaseStorageProtocol, metaclass=Factory):
+class Storage(BaseStorageProtocol, metaclass=SingletonFactory):
     """Storage protocol is a generic way of allowing Orion to interface with different storage.
     MongoDB, track, cometML, MLFLow, etc...
 
     Examples
     --------
-    >>> StorageProtocol('track', uri='file://orion_test.json')
-    >>> StorageProtocol('legacy', experiment=...)
+    >>> Storage('track', uri='file://orion_test.json')
+    >>> Storage('legacy', experiment=...)
+
+    Notes
+    -----
+    When retrieving an already initialized Storage object you should use `get_storage`.
+    `Storage()` should only be used for initialization purposes as `get_storage`
+    raises more granular error messages.
 
     """
 
     pass
+
+
+def get_storage():
+    """Return current storage
+
+    This is a wrapper around the Storage Singleton object to provide
+    better error message when it is used without being initialized.
+
+    Raises
+    ------
+    RuntimeError
+        If the underlying storage was not initialized prior to calling this function
+
+    Notes
+    -----
+    To initialize the underlying storage you must first call `Storage(...)`
+    with the appropriate arguments for the chosen backend
+
+    """
+    try:
+        return Storage()
+    except TypeError as exception:
+        raise RuntimeError('Singleton `Storage` was not initialized!') from exception
 
 
 # pylint: disable=too-few-public-methods
