@@ -606,13 +606,9 @@ def test_forcing_user(exp_config):
 class TestReserveTrial(object):
     """Calls to interface `Experiment.reserve_trial`."""
 
+    @pytest.mark.usefixtures("create_db_instance")
     def test_reserve_none(self):
         """Find nothing, return None."""
-        try:
-            Database(of_type='MongoDB', name='orion_test',
-                     username='user', password='pass')
-        except (TypeError, ValueError):
-            pass
         exp = Experiment('supernaekei')
         trial = exp.reserve_trial()
         assert trial is None

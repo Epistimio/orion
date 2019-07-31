@@ -16,6 +16,40 @@ from orion.core.io.database import Database
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
+from orion.storage.base import get_storage, Storage
+
+PICKLE_DB_HARDCODED = 'unittests.pkl'
+
+
+def remove(db):
+    """Remove a file if it exists else do nothing"""
+    try:
+        os.remove(db)
+    except FileNotFoundError:
+        pass
+
+
+@pytest.fixture()
+def storage(storage_type='legacy'):
+    """Returns test storage"""
+    try:
+        config = {
+            'database': {
+                'type': 'PickledDB',
+                'host': PICKLE_DB_HARDCODED
+            }
+        }
+        db = Storage(storage_type, config=config)
+    except ValueError:
+        db = Storage()
+    return db
+
+
+@pytest.fixture()
+def clean_storage():
+    """Returns a clean storage"""
+    remove(PICKLE_DB_HARDCODED)
+    return storage()
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -180,14 +214,10 @@ def test_demo_two_workers(database, monkeypatch):
     assert params[0]['type'] == 'real'
 
 
-@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("create_db_instance")
 def test_workon(database):
     """Test scenario having a configured experiment already setup."""
-    try:
-        Database(of_type='MongoDB', name='orion_test',
-                 username='user', password='pass')
-    except (TypeError, ValueError):
-        pass
+
     experiment = Experiment('voila_voici')
     config = experiment.configuration
     config['algorithms'] = {
