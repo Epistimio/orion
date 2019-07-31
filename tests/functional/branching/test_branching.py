@@ -425,7 +425,8 @@ def test_new_algo_not_resolved(init_full_x):
     with pytest.raises(ValueError) as exc:
         orion.core.cli.main(
             ("init_only -n {name} --branch {branch} --config new_algo_config.yaml "
-             "./black_box.py -x~uniform(-10,10)").format(name=name, branch=branch).split(" "))
+             "--manual-resolution ./black_box.py -x~uniform(-10,10)")
+            .format(name=name, branch=branch).split(" "))
     assert "Configuration is different and generates a branching event" in str(exc.value)
 
 
@@ -466,7 +467,7 @@ def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
     # If autoresolution was not succesfull, this to fail with a sys.exit without registering the
     # experiment
     orion.core.cli.main(
-        ("init_only -n {name} --branch {branch} --auto-resolution ./black_box_with_y.py "
+        ("init_only -n {name} --branch {branch} ./black_box_with_y.py "
          "-x~uniform(0,10) "
          "-w~choices(['a','b'],default_value='a')").format(name=name, branch=branch).split(" "))
     orion.core.cli.main("insert -n {name} script -x=2 -w=b".format(name=branch).split(" "))
