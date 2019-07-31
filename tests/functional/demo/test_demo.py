@@ -29,7 +29,7 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
                          "--max-trials", "30",
                          "./black_box.py", "-x~uniform(-50, 50)"])
 
-    exp = list(database.read('experiments', {'name': 'default_algo'}))
+    exp = list(database.experiments.find({'name': 'default_algo'}))
     assert len(exp) == 1
     exp = exp[0]
     assert '_id' in exp
