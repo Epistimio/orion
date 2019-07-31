@@ -1609,7 +1609,7 @@ class ExperimentNameConflict(Conflict):
             parent = self.conflict.old_config
 
             query = {'refers.parent_id': parent['_id']}
-            children = Database().count('experiments', query)
+            children = len(get_storage().fetch_experiments(query))
 
             return bool(children)
 
