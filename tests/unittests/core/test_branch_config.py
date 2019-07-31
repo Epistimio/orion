@@ -41,8 +41,10 @@ def user_config():
 def parent_config(user_config):
     """Create a configuration that will not hit the database."""
     config = dict(
+        _id='test',
         name='test',
         algorithms='random',
+        version=1,
         metadata={'VCS': {"type": "git",
                           "is_dirty": False,
                           "HEAD_sha": "test",
@@ -52,7 +54,8 @@ def parent_config(user_config):
                   'user_script': 'abs_path/black_box.py',
                   'user_args':
                   ['--nameless=option', '-x~uniform(0,1)', '-y~normal(0,1)', '-z~uniform(0,10)'],
-                  'user': 'some_user_name'})
+                  'user': 'some_user_name'},
+        refers={})
 
     config_file_path = "./parent_config.yaml"
 
@@ -69,6 +72,9 @@ def parent_config(user_config):
 def child_config(parent_config, create_db_instance):
     """Create a child branching from the test experiment"""
     config = copy.deepcopy(parent_config)
+    config['_id'] = 'test2'
+    config['version'] = 2
+    config['refers']['parent_id'] = parent_config['_id']
     return config
 
 
@@ -407,9 +413,11 @@ class TestResolutions(object):
         assert isinstance(conflict, NewDimensionConflict)
         assert len(conflicts.get_resolved()) == 0
 
-    def test_name_experiment(self, parent_config, child_config, create_db_instance):
-        """Test if changing the experiment names work for valid name"""
-        conflicts = detect_conflicts(parent_config, child_config)
+    def test_name_experiment(self, bad_exp_parent_config, bad_exp_child_config, create_db_instance):
+        """Test if having the same experiment name does not create a conflict."""
+        create_db_instance.write('experiments', bad_exp_parent_config)
+        create_db_instance.write('experiments', bad_exp_child_config)
+        conflicts = detect_conflicts(bad_exp_parent_config, bad_exp_parent_config)
         branch_builder = ExperimentBranchBuilder(conflicts, {})
 
         assert len(conflicts.get()) == 1
@@ -424,11 +432,15 @@ class TestResolutions(object):
         assert conflict.new_config['name'] == 'test2'
         assert conflict.is_resolved
 
-    def test_bad_name_experiment(self, parent_config, child_config, create_db_instance):
+    def test_bad_name_experiment(self, parent_config, child_config, monkeypatch):
         """Test if changing the experiment names does not work for invalid name and revert
         to old one
         """
-        create_db_instance.write('experiments', parent_config)
+        def _is_unique(self, *args, **kwargs):
+            return False
+
+        monkeypatch.setattr(ExperimentNameConflict.ExperimentNameResolution, "_name_is_unique",
+                            _is_unique)
 
         conflicts = detect_conflicts(parent_config, child_config)
         branch_builder = ExperimentBranchBuilder(conflicts, {})
@@ -438,11 +450,10 @@ class TestResolutions(object):
 
         conflict = conflicts.get([ExperimentNameConflict])[0]
 
-        conflict.new_config['name'] = 'should-not-be-overwritten'
         assert not conflict.is_resolved
-        branch_builder.change_experiment_name('test')
+        branch_builder.change_experiment_name('test2')
         assert len(conflicts.get_resolved()) == 0
-        assert conflict.new_config['name'] == 'should-not-be-overwritten'
+        assert conflict.new_config['name'] == 'test'
         assert not conflict.is_resolved
 
     def test_algo_change(self, parent_config, changed_algo_config):
@@ -751,13 +762,16 @@ class TestResolutionsWithMarkers(object):
         assert conflict.new_config['name'] == new_name
         assert conflict.is_resolved
 
-    def test_bad_name_experiment(self, parent_config, child_config, create_db_instance):
+    def test_bad_name_experiment(self, parent_config, child_config, monkeypatch):
         """Test if experiment name conflict is not resolved when invalid name is marked"""
-        new_name = 'test'
-        create_db_instance.write('experiments', parent_config)
+        def _is_unique(self, *args, **kwargs):
+            return False
+
+        monkeypatch.setattr(ExperimentNameConflict.ExperimentNameResolution, "_name_is_unique",
+                            _is_unique)
 
         conflicts = detect_conflicts(parent_config, child_config)
-        ExperimentBranchBuilder(conflicts, {'branch': new_name})
+        ExperimentBranchBuilder(conflicts, {'branch': 'test2'})
 
         assert len(conflicts.get()) == 1
         assert len(conflicts.get_resolved()) == 0

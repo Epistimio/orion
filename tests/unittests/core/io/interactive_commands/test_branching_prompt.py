@@ -64,6 +64,14 @@ def conflicts(new_dimension_conflict, new_cat_dimension_conflict,
 
 
 @pytest.fixture
+def conflicts_exp_name(conflicts, failing_exp_name_conflict, experiment_name_conflict):
+    """Return a list of conflicts with an ExperimentNameConflict that fails."""
+    conflicts.deprecate([experiment_name_conflict])
+    conflicts.register(failing_exp_name_conflict)
+    return conflicts
+
+
+@pytest.fixture
 def branch_builder(conflicts):
     """Generate the experiment branch builder"""
     return ExperimentBranchBuilder(conflicts, {})
@@ -432,13 +440,13 @@ class TestCommands(object):
         branch_solver_prompt.do_name("new-name")
         assert len(conflicts.get_resolved()) == 1
 
-    def test_set_experiment_bad_name(self, capsys, conflicts, branch_solver_prompt):
+    def test_set_experiment_bad_name(self, capsys, conflicts_exp_name, branch_solver_prompt):
         """Verify error message when attempting experiment name resolution with bad name"""
-        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts_exp_name.get_resolved()) == 0
         branch_solver_prompt.do_name("test")
         out, err = capsys.readouterr()
         assert "Experiment name 'test' already exist for user" in out
-        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts_exp_name.get_resolved()) == 0
 
     def test_set_experiment_name_twice(self, capsys, conflicts, branch_solver_prompt):
         """Verify that error message is given trying to solve twice the same conflict"""
@@ -458,13 +466,13 @@ class TestCommands(object):
         branch_solver_prompt.do_reset("'{}'".format(str(conflicts.get_resolved()[0].resolution)))
         assert len(conflicts.get_resolved()) == 0
 
-    def test_commit_wont_quit_if_not_solved(self, conflicts, branch_solver_prompt):
+    def test_commit_wont_quit_if_not_solved(self, conflicts_exp_name, branch_solver_prompt):
         """Verify that commit will not quit if some conflicts are not resolved"""
-        assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
+        assert len(conflicts_exp_name.get_resolved()) == 0
+        assert len(conflicts_exp_name.get()) == 11
         branch_solver_prompt.do_auto("")
-        assert len(conflicts.get()) == 11
-        assert len(conflicts.get_resolved()) == 7
+        assert len(conflicts_exp_name.get()) == 11
+        assert len(conflicts_exp_name.get_resolved()) == 8
 
         assert branch_solver_prompt.do_commit("") is False
 
@@ -481,7 +489,7 @@ class TestCommands(object):
         assert len(conflicts.get()) == 11
         branch_solver_prompt.do_auto("")
         assert len(conflicts.get()) == 11
-        assert len(conflicts.get_resolved()) == 7
+        assert len(conflicts.get_resolved()) == 8
 
     def test_reset_many(self, conflicts, branch_solver_prompt):
         """Verify that all resolutions are reverted"""
@@ -489,7 +497,7 @@ class TestCommands(object):
         assert len(conflicts.get()) == 11
         branch_solver_prompt.do_auto("")
         assert len(conflicts.get()) == 11
-        assert len(conflicts.get_resolved()) == 7
+        assert len(conflicts.get_resolved()) == 8
 
         reset_strings = []
         for resolution in conflicts.get_resolutions():
