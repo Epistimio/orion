@@ -12,7 +12,6 @@ import pytest
 import yaml
 
 import orion.core.cli
-
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
@@ -22,7 +21,6 @@ from orion.core.worker.experiment import Experiment
 @pytest.mark.usefixtures("null_db_instances")
 def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     """Check that random algorithm is used, when no algo is chosen explicitly."""
-
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     monkeypatch.setenv('ORION_DB_NAME', 'orion_test')
     monkeypatch.setenv('ORION_DB_ADDRESS', 'mongodb://user:pass@localhost')
@@ -184,7 +182,6 @@ def test_demo_two_workers(database, monkeypatch):
 @pytest.mark.usefixtures("create_db_instance")
 def test_workon(database):
     """Test scenario having a configured experiment already setup."""
-
     experiment = Experiment('voila_voici')
     config = experiment.configuration
     config['algorithms'] = {
