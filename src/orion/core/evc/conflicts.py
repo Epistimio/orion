@@ -1628,3 +1628,10 @@ class ExperimentNameConflict(Conflict):
             configuration file by the user
             """
             return "{0} {1}".format(self.ARGUMENT, self.new_name)
+
+        @property
+        def is_marked(self):
+            """Return True every time since the `--branch` argument is not used when incrementing
+            version of an experiment.
+            """
+            return True
