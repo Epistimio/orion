@@ -12,6 +12,12 @@ from orion.core.evc import adapters
 from orion.core.evc.conflicts import Resolution
 
 
+def _add_auto_resolution_argument(parser):
+    parser.add_argument(
+        "--auto-resolution",
+        help="Deprecated")
+
+
 def _add_manual_resolution_argument(parser):
     parser.add_argument(
         "--manual-resolution",
@@ -54,6 +60,7 @@ def _add_branching_argument(parser, resolution_class):
 
 
 resolution_arguments = {
+    'auto_resolution': _add_auto_resolution_argument,
     'manual_resolution': _add_manual_resolution_argument,
     'algorithm_change': _add_algorithm_argument,
     'code_change_type': _add_code_argument,
@@ -74,6 +81,7 @@ def get_branching_args_group(parser):
         description="Arguments to automatically resolved branching events.")
 
     _add_manual_resolution_argument(branching_args_group)
+    _add_auto_resolution_argument(branching_args_group)
 
     for resolution_class in sorted(Resolution.__subclasses__(), key=lambda cls: cls.__name__):
         if not resolution_class.ARGUMENT:
