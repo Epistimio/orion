@@ -1093,7 +1093,7 @@ class CodeConflict(Conflict):
         old_hash_commit = old_config['metadata'].get('VCS', None)
         new_hash_commit = new_config['metadata'].get('VCS')
 
-        if old_hash_commit is None or old_hash_commit != new_hash_commit:
+        if new_hash_commit and old_hash_commit != new_hash_commit:
             yield cls(old_config, new_config)
 
     def get_marked_arguments(self, conflicts):
@@ -1553,44 +1553,70 @@ class ExperimentNameConflict(Conflict):
                 The conflict which is resolved by this resolution.
             new_name: string
                 A new name for the branching experiment. A ValueError is raised if name is already
-                in database.
+                in database with a direct child.
 
             Raises
             ------
             ValueError
-                If name already exists in database for current user.
+                If name already exists in database with a direct child for current user.
 
             """
             super(ExperimentNameConflict.ExperimentNameResolution, self).__init__(conflict)
 
             self.new_name = new_name
-            self.old_name = self.conflict.new_config['name']
-            self.validate(new_name)
-            self.conflict.new_config['name'] = new_name
+            self.old_name = self.conflict.old_config['name']
+            self.old_version = self.conflict.old_config.get('version', 1)
+            self.new_version = self.old_version
+            self.validate()
+            self.conflict.new_config['name'] = self.new_name
+            self.conflict.new_config['version'] = self.new_version
 
-        def _validate(self, new_name):
-            """Validate new_name is not in database for current user"""
-            if new_name is None:
-                raise ValueError("No new name provided. Cannot resolve experiment name conflict.")
-
+        def _validate(self):
+            """Validate new_name is not in database with a direct child for current user"""
             # TODO: WARNING!!! _name_is_unique could lead to race conditions,
             # The resolution may become invalid before the branching experiment is
             # registered. What should we do in such case?
-            if not self._name_is_unique(new_name):
-                raise ValueError(
-                    "Experiment name \'{0}\' already exist for user \'{1}\'".format(
-                        new_name, self.conflict.username))
+            if self.new_name != self.old_name:
+                # If we are trying to actually branch from experiment
+                if not self._name_is_unique():
+                    raise ValueError(
+                        "Cannot branch from {} with name {} since it already exists.".format(
+                            self.old_name, self.new_name))
+                # Since the name changes, we reset the version count.
+                self.new_version = 1
 
-        def _name_is_unique(self, name):
+            # If the new name is the same as the old name, we are trying to increment
+            # the version of the experiment.
+            elif self._check_for_children():
+                raise ValueError(
+                    "Experiment name \'{0}\' already exist for user \'{1}\' and has children. "
+                    "Version cannot be auto-incremented and a new name is required for branching."
+                    .format(self.new_name, self.conflict.username))
+            else:
+                self.new_name = self.old_name
+                self.new_version = self.conflict.old_config['version'] + 1
+
+        def _name_is_unique(self):
             """Return True if given name is not in database for current user"""
-            query = {'name': name, 'metadata.user': self.conflict.username}
+            query = {'name': self.new_name, 'metadata.user': self.conflict.username}
 
             named_experiments = Database().count('experiments', query)
             return named_experiments == 0
 
+        def _check_for_children(self):
+            """Check if experiment has children"""
+            # If we made it this far, new_name is actually the name of the parent.
+            parent = self.conflict.old_config
+
+            query = {'refers.parent_id': parent['_id']}
+            children = Database().count('experiments', query)
+
+            return bool(children)
+
         def revert(self):
             """Reset conflict set experiment name back to old one in new configuration"""
             self.conflict.new_config['name'] = self.old_name
+            self.conflict.new_config['version'] = self.old_version
             return super(ExperimentNameConflict.ExperimentNameResolution, self).revert()
 
         def get_adapters(self):
