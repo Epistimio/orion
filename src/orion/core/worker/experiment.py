@@ -131,7 +131,7 @@ class Experiment:
                       name, user)
 
             if len(config) > 1:
-                max_version = max(map(lambda exp: exp['version'], config))
+                max_version = max(config, key=lambda exp: exp['version'])
 
                 if version is None:
                     self.version = max_version

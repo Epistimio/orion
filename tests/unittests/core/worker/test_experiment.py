@@ -283,7 +283,7 @@ class TestInitExperiment(object):
 
     def test_old_experiment_w_version_bigger_than_max(self, create_db_instance,
                                                       parent_version_config, child_version_config):
-        """Create an already existing experiment without a version."""
+        """Create an already existing experiment with a too large version."""
         create_db_instance.write('experiments', parent_version_config)
         create_db_instance.write('experiments', child_version_config)
 
