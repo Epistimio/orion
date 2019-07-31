@@ -251,7 +251,7 @@ class BranchingPrompt(cmd.Cmd):
         self.branch_builder.auto_resolution = True
         self.branch_builder.resolve_conflicts()
 
-        self.do_status("")
+        return True
 
     @parse_command
     def do_name(self, options):
