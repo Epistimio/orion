@@ -491,3 +491,43 @@ def test_auto_resolution_forces_prompt(init_full_x_full_y, monkeypatch):
              "-x~uniform(-10,10) "
              "-y~+uniform(-10,10,default_value=1)").format(name=name, branch=branch).split(" "))
     assert "Configuration is different and generates a branching event" in str(exc.value)
+
+
+def test_init_w_version_from_parent_w_children(clean_db, monkeypatch):
+    """Test that init of experiment from version with children fails."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1) "
+                        "-y~+normal(0,1)".split(" "))
+
+    with pytest.raises(ValueError) as exc:
+        orion.core.cli.main("init_only -n experiment -v 1 ./black_box.py "
+                            "-x~normal(0,1) -y~+normal(0,1) -z~normal(0,1)".split(" "))
+
+    assert "Experiment name" in str(exc.value)
+
+
+def test_init_w_version_from_exp_wout_child(clean_db, monkeypatch, database):
+    """Test that init of experiment from version without child works."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1) "
+                        "-y~+normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment -v 2 ./black_box.py "
+                        "-x~normal(0,1) -y~+normal(0,1) -z~+normal(0,1)".split(" "))
+
+    exp = database.experiments.find({'name': 'experiment', 'version': 3})
+    assert len(list(exp))
+
+
+def test_init_w_version_gt_max(clean_db, monkeypatch, database):
+    """Test that init of experiment from version higher than max works."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1) "
+                        "-y~+normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment -v 2000 ./black_box.py "
+                        "-x~normal(0,1) -y~+normal(0,1) -z~+normal(0,1)".split(" "))
+
+    exp = database.experiments.find({'name': 'experiment', 'version': 3})
+    assert len(list(exp))
