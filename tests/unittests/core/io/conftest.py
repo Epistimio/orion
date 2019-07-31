@@ -60,7 +60,7 @@ def child_config(parent_config):
 
 
 @pytest.fixture
-def failing_exp_name_conflict(create_db_instance, parent_config, child_config):
+def experiment_name_conflict(create_db_instance, parent_config, child_config):
     """Generate an experiment name conflict"""
     create_db_instance.write('experiments', parent_config)
     create_db_instance.write('experiments', child_config)
