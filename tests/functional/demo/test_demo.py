@@ -13,114 +13,38 @@ import yaml
 
 import orion.core.cli
 
-from orion.core.io.database import Database
-from orion.core.io.database.mongodb import MongoDB
-from orion.core.io.database.pickleddb import PickledDB
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
-from orion.storage.base import get_storage, Storage
-from orion.storage.legacy import  Legacy
-
-PICKLE_DB_HARDCODED = '/tmp/unittests.pkl'
 
 
-def remove(db):
-    """Remove a file if it exists else do nothing"""
-    try:
-        os.remove(db)
-    except FileNotFoundError:
-        pass
-
-
-class OrionTestState:
-    """Setup global variables and singleton for tests
-
-    it swaps the singleton with none at startup and restore them after the tests.
-    It also initialize PickleDB as the storage for testing.
-    We use PickledDB as our storage mock
-
-    Parameters
-    ----------
-    config: YAML
-        YAML config to apply for this test
-    """
-    SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB)
-    singletons = {}
-
-    def init(self, config):
-        """Initialize environment before testing"""
-        self.storage()
-        return get_storage()._db
-
-    def cleanup(self):
-        """Cleanup after testing"""
-        remove(PICKLE_DB_HARDCODED)
-
-    def __init__(self, config=None):
-        self.config = config
-
-    def __enter__(self):
-        for singleton in self.SINGLETONS:
-            self.new_singleton(singleton)
-
-        return self.init(self.config)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cleanup()
-
-        for obj in self.singletons:
-            self.restore_singleton(obj)
-
-    def new_singleton(self, obj, new_value=None):
-        self.singletons[obj] = obj.instance
-        obj.instance = new_value
-
-    def restore_singleton(self, obj):
-        obj.instance = self.singletons.get(obj)
-
-    def storage(self, storage_type='legacy'):
-        """Returns test storage"""
-        try:
-            config = {
-                'database': {
-                    'type': 'PickledDB',
-                    'host': PICKLE_DB_HARDCODED
-                }
-            }
-            db = Storage(storage_type, config=config)
-
-        except ValueError:
-            db = get_storage()
-        return db
-
-
-def test_demo_with_default_algo_cli_config_only(monkeypatch):
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     """Check that random algorithm is used, when no algo is chosen explicitly."""
 
-    with OrionTestState() as database:
-        monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-        monkeypatch.setenv('ORION_DB_NAME', 'orion_test')
-        monkeypatch.setenv('ORION_DB_ADDRESS', 'mongodb://user:pass@localhost')
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    monkeypatch.setenv('ORION_DB_NAME', 'orion_test')
+    monkeypatch.setenv('ORION_DB_ADDRESS', 'mongodb://user:pass@localhost')
 
-        orion.core.cli.main(["hunt", "-n", "default_algo",
-                             "--max-trials", "30",
-                             "./black_box.py", "-x~uniform(-50, 50)"])
+    orion.core.cli.main(["hunt", "-n", "default_algo",
+                         "--max-trials", "30",
+                         "./black_box.py", "-x~uniform(-50, 50)"])
 
-        exp = list(database.read('experiments', {'name': 'default_algo'}))
-        assert len(exp) == 1
-        exp = exp[0]
-        assert '_id' in exp
-        assert exp['name'] == 'default_algo'
-        assert exp['pool_size'] == 1
-        assert exp['max_trials'] == 30
-        assert exp['algorithms'] == {'random': {'seed': None}}
-        assert 'user' in exp['metadata']
-        assert 'datetime' in exp['metadata']
-        assert 'orion_version' in exp['metadata']
-        assert 'user_script' in exp['metadata']
-        assert os.path.isabs(exp['metadata']['user_script'])
-        assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
+    exp = list(database.read('experiments', {'name': 'default_algo'}))
+    assert len(exp) == 1
+    exp = exp[0]
+    assert '_id' in exp
+    assert exp['name'] == 'default_algo'
+    assert exp['pool_size'] == 1
+    assert exp['max_trials'] == 30
+    assert exp['algorithms'] == {'random': {'seed': None}}
+    assert 'user' in exp['metadata']
+    assert 'datetime' in exp['metadata']
+    assert 'orion_version' in exp['metadata']
+    assert 'user_script' in exp['metadata']
+    assert os.path.isabs(exp['metadata']['user_script'])
+    assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
 
 
 @pytest.mark.usefixtures("clean_db")
