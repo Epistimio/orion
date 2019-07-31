@@ -321,7 +321,7 @@ class TestResolutions(object):
         assert len(conflicts.get()) == 2
         assert len(conflicts.get_resolved()) == 2
 
-        conflict = conflicts.get_resolved()[0]
+        conflict = conflicts.get_resolved()[1]
 
         assert conflict.is_resolved
         assert isinstance(conflict.resolution, conflict.ChangeDimensionResolution)
