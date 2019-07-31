@@ -474,24 +474,22 @@ def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
     orion.core.cli.main("insert -n {name} script -x=1".format(name=branch).split(" "))
 
 
-def test_auto_resolution_forces_prompt(init_full_x_full_y, monkeypatch):
+def test_auto_resolution_not_force_prompt(init_full_x_full_y, monkeypatch):
     """Test that auto-resolution forces prompt"""
     name = "full_x_full_y"
     branch = "new_full_x_full_y"
 
     # No conflict, it does not prompt
     orion.core.cli.main(
-        ("init_only -n {name} --auto-resolution ./black_box.py "
+        ("init_only -n {name} ./black_box.py "
          "-x~uniform(-10,10) "
          "-y~+uniform(-10,10,default_value=1)").format(name=name).split(" "))
 
-    # No conflicts, but forced branching, it forces prompt
-    with pytest.raises(ValueError) as exc:
-        orion.core.cli.main(
-            ("init_only -n {name} --branch {branch} --auto-resolution ./black_box.py "
-             "-x~uniform(-10,10) "
-             "-y~+uniform(-10,10,default_value=1)").format(name=name, branch=branch).split(" "))
-    assert "Configuration is different and generates a branching event" in str(exc.value)
+    # No conflicts, but forced branching, should not force prompt
+    orion.core.cli.main(
+        ("init_only -n {name} --branch {branch} ./black_box.py "
+         "-x~uniform(-10,10) "
+         "-y~+uniform(-10,10,default_value=1)").format(name=name, branch=branch).split(" "))
 
 
 def test_init_w_version_from_parent_w_children(clean_db, monkeypatch):
