@@ -66,7 +66,7 @@ def conflicts(new_dimension_conflict, new_cat_dimension_conflict,
 @pytest.fixture
 def branch_builder(conflicts):
     """Generate the experiment branch builder"""
-    return ExperimentBranchBuilder(conflicts, {})
+    return ExperimentBranchBuilder(conflicts, {'manual_resolution': True})
 
 
 @pytest.fixture
