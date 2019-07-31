@@ -125,7 +125,6 @@ class Experiment:
         self._storage = get_storage()
 
         config = self._storage.fetch_experiments({'name': name, 'metadata.user': user})
-        print(config)
 
         if config:
             log.debug("Found existing experiment, %s, under user, %s, registered in database.",
@@ -595,7 +594,9 @@ class Experiment:
             # will be used when EVC is not available.
             # must_branch = self._is_different_from(experiment.configuration)
             branching_configuration = fetch_branching_configuration(config)
-            conflicts = detect_conflicts(self.configuration, experiment.configuration)
+            configuration = self.configuration
+            configuration['_id'] = self._id
+            conflicts = detect_conflicts(configuration, experiment.configuration)
             must_branch = len(conflicts.get()) > 1 or branching_configuration.get('branch')
             if must_branch and not enable_branching:
                 raise ValueError("Configuration is different and generate a "
@@ -769,7 +770,7 @@ class ExperimentView(object):
                         ["fetch_trials", "fetch_trials_tree", "fetch_completed_trials",
                          "connect_to_version_control_tree"])
 
-    def __init__(self, name, user=None):
+    def __init__(self, name, user=None, version=None):
         """Initialize viewed experiment object with primary key (:attr:`name`, :attr:`user`).
 
         Build an experiment from configuration found in `Database` with a key (name, user).
@@ -782,7 +783,7 @@ class ExperimentView(object):
         :param name: Describe a configuration with a unique identifier per :attr:`user`.
         :type name: str
         """
-        self._experiment = Experiment(name, user)
+        self._experiment = Experiment(name, user, version)
 
         if self._experiment.id is None:
             raise ValueError("No experiment with given name '%s' for user '%s' inside database, "
