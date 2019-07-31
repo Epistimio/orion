@@ -762,6 +762,20 @@ class TestResolutionsWithMarkers(object):
         assert conflict.new_config['name'] == new_name
         assert conflict.is_resolved
 
+    def test_bad_name_experiment(self, parent_config, child_config, monkeypatch):
+        """Test if experiment name conflict is not resolved when invalid name is marked"""
+        def _is_unique(self, *args, **kwargs):
+            return False
+
+        monkeypatch.setattr(ExperimentNameConflict.ExperimentNameResolution, "_name_is_unique",
+                            _is_unique)
+
+        conflicts = detect_conflicts(parent_config, child_config)
+        ExperimentBranchBuilder(conflicts, {'branch': 'test2'})
+
+        assert len(conflicts.get()) == 1
+        assert len(conflicts.get_resolved()) == 0
+
     def test_code_change(self, parent_config, changed_code_config):
         """Test if code conflict is resolved automatically"""
         change_type = evc.adapters.CodeChange.types[0]
