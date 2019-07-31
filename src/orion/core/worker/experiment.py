@@ -27,7 +27,7 @@ from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
                                         Strategy)
-from orion.storage.base import ReadOnlyStorageProtocol, StorageProtocol
+from orion.storage.base import get_storage, ReadOnlyStorageProtocol
 
 log = logging.getLogger(__name__)
 
@@ -107,7 +107,6 @@ class Experiment:
         """
         log.debug("Creating Experiment object with name: %s", name)
         self._init_done = False
-        self._storage = StorageProtocol('legacy')
 
         self._id = None
         self.name = name
@@ -122,6 +121,8 @@ class Experiment:
         self.working_dir = None
         self.producer = {'strategy': None}
         self.version = 1
+        # this needs to be an attribute because we override it in ExperienceView
+        self._storage = get_storage()
 
         config = self._storage.fetch_experiments({'name': name, 'metadata.user': user})
 
@@ -552,6 +553,7 @@ class Experiment:
             considered as done. But it can be called only once.
 
         """
+        log.debug('configuring (name: %s)', config['name'])
         if self._init_done:
             raise RuntimeError("Configuration is done; cannot reset an Experiment.")
 
@@ -610,6 +612,7 @@ class Experiment:
 
             # Update refers in db if experiment is root
             if self.refers['parent_id'] is None:
+                log.debug('update refers (name: %s)', config['name'])
                 self.refers['root_id'] = self._id
                 self._storage.update_experiment(self, refers=self.refers)
 
@@ -619,6 +622,8 @@ class Experiment:
             # To avoid this `final_config["name"]` is popped out before
             # `db.write()`, thus seamingly breaking  the compound index
             # `(name, metadata.user)`
+            log.debug('updating experiment (name: %s)', config['name'])
+
             final_config.pop("name")
             self._storage.update_experiment(self, **final_config)
 
@@ -790,7 +795,7 @@ class ExperimentView(object):
         #             "Experiment object. This is likely due to a backward incompatible update in "
         #             "Oríon. Please report to https://github.com/epistimio/orion/issues.") from e
         #     raise
-        self._experiment._storage = ReadOnlyStorageProtocol(self._experiment._storage)
+        self._experiment._storage = ReadOnlyStorageProtocol(get_storage())
 
     def __getattr__(self, name):
         """Get attribute only if valid"""

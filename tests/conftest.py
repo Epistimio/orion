@@ -13,6 +13,8 @@ from orion.core.io import resolve_config
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.worker.trial import Trial
+from orion.storage.base import Storage
+from orion.storage.legacy import Legacy
 
 
 class DumbAlgo(BaseAlgorithm):
@@ -166,6 +168,8 @@ def clean_db(database, exp_config):
 @pytest.fixture()
 def null_db_instances():
     """Nullify singleton instance so that we can assure independent instantiation tests."""
+    Storage.instance = None
+    Legacy.instance = None
     Database.instance = None
     MongoDB.instance = None
 
@@ -195,11 +199,19 @@ def version_XYZ(monkeypatch):
 def create_db_instance(null_db_instances, clean_db):
     """Create and save a singleton database instance."""
     try:
-        db = Database(of_type='MongoDB', name='orion_test',
-                      username='user', password='pass')
+        config = {
+            'database': {
+                'type': 'MongoDB',
+                'name': 'orion_test',
+                'username': 'user',
+                'password': 'pass'
+            }
+        }
+        db = Storage(of_type='legacy', config=config)
     except ValueError:
-        db = Database()
+        db = Storage()
 
+    db = db._db
     return db
 
 

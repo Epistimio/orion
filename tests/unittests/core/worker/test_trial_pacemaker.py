@@ -6,10 +6,10 @@ import time
 
 import pytest
 
-from orion.core.io.database import Database
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.format_trials import tuple_to_trial
 from orion.core.worker.trial_pacemaker import TrialPacemaker
+from orion.storage.base import get_storage
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def trial(exp):
     trial.status = 'reserved'
     trial.heartbeat = heartbeat
 
-    Database().write('trials', trial.to_dict())
+    get_storage().register_trial(trial)
 
     return trial
 
@@ -75,8 +75,7 @@ def test_trial_heartbeat_not_updated(exp, trial):
 
     assert trial.heartbeat != trials[0].heartbeat
 
-    data = {'status': 'interrupted'}
-    Database().write('trials', data, query=dict(_id=trial.id))
+    get_storage().update_trial(trial, status='interrupted')
 
     time.sleep(2)
 

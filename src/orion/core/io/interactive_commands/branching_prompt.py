@@ -21,8 +21,8 @@ import traceback
 
 from orion.algo.space import Dimension
 from orion.core.evc import adapters, conflicts
-from orion.core.io.database import Database
 from orion.core.utils.diff import green, red
+from orion.storage.base import get_storage
 
 
 readline.set_completer_delims(' ')
@@ -271,7 +271,7 @@ class BranchingPrompt(cmd.Cmd):
         else:
             query = {'refers.root_id': self.branch_builder.experiment_config['refers']['root_id'],
                      'metadata.user': self.branch_builder.experiment_config['metadata']['user']}
-            names = [experiment['name'] for experiment in Database().read('experiments', query)]
+            names = [experiment['name'] for experiment in get_storage().fetch_experiments(query)]
 
         return self._get_completions(names, text)
 
