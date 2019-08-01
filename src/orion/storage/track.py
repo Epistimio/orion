@@ -86,7 +86,7 @@ class TrialAdapter:
 
     objective: str
         objective key
-    
+
     """
 
     def __init__(self, storage_trial, orion_trial=None, objective=None):
@@ -251,6 +251,7 @@ class Track(BaseStorageProtocol):
     uri: str
         Track backend to use for storage; the format is as follow
          `protocol://[username:password@]host1[:port1][,...hostN[:portN]]][/[database][?options]]`
+
     """
 
     def __init__(self, uri):
