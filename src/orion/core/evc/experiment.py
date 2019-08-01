@@ -110,7 +110,11 @@ class ExperimentNode(TreeNode):
             self._no_children_lookup = False
             query = {'refers.parent_id': self.item.id}
             selection = {'name': 1, 'version': 1}
+<<<<<<< HEAD
             experiments = get_storage().fetch_experiments(query, selection)
+=======
+            experiments = Database().read('experiments', query, selection=selection)
+>>>>>>> Fix bug where info was stuck in a recursive loop
             for child in experiments:
                 self.add_children(ExperimentNode(name=child['name'], version=child['version']))
 
