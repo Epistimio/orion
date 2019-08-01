@@ -107,15 +107,6 @@ class Experiment:
         """
         log.debug("Creating Experiment object with name: %s", name)
         self._init_done = False
-        # --
-        # Pending config Refactoring
-        import os
-        # ORION_STORAGE=track:file://test.json
-        uri = os.environ.get('ORION_STORAGE', 'legacy:..')
-        proto, proto_args = uri.split(':', 1)
-        self._storage = Storage(proto, proto_args)
-        # --
-
         self._id = None
         self.name = name
         self._node = None
