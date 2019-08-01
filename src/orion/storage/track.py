@@ -10,7 +10,6 @@
 """
 
 from collections import defaultdict
-
 import datetime
 import logging
 import uuid
@@ -52,14 +51,17 @@ if HAS_TRACK:
 
 
 def get_track_status(val):
+    """Convert orion status to track status"""
     return _status_dict.get(val)
 
 
 def convert_track_status(status):
+    """Convert track status to orion status"""
     return status.name.lower()
 
 
 def remove_leading_slash(name):
+    """Remove leading slash"""
     # if name[0] == '/':
     #     return name[1:]
     # return name
@@ -67,6 +69,7 @@ def remove_leading_slash(name):
 
 
 def add_leading_slash(name):
+    """Add leading slash"""
     # if name[0] == '/':
     #     return name
     # return '/' + name
