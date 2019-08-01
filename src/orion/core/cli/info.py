@@ -11,6 +11,7 @@
 """
 import logging
 
+from orion.core.cli.base import get_basic_args_group
 from orion.core.io.evc_builder import EVCBuilder
 
 log = logging.getLogger(__name__)
@@ -19,8 +20,7 @@ log = logging.getLogger(__name__)
 def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
     info_parser = parser.add_parser('info', help='info help')
-
-    info_parser.add_argument('name')
+    get_basic_args_group(info_parser)
 
     info_parser.set_defaults(func=main)
 
@@ -34,6 +34,8 @@ def main(args):
 
 
 INFO_TEMPLATE = """\
+{identification}
+
 {commandline}
 
 {configuration}
@@ -53,6 +55,7 @@ INFO_TEMPLATE = """\
 def format_info(experiment):
     """Render a string for all info of experiment"""
     info_string = INFO_TEMPLATE.format(
+        identification=format_identification(experiment),
         commandline=format_commandline(experiment),
         configuration=format_config(experiment),
         algorithm=format_algorithm(experiment),
@@ -235,6 +238,25 @@ def format_list(a_list, depth=0, width=4, templates=None):
             list_string += item_template.format(tab=subtab, id=i, item=item)
 
     return list_template.format(tab=tab, items=list_string.rstrip("\n"))
+
+
+ID_TEMPLATE = """\
+{title}
+name: {name}
+version: {version}
+user: {user}
+"""
+
+
+def format_identification(experiment):
+    """Render a string for identification section"""
+    identification_string = ID_TEMPLATE.format(
+        title=format_title("Identification"),
+        name=experiment.name,
+        version=experiment.version,
+        user=experiment.metadata['user'])
+
+    return identification_string
 
 
 COMMANDLINE_TEMPLATE = """\
