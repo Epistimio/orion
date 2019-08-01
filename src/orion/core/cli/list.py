@@ -50,4 +50,4 @@ def main(args):
 
     for root_experiment in root_experiments:
         root = EVCBuilder().build_view_from({'name': root_experiment['name']}).node
-        print_tree(root)
+        print_tree(root, nameattr='tree_name')
