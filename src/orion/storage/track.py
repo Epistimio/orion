@@ -86,6 +86,7 @@ class TrialAdapter:
 
     objective: str
         objective key
+    
     """
 
     def __init__(self, storage_trial, orion_trial=None, objective=None):
