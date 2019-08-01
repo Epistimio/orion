@@ -27,7 +27,7 @@ from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
                                         Strategy)
-from orion.storage.base import get_storage, ReadOnlyStorageProtocol, Storage
+from orion.storage.base import get_storage, ReadOnlyStorageProtocol
 
 log = logging.getLogger(__name__)
 
