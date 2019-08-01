@@ -575,7 +575,7 @@ class Experiment:
             raise DuplicateKeyError("Cannot register an existing experiment with a new config")
 
         # Copy and simulate instantiating given configuration
-        experiment = Experiment(self.name)
+        experiment = Experiment(self.name, version=self.version)
         experiment._instantiate_config(self.configuration)
         experiment._instantiate_config(config)
         experiment._init_done = True
