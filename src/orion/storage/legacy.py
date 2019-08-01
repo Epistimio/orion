@@ -159,4 +159,3 @@ class Legacy(BaseStorageProtocol):
             status={'$in': ['new', 'suspended', 'interrupted']}
         )
         return self.fetch_trials(query)
-

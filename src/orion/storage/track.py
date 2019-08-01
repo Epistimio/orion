@@ -74,6 +74,20 @@ def add_leading_slash(name):
 
 
 class TrialAdapter:
+    """Mock Trial, see `~orion.core.worker.trial.Trial`
+
+    Parameters
+    ----------
+    storage_trial
+        Track trial object
+
+    orion_trial
+        Orion trial object
+
+    objective: str
+        objective key
+    """
+
     def __init__(self, storage_trial, orion_trial=None, objective=None):
         self.storage = storage_trial
         self.memory = orion_trial
@@ -98,20 +112,24 @@ class TrialAdapter:
 
     @property
     def experiment(self):
+        """See `~orion.core.worker.trial.Trial`"""
         if self.memory is not None:
             return self.memory.experiment
         return self.storage.group_id
 
     @property
     def hearbeat(self):
+        """See `~orion.core.worker.trial.Trial`"""
         return datetime.datetime.utcfromtimestamp(self.storage.metadata.get('heartbeat', 0))
 
     @property
     def id(self):
+        """See `~orion.core.worker.trial.Trial`"""
         return self.storage.uid
 
     @property
     def params(self):
+        """See `~orion.core.worker.trial.Trial`"""
         if self.memory is not None:
             return self.memory.params
 
@@ -127,6 +145,7 @@ class TrialAdapter:
 
     @property
     def status(self):
+        """See `~orion.core.worker.trial.Trial`"""
         if self.memory is not None:
             return self.memory.status
 
@@ -134,9 +153,11 @@ class TrialAdapter:
 
     @status.setter
     def status(self, value):
+        """See `~orion.core.worker.trial.Trial`"""
         pass
 
     def to_dict(self):
+        """See `~orion.core.worker.trial.Trial`"""
         import copy
 
         trial = copy.deepcopy(self.storage.metadata)
@@ -150,11 +171,13 @@ class TrialAdapter:
 
     @property
     def lie(self):
+        """See `~orion.core.worker.trial.Trial`"""
         # we do not lie like Orion does
         return None
 
     @property
     def objective(self):
+        """See `~orion.core.worker.trial.Trial`"""
         def result(val):
             return OrionTrial.Result(name=self.objective_key, value=val, type='objective')
 
@@ -184,30 +207,37 @@ class TrialAdapter:
 
     @property
     def results(self):
+        """See `~orion.core.worker.trial.Trial`"""
         return self._results
 
     @results.setter
     def results(self, value):
+        """See `~orion.core.worker.trial.Trial`"""
         self._results = value
 
     @property
     def gradient(self):
+        """See `~orion.core.worker.trial.Trial`"""
         return None
 
     @property
     def parents(self):
+        """See `~orion.core.worker.trial.Trial`"""
         return []
 
     @property
     def submit_time(self):
+        """See `~orion.core.worker.trial.Trial`"""
         return datetime.datetime.utcfromtimestamp(self.storage.metadata.get('submit_time'))
 
     @property
     def end_time(self):
+        """See `~orion.core.worker.trial.Trial`"""
         return datetime.datetime.utcfromtimestamp(self.storage.metadata.get('end_time'))
 
     @end_time.setter
     def end_time(self, value):
+        """See `~orion.core.worker.trial.Trial`"""
         self.storage.metadata['end_time'] = value
 
 
@@ -237,7 +267,6 @@ class Track(BaseStorageProtocol):
 
     def create_experiment(self, config):
         """Insert a new experiment inside the database"""
-
         if self.project is None:
             self.project = self.backend.get_project(Project(name=config['name']))
 

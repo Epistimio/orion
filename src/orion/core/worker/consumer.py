@@ -108,10 +108,7 @@ class Consumer(object):
         ----------
         results_file: str
            file used to store results, this is only used by the legacy protocol
-<<<<<<< HEAD
 
-=======
->>>>>>> reinsert change that were rolledback
         trial: Trial
            reference to the trial object that is going to be run
 
