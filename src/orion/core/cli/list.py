@@ -49,5 +49,6 @@ def main(args):
                             if exp['refers'].get('root_id', exp['_id']) == exp['_id']]
 
     for root_experiment in root_experiments:
-        root = EVCBuilder().build_view_from({'name': root_experiment['name']}).node
+        root = EVCBuilder().build_view_from({'name': root_experiment['name'],
+                                             'version': root_experiment['version']}).node
         print_tree(root, nameattr='tree_name')
