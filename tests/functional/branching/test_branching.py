@@ -497,3 +497,16 @@ def test_init_w_version_gt_max(clean_db, monkeypatch, database):
 
     exp = database.experiments.find({'name': 'experiment', 'version': 3})
     assert len(list(exp))
+
+
+def test_init_check_increment_w_children(clean_db, monkeypatch, database):
+    """Test that incrementing version works with not same-named children."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment --branch experiment_2 ./black_box.py "
+                        "-x~normal(0,1) -y~+normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment ./black_box.py "
+                        "-x~normal(0,1) -z~+normal(0,1)".split(" "))
+
+    exp = database.experiments.find({'name': 'experiment', 'version': 2})
+    assert len(list(exp))
