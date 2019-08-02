@@ -71,12 +71,13 @@ def get_experiments(args):
         Commandline arguments.
 
     """
-    projection = {'name': 1}
+    projection = {'name': 1, 'version': 1}
 
     query = {'name': args['name']} if args.get('name') else {}
     experiments = get_storage().fetch_experiments(query, projection)
 
-    return [EVCBuilder().build_view_from({'name': exp['name']}) for exp in experiments]
+    return [EVCBuilder().build_view_from({'name': exp['name'], 'version': exp['version']})
+            for exp in experiments]
 
 
 def print_status_recursively(exp, depth=0, **kwargs):
@@ -114,8 +115,9 @@ def print_status(exp, offset=0, all_trials=False, collapse=False):
     else:
         trials = exp.fetch_trials({})
 
-    print(" " * offset, exp.name, sep="")
-    print(" " * offset, "=" * len(exp.name), sep="")
+    exp_title = exp.name + ' - v.{}'.format(exp.version)
+    print(" " * offset, exp_title, sep="")
+    print(" " * offset, "=" * len(exp_title), sep="")
 
     if all_trials:
         print_all_trials(trials, offset=offset)
