@@ -148,7 +148,9 @@ def print_summary(trials, offset=0):
         line = [status, len(c_trials)]
 
         if c_trials[0].objective:
+            headers.append('params')
             headers.append('min {}'.format(c_trials[0].objective.name))
+            line.append(format_params(trial.params))
             line.append(min(trial.objective.value for trial in c_trials))
 
         lines.append(line)
@@ -174,11 +176,11 @@ def print_all_trials(trials, offset=0):
         The number of tabs to the right this experiment is.
 
     """
-    headers = ['id', 'status', 'best objective']
+    headers = ['id', 'status', 'params', 'best objective']
     lines = []
 
     for trial in sorted(trials, key=lambda t: t.status):
-        line = [trial.id, trial.status]
+        line = [trial.id, trial.status, format_params(trial.params)]
 
         if trial.objective:
             headers[-1] = 'min {}'.format(trial.objective.name)
@@ -191,3 +193,16 @@ def print_all_trials(trials, offset=0):
     print(tab + ("\n" + tab).join(grid.split("\n")))
 
     print("\n")
+
+
+def format_params(params):
+    """Return a formatted line for the parameters of a trial."""
+    line = ""
+
+    for param in params:
+        param_str = "{}={}".format(param.name[1:], param.value)
+        line += (param_str + ", ")
+
+    line = line[:-2]
+
+    return line
