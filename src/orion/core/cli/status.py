@@ -34,7 +34,7 @@ def add_subparser(parser):
         help="Show all trials line by line. Otherwise, they are all aggregated by status")
 
     status_parser.add_argument(
-        '-C', '--collapse', action="store_true",
+        '-c', '--collapse', action="store_true",
         help=("Aggregate together results of all child experiments. Otherwise they are all "
               "printed hierarchically"))
 
