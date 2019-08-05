@@ -103,6 +103,19 @@ Roadmap
 
 You can find our roadmap here: `<https://github.com/Epistimio/orion/blob/master/ROADMAP.md>`_
 
+Citing
+======
+```
+@misc{Oríon,
+    author = {Xavier Bouthillier, Christos Tsirigotis and François Corneau-Tremblay},
+    title = {{Oríon - A gradient-free optimization platform}},
+    year = {2018 - Asynchronous Distributed Hyperparameter Optimization},
+    publisher = {GitHub},
+    journal = {GitHub repository},
+    howpublished = {\url{https://github.com/Epistimio/orion}},
+}
+```
+
 License
 =======
 
