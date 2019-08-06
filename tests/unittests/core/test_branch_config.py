@@ -174,12 +174,6 @@ def cl_config(create_db_instance):
     return config
 
 
-def test_auto_resolution_deprecated(deprecated_config):
-    """Check that auto-resolution is correctly identified as deprecated."""
-    exp = ExperimentBranchBuilder([], {'auto_resolution': True})
-    assert exp.auto_resolution is None
-
-
 class TestConflictDetection(object):
     """Test detection of conflicts between two configurations"""
 
@@ -446,13 +440,13 @@ class TestResolutions(object):
         def _is_unique(self, *args, **kwargs):
             return False
 
-        def _children(self, *args, **kwargs):
+        def _versions(self, *args, **kwargs):
             return True
 
         monkeypatch.setattr(ExperimentNameConflict.ExperimentNameResolution, "_name_is_unique",
                             _is_unique)
-        monkeypatch.setattr(ExperimentNameConflict.ExperimentNameResolution, "_check_for_children",
-                            _children)
+        monkeypatch.setattr(ExperimentNameConflict.ExperimentNameResolution,
+                            "_check_for_greater_versions", _versions)
 
         conflicts = detect_conflicts(parent_config, child_config)
         branch_builder = ExperimentBranchBuilder(conflicts, {'manual_resolution': True})
