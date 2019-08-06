@@ -15,7 +15,8 @@ from orion.core.evc.conflicts import Resolution
 def _add_auto_resolution_argument(parser):
     parser.add_argument(
         "--auto-resolution",
-        help="Deprecated")
+        help="Deprecated. Conflicts are now resolved automatically by default."
+             "See --manual-resolution to avoid auto-resolution.")
 
 
 def _add_manual_resolution_argument(parser):

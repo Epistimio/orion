@@ -456,10 +456,6 @@ def test_new_cli_not_resolved(init_full_x):
 def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
     """Test that auto-resolution does resolve all conflicts"""
     # Patch cmdloop to avoid autoresolution's prompt
-    def _do_nothing(self):
-        pass
-    from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
-    monkeypatch.setattr(BranchingPrompt, "cmdloop", _do_nothing)
     monkeypatch.setattr('sys.__stdin__.isatty', lambda: True)
 
     name = "full_x_full_y"
@@ -472,24 +468,6 @@ def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
          "-w~choices(['a','b'],default_value='a')").format(name=name, branch=branch).split(" "))
     orion.core.cli.main("insert -n {name} script -x=2 -w=b".format(name=branch).split(" "))
     orion.core.cli.main("insert -n {name} script -x=1".format(name=branch).split(" "))
-
-
-def test_auto_resolution_not_force_prompt(init_full_x_full_y, monkeypatch):
-    """Test that auto-resolution forces prompt"""
-    name = "full_x_full_y"
-    branch = "new_full_x_full_y"
-
-    # No conflict, it does not prompt
-    orion.core.cli.main(
-        ("init_only -n {name} ./black_box.py "
-         "-x~uniform(-10,10) "
-         "-y~+uniform(-10,10,default_value=1)").format(name=name).split(" "))
-
-    # No conflicts, but forced branching, should not force prompt
-    orion.core.cli.main(
-        ("init_only -n {name} --branch {branch} ./black_box.py "
-         "-x~uniform(-10,10) "
-         "-y~+uniform(-10,10,default_value=1)").format(name=name, branch=branch).split(" "))
 
 
 def test_init_w_version_from_parent_w_children(clean_db, monkeypatch):
