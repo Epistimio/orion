@@ -321,7 +321,7 @@ class Track(BaseStorageProtocol):
         trial.submit_time = stamp
 
         metadata = dict()
-        metadata['params_types'] = {remove_leading_slash(p.name): p.type for p in trial. params}
+        metadata['params_types'] = {remove_leading_slash(p.name): p.type for p in trial.params}
         metadata['submit_time'] = to_json(trial.submit_time)
         metadata['end_time'] = to_json(trial.end_time)
         metadata['worker'] = trial.worker
