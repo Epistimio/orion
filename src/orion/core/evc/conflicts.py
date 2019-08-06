@@ -1576,7 +1576,7 @@ class ExperimentNameConflict(Conflict):
             # TODO: WARNING!!! _name_is_unique could lead to race conditions,
             # The resolution may become invalid before the branching experiment is
             # registered. What should we do in such case?
-            if self.new_name != self.old_name:
+            if self.new_name is not None and self.new_name != self.old_name:
                 # If we are trying to actually branch from experiment
                 if not self._name_is_unique():
                     raise ValueError(
@@ -1628,3 +1628,10 @@ class ExperimentNameConflict(Conflict):
             configuration file by the user
             """
             return "{0} {1}".format(self.ARGUMENT, self.new_name)
+
+        @property
+        def is_marked(self):
+            """Return True every time since the `--branch` argument is not used when incrementing
+            version of an experiment.
+            """
+            return True

@@ -91,7 +91,7 @@ class Experiment:
                  '_node', '_storage')
     non_branching_attrs = ('pool_size', 'max_trials')
 
-    def __init__(self, name, user=None):
+    def __init__(self, name, user=None, version=None):
         """Initialize an Experiment object with primary key (:attr:`name`, :attr:`user`).
 
         Try to find an entry in `Database` with such a key and config this object
@@ -131,10 +131,22 @@ class Experiment:
                       name, user)
 
             if len(config) > 1:
-                version = max(map(lambda exp: exp['version'], config))
+                max_version = max(config, key=lambda exp: exp['version'])['version']
+
+                if version is None:
+                    self.version = max_version
+                else:
+                    self.version = version
+
+                if self.version > max_version:
+                    log.warning("Version %s was specified but most recent version is only %s. "
+                                "Using %s.", self.version, max_version, max_version)
+
+                self.version = min(self.version, max_version)
+
                 log.info("Many versions for experiment %s have been found. Using latest\
-                          version %s.", name, version)
-                config = filter(lambda exp: exp['version'] == version, config)
+                          version %s.", name, self.version)
+                config = filter(lambda exp: exp['version'] == self.version, config)
 
             config = sorted(config, key=lambda x: x['metadata']['datetime'],
                             reverse=True)[0]
@@ -582,7 +594,9 @@ class Experiment:
             # will be used when EVC is not available.
             # must_branch = self._is_different_from(experiment.configuration)
             branching_configuration = fetch_branching_configuration(config)
-            conflicts = detect_conflicts(self.configuration, experiment.configuration)
+            configuration = self.configuration
+            configuration['_id'] = self._id
+            conflicts = detect_conflicts(configuration, experiment.configuration)
             must_branch = len(conflicts.get()) > 1 or branching_configuration.get('branch')
             if must_branch and not enable_branching:
                 raise ValueError("Configuration is different and generate a "
@@ -756,7 +770,7 @@ class ExperimentView(object):
                         ["fetch_trials", "fetch_trials_tree", "fetch_completed_trials",
                          "connect_to_version_control_tree"])
 
-    def __init__(self, name, user=None):
+    def __init__(self, name, user=None, version=None):
         """Initialize viewed experiment object with primary key (:attr:`name`, :attr:`user`).
 
         Build an experiment from configuration found in `Database` with a key (name, user).
@@ -769,7 +783,7 @@ class ExperimentView(object):
         :param name: Describe a configuration with a unique identifier per :attr:`user`.
         :type name: str
         """
-        self._experiment = Experiment(name, user)
+        self._experiment = Experiment(name, user, version)
 
         if self._experiment.id is None:
             raise ValueError("No experiment with given name '%s' for user '%s' inside database, "
