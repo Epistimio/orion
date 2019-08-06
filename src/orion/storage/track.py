@@ -298,7 +298,7 @@ class Track(BaseStorageProtocol):
             Experiment object to update
 
         where: Optional[dict]
-            constraint experiment must respect
+            constraint experiment must respect for the update to take place
 
         **kwargs: dict
             a dictionary of fields to update
