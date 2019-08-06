@@ -117,11 +117,11 @@ class Consumer(object):
         This functions define the environment variables described below
 
         ORION_PROJECT: str
-           name of the project the user is currently working on.
-           it defaults to `orion` is no project name was defined
+           name of the experiment the user is currently working on.
+           A project is a set of experiment
 
         ORION_EXPERIMENT: str
-           current experiment id that this trial belong to
+           current experiment triplet that fully the experiment (i.e unique)
 
         ORION_TRIAL_ID: str
            current trial id that is currently being ran in this process
@@ -136,8 +136,8 @@ class Consumer(object):
         """
         env = dict(os.environ)
 
-        env['ORION_PROJECT'] = 'orion'
-        env['ORION_EXPERIMENT'] = self.experiment.name
+        env['ORION_PROJECT'] = self.experiment.name
+        env['ORION_EXPERIMENT'] = f'{self.experiment.name}-{self.experiment.version}-{self.experiment.metadat.user}'
         env['ORION_TRIAL_ID'] = str(trial.id)
 
         env['ORION_WORKING_DIR'] = str(trial.working_dir)

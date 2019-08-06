@@ -116,7 +116,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         raise NotImplementedError()
 
     def fetch_pending_trials(self, experiment):
-        """Fetch trials that have not run yet"""
+        """Fetch trials that can  be executed. It includes interrupted and suspended trials"""
         raise NotImplementedError()
 
 

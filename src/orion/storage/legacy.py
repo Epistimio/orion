@@ -153,7 +153,7 @@ class Legacy(BaseStorageProtocol):
         return self._db.write('trials', data=kwargs, query=where)
 
     def fetch_pending_trials(self, experiment):
-        """Fetch trials that have not run yet"""
+        """See :func:`~orion.storage.BaseStorageProtocol.fetch_pending_trials`"""
         query = dict(
             experiment=experiment._id,
             status={'$in': ['new', 'suspended', 'interrupted']}

@@ -10,6 +10,7 @@
 """
 
 from collections import defaultdict
+import copy
 import datetime
 import logging
 import uuid
@@ -38,7 +39,6 @@ if HAS_TRACK:
         CustomStatus('reserved', TrackStatus.CreatedGroup.value + 2),
 
         CustomStatus('suspended', TrackStatus.FinishedGroup.value + 1),
-        # CustomStatus('completed', TrackStatus.FinishedGroup.value + 2),
 
         CustomStatus('interrupted', TrackStatus.ErrorGroup.value + 1),
         CustomStatus('broken', TrackStatus.ErrorGroup.value + 3)
@@ -162,8 +162,6 @@ class TrialAdapter:
 
     def to_dict(self):
         """See `~orion.core.worker.trial.Trial`"""
-        import copy
-
         trial = copy.deepcopy(self.storage.metadata)
         trial.update({
             'results': self.storage.metrics,
@@ -331,7 +329,7 @@ class Track(BaseStorageProtocol):
 
         metrics = defaultdict(list)
         for p in trial.results:
-            metrics[p.name] = p.value
+            metrics[p.name] = [p.value]
 
         self.current_trial = self.backend.new_trial(TrackTrial(
             _hash=trial.hash_name,
@@ -418,23 +416,21 @@ class Track(BaseStorageProtocol):
         returns true if the underlying storage was updated
 
         """
-        try:
-            if isinstance(trial, TrialAdapter):
-                trial = trial.storage
+        if isinstance(trial, TrialAdapter):
+            trial = trial.storage
 
-            for key, value in kwargs.items():
-                if key == 'status':
-                    self.backend.set_trial_status(trial, get_track_status(value))
-                elif key in self._ignore_updates_for:
-                    continue
-                else:
-                    pair = {key: to_json(value)}
-                    self.backend.log_trial_metadata(trial, **pair)
+        print(where)
 
-            return True
+        for key, value in kwargs.items():
+            if key == 'status':
+                self.backend.set_trial_status(trial, get_track_status(value))
+            elif key in self._ignore_updates_for:
+                continue
+            else:
+                pair = {key: to_json(value)}
+                self.backend.log_trial_metadata(trial, **pair)
 
-        except RuntimeError:
-            return False
+        return True
 
     def retrieve_result(self, trial, *args, **kwargs):
         """Fetch the result from a given medium (file, db, socket, etc..) for a given trial and
@@ -452,7 +448,8 @@ class Track(BaseStorageProtocol):
         return new_trial
 
     def fetch_pending_trials(self, experiment):
-        """Fetch trials that have not run yet"""
+        """See :func:`~orion.storage.BaseStorageProtocol.fetch_pending_trials`"""
+
         query = dict(
             group_id=experiment._id,
             status={'$in': [
