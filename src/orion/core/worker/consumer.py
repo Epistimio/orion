@@ -124,7 +124,7 @@ class Consumer(object):
            current experiment id that this trial belongs to
 
         ORION_TRIAL_ID: str
-           current trial id that is currently being ran in this process
+           current trial id that is currently being executed in this process
 
         ORION_WORKING_DIRECTORY: str
            orion current working directory
