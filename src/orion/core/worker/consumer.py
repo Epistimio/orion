@@ -121,7 +121,7 @@ class Consumer(object):
            it defaults to `orion` is no project name was defined
 
         ORION_EXPERIMENT: str
-           current experiment id that this trial belong to
+           current experiment id that this trial belongs to
 
         ORION_TRIAL_ID: str
            current trial id that is currently being ran in this process
