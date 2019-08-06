@@ -21,6 +21,7 @@ try:
     from track.serialization import to_json
     from track.structure import CustomStatus, Status as TrackStatus
     from track.structure import Project, Trial as TrackTrial, TrialGroup
+    from track.persistence.local import ConcurrentWrite
 
     HAS_TRACK = True
 except ImportError:
@@ -414,19 +415,22 @@ class Track(BaseStorageProtocol):
         returns true if the underlying storage was updated
 
         """
-        if isinstance(trial, TrialAdapter):
-            trial = trial.storage
+        try:
+            if isinstance(trial, TrialAdapter):
+                trial = trial.storage
 
-        for key, value in kwargs.items():
-            if key == 'status':
-                self.backend.set_trial_status(trial, get_track_status(value))
-            elif key in self._ignore_updates_for:
-                continue
-            else:
-                pair = {key: to_json(value)}
-                self.backend.log_trial_metadata(trial, **pair)
+            for key, value in kwargs.items():
+                if key == 'status':
+                    self.backend.set_trial_status(trial, get_track_status(value))
+                elif key in self._ignore_updates_for:
+                    continue
+                else:
+                    pair = {key: to_json(value)}
+                    self.backend.log_trial_metadata(trial, **pair)
 
-        return True
+            return True
+        except ConcurrentWrite:
+            return False
 
     def retrieve_result(self, trial, *args, **kwargs):
         """Fetch the result from a given medium (file, db, socket, etc..) for a given trial and
