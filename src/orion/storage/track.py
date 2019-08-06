@@ -186,7 +186,7 @@ class TrialAdapter:
             return OrionTrial.Result(name=self.objective_key, value=val, type='objective')
 
         if self.objective_key is None:
-            raise RuntimeError('not objective was defined!')
+            raise RuntimeError('no objective key was defined!')
 
         self.objectives_values = []
 
