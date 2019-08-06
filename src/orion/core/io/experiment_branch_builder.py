@@ -38,10 +38,10 @@ class ExperimentBranchBuilder:
         Initialize the ExperimentBranchBuilder by populating a list of the conflicts inside
         the two configurations.
         """
-        self.auto_resolution = branching_configuration.get('auto_resolution', None)
+        self.auto_resolution = branching_configuration.pop('auto_resolution', None)
 
         if self.auto_resolution is not None:
-            log.info("--auto-resolution is deprecated and will be removed in v0.2.0 of Orion.")
+            log.info("Auto-resolution is deprecated and will be removed in v0.2.0.")
             self.auto_resolution = None
 
         self.manual_resolution = branching_configuration.pop('manual_resolution', False)

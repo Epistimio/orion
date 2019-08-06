@@ -174,6 +174,12 @@ def cl_config(create_db_instance):
     return config
 
 
+def test_auto_resolution_deprecated(deprecated_config):
+    """Check that auto-resolution is correctly identified as deprecated."""
+    exp = ExperimentBranchBuilder([], {'auto_resolution': True})
+    assert exp.auto_resolution is None
+
+
 class TestConflictDetection(object):
     """Test detection of conflicts between two configurations"""
 
