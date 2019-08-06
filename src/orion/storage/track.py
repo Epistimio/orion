@@ -184,7 +184,7 @@ class TrialAdapter:
             return OrionTrial.Result(name=self.objective_key, value=val, type='objective')
 
         if self.objective_key is None:
-            raise RuntimeError('not objective was defined!')
+            raise RuntimeError('no objective key was defined!')
 
         self.objectives_values = []
 
@@ -288,7 +288,7 @@ class Track(BaseStorageProtocol):
         return config
 
     def update_experiment(self, experiment, where=None, **kwargs):
-        """Update a the fields of a given trials
+        """Update the fields of a given trials
 
         Parameters
         ----------
@@ -296,7 +296,7 @@ class Track(BaseStorageProtocol):
             Experiment object to update
 
         where: Optional[dict]
-            constraint experiment must respect
+            constraint experiment must respect for the update to take place
 
         **kwargs: dict
             a dictionary of fields to update
@@ -319,7 +319,7 @@ class Track(BaseStorageProtocol):
         trial.submit_time = stamp
 
         metadata = dict()
-        metadata['params_types'] = {remove_leading_slash(p.name): p.type for p in trial. params}
+        metadata['params_types'] = {remove_leading_slash(p.name): p.type for p in trial.params}
         metadata['submit_time'] = to_json(trial.submit_time)
         metadata['end_time'] = to_json(trial.end_time)
         metadata['worker'] = trial.worker

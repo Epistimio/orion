@@ -112,19 +112,19 @@ class Consumer(object):
         trial: Trial
            reference to the trial object that is going to be run
 
-        Note
+        Notes
         ----
         This functions define the environment variables described below
 
         ORION_PROJECT: str
            name of the experiment the user is currently working on.
-           A project is a set of experiment
+           A project is a set of experiments
 
         ORION_EXPERIMENT: str
            current experiment triplet that fully the experiment (i.e unique)
 
         ORION_TRIAL_ID: str
-           current trial id that is currently being ran in this process
+           current trial id that is currently being executed in this process
 
         ORION_WORKING_DIRECTORY: str
            orion current working directory
