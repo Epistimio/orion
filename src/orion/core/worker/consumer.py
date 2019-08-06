@@ -137,7 +137,8 @@ class Consumer(object):
         env = dict(os.environ)
 
         env['ORION_PROJECT'] = self.experiment.name
-        env['ORION_EXPERIMENT'] = f'{self.experiment.name}-{self.experiment.version}-{self.experiment.metadat.user}'
+        env['ORION_EXPERIMENT'] = \
+            f'{self.experiment.name}-{self.experiment.version}-{self.experiment.metadata["user"]}'
         env['ORION_TRIAL_ID'] = str(trial.id)
 
         env['ORION_WORKING_DIR'] = str(trial.working_dir)

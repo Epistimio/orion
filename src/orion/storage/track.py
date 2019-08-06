@@ -37,17 +37,15 @@ if HAS_TRACK:
     _status = [
         CustomStatus('new', TrackStatus.CreatedGroup.value + 1),
         CustomStatus('reserved', TrackStatus.CreatedGroup.value + 2),
-
-        CustomStatus('suspended', TrackStatus.FinishedGroup.value + 1),
-
-        CustomStatus('interrupted', TrackStatus.ErrorGroup.value + 1),
-        CustomStatus('broken', TrackStatus.ErrorGroup.value + 3)
     ]
 
     _status_dict = {
         s.name: s for s in _status
     }
     _status_dict['completed'] = TrackStatus.Completed
+    _status_dict['interrupted'] = TrackStatus.Interrupted
+    _status_dict['broken'] = TrackStatus.Broken
+    _status_dict['suspended'] = TrackStatus.Suspended
 
 
 def get_track_status(val):
@@ -306,7 +304,7 @@ class Track(BaseStorageProtocol):
         returns true if the underlying storage was updated
 
         """
-        pass
+        raise RuntimeError('You should not update a track experiment')
 
     def fetch_experiments(self, query):
         """Fetch all experiments that match the query"""
@@ -418,8 +416,6 @@ class Track(BaseStorageProtocol):
         """
         if isinstance(trial, TrialAdapter):
             trial = trial.storage
-
-        print(where)
 
         for key, value in kwargs.items():
             if key == 'status':
