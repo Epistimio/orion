@@ -112,7 +112,7 @@ class Consumer(object):
         trial: Trial
            reference to the trial object that is going to be run
 
-        Note
+        Notes
         ----
         This functions define the environment variables described below
 
