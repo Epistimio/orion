@@ -290,7 +290,7 @@ class Track(BaseStorageProtocol):
         return config
 
     def update_experiment(self, experiment, where=None, **kwargs):
-        """Update a the fields of a given trials
+        """Update the fields of a given trials
 
         Parameters
         ----------
