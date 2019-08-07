@@ -91,18 +91,6 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_experiments`"""
         return self._db.read('experiments', query, selection)
 
-    def fetch_trials(self, query, selection=None):
-        """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
-        def sort_key(item):
-            submit_time = item.submit_time
-            if submit_time is None:
-                return 0
-            return submit_time
-
-        trials = Trial.build(self._db.read('trials', query=query, selection=selection))
-        trials.sort(key=sort_key)
-        return trials
-
     def register_trial(self, trial):
         """See :func:`~orion.storage.BaseStorageProtocol.register_trial`"""
         self._db.write('trials', trial.to_dict())
@@ -159,3 +147,16 @@ class Legacy(BaseStorageProtocol):
             status={'$in': ['new', 'suspended', 'interrupted']}
         )
         return self.fetch_trials(query)
+
+    def fetch_trials(self, query, selection=None):
+        """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
+        def sort_key(item):
+            submit_time = item.submit_time
+            if submit_time is None:
+                return 0
+            return submit_time
+
+        trials = Trial.build(self._db.read('trials', query=query, selection=selection))
+        trials.sort(key=sort_key)
+        return trials
+
