@@ -22,7 +22,7 @@ def test_single_exp(clean_db, one_experiment, capsys):
 
     captured = capsys.readouterr().out
 
-    assert captured == " test_single_exp - v.1\n"
+    assert captured == " test_single_exp-v1\n"
 
 
 def test_broken_refers(clean_db, broken_refers, capsys):
@@ -31,7 +31,7 @@ def test_broken_refers(clean_db, broken_refers, capsys):
 
     captured = capsys.readouterr().out
 
-    assert captured == " test_single_exp - v.1\n"
+    assert captured == " test_single_exp-v1\n"
 
 
 def test_two_exp(capsys, clean_db, two_experiments):
@@ -41,8 +41,8 @@ def test_two_exp(capsys, clean_db, two_experiments):
     captured = capsys.readouterr().out
 
     assert captured == """\
- test_double_exp - v.1┐
-                      └test_double_exp_child - v.1
+ test_double_exp-v1┐
+                   └test_double_exp_child-v1
 """
 
 
@@ -53,9 +53,9 @@ def test_three_exp(capsys, clean_db, three_experiments):
     captured = capsys.readouterr().out
 
     assert captured == """\
- test_double_exp - v.1┐
-                      └test_double_exp_child - v.1
- test_single_exp - v.1
+ test_double_exp-v1┐
+                   └test_double_exp_child-v1
+ test_single_exp-v1
 """
 
 
@@ -76,7 +76,7 @@ def test_exp_name(clean_db, three_experiments, monkeypatch, capsys):
 
     captured = capsys.readouterr().out
 
-    assert captured == " test_single_exp - v.1\n"
+    assert captured == " test_single_exp-v1\n"
 
 
 def test_exp_name_with_child(clean_db, three_experiments, monkeypatch, capsys):
@@ -87,8 +87,8 @@ def test_exp_name_with_child(clean_db, three_experiments, monkeypatch, capsys):
     captured = capsys.readouterr().out
 
     assert captured == """\
- test_double_exp - v.1┐
-                      └test_double_exp_child - v.1
+ test_double_exp-v1┐
+                   └test_double_exp_child-v1
 """
 
 
@@ -99,7 +99,7 @@ def test_exp_name_child(clean_db, three_experiments, monkeypatch, capsys):
 
     captured = capsys.readouterr().out
 
-    assert captured == " test_double_exp_child - v.1\n"
+    assert captured == " test_double_exp_child-v1\n"
 
 
 def test_exp_same_name(clean_db, two_experiments_same_name, monkeypatch, capsys):
@@ -110,8 +110,8 @@ def test_exp_same_name(clean_db, two_experiments_same_name, monkeypatch, capsys)
     captured = capsys.readouterr().out
 
     assert captured == """\
- test_single_exp - v.1┐
-                      └test_single_exp - v.2
+ test_single_exp-v1┐
+                   └test_single_exp-v2
 """
 
 
@@ -125,9 +125,9 @@ def test_exp_family_same_name(clean_db, three_experiments_family_same_name, monk
     captured = capsys.readouterr().out
 
     assert captured == """\
-                      ┌test_single_exp - v.2
- test_single_exp - v.1┤
-                      └test_single_exp_child - v.1
+                   ┌test_single_exp-v2
+ test_single_exp-v1┤
+                   └test_single_exp_child-v1
 """
 
 
@@ -142,7 +142,7 @@ def test_exp_family_branch_same_name(clean_db, three_experiments_branch_same_nam
     captured = capsys.readouterr().out
 
     assert captured == """\
- test_single_exp - v.1┐
-                      └test_single_exp - v.2┐
-                                            └test_single_exp_child - v.1
+ test_single_exp-v1┐
+                   └test_single_exp-v2┐
+                                      └test_single_exp_child-v1
 """
