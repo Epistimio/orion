@@ -104,11 +104,13 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         Returns
         -------
         return none if the trial is not found
+
         """
         raise NotImplementedError()
 
     def fetch_lost_trials(self, experiment):
-        """Fetch all trials that have a heartbeat older that some given time delta (2 minutes by default)"""
+        """Fetch all trials that have a heartbeat older than
+        some given time delta (2 minutes by default)"""
         raise NotImplementedError()
 
     def retrieve_result(self, trial, *args, **kwargs):
@@ -127,7 +129,8 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
 
     def fetch_pending_trials(self, experiment):
         """Fetch all trials that are available to be executed by a worker,
-        this includes new, suspended and interupted trials"""
+        this includes new, suspended and interupted trials
+        """
         raise NotImplementedError()
 
     def fetch_noncompleted_trials(self, experiment):

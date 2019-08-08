@@ -1,14 +1,23 @@
-import yaml
+# -*- coding: utf-8 -*-
+"""
+:mod:`orion.core.utils.state` -- Encapsulate Orion state
+=================================================================
+.. module:: state
+   :platform: Unix
+   :synopsis: Encapsulate orion state
+
+"""
 import os
+import yaml
 
 from orion.core.io.database import Database
-from orion.core.io.database.pickleddb import PickledDB
 from orion.core.io.database.mongodb import MongoDB
-from orion.core.worker.trial import Trial
+from orion.core.io.database.pickleddb import PickledDB
+from orion.core.utils import SingletonAlreadyInstantiatedError
 from orion.core.worker.experiment import Experiment
+from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage, Storage
 from orion.storage.legacy import Legacy
-from orion.core.utils import SingletonAlreadyInstantiatedError
 
 
 PICKLE_DB_HARDCODED = '/tmp/independent.pkl'
@@ -41,12 +50,12 @@ class OrionState:
 
     Examples
     --------
-
     >>> myconfig = {...}
     >>> with OrionTestState(myconfig):
         ...
 
     """
+
     SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB)
     singletons = {}
     database = None
@@ -108,22 +117,26 @@ class OrionState:
         self.database.write('resources', self.resources)
 
     def __enter__(self):
+        """Load a new database state"""
         for singleton in self.SINGLETONS:
             self.new_singleton(singleton, new_value=None)
 
         return self.init()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """Cleanup database state"""
         self.cleanup()
 
         for obj in self.singletons:
             self.restore_singleton(obj)
 
     def new_singleton(self, obj, new_value=None):
+        """Replace a singleton by another value"""
         self.singletons[obj] = obj.instance
         obj.instance = new_value
 
     def restore_singleton(self, obj):
+        """Restore a singleton to its previous value"""
         obj.instance = self.singletons.get(obj)
 
     def storage(self, storage_type='legacy'):

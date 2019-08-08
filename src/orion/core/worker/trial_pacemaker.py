@@ -7,7 +7,6 @@
    :synopsis: Monitor trials and update their heartbeat
 
 """
-import datetime
 import threading
 
 from orion.storage.base import get_storage

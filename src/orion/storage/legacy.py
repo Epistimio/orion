@@ -10,13 +10,12 @@
 """
 import datetime
 import logging
+from warnings import warn
 
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database
 from orion.core.worker.trial import Trial
 from orion.storage.base import BaseStorageProtocol
-
-from warnings import warn
 
 log = logging.getLogger(__name__)
 
@@ -175,7 +174,6 @@ class Legacy(BaseStorageProtocol):
 
     def _update_trial(self, trial: Trial, where=None, **kwargs) -> Trial:
         """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
-
         if where is None:
             where = dict()
 
@@ -266,4 +264,3 @@ class Legacy(BaseStorageProtocol):
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
         return self._update_trial(trial, heartbeat=datetime.datetime.utcnow())
-

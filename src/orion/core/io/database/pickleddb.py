@@ -12,6 +12,7 @@ from contextlib import contextmanager
 import logging
 import os
 import pickle
+
 from pickle import PicklingError
 from filelock import FileLock
 
@@ -151,7 +152,7 @@ class PickledDB(AbstractDB):
 
             for doc in documents:
                 try:
-                    _ = pickle.dumps(doc)
+                    pickle.dumps(doc)
 
                 except PicklingError:
                     return name, doc
@@ -160,7 +161,7 @@ class PickledDB(AbstractDB):
     def _find_unpickable_field(doc):
         for k, v in doc._data.items():
             try:
-                _ = pickle.dumps(v)
+                pickle.dumps(v)
 
             except PicklingError:
                 return k, v
