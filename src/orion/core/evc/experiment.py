@@ -122,7 +122,7 @@ class ExperimentNode(TreeNode):
     def tree_name(self):
         """Return a formatted name of the Node for a tree pretty-print."""
         if self.item is not None:
-            return self.name + " - v.{}".format(self.item.version)
+            return self.name + "-v{}".format(self.item.version)
 
         return self.name
 
