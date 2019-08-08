@@ -146,6 +146,10 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """Count the number of broken trials"""
         raise NotImplementedError()
 
+    def update_heartbeat(self, trial):
+        """Update trial's heartbeat"""
+        raise NotImplementedError()
+
 
 # pylint: disable=too-few-public-methods,abstract-method
 class Storage(BaseStorageProtocol, metaclass=SingletonFactory):

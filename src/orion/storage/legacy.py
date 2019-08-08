@@ -263,4 +263,7 @@ class Legacy(BaseStorageProtocol):
         )
         return self._db.count('trials', query)
 
+    def update_heartbeat(self, trial):
+        """Update trial's heartbeat"""
+        return self._update_trial(trial, heartbeat=datetime.datetime.utcnow())
 
