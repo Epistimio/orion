@@ -104,6 +104,35 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """
         raise NotImplementedError()
 
+    def push_trial_results(self, trial):
+        """Push the trial's results to the database"""
+        raise NotImplementedError()
+
+    def set_trial_status(self, trial, status):
+        """Update the trial status and the heartbeat"""
+        raise NotImplementedError()
+
+    def fetch_pending_trials(self, experiment):
+        """Fetch all trials that are available to be executed by a worker,
+        this includes new, suspended and interupted trials"""
+        raise NotImplementedError()
+
+    def fetch_non_completed_trials(self, experiment):
+        """Fetch all non completed trials"""
+        raise NotImplementedError()
+
+    def fetch_completed_trials(self, experiment):
+        """Fetch all completed trials that have results stored"""
+        raise NotImplementedError()
+
+    def count_completed_trials(self, experiment):
+        """Count the number of completed trials"""
+        raise NotImplementedError()
+
+    def count_broken_trials(self, experiment):
+        """Count the number of broken trials"""
+        raise NotImplementedError()
+
 
 # pylint: disable=too-few-public-methods,abstract-method
 class Storage(BaseStorageProtocol, metaclass=SingletonFactory):

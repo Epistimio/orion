@@ -235,12 +235,7 @@ class Experiment:
 
         self.fix_lost_trials()
 
-        query = dict(
-            experiment=self._id,
-            status={'$in': ['new', 'suspended', 'interrupted']}
-            )
-
-        new_trials = self.fetch_trials(query)
+        new_trials = self._storage.fetch_pending_trials(self)
         log.debug('%s Fetched (trials: %s)', '<' * _depth, len(new_trials))
 
         if not new_trials:
@@ -253,6 +248,7 @@ class Experiment:
             scored_trials = zip(scores, new_trials)
             best_trials = filter(lambda st: st[0] == max(scores), scored_trials)
             new_trials = list(zip(*best_trials))[1]
+
         elif score_handle is not None:
             log.warning("While reserving trial: `score_handle` was provided, but "
                         "parameter space has not been defined yet.")
@@ -260,24 +256,18 @@ class Experiment:
         selected_trial = random.sample(new_trials, 1)[0]
         log.debug('%s selected (trial: %s)', '<' * _depth, selected_trial)
 
-        update = dict(status='reserved', heartbeat=datetime.datetime.utcnow())
-
-        if selected_trial.status == 'new':
-            update["start_time"] = datetime.datetime.utcnow()
-
         # Query on status to ensure atomicity. If another process change the
         # status meanwhile, update will fail, because query will fail.
         # This relies on the atomicity of document updates.
 
         log.debug('%s trying to reverse trial', '<' * _depth)
-        reserved = self._storage.update_trial(
-            selected_trial, **update, where={'status': selected_trial.status})
+        reserved = self._storage.set_trial_status(selected_trial, status='reserved')
 
         if not reserved:
             selected_trial = self.reserve_trial(score_handle=score_handle, _depth=_depth + 1)
         else:
             log.debug('%s found suitable trial', '<' * _depth)
-            selected_trial = self.fetch_trials({'_id': selected_trial.id})[0]
+            selected_trial = self._storage.get_trial(selected_trial)
 
         log.debug('%s reserved trial (trial: %s)', '<' * _depth, selected_trial)
         return selected_trial
@@ -291,18 +281,12 @@ class Experiment:
         trials and set them as interrupted so they can be launched again.
 
         """
-        # TODO: Configure this
-        threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=60 * 2)
-        lte_comparison = {'$lte': threshold}
-        query = {'experiment': self._id, 'status': 'reserved', 'heartbeat': lte_comparison}
-
-        trials = self.fetch_trials(query)
+        trials = self._storage.get_lost_trials(self)
 
         for trial in trials:
-            query['_id'] = trial.id
             log.debug('Setting lost trial %s status to interrupted...', trial.id)
 
-            updated = self._storage.update_trial(trial, status='interrupted', where=query)
+            updated = self._storage.update_trial(trial, status='interrupted', where=dict(_id=trial.id))
             log.debug('success' if updated else 'failed')
 
     def update_completed_trial(self, trial, results_file):
@@ -317,10 +301,8 @@ class Experiment:
 
         """
         self._storage.retrieve_result(trial, results_file)
-
-        trial.end_time = datetime.datetime.utcnow()
-        trial.status = 'completed'
-        self._storage.update_trial(trial, **trial.to_dict())
+        self._storage.push_trial_results(trial)
+        self._storage.set_trial_status(trial, status='completed')
 
     def register_lie(self, lying_trial):
         """Register a *fake* trial created by the strategist.
@@ -391,15 +373,11 @@ class Experiment:
         .. note::
 
             It will return all non-completed trials, including new, reserved, suspended,
-            interruped and broken ones.
+            interrupted and broken ones.
 
         :return: list of non-completed `Trial` objects
         """
-        query = dict(
-            status={'$ne': 'completed'}
-            )
-
-        return self.fetch_trials_tree(query)
+        return self._storage.fetch_non_completed_trials(self)
 
     # pylint: disable=invalid-name
     @property
@@ -435,11 +413,7 @@ class Experiment:
             To be used as a terminating condition in a ``Worker``.
 
         """
-        query = dict(
-            experiment=self._id,
-            status='completed'
-            )
-        num_completed_trials = len(self._storage.fetch_trials(query))
+        num_completed_trials = self._storage.count_completed_trials(self)
 
         return ((num_completed_trials >= self.max_trials) or
                 (self._init_done and self.algorithms.is_done))
@@ -453,10 +427,8 @@ class Experiment:
 
 
         """
-        query = {'experiment': self._id, 'status': 'broken'}
-        num_broken_trials = len(self._storage.fetch_trials(query))
-
-        return num_broken_trials >= 3
+        num_broken_trials = self._storage.count_broken_trials(self)
+        return num_broken_trials >= 3   # TODO: make this configurable ?
 
     @property
     def space(self):
@@ -519,17 +491,8 @@ class Experiment:
            Elapsed time.
 
         """
-        query = dict(
-            experiment=self._id,
-            status='completed'
-            )
-        selection = {
-            'end_time': 1,
-            'results': 1,
-            'experiment': 1,
-            'params': 1
-            }
-        completed_trials = self.fetch_trials(query, selection)
+        completed_trials = self.fetch_non_completed_trials(self)
+
         if not completed_trials:
             return dict()
         stats = dict()

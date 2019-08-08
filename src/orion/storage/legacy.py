@@ -8,6 +8,7 @@
    :synopsis: Old Storage implementation
 
 """
+import datetime
 import logging
 
 from orion.core.io.convert import JSONConverter
@@ -135,6 +136,28 @@ class Legacy(BaseStorageProtocol):
 
         return trial
 
+    def get_trial(self, trial=None, uid=None):
+        if uid is None:
+            uid = trial.id
+
+        result = self._db.read('trials', {'_id': uid})
+        if not result:
+            return None
+
+        return result[0]
+
+    def get_lost_trials(self, experiment):
+        # TODO: Configure this
+        threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=60 * 2)
+        lte_comparison = {'$lte': threshold}
+        query = {
+            'experiment': experiment._id,
+            'status': 'reserved',
+            'heartbeat': lte_comparison
+        }
+
+        return self._db.read('trials', query)
+
     def update_trial(self, trial: Trial, where=None, **kwargs) -> Trial:
         """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
         if where is None:
@@ -142,3 +165,62 @@ class Legacy(BaseStorageProtocol):
 
         where['_id'] = trial.id
         return self._db.write('trials', data=kwargs, query=where)
+
+    def push_trial_results(self, trial):
+        return self._db.write('trials', data=trial.to_dict(), query={'_id': trial.id})
+
+    def set_trial_status(self, trial, status):
+        update = dict(
+            status=status,
+            heartbeat=datetime.datetime.utcnow()
+        )
+        if trial.status == 'new':
+            update["start_time"] = datetime.datetime.utcnow()
+
+        elif trial.status == 'completed':
+            update["end_time"] = datetime.datetime.utcnow()
+
+        return self._db.write('trials', data=update, query={'status': trial.status})
+
+    def fetch_pending_trials(self, experiment):
+        query = dict(
+            experiment=experiment._id,
+            status={'$in': ['new', 'suspended', 'interrupted']}
+        )
+        return self.fetch_trials(query)
+
+    def fetch_non_completed_trials(self, experiment):
+        query = dict(
+            experiment=experiment._id,
+            status={'$ne': 'completed'}
+        )
+        return self._db.read('trials', query)
+
+    def fetch_completed_trials(self, experiment):
+        query = dict(
+            experiment=experiment._id,
+            status='completed'
+        )
+        selection = {
+            'end_time': 1,
+            'results': 1,
+            'experiment': 1,
+            'params': 1
+        }
+        return self._db.read('trials', query, selection)
+
+    def count_completed_trials(self, experiment):
+        query = dict(
+            experiment=experiment._id,
+            status='completed'
+        )
+        return self._db.count('trials', query)
+
+    def count_broken_trials(self, experiment):
+        query = dict(
+            experiment=experiment._id,
+            status='broken'
+        )
+        return self._db.count('trials', query)
+
+
