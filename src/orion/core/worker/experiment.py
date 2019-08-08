@@ -281,7 +281,7 @@ class Experiment:
         trials and set them as interrupted so they can be launched again.
 
         """
-        trials = self._storage.get_lost_trials(self)
+        trials = self._storage.fetch_lost_trials(self)
 
         for trial in trials:
             log.debug('Setting lost trial %s status to interrupted...', trial.id)

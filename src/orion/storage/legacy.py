@@ -146,7 +146,16 @@ class Legacy(BaseStorageProtocol):
 
         return result[0]
 
-    def get_lost_trials(self, experiment):
+    def update_trial(self, trial: Trial, where=None, **kwargs) -> Trial:
+        """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
+        if where is None:
+            where = dict()
+
+        where['_id'] = trial.id
+        return self._db.write('trials', data=kwargs, query=where)
+
+    def fetch_lost_trials(self, experiment):
+        """See :func:`~orion.storage.BaseStorageProtocol.fetch_lost_trials`"""
         # TODO: Configure this
         threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=60 * 2)
         lte_comparison = {'$lte': threshold}
@@ -157,14 +166,6 @@ class Legacy(BaseStorageProtocol):
         }
 
         return self._db.read('trials', query)
-
-    def update_trial(self, trial: Trial, where=None, **kwargs) -> Trial:
-        """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
-        if where is None:
-            where = dict()
-
-        where['_id'] = trial.id
-        return self._db.write('trials', data=kwargs, query=where)
 
     def push_trial_results(self, trial):
         """See :func:`~orion.storage.BaseStorageProtocol.push_trial_results`"""

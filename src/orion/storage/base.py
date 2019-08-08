@@ -98,6 +98,10 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """
         raise NotImplementedError()
 
+    def fetch_lost_trials(self, experiment):
+        """Fetch all trials that have a heartbeat older that some given time delta (2 minutes by default)"""
+        raise NotImplementedError()
+
     def retrieve_result(self, trial, *args, **kwargs):
         """Fetch the result from a given medium (file, db, socket, etc..) for a given trial and
         insert it into the trial object
@@ -188,7 +192,16 @@ class ReadOnlyStorageProtocol(object):
     """
 
     __slots__ = ('_storage', )
-    valid_attributes = {"fetch_trials", "fetch_experiments"}
+    valid_attributes = {
+        'fetch_trials',
+        'fetch_experiments',
+        'count_broken_trials',
+        'count_completed_trials',
+        'fetch_completed_trials',
+        'fetch_non_completed_trials',
+        'fetch_pending_trials',
+        'fetch_lost_trials'
+    }
 
     def __init__(self, protocol):
         """Init method, see attributes of :class:`BaseStorageProtocol`."""
