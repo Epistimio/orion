@@ -377,7 +377,7 @@ class Experiment:
 
         :return: list of non-completed `Trial` objects
         """
-        return self._storage.fetch_non_completed_trials(self)
+        return self._storage.fetch_noncompleted_trials(self)
 
     # pylint: disable=invalid-name
     @property
@@ -491,7 +491,7 @@ class Experiment:
            Elapsed time.
 
         """
-        completed_trials = self.fetch_non_completed_trials(self)
+        completed_trials = self.fetch_completed_trials()
 
         if not completed_trials:
             return dict()

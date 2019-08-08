@@ -9,15 +9,17 @@
 
 """
 from contextlib import contextmanager
+import logging
 import os
 import pickle
-
+from pickle import PicklingError
 from filelock import FileLock
 
 import orion.core
 from orion.core.io.database import AbstractDB
 from orion.core.io.database.ephemeraldb import EphemeralDB
 
+log = logging.getLogger(__name__)
 
 DEFAULT_HOST = os.path.join(orion.core.DIRS.user_data_dir, 'orion', 'orion_db.pkl')
 
@@ -127,10 +129,41 @@ class PickledDB(AbstractDB):
     def _dump_database(self, database):
         """Write pickled DB on disk"""
         tmp_file = self.host + '.tmp'
-        with open(tmp_file, 'wb') as f:
-            pickle.dump(database, f)
+
+        try:
+            with open(tmp_file, 'wb') as f:
+                pickle.dump(database, f)
+
+        except PicklingError:
+            collection, doc = self._find_unpickable_doc(database)
+            log.error(f'Document in (collection: {collection}) is not pickable\ndoc: {doc._data}')
+
+            key, value = self._find_unpickable_field(doc)
+            log.error(f'because (value {value}) in (field: {key}) is not pickable')
+            raise
 
         os.rename(tmp_file, self.host)
+
+    @staticmethod
+    def _find_unpickable_doc(database):
+        for name, collection in database._db.items():
+            documents = collection._documents
+
+            for doc in documents:
+                try:
+                    _ = pickle.dumps(doc)
+
+                except PicklingError:
+                    return name, doc
+
+    @staticmethod
+    def _find_unpickable_field(doc):
+        for k, v in doc._data.items():
+            try:
+                _ = pickle.dumps(v)
+
+            except PicklingError:
+                return k, v
 
     @contextmanager
     def locked_database(self, write=True):

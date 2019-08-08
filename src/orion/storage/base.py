@@ -98,6 +98,15 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """
         raise NotImplementedError()
 
+    def get_trial(self, trial=None, uid=None):
+        """Fetch a single trial
+
+        Returns
+        -------
+        return none if the trial is not found
+        """
+        raise NotImplementedError()
+
     def fetch_lost_trials(self, experiment):
         """Fetch all trials that have a heartbeat older that some given time delta (2 minutes by default)"""
         raise NotImplementedError()
@@ -112,7 +121,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """Push the trial's results to the database"""
         raise NotImplementedError()
 
-    def set_trial_status(self, trial, status):
+    def set_trial_status(self, trial, status, heartbeat=None):
         """Update the trial status and the heartbeat"""
         raise NotImplementedError()
 
@@ -121,7 +130,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         this includes new, suspended and interupted trials"""
         raise NotImplementedError()
 
-    def fetch_non_completed_trials(self, experiment):
+    def fetch_noncompleted_trials(self, experiment):
         """Fetch all non completed trials"""
         raise NotImplementedError()
 
@@ -198,7 +207,7 @@ class ReadOnlyStorageProtocol(object):
         'count_broken_trials',
         'count_completed_trials',
         'fetch_completed_trials',
-        'fetch_non_completed_trials',
+        'fetch_noncompleted_trials',
         'fetch_pending_trials',
         'fetch_lost_trials'
     }

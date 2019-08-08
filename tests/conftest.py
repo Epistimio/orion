@@ -126,6 +126,13 @@ def categorical_values():
 
 
 @pytest.fixture()
+def exp_config_file():
+    """return configuration file used for stuff"""
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)),
+              'unittests', 'core', 'experiment.yaml')
+
+
+@pytest.fixture()
 def exp_config():
     """Load an example database."""
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -134,6 +141,7 @@ def exp_config():
 
     for i, t_dict in enumerate(exp_config[1]):
         exp_config[1][i] = Trial(**t_dict).to_dict()
+
     for i, _ in enumerate(exp_config[0]):
         exp_config[0][i]["metadata"]["user_script"] = os.path.join(
             os.path.dirname(__file__), exp_config[0][i]["metadata"]["user_script"])

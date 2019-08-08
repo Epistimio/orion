@@ -17,6 +17,7 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
+from orion.core.utils.state import OrionState
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -673,13 +674,18 @@ class TestReserveTrial(object):
         assert trial is None
 
     @pytest.mark.usefixtures("patch_sample")
-    def test_reserve_success(self, exp_config, hacked_exp, random_dt):
+    def test_reserve_success(self, exp_config_file, random_dt):
         """Successfully find new trials in db and reserve one at 'random'."""
-        trial = hacked_exp.reserve_trial()
-        exp_config[1][3]['status'] = 'reserved'
-        exp_config[1][3]['start_time'] = random_dt
-        exp_config[1][3]['heartbeat'] = random_dt
-        assert trial.to_dict() == exp_config[1][3]
+
+        with OrionState(from_yaml=exp_config_file) as cfg:
+            exp = cfg.get_experiment('supernaedo2', user='dendi')
+            trial = exp.reserve_trial()
+
+            cfg.trials[3]['status'] = 'reserved'
+            cfg.trials[3]['start_time'] = random_dt
+            cfg.trials[3]['heartbeat'] = random_dt
+
+            assert trial.to_dict() == cfg.trials[3]
 
     @pytest.mark.usefixtures("patch_sample2")
     def test_reserve_success2(self, exp_config, hacked_exp, random_dt):
@@ -733,10 +739,9 @@ class TestReserveTrial(object):
         trial = hacked_exp.fetch_trials(exp_query)[0]
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        get_storage().update_trial(trial,
+        get_storage().set_trial_status(trial,
                                    status='reserved',
-                                   heartbeat=heartbeat,
-                                   where={'experiment': hacked_exp.id})
+                                   heartbeat=heartbeat)
 
         exp_query['status'] = 'reserved'
         exp_query['_id'] = trial.id
@@ -760,15 +765,13 @@ class TestReserveTrial(object):
 
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        get_storage().update_trial(lost,
+        get_storage().set_trial_status(lost,
                                    status='reserved',
-                                   heartbeat=heartbeat,
-                                   where={'experiment': hacked_exp.id})
+                                   heartbeat=heartbeat)
 
-        get_storage().update_trial(not_lost,
+        get_storage().set_trial_status(not_lost,
                                    status='reserved',
-                                   heartbeat=random_dt,
-                                   where={'experiment': hacked_exp.id})
+                                   heartbeat=random_dt)
 
         exp_query['status'] = 'reserved'
         exp_query['_id'] = {'$in': [lost.id, not_lost.id]}
@@ -789,9 +792,7 @@ class TestReserveTrial(object):
         trial = hacked_exp.fetch_trials(exp_query)[0]
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        get_storage().update_trial(trial,
-                                   status='interrupted', heartbeat=heartbeat,
-                                   where={'experiment': hacked_exp.id})
+        get_storage().set_trial_status(trial, status='interrupted', heartbeat=heartbeat)
 
         assert hacked_exp.fetch_trials(exp_query)[0].status == 'interrupted'
 

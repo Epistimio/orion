@@ -126,18 +126,21 @@ def with_user_dendi(monkeypatch):
     monkeypatch.setattr(getpass, 'getuser', lambda: 'dendi')
 
 
+def default_datetime():
+    return datetime.datetime(1903, 4, 25, 0, 0, 0)
+
+
+class MockDatetime(datetime.datetime):
+    @classmethod
+    def utcnow(cls):
+        return default_datetime()
+
+
 @pytest.fixture()
 def random_dt(monkeypatch):
     """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    random_dt = datetime.datetime(1903, 4, 25, 0, 0, 0)
-
-    class MockDatetime(datetime.datetime):
-        @classmethod
-        def utcnow(cls):
-            return random_dt
-
     monkeypatch.setattr(datetime, 'datetime', MockDatetime)
-    return random_dt
+    return default_datetime()
 
 
 @pytest.fixture()
@@ -175,7 +178,7 @@ def refers_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_inst
 
     for experiment in experiments:
         query = {'_id': experiment['_id']}
-        print(experiment['refers'])
+
         root_id = experiment_dict[experiment['refers']['root_id']]['_id']
         if experiment['refers']['parent_id'] is not None:
             parent_id = experiment_dict[experiment['refers']['parent_id']]['_id']
