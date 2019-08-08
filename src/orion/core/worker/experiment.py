@@ -215,9 +215,9 @@ class Experiment:
         """See :func:`~orion.storage.BaseStorageProtocol.retrieve_result`"""
         return self._storage.retrieve_result(trial, *args, **kwargs)
 
-    def update_trial(self, *args, **kwargs):
-        """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
-        return self._storage.update_trial(*args, **kwargs)
+    def set_trial_status(self, *args, **kwargs):
+        """See :func:`~orion.storage.BaseStorageProtocol.set_trial_status`"""
+        return self._storage.set_trial_status(*args, **kwargs)
 
     def reserve_trial(self, score_handle=None, _depth=1):
         """Find *new* trials that exist currently in database and select one of

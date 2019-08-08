@@ -92,13 +92,13 @@ class Consumer(object):
         except KeyboardInterrupt:
             log.debug("### Save %s as interrupted.", trial)
             trial.status = 'interrupted'
-            self.experiment.update_trial(trial, status=trial.status)
+            self.experiment.set_trial_status(trial, status=trial.status)
 
             raise
         except RuntimeError:
             log.debug("### Save %s as broken.", trial)
             trial.status = 'broken'
-            self.experiment.update_trial(trial, status=trial.status)
+            self.experiment.set_trial_status(trial, status=trial.status)
 
     def _consume(self, trial, workdirname):
         config_file = tempfile.NamedTemporaryFile(mode='w', prefix='trial_',
