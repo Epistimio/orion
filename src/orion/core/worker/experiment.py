@@ -286,11 +286,11 @@ class Experiment:
         for trial in trials:
             log.debug('Setting lost trial %s status to interrupted...', trial.id)
 
-            updated = self._storage.update_trial(trial, status='interrupted', where=dict(_id=trial.id))
+            updated = self._storage.set_trial_status(trial, status='interrupted')
             log.debug('success' if updated else 'failed')
 
     def update_completed_trial(self, trial, results_file):
-        """Inform database about an evaluated `trial` with resultlts.
+        """Inform database about an evaluated `trial` with results.
 
         :param trial: Corresponds to a successful evaluation of a particular run.
         :type trial: `Trial`

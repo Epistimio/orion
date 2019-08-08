@@ -167,9 +167,11 @@ class Legacy(BaseStorageProtocol):
         return self._db.write('trials', data=kwargs, query=where)
 
     def push_trial_results(self, trial):
+        """See :func:`~orion.storage.BaseStorageProtocol.push_trial_results`"""
         return self._db.write('trials', data=trial.to_dict(), query={'_id': trial.id})
 
     def set_trial_status(self, trial, status):
+        """See :func:`~orion.storage.BaseStorageProtocol.set_trial_status`"""
         update = dict(
             status=status,
             heartbeat=datetime.datetime.utcnow()
@@ -180,9 +182,10 @@ class Legacy(BaseStorageProtocol):
         elif trial.status == 'completed':
             update["end_time"] = datetime.datetime.utcnow()
 
-        return self._db.write('trials', data=update, query={'status': trial.status})
+        return self._db.write('trials', data=update, query={'status': trial.status, '_id': trial.id})
 
     def fetch_pending_trials(self, experiment):
+        """See :func:`~orion.storage.BaseStorageProtocol.fetch_pending_trials`"""
         query = dict(
             experiment=experiment._id,
             status={'$in': ['new', 'suspended', 'interrupted']}
@@ -190,6 +193,7 @@ class Legacy(BaseStorageProtocol):
         return self.fetch_trials(query)
 
     def fetch_non_completed_trials(self, experiment):
+        """See :func:`~orion.storage.BaseStorageProtocol.fetch_non_completed_trials`"""
         query = dict(
             experiment=experiment._id,
             status={'$ne': 'completed'}
@@ -197,6 +201,7 @@ class Legacy(BaseStorageProtocol):
         return self._db.read('trials', query)
 
     def fetch_completed_trials(self, experiment):
+        """See :func:`~orion.storage.BaseStorageProtocol.fetch_completed_trials`"""
         query = dict(
             experiment=experiment._id,
             status='completed'
@@ -210,6 +215,7 @@ class Legacy(BaseStorageProtocol):
         return self._db.read('trials', query, selection)
 
     def count_completed_trials(self, experiment):
+        """See :func:`~orion.storage.BaseStorageProtocol.count_completed_trials`"""
         query = dict(
             experiment=experiment._id,
             status='completed'
@@ -217,6 +223,7 @@ class Legacy(BaseStorageProtocol):
         return self._db.count('trials', query)
 
     def count_broken_trials(self, experiment):
+        """See :func:`~orion.storage.BaseStorageProtocol.count_broken_trials`"""
         query = dict(
             experiment=experiment._id,
             status='broken'
