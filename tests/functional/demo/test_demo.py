@@ -12,7 +12,6 @@ import pytest
 import yaml
 
 import orion.core.cli
-from orion.core.io.database import Database
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
@@ -180,14 +179,9 @@ def test_demo_two_workers(database, monkeypatch):
     assert params[0]['type'] == 'real'
 
 
-@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("create_db_instance")
 def test_workon(database):
     """Test scenario having a configured experiment already setup."""
-    try:
-        Database(of_type='MongoDB', name='orion_test',
-                 username='user', password='pass')
-    except (TypeError, ValueError):
-        pass
     experiment = Experiment('voila_voici')
     config = experiment.configuration
     config['algorithms'] = {
@@ -471,3 +465,16 @@ def test_resilience(monkeypatch):
 
     exp = ExperimentBuilder().build_from({'name': 'demo_random_search'})
     assert len(exp.fetch_trials({'status': 'broken'})) == 3
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_demo_with_shutdown_quickly(monkeypatch):
+    """Check simple pipeline with random search is reasonably fast."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+    process = subprocess.Popen(
+        ["orion", "hunt", "--config", "./orion_config_random.yaml", "--max-trials", "30",
+         "./black_box.py", "-x~uniform(-50, 50)"])
+
+    assert process.wait(timeout=10) == 0

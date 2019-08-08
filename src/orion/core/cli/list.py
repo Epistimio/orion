@@ -10,10 +10,10 @@
 import logging
 
 from orion.core.cli import base as cli
-from orion.core.io.database import Database
 from orion.core.io.evc_builder import EVCBuilder
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.pptree import print_tree
+from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
 
@@ -33,19 +33,20 @@ def main(args):
     """List all experiments inside database."""
     builder = ExperimentBuilder()
     config = builder.fetch_full_config(args, use_db=False)
-    builder.setup_database(config)
+    builder.setup_storage(config)
 
     query = {}
 
     if args['name']:
         query['name'] = args['name']
 
-    experiments = Database().read("experiments", query)
+    experiments = get_storage().fetch_experiments(query)
 
     if args['name']:
         root_experiments = experiments
     else:
-        root_experiments = [exp for exp in experiments if exp['refers']['root_id'] == exp['_id']]
+        root_experiments = [exp for exp in experiments
+                            if exp['refers'].get('root_id', exp['_id']) == exp['_id']]
 
     for root_experiment in root_experiments:
         root = EVCBuilder().build_view_from({'name': root_experiment['name']}).node

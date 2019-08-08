@@ -90,14 +90,16 @@ import copy
 import logging
 
 from orion.core.io import resolve_config
-from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import NoConfigurationError
 from orion.core.worker.experiment import Experiment, ExperimentView
+from orion.storage.base import Storage
 
 
 log = logging.getLogger(__name__)
 
 
+# pylint: disable=too-many-public-methods
 class ExperimentBuilder(object):
     """Builder for :class:`orion.core.worker.experiment.Experiment`
     and :class:`orion.core.worker.experiment.ExperimentView`
@@ -202,7 +204,7 @@ class ExperimentBuilder(object):
         """
         local_config = self.fetch_full_config(cmdargs, use_db=False)
 
-        self.setup_database(local_config)
+        self.setup_storage(local_config)
 
         # Information should be enough to infer experiment's name.
         exp_name = local_config['name']
@@ -268,8 +270,8 @@ class ExperimentBuilder(object):
 
         return experiment
 
-    def setup_database(self, config):
-        """Create the Database instance from a configuration.
+    def setup_storage(self, config):
+        """Create the storage instance from a configuration.
 
         Parameters
         ----------
@@ -277,15 +279,13 @@ class ExperimentBuilder(object):
             Configuration for the database.
 
         """
-        db_opts = config['database']
+        # TODO: Fix this in config refactoring
+        db_opts = config.get('protocol', {'type': 'legacy'})
         dbtype = db_opts.pop('type')
-
-        if config.get("debug"):
-            dbtype = "EphemeralDB"
 
         log.debug("Creating %s database client with args: %s", dbtype, db_opts)
         try:
-            Database(of_type=dbtype, **db_opts)
+            Storage(of_type=dbtype, config=config, **db_opts)
         except ValueError:
-            if Database().__class__.__name__.lower() != dbtype.lower():
+            if Storage().__class__.__name__.lower() != dbtype.lower():
                 raise

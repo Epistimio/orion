@@ -8,11 +8,37 @@
    :synopsis: Old Storage implementation
 
 """
+import logging
 
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database
 from orion.core.worker.trial import Trial
 from orion.storage.base import BaseStorageProtocol
+
+log = logging.getLogger(__name__)
+
+
+def setup_database(config):
+    """Create the Database instance from a configuration.
+
+    Parameters
+    ----------
+    config: dict
+        Configuration for the database.
+
+    """
+    db_opts = config['database']
+    dbtype = db_opts.pop('type')
+
+    if config.get("debug"):
+        dbtype = "EphemeralDB"
+
+    log.debug("Creating %s database client with args: %s", dbtype, db_opts)
+    try:
+        Database(of_type=dbtype, **db_opts)
+    except ValueError:
+        if Database().__class__.__name__.lower() != dbtype.lower():
+            raise
 
 
 class Legacy(BaseStorageProtocol):
@@ -20,14 +46,17 @@ class Legacy(BaseStorageProtocol):
 
     Parameters
     ----------
-    uri: str
-        database uri specifying how to connect to the database
-        the uri follows the following format
-        `mongodb://[username:password@]host1[:port1][,...hostN[:portN]][/[database][?options]]`
+    config: Dict
+        configuration definition passed from experiment_builder
+        to storage factory to legacy constructor.
+        See `~orion.io.database.Database` for more details
 
     """
 
-    def __init__(self, uri=None):
+    def __init__(self, config=None):
+        if config is not None:
+            setup_database(config)
+
         self._db = Database()
         self._setup_db()
 
@@ -35,7 +64,8 @@ class Legacy(BaseStorageProtocol):
         """Database index setup"""
         self._db.ensure_index('experiments',
                               [('name', Database.ASCENDING),
-                               ('metadata.user', Database.ASCENDING)],
+                               ('metadata.user', Database.ASCENDING),
+                               ('version', Database.ASCENDING)],
                               unique=True)
         self._db.ensure_index('experiments', 'metadata.datetime')
 
@@ -47,7 +77,7 @@ class Legacy(BaseStorageProtocol):
 
     def create_experiment(self, config):
         """See :func:`~orion.storage.BaseStorageProtocol.create_experiment`"""
-        return self._db.write('experiments', config)
+        return self._db.write('experiments', data=config, query=None)
 
     def update_experiment(self, experiment, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
@@ -57,13 +87,21 @@ class Legacy(BaseStorageProtocol):
         where['_id'] = experiment._id
         return self._db.write('experiments', data=kwargs, query=where)
 
-    def fetch_experiments(self, query):
+    def fetch_experiments(self, query, selection=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_experiments`"""
-        return self._db.read('experiments', query)
+        return self._db.read('experiments', query, selection)
 
     def fetch_trials(self, query, selection=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
-        return [Trial(**t) for t in self._db.read('trials', query=query, selection=selection)]
+        def sort_key(item):
+            submit_time = item.submit_time
+            if submit_time is None:
+                return 0
+            return submit_time
+
+        trials = Trial.build(self._db.read('trials', query=query, selection=selection))
+        trials.sort(key=sort_key)
+        return trials
 
     def register_trial(self, trial):
         """See :func:`~orion.storage.BaseStorageProtocol.register_trial`"""
@@ -115,10 +153,9 @@ class Legacy(BaseStorageProtocol):
         return self._db.write('trials', data=kwargs, query=where)
 
     def fetch_pending_trials(self, experiment):
-        """Fetch trials that have not run yet"""
+        """See :func:`~orion.storage.BaseStorageProtocol.fetch_pending_trials`"""
         query = dict(
             experiment=experiment._id,
             status={'$in': ['new', 'suspended', 'interrupted']}
         )
         return self.fetch_trials(query)
-

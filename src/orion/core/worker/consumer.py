@@ -16,7 +16,7 @@ import tempfile
 
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.working_dir import WorkingDir
-
+from orion.core.worker.trial_pacemaker import TrialPacemaker
 
 log = logging.getLogger(__name__)
 
@@ -64,6 +64,8 @@ class Consumer(object):
 
         self.script_path = experiment.metadata['user_script']
 
+        self.pacemaker = None
+
     def consume(self, trial):
         """Execute user's script as a block box using the options contained
         within `trial`.
@@ -110,19 +112,19 @@ class Consumer(object):
         trial: Trial
            reference to the trial object that is going to be run
 
-        Note
+        Notes
         ----
         This functions define the environment variables described below
 
         ORION_PROJECT: str
-           name of the project the user is currently working on.
-           it defaults to `orion` is no project name was defined
+           name of the experiment the user is currently working on.
+           A project is a set of experiments
 
         ORION_EXPERIMENT: str
-           current experiment id that this trial belong to
+           current experiment triplet that fully the experiment (i.e unique)
 
         ORION_TRIAL_ID: str
-           current trial id that is currently being ran in this process
+           current trial id that is currently being executed in this process
 
         ORION_WORKING_DIRECTORY: str
            orion current working directory
@@ -134,8 +136,9 @@ class Consumer(object):
         """
         env = dict(os.environ)
 
-        env['ORION_PROJECT'] = 'orion'
-        env['ORION_EXPERIMENT'] = self.experiment.name
+        env['ORION_PROJECT'] = self.experiment.name
+        env['ORION_EXPERIMENT'] = \
+            f'{self.experiment.name}-{self.experiment.version}-{self.experiment.metadata["user"]}'
         env['ORION_TRIAL_ID'] = str(trial.id)
 
         env['ORION_WORKING_DIR'] = str(trial.working_dir)
@@ -156,21 +159,28 @@ class Consumer(object):
         log.debug("## New temp results file: %s", results_file.name)
 
         log.debug("## Building command line argument and configuration for trial.")
+        env = self.get_execution_environment(trial, results_file.name)
         cmd_args = self.template_builder.build_to(config_file.name, trial, self.experiment)
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
         env = self.get_execution_environment(trial, results_file.name)
+        self.pacemaker = TrialPacemaker(self.experiment, trial.id)
+        self.pacemaker.start()
+        try:
+            self.execute_process(cmd_args, env)
+        finally:
+            # merciless
+            self.pacemaker.stop()
 
-        self.execute_process(cmd_args, env)
         return results_file
 
-    def execute_process(self, cmd_args, overrides):
+    def execute_process(self, cmd_args, environ):
         """Facilitate launching a black-box trial."""
         command = [self.script_path] + cmd_args
 
         signal.signal(signal.SIGTERM, _handler)
-        process = subprocess.Popen(command, env=overrides)
+        process = subprocess.Popen(command, env=environ)
 
         return_code = process.wait()
         if return_code != 0:

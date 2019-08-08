@@ -185,6 +185,7 @@ class MongoDB(AbstractDB):
             # So we do insert_many instead.
             if type(data) not in (list, tuple):
                 data = [data]
+
             result = dbcollection.insert_many(documents=data)
             return len(result.inserted_ids)
 

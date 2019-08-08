@@ -20,8 +20,8 @@ import functools
 import logging
 
 from orion.core.evc.tree import TreeNode
-from orion.core.io.database import Database
 from orion.core.worker.experiment import ExperimentView
+from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ class ExperimentNode(TreeNode):
             self._no_parent_lookup = False
             query = {'_id': self.item.refers['parent_id']}
             selection = {'name': 1}
-            experiments = Database().read('experiments', query, selection=selection)
+            experiments = get_storage().fetch_experiments(query, selection)
             if experiments:
                 self.set_parent(ExperimentNode(name=experiments[0]['name']))
 
@@ -106,7 +106,7 @@ class ExperimentNode(TreeNode):
             self._no_children_lookup = False
             query = {'refers.parent_id': self.item.id}
             selection = {'name': 1}
-            experiments = Database().read('experiments', query, selection=selection)
+            experiments = get_storage().fetch_experiments(query, selection)
             for child in experiments:
                 self.add_children(ExperimentNode(name=child['name']))
 

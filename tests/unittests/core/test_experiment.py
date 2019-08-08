@@ -13,12 +13,27 @@ import tempfile
 import pytest
 
 from orion.algo.base import BaseAlgorithm
-from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.io.database import DuplicateKeyError
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
-
+from orion.storage.base import get_storage
 
 logging.basicConfig(level=logging.DEBUG)
+
+
+def check_sorted(trials):
+    """fetch_trials should return a list of sorted trials"""
+    def get_time(item):
+        sub_time = item.submit_time
+        if sub_time is None:
+            return 0
+        return sub_time
+
+    prev = trials[0]
+    for trial in trials[1:]:
+        assert get_time(trial) > get_time(prev), 'Trials should be in ASC order'
+
+    return trials
 
 
 @pytest.fixture()
@@ -27,6 +42,8 @@ def patch_sample(monkeypatch):
     def mock_sample(a_list, should_be_one):
         assert type(a_list) == list
         assert len(a_list) >= 1
+        check_sorted(a_list)
+
         # Part of `TestReserveTrial.test_reserve_success`
         assert a_list[0].status == 'new'
         assert a_list[1].status == 'new'
@@ -44,6 +61,8 @@ def patch_sample2(monkeypatch):
     def mock_sample(a_list, should_be_one):
         assert type(a_list) == list
         assert len(a_list) >= 1
+        check_sorted(a_list)
+
         # Part of `TestReserveTrial.test_reserve_success2`
         assert a_list[0].status == 'new'
         assert a_list[1].status == 'new'
@@ -64,6 +83,8 @@ def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
     def mock_sample(a_list, should_be_one):
         assert type(a_list) == list
         assert len(a_list) >= 1
+        check_sorted(a_list)
+
         # Part of `TestReserveTrial.test_reserve_race_condition`
         if len(a_list) == 4:
             assert a_list[0].status == 'new'
@@ -143,6 +164,7 @@ def new_config(random_dt):
                           "HEAD_sha": "fsa7df7a8sdf7a8s7",
                           "active_branch": None,
                           "diff_sha": "diff"}},
+        version=1,
         pool_size=10,
         max_trials=1000,
         working_dir=None,
@@ -189,6 +211,7 @@ class TestInitExperiment(object):
         assert exp.max_trials is None
         assert exp.algorithms is None
         assert exp.working_dir is None
+        assert exp.version == 1
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
@@ -207,6 +230,7 @@ class TestInitExperiment(object):
         assert exp.max_trials is None
         assert exp.algorithms is None
         assert exp.working_dir is None
+        assert exp.version == 1
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
@@ -224,6 +248,7 @@ class TestInitExperiment(object):
         assert exp.max_trials == exp_config[0][0]['max_trials']
         assert exp.algorithms == exp_config[0][0]['algorithms']
         assert exp.working_dir == exp_config[0][0]['working_dir']
+        assert exp.version == 1
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
@@ -239,6 +264,7 @@ class TestConfigProperty(object):
         """
         exp = Experiment('supernaedo2')
         exp_config[0][0].pop('_id')
+        exp_config[0][0]['version'] = 1
         assert exp.configuration == exp_config[0][0]
 
     def test_get_before_init_no_hit(self, exp_config, random_dt):
@@ -258,6 +284,7 @@ class TestConfigProperty(object):
         assert cfg['max_trials'] is None
         assert cfg['algorithms'] is None
         assert cfg['working_dir'] is None
+        assert cfg['version'] == 1
 
     @pytest.mark.skip(reason='Interactive prompt problems')
     def test_good_set_before_init_hit_with_diffs(self, exp_config):
@@ -348,6 +375,7 @@ class TestConfigProperty(object):
         assert exp.pool_size == new_config['pool_size']
         assert exp.max_trials == new_config['max_trials']
         assert exp.working_dir == new_config['working_dir']
+        assert exp.version == new_config['version']
         #  assert exp.algorithms == new_config['algorithms']
 
     def test_working_dir_is_correctly_set(self, database, new_config):
@@ -453,9 +481,11 @@ class TestConfigProperty(object):
         assert naughty_little_exp._init_done is True
         assert exp._init_done is False
         assert (experiment_count_before + 1) == count_experiment(exp)
+
         # First experiment won't be able to be configured
         with pytest.raises(DuplicateKeyError) as exc_info:
             exp.configure(new_config)
+
         assert 'duplicate key error' in str(exc_info.value)
 
         assert (experiment_count_before + 1) == count_experiment(exp)
@@ -597,13 +627,9 @@ def test_forcing_user(exp_config):
 class TestReserveTrial(object):
     """Calls to interface `Experiment.reserve_trial`."""
 
+    @pytest.mark.usefixtures("create_db_instance")
     def test_reserve_none(self):
         """Find nothing, return None."""
-        try:
-            Database(of_type='MongoDB', name='orion_test',
-                     username='user', password='pass')
-        except (TypeError, ValueError):
-            pass
         exp = Experiment('supernaekei')
         trial = exp.reserve_trial()
         assert trial is None
@@ -669,8 +695,10 @@ class TestReserveTrial(object):
         trial = hacked_exp.fetch_trials(exp_query)[0]
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        Database().write('trials', {'status': 'reserved', 'heartbeat': heartbeat},
-                         {'experiment': hacked_exp.id, '_id': trial.id})
+        get_storage().update_trial(trial,
+                                   status='reserved',
+                                   heartbeat=heartbeat,
+                                   where={'experiment': hacked_exp.id})
 
         exp_query['status'] = 'reserved'
         exp_query['_id'] = trial.id
@@ -694,10 +722,15 @@ class TestReserveTrial(object):
 
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        Database().write('trials', {'status': 'reserved', 'heartbeat': heartbeat},
-                         {'experiment': hacked_exp.id, '_id': lost.id})
-        Database().write('trials', {'status': 'reserved', 'heartbeat': random_dt},
-                         {'experiment': hacked_exp.id, '_id': not_lost.id})
+        get_storage().update_trial(lost,
+                                   status='reserved',
+                                   heartbeat=heartbeat,
+                                   where={'experiment': hacked_exp.id})
+
+        get_storage().update_trial(not_lost,
+                                   status='reserved',
+                                   heartbeat=random_dt,
+                                   where={'experiment': hacked_exp.id})
 
         exp_query['status'] = 'reserved'
         exp_query['_id'] = {'$in': [lost.id, not_lost.id]}
@@ -718,8 +751,9 @@ class TestReserveTrial(object):
         trial = hacked_exp.fetch_trials(exp_query)[0]
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        Database().write('trials', {'status': 'interrupted', 'heartbeat': heartbeat},
-                         {'experiment': hacked_exp.id, '_id': trial.id})
+        get_storage().update_trial(trial,
+                                   status='interrupted', heartbeat=heartbeat,
+                                   where={'experiment': hacked_exp.id})
 
         assert hacked_exp.fetch_trials(exp_query)[0].status == 'interrupted'
 
@@ -867,11 +901,8 @@ def test_broken_property(hacked_exp):
     assert not hacked_exp.is_broken
     trials = hacked_exp.fetch_trials({})[:3]
 
-    query = {'experiment': hacked_exp.id}
-
     for trial in trials:
-        query['_id'] = trial.id
-        Database().write('trials', {'status': 'broken'}, query)
+        get_storage().update_trial(trial, status='broken')
 
     assert hacked_exp.is_broken
 
@@ -919,6 +950,7 @@ class TestInitExperimentView(object):
         assert exp.metadata == exp_config[0][0]['metadata']
         assert exp.pool_size == exp_config[0][0]['pool_size']
         assert exp.max_trials == exp_config[0][0]['max_trials']
+        assert exp.version == exp_config[0][0]['version']
         # TODO: Views are not fully configured until configuration is refactored
         # assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
 
@@ -1062,6 +1094,7 @@ class TestInitExperimentWithEVC(object):
         assert exp.metadata == exp_config[0][4]['metadata']
         assert exp.pool_size is None
         assert exp.max_trials is None
+        assert exp.version == 1
         assert exp.configuration['algorithms'] == {'random': {'seed': None}}
 
     @pytest.mark.usefixtures("with_user_tsirif")
@@ -1078,6 +1111,7 @@ class TestInitExperimentWithEVC(object):
         assert exp.metadata == exp_config[0][4]['metadata']
         assert exp.pool_size == 2
         assert exp.max_trials == 1000
+        assert exp.version == 1
         assert exp.configuration['algorithms'] == {'random': {'seed': None}}
 
     @pytest.mark.usefixtures("with_user_tsirif")

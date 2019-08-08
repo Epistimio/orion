@@ -10,49 +10,57 @@
 """
 
 from collections import defaultdict
-
+import copy
 import datetime
 import logging
 import uuid
 
+try:
+    from track.client import TrackClient
+    from track.persistence.utils import parse_uri
+    from track.serialization import to_json
+    from track.structure import CustomStatus, Status as TrackStatus
+    from track.structure import Project, Trial as TrackTrial, TrialGroup
+    from track.persistence.local import ConcurrentWrite
+
+    HAS_TRACK = True
+except ImportError:
+    HAS_TRACK = False
+
 from orion.core.worker.trial import Trial as OrionTrial
 from orion.storage.base import BaseStorageProtocol
-
-from track.serialization import to_json
-from track.client import TrackClient
-from track.structure import Trial as TrackTrial, TrialGroup, Project
-from track.structure import CustomStatus, Status as TrackStatus
-from track.persistence.utils import parse_uri
 
 
 log = logging.getLogger(__name__)
 
-_status = [
-    CustomStatus('new', TrackStatus.CreatedGroup.value + 1),
-    CustomStatus('reserved', TrackStatus.CreatedGroup.value + 2),
 
-    CustomStatus('suspended', TrackStatus.FinishedGroup.value + 1),
-    # CustomStatus('completed', TrackStatus.FinishedGroup.value + 2),
+if HAS_TRACK:
+    _status = [
+        CustomStatus('new', TrackStatus.CreatedGroup.value + 1),
+        CustomStatus('reserved', TrackStatus.CreatedGroup.value + 2),
+    ]
 
-    CustomStatus('interrupted', TrackStatus.ErrorGroup.value + 1),
-    CustomStatus('broken', TrackStatus.ErrorGroup.value + 3)
-]
-
-_status_dict = {
-    s.name: s for s in _status
-}
-_status_dict['completed'] = TrackStatus.Completed
+    _status_dict = {
+        s.name: s for s in _status
+    }
+    _status_dict['completed'] = TrackStatus.Completed
+    _status_dict['interrupted'] = TrackStatus.Interrupted
+    _status_dict['broken'] = TrackStatus.Broken
+    _status_dict['suspended'] = TrackStatus.Suspended
 
 
 def get_track_status(val):
+    """Convert orion status to track status"""
     return _status_dict.get(val)
 
 
 def convert_track_status(status):
+    """Convert track status to orion status"""
     return status.name.lower()
 
 
 def remove_leading_slash(name):
+    """Remove leading slash"""
     # if name[0] == '/':
     #     return name[1:]
     # return name
@@ -60,6 +68,7 @@ def remove_leading_slash(name):
 
 
 def add_leading_slash(name):
+    """Add leading slash"""
     # if name[0] == '/':
     #     return name
     # return '/' + name
@@ -67,6 +76,21 @@ def add_leading_slash(name):
 
 
 class TrialAdapter:
+    """Mock Trial, see `~orion.core.worker.trial.Trial`
+
+    Parameters
+    ----------
+    storage_trial
+        Track trial object
+
+    orion_trial
+        Orion trial object
+
+    objective: str
+        objective key
+
+    """
+
     def __init__(self, storage_trial, orion_trial=None, objective=None):
         self.storage = storage_trial
         self.memory = orion_trial
@@ -91,20 +115,24 @@ class TrialAdapter:
 
     @property
     def experiment(self):
+        """See `~orion.core.worker.trial.Trial`"""
         if self.memory is not None:
             return self.memory.experiment
         return self.storage.group_id
 
     @property
     def hearbeat(self):
+        """See `~orion.core.worker.trial.Trial`"""
         return datetime.datetime.utcfromtimestamp(self.storage.metadata.get('heartbeat', 0))
 
     @property
     def id(self):
+        """See `~orion.core.worker.trial.Trial`"""
         return self.storage.uid
 
     @property
     def params(self):
+        """See `~orion.core.worker.trial.Trial`"""
         if self.memory is not None:
             return self.memory.params
 
@@ -120,6 +148,7 @@ class TrialAdapter:
 
     @property
     def status(self):
+        """See `~orion.core.worker.trial.Trial`"""
         if self.memory is not None:
             return self.memory.status
 
@@ -127,11 +156,11 @@ class TrialAdapter:
 
     @status.setter
     def status(self, value):
+        """See `~orion.core.worker.trial.Trial`"""
         pass
 
     def to_dict(self):
-        import copy
-
+        """See `~orion.core.worker.trial.Trial`"""
         trial = copy.deepcopy(self.storage.metadata)
         trial.update({
             'results': self.storage.metrics,
@@ -143,16 +172,18 @@ class TrialAdapter:
 
     @property
     def lie(self):
+        """See `~orion.core.worker.trial.Trial`"""
         # we do not lie like Orion does
         return None
 
     @property
     def objective(self):
+        """See `~orion.core.worker.trial.Trial`"""
         def result(val):
             return OrionTrial.Result(name=self.objective_key, value=val, type='objective')
 
         if self.objective_key is None:
-            raise RuntimeError('not objective was defined!')
+            raise RuntimeError('no objective key was defined!')
 
         self.objectives_values = []
 
@@ -177,30 +208,37 @@ class TrialAdapter:
 
     @property
     def results(self):
+        """See `~orion.core.worker.trial.Trial`"""
         return self._results
 
     @results.setter
     def results(self, value):
+        """See `~orion.core.worker.trial.Trial`"""
         self._results = value
 
     @property
     def gradient(self):
+        """See `~orion.core.worker.trial.Trial`"""
         return None
 
     @property
     def parents(self):
+        """See `~orion.core.worker.trial.Trial`"""
         return []
 
     @property
     def submit_time(self):
+        """See `~orion.core.worker.trial.Trial`"""
         return datetime.datetime.utcfromtimestamp(self.storage.metadata.get('submit_time'))
 
     @property
     def end_time(self):
+        """See `~orion.core.worker.trial.Trial`"""
         return datetime.datetime.utcfromtimestamp(self.storage.metadata.get('end_time'))
 
     @end_time.setter
     def end_time(self, value):
+        """See `~orion.core.worker.trial.Trial`"""
         self.storage.metadata['end_time'] = value
 
 
@@ -213,6 +251,7 @@ class Track(BaseStorageProtocol):
     uri: str
         Track backend to use for storage; the format is as follow
          `protocol://[username:password@]host1[:port1][,...hostN[:portN]]][/[database][?options]]`
+
     """
 
     def __init__(self, uri):
@@ -230,7 +269,6 @@ class Track(BaseStorageProtocol):
 
     def create_experiment(self, config):
         """Insert a new experiment inside the database"""
-
         if self.project is None:
             self.project = self.backend.get_project(Project(name=config['name']))
 
@@ -249,7 +287,7 @@ class Track(BaseStorageProtocol):
         return config
 
     def update_experiment(self, experiment, where=None, **kwargs):
-        """Update a the fields of a given trials
+        """Update the fields of a given trials
 
         Parameters
         ----------
@@ -257,7 +295,7 @@ class Track(BaseStorageProtocol):
             Experiment object to update
 
         where: Optional[dict]
-            constraint experiment must respect
+            constraint experiment must respect for the update to take place
 
         **kwargs: dict
             a dictionary of fields to update
@@ -267,7 +305,7 @@ class Track(BaseStorageProtocol):
         returns true if the underlying storage was updated
 
         """
-        pass
+        raise RuntimeError('You should not update a track experiment')
 
     def fetch_experiments(self, query):
         """Fetch all experiments that match the query"""
@@ -280,7 +318,7 @@ class Track(BaseStorageProtocol):
         trial.submit_time = stamp
 
         metadata = dict()
-        metadata['params_types'] = {remove_leading_slash(p.name): p.type for p in trial. params}
+        metadata['params_types'] = {remove_leading_slash(p.name): p.type for p in trial.params}
         metadata['submit_time'] = to_json(trial.submit_time)
         metadata['end_time'] = to_json(trial.end_time)
         metadata['worker'] = trial.worker
@@ -290,7 +328,7 @@ class Track(BaseStorageProtocol):
 
         metrics = defaultdict(list)
         for p in trial.results:
-            metrics[p.name] = p.value
+            metrics[p.name] = [p.value]
 
         self.current_trial = self.backend.new_trial(TrackTrial(
             _hash=trial.hash_name,
@@ -322,6 +360,12 @@ class Track(BaseStorageProtocol):
 
     def fetch_trials(self, query, *args, **kwargs):
         """Fetch all the trials that match the query"""
+        def sort_key(item):
+            submit_time = item.submit_time
+            if submit_time is None:
+                return 0
+            return submit_time
+
         query = to_json(query)
 
         new_query = {}
@@ -344,8 +388,11 @@ class Track(BaseStorageProtocol):
             else:
                 new_query[k] = v
 
-        results = [TrialAdapter(t, objective=self.objective) for t in self.backend.fetch_trials(new_query)]
-        return results
+        trials = [
+            TrialAdapter(t, objective=self.objective) for t in self.backend.fetch_trials(new_query)
+        ]
+        trials.sort(key=sort_key)
+        return trials
 
     _ignore_updates_for = {'results', 'params', '_id'}
 
@@ -382,8 +429,7 @@ class Track(BaseStorageProtocol):
                     self.backend.log_trial_metadata(trial, **pair)
 
             return True
-
-        except RuntimeError:
+        except ConcurrentWrite:
             return False
 
     def retrieve_result(self, trial, *args, **kwargs):
@@ -402,7 +448,8 @@ class Track(BaseStorageProtocol):
         return new_trial
 
     def fetch_pending_trials(self, experiment):
-        """Fetch trials that have not run yet"""
+        """See :func:`~orion.storage.BaseStorageProtocol.fetch_pending_trials`"""
+
         query = dict(
             group_id=experiment._id,
             status={'$in': [

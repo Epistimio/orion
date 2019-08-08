@@ -126,7 +126,7 @@ def only_experiments_db(clean_db, database, exp_config):
     database.experiments.insert_many(exp_config[0])
 
 
-def ensure_deterministic_id(name, db_instance):
+def ensure_deterministic_id(name, db_instance, update=None):
     """Change the id of experiment to its name."""
     experiment = db_instance.read('experiments', {'name': name})[0]
     db_instance.remove('experiments', {'_id': experiment['_id']})
@@ -134,6 +134,9 @@ def ensure_deterministic_id(name, db_instance):
 
     if experiment['refers']['parent_id'] is None:
         experiment['refers']['root_id'] = name
+
+    if update is not None:
+        experiment.update(update)
 
     db_instance.write('experiments', experiment)
 
@@ -146,6 +149,12 @@ def one_experiment(monkeypatch, db_instance):
     orion.core.cli.main(['init_only', '-n', 'test_single_exp',
                          './black_box.py', '--x~uniform(0,1)'])
     ensure_deterministic_id('test_single_exp', db_instance)
+
+
+@pytest.fixture
+def broken_refers(one_experiment, db_instance):
+    """Create an experiment with broken refers."""
+    ensure_deterministic_id('test_single_exp', db_instance, update=dict(refers={'oups': 'broken'}))
 
 
 @pytest.fixture

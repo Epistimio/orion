@@ -27,14 +27,13 @@ from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
                                         Strategy)
-from orion.core.worker.trial_monitor import TrialMonitor
-from orion.storage.base import ReadOnlyStorageProtocol, StorageProtocol
+from orion.storage.base import get_storage, ReadOnlyStorageProtocol
 
 log = logging.getLogger(__name__)
 
 
 # pylint: disable=too-many-public-methods
-class Experiment(object):
+class Experiment:
     """Represents an entry in database/experiments collection.
 
     Attributes
@@ -49,6 +48,8 @@ class Experiment(object):
        trials we want to add in the history of completed trials we want to re-use.
        For convenience and database effiency purpose, all experiments of a common tree shares
        `refers[root_id]`, with the root experiment refering to itself.
+    version: int
+        Current version of this experiment.
     metadata : dict
        Contains managerial information about this `Experiment`.
     pool_size : int
@@ -85,7 +86,7 @@ class Experiment(object):
 
     """
 
-    __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials',
+    __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials', 'version',
                  'algorithms', 'producer', 'working_dir', '_init_done', '_id',
                  '_node', '_storage')
     non_branching_attrs = ('pool_size', 'max_trials')
@@ -106,16 +107,6 @@ class Experiment(object):
         """
         log.debug("Creating Experiment object with name: %s", name)
         self._init_done = False
-
-        # --
-        # Pending config Refactoring
-        import os
-        # ORION_STORAGE=track:file://test.json
-        uri = os.environ.get('ORION_STORAGE', 'legacy:..')
-        proto, proto_args = uri.split(':', 1)
-        self._storage = StorageProtocol(proto, proto_args)
-        # --
-
         self._id = None
         self.name = name
         self._node = None
@@ -128,16 +119,22 @@ class Experiment(object):
         self.algorithms = None
         self.working_dir = None
         self.producer = {'strategy': None}
+        self.version = 1
+        # this needs to be an attribute because we override it in ExperienceView
+        self._storage = get_storage()
 
         config = self._storage.fetch_experiments({'name': name, 'metadata.user': user})
 
         if config:
             log.debug("Found existing experiment, %s, under user, %s, registered in database.",
                       name, user)
+
             if len(config) > 1:
-                log.warning("Many (%s) experiments for (%s, %s) are available but "
-                            "only the most recent one can be accessed. "
-                            "Experiment branches will be supported soon.", len(config), name, user)
+                version = max(map(lambda exp: exp['version'], config))
+                log.info("Many versions for experiment %s have been found. Using latest\
+                          version %s.", name, version)
+                config = filter(lambda exp: exp['version'] == version, config)
+
             config = sorted(config, key=lambda x: x['metadata']['datetime'],
                             reverse=True)[0]
             for attrname in self.__slots__:
@@ -219,14 +216,14 @@ class Experiment(object):
         :param _depth: recursion depth only used for logging purposes can be ignored
         :return: selected `Trial` object, None if could not find any.
         """
-        log.debug('%s reserving trial with (score: %s)', '<' * _depth, score_handle)
+        log.debug('%s reserving trial with (score: %s)', '>' * _depth, score_handle)
         if score_handle is not None and not callable(score_handle):
             raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
 
         self.fix_lost_trials()
 
         new_trials = self._storage.fetch_pending_trials(self)
-        log.debug('%s Fetched (trials: %s)', '<' * _depth, len(new_trials))
+        log.debug('%s Fetched (trials: %s)', '>' * _depth, len(new_trials))
 
         if not new_trials:
             log.debug('%s no new trials found', '<' * _depth)
@@ -243,7 +240,7 @@ class Experiment(object):
                         "parameter space has not been defined yet.")
 
         selected_trial = random.sample(new_trials, 1)[0]
-        log.debug('%s selected (trial: %s)', '<' * _depth, selected_trial)
+        log.debug('%s selected (trial: %s)', '>' * _depth, selected_trial)
 
         update = dict(status='reserved', heartbeat=datetime.datetime.utcnow())
 
@@ -254,7 +251,7 @@ class Experiment(object):
         # status meanwhile, update will fail, because query will fail.
         # This relies on the atomicity of document updates.
 
-        log.debug('%s trying to reverse trial', '<' * _depth)
+        log.debug('%s trying to reverse trial', '>' * _depth)
         reserved = self._storage.update_trial(
             selected_trial, **update, where={'status': selected_trial.status})
 
@@ -264,7 +261,6 @@ class Experiment(object):
         else:
             log.debug('%s found suitable trial', '<' * _depth)
             selected_trial = self.fetch_trials({'_id': selected_trial.id})[0]
-            TrialMonitor(self, selected_trial.id).start()
 
         log.debug('%s reserved trial (trial: %s)', '<' * _depth, selected_trial)
         return selected_trial
@@ -481,89 +477,6 @@ class Experiment(object):
         # object from a getter.
         return copy.deepcopy(config)
 
-    def configure(self, config, enable_branching=True, enable_update=True):
-        """Set `Experiment` by overwriting current attributes.
-
-        If `Experiment` was already set and an overwrite is needed, a *branch*
-        is advised with a different :attr:`name` for this particular configuration.
-
-        .. note::
-
-            Calling this property is necessary for an experiment's initialization process to be
-            considered as done. But it can be called only once.
-
-        """
-        if self._init_done:
-            raise RuntimeError("Configuration is done; cannot reset an Experiment.")
-
-        # Experiment was build using db, but config was build before experiment got in db.
-        # Fake a DuplicateKeyError to force reinstantiation of experiment with proper config.
-        if self._id is not None and "datetime" not in config['metadata']:
-            raise DuplicateKeyError("Cannot register an existing experiment with a new config")
-
-        # Copy and simulate instantiating given configuration
-        experiment = Experiment(self.name)
-        experiment._instantiate_config(self.configuration)
-        experiment._instantiate_config(config)
-        experiment._init_done = True
-
-        # If id is None in this object, then database did not hit a config
-        # with same (name, user's name) pair. Everything depends on the user's
-        # orion_config to set.
-        if self._id is None:
-            if config['name'] != self.name or \
-                    config['metadata']['user'] != self.metadata['user']:
-                raise ValueError("Configuration given is inconsistent with this Experiment.")
-            is_new = True
-        else:
-            # Branch if it is needed
-            # TODO: When refactoring experiment managenent, is_different_from
-            # will be used when EVC is not available.
-            # is_new = self._is_different_from(experiment.configuration)
-            branching_configuration = fetch_branching_configuration(config)
-            conflicts = detect_conflicts(self.configuration, experiment.configuration)
-            is_new = len(conflicts.get()) > 1 or branching_configuration.get('branch')
-            if is_new and not enable_branching:
-                raise ValueError("Configuration is different and generate a "
-                                 "branching event")
-            elif is_new:
-                experiment._branch_config(conflicts, branching_configuration)
-
-        final_config = experiment.configuration
-        self._instantiate_config(final_config)
-
-        self._init_done = True
-
-        if not enable_update:
-            return
-
-        # If everything is alright, push new config to database
-        if is_new:
-            final_config['metadata']['datetime'] = datetime.datetime.utcnow()
-            self.metadata['datetime'] = final_config['metadata']['datetime']
-            # This will raise DuplicateKeyError if a concurrent experiment with
-            # identical (name, metadata.user) is written first in the database.
-
-            self._storage.create_experiment(final_config)
-
-            # XXX: Reminder for future DB implementations:
-            # MongoDB, updates an inserted dict with _id, so should you :P
-            self._id = final_config['_id']
-
-            # Update refers in db if experiment is root
-            if not self.refers:
-                self.refers = {'root_id': self._id, 'parent_id': None, 'adapter': []}
-                self._storage.update_experiment(self, refers=self.refers)
-
-        else:
-            # Writing the final config to an already existing experiment raises
-            # a DuplicatKeyError because of the embedding id `metadata.user`.
-            # To avoid this `final_config["name"]` is popped out before
-            # `db.write()`, thus seamingly breaking  the compound index
-            # `(name, metadata.user)`
-            final_config.pop("name")
-            self._storage.update_experiment(self, **final_config)
-
     @property
     def stats(self):
         """Calculate a stats dictionary for this particular experiment.
@@ -623,6 +536,92 @@ class Experiment(object):
 
         return stats
 
+    def configure(self, config, enable_branching=True, enable_update=True):
+        """Set `Experiment` by overwriting current attributes.
+
+        If `Experiment` was already set and an overwrite is needed, a *branch*
+        is advised with a different :attr:`name` for this particular configuration.
+
+        .. note::
+
+            Calling this property is necessary for an experiment's initialization process to be
+            considered as done. But it can be called only once.
+
+        """
+        log.debug('configuring (name: %s)', config['name'])
+        if self._init_done:
+            raise RuntimeError("Configuration is done; cannot reset an Experiment.")
+
+        # Experiment was build using db, but config was build before experiment got in db.
+        # Fake a DuplicateKeyError to force reinstantiation of experiment with proper config.
+        if self._id is not None and "datetime" not in config['metadata']:
+            raise DuplicateKeyError("Cannot register an existing experiment with a new config")
+
+        # Copy and simulate instantiating given configuration
+        experiment = Experiment(self.name)
+        experiment._instantiate_config(self.configuration)
+        experiment._instantiate_config(config)
+        experiment._init_done = True
+
+        # If id is None in this object, then database did not hit a config
+        # with same (name, user's name) pair. Everything depends on the user's
+        # orion_config to set.
+        if self._id is None:
+            if config['name'] != self.name or \
+                    config['metadata']['user'] != self.metadata['user']:
+                raise ValueError("Configuration given is inconsistent with this Experiment.")
+            must_branch = True
+        else:
+            # Branch if it is needed
+            # TODO: When refactoring experiment managenent, is_different_from
+            # will be used when EVC is not available.
+            # must_branch = self._is_different_from(experiment.configuration)
+            branching_configuration = fetch_branching_configuration(config)
+            conflicts = detect_conflicts(self.configuration, experiment.configuration)
+            must_branch = len(conflicts.get()) > 1 or branching_configuration.get('branch')
+            if must_branch and not enable_branching:
+                raise ValueError("Configuration is different and generate a "
+                                 "branching event")
+            elif must_branch:
+                experiment._branch_config(conflicts, branching_configuration)
+
+        final_config = experiment.configuration
+        self._instantiate_config(final_config)
+
+        self._init_done = True
+
+        if not enable_update:
+            return
+
+        # If everything is alright, push new config to database
+        if must_branch:
+            final_config['metadata']['datetime'] = datetime.datetime.utcnow()
+            self.metadata['datetime'] = final_config['metadata']['datetime']
+            # This will raise DuplicateKeyError if a concurrent experiment with
+            # identical (name, metadata.user) is written first in the database.
+            self._storage.create_experiment(final_config)
+
+            # XXX: Reminder for future DB implementations:
+            # MongoDB, updates an inserted dict with _id, so should you :P
+            self._id = final_config['_id']
+
+            # Update refers in db if experiment is root
+            if self.refers['parent_id'] is None:
+                log.debug('update refers (name: %s)', config['name'])
+                self.refers['root_id'] = self._id
+                self._storage.update_experiment(self, refers=self.refers)
+
+        else:
+            # Writing the final config to an already existing experiment raises
+            # a DuplicatKeyError because of the embedding id `metadata.user`.
+            # To avoid this `final_config["name"]` is popped out before
+            # `db.write()`, thus seamingly breaking  the compound index
+            # `(name, metadata.user)`
+            log.debug('updating experiment (name: %s)', config['name'])
+
+            final_config.pop("name")
+            self._storage.update_experiment(self, **final_config)
+
     def _instantiate_config(self, config):
         """Check before dispatching experiment whether configuration corresponds
         to a executable experiment environment.
@@ -665,7 +664,10 @@ class Experiment(object):
         except KeyError:
             pass
 
-        if self.refers and not isinstance(self.refers.get('adapter'), BaseAdapter):
+        self.refers.setdefault('parent_id', None)
+        self.refers.setdefault('root_id', self._id)
+        self.refers.setdefault('adapter', [])
+        if self.refers['adapter'] and not isinstance(self.refers.get('adapter'), BaseAdapter):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
         if not self.producer.get('strategy'):
@@ -741,7 +743,8 @@ class ExperimentView(object):
     __slots__ = ('_experiment', )
 
     #                     Attributes
-    valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials"] +
+    valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials",
+                         "version"] +
                         # Properties
                         ["id", "node", "is_done", "space", "algorithms", "stats", "configuration"] +
                         # Methods
@@ -771,8 +774,11 @@ class ExperimentView(object):
         # TODO: Views are not fully configured until configuration is refactored
         #       This snippet is to instantiate adapters anyhow, because it is required for
         #       experiment views in EVC.
-        if self.refers and not isinstance(self.refers.get('adapter'), BaseAdapter):
-            self._experiment.refers['adapter'] = Adapter.build(self.refers['adapter'])
+        self.refers.setdefault('parent_id', None)
+        self.refers.setdefault('root_id', self._id)
+        self.refers.setdefault('adapter', [])
+        if self.refers['adapter'] and not isinstance(self.refers.get('adapter'), BaseAdapter):
+            self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
         # try:
         #     self._experiment.configure(self._experiment.configuration, enable_branching=False,
@@ -784,7 +790,7 @@ class ExperimentView(object):
         #             "Experiment object. This is likely due to a backward incompatible update in "
         #             "Oríon. Please report to https://github.com/epistimio/orion/issues.") from e
         #     raise
-        self._experiment._storage = ReadOnlyStorageProtocol(self._experiment._storage)
+        self._experiment._storage = ReadOnlyStorageProtocol(get_storage())
 
     def __getattr__(self, name):
         """Get attribute only if valid"""
