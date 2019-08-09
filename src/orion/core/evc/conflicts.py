@@ -1109,7 +1109,7 @@ class CodeConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return {}
+        return dict(change_type=adapters.CodeChange.BREAK)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution CodeResolution
@@ -1243,7 +1243,7 @@ class CommandLineConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return {}
+        return dict(change_type=adapters.CommandLineChange.BREAK)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution CommandLineResolution
@@ -1373,7 +1373,7 @@ class ScriptConfigConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return {}
+        return dict(change_type=adapters.ScriptConfigChange.BREAK)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution ScriptConfigResolution
