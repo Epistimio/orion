@@ -174,6 +174,20 @@ def cl_config(create_db_instance):
     return config
 
 
+@pytest.fixture
+def conflicts(new_dimension_conflict, changed_dimension_conflict, missing_dimension_conflict,
+              algorithm_conflict, code_conflict, experiment_name_conflict):
+    """Create a container for conflicts with one of each types for testing purposes"""
+    conflicts = evc.conflicts.Conflicts()
+    conflicts.register(new_dimension_conflict)
+    conflicts.register(changed_dimension_conflict)
+    conflicts.register(missing_dimension_conflict)
+    conflicts.register(algorithm_conflict)
+    conflicts.register(code_conflict)
+    conflicts.register(experiment_name_conflict)
+    return conflicts
+
+
 class TestConflictDetection(object):
     """Test detection of conflicts between two configurations"""
 
@@ -568,6 +582,15 @@ class TestResolutions(object):
 
         assert len(conflicts.get()) == 2
         assert len(conflicts.get_resolved()) == 1
+
+
+    def test_solve_all_automatically(self, conflicts):
+        """Test if all conflicts all automatically resolve by the ExperimentBranchBuilder."""
+        branch_builder = ExperimentBranchBuilder(conflicts, {})
+
+        print(conflicts.get())
+        print(conflicts.get_resolved())
+        assert len(conflicts.get_resolved()) == 6
 
 
 class TestResolutionsWithMarkers(object):
