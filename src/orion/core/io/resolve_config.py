@@ -23,7 +23,7 @@ How:
     * cmd-args **>** cmd-provided orion_config **>** database (if experiment name
       can be found) **>** default files
 
-Default files are given as a list at :const:`DEF_CONFIG_FILES_PATHS` and a
+Default files are given as a list at :const:`orion.core.DEF_CONFIG_FILES_PATHS` and a
 precedence is respected when building the settings dictionary:
 
  * default orion example file **<** system-wide config **<** user-wide config
@@ -36,13 +36,14 @@ import getpass
 import hashlib
 import logging
 import os
-import socket
 
 import git
 from numpy import inf as infinity
 import yaml
 
 import orion
+import orion.core
+from orion.core import config
 
 
 def is_exe(path):
@@ -61,24 +62,13 @@ DEF_CMD_MAX_TRIALS = (infinity, 'inf/until preempted')
 DEF_CMD_WORKER_TRIALS = (infinity, 'inf/until preempted')
 DEF_CMD_POOL_SIZE = (1, str(1))
 
-DEF_CONFIG_FILES_PATHS = [
-    os.path.join(orion.core.DIRS.site_data_dir, 'orion_config.yaml.example'),
-    os.path.join(orion.core.DIRS.site_config_dir, 'orion_config.yaml'),
-    os.path.join(orion.core.DIRS.user_config_dir, 'orion_config.yaml')
-    ]
-
-try:
-    DEFAULT_HOST = socket.gethostbyname(socket.gethostname())
-except socket.gaierror:
-    DEFAULT_HOST = 'localhost'
-
 # list containing tuples of
 # (environmental variable names, configuration keys, default values)
 ENV_VARS_DB = [
-    ('ORION_DB_NAME', 'name', 'orion'),
-    ('ORION_DB_TYPE', 'type', 'MongoDB'),
-    ('ORION_DB_ADDRESS', 'host', DEFAULT_HOST),
-    ('ORION_DB_PORT', 'port', '27017')
+    ('ORION_DB_NAME', 'name'),
+    ('ORION_DB_TYPE', 'type'),
+    ('ORION_DB_ADDRESS', 'host'),
+    ('ORION_DB_PORT', 'port')
     ]
 
 # TODO: Default resource from environmental (localhost)
@@ -108,7 +98,7 @@ def fetch_default_options():
     Respect precedence from application's default, to system's and
     user's.
 
-    .. seealso:: :const:`DEF_CONFIG_FILES_PATHS`
+    .. seealso:: :const:`orion.core.DEF_CONFIG_FILES_PATHS`
 
     """
     default_config = dict()
@@ -124,11 +114,11 @@ def fetch_default_options():
     # get default options for some managerial variables (see :const:`ENV_VARS`)
     for signifier, env_vars in ENV_VARS.items():
         default_config[signifier] = {}
-        for _, key, default_value in env_vars:
-            default_config[signifier][key] = default_value
+        for _, key in env_vars:
+            default_config[signifier][key] = config[signifier][key]
 
     # fetch options from default configuration files
-    for configpath in DEF_CONFIG_FILES_PATHS:
+    for configpath in orion.core.DEF_CONFIG_FILES_PATHS:
         try:
             with open(configpath) as f:
                 cfg = yaml.safe_load(f)
@@ -159,7 +149,7 @@ def fetch_env_vars():
     for signif, evars in ENV_VARS.items():
         env_vars[signif] = {}
 
-        for var_name, key, _ in evars:
+        for var_name, key in evars:
             value = os.getenv(var_name)
 
             if value is not None:
@@ -246,8 +236,8 @@ def merge_configs(*configs):
     """
     merged_config = configs[0]
 
-    for config in configs[1:]:
-        for key, value in config.items():
+    for config_i in configs[1:]:
+        for key, value in config_i.items():
             if isinstance(value, dict) and isinstance(merged_config.get(key), dict):
                 merged_config[key] = merge_configs(merged_config[key], value)
             elif value is not None:

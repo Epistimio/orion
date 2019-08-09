@@ -18,7 +18,7 @@ hierarchy. From the more global to the more specific, there is:
 
 1. Global configuration:
 
-  Defined by `src.orion.core.io.resolve_config.DEF_CONFIG_FILES_PATHS`.
+  Defined by `orion.core.DEF_CONFIG_FILES_PATHS`.
   Can be scattered in user file system, defaults could look like:
 
     - `/some/path/to/.virtualenvs/orion/share/orion.core`
@@ -28,8 +28,8 @@ hierarchy. From the more global to the more specific, there is:
   Note that some variables have default value even if user do not defined them in global
   configuration:
 
-    - `max_trials = src.orion.core.io.resolve_config.DEF_CMD_MAX_TRIALS`
-    - `pool_size = src.orion.core.io.resolve_config.DEF_CMD_POOL_SIZE`
+    - `max_trials = orion.core.io.resolve_config.DEF_CMD_MAX_TRIALS`
+    - `pool_size = orion.core.io.resolve_config.DEF_CMD_POOL_SIZE`
     - `algorithms = random`
     - Database specific:
 
