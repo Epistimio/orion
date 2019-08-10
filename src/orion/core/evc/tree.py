@@ -129,8 +129,8 @@ class TreeNode(object):
     root: instance of `orion.core.evc.tree.TreeNode`
         The top node of the current tree. The root node returns itself.
 
-    Example
-    -------
+    Examples
+    --------
     .. code-block:: python
         :linenos:
 
