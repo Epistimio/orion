@@ -442,17 +442,6 @@ def test_new_cli(init_full_x_new_cli):
     assert len(experiment.fetch_trials({})) == 20
 
 
-def test_new_cli_not_resolved(init_full_x):
-    """Test that new cli conflict is not automatically resolved"""
-    name = "full_x"
-    branch = "full_x_new_cli"
-    with pytest.raises(ValueError) as exc:
-        orion.core.cli.main(
-            ("init_only -n {name} --branch {branch} ./black_box.py "
-             "-x~uniform(-10,10) --a-new argument").format(name=name, branch=branch).split(" "))
-    assert "Configuration is different and generates a branching event" in str(exc.value)
-
-
 def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
     """Test that auto-resolution does resolve all conflicts"""
     # Patch cmdloop to avoid autoresolution's prompt

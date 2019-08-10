@@ -464,7 +464,7 @@ class TestCommands(object):
         assert len(conflicts.get()) == 11
         branch_solver_prompt.do_auto("")
         assert len(conflicts.get()) == 11
-        assert len(conflicts.get_resolved()) == 7
+        assert len(conflicts.get_resolved()) == 10
 
         assert branch_solver_prompt.do_commit("") is False
 
@@ -481,7 +481,7 @@ class TestCommands(object):
         assert len(conflicts.get()) == 11
         branch_solver_prompt.do_auto("")
         assert len(conflicts.get()) == 11
-        assert len(conflicts.get_resolved()) == 7
+        assert len(conflicts.get_resolved()) == 10
 
     def test_reset_many(self, conflicts, branch_solver_prompt):
         """Verify that all resolutions are reverted"""
@@ -489,7 +489,7 @@ class TestCommands(object):
         assert len(conflicts.get()) == 11
         branch_solver_prompt.do_auto("")
         assert len(conflicts.get()) == 11
-        assert len(conflicts.get_resolved()) == 7
+        assert len(conflicts.get_resolved()) == 10
 
         reset_strings = []
         for resolution in conflicts.get_resolutions():
