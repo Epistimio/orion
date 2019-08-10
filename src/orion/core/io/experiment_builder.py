@@ -130,8 +130,8 @@ class ExperimentBuilder(object):
     def fetch_config_from_db(self, cmdargs):
         """Get dictionary of options from experiment found in the database
 
-        Note
-        ----
+        Notes
+        -----
             This method builds an experiment view in the background to fetch the configuration from
             the database.
         """
@@ -163,8 +163,8 @@ class ExperimentBuilder(object):
         use_db: bool
             Use experiment configuration found in database if True. Defaults to True.
 
-        Note
-        ----
+        Notes
+        -----
             This method builds an experiment view in the background to fetch the configuration from
             the database.
 
