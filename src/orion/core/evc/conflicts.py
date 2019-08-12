@@ -1109,7 +1109,7 @@ class CodeConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return {}
+        return dict(change_type=adapters.CodeChange.BREAK)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution CodeResolution
@@ -1243,7 +1243,7 @@ class CommandLineConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return {}
+        return dict(change_type=adapters.CommandLineChange.BREAK)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution CommandLineResolution
@@ -1373,7 +1373,7 @@ class ScriptConfigConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return {}
+        return dict(change_type=adapters.ScriptConfigChange.BREAK)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution ScriptConfigResolution
@@ -1587,7 +1587,7 @@ class ExperimentNameConflict(Conflict):
 
             # If the new name is the same as the old name, we are trying to increment
             # the version of the experiment.
-            elif self._check_for_children():
+            elif self._check_for_greater_versions():
                 raise ValueError(
                     "Experiment name \'{0}\' already exist for user \'{1}\' and has children. "
                     "Version cannot be auto-incremented and a new name is required for branching."
@@ -1603,7 +1603,7 @@ class ExperimentNameConflict(Conflict):
             named_experiments = len(get_storage().fetch_experiments(query))
             return named_experiments == 0
 
-        def _check_for_children(self):
+        def _check_for_greater_versions(self):
             """Check if experiment has children"""
             # If we made it this far, new_name is actually the name of the parent.
             parent = self.conflict.old_config
