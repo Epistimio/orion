@@ -7,6 +7,7 @@
    :synopsis: Encapsulate orion state
 
 """
+
 import os
 import yaml
 
@@ -140,7 +141,7 @@ class OrionState:
         obj.instance = self.singletons.get(obj)
 
     def storage(self, storage_type='legacy'):
-        """Returns test storage"""
+        """Return test storage"""
         try:
             config = {
                 'database': {

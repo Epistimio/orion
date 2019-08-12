@@ -127,9 +127,9 @@ def categorical_values():
 
 @pytest.fixture()
 def exp_config_file():
-    """return configuration file used for stuff"""
+    """Return configuration file used for stuff"""
     return os.path.join(os.path.dirname(os.path.abspath(__file__)),
-              'unittests', 'core', 'experiment.yaml')
+                        'unittests', 'core', 'experiment.yaml')
 
 
 @pytest.fixture()

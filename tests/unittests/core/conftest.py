@@ -127,12 +127,16 @@ def with_user_dendi(monkeypatch):
 
 
 def default_datetime():
+    """Default datetime"""
     return datetime.datetime(1903, 4, 25, 0, 0, 0)
 
 
 class MockDatetime(datetime.datetime):
+    """Fake Datetime"""
+
     @classmethod
     def utcnow(cls):
+        """Return our random/fixed datetime"""
         return default_datetime()
 
 

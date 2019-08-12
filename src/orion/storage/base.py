@@ -110,7 +110,8 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
 
     def fetch_lost_trials(self, experiment):
         """Fetch all trials that have a heartbeat older than
-        some given time delta (2 minutes by default)"""
+        some given time delta (2 minutes by default)
+        """
         raise NotImplementedError()
 
     def retrieve_result(self, trial, *args, **kwargs):

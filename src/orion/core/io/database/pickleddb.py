@@ -8,11 +8,11 @@
    :synopsis: Implement permanent version of :class:`orion.core.io.database.EphemeralDB`
 
 """
+
 from contextlib import contextmanager
 import logging
 import os
 import pickle
-
 from pickle import PicklingError
 from filelock import FileLock
 

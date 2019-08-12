@@ -14,10 +14,11 @@ import pytest
 
 from orion.algo.base import BaseAlgorithm
 from orion.core.io.database import DuplicateKeyError
+from orion.core.utils.state import OrionState
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
-from orion.core.utils.state import OrionState
+
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -676,7 +677,6 @@ class TestReserveTrial(object):
     @pytest.mark.usefixtures("patch_sample")
     def test_reserve_success(self, exp_config_file, random_dt):
         """Successfully find new trials in db and reserve one at 'random'."""
-
         with OrionState(from_yaml=exp_config_file) as cfg:
             exp = cfg.get_experiment('supernaedo2', user='dendi')
             trial = exp.reserve_trial()
@@ -739,9 +739,7 @@ class TestReserveTrial(object):
         trial = hacked_exp.fetch_trials(exp_query)[0]
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        get_storage().set_trial_status(trial,
-                                   status='reserved',
-                                   heartbeat=heartbeat)
+        get_storage().set_trial_status(trial, status='reserved', heartbeat=heartbeat)
 
         exp_query['status'] = 'reserved'
         exp_query['_id'] = trial.id
@@ -765,13 +763,8 @@ class TestReserveTrial(object):
 
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        get_storage().set_trial_status(lost,
-                                   status='reserved',
-                                   heartbeat=heartbeat)
-
-        get_storage().set_trial_status(not_lost,
-                                   status='reserved',
-                                   heartbeat=random_dt)
+        get_storage().set_trial_status(lost, status='reserved', heartbeat=heartbeat)
+        get_storage().set_trial_status(not_lost, status='reserved', heartbeat=random_dt)
 
         exp_query['status'] = 'reserved'
         exp_query['_id'] = {'$in': [lost.id, not_lost.id]}
