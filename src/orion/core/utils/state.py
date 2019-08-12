@@ -32,12 +32,13 @@ def _remove(file_name):
         pass
 
 
-def _select(a, b):
-    if a:
-        return a
-    return b
+def _select(lhs, rhs):
+    if lhs:
+        return lhs
+    return rhs
 
 
+# pylint: disable=no-self-use,protected-access
 class OrionState:
     """Setup global variables and singleton for tests
 

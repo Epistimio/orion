@@ -26,6 +26,7 @@ log = logging.getLogger(__name__)
 DEFAULT_HOST = os.path.join(orion.core.DIRS.user_data_dir, 'orion', 'orion_db.pkl')
 
 
+# pylint: disable=protected-access
 class PickledDB(AbstractDB):
     """Pickled EphemeralDB to support permanancy and concurrency
 
@@ -158,6 +159,8 @@ class PickledDB(AbstractDB):
                 except PicklingError:
                     return name, doc
 
+        return None, None
+
     @staticmethod
     def _find_unpickable_field(doc):
         for k, v in doc._data.items():
@@ -166,6 +169,8 @@ class PickledDB(AbstractDB):
 
             except PicklingError:
                 return k, v
+
+        return None, None
 
     @contextmanager
     def locked_database(self, write=True):
