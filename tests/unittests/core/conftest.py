@@ -127,7 +127,7 @@ def with_user_dendi(monkeypatch):
 
 
 def default_datetime():
-    """Default datetime"""
+    """Return default datetime"""
     return datetime.datetime(1903, 4, 25, 0, 0, 0)
 
 
