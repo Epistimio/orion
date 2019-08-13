@@ -6,7 +6,7 @@ import orion.core.cli
 
 def test_info_no_hit(clean_db, one_experiment, capsys):
     """Test info if no experiment with given name."""
-    orion.core.cli.main(['info','--name' , 'i do not exist'])
+    orion.core.cli.main(['info', '--name', 'i do not exist'])
 
     captured = capsys.readouterr().out
 
