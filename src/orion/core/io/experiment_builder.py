@@ -134,6 +134,7 @@ class ExperimentBuilder(object):
         -----
             This method builds an experiment view in the background to fetch the configuration from
             the database.
+
         """
         try:
             experiment_view = self.build_view_from(cmdargs)
