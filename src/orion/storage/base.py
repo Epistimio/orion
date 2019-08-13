@@ -77,6 +77,10 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """Fetch all the trials that match the query"""
         raise NotImplementedError()
 
+    def fetch_experiment_trials(self, experiment=None, uid=None):
+        """Fetch trials of the experiment in the database"""
+        raise NotImplementedError()
+
     def update_trial(self, trial, where=None, **kwargs):
         """Update the fields of a given trials
 

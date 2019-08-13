@@ -92,7 +92,8 @@ class Producer(object):
         """Pull all trials to update model with completed ones and naive model with non completed
         ones.
         """
-        trials = self.experiment.fetch_trials({})
+        trials = self.experiment.fetch_experiment_trials()
+
         self._update_algorithm([trial for trial in trials if trial.status == 'completed'])
         self._update_naive_algorithm([trial for trial in trials if trial.status != 'completed'])
 

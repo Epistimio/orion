@@ -155,6 +155,23 @@ class Experiment:
                     setattr(self, attrname, config[attrname])
             self._id = config['_id']
 
+    def fetch_experiment_trials(self):
+        """Fetch trials of the experiment in the database
+
+        Trials are sorted based on `Trial.submit_time`
+
+        .. note::
+
+           The query is always updated with `{"experiment": self._id}`
+
+        .. seealso::
+
+           :meth:`orion.core.io.database.AbstractDB.read` for more information about the
+           arguments.
+
+        """
+        return self._storage.fetch_experiment_trials(uid=self._id)
+
     def fetch_trials(self, query, selection=None):
         """Fetch trials of the experiment in the database
 

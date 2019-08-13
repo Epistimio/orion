@@ -95,11 +95,21 @@ class Legacy(BaseStorageProtocol):
 
     def fetch_trials(self, query, selection=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
-        import inspect
-        stack = inspect.stack()
-        warn(f'DEPRECATED {query} {selection}\n    =>{stack[1]}')
+        # import inspect
+        # stack = inspect.stack()
+        # warn(f'DEPRECATED {query} {selection}\n')
+        #
+        # print('---')
+        # for i in stack[1:]:
+        #     print('   ', i.filename)
 
         return self._fetch_trials(query, selection)
+
+    def fetch_experiment_trials(self, experiment=None, uid=None):
+        if experiment is not None:
+            uid = experiment._id
+
+        return self._fetch_trials(dict(experiment=uid))
 
     def _fetch_trials(self, query, selection=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
