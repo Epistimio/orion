@@ -106,6 +106,7 @@ class Legacy(BaseStorageProtocol):
         return self._fetch_trials(query, selection)
 
     def fetch_experiment_trials(self, experiment=None, uid=None):
+        """See :func:`~orion.storage.BaseStorageProtocol.fetch_experiment_trials`"""
         if experiment is not None:
             uid = experiment._id
 
