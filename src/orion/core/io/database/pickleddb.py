@@ -139,11 +139,11 @@ class PickledDB(AbstractDB):
 
         except PicklingError:
             collection, doc = self._find_unpickable_doc(database)
-            log.error('Document in (collection: %%) is not pickable\ndoc: %',
+            log.error('Document in (collection: %s) is not pickable\ndoc: %s',
                       collection, doc._data)
 
             key, value = self._find_unpickable_field(doc)
-            log.error('because (value %%) in (field: %%) is not pickable',
+            log.error('because (value %s) in (field: %s) is not pickable',
                       value, key)
             raise
 
