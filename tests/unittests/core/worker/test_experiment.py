@@ -15,6 +15,7 @@ import pytest
 from orion.algo.base import BaseAlgorithm
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.state import OrionState
+import orion.core.worker.experiment
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
@@ -1150,12 +1151,18 @@ class TestInitExperimentWithEVC(object):
     def test_experiment_non_interactive_branching(self, create_db_instance, random_dt, exp_config,
                                                   monkeypatch):
         """Configure an existing experiment with parent."""
-        monkeypatch.setattr('sys.__stdin__.isatty', lambda: True)
-        exp = Experiment('supernaedo2.1')
-        exp.algorithms = {'dumbalgo': {}}
-        with pytest.raises(OSError):
-            exp.configure(exp.configuration)
-        monkeypatch.undo()
+        def _patch_fetch(config):
+            return {'manual_resolution': True}
+
+        monkeypatch.setattr(orion.core.worker.experiment,
+                            "fetch_branching_configuration", _patch_fetch)
+        with monkeypatch.context() as ctx:
+            ctx.setattr('sys.__stdin__.isatty', lambda: True)
+            exp = Experiment('supernaedo2.1')
+            exp.algorithms = {'dumbalgo': {}}
+            with pytest.raises(OSError):
+                exp.configure(exp.configuration)
+
         with pytest.raises(ValueError) as exc_info:
             exp.configure(exp.configuration)
         assert "Configuration is different and generates a branching" in str(exc_info.value)
