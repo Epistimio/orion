@@ -28,6 +28,7 @@ def _handler(signum, frame):
 
 
 class ExecutionError(Exception):
+    """Error raised when orion is unable to execute the user' script without errors"""
     pass
 
 
@@ -136,7 +137,7 @@ class Consumer(object):
         command = [self.script_path] + cmd_args
 
         signal.signal(signal.SIGTERM, _handler)
-        process = subprocess.Popen(command, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        process = subprocess.Popen(command, env=env)
 
         return_code = process.wait()
         if return_code != 0:
