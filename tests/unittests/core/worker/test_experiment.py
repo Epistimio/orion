@@ -7,7 +7,6 @@ import datetime
 import getpass
 import json
 import logging
-import random
 import tempfile
 
 import pytest
@@ -61,6 +60,7 @@ def test_change_status_failed_update(exp_config_file):
             assert False, 'Status change should have failed'
         except FailedUpdate:
             pass
+
 
 @pytest.fixture()
 def new_config(random_dt):
@@ -624,8 +624,7 @@ class TestReserveTrial(object):
 
     def test_reserve_dead_race_condition(self, exp_config, hacked_exp):
         """Return None once all the trials have been allocated"""
-
-        for i in range(10):
+        for _ in range(10):
             trial = hacked_exp.reserve_trial()
 
         assert trial is None

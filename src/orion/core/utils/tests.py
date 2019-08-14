@@ -15,9 +15,9 @@ import tempfile
 import yaml
 
 from orion.core.io.database import Database
+from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.utils import SingletonAlreadyInstantiatedError
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
@@ -80,6 +80,7 @@ class OrionState:
     trials = []
     resources = []
     workers = []
+    tempfile = None
 
     def __init__(self, experiments=None, trials=None, workers=None, resources=None, from_yaml=None):
         if from_yaml is not None:
