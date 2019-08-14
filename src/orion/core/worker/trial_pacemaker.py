@@ -50,4 +50,3 @@ class TrialPacemaker(threading.Thread):
         else:
             if not self.storage.update_heartbeat(trial):
                 self.stopped.set()
-
