@@ -29,6 +29,7 @@ def _handler(signum, frame):
 
 class ExecutionError(Exception):
     """Error raised when orion is unable to execute the user' script without errors"""
+
     pass
 
 
@@ -142,4 +143,4 @@ class Consumer(object):
         return_code = process.wait()
         if return_code != 0:
             raise ExecutionError("Something went wrong. Check logs. Process "
-                               "returned with code {} !".format(return_code))
+                                 "returned with code {} !".format(return_code))

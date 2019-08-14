@@ -45,6 +45,7 @@ def setup_database(config):
 
 class FailedUpdate(Exception):
     """Exception raised when we are unable to update a trial' status"""
+
     pass
 
 

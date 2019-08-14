@@ -68,10 +68,12 @@ def test_change_status_success(exp_config_file):
             assert trial is not None, 'was not able to retrieve trial for test'
 
             get_storage().set_trial_status(trial, status=new_status)
-            assert trial.status == new_status, 'Trial status should have been updated locally'
+            assert trial.status == new_status, \
+                'Trial status should have been updated locally'
 
             trial = get_storage().get_trial(trial)
-            assert trial.status == new_status, 'Trial status should have been updated in the storage'
+            assert trial.status == new_status, \
+                'Trial status should have been updated in the storage'
 
     check_status_change('completed')
     check_status_change('broken')
