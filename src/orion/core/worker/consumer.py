@@ -27,6 +27,10 @@ def _handler(signum, frame):
     raise KeyboardInterrupt
 
 
+class ExecutionError(Exception):
+    pass
+
+
 class Consumer(object):
     """Consume a trial by using it to initialize a black-box box to evaluate it.
 
@@ -91,14 +95,12 @@ class Consumer(object):
 
         except KeyboardInterrupt:
             log.debug("### Save %s as interrupted.", trial)
-            trial.status = 'interrupted'
             self.experiment.set_trial_status(trial, status=trial.status)
 
             raise
-        except RuntimeError:
+        except ExecutionError:
             log.debug("### Save %s as broken.", trial)
-            trial.status = 'broken'
-            self.experiment.set_trial_status(trial, status=trial.status)
+            self.experiment.set_trial_status(trial, status='broken')
 
     def _consume(self, trial, workdirname):
         config_file = tempfile.NamedTemporaryFile(mode='w', prefix='trial_',
@@ -134,9 +136,9 @@ class Consumer(object):
         command = [self.script_path] + cmd_args
 
         signal.signal(signal.SIGTERM, _handler)
-        process = subprocess.Popen(command, env=env)
+        process = subprocess.Popen(command, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         return_code = process.wait()
         if return_code != 0:
-            raise RuntimeError("Something went wrong. Check logs. Process "
+            raise ExecutionError("Something went wrong. Check logs. Process "
                                "returned with code {} !".format(return_code))

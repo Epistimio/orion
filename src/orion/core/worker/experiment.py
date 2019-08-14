@@ -317,9 +317,11 @@ class Experiment:
             Change status from *reserved* to *completed*.
 
         """
+        trial.status = 'completed'
+        trial.end_time = datetime.datetime.utcnow()
         self._storage.retrieve_result(trial, results_file)
+        # push trial results updates the entire trial status included
         self._storage.push_trial_results(trial)
-        self._storage.set_trial_status(trial, status='completed')
 
     def register_lie(self, lying_trial):
         """Register a *fake* trial created by the strategist.

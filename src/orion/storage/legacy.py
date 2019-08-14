@@ -43,6 +43,10 @@ def setup_database(config):
             raise
 
 
+class FailedUpdate(Exception):
+    pass
+
+
 class Legacy(BaseStorageProtocol):
     """Legacy protocol, store all experiments and trials inside the Database()
 
@@ -224,7 +228,11 @@ class Legacy(BaseStorageProtocol):
         elif status == 'completed':
             update["end_time"] = datetime.datetime.utcnow()
 
-        return self._update_trial(trial, **update, where={'status': trial.status, '_id': trial.id})
+        rc = self._update_trial(trial, **update, where={'status': trial.status, '_id': trial.id})
+        trial.status = status
+
+        if not rc:
+            raise FailedUpdate()
 
     def fetch_pending_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_pending_trials`"""
