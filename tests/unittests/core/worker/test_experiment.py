@@ -61,7 +61,6 @@ def patch_sample2(monkeypatch):
 
 def test_change_status_success(exp_config_file):
     """Change the status of a Trial"""
-
     def check_status_change(new_status):
         with OrionState(from_yaml=exp_config_file) as cfg:
             trial = cfg.get_trial(0)
