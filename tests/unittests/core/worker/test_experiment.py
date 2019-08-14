@@ -641,6 +641,20 @@ class TestConfigProperty(object):
 
         assert not exp.is_done
 
+    def test_no_increment_when_child_exist(self, create_db_instance):
+        """Check that experiment is not incremented when asked for v1 while v2 exists."""
+        query = dict(name='experiment_test', metadata={'user': 'corneauf'}, version=1)
+        get_storage().create_experiment(query)
+
+        query['version'] = 2
+        query.pop('_id')
+
+        get_storage().create_experiment(query)
+
+        exp = Experiment('experiment_test', version=1)
+
+        assert exp.version == 1
+
 
 @pytest.mark.usefixtures("create_db_instance", "with_user_bouthilx")
 def test_forcing_user(exp_config):
