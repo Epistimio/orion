@@ -240,7 +240,7 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.reserve_trial`"""
         query = dict(
             experiment=experiment._id,
-            status={'$in': ['new', 'suspended', 'interrupted']}
+            status={'$in': ['interrupted', 'new', 'suspended']}
         )
         # read and write works on a single document
         now = datetime.datetime.utcnow()

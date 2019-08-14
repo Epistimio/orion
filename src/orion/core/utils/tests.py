@@ -8,21 +8,21 @@
 
 """
 
+import datetime
 import os
+import tempfile
 
 import yaml
 
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
+from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.utils import SingletonAlreadyInstantiatedError
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage, Storage
 from orion.storage.legacy import Legacy
-
-
-PICKLE_DB_HARDCODED = '/tmp/independent.pkl'
 
 
 def _remove(file_name):
@@ -36,6 +36,20 @@ def _select(lhs, rhs):
     if lhs:
         return lhs
     return rhs
+
+
+def default_datetime():
+    """Return default datetime"""
+    return datetime.datetime(1903, 4, 25, 0, 0, 0)
+
+
+class MockDatetime(datetime.datetime):
+    """Fake Datetime"""
+
+    @classmethod
+    def utcnow(cls):
+        """Return our random/fixed datetime"""
+        return default_datetime()
 
 
 # pylint: disable=no-self-use,protected-access
@@ -59,7 +73,7 @@ class OrionState:
 
     """
 
-    SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB)
+    SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB, EphemeralDB)
     singletons = {}
     database = None
     experiments = []
@@ -98,7 +112,7 @@ class OrionState:
 
     def cleanup(self):
         """Cleanup after testing"""
-        _remove(PICKLE_DB_HARDCODED)
+        _remove(self.tempfile)
 
     def load_experience_configuration(self):
         """Load an example database."""
@@ -106,7 +120,7 @@ class OrionState:
             self.trials[i] = Trial(**t_dict).to_dict()
 
         # sort by submit time like the protocol does
-        self.trials.sort(key=lambda obj: obj['submit_time'], reverse=True)
+        self.trials.sort(key=lambda obj: int(obj['_id'], 16), reverse=True)
 
         for i, _ in enumerate(self.experiments):
             path = os.path.join(
@@ -124,6 +138,8 @@ class OrionState:
 
     def __enter__(self):
         """Load a new database state"""
+        _, self.tempfile = tempfile.mkstemp('orion_test')
+
         for singleton in self.SINGLETONS:
             self.new_singleton(singleton, new_value=None)
 
@@ -152,7 +168,7 @@ class OrionState:
             config = {
                 'database': {
                     'type': 'PickledDB',
-                    'host': PICKLE_DB_HARDCODED
+                    'host': self.tempfile
                 }
             }
             db = Storage(of_type=storage_type, config=config)

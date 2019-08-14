@@ -14,7 +14,7 @@ import pytest
 
 from orion.algo.base import BaseAlgorithm
 from orion.core.io.database import DuplicateKeyError
-from orion.core.utils.state import OrionState
+from orion.core.utils.tests import OrionState
 import orion.core.worker.experiment
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
@@ -61,79 +61,6 @@ def test_change_status_failed_update(exp_config_file):
             assert False, 'Status change should have failed'
         except FailedUpdate:
             pass
-
-
-@pytest.fixture()
-def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
-    """Patch ``random.sample`` to return the first one and check call.
-
-    The first trial is marked as new, but in DB it is reserved.
-    """
-    def mock_sample(a_list, should_be_one):
-        assert type(a_list) == list
-        assert len(a_list) >= 1
-        # Part of `TestReserveTrial.test_reserve_race_condition`
-        if len(a_list) == 4:
-            assert a_list[0].status == 'new'
-        if len(a_list) == 3:
-            assert a_list[0].status == 'new'
-        if len(a_list) == 2:
-            assert a_list[0].status == 'interrupted'
-        if len(a_list) == 1:
-            assert a_list[0].status == 'suspended'
-
-        assert should_be_one == 1
-
-        if len(a_list) > 3:
-            # Set row's status as 'reserved' just like if it was reserved by
-            # another process right after the call to orion_db.read()
-            create_db_instance.write(
-                "trials",
-                data={"status": "reserved",
-                      "heartbeat": datetime.datetime.utcnow()},
-                query={"_id": a_list[0].id})
-            trial = create_db_instance.read("trials", {"_id": a_list[0].id})
-            assert trial[0]['status'] == 'reserved'
-
-        return [a_list[0]]
-
-    monkeypatch.setattr(random, 'sample', mock_sample)
-
-
-@pytest.fixture()
-def patch_sample_concurrent2(monkeypatch, create_db_instance, exp_config):
-    """Patch ``random.sample`` to return the first one and check call.
-
-    All trials are marked as new, but in DB they are reserved.
-    """
-    def mock_sample(a_list, should_be_one):
-        assert type(a_list) == list
-        assert len(a_list) >= 1
-        # Part of `TestReserveTrial.test_reserve_dead_race_condition`
-        if len(a_list) == 4:
-            assert a_list[0].status == 'new'
-        if len(a_list) == 3:
-            assert a_list[0].status == 'new'
-        if len(a_list) == 2:
-            assert a_list[0].status == 'interrupted'
-        if len(a_list) == 1:
-            assert a_list[0].status == 'suspended'
-
-        assert should_be_one == 1
-
-        # Set row's status as 'reserved' just like if it was reserved by
-        # another process right after the call to orion_db.read()
-        create_db_instance.write(
-            "trials",
-            data={"status": "reserved", 'heartbeat': datetime.datetime.utcnow()},
-            query={"_id": a_list[0].id})
-        trial = create_db_instance.read("trials", {"_id": a_list[0].id})
-        assert trial[0]['status'] == 'reserved'
-
-        return [a_list[0]]
-
-    monkeypatch.setattr(random, 'sample', mock_sample)
-
 
 @pytest.fixture()
 def new_config(random_dt):
@@ -680,7 +607,6 @@ class TestReserveTrial(object):
         trial = exp.reserve_trial()
         assert trial is None
 
-    @pytest.mark.usefixtures("patch_sample")
     def test_reserve_success(self, exp_config_file, random_dt):
         """Successfully find new trials in db and reserve the first one"""
         with OrionState(from_yaml=exp_config_file) as cfg:
@@ -696,39 +622,13 @@ class TestReserveTrial(object):
 
             assert trial.to_dict() == cfg.trials[0]
 
-    @pytest.mark.usefixtures("patch_sample_concurrent")
-    def test_reserve_race_condition(self, exp_config, hacked_exp, random_dt):
-        """Get its trials reserved before by another process once."""
-        trial = hacked_exp.reserve_trial()
-        exp_config[1][4]['status'] = 'reserved'
-        exp_config[1][4]['start_time'] = random_dt
-        exp_config[1][4]['heartbeat'] = random_dt
-        assert trial.to_dict() == exp_config[1][4]
-
-    @pytest.mark.usefixtures("patch_sample_concurrent2")
     def test_reserve_dead_race_condition(self, exp_config, hacked_exp):
-        """Always get its trials reserved before by another process."""
-        trial = hacked_exp.reserve_trial()
+        """Return None once all the trials have been allocated"""
+
+        for i in range(10):
+            trial = hacked_exp.reserve_trial()
+
         assert trial is None
-
-    def test_reserve_with_uncallable_score(self, hacked_exp):
-        """Reserve with a score object that cannot do its job."""
-        with pytest.raises(ValueError):
-            hacked_exp.reserve_trial(score_handle='asfa')
-
-    def fake_handle(self, xxx):
-        """Fake score handle for testing."""
-        self.times_called += 1
-        return self.times_called
-
-    def test_reserve_with_score(self, hacked_exp, exp_config, random_dt):
-        """Reserve with a score object that can do its job."""
-        self.times_called = 0
-        hacked_exp.configure(exp_config[0][3])
-        trial = hacked_exp.reserve_trial(score_handle=self.fake_handle)
-        exp_config[1][6]['status'] = 'reserved'
-        exp_config[1][6]['heartbeat'] = random_dt
-        assert trial.to_dict() == exp_config[1][6]
 
     def test_fix_lost_trials(self, hacked_exp, random_dt):
         """Test that a running trial with an old heartbeat is set to interrupted."""
@@ -795,7 +695,6 @@ class TestReserveTrial(object):
             hacked_exp.fix_lost_trials()
 
 
-@pytest.mark.usefixtures("patch_sample")
 def test_update_completed_trial(hacked_exp, database, random_dt):
     """Successfully push a completed trial into database."""
     trial = hacked_exp.reserve_trial()
@@ -931,7 +830,7 @@ def test_broken_property(hacked_exp):
     trials = hacked_exp.fetch_trials({})[:3]
 
     for trial in trials:
-        get_storage().update_trial(trial, status='broken')
+        get_storage().set_trial_status(trial, status='broken')
 
     assert hacked_exp.is_broken
 
@@ -1097,10 +996,11 @@ def test_experiment_view_protocol_read_only():
     """Verify that wrapper experiments' database is read-only"""
     exp = ExperimentView('supernaedo2')
 
-    # Test that _protocol.update_trials indeed exists
-    exp._experiment._storage._storage.update_trial
+    # Test that _protocol.set_trial_status indeed exists
+    exp._experiment._storage._storage.set_trial_status
+
     with pytest.raises(AttributeError):
-        exp._experiment._storage.update_trial
+        exp._experiment._storage.set_trial_status
 
 
 class TestInitExperimentWithEVC(object):

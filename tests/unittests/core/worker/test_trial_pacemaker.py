@@ -75,7 +75,7 @@ def test_trial_heartbeat_not_updated(exp, trial):
 
     assert trial.heartbeat != trials[0].heartbeat
 
-    get_storage().update_trial(trial, status='interrupted')
+    get_storage().set_trial_status(trial, status='interrupted')
 
     time.sleep(2)
 

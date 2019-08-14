@@ -81,27 +81,6 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """Fetch trials of the experiment in the database"""
         raise NotImplementedError()
 
-    def update_trial(self, trial, where=None, **kwargs):
-        """Update the fields of a given trials
-
-        Parameters
-        ----------
-        trial: Trial
-            Trial object to update
-
-        where: Optional[dict]
-            constraint trial must respect
-
-        kwargs: dict
-            a dictionary of fields to update
-
-        Returns
-        -------
-        returns true if the underlying storage was updated
-
-        """
-        raise NotImplementedError()
-
     def get_trial(self, trial=None, uid=None):
         """Fetch a single trial
 

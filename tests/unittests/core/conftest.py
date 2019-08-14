@@ -12,8 +12,8 @@ from orion.algo.space import (Categorical, Integer, Real, Space)
 from orion.core.evc import conflicts
 from orion.core.io.convert import (JSONConverter, YAMLConverter)
 from orion.core.io.space_builder import DimensionBuilder
+from orion.core.utils.tests import default_datetime, MockDatetime
 from orion.core.worker.experiment import Experiment
-
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, 'sample_config.yml')
@@ -124,20 +124,6 @@ def with_user_bouthilx(monkeypatch):
 def with_user_dendi(monkeypatch):
     """Make ``getpass.getuser()`` return ``'dendi'``."""
     monkeypatch.setattr(getpass, 'getuser', lambda: 'dendi')
-
-
-def default_datetime():
-    """Return default datetime"""
-    return datetime.datetime(1903, 4, 25, 0, 0, 0)
-
-
-class MockDatetime(datetime.datetime):
-    """Fake Datetime"""
-
-    @classmethod
-    def utcnow(cls):
-        """Return our random/fixed datetime"""
-        return default_datetime()
 
 
 @pytest.fixture()
