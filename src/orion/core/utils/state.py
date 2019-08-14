@@ -93,6 +93,10 @@ class OrionState:
         exp._id = name
         return exp
 
+    def get_trial(self, index):
+        """Return a Trial"""
+        return Trial(**self.trials[index])
+
     def cleanup(self):
         """Cleanup after testing"""
         _remove(PICKLE_DB_HARDCODED)

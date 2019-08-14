@@ -19,6 +19,7 @@ import orion.core.worker.experiment
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
+from orion.storage.legacy import FailedUpdate
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -56,6 +57,49 @@ def patch_sample2(monkeypatch):
         return [a_list[-1]]
 
     monkeypatch.setattr(random, 'sample', mock_sample)
+
+
+def test_change_status_success(exp_config_file):
+    """Change the status of a Trial"""
+
+    def check_status_change(new_status):
+        with OrionState(from_yaml=exp_config_file) as cfg:
+            trial = cfg.get_trial(0)
+            assert trial is not None, 'Was not able to reserve trials for test'
+
+            try:
+                get_storage().set_trial_status(trial, status=new_status)
+                assert trial.status == new_status, 'Trial status should have been updated locally'
+
+                trial = get_storage().get_trial(trial)
+                assert trial.status == new_status, 'Trial status should have been updated in the storage'
+
+            except FailedUpdate:
+                pass
+
+    check_status_change('completed')
+    check_status_change('broken')
+    check_status_change('reserved')
+    check_status_change('interrupted')
+    check_status_change('suspended')
+    check_status_change('new')
+
+
+def test_change_status_failed_update(exp_config_file):
+    """Successfully find new trials in db and reserve one at 'random'."""
+    with OrionState(from_yaml=exp_config_file) as cfg:
+        trial = cfg.get_trial(0)
+        assert trial is not None, 'Was not able to reserve trials for test'
+
+        try:
+            trial.status = 'completed'
+            get_storage().set_trial_status(trial, status='completed')
+
+            assert False, 'Status change should have failed'
+        except FailedUpdate:
+            pass
+
+
 
 
 @pytest.fixture()
