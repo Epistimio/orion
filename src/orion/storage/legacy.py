@@ -10,7 +10,6 @@
 """
 import datetime
 import logging
-from warnings import warn
 
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database
