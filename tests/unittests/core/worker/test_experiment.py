@@ -100,8 +100,6 @@ def test_change_status_failed_update(exp_config_file):
             pass
 
 
-
-
 @pytest.fixture()
 def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
     """Patch ``random.sample`` to return the first one and check call.
