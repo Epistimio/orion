@@ -25,40 +25,6 @@ from orion.storage.legacy import FailedUpdate
 logging.basicConfig(level=logging.DEBUG)
 
 
-@pytest.fixture()
-def patch_sample(monkeypatch):
-    """Patch ``random.sample`` to return the first one and check call."""
-    def mock_sample(a_list, should_be_one):
-        assert type(a_list) == list
-        assert len(a_list) >= 1
-        # Part of `TestReserveTrial.test_reserve_success`
-        assert a_list[0].status == 'new'
-        assert a_list[1].status == 'new'
-        assert a_list[2].status == 'interrupted'
-        assert a_list[3].status == 'suspended'
-        assert should_be_one == 1
-        return [a_list[0]]
-
-    monkeypatch.setattr(random, 'sample', mock_sample)
-
-
-@pytest.fixture()
-def patch_sample2(monkeypatch):
-    """Patch ``random.sample`` to return the first one and check call."""
-    def mock_sample(a_list, should_be_one):
-        assert type(a_list) == list
-        assert len(a_list) >= 1
-        # Part of `TestReserveTrial.test_reserve_success2`
-        assert a_list[0].status == 'new'
-        assert a_list[1].status == 'new'
-        assert a_list[2].status == 'interrupted'
-        assert a_list[3].status == 'suspended'
-        assert should_be_one == 1
-        return [a_list[-1]]
-
-    monkeypatch.setattr(random, 'sample', mock_sample)
-
-
 def test_change_status_success(exp_config_file):
     """Change the status of a Trial"""
     def check_status_change(new_status):
@@ -716,28 +682,19 @@ class TestReserveTrial(object):
 
     @pytest.mark.usefixtures("patch_sample")
     def test_reserve_success(self, exp_config_file, random_dt):
-        """Successfully find new trials in db and reserve one at 'random'."""
+        """Successfully find new trials in db and reserve the first one"""
         with OrionState(from_yaml=exp_config_file) as cfg:
             exp = cfg.get_experiment('supernaedo2', user='dendi')
             trial = exp.reserve_trial()
 
-            cfg.trials[3]['status'] = 'reserved'
-            cfg.trials[3]['start_time'] = random_dt
-            cfg.trials[3]['heartbeat'] = random_dt
+            cfg.trials[0]['status'] = 'reserved'
+            cfg.trials[0]['start_time'] = random_dt
+            cfg.trials[0]['heartbeat'] = random_dt
 
-            assert trial.to_dict() == cfg.trials[3]
+            for t in cfg.trials:
+                print(t['submit_time'], t['_id'])
 
-    @pytest.mark.usefixtures("patch_sample2")
-    def test_reserve_success2(self, exp_config, hacked_exp, random_dt):
-        """Successfully find new trials in db and reserve one at 'random'.
-
-        Version that start_time does not get written, because the selected trial
-        was not a 'new' one.
-        """
-        trial = hacked_exp.reserve_trial()
-        exp_config[1][6]['status'] = 'reserved'
-        exp_config[1][6]['heartbeat'] = random_dt
-        assert trial.to_dict() == exp_config[1][6]
+            assert trial.to_dict() == cfg.trials[0]
 
     @pytest.mark.usefixtures("patch_sample_concurrent")
     def test_reserve_race_condition(self, exp_config, hacked_exp, random_dt):

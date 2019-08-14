@@ -243,7 +243,15 @@ class Legacy(BaseStorageProtocol):
             status={'$in': ['new', 'suspended', 'interrupted']}
         )
         # read and write works on a single document
-        trial = self._db.read_and_write('trials', query=query, data=dict(status='reserved'))
+        now = datetime.datetime.utcnow()
+        trial = self._db.read_and_write(
+            'trials',
+            query=query,
+            data=dict(
+                status='reserved',
+                start_time=now,
+                heartbeat=now
+            ))
 
         if trial is None:
             return None

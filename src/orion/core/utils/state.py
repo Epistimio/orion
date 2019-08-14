@@ -127,6 +127,7 @@ class OrionState:
         for singleton in self.SINGLETONS:
             self.new_singleton(singleton, new_value=None)
 
+        self.cleanup()
         return self.init()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
