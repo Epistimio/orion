@@ -6,9 +6,9 @@ import itertools
 import pytest
 
 from orion.core.cli.info import (
-    format_algorithm, format_commandline, format_config, format_dict, format_info, format_list,
-    format_metadata, format_refers, format_space, format_stats, format_title, get_trial_params,
-    format_identification)
+    format_algorithm, format_commandline, format_config, format_dict, format_identification,
+    format_info, format_list, format_metadata, format_refers, format_space, format_stats,
+    format_title, get_trial_params)
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.trial import Trial
 
