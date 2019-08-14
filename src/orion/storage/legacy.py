@@ -244,6 +244,20 @@ class Legacy(BaseStorageProtocol):
         )
         return self._fetch_trials(query)
 
+    def reserve_trial(self, experiment):
+        """See :func:`~orion.storage.BaseStorageProtocol.reserve_trial`"""
+        query = dict(
+            experiment=experiment._id,
+            status={'$in': ['new', 'suspended', 'interrupted']}
+        )
+        # read and write works on a single document
+        trial = self._db.read_and_write('trials', query=query, data=dict(status='reserved'))
+
+        if trial is None:
+            return None
+
+        return Trial(**trial)
+
     def fetch_noncompleted_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_noncompleted_trials`"""
         query = dict(

@@ -236,57 +236,29 @@ class Experiment:
         """See :func:`~orion.storage.BaseStorageProtocol.set_trial_status`"""
         return self._storage.set_trial_status(*args, **kwargs)
 
-    def reserve_trial(self, score_handle=None, _depth=1):
+    def reserve_trial(self, score_handle=None):
         """Find *new* trials that exist currently in database and select one of
         them based on the highest score return from `score_handle` callable.
 
-        :param score_handle: A way to decide which trial out of the *new* ones to
-           to pick as *reserved*, defaults to a random choice.
-        :type score_handle: callable
-        :param _depth: recursion depth only used for logging purposes can be ignored
-        :return: selected `Trial` object, None if could not find any.
+        Parameters
+        ----------
+        score_handle: Optional[Callable[[Trial], int]]
+            A way to decide which trial out of the *new* ones to
+            to pick as *reserved*, defaults to a random choice.
+
+        Returns
+        -------
+        Selected `Trial` object, None if could not find any.
         """
-        log.debug('%s reserving trial with (score: %s)', '<' * _depth, score_handle)
-        if score_handle is not None and not callable(score_handle):
-            raise ValueError("Argument `score_handle` must be callable with a `Trial`.")
+        log.debug('reserving trial with (score: %s)', score_handle)
+
+        if score_handle is not None:
+            log.warning("Argument `score_handle` is deprecated")
 
         self.fix_lost_trials()
 
-        new_trials = self._storage.fetch_pending_trials(self)
-        log.debug('%s Fetched (trials: %s)', '<' * _depth, len(new_trials))
-
-        if not new_trials:
-            log.debug('%s no new trials found', '<' * _depth)
-            return None
-
-        if score_handle is not None and self.space:
-            scores = list(map(score_handle,
-                              map(lambda x: trial_to_tuple(x, self.space), new_trials)))
-            scored_trials = zip(scores, new_trials)
-            best_trials = filter(lambda st: st[0] == max(scores), scored_trials)
-            new_trials = list(zip(*best_trials))[1]
-
-        elif score_handle is not None:
-            log.warning("While reserving trial: `score_handle` was provided, but "
-                        "parameter space has not been defined yet.")
-
-        selected_trial = random.sample(new_trials, 1)[0]
-        log.debug('%s selected (trial: %s)', '<' * _depth, selected_trial)
-
-        # Query on status to ensure atomicity. If another process change the
-        # status meanwhile, update will fail, because query will fail.
-        # This relies on the atomicity of document updates.
-
-        log.debug('%s trying to reverse trial', '<' * _depth)
-        reserved = self._storage.set_trial_status(selected_trial, status='reserved')
-
-        if not reserved:
-            selected_trial = self.reserve_trial(score_handle=score_handle, _depth=_depth + 1)
-        else:
-            log.debug('%s found suitable trial', '<' * _depth)
-            selected_trial = self._storage.get_trial(selected_trial)
-
-        log.debug('%s reserved trial (trial: %s)', '<' * _depth, selected_trial)
+        selected_trial = self._storage.reserve_trial(self)
+        log.debug('reserved trial (trial: %s)', selected_trial)
         return selected_trial
 
     def fix_lost_trials(self):

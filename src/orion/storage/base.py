@@ -69,7 +69,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """
         raise NotImplementedError()
 
-    def reserve_trial(self, *args, **kwargs):
+    def reserve_trial(self, experiment):
         """Select a pending trial and reserve it for the worker"""
         raise NotImplementedError()
 

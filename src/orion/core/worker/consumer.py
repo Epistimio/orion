@@ -97,9 +97,9 @@ class Consumer(object):
 
         except KeyboardInterrupt:
             log.debug("### Save %s as interrupted.", trial)
-            self.experiment.set_trial_status(trial, status=trial.status)
-
+            self.experiment.set_trial_status(trial, status='interrupted')
             raise
+
         except ExecutionError:
             log.debug("### Save %s as broken.", trial)
             self.experiment.set_trial_status(trial, status='broken')
