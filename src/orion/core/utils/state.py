@@ -84,7 +84,6 @@ class OrionState:
         self.storage()
         self.database = get_storage()._db
         self.load_experience_configuration()
-
         return self
 
     def get_experiment(self, name, user=None, version=None):

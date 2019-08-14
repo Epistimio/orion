@@ -182,13 +182,6 @@ class Legacy(BaseStorageProtocol):
 
         return Trial(**result[0])
 
-    def update_trial(self, trial: Trial, where=None, **kwargs) -> Trial:
-        """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
-        import inspect
-        stack = inspect.stack()
-        warn(f'DEPRECATED\n{trial}\n{where}\n{kwargs}\n{stack[1]}')
-        return self._update_trial(trial, where, **kwargs)
-
     def _update_trial(self, trial: Trial, where=None, **kwargs) -> Trial:
         """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
         if where is None:
