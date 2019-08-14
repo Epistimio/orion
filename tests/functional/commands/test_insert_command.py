@@ -156,19 +156,17 @@ def test_insert_with_version(database, monkeypatch, script_path):
                          "-c", "./orion_config_random.yaml", script_path, "-x~normal(0,1)",
                          "-y~+normal(0,1)"])
 
-    orion.core.cli.main(["insert", "-n", "experiment", "--version", "1",
-                         "-c", "./orion_config_random.yaml", script_path, "-x=1"])
-
     exp = list(database.experiments.find({"name": "experiment", "version": 1}))
     assert len(exp) == 1
     exp = exp[0]
     assert '_id' in exp
 
     trials = list(database.trials.find({"experiment": exp['_id']}))
+    assert len(trials) == 0
+
+    orion.core.cli.main(["insert", "-n", "experiment", "--version", "1",
+                         "-c", "./orion_config_random.yaml", script_path, "-x=1"])
+
+    trials = list(database.trials.find({"experiment": exp['_id']}))
 
     assert len(trials) == 1
-
-    trial = trials[0]
-
-    assert trial['status'] == 'new'
-    assert trial['params'][0]['value'] == 1
