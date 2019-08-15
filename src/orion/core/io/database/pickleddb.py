@@ -152,7 +152,7 @@ class PickledDB(AbstractDB):
     @staticmethod
     def _find_unpickable_doc(database):
         for name, collection in database._db.items():
-            documents = collection._documents
+            documents = collection.find()
 
             for doc in documents:
                 try:
