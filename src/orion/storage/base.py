@@ -13,6 +13,12 @@
 from orion.core.utils import (AbstractSingletonType, SingletonFactory)
 
 
+class FailedUpdate(Exception):
+    """Exception raised when we are unable to update a trial' status"""
+
+    pass
+
+
 class BaseStorageProtocol(metaclass=AbstractSingletonType):
     """Implement a generic protocol to allow Orion to communicate using
     different storage backend
@@ -83,6 +89,14 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
 
     def get_trial(self, trial=None, uid=None):
         """Fetch a single trial
+
+        Parameters
+        ----------
+        trial: Trial
+           trial object to retrieve from the database
+
+        uid: str
+            trial id used to retrieve the trial object
 
         Returns
         -------

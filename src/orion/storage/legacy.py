@@ -14,7 +14,7 @@ import logging
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database
 from orion.core.worker.trial import Trial
-from orion.storage.base import BaseStorageProtocol
+from orion.storage.base import BaseStorageProtocol, FailedUpdate
 
 log = logging.getLogger(__name__)
 
@@ -40,12 +40,6 @@ def setup_database(config):
     except ValueError:
         if Database().__class__.__name__.lower() != dbtype.lower():
             raise
-
-
-class FailedUpdate(Exception):
-    """Exception raised when we are unable to update a trial' status"""
-
-    pass
 
 
 class Legacy(BaseStorageProtocol):

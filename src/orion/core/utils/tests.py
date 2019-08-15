@@ -73,6 +73,7 @@ class OrionState:
 
     """
 
+    # TODO: Fix these singletons to remove Legacy, MongoDB, PickledDB and EphemeralDB.
     SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB, EphemeralDB)
     singletons = {}
     database = None

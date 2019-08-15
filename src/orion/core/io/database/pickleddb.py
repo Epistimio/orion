@@ -26,7 +26,31 @@ log = logging.getLogger(__name__)
 DEFAULT_HOST = os.path.join(orion.core.DIRS.user_data_dir, 'orion', 'orion_db.pkl')
 
 
-# pylint: disable=protected-access
+def find_unpickable_doc(dict_of_dict):
+    for name, collection in dict_of_dict:
+        documents = collection.find()
+
+        for doc in documents:
+            try:
+                pickle.dumps(doc)
+
+            except PicklingError:
+                return name, doc
+
+    return None, None
+
+
+def find_unpickable_field(doc):
+    for k, v in doc.to_dict().items():
+        try:
+            pickle.dumps(v)
+
+        except PicklingError:
+            return k, v
+
+    return None, None
+
+
 class PickledDB(AbstractDB):
     """Pickled EphemeralDB to support permanancy and concurrency
 
@@ -129,6 +153,7 @@ class PickledDB(AbstractDB):
 
         return database
 
+    # pylint: disable: protected-access
     def _dump_database(self, database):
         """Write pickled DB on disk"""
         tmp_file = self.host + '.tmp'
@@ -138,41 +163,16 @@ class PickledDB(AbstractDB):
                 pickle.dump(database, f)
 
         except PicklingError:
-            collection, doc = self._find_unpickable_doc(database)
+            collection, doc = find_unpickable_doc(database._db)
             log.error('Document in (collection: %s) is not pickable\ndoc: %s',
                       collection, doc._data)
 
-            key, value = self._find_unpickable_field(doc)
+            key, value = find_unpickable_field(doc)
             log.error('because (value %s) in (field: %s) is not pickable',
                       value, key)
             raise
 
         os.rename(tmp_file, self.host)
-
-    @staticmethod
-    def _find_unpickable_doc(database):
-        for name, collection in database._db.items():
-            documents = collection.find()
-
-            for doc in documents:
-                try:
-                    pickle.dumps(doc)
-
-                except PicklingError:
-                    return name, doc
-
-        return None, None
-
-    @staticmethod
-    def _find_unpickable_field(doc):
-        for k, v in doc.to_dict().items():
-            try:
-                pickle.dumps(v)
-
-            except PicklingError:
-                return k, v
-
-        return None, None
 
     @contextmanager
     def locked_database(self, write=True):

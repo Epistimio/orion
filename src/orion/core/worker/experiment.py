@@ -240,9 +240,10 @@ class Experiment:
 
         Parameters
         ----------
-        score_handle: Optional[Callable[[Trial], int]]
+        score_handle: callable object, optional
             A way to decide which trial out of the *new* ones to
             to pick as *reserved*, defaults to a random choice.
+            Deprecated
 
         Returns
         -------
