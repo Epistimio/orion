@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.core.utils.state` -- Encapsulate Orion state
-=================================================================
+========================================================
 .. module:: state
    :platform: Unix
    :synopsis: Encapsulate orion state
