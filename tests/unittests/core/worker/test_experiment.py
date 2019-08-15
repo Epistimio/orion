@@ -622,7 +622,7 @@ class TestReserveTrial(object):
 
             assert trial.to_dict() == cfg.trials[0]
 
-    def test_reserve_dead_race_condition(self, exp_config, hacked_exp):
+    def test_reserve_when_exhausted(self, exp_config, hacked_exp):
         """Return None once all the trials have been allocated"""
         for _ in range(10):
             trial = hacked_exp.reserve_trial()
