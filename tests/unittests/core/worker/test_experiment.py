@@ -643,17 +643,32 @@ class TestConfigProperty(object):
 
     def test_no_increment_when_child_exist(self, create_db_instance):
         """Check that experiment is not incremented when asked for v1 while v2 exists."""
-        query = dict(name='experiment_test', metadata={'user': 'corneauf'}, version=1)
-        get_storage().create_experiment(query)
+        user_args = ['--x~normal(0,1)']
+        metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
+        algorithms = {'random': {'seed': None}}
+        config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
 
-        query['version'] = 2
-        query.pop('_id')
+        get_storage().create_experiment(config)
+        original = Experiment('experiment_test', version=1)
 
-        get_storage().create_experiment(query)
+        config['version'] = 2
+        config['metadata']['user_args'].append("--y~+normal(0,1)")
+        config.pop('_id')
 
+        get_storage().create_experiment(config)
+        config.pop('_id')
+
+        config['branch'] = ['experiment_2']
+        config['metadata']['user_args'].pop()
+        config['metadata']['user_args'].append("--z~+normal(0,1)")
+        config['version'] = 1
         exp = Experiment('experiment_test', version=1)
+        exp.configure(config)
 
         assert exp.version == 1
+        assert '/z' in exp.space
+        assert '/y' not in exp.space
+        assert exp.refers['parent_id'] == original.id
 
 
 @pytest.mark.usefixtures("create_db_instance", "with_user_bouthilx")
