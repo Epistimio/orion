@@ -27,6 +27,7 @@ DEFAULT_HOST = os.path.join(orion.core.DIRS.user_data_dir, 'orion', 'orion_db.pk
 
 
 def find_unpickable_doc(dict_of_dict):
+    """Look for a dictionary that cannot be pickled"""
     for name, collection in dict_of_dict:
         documents = collection.find()
 
@@ -41,6 +42,7 @@ def find_unpickable_doc(dict_of_dict):
 
 
 def find_unpickable_field(doc):
+    """Look for a field in a dictionary that cannot be pickled"""
     for k, v in doc.to_dict().items():
         try:
             pickle.dumps(v)
