@@ -992,7 +992,7 @@ def test_experiment_view_stats(hacked_exp, exp_config, random_dt):
 
 @pytest.mark.usefixtures("with_user_tsirif")
 def test_experiment_view_protocol_read_only():
-    """Verify that wrapper experiments' database is read-only"""
+    """Verify that wrapper experiments' protocol is read-only"""
     exp = ExperimentView('supernaedo2')
 
     # Test that _protocol.set_trial_status indeed exists
