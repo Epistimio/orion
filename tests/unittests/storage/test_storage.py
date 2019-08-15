@@ -9,57 +9,57 @@ from orion.core.utils.tests import OrionState
 
 
 def test_create_experiment():
-    """test update heartbeat"""
+    """Test create experiment"""
     pass
 
 
 def test_fetch_experiments():
-    """test update heartbeat"""
+    """Test fetch expriments"""
     pass
 
 
 def test_register_trial():
-    """test update heartbeat"""
+    """Test register trial"""
     pass
 
 
 def test_register_lie():
-    """test update heartbeat"""
+    """Test register lie"""
     pass
 
 
 def test_reserve_trial():
-    """test update heartbeat"""
+    """Test reserve trial"""
     pass
 
 
 def test_fetch_trials():
-    """test update heartbeat"""
+    """Test fetch trials"""
     pass
 
 
 def test_fetch_experiment_trials():
-    """test update heartbeat"""
+    """test fetch experiment trials"""
     pass
 
 
 def test_get_trial():
-    """test update heartbeat"""
+    """Test get trial"""
     pass
 
 
 def test_fetch_lost_trials():
-    """test update heartbeat"""
+    """Test update heartbeat"""
     pass
 
 
 def test_retrieve_result():
-    """test update heartbeat"""
+    """Test retrieve result"""
     pass
 
 
 def test_push_trial_results():
-    """test update heartbeat"""
+    """Test push trial results"""
     pass
 
 
@@ -107,31 +107,31 @@ def test_change_status_failed_update(exp_config_file):
 
 
 def test_fetch_pending_trials():
-    """test update heartbeat"""
+    """Test fetch pending trials"""
     pass
 
 
 def test_fetch_noncompleted_trials():
-    """test update heartbeat"""
+    """Test fetch non completed trials"""
     pass
 
 
 def test_fetch_completed_trials():
-    """test update heartbeat"""
+    """Test fetch completed trials"""
     pass
 
 
 def test_count_completed_trials():
-    """test update heartbeat"""
+    """Test count completed trials"""
     pass
 
 
 def test_count_broken_trials():
-    """test update heartbeat"""
+    """Test count broken trials"""
     pass
 
 
 def test_update_heartbeat():
-    """test update heartbeat"""
+    """Test update heartbeat"""
     pass
 
