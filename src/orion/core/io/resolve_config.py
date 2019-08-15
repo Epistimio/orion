@@ -222,8 +222,8 @@ def merge_configs(*configs):
 
         merge_configs({'a': {'b': 1, 'c': 2}}, {'a': {'c': 3}}) -> {'a': {'b': 1, 'c': 3}}
 
-    Example
-    -------
+    Examples
+    --------
     .. code-block:: python
         :linenos:
 
