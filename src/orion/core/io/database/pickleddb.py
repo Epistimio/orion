@@ -165,7 +165,7 @@ class PickledDB(AbstractDB):
 
     @staticmethod
     def _find_unpickable_field(doc):
-        for k, v in doc._data.items():
+        for k, v in doc.to_dict().items():
             try:
                 pickle.dumps(v)
 
