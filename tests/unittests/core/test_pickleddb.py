@@ -9,6 +9,7 @@ import os
 import pytest
 
 from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.io.database.ephemeraldb import EphemeralCollection
 from orion.core.io.database.pickleddb import find_unpickable_doc, find_unpickable_field, PickledDB
 
 
@@ -379,7 +380,10 @@ def test_unpickable_error_find_document():
         'c_pickable_doc': pickable_doc
     }
 
-    collection, doc = find_unpickable_doc(unpickable_dict_of_dict)
+    unpickable_collection = EphemeralCollection()
+    unpickable_collection.insert_many(unpickable_dict_of_dict)
+
+    collection, doc = find_unpickable_doc(unpickable_collection)
     assert collection == 'b_unpickable_doc', 'should return the unpickable document'
 
     key, value = find_unpickable_field(doc)
