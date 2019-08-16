@@ -112,7 +112,6 @@ class StorageTest:
 
     def test_change_status_success(self, storage, exp_config_file):
         """Change the status of a Trial"""
-
         def check_status_change(new_status):
             with OrionState(from_yaml=exp_config_file, database=storage) as cfg:
                 trial = cfg.get_trial(0)
@@ -135,7 +134,6 @@ class StorageTest:
 
     def test_change_status_failed_update(self, storage, exp_config_file):
         """Successfully find new trials in db and reserve one at 'random'."""
-
         def check_status_change(new_status):
             with OrionState(from_yaml=exp_config_file, database=storage) as cfg:
                 trial = cfg.get_trial(0)
