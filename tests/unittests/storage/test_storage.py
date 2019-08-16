@@ -63,7 +63,7 @@ class StorageTest:
 
     def test_create_experiment(self, storage):
         """Test create experiment"""
-        with OrionState(experiements=[], database=storage) as cfg:
+        with OrionState(experiments=[], database=storage) as cfg:
             storage = cfg.storage()
             storage.create_experiment(base_experiment)
 
