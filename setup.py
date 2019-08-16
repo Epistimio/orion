@@ -51,7 +51,7 @@ setup_args = dict(
     install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython', 'filelock',
                       'tabulate', 'AppDirs'],
     tests_require=tests_require,
-    setup_requires=['setuptools', 'appdirs', 'pytest-runner>=2.0,<3dev'],
+    setup_requires=['setuptools', 'appdirs', 'pytest-runner'],
     extras_require=dict(test=tests_require),
     # "Zipped eggs don't play nicely with namespace packaging"
     # from https://github.com/pypa/sample-namespace-packages
