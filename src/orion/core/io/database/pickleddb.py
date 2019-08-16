@@ -43,7 +43,10 @@ def find_unpickable_doc(dict_of_dict):
 
 def find_unpickable_field(doc):
     """Look for a field in a dictionary that cannot be pickled"""
-    for k, v in doc.to_dict().items():
+    if not isinstance(doc, dict):
+        doc = doc.to_dict()
+
+    for k, v in doc.items():
         try:
             pickle.dumps(v)
 
