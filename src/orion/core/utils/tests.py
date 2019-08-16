@@ -52,6 +52,17 @@ class MockDatetime(datetime.datetime):
         return default_datetime()
 
 
+def _get_default_test_database():
+    """Return default configuration for the test database"""
+    _, filename = tempfile.mkstemp('orion_test')
+
+    return {
+        'storage_type': 'legacy',
+        'type': 'PickledDB',
+        'host': filename
+    }
+
+
 # pylint: disable=no-self-use,protected-access
 class OrionState:
     """Setup global variables and singleton for tests
@@ -64,6 +75,21 @@ class OrionState:
     ----------
     config: YAML
         YAML config to apply for this test
+
+    experiments: list
+        List of experiments to insert into the database
+
+    trials: list
+        List of trials to insert into the database
+
+    workers: list
+        List of workers to insert into the database
+
+    resources: list
+        List of resources to insert into the database
+
+    database: dict
+        Configuration of the underlying database
 
     Examples
     --------
@@ -83,13 +109,15 @@ class OrionState:
     workers = []
     tempfile = None
 
-    def __init__(self, experiments=None, trials=None, workers=None, resources=None, from_yaml=None):
+    def __init__(self, experiments=None, trials=None, workers=None, resources=None,
+                 from_yaml=None, database=None):
         if from_yaml is not None:
             with open(from_yaml) as f:
                 exp_config = list(yaml.safe_load_all(f))
                 experiments = exp_config[0]
                 trials = exp_config[1]
 
+        self.database = _select(database, _get_default_test_database())
         self.experiments = _select(experiments, [])
         self.trials = _select(trials, [])
         self.workers = _select(workers, [])
@@ -140,7 +168,7 @@ class OrionState:
 
     def __enter__(self):
         """Load a new database state"""
-        _, self.tempfile = tempfile.mkstemp('orion_test')
+        self.tempfile = self.database.get('host')
 
         for singleton in self.SINGLETONS:
             self.new_singleton(singleton, new_value=None)
@@ -164,14 +192,12 @@ class OrionState:
         """Restore a singleton to its previous value"""
         obj.instance = self.singletons.get(obj)
 
-    def storage(self, storage_type='legacy'):
+    def storage(self):
         """Return test storage"""
         try:
+            storage_type = self.database.pop('storage_type')
             config = {
-                'database': {
-                    'type': 'PickledDB',
-                    'host': self.tempfile
-                }
+                'database': self.database
             }
             db = Storage(of_type=storage_type, config=config)
 
