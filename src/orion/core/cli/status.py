@@ -111,8 +111,9 @@ def print_status(exp, offset=0, all_trials=False, collapse=False):
     """
     trials = exp.fetch_trials(with_evc_tree=collapse)
 
-    print(" " * offset, exp.name, sep="")
-    print(" " * offset, "=" * len(exp.name), sep="")
+    exp_title = exp.name + ' - v.{}'.format(exp.version)
+    print(" " * offset, exp_title, sep="")
+    print(" " * offset, "=" * len(exp_title), sep="")
 
     if all_trials:
         print_all_trials(trials, offset=offset)

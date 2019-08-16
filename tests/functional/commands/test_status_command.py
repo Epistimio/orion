@@ -23,8 +23,8 @@ def test_experiment_without_trials_wout_ac(clean_db, one_experiment, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_single_exp
-===============
+test_single_exp - v.1
+=====================
 empty
 
 
@@ -39,8 +39,8 @@ def test_experiment_wout_success_wout_ac(clean_db, single_without_success, capsy
     captured = capsys.readouterr().out
 
     expected = """\
-test_single_exp
-===============
+test_single_exp - v.1
+=====================
 status         quantity
 -----------  ----------
 broken                1
@@ -61,8 +61,8 @@ def test_experiment_w_trials_wout_ac(clean_db, single_with_trials, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_single_exp
-===============
+test_single_exp - v.1
+=====================
 status         quantity    min obj
 -----------  ----------  ---------
 broken                1
@@ -84,8 +84,8 @@ def test_two_unrelated_w_trials_wout_ac(clean_db, unrelated_with_trials, capsys)
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 status         quantity
 -----------  ----------
 broken                1
@@ -96,8 +96,8 @@ reserved              1
 suspended             1
 
 
-test_single_exp
-===============
+test_single_exp - v.1
+=====================
 status         quantity    min obj
 -----------  ----------  ---------
 broken                1
@@ -120,8 +120,8 @@ def test_two_related_w_trials_wout_ac(clean_db, family_with_trials, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 status         quantity
 -----------  ----------
 broken                1
@@ -132,8 +132,8 @@ reserved              1
 suspended             1
 
 
-  test_double_exp_child
-  =====================
+  test_double_exp_child - v.1
+  ===========================
   status         quantity
   -----------  ----------
   broken                1
@@ -156,8 +156,8 @@ def test_three_unrelated_wout_ac(clean_db, three_experiments_with_trials, capsys
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 status         quantity
 -----------  ----------
 broken                1
@@ -168,8 +168,8 @@ reserved              1
 suspended             1
 
 
-  test_double_exp_child
-  =====================
+  test_double_exp_child - v.1
+  ===========================
   status         quantity
   -----------  ----------
   broken                1
@@ -180,8 +180,8 @@ suspended             1
   suspended             1
 
 
-test_single_exp
-===============
+test_single_exp - v.1
+=====================
 status         quantity    min obj
 -----------  ----------  ---------
 broken                1
@@ -204,8 +204,8 @@ def test_three_related_wout_ac(clean_db, three_family_with_trials, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 status         quantity
 -----------  ----------
 broken                1
@@ -216,8 +216,8 @@ reserved              1
 suspended             1
 
 
-  test_double_exp_child
-  =====================
+  test_double_exp_child - v.1
+  ===========================
   status         quantity
   -----------  ----------
   broken                1
@@ -228,8 +228,8 @@ suspended             1
   suspended             1
 
 
-  test_double_exp_child2
-  ======================
+  test_double_exp_child2 - v.1
+  ============================
   status         quantity
   -----------  ----------
   broken                1
@@ -252,8 +252,8 @@ def test_three_related_branch_wout_ac(clean_db, three_family_branch_with_trials,
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 status         quantity
 -----------  ----------
 broken                1
@@ -264,8 +264,8 @@ reserved              1
 suspended             1
 
 
-  test_double_exp_child
-  =====================
+  test_double_exp_child - v.1
+  ===========================
   status         quantity
   -----------  ----------
   broken                1
@@ -276,8 +276,8 @@ suspended             1
   suspended             1
 
 
-    test_double_exp_grand_child
-    ===========================
+    test_double_exp_grand_child - v.1
+    =================================
     status         quantity
     -----------  ----------
     broken                1
@@ -300,8 +300,8 @@ def test_one_wout_trials_w_a_wout_c(clean_db, one_experiment, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_single_exp
-===============
+test_single_exp - v.1
+=====================
 id    status    best objective
 ----  --------  ----------------
 
@@ -318,8 +318,8 @@ def test_one_w_trials_w_a_wout_c(clean_db, single_with_trials, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_single_exp
-===============
+test_single_exp - v.1
+=====================
 id                                status         min obj
 --------------------------------  -----------  ---------
 9f360d1b4eb2707f19dd619d0d898dd9  broken
@@ -342,8 +342,8 @@ def test_one_wout_success_w_a_wout_c(clean_db, single_without_success, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_single_exp
-===============
+test_single_exp - v.1
+=====================
 id                                status
 --------------------------------  -----------
 9f360d1b4eb2707f19dd619d0d898dd9  broken
@@ -365,8 +365,8 @@ def test_two_unrelated_w_a_wout_c(clean_db, unrelated_with_trials, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 id                                status
 --------------------------------  -----------
 c2187f4954884c801e423d851aec9a0b  broken
@@ -377,8 +377,8 @@ b849f69cc3a77f39382d7435d0d41b14  interrupted
 557b9fdb9f96569dff7eb2de10d3946f  suspended
 
 
-test_single_exp
-===============
+test_single_exp - v.1
+=====================
 id                                status         min obj
 --------------------------------  -----------  ---------
 9f360d1b4eb2707f19dd619d0d898dd9  broken
@@ -401,8 +401,8 @@ def test_two_related_w_a_wout_c(clean_db, family_with_trials, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 id                                status
 --------------------------------  -----------
 c2187f4954884c801e423d851aec9a0b  broken
@@ -413,8 +413,8 @@ b849f69cc3a77f39382d7435d0d41b14  interrupted
 557b9fdb9f96569dff7eb2de10d3946f  suspended
 
 
-  test_double_exp_child
-  =====================
+  test_double_exp_child - v.1
+  ===========================
   id                                status
   --------------------------------  -----------
   9bd1ebc475bcb9e077a9e81a7c954a65  broken
@@ -437,8 +437,8 @@ def test_three_unrelated_w_a_wout_c(clean_db, three_experiments_with_trials, cap
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 id                                status
 --------------------------------  -----------
 c2187f4954884c801e423d851aec9a0b  broken
@@ -449,8 +449,8 @@ b849f69cc3a77f39382d7435d0d41b14  interrupted
 557b9fdb9f96569dff7eb2de10d3946f  suspended
 
 
-  test_double_exp_child
-  =====================
+  test_double_exp_child - v.1
+  ===========================
   id                                status
   --------------------------------  -----------
   9bd1ebc475bcb9e077a9e81a7c954a65  broken
@@ -461,8 +461,8 @@ b849f69cc3a77f39382d7435d0d41b14  interrupted
   ff997e666e20c5a8c1a816dde0b5e2e9  suspended
 
 
-test_single_exp
-===============
+test_single_exp - v.1
+=====================
 id                                status         min obj
 --------------------------------  -----------  ---------
 9f360d1b4eb2707f19dd619d0d898dd9  broken
@@ -485,8 +485,8 @@ def test_three_related_w_a_wout_c(clean_db, three_family_with_trials, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 id                                status
 --------------------------------  -----------
 c2187f4954884c801e423d851aec9a0b  broken
@@ -497,8 +497,8 @@ b849f69cc3a77f39382d7435d0d41b14  interrupted
 557b9fdb9f96569dff7eb2de10d3946f  suspended
 
 
-  test_double_exp_child
-  =====================
+  test_double_exp_child - v.1
+  ===========================
   id                                status
   --------------------------------  -----------
   9bd1ebc475bcb9e077a9e81a7c954a65  broken
@@ -509,8 +509,8 @@ b849f69cc3a77f39382d7435d0d41b14  interrupted
   ff997e666e20c5a8c1a816dde0b5e2e9  suspended
 
 
-  test_double_exp_child2
-  ======================
+  test_double_exp_child2 - v.1
+  ============================
   id                                status
   --------------------------------  -----------
   2c2b64df1859b45a0b01362ca146584a  broken
@@ -533,8 +533,8 @@ def test_three_related_branch_w_a_wout_c(clean_db, three_family_branch_with_tria
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 id                                status
 --------------------------------  -----------
 c2187f4954884c801e423d851aec9a0b  broken
@@ -545,8 +545,8 @@ b849f69cc3a77f39382d7435d0d41b14  interrupted
 557b9fdb9f96569dff7eb2de10d3946f  suspended
 
 
-  test_double_exp_child
-  =====================
+  test_double_exp_child - v.1
+  ===========================
   id                                status
   --------------------------------  -----------
   9bd1ebc475bcb9e077a9e81a7c954a65  broken
@@ -557,8 +557,8 @@ b849f69cc3a77f39382d7435d0d41b14  interrupted
   ff997e666e20c5a8c1a816dde0b5e2e9  suspended
 
 
-    test_double_exp_grand_child
-    ===========================
+    test_double_exp_grand_child - v.1
+    =================================
     id                                status
     --------------------------------  -----------
     82f82a325b7cf09251a34c9264e1812a  broken
@@ -581,8 +581,8 @@ def test_two_unrelated_w_c_wout_a(clean_db, unrelated_with_trials, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 status         quantity
 -----------  ----------
 broken                1
@@ -593,8 +593,8 @@ reserved              1
 suspended             1
 
 
-test_single_exp
-===============
+test_single_exp - v.1
+=====================
 status         quantity    min obj
 -----------  ----------  ---------
 broken                1
@@ -617,8 +617,8 @@ def test_two_related_w_c_wout_a(clean_db, family_with_trials, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 status         quantity
 -----------  ----------
 broken                1
@@ -641,8 +641,8 @@ def test_three_unrelated_w_c_wout_a(clean_db, three_experiments_with_trials, cap
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 status         quantity
 -----------  ----------
 broken                1
@@ -653,8 +653,8 @@ reserved              1
 suspended             1
 
 
-test_single_exp
-===============
+test_single_exp - v.1
+=====================
 status         quantity    min obj
 -----------  ----------  ---------
 broken                1
@@ -677,8 +677,8 @@ def test_three_related_w_c_wout_a(clean_db, three_family_with_trials, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 status         quantity
 -----------  ----------
 broken                1
@@ -701,8 +701,8 @@ def test_three_related_branch_w_c_wout_a(clean_db, three_family_branch_with_tria
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 status         quantity
 -----------  ----------
 broken                1
@@ -725,8 +725,8 @@ def test_two_unrelated_w_ac(clean_db, unrelated_with_trials, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 id                                status
 --------------------------------  -----------
 c2187f4954884c801e423d851aec9a0b  broken
@@ -737,8 +737,8 @@ b849f69cc3a77f39382d7435d0d41b14  interrupted
 557b9fdb9f96569dff7eb2de10d3946f  suspended
 
 
-test_single_exp
-===============
+test_single_exp - v.1
+=====================
 id                                status         min obj
 --------------------------------  -----------  ---------
 9f360d1b4eb2707f19dd619d0d898dd9  broken
@@ -761,8 +761,8 @@ def test_two_related_w_ac(clean_db, family_with_trials, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 id                                status
 --------------------------------  -----------
 c2187f4954884c801e423d851aec9a0b  broken
@@ -786,8 +786,8 @@ def test_three_unrelated_w_ac(clean_db, three_experiments_with_trials, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 id                                status
 --------------------------------  -----------
 c2187f4954884c801e423d851aec9a0b  broken
@@ -799,8 +799,8 @@ d5f1c1cae188608b581ded20cd198679  new
 557b9fdb9f96569dff7eb2de10d3946f  suspended
 
 
-test_single_exp
-===============
+test_single_exp - v.1
+=====================
 id                                status         min obj
 --------------------------------  -----------  ---------
 9f360d1b4eb2707f19dd619d0d898dd9  broken
@@ -823,8 +823,8 @@ def test_three_related_w_ac(clean_db, three_family_with_trials, capsys):
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 id                                status
 --------------------------------  -----------
 c2187f4954884c801e423d851aec9a0b  broken
@@ -849,8 +849,8 @@ def test_three_related_branch_w_ac(clean_db, three_family_branch_with_trials, ca
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 id                                status
 --------------------------------  -----------
 c2187f4954884c801e423d851aec9a0b  broken
@@ -874,8 +874,9 @@ def test_experiment_wout_child_w_name(clean_db, unrelated_with_trials, capsys):
 
     captured = capsys.readouterr().out
 
-    expected = """test_single_exp
-===============
+    expected = """\
+test_single_exp - v.1
+=====================
 status         quantity    min obj
 -----------  ----------  ---------
 broken                1
@@ -898,8 +899,8 @@ def test_experiment_w_child_w_name(clean_db, three_experiments_with_trials, caps
     captured = capsys.readouterr().out
 
     expected = """\
-test_double_exp
-===============
+test_double_exp - v.1
+=====================
 status         quantity
 -----------  ----------
 broken                1
