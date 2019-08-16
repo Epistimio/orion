@@ -10,6 +10,8 @@ from orion.storage.base import FailedUpdate, get_storage
 
 @pytest.mark.parametrize('storage', ['legacy'])
 class StorageTest:
+    """Test all storage backend"""
+
     def test_create_experiment(self, storage):
         """Test create experiment"""
         pass
