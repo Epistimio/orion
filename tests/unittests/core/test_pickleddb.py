@@ -363,21 +363,24 @@ def test_unpickable_error_find_document():
         i_am_not_pickable = None
 
     unpickable_doc = {
+        '_id': 2,
         'a_pickable': 1,
         'b_unpickable': UnpickableClass(),
         'c_pickable': 3
     }
 
-    pickable_doc = {
-        'a_pickable': 1,
-        'b_pickable': 2,
-        'c_pickable': 3
-    }
+    def make_pickable(uid):
+        return {
+            '_id': uid,
+            'a_pickable': 1,
+            'b_pickable': 2,
+            'c_pickable': 3
+        }
 
     unpickable_dict_of_dict = [
-        pickable_doc,
+        make_pickable(1),
         unpickable_doc,
-        pickable_doc
+        make_pickable(3)
     ]
 
     unpickable_collection = EphemeralCollection()
