@@ -163,7 +163,7 @@ class PickledDB(AbstractDB):
             with open(tmp_file, 'wb') as f:
                 pickle.dump(database, f)
 
-        except PicklingError:
+        except (PicklingError, AttributeError):
             collection, doc = find_unpickable_doc(database._db)  # pylint: disable=protected-access
             log.error('Document in (collection: %s) is not pickable\ndoc: %s',
                       collection, doc._data)                     # pylint: disable=protected-access
