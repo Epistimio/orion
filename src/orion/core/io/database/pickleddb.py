@@ -35,7 +35,7 @@ def find_unpickable_doc(dict_of_dict):
             try:
                 pickle.dumps(doc)
 
-            except PicklingError:
+            except (PicklingError, AttributeError):
                 return name, doc
 
     return None, None
@@ -47,7 +47,7 @@ def find_unpickable_field(doc):
         try:
             pickle.dumps(v)
 
-        except PicklingError:
+        except (PicklingError, AttributeError):
             return k, v
 
     return None, None
