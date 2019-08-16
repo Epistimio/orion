@@ -1608,7 +1608,7 @@ class ExperimentNameConflict(Conflict):
             # If we made it this far, new_name is actually the name of the parent.
             parent = self.conflict.old_config
 
-            query = {'refers.parent_id': parent['_id']}
+            query = {'name': parent['name'], 'refers.parent_id': parent['_id']}
             children = len(get_storage().fetch_experiments(query))
 
             return bool(children)
