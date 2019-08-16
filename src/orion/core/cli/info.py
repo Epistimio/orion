@@ -348,8 +348,10 @@ STATS_TEMPLATE = """\
 {title}
 trials completed: {stats[trials_completed]}
 best trial:
+  id: {stats[best_trials_id]}
+  evaluation: {stats[best_evaluation]}
+  params:
 {best_params}
-best evaluation: {stats[best_evaluation]}
 start time: {stats[start_time]}
 finish time: {stats[finish_time]}
 duration: {stats[duration]}
@@ -383,8 +385,9 @@ def format_stats(experiment):
     stats_string = STATS_TEMPLATE.format(
         title=format_title("Stats"),
         stats=stats,
-        best_params=format_dict(best_params, depth=1, width=2))
+        best_params=format_dict(best_params, depth=2, width=2))
 
+    print(format_dict(best_params, depth=2, width=2))
     return stats_string
 
 
