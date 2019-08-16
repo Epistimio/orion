@@ -383,11 +383,25 @@ def test_unpickable_error_find_document():
         make_pickable(3)
     ]
 
+    pickable_dict_of_dict = [
+        make_pickable(1),
+        make_pickable(2),
+        make_pickable(3)
+    ]
+
     unpickable_collection = EphemeralCollection()
     unpickable_collection.insert_many(unpickable_dict_of_dict)
 
-    collection, doc = find_unpickable_doc(unpickable_collection)
-    assert collection == 'b_unpickable_doc', 'should return the unpickable document'
+    pickable_collection = EphemeralCollection()
+    pickable_collection.insert_many(pickable_dict_of_dict)
+
+    database = {
+        'pickable_collection': pickable_collection,
+        'unpickable_collection': unpickable_collection
+    }
+
+    collection, doc = find_unpickable_doc(database)
+    assert collection == 'unpickable_collection', 'should return the unpickable document'
 
     key, value = find_unpickable_field(doc)
     assert key == 'b_unpickable', 'should return the unpickable field'
