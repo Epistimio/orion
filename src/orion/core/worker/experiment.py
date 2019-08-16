@@ -144,8 +144,8 @@ class Experiment:
 
                 self.version = min(self.version, max_version)
 
-                log.info("Many versions for experiment %s have been found. Using latest\
-                          version %s.", name, self.version)
+                log.info("Many versions for experiment %s have been found. Using latest "
+                         "version %s.", name, self.version)
                 config = filter(lambda exp: exp['version'] == self.version, config)
 
             config = sorted(config, key=lambda x: x['metadata']['datetime'],
