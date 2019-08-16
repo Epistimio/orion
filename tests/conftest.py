@@ -120,9 +120,9 @@ def dumbalgo():
 @pytest.fixture()
 def categorical_values():
     """Return a list of all the categorical points possible for `supernaedo2` and `supernaedo3`"""
-    return [('rnn', 'rnn'), ('rnn', 'lstm_with_attention'), ('rnn', 'gru'),
-            ('gru', 'rnn'), ('gru', 'lstm_with_attention'), ('gru', 'gru'),
-            ('lstm', 'rnn'), ('lstm', 'lstm_with_attention'), ('lstm', 'gru')]
+    return [('rnn', 'rnn'), ('lstm_with_attention', 'rnn'), ('gru', 'rnn'),
+            ('rnn', 'gru'), ('lstm_with_attention', 'gru'), ('gru', 'gru'),
+            ('rnn', 'lstm'), ('lstm_with_attention', 'lstm'), ('gru', 'lstm')]
 
 
 @pytest.fixture()

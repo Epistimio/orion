@@ -68,7 +68,11 @@ class PrimaryAlgo(BaseAlgorithm):
         """
         points = self.algorithm.suggest(num)
         for point in points:
-            assert point in self.transformed_space
+            if point not in self.transformed_space:
+                raise ValueError("""
+Point is not contained in space:
+Point: {}
+Space: {}""".format(point, self.transformed_space))
         return [self.transformed_space.reverse(point) for point in points]
 
     def observe(self, points, results):
