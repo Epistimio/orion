@@ -17,8 +17,8 @@ import tabulate
 from orion.core.cli import base as cli
 from orion.core.io.evc_builder import EVCBuilder
 from orion.core.io.experiment_builder import ExperimentBuilder
+from orion.core.worker.experiment import Experiment
 from orion.storage.base import get_storage
-
 
 log = logging.getLogger(__name__)
 
@@ -37,6 +37,11 @@ def add_subparser(parser):
         '-C', '--collapse', action="store_true",
         help=("Aggregate together results of all child experiments. Otherwise they are all "
               "printed hierarchically"))
+
+    status_parser.add_argument(
+        '-e', '--expand-versions', action='store_true',
+        help=("Show all the version of every experiments instead of only the latest one")
+        )
 
     status_parser.set_defaults(func=main)
 
@@ -58,8 +63,10 @@ def main(args):
     for exp in filter(lambda e: e.refers.get('parent_id') is None, experiments):
         if args.get('collapse'):
             print_status(exp, all_trials=args.get('all'), collapse=True)
-        else:
+        elif args.get('expand_versions') or _has_named_children(exp, experiments):
             print_status_recursively(exp, all_trials=args.get('all'))
+        else:
+            print_status(Experiment(exp.name), all_trials=args.get('all'))
 
 
 def get_experiments(args):
@@ -71,12 +78,20 @@ def get_experiments(args):
         Commandline arguments.
 
     """
-    projection = {'name': 1}
+    projection = {'name': 1, 'version': 1}
 
     query = {'name': args['name']} if args.get('name') else {}
     experiments = get_storage().fetch_experiments(query, projection)
 
-    return [EVCBuilder().build_view_from({'name': exp['name']}) for exp in experiments]
+    return [EVCBuilder().build_view_from({'name': exp['name'], 'version': exp['version']})
+            for exp in experiments]
+
+
+def _has_named_children(exp, experiments):
+    tree = list(filter(lambda e: e.name == exp.name or e.refers['root_id'] == exp.id, experiments))
+    latest = max(tree, key=lambda e: e.version).version
+
+    return len(tree) > latest
 
 
 def print_status_recursively(exp, depth=0, **kwargs):

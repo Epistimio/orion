@@ -914,3 +914,106 @@ suspended             1
 """
 
     assert captured == expected
+
+
+def test_experiment_same_name_wout_exv(clean_db, three_experiments_same_name, capsys):
+    """Test status with three experiments having the same name but different versions."""
+
+    orion.core.cli.main(['status'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp - v.3
+=====================
+empty
+
+
+"""
+
+    assert captured == expected
+
+
+def test_experiment_same_name_wout_exv_w_child(clean_db,
+                                               three_experiments_family_same_name, capsys):
+    """Test status with two experiments having the same name and one with a child."""
+
+    orion.core.cli.main(['status'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp - v.1
+=====================
+empty
+
+
+  test_single_exp - v.2
+  =====================
+  empty
+
+
+  test_single_exp_child - v.1
+  ===========================
+  empty
+
+
+"""
+
+    assert captured == expected
+
+
+def test_experiment_same_name_w_exv(clean_db, three_experiments_same_name, capsys):
+    """Test status with three experiments with the same name and `--expand-verions`."""
+
+    orion.core.cli.main(['status', '--expand-versions'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp - v.1
+=====================
+empty
+
+
+  test_single_exp - v.2
+  =====================
+  empty
+
+
+    test_single_exp - v.3
+    =====================
+    empty
+
+
+"""
+
+    assert captured == expected
+
+
+def test_experiment_same_name_w_exv_w_child(clean_db, three_experiments_family_same_name, capsys):
+    """Test status with two experiments having the same name and one with a child."""
+
+    orion.core.cli.main(['status', '--expand-versions'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp - v.1
+=====================
+empty
+
+
+  test_single_exp - v.2
+  =====================
+  empty
+
+
+  test_single_exp_child - v.1
+  ===========================
+  empty
+
+
+"""
+
+    assert captured == expected
