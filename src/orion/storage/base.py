@@ -19,6 +19,12 @@ class FailedUpdate(Exception):
     pass
 
 
+class UnderdefinedCall(Exception):
+    """Raised when calling a function without the minimal set of parameters"""
+
+    pass
+
+
 class BaseStorageProtocol(metaclass=AbstractSingletonType):
     """Implement a generic protocol to allow Orion to communicate using
     different storage backend
@@ -92,15 +98,20 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
 
         Parameters
         ----------
-        trial: Trial
+        trial: Trial, optional
            trial object to retrieve from the database
 
-        uid: str
+        uid: str, optional
             trial id used to retrieve the trial object
 
         Returns
         -------
-        return none if the trial is not found
+        return none if the trial is not found,
+
+        Raises
+        ------
+        UnderdefinedCall
+            if both trial and uid are not set
 
         """
         raise NotImplementedError()

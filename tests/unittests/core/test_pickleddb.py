@@ -9,7 +9,7 @@ import os
 import pytest
 
 from orion.core.io.database import Database, DuplicateKeyError
-from orion.core.io.database.pickleddb import PickledDB, find_unpickable_doc, find_unpickable_field
+from orion.core.io.database.pickleddb import find_unpickable_doc, find_unpickable_field, PickledDB
 
 
 @pytest.fixture()
@@ -357,6 +357,7 @@ class TestConcurreny(object):
 
 
 def test_unpickable_error_find_document():
+    """Check error messages for pickledb"""
     class UnpickableClass:
         i_am_not_pickable = None
 

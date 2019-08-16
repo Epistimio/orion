@@ -14,7 +14,7 @@ import logging
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database
 from orion.core.worker.trial import Trial
-from orion.storage.base import BaseStorageProtocol, FailedUpdate
+from orion.storage.base import BaseStorageProtocol, FailedUpdate, UnderdefinedCall
 
 log = logging.getLogger(__name__)
 
@@ -167,6 +167,9 @@ class Legacy(BaseStorageProtocol):
     def get_trial(self, trial=None, uid=None):
         """See :func:`~orion.storage.BaseStorageProtocol.get_trial`"""
         if uid is None:
+            if trial is None:
+                raise UnderdefinedCall('Either `trial` or `uid` should be set')
+
             uid = trial.id
 
         result = self._db.read('trials', {'_id': uid})

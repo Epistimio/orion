@@ -155,7 +155,6 @@ class PickledDB(AbstractDB):
 
         return database
 
-    # pylint: disable=protected-access
     def _dump_database(self, database):
         """Write pickled DB on disk"""
         tmp_file = self.host + '.tmp'
@@ -165,7 +164,7 @@ class PickledDB(AbstractDB):
                 pickle.dump(database, f)
 
         except PicklingError:
-            collection, doc = find_unpickable_doc(database._db)
+            collection, doc = find_unpickable_doc(database._db)  # pylint: disable=protected-access
             log.error('Document in (collection: %s) is not pickable\ndoc: %s',
                       collection, doc._data)
 
