@@ -144,8 +144,8 @@ class Experiment:
 
                 self.version = min(self.version, max_version)
 
-                log.info("Many versions for experiment %s have been found. Using latest\
-                          version %s.", name, self.version)
+                log.info("Many versions for experiment %s have been found. Using latest "
+                         "version %s.", name, self.version)
                 config = filter(lambda exp: exp['version'] == self.version, config)
 
             config = sorted(config, key=lambda x: x['metadata']['datetime'],
@@ -575,7 +575,7 @@ class Experiment:
             raise DuplicateKeyError("Cannot register an existing experiment with a new config")
 
         # Copy and simulate instantiating given configuration
-        experiment = Experiment(self.name)
+        experiment = Experiment(self.name, version=self.version)
         experiment._instantiate_config(self.configuration)
         experiment._instantiate_config(config)
         experiment._init_done = True
@@ -703,7 +703,7 @@ class Experiment:
         experiment_brancher = ExperimentBranchBuilder(conflicts, branching_configuration)
 
         needs_manual_resolution = (not experiment_brancher.is_resolved or
-                                   experiment_brancher.auto_resolution)
+                                   experiment_brancher.manual_resolution)
 
         if needs_manual_resolution:
             branching_prompt = BranchingPrompt(experiment_brancher)
@@ -746,7 +746,8 @@ class Experiment:
 
     def __repr__(self):
         """Represent the object as a string."""
-        return "Experiment(name=%s, metadata.user=%s)" % (self.name, self.metadata['user'])
+        return "Experiment(name=%s, metadata.user=%s, version=%s)" % \
+            (self.name, self.metadata['user'], self.version)
 
 
 # pylint: disable=too-few-public-methods
@@ -820,4 +821,5 @@ class ExperimentView(object):
 
     def __repr__(self):
         """Represent the object as a string."""
-        return "ExperimentView(name=%s, metadata.user=%s)" % (self.name, self.metadata['user'])
+        return "ExperimentView(name=%s, metadata.user=%s, version=%s)" % \
+            (self.name, self.metadata['user'], self.version)

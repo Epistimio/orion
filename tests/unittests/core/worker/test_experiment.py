@@ -14,6 +14,7 @@ import pytest
 
 from orion.algo.base import BaseAlgorithm
 from orion.core.io.database import DuplicateKeyError
+import orion.core.worker.experiment
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
@@ -164,7 +165,8 @@ def parent_version_config():
                 name="old_experiment",
                 version=1,
                 algorithms='random',
-                metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow()}
+                metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow(),
+                          'user_args': ['--x~normal(0,1)']}
                 )
 
 
@@ -176,6 +178,7 @@ def child_version_config(parent_version_config):
     config['version'] = 2
     config['refers'] = {'parent_id': 'parent_config'}
     config['metadata']['datetime'] = datetime.datetime.utcnow()
+    config['metadata']['user_args'].append('--y~+normal(0,1)')
     return config
 
 
@@ -639,6 +642,65 @@ class TestConfigProperty(object):
         exp.configure(exp_config[0][2])
 
         assert not exp.is_done
+
+    def test_no_increment_when_child_exist(self, create_db_instance):
+        """Check that experiment is not incremented when asked for v1 while v2 exists."""
+        user_args = ['--x~normal(0,1)']
+        metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
+        algorithms = {'random': {'seed': None}}
+        config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
+
+        get_storage().create_experiment(config)
+        original = Experiment('experiment_test', version=1)
+
+        config['version'] = 2
+        config['metadata']['user_args'].append("--y~+normal(0,1)")
+        config.pop('_id')
+
+        get_storage().create_experiment(config)
+        config.pop('_id')
+
+        config['branch'] = ['experiment_2']
+        config['metadata']['user_args'].pop()
+        config['metadata']['user_args'].append("--z~+normal(0,1)")
+        config['version'] = 1
+        exp = Experiment('experiment_test', version=1)
+        exp.configure(config)
+
+        assert exp.version == 1
+        assert '/z' in exp.space
+        assert '/y' not in exp.space
+        assert exp.refers['parent_id'] == original.id
+
+    def test_old_experiment_wout_version(self, create_db_instance, parent_version_config,
+                                         child_version_config):
+        """Create an already existing experiment without a version."""
+        algorithm = {'random': {'seed': None}}
+        parent_version_config['algorithms'] = algorithm
+        child_version_config['algorithms'] = algorithm
+
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf")
+        exp.configure(child_version_config)
+
+        assert exp.version == 2
+
+    def test_old_experiment_w_version(self, create_db_instance, parent_version_config,
+                                      child_version_config):
+        """Create an already existing experiment with a version."""
+        algorithm = {'random': {'seed': None}}
+        parent_version_config['algorithms'] = algorithm
+        child_version_config['algorithms'] = algorithm
+
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf", version=1)
+        exp.configure(parent_version_config)
+
+        assert exp.version == 1
 
 
 @pytest.mark.usefixtures("create_db_instance", "with_user_bouthilx")
@@ -1156,12 +1218,18 @@ class TestInitExperimentWithEVC(object):
     def test_experiment_non_interactive_branching(self, create_db_instance, random_dt, exp_config,
                                                   monkeypatch):
         """Configure an existing experiment with parent."""
-        monkeypatch.setattr('sys.__stdin__.isatty', lambda: True)
-        exp = Experiment('supernaedo2.1')
-        exp.algorithms = {'dumbalgo': {}}
-        with pytest.raises(OSError):
-            exp.configure(exp.configuration)
-        monkeypatch.undo()
+        def _patch_fetch(config):
+            return {'manual_resolution': True}
+
+        monkeypatch.setattr(orion.core.worker.experiment,
+                            "fetch_branching_configuration", _patch_fetch)
+        with monkeypatch.context() as ctx:
+            ctx.setattr('sys.__stdin__.isatty', lambda: True)
+            exp = Experiment('supernaedo2.1')
+            exp.algorithms = {'dumbalgo': {}}
+            with pytest.raises(OSError):
+                exp.configure(exp.configuration)
+
         with pytest.raises(ValueError) as exc_info:
             exp.configure(exp.configuration)
         assert "Configuration is different and generates a branching" in str(exc_info.value)

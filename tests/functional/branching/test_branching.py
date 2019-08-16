@@ -425,7 +425,8 @@ def test_new_algo_not_resolved(init_full_x):
     with pytest.raises(ValueError) as exc:
         orion.core.cli.main(
             ("init_only -n {name} --branch {branch} --config new_algo_config.yaml "
-             "./black_box.py -x~uniform(-10,10)").format(name=name, branch=branch).split(" "))
+             "--manual-resolution ./black_box.py -x~uniform(-10,10)")
+            .format(name=name, branch=branch).split(" "))
     assert "Configuration is different and generates a branching event" in str(exc.value)
 
 
@@ -441,24 +442,9 @@ def test_new_cli(init_full_x_new_cli):
     assert len(experiment.fetch_trials({})) == 20
 
 
-def test_new_cli_not_resolved(init_full_x):
-    """Test that new cli conflict is not automatically resolved"""
-    name = "full_x"
-    branch = "full_x_new_cli"
-    with pytest.raises(ValueError) as exc:
-        orion.core.cli.main(
-            ("init_only -n {name} --branch {branch} ./black_box.py "
-             "-x~uniform(-10,10) --a-new argument").format(name=name, branch=branch).split(" "))
-    assert "Configuration is different and generates a branching event" in str(exc.value)
-
-
 def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
     """Test that auto-resolution does resolve all conflicts"""
     # Patch cmdloop to avoid autoresolution's prompt
-    def _do_nothing(self):
-        pass
-    from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
-    monkeypatch.setattr(BranchingPrompt, "cmdloop", _do_nothing)
     monkeypatch.setattr('sys.__stdin__.isatty', lambda: True)
 
     name = "full_x_full_y"
@@ -466,31 +452,11 @@ def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
     # If autoresolution was not succesfull, this to fail with a sys.exit without registering the
     # experiment
     orion.core.cli.main(
-        ("init_only -n {name} --branch {branch} --auto-resolution ./black_box_with_y.py "
+        ("init_only -n {name} --branch {branch} ./black_box_with_y.py "
          "-x~uniform(0,10) "
          "-w~choices(['a','b'],default_value='a')").format(name=name, branch=branch).split(" "))
     orion.core.cli.main("insert -n {name} script -x=2 -w=b".format(name=branch).split(" "))
     orion.core.cli.main("insert -n {name} script -x=1".format(name=branch).split(" "))
-
-
-def test_auto_resolution_forces_prompt(init_full_x_full_y, monkeypatch):
-    """Test that auto-resolution forces prompt"""
-    name = "full_x_full_y"
-    branch = "new_full_x_full_y"
-
-    # No conflict, it does not prompt
-    orion.core.cli.main(
-        ("init_only -n {name} --auto-resolution ./black_box.py "
-         "-x~uniform(-10,10) "
-         "-y~+uniform(-10,10,default_value=1)").format(name=name).split(" "))
-
-    # No conflicts, but forced branching, it forces prompt
-    with pytest.raises(ValueError) as exc:
-        orion.core.cli.main(
-            ("init_only -n {name} --branch {branch} --auto-resolution ./black_box.py "
-             "-x~uniform(-10,10) "
-             "-y~+uniform(-10,10,default_value=1)").format(name=name, branch=branch).split(" "))
-    assert "Configuration is different and generates a branching event" in str(exc.value)
 
 
 def test_init_w_version_from_parent_w_children(clean_db, monkeypatch):
@@ -531,3 +497,30 @@ def test_init_w_version_gt_max(clean_db, monkeypatch, database):
 
     exp = database.experiments.find({'name': 'experiment', 'version': 3})
     assert len(list(exp))
+
+
+def test_init_check_increment_w_children(clean_db, monkeypatch, database):
+    """Test that incrementing version works with not same-named children."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment --branch experiment_2 ./black_box.py "
+                        "-x~normal(0,1) -y~+normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment ./black_box.py "
+                        "-x~normal(0,1) -z~+normal(0,1)".split(" "))
+
+    exp = database.experiments.find({'name': 'experiment', 'version': 2})
+    assert len(list(exp))
+
+
+def test_branch_from_selected_version(clean_db, monkeypatch, database):
+    """Test that branching from a version passed with `--version` works."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1) -y~+normal(0,1)"
+                        .split(" "))
+    orion.core.cli.main("init_only -n experiment --version 1 -b experiment_2 ./black_box.py "
+                        "-x~normal(0,1) -z~+normal(0,1)".split(" "))
+
+    parent = database.experiments.find({'name': 'experiment', 'version': 1})[0]
+    exp = database.experiments.find({'name': 'experiment_2'})[0]
+    assert exp['refers']['parent_id'] == parent['_id']
