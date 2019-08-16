@@ -700,7 +700,8 @@ class Experiment:
 
     def __repr__(self):
         """Represent the object as a string."""
-        return "Experiment(name=%s, metadata.user=%s)" % (self.name, self.metadata['user'])
+        return "Experiment(name=%s, metadata.user=%s, version=%s)" % \
+            (self.name, self.metadata['user'], self.version)
 
 
 # pylint: disable=too-few-public-methods
@@ -774,4 +775,5 @@ class ExperimentView(object):
 
     def __repr__(self):
         """Represent the object as a string."""
-        return "ExperimentView(name=%s, metadata.user=%s)" % (self.name, self.metadata['user'])
+        return "ExperimentView(name=%s, metadata.user=%s, version=%s)" % \
+            (self.name, self.metadata['user'], self.version)
