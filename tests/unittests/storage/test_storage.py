@@ -4,8 +4,8 @@
 
 import pytest
 
-from orion.storage.base import BaseStorageProtocol, FailedUpdate, get_storage, Storage
 from orion.core.utils.tests import OrionState
+from orion.storage.base import FailedUpdate, get_storage
 
 
 def test_create_experiment():
@@ -88,13 +88,12 @@ def test_change_status_success(exp_config_file):
 
 def test_change_status_failed_update(exp_config_file):
     """Successfully find new trials in db and reserve one at 'random'."""
-
     def check_status_change(new_status):
         with OrionState(from_yaml=exp_config_file) as cfg:
             trial = cfg.get_trial(0)
             assert trial is not None, 'Was not able to retrieve trial for test'
 
-            with pytest.raises(FailedUpdate) as exc:
+            with pytest.raises(FailedUpdate):
                 trial.status = new_status
                 get_storage().set_trial_status(trial, status=new_status)
 
@@ -134,4 +133,3 @@ def test_count_broken_trials():
 def test_update_heartbeat():
     """Test update heartbeat"""
     pass
-
