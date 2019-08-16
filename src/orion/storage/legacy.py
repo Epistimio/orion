@@ -148,8 +148,8 @@ class Legacy(BaseStorageProtocol):
         -------
         returns the updated trial object
 
-        Note
-        ----
+        Notes
+        -----
         This does not update the database!
 
         """
