@@ -165,7 +165,8 @@ def parent_version_config():
                 name="old_experiment",
                 version=1,
                 algorithms='random',
-                metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow()}
+                metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow(),
+                          'user_args': ['--x~normal(0,1)']}
                 )
 
 
@@ -177,6 +178,7 @@ def child_version_config(parent_version_config):
     config['version'] = 2
     config['refers'] = {'parent_id': 'parent_config'}
     config['metadata']['datetime'] = datetime.datetime.utcnow()
+    config['metadata']['user_args'].append('--y~+normal(0,1)')
     return config
 
 
@@ -669,6 +671,36 @@ class TestConfigProperty(object):
         assert '/z' in exp.space
         assert '/y' not in exp.space
         assert exp.refers['parent_id'] == original.id
+
+    def test_old_experiment_wout_version(self, create_db_instance, parent_version_config,
+                                         child_version_config):
+        """Create an already existing experiment without a version."""
+        algorithm = {'random': {'seed': None}}
+        parent_version_config['algorithms'] = algorithm
+        child_version_config['algorithms'] = algorithm
+
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf")
+        exp.configure(child_version_config)
+
+        assert exp.version == 2
+
+    def test_old_experiment_w_version(self, create_db_instance, parent_version_config,
+                                      child_version_config):
+        """Create an already existing experiment with a version."""
+        algorithm = {'random': {'seed': None}}
+        parent_version_config['algorithms'] = algorithm
+        child_version_config['algorithms'] = algorithm
+
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf", version=1)
+        exp.configure(parent_version_config)
+
+        assert exp.version == 1
 
 
 @pytest.mark.usefixtures("create_db_instance", "with_user_bouthilx")
