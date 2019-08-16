@@ -374,11 +374,11 @@ def test_unpickable_error_find_document():
         'c_pickable': 3
     }
 
-    unpickable_dict_of_dict = {
-        'a_pickable_doc': pickable_doc,
-        'b_unpickable_doc': unpickable_doc,
-        'c_pickable_doc': pickable_doc
-    }
+    unpickable_dict_of_dict = [
+        pickable_doc,
+        unpickable_doc,
+        pickable_doc
+    ]
 
     unpickable_collection = EphemeralCollection()
     unpickable_collection.insert_many(unpickable_dict_of_dict)

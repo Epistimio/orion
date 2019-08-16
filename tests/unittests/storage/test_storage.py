@@ -2,19 +2,73 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.storage`."""
 
+import copy
+
 import pytest
 
 from orion.core.utils.tests import OrionState
 from orion.storage.base import FailedUpdate, get_storage
 
+storage_backends = [
+    None,  # defaults to legacy with PickleDB
+]
 
-@pytest.mark.parametrize('storage', ['legacy'])
+base_experiment = {
+    'name': 'supernaedo2',
+    'metadata': {
+        'user': None,
+    }
+}
+
+
+base_trial = {
+    'experiment': 'supernaedo2',
+    'status': 'new',  # new, reserved, suspended, completed, broken
+    'worker': None,
+    'submit_time': '2017-11-23T02:00:00',
+    'start_time': None,
+    'end_time': None,
+    'heartbeat': None,
+    'results': [
+        {'name': 'loss',
+         'type': 'objective',  # objective, constraint
+         'value': 2}
+    ],
+    'params': [
+        {'name': '/encoding_layer',
+         'type': 'categorical',
+         'value': 'rnn'},
+        {'name': '/decoding_layer',
+         'type': 'categorical',
+         'value': 'lstm_with_attention'}
+    ]
+}
+
+
+def generate_trials():
+    """Generate Trials with different configurations"""
+    status = ['completed', 'broken', 'reserved', 'interrupted', 'suspended', 'new']
+
+    def generate(obj, key, value):
+        obj = copy.deepcopy(obj)
+        obj[key] = value
+        return obj
+
+    return [generate(base_trial, 'status', s) for s in status]
+
+
+@pytest.mark.parametrize('storage', storage_backends)
 class StorageTest:
     """Test all storage backend"""
 
     def test_create_experiment(self, storage):
         """Test create experiment"""
-        pass
+        with OrionState(experiements=[], database=storage) as cfg:
+            storage = cfg.storage()
+            storage.create_experiment(base_experiment)
+
+            experiment = storage.fetch_experiments({'name': 'supernaedo2'})
+            assert base_experiment == experiment, 'Local experiment and DB should match'
 
     def test_fetch_experiments(self, storage):
         """Test fetch expriments"""
@@ -58,8 +112,9 @@ class StorageTest:
 
     def test_change_status_success(self, storage, exp_config_file):
         """Change the status of a Trial"""
+
         def check_status_change(new_status):
-            with OrionState(from_yaml=exp_config_file) as cfg:
+            with OrionState(from_yaml=exp_config_file, database=storage) as cfg:
                 trial = cfg.get_trial(0)
                 assert trial is not None, 'was not able to retrieve trial for test'
 
@@ -80,8 +135,9 @@ class StorageTest:
 
     def test_change_status_failed_update(self, storage, exp_config_file):
         """Successfully find new trials in db and reserve one at 'random'."""
+
         def check_status_change(new_status):
-            with OrionState(from_yaml=exp_config_file) as cfg:
+            with OrionState(from_yaml=exp_config_file, database=storage) as cfg:
                 trial = cfg.get_trial(0)
                 assert trial is not None, 'Was not able to retrieve trial for test'
 
