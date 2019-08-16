@@ -3,65 +3,10 @@ language: python
 
 jobs:
   include:
-      - stage: pretest
-        env: TOXENV=flake8
-        python: 3.6
-      - env: TOXENV=pylint
-        python: 3.6
-      - env: TOXENV=doc8
-        python: 3.6
-      - env: TOXENV=docs
-        python: 3.6
-      - &test
-        stage: test
-        services: mongodb
-        before_script:
-          - sleep 15
-          - mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
-        after_success:
-          - tox -e final-coverage
-          - tox -e codecov
-        env: TOXENV=py35
-        python: 3.5
-      - <<: *test
-        env: TOXENV=py36
-        python: 3.6
-      - <<: *test
-        env: TOXENV=py36, PYTHON=3.6.3
-        python: 3.6
-        os: osx
-        language: generic
-      - <<: *test
-        env: TOXENV=py37
-        python: 3.7
-        dist: xenial
-        sudo: true
-      - <<: *test
-        env: TOXENV=demo_random
-        python: 3.6
-      - stage: packaging
-        env: TOXENV=packaging
-        python: 3.6
       - env: TOXENV=none
         python: 3.6
         install: skip
         script: ./conda/conda_build.sh
-
-before_install: |
-  if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-    brew update
-    brew install readline
-    brew outdated pyenv || brew upgrade pyenv
-    brew install pyenv-virtualenv
-    pyenv install $PYTHON
-    export PYENV_VERSION=$PYTHON
-    export PATH="/Users/travis/.pyenv/shims:${PATH}"
-    pyenv-virtualenv venv
-    source venv/bin/activate
-    python --version
-    brew install mongodb
-    brew services start mongodb
-  fi
 
 install:
   - pip install tox
