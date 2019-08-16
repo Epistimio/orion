@@ -39,7 +39,7 @@ def test_fetch_trials():
 
 
 def test_fetch_experiment_trials():
-    """test fetch experiment trials"""
+    """Test fetch experiment trials"""
     pass
 
 
