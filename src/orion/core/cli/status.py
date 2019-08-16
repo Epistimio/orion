@@ -88,10 +88,7 @@ def get_experiments(args):
 
 
 def _has_named_children(exp, experiments):
-    tree = list(filter(lambda e: e.name == exp.name or e.refers['root_id'] == exp.id, experiments))
-    latest = max(tree, key=lambda e: e.version).version
-
-    return len(tree) > latest
+     return any(node.name != exp.name for node in exp.node)
 
 
 def print_status_recursively(exp, depth=0, **kwargs):
@@ -126,7 +123,7 @@ def print_status(exp, offset=0, all_trials=False, collapse=False):
     """
     trials = exp.fetch_trials(with_evc_tree=collapse)
 
-    exp_title = exp.name + ' - v.{}'.format(exp.version)
+    exp_title = exp.node.tree_name
     print(" " * offset, exp_title, sep="")
     print(" " * offset, "=" * len(exp_title), sep="")
 
