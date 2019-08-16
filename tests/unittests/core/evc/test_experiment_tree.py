@@ -23,7 +23,7 @@ def test_parent_fetch_trials(create_db_instance):
     leaf_names = ['supernaedo2.3']
 
     experiment = ExperimentView(experiment_name)
-    exp_node = ExperimentNode(experiment.name, experiment=experiment)
+    exp_node = ExperimentNode(experiment.name, experiment.version, experiment=experiment)
     exp_node = build_trimmed_tree(experiment, root_name, leaf_names)
 
     assert exp_node.item.name == experiment_name
