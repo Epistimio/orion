@@ -155,7 +155,7 @@ class PickledDB(AbstractDB):
 
         return database
 
-    # pylint: disable: protected-access
+    # pylint: disable=protected-access
     def _dump_database(self, database):
         """Write pickled DB on disk"""
         tmp_file = self.host + '.tmp'
