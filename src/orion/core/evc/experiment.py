@@ -56,6 +56,7 @@ class ExperimentNode(TreeNode):
         """
         super(ExperimentNode, self).__init__(experiment, parent, children)
         self.name = name
+
         self._no_parent_lookup = True
         self._no_children_lookup = True
 
@@ -116,6 +117,14 @@ class ExperimentNode(TreeNode):
     def adapter(self):
         """Get the adapter of the experiment with respect to its parent"""
         return self.item.refers["adapter"]
+
+    @property
+    def tree_name(self):
+        """Return a formatted name of the Node for a tree pretty-print."""
+        if self.item is not None:
+            return self.name + "-v{}".format(self.item.version)
+
+        return self.name
 
     def fetch_trials(self, query, selection=None):
         """Fetch trials recursively in the EVC tree
