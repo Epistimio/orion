@@ -9,7 +9,7 @@ import os
 import pytest
 
 from orion.core.io.database import Database, DuplicateKeyError
-from orion.core.io.database.pickleddb import PickledDB
+from orion.core.io.database.pickleddb import PickledDB, find_unpickable_doc, find_unpickable_field
 
 
 @pytest.fixture()
@@ -354,3 +354,33 @@ class TestConcurreny(object):
         Pool(10).starmap(write, (('unique', 1) for i in range(10)))
 
         assert orion_db.count('concurrent', {'unique': 1}) == 1
+
+
+def test_unpickable_error_find_document():
+    class UnpickableClass:
+        i_am_not_pickable = None
+
+    unpickable_doc = {
+        'a_pickable': 1,
+        'b_unpickable': UnpickableClass(),
+        'c_pickable': 3
+    }
+
+    pickable_doc = {
+        'a_pickable': 1,
+        'b_pickable': 2,
+        'c_pickable': 3
+    }
+
+    unpickable_dict_of_dict = {
+        'a_pickable_doc': pickable_doc,
+        'b_unpickable_doc': unpickable_doc,
+        'c_pickable_doc': pickable_doc
+    }
+
+    collection, doc = find_unpickable_doc(unpickable_dict_of_dict)
+    assert collection == 'b_unpickable_doc', 'should return the unpickable document'
+
+    key, value = find_unpickable_field(doc)
+    assert key == 'b_unpickable', 'should return the unpickable field'
+    assert isinstance(value, UnpickableClass), 'should return the unpickable value'

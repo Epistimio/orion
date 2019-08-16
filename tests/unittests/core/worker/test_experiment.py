@@ -578,9 +578,6 @@ class TestReserveTrial(object):
             cfg.trials[0]['start_time'] = random_dt
             cfg.trials[0]['heartbeat'] = random_dt
 
-            for t in cfg.trials:
-                print(t['submit_time'], t['_id'])
-
             assert trial.to_dict() == cfg.trials[0]
 
     def test_reserve_when_exhausted(self, exp_config, hacked_exp):
