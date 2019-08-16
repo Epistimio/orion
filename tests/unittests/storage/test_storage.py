@@ -102,7 +102,6 @@ def test_change_status_failed_update(exp_config_file):
     check_status_change('reserved')
     check_status_change('interrupted')
     check_status_change('suspended')
-    check_status_change('new')
 
 
 def test_fetch_pending_trials():
