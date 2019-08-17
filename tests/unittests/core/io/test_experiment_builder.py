@@ -5,7 +5,6 @@ import getpass
 
 import pytest
 
-from orion.core.io import resolve_config
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.exceptions import NoConfigurationError
 
@@ -35,20 +34,19 @@ def test_fetch_local_config(config_file):
     assert local_config['pool_size'] == 1
 
 
-@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("clean_db", "test_config")
 def test_fetch_local_config_from_incomplete_config(incomplete_config_file):
     """Test local config with incomplete user configuration file
     (default, env_vars, cmdconfig, cmdargs)
 
     This is to ensure merge_configs update properly the subconfigs
     """
-    resolve_config.DEF_CONFIG_FILES_PATHS = []
     cmdargs = {"config": incomplete_config_file}
     local_config = ExperimentBuilder().fetch_full_config(cmdargs, use_db=False)
 
     assert local_config['algorithms'] == 'random'
     assert local_config['database']['host'] == 'mongodb://user:pass@localhost'
-    assert local_config['database']['name'] == 'orion'
+    assert local_config['database']['name'] == 'orion_test'
     assert local_config['database']['type'] == 'incomplete'
     assert local_config['max_trials'] == float('inf')
     assert local_config['name'] == 'incomplete'
