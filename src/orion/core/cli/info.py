@@ -387,7 +387,6 @@ def format_stats(experiment):
         stats=stats,
         best_params=format_dict(best_params, depth=2, width=2))
 
-    print(format_dict(best_params, depth=2, width=2))
     return stats_string
 
 
