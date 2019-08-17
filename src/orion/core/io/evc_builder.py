@@ -36,7 +36,7 @@ class EVCBuilder(object):
     # pylint:disable=no-self-use
     def connect_to_version_control_tree(self, experiment):
         """Build the EVC and connect the experiment to it"""
-        experiment_node = ExperimentNode(experiment.name, experiment=experiment)
+        experiment_node = ExperimentNode(experiment.name, experiment.version, experiment=experiment)
         experiment.connect_to_version_control_tree(experiment_node)
 
     def build_view_from(self, cmdargs):
