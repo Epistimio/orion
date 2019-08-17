@@ -6,8 +6,9 @@ import itertools
 import pytest
 
 from orion.core.cli.info import (
-    format_algorithm, format_commandline, format_config, format_dict, format_info, format_list,
-    format_metadata, format_refers, format_space, format_stats, format_title, get_trial_params)
+    format_algorithm, format_commandline, format_config, format_dict, format_identification,
+    format_info, format_list, format_metadata, format_refers, format_space, format_stats,
+    format_title, get_trial_params)
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.trial import Trial
 
@@ -362,6 +363,21 @@ def test_format_dict_with_list(dummy_list_of_objects):
 """
 
 
+def test_format_identification():
+    """Test commandline section formatting"""
+    experiment = DummyExperiment()
+    experiment.name = "test"
+    experiment.version = 1
+    experiment.metadata = {'user': 'corneauf'}
+    assert format_identification(experiment) == """\
+Identification
+==============
+name: test
+version: 1
+user: corneauf
+"""
+
+
 def test_format_commandline():
     """Test commandline section formatting"""
     experiment = DummyExperiment()
@@ -541,6 +557,8 @@ def test_format_info(algorithm_dict, dummy_trial):
     experiment = DummyExperiment()
     commandline = ['executing.sh', '--some~choices(["random", "or", "not"])',
                    '--command~uniform(0, 1)']
+    experiment.name = 'test'
+    experiment.version = 1
     experiment.metadata = {'user_args': commandline}
     experiment.pool_size = 10
     experiment.max_trials = 100
@@ -582,6 +600,13 @@ def test_format_info(algorithm_dict, dummy_trial):
     experiment.fetch_trials = lambda query: [dummy_trial]
 
     assert format_info(experiment) == """\
+Identification
+==============
+name: test
+version: 1
+user: user
+
+
 Commandline
 ===========
 executing.sh --some~choices(["random", "or", "not"]) --command~uniform(0, 1)

@@ -46,9 +46,9 @@ class ExperimentNode(TreeNode):
 
     """
 
-    __slots__ = ('name', '_no_parent_lookup', '_no_children_lookup') + TreeNode.__slots__
+    __slots__ = ('name', 'version', '_no_parent_lookup', '_no_children_lookup') + TreeNode.__slots__
 
-    def __init__(self, name, experiment=None, parent=None, children=tuple()):
+    def __init__(self, name, version, experiment=None, parent=None, children=tuple()):
         """Initialize experiment node with item, experiment, parent and children
 
         .. seealso::
@@ -56,6 +56,8 @@ class ExperimentNode(TreeNode):
         """
         super(ExperimentNode, self).__init__(experiment, parent, children)
         self.name = name
+        self.version = version
+
         self._no_parent_lookup = True
         self._no_children_lookup = True
 
@@ -67,7 +69,7 @@ class ExperimentNode(TreeNode):
         not done already.
         """
         if self._item is None:
-            self._item = ExperimentView(self.name)
+            self._item = ExperimentView(self.name, version=self.version)
             self._item.connect_to_version_control_tree(self)
 
         return self._item
@@ -85,11 +87,13 @@ class ExperimentNode(TreeNode):
         if self._parent is None and self._no_parent_lookup:
             self._no_parent_lookup = False
             query = {'_id': self.item.refers['parent_id']}
-            selection = {'name': 1}
+            selection = {'name': 1, 'version': 1}
             experiments = get_storage().fetch_experiments(query, selection)
-            if experiments:
-                self.set_parent(ExperimentNode(name=experiments[0]['name']))
 
+            if experiments:
+                parent = experiments[0]
+                exp_node = ExperimentNode(name=parent['name'], version=parent['version'])
+                self.set_parent(exp_node)
         return self._parent
 
     @property
@@ -105,10 +109,10 @@ class ExperimentNode(TreeNode):
         if not self._children and self._no_children_lookup:
             self._no_children_lookup = False
             query = {'refers.parent_id': self.item.id}
-            selection = {'name': 1}
+            selection = {'name': 1, 'version': 1}
             experiments = get_storage().fetch_experiments(query, selection)
             for child in experiments:
-                self.add_children(ExperimentNode(name=child['name']))
+                self.add_children(ExperimentNode(name=child['name'], version=child['version']))
 
         return self._children
 
@@ -116,6 +120,14 @@ class ExperimentNode(TreeNode):
     def adapter(self):
         """Get the adapter of the experiment with respect to its parent"""
         return self.item.refers["adapter"]
+
+    @property
+    def tree_name(self):
+        """Return a formatted name of the Node for a tree pretty-print."""
+        if self.item is not None:
+            return self.name + "-v{}".format(self.item.version)
+
+        return self.name
 
     def fetch_trials(self, query, selection=None):
         """Fetch trials recursively in the EVC tree
