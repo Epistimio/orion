@@ -3,7 +3,6 @@
 """Example usage and tests for :mod:`orion.core.io.resolve_config`."""
 
 import hashlib
-import importlib
 import logging
 import os
 import shutil
@@ -12,6 +11,7 @@ import socket
 import git
 import pytest
 
+import orion.core
 import orion.core.io.resolve_config as resolve_config
 
 
@@ -24,33 +24,32 @@ def force_is_exe(monkeypatch):
     monkeypatch.setattr(resolve_config, "is_exe", is_exe)
 
 
+@pytest.mark.usefixtures("empty_config")
 def test_fetch_default_options():
     """Verify default options"""
-    resolve_config.DEF_CONFIG_FILES_PATHS = []
     default_config = resolve_config.fetch_default_options()
 
     assert default_config['algorithms'] == 'random'
     assert default_config['database']['host'] == socket.gethostbyname(socket.gethostname())
     assert default_config['database']['name'] == 'orion'
     assert default_config['database']['type'] == 'MongoDB'
-    assert default_config['database']['port'] == '27017'
+    assert default_config['database']['port'] == 27017
 
     assert default_config['max_trials'] == float('inf')
     assert default_config['name'] is None
     assert default_config['pool_size'] == 1
 
 
+@pytest.mark.usefixtures("empty_config")
 def test_socket_on_osx(monkeypatch):
     """Verify that default hostname is set properly on OSX"""
-    resolve_config.DEF_CONFIG_FILES_PATHS = []
     default_config = resolve_config.fetch_default_options()
     assert default_config['database']['host'] == socket.gethostbyname(socket.gethostname())
     assert socket.gethostbyname(socket.gethostname()) != 'localhost'
 
     monkeypatch.setattr(socket, 'gethostname', lambda: 'wrong_name_on_osx')
-    importlib.reload(resolve_config)
-
-    resolve_config.DEF_CONFIG_FILES_PATHS = []
+    config = orion.core.build_config()
+    resolve_config.config = config
     default_config = resolve_config.fetch_default_options()
     assert default_config['database']['host'] == 'localhost'
 

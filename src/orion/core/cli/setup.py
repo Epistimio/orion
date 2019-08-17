@@ -14,7 +14,7 @@ import os
 
 import yaml
 
-import orion.core.io.resolve_config as resolve_config
+import orion.core
 
 log = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ def ask_question(question, default=None):
 # pylint: disable = unused-argument
 def main(*args):
     """Build a configuration file."""
-    default_file = resolve_config.DEF_CONFIG_FILES_PATHS[-1]
+    default_file = orion.core.DEF_CONFIG_FILES_PATHS[-1]
 
     if os.path.exists(default_file):
         cancel = ''
