@@ -157,6 +157,10 @@ class Experiment:
         """Fetch all trials of the experiment"""
         return self._select_evc_call(with_evc_tree, 'fetch_trials')
 
+    def get_trial(self, trial=None, uid=None):
+        """Fetch a single Trial, see `orion.storage.base.BaseStorage.get_trial`"""
+        return self._storage.get_trial(trial, uid)
+
     def connect_to_version_control_tree(self, node):
         """Connect the experiment to its node in a version control tree
 
@@ -672,7 +676,7 @@ class ExperimentView(object):
                         ["id", "node", "is_done", "space", "algorithms", "stats", "configuration"] +
                         # Methods
                         ["fetch_trials", "fetch_trials_by_status",
-                         "connect_to_version_control_tree"])
+                         "connect_to_version_control_tree", "get_trial"])
 
     def __init__(self, name, user=None, version=None):
         """Initialize viewed experiment object with primary key (:attr:`name`, :attr:`user`).

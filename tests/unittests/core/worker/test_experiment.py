@@ -656,18 +656,17 @@ class TestReserveTrial(object):
 
         get_storage().set_trial_status(trial, status='reserved', heartbeat=heartbeat)
 
-        exp_query['status'] = 'reserved'
-        exp_query['_id'] = trial.id
+        def fetch_trials(status='reserved'):
+            trials = hacked_exp.fetch_trials_by_status(status)
+            return list(filter(lambda new_trial: new_trial.id in [trial.id], trials))
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+        assert len(fetch_trials()) == 1
 
         hacked_exp.fix_lost_trials()
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 0
+        assert len(fetch_trials()) == 0
 
-        exp_query['status'] = 'interrupted'
-
-        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+        assert len(fetch_trials('interrupted')) == 1
 
     def test_fix_only_lost_trials(self, hacked_exp, random_dt):
         """Test that an old trial is set to interrupted but not a recent one."""
@@ -681,18 +680,19 @@ class TestReserveTrial(object):
         get_storage().set_trial_status(lost, status='reserved', heartbeat=heartbeat)
         get_storage().set_trial_status(not_lost, status='reserved', heartbeat=random_dt)
 
-        exp_query['status'] = 'reserved'
-        exp_query['_id'] = {'$in': [lost.id, not_lost.id]}
+        def fetch_trials():
+            trials = hacked_exp.fetch_trials_by_status('reserved')
+            return list(filter(lambda trial: trial.id in [lost.id, not_lost.id], trials))
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 2
+        assert len(fetch_trials()) == 2
 
         hacked_exp.fix_lost_trials()
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+        assert len(fetch_trials()) == 1
 
         exp_query['status'] = 'interrupted'
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+        assert len(fetch_trials()) == 1
 
     def test_fix_lost_trials_race_condition(self, hacked_exp, random_dt, monkeypatch):
         """Test that a lost trial fixed by a concurrent process does not cause error."""

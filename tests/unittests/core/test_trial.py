@@ -124,8 +124,8 @@ class TestTrial(object):
         """Test representation of `Trial`."""
         t = Trial(**exp_config[1][1])
         assert t.pfmt() == "Trial(experiment='supernaedo2', status='completed',\n"\
-                           "      params=/encoding_layer:gru\n"\
-                           "             /decoding_layer:lstm_with_attention)"
+                           "      params=/decoding_layer:lstm_with_attention\n"\
+                           "             /encoding_layer:gru)"
 
     def test_str_value(self, exp_config):
         """Test representation of `Trial.Value`."""
