@@ -154,6 +154,7 @@ class Experiment:
             self._id = config['_id']
 
     def fetch_trials(self, with_evc_tree=False):
+        """Fetch all trials of the experiment"""
         return self._select_evc_call(with_evc_tree, 'fetch_trials')
 
     def connect_to_version_control_tree(self, node):

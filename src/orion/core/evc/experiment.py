@@ -129,18 +129,22 @@ class ExperimentNode(TreeNode):
         return self.name
 
     def fetch_lost_trials(self):
+        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
         return self._fetch_trials('fetch_lost_trials')
 
     def fetch_trials(self):
+        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
         return self._fetch_trials('fetch_trials')
 
     def fetch_pending_trials(self):
         return self._fetch_trials('fetch_pending_trials')
 
     def fetch_noncompleted_trials(self):
+        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
         return self._fetch_trials('fetch_noncompleted_trials')
 
     def fetch_trials_by_status(self, status):
+        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
         return self._fetch_trials('fetch_trials_by_status', status=status)
 
     def _fetch_trials(self, fun_name, *args, **kwargs):
