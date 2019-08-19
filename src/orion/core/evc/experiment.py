@@ -128,18 +128,41 @@ class ExperimentNode(TreeNode):
 
         return self.name
 
-    def fetch_trials(self, query, selection=None):
-        """Fetch trials recursively in the EVC tree
+    def fetch_lost_trials(self):
+        return self._fetch_trials('fetch_lost_trials')
 
-        .. seealso::
+    def fetch_trials(self):
+        return self._fetch_trials('fetch_trials')
 
-            :meth:`orion.core.worker.Experiment.fetch_trials` for more information about the
-            arguments.
+    def fetch_pending_trials(self):
+        return self._fetch_trials('fetch_pending_trials')
+
+    def fetch_noncompleted_trials(self):
+        return self._fetch_trials('fetch_noncompleted_trials')
+
+    def fetch_completed_trials(self):
+        return self._fetch_trials('fetch_completed_trials')
+
+    def _fetch_trials(self, fun_name, *args, **kwargs):
+        """Fetch trials recursively in the EVC tree using the fetch function `fun_name`
+
+        Parameters
+        ----------
+        fun_name: callable
+            Function name to call to fetch trials. The function must be an attribute of
+            :class:`orion.core.worker.experiment:Experiment`
+
+        *args:
+            positional arguments to pass to `fun_name`
+
+        **kwargs
+            keyword arguments to pass to `fun_name
 
         """
         def retrieve_trials(node, parent_or_children):
             """Retrieve the trials of a node/experiments"""
-            trials = node.item.fetch_trials(query, selection=selection)
+            fun = getattr(node.item, fun_name)
+            trials = fun(*args, **kwargs)
             return dict(trials=trials, experiment=node.item), parent_or_children
 
         # get the trials of the parents
