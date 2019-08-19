@@ -540,10 +540,12 @@ Stats
 =====
 trials completed: 10
 best trial:
-  a: 0.0
-  b: 1
-  c: Some
-best evaluation: 0.1
+  id: dummy
+  evaluation: 0.1
+  params:
+    a: 0.0
+    b: 1
+    c: Some
 start time: yesterday
 finish time: now
 duration: way too long
@@ -652,10 +654,12 @@ Stats
 =====
 trials completed: 10
 best trial:
-  a: 0.0
-  b: 1
-  c: Some
-best evaluation: 0.1
+  id: dummy
+  evaluation: 0.1
+  params:
+    a: 0.0
+    b: 1
+    c: Some
 start time: yesterday
 finish time: now
 duration: way too long
