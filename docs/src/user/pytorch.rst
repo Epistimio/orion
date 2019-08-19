@@ -23,7 +23,7 @@ PyTorch `examples repository`_:
 
 
 Adapting the code for Oríon
-==================================
+===========================
 
 To use Oríon with any code we need to do three things
 
