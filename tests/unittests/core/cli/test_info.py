@@ -429,8 +429,8 @@ def test_format_space():
     assert format_space(experiment) == """\
 Space
 =====
-/some: choices(['random', 'or', 'not'])
 /command: uniform(0, 1)
+/some: choices(['random', 'or', 'not'])
 """
 
 
@@ -630,8 +630,8 @@ bayesianoptimizer:
 
 Space
 =====
-/some: choices(['random', 'or', 'not'])
 /command: uniform(0, 1)
+/some: choices(['random', 'or', 'not'])
 
 
 Meta-data
