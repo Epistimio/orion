@@ -15,6 +15,7 @@ requirements:
     - python {{ python }}
     - setuptools
     - pytest-runner
+    - appdirs
   run:
     - python
     - numpy
@@ -24,6 +25,7 @@ requirements:
     - gitpython
     - filelock
     - tabulate
+    - AppDirs
 
 test:
   import:
@@ -31,6 +33,7 @@ test:
     - orion.core.cli
     - orion.algo
     - orion.client
+    - orion.storage
   commands:
     - orion --help
 
