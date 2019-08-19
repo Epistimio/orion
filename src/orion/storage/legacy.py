@@ -92,21 +92,12 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_experiments`"""
         return self._db.read('experiments', query, selection)
 
-    def fetch_trials(self, query, selection=None):
+    def fetch_trials(self, experiment=None, uid=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
-        # import inspect
-        # stack = inspect.stack()
-        # warn(f'DEPRECATED {query} {selection}\n')
-        #
-        # print('---')
-        # for i in stack[1:]:
-        #     print('   ', i.filename)
+        if uid is None:
+            if experiment is None:
+                raise UnderdefinedCall('Either `experiment` or `uid` should be set')
 
-        return self._fetch_trials(query, selection)
-
-    def fetch_experiment_trials(self, experiment=None, uid=None):
-        """See :func:`~orion.storage.BaseStorageProtocol.fetch_experiment_trials`"""
-        if experiment is not None:
             uid = experiment._id
 
         return self._fetch_trials(dict(experiment=uid))
@@ -263,21 +254,6 @@ class Legacy(BaseStorageProtocol):
         )
         return self._fetch_trials(query)
 
-    def fetch_completed_trials(self, experiment):
-        """See :func:`~orion.storage.BaseStorageProtocol.fetch_completed_trials`"""
-        query = dict(
-            experiment=experiment._id,
-            status='completed'
-        )
-        selection = {
-            'end_time': 1,
-            'results': 1,
-            'experiment': 1,
-            'params': 1,
-            'status': 1
-        }
-        return self._fetch_trials(query, selection)
-
     def count_completed_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.count_completed_trials`"""
         query = dict(
@@ -297,3 +273,10 @@ class Legacy(BaseStorageProtocol):
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
         return self._update_trial(trial, heartbeat=datetime.datetime.utcnow())
+
+    def fetch_trial_by_status(self, experiment, status):
+        query = dict(
+            experiment=experiment._id,
+            status=status
+        )
+        return self._fetch_trials(query)

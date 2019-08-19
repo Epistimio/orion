@@ -49,7 +49,7 @@ def test_trial_update_heartbeat(exp, trial):
     trial_monitor.start()
     time.sleep(2)
 
-    trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
+    trials = exp.fetch_trials_by_status('reserved')
 
     assert trial.heartbeat != trials[0].heartbeat
 
@@ -57,7 +57,7 @@ def test_trial_update_heartbeat(exp, trial):
 
     time.sleep(2)
 
-    trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
+    trials = exp.fetch_trials_by_status(status='reserved')
 
     assert heartbeat != trials[0].heartbeat
     trial_monitor.stop()
@@ -71,7 +71,7 @@ def test_trial_heartbeat_not_updated(exp, trial):
     trial_monitor.start()
     time.sleep(2)
 
-    trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
+    trials = exp.fetch_trials_by_status('reserved')
 
     assert trial.heartbeat != trials[0].heartbeat
 
@@ -92,14 +92,14 @@ def test_trial_heartbeat_not_updated_inbetween(exp, trial):
     trial_monitor.start()
     time.sleep(1)
 
-    trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
+    trials = exp.fetch_trials_by_status('reserved')
     assert trial.heartbeat.replace(microsecond=0) == trials[0].heartbeat.replace(microsecond=0)
 
     heartbeat = trials[0].heartbeat
 
     time.sleep(6)
 
-    trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
+    trials = exp.fetch_trials_by_status(status='reserved')
 
     assert heartbeat != trials[0].heartbeat
     trial_monitor.stop()

@@ -208,11 +208,15 @@ class Trial:
 
     def __str__(self):
         """Represent partially with a string."""
-        ret = "Trial(experiment={0}, status={1},\n      params={2})".format(
-            repr(self.experiment), repr(self._status), self.params_repr(sep=('\n' + ' ' * 13)))
-        return ret
+        return "Trial(experiment={0}, status={1}, params={2})".format(
+            repr(self.experiment), repr(self._status), self.params_repr())
 
     __repr__ = __str__
+
+    def pfmt(self):
+        """Represent a trial with params on separate lines for emphasis"""
+        return "Trial(experiment={0}, status={1},\n      params={2})".format(
+            repr(self.experiment), repr(self._status), self.params_repr(sep=('\n' + ' ' * 13)))
 
     @property
     def results(self):

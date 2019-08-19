@@ -140,8 +140,8 @@ class ExperimentNode(TreeNode):
     def fetch_noncompleted_trials(self):
         return self._fetch_trials('fetch_noncompleted_trials')
 
-    def fetch_completed_trials(self):
-        return self._fetch_trials('fetch_completed_trials')
+    def fetch_trials_by_status(self, status):
+        return self._fetch_trials('fetch_trials_by_status', status=status)
 
     def _fetch_trials(self, fun_name, *args, **kwargs):
         """Fetch trials recursively in the EVC tree using the fetch function `fun_name`
@@ -160,9 +160,10 @@ class ExperimentNode(TreeNode):
 
         """
         def retrieve_trials(node, parent_or_children):
-            """Retrieve the trials of a node/experiments"""
+            """Retrieve the trials of a node/experiment"""
             fun = getattr(node.item, fun_name)
-            trials = fun(*args, **kwargs)
+            # with_evc_tree needs to be False here or we will have an infinite loop
+            trials = fun(*args, with_evc_tree=False, **kwargs)
             return dict(trials=trials, experiment=node.item), parent_or_children
 
         # get the trials of the parents

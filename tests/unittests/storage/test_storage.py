@@ -157,17 +157,13 @@ class TestStorage:
             assert trial.status == 'reserved'
 
     def test_fetch_trials(self, storage):
-        """Test fetch trials"""
-        pass
-
-    def test_fetch_experiment_trials(self, storage):
         """Test fetch experiment trials"""
         with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
             storage = cfg.storage()
             experiment = cfg.get_experiment('default_name', 'default_user', version=None)
 
-            trials = storage.fetch_experiment_trials(experiment)
+            trials = storage.fetch_trials(experiment)
             assert len(trials) == len(cfg.trials), 'trial count should match'
 
     def test_get_trial(self, storage):
@@ -317,7 +313,7 @@ class TestStorage:
 
             storage = cfg.storage()
             experiment = cfg.get_experiment('default_name', 'default_user', version=None)
-            trials = storage.fetch_completed_trials(experiment)
+            trials = storage.fetch_trial_by_status(experiment, 'completed')
 
             assert len(trials) == count
             for trial in trials:

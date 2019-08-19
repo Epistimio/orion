@@ -776,16 +776,6 @@ def test_fetch_all_trials(hacked_exp, exp_config, random_dt):
         assert trials[i].to_dict() == sorted_exp_config[i]
 
 
-def test_fetch_completed_trials(hacked_exp, exp_config, random_dt):
-    """Fetch a list of the unseen yet completed trials."""
-    trials = hacked_exp.fetch_completed_trials()
-    assert len(trials) == 3
-    # Trials are sorted based on submit time
-    assert trials[0].to_dict() == exp_config[1][0]
-    assert trials[1].to_dict() == exp_config[1][2]
-    assert trials[2].to_dict() == exp_config[1][1]
-
-
 def test_fetch_non_completed_trials(hacked_exp, exp_config):
     """Fetch a list of the trials that are not completed
 
@@ -845,7 +835,7 @@ def test_is_done_property_with_algo(hacked_exp):
 def test_broken_property(hacked_exp):
     """Check experiment stopping conditions for maximum number of broken."""
     assert not hacked_exp.is_broken
-    trials = hacked_exp.fetch_trials({})[:3]
+    trials = hacked_exp.fetch_trials()[:3]
 
     for trial in trials:
         get_storage().set_trial_status(trial, status='broken')
@@ -952,7 +942,7 @@ def test_fetch_completed_trials_from_view(hacked_exp, exp_config, random_dt):
     experiment_view = ExperimentView(hacked_exp.name)
     experiment_view._experiment = hacked_exp
 
-    trials = experiment_view.fetch_completed_trials()
+    trials = experiment_view.fetch_trials_by_status('completed')
     assert len(trials) == 3
     assert trials[0].to_dict() == exp_config[1][0]
     assert trials[1].to_dict() == exp_config[1][2]

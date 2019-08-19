@@ -109,10 +109,8 @@ def print_status(exp, offset=0, all_trials=False, collapse=False):
         Fetch trials for entire EVCTree. Defaults to False.
 
     """
-    if collapse:
-        trials = exp.fetch_trials_tree({})
-    else:
-        trials = exp.fetch_trials({})
+
+    trials = exp.fetch_trials(with_evc_tree=collapse)
 
     print(" " * offset, exp.name, sep="")
     print(" " * offset, "=" * len(exp.name), sep="")

@@ -120,10 +120,10 @@ class TestTrial(object):
         assert trials[0].params[0] == Trial.Param(**exp_config[1][0]['params'][0])
         assert trials[0].params[1] != Trial.Param(**exp_config[1][0]['params'][0])
 
-    def test_str_trial(self, exp_config):
+    def test_pfmt_trial(self, exp_config):
         """Test representation of `Trial`."""
         t = Trial(**exp_config[1][1])
-        assert str(t) == "Trial(experiment='supernaedo2', status='completed',\n"\
+        assert t.pfmt()  == "Trial(experiment='supernaedo2', status='completed',\n"\
                          "      params=/encoding_layer:gru\n"\
                          "             /decoding_layer:lstm_with_attention)"
 

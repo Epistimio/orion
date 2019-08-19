@@ -85,12 +85,27 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """Select a pending trial and reserve it for the worker"""
         raise NotImplementedError()
 
-    def fetch_trials(self, query, selection=None):
-        """Fetch all the trials that match the query"""
-        raise NotImplementedError()
+    def fetch_trials(self, experiment=None, uid=None):
+        """Fetch all the trials of an experiment in the database
 
-    def fetch_experiment_trials(self, experiment=None, uid=None):
-        """Fetch trials of the experiment in the database"""
+        Parameters
+        ----------
+        experiment: Experiment, optional
+           experiment object to retrieve from the database
+
+        uid: str, optional
+            experiment id used to retrieve the trial object
+
+        Returns
+        -------
+        return none if the experiment is not found,
+
+        Raises
+        ------
+        UnderdefinedCall
+            if both experiment and uid are not set
+
+        """
         raise NotImplementedError()
 
     def get_trial(self, trial=None, uid=None):
@@ -154,8 +169,8 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """Fetch all non completed trials"""
         raise NotImplementedError()
 
-    def fetch_completed_trials(self, experiment):
-        """Fetch all completed trials that have results stored"""
+    def fetch_trial_by_status(self, experiment, status):
+        """Fetch all trials with the given status"""
         raise NotImplementedError()
 
     def count_completed_trials(self, experiment):
@@ -230,7 +245,6 @@ class ReadOnlyStorageProtocol(object):
         'fetch_experiments',
         'count_broken_trials',
         'count_completed_trials',
-        'fetch_completed_trials',
         'fetch_noncompleted_trials',
         'fetch_pending_trials',
         'fetch_lost_trials'

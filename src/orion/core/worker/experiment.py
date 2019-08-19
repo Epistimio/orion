@@ -153,66 +153,8 @@ class Experiment:
                     setattr(self, attrname, config[attrname])
             self._id = config['_id']
 
-    def fetch_experiment_trials(self):
-        """Fetch trials of the experiment in the database
-
-        Trials are sorted based on `Trial.submit_time`
-
-        .. note::
-
-           The query is always updated with `{"experiment": self._id}`
-
-        .. seealso::
-
-           :meth:`orion.core.io.database.AbstractDB.read` for more information about the
-           arguments.
-
-        """
-        return self._storage.fetch_experiment_trials(uid=self._id)
-
-    def fetch_trials(self, query, selection=None):
-        """Fetch trials of the experiment in the database
-
-        Trials are sorted based on `Trial.submit_time`
-
-        .. note::
-
-            The query is always updated with `{"experiment": self._id}`
-
-        .. seealso::
-
-            :meth:`orion.core.io.database.AbstractDB.read` for more information about the
-            arguments.
-
-        """
-        query["experiment"] = self._id
-
-        trials = self._storage.fetch_trials(query, selection)
-
-        def _get_submit_time(trial):
-            if trial.submit_time:
-                return trial.submit_time
-
-            return datetime.datetime.utcnow()
-
-        return list(sorted(trials, key=_get_submit_time))
-
-    def fetch_trials_tree(self, query, selection=None):
-        """Fetch trials recursively in the EVC tree
-
-        .. seealso::
-
-            :meth:`orion.core.worker.Experiment.fetch_trials` for more information about the
-            arguments.
-
-            :class:`orion.core.evc.experiment.ExperimentNode` for more information about the EVC
-            tree.
-
-        """
-        if self._node is None:
-            return self.fetch_trials(query, selection)
-
-        return self._node.fetch_trials(query, selection)
+    def fetch_trials(self, with_evc_tree=False):
+        return self._select_evc_call(with_evc_tree, 'fetch_trials')
 
     def connect_to_version_control_tree(self, node):
         """Connect the experiment to its node in a version control tree
@@ -347,16 +289,22 @@ class Experiment:
 
         self._storage.register_trial(trial)
 
-    def fetch_completed_trials(self):
-        """Fetch all completed trials.
+    def _select_evc_call(self, with_evc_tree, function, *args, **kwargs):
+        if self._node is not None and with_evc_tree:
+            return getattr(self._node, function)(*args, **kwargs)
+
+        return getattr(self._storage, function)(self, *args, **kwargs)
+
+    def fetch_trials_by_status(self, status, with_evc_tree=False):
+        """Fetch all trials with the given status
 
         Trials are sorted based on `Trial.submit_time`
 
-        :return: list of completed `Trial` objects
+        :return: list of `Trial` objects
         """
-        return self.fetch_trials_tree(dict(status='completed'))
+        return self._select_evc_call(with_evc_tree, 'fetch_trial_by_status', status)
 
-    def fetch_noncompleted_trials(self):
+    def fetch_noncompleted_trials(self, with_evc_tree=False):
         """Fetch non-completed trials of this `Experiment` instance.
 
         Trials are sorted based on `Trial.submit_time`
@@ -368,7 +316,7 @@ class Experiment:
 
         :return: list of non-completed `Trial` objects
         """
-        return self._storage.fetch_noncompleted_trials(self)
+        return self._select_evc_call(with_evc_tree, 'fetch_noncompleted_trials')
 
     # pylint: disable=invalid-name
     @property
@@ -482,7 +430,7 @@ class Experiment:
            Elapsed time.
 
         """
-        completed_trials = self.fetch_completed_trials()
+        completed_trials = self.fetch_trials_by_status('completed')
 
         if not completed_trials:
             return dict()
@@ -722,7 +670,7 @@ class ExperimentView(object):
                         # Properties
                         ["id", "node", "is_done", "space", "algorithms", "stats", "configuration"] +
                         # Methods
-                        ["fetch_trials", "fetch_trials_tree", "fetch_completed_trials",
+                        ["fetch_trials", "fetch_trials_by_status",
                          "connect_to_version_control_tree"])
 
     def __init__(self, name, user=None, version=None):
