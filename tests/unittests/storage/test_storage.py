@@ -71,6 +71,11 @@ def make_lost_trial():
     obj = copy.deepcopy(base_trial)
     obj['status'] = 'reserved'
     obj['heartbeat'] = datetime.datetime.utcnow() - datetime.timedelta(seconds=61 * 2)
+    obj['params'].append({
+        'name': '/index',
+        'type': 'categorical',
+        'value': 'lost_trial'
+    })
     return obj
 
 
@@ -79,6 +84,7 @@ def generate_trials():
     status = ['completed', 'broken', 'reserved', 'interrupted', 'suspended', 'new']
     new_trials = [_generate(base_trial, 'status', value=s) for s in status]
 
+    # make each trial unique
     for i, trial in enumerate(new_trials):
         trial['params'].append({
             'name': '/index',
@@ -135,7 +141,9 @@ class TestStorage:
 
     def test_register_lie(self, storage):
         """Test register lie"""
-        pass
+        with OrionState(experiments=[base_experiment], database=storage) as cfg:
+            storage = cfg.storage()
+            storage.register_lie(Trial(**base_trial))
 
     def test_reserve_trial(self, storage):
         """Test reserve trial"""
@@ -310,8 +318,6 @@ class TestStorage:
             storage = cfg.storage()
             experiment = cfg.get_experiment('default_name', 'default_user', version=None)
             trials = storage.fetch_completed_trials(experiment)
-
-            print(trials)
 
             assert len(trials) == count
             for trial in trials:
