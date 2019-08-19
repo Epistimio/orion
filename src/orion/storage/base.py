@@ -133,7 +133,15 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         raise NotImplementedError()
 
     def set_trial_status(self, trial, status, heartbeat=None):
-        """Update the trial status and the heartbeat"""
+        """Update the trial status and the heartbeat
+
+        Raises
+        ------
+        FailedUpdate
+            The exception is raised if the status of the trial object
+            does not match the status in the database
+
+        """
         raise NotImplementedError()
 
     def fetch_pending_trials(self, experiment):

@@ -18,15 +18,18 @@ storage_backends = [
 ]
 
 base_experiment = {
-    'name': 'supernaedo2',
+    'name': 'default_name',
+    'version': 0,
     'metadata': {
         'user': 'default_user',
+        'user_script': 'abc',
+        'datetime': '2017-11-23T02:00:00'
     }
 }
 
 
 base_trial = {
-    'experiment': 'supernaedo2',
+    'experiment': 'default_name',
     'status': 'new',  # new, reserved, suspended, completed, broken
     'worker': None,
     'submit_time': '2017-11-23T02:00:00',
@@ -50,11 +53,14 @@ base_trial = {
 
 
 def _generate(obj, *args, value):
+    if obj is None:
+        return None
+
     obj = copy.deepcopy(obj)
-    data = None
+    data = obj
 
     for arg in args[:-1]:
-        data = obj[arg]
+        data = data[arg]
 
     data[args[-1]] = value
     return obj
@@ -71,7 +77,16 @@ def make_lost_trial():
 def generate_trials():
     """Generate Trials with different configurations"""
     status = ['completed', 'broken', 'reserved', 'interrupted', 'suspended', 'new']
-    return [_generate(base_trial, 'status', value=s) for s in status]
+    new_trials = [_generate(base_trial, 'status', value=s) for s in status]
+
+    for i, trial in enumerate(new_trials):
+        trial['params'].append({
+            'name': '/index',
+            'type': 'categorical',
+            'value': i
+        })
+
+    return new_trials
 
 
 def generate_experiments():
@@ -81,7 +96,7 @@ def generate_experiments():
 
 
 @pytest.mark.parametrize('storage', storage_backends)
-class StorageTest:
+class TestStorage:
     """Test all storage backend"""
 
     def test_create_experiment(self, storage):
@@ -97,13 +112,13 @@ class StorageTest:
             experiment = experiments[0]
             assert base_experiment == experiment, 'Local experiment and DB should match'
 
-    def test_fetch_experiments(self, storage, name='supernaedo2', user='a'):
+    def test_fetch_experiments(self, storage, name='default_name', user='default_user'):
         """Test fetch expriments"""
-        with OrionState(experiments=[], database=storage) as cfg:
+        with OrionState(experiments=[base_experiment], database=storage) as cfg:
             storage = cfg.storage()
 
             experiments = storage.fetch_experiments({'name': name, 'metadata.user': user})
-            assert len(experiments) == 1, 'Only one experiment should be retrieved'
+            assert len(experiments) == len(cfg.experiments)
 
             experiment = experiments[0]
             assert experiment['name'] == name, 'name should match query'
@@ -116,7 +131,7 @@ class StorageTest:
             trial1 = storage.register_trial(Trial(**base_trial))
             trial2 = storage.get_trial(trial1)
 
-            assert trial1 == trial2, 'Trials should match after insert'
+            assert trial1.to_dict() == trial2.to_dict(), 'Trials should match after insert'
 
     def test_register_lie(self, storage):
         """Test register lie"""
@@ -127,7 +142,7 @@ class StorageTest:
         with OrionState(
                 experiments=[base_experiment], trials=[base_trial], database=storage) as cfg:
             storage = cfg.storage()
-            experiment = cfg.get_experiment('supernaedo2', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
 
             trial = storage.reserve_trial(experiment)
             assert trial is not None
@@ -142,11 +157,10 @@ class StorageTest:
         with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
             storage = cfg.storage()
-            experiment = cfg.get_experiment('supernaedo2', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
 
-            trial = storage.fetch_experiment_trials(experiment)
-            assert len(trial) == 1
-            assert trial.to_dict() == base_trial
+            trials = storage.fetch_experiment_trials(experiment)
+            assert len(trials) == len(cfg.trials), 'trial count should match'
 
     def test_get_trial(self, storage):
         """Test get trial"""
@@ -165,7 +179,7 @@ class StorageTest:
                         trials=generate_trials() + [make_lost_trial()], database=storage) as cfg:
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('supernaedo2', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
             trials = storage.fetch_lost_trials(experiment)
             assert len(trials) == 1
 
@@ -193,7 +207,7 @@ class StorageTest:
             results = trial.results
 
             assert len(results) == 1
-            assert results[0] == generated_result
+            assert results[0].to_dict() == generated_result
 
     def test_push_trial_results(self, storage):
         """Successfully push a completed trial into database."""
@@ -206,7 +220,7 @@ class StorageTest:
             trial.results = results
             assert storage.push_trial_results(trial), 'should update successfully'
 
-            trial2 = storage.get_trial()
+            trial2 = storage.get_trial(trial)
             assert trial2.results == results
 
     def test_change_status_success(self, storage, exp_config_file):
@@ -254,10 +268,15 @@ class StorageTest:
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('supernaedo2', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
             trials = storage.fetch_pending_trials(experiment)
 
-            assert len(trials) == 1
+            count = 0
+            for trial in cfg.trials:
+                if trial['status'] in {'new', 'suspended', 'interrupted'}:
+                    count += 1
+
+            assert len(trials) == count
             for trial in trials:
                 assert trial.status in {'new', 'suspended', 'interrupted'}
 
@@ -267,10 +286,15 @@ class StorageTest:
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('supernaedo2', 'default_user', version=None)
-            trials = storage.test_fetch_noncompleted_trials(experiment)
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            trials = storage.fetch_noncompleted_trials(experiment)
 
-            assert len(trials) == 1
+            count = 0
+            for trial in cfg.trials:
+                if trial['status'] != 'completed':
+                    count += 1
+
+            assert len(trials) == count
             for trial in trials:
                 assert trial.status != 'completed'
 
@@ -278,34 +302,51 @@ class StorageTest:
         """Test fetch completed trials"""
         with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+            count = 0
+            for trial in cfg.trials:
+                if trial['status'] == 'completed':
+                    count += 1
+
             storage = cfg.storage()
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            trials = storage.fetch_completed_trials(experiment)
 
-            experiment = cfg.get_experiment('supernaedo2', 'default_user', version=None)
-            trials = storage.fetch_noncompleted_trials(experiment)
+            print(trials)
 
-            assert len(trials) == 1
+            assert len(trials) == count
             for trial in trials:
-                assert trial.status == 'completed'
+                assert trial.status == 'completed', trial
 
     def test_count_completed_trials(self, storage):
         """Test count completed trials"""
         with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+            count = 0
+            for trial in cfg.trials:
+                if trial['status'] == 'completed':
+                    count += 1
+
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('supernaedo2', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
             trials = storage.count_completed_trials(experiment)
-            assert trials == 1
+            assert trials == count
 
     def test_count_broken_trials(self, storage):
         """Test count broken trials"""
         with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+            count = 0
+            for trial in cfg.trials:
+                if trial['status'] == 'broken':
+                    count += 1
+
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('supernaedo2', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
             trials = storage.count_broken_trials(experiment)
-            assert trials == 1
+
+            assert trials == count
 
     def test_update_heartbeat(self, storage):
         """Test update heartbeat"""
@@ -313,8 +354,8 @@ class StorageTest:
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
             storage = cfg.storage()
 
-            trial1 = storage.get_trial(Trial(**cfg.get_trial(0)))
+            trial1 = storage.get_trial(cfg.get_trial(0))
             storage.update_heartbeat(trial1)
 
-            trial2 = storage.get_trial(Trial(**cfg.get_trial(0)))
+            trial2 = storage.get_trial(trial1)
             assert trial1.heartbeat != trial2.heartbeat

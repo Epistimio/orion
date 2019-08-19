@@ -117,7 +117,7 @@ class OrionState:
                 experiments = exp_config[0]
                 trials = exp_config[1]
 
-        self.database = _select(database, _get_default_test_database())
+        self.database_config = _select(database, _get_default_test_database())
         self.experiments = _select(experiments, [])
         self.trials = _select(trials, [])
         self.workers = _select(workers, [])
@@ -168,7 +168,7 @@ class OrionState:
 
     def __enter__(self):
         """Load a new database state"""
-        self.tempfile = self.database.get('host')
+        self.tempfile = self.database_config.get('host')
 
         for singleton in self.SINGLETONS:
             self.new_singleton(singleton, new_value=None)
@@ -195,13 +195,18 @@ class OrionState:
     def storage(self):
         """Return test storage"""
         try:
-            storage_type = self.database.pop('storage_type')
+            storage_type = self.database_config.pop('storage_type')
             config = {
-                'database': self.database
+                'database': self.database_config
             }
             db = Storage(of_type=storage_type, config=config)
+            self.database_config['storage_type'] = storage_type
 
         except SingletonAlreadyInstantiatedError:
             db = get_storage()
+
+        except KeyError:
+            print(self.database_config)
+            raise
 
         return db

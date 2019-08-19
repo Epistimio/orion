@@ -273,7 +273,8 @@ class Legacy(BaseStorageProtocol):
             'end_time': 1,
             'results': 1,
             'experiment': 1,
-            'params': 1
+            'params': 1,
+            'status': 1
         }
         return self._fetch_trials(query, selection)
 
