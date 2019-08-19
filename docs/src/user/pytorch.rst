@@ -8,7 +8,7 @@ Installation and setup
 ======================
 
 Make sure Oríon is installed (:doc:`/install/core`) and the database is configured
-(:doc:`/install/database`). 
+(:doc:`/install/database`).
 
 Then install ``pytorch`` and ``torchvision`` and clone the
 PyTorch `examples repository`_:
@@ -147,7 +147,7 @@ fetched using the :ref:`library API <library-api-results>`.
     $ orion info -n orion-tutorial
 
 Notes
-===============
+=====
 We use test error rate for sake of simplicity, because the
 script does not contain validation dataset loader as-is, but we should
 **never** optimize our hyper-parameters on the test set and instead always use a
