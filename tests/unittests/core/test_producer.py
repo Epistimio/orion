@@ -75,9 +75,9 @@ def test_algo_observe_completed(producer):
     obs_points = producer.algorithm.algorithm._points
     obs_results = producer.algorithm.algorithm._results
     assert len(obs_points) == 3
-    assert obs_points[0] == ('lstm', 'rnn')
+    assert obs_points[0] == ('rnn', 'lstm')
     assert obs_points[1] == ('rnn', 'rnn')
-    assert obs_points[2] == ('gru', 'lstm_with_attention')
+    assert obs_points[2] == ('lstm_with_attention', 'gru')
     assert len(obs_results) == 3
     assert obs_results[0] == {
         'objective': 3,
@@ -104,9 +104,9 @@ def test_strategist_observe_completed(producer):
     obs_points = producer.strategy._observed_points
     obs_results = producer.strategy._observed_results
     assert len(obs_points) == 3
-    assert obs_points[0] == ('lstm', 'rnn')
+    assert obs_points[0] == ('rnn', 'lstm')
     assert obs_points[1] == ('rnn', 'rnn')
-    assert obs_points[2] == ('gru', 'lstm_with_attention')
+    assert obs_points[2] == ('lstm_with_attention', 'gru')
     assert len(obs_results) == 3
     assert obs_results[0] == {
         'objective': 3,
@@ -128,7 +128,7 @@ def test_strategist_observe_completed(producer):
 def test_naive_algorithm_is_producing(monkeypatch, producer, database, random_dt):
     """Verify naive algo is used to produce, not original algo"""
     producer.experiment.pool_size = 1
-    producer.algorithm.algorithm.possible_values = [('rnn', 'gru')]
+    producer.algorithm.algorithm.possible_values = [('gru', 'rnn')]
     producer.update()
     monkeypatch.setattr(producer.algorithm.algorithm, 'set_state', lambda value: None)
     producer.algorithm.algorithm.possible_values = [('gru', 'gru')]
@@ -140,7 +140,7 @@ def test_naive_algorithm_is_producing(monkeypatch, producer, database, random_dt
 
 def test_update_and_produce(producer, database, random_dt):
     """Test new trials are properly produced"""
-    possible_values = [('rnn', 'gru')]
+    possible_values = [('gru', 'rnn')]
     producer.experiment.pool_size = 1
     producer.experiment.algorithms.algorithm.possible_values = possible_values
 
@@ -160,7 +160,7 @@ def test_register_new_trials(producer, database, random_dt):
     new_trials_in_db_before = database.trials.count({'status': 'new'})
 
     producer.experiment.pool_size = 1
-    producer.experiment.algorithms.algorithm.possible_values = [('rnn', 'gru')]
+    producer.experiment.algorithms.algorithm.possible_values = [('gru', 'rnn')]
 
     producer.update()
     producer.produce()
@@ -178,12 +178,12 @@ def test_register_new_trials(producer, database, random_dt):
     assert new_trials[0]['end_time'] is None
     assert new_trials[0]['results'] == []
     assert new_trials[0]['params'] == [
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'rnn'},
         {'name': '/decoding_layer',
          'type': 'categorical',
-         'value': 'gru'}
+         'value': 'gru'},
+        {'name': '/encoding_layer',
+         'type': 'categorical',
+         'value': 'rnn'}
         ]
 
 
@@ -269,7 +269,7 @@ def test_register_duplicate_lies(producer, database, random_dt):
 
     # Set specific output value for to algo to ensure successful creation of a new trial.
     producer.experiment.pool_size = 1
-    producer.experiment.algorithms.algorithm.possible_values = [('rnn', 'gru')]
+    producer.experiment.algorithms.algorithm.possible_values = [('gru', 'rnn')]
 
     producer.update()
     assert len(produce_lies(producer)) == 4
@@ -361,7 +361,7 @@ def test_naive_algo_is_discared(producer, database, monkeypatch):
     """Verify that naive algo is discarded and recopied from original algo"""
     # Set values for predictions
     producer.experiment.pool_size = 1
-    producer.experiment.algorithms.algorithm.possible_values = [('rnn', 'gru')]
+    producer.experiment.algorithms.algorithm.possible_values = [('gru', 'rnn')]
 
     producer.update()
     assert len(produce_lies(producer)) == 4
@@ -390,13 +390,11 @@ def test_concurent_producers(producer, database, random_dt):
     trials_in_db_before = database.trials.count()
     new_trials_in_db_before = database.trials.count({'status': 'new'})
 
-    print(producer.experiment.fetch_trials())
-
     # Set so that first producer's algorithm generate valid point on first time
     # And second producer produce same point and thus must produce next one two.
     # Hence, we know that producer algo will have _num == 1 and
     # second producer algo will have _num == 2
-    producer.algorithm.algorithm.possible_values = [('rnn', 'gru'), ('gru', 'gru')]
+    producer.algorithm.algorithm.possible_values = [('gru', 'rnn'), ('gru', 'gru')]
     # Make sure it starts from index 0
     producer.algorithm.seed_rng(0)
 
@@ -408,11 +406,7 @@ def test_concurent_producers(producer, database, random_dt):
     producer.update()
     second_producer.update()
 
-    print(producer.algorithm.algorithm._index)
-    print(second_producer.algorithm.algorithm._index)
     producer.produce()
-    print(producer.algorithm.algorithm._index)
-    print(second_producer.algorithm.algorithm._index)
     second_producer.produce()
 
     # Algorithm was required to suggest some trials
@@ -430,19 +424,19 @@ def test_concurent_producers(producer, database, random_dt):
     assert new_trials[0]['end_time'] is None
     assert new_trials[0]['results'] == []
     assert new_trials[0]['params'] == [
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'rnn'},
         {'name': '/decoding_layer',
          'type': 'categorical',
-         'value': 'gru'}
+         'value': 'gru'},
+        {'name': '/encoding_layer',
+         'type': 'categorical',
+         'value': 'rnn'}
         ]
 
     assert new_trials[1]['params'] == [
-        {'name': '/encoding_layer',
+        {'name': '/decoding_layer',
          'type': 'categorical',
          'value': 'gru'},
-        {'name': '/decoding_layer',
+        {'name': '/encoding_layer',
          'type': 'categorical',
          'value': 'gru'}
         ]
@@ -458,7 +452,7 @@ def test_duplicate_within_pool(producer, database, random_dt):
     producer.experiment.pool_size = 2
 
     producer.experiment.algorithms.algorithm.possible_values = [
-        ('rnn', 'gru'), ('rnn', 'gru'), ('gru', 'gru')]
+        ('gru', 'rnn'), ('gru', 'rnn'), ('gru', 'gru')]
 
     producer.update()
     producer.produce()
@@ -476,19 +470,19 @@ def test_duplicate_within_pool(producer, database, random_dt):
     assert new_trials[0]['end_time'] is None
     assert new_trials[0]['results'] == []
     assert new_trials[0]['params'] == [
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'rnn'},
         {'name': '/decoding_layer',
          'type': 'categorical',
-         'value': 'gru'}
+         'value': 'gru'},
+        {'name': '/encoding_layer',
+         'type': 'categorical',
+         'value': 'rnn'}
         ]
 
     assert new_trials[1]['params'] == [
-        {'name': '/encoding_layer',
+        {'name': '/decoding_layer',
          'type': 'categorical',
          'value': 'gru'},
-        {'name': '/decoding_layer',
+        {'name': '/encoding_layer',
          'type': 'categorical',
          'value': 'gru'}
         ]
@@ -504,7 +498,7 @@ def test_duplicate_within_pool_and_db(producer, database, random_dt):
     producer.experiment.pool_size = 2
 
     producer.experiment.algorithms.algorithm.possible_values = [
-        ('rnn', 'gru'), ('rnn', 'rnn'), ('gru', 'gru')]
+        ('gru', 'rnn'), ('rnn', 'rnn'), ('gru', 'gru')]
 
     producer.update()
     producer.produce()
@@ -522,19 +516,19 @@ def test_duplicate_within_pool_and_db(producer, database, random_dt):
     assert new_trials[0]['end_time'] is None
     assert new_trials[0]['results'] == []
     assert new_trials[0]['params'] == [
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'rnn'},
         {'name': '/decoding_layer',
          'type': 'categorical',
-         'value': 'gru'}
+         'value': 'gru'},
+        {'name': '/encoding_layer',
+         'type': 'categorical',
+         'value': 'rnn'}
         ]
 
     assert new_trials[1]['params'] == [
-        {'name': '/encoding_layer',
+        {'name': '/decoding_layer',
          'type': 'categorical',
          'value': 'gru'},
-        {'name': '/decoding_layer',
+        {'name': '/encoding_layer',
          'type': 'categorical',
          'value': 'gru'}
         ]
