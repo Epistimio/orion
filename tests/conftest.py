@@ -9,6 +9,7 @@ import pytest
 import yaml
 
 from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
+import orion.core
 from orion.core.io import resolve_config
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
@@ -109,6 +110,26 @@ class DumbAlgo(BaseAlgorithm):
 # Hack it into being discoverable
 OptimizationAlgorithm.types.append(DumbAlgo)
 OptimizationAlgorithm.typenames.append(DumbAlgo.__name__.lower())
+
+
+@pytest.fixture()
+def empty_config():
+    """Return config purged from global definition"""
+    orion.core.DEF_CONFIG_FILES_PATHS = []
+    config = orion.core.build_config()
+    orion.core.config = config
+    resolve_config.config = config
+    return config
+
+
+@pytest.fixture()
+def test_config(empty_config):
+    """Return orion's config overwritten with local config file"""
+    config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "orion_config.yaml")
+    empty_config.load_yaml(config_file)
+
+    return empty_config
 
 
 @pytest.fixture(scope='session')
