@@ -674,6 +674,10 @@ class TestSpace(object):
         space2.register(Categorical('yolo4', ('asdfa', 2)))
         space2.register(Integer('yolo2', 'uniform', -3, 6, shape=(2,)))
 
+        assert list(space1) == list(space1.keys())
+        assert list(space2) == list(space2.keys())
+        assert list(space1.values()) == list(space2.values())
+        assert list(space1.items()) == list(space2.items())
         assert list(space1.keys()) == list(space2.keys())
         assert list(space1.values()) == list(space2.values())
         assert list(space1.items()) == list(space2.items())
