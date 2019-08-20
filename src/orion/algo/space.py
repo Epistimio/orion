@@ -834,7 +834,11 @@ class Space(dict):
 
     def keys(self):
         """Return sorted keys"""
-        return list(sorted(super(Space, self).keys()))
+        return list(iter(self))
+
+    def __iter__(self):
+        """Return sorted keys"""
+        return iter(sorted(super(Space, self).keys()))
 
 
 def pack_point(point, space):
