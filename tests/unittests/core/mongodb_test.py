@@ -237,12 +237,12 @@ class TestRead(object):
     def test_read_experiment(self, exp_config, orion_db):
         """Fetch a whole experiment entries."""
         loaded_config = orion_db.read(
-            'trials', {'experiment': 'supernaedo2', 'status': 'new'})
+            'trials', {'experiment': 'supernaedo2-dendi', 'status': 'new'})
         assert loaded_config == [exp_config[1][3], exp_config[1][4]]
 
         loaded_config = orion_db.read(
             'trials',
-            {'experiment': 'supernaedo2',
+            {'experiment': 'supernaedo2-dendi',
              'submit_time': exp_config[1][3]['submit_time']})
         assert loaded_config == [exp_config[1][3]]
         assert loaded_config[0]['_id'] == exp_config[1][3]['_id']
@@ -270,13 +270,13 @@ class TestRead(object):
         """Fetch value(s) from an entry."""
         value = orion_db.read(
             'trials',
-            {'experiment': 'supernaedo2',
+            {'experiment': 'supernaedo2-dendi',
              'submit_time': {'$gte': datetime(2017, 11, 23, 0, 0, 0)}})
         assert value == [exp_config[1][1]] + exp_config[1][3:7]
 
         value = orion_db.read(
             'trials',
-            {'experiment': 'supernaedo2',
+            {'experiment': 'supernaedo2-dendi',
              'submit_time': {'$gt': datetime(2017, 11, 23, 0, 0, 0)}})
         assert value == exp_config[1][3:7]
 
@@ -313,7 +313,7 @@ class TestWrite(object):
 
     def test_update_many_default(self, database, orion_db):
         """Should match existing entries, and update some of their keys."""
-        filt = {'metadata.user': 'tsirif'}
+        filt = {'metadata.user': 'dendi'}
         count_before = database.experiments.count_documents({})
         count_filt = database.experiments.count_documents(filt)
         # call interface
@@ -321,8 +321,8 @@ class TestWrite(object):
         assert database.experiments.count_documents({}) == count_before
         value = list(database.experiments.find({}))
         assert value[0]['pool_size'] == 16
-        assert value[1]['pool_size'] == 16
-        assert value[2]['pool_size'] == 16
+        assert value[1]['pool_size'] == 2
+        assert value[2]['pool_size'] == 2
         assert value[3]['pool_size'] == 2
 
     def test_update_with_id(self, exp_config, database, orion_db):
@@ -351,13 +351,13 @@ class TestReadAndWrite(object):
         # Make sure there is only one match
         documents = orion_db.read(
             'experiments',
-            {'name': 'supernaedo2', 'metadata.user': 'dendi'})
+            {'name': 'supernaedo4'})
         assert len(documents) == 1
 
         # Find and update atomically
         loaded_config = orion_db.read_and_write(
             'experiments',
-            {'name': 'supernaedo2', 'metadata.user': 'dendi'},
+            {'name': 'supernaedo4'},
             {'pool_size': 'lalala'})
         exp_config[0][3]['pool_size'] = 'lalala'
         assert loaded_config == exp_config[0][3]
@@ -365,20 +365,20 @@ class TestReadAndWrite(object):
     def test_read_and_write_many(self, database, orion_db, exp_config):
         """Should update only one entry."""
         # Make sure there is many matches
-        documents = orion_db.read('experiments', {'name': 'supernaedo2'})
+        documents = orion_db.read('experiments', {'metadata.user': 'tsirif'})
         assert len(documents) > 1
 
         # Find many and update first one only
         loaded_config = orion_db.read_and_write(
             'experiments',
-            {'name': 'supernaedo2'},
+            {'metadata.user': 'tsirif'},
             {'pool_size': 'lalala'})
 
-        exp_config[0][0]['pool_size'] = 'lalala'
-        assert loaded_config == exp_config[0][0]
+        exp_config[0][1]['pool_size'] = 'lalala'
+        assert loaded_config == exp_config[0][1]
 
         # Make sure it only changed the first document found
-        documents = orion_db.read('experiments', {'name': 'supernaedo2'})
+        documents = orion_db.read('experiments', {'metadata.user': 'tsirif'})
         assert documents[0]['pool_size'] == 'lalala'
         assert documents[1]['pool_size'] != 'lalala'
 
@@ -405,7 +405,7 @@ class TestRemove(object):
         assert orion_db.remove('experiments', filt) == count_filt
         assert database.experiments.count_documents({}) == count_before - count_filt
         assert database.experiments.count_documents({}) == 1
-        assert list(database.experiments.find()) == [exp_config[0][3]]
+        assert list(database.experiments.find()) == [exp_config[0][0]]
 
     def test_remove_with_id(self, exp_config, database, orion_db):
         """Query using ``_id`` key."""
