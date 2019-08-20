@@ -65,7 +65,6 @@ class Legacy(BaseStorageProtocol):
         """Database index setup"""
         self._db.ensure_index('experiments',
                               [('name', Database.ASCENDING),
-                               ('metadata.user', Database.ASCENDING),
                                ('version', Database.ASCENDING)],
                               unique=True)
         self._db.ensure_index('experiments', 'metadata.datetime')

@@ -5,6 +5,38 @@
 # Example of entries in `experiments` collection
 # configurations: some are inferred automatically,
 # but most depend on user's input to `orion`
+- name: supernaedo2-dendi
+
+  metadata:
+    user: dendi
+    datetime: 2017-11-22T20:00:00
+    orion_version: XYZ
+    user_script: functional/demo/black_box.py
+    user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
+    VCS:
+      type: git
+      is_dirty: False
+      HEAD_sha: "test"
+      active_branch: null
+      diff_sha: "diff"
+  refers:
+    root_id: supernaedo2-dendi
+    parent_id: null
+    adapter: []
+  pool_size: 2
+  max_trials: 1000
+  working_dir: 
+  algorithms:
+    dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
+      seed: null
+      value: 5
+      scoring: 0
+      judgement: ~
+      suspend: False
+      done: False
+  producer:
+    strategy: NoParallelStrategy
+
 - name: supernaedo2
 
   metadata:
@@ -117,38 +149,6 @@
   producer:
     strategy: NoParallelStrategy
 
-- name: supernaedo2
-
-  metadata:
-    user: dendi
-    datetime: 2017-11-22T20:00:00
-    orion_version: XYZ
-    user_script: full_path/main.py
-    user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
-    VCS:
-          type: git
-          is_dirty: False
-          HEAD_sha: "as5f7asf5asfa7sf"
-          active_branch: null
-          diff_sha: "diff"
-  refers:
-    root_id: supernaedo2
-    parent_id: null
-    adapter: []
-  pool_size: 2
-  max_trials: 1000
-  working_dir: 
-  algorithms:
-    dumbalgo:  # this must be logged as `Experiment` would log it, complete specification
-      seed: null
-      value: 5
-      scoring: 0
-      judgement: ~
-      suspend: False
-      done: False
-  producer:
-    strategy: NoParallelStrategy
-
 
 - name: supernaedo2.1
 
@@ -171,8 +171,8 @@
           diff_sha: "diff"
 
   refers:
-    root_id: supernaedo2
-    parent_id: supernaedo2
+    root_id: supernaedo2-dendi
+    parent_id: supernaedo2-dendi
     adapter:
       - of_type: dimensiondeletion
         param:
@@ -215,8 +215,8 @@
           diff_sha: "diff"
 
   refers:
-    root_id: supernaedo2
-    parent_id: supernaedo2
+    root_id: supernaedo2-dendi
+    parent_id: supernaedo2-dendi
     adapter:
       - of_type: dimensiondeletion
         param:
@@ -259,8 +259,8 @@
           diff_sha: "diff"
 
   refers:
-    root_id: supernaedo2
-    parent_id: supernaedo2
+    root_id: supernaedo2-dendi
+    parent_id: supernaedo2-dendi
     adapter:
       - of_type: dimensionrenaming
         old_name: /encoding_layer
@@ -301,7 +301,7 @@
           diff_sha: "diff"
 
   refers:
-    root_id: supernaedo2
+    root_id: supernaedo2-dendi
     parent_id: supernaedo2.3
     adapter:
       - of_type: dimensiondeletion
@@ -349,7 +349,7 @@
           diff_sha: "diff"
 
   refers:
-    root_id: supernaedo2
+    root_id: supernaedo2-dendi
     parent_id: supernaedo2.3.1
     adapter:
       - of_type: codechange
@@ -390,7 +390,7 @@
           diff_sha: "diff"
 
   refers:
-    root_id: supernaedo2
+    root_id: supernaedo2-dendi
     parent_id: supernaedo2.3.1
     adapter:
       - of_type: codechange
@@ -431,7 +431,7 @@
           diff_sha: "diff"
 
   refers:
-    root_id: supernaedo2
+    root_id: supernaedo2-dendi
     parent_id: supernaedo2.3.1
     adapter:
       - of_type: codechange
@@ -472,7 +472,7 @@
           diff_sha: "diff"
 
   refers:
-    root_id: supernaedo2
+    root_id: supernaedo2-dendi
     parent_id: supernaedo2.2
     adapter:
       - of_type: algorithmchange
@@ -492,7 +492,7 @@
 ---
 
 # Example of entries in `trials` collection
-- experiment: supernaedo2
+- experiment: supernaedo2-dendi
 
   status: completed  # new, reserved, suspended, completed, interrupted, broken
   worker: 1251231
@@ -511,7 +511,7 @@
       type: categorical
       value: lstm
   parents: []
-- experiment: supernaedo2
+- experiment: supernaedo2-dendi
 
   status: completed
   worker: 23415151
@@ -537,7 +537,7 @@
       value: gru
   parents: []
 
-- experiment: supernaedo2
+- experiment: supernaedo2-dendi
 
   status: completed
   worker: 1251231
@@ -561,7 +561,7 @@
   parents: []
 
 
-- experiment: supernaedo2
+- experiment: supernaedo2-dendi
 
   status: new
   worker: ~
@@ -581,7 +581,7 @@
       value: gru
   parents: []
 
-- experiment: supernaedo2
+- experiment: supernaedo2-dendi
 
   status: new  # new, reserved, suspended, completed, broken
   worker: ~
@@ -600,7 +600,7 @@
       type: categorical
       value: rnn
   parents: []
-- experiment: supernaedo2
+- experiment: supernaedo2-dendi
 
   status: interrupted
   worker: ~
@@ -619,7 +619,7 @@
       type: categorical
       value: lstm
   parents: []
-- experiment: supernaedo2
+- experiment: supernaedo2-dendi
 
   status: suspended
   worker: ~

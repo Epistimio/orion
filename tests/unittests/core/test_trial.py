@@ -120,6 +120,13 @@ class TestTrial(object):
         assert trials[0].params[0] == Trial.Param(**exp_config[1][0]['params'][0])
         assert trials[0].params[1] != Trial.Param(**exp_config[1][0]['params'][0])
 
+    def test_str_trial(self, exp_config):
+        """Test representation of `Trial`."""
+        t = Trial(**exp_config[1][1])
+        assert str(t) == "Trial(experiment='supernaedo2-dendi', status='completed',\n"\
+                         "      params=/decoding_layer:lstm_with_attention\n"\
+                         "             /encoding_layer:gru)"
+
     def test_str_value(self, exp_config):
         """Test representation of `Trial.Value`."""
         t = Trial(**exp_config[1][1])
@@ -214,7 +221,7 @@ class TestTrial(object):
     def test_hash_name_property(self, exp_config):
         """Check property `Trial.hash_name`."""
         t = Trial(**exp_config[1][1])
-        assert t.hash_name == "e4422cafdb943b148e47ab8b57dcf3db"
+        assert t.hash_name == "6e2ecbf266e00c29f157e6be5d7fe8fe"
 
         t = Trial()
         with pytest.raises(ValueError) as exc:
