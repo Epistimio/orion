@@ -14,7 +14,7 @@ import logging
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database
 from orion.core.worker.trial import Trial
-from orion.storage.base import BaseStorageProtocol, FailedUpdate, UndefinedCall
+from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
 
 log = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
         if uid is None:
             if experiment is None:
-                raise UndefinedCall('Either `experiment` or `uid` should be set')
+                raise MissingArguments('Either `experiment` or `uid` should be set')
 
             uid = experiment._id
 
@@ -159,7 +159,7 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.get_trial`"""
         if uid is None:
             if trial is None:
-                raise UndefinedCall('Either `trial` or `uid` should be set')
+                raise MissingArguments('Either `trial` or `uid` should be set')
 
             uid = trial.id
 

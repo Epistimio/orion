@@ -19,7 +19,7 @@ class FailedUpdate(Exception):
     pass
 
 
-class UndefinedCall(Exception):
+class MissingArguments(Exception):
     """Raised when calling a function without the minimal set of parameters"""
 
     pass
