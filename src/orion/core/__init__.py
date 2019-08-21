@@ -52,6 +52,9 @@ def define_config():
     """Create and define the fields of the configuration object."""
     config = Configuration()
     define_database_config(config)
+    config.add_option(
+            'user_script_config', option_type=str, default='config')
+
     return config
 
 
