@@ -125,7 +125,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
 
         Raises
         ------
-        UnderdefinedCall
+        UndefinedCall
             if both trial and uid are not set
 
         """
