@@ -55,7 +55,7 @@ def define_config():
     define_worker_config(config)
 
     config.add_option(
-            'user_script_config', option_type=str, default='config')
+        'user_script_config', option_type=str, default='config')
 
     return config
 
