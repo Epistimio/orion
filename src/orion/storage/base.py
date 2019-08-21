@@ -102,8 +102,11 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
 
         Raises
         ------
-        UnderdefinedCall
+        UndefinedCall
             if both experiment and uid are not set
+
+        AssertionError
+            if both experiment and uid are provided and they do not match
 
         """
         raise NotImplementedError()
@@ -127,6 +130,9 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         ------
         UndefinedCall
             if both trial and uid are not set
+
+        AssertionError
+            if both trial and uid are provided and they do not match
 
         """
         raise NotImplementedError()

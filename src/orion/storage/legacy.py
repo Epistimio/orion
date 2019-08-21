@@ -94,6 +94,9 @@ class Legacy(BaseStorageProtocol):
 
     def fetch_trials(self, experiment=None, uid=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
+        if experiment is not None and uid is not None:
+            assert experiment._id == uid
+
         if uid is None:
             if experiment is None:
                 raise MissingArguments('Either `experiment` or `uid` should be set')
@@ -157,6 +160,9 @@ class Legacy(BaseStorageProtocol):
 
     def get_trial(self, trial=None, uid=None):
         """See :func:`~orion.storage.BaseStorageProtocol.get_trial`"""
+        if trial is not None and uid is not None:
+            assert trial._id == uid
+
         if uid is None:
             if trial is None:
                 raise MissingArguments('Either `trial` or `uid` should be set')

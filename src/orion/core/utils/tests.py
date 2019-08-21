@@ -109,7 +109,7 @@ class OrionState:
     workers = []
     tempfile = None
 
-    def __init__(self, experiments=None, trials=None, workers=None, resources=None,
+    def __init__(self, experiments=None, trials=None, workers=None, lies=None, resources=None,
                  from_yaml=None, database=None):
         if from_yaml is not None:
             with open(from_yaml) as f:
@@ -122,6 +122,7 @@ class OrionState:
         self.trials = _select(trials, [])
         self.workers = _select(workers, [])
         self.resources = _select(resources, [])
+        self.lies = _select(lies, [])
 
     def init(self):
         """Initialize environment before testing"""
@@ -165,6 +166,7 @@ class OrionState:
         self.database.write('trials', self.trials)
         self.database.write('workers', self.workers)
         self.database.write('resources', self.resources)
+        self.database.write('lying_trials', self.lies)
 
     def __enter__(self):
         """Load a new database state"""
