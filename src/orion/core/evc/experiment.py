@@ -149,7 +149,7 @@ class ExperimentNode(TreeNode):
         return self._fetch_trials('fetch_trials_by_status', status=status)
 
     def _fetch_trials(self, fun_name, *args, **kwargs):
-        """Fetch trials recursively in the EVC tree using the fetch function `fun_name`
+        """Fetch trials recursively in the EVC tree using the fetch function `fun_name`.
 
         Parameters
         ----------
@@ -158,14 +158,14 @@ class ExperimentNode(TreeNode):
             :class:`orion.core.worker.experiment:Experiment`
 
         *args:
-            positional arguments to pass to `fun_name`
+            Positional arguments to pass to `fun_name`.
 
         **kwargs
-            keyword arguments to pass to `fun_name
+            Keyword arguments to pass to `fun_name.
 
         """
         def retrieve_trials(node, parent_or_children):
-            """Retrieve the trials of a node/experiment"""
+            """Retrieve the trials of a node/experiment."""
             fun = getattr(node.item, fun_name)
             # with_evc_tree needs to be False here or we will have an infinite loop
             trials = fun(*args, with_evc_tree=False, **kwargs)

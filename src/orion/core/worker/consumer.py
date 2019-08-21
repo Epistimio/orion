@@ -28,7 +28,7 @@ def _handler(signum, frame):
 
 
 class ExecutionError(Exception):
-    """Error raised when orion is unable to execute the user' script without errors"""
+    """Error raised when Orion is unable to execute the user's script without errors."""
 
     pass
 
