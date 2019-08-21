@@ -36,7 +36,7 @@ base_trial = {
     'submit_time': '2017-11-23T02:00:00',
     'start_time': None,
     'end_time': None,
-    'heartbeat': datetime.datetime.utcnow(),
+    'heartbeat': None,
     'results': [
         {'name': 'loss',
          'type': 'objective',  # objective, constraint
@@ -99,7 +99,8 @@ def generate_trials():
 def generate_experiments():
     """Generate a set of experiments"""
     users = ['a', 'b', 'c']
-    return [_generate(base_trial, 'metadata', 'user', value=u) for u in users]
+    exps = [_generate(base_experiment, 'metadata', 'user', value=u) for u in users]
+    return [_generate(exp, 'name', value=str(i)) for i, exp in enumerate(exps)]
 
 
 @pytest.mark.parametrize('storage', storage_backends)
@@ -132,7 +133,7 @@ class TestStorage:
             experiment = experiments[0]
             assert base_experiment == experiment, 'Local experiment and DB should match'
 
-    def test_fetch_experiments(self, storage, name='default_name', user='a'):
+    def test_fetch_experiments(self, storage, name='1', user='a'):
         """Test fetch experiments"""
         with OrionState(experiments=generate_experiments(), database=storage) as cfg:
             storage = cfg.storage()
@@ -227,7 +228,7 @@ class TestStorage:
 
             trial_dict = cfg.trials[0]
             trial1 = storage.get_trial(trial=Trial(**trial_dict))
-            trial2 = storage.get_trial(uid=trial1.uid)
+            trial2 = storage.get_trial(uid=trial1.id)
 
             with pytest.raises(MissingArguments):
                 storage.get_trial()
@@ -278,10 +279,13 @@ class TestStorage:
 
     def test_retrieve_result_incorrect_value(self, storage):
         """Test retrieve result"""
-        self.retrieve_result(storage, generated_result={
-            'name': 'loss',
-            'type': 'objective_unsupported_type',
-            'value': 2})
+        with pytest.raises(ValueError) as exec:
+            self.retrieve_result(storage, generated_result={
+                'name': 'loss',
+                'type': 'objective_unsupported_type',
+                'value': 2})
+
+        assert exec.match(r'Given type, objective_unsupported_type')
 
     def test_retrieve_result_nofile(self, storage):
         """Test retrieve result"""
@@ -293,7 +297,11 @@ class TestStorage:
             storage = cfg.storage()
 
             trial = Trial(**base_trial)
-            trial = storage.retrieve_result(trial, results_file)
+
+            with pytest.raises(json.decoder.JSONDecodeError) as exec:
+                storage.retrieve_result(trial, results_file)
+
+        assert exec.match(r'Expecting value: line 1 column 1 \(char 0\)')
 
     def test_push_trial_results(self, storage):
         """Successfully push a completed trial into database."""
@@ -442,4 +450,7 @@ class TestStorage:
             storage.update_heartbeat(trial1)
 
             trial2 = storage.get_trial(trial1)
-            assert trial1.heartbeat < trial2.heartbeat
+            assert trial1.heartbeat is None
+            assert trial2.heartbeat is not None
+            # this checks that heartbeat is the correct type and that it was updated prior to now
+            assert trial2.heartbeat < datetime.datetime.utcnow()
