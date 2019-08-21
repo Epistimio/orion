@@ -165,7 +165,7 @@ class ExperimentNode(TreeNode):
 
         """
         def retrieve_trials(node, parent_or_children):
-            """Retrieve the trials of a node/experiment"""
+            """Retrieve the trials of a node/experiment."""
             fun = getattr(node.item, fun_name)
             # with_evc_tree needs to be False here or we will have an infinite loop
             trials = fun(*args, with_evc_tree=False, **kwargs)
