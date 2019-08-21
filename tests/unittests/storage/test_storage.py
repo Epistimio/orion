@@ -12,7 +12,7 @@ import pytest
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.tests import OrionState
 from orion.core.worker.trial import Trial
-from orion.storage.base import FailedUpdate, MissingArguments, get_storage
+from orion.storage.base import FailedUpdate, get_storage, MissingArguments
 
 storage_backends = [
     None,  # defaults to legacy with PickleDB
@@ -158,7 +158,8 @@ class TestStorage:
 
     def test_register_duplicate_trial(self, storage):
         """Test register trial"""
-        with OrionState(experiments=[base_experiment], trials=[base_trial], database=storage) as cfg:
+        with OrionState(
+                experiments=[base_experiment], trials=[base_trial], database=storage) as cfg:
             storage = cfg.storage()
 
             with pytest.raises(DuplicateKeyError):
@@ -269,12 +270,14 @@ class TestStorage:
             assert results[0].to_dict() == generated_result
 
     def test_retrieve_result(self, storage):
+        """Test retrieve result"""
         self.retrieve_result(storage, generated_result={
             'name': 'loss',
             'type': 'objective',
             'value': 2})
 
     def test_retrieve_result_incorrect_value(self, storage):
+        """Test retrieve result"""
         self.retrieve_result(storage, generated_result={
             'name': 'loss',
             'type': 'objective_unsupported_type',

@@ -278,7 +278,7 @@ class Legacy(BaseStorageProtocol):
 
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
-        return self._update_trial(trial, heartbeat=datetime.datetime.utcnow())
+        return self._update_trial(trial, heartbeat=datetime.datetime.utcnow(), status='reserved')
 
     def fetch_trial_by_status(self, experiment, status):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trial_by_status`"""
