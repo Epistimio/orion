@@ -94,7 +94,7 @@ class OrionState:
     Examples
     --------
     >>> myconfig = {...}
-    >>> with OrionTestState(myconfig):
+    >>> with OrionState(myconfig):
         ...
 
     """
