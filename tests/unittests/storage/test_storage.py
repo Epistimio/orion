@@ -125,15 +125,10 @@ class TestStorage:
         with OrionState(experiments=[base_experiment], database=storage) as cfg:
             storage = cfg.storage()
 
-            storage.create_experiment(base_experiment)
+            with pytest.raises(DuplicateKeyError):
+                storage.create_experiment(base_experiment)
 
-            experiments = storage.fetch_experiments({})
-            assert len(experiments) == 1, 'Only one experiment in the database'
-
-            experiment = experiments[0]
-            assert base_experiment == experiment, 'Local experiment and DB should match'
-
-    def test_fetch_experiments(self, storage, name='1', user='a'):
+    def test_fetch_experiments(self, storage, name='0', user='a'):
         """Test fetch experiments"""
         with OrionState(experiments=generate_experiments(), database=storage) as cfg:
             storage = cfg.storage()
@@ -176,6 +171,8 @@ class TestStorage:
         """Test register lie"""
         with OrionState(experiments=[base_experiment], lies=[base_trial], database=storage) as cfg:
             storage = cfg.storage()
+
+            print(cfg.lies)
 
             with pytest.raises(DuplicateKeyError):
                 storage.register_lie(Trial(**base_trial))
@@ -234,7 +231,7 @@ class TestStorage:
                 storage.get_trial()
 
             with pytest.raises(AssertionError):
-                storage.fetch_trials(trial=trial1, uid='123')
+                storage.get_trial(trial=trial1, uid='123')
 
             assert trial1.to_dict() == trial_dict
             assert trial2.to_dict() == trial_dict
