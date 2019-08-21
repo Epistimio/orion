@@ -65,7 +65,7 @@ def _get_default_test_database():
 
 # pylint: disable=no-self-use,protected-access
 class OrionState:
-    """Setup global variables and singleton for tests
+    """Setup global variables and singleton for tests.
 
     it swaps the singleton with none at startup and restore them after the tests.
     It also initialize PickleDB as the storage for testing.
