@@ -172,10 +172,8 @@ class TestStorage:
         with OrionState(experiments=[base_experiment], lies=[base_trial], database=storage) as cfg:
             storage = cfg.storage()
 
-            print(cfg.lies)
-
             with pytest.raises(DuplicateKeyError):
-                storage.register_lie(Trial(**base_trial))
+                storage.register_lie(Trial(**cfg.lies[0]))
 
     def test_reserve_trial_success(self, storage):
         """Test reserve trial"""
