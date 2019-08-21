@@ -153,7 +153,6 @@ class OrionState:
         for i, t_dict in enumerate(self.lies):
             self.lies[i] = Trial(**t_dict).to_dict()
 
-        # sort by submit time like the protocol does
         self.trials.sort(key=lambda obj: int(obj['_id'], 16), reverse=True)
 
         for i, _ in enumerate(self.experiments):

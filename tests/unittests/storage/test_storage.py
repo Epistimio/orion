@@ -80,9 +80,14 @@ def make_lost_trial():
     return obj
 
 
-def generate_trials():
+all_status = ['completed', 'broken', 'reserved', 'interrupted', 'suspended', 'new']
+
+
+def generate_trials(status=None):
     """Generate Trials with different configurations"""
-    status = ['completed', 'broken', 'reserved', 'interrupted', 'suspended', 'new']
+    if status is None:
+        status = all_status
+
     new_trials = [_generate(base_trial, 'status', value=s) for s in status]
 
     # make each trial unique
@@ -189,7 +194,10 @@ class TestStorage:
     def test_reserve_trial_fail(self, storage):
         """Test reserve trial"""
         with OrionState(
-                experiments=[base_experiment], trials=[], database=storage) as cfg:
+                experiments=[base_experiment],
+                trials=[generate_trials(status=['completed', 'reserved'])],
+                database=storage) as cfg:
+
             storage = cfg.storage()
             experiment = cfg.get_experiment('default_name', 'default_user', version=None)
 
