@@ -161,7 +161,7 @@ class ExperimentNode(TreeNode):
             positional arguments to pass to `fun_name`
 
         **kwargs
-            keyword arguments to pass to `fun_name
+            Keyword arguments to pass to `fun_name.
 
         """
         def retrieve_trials(node, parent_or_children):
