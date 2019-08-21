@@ -11,6 +11,7 @@ import tempfile
 import pytest
 
 from orion.algo.base import BaseAlgorithm
+from orion.core import config
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.tests import OrionState
 import orion.core.worker.experiment
@@ -671,6 +672,28 @@ class TestReserveTrial(object):
             m.setattr(hacked_exp.__class__, 'fetch_trials', fetch_lost_trials)
             hacked_exp.fix_lost_trials()
 
+    def test_fix_lost_trials_configurable_hb(self, hacked_exp, random_dt):
+        """Test that heartbeat is correctly being configured."""
+        exp_query = {'experiment': hacked_exp.id}
+        trial = hacked_exp.fetch_trials(exp_query)[0]
+        heartbeat = random_dt - datetime.timedelta(seconds=180)
+
+        get_storage().update_trial(trial,
+                                   status='reserved',
+                                   heartbeat=heartbeat,
+                                   where={'experiment': hacked_exp.id})
+
+        exp_query['status'] = 'reserved'
+        exp_query['_id'] = trial.id
+
+        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+
+        config.worker.heartbeat = 150
+
+        hacked_exp.fix_lost_trials()
+
+        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+
 
 def test_update_completed_trial(hacked_exp, database, random_dt):
     """Successfully push a completed trial into database."""
@@ -800,6 +823,21 @@ def test_broken_property(hacked_exp):
         get_storage().set_trial_status(trial, status='broken')
 
     assert hacked_exp.is_broken
+
+
+def test_configurable_broken_property(hacked_exp):
+    """Check if max_broken changes after configuration."""
+    assert not hacked_exp.is_broken
+    trials = hacked_exp.fetch_trials({})[:3]
+
+    for trial in trials:
+        get_storage().update_trial(trial, status='broken')
+
+    assert hacked_exp.is_broken
+
+    config.worker.max_broken = 4
+
+    assert not hacked_exp.is_broken
 
 
 def test_experiment_stats(hacked_exp, exp_config, random_dt):
