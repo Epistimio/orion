@@ -14,7 +14,7 @@ import logging
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database
 from orion.core.worker.trial import Trial
-from orion.storage.base import BaseStorageProtocol, FailedUpdate, UnderdefinedCall
+from orion.storage.base import BaseStorageProtocol, FailedUpdate, UndefinedCall
 
 log = logging.getLogger(__name__)
 
