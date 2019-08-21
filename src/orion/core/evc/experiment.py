@@ -158,7 +158,7 @@ class ExperimentNode(TreeNode):
             :class:`orion.core.worker.experiment:Experiment`
 
         *args:
-            positional arguments to pass to `fun_name`
+            Positional arguments to pass to `fun_name`.
 
         **kwargs
             Keyword arguments to pass to `fun_name.
