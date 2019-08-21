@@ -159,7 +159,7 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.get_trial`"""
         if uid is None:
             if trial is None:
-                raise UnderdefinedCall('Either `trial` or `uid` should be set')
+                raise UndefinedCall('Either `trial` or `uid` should be set')
 
             uid = trial.id
 
