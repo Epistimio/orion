@@ -360,4 +360,4 @@ class TestStorage:
             storage.update_heartbeat(trial1)
 
             trial2 = storage.get_trial(trial1)
-            assert trial1.heartbeat != trial2.heartbeat
+            assert trial1.heartbeat < trial2.heartbeat
