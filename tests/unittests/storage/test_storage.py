@@ -302,7 +302,7 @@ class TestStorage:
             for trial in trials:
                 assert trial.status != 'completed'
 
-    def test_fetch_completed_trials(self, storage):
+    def test_fetch_trial_by_status(self, storage):
         """Test fetch completed trials"""
         with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
