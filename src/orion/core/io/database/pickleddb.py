@@ -169,7 +169,7 @@ class PickledDB(AbstractDB):
         except (PicklingError, AttributeError):
             collection, doc = find_unpickable_doc(database._db)  # pylint: disable=protected-access
             log.error('Document in (collection: %s) is not pickable\ndoc: %s',
-                      collection, doc._data)                     # pylint: disable=protected-access
+                      collection, doc.to_dict())
 
             key, value = find_unpickable_field(doc)
             log.error('because (value %s) in (field: %s) is not pickable',
