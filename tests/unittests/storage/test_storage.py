@@ -195,7 +195,7 @@ class TestStorage:
         """Test reserve trial"""
         with OrionState(
                 experiments=[base_experiment],
-                trials=[generate_trials(status=['completed', 'reserved'])],
+                trials=generate_trials(status=['completed', 'reserved']),
                 database=storage) as cfg:
 
             storage = cfg.storage()
