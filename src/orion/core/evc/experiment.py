@@ -149,7 +149,7 @@ class ExperimentNode(TreeNode):
         return self._fetch_trials('fetch_trials_by_status', status=status)
 
     def _fetch_trials(self, fun_name, *args, **kwargs):
-        """Fetch trials recursively in the EVC tree using the fetch function `fun_name`
+        """Fetch trials recursively in the EVC tree using the fetch function `fun_name`.
 
         Parameters
         ----------
