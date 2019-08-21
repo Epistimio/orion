@@ -68,7 +68,7 @@ class OrionState:
     """Setup global variables and singleton for tests.
 
     It swaps the singleton with `None` at startup and restores them after the tests.
-    It also initialize PickleDB as the storage for testing.
+    It also initializes PickleDB as the storage for testing.
     We use PickledDB as our storage mock
 
     Parameters
