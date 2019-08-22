@@ -12,8 +12,8 @@ from orion.algo.space import (Categorical, Integer, Real, Space)
 from orion.core.evc import conflicts
 from orion.core.io.convert import (JSONConverter, YAMLConverter)
 from orion.core.io.space_builder import DimensionBuilder
+from orion.core.utils.tests import default_datetime, MockDatetime
 from orion.core.worker.experiment import Experiment
-
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, 'sample_config.yml')
@@ -129,15 +129,8 @@ def with_user_dendi(monkeypatch):
 @pytest.fixture()
 def random_dt(monkeypatch):
     """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    random_dt = datetime.datetime(1903, 4, 25, 0, 0, 0)
-
-    class MockDatetime(datetime.datetime):
-        @classmethod
-        def utcnow(cls):
-            return random_dt
-
     monkeypatch.setattr(datetime, 'datetime', MockDatetime)
-    return random_dt
+    return default_datetime()
 
 
 @pytest.fixture()
@@ -175,7 +168,7 @@ def refers_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_inst
 
     for experiment in experiments:
         query = {'_id': experiment['_id']}
-        print(experiment['refers'])
+
         root_id = experiment_dict[experiment['refers']['root_id']]['_id']
         if experiment['refers']['parent_id'] is not None:
             parent_id = experiment_dict[experiment['refers']['parent_id']]['_id']

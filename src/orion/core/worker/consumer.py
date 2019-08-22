@@ -27,6 +27,12 @@ def _handler(signum, frame):
     raise KeyboardInterrupt
 
 
+class ExecutionError(Exception):
+    """Error raised when Orion is unable to execute the user's script without errors."""
+
+    pass
+
+
 class Consumer(object):
     """Consume a trial by using it to initialize a black-box box to evaluate it.
 
@@ -91,14 +97,12 @@ class Consumer(object):
 
         except KeyboardInterrupt:
             log.debug("### Save %s as interrupted.", trial)
-            trial.status = 'interrupted'
-            self.experiment.update_trial(trial, status=trial.status)
-
+            self.experiment.set_trial_status(trial, status='interrupted')
             raise
-        except RuntimeError:
+
+        except ExecutionError:
             log.debug("### Save %s as broken.", trial)
-            trial.status = 'broken'
-            self.experiment.update_trial(trial, status=trial.status)
+            self.experiment.set_trial_status(trial, status='broken')
 
     def _consume(self, trial, workdirname):
         config_file = tempfile.NamedTemporaryFile(mode='w', prefix='trial_',
@@ -117,7 +121,7 @@ class Consumer(object):
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
-        self.pacemaker = TrialPacemaker(self.experiment, trial.id)
+        self.pacemaker = TrialPacemaker(trial)
         self.pacemaker.start()
         try:
             self.execute_process(results_file.name, cmd_args)
@@ -138,5 +142,5 @@ class Consumer(object):
 
         return_code = process.wait()
         if return_code != 0:
-            raise RuntimeError("Something went wrong. Check logs. Process "
-                               "returned with code {} !".format(return_code))
+            raise ExecutionError("Something went wrong. Check logs. Process "
+                                 "returned with code {} !".format(return_code))

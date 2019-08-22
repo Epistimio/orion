@@ -120,13 +120,6 @@ class TestTrial(object):
         assert trials[0].params[0] == Trial.Param(**exp_config[1][0]['params'][0])
         assert trials[0].params[1] != Trial.Param(**exp_config[1][0]['params'][0])
 
-    def test_str_trial(self, exp_config):
-        """Test representation of `Trial`."""
-        t = Trial(**exp_config[1][1])
-        assert str(t) == "Trial(experiment='supernaedo2', status='completed',\n"\
-                         "      params=/decoding_layer:lstm_with_attention\n"\
-                         "             /encoding_layer:gru)"
-
     def test_str_value(self, exp_config):
         """Test representation of `Trial.Value`."""
         t = Trial(**exp_config[1][1])

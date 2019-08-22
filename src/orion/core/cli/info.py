@@ -414,8 +414,8 @@ def format_stats(experiment):
 
 def get_trial_params(trial_id, experiment):
     """Get params from trial_id in given experiment"""
-    best_trial = experiment.fetch_trials({'_id': trial_id})
+    best_trial = experiment.get_trial(uid=trial_id)
     if not best_trial:
         return {}
 
-    return dict((param.name, param.value) for param in best_trial[0].params)
+    return dict((param.name, param.value) for param in best_trial.params)

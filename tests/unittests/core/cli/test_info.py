@@ -510,14 +510,14 @@ adapter:
 def test_get_trial_params_empty():
     """Test failing to fetch trials does not fail"""
     experiment = DummyExperiment()
-    experiment.fetch_trials = lambda query: []
+    experiment.get_trial = lambda trial=None, uid=None: None
     assert get_trial_params(None, experiment) == {}
 
 
 def test_get_trial_params(dummy_trial):
     """Test params are converted properly to a dict."""
     experiment = DummyExperiment()
-    experiment.fetch_trials = lambda query: [dummy_trial]
+    experiment.get_trial = lambda trial=None, uid=None: dummy_trial
     params = get_trial_params(None, experiment)
     assert params['a'] == 0.0
     assert params['b'] == 1
@@ -534,7 +534,7 @@ def test_format_stats(dummy_trial):
         start_time='yesterday',
         finish_time='now',
         duration='way too long')
-    experiment.fetch_trials = lambda query: [dummy_trial]
+    experiment.get_trial = lambda trial=None, uid=None: dummy_trial
     assert format_stats(experiment) == """\
 Stats
 =====
@@ -597,7 +597,7 @@ def test_format_info(algorithm_dict, dummy_trial):
         start_time='yesterday',
         finish_time='now',
         duration='way too long')
-    experiment.fetch_trials = lambda query: [dummy_trial]
+    experiment.get_trial = lambda trial=None, uid=None: dummy_trial
 
     assert format_info(experiment) == """\
 Identification
