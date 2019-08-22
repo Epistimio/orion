@@ -144,12 +144,12 @@ class TestStorage:
             experiments = storage.fetch_experiments({'name': name, 'metadata.user': user})
             assert len(experiments) == 1
 
-            experiments = storage.fetch_experiments({'name': '-1', 'metadata.user': user})
-            assert len(experiments) == 0
-
             experiment = experiments[0]
             assert experiment['name'] == name, 'name should match query'
             assert experiment['metadata']['user'] == user, 'user name should match query'
+
+            experiments = storage.fetch_experiments({'name': '-1', 'metadata.user': user})
+            assert len(experiments) == 0
 
     def test_register_trial(self, storage):
         """Test register trial"""
@@ -453,7 +453,8 @@ class TestStorage:
             storage_name = storage
             storage = cfg.storage()
 
-            trial1 = storage.fetch_trial_by_status(status='reserved')[0]
+            exp = cfg.get_experiment(name='default_name')
+            trial1 = storage.fetch_trial_by_status(exp, status='reserved')[0]
 
             storage.update_heartbeat(trial1)
 
@@ -465,7 +466,7 @@ class TestStorage:
             assert trial2.heartbeat < datetime.datetime.utcnow()
 
             if storage_name is None:
-                trial3 = storage.fetch_trial_by_status(status='completed')
+                trial3 = storage.fetch_trial_by_status(exp, status='completed')[0]
                 storage.update_heartbeat(trial3)
 
                 assert trial3.heartveat is None, \
