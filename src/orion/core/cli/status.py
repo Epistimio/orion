@@ -63,7 +63,7 @@ def main(args):
     for exp in filter(lambda e: e.refers.get('parent_id') is None, experiments):
         if args.get('collapse'):
             print_status(exp, all_trials=args.get('all'), collapse=True)
-        elif args.get('expand_versions') or _has_named_children(exp, experiments):
+        elif args.get('expand_versions') or _has_named_children(exp):
             print_status_recursively(exp, all_trials=args.get('all'))
         else:
             print_status(Experiment(exp.name), all_trials=args.get('all'))
@@ -87,8 +87,8 @@ def get_experiments(args):
             for exp in experiments]
 
 
-def _has_named_children(exp, experiments):
-     return any(node.name != exp.name for node in exp.node)
+def _has_named_children(exp):
+    return any(node.name != exp.name for node in exp.node)
 
 
 def print_status_recursively(exp, depth=0, **kwargs):
