@@ -162,12 +162,12 @@ def test_insert_with_version(create_db_instance, monkeypatch, script_path):
     exp = exp[0]
     assert '_id' in exp
 
-    trials = list(get_storage().fetch_trials({"experiment": exp['_id']}))
+    trials = list(get_storage().fetch_trials(uid=exp['_id']))
     assert len(trials) == 0
 
     orion.core.cli.main(["insert", "-n", "experiment", "--version", "1",
                          "-c", "./orion_config_random.yaml", script_path, "-x=1"])
 
-    trials = list(get_storage().fetch_trials({"experiment": exp['_id']}))
+    trials = list(get_storage().fetch_trials(uid=exp['_id']))
 
     assert len(trials) == 1
