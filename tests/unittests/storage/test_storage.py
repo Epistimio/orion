@@ -468,5 +468,5 @@ class TestStorage:
                 trial3 = storage.fetch_trial_by_status(status='completed')
                 storage.update_heartbeat(trial3)
 
-                assert trial3.heartveat is None, \
+                assert trial3.heartbeat is None, \
                     'Legacy does not update trials with a status different from reserved'
