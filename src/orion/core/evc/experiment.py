@@ -16,7 +16,6 @@ Helper functions are provided to fetch trials keeping the tree structure. Those 
 analyzing an EVC tree.
 
 """
-import functools
 import logging
 
 from orion.core.evc.tree import TreeNode
@@ -129,57 +128,60 @@ class ExperimentNode(TreeNode):
 
         return self.name
 
-    def fetch_trials(self, query, selection=None):
-        """Fetch trials recursively in the EVC tree
+    def fetch_lost_trials(self):
+        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
+        return self._fetch_trials('fetch_lost_trials')
 
-        .. seealso::
+    def fetch_trials(self):
+        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
+        return self._fetch_trials('fetch_trials')
 
-            :meth:`orion.core.worker.Experiment.fetch_trials` for more information about the
-            arguments.
+    def fetch_pending_trials(self):
+        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
+        return self._fetch_trials('fetch_pending_trials')
+
+    def fetch_noncompleted_trials(self):
+        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
+        return self._fetch_trials('fetch_noncompleted_trials')
+
+    def fetch_trials_by_status(self, status):
+        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
+        return self._fetch_trials('fetch_trials_by_status', status=status)
+
+    def _fetch_trials(self, fun_name, *args, **kwargs):
+        """Fetch trials recursively in the EVC tree using the fetch function `fun_name`.
+
+        Parameters
+        ----------
+        fun_name: callable
+            Function name to call to fetch trials. The function must be an attribute of
+            :class:`orion.core.worker.experiment:Experiment`
+
+        *args:
+            Positional arguments to pass to `fun_name`.
+
+        **kwargs
+            Keyword arguments to pass to `fun_name.
 
         """
-        trials_tree = fetch_trials_tree(self, query, selection)
-        adapt_trials(trials_tree)
+        def retrieve_trials(node, parent_or_children):
+            """Retrieve the trials of a node/experiment."""
+            fun = getattr(node.item, fun_name)
+            # with_evc_tree needs to be False here or we will have an infinite loop
+            trials = fun(*args, with_evc_tree=False, **kwargs)
+            return dict(trials=trials, experiment=node.item), parent_or_children
 
-        return sum([node.item['trials'] for node in trials_tree.root], [])
+        # get the trials of the parents
+        parent_trials = None
+        if self.parent is not None:
+            parent_trials = self.parent.map(retrieve_trials, self.parent.parent)
 
+        # get the trials of the children
+        children_trials = self.map(retrieve_trials, self.children)
+        children_trials.set_parent(parent_trials)
 
-def _fetch_node_trials(experiment_node, parent_or_children, query, selection=None):
-    """Fetch trials from the current node and connect with parent or children
-
-    .. note::
-
-        To call with node.map to connect with parents or children
-
-    """
-    experiment_trials = experiment_node.item.fetch_trials(query, selection)
-
-    rval = {'trials': experiment_trials, 'experiment': experiment_node.item}
-
-    return rval, parent_or_children
-
-
-def fetch_trials_tree(experiment_node, query, selection=None):
-    """Fetch trials recursively from an experiment node
-
-    .. seealso::
-
-        :meth:`orion.core.evc.experiment.ExperimentNode.fetch_trials`
-
-    """
-    if experiment_node.parent is not None:
-        parent_trials_tree = experiment_node.parent.map(
-            functools.partial(_fetch_node_trials, query=query, selection=selection),
-            experiment_node.parent.parent)
-    else:
-        parent_trials_tree = None
-
-    children_trials_tree = experiment_node.map(
-        functools.partial(_fetch_node_trials, query=query, selection=selection),
-        experiment_node.children)
-    children_trials_tree.set_parent(parent_trials_tree)
-
-    return children_trials_tree
+        adapt_trials(children_trials)
+        return sum([node.item['trials'] for node in children_trials.root], [])
 
 
 def _adapt_parent_trials(node, parent_trials_node):

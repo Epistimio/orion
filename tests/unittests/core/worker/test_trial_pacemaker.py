@@ -44,12 +44,12 @@ def trial(exp):
 @pytest.mark.usefixtures("create_db_instance")
 def test_trial_update_heartbeat(exp, trial):
     """Test that the heartbeat of a trial has been updated."""
-    trial_monitor = TrialPacemaker(exp, trial.id, wait_time=1)
+    trial_monitor = TrialPacemaker(trial, wait_time=1)
 
     trial_monitor.start()
     time.sleep(2)
 
-    trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
+    trials = exp.fetch_trials_by_status('reserved')
 
     assert trial.heartbeat != trials[0].heartbeat
 
@@ -57,7 +57,7 @@ def test_trial_update_heartbeat(exp, trial):
 
     time.sleep(2)
 
-    trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
+    trials = exp.fetch_trials_by_status(status='reserved')
 
     assert heartbeat != trials[0].heartbeat
     trial_monitor.stop()
@@ -66,16 +66,16 @@ def test_trial_update_heartbeat(exp, trial):
 @pytest.mark.usefixtures("create_db_instance")
 def test_trial_heartbeat_not_updated(exp, trial):
     """Test that the heartbeat of a trial is not updated when trial is not longer reserved."""
-    trial_monitor = TrialPacemaker(exp, trial.id, wait_time=1)
+    trial_monitor = TrialPacemaker(trial, wait_time=1)
 
     trial_monitor.start()
     time.sleep(2)
 
-    trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
+    trials = exp.fetch_trials_by_status('reserved')
 
     assert trial.heartbeat != trials[0].heartbeat
 
-    get_storage().update_trial(trial, status='interrupted')
+    get_storage().set_trial_status(trial, status='interrupted')
 
     time.sleep(2)
 
@@ -87,19 +87,19 @@ def test_trial_heartbeat_not_updated(exp, trial):
 @pytest.mark.usefixtures("create_db_instance")
 def test_trial_heartbeat_not_updated_inbetween(exp, trial):
     """Test that the heartbeat of a trial is not updated before wait time."""
-    trial_monitor = TrialPacemaker(exp, trial.id, wait_time=5)
+    trial_monitor = TrialPacemaker(trial, wait_time=5)
 
     trial_monitor.start()
     time.sleep(1)
 
-    trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
+    trials = exp.fetch_trials_by_status('reserved')
     assert trial.heartbeat.replace(microsecond=0) == trials[0].heartbeat.replace(microsecond=0)
 
     heartbeat = trials[0].heartbeat
 
     time.sleep(6)
 
-    trials = exp.fetch_trials({'_id': trial.id, 'status': 'reserved'})
+    trials = exp.fetch_trials_by_status(status='reserved')
 
     assert heartbeat != trials[0].heartbeat
     trial_monitor.stop()
