@@ -37,7 +37,7 @@ def produce_lies(producer):
 
 def update_algorithm(producer):
     """Wrap update of algorithm outside of `Producer.update`"""
-    return producer._update_algorithm(producer.experiment.fetch_completed_trials())
+    return producer._update_algorithm(producer.experiment.fetch_trials_by_status('completed'))
 
 
 def update_naive_algorithm(producer):
@@ -69,7 +69,7 @@ def producer(hacked_exp, random_dt, exp_config, categorical_values):
 
 def test_algo_observe_completed(producer):
     """Test that algo only observes completed trials"""
-    assert len(producer.experiment.fetch_trials({})) > 3
+    assert len(producer.experiment.fetch_trials()) > 3
     producer.update()
     # Algorithm must have received completed points and their results
     obs_points = producer.algorithm.algorithm._points
@@ -98,7 +98,7 @@ def test_algo_observe_completed(producer):
 
 def test_strategist_observe_completed(producer):
     """Test that strategist only observes completed trials"""
-    assert len(producer.experiment.fetch_trials({})) > 3
+    assert len(producer.experiment.fetch_trials()) > 3
     producer.update()
     # Algorithm must have received completed points and their results
     obs_points = producer.strategy._observed_points
