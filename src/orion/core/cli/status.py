@@ -17,7 +17,6 @@ import tabulate
 from orion.core.cli import base as cli
 from orion.core.io.evc_builder import EVCBuilder
 from orion.core.io.experiment_builder import ExperimentBuilder
-from orion.core.worker.experiment import Experiment
 from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
