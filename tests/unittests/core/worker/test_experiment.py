@@ -11,7 +11,7 @@ import tempfile
 import pytest
 
 from orion.algo.base import BaseAlgorithm
-from orion.core import config
+import orion.core
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.tests import OrionState
 import orion.core.worker.experiment
@@ -688,7 +688,7 @@ class TestReserveTrial(object):
 
         assert len(hacked_exp.fetch_trials(exp_query)) == 1
 
-        config.worker.heartbeat = 150
+        orion.core.config.worker.heartbeat = 150
 
         hacked_exp.fix_lost_trials()
 
@@ -835,7 +835,7 @@ def test_configurable_broken_property(hacked_exp):
 
     assert hacked_exp.is_broken
 
-    config.worker.max_broken = 4
+    orion.core.config.worker.max_broken = 4
 
     assert not hacked_exp.is_broken
 
