@@ -20,22 +20,22 @@ on and so forth. We provide an example output to illustrate this:
 
 .. code-block:: bash
 
-    root
-    ====
+    root-v1
+    =======
     status       quantity    min example_objective
     ---------  ----------  -----------------------
     completed           5                  4534.95
 
 
-      child_1
-      =======
+      child_1-v1
+      ==========
       status       quantity    min example_objective
       ---------  ----------  -----------------------
       completed           5                  4547.28
 
 
-    other_root
-    ==========
+    other_root-v1
+    =============
     status       quantity    min example_objective
     ---------  ----------  -----------------------
     completed           5                  4543.73
@@ -53,8 +53,8 @@ Here is a sample output using the same experiments and trials as before:
 
 .. code-block:: bash
 
-    root
-    ====
+    root-v1
+    =======
     id                                status       min example_objective
     --------------------------------  ---------  -----------------------
     bc222aa1705b3fe3a266fd601598ac41  completed                  4555.13
@@ -64,8 +64,8 @@ Here is a sample output using the same experiments and trials as before:
     6a82a8a55d2241d989978cf3a7ebbba0  completed                  4534.95
 
 
-      child_1
-      =======
+      child_1-v1
+      ==========
       id                                status       min example_objective
       --------------------------------  ---------  -----------------------
       a3395b7192eee3ca586e93ccf4f12f59  completed                  4600.98
@@ -75,8 +75,8 @@ Here is a sample output using the same experiments and trials as before:
       5f9743e88a29d0ee87b5c71246dbd2fb  completed                  4547.28
 
 
-    other_root
-    ==========
+    other_root-v1
+    =============
     id                                status       min example_objective
     --------------------------------  ---------  -----------------------
     aaa16658770abd3516a027918eb91be5  completed                  4761.33
@@ -100,15 +100,15 @@ give you an example:
 
     orion status --collapse
 
-    root
-    ====
+    root-v1
+    =======
     status       quantity    min example_objective
     ---------  ----------  -----------------------
     completed          10                  4534.95
 
 
-    other_root
-    ==========
+    other_root-v1
+    =============
     status       quantity    min example_objective
     ---------  ----------  -----------------------
     completed           5                  4543.73
@@ -127,15 +127,15 @@ given:
 
 .. code-block:: bash
 
-    root
-    ====
+    root-v1
+    =======
     status       quantity    min example_objective
     ---------  ----------  -----------------------
     completed          10                  4534.95
 
 
-      child_1
-      =======
+      child_1-v1
+      ==========
       status       quantity    min example_objective
       ---------  ----------  -----------------------
       completed          10                  4547.28
@@ -146,8 +146,8 @@ given:
 
 .. code-block:: bash
 
-    root
-    ====
+    root-v1
+    =======
     id                                status       min example_objective
     --------------------------------  ---------  -----------------------
     bc222aa1705b3fe3a266fd601598ac41  completed                  4555.13
@@ -157,8 +157,8 @@ given:
     6a82a8a55d2241d989978cf3a7ebbba0  completed                  4534.95
 
 
-      child_1
-      =======
+      child_1-v1
+      ==========
       id                                status       min example_objective
       --------------------------------  ---------  -----------------------
       a3395b7192eee3ca586e93ccf4f12f59  completed                  4600.98
@@ -173,8 +173,79 @@ given:
 
 .. code-block:: bash
 
-    root
-    ====
+    root-v1
+    =======
     status       quantity    min example_objective
     ---------  ----------  -----------------------
     completed          10                  4534.95
+
+
+``status`` and the experiment tree
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The `status` command handles the experiment tree in a particular fashion. Since most users will
+simply use the incrementing version mechanism instead of constantly renaming their experiments, the
+experiment tree can grow large in depth but not in breadth. This leads to a very hard to read output
+if the command was to print such a tree in the same way as presented above. Instead, if a root
+experiment does not have any children named differently, i.e. its tree only contains different
+version of itself, `status` will only print the latest version. However, if any of its children
+is named differently, than the whole tree will be printed just like above.
+
+To illustrate the first case, suppose we have an experiment named `test` with three different
+versions: version `1`, `2` and `3`. Then running status as usual will only output version `3`.
+
+.. code-block:: console
+
+    orion status --name test
+
+.. code-block:: bash
+
+    test-v3
+    =======
+    empty
+
+The ``--version`` argument
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+The `--version` argument allows you to specify a version to print instead of getting the latest one.
+Suppose we have the same setup as above with three experiments named `test` but with different
+versions. Then running the following command will output the second version instead of the latest.
+
+.. code-block:: console
+
+    orion status --name test --version 2
+
+.. code-block:: bash
+
+    test-v2
+    =======
+    empty
+
+It should be noted that using `--version` with any of `--collapse` or `--expand-versions` will lead
+to a `RuntimeError`. 
+
+The `--expand-versions` argument
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+As specified above, if there are no children of a root experiment with a different name then the
+experiment tree will not be printed in its entirety. The `--expand-versions` allows you to get the
+full output of the experiment tree, regardless if it only contains different versions. Once again,
+suppose we have the same setup with experiment `test`, then running the following command will print
+the experiment tree.
+
+.. code-block:: console
+
+    orion status --name test --expand-versions
+
+.. code-block:: bash
+
+    test-v1
+    =======
+    empty
+
+
+      test-v2
+      =======
+      empty
+
+
+        test-v3
+        =======
+        empty
