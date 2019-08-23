@@ -591,14 +591,14 @@ class TestReserveTrial(object):
     def test_reserve_success(self, exp_config_file, random_dt):
         """Successfully find new trials in db and reserve the first one"""
         with OrionState(from_yaml=exp_config_file) as cfg:
-            exp = cfg.get_experiment('supernaedo2', user='dendi')
+            exp = cfg.get_experiment('supernaedo2-dendi')
             trial = exp.reserve_trial()
 
-            cfg.trials[0]['status'] = 'reserved'
-            cfg.trials[0]['start_time'] = random_dt
-            cfg.trials[0]['heartbeat'] = random_dt
+            cfg.trials[1]['status'] = 'reserved'
+            cfg.trials[1]['start_time'] = random_dt
+            cfg.trials[1]['heartbeat'] = random_dt
 
-            assert trial.to_dict() == cfg.trials[0]
+            assert trial.to_dict() == cfg.trials[1]
 
     def test_reserve_when_exhausted(self, exp_config, hacked_exp):
         """Return None once all the trials have been allocated"""
