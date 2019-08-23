@@ -59,13 +59,19 @@ def main(args):
         print_status(experiments[0], all_trials=args.get('all'), collapse=args.get('collapse'))
         return
 
+    if args.get('version'):
+        if args.get('collapse') or args.get('expand_versions'):
+            raise RuntimeError("Cannot fetch specific version of experiments with --collapse "
+                               "or --expand-versions.")
+
     for exp in filter(lambda e: e.refers.get('parent_id') is None, experiments):
         if args.get('collapse'):
             print_status(exp, all_trials=args.get('all'), collapse=True)
         elif args.get('expand_versions') or _has_named_children(exp):
             print_status_recursively(exp, all_trials=args.get('all'))
         else:
-            print_status(EVCBuilder().build_from({'name': exp.name}), all_trials=args.get('all'))
+            cfg = {'name': exp.name, 'version': args.get('version', None)}
+            print_status(EVCBuilder().build_from(cfg), all_trials=args.get('all'))
 
 
 def get_experiments(args):
