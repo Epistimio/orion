@@ -338,9 +338,6 @@ class TestASHA():
         """Test that a new point is sampled."""
         asha.brackets = [bracket]
         bracket.asha = asha
-        bracket.rungs[0] = rung_0
-        bracket.rungs[1] = rung_1
-        bracket.rungs[2] = rung_2
 
         def sample(num=1, seed=None):
             return [('fidelity', 0.5)]
@@ -356,13 +353,11 @@ class TestASHA():
         asha.brackets = [bracket]
         bracket.asha = asha
 
-        # Fill rungs to force sampling
-        bracket.rungs[0] = rung_0
-        bracket.rungs[1] = rung_1
-        bracket.rungs[2] = rung_2
-
         duplicate_point = ('fidelity', 0.0)
         new_point = ('fidelity', 0.5)
+
+        duplicate_id = hashlib.md5(str([duplicate_point]).encode('utf-8')).hexdigest()
+        bracket.rungs[0] = (1, {duplicate_id: (0.0, duplicate_point)})
 
         asha.trial_info[asha.get_id(duplicate_point)] = bracket
 
@@ -380,11 +375,6 @@ class TestASHA():
         """Test that sampling inf collisions raises runtime error."""
         asha.brackets = [bracket]
         bracket.asha = asha
-
-        # Fill rungs to force sampling
-        bracket.rungs[0] = rung_0
-        bracket.rungs[1] = rung_1
-        bracket.rungs[2] = rung_2
 
         zhe_point = ('fidelity', 0.0)
         asha.trial_info[asha.get_id(zhe_point)] = bracket
@@ -408,6 +398,16 @@ class TestASHA():
         points = asha.suggest()
 
         assert points == [(3, 0.0)]
+
+    def test_suggest_opt_out(self, asha, bracket, rung_0, rung_1, rung_2):
+        """Test that ASHA opts out when last rung is full."""
+        asha.brackets = [bracket]
+        bracket.asha = asha
+        bracket.rungs[2] = rung_2
+
+        points = asha.suggest()
+
+        assert points is None
 
     def test_seed_rng(self, asha):
         """Test that algo is seeded properly"""
