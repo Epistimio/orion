@@ -35,7 +35,7 @@ __license__ = 'BSD-3-Clause'
 __author__ = u'Epistímio'
 __author_short__ = u'Epistímio'
 __author_email__ = 'xavier.bouthillier@umontreal.ca'
-__copyright__ = u'2017-2018, Epistímio'
+__copyright__ = u'2017-2019, Epistímio'
 __url__ = 'https://github.com/epistimio/orion'
 
 DIRS = AppDirs(__name__, __author_short__)
@@ -89,6 +89,8 @@ def define_worker_config(config):
         'heartbeat', option_type=int, default=120)
     worker_config.add_option(
         'max_broken', option_type=int, default=3)
+    worker_config.add_option(
+        'max_idle_time', option_type=int, default=60)
 
     config.worker = worker_config
 
