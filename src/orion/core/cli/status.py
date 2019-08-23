@@ -19,7 +19,6 @@ from orion.core.io.evc_builder import EVCBuilder
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.storage.base import get_storage
 
-
 log = logging.getLogger(__name__)
 
 
@@ -38,6 +37,11 @@ def add_subparser(parser):
         help=("Aggregate together results of all child experiments. Otherwise they are all "
               "printed hierarchically"))
 
+    status_parser.add_argument(
+        '-e', '--expand-versions', action='store_true',
+        help=("Show all the version of every experiments instead of only the latest one")
+        )
+
     status_parser.set_defaults(func=main)
 
     return status_parser
@@ -55,11 +59,19 @@ def main(args):
         print_status(experiments[0], all_trials=args.get('all'), collapse=args.get('collapse'))
         return
 
+    if args.get('version'):
+        if args.get('collapse') or args.get('expand_versions'):
+            raise RuntimeError("Cannot fetch specific version of experiments with --collapse "
+                               "or --expand-versions.")
+
     for exp in filter(lambda e: e.refers.get('parent_id') is None, experiments):
         if args.get('collapse'):
             print_status(exp, all_trials=args.get('all'), collapse=True)
-        else:
+        elif args.get('expand_versions') or _has_named_children(exp):
             print_status_recursively(exp, all_trials=args.get('all'))
+        else:
+            cfg = {'name': exp.name, 'version': args.get('version', None)}
+            print_status(EVCBuilder().build_from(cfg), all_trials=args.get('all'))
 
 
 def get_experiments(args):
@@ -71,12 +83,17 @@ def get_experiments(args):
         Commandline arguments.
 
     """
-    projection = {'name': 1}
+    projection = {'name': 1, 'version': 1}
 
     query = {'name': args['name']} if args.get('name') else {}
     experiments = get_storage().fetch_experiments(query, projection)
 
-    return [EVCBuilder().build_view_from({'name': exp['name']}) for exp in experiments]
+    return [EVCBuilder().build_view_from({'name': exp['name'], 'version': exp['version']})
+            for exp in experiments]
+
+
+def _has_named_children(exp):
+    return any(node.name != exp.name for node in exp.node)
 
 
 def print_status_recursively(exp, depth=0, **kwargs):
@@ -111,8 +128,9 @@ def print_status(exp, offset=0, all_trials=False, collapse=False):
     """
     trials = exp.fetch_trials(with_evc_tree=collapse)
 
-    print(" " * offset, exp.name, sep="")
-    print(" " * offset, "=" * len(exp.name), sep="")
+    exp_title = exp.node.tree_name
+    print(" " * offset, exp_title, sep="")
+    print(" " * offset, "=" * len(exp_title), sep="")
 
     if all_trials:
         print_all_trials(trials, offset=offset)

@@ -325,3 +325,12 @@ def three_experiments_branch_same_name(two_experiments_same_name, db_instance):
                          'test_single_exp_child', './black_box.py', '--x~uniform(0,1)',
                          '--y~normal(0,1)', '--z~+normal(0,1)'])
     ensure_deterministic_id('test_single_exp_child', db_instance)
+
+
+@pytest.fixture
+def three_experiments_same_name(two_experiments_same_name, db_instance):
+    """Create three experiments with the same name but different versions."""
+    orion.core.cli.main(['init_only', '-n', 'test_single_exp',
+                         './black_box.py', '--x~uniform(0,1)', '--y~normal(0,1)',
+                         '--z~+normal(0,1)'])
+    ensure_deterministic_id('test_single_exp', db_instance, version=3)
