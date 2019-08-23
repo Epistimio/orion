@@ -349,8 +349,9 @@ class TestStorage:
         """Successfully find new trials in db and reserve one at 'random'."""
         def check_status_change(new_status):
             with OrionState(from_yaml=exp_config_file, database=storage) as cfg:
-                trial = cfg.get_trial(0)
+                trial = cfg.get_trial(1)
                 assert trial is not None, 'Was not able to retrieve trial for test'
+                assert trial.status != new_status
 
                 with pytest.raises(FailedUpdate):
                     trial.status = new_status
