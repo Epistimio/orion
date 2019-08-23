@@ -10,6 +10,12 @@ Here is an example of all the sections provided by the command.
 
 .. code-block:: bash
 
+   Identification
+   ==============
+   name: orion-tutorial
+   version: 1
+   user: <username>
+
    Commandline
    ===========
    --lr~loguniform(1e-5, 1.0)
