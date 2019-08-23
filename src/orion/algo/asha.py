@@ -124,6 +124,10 @@ class ASHA(BaseAlgorithm):
                 logger.debug('Promoting')
                 return [candidate]
 
+        if all(bracket.is_done for bracket in self.brackets):
+            logger.debug('All brackets are filled.')
+            return None
+
         for _attempt in range(100):
             point = list(self.space.sample(1, seed=tuple(self.rng.randint(0, 1000000, size=3)))[0])
             if self.get_id(point) not in self.trial_info:
@@ -136,6 +140,8 @@ class ASHA(BaseAlgorithm):
 
         sizes = numpy.array([len(b.rungs) for b in self.brackets])
         probs = numpy.e**(sizes - sizes.max())
+        probs = numpy.array([prob * int(not bracket.is_done)
+                             for prob, bracket in zip(probs, self.brackets)])
         normalized = probs / probs.sum()
         idx = self.rng.choice(len(self.brackets), p=normalized)
 
@@ -256,13 +262,19 @@ class Bracket():
 
     @property
     def is_done(self):
-        """Return True, if reached the bracket reached its maximum resources."""
-        return len(self.rungs[-1][1])
+        """Return True, if the penultimate rung is filled."""
+        return self.is_filled(len(self.rungs) - 2) or len(self.rungs[-1][1])
+
+    def is_filled(self, rung_id):
+        """Return True, if the rung[rung_id] is filled."""
+        n_rungs = len(self.rungs)
+        n_trials = len(self.rungs[rung_id][1])
+        return n_trials >= (n_rungs - rung_id - 1) ** self.reduction_factor
 
     def update_rungs(self):
         """Promote the first candidate that is found and return it
 
-        The rungs are iterated over is reversed order, so that high rungs
+        The rungs are iterated over in reversed order, so that high rungs
         are prioritised for promotions. When a candidate is promoted, the loop is broken and
         the method returns the promoted point.
 
@@ -273,6 +285,9 @@ class Bracket():
             Lookup for promotion in rung l + 1 contains trials of any status.
 
         """
+        if self.is_done and self.rungs[-1][1]:
+            return None
+
         for rung_id in range(len(self.rungs) - 2, -1, -1):
             candidate = self.get_candidate(rung_id)
             if candidate:
