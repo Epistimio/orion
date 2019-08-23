@@ -69,7 +69,7 @@ class TestReadOnlyDatabase(object):
         database = create_db_instance
         readonly_database = ReadOnlyDB(database)
 
-        args = {"collection_name": "trials", "query": {"experiment": "supernaedo2"}}
+        args = {"collection_name": "trials", "query": {"experiment": "supernaedo2-dendi"}}
         readonly_result = readonly_database.read(**args)
         result = database.read(**args)
 
