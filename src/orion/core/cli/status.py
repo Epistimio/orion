@@ -66,7 +66,7 @@ def main(args):
         elif args.get('expand_versions') or _has_named_children(exp):
             print_status_recursively(exp, all_trials=args.get('all'))
         else:
-            print_status(Experiment(exp.name), all_trials=args.get('all'))
+            print_status(EVCBuilder().build_from({'name': exp.name}), all_trials=args.get('all'))
 
 
 def get_experiments(args):
