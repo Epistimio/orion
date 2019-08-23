@@ -21,11 +21,11 @@ experiments are easily identifiable. Here is a sample output to serve as an exam
 
 .. code-block:: console
 
-         ┌child_2
-     root┤
-         └child_1┐
-                 └grand_child_1
-     other_root
+            ┌child_2-v1
+     root-v1┤
+            └child_1-v1┐
+                       └grand_child_1-v1
+     other_root-v1
 
 Here, you can see we have five experiments. Two of them are roots, which mean they do not have any
 parents. One of them, ``other_root``, does not have any children and so, it does not have any
@@ -48,10 +48,10 @@ Output
 
 .. code-block:: console
 
-         ┌child_2
-     root┤
-         └child_1┐
-                 └grand_child_1
+            ┌child_2-v1
+     root-v1┤
+            └child_1-v1┐
+                       └grand_child_1-v1
 
 Here, the ``other_root`` experiment is not showned because it is not inside the ``root`` experiment
 tree.
@@ -64,8 +64,8 @@ Output
 
 .. code-block:: console
 
-     child_1┐
-            └grand_child_1
+     child_1-v1┐
+               └grand_child_1-v1
 
 Here, the ``root`` and ``child_2`` experiments are not present because they are not children of
 ``child_1``.
