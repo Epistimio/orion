@@ -86,7 +86,7 @@ latest version, so version `2`.
 
 .. code-block:: console
 
-   orion info --name orion-tutorial 
+   orion info --name orion-tutorial
 
 Whereas, running the next command will give us the first version instead:
 

@@ -220,7 +220,7 @@ versions. Then running the following command will output the second version inst
     empty
 
 It should be noted that using `--version` with any of `--collapse` or `--expand-versions` will lead
-to a `RuntimeError`. 
+to a `RuntimeError`.
 
 The `--expand-versions` argument
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
