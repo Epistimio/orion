@@ -123,8 +123,8 @@ class TestTrial(object):
     def test_str_trial(self, exp_config):
         """Test representation of `Trial`."""
         t = Trial(**exp_config[1][1])
-        assert str(t) == "Trial(experiment='supernaedo2-dendi', status='completed',\n"\
-                         "      params=/decoding_layer:lstm_with_attention,/encoding_layer:gru)"
+        assert str(t) == "Trial(experiment='supernaedo2-dendi', status='completed', "\
+                         "params=/decoding_layer:lstm_with_attention,/encoding_layer:gru)"
 
     def test_str_value(self, exp_config):
         """Test representation of `Trial.Value`."""
