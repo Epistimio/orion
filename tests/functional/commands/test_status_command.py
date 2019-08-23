@@ -3,6 +3,8 @@
 """Perform a functional test of the status command."""
 import os
 
+import pytest
+
 import orion.core.cli
 
 
@@ -1013,3 +1015,33 @@ empty
 """
 
     assert captured == expected
+
+
+def test_experiment_specific_version(clean_db, three_experiments_same_name, capsys):
+    """Test status using `--version`."""
+    orion.core.cli.main(['status', '--version', '2'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp-v2
+==================
+empty
+
+
+"""
+
+    assert captured == expected
+
+
+def test_experiment_cant_use_version(clean_db, three_experiments_same_name):
+    """Test status using `--version`."""
+    with pytest.raises(RuntimeError) as ex:
+        orion.core.cli.main(['status', '--version', '2', '--collapse'])
+
+    assert 'collapse' in str(ex.value)
+
+    with pytest.raises(RuntimeError) as ex:
+        orion.core.cli.main(['status', '--version', '2', '--expand-versions'])
+
+    assert 'expand-versions' in str(ex.value)
