@@ -367,7 +367,7 @@ class OrionCmdlineParser():
         configuration = self._build_configuration(trial)
 
         if config_path is not None:
-            configuration['config'] = config_path
+            configuration[self.config_prefix] = config_path
 
         templated = self.parser.format(configuration)
 
