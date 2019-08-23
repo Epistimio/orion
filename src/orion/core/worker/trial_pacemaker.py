@@ -7,8 +7,11 @@
    :synopsis: Monitor trials and update their heartbeat
 
 """
-import datetime
 import threading
+
+from orion.storage.base import get_storage
+
+STOPPED_STATUS = {'completed', 'interrupted', 'suspended'}
 
 
 class TrialPacemaker(threading.Thread):
@@ -22,12 +25,12 @@ class TrialPacemaker(threading.Thread):
 
     """
 
-    def __init__(self, exp, trial_id, wait_time=60):
+    def __init__(self, trial, wait_time=60):
         threading.Thread.__init__(self)
         self.stopped = threading.Event()
-        self.exp = exp
-        self.trial_id = trial_id
+        self.trial = trial
         self.wait_time = wait_time
+        self.storage = get_storage()
 
     def stop(self):
         """Stop monitoring."""
@@ -40,12 +43,10 @@ class TrialPacemaker(threading.Thread):
             self._monitor_trial()
 
     def _monitor_trial(self):
-        query = {'_id': self.trial_id, 'status': 'reserved'}
-        trials = self.exp.fetch_trials(query)
+        trial = self.storage.get_trial(self.trial)
 
-        if trials:
-            update = datetime.datetime.utcnow()
-            if not self.exp.update_trial(trials[0], where=query, heartbeat=update):
-                self.stopped.set()
-        else:
+        if trial.status in STOPPED_STATUS:
             self.stopped.set()
+        else:
+            if not self.storage.update_heartbeat(trial):
+                self.stopped.set()

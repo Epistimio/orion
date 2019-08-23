@@ -12,7 +12,9 @@ conda update -q conda
 conda info -a
 conda install conda-build anaconda-client
 
-conda build conda
+conda build conda --python 3.5
+conda build conda --python 3.6
+conda build conda --python 3.7
 
 if [[ -n "${TRAVIS_TAG}" ]]
 then

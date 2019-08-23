@@ -120,17 +120,10 @@ class TestTrial(object):
         assert trials[0].params[0] == Trial.Param(**exp_config[1][0]['params'][0])
         assert trials[0].params[1] != Trial.Param(**exp_config[1][0]['params'][0])
 
-    def test_str_trial(self, exp_config):
-        """Test representation of `Trial`."""
-        t = Trial(**exp_config[1][1])
-        assert str(t) == "Trial(experiment='supernaedo2', status='completed',\n"\
-                         "      params=/encoding_layer:gru\n"\
-                         "             /decoding_layer:lstm_with_attention)"
-
     def test_str_value(self, exp_config):
         """Test representation of `Trial.Value`."""
         t = Trial(**exp_config[1][1])
-        assert str(t.params[0]) == "Param(name='/encoding_layer', "\
+        assert str(t.params[1]) == "Param(name='/encoding_layer', "\
                                    "type='categorical', value='gru')"
 
     def test_invalid_result(self, exp_config):
@@ -212,8 +205,8 @@ class TestTrial(object):
     def test_params_repr_property(self, exp_config):
         """Check property `Trial.params_repr`."""
         t = Trial(**exp_config[1][1])
-        assert t.params_repr() == "/encoding_layer:gru,/decoding_layer:lstm_with_attention"
-        assert t.params_repr(sep='\n') == "/encoding_layer:gru\n/decoding_layer:lstm_with_attention"
+        assert t.params_repr() == "/decoding_layer:lstm_with_attention,/encoding_layer:gru"
+        assert t.params_repr(sep='\n') == "/decoding_layer:lstm_with_attention\n/encoding_layer:gru"
 
         t = Trial()
         assert t.params_repr() == ""
@@ -221,7 +214,7 @@ class TestTrial(object):
     def test_hash_name_property(self, exp_config):
         """Check property `Trial.hash_name`."""
         t = Trial(**exp_config[1][1])
-        assert t.hash_name == "af737340845fb882e625d119968fd922"
+        assert t.hash_name == "e4422cafdb943b148e47ab8b57dcf3db"
 
         t = Trial()
         with pytest.raises(ValueError) as exc:
@@ -231,7 +224,7 @@ class TestTrial(object):
     def test_full_name_property(self, exp_config):
         """Check property `Trial.full_name`."""
         t = Trial(**exp_config[1][1])
-        assert t.full_name == ".encoding_layer:gru-.decoding_layer:lstm_with_attention"
+        assert t.full_name == ".decoding_layer:lstm_with_attention-.encoding_layer:gru"
 
         t = Trial()
         with pytest.raises(ValueError) as exc:

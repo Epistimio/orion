@@ -32,7 +32,6 @@ unless noted otherwise!
 
 """
 
-from collections import OrderedDict
 import logging
 import numbers
 
@@ -713,11 +712,11 @@ class Fidelity(Dimension):
         return True
 
 
-class Space(OrderedDict):
+class Space(dict):
     """Represents the search space.
 
-    It is an ordered dictionary which :attr:`contains` `Dimension` objects.
-    That class attribute is used to perform checks on :meth:`register`.
+    It is a sorted dictionary which contains `Dimension` objects.
+    The dimensions are sorted based on their names.
     """
 
     contains = Dimension
@@ -824,6 +823,22 @@ class Space(OrderedDict):
         """Represent as a string the space and the dimensions it contains."""
         dims = list(self.values())
         return "Space([{}])".format(',\n       '.join(map(str, dims)))
+
+    def items(self):
+        """Return items sorted according to keys"""
+        return [(k, self[k]) for k in self.keys()]
+
+    def values(self):
+        """Return values sorted according to keys"""
+        return [self[k] for k in self.keys()]
+
+    def keys(self):
+        """Return sorted keys"""
+        return list(iter(self))
+
+    def __iter__(self):
+        """Return sorted keys"""
+        return iter(sorted(super(Space, self).keys()))
 
 
 def pack_point(point, space):

@@ -9,6 +9,7 @@ import pytest
 import yaml
 
 from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
+import orion.core
 from orion.core.io import resolve_config
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
@@ -111,6 +112,26 @@ OptimizationAlgorithm.types.append(DumbAlgo)
 OptimizationAlgorithm.typenames.append(DumbAlgo.__name__.lower())
 
 
+@pytest.fixture()
+def empty_config():
+    """Return config purged from global definition"""
+    orion.core.DEF_CONFIG_FILES_PATHS = []
+    config = orion.core.build_config()
+    orion.core.config = config
+    resolve_config.config = config
+    return config
+
+
+@pytest.fixture()
+def test_config(empty_config):
+    """Return orion's config overwritten with local config file"""
+    config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "orion_config.yaml")
+    empty_config.load_yaml(config_file)
+
+    return empty_config
+
+
 @pytest.fixture(scope='session')
 def dumbalgo():
     """Return stab algorithm class."""
@@ -120,9 +141,16 @@ def dumbalgo():
 @pytest.fixture()
 def categorical_values():
     """Return a list of all the categorical points possible for `supernaedo2` and `supernaedo3`"""
-    return [('rnn', 'rnn'), ('rnn', 'lstm_with_attention'), ('rnn', 'gru'),
-            ('gru', 'rnn'), ('gru', 'lstm_with_attention'), ('gru', 'gru'),
-            ('lstm', 'rnn'), ('lstm', 'lstm_with_attention'), ('lstm', 'gru')]
+    return [('rnn', 'rnn'), ('lstm_with_attention', 'rnn'), ('gru', 'rnn'),
+            ('rnn', 'gru'), ('lstm_with_attention', 'gru'), ('gru', 'gru'),
+            ('rnn', 'lstm'), ('lstm_with_attention', 'lstm'), ('gru', 'lstm')]
+
+
+@pytest.fixture()
+def exp_config_file():
+    """Return configuration file used for stuff"""
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        'unittests', 'core', 'experiment.yaml')
 
 
 @pytest.fixture()
@@ -134,6 +162,7 @@ def exp_config():
 
     for i, t_dict in enumerate(exp_config[1]):
         exp_config[1][i] = Trial(**t_dict).to_dict()
+
     for i, _ in enumerate(exp_config[0]):
         exp_config[0][i]["metadata"]["user_script"] = os.path.join(
             os.path.dirname(__file__), exp_config[0][i]["metadata"]["user_script"])

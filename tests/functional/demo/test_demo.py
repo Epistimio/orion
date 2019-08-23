@@ -464,7 +464,7 @@ def test_resilience(monkeypatch):
                          "-x~uniform(-50, 50)"])
 
     exp = ExperimentBuilder().build_from({'name': 'demo_random_search'})
-    assert len(exp.fetch_trials({'status': 'broken'})) == 3
+    assert len(exp.fetch_trials_by_status('broken')) == 3
 
 
 @pytest.mark.usefixtures("clean_db")

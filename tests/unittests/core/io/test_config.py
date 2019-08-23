@@ -32,12 +32,12 @@ def test_fetch_non_existing_option():
 
 
 def test_access_to_config():
-    """Test that access to config returns properly config.
+    """Test that access to _config returns properly _config.
 
-    This is because getattr() could grasp any key including `config` and makes
+    This is because getattr() could grasp any key including `_config` and makes
     it impossible to access the later
     """
-    assert Configuration().config == {}
+    assert Configuration()._config == {}
 
 
 def test_set_subconfig():

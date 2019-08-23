@@ -16,7 +16,6 @@ Helper functions are provided to fetch trials keeping the tree structure. Those 
 analyzing an EVC tree.
 
 """
-import functools
 import logging
 
 from orion.core.evc.tree import TreeNode
@@ -46,9 +45,9 @@ class ExperimentNode(TreeNode):
 
     """
 
-    __slots__ = ('name', '_no_parent_lookup', '_no_children_lookup') + TreeNode.__slots__
+    __slots__ = ('name', 'version', '_no_parent_lookup', '_no_children_lookup') + TreeNode.__slots__
 
-    def __init__(self, name, experiment=None, parent=None, children=tuple()):
+    def __init__(self, name, version, experiment=None, parent=None, children=tuple()):
         """Initialize experiment node with item, experiment, parent and children
 
         .. seealso::
@@ -56,6 +55,8 @@ class ExperimentNode(TreeNode):
         """
         super(ExperimentNode, self).__init__(experiment, parent, children)
         self.name = name
+        self.version = version
+
         self._no_parent_lookup = True
         self._no_children_lookup = True
 
@@ -67,7 +68,7 @@ class ExperimentNode(TreeNode):
         not done already.
         """
         if self._item is None:
-            self._item = ExperimentView(self.name)
+            self._item = ExperimentView(self.name, version=self.version)
             self._item.connect_to_version_control_tree(self)
 
         return self._item
@@ -85,11 +86,13 @@ class ExperimentNode(TreeNode):
         if self._parent is None and self._no_parent_lookup:
             self._no_parent_lookup = False
             query = {'_id': self.item.refers['parent_id']}
-            selection = {'name': 1}
+            selection = {'name': 1, 'version': 1}
             experiments = get_storage().fetch_experiments(query, selection)
-            if experiments:
-                self.set_parent(ExperimentNode(name=experiments[0]['name']))
 
+            if experiments:
+                parent = experiments[0]
+                exp_node = ExperimentNode(name=parent['name'], version=parent['version'])
+                self.set_parent(exp_node)
         return self._parent
 
     @property
@@ -105,10 +108,10 @@ class ExperimentNode(TreeNode):
         if not self._children and self._no_children_lookup:
             self._no_children_lookup = False
             query = {'refers.parent_id': self.item.id}
-            selection = {'name': 1}
+            selection = {'name': 1, 'version': 1}
             experiments = get_storage().fetch_experiments(query, selection)
             for child in experiments:
-                self.add_children(ExperimentNode(name=child['name']))
+                self.add_children(ExperimentNode(name=child['name'], version=child['version']))
 
         return self._children
 
@@ -117,57 +120,68 @@ class ExperimentNode(TreeNode):
         """Get the adapter of the experiment with respect to its parent"""
         return self.item.refers["adapter"]
 
-    def fetch_trials(self, query, selection=None):
-        """Fetch trials recursively in the EVC tree
+    @property
+    def tree_name(self):
+        """Return a formatted name of the Node for a tree pretty-print."""
+        if self.item is not None:
+            return self.name + "-v{}".format(self.item.version)
 
-        .. seealso::
+        return self.name
 
-            :meth:`orion.core.worker.Experiment.fetch_trials` for more information about the
-            arguments.
+    def fetch_lost_trials(self):
+        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
+        return self._fetch_trials('fetch_lost_trials')
+
+    def fetch_trials(self):
+        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
+        return self._fetch_trials('fetch_trials')
+
+    def fetch_pending_trials(self):
+        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
+        return self._fetch_trials('fetch_pending_trials')
+
+    def fetch_noncompleted_trials(self):
+        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
+        return self._fetch_trials('fetch_noncompleted_trials')
+
+    def fetch_trials_by_status(self, status):
+        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
+        return self._fetch_trials('fetch_trials_by_status', status=status)
+
+    def _fetch_trials(self, fun_name, *args, **kwargs):
+        """Fetch trials recursively in the EVC tree using the fetch function `fun_name`.
+
+        Parameters
+        ----------
+        fun_name: callable
+            Function name to call to fetch trials. The function must be an attribute of
+            :class:`orion.core.worker.experiment:Experiment`
+
+        *args:
+            Positional arguments to pass to `fun_name`.
+
+        **kwargs
+            Keyword arguments to pass to `fun_name.
 
         """
-        trials_tree = fetch_trials_tree(self, query, selection)
-        adapt_trials(trials_tree)
+        def retrieve_trials(node, parent_or_children):
+            """Retrieve the trials of a node/experiment."""
+            fun = getattr(node.item, fun_name)
+            # with_evc_tree needs to be False here or we will have an infinite loop
+            trials = fun(*args, with_evc_tree=False, **kwargs)
+            return dict(trials=trials, experiment=node.item), parent_or_children
 
-        return sum([node.item['trials'] for node in trials_tree.root], [])
+        # get the trials of the parents
+        parent_trials = None
+        if self.parent is not None:
+            parent_trials = self.parent.map(retrieve_trials, self.parent.parent)
 
+        # get the trials of the children
+        children_trials = self.map(retrieve_trials, self.children)
+        children_trials.set_parent(parent_trials)
 
-def _fetch_node_trials(experiment_node, parent_or_children, query, selection=None):
-    """Fetch trials from the current node and connect with parent or children
-
-    .. note::
-
-        To call with node.map to connect with parents or children
-
-    """
-    experiment_trials = experiment_node.item.fetch_trials(query, selection)
-
-    rval = {'trials': experiment_trials, 'experiment': experiment_node.item}
-
-    return rval, parent_or_children
-
-
-def fetch_trials_tree(experiment_node, query, selection=None):
-    """Fetch trials recursively from an experiment node
-
-    .. seealso::
-
-        :meth:`orion.core.evc.experiment.ExperimentNode.fetch_trials`
-
-    """
-    if experiment_node.parent is not None:
-        parent_trials_tree = experiment_node.parent.map(
-            functools.partial(_fetch_node_trials, query=query, selection=selection),
-            experiment_node.parent.parent)
-    else:
-        parent_trials_tree = None
-
-    children_trials_tree = experiment_node.map(
-        functools.partial(_fetch_node_trials, query=query, selection=selection),
-        experiment_node.children)
-    children_trials_tree.set_parent(parent_trials_tree)
-
-    return children_trials_tree
+        adapt_trials(children_trials)
+        return sum([node.item['trials'] for node in children_trials.root], [])
 
 
 def _adapt_parent_trials(node, parent_trials_node):

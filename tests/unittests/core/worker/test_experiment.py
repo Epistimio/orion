@@ -7,145 +7,17 @@ import datetime
 import getpass
 import json
 import logging
-import random
 import tempfile
 
 import pytest
 
 from orion.algo.base import BaseAlgorithm
 from orion.core.io.database import DuplicateKeyError
+from orion.core.utils.tests import OrionState
+import orion.core.worker.experiment
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
-
-logging.basicConfig(level=logging.DEBUG)
-
-
-def check_sorted(trials):
-    """fetch_trials should return a list of sorted trials"""
-    def get_time(item):
-        sub_time = item.submit_time
-        if sub_time is None:
-            return 0
-        return sub_time
-
-    prev = trials[0]
-    for trial in trials[1:]:
-        assert get_time(trial) > get_time(prev), 'Trials should be in ASC order'
-
-    return trials
-
-
-@pytest.fixture()
-def patch_sample(monkeypatch):
-    """Patch ``random.sample`` to return the first one and check call."""
-    def mock_sample(a_list, should_be_one):
-        assert type(a_list) == list
-        assert len(a_list) >= 1
-        check_sorted(a_list)
-
-        # Part of `TestReserveTrial.test_reserve_success`
-        assert a_list[0].status == 'new'
-        assert a_list[1].status == 'new'
-        assert a_list[2].status == 'interrupted'
-        assert a_list[3].status == 'suspended'
-        assert should_be_one == 1
-        return [a_list[0]]
-
-    monkeypatch.setattr(random, 'sample', mock_sample)
-
-
-@pytest.fixture()
-def patch_sample2(monkeypatch):
-    """Patch ``random.sample`` to return the first one and check call."""
-    def mock_sample(a_list, should_be_one):
-        assert type(a_list) == list
-        assert len(a_list) >= 1
-        check_sorted(a_list)
-
-        # Part of `TestReserveTrial.test_reserve_success2`
-        assert a_list[0].status == 'new'
-        assert a_list[1].status == 'new'
-        assert a_list[2].status == 'interrupted'
-        assert a_list[3].status == 'suspended'
-        assert should_be_one == 1
-        return [a_list[-1]]
-
-    monkeypatch.setattr(random, 'sample', mock_sample)
-
-
-@pytest.fixture()
-def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
-    """Patch ``random.sample`` to return the first one and check call.
-
-    The first trial is marked as new, but in DB it is reserved.
-    """
-    def mock_sample(a_list, should_be_one):
-        assert type(a_list) == list
-        assert len(a_list) >= 1
-        check_sorted(a_list)
-
-        # Part of `TestReserveTrial.test_reserve_race_condition`
-        if len(a_list) == 4:
-            assert a_list[0].status == 'new'
-        if len(a_list) == 3:
-            assert a_list[0].status == 'new'
-        if len(a_list) == 2:
-            assert a_list[0].status == 'interrupted'
-        if len(a_list) == 1:
-            assert a_list[0].status == 'suspended'
-
-        assert should_be_one == 1
-
-        if len(a_list) > 3:
-            # Set row's status as 'reserved' just like if it was reserved by
-            # another process right after the call to orion_db.read()
-            create_db_instance.write(
-                "trials",
-                data={"status": "reserved",
-                      "heartbeat": datetime.datetime.utcnow()},
-                query={"_id": a_list[0].id})
-            trial = create_db_instance.read("trials", {"_id": a_list[0].id})
-            assert trial[0]['status'] == 'reserved'
-
-        return [a_list[0]]
-
-    monkeypatch.setattr(random, 'sample', mock_sample)
-
-
-@pytest.fixture()
-def patch_sample_concurrent2(monkeypatch, create_db_instance, exp_config):
-    """Patch ``random.sample`` to return the first one and check call.
-
-    All trials are marked as new, but in DB they are reserved.
-    """
-    def mock_sample(a_list, should_be_one):
-        assert type(a_list) == list
-        assert len(a_list) >= 1
-        # Part of `TestReserveTrial.test_reserve_dead_race_condition`
-        if len(a_list) == 4:
-            assert a_list[0].status == 'new'
-        if len(a_list) == 3:
-            assert a_list[0].status == 'new'
-        if len(a_list) == 2:
-            assert a_list[0].status == 'interrupted'
-        if len(a_list) == 1:
-            assert a_list[0].status == 'suspended'
-
-        assert should_be_one == 1
-
-        # Set row's status as 'reserved' just like if it was reserved by
-        # another process right after the call to orion_db.read()
-        create_db_instance.write(
-            "trials",
-            data={"status": "reserved", 'heartbeat': datetime.datetime.utcnow()},
-            query={"_id": a_list[0].id})
-        trial = create_db_instance.read("trials", {"_id": a_list[0].id})
-        assert trial[0]['status'] == 'reserved'
-
-        return [a_list[0]]
-
-    monkeypatch.setattr(random, 'sample', mock_sample)
 
 
 @pytest.fixture()
@@ -176,6 +48,30 @@ def new_config(random_dt):
         something_to_be_ignored='asdfa'
         )
     return new_config
+
+
+@pytest.fixture
+def parent_version_config():
+    """Return a configuration for an experiment."""
+    return dict(_id='parent_config',
+                name="old_experiment",
+                version=1,
+                algorithms='random',
+                metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow(),
+                          'user_args': ['--x~normal(0,1)']}
+                )
+
+
+@pytest.fixture
+def child_version_config(parent_version_config):
+    """Return a configuration for an experiment."""
+    config = copy.deepcopy(parent_version_config)
+    config['_id'] = 'child_config'
+    config['version'] = 2
+    config['refers'] = {'parent_id': 'parent_config'}
+    config['metadata']['datetime'] = datetime.datetime.utcnow()
+    config['metadata']['user_args'].append('--y~+normal(0,1)')
+    return config
 
 
 def assert_protocol(exp, create_db_instance):
@@ -251,6 +147,43 @@ class TestInitExperiment(object):
         assert exp.version == 1
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
+
+    def test_new_experiment_wout_version(self, create_db_instance):
+        """Create a new and never-seen-before experiment without a version."""
+        exp = Experiment("exp_wout_version")
+        assert exp.version == 1
+
+    def test_new_experiment_w_version(self, create_db_instance):
+        """Create a new and never-seen-before experiment with a version."""
+        exp = Experiment("exp_wout_version", version=1)
+        assert exp.version == 1
+
+    def test_old_experiment_wout_version(self, create_db_instance, parent_version_config,
+                                         child_version_config):
+        """Create an already existing experiment without a version."""
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf")
+        assert exp.version == 2
+
+    def test_old_experiment_w_version(self, create_db_instance, parent_version_config,
+                                      child_version_config):
+        """Create an already existing experiment with a version."""
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf", version=1)
+        assert exp.version == 1
+
+    def test_old_experiment_w_version_bigger_than_max(self, create_db_instance,
+                                                      parent_version_config, child_version_config):
+        """Create an already existing experiment with a too large version."""
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf", version=8)
+        assert exp.version == 2
 
 
 @pytest.mark.usefixtures("create_db_instance", "with_user_tsirif")
@@ -602,6 +535,65 @@ class TestConfigProperty(object):
 
         assert not exp.is_done
 
+    def test_no_increment_when_child_exist(self, create_db_instance):
+        """Check that experiment is not incremented when asked for v1 while v2 exists."""
+        user_args = ['--x~normal(0,1)']
+        metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
+        algorithms = {'random': {'seed': None}}
+        config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
+
+        get_storage().create_experiment(config)
+        original = Experiment('experiment_test', version=1)
+
+        config['version'] = 2
+        config['metadata']['user_args'].append("--y~+normal(0,1)")
+        config.pop('_id')
+
+        get_storage().create_experiment(config)
+        config.pop('_id')
+
+        config['branch'] = ['experiment_2']
+        config['metadata']['user_args'].pop()
+        config['metadata']['user_args'].append("--z~+normal(0,1)")
+        config['version'] = 1
+        exp = Experiment('experiment_test', version=1)
+        exp.configure(config)
+
+        assert exp.version == 1
+        assert '/z' in exp.space
+        assert '/y' not in exp.space
+        assert exp.refers['parent_id'] == original.id
+
+    def test_old_experiment_wout_version(self, create_db_instance, parent_version_config,
+                                         child_version_config):
+        """Create an already existing experiment without a version."""
+        algorithm = {'random': {'seed': None}}
+        parent_version_config['algorithms'] = algorithm
+        child_version_config['algorithms'] = algorithm
+
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf")
+        exp.configure(child_version_config)
+
+        assert exp.version == 2
+
+    def test_old_experiment_w_version(self, create_db_instance, parent_version_config,
+                                      child_version_config):
+        """Create an already existing experiment with a version."""
+        algorithm = {'random': {'seed': None}}
+        parent_version_config['algorithms'] = algorithm
+        child_version_config['algorithms'] = algorithm
+
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf", version=1)
+        exp.configure(parent_version_config)
+
+        assert exp.version == 1
+
 
 @pytest.mark.usefixtures("create_db_instance", "with_user_bouthilx")
 def test_forcing_user(exp_config):
@@ -634,60 +626,24 @@ class TestReserveTrial(object):
         trial = exp.reserve_trial()
         assert trial is None
 
-    @pytest.mark.usefixtures("patch_sample")
-    def test_reserve_success(self, exp_config, hacked_exp, random_dt):
-        """Successfully find new trials in db and reserve one at 'random'."""
-        trial = hacked_exp.reserve_trial()
-        exp_config[1][3]['status'] = 'reserved'
-        exp_config[1][3]['start_time'] = random_dt
-        exp_config[1][3]['heartbeat'] = random_dt
-        assert trial.to_dict() == exp_config[1][3]
+    def test_reserve_success(self, exp_config_file, random_dt):
+        """Successfully find new trials in db and reserve the first one"""
+        with OrionState(from_yaml=exp_config_file) as cfg:
+            exp = cfg.get_experiment('supernaedo2', user='dendi')
+            trial = exp.reserve_trial()
 
-    @pytest.mark.usefixtures("patch_sample2")
-    def test_reserve_success2(self, exp_config, hacked_exp, random_dt):
-        """Successfully find new trials in db and reserve one at 'random'.
+            cfg.trials[0]['status'] = 'reserved'
+            cfg.trials[0]['start_time'] = random_dt
+            cfg.trials[0]['heartbeat'] = random_dt
 
-        Version that start_time does not get written, because the selected trial
-        was not a 'new' one.
-        """
-        trial = hacked_exp.reserve_trial()
-        exp_config[1][6]['status'] = 'reserved'
-        exp_config[1][6]['heartbeat'] = random_dt
-        assert trial.to_dict() == exp_config[1][6]
+            assert trial.to_dict() == cfg.trials[0]
 
-    @pytest.mark.usefixtures("patch_sample_concurrent")
-    def test_reserve_race_condition(self, exp_config, hacked_exp, random_dt):
-        """Get its trials reserved before by another process once."""
-        trial = hacked_exp.reserve_trial()
-        exp_config[1][4]['status'] = 'reserved'
-        exp_config[1][4]['start_time'] = random_dt
-        exp_config[1][4]['heartbeat'] = random_dt
-        assert trial.to_dict() == exp_config[1][4]
+    def test_reserve_when_exhausted(self, exp_config, hacked_exp):
+        """Return None once all the trials have been allocated"""
+        for _ in range(10):
+            trial = hacked_exp.reserve_trial()
 
-    @pytest.mark.usefixtures("patch_sample_concurrent2")
-    def test_reserve_dead_race_condition(self, exp_config, hacked_exp):
-        """Always get its trials reserved before by another process."""
-        trial = hacked_exp.reserve_trial()
         assert trial is None
-
-    def test_reserve_with_uncallable_score(self, hacked_exp):
-        """Reserve with a score object that cannot do its job."""
-        with pytest.raises(ValueError):
-            hacked_exp.reserve_trial(score_handle='asfa')
-
-    def fake_handle(self, xxx):
-        """Fake score handle for testing."""
-        self.times_called += 1
-        return self.times_called
-
-    def test_reserve_with_score(self, hacked_exp, exp_config, random_dt):
-        """Reserve with a score object that can do its job."""
-        self.times_called = 0
-        hacked_exp.configure(exp_config[0][3])
-        trial = hacked_exp.reserve_trial(score_handle=self.fake_handle)
-        exp_config[1][6]['status'] = 'reserved'
-        exp_config[1][6]['heartbeat'] = random_dt
-        assert trial.to_dict() == exp_config[1][6]
 
     def test_fix_lost_trials(self, hacked_exp, random_dt):
         """Test that a running trial with an old heartbeat is set to interrupted."""
@@ -695,23 +651,19 @@ class TestReserveTrial(object):
         trial = hacked_exp.fetch_trials(exp_query)[0]
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        get_storage().update_trial(trial,
-                                   status='reserved',
-                                   heartbeat=heartbeat,
-                                   where={'experiment': hacked_exp.id})
+        get_storage().set_trial_status(trial, status='reserved', heartbeat=heartbeat)
 
-        exp_query['status'] = 'reserved'
-        exp_query['_id'] = trial.id
+        def fetch_trials(status='reserved'):
+            trials = hacked_exp.fetch_trials_by_status(status)
+            return list(filter(lambda new_trial: new_trial.id in [trial.id], trials))
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+        assert len(fetch_trials()) == 1
 
         hacked_exp.fix_lost_trials()
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 0
+        assert len(fetch_trials()) == 0
 
-        exp_query['status'] = 'interrupted'
-
-        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+        assert len(fetch_trials('interrupted')) == 1
 
     def test_fix_only_lost_trials(self, hacked_exp, random_dt):
         """Test that an old trial is set to interrupted but not a recent one."""
@@ -722,28 +674,22 @@ class TestReserveTrial(object):
 
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        get_storage().update_trial(lost,
-                                   status='reserved',
-                                   heartbeat=heartbeat,
-                                   where={'experiment': hacked_exp.id})
+        get_storage().set_trial_status(lost, status='reserved', heartbeat=heartbeat)
+        get_storage().set_trial_status(not_lost, status='reserved', heartbeat=random_dt)
 
-        get_storage().update_trial(not_lost,
-                                   status='reserved',
-                                   heartbeat=random_dt,
-                                   where={'experiment': hacked_exp.id})
+        def fetch_trials():
+            trials = hacked_exp.fetch_trials_by_status('reserved')
+            return list(filter(lambda trial: trial.id in [lost.id, not_lost.id], trials))
 
-        exp_query['status'] = 'reserved'
-        exp_query['_id'] = {'$in': [lost.id, not_lost.id]}
-
-        assert len(hacked_exp.fetch_trials(exp_query)) == 2
+        assert len(fetch_trials()) == 2
 
         hacked_exp.fix_lost_trials()
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+        assert len(fetch_trials()) == 1
 
         exp_query['status'] = 'interrupted'
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+        assert len(fetch_trials()) == 1
 
     def test_fix_lost_trials_race_condition(self, hacked_exp, random_dt, monkeypatch):
         """Test that a lost trial fixed by a concurrent process does not cause error."""
@@ -751,9 +697,7 @@ class TestReserveTrial(object):
         trial = hacked_exp.fetch_trials(exp_query)[0]
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        get_storage().update_trial(trial,
-                                   status='interrupted', heartbeat=heartbeat,
-                                   where={'experiment': hacked_exp.id})
+        get_storage().set_trial_status(trial, status='interrupted', heartbeat=heartbeat)
 
         assert hacked_exp.fetch_trials(exp_query)[0].status == 'interrupted'
 
@@ -766,7 +710,6 @@ class TestReserveTrial(object):
             hacked_exp.fix_lost_trials()
 
 
-@pytest.mark.usefixtures("patch_sample")
 def test_update_completed_trial(hacked_exp, database, random_dt):
     """Successfully push a completed trial into database."""
     trial = hacked_exp.reserve_trial()
@@ -830,16 +773,6 @@ def test_fetch_all_trials(hacked_exp, exp_config, random_dt):
         assert trials[i].to_dict() == sorted_exp_config[i]
 
 
-def test_fetch_completed_trials(hacked_exp, exp_config, random_dt):
-    """Fetch a list of the unseen yet completed trials."""
-    trials = hacked_exp.fetch_completed_trials()
-    assert len(trials) == 3
-    # Trials are sorted based on submit time
-    assert trials[0].to_dict() == exp_config[1][0]
-    assert trials[1].to_dict() == exp_config[1][2]
-    assert trials[2].to_dict() == exp_config[1][1]
-
-
 def test_fetch_non_completed_trials(hacked_exp, exp_config):
     """Fetch a list of the trials that are not completed
 
@@ -899,10 +832,10 @@ def test_is_done_property_with_algo(hacked_exp):
 def test_broken_property(hacked_exp):
     """Check experiment stopping conditions for maximum number of broken."""
     assert not hacked_exp.is_broken
-    trials = hacked_exp.fetch_trials({})[:3]
+    trials = hacked_exp.fetch_trials()[:3]
 
     for trial in trials:
-        get_storage().update_trial(trial, status='broken')
+        get_storage().set_trial_status(trial, status='broken')
 
     assert hacked_exp.is_broken
 
@@ -1006,7 +939,7 @@ def test_fetch_completed_trials_from_view(hacked_exp, exp_config, random_dt):
     experiment_view = ExperimentView(hacked_exp.name)
     experiment_view._experiment = hacked_exp
 
-    trials = experiment_view.fetch_completed_trials()
+    trials = experiment_view.fetch_trials_by_status('completed')
     assert len(trials) == 3
     assert trials[0].to_dict() == exp_config[1][0]
     assert trials[1].to_dict() == exp_config[1][2]
@@ -1065,13 +998,14 @@ def test_experiment_view_stats(hacked_exp, exp_config, random_dt):
 
 @pytest.mark.usefixtures("with_user_tsirif")
 def test_experiment_view_protocol_read_only():
-    """Verify that wrapper experiments' database is read-only"""
+    """Verify that wrapper experiments' protocol is read-only"""
     exp = ExperimentView('supernaedo2')
 
-    # Test that _protocol.update_trials indeed exists
-    exp._experiment._storage._storage.update_trial
+    # Test that _protocol.set_trial_status indeed exists
+    exp._experiment._storage._storage.set_trial_status
+
     with pytest.raises(AttributeError):
-        exp._experiment._storage.update_trial
+        exp._experiment._storage.set_trial_status
 
 
 class TestInitExperimentWithEVC(object):
@@ -1118,12 +1052,18 @@ class TestInitExperimentWithEVC(object):
     def test_experiment_non_interactive_branching(self, create_db_instance, random_dt, exp_config,
                                                   monkeypatch):
         """Configure an existing experiment with parent."""
-        monkeypatch.setattr('sys.__stdin__.isatty', lambda: True)
-        exp = Experiment('supernaedo2.1')
-        exp.algorithms = {'dumbalgo': {}}
-        with pytest.raises(OSError):
-            exp.configure(exp.configuration)
-        monkeypatch.undo()
+        def _patch_fetch(config):
+            return {'manual_resolution': True}
+
+        monkeypatch.setattr(orion.core.worker.experiment,
+                            "fetch_branching_configuration", _patch_fetch)
+        with monkeypatch.context() as ctx:
+            ctx.setattr('sys.__stdin__.isatty', lambda: True)
+            exp = Experiment('supernaedo2.1')
+            exp.algorithms = {'dumbalgo': {}}
+            with pytest.raises(OSError):
+                exp.configure(exp.configuration)
+
         with pytest.raises(ValueError) as exc_info:
             exp.configure(exp.configuration)
         assert "Configuration is different and generates a branching" in str(exc_info.value)

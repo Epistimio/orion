@@ -240,8 +240,8 @@ class Conflicts(object):
         Resolutions may generate side-effect conflicts. In such case, they are added to interval's
         list of conflicts.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         conflict: `orion.ore.evc.conflicts.Conflict`
             Conflict object to call `try_resolve`.
         silence_errors: bool
@@ -837,8 +837,8 @@ class MissingDimensionConflict(Conflict):
     def try_resolve(self, new_dimension_conflict=None, default_value=Dimension.NO_DEFAULT_VALUE):
         """Try to create a resolution RenameDimensionResolution of RemoveDimensionResolution
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         new_dimension_conflict: None or `orion.core.evc.conflicts.NewDimensionConflict`
             Dimension used for a rename resolution. If None, a remove resolution will be created
             instead.
@@ -1109,13 +1109,13 @@ class CodeConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return {}
+        return dict(change_type=adapters.CodeChange.BREAK)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution CodeResolution
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         change_type: None or string
             One of the types defined in `orion.core.evc.adapters.CodeChange.types`.
 
@@ -1243,13 +1243,13 @@ class CommandLineConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return {}
+        return dict(change_type=adapters.CommandLineChange.BREAK)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution CommandLineResolution
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         change_type: None or string
             One of the types defined in `orion.core.evc.adapters.CommandLineChange.types`.
 
@@ -1373,13 +1373,13 @@ class ScriptConfigConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return {}
+        return dict(change_type=adapters.ScriptConfigChange.BREAK)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution ScriptConfigResolution
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         change_type: None or string
             One of the types defined in `orion.core.evc.adapters.ScriptConfigChange.types`.
 
@@ -1499,8 +1499,8 @@ class ExperimentNameConflict(Conflict):
     def try_resolve(self, new_name=None):
         """Try to create a resolution ExperimentNameResolution
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         new_name: None or string
             A new name for the branching experiment. A ValueError is raised if name is already in
             database.
@@ -1576,7 +1576,7 @@ class ExperimentNameConflict(Conflict):
             # TODO: WARNING!!! _name_is_unique could lead to race conditions,
             # The resolution may become invalid before the branching experiment is
             # registered. What should we do in such case?
-            if self.new_name != self.old_name:
+            if self.new_name is not None and self.new_name != self.old_name:
                 # If we are trying to actually branch from experiment
                 if not self._name_is_unique():
                     raise ValueError(
@@ -1587,7 +1587,7 @@ class ExperimentNameConflict(Conflict):
 
             # If the new name is the same as the old name, we are trying to increment
             # the version of the experiment.
-            elif self._check_for_children():
+            elif self._check_for_greater_versions():
                 raise ValueError(
                     "Experiment name \'{0}\' already exist for user \'{1}\' and has children. "
                     "Version cannot be auto-incremented and a new name is required for branching."
@@ -1603,12 +1603,12 @@ class ExperimentNameConflict(Conflict):
             named_experiments = len(get_storage().fetch_experiments(query))
             return named_experiments == 0
 
-        def _check_for_children(self):
+        def _check_for_greater_versions(self):
             """Check if experiment has children"""
             # If we made it this far, new_name is actually the name of the parent.
             parent = self.conflict.old_config
 
-            query = {'refers.parent_id': parent['_id']}
+            query = {'name': parent['name'], 'refers.parent_id': parent['_id']}
             children = len(get_storage().fetch_experiments(query))
 
             return bool(children)
@@ -1628,3 +1628,10 @@ class ExperimentNameConflict(Conflict):
             configuration file by the user
             """
             return "{0} {1}".format(self.ARGUMENT, self.new_name)
+
+        @property
+        def is_marked(self):
+            """Return True every time since the `--branch` argument is not used when incrementing
+            version of an experiment.
+            """
+            return True
