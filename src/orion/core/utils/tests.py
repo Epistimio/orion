@@ -23,9 +23,13 @@ from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage, Storage
 from orion.storage.legacy import Legacy
+from orion.storage.track import Track
 
 
 def _remove(file_name):
+    if file_name is None:
+        return
+
     try:
         os.remove(file_name)
     except FileNotFoundError:
@@ -54,12 +58,16 @@ class MockDatetime(datetime.datetime):
 
 def _get_default_test_database():
     """Return default configuration for the test database"""
-    _, filename = tempfile.mkstemp('orion_test')
-
     return {
         'storage_type': 'legacy',
-        'type': 'PickledDB',
-        'host': filename
+        'args': {
+            'config': {
+                'database': {
+                    'type': 'PickledDB',
+                    'host': '${file}'
+                }
+            }
+        }
     }
 
 
@@ -100,7 +108,7 @@ class OrionState:
     """
 
     # TODO: Fix these singletons to remove Legacy, MongoDB, PickledDB and EphemeralDB.
-    SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB, EphemeralDB)
+    SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB, EphemeralDB, Track)
     singletons = {}
     database = None
     experiments = []
@@ -124,10 +132,12 @@ class OrionState:
         self.resources = _select(resources, [])
         self.lies = _select(lies, [])
 
-    def init(self):
+    def init(self, config):
         """Initialize environment before testing"""
-        self.storage()
-        self.database = get_storage()._db
+        self.storage(config)
+        if hasattr(get_storage(), '_db'):
+            self.database = get_storage()._db
+
         self.load_experience_configuration()
         return self
 
@@ -164,21 +174,49 @@ class OrionState:
             self.experiments[i]['version'] = 1
             self.experiments[i]['_id'] = i
 
-        self.database.write('experiments', self.experiments)
-        self.database.write('trials', self.trials)
-        self.database.write('workers', self.workers)
-        self.database.write('resources', self.resources)
-        self.database.write('lying_trials', self.lies)
+        # Legacy
+        if self.database is not None:
+            self.database.write('experiments', self.experiments)
+            self.database.write('trials', self.trials)
+            self.database.write('workers', self.workers)
+            self.database.write('resources', self.resources)
+            self.database.write('lying_trials', self.lies)
+        else:
+            for exp in self.experiments:
+                get_storage().create_experiment(exp)
+
+            for t in self.trials:
+                get_storage().register_trial(Trial(**t))
+
+    def make_config(self):
+        """Iterate over the database configuration and replace ${file}
+        by the name of a temporary file
+        """
+        _, self.tempfile = tempfile.mkstemp('_orion_test')
+        _remove(self.tempfile)
+
+        def map_dict(fun, dictionary):
+            return {k: fun(v) for k, v in dictionary.items()}
+
+        def replace_file(v):
+            if isinstance(v, str):
+                v = v.replace('${file}', self.tempfile)
+
+            if isinstance(v, dict):
+                v = map_dict(replace_file, v)
+
+            return v
+
+        return map_dict(replace_file, self.database_config)
 
     def __enter__(self):
         """Load a new database state"""
-        self.tempfile = self.database_config.get('host')
 
         for singleton in self.SINGLETONS:
             self.new_singleton(singleton, new_value=None)
 
         self.cleanup()
-        return self.init()
+        return self.init(self.make_config())
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Cleanup database state"""
@@ -196,15 +234,15 @@ class OrionState:
         """Restore a singleton to its previous value"""
         obj.instance = self.singletons.get(obj)
 
-    def storage(self):
+    def storage(self, config=None):
         """Return test storage"""
+        if config is None:
+            return get_storage()
+
         try:
-            storage_type = self.database_config.pop('storage_type')
-            config = {
-                'database': self.database_config
-            }
-            db = Storage(of_type=storage_type, config=config)
-            self.database_config['storage_type'] = storage_type
+            storage_type = config.pop('storage_type')
+            kwargs = config['args']
+            db = Storage(of_type=storage_type, **kwargs)
 
         except SingletonAlreadyInstantiatedError:
             db = get_storage()

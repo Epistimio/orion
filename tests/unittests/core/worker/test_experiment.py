@@ -6,7 +6,6 @@ import copy
 import datetime
 import getpass
 import json
-import logging
 import tempfile
 
 import pytest

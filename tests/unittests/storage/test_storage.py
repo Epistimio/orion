@@ -5,6 +5,7 @@
 import copy
 import datetime
 import json
+import logging
 import tempfile
 
 import pytest
@@ -13,10 +14,25 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.tests import OrionState
 from orion.core.worker.trial import Trial
 from orion.storage.base import FailedUpdate, get_storage, MissingArguments
+from orion.storage.track import HAS_TRACK
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.WARNING)
 
 storage_backends = [
-    None,  # defaults to legacy with PickleDB
+    None  # defaults to legacy with PickleDB
 ]
+
+if not HAS_TRACK:
+    log.warning('Track is not tested!')
+else:
+    log.info('Track is tested!')
+    storage_backends.append({
+        'storage_type': 'track',
+        'args': {
+            'uri': 'file://${file}?objective=loss'
+        }
+    })
 
 base_experiment = {
     'name': 'default_name',
