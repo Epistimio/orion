@@ -64,10 +64,13 @@ to very optimal resource usage.
 
 The most common way of using ASHA is to reduce the number of epochs,
 but the algorithm is generic and can be applied to any multi-fidelity setting.
-That is, you can use training time, specifying the fidelity with ``--epochs~fidelity()``
-(assuming your script takes this argument in commandline), but you could also use other fidelity
-such as dataset size ``--dataset-size~fidelity()`` (assuming your script takes this argument and
-adapt dataset size accordingly). The placeholder ``fidelity()`` is a special prior for
+That is, you can use training time, specifying the fidelity with
+``--epochs~fidelity(low=1, high=100)``
+(assuming your script takes this argument in commandline),
+but you could also use other fidelity
+such as dataset size ``--dataset-size~fidelity(low=500, high=50000)``
+(assuming your script takes this argument and
+adapt dataset size accordingly). The placeholder ``fidelity(low, high)`` is a special prior for
 multi-fidelity algorithms.
 
 
@@ -86,9 +89,7 @@ Configuration
      algorithms:
         asha:
            seed: null
-           max_resources: 100
-           grace_period: 1
-           reduction_factor: 4
+           num_rungs: null
            num_brackets: 1
 
 ``seed``
@@ -96,20 +97,11 @@ Configuration
 Seed for the random number generator used to sample new trials. Default is ``None``.
 
 
-``max_resources``
+``num_rungs``
 
-Maximum amount of resources that will be assigned to trials by ASHA. Only the best
-performing trial will be assigned the maximum amount of resources. Default is 100.
-
-``grace_period``
-
-The minimum number of resources assigned to each trial. Default is 1.
-
-``reduction_factor``
-
-The factor by which ASHA promotes trials. If the reduction factor is 4, it means
-the number of trials from one fidelity level to the next one is roughly divided by 4, and
-each fidelity level has 4 times more resources than the prior one. Default is 4.
+Number of rungs for the largest bracket. If not defined, it will be equal to ``(base + 1)`` of the
+fidelity dimension. In the original paper,
+``num_rungs == log(fidelity.high/fidelity.low) / log(fidelity.base) + 1``.
 
 ``num_brackets``
 

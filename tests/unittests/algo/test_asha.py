@@ -16,27 +16,32 @@ def space():
     """Create a Space with a real dimension and a fidelity value."""
     space = Space()
     space.register(Real('lr', 'uniform', 0, 1))
-    space.register(Fidelity('epoch'))
+    space.register(Fidelity('epoch', 1, 9, 3))
     return space
 
 
 @pytest.fixture
-def b_config():
+def b_config(space):
     """Return a configuration for a bracket."""
-    return {'n': 9, 'r': 1, 'R': 9, 'eta': 3}
+    fidelity_dim = space.values()[0]
+    num_rungs = 3
+    budgets = np.logspace(
+        np.log(fidelity_dim.low) / np.log(fidelity_dim.base),
+        np.log(fidelity_dim.high) / np.log(fidelity_dim.base),
+        num_rungs, base=fidelity_dim.base)
+    return {'reduction_factor': fidelity_dim.base, 'budgets': budgets}
 
 
 @pytest.fixture
 def asha(b_config, space):
     """Return an instance of ASHA."""
-    return ASHA(space, max_resources=b_config['R'], grace_period=b_config['r'],
-                reduction_factor=b_config['eta'])
+    return ASHA(space)
 
 
 @pytest.fixture
 def bracket(b_config):
     """Return a `Bracket` instance configured with `b_config`."""
-    return Bracket(None, b_config['r'], b_config['R'], b_config['eta'], 0)
+    return Bracket(None, b_config['reduction_factor'], b_config['budgets'])
 
 
 @pytest.fixture
@@ -70,24 +75,6 @@ class TestBracket():
         assert bracket.rungs[0][0] == 1
         assert bracket.rungs[1][0] == 3
         assert bracket.rungs[2][0] == 9
-
-    def test_negative_minimum_resources(self, b_config):
-        """Test to see if `Bracket` handles negative minimum resources."""
-        b_config['r'] = -1
-
-        with pytest.raises(AttributeError) as ex:
-            Bracket(None, b_config['r'], b_config['R'], b_config['eta'], 0)
-
-        assert 'positive' in str(ex.value)
-
-    def test_min_resources_greater_than_max(self, b_config):
-        """Test to see if `Bracket` handles minimum resources too high."""
-        b_config['r'] = 10
-
-        with pytest.raises(AttributeError) as ex:
-            Bracket(None, b_config['r'], b_config['R'], b_config['eta'], 0)
-
-        assert 'smaller' in str(ex.value)
 
     def test_register(self, asha, bracket):
         """Check that a point is correctly registered inside a bracket."""
@@ -223,8 +210,7 @@ class TestASHA():
 
     def test_register_bracket_multi_fidelity(self, space, b_config):
         """Check that a point is registered inside the same bracket for diff fidelity."""
-        asha = ASHA(space, max_resources=b_config['R'], grace_period=b_config['r'],
-                    reduction_factor=b_config['eta'], num_brackets=3)
+        asha = ASHA(space, num_brackets=3)
 
         value = 50
         fidelity = 1
@@ -252,8 +238,7 @@ class TestASHA():
 
     def test_register_next_bracket(self, space, b_config):
         """Check that a point is registered inside the good bracket when higher fidelity."""
-        asha = ASHA(space, max_resources=b_config['R'], grace_period=b_config['r'],
-                    reduction_factor=b_config['eta'], num_brackets=3)
+        asha = ASHA(space, num_brackets=3)
 
         value = 50
         fidelity = 3
@@ -283,8 +268,7 @@ class TestASHA():
 
     def test_register_invalid_fidelity(self, space, b_config):
         """Check that a point cannot registered if fidelity is invalid."""
-        asha = ASHA(space, max_resources=b_config['R'], grace_period=b_config['r'],
-                    reduction_factor=b_config['eta'], num_brackets=3)
+        asha = ASHA(space, num_brackets=3)
 
         value = 50
         fidelity = 2
@@ -297,8 +281,7 @@ class TestASHA():
 
     def test_register_corrupted_db(self, caplog, space, b_config):
         """Check that a point cannot registered if passed in order diff than fidelity."""
-        asha = ASHA(space, max_resources=b_config['R'], grace_period=b_config['r'],
-                    reduction_factor=b_config['eta'], num_brackets=3)
+        asha = ASHA(space, num_brackets=3)
 
         value = 50
         fidelity = 3
@@ -316,8 +299,7 @@ class TestASHA():
 
     def test_get_id(self, space, b_config):
         """Test valid id of points"""
-        asha = ASHA(space, max_resources=b_config['R'], grace_period=b_config['r'],
-                    reduction_factor=b_config['eta'], num_brackets=3)
+        asha = ASHA(space, num_brackets=3)
 
         assert asha.get_id(['whatever', 1]) == asha.get_id(['is here', 1])
         assert asha.get_id(['whatever', 1]) != asha.get_id(['is here', 2])
@@ -325,11 +307,10 @@ class TestASHA():
     def test_get_id_multidim(self, b_config):
         """Test valid id for points with dim of shape > 1"""
         space = Space()
-        space.register(Fidelity('epoch'))
+        space.register(Fidelity('epoch', 1, 9, 3))
         space.register(Real('lr', 'uniform', 0, 1, shape=2))
 
-        asha = ASHA(space, max_resources=b_config['R'], grace_period=b_config['r'],
-                    reduction_factor=b_config['eta'], num_brackets=3)
+        asha = ASHA(space, num_brackets=3)
 
         assert asha.get_id(['whatever', [1, 1]]) == asha.get_id(['is here', [1, 1]])
         assert asha.get_id(['whatever', [1, 1]]) != asha.get_id(['is here', [2, 2]])
