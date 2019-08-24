@@ -141,10 +141,10 @@ class DimensionBuilder(object):
 
         return Categorical(name, args, **kwargs)
 
-    def fidelity(self):
+    def fidelity(self, *args, **kwargs):
         """Create a `Fidelity` dimension."""
         name = self.name
-        return Fidelity(name)
+        return Fidelity(name, *args, **kwargs)
 
     def uniform(self, *args, **kwargs):
         """Create an `Integer` or `Real` uniformly distributed dimension.
