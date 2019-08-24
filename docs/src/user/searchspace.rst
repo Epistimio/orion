@@ -47,12 +47,14 @@ You can pass strings, integers and floats, and all mixed together if needed:
 
 .. _prior-fidelity:
 
-``fidelity()``
---------------
+``fidelity(low, high, base=2)``
+-------------------------------
 
 This prior is a special placeholder to define a ``Fidelity`` dimension. The algorithms will not use
 this prior to sample, but rather for multi-fidelity optimization. For an example of an algorithm
-using multi-fidelity, you can look at the documentation of :ref:`ASHA`.
+using multi-fidelity, you can look at the documentation of :ref:`ASHA`. To define the space of
+multi-fidelity optimization, you must give the minimum (``low``) and maximum (``high``) values for
+the fidelity and optionally the logarithmic base that should be used to explore this space.
 
 .. _scipy distributions: https://docs.scipy.org/doc/scipy/reference/stats.html
 
@@ -106,14 +108,14 @@ Special arguments
 ``discrete``
 ------------
 
-ex: ``unifor(0, 10, discrete=True)``
+ex: ``uniform(0, 10, discrete=True)``
 
 Argument to cast a continous distribution into :ref:`integer-dim`. Defaults to ``False``.
 
 ``default_value``
 -----------------
 
-ex: ``unifor(0, 10, default_value=5)``
+ex: ``uniform(0, 10, default_value=5)``
 
 Dimensions can be set to a default value so that commandline call `insert` can support insertion
 without specifing this hyperparameter, assigning it the default value. This is also usefull in when
@@ -123,7 +125,7 @@ adapt trials from other experiments by using the default value.
 ``shape``
 ---------
 
-ex: ``unifor(0, 10, shape=2)``
+ex: ``uniform(0, 10, shape=2)``
 
 Some hyper-parameters may have multiple dimensions. This can be set using ``shape``
 
