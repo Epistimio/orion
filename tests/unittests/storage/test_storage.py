@@ -141,11 +141,7 @@ class TestStorage:
             experiment = experiments[0]
             assert base_experiment == experiment, 'Local experiment and DB should match'
 
-    def test_create_experiment_fail(self, storage):
-        """Test create experiment"""
-        with OrionState(experiments=[base_experiment], database=storage) as cfg:
-            storage = cfg.storage()
-
+            # Insert it again
             with pytest.raises(DuplicateKeyError):
                 storage.create_experiment(base_experiment)
 
@@ -249,6 +245,7 @@ class TestStorage:
             storage = cfg.storage()
 
             trial_dict = cfg.trials[0]
+
             trial1 = storage.get_trial(trial=Trial(**trial_dict))
             trial2 = storage.get_trial(uid=trial1.id)
 
@@ -269,81 +266,35 @@ class TestStorage:
 
             experiment = cfg.get_experiment('default_name', 'default_user', version=None)
             trials = storage.fetch_lost_trials(experiment)
-            assert len(trials) == 1
 
-    def retrieve_result(self, storage, generated_result):
-        """Test retrieve result"""
-        results_file = tempfile.NamedTemporaryFile(
-            mode='w', prefix='results_', suffix='.log', dir='.', delete=True
-        )
+            count = 0
+            now_datetime = datetime.datetime.utcnow()
+            now_seconds = (now_datetime - datetime.datetime(1970, 1, 1)).total_seconds()
+            for t in cfg.trials:
+                status = t.get('status')
+                if status == 'reserved':
+                    heartbeat = t.get('heartbeat')
+                    if heartbeat is None:
+                        continue
 
-        # Generate fake result
-        with open(results_file.name, 'w') as file:
-            json.dump([generated_result], file)
-        # --
-        with OrionState(experiments=[], trials=[], database=storage) as cfg:
-            storage = cfg.storage()
+                    diff = 0
+                    if isinstance(heartbeat, datetime.datetime):
+                        diff = (now_datetime - heartbeat).total_seconds()
+                    else:
+                        diff = now_seconds - heartbeat
 
-            trial = Trial(**base_trial)
-            trial = storage.retrieve_result(trial, results_file)
+                    if diff > 60 * 2:
+                        count += 1
 
-            results = trial.results
+            assert len(trials) == count
 
-            assert len(results) == 1
-            assert results[0].to_dict() == generated_result
-
-    def test_retrieve_result(self, storage):
-        """Test retrieve result"""
-        self.retrieve_result(storage, generated_result={
-            'name': 'loss',
-            'type': 'objective',
-            'value': 2})
-
-    def test_retrieve_result_incorrect_value(self, storage):
-        """Test retrieve result"""
-        with pytest.raises(ValueError) as exec:
-            self.retrieve_result(storage, generated_result={
-                'name': 'loss',
-                'type': 'objective_unsupported_type',
-                'value': 2})
-
-        assert exec.match(r'Given type, objective_unsupported_type')
-
-    def test_retrieve_result_nofile(self, storage):
-        """Test retrieve result"""
-        results_file = tempfile.NamedTemporaryFile(
-            mode='w', prefix='results_', suffix='.log', dir='.', delete=True
-        )
-
-        with OrionState(experiments=[], trials=[], database=storage) as cfg:
-            storage = cfg.storage()
-
-            trial = Trial(**base_trial)
-
-            with pytest.raises(json.decoder.JSONDecodeError) as exec:
-                storage.retrieve_result(trial, results_file)
-
-        assert exec.match(r'Expecting value: line 1 column 1 \(char 0\)')
-
-    def test_push_trial_results(self, storage):
-        """Successfully push a completed trial into database."""
-        with OrionState(experiments=[], trials=[base_trial], database=storage) as cfg:
-            storage = cfg.storage()
-            trial = storage.get_trial(Trial(**base_trial))
-            results = [
-                Trial.Result(name='loss', type='objective', value=2)
-            ]
-            trial.results = results
-            assert storage.push_trial_results(trial), 'should update successfully'
-
-            trial2 = storage.get_trial(trial)
-            assert trial2.results == results
-
-    def test_change_status_success(self, storage, exp_config_file):
+    def test_change_status_success(self, storage):
         """Change the status of a Trial"""
         def check_status_change(new_status):
-            with OrionState(from_yaml=exp_config_file, database=storage) as cfg:
-                trial = cfg.get_trial(0)
+            with OrionState(
+                    experiments=[base_experiment],
+                    trials=generate_trials(), database=storage) as cfg:
+                trial = get_storage().get_trial(cfg.get_trial(0))
                 assert trial is not None, 'was not able to retrieve trial for test'
 
                 get_storage().set_trial_status(trial, status=new_status)
@@ -361,12 +312,18 @@ class TestStorage:
         check_status_change('suspended')
         check_status_change('new')
 
-    def test_change_status_failed_update(self, storage, exp_config_file):
-        """Successfully find new trials in db and reserve one at 'random'."""
+    def test_change_status_failed_update(self, storage):
+        """Change the status of a Trial"""
         def check_status_change(new_status):
-            with OrionState(from_yaml=exp_config_file, database=storage) as cfg:
-                trial = cfg.get_trial(0)
+            with OrionState(
+                    experiments=[base_experiment],
+                    trials=generate_trials(), database=storage) as cfg:
+                trial = get_storage().get_trial(cfg.get_trial(0))
                 assert trial is not None, 'Was not able to retrieve trial for test'
+
+                print(trial, trial.status, new_status)
+                if trial.status == new_status:
+                    return
 
                 with pytest.raises(FailedUpdate):
                     trial.status = new_status
@@ -410,9 +367,10 @@ class TestStorage:
                 if trial['status'] != 'completed':
                     count += 1
 
-            assert len(trials) == count
             for trial in trials:
                 assert trial.status != 'completed'
+
+            assert len(trials) == count
 
     def test_fetch_trial_by_status(self, storage):
         """Test fetch completed trials"""
@@ -469,14 +427,15 @@ class TestStorage:
             storage_name = storage
             storage = cfg.storage()
 
-            exp = cfg.get_experiment(name='default_name')
+            exp = cfg.get_experiment('default_name', 'default_user')
             trial1 = storage.fetch_trial_by_status(exp, status='reserved')[0]
+            trial1b = copy.deepcopy(trial1)
 
             storage.update_heartbeat(trial1)
 
             trial2 = storage.get_trial(trial1)
 
-            assert trial1.heartbeat is None
+            assert trial1b.heartbeat is None
             assert trial2.heartbeat is not None
             # this checks that heartbeat is the correct type and that it was updated prior to now
             assert trial2.heartbeat < datetime.datetime.utcnow()
@@ -487,3 +446,75 @@ class TestStorage:
 
                 assert trial3.heartbeat is None, \
                     'Legacy does not update trials with a status different from reserved'
+
+
+class TestLegacyStorage:
+    """Test Legacy Storage retrieve result mechanic separately"""
+
+    def test_push_trial_results(self, storage=None):
+        """Successfully push a completed trial into database."""
+        with OrionState(experiments=[], trials=[base_trial], database=storage) as cfg:
+            storage = cfg.storage()
+            trial = storage.get_trial(Trial(**base_trial))
+            results = [
+                Trial.Result(name='loss', type='objective', value=2)
+            ]
+            trial.results = results
+            assert storage.push_trial_results(trial), 'should update successfully'
+
+            trial2 = storage.get_trial(trial)
+            assert trial2.results == results
+
+    def retrieve_result(self, storage, generated_result):
+        """Test retrieve result"""
+        results_file = tempfile.NamedTemporaryFile(
+            mode='w', prefix='results_', suffix='.log', dir='.', delete=True
+        )
+
+        # Generate fake result
+        with open(results_file.name, 'w') as file:
+            json.dump([generated_result], file)
+        # --
+        with OrionState(experiments=[], trials=[], database=storage) as cfg:
+            storage = cfg.storage()
+
+            trial = Trial(**base_trial)
+            trial = storage.retrieve_result(trial, results_file)
+
+            results = trial.results
+
+            assert len(results) == 1
+            assert results[0].to_dict() == generated_result
+
+    def test_retrieve_result(self, storage=None):
+        """Test retrieve result"""
+        self.retrieve_result(storage, generated_result={
+            'name': 'loss',
+            'type': 'objective',
+            'value': 2})
+
+    def test_retrieve_result_incorrect_value(self, storage=None):
+        """Test retrieve result"""
+        with pytest.raises(ValueError) as exec:
+            self.retrieve_result(storage, generated_result={
+                'name': 'loss',
+                'type': 'objective_unsupported_type',
+                'value': 2})
+
+        assert exec.match(r'Given type, objective_unsupported_type')
+
+    def test_retrieve_result_nofile(self, storage=None):
+        """Test retrieve result"""
+        results_file = tempfile.NamedTemporaryFile(
+            mode='w', prefix='results_', suffix='.log', dir='.', delete=True
+        )
+
+        with OrionState(experiments=[], trials=[], database=storage) as cfg:
+            storage = cfg.storage()
+
+            trial = Trial(**base_trial)
+
+            with pytest.raises(json.decoder.JSONDecodeError) as exec:
+                storage.retrieve_result(trial, results_file)
+
+        assert exec.match(r'Expecting value: line 1 column 1 \(char 0\)')

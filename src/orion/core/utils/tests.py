@@ -126,11 +126,15 @@ class OrionState:
                 trials = exp_config[1]
 
         self.database_config = _select(database, _get_default_test_database())
-        self.experiments = _select(experiments, [])
-        self.trials = _select(trials, [])
-        self.workers = _select(workers, [])
-        self.resources = _select(resources, [])
-        self.lies = _select(lies, [])
+        self._experiments = _select(experiments, [])
+        self._trials = _select(trials, [])
+        self._workers = _select(workers, [])
+        self._resources = _select(resources, [])
+        self._lies = _select(lies, [])
+
+        self.trials = []
+        self.experiments = self._experiments
+        self.lies = []
 
     def init(self, config):
         """Initialize environment before testing"""
@@ -141,10 +145,14 @@ class OrionState:
         self.load_experience_configuration()
         return self
 
-    def get_experiment(self, name, user=None, version=None):
+    def get_experiment(self, name, user=None, version=None, uid=None):
         """Make experiment id deterministic"""
         exp = Experiment(name, user=user, version=version)
-        exp._id = name
+
+        # Legacy
+        if self.database is not None:
+            exp._id = exp.name
+
         return exp
 
     def get_trial(self, index):
@@ -157,36 +165,44 @@ class OrionState:
 
     def load_experience_configuration(self):
         """Load an example database."""
-        for i, t_dict in enumerate(self.trials):
-            self.trials[i] = Trial(**t_dict).to_dict()
+        for i, t_dict in enumerate(self._trials):
+            self._trials[i] = Trial(**t_dict).to_dict()
 
-        for i, t_dict in enumerate(self.lies):
-            self.lies[i] = Trial(**t_dict).to_dict()
+        for i, t_dict in enumerate(self._lies):
+            self._lies[i] = Trial(**t_dict).to_dict()
 
-        self.trials.sort(key=lambda obj: int(obj['_id'], 16), reverse=True)
+        self._trials.sort(key=lambda obj: int(obj['_id'], 16), reverse=True)
 
-        for i, _ in enumerate(self.experiments):
+        for i, _ in enumerate(self._experiments):
             path = os.path.join(
                 os.path.dirname(__file__),
-                self.experiments[i]["metadata"]["user_script"])
+                self._experiments[i]["metadata"]["user_script"])
 
-            self.experiments[i]["metadata"]["user_script"] = path
-            self.experiments[i]['version'] = 1
-            self.experiments[i]['_id'] = i
+            self._experiments[i]["metadata"]["user_script"] = path
+            self._experiments[i]['version'] = 1
+            self._experiments[i]['_id'] = i
 
         # Legacy
         if self.database is not None:
-            self.database.write('experiments', self.experiments)
-            self.database.write('trials', self.trials)
+            self.database.write('experiments', self._experiments)
+            self.database.write('trials', self._trials)
             self.database.write('workers', self.workers)
             self.database.write('resources', self.resources)
-            self.database.write('lying_trials', self.lies)
+            self.database.write('lying_trials', self._lies)
+
+            self.lies = self._lies
+            self.trials = self._trials
         else:
-            for exp in self.experiments:
+            for exp in self._experiments:
                 get_storage().create_experiment(exp)
 
-            for t in self.trials:
-                get_storage().register_trial(Trial(**t))
+            for t in self._trials:
+                nt = get_storage().register_trial(Trial(**t))
+                self.trials.append(nt.to_dict())
+
+            for t in self._lies:
+                nt = get_storage().register_lie(Trial(**t))
+                self.lies.append(nt.to_dict())
 
     def make_config(self):
         """Iterate over the database configuration and replace ${file}

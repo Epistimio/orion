@@ -13,7 +13,7 @@ from collections import defaultdict
 import copy
 import datetime
 import logging
-import uuid
+import hashlib
 
 
 # TODO: Remove this when factory is reworked
@@ -34,8 +34,9 @@ try:
 except ImportError:
     HAS_TRACK = False
 
+from orion.core.io.database import DuplicateKeyError
 from orion.core.worker.trial import Trial as OrionTrial
-from orion.storage.base import BaseStorageProtocol
+from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
 
 log = logging.getLogger(__name__)
 
@@ -81,6 +82,22 @@ def add_leading_slash(name):
     return name
 
 
+def to_epoch(date):
+    return (date - datetime.datetime(1970, 1, 1)).total_seconds()
+
+
+class _WarnOnce:
+    """Call a function once and only once"""
+
+    def __init__(self, fun, *args, **kwargs):
+        self.fun = lambda: fun(*args, **kwargs)
+        self.was_called = False
+
+    def __call__(self, *args, **kwargs):
+        if not self.was_called:
+            return self.fun()
+
+
 class TrialAdapter:
     """Mock Trial, see `~orion.core.worker.trial.Trial`
 
@@ -98,7 +115,7 @@ class TrialAdapter:
     """
 
     def __init__(self, storage_trial, orion_trial=None, objective=None):
-        self.storage = storage_trial
+        self.storage = copy.deepcopy(storage_trial)
         self.memory = orion_trial
         self.session_group = None
         self._params = None
@@ -163,16 +180,26 @@ class TrialAdapter:
     @status.setter
     def status(self, value):
         """See `~orion.core.worker.trial.Trial`"""
-        pass
+        self.storage.status = get_track_status(value)
+
+        if self.memory is not None:
+            self.memory.status = value
 
     def to_dict(self):
         """See `~orion.core.worker.trial.Trial`"""
         trial = copy.deepcopy(self.storage.metadata)
         trial.update({
-            'results': self.storage.metrics,
-            'params': self.storage.parameters,
+            'results': [r.to_dict() for r in self.results],
+            'params': [p.to_dict() for p in self.params],
             '_id': self.storage.uid,
+            'submit_time': self.submit_time,
+            'experiment': self.experiment,
+            'status': self.status
         })
+
+        trial.pop('_update_count', 0)
+        trial.pop('metric_types', 0)
+        trial.pop('params_types')
 
         return trial
 
@@ -215,6 +242,15 @@ class TrialAdapter:
     @property
     def results(self):
         """See `~orion.core.worker.trial.Trial`"""
+        self._results = []
+
+        for k, values in self.storage.metrics.items():
+            result_type = 'statistic'
+            if k == self.objective_key:
+                result_type = 'objective'
+
+            self._results.append(OrionTrial.Result(name=k, type=result_type, value=values[-1]))
+
         return self._results
 
     @results.setter
@@ -247,6 +283,27 @@ class TrialAdapter:
         """See `~orion.core.worker.trial.Trial`"""
         self.storage.metadata['end_time'] = value
 
+    @property
+    def heartbeat(self):
+        heartbeat = self.storage.metadata.get('heartbeat')
+        if heartbeat:
+            return datetime.datetime.utcfromtimestamp(heartbeat)
+        return None
+
+
+def experiment_uid(exp=None, name=None, version=None):
+    """Returns an experiment uid from its name and version for Track"""
+    if name is None:
+        name = exp.name
+
+    if version is None:
+        version = exp.version
+
+    sha = hashlib.sha256()
+    sha.update(name.encode('utf8'))
+    sha.update(bytes([version]))
+    return sha.hexdigest()
+
 
 class Track(BaseStorageProtocol):
     """Implement a generic protocol to allow Orion to communicate using
@@ -269,9 +326,11 @@ class Track(BaseStorageProtocol):
         self.project = None
         self.group = None
         self.current_trial = None
-
         self.objective = self.options.get('objective')
+        self.lies = dict()
         assert self.objective is not None, 'An objective should be defined!'
+
+        self.track_lie_warn = _WarnOnce(log.warning, 'Track does not persist lying trials')
 
     def _get_project(self, name):
         if self.project is None:
@@ -286,11 +345,14 @@ class Track(BaseStorageProtocol):
 
         self.group = self.backend.new_trial_group(
             TrialGroup(
-                name=str(uuid.uuid4()),
+                name=experiment_uid(name=config['name'], version=config['version']),
                 project_id=self.project.uid,
                 metadata=to_json(config)
             )
         )
+
+        if self.group is None:
+            raise DuplicateKeyError('Experiment was already created')
 
         config['_id'] = self.group.uid
         return config
@@ -318,12 +380,21 @@ class Track(BaseStorageProtocol):
 
     def fetch_experiments(self, query, selection=None):
         """Fetch all experiments that match the query"""
-        groups = self.backend.fetch_groups(query)
+        new_query = {}
+        for k, v in query.items():
+            if k == 'name':
+                new_query['metadata.name'] = v
+            elif k.startswith('metadata'):
+                new_query['metadata.{}'.format(k)] = v
+            else:
+                new_query[k] = v
+
+        groups = self.backend.fetch_groups(new_query)
 
         experiments = []
         for group in groups:
-            version = group.metadata.pop('version', 0)
-            metadata = group.metadata.pop('metadata', {})
+            version = group.metadata.get('version', 0)
+            metadata = group.metadata.get('metadata', {})
             experiments.append({
                 '_id': group.uid,
                 'name': group.project_id,
@@ -336,7 +407,6 @@ class Track(BaseStorageProtocol):
     def register_trial(self, trial):
         """Create a new trial to be executed"""
         stamp = datetime.datetime.utcnow()
-        trial.status = 'new'
         trial.submit_time = stamp
 
         metadata = dict()
@@ -346,7 +416,10 @@ class Track(BaseStorageProtocol):
         metadata['worker'] = trial.worker
         metadata['metric_types'] = {remove_leading_slash(p.name): p.type for p in trial.results}
         metadata['metric_types'][self.objective] = 'objective'
-        metadata['heartbeat'] = stamp
+        heartbeat = to_json(trial.heartbeat)
+        if heartbeat is None:
+            heartbeat = 0
+        metadata['heartbeat'] = heartbeat
 
         metrics = defaultdict(list)
         for p in trial.results:
@@ -354,13 +427,17 @@ class Track(BaseStorageProtocol):
 
         self.current_trial = self.backend.new_trial(TrackTrial(
             _hash=trial.hash_name,
-            status=get_track_status('new'),
+            status=get_track_status(trial.status),
             project_id=self.project.uid,
             group_id=self.group.uid,
             parameters={p.name: p.value for p in trial.params},
             metadata=metadata,
             metrics=metrics
-        ))
+        ), auto_increment=False)
+
+        if self.current_trial is None:
+            raise DuplicateKeyError('Was not able to register Trial!')
+
         return TrialAdapter(self.current_trial, objective=self.objective)
 
     def register_lie(self, trial):
@@ -378,7 +455,13 @@ class Track(BaseStorageProtocol):
             Fake trial to register in the database
 
         """
-        pass
+        self.track_lie_warn()
+
+        if trial.id in self.lies:
+            raise DuplicateKeyError('Lie already exists')
+
+        self.lies[trial.id] = trial
+        return trial
 
     def _fetch_trials(self, query, *args, **kwargs):
         """Fetch all the trials that match the query"""
@@ -471,14 +554,14 @@ class Track(BaseStorageProtocol):
 
     def fetch_pending_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_pending_trials`"""
+        pending_status = ['new', 'suspended', 'interrupted']
+        pending_status = [get_track_status(s) for s in pending_status]
+
         query = dict(
-            group_id=experiment._id,
-            status={'$in': [
-                'new',
-                'suspended',
-                'interrupted'
-            ]}
+            group_id=experiment.id,
+            status={'$in': pending_status}
         )
+
         return self._fetch_trials(query)
 
     def set_trial_status(self, trial, status, heartbeat=None):
@@ -491,48 +574,113 @@ class Track(BaseStorageProtocol):
             does not match the status in the database
 
         """
-        kwargs = dict(status=status)
-        if heartbeat is not None:
-            kwargs['heartbeat'] = heartbeat
+        result_trial = self.backend.fetch_and_update_trial({
+            'uid': trial.id,
+            'status': get_track_status(trial.status)
+        }, 'set_trial_status', status=get_track_status(status))
 
-        return self._update_trial(trial, **kwargs)
+        if result_trial is None:
+            raise FailedUpdate()
+
+        trial.status = status
+        return result_trial
 
     def fetch_trials(self, experiment=None, uid=None):
-        pass
+        if uid and experiment:
+            assert experiment.id == uid
+
+        if uid is None:
+            if experiment is None:
+                raise MissingArguments('experiment or uid need to be defined')
+
+            uid = experiment.id
+
+        return self._fetch_trials(dict(group_id=uid))
 
     def get_trial(self, trial=None, uid=None):
-        pass
+        if trial is not None and uid is not None:
+            assert trial.id == uid
+
+        if uid is None:
+            if trial is None:
+                raise MissingArguments('trial or uid argument should be populated')
+
+            uid = trial.id
+
+        _hash, _rev = 0, 0
+        data = uid.split('_', maxsplit=1)
+
+        if len(data) == 1:
+            _hash = data[0]
+
+        elif len(data) == 2:
+            _hash, _rev = data
+
+        trials = self.backend.get_trial(TrackTrial(_hash=_hash, revision=_rev))
+
+        if trials is None:
+            return None
+
+        assert len(trials) == 1
+        return TrialAdapter(trials[0], objective=self.objective)
 
     def reserve_trial(self, experiment):
         """Select a pending trial and reserve it for the worker"""
-        raise NotImplementedError()
+        query = dict(
+            group_id=experiment.id,
+            status={'$in': ['new', 'suspended', 'interrupted']}
+        )
+
+        trial = self.backend.fetch_and_update_trial(
+            query,
+            'set_trial_status',
+            status=get_track_status('reserved'))
+
+        if trial is None:
+            return None
+
+        return TrialAdapter(trial, objective=self.objective)
 
     def fetch_lost_trials(self, experiment):
         """Fetch all trials that have a heartbeat older than
         some given time delta (2 minutes by default)
         """
-        raise NotImplementedError()
+        # TODO: Configure this
+        threshold = to_epoch(datetime.datetime.utcnow() - datetime.timedelta(seconds=60 * 2))
+        lte_comparison = {'$lte': threshold}
+        query = {
+            'experiment': experiment.id,
+            'status': 'reserved',
+            'heartbeat': lte_comparison
+        }
+
+        return self._fetch_trials(query)
 
     def push_trial_results(self, trial):
         """Push the trial's results to the database"""
-        raise NotImplementedError()
+        self.backend.log_trial_metrics()
 
     def fetch_noncompleted_trials(self, experiment):
         """Fetch all non completed trials"""
-        raise NotImplementedError()
+        query = dict(
+            group_id=experiment.id,
+            status={'$ne': get_track_status('completed')}
+        )
+        return self.backend.fetch_trials(query)
 
     def fetch_trial_by_status(self, experiment, status):
         """Fetch all trials with the given status"""
-        raise NotImplementedError()
+        trials = self._fetch_trials(dict(status=status, group_id=experiment.id))
+        return trials
 
     def count_completed_trials(self, experiment):
         """Count the number of completed trials"""
-        raise NotImplementedError()
+        return len(self._fetch_trials(dict(status='completed', group_id=experiment.id)))
 
     def count_broken_trials(self, experiment):
         """Count the number of broken trials"""
-        raise NotImplementedError()
+        return len(self._fetch_trials(dict(status='broken', group_id=experiment.id)))
 
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
-        raise self._update_trial(trial, heartbeat=datetime.datetime.utcnow())
+        self.backend.log_trial_metadata(trial.storage, heartbeat=to_epoch(datetime.datetime.utcnow()))
