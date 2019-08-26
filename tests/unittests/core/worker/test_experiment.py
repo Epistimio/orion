@@ -679,21 +679,21 @@ class TestReserveTrial(object):
         old_heartbeat_value = orion.core.config.worker.heartbeat
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        get_storage().update_trial(trial,
-                                   status='reserved',
-                                   heartbeat=heartbeat,
-                                   where={'experiment': hacked_exp.id})
+        get_storage().set_trial_status(trial,
+                                       status='reserved',
+                                       heartbeat=heartbeat)
 
-        exp_query['status'] = 'reserved'
-        exp_query['_id'] = trial.id
+        trials = get_storage().fetch_trial_by_status(hacked_exp, 'reserved')
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+        assert trial.id in [t.id for t in trials]
 
-        orion.core.config.worker.heartbeat = 150
-
+        orion.core.config.worker.heartbeat = 210
         hacked_exp.fix_lost_trials()
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+        trials = get_storage().fetch_trial_by_status(hacked_exp, 'reserved')
+
+        assert trial.id in [t.id for t in trials]
+
         orion.core.config.worker.heartbeat = old_heartbeat_value
 
 
@@ -834,7 +834,7 @@ def test_configurable_broken_property(hacked_exp):
     old_broken_value = orion.core.config.worker.max_broken
 
     for trial in trials:
-        get_storage().update_trial(trial, status='broken')
+        get_storage().set_trial_status(trial, status='broken')
 
     assert hacked_exp.is_broken
 
