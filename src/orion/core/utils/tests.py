@@ -145,7 +145,7 @@ class OrionState:
         self.load_experience_configuration()
         return self
 
-    def get_experiment(self, name, user=None, version=None, uid=None):
+    def get_experiment(self, name, user=None, version=None):
         """Make experiment id deterministic"""
         exp = Experiment(name, user=user, version=version)
 
@@ -196,12 +196,12 @@ class OrionState:
             for exp in self._experiments:
                 get_storage().create_experiment(exp)
 
-            for t in self._trials:
-                nt = get_storage().register_trial(Trial(**t))
+            for trial in self._trials:
+                nt = get_storage().register_trial(Trial(**trial))
                 self.trials.append(nt.to_dict())
 
-            for t in self._lies:
-                nt = get_storage().register_lie(Trial(**t))
+            for lie in self._lies:
+                nt = get_storage().register_lie(Trial(**lie))
                 self.lies.append(nt.to_dict())
 
     def make_config(self):
@@ -212,9 +212,11 @@ class OrionState:
         _remove(self.tempfile)
 
         def map_dict(fun, dictionary):
+            """Return a dictionary with fun applied to each values"""
             return {k: fun(v) for k, v in dictionary.items()}
 
         def replace_file(v):
+            """Replace `${file}` by a generated temporary file"""
             if isinstance(v, str):
                 v = v.replace('${file}', self.tempfile)
 
@@ -227,7 +229,6 @@ class OrionState:
 
     def __enter__(self):
         """Load a new database state"""
-
         for singleton in self.SINGLETONS:
             self.new_singleton(singleton, new_value=None)
 

@@ -12,12 +12,18 @@
 from collections import defaultdict
 import copy
 import datetime
-import logging
 import hashlib
+import logging
+
+from orion.core.io.database import DuplicateKeyError
+from orion.core.worker.trial import Trial as OrionTrial
+from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
 
 
 # TODO: Remove this when factory is reworked
-class Track:
+class Track:    # noqa: F811
+    """Forward declaration because of a weird factory bug where Track is not found"""
+
     def __init__(self, uri):
         assert False, 'This should not be called'
 
@@ -34,9 +40,6 @@ try:
 except ImportError:
     HAS_TRACK = False
 
-from orion.core.io.database import DuplicateKeyError
-from orion.core.worker.trial import Trial as OrionTrial
-from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
 
 log = logging.getLogger(__name__)
 
@@ -83,6 +86,7 @@ def add_leading_slash(name):
 
 
 def to_epoch(date):
+    """Convert datetime class into seconds since epochs"""
     return (date - datetime.datetime(1970, 1, 1)).total_seconds()
 
 
@@ -285,6 +289,7 @@ class TrialAdapter:
 
     @property
     def heartbeat(self):
+        """Trial Heartbeat"""
         heartbeat = self.storage.metadata.get('heartbeat')
         if heartbeat:
             return datetime.datetime.utcfromtimestamp(heartbeat)
@@ -292,7 +297,7 @@ class TrialAdapter:
 
 
 def experiment_uid(exp=None, name=None, version=None):
-    """Returns an experiment uid from its name and version for Track"""
+    """Return an experiment uid from its name and version for Track"""
     if name is None:
         name = exp.name
 
@@ -305,7 +310,7 @@ def experiment_uid(exp=None, name=None, version=None):
     return sha.hexdigest()
 
 
-class Track(BaseStorageProtocol):
+class Track(BaseStorageProtocol):   # noqa: F811
     """Implement a generic protocol to allow Orion to communicate using
     different storage backend
 
@@ -586,6 +591,7 @@ class Track(BaseStorageProtocol):
         return result_trial
 
     def fetch_trials(self, experiment=None, uid=None):
+        """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
         if uid and experiment:
             assert experiment.id == uid
 
@@ -598,6 +604,7 @@ class Track(BaseStorageProtocol):
         return self._fetch_trials(dict(group_id=uid))
 
     def get_trial(self, trial=None, uid=None):
+        """See :func:`~orion.storage.BaseStorageProtocol.get_trials`"""
         if trial is not None and uid is not None:
             assert trial.id == uid
 
@@ -683,4 +690,5 @@ class Track(BaseStorageProtocol):
 
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
-        self.backend.log_trial_metadata(trial.storage, heartbeat=to_epoch(datetime.datetime.utcnow()))
+        self.backend.log_trial_metadata(trial.storage,
+                                        heartbeat=to_epoch(datetime.datetime.utcnow()))

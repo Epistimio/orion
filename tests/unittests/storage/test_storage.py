@@ -322,7 +322,6 @@ class TestStorage:
                 assert trial is not None, 'Was not able to retrieve trial for test'
                 assert trial.status != new_status
 
-                print(trial, trial.status, new_status)
                 if trial.status == new_status:
                     return
 
