@@ -55,6 +55,10 @@ def main(args):
 
     experiments = get_experiments(args)
 
+    if not experiments:
+        print("No experiment found")
+        return
+
     if args.get('name'):
         print_status(experiments[0], all_trials=args.get('all'), collapse=args.get('collapse'))
         return
