@@ -9,7 +9,6 @@ algorithms:
     # dx_tolerance: 1e-7
 
 user_script_config: configuration
-working_dir: ./
 
 producer:
     strategy: NoParallelStrategy
