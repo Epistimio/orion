@@ -15,7 +15,7 @@ import getpass
 import logging
 import sys
 
-from orion.core import config
+import orion.core
 from orion.core.cli.evc import fetch_branching_configuration
 from orion.core.evc.adapters import Adapter, BaseAdapter
 from orion.core.evc.conflicts import detect_conflicts
@@ -373,7 +373,7 @@ class Experiment:
 
         """
         num_broken_trials = self._storage.count_broken_trials(self)
-        return num_broken_trials >= config.worker.max_broken
+        return num_broken_trials >= orion.core.config.worker.max_broken
 
     @property
     def space(self):

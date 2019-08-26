@@ -11,7 +11,7 @@
 import datetime
 import logging
 
-from orion.core import config
+import orion.core
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database
 from orion.core.worker.trial import Trial
@@ -185,7 +185,7 @@ class Legacy(BaseStorageProtocol):
 
     def fetch_lost_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_lost_trials`"""
-        heartbeat = config.worker.heartbeat
+        heartbeat = orion.core.config.worker.heartbeat
         threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=heartbeat)
         lte_comparison = {'$lte': threshold}
         query = {
