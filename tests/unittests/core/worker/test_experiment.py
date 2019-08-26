@@ -4,7 +4,6 @@
 
 import copy
 import datetime
-import getpass
 import json
 import tempfile
 
@@ -110,29 +109,10 @@ class TestInitExperiment(object):
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
-    @pytest.mark.usefixtures("with_user_bouthilx")
-    def test_new_experiment_due_to_username(self, create_db_instance, random_dt):
-        """Hit exp_name, but user's name does not hit the db, create new entry."""
-        exp = Experiment('supernaedo2')
-        assert exp._init_done is False
-        assert_protocol(exp, create_db_instance)
-        assert exp._id is None
-        assert exp.name == 'supernaedo2'
-        assert exp.refers == {}
-        assert exp.metadata['user'] == 'bouthilx'
-        assert len(exp.metadata) == 1
-        assert exp.pool_size is None
-        assert exp.max_trials is None
-        assert exp.algorithms is None
-        assert exp.working_dir is None
-        assert exp.version == 1
-        with pytest.raises(AttributeError):
-            exp.this_is_not_in_config = 5
-
     @pytest.mark.usefixtures("with_user_tsirif")
     def test_existing_experiment(self, create_db_instance, exp_config):
         """Hit exp_name + user's name in the db, fetch most recent entry."""
-        exp = Experiment('supernaedo2')
+        exp = Experiment('supernaedo2-dendi')
         assert exp._init_done is False
         assert_protocol(exp, create_db_instance)
         assert exp._id == exp_config[0][0]['_id']
@@ -194,7 +174,7 @@ class TestConfigProperty(object):
 
         Assuming that experiment's (exp's name, user's name) has hit the database.
         """
-        exp = Experiment('supernaedo2')
+        exp = Experiment('supernaedo2-dendi')
         exp_config[0][0].pop('_id')
         exp_config[0][0]['version'] = 1
         assert exp.configuration == exp_config[0][0]
@@ -242,7 +222,7 @@ class TestConfigProperty(object):
         Everything is normal, nothing changes. Experiment is resumed,
         perhaps with more trials to evaluate (an exception is 'max_trials').
         """
-        exp = Experiment('supernaedo2')
+        exp = Experiment('supernaedo2-dendi')
         # Deliver an external configuration to finalize init
         exp_config[0][0]['max_trials'] = 5000
         exp.configure(exp_config[0][0])
@@ -262,7 +242,7 @@ class TestConfigProperty(object):
         Everything is normal, nothing changes. Experiment is resumed,
         perhaps with more workers that evaluate (an exception is 'pool_size').
         """
-        exp = Experiment('supernaedo2')
+        exp = Experiment('supernaedo2-dendi')
         # Deliver an external configuration to finalize init
         exp_config[0][0]['pool_size'] = 10
         exp.configure(exp_config[0][0])
@@ -369,7 +349,7 @@ class TestConfigProperty(object):
         user's name) has not hit the database. return a yaml compliant form
         of current state, to be used with :mod:`orion.core.cli.esolve_config`.
         """
-        exp = Experiment('supernaedo2')
+        exp = Experiment('supernaedo2-dendi')
         # Deliver an external configuration to finalize init
         experiment_count_before = count_experiment(exp)
         exp.configure(exp_config[0][0])
@@ -502,7 +482,7 @@ class TestConfigProperty(object):
 
     def test_algorithm_config_with_just_a_string(self, exp_config):
         """Test that configuring an algorithm with just a string is OK."""
-        new_config = copy.deepcopy(exp_config[0][1])
+        new_config = copy.deepcopy(exp_config[0][2])
         new_config['algorithms'] = 'dumbalgo'
         exp = Experiment('supernaedo3')
         exp.configure(new_config)
@@ -523,14 +503,14 @@ class TestConfigProperty(object):
         exp = Experiment('supernaedo4')
 
         # Deliver an external configuration to finalize init
-        exp.configure(exp_config[0][2])
+        exp.configure(exp_config[0][3])
 
         assert exp.is_done
 
         exp = Experiment('supernaedo4')
         # Deliver an external configuration to finalize init
-        exp_config[0][2]['max_trials'] = 1000
-        exp.configure(exp_config[0][2])
+        exp_config[0][3]['max_trials'] = 1000
+        exp.configure(exp_config[0][3])
 
         assert not exp.is_done
 
@@ -594,27 +574,6 @@ class TestConfigProperty(object):
         assert exp.version == 1
 
 
-@pytest.mark.usefixtures("create_db_instance", "with_user_bouthilx")
-def test_forcing_user(exp_config):
-    """Trying to set by forcing user so that NO differences are found."""
-    assert getpass.getuser() == 'bouthilx'
-    exp = Experiment('supernaedo2')
-    assert exp.metadata['user'] == 'bouthilx'
-    exp = Experiment('supernaedo2', 'tsirif')
-    # Deliver an external configuration to finalize init
-    exp_config[0][0]['max_trials'] = 5000
-    exp.configure(exp_config[0][0])
-    exp_config[0][0]['algorithms']['dumbalgo']['done'] = False
-    exp_config[0][0]['algorithms']['dumbalgo']['judgement'] = None
-    exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
-    exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
-    exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
-    exp_config[0][0]['algorithms']['dumbalgo']['seed'] = None
-    exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
-    assert exp._id == exp_config[0][0].pop('_id')
-    assert exp.configuration == exp_config[0][0]
-
-
 class TestReserveTrial(object):
     """Calls to interface `Experiment.reserve_trial`."""
 
@@ -628,14 +587,14 @@ class TestReserveTrial(object):
     def test_reserve_success(self, exp_config_file, random_dt):
         """Successfully find new trials in db and reserve the first one"""
         with OrionState(from_yaml=exp_config_file) as cfg:
-            exp = cfg.get_experiment('supernaedo2', user='dendi')
+            exp = cfg.get_experiment('supernaedo2-dendi')
             trial = exp.reserve_trial()
 
-            cfg.trials[0]['status'] = 'reserved'
-            cfg.trials[0]['start_time'] = random_dt
-            cfg.trials[0]['heartbeat'] = random_dt
+            cfg.trials[1]['status'] = 'reserved'
+            cfg.trials[1]['start_time'] = random_dt
+            cfg.trials[1]['heartbeat'] = random_dt
 
-            assert trial.to_dict() == cfg.trials[0]
+            assert trial.to_dict() == cfg.trials[1]
 
     def test_reserve_when_exhausted(self, exp_config, hacked_exp):
         """Return None once all the trials have been allocated"""
@@ -845,7 +804,7 @@ def test_experiment_stats(hacked_exp, exp_config, random_dt):
     assert stats['trials_completed'] == 3
     assert stats['best_trials_id'] == exp_config[1][2]['_id']
     assert stats['best_evaluation'] == 2
-    assert stats['start_time'] == exp_config[0][3]['metadata']['datetime']
+    assert stats['start_time'] == exp_config[0][4]['metadata']['datetime']
     assert stats['finish_time'] == exp_config[1][1]['end_time']
     assert stats['duration'] == stats['finish_time'] - stats['start_time']
     assert len(stats) == 6
@@ -862,18 +821,10 @@ class TestInitExperimentView(object):
         assert ("No experiment with given name 'supernaekei' for user 'tsirif'"
                 in str(exc_info.value))
 
-    @pytest.mark.usefixtures("with_user_bouthilx")
-    def test_empty_experiment_view_due_to_username(self):
-        """Hit exp_name, but user's name does not hit the db, create new entry."""
-        with pytest.raises(ValueError) as exc_info:
-            ExperimentView('supernaedo2')
-        assert ("No experiment with given name 'supernaedo2' for user 'bouthilx'"
-                in str(exc_info.value))
-
     @pytest.mark.usefixtures("with_user_tsirif")
     def test_existing_experiment_view(self, create_db_instance, exp_config):
         """Hit exp_name + user's name in the db, fetch most recent entry."""
-        exp = ExperimentView('supernaedo2')
+        exp = ExperimentView('supernaedo2-dendi')
         assert exp._experiment._init_done is False
 
         assert exp._id == exp_config[0][0]['_id']
@@ -989,7 +940,7 @@ def test_experiment_view_stats(hacked_exp, exp_config, random_dt):
     assert stats['trials_completed'] == 3
     assert stats['best_trials_id'] == exp_config[1][2]['_id']
     assert stats['best_evaluation'] == 2
-    assert stats['start_time'] == exp_config[0][3]['metadata']['datetime']
+    assert stats['start_time'] == exp_config[0][4]['metadata']['datetime']
     assert stats['finish_time'] == exp_config[1][1]['end_time']
     assert stats['duration'] == stats['finish_time'] - stats['start_time']
     assert len(stats) == 6

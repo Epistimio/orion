@@ -122,7 +122,7 @@ class Experiment:
         # this needs to be an attribute because we override it in ExperienceView
         self._storage = get_storage()
 
-        config = self._storage.fetch_experiments({'name': name, 'metadata.user': user})
+        config = self._storage.fetch_experiments({'name': name})
 
         if config:
             log.debug("Found existing experiment, %s, under user, %s, registered in database.",
