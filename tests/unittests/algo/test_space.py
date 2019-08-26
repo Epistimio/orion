@@ -537,9 +537,9 @@ class TestSpace(object):
     """Test methods of a `Space` object."""
 
     def test_init(self):
-        """Instantiate space, must be an ordered dictionary."""
+        """Instantiate space, must be a dictionary."""
         space = Space()
-        assert isinstance(space, OrderedDict)
+        assert isinstance(space, dict)
 
     def test_register_and_contain(self):
         """Register bunch of dimensions, check if points/name are in space."""
@@ -659,6 +659,28 @@ class TestSpace(object):
 
         with pytest.raises(IndexError):
             space[3]
+
+    def test_order(self):
+        """Test that the same space built twice will have the same ordering."""
+        space1 = Space()
+        space1.register(Integer('yolo1', 'uniform', -3, 6, shape=(2,)))
+        space1.register(Integer('yolo2', 'uniform', -3, 6, shape=(2,)))
+        space1.register(Real('yolo3', 'norm', 0.9))
+        space1.register(Categorical('yolo4', ('asdfa', 2)))
+
+        space2 = Space()
+        space2.register(Integer('yolo1', 'uniform', -3, 6, shape=(2,)))
+        space2.register(Real('yolo3', 'norm', 0.9))
+        space2.register(Categorical('yolo4', ('asdfa', 2)))
+        space2.register(Integer('yolo2', 'uniform', -3, 6, shape=(2,)))
+
+        assert list(space1) == list(space1.keys())
+        assert list(space2) == list(space2.keys())
+        assert list(space1.values()) == list(space2.values())
+        assert list(space1.items()) == list(space2.items())
+        assert list(space1.keys()) == list(space2.keys())
+        assert list(space1.values()) == list(space2.values())
+        assert list(space1.items()) == list(space2.items())
 
     def test_repr(self):
         """Test str/repr."""

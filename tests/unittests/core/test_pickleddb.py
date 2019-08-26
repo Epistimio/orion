@@ -9,7 +9,8 @@ import os
 import pytest
 
 from orion.core.io.database import Database, DuplicateKeyError
-from orion.core.io.database.pickleddb import PickledDB
+from orion.core.io.database.ephemeraldb import EphemeralCollection
+from orion.core.io.database.pickleddb import find_unpickable_doc, find_unpickable_field, PickledDB
 
 
 @pytest.fixture()
@@ -354,3 +355,54 @@ class TestConcurreny(object):
         Pool(10).starmap(write, (('unique', 1) for i in range(10)))
 
         assert orion_db.count('concurrent', {'unique': 1}) == 1
+
+
+def test_unpickable_error_find_document():
+    """Check error messages for pickledb"""
+    class UnpickableClass:
+        i_am_not_pickable = None
+
+    unpickable_doc = {
+        '_id': 2,
+        'a_pickable': 1,
+        'b_unpickable': UnpickableClass(),
+        'c_pickable': 3
+    }
+
+    def make_pickable(uid):
+        return {
+            '_id': uid,
+            'a_pickable': 1,
+            'b_pickable': 2,
+            'c_pickable': 3
+        }
+
+    unpickable_dict_of_dict = [
+        make_pickable(1),
+        unpickable_doc,
+        make_pickable(3)
+    ]
+
+    pickable_dict_of_dict = [
+        make_pickable(1),
+        make_pickable(2),
+        make_pickable(3)
+    ]
+
+    unpickable_collection = EphemeralCollection()
+    unpickable_collection.insert_many(unpickable_dict_of_dict)
+
+    pickable_collection = EphemeralCollection()
+    pickable_collection.insert_many(pickable_dict_of_dict)
+
+    database = {
+        'pickable_collection': pickable_collection,
+        'unpickable_collection': unpickable_collection
+    }
+
+    collection, doc = find_unpickable_doc(database)
+    assert collection == 'unpickable_collection', 'should return the unpickable document'
+
+    key, value = find_unpickable_field(doc)
+    assert key == 'b_unpickable', 'should return the unpickable field'
+    assert isinstance(value, UnpickableClass), 'should return the unpickable value'

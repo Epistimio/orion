@@ -16,6 +16,7 @@ import pprint
 
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer
+from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ def workon(experiment, worker_trials=None):
         log.info("No trials completed.")
         return
 
-    best = experiment.fetch_trials({'_id': stats['best_trials_id']})[0]
+    best = get_storage().get_trial(uid=stats['best_trials_id'])
 
     stats_stream = io.StringIO()
     pprint.pprint(stats, stream=stats_stream)

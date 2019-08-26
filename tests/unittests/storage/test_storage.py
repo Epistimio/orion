@@ -1,143 +1,489 @@
-from io import StringIO
-import os
-import yaml
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""Collection of tests for :mod:`orion.storage`."""
 
-from orion.core.io.database import Database
-from orion.core.io.database.mongodb import MongoDB
-from orion.core.io.database.pickleddb import PickledDB
+import copy
+import datetime
+import json
+import logging
+import tempfile
+
+import pytest
+
+from orion.core.io.database import DuplicateKeyError
+from orion.core.utils.tests import OrionState
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage, Storage
-from orion.storage.legacy import Legacy
+from orion.storage.base import FailedUpdate, get_storage, MissingArguments
+from orion.storage.track import HAS_TRACK
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.WARNING)
+
+storage_backends = [
+    None  # defaults to legacy with PickleDB
+]
+
+if not HAS_TRACK:
+    log.warning('Track is not tested!')
+else:
+    log.info('Track is tested!')
+    storage_backends.append({
+        'storage_type': 'track',
+        'args': {
+            'uri': 'file://${file}?objective=loss'
+        }
+    })
+
+base_experiment = {
+    'name': 'default_name',
+    'version': 0,
+    'metadata': {
+        'user': 'default_user',
+        'user_script': 'abc',
+        'datetime': '2017-11-23T02:00:00'
+    }
+}
 
 
-def remove(file_name):
-    try:
-        os.remove(file_name)
-    except FileNotFoundError:
-        pass
+base_trial = {
+    'experiment': 'default_name',
+    'status': 'new',  # new, reserved, suspended, completed, broken
+    'worker': None,
+    'submit_time': '2017-11-23T02:00:00',
+    'start_time': None,
+    'end_time': None,
+    'heartbeat': None,
+    'results': [
+        {'name': 'loss',
+         'type': 'objective',  # objective, constraint
+         'value': 2}
+    ],
+    'params': [
+        {'name': '/encoding_layer',
+         'type': 'categorical',
+         'value': 'rnn'},
+        {'name': '/decoding_layer',
+         'type': 'categorical',
+         'value': 'lstm_with_attention'}
+    ]
+}
 
 
-PICKLE_DB_HARDCODED = '/tmp/database.pkl'
+def _generate(obj, *args, value):
+    if obj is None:
+        return None
+
+    obj = copy.deepcopy(obj)
+    data = obj
+
+    for arg in args[:-1]:
+        data = data[arg]
+
+    data[args[-1]] = value
+    return obj
 
 
-class OrionTestState:
-    """Setup global variables and singleton for tests
-
-    it swaps the singleton with none at startup and restore them after the tests.
-    It also initialize PickleDB as the storage for testing.
-    We use PickledDB as our storage mock
-
-    Parameters
-    ----------
-    config: YAML
-        YAML config to apply for this test
-
-    Examples
-    --------
-
-    >>> myconfig = {...}
-    >>> with OrionTestState(myconfig):
-        ...
-
-    """
-    SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB)
-    singletons = {}
-    database = None
-
-    # def __init__(self, experiments, trials, ...):
-    #     self.config = {
-    #         'database': {
-    #             'experiments': experiments,
-    #             'trials': trials,
-    #             ...
-    #         }
-    #     }
-
-    def init(self, config, storage):
-        """Initialize environment before testing"""
-        self.storage(storage_type=storage)
-        self.database = get_storage()._db
-
-        exp_config = config.get('database')
-        if exp_config is not None:
-            self.load_experience_configuration(exp_config)
-
-        return self.database
-
-    def cleanup(self):
-        """Cleanup after testing"""
-        remove(PICKLE_DB_HARDCODED)
-
-    def load_experience_configuration(self, experience):
-        """Load an example database."""
-        exp_config = list(yaml.safe_load(StringIO(experience)))
-
-        for i, t_dict in enumerate(exp_config[1]):
-            exp_config[1][i] = Trial(**t_dict).to_dict()
-
-        for i, _ in enumerate(exp_config[0]):
-            path = os.path.join(
-                os.path.dirname(__file__),
-                exp_config[0][i]["metadata"]["user_script"])
-
-            exp_config[0][i]["metadata"]["user_script"] = path
-            exp_config[0][i]['version'] = 1
-
-        self.database.write('experiments', exp_config[0])
-        self.database.write('trials', exp_config[1])
-        self.database.write('workers', exp_config[2])
-        self.database.write('resources', exp_config[3])
-
-    def __init__(self, config=None):
-        self.config = config
-
-    def __enter__(self):
-        for singleton in self.SINGLETONS:
-            self.new_singleton(singleton)
-
-        return self.init(self.config)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cleanup()
-
-        for obj in self.singletons:
-            self.restore_singleton(obj)
-
-    def new_singleton(self, obj, new_value=None):
-        self.singletons[obj] = obj.instance
-        obj.instance = new_value
-
-    def restore_singleton(self, obj):
-        obj.instance = self.singletons.get(obj)
-
-    def storage(self, storage_type='legacy'):
-        """Returns test storage"""
-        try:
-            config = {
-                'database': {
-                    'type': 'PickledDB',
-                    'host': PICKLE_DB_HARDCODED
-                }
-            }
-            db = Storage(storage_type, config=config)
-
-        except ValueError:
-            db = get_storage()
-        return db
+def make_lost_trial():
+    """Make a lost trial"""
+    obj = copy.deepcopy(base_trial)
+    obj['status'] = 'reserved'
+    obj['heartbeat'] = datetime.datetime.utcnow() - datetime.timedelta(seconds=61 * 2)
+    obj['params'].append({
+        'name': '/index',
+        'type': 'categorical',
+        'value': 'lost_trial'
+    })
+    return obj
 
 
+all_status = ['completed', 'broken', 'reserved', 'interrupted', 'suspended', 'new']
+
+
+def generate_trials(status=None):
+    """Generate Trials with different configurations"""
+    if status is None:
+        status = all_status
+
+    new_trials = [_generate(base_trial, 'status', value=s) for s in status]
+
+    # make each trial unique
+    for i, trial in enumerate(new_trials):
+        trial['params'].append({
+            'name': '/index',
+            'type': 'categorical',
+            'value': i
+        })
+
+    return new_trials
+
+
+def generate_experiments():
+    """Generate a set of experiments"""
+    users = ['a', 'b', 'c']
+    exps = [_generate(base_experiment, 'metadata', 'user', value=u) for u in users]
+    return [_generate(exp, 'name', value=str(i)) for i, exp in enumerate(exps)]
+
+
+@pytest.mark.parametrize('storage', storage_backends)
 class TestStorage:
-    def __init__(self, backend):
-        self.backend = backend
+    """Test all storage backend"""
 
-    def test_create_experiment(self):
-        with OrionTestState(storage=self.backend):
-            get_storage().create_experiment({
-                'name': 'test'
-            })
+    def test_create_experiment(self, storage):
+        """Test create experiment"""
+        with OrionState(experiments=[], database=storage) as cfg:
+            storage = cfg.storage()
 
-    def test_update_experiment(self):
-        with OrionTestState(storage=self.backend):
-            get_storage().create_experiment({
-                'name': 'test'
-            })
+            storage.create_experiment(base_experiment)
+
+            experiments = storage.fetch_experiments({})
+            assert len(experiments) == 1, 'Only one experiment in the database'
+
+            experiment = experiments[0]
+            assert base_experiment == experiment, 'Local experiment and DB should match'
+
+    def test_create_experiment_fail(self, storage):
+        """Test create experiment"""
+        with OrionState(experiments=[base_experiment], database=storage) as cfg:
+            storage = cfg.storage()
+
+            with pytest.raises(DuplicateKeyError):
+                storage.create_experiment(base_experiment)
+
+    def test_fetch_experiments(self, storage, name='0', user='a'):
+        """Test fetch experiments"""
+        with OrionState(experiments=generate_experiments(), database=storage) as cfg:
+            storage = cfg.storage()
+
+            experiments = storage.fetch_experiments({})
+            assert len(experiments) == len(cfg.experiments)
+
+            experiments = storage.fetch_experiments({'name': name, 'metadata.user': user})
+            assert len(experiments) == 1
+
+            experiment = experiments[0]
+            assert experiment['name'] == name, 'name should match query'
+            assert experiment['metadata']['user'] == user, 'user name should match query'
+
+            experiments = storage.fetch_experiments({'name': '-1', 'metadata.user': user})
+            assert len(experiments) == 0
+
+    def test_register_trial(self, storage):
+        """Test register trial"""
+        with OrionState(experiments=[base_experiment], database=storage) as cfg:
+            storage = cfg.storage()
+            trial1 = storage.register_trial(Trial(**base_trial))
+            trial2 = storage.get_trial(trial1)
+
+            assert trial1.to_dict() == trial2.to_dict(), 'Trials should match after insert'
+
+    def test_register_duplicate_trial(self, storage):
+        """Test register trial"""
+        with OrionState(
+                experiments=[base_experiment], trials=[base_trial], database=storage) as cfg:
+            storage = cfg.storage()
+
+            with pytest.raises(DuplicateKeyError):
+                storage.register_trial(Trial(**base_trial))
+
+    def test_register_lie(self, storage):
+        """Test register lie"""
+        with OrionState(experiments=[base_experiment], database=storage) as cfg:
+            storage = cfg.storage()
+            storage.register_lie(Trial(**base_trial))
+
+    def test_register_lie_fail(self, storage):
+        """Test register lie"""
+        with OrionState(experiments=[base_experiment], lies=[base_trial], database=storage) as cfg:
+            storage = cfg.storage()
+
+            with pytest.raises(DuplicateKeyError):
+                storage.register_lie(Trial(**cfg.lies[0]))
+
+    def test_reserve_trial_success(self, storage):
+        """Test reserve trial"""
+        with OrionState(
+                experiments=[base_experiment], trials=[base_trial], database=storage) as cfg:
+            storage = cfg.storage()
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+
+            trial = storage.reserve_trial(experiment)
+            assert trial is not None
+            assert trial.status == 'reserved'
+
+    def test_reserve_trial_fail(self, storage):
+        """Test reserve trial"""
+        with OrionState(
+                experiments=[base_experiment],
+                trials=generate_trials(status=['completed', 'reserved']),
+                database=storage) as cfg:
+
+            storage = cfg.storage()
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+
+            trial = storage.reserve_trial(experiment)
+            assert trial is None
+
+    def test_fetch_trials(self, storage):
+        """Test fetch experiment trials"""
+        with OrionState(
+                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+            storage = cfg.storage()
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+
+            trials1 = storage.fetch_trials(experiment=experiment)
+            trials2 = storage.fetch_trials(uid=experiment._id)
+
+            with pytest.raises(MissingArguments):
+                storage.fetch_trials()
+
+            with pytest.raises(AssertionError):
+                storage.fetch_trials(experiment=experiment, uid='123')
+
+            assert len(trials1) == len(cfg.trials), 'trial count should match'
+            assert len(trials2) == len(cfg.trials), 'trial count should match'
+
+    def test_get_trial(self, storage):
+        """Test get trial"""
+        with OrionState(
+                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+            storage = cfg.storage()
+
+            trial_dict = cfg.trials[0]
+            trial1 = storage.get_trial(trial=Trial(**trial_dict))
+            trial2 = storage.get_trial(uid=trial1.id)
+
+            with pytest.raises(MissingArguments):
+                storage.get_trial()
+
+            with pytest.raises(AssertionError):
+                storage.get_trial(trial=trial1, uid='123')
+
+            assert trial1.to_dict() == trial_dict
+            assert trial2.to_dict() == trial_dict
+
+    def test_fetch_lost_trials(self, storage):
+        """Test update heartbeat"""
+        with OrionState(experiments=[base_experiment],
+                        trials=generate_trials() + [make_lost_trial()], database=storage) as cfg:
+            storage = cfg.storage()
+
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            trials = storage.fetch_lost_trials(experiment)
+            assert len(trials) == 1
+
+    def retrieve_result(self, storage, generated_result):
+        """Test retrieve result"""
+        results_file = tempfile.NamedTemporaryFile(
+            mode='w', prefix='results_', suffix='.log', dir='.', delete=True
+        )
+
+        # Generate fake result
+        with open(results_file.name, 'w') as file:
+            json.dump([generated_result], file)
+        # --
+        with OrionState(experiments=[], trials=[], database=storage) as cfg:
+            storage = cfg.storage()
+
+            trial = Trial(**base_trial)
+            trial = storage.retrieve_result(trial, results_file)
+
+            results = trial.results
+
+            assert len(results) == 1
+            assert results[0].to_dict() == generated_result
+
+    def test_retrieve_result(self, storage):
+        """Test retrieve result"""
+        self.retrieve_result(storage, generated_result={
+            'name': 'loss',
+            'type': 'objective',
+            'value': 2})
+
+    def test_retrieve_result_incorrect_value(self, storage):
+        """Test retrieve result"""
+        with pytest.raises(ValueError) as exec:
+            self.retrieve_result(storage, generated_result={
+                'name': 'loss',
+                'type': 'objective_unsupported_type',
+                'value': 2})
+
+        assert exec.match(r'Given type, objective_unsupported_type')
+
+    def test_retrieve_result_nofile(self, storage):
+        """Test retrieve result"""
+        results_file = tempfile.NamedTemporaryFile(
+            mode='w', prefix='results_', suffix='.log', dir='.', delete=True
+        )
+
+        with OrionState(experiments=[], trials=[], database=storage) as cfg:
+            storage = cfg.storage()
+
+            trial = Trial(**base_trial)
+
+            with pytest.raises(json.decoder.JSONDecodeError) as exec:
+                storage.retrieve_result(trial, results_file)
+
+        assert exec.match(r'Expecting value: line 1 column 1 \(char 0\)')
+
+    def test_push_trial_results(self, storage):
+        """Successfully push a completed trial into database."""
+        with OrionState(experiments=[], trials=[base_trial], database=storage) as cfg:
+            storage = cfg.storage()
+            trial = storage.get_trial(Trial(**base_trial))
+            results = [
+                Trial.Result(name='loss', type='objective', value=2)
+            ]
+            trial.results = results
+            assert storage.push_trial_results(trial), 'should update successfully'
+
+            trial2 = storage.get_trial(trial)
+            assert trial2.results == results
+
+    def test_change_status_success(self, storage, exp_config_file):
+        """Change the status of a Trial"""
+        def check_status_change(new_status):
+            with OrionState(from_yaml=exp_config_file, database=storage) as cfg:
+                trial = cfg.get_trial(0)
+                assert trial is not None, 'was not able to retrieve trial for test'
+
+                get_storage().set_trial_status(trial, status=new_status)
+                assert trial.status == new_status, \
+                    'Trial status should have been updated locally'
+
+                trial = get_storage().get_trial(trial)
+                assert trial.status == new_status, \
+                    'Trial status should have been updated in the storage'
+
+        check_status_change('completed')
+        check_status_change('broken')
+        check_status_change('reserved')
+        check_status_change('interrupted')
+        check_status_change('suspended')
+        check_status_change('new')
+
+    def test_change_status_failed_update(self, storage, exp_config_file):
+        """Successfully find new trials in db and reserve one at 'random'."""
+        def check_status_change(new_status):
+            with OrionState(from_yaml=exp_config_file, database=storage) as cfg:
+                trial = cfg.get_trial(0)
+                assert trial is not None, 'Was not able to retrieve trial for test'
+
+                with pytest.raises(FailedUpdate):
+                    trial.status = new_status
+                    get_storage().set_trial_status(trial, status=new_status)
+
+        check_status_change('completed')
+        check_status_change('broken')
+        check_status_change('reserved')
+        check_status_change('interrupted')
+        check_status_change('suspended')
+
+    def test_fetch_pending_trials(self, storage):
+        """Test fetch pending trials"""
+        with OrionState(
+                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+            storage = cfg.storage()
+
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            trials = storage.fetch_pending_trials(experiment)
+
+            count = 0
+            for trial in cfg.trials:
+                if trial['status'] in {'new', 'suspended', 'interrupted'}:
+                    count += 1
+
+            assert len(trials) == count
+            for trial in trials:
+                assert trial.status in {'new', 'suspended', 'interrupted'}
+
+    def test_fetch_noncompleted_trials(self, storage):
+        """Test fetch non completed trials"""
+        with OrionState(
+                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+            storage = cfg.storage()
+
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            trials = storage.fetch_noncompleted_trials(experiment)
+
+            count = 0
+            for trial in cfg.trials:
+                if trial['status'] != 'completed':
+                    count += 1
+
+            assert len(trials) == count
+            for trial in trials:
+                assert trial.status != 'completed'
+
+    def test_fetch_trial_by_status(self, storage):
+        """Test fetch completed trials"""
+        with OrionState(
+                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+            count = 0
+            for trial in cfg.trials:
+                if trial['status'] == 'completed':
+                    count += 1
+
+            storage = cfg.storage()
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            trials = storage.fetch_trial_by_status(experiment, 'completed')
+
+            assert len(trials) == count
+            for trial in trials:
+                assert trial.status == 'completed', trial
+
+    def test_count_completed_trials(self, storage):
+        """Test count completed trials"""
+        with OrionState(
+                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+            count = 0
+            for trial in cfg.trials:
+                if trial['status'] == 'completed':
+                    count += 1
+
+            storage = cfg.storage()
+
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            trials = storage.count_completed_trials(experiment)
+            assert trials == count
+
+    def test_count_broken_trials(self, storage):
+        """Test count broken trials"""
+        with OrionState(
+                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+            count = 0
+            for trial in cfg.trials:
+                if trial['status'] == 'broken':
+                    count += 1
+
+            storage = cfg.storage()
+
+            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            trials = storage.count_broken_trials(experiment)
+
+            assert trials == count
+
+    def test_update_heartbeat(self, storage):
+        """Test update heartbeat"""
+        with OrionState(
+                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+            storage_name = storage
+            storage = cfg.storage()
+
+            exp = cfg.get_experiment(name='default_name')
+            trial1 = storage.fetch_trial_by_status(exp, status='reserved')[0]
+
+            storage.update_heartbeat(trial1)
+
+            trial2 = storage.get_trial(trial1)
+
+            assert trial1.heartbeat is None
+            assert trial2.heartbeat is not None
+            # this checks that heartbeat is the correct type and that it was updated prior to now
+            assert trial2.heartbeat < datetime.datetime.utcnow()
+
+            if storage_name is None:
+                trial3 = storage.fetch_trial_by_status(exp, status='completed')[0]
+                storage.update_heartbeat(trial3)
+
+                assert trial3.heartbeat is None, \
+                    'Legacy does not update trials with a status different from reserved'

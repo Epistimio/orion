@@ -190,21 +190,21 @@ def get_name_value_pairs(trials):
 def test_init(init_full_x, create_db_instance):
     """Test if original experiment contains trial 0"""
     experiment = ExperimentView('full_x')
-    pairs = get_name_value_pairs(experiment.fetch_trials({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 0), ), )
 
 
 def test_full_x_full_y(init_full_x_full_y, create_db_instance):
     """Test if full x full y is properly initialized and can fetch original trial"""
     experiment = EVCBuilder().build_view_from({'name': 'full_x_full_y'})
-    pairs = get_name_value_pairs(experiment.fetch_trials({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 1), ('/y', 1)),
                      (('/x', -1), ('/y', 1)),
                      (('/x', 1), ('/y', -1)),
                      (('/x', -1), ('/y', -1)))
 
     # pytest.set_trace()
-    pairs = get_name_value_pairs(experiment.fetch_trials_tree({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials(with_evc_tree=True))
     assert pairs == ((('/x', 0), ('/y', 1)),
                      (('/x', 1), ('/y', 1)),
                      (('/x', -1), ('/y', 1)),
@@ -215,11 +215,11 @@ def test_full_x_full_y(init_full_x_full_y, create_db_instance):
 def test_half_x_full_y(init_half_x_full_y, create_db_instance):
     """Test if half x full y is properly initialized and can fetch from its 2 parents"""
     experiment = EVCBuilder().build_view_from({'name': 'half_x_full_y'})
-    pairs = get_name_value_pairs(experiment.fetch_trials({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 2), ('/y', 2)),
                      (('/x', 2), ('/y', -2)))
 
-    pairs = get_name_value_pairs(experiment.fetch_trials_tree({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials(with_evc_tree=True))
     assert pairs == ((('/x', 0), ('/y', 1)),
                      (('/x', 1), ('/y', 1)),
                      (('/x', 1), ('/y', -1)),
@@ -230,11 +230,11 @@ def test_half_x_full_y(init_half_x_full_y, create_db_instance):
 def test_full_x_half_y(init_full_x_half_y, create_db_instance):
     """Test if full x half y is properly initialized and can fetch from its 2 parents"""
     experiment = EVCBuilder().build_view_from({'name': 'full_x_half_y'})
-    pairs = get_name_value_pairs(experiment.fetch_trials({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 3), ('/y', 3)),
                      (('/x', -3), ('/y', 3)))
 
-    pairs = get_name_value_pairs(experiment.fetch_trials_tree({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials(with_evc_tree=True))
     assert pairs == ((('/x', 0), ('/y', 1)),
                      (('/x', 1), ('/y', 1)),
                      (('/x', -1), ('/y', 1)),
@@ -245,13 +245,13 @@ def test_full_x_half_y(init_full_x_half_y, create_db_instance):
 def test_full_x_rename_y_z(init_full_x_rename_y_z, create_db_instance):
     """Test if full x full z is properly initialized and can fetch from its 2 parents"""
     experiment = EVCBuilder().build_view_from({'name': 'full_x_rename_y_z'})
-    pairs = get_name_value_pairs(experiment.fetch_trials({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 4), ('/z', 4)),
                      (('/x', -4), ('/z', 4)),
                      (('/x', 4), ('/z', -4)),
                      (('/x', -4), ('/z', -4)))
 
-    pairs = get_name_value_pairs(experiment.fetch_trials_tree({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials(with_evc_tree=True))
     assert pairs == ((('/x', 0), ('/z', 1)),
                      (('/x', 1), ('/z', 1)),
                      (('/x', -1), ('/z', 1)),
@@ -266,11 +266,11 @@ def test_full_x_rename_y_z(init_full_x_rename_y_z, create_db_instance):
 def test_full_x_rename_half_y_half_z(init_full_x_rename_half_y_half_z, create_db_instance):
     """Test if full x half z is properly initialized and can fetch from its 3 parents"""
     experiment = EVCBuilder().build_view_from({'name': 'full_x_rename_half_y_half_z'})
-    pairs = get_name_value_pairs(experiment.fetch_trials({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 5), ('/z', 5)),
                      (('/x', -5), ('/z', 5)))
 
-    pairs = get_name_value_pairs(experiment.fetch_trials_tree({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials(with_evc_tree=True))
     assert pairs == ((('/x', 0), ('/z', 1)),
                      (('/x', 1), ('/z', 1)),
                      (('/x', -1), ('/z', 1)),
@@ -283,13 +283,13 @@ def test_full_x_rename_half_y_half_z(init_full_x_rename_half_y_half_z, create_db
 def test_full_x_rename_half_y_full_z(init_full_x_rename_half_y_full_z, create_db_instance):
     """Test if full x half->full z is properly initialized and can fetch from its 3 parents"""
     experiment = EVCBuilder().build_view_from({'name': 'full_x_rename_half_y_full_z'})
-    pairs = get_name_value_pairs(experiment.fetch_trials({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 6), ('/z', 6)),
                      (('/x', -6), ('/z', 6)),
                      (('/x', 6), ('/z', -6)),
                      (('/x', -6), ('/z', -6)))
 
-    pairs = get_name_value_pairs(experiment.fetch_trials_tree({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials(with_evc_tree=True))
     assert pairs == ((('/x', 0), ('/z', 1)),
                      (('/x', 1), ('/z', 1)),
                      (('/x', -1), ('/z', 1)),
@@ -304,20 +304,20 @@ def test_full_x_rename_half_y_full_z(init_full_x_rename_half_y_full_z, create_db
 def test_full_x_remove_y(init_full_x_remove_y, create_db_instance):
     """Test if full x removed y is properly initialized and can fetch from its 2 parents"""
     experiment = EVCBuilder().build_view_from({'name': 'full_x_remove_y'})
-    pairs = get_name_value_pairs(experiment.fetch_trials({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 7), ), (('/x', -7), ))
 
-    pairs = get_name_value_pairs(experiment.fetch_trials_tree({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials(with_evc_tree=True))
     assert pairs == ((('/x', 0), ), (('/x', 1), ), (('/x', -1), ), (('/x', 7), ), (('/x', -7), ))
 
 
 def test_full_x_remove_z(init_full_x_remove_z, create_db_instance):
     """Test if full x removed z is properly initialized and can fetch from 2 of its 3 parents"""
     experiment = EVCBuilder().build_view_from({'name': 'full_x_remove_z'})
-    pairs = get_name_value_pairs(experiment.fetch_trials({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 8), ), (('/x', -8), ))
 
-    pairs = get_name_value_pairs(experiment.fetch_trials_tree({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials(with_evc_tree=True))
     # Note that full_x_rename_y_z are filtered out because default_value=1
     assert pairs == ((('/x', 0), ), (('/x', 1), ), (('/x', -1), ), (('/x', 8), ), (('/x', -8), ))
 
@@ -327,10 +327,10 @@ def test_full_x_remove_z_default_4(init_full_x_remove_z_default_4, create_db_ins
     from 1 of its 3 parents
     """
     experiment = EVCBuilder().build_view_from({'name': 'full_x_remove_z_default_4'})
-    pairs = get_name_value_pairs(experiment.fetch_trials({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 9), ), (('/x', -9), ))
 
-    pairs = get_name_value_pairs(experiment.fetch_trials_tree({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials(with_evc_tree=True))
     # Note that full_x and full_x_full_y are filtered out because default_value=4
     assert pairs == ((('/x', 4), ), (('/x', -4), ), (('/x', 9), ), (('/x', -9), ))
 
@@ -338,13 +338,13 @@ def test_full_x_remove_z_default_4(init_full_x_remove_z_default_4, create_db_ins
 def test_entire_full_x_full_y(init_entire, create_db_instance):
     """Test if full x full y can fetch from its parent and all children"""
     experiment = EVCBuilder().build_view_from({'name': 'full_x_full_y'})
-    pairs = get_name_value_pairs(experiment.fetch_trials({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 1), ('/y', 1)),
                      (('/x', -1), ('/y', 1)),
                      (('/x', 1), ('/y', -1)),
                      (('/x', -1), ('/y', -1)))
 
-    pairs = get_name_value_pairs(experiment.fetch_trials_tree({}))
+    pairs = get_name_value_pairs(experiment.fetch_trials(with_evc_tree=True))
     assert set(pairs) == set(((('/x', 0), ('/y', 1)),
                               # full_x_full_y
                               (('/x', 1), ('/y', 1)),
@@ -382,40 +382,40 @@ def test_entire_full_x_full_y(init_entire, create_db_instance):
 def test_run_entire_full_x_full_y(init_entire, create_db_instance):
     """Test if branched experiment can be executed without triggering a branching event again"""
     experiment = EVCBuilder().build_view_from({'name': 'full_x_full_y'})
-    assert len(experiment.fetch_trials_tree({})) == 23
-    assert len(experiment.fetch_trials({})) == 4
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 23
+    assert len(experiment.fetch_trials()) == 4
 
     orion.core.cli.main(("-vv hunt --max-trials 20 --pool-size 1 -n full_x_full_y "
                          "./black_box_with_y.py "
                          "-x~uniform(-10,10) "
                          "-y~uniform(-10,10,default_value=1)").split(" "))
 
-    assert len(experiment.fetch_trials_tree({})) == 39
-    assert len(experiment.fetch_trials({})) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 39
+    assert len(experiment.fetch_trials()) == 20
 
 
 def test_run_entire_full_x_full_y_no_args(init_entire, create_db_instance):
     """Test if branched experiment can be executed without script arguments"""
     experiment = EVCBuilder().build_view_from({'name': 'full_x_full_y'})
-    assert len(experiment.fetch_trials_tree({})) == 23
-    assert len(experiment.fetch_trials({})) == 4
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 23
+    assert len(experiment.fetch_trials()) == 4
 
     orion.core.cli.main(("-vv hunt --max-trials 20 --pool-size 1 -n full_x_full_y").split(" "))
 
-    assert len(experiment.fetch_trials_tree({})) == 39
-    assert len(experiment.fetch_trials({})) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 39
+    assert len(experiment.fetch_trials()) == 20
 
 
 def test_new_algo(init_full_x_new_algo):
     """Test that new algo conflict is automatically resolved"""
     experiment = EVCBuilder().build_view_from({'name': 'full_x_new_algo'})
-    assert len(experiment.fetch_trials_tree({})) == 3
-    assert len(experiment.fetch_trials({})) == 2
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 3
+    assert len(experiment.fetch_trials()) == 2
 
     orion.core.cli.main(("-vv hunt --max-trials 20 --pool-size 1 -n full_x_new_algo").split(" "))
 
-    assert len(experiment.fetch_trials_tree({})) == 21
-    assert len(experiment.fetch_trials({})) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 21
+    assert len(experiment.fetch_trials()) == 20
 
 
 def test_new_algo_not_resolved(init_full_x):
@@ -425,40 +425,26 @@ def test_new_algo_not_resolved(init_full_x):
     with pytest.raises(ValueError) as exc:
         orion.core.cli.main(
             ("init_only -n {name} --branch {branch} --config new_algo_config.yaml "
-             "./black_box.py -x~uniform(-10,10)").format(name=name, branch=branch).split(" "))
+             "--manual-resolution ./black_box.py -x~uniform(-10,10)")
+            .format(name=name, branch=branch).split(" "))
     assert "Configuration is different and generates a branching event" in str(exc.value)
 
 
 def test_new_cli(init_full_x_new_cli):
     """Test that new cli conflict is automatically resolved"""
     experiment = EVCBuilder().build_view_from({'name': 'full_x_new_cli'})
-    assert len(experiment.fetch_trials_tree({})) == 3
-    assert len(experiment.fetch_trials({})) == 2
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 3
+    assert len(experiment.fetch_trials()) == 2
 
     orion.core.cli.main(("-vv hunt --max-trials 20 --pool-size 1 -n full_x_new_cli").split(" "))
 
-    assert len(experiment.fetch_trials_tree({})) == 21
-    assert len(experiment.fetch_trials({})) == 20
-
-
-def test_new_cli_not_resolved(init_full_x):
-    """Test that new cli conflict is not automatically resolved"""
-    name = "full_x"
-    branch = "full_x_new_cli"
-    with pytest.raises(ValueError) as exc:
-        orion.core.cli.main(
-            ("init_only -n {name} --branch {branch} ./black_box.py "
-             "-x~uniform(-10,10) --a-new argument").format(name=name, branch=branch).split(" "))
-    assert "Configuration is different and generates a branching event" in str(exc.value)
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 21
+    assert len(experiment.fetch_trials()) == 20
 
 
 def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
     """Test that auto-resolution does resolve all conflicts"""
     # Patch cmdloop to avoid autoresolution's prompt
-    def _do_nothing(self):
-        pass
-    from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
-    monkeypatch.setattr(BranchingPrompt, "cmdloop", _do_nothing)
     monkeypatch.setattr('sys.__stdin__.isatty', lambda: True)
 
     name = "full_x_full_y"
@@ -466,28 +452,75 @@ def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
     # If autoresolution was not succesfull, this to fail with a sys.exit without registering the
     # experiment
     orion.core.cli.main(
-        ("init_only -n {name} --branch {branch} --auto-resolution ./black_box_with_y.py "
+        ("init_only -n {name} --branch {branch} ./black_box_with_y.py "
          "-x~uniform(0,10) "
          "-w~choices(['a','b'],default_value='a')").format(name=name, branch=branch).split(" "))
     orion.core.cli.main("insert -n {name} script -x=2 -w=b".format(name=branch).split(" "))
     orion.core.cli.main("insert -n {name} script -x=1".format(name=branch).split(" "))
 
 
-def test_auto_resolution_forces_prompt(init_full_x_full_y, monkeypatch):
-    """Test that auto-resolution forces prompt"""
-    name = "full_x_full_y"
-    branch = "new_full_x_full_y"
+def test_init_w_version_from_parent_w_children(clean_db, monkeypatch):
+    """Test that init of experiment from version with children fails."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1) "
+                        "-y~+normal(0,1)".split(" "))
 
-    # No conflict, it does not prompt
-    orion.core.cli.main(
-        ("init_only -n {name} --auto-resolution ./black_box.py "
-         "-x~uniform(-10,10) "
-         "-y~+uniform(-10,10,default_value=1)").format(name=name).split(" "))
-
-    # No conflicts, but forced branching, it forces prompt
     with pytest.raises(ValueError) as exc:
-        orion.core.cli.main(
-            ("init_only -n {name} --branch {branch} --auto-resolution ./black_box.py "
-             "-x~uniform(-10,10) "
-             "-y~+uniform(-10,10,default_value=1)").format(name=name, branch=branch).split(" "))
-    assert "Configuration is different and generates a branching event" in str(exc.value)
+        orion.core.cli.main("init_only -n experiment -v 1 ./black_box.py "
+                            "-x~normal(0,1) -y~+normal(0,1) -z~normal(0,1)".split(" "))
+
+    assert "Experiment name" in str(exc.value)
+
+
+def test_init_w_version_from_exp_wout_child(clean_db, monkeypatch, database):
+    """Test that init of experiment from version without child works."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1) "
+                        "-y~+normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment -v 2 ./black_box.py "
+                        "-x~normal(0,1) -y~+normal(0,1) -z~+normal(0,1)".split(" "))
+
+    exp = database.experiments.find({'name': 'experiment', 'version': 3})
+    assert len(list(exp))
+
+
+def test_init_w_version_gt_max(clean_db, monkeypatch, database):
+    """Test that init of experiment from version higher than max works."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1) "
+                        "-y~+normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment -v 2000 ./black_box.py "
+                        "-x~normal(0,1) -y~+normal(0,1) -z~+normal(0,1)".split(" "))
+
+    exp = database.experiments.find({'name': 'experiment', 'version': 3})
+    assert len(list(exp))
+
+
+def test_init_check_increment_w_children(clean_db, monkeypatch, database):
+    """Test that incrementing version works with not same-named children."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment --branch experiment_2 ./black_box.py "
+                        "-x~normal(0,1) -y~+normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment ./black_box.py "
+                        "-x~normal(0,1) -z~+normal(0,1)".split(" "))
+
+    exp = database.experiments.find({'name': 'experiment', 'version': 2})
+    assert len(list(exp))
+
+
+def test_branch_from_selected_version(clean_db, monkeypatch, database):
+    """Test that branching from a version passed with `--version` works."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1)".split(" "))
+    orion.core.cli.main("init_only -n experiment ./black_box.py -x~normal(0,1) -y~+normal(0,1)"
+                        .split(" "))
+    orion.core.cli.main("init_only -n experiment --version 1 -b experiment_2 ./black_box.py "
+                        "-x~normal(0,1) -z~+normal(0,1)".split(" "))
+
+    parent = database.experiments.find({'name': 'experiment', 'version': 1})[0]
+    exp = database.experiments.find({'name': 'experiment_2'})[0]
+    assert exp['refers']['parent_id'] == parent['_id']

@@ -6,8 +6,8 @@ import os
 
 import yaml
 
+import orion.core
 import orion.core.cli
-import orion.core.io.resolve_config as resolve_config
 
 
 class _mock_input:
@@ -25,7 +25,7 @@ class _mock_input:
 def test_creation_when_not_existing(monkeypatch, tmp_path):
     """Test if a configuration file is created when it does not exist."""
     config_path = str(tmp_path) + "/tmp_config.yaml"
-    monkeypatch.setattr(resolve_config, "DEF_CONFIG_FILES_PATHS", [config_path])
+    monkeypatch.setattr(orion.core, "DEF_CONFIG_FILES_PATHS", [config_path])
     monkeypatch.setattr(builtins, "input", _mock_input(['type', 'name', 'host']))
 
     try:
@@ -46,7 +46,7 @@ def test_creation_when_not_existing(monkeypatch, tmp_path):
 def test_creation_when_exists(monkeypatch, tmp_path):
     """Test if the configuration file is overwritten when it exists."""
     config_path = str(tmp_path) + "/tmp_config.yaml"
-    monkeypatch.setattr(resolve_config, "DEF_CONFIG_FILES_PATHS", [config_path])
+    monkeypatch.setattr(orion.core, "DEF_CONFIG_FILES_PATHS", [config_path])
     monkeypatch.setattr(builtins, "input", _mock_input(['y', 'type', 'name', 'host']))
 
     dump = {"database": {"type": "allo2", "name": "allo2", "host": "allo2"}}
@@ -65,7 +65,7 @@ def test_creation_when_exists(monkeypatch, tmp_path):
 def test_stop_creation_when_exists(monkeypatch, tmp_path):
     """Test if the configuration file is overwritten when it exists."""
     config_path = str(tmp_path) + "/tmp_config.yaml"
-    monkeypatch.setattr(resolve_config, "DEF_CONFIG_FILES_PATHS", [config_path])
+    monkeypatch.setattr(orion.core, "DEF_CONFIG_FILES_PATHS", [config_path])
     monkeypatch.setattr(builtins, "input", _mock_input(['n']))
 
     dump = {"database": {"type": "allo2", "name": "allo2", "host": "allo2"}}
@@ -84,7 +84,7 @@ def test_stop_creation_when_exists(monkeypatch, tmp_path):
 def test_defaults(monkeypatch, tmp_path):
     """Test if the default values are used when nothing user enters nothing."""
     config_path = str(tmp_path) + "/tmp_config.yaml"
-    monkeypatch.setattr(resolve_config, "DEF_CONFIG_FILES_PATHS", [config_path])
+    monkeypatch.setattr(orion.core, "DEF_CONFIG_FILES_PATHS", [config_path])
     monkeypatch.setattr(builtins, "input", _mock_input(['', '', '']))
 
     orion.core.cli.main(["setup"])

@@ -2,12 +2,15 @@
 Simple example
 **************
 
+This is a simple tutorial on running hyperparameter search with Oríon on Pytorch's MNIST example
+
 Installation and setup
 ======================
 
-In this tutorial you will run a very simple MNIST example in pytorch using Oríon.
-First, install Oríon follwing :doc:`/install/core` and configure the database
-(:doc:`/install/database`). Then install ``pytorch``, ``torchvision`` and clone the
+Make sure Oríon is installed (:doc:`/install/core`) and the database is configured
+(:doc:`/install/database`).
+
+Then install ``pytorch`` and ``torchvision`` and clone the
 PyTorch `examples repository`_:
 
 .. code-block:: bash
@@ -19,15 +22,22 @@ PyTorch `examples repository`_:
 .. _examples repository: https://github.com/pytorch/examples
 
 
-Adapting the code of MNIST example
-==================================
+Adapting the code for Oríon
+===========================
+
+To use Oríon with any code we need to do three things
+
+1. make the ``main.py`` file a python executable
+2. import the ``orion.client.report_results`` helper function
+3. call `report_results` on the final objective output to be minimized (e.g. final test error rate)
+
 After cloning pytorch examples repository, cd to mnist folder:
 
 .. code-block:: bash
 
     $ cd examples/mnist
 
-In your favourite editor add a shebang line ``#!/usr/bin/env python`` to
+1. In your favourite editor add a shebang line ``#!/usr/bin/env python`` to
 the ``main.py`` and make it executable, for example:
 
 .. code-block:: bash
@@ -35,24 +45,22 @@ the ``main.py`` and make it executable, for example:
     $ sed -i '1s/^/#!/usr/bin/env python/' main.py
     $ chmod +x main.py
 
-At the top of the file, below the imports, add one line of import the helper function
+2. At the top of the file, below the imports, add one line of import the helper function
 ``orion.client.report_results()``:
 
 .. code-block:: python
 
     from orion.client import report_results
 
-We are almost done now. We need to add a line to the function ``test()`` so that
-it returns the error rate.
+3. We need the test error rate so we're going to add a line to the function ``test()`` to return it
 
 .. code-block:: python
 
     return 1 - (correct / len(test_loader.dataset))
 
-And finally, we get back this test error rate and call ``report_results`` to
-return the objective value to Oríon. Note that ``report_results`` is meant to
-be called only once, this is because Oríon only optimizes looking at 1
-objective value.
+Finally, we get back this test error rate and call ``report_results`` to
+return the final objective value to Oríon. Note that ``report_results`` is meant to
+be called only once because Oríon only looks at 1 ``'objective'`` value per run.
 
 .. code-block:: python
 
@@ -62,18 +70,6 @@ objective value.
         name='test_error_rate',
         type='objective',
         value=test_error_rate)])
-
-You can also return result types of ``'gradient'`` and ``'constraint'`` for
-algorithms which supports those results as well.
-
-Important note here, we use test error rate for sake of simplicity, because the
-script does not contain validation dataset loader as-is, but we should
-**never** optimize our hyper-parameters on the test set. We should always use a
-validation set.
-
-Another important note, Oríon will always **minimize** the objective so make sure you never try to
-optimize something like the accuracy of the model unless you are looking for very very bad models.
-
 
 Execution
 =========
@@ -86,7 +82,7 @@ rather simple. Normally you would call the script the following way.
     $ ./main.py --lr 0.01
 
 To use it with Oríon, you simply need to prepend the call with
-``orion hunt -n <some name>`` and specify the hyper-parameter prior
+``orion hunt -n <experiment name>`` and specify the hyper-parameter prior
 distributions.
 
 .. code-block:: bash
@@ -121,6 +117,47 @@ You can also register experiments without executing them.
 
     $ orion init_only -n orion-tutorial ./main.py --lr~'loguniform(1e-5, 1.0)'
 
+
+Results
+=======
+
+When an experiment reaches its termination criterion, basically ``max-trials``, it will print the
+following statistics if Oríon is called with ``-v`` or ``-vv``.
+
+.. code-block:: bash
+
+    RESULTS
+    =======
+    {'best_evaluation': 0.05289999999999995,
+     'best_trials_id': 'b7a741e70b75f074208942c1c2c7cd36',
+     'duration': datetime.timedelta(0, 49, 751548),
+     'finish_time': datetime.datetime(2018, 8, 30, 1, 8, 2, 562000),
+     'start_time': datetime.datetime(2018, 8, 30, 1, 7, 12, 810452),
+     'trials_completed': 5}
+
+    BEST PARAMETERS
+    ===============
+    [{'name': '/lr', 'type': 'real', 'value': 0.012027705702344259}]
+
+These results can be printed in terminal later on with the command :ref:`info <cli-info>` or
+fetched using the :ref:`library API <library-api-results>`.
+
+.. code-block:: bash
+
+    $ orion info -n orion-tutorial
+
+Notes
+=====
+We use test error rate for sake of simplicity, because the
+script does not contain validation dataset loader as-is, but we should
+**never** optimize our hyper-parameters on the test set and instead always use a
+validation set.
+
+Oríon will always **minimize** the objective so make sure you never try to
+optimize something like the accuracy of the model unless you are looking for very very bad models.
+
+You can also ``report_results`` of types ``'gradient'`` and ``'constraint'`` for
+algorithms which require those parameters as well.
 
 Debugging
 =========
@@ -201,28 +238,3 @@ The number of trials which are generated by the algorithm each time it is interr
 useful if many workers are executed in parallel and the algorithm has a strategy to sample
 non-independant trials simultaneously. Otherwise, it is better to leave ``pool_size`` to its default
 value 1.
-
-
-Results
-=======
-
-When an experiment reaches its termination criterion, basically ``max-trials``, it will print the
-following statistics if Oríon is called with ``-v`` or ``-vv``.
-
-.. code-block:: bash
-
-    RESULTS
-    =======
-    {'best_evaluation': 0.05289999999999995,
-     'best_trials_id': 'b7a741e70b75f074208942c1c2c7cd36',
-     'duration': datetime.timedelta(0, 49, 751548),
-     'finish_time': datetime.datetime(2018, 8, 30, 1, 8, 2, 562000),
-     'start_time': datetime.datetime(2018, 8, 30, 1, 7, 12, 810452),
-     'trials_completed': 5}
-
-    BEST PARAMETERS
-    ===============
-    [{'name': '/lr', 'type': 'real', 'value': 0.012027705702344259}]
-
-These results can be printed in terminal later on with the command :ref:`info <cli-info>` or
-fetched using the :ref:`library API <library-api-results>`.

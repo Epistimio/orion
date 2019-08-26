@@ -15,6 +15,13 @@ import datetime
 import logging
 import uuid
 
+
+# TODO: Remove this when factory is reworked
+class Track:
+    def __init__(self, uri):
+        assert False, 'This should not be called'
+
+
 try:
     from track.client import TrackClient
     from track.persistence.utils import parse_uri
@@ -29,7 +36,6 @@ except ImportError:
 
 from orion.core.worker.trial import Trial as OrionTrial
 from orion.storage.base import BaseStorageProtocol
-
 
 log = logging.getLogger(__name__)
 
@@ -267,13 +273,16 @@ class Track(BaseStorageProtocol):
         self.objective = self.options.get('objective')
         assert self.objective is not None, 'An objective should be defined!'
 
-    def create_experiment(self, config):
-        """Insert a new experiment inside the database"""
+    def _get_project(self, name):
         if self.project is None:
-            self.project = self.backend.get_project(Project(name=config['name']))
+            self.project = self.backend.get_project(Project(name=name))
 
             if self.project is None:
-                self.project = self.backend.new_project(Project(name=config['name']))
+                self.project = self.backend.new_project(Project(name=name))
+
+    def create_experiment(self, config):
+        """Insert a new experiment inside the database"""
+        self._get_project(config['name'])
 
         self.group = self.backend.new_trial_group(
             TrialGroup(
@@ -307,9 +316,22 @@ class Track(BaseStorageProtocol):
         """
         raise RuntimeError('You should not update a track experiment')
 
-    def fetch_experiments(self, query):
+    def fetch_experiments(self, query, selection=None):
         """Fetch all experiments that match the query"""
-        return self.backend.fetch_groups(query)
+        groups = self.backend.fetch_groups(query)
+
+        experiments = []
+        for group in groups:
+            version = group.metadata.pop('version', 0)
+            metadata = group.metadata.pop('metadata', {})
+            experiments.append({
+                '_id': group.uid,
+                'name': group.project_id,
+                'metadata': metadata,
+                'version': version
+            })
+
+        return experiments
 
     def register_trial(self, trial):
         """Create a new trial to be executed"""
@@ -358,7 +380,7 @@ class Track(BaseStorageProtocol):
         """
         pass
 
-    def fetch_trials(self, query, *args, **kwargs):
+    def _fetch_trials(self, query, *args, **kwargs):
         """Fetch all the trials that match the query"""
         def sort_key(item):
             submit_time = item.submit_time
@@ -396,7 +418,7 @@ class Track(BaseStorageProtocol):
 
     _ignore_updates_for = {'results', 'params', '_id'}
 
-    def update_trial(self, trial, where=None, **kwargs):
+    def _update_trial(self, trial, **kwargs):
         """Update the fields of a given trials
 
         Parameters
@@ -449,7 +471,6 @@ class Track(BaseStorageProtocol):
 
     def fetch_pending_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_pending_trials`"""
-
         query = dict(
             group_id=experiment._id,
             status={'$in': [
@@ -458,4 +479,60 @@ class Track(BaseStorageProtocol):
                 'interrupted'
             ]}
         )
-        return self.fetch_trials(query)
+        return self._fetch_trials(query)
+
+    def set_trial_status(self, trial, status, heartbeat=None):
+        """Update the trial status and the heartbeat
+
+        Raises
+        ------
+        FailedUpdate
+            The exception is raised if the status of the trial object
+            does not match the status in the database
+
+        """
+        kwargs = dict(status=status)
+        if heartbeat is not None:
+            kwargs['heartbeat'] = heartbeat
+
+        return self._update_trial(trial, **kwargs)
+
+    def fetch_trials(self, experiment=None, uid=None):
+        pass
+
+    def get_trial(self, trial=None, uid=None):
+        pass
+
+    def reserve_trial(self, experiment):
+        """Select a pending trial and reserve it for the worker"""
+        raise NotImplementedError()
+
+    def fetch_lost_trials(self, experiment):
+        """Fetch all trials that have a heartbeat older than
+        some given time delta (2 minutes by default)
+        """
+        raise NotImplementedError()
+
+    def push_trial_results(self, trial):
+        """Push the trial's results to the database"""
+        raise NotImplementedError()
+
+    def fetch_noncompleted_trials(self, experiment):
+        """Fetch all non completed trials"""
+        raise NotImplementedError()
+
+    def fetch_trial_by_status(self, experiment, status):
+        """Fetch all trials with the given status"""
+        raise NotImplementedError()
+
+    def count_completed_trials(self, experiment):
+        """Count the number of completed trials"""
+        raise NotImplementedError()
+
+    def count_broken_trials(self, experiment):
+        """Count the number of broken trials"""
+        raise NotImplementedError()
+
+    def update_heartbeat(self, trial):
+        """Update trial's heartbeat"""
+        raise self._update_trial(trial, heartbeat=datetime.datetime.utcnow())

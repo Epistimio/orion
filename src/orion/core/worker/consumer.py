@@ -27,6 +27,12 @@ def _handler(signum, frame):
     raise KeyboardInterrupt
 
 
+class ExecutionError(Exception):
+    """Error raised when Orion is unable to execute the user's script without errors."""
+
+    pass
+
+
 class Consumer(object):
     """Consume a trial by using it to initialize a black-box box to evaluate it.
 
@@ -91,14 +97,12 @@ class Consumer(object):
 
         except KeyboardInterrupt:
             log.debug("### Save %s as interrupted.", trial)
-            trial.status = 'interrupted'
-            self.experiment.update_trial(trial, status=trial.status)
-
+            self.experiment.set_trial_status(trial, status='interrupted')
             raise
-        except RuntimeError:
+
+        except ExecutionError:
             log.debug("### Save %s as broken.", trial)
-            trial.status = 'broken'
-            self.experiment.update_trial(trial, status=trial.status)
+            self.experiment.set_trial_status(trial, status='broken')
 
     def get_execution_environment(self, trial, results_file='results.log'):
         """Set a few environment variables to allow users and
@@ -113,18 +117,20 @@ class Consumer(object):
            reference to the trial object that is going to be run
 
         Notes
-        ----
-        This functions define the environment variables described below
+        -----
+        This function defines the environment variables described below
 
-        ORION_PROJECT: str
+        ORION_EXPERIMENT_NAME: str
            name of the experiment the user is currently working on.
-           A project is a set of experiments
+           In Track this is used to initialize/select the Project
 
-        ORION_EXPERIMENT: str
-           current experiment triplet that fully the experiment (i.e unique)
+        ORION_EXPERIMENT_ID: str
+           current experiment that is being ran.
+           In Track this is used to initialize/select the TrialGroup
 
         ORION_TRIAL_ID: str
            current trial id that is currently being executed in this process
+           In Track this is used to select the (Track) Trial
 
         ORION_WORKING_DIRECTORY: str
            orion current working directory
@@ -136,9 +142,8 @@ class Consumer(object):
         """
         env = dict(os.environ)
 
-        env['ORION_PROJECT'] = self.experiment.name
-        env['ORION_EXPERIMENT'] = \
-            f'{self.experiment.name}-{self.experiment.version}-{self.experiment.metadata["user"]}'
+        env['ORION_EXPERIMENT_NAME'] = str(self.experiment.name)
+        env['ORION_EXPERIMENT_ID'] = str(self.experiment.id)
         env['ORION_TRIAL_ID'] = str(trial.id)
 
         env['ORION_WORKING_DIR'] = str(trial.working_dir)
@@ -164,8 +169,7 @@ class Consumer(object):
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
-        env = self.get_execution_environment(trial, results_file.name)
-        self.pacemaker = TrialPacemaker(self.experiment, trial.id)
+        self.pacemaker = TrialPacemaker(trial)
         self.pacemaker.start()
         try:
             self.execute_process(cmd_args, env)
@@ -184,5 +188,5 @@ class Consumer(object):
 
         return_code = process.wait()
         if return_code != 0:
-            raise RuntimeError("Something went wrong. Check logs. Process "
-                               "returned with code {} !".format(return_code))
+            raise ExecutionError("Something went wrong. Check logs. Process "
+                                 "returned with code {} !".format(return_code))
