@@ -15,7 +15,7 @@ def test_no_experiments(clean_db, monkeypatch, capsys):
 
     captured = capsys.readouterr().out
 
-    assert captured == ""
+    assert captured == "No experiment found\n"
 
 
 def test_experiment_without_trials_wout_ac(clean_db, one_experiment, capsys):
@@ -868,6 +868,16 @@ d5f1c1cae188608b581ded20cd198679  new
 """
 
     assert captured == expected
+
+
+def test_no_experiments_w_name(clean_db, monkeypatch, capsys):
+    """Test status when --name <exp> does not exist."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main(['status', '--name', 'test_ghost_exp'])
+
+    captured = capsys.readouterr().out
+
+    assert captured == "No experiment found\n"
 
 
 def test_experiment_wout_child_w_name(clean_db, unrelated_with_trials, capsys):
