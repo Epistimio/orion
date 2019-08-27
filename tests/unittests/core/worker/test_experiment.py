@@ -142,6 +142,16 @@ class TestInitExperiment(object):
         exp = Experiment("exp_wout_version", version=1)
         assert exp.version == 1
 
+    def test_backward_compatibility_no_version(self, create_db_instance, parent_version_config,
+                                               child_version_config):
+        """Branch from parent that has no version field."""
+        parent_version_config.pop('version')
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf")
+        assert exp.version == 2
+
     def test_old_experiment_wout_version(self, create_db_instance, parent_version_config,
                                          child_version_config):
         """Create an already existing experiment without a version."""
