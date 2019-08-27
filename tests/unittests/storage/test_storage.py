@@ -14,7 +14,7 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.tests import OrionState
 from orion.core.worker.trial import Trial
 from orion.storage.base import FailedUpdate, get_storage, MissingArguments
-from orion.storage.track import HAS_TRACK
+from orion.storage.track import HAS_TRACK, REASON
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.WARNING)
@@ -24,9 +24,8 @@ storage_backends = [
 ]
 
 if not HAS_TRACK:
-    log.warning('Track is not tested!')
+    log.warning('Track is not tested because: %s!', REASON)
 else:
-    log.info('Track is tested!')
     storage_backends.append({
         'storage_type': 'track',
         'args': {

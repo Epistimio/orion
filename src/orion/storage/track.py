@@ -14,10 +14,13 @@ import copy
 import datetime
 import hashlib
 import logging
+import sys
 
 from orion.core.io.database import DuplicateKeyError
 from orion.core.worker.trial import Trial as OrionTrial
 from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
+
+log = logging.getLogger(__name__)
 
 
 # TODO: Remove this when factory is reworked
@@ -28,6 +31,8 @@ class Track:    # noqa: F811
         assert False, 'This should not be called'
 
 
+HAS_TRACK = False
+REASON = None
 try:
     from track.client import TrackClient
     from track.persistence.utils import parse_uri
@@ -38,10 +43,16 @@ try:
 
     HAS_TRACK = True
 except ImportError:
-    HAS_TRACK = False
+    REASON = 'Track is not installed'
 
+except SyntaxError:
+    major, minor, patch, _, _ = sys.version_info
 
-log = logging.getLogger(__name__)
+    if minor < 6:
+        REASON = 'Python is too old'
+        log.warning('Track does not support python < 3.6!')
+    else:
+        raise
 
 
 if HAS_TRACK:
