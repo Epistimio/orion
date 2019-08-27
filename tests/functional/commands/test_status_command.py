@@ -18,6 +18,22 @@ def test_no_experiments(clean_db, monkeypatch, capsys):
     assert captured == "No experiment found\n"
 
 
+def test_no_version_backward_compatible(clean_db, one_experiment_no_version, capsys):
+    """Test status with no experiments."""
+    orion.core.cli.main(['status'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp-no-version-v1
+=============================
+empty
+
+
+"""
+    assert captured == expected
+
+
 def test_experiment_without_trials_wout_ac(clean_db, one_experiment, capsys):
     """Test status with only one experiment and no trials."""
     orion.core.cli.main(['status'])
