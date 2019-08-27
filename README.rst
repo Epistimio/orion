@@ -4,12 +4,12 @@ Oríon
 
 |pypi| |py_versions| |license| |rtfd| |codecov| |travis|
 
-.. |pypi| image:: https://img.shields.io/pypi/v/orion.core.svg
-    :target: https://pypi.python.org/pypi/orion.core
+.. |pypi| image:: https://img.shields.io/pypi/v/orion.svg
+    :target: https://pypi.python.org/pypi/orion
     :alt: Current PyPi Version
 
-.. |py_versions| image:: https://img.shields.io/pypi/pyversions/orion.core.svg
-    :target: https://pypi.python.org/pypi/orion.core
+.. |py_versions| image:: https://img.shields.io/pypi/pyversions/orion.svg
+    :target: https://pypi.python.org/pypi/orion
     :alt: Supported Python Versions
 
 .. |license| image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
@@ -78,7 +78,7 @@ Installation
 
 Install Oríon by running:
 
-``pip install orion.core``
+``pip install orion``
 
 For more information read the `full installation docs`_.
 
