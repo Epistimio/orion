@@ -25,6 +25,15 @@ def test_single_exp(clean_db, one_experiment, capsys):
     assert captured == " test_single_exp-v1\n"
 
 
+def test_no_version_backward_compatible(clean_db, one_experiment_no_version, capsys):
+    """Test status with no experiments."""
+    orion.core.cli.main(['list'])
+
+    captured = capsys.readouterr().out
+
+    assert captured == " test_single_exp-no-version-v1\n"
+
+
 def test_broken_refers(clean_db, broken_refers, capsys):
     """Test that experiment without refers dict can be handled properly."""
     orion.core.cli.main(['list'])
