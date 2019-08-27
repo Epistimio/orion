@@ -35,7 +35,7 @@ __license__ = 'BSD-3-Clause'
 __author__ = u'Epistímio'
 __author_short__ = u'Epistímio'
 __author_email__ = 'xavier.bouthillier@umontreal.ca'
-__copyright__ = u'2017-2018, Epistímio'
+__copyright__ = u'2017-2019, Epistímio'
 __url__ = 'https://github.com/epistimio/orion'
 
 DIRS = AppDirs(__name__, __author_short__)
@@ -52,6 +52,11 @@ def define_config():
     """Create and define the fields of the configuration object."""
     config = Configuration()
     define_database_config(config)
+    define_worker_config(config)
+
+    config.add_option(
+        'user_script_config', option_type=str, default='config')
+
     return config
 
 
@@ -74,6 +79,20 @@ def define_database_config(config):
         'port', option_type=int, default=27017, env_var='ORION_DB_PORT')
 
     config.database = database_config
+
+
+def define_worker_config(config):
+    """Create and define the fields of the worker configuration."""
+    worker_config = Configuration()
+
+    worker_config.add_option(
+        'heartbeat', option_type=int, default=120)
+    worker_config.add_option(
+        'max_broken', option_type=int, default=3)
+    worker_config.add_option(
+        'max_idle_time', option_type=int, default=60)
+
+    config.worker = worker_config
 
 
 def build_config():

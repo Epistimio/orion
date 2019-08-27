@@ -92,7 +92,7 @@ def get_experiments(args):
     query = {'name': args['name']} if args.get('name') else {}
     experiments = get_storage().fetch_experiments(query, projection)
 
-    return [EVCBuilder().build_view_from({'name': exp['name'], 'version': exp['version']})
+    return [EVCBuilder().build_view_from({'name': exp['name'], 'version': exp.get('version', 1)})
             for exp in experiments]
 
 

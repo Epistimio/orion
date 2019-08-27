@@ -1594,7 +1594,7 @@ class ExperimentNameConflict(Conflict):
                     .format(self.new_name, self.conflict.username))
             else:
                 self.new_name = self.old_name
-                self.new_version = self.conflict.old_config['version'] + 1
+                self.new_version = self.conflict.old_config.get('version', 1) + 1
 
         def _name_is_unique(self):
             """Return True if given name is not in database for current user"""

@@ -10,6 +10,7 @@ import tempfile
 import pytest
 
 from orion.algo.base import BaseAlgorithm
+import orion.core
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.tests import OrionState
 import orion.core.worker.experiment
@@ -136,6 +137,16 @@ class TestInitExperiment(object):
         """Create a new and never-seen-before experiment with a version."""
         exp = Experiment("exp_wout_version", version=1)
         assert exp.version == 1
+
+    def test_backward_compatibility_no_version(self, create_db_instance, parent_version_config,
+                                               child_version_config):
+        """Branch from parent that has no version field."""
+        parent_version_config.pop('version')
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf")
+        assert exp.version == 2
 
     def test_old_experiment_wout_version(self, create_db_instance, parent_version_config,
                                          child_version_config):
@@ -667,6 +678,30 @@ class TestReserveTrial(object):
             m.setattr(hacked_exp.__class__, 'fetch_trials', fetch_lost_trials)
             hacked_exp.fix_lost_trials()
 
+    def test_fix_lost_trials_configurable_hb(self, hacked_exp, random_dt):
+        """Test that heartbeat is correctly being configured."""
+        exp_query = {'experiment': hacked_exp.id}
+        trial = hacked_exp.fetch_trials(exp_query)[0]
+        old_heartbeat_value = orion.core.config.worker.heartbeat
+        heartbeat = random_dt - datetime.timedelta(seconds=180)
+
+        get_storage().set_trial_status(trial,
+                                       status='reserved',
+                                       heartbeat=heartbeat)
+
+        trials = get_storage().fetch_trial_by_status(hacked_exp, 'reserved')
+
+        assert trial.id in [t.id for t in trials]
+
+        orion.core.config.worker.heartbeat = 210
+        hacked_exp.fix_lost_trials()
+
+        trials = get_storage().fetch_trial_by_status(hacked_exp, 'reserved')
+
+        assert trial.id in [t.id for t in trials]
+
+        orion.core.config.worker.heartbeat = old_heartbeat_value
+
 
 def test_update_completed_trial(hacked_exp, database, random_dt):
     """Successfully push a completed trial into database."""
@@ -796,6 +831,24 @@ def test_broken_property(hacked_exp):
         get_storage().set_trial_status(trial, status='broken')
 
     assert hacked_exp.is_broken
+
+
+def test_configurable_broken_property(hacked_exp):
+    """Check if max_broken changes after configuration."""
+    assert not hacked_exp.is_broken
+    trials = hacked_exp.fetch_trials({})[:3]
+    old_broken_value = orion.core.config.worker.max_broken
+
+    for trial in trials:
+        get_storage().set_trial_status(trial, status='broken')
+
+    assert hacked_exp.is_broken
+
+    orion.core.config.worker.max_broken = 4
+
+    assert not hacked_exp.is_broken
+
+    orion.core.config.worker.max_broken = old_broken_value
 
 
 def test_experiment_stats(hacked_exp, exp_config, random_dt):
