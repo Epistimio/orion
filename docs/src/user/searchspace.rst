@@ -147,11 +147,24 @@ Configuration file
 You can use configuration files to define search space with placeholder
 ``'orion~dist(*args, **kwargs)'`` in yaml and json files or
 ``name~dist(*args, **kwargs)`` in any other text-based file.
-For now Oríon can only recognize the
-configuration file if it is passed with the argument ``--config`` to the user script. This should
-not be confused with the argument ``--config`` of ``orion hunt``, which is the configuration of
-Oríon. We are here referring the configuration of the user script, represented with
-``my_script_config.txt`` in the following example.
+By default Oríon will only consider the file passed through the argument ``--config`` as a
+configuration file for the user script. However, it is possible to change the default argument
+inside the configuration file of Oríon through the `user_script_config` argument, like this:
+
+.. code-block:: yaml
+
+    user_script_config: configuration
+
+
+.. code-block:: console
+
+   orion hunt --config my_orion_config.yaml ./my_script --configuration my_script_config.txt
+
+As you can see, the configuration file for the user script is now passed through `--configuration`.
+
+This should not be confused with the argument ``--config`` of ``orion hunt``,
+which is the configuration of Oríon. We are here referring the configuration of the user script,
+represented with ``my_script_config.txt`` in the following example.
 
 .. code-block:: console
 
