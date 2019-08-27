@@ -3,6 +3,7 @@
 """Collection of tests for :mod:`orion.core.worker.producer`."""
 import copy
 import datetime
+import time
 
 import pytest
 
@@ -534,18 +535,46 @@ def test_duplicate_within_pool_and_db(producer, database, random_dt):
         ]
 
 
-def test_exceed_max_attempts(producer, database, random_dt):
+def test_exceed_max_idle_time_because_of_duplicates(producer, database, random_dt):
     """Test that RuntimeError is raised when algo keep suggesting the same points"""
-    producer.max_attempts = 10  # to limit run-time, default would work as well.
+    timeout = 3
+    producer.max_idle_time = timeout  # to limit run-time, default would work as well.
     producer.experiment.algorithms.algorithm.possible_values = [('rnn', 'rnn')]
 
     assert producer.experiment.pool_size == 1
 
     producer.update()
 
+    start = time.time()
     with pytest.raises(RuntimeError) as exc_info:
         producer.produce()
-    assert "Looks like the algorithm keeps suggesting" in str(exc_info.value)
+    assert timeout <= time.time() - start < timeout + 1
+
+    assert "Algorithm could not sample new points" in str(exc_info.value)
+
+
+def test_exceed_max_idle_time_because_of_optout(producer, database, random_dt, monkeypatch):
+    """Test that RuntimeError is raised when algo keeps opting out"""
+    timeout = 3
+    producer.max_idle_time = timeout  # to limit run-time, default would work as well.
+
+    def opt_out(self, num=1):
+        """Return None to always opt out"""
+        self._suggested = None
+        return None
+
+    monkeypatch.setattr(producer.experiment.algorithms.algorithm.__class__, 'suggest', opt_out)
+
+    assert producer.experiment.pool_size == 1
+
+    producer.update()
+
+    start = time.time()
+    with pytest.raises(RuntimeError) as exc_info:
+        producer.produce()
+    assert timeout <= time.time() - start < timeout + 1
+
+    assert "Algorithm could not sample new points" in str(exc_info.value)
 
 
 def test_original_seeding(producer, database):
