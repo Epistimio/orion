@@ -56,6 +56,7 @@ def find_unpickable_field(doc):
     return None, None
 
 
+# pylint: disable=too-many-public-methods
 class PickledDB(AbstractDB):
     """Pickled EphemeralDB to support permanancy and concurrency
 
@@ -98,6 +99,16 @@ class PickledDB(AbstractDB):
         """
         with self.locked_database() as database:
             database.ensure_index(collection_name, keys, unique=unique)
+
+    def index_information(self, collection_name):
+        """Return dict of names and sorting order of indexes"""
+        with self.locked_database(write=False) as database:
+            return database.index_information(collection_name)
+
+    def drop_index(self, collection_name, name):
+        """Remove index from the database"""
+        with self.locked_database() as database:
+            return database.drop_index(collection_name, name)
 
     def write(self, collection_name, data, query=None):
         """Write new information to a collection. Perform insert or update.
