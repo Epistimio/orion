@@ -12,6 +12,7 @@ import orion.core.cli
 from orion.core.io.database import Database
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.worker.trial import Trial
+from orion.storage.base import get_storage
 
 
 class DumbAlgo(BaseAlgorithm):
@@ -147,9 +148,28 @@ def ensure_deterministic_id(name, db_instance, version=1, update=None):
 def one_experiment(monkeypatch, db_instance):
     """Create an experiment without trials."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(['init_only', '-n', 'test_single_exp',
+    name = 'test_single_exp'
+    orion.core.cli.main(['init_only', '-n', name,
                          './black_box.py', '--x~uniform(0,1)'])
-    ensure_deterministic_id('test_single_exp', db_instance)
+    ensure_deterministic_id(name, db_instance)
+    return get_storage().fetch_experiments({'name': name})[0]
+
+
+@pytest.fixture
+def one_experiment_no_version(monkeypatch, one_experiment):
+    """Create an experiment without trials."""
+    one_experiment['name'] = one_experiment['name'] + '-no-version'
+    one_experiment.pop('version')
+
+    def fetch_without_version(query, selection=None):
+        if query.get('name') == one_experiment['name'] or query == {'_id': None} or query == {}:
+            return [one_experiment]
+
+        return []
+
+    monkeypatch.setattr(get_storage(), 'fetch_experiments', fetch_without_version)
+
+    return one_experiment
 
 
 @pytest.fixture

@@ -130,7 +130,7 @@ class Experiment:
                       name, user)
 
             if len(config) > 1:
-                max_version = max(config, key=lambda exp: exp['version'])['version']
+                max_version = max(config, key=lambda exp: exp.get('version', 1)).get('version', 1)
 
                 if version is None:
                     self.version = max_version
@@ -145,7 +145,7 @@ class Experiment:
 
                 log.info("Many versions for experiment %s have been found. Using latest "
                          "version %s.", name, self.version)
-                config = filter(lambda exp: exp['version'] == self.version, config)
+                config = filter(lambda exp: exp.get('version', 1) == self.version, config)
 
             config = sorted(config, key=lambda x: x['metadata']['datetime'],
                             reverse=True)[0]
