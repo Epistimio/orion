@@ -68,6 +68,13 @@ class Legacy(BaseStorageProtocol):
                               [('name', Database.ASCENDING),
                                ('version', Database.ASCENDING)],
                               unique=True)
+
+        # For backward compatibility
+        index_info = self._db.index_information('experiments')
+        for depracated_idx in ['name_1_metadata.user_1', 'name_1_metadata.user_1_version_1']:
+            if depracated_idx in index_info:
+                self._db.drop_index('experiments', depracated_idx)
+
         self._db.ensure_index('experiments', 'metadata.datetime')
 
         self._db.ensure_index('trials', 'experiment')
