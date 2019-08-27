@@ -91,7 +91,7 @@ class ExperimentNode(TreeNode):
 
             if experiments:
                 parent = experiments[0]
-                exp_node = ExperimentNode(name=parent['name'], version=parent['version'])
+                exp_node = ExperimentNode(name=parent['name'], version=parent.get('version', 1))
                 self.set_parent(exp_node)
         return self._parent
 
@@ -111,7 +111,9 @@ class ExperimentNode(TreeNode):
             selection = {'name': 1, 'version': 1}
             experiments = get_storage().fetch_experiments(query, selection)
             for child in experiments:
-                self.add_children(ExperimentNode(name=child['name'], version=child['version']))
+                self.add_children(
+                    ExperimentNode(name=child['name'],
+                                   version=child.get('version', 1)))
 
         return self._children
 
