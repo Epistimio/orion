@@ -655,29 +655,42 @@ class Fidelity(Dimension):
     explore a low fidelity space. This class is used as a place-holder so that algorithms can
     discern fidelity dimensions from hyper-parameter dimensions.
 
+    Parameters
+    ----------
+    name : str
+        Name of the dimension
+    low: int
+        Mininum of the fidelity interval.
+    high: int
+        Maximum of the fidelity interval.
+    base: int
+        Base logarithm of the fidelity dimension.
+
     Attributes
     ----------
     name : str
-    type : str
+        Name of the dimension
 
     """
 
     # pylint:disable=super-init-not-called
-    def __init__(self, name):
-        """Fidelity dimension that can represent a fidelity level.
-
-        Parameters
-        ----------
-        name : str
-
-        """
+    def __init__(self, name, low, high, base=2):
+        if low <= 0:
+            raise AttributeError("Minimum resources must be a positive number.")
+        elif low > high:
+            raise AttributeError("Minimum resources must be smaller than maximum resources.")
+        if base <= 1:
+            raise AttributeError("Base should be greater than 1")
         self.name = name
+        self.low = int(low)
+        self.high = int(high)
+        self.base = int(base)
         self.prior = None
         self._prior_name = 'None'
 
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
-        return 'fidelity()'
+        return 'fidelity({}, {}, {})'.format(self.low, self.high, self.base)
 
     def validate(self):
         """Do not do anything."""
@@ -689,7 +702,7 @@ class Fidelity(Dimension):
 
     def interval(self, alpha=1.0):
         """Do not do anything."""
-        raise NotImplementedError
+        return (self.low, self.high)
 
     def cast(self, point=0):
         """Do not do anything."""
@@ -697,19 +710,16 @@ class Fidelity(Dimension):
 
     def __repr__(self):
         """Represent the object as a string."""
-        return "{0}(name={1})".format(self.__class__.__name__, self.name)
+        return "{0}(name={1}, low={2}, high={3}, base={4})".format(
+            self.__class__.__name__, self.name, self.low, self.high, self.base)
 
     def __contains__(self, value):
         """Check if constraints hold for this `point` of `Dimension`.
 
-        .. note ::
-
-            Always True for Fidelity.
-
         :param point: a parameter corresponding to this `Dimension`.
         :type point: numeric or array-like
         """
-        return True
+        return self.low <= value <= self.high
 
 
 class Space(dict):

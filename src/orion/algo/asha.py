@@ -45,18 +45,20 @@ class ASHA(BaseAlgorithm):
     seed: None, int or sequence of int
         Seed for the random number generator used to sample new trials.
         Default: ``None``
-    max_resources: int
-        Maximum amount of resources that will be assigned to trials by ASHA. Only the
-        best performing trial will be assigned the maximum amount of resources.
-        Default: 100
     grace_period: int
-        The minimum number of resources assigned to each trial.
-        Default: 1
+        Deprecated and will be removed in v0.2.0. To set min resources, you must define it in the
+        prior `fidelity(low, high, base)`.
+    max_resources: int
+        Deprecated and will be removed in v0.2.0. To set max resources, you must define it in the
+        prior `fidelity(low, high, base)`.
     reduction_factor: int
-        The factor by which ASHA promotes trials. If the reduction factor is 4,
-        it means the number of trials from one fidelity level to the next one is roughly
-        divided by 4, and each fidelity level has 4 times more resources than the prior one.
-        Default: 4
+        Deprecated and will be removed in v0.2.0. To set the reduction factor, you must define the
+        base of `fidelity(low, high, base)`.
+    num_rungs: int, optional
+        Number of rungs for the largest bracket. If not defined, it will be equal to (base + 1) of
+        the fidelity dimension. In the original paper,
+        num_rungs == log(fidelity.high/fidelity.low) / log(fidelity.base) + 1.
+        Default: log(fidelity.high/fidelity.low) / log(fidelity.base) + 1
     num_brackets: int
         Using a grace period that is too small may bias ASHA too strongly towards
         fast converging trials that do not lead to best results at convergence (stagglers). To
@@ -66,21 +68,57 @@ class ASHA(BaseAlgorithm):
 
     """
 
-    def __init__(self, space, seed=None, max_resources=100, grace_period=1, reduction_factor=4,
-                 num_brackets=1):
+    def __init__(self, space, seed=None, grace_period=None, max_resources=None,
+                 reduction_factor=None, num_rungs=None, num_brackets=1):
         super(ASHA, self).__init__(
             space, seed=seed, max_resources=max_resources, grace_period=grace_period,
             reduction_factor=reduction_factor, num_brackets=num_brackets)
 
+        self.trial_info = {}  # Stores Trial -> Bracket
+
+        fidelity_dim = space.values()[self.fidelity_index]
+
+        if grace_period is not None:
+            logger.warning(
+                'The argument `grace_period` is deprecated and will be removed in v0.2.0. To set '
+                'min resources, you must define ' 'it in the prior `fidelity(low, high, base)`.')
+            min_resources = grace_period
+        else:
+            min_resources = fidelity_dim.low
+
+        if max_resources is not None:
+            logger.warning(
+                'The argument `max_resources` is deprecated and will be removed in v0.2.0. To set '
+                'max resources, you must define ' 'it in the prior `fidelity(low, high, base)`')
+            max_resources = max_resources
+        else:
+            max_resources = fidelity_dim.high
+
+        if reduction_factor is not None:
+            logger.warning(
+                'The argument `reduction_factor` is deprecated and will be removed in v0.2.0. To '
+                'set the reduction factor, you must define the base of `fidelity(low, high, base)`')
+            reduction_factor = reduction_factor
+        else:
+            reduction_factor = fidelity_dim.base
+
         if reduction_factor < 2:
             raise AttributeError("Reduction factor for ASHA needs to be at least 2.")
 
-        self.trial_info = {}  # Stores Trial -> Bracket
+        if num_rungs is None:
+            num_rungs = numpy.log(max_resources / min_resources) / numpy.log(reduction_factor) + 1
+
+        self.num_rungs = num_rungs
+
+        budgets = numpy.logspace(
+            numpy.log(min_resources) / numpy.log(reduction_factor),
+            numpy.log(max_resources) / numpy.log(reduction_factor),
+            num_rungs, base=reduction_factor)
 
         # Tracks state for new trial add
         self.brackets = [
-            Bracket(self, grace_period, max_resources, reduction_factor, s)
-            for s in range(num_brackets)
+            Bracket(self, reduction_factor, budgets[bracket_index:])
+            for bracket_index in range(num_brackets)
         ]
 
     def seed_rng(self, seed):
@@ -207,27 +245,25 @@ class ASHA(BaseAlgorithm):
 
 
 class Bracket():
-    """Bracket of rungs for the algorithm ASHA."""
+    """Bracket of rungs for the algorithm ASHA.
 
-    def __init__(self, asha, min_t, max_t, reduction_factor, s):
-        """Build rungs based on min_t, max_t, reduction_factor and s.
+    Parameters
+    ----------
+    asha: `ASHA` algorithm
+        The asha algorithm object which this bracket will be part of.
+    reduction_factor: int
+        The factor by which ASHA promotes trials. If the reduction factor is 4,
+        it means the number of trials from one fidelity level to the next one is roughly
+        divided by 4, and each fidelity level has 4 times more resources than the prior one.
+    budgets: list of int
+        Budgets used for each rung
 
-        :param asha: `ASHA` algorithm
-        :param min_t: Minimum resources (grace_period)
-        :param max_t: Maximum resources
-        :param reduction_factor: Factor of reduction from `min_t` to `max_t`
-        :param s: Minimal early stopping factor (used when there is many brackets)
-        """
-        if min_t <= 0:
-            raise AttributeError("Minimum resources must be a positive number.")
-        elif min_t > max_t:
-            raise AttributeError("Minimum resources must be smaller than maximum resources.")
+    """
 
+    def __init__(self, asha, reduction_factor, budgets):
         self.asha = asha
         self.reduction_factor = reduction_factor
-        max_rungs = int(numpy.ceil(numpy.log(max_t / min_t) / numpy.log(reduction_factor) - s + 1))
-        self.rungs = [(min(min_t * reduction_factor**(k + s), max_t), dict())
-                      for k in range(max_rungs)]
+        self.rungs = [(budget, dict()) for budget in budgets]
 
         logger.debug('Bracket budgets: %s', str([rung[0] for rung in self.rungs]))
 
