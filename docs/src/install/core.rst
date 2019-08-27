@@ -6,11 +6,11 @@ Via PyPI
 ========
 
 The easiest way to install Oríon is using the Python package manager. The core of Oríon is
-registered on PyPI under `orion.core`.
+registered on PyPI under `orion`.
 
 .. code-block:: sh
 
-   pip install orion.core
+   pip install orion
 
 This will install all the core components. Note that the only algorithm provided with it
 is random search. To install more algorithms, you can look at section :doc:`/install/plugins`.
