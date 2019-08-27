@@ -6,7 +6,7 @@ from datetime import datetime
 
 import pytest
 
-from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.io.database import Database, DatabaseError, DuplicateKeyError
 from orion.core.io.database.ephemeraldb import EphemeralCollection, EphemeralDB, EphemeralDocument
 
 
@@ -65,32 +65,32 @@ class TestEnsureIndex(object):
 
     def test_new_index(self, orion_db):
         """Index should be added to ephemeral database"""
-        assert ("new_field", ) not in orion_db._db['new_collection']._indexes
+        assert "new_field_1" not in orion_db._db['new_collection']._indexes
 
         orion_db.ensure_index('new_collection', 'new_field', unique=False)
-        assert ("new_field", ) not in orion_db._db['new_collection']._indexes
+        assert "new_field_1" not in orion_db._db['new_collection']._indexes
 
         orion_db.ensure_index('new_collection', 'new_field', unique=True)
-        assert ("new_field", ) in orion_db._db['new_collection']._indexes
+        assert "new_field_1" in orion_db._db['new_collection']._indexes
 
     def test_existing_index(self, orion_db):
         """Index should be added to ephemeral database and reattempt should do nothing"""
-        assert ("new_field", ) not in orion_db._db['new_collection']._indexes
+        assert "new_field_1" not in orion_db._db['new_collection']._indexes
 
         orion_db.ensure_index('new_collection', 'new_field', unique=True)
-        assert ("new_field", ) in orion_db._db['new_collection']._indexes
+        assert "new_field_1" in orion_db._db['new_collection']._indexes
 
         # reattempt
         orion_db.ensure_index('new_collection', 'new_field', unique=True)
-        assert ("new_field", ) in orion_db._db['new_collection']._indexes
+        assert "new_field_1" in orion_db._db['new_collection']._indexes
 
     def test_compound_index(self, orion_db):
         """Tuple of Index should be added as a compound index."""
-        assert ("name", "metadata.user") not in orion_db._db['experiments']._indexes
+        assert "name_1_metadata.user_1" not in orion_db._db['experiments']._indexes
         orion_db.ensure_index('experiments',
                               [('name', Database.ASCENDING),
                                ('metadata.user', Database.ASCENDING)], unique=True)
-        assert ("name", "metadata.user") in orion_db._db['experiments']._indexes
+        assert "name_1_metadata.user_1" in orion_db._db['experiments']._indexes
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -334,10 +334,11 @@ class TestIndex(object):
     def test_create_index(self, collection):
         """Test if new index added property."""
         collection.create_index('hello')
-        assert collection._indexes == {('_id',): {(1, )}}
+        assert collection._indexes == {'_id_': (('_id',), {(1, )})}
 
         collection.create_index('hello', unique=True)
-        assert collection._indexes == {('_id',): {(1, )}, ('hello', ): {('there', )}}
+        assert collection._indexes == {'_id_': (('_id',), {(1, )}),
+                                       'hello_1': (('hello', ), {('there', )})}
 
     def test_track_index(self, collection):
         """Test if index values are tracked property."""
@@ -345,7 +346,8 @@ class TestIndex(object):
         collection.insert_many([{'hello': 'here'}, {'hello': 2}])
         assert (
             collection._indexes ==
-            {('_id',): {(1, ), (2, ), (3, )}, ('hello', ): {('there', ), ('here', ), (2, )}})
+            {'_id_': (('_id',), {(1, ), (2, ), (3, )}),
+             'hello_1': (('hello', ), {('there', ), ('here', ), (2, )})})
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -435,3 +437,78 @@ class TestMatch:
             document.match({'_id': {'$voici_voila': 0}})
 
         assert 'Operator \'$voici_voila\' is not supported' in str(exc.value)
+
+
+@pytest.mark.usefixtures("clean_db")
+class TestIndexInformation(object):
+    """Calls :meth:`orion.core.io.database.mongodb.EphemeralDB.count`."""
+
+    def test_no_index(self, orion_db):
+        """Test that no index is returned when there is none."""
+        assert orion_db.index_information('experiments') == {'_id_': True}
+
+    def test_single_index(self, orion_db):
+        """Test that single indexes are ignored if not unique."""
+        orion_db.ensure_index('experiments', [('name', EphemeralDB.ASCENDING)])
+
+        assert orion_db.index_information('experiments') == {'_id_': True}
+
+    def test_single_index_unique(self, orion_db):
+        """Test with single unique indexes."""
+        orion_db.ensure_index('experiments', [('name', EphemeralDB.ASCENDING)], unique=True)
+
+        assert orion_db.index_information('experiments') == {'_id_': True, 'name_1': True}
+
+    def test_ordered_index(self, orion_db):
+        """Test that ordered indexes are not taken into account."""
+        orion_db.ensure_index('experiments', [('name', EphemeralDB.DESCENDING)], unique=True)
+
+        assert orion_db.index_information('experiments') == {'_id_': True, 'name_1': True}
+
+    def test_compound_index(self, orion_db):
+        """Test representation of compound indexes."""
+        orion_db.ensure_index('experiments',
+                              [('name', EphemeralDB.DESCENDING),
+                               ('version', EphemeralDB.ASCENDING)], unique=True)
+
+        index_info = orion_db.index_information('experiments')
+        assert index_info == {'_id_': True, 'name_1_version_1': True}
+
+
+@pytest.mark.usefixtures("clean_db")
+class TestDropIndex(object):
+    """Calls :meth:`orion.core.io.database.mongodb.EphemeralDB.count`."""
+
+    def test_no_index(self, orion_db):
+        """Test that no index is returned when there is none."""
+        with pytest.raises(DatabaseError) as exc:
+            orion_db.drop_index('experiments', 'i_dont_exist')
+        assert 'index not found with name' in str(exc.value)
+
+    def test_drop_single_index(self, orion_db):
+        """Test with single indexes."""
+        orion_db.ensure_index('experiments', [('name', EphemeralDB.ASCENDING)], unique=True)
+        assert orion_db.index_information('experiments') == {'_id_': True, 'name_1': True}
+        orion_db.drop_index('experiments', 'name_1')
+        assert orion_db.index_information('experiments') == {'_id_': True}
+
+    def test_drop_ordered_single_index(self, orion_db):
+        """Test with single indexes."""
+        orion_db.ensure_index('experiments', [('name', EphemeralDB.DESCENDING)], unique=True)
+        index_info = orion_db.index_information('experiments')
+        assert index_info == {'_id_': True, 'name_1': True}
+        orion_db.drop_index('experiments', 'name_1')
+        index_info = orion_db.index_information('experiments')
+        assert index_info == {'_id_': True}
+
+    def test_drop_ordered_compound_index(self, orion_db):
+        """Test with single indexes."""
+        orion_db.ensure_index('experiments',
+                              [('name', EphemeralDB.ASCENDING),
+                               ('version', EphemeralDB.DESCENDING)],
+                              unique=True)
+        index_info = orion_db.index_information('experiments')
+        assert index_info == {'_id_': True, 'name_1_version_1': True}
+        orion_db.drop_index('experiments', 'name_1_version_1')
+        index_info = orion_db.index_information('experiments')
+        assert index_info == {'_id_': True}

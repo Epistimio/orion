@@ -440,3 +440,102 @@ class TestCount(object):
         """Call with argument that will not find anything."""
         found = orion_db.count('experiments', {'name': 'lalalanotfound'})
         assert found == 0
+
+
+@pytest.mark.usefixtures("clean_db")
+class TestIndexInformation(object):
+    """Calls :meth:`orion.core.io.database.mongodb.MongoDB.count`."""
+
+    def test_no_index(self, orion_db):
+        """Test that no index is returned when there is none."""
+        assert orion_db.index_information('experiments') == {'_id_': True}
+
+    def test_single_index(self, orion_db):
+        """Test with single indexes."""
+        orion_db.ensure_index('experiments', [('name', MongoDB.ASCENDING)])
+
+        assert orion_db.index_information('experiments') == {'_id_': True, 'name_1': False}
+
+    def test_ordered_index(self, orion_db):
+        """Test with ordered indexes."""
+        orion_db.ensure_index('experiments', [('name', MongoDB.DESCENDING)])
+
+        assert orion_db.index_information('experiments') == {'_id_': True, 'name_-1': False}
+
+    def test_compound_index(self, orion_db):
+        """Test representation of compound indexes."""
+        orion_db.ensure_index('experiments',
+                              [('name', MongoDB.DESCENDING),
+                               ('version', MongoDB.ASCENDING)])
+
+        index_info = orion_db.index_information('experiments')
+        assert index_info == {'_id_': True, 'name_-1_version_1': False}
+
+    def test_unique_index(self, orion_db):
+        """Test that unique indexes are correctly inditified."""
+        orion_db.ensure_index('hello',
+                              [('bonjour', MongoDB.DESCENDING)], unique=True)
+
+        assert orion_db.index_information('hello') == {'_id_': True, 'bonjour_-1': True}
+
+
+@pytest.mark.usefixtures("clean_db")
+class TestDropIndex(object):
+    """Calls :meth:`orion.core.io.database.mongodb.MongoDB.count`."""
+
+    def test_no_index(self, orion_db):
+        """Test DatabaseError is raised when index does not exist."""
+        with pytest.raises(DatabaseError) as exc:
+            orion_db.drop_index('experiments', 'i_dont_exist')
+        assert 'index not found with name' in str(exc.value)
+
+    def test_drop_single_index(self, orion_db):
+        """Test with single indexes."""
+        orion_db.ensure_index('experiments', [('name', MongoDB.ASCENDING)])
+        assert orion_db.index_information('experiments') == {'_id_': True, 'name_1': False}
+        orion_db.drop_index('experiments', 'name_1')
+        assert orion_db.index_information('experiments') == {'_id_': True}
+
+    def test_drop_ordered_single_index(self, orion_db):
+        """Test with single indexes."""
+        orion_db.ensure_index('experiments', [('name', MongoDB.ASCENDING)])
+        orion_db.ensure_index('experiments', [('name', MongoDB.DESCENDING)])
+        index_info = orion_db.index_information('experiments')
+        assert index_info == {'_id_': True, 'name_1': False, 'name_-1': False}
+        orion_db.drop_index('experiments', 'name_1')
+        index_info = orion_db.index_information('experiments')
+        assert index_info == {'_id_': True, 'name_-1': False}
+        with pytest.raises(DatabaseError) as exc:
+            orion_db.drop_index('experiments', 'name_1')
+        assert 'index not found with name' in str(exc.value)
+        orion_db.drop_index('experiments', 'name_-1')
+        index_info = orion_db.index_information('experiments')
+        assert index_info == {'_id_': True}
+
+    def test_drop_ordered_compound_index(self, orion_db):
+        """Test with single indexes."""
+        orion_db.ensure_index('experiments',
+                              [('name', MongoDB.ASCENDING), ('version', MongoDB.DESCENDING)])
+        orion_db.ensure_index('experiments',
+                              [('name', MongoDB.DESCENDING), ('version', MongoDB.ASCENDING)])
+        index_info = orion_db.index_information('experiments')
+        assert index_info == {'_id_': True, 'name_1_version_-1': False, 'name_-1_version_1': False}
+        orion_db.drop_index('experiments', 'name_1_version_-1')
+        index_info = orion_db.index_information('experiments')
+        assert index_info == {'_id_': True, 'name_-1_version_1': False}
+        with pytest.raises(DatabaseError) as exc:
+            orion_db.drop_index('experiments', 'name_1_version_-1')
+        assert 'index not found with name' in str(exc.value)
+        orion_db.drop_index('experiments', 'name_-1_version_1')
+        index_info = orion_db.index_information('experiments')
+        assert index_info == {'_id_': True}
+
+    def test_drop_unique_index(self, orion_db):
+        """Test with single indexes."""
+        orion_db.ensure_index('hello',
+                              [('bonjour', MongoDB.DESCENDING)], unique=True)
+        index_info = orion_db.index_information('hello')
+        assert index_info == {'_id_': True, 'bonjour_-1': True}
+        orion_db.drop_index('hello', 'bonjour_-1')
+        index_info = orion_db.index_information('hello')
+        assert index_info == {'_id_': True}
