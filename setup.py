@@ -24,7 +24,7 @@ packages = [
     ]
 
 setup_args = dict(
-    name='orion.core',
+    name='orion',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description='Asynchronous [black-box] Optimization',
