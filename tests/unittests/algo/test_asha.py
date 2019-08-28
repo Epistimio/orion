@@ -384,6 +384,7 @@ class TestASHA():
         """Test that ASHA opts out when last rung is full."""
         asha.brackets = [bracket]
         bracket.asha = asha
+        bracket.rungs[1] = rung_1
         bracket.rungs[2] = rung_2
 
         points = asha.suggest()
