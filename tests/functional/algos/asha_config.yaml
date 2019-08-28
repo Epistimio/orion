@@ -1,0 +1,21 @@
+name: demo_algo
+
+pool_size: 1
+max_trials: 100
+
+algorithms:
+  asha:
+    seed: 1
+    num_rungs: 4
+    num_brackets: 1
+    grace_period: null
+    max_resources: null
+    reduction_factor: null
+
+producer:
+  strategy: StubParallelStrategy
+
+database:
+  type: 'mongodb'
+  name: 'orion_test'
+  host: 'mongodb://user:pass@localhost'
