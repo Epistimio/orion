@@ -53,7 +53,8 @@ class DumbAlgo(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {'index': self._index, 'suggested': self._suggested, 'num': self._num}
+        return {'index': self._index, 'suggested': self._suggested, 'num': self._num,
+                'done': self.done}
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
@@ -63,6 +64,7 @@ class DumbAlgo(BaseAlgorithm):
         self._index = state_dict['index']
         self._suggested = state_dict['suggested']
         self._num = state_dict['num']
+        self.done = state_dict['done']
 
     def suggest(self, num=1):
         """Suggest based on `value`."""
