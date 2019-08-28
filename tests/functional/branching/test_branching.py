@@ -454,9 +454,22 @@ def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
     orion.core.cli.main(
         ("init_only -n {name} --branch {branch} ./black_box_with_y.py "
          "-x~uniform(0,10) "
-         "-w~choices(['a','b'],default_value='a')").format(name=name, branch=branch).split(" "))
-    orion.core.cli.main("insert -n {name} script -x=2 -w=b".format(name=branch).split(" "))
-    orion.core.cli.main("insert -n {name} script -x=1".format(name=branch).split(" "))
+         "-w~choices(['a','b'])").format(name=name, branch=branch).split(" "))
+
+
+def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
+    """Test that auto-resolution does resolve all conflicts including new fidelity"""
+    # Patch cmdloop to avoid autoresolution's prompt
+    monkeypatch.setattr('sys.__stdin__.isatty', lambda: True)
+
+    name = "full_x_full_y"
+    branch = "half_x_no_y_new_w"
+    # If autoresolution was not succesfull, this to fail with a sys.exit without registering the
+    # experiment
+    orion.core.cli.main(
+        ("init_only -n {name} --branch {branch} ./black_box_with_y.py "
+         "-x~uniform(0,10) "
+         "-w~fidelity(1,10)").format(name=name, branch=branch).split(" "))
 
 
 def test_init_w_version_from_parent_w_children(clean_db, monkeypatch):
