@@ -528,10 +528,18 @@ class TestFidelity(object):
         assert "Base should be greater than 1" == str(exc.value)
 
     def test_sampling(self):
-        """Make sure Fidelity simply returns `fidelity`"""
+        """Make sure Fidelity simply returns `high`"""
         dim = Fidelity('epoch', 1, 2)
+        assert dim.sample() == [2]
+        dim = Fidelity('epoch', 1, 5)
+        assert dim.sample() == [5]
 
-        assert dim.sample() == ['fidelity']
+    def test_default_value(self):
+        """Make sure Fidelity simply returns `high`"""
+        dim = Fidelity('epoch', 1, 2)
+        assert dim.default_value == 2
+        dim = Fidelity('epoch', 1, 5)
+        assert dim.default_value == 5
 
     def test_contains(self):
         """Make sure fidelity.__contains__ tests based on (min, max)"""

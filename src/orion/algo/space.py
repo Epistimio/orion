@@ -670,6 +670,8 @@ class Fidelity(Dimension):
     ----------
     name : str
         Name of the dimension
+    default_value: int
+        Maximum of the fidelity interval.
 
     """
 
@@ -688,6 +690,11 @@ class Fidelity(Dimension):
         self.prior = None
         self._prior_name = 'None'
 
+    @property
+    def default_value(self):
+        """Return `high`"""
+        return self.high
+
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
         return 'fidelity({}, {}, {})'.format(self.low, self.high, self.base)
@@ -698,7 +705,7 @@ class Fidelity(Dimension):
 
     def sample(self, n_samples=1, seed=None):
         """Do not do anything."""
-        return ['fidelity']
+        return [self.high]
 
     def interval(self, alpha=1.0):
         """Do not do anything."""
