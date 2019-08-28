@@ -15,11 +15,10 @@ import os
 import pickle
 from pickle import PicklingError
 
-from filelock import FileLock
-
 import orion.core
 from orion.core.io.database import AbstractDB
 from orion.core.io.database.ephemeraldb import EphemeralDB
+from orion.core.utils.rw_filelock import RWFileLock
 
 log = logging.getLogger(__name__)
 
@@ -181,7 +180,12 @@ class PickledDB(AbstractDB):
     @contextmanager
     def locked_database(self, write=True):
         """Lock database file during wrapped operation call."""
-        lock = FileLock(self.host + '.lock')
+        rw_filelock = RWFileLock(self.host)
+
+        if write:
+            lock = rw_filelock.write_lock()
+        else:
+            lock = rw_filelock.read_lock()
 
         with lock.acquire(timeout=60):
             database = self._get_database()
