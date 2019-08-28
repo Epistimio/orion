@@ -577,6 +577,29 @@ def test_exceed_max_idle_time_because_of_optout(producer, database, random_dt, m
     assert "Algorithm could not sample new points" in str(exc_info.value)
 
 
+def test_stops_if_algo_done(producer, database, random_dt, monkeypatch):
+    """Test that producer stops producing when algo is done."""
+    def opt_out_and_complete(self, num=1):
+        """Return None to always opt out and set id_done to True"""
+        self._suggested = None
+        self.done = True
+        print('set')
+        return None
+
+    monkeypatch.setattr(producer.experiment.algorithms.algorithm.__class__, 'suggest',
+                        opt_out_and_complete)
+
+    assert producer.experiment.pool_size == 1
+
+    trials_in_db_before = database.trials.count()
+
+    producer.update()
+    producer.produce()
+
+    assert database.trials.count() == trials_in_db_before
+    assert producer.experiment.algorithms.is_done
+
+
 def test_original_seeding(producer, database):
     """Verify that rng state in original algo changes when duplicate trials is discarded"""
     assert producer.experiment.pool_size == 1
