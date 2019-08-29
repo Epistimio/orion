@@ -25,13 +25,6 @@ from orion.storage.base import get_storage, Storage
 from orion.storage.legacy import Legacy
 
 
-def _remove(file_name):
-    try:
-        os.remove(file_name)
-    except FileNotFoundError:
-        pass
-
-
 def _select(lhs, rhs):
     if lhs:
         return lhs
@@ -107,7 +100,6 @@ class OrionState:
     trials = []
     resources = []
     workers = []
-    tempfile = None
 
     def __init__(self, experiments=None, trials=None, workers=None, lies=None, resources=None,
                  from_yaml=None, database=None):
@@ -128,6 +120,7 @@ class OrionState:
         """Initialize environment before testing"""
         self.storage()
         self.database = get_storage()._db
+        self.cleanup()
         self.load_experience_configuration()
         return self
 
@@ -143,7 +136,8 @@ class OrionState:
 
     def cleanup(self):
         """Cleanup after testing"""
-        _remove(self.tempfile)
+        self.database.remove('experiments', {})
+        self.database.remove('trials', {})
 
     def load_experience_configuration(self):
         """Load an example database."""
@@ -164,20 +158,22 @@ class OrionState:
             self.experiments[i]['version'] = 1
             self.experiments[i]['_id'] = i
 
-        self.database.write('experiments', self.experiments)
-        self.database.write('trials', self.trials)
-        self.database.write('workers', self.workers)
-        self.database.write('resources', self.resources)
-        self.database.write('lying_trials', self.lies)
+        if self.experiments:
+            self.database.write('experiments', self.experiments)
+        if self.trials:
+            self.database.write('trials', self.trials)
+        if self.workers:
+            self.database.write('workers', self.workers)
+        if self.resources:
+            self.database.write('resources', self.resources)
+        if self.lies:
+            self.database.write('lying_trials', self.lies)
 
     def __enter__(self):
         """Load a new database state"""
-        self.tempfile = self.database_config.get('host')
-
         for singleton in self.SINGLETONS:
             self.new_singleton(singleton, new_value=None)
 
-        self.cleanup()
         return self.init()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -199,7 +195,7 @@ class OrionState:
     def storage(self):
         """Return test storage"""
         try:
-            storage_type = self.database_config.pop('storage_type')
+            storage_type = self.database_config.pop('storage_type', 'legacy')
             config = {
                 'database': self.database_config
             }
