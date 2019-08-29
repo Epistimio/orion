@@ -10,6 +10,7 @@
 
 """
 import logging
+import sys
 
 from orion.core.cli.base import get_basic_args_group
 from orion.core.io.evc_builder import EVCBuilder
@@ -27,9 +28,23 @@ def add_subparser(parser):
     return info_parser
 
 
+# pylint: disable=protected-access
+def hack_until_config_is_refactored(experiment):
+    """Build the space and the algorithm"""
+    experiment._experiment._instantiate_config(experiment.configuration)
+    experiment._experiment._init_done = True
+
+
 def main(args):
     """Fetch config and info experiments"""
-    experiment = EVCBuilder().build_from(args)
+    try:
+        experiment = EVCBuilder().build_view_from(args)
+    except ValueError:
+        print('Experiment {} not found in db.'.format(args.get('name', None)))
+        sys.exit(1)
+
+    hack_until_config_is_refactored(experiment)
+
     print(format_info(experiment))
 
 
@@ -326,6 +341,8 @@ METADATA_TEMPLATE = """\
 user: {experiment.metadata[user]}
 datetime: {experiment.metadata[datetime]}
 orion version: {experiment.metadata[orion_version]}
+VCS:
+{vcs}
 """
 
 
@@ -333,7 +350,8 @@ def format_metadata(experiment):
     """Render a string for metadata section"""
     metadata_string = METADATA_TEMPLATE.format(
         title=format_title("Meta-data"),
-        experiment=experiment)
+        experiment=experiment,
+        vcs=format_dict(experiment.metadata.get('VCS', {}), depth=1, width=2))
 
     return metadata_string
 
