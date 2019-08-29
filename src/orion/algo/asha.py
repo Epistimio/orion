@@ -26,6 +26,12 @@ Bad fidelity level {fidelity}. Should be in {budgets}.
 Params: {params}
 """
 
+SPACE_ERROR = """
+ASHA cannot be used if space does contain a fidelity dimension.
+For more information on the configuration and usage of ASHA, see
+https://orion.readthedocs.io/en/develop/user/algorithms.html#asha
+"""
+
 
 class ASHA(BaseAlgorithm):
     """Asynchronous Successive Halving Algorithm
@@ -72,11 +78,16 @@ class ASHA(BaseAlgorithm):
                  reduction_factor=None, num_rungs=None, num_brackets=1):
         super(ASHA, self).__init__(
             space, seed=seed, max_resources=max_resources, grace_period=grace_period,
-            reduction_factor=reduction_factor, num_brackets=num_brackets)
+            reduction_factor=reduction_factor, num_rungs=num_rungs, num_brackets=num_brackets)
 
         self.trial_info = {}  # Stores Trial -> Bracket
 
-        fidelity_dim = space.values()[self.fidelity_index]
+        try:
+            fidelity_index = self.fidelity_index
+        except IndexError:
+            raise RuntimeError(SPACE_ERROR)
+
+        fidelity_dim = space.values()[fidelity_index]
 
         if grace_period is not None:
             logger.warning(
@@ -106,14 +117,15 @@ class ASHA(BaseAlgorithm):
             raise AttributeError("Reduction factor for ASHA needs to be at least 2.")
 
         if num_rungs is None:
-            num_rungs = numpy.log(max_resources / min_resources) / numpy.log(reduction_factor) + 1
+            num_rungs = int(numpy.log(max_resources / min_resources) /
+                            numpy.log(reduction_factor) + 1)
 
         self.num_rungs = num_rungs
 
         budgets = numpy.logspace(
             numpy.log(min_resources) / numpy.log(reduction_factor),
             numpy.log(max_resources) / numpy.log(reduction_factor),
-            num_rungs, base=reduction_factor)
+            num_rungs, base=reduction_factor).astype(int)
 
         # Tracks state for new trial add
         self.brackets = [
@@ -162,7 +174,7 @@ class ASHA(BaseAlgorithm):
                 logger.debug('Promoting')
                 return [candidate]
 
-        if all(bracket.is_done for bracket in self.brackets):
+        if all(bracket.is_filled for bracket in self.brackets):
             logger.debug('All brackets are filled.')
             return None
 
@@ -178,7 +190,7 @@ class ASHA(BaseAlgorithm):
 
         sizes = numpy.array([len(b.rungs) for b in self.brackets])
         probs = numpy.e**(sizes - sizes.max())
-        probs = numpy.array([prob * int(not bracket.is_done)
+        probs = numpy.array([prob * int(not bracket.is_filled)
                              for prob, bracket in zip(probs, self.brackets)])
         normalized = probs / probs.sum()
         idx = self.rng.choice(len(self.brackets), p=normalized)
@@ -298,14 +310,19 @@ class Bracket():
 
     @property
     def is_done(self):
-        """Return True, if the penultimate rung is filled."""
-        return self.is_filled(len(self.rungs) - 2) or len(self.rungs[-1][1])
+        """Return True, if the last rung is filled."""
+        return len(self.rungs[-1][1])
 
-    def is_filled(self, rung_id):
+    @property
+    def is_filled(self):
+        """Return True, if the penultimate rung is filled."""
+        return self.has_rung_filled(len(self.rungs) - 2)
+
+    def has_rung_filled(self, rung_id):
         """Return True, if the rung[rung_id] is filled."""
         n_rungs = len(self.rungs)
         n_trials = len(self.rungs[rung_id][1])
-        return n_trials >= (n_rungs - rung_id - 1) ** self.reduction_factor
+        return n_trials >= self.reduction_factor ** (n_rungs - rung_id - 1)
 
     def update_rungs(self):
         """Promote the first candidate that is found and return it
@@ -321,7 +338,7 @@ class Bracket():
             Lookup for promotion in rung l + 1 contains trials of any status.
 
         """
-        if self.is_done and self.rungs[-1][1]:
+        if self.is_done:
             return None
 
         for rung_id in range(len(self.rungs) - 2, -1, -1):
