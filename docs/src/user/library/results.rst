@@ -43,7 +43,7 @@ For a complete example, here is how you can fetch trials from a given experiment
 
    pprint.pprint(experiment.stats)
 
-   for trial in experiment.fetch_trials({}):
+   for trial in experiment.fetch_trials():
        print(trial.id)
        print(trial.status)
        print(trial.params)
@@ -52,21 +52,10 @@ For a complete example, here is how you can fetch trials from a given experiment
        pprint.pprint(trial.to_dict())
 
    # Fetches only the completed trials
-   for trial in experiment.fetch_trials({'status': 'completed'}):
+   for trial in experiment.fetch_trials_by_status('completed'):
        print(trial.objective)
 
-   # Fetches only the most recent trials using mongodb-like syntax
-   for trial in experiment.fetch_trials({'end_time': {'$gte': some_datetime}}):
-       print(trial.id)
-       print(trial.end_time)
-
-You can pass queries to
-:meth:`fetch_trials() <orion.core.worker.experiment.Experiment.fetch_trials>`,
-where queries can be a simple dictionary of values to
-match like ``{'status': 'completed'}``, in which case it would return all trials where
-``trial.status == 'completed'``, or they can be more complex using `mongodb-like syntax`_.
-You can find more information on the object
-:class:`Experiment <orion.core.worker.experiment.Experiment>` in the code
-reference section.
+:class:`<orion.core.worker.experiment.Experiment>` has many methods that allows you to query
+for different trials. You can find them in the code
 
 .. _`mongodb-like syntax`: https://docs.mongodb.com/manual/reference/method/db.collection.find/
