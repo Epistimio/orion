@@ -9,14 +9,15 @@ from filelock import FileLock, _Acquire_ReturnProxy
 class RWFileLock():
     """A Read/Write lock using FileLock giving fairness to both Reader and Writer."""
 
-    def __init__(self, basename, timeout=-1) -> None:
-        """Init."""
-        self.read_count = FileLock(f'{basename}.rclock', timeout)
-        with open(self.read_count.lock_file, 'w') as f:
-            f.write("00")
-
+    def __init__(self, basename, timeout=-1):
         self.read = FileLock(f'{basename}.rlock', timeout)
         self.write = FileLock(f'{basename}.wlock', timeout)
+        self.read_count = FileLock(f'{basename}.rclock', timeout)
+
+        self.read_count_file = f'{basename}.num_readers'
+        with open(self.read_count_file, 'w') as f:
+            f.write("00")
+
 
     def read_lock(self):
         return ReaderLock(self)
@@ -31,24 +32,26 @@ class ReaderLock():
         self.is_locked = False
 
     def acquire(self, timeout=None):
-        with (self.lock.read.acquire(timeout=timeout),
-              self.lock.read_count.acquire(timeout=timeout)):
+        with self.lock.read.acquire(timeout=timeout):
+            with self.lock.read_count.acquire(timeout=timeout):
+                with open(self.lock.read_count_file, 'r+') as f:
+                    read_count = int(f.read())
+                    if read_count == 0:
+                        self.lock.write.acquire(timeout=timeout)
 
-            with open(self.lock.read_count.lock_file, 'rw') as f:
-                read_count = int(f.read())
-                if read_count == 0:
-                    self.lock.write.acquire(timeout=timeout)
-
-                read_count += 1
-                f.write(f"{read_count:02}")
-                self.is_locked = True
+                    read_count += 1
+                    f.write(f"{read_count:02}")
+                    self.is_locked = True
 
         return _Acquire_ReturnProxy(lock=self)
 
     def release(self):
         with self.lock.read_count.acquire():
-            with open(self.lock.read_count.lock_file, 'rw') as f:
-                read_count = int(f.read())
+            with open(self.lock.read_count_file, 'r+') as f:
+                try:
+                    read_count = int(f.read())
+                except ValueError:
+                    raise Exception(f'read count lock file {self.lock.read_count.lock_file} has invalid number of readers')
                 read_count -= 1
 
                 if read_count == 0:
