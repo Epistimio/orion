@@ -174,7 +174,7 @@ def one_experiment_no_version(monkeypatch, one_experiment):
     one_experiment.pop('version')
 
     def fetch_without_version(query, selection=None):
-        if query.get('name') == one_experiment['name'] or query == {'_id': None} or query == {}:
+        if query.get('name') == one_experiment['name'] or query == {}:
             return [one_experiment]
 
         return []
