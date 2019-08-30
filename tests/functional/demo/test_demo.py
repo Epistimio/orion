@@ -398,16 +398,13 @@ def test_run_with_parallel_strategy(database, monkeypatch, strategy):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     with open('strategy_config.yaml') as f:
-        config = yaml.load(f.read())
+        config = yaml.safe_load(f.read())
 
     config_file = '{}_strategy_config.yaml'.format(strategy)
 
     with open(config_file, 'w') as f:
         config['producer']['strategy'] = strategy
         f.write(yaml.dump(config))
-
-    with open(config_file, 'r') as f:
-        print(yaml.load(f.read()))
 
     orion.core.cli.main(["hunt", "--max-trials", "20", "--pool-size", "1",
                          "--config", config_file,
