@@ -18,6 +18,7 @@
    user/monitoring
    user/searchspace
    user/algorithms
+   user/script
    user/evc
 
 .. toctree::

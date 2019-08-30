@@ -50,8 +50,18 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
 def test_demo(database, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(["hunt", "--config", "./orion_config.yaml",
-                         "./black_box.py", "-x~uniform(-50, 50)"])
+
+    user_args = [
+        "-x~uniform(-50, 50)",
+        "--test-env",
+        "--experiment-id", '{exp.id}',
+        "--experiment-name", '{exp.name}',
+        "--experiment-version", '{exp.version}',
+        "--trial-id", '{trial.id}',
+        "--working-dir", '{trial.working_dir}']
+
+    orion.core.cli.main([
+        "hunt", "--config", "./orion_config.yaml", "./black_box.py"] + user_args)
 
     exp = list(database.experiments.find({'name': 'voila_voici'}))
     assert len(exp) == 1
@@ -68,8 +78,7 @@ def test_demo(database, monkeypatch):
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
     assert os.path.isabs(exp['metadata']['user_script'])
-    assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
-
+    assert exp['metadata']['user_args'] == user_args
     trials = list(database.trials.find({'experiment': exp_id}))
     assert len(trials) <= 15
     assert trials[-1]['status'] == 'completed'
