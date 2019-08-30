@@ -156,6 +156,18 @@ def one_experiment(monkeypatch, db_instance):
 
 
 @pytest.fixture
+def one_experiment_changed_vcs(one_experiment):
+    """Create an experiment without trials."""
+    experiment = ExperimentBuilder().build_from({'name': one_experiment['name']})
+
+    experiment.metadata['VCS'] = {
+        'type': 'git', 'is_dirty': False, 'HEAD_sha': 'new', 'active_branch': 'master',
+        'diff_sha': None}
+
+    get_storage().update_experiment(experiment, metadata=experiment.metadata)
+
+
+@pytest.fixture
 def one_experiment_no_version(monkeypatch, one_experiment):
     """Create an experiment without trials."""
     one_experiment['name'] = one_experiment['name'] + '-no-version'

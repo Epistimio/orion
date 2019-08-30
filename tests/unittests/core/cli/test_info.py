@@ -440,13 +440,25 @@ def test_format_metadata():
     experiment.metadata = dict(
         user='user',
         datetime='now',
-        orion_version='1.0.1')
+        orion_version='1.0.1',
+        VCS=dict(
+            HEAD_sha='sha',
+            active_branch='branch',
+            diff_sha='smt',
+            is_dirty=True,
+            type='git'))
     assert format_metadata(experiment) == """\
 Meta-data
 =========
 user: user
 datetime: now
 orion version: 1.0.1
+VCS:
+  HEAD_sha: sha
+  active_branch: branch
+  diff_sha: smt
+  is_dirty: True
+  type: git
 """
 
 
@@ -569,7 +581,13 @@ def test_format_info(algorithm_dict, dummy_trial):
     experiment.metadata.update(dict(
         user='user',
         datetime='now',
-        orion_version='1.0.1'))
+        orion_version='1.0.1',
+        VCS=dict(
+            HEAD_sha='sha',
+            active_branch='branch',
+            diff_sha='smt',
+            is_dirty=True,
+            type='git')))
 
     ROOT_NAME = 'root-name'
     PARENT_NAME = 'parent-name'
@@ -639,6 +657,12 @@ Meta-data
 user: user
 datetime: now
 orion version: 1.0.1
+VCS:
+  HEAD_sha: sha
+  active_branch: branch
+  diff_sha: smt
+  is_dirty: True
+  type: git
 
 
 Parent experiment
