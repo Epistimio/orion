@@ -264,7 +264,7 @@ class TreeNode(object):
             nodes = self.children
 
         for child in list(nodes):
-            del self._children[self.children.index(child)]
+            del self._children[self._children.index(child)]
             # pylint: disable=protected-access
             child._parent = None
 

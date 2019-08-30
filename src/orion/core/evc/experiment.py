@@ -105,7 +105,8 @@ class ExperimentNode(TreeNode):
             may trigger a call to database to build those children live.
 
         """
-        if not self._children and self._no_children_lookup:
+        if self._no_children_lookup:
+            self._children = []
             self._no_children_lookup = False
             query = {'refers.parent_id': self.item.id}
             selection = {'name': 1, 'version': 1}
