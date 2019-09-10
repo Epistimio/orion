@@ -18,11 +18,12 @@ import sys
 import orion.core
 from orion.core.cli.evc import fetch_branching_configuration
 from orion.core.evc.adapters import Adapter, BaseAdapter
-from orion.core.evc.conflicts import detect_conflicts
+from orion.core.evc.conflicts import detect_conflicts, ExperimentNameConflict
 from orion.core.io.database import DuplicateKeyError
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
+from orion.core.utils.exceptions import RaceCondition
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
                                         Strategy)
@@ -506,9 +507,14 @@ class Experiment:
             configuration['_id'] = self._id
             conflicts = detect_conflicts(configuration, experiment.configuration)
             must_branch = len(conflicts.get()) > 1 or branching_configuration.get('branch')
-            if must_branch and not enable_branching:
-                raise ValueError("Configuration is different and generate a "
-                                 "branching event")
+
+            name_conflict = conflicts.get([ExperimentNameConflict])[0]
+            if not name_conflict.is_resolved and not config.get('version'):
+                raise RaceCondition('There was likely a race condition during version increment.')
+
+            elif must_branch and not enable_branching:
+                raise ValueError("Configuration is different and generate a branching event")
+
             elif must_branch:
                 experiment._branch_config(conflicts, branching_configuration)
 
