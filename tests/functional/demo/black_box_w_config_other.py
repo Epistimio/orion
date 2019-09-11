@@ -22,7 +22,7 @@ def execute():
     inputs = parser.parse_args()
 
     with open(inputs.configuration, 'r') as f:
-        config = yaml.load(f)
+        config = yaml.safe_load(f)
 
     # 2. Perform computations
 
