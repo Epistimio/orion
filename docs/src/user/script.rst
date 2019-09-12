@@ -25,17 +25,23 @@ this:
 
     user_script_config: configuration
 
+It is then possible to run ``orion hunt`` like here:
+
 .. code-block:: console
 
    orion hunt --config my_orion_config.yaml ./my_script --configuration my_script_config.txt
 
 As you can see, the configuration file for the user script is now passed through
 ``--configuration``.
+This should not be confused with the argument ``--config`` of ``orion hunt``,
+which is the configuration of Oríon. We are here referring the configuration of the user script,
+represented with ``my_script_config.txt`` in the previous example.
 
 .. note::
 
-   This value of ``user_script_config`` is only configurable from the global configuration yaml file
-   at the moment.
+   The value of ``user_script_config`` is only configurable from the global configuration yaml file
+   at the moment. It cannot be set in the local configuration file passed to
+   ``orion hunt --config``.
 
 ``working_dir``
 ---------------
@@ -90,8 +96,8 @@ Templates                  Description
 
 .. note::
 
-   Templates are only supported in commandline and not in user script at the moment.
-   We plan to support both in the future. Contributions are very welcome. :)
+   Templates are only supported in commandline and not in user script configuration
+   at the moment.  We plan to support both in the future. Contributions are very welcome. :)
 
 .. _env_vars:
 
