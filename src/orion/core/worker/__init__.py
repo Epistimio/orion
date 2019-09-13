@@ -16,6 +16,7 @@ import pprint
 
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer
+from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ def reserve_trial(experiment, producer):
     """Reserve a new trial, or produce and reserve a trial if none are available."""
     trial = experiment.reserve_trial(score_handle=producer.algorithm.score)
 
-    if trial is None:
+    if trial is None and not experiment.is_done:
         log.debug("#### Failed to pull a new trial from database.")
 
         log.debug("#### Fetch most recent completed trials and update algorithm.")
@@ -62,8 +63,9 @@ def workon(experiment, worker_trials=None):
         log.debug("#### Try to reserve a new trial to evaluate.")
         trial = reserve_trial(experiment, producer)
 
-        log.debug("#### Successfully reserved %s to evaluate. Consuming...", trial)
-        consumer.consume(trial)
+        if trial is not None:
+            log.debug("#### Successfully reserved %s to evaluate. Consuming...", trial)
+            consumer.consume(trial)
 
     stats = experiment.stats
 
@@ -71,7 +73,7 @@ def workon(experiment, worker_trials=None):
         log.info("No trials completed.")
         return
 
-    best = experiment.fetch_trials({'_id': stats['best_trials_id']})[0]
+    best = get_storage().get_trial(uid=stats['best_trials_id'])
 
     stats_stream = io.StringIO()
     pprint.pprint(stats, stream=stats_stream)

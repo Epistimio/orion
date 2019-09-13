@@ -19,3 +19,9 @@ class CheckError(Exception):
     """Raise when a check has failed."""
 
     pass
+
+
+class RaceCondition(Exception):
+    """Raise when a race condition occured."""
+
+    pass

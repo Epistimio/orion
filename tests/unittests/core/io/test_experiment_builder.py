@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.experiment_builder`."""
-import getpass
-
 import pytest
 
-from orion.core.io import resolve_config
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.exceptions import NoConfigurationError
 
@@ -35,20 +32,19 @@ def test_fetch_local_config(config_file):
     assert local_config['pool_size'] == 1
 
 
-@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("clean_db", "test_config")
 def test_fetch_local_config_from_incomplete_config(incomplete_config_file):
     """Test local config with incomplete user configuration file
     (default, env_vars, cmdconfig, cmdargs)
 
     This is to ensure merge_configs update properly the subconfigs
     """
-    resolve_config.DEF_CONFIG_FILES_PATHS = []
     cmdargs = {"config": incomplete_config_file}
     local_config = ExperimentBuilder().fetch_full_config(cmdargs, use_db=False)
 
     assert local_config['algorithms'] == 'random'
     assert local_config['database']['host'] == 'mongodb://user:pass@localhost'
-    assert local_config['database']['name'] == 'orion'
+    assert local_config['database']['name'] == 'orion_test'
     assert local_config['database']['type'] == 'incomplete'
     assert local_config['max_trials'] == float('inf')
     assert local_config['name'] == 'incomplete'
@@ -66,7 +62,7 @@ def test_fetch_config_from_db_no_hit(config_file, random_dt):
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
 def test_fetch_config_from_db_hit(config_file, exp_config, random_dt):
     """Verify db config when experiment is in db"""
-    cmdargs = {'name': 'supernaedo2', 'config': config_file}
+    cmdargs = {'name': 'supernaedo2-dendi', 'config': config_file}
     db_config = ExperimentBuilder().fetch_config_from_db(cmdargs)
 
     assert db_config['name'] == exp_config[0][0]['name']
@@ -77,11 +73,11 @@ def test_fetch_config_from_db_hit(config_file, exp_config, random_dt):
     assert db_config['algorithms'] == exp_config[0][0]['algorithms']
 
 
-@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif",
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_dendi",
                          "mock_infer_versioning_metadata")
 def test_fetch_full_config_new_config(config_file, exp_config, random_dt, script_path):
     """Verify full config with new config (causing branch)"""
-    cmdargs = {'name': 'supernaedo2',
+    cmdargs = {'name': 'supernaedo2-dendi',
                'config': config_file,
                'user_args': [script_path,
                              "--encoding_layer~choices(['rnn', 'lstm', 'gru'])",
@@ -99,11 +95,11 @@ def test_fetch_full_config_new_config(config_file, exp_config, random_dt, script
     assert full_config['algorithms'] == cmdconfig['algorithms']
 
 
-@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif",
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_dendi",
                          "mock_infer_versioning_metadata")
 def test_fetch_full_config_old_config(old_config_file, exp_config, random_dt, script_path):
     """Verify full config with old config (not causing branch)"""
-    cmdargs = {'name': 'supernaedo2',
+    cmdargs = {'name': 'supernaedo2-dendi',
                'config': old_config_file,
                'user_args': [script_path,
                              "--encoding_layer~choices(['rnn', 'lstm', 'gru'])",
@@ -151,7 +147,7 @@ def test_build_view_from_no_hit(config_file, create_db_instance, exp_config):
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
 def test_build_view_from(config_file, create_db_instance, exp_config, random_dt):
     """Try building experiment view when in db"""
-    cmdargs = {'name': 'supernaedo2', 'config': config_file}
+    cmdargs = {'name': 'supernaedo2-dendi', 'config': config_file}
     exp_view = ExperimentBuilder().build_view_from(cmdargs)
 
     assert exp_view._experiment._init_done is False
@@ -166,22 +162,7 @@ def test_build_view_from(config_file, create_db_instance, exp_config, random_dt)
     # assert exp_view.algorithms.configuration == exp_config[0][0]['algorithms']
 
 
-@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_bouthilx")
-def test_build_view_from_force_user(config_file, create_db_instance, exp_config, random_dt):
-    """Try building experiment view when in db"""
-    # Verify default behavior properly fetches bouthilx
-    assert getpass.getuser() == 'bouthilx'
-    cmdargs = {'name': 'supernaedo2', 'config': config_file}
-    with pytest.raises(ValueError) as exc_info:
-        exp_view = ExperimentBuilder().build_view_from(cmdargs)
-    assert "No experiment with given name 'supernaedo2' for user 'bouthilx'" in str(exc_info.value)
-
-    cmdargs['user'] = 'tsirif'
-    exp_view = ExperimentBuilder().build_view_from(cmdargs)
-    assert exp_view.metadata['user'] == 'tsirif'
-
-
-@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_dendi")
 def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_dt, script_path):
     """Try building experiment when not in db"""
     cmdargs = {'name': 'supernaekei', 'config': config_file,
@@ -190,7 +171,7 @@ def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_d
 
     with pytest.raises(ValueError) as exc_info:
         ExperimentBuilder().build_view_from(cmdargs)
-    assert "No experiment with given name 'supernaekei' for user 'tsirif'" in str(exc_info.value)
+    assert "No experiment with given name 'supernaekei' for user 'dendi'" in str(exc_info.value)
 
     exp = ExperimentBuilder().build_from(cmdargs)
 
@@ -199,7 +180,7 @@ def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_d
     assert exp.name == cmdargs['name']
     assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
     assert exp.metadata['datetime'] == random_dt
-    assert exp.metadata['user'] == 'tsirif'
+    assert exp.metadata['user'] == 'dendi'
     assert exp.metadata['user_script'] == cmdargs['user_args'][0]
     assert exp.metadata['user_args'] == cmdargs['user_args'][1:]
     assert exp.pool_size == 1
@@ -207,11 +188,11 @@ def test_build_from_no_hit(config_file, create_db_instance, exp_config, random_d
     assert exp.algorithms.configuration == {'random': {'seed': None}}
 
 
-@pytest.mark.usefixtures("version_XYZ", "clean_db", "null_db_instances", "with_user_tsirif",
+@pytest.mark.usefixtures("version_XYZ", "clean_db", "null_db_instances", "with_user_dendi",
                          "mock_infer_versioning_metadata")
 def test_build_from_hit(old_config_file, create_db_instance, exp_config, script_path):
     """Try building experiment when in db (no branch)"""
-    cmdargs = {'name': 'supernaedo2',
+    cmdargs = {'name': 'supernaedo2-dendi',
                'config': old_config_file,
                'user_args': [script_path,
                              "--encoding_layer~choices(['rnn', 'lstm', 'gru'])",
@@ -270,6 +251,7 @@ def test_build_from_config_no_hit(config_file, create_db_instance, exp_config, r
     assert exp.algorithms.configuration == {'random': {'seed': None}}
 
 
+@pytest.mark.usefixtures("clean_db")
 def test_build_from_config_no_commandline_config(config_file):
     """Try building experiment with no commandline configuration."""
     cmdargs = {'name': 'supernaekei', 'config': config_file}
@@ -282,7 +264,7 @@ def test_build_from_config_no_commandline_config(config_file):
 @pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
 def test_build_from_config_hit(old_config_file, create_db_instance, exp_config, script_path):
     """Try building experiment from config when in db (no branch)"""
-    cmdargs = {'name': 'supernaedo2',
+    cmdargs = {'name': 'supernaedo2-dendi',
                'config': old_config_file,
                'user_args': [script_path,
                              "--encoding_layer~choices(['rnn', 'lstm', 'gru'])",
@@ -305,10 +287,10 @@ def test_build_from_config_hit(old_config_file, create_db_instance, exp_config, 
     assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
 
 
-@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
+@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_dendi")
 def test_build_without_config_hit(old_config_file, create_db_instance, exp_config, script_path):
     """Try building experiment without commandline config when in db (no branch)"""
-    cmdargs = {'name': 'supernaedo2',
+    cmdargs = {'name': 'supernaedo2-dendi',
                'config': old_config_file,
                'user_args': [script_path,
                              "--encoding_layer~choices(['rnn', 'lstm', 'gru'])",
@@ -317,7 +299,7 @@ def test_build_without_config_hit(old_config_file, create_db_instance, exp_confi
     # Test that experiment already exists
     ExperimentBuilder().build_view_from(cmdargs)
 
-    cmdargs = {'name': 'supernaedo2'}
+    cmdargs = {'name': 'supernaedo2-dendi'}
 
     exp_view = ExperimentBuilder().build_view_from(cmdargs)
     exp = ExperimentBuilder().build_from_config(exp_view.configuration)

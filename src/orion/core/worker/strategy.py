@@ -23,8 +23,8 @@ def get_objective(trial):
     :return: Float or None
         The value of the objective, or None if it doesn't exist
     """
-    objectives = [result['value'] for result in trial.results
-                  if result['type'] == 'objective']
+    objectives = [result.value for result in trial.results
+                  if result.type == 'objective']
 
     if not objectives:
         objective = None

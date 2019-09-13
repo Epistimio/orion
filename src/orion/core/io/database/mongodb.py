@@ -20,6 +20,9 @@ AUTH_FAILED_MESSAGES = [
     "auth failed",
     "Authentication failed."]
 
+INDEX_OP_ERROR_MESSAGES = [
+    "index not found with name"]
+
 DUPLICATE_KEY_MESSAGES = [
     "duplicate key error"]
 
@@ -53,7 +56,8 @@ def mongodb_exception_wrapper(method):
         except pymongo.errors.OperationFailure as e:
             if any(m in str(e) for m in AUTH_FAILED_MESSAGES):
                 raise DatabaseError("Authentication Failure: bad credentials") from e
-
+            elif any(m in str(e) for m in INDEX_OP_ERROR_MESSAGES):
+                raise DatabaseError(str(e)) from e
             raise
 
         return rval
@@ -61,6 +65,7 @@ def mongodb_exception_wrapper(method):
     return _decorator
 
 
+# pylint: disable=too-many-public-methods
 class MongoDB(AbstractDB):
     """Wrap MongoDB with three primary methods `read`, `write`, `remove`.
 
@@ -150,6 +155,18 @@ class MongoDB(AbstractDB):
 
         dbcollection.create_index(keys, unique=unique, background=True)
 
+    def index_information(self, collection_name):
+        """Return dict of names and sorting order of indexes"""
+        dbcollection = self._db[collection_name]
+        return {index: specs.get('unique', False) or index == '_id_'
+                for index, specs in dbcollection.index_information().items()}
+
+    @mongodb_exception_wrapper
+    def drop_index(self, collection_name, name):
+        """Remove index from the database"""
+        dbcollection = self._db[collection_name]
+        dbcollection.drop_index(name)
+
     def _convert_index_keys(self, keys):
         """Convert index keys to MongoDB ones."""
         if not isinstance(keys, (list, tuple)):
@@ -185,6 +202,7 @@ class MongoDB(AbstractDB):
             # So we do insert_many instead.
             if type(data) not in (list, tuple):
                 data = [data]
+
             result = dbcollection.insert_many(documents=data)
             return len(result.inserted_ids)
 

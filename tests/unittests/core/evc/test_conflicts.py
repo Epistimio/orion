@@ -350,18 +350,6 @@ class TestExperimentNameConflict(object):
         assert experiment_name_conflict.is_resolved
         assert experiment_name_conflict.try_resolve() is None
 
-    def test_try_resolve_bad_name(self, experiment_name_conflict):
-        """Verify that resolution fails if name already exist in db"""
-        assert not experiment_name_conflict.is_resolved
-        with pytest.raises(ValueError) as exc:
-            experiment_name_conflict.try_resolve("test")
-        assert "Experiment name 'test' already exist" in str(exc.value)
-
-        assert not experiment_name_conflict.is_resolved
-        with pytest.raises(ValueError) as exc:
-            experiment_name_conflict.try_resolve()
-        assert "No new name provided." in str(exc.value)
-
     def test_try_resolve(self, experiment_name_conflict):
         """Verify that resolution is achievable with a valid name"""
         new_name = "dummy"
@@ -371,6 +359,54 @@ class TestExperimentNameConflict(object):
         assert experiment_name_conflict.is_resolved
         assert resolution.conflict is experiment_name_conflict
         assert resolution.new_name == new_name
+
+    def test_branch_w_existing_exp(self, existing_exp_conflict):
+        """Test branching when an existing experiment with the new name already exists"""
+        with pytest.raises(ValueError) as exc:
+            existing_exp_conflict.try_resolve("dummy")
+
+        assert "Cannot" in str(exc.value)
+
+    def test_conflict_exp_no_child(self, exp_no_child_conflict):
+        """Verify the version number is incremented when exp has no child."""
+        new_name = "test"
+        assert not exp_no_child_conflict.is_resolved
+        resolution = exp_no_child_conflict.try_resolve(new_name)
+        assert isinstance(resolution, exp_no_child_conflict.ExperimentNameResolution)
+        assert exp_no_child_conflict.is_resolved
+        assert resolution.conflict is exp_no_child_conflict
+        assert resolution.old_version == 1
+        assert resolution.new_version == 2
+
+    def test_conflict_exp_w_child(self, exp_w_child_conflict):
+        """Verify the version number is incremented from child when exp has a child."""
+        new_name = "test"
+        assert not exp_w_child_conflict.is_resolved
+        resolution = exp_w_child_conflict.try_resolve(new_name)
+        assert isinstance(resolution, exp_w_child_conflict.ExperimentNameResolution)
+        assert exp_w_child_conflict.is_resolved
+        assert resolution.conflict is exp_w_child_conflict
+        assert resolution.new_version == 3
+
+    def test_conflict_exp_w_child_as_parent(self, exp_w_child_as_parent_conflict):
+        """Verify that an error is raised when trying to branch from parent."""
+        new_name = "test"
+        with pytest.raises(ValueError) as exc:
+            exp_w_child_as_parent_conflict.try_resolve(new_name)
+
+        assert "Experiment name" in str(exc.value)
+
+    def test_conflict_exp_renamed(self, exp_w_child_conflict):
+        """Verify the version number is not incremented when exp is renamed."""
+        # It increments from child
+        new_name = "test2"
+        assert not exp_w_child_conflict.is_resolved
+        resolution = exp_w_child_conflict.try_resolve(new_name)
+        assert isinstance(resolution, exp_w_child_conflict.ExperimentNameResolution)
+        assert exp_w_child_conflict.is_resolved
+        assert resolution.conflict is exp_w_child_conflict
+        assert resolution.old_version == 2
+        assert resolution.new_version == 1
 
     def test_repr(self, experiment_name_conflict):
         """Verify the representation of conflict for user interface"""
@@ -500,14 +536,15 @@ class TestConflicts(object):
             conflicts.deprecate(["dummy object"])
         assert "'dummy object' is not in list" in str(exc.value)
 
-    def test_try_resolve_silence_errors(self, capsys, experiment_name_conflict, conflicts):
+    def test_try_resolve_silence_errors(self, capsys, code_conflict, conflicts):
         """Verify try_resolve errors are silenced"""
-        conflicts.try_resolve(experiment_name_conflict)
+        conflicts.try_resolve(code_conflict)
         out, err = capsys.readouterr()
         assert (out.split("\n")[-3] ==
-                "ValueError: No new name provided. Cannot resolve experiment name conflict.")
+                "ValueError: Invalid code change type 'None'. Should be one of "
+                "['noeffect', 'break', 'unsure']")
 
-        conflicts.try_resolve(experiment_name_conflict, silence_errors=True)
+        conflicts.try_resolve(code_conflict, silence_errors=True)
         out, err = capsys.readouterr()
         assert out == ''
 

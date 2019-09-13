@@ -6,9 +6,15 @@ Here is an example of all the sections provided by the command.
 
 .. code-block:: console
 
-   orion info orion-tutorial
+   orion info --name orion-tutorial
 
 .. code-block:: bash
+
+   Identification
+   ==============
+   name: orion-tutorial
+   version: 1
+   user: <username>
 
    Commandline
    ===========
@@ -59,3 +65,31 @@ Here is an example of all the sections provided by the command.
 
 The last section contains information about the best trial so far, providing its
 hyperparameter values and the corresponding objective.
+
+The ``--name`` argument
+~~~~~~~~~~~~~~~~~~~~~~~
+To get information on an experiment, you need to call `info` with the `--name` or `-n` argument like
+shown in the previous example. This will fetch the latest version of the experiment with that name
+inside the database and display its content.
+
+The ``--version`` argument
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+To specify which version of an experiment you wish to observe, you can use the `--version` argument.
+If provided, this will fetch the experiment with a version number corresponding to that version
+instead of fetching the latest one. Note that the `--version` argument cannot be used alone and that
+an invalid version number, i.e. a version number greater than the latest version, will simply fetch
+the latest one instead.
+
+For example, suppose we have two experiments named `orion-tutorial` inside the database, one with
+version `1` and one with version `2`. Then running the following command would simply give us the
+latest version, so version `2`.
+
+.. code-block:: console
+
+   orion info --name orion-tutorial
+
+Whereas, running the next command will give us the first version instead:
+
+.. code-block:: console
+
+   orion info --name orion-tutorial --version 1

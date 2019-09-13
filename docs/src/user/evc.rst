@@ -10,8 +10,17 @@ could pre-train on all prior data resulting in a much more efficient optimizatio
 advantage of the EVC system is that it provides a systematic way to organize research and the
 possibility to go back in time and compare the evolution of performance throughout your research.
 
+Experiments inside the EVC are organized by version. By default, every time an experiment has
+changed but has not been explicitly renamed, its version number will automatically increment and
+this new version will appear as a new branch for that experiment.
+
+However, it is possible to overrule the automatic resolution of changes for experiments by using the
+`--manual-resolution` argument with Oríon. The rest of the document presents the process of doing
+so.
+
 To continue with our examples from pytorch-mnist, suppose we decide at some point we would like to
-also optimize the ``momentum``.
+also optimize the ``momentum``. For the sake of brevity, the `--manual-resolution` argument has been
+omitted from the command samples.
 
 .. code-block:: bash
 
@@ -148,15 +157,6 @@ offer autocompletions of the possible resolutions to reset.
 
 Once you are done, you can enter ``commit`` and the branched experiment will be register and will
 begin execution.
-
-Note that all of this can be partially avoided using the option ``--auto-resolution`` in commandline
-or ``auto`` in the interactive prompt. This will automatically resolve any conflict related to
-hyper-parameters and algorithms. For now, Oríon cannot solve automatically experiment name
-conflicts, code conflicts, command-line conflicts and configuration file conflicts.
-
-.. code-block:: bash
-
-    $ orion hunt --auto-resolution -n orion-tutorial ./main.py --lr~'loguniform(1e-5, 1.0)' --momentum~'uniform(0, 1)'
 
 Source of conflicts
 -------------------

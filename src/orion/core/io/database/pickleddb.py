@@ -8,9 +8,12 @@
    :synopsis: Implement permanent version of :class:`orion.core.io.database.EphemeralDB`
 
 """
+
 from contextlib import contextmanager
+import logging
 import os
 import pickle
+from pickle import PicklingError
 
 from filelock import FileLock
 
@@ -18,10 +21,42 @@ import orion.core
 from orion.core.io.database import AbstractDB
 from orion.core.io.database.ephemeraldb import EphemeralDB
 
+log = logging.getLogger(__name__)
 
 DEFAULT_HOST = os.path.join(orion.core.DIRS.user_data_dir, 'orion', 'orion_db.pkl')
 
 
+def find_unpickable_doc(dict_of_dict):
+    """Look for a dictionary that cannot be pickled."""
+    for name, collection in dict_of_dict.items():
+        documents = collection.find()
+
+        for doc in documents:
+            try:
+                pickle.dumps(doc)
+
+            except (PicklingError, AttributeError):
+                return name, doc
+
+    return None, None
+
+
+def find_unpickable_field(doc):
+    """Look for a field in a dictionary that cannot be pickled"""
+    if not isinstance(doc, dict):
+        doc = doc.to_dict()
+
+    for k, v in doc.items():
+        try:
+            pickle.dumps(v)
+
+        except (PicklingError, AttributeError):
+            return k, v
+
+    return None, None
+
+
+# pylint: disable=too-many-public-methods
 class PickledDB(AbstractDB):
     """Pickled EphemeralDB to support permanancy and concurrency
 
@@ -64,6 +99,16 @@ class PickledDB(AbstractDB):
         """
         with self.locked_database() as database:
             database.ensure_index(collection_name, keys, unique=unique)
+
+    def index_information(self, collection_name):
+        """Return dict of names and sorting order of indexes"""
+        with self.locked_database(write=False) as database:
+            return database.index_information(collection_name)
+
+    def drop_index(self, collection_name, name):
+        """Remove index from the database"""
+        with self.locked_database() as database:
+            return database.drop_index(collection_name, name)
 
     def write(self, collection_name, data, query=None):
         """Write new information to a collection. Perform insert or update.
@@ -120,15 +165,31 @@ class PickledDB(AbstractDB):
             return EphemeralDB()
 
         with open(self.host, 'rb') as f:
-            database = pickle.load(f)
+            data = f.read()
+            if not data:
+                database = EphemeralDB()
+            else:
+                database = pickle.loads(data)
 
         return database
 
     def _dump_database(self, database):
         """Write pickled DB on disk"""
         tmp_file = self.host + '.tmp'
-        with open(tmp_file, 'wb') as f:
-            pickle.dump(database, f)
+
+        try:
+            with open(tmp_file, 'wb') as f:
+                pickle.dump(database, f)
+
+        except (PicklingError, AttributeError):
+            collection, doc = find_unpickable_doc(database._db)  # pylint: disable=protected-access
+            log.error('Document in (collection: %s) is not pickable\ndoc: %s',
+                      collection, doc.to_dict())
+
+            key, value = find_unpickable_field(doc)
+            log.error('because (value %s) in (field: %s) is not pickable',
+                      value, key)
+            raise
 
         os.rename(tmp_file, self.host)
 

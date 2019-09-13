@@ -10,7 +10,9 @@
 
 """
 import logging
+import sys
 
+from orion.core.cli.base import get_basic_args_group
 from orion.core.io.evc_builder import EVCBuilder
 
 log = logging.getLogger(__name__)
@@ -19,21 +21,36 @@ log = logging.getLogger(__name__)
 def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
     info_parser = parser.add_parser('info', help='info help')
-
-    info_parser.add_argument('name')
+    get_basic_args_group(info_parser)
 
     info_parser.set_defaults(func=main)
 
     return info_parser
 
 
+# pylint: disable=protected-access
+def hack_until_config_is_refactored(experiment):
+    """Build the space and the algorithm"""
+    experiment._experiment._instantiate_config(experiment.configuration)
+    experiment._experiment._init_done = True
+
+
 def main(args):
     """Fetch config and info experiments"""
-    experiment = EVCBuilder().build_from(args)
+    try:
+        experiment = EVCBuilder().build_view_from(args)
+    except ValueError:
+        print('Experiment {} not found in db.'.format(args.get('name', None)))
+        sys.exit(1)
+
+    hack_until_config_is_refactored(experiment)
+
     print(format_info(experiment))
 
 
 INFO_TEMPLATE = """\
+{identification}
+
 {commandline}
 
 {configuration}
@@ -53,6 +70,7 @@ INFO_TEMPLATE = """\
 def format_info(experiment):
     """Render a string for all info of experiment"""
     info_string = INFO_TEMPLATE.format(
+        identification=format_identification(experiment),
         commandline=format_commandline(experiment),
         configuration=format_config(experiment),
         algorithm=format_algorithm(experiment),
@@ -237,6 +255,25 @@ def format_list(a_list, depth=0, width=4, templates=None):
     return list_template.format(tab=tab, items=list_string.rstrip("\n"))
 
 
+ID_TEMPLATE = """\
+{title}
+name: {name}
+version: {version}
+user: {user}
+"""
+
+
+def format_identification(experiment):
+    """Render a string for identification section"""
+    identification_string = ID_TEMPLATE.format(
+        title=format_title("Identification"),
+        name=experiment.name,
+        version=experiment.version,
+        user=experiment.metadata['user'])
+
+    return identification_string
+
+
 COMMANDLINE_TEMPLATE = """\
 {title}
 {commandline}
@@ -304,6 +341,8 @@ METADATA_TEMPLATE = """\
 user: {experiment.metadata[user]}
 datetime: {experiment.metadata[datetime]}
 orion version: {experiment.metadata[orion_version]}
+VCS:
+{vcs}
 """
 
 
@@ -311,7 +350,8 @@ def format_metadata(experiment):
     """Render a string for metadata section"""
     metadata_string = METADATA_TEMPLATE.format(
         title=format_title("Meta-data"),
-        experiment=experiment)
+        experiment=experiment,
+        vcs=format_dict(experiment.metadata.get('VCS', {}), depth=1, width=2))
 
     return metadata_string
 
@@ -348,8 +388,10 @@ STATS_TEMPLATE = """\
 {title}
 trials completed: {stats[trials_completed]}
 best trial:
+  id: {stats[best_trials_id]}
+  evaluation: {stats[best_evaluation]}
+  params:
 {best_params}
-best evaluation: {stats[best_evaluation]}
 start time: {stats[start_time]}
 finish time: {stats[finish_time]}
 duration: {stats[duration]}
@@ -383,15 +425,15 @@ def format_stats(experiment):
     stats_string = STATS_TEMPLATE.format(
         title=format_title("Stats"),
         stats=stats,
-        best_params=format_dict(best_params, depth=1, width=2))
+        best_params=format_dict(best_params, depth=2, width=2))
 
     return stats_string
 
 
 def get_trial_params(trial_id, experiment):
     """Get params from trial_id in given experiment"""
-    best_trial = experiment.fetch_trials({'_id': trial_id})
+    best_trial = experiment.get_trial(uid=trial_id)
     if not best_trial:
         return {}
 
-    return dict((param.name, param.value) for param in best_trial[0].params)
+    return dict((param.name, param.value) for param in best_trial.params)

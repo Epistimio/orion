@@ -9,7 +9,8 @@ import os
 import pytest
 
 from orion.core.io.database import Database, DuplicateKeyError
-from orion.core.io.database.pickleddb import PickledDB
+from orion.core.io.database.ephemeraldb import EphemeralCollection
+from orion.core.io.database.pickleddb import find_unpickable_doc, find_unpickable_field, PickledDB
 
 
 @pytest.fixture()
@@ -45,32 +46,32 @@ class TestEnsureIndex(object):
 
     def test_new_index(self, orion_db):
         """Index should be added to pickled database"""
-        assert ("new_field", ) not in orion_db._get_database()._db['new_collection']._indexes
+        assert "new_field_1" not in orion_db._get_database()._db['new_collection']._indexes
 
         orion_db.ensure_index('new_collection', 'new_field', unique=False)
-        assert ("new_field", ) not in orion_db._get_database()._db['new_collection']._indexes
+        assert "new_field_1" not in orion_db._get_database()._db['new_collection']._indexes
 
         orion_db.ensure_index('new_collection', 'new_field', unique=True)
-        assert ("new_field", ) in orion_db._get_database()._db['new_collection']._indexes
+        assert "new_field_1" in orion_db._get_database()._db['new_collection']._indexes
 
     def test_existing_index(self, orion_db):
         """Index should be added to pickled database and reattempt should do nothing"""
-        assert ("new_field", ) not in orion_db._get_database()._db['new_collection']._indexes
+        assert "new_field_1" not in orion_db._get_database()._db['new_collection']._indexes
 
         orion_db.ensure_index('new_collection', 'new_field', unique=True)
-        assert ("new_field", ) in orion_db._get_database()._db['new_collection']._indexes
+        assert "new_field_1" in orion_db._get_database()._db['new_collection']._indexes
 
         # reattempt
         orion_db.ensure_index('new_collection', 'new_field', unique=True)
-        assert ("new_field", ) in orion_db._get_database()._db['new_collection']._indexes
+        assert "new_field_1" in orion_db._get_database()._db['new_collection']._indexes
 
     def test_compound_index(self, orion_db):
         """Tuple of Index should be added as a compound index."""
-        assert ("name", "metadata.user") not in orion_db._get_database()._db['experiments']._indexes
+        assert "name_1_metadata.user_1" not in orion_db._get_database()._db['experiments']._indexes
         orion_db.ensure_index('experiments',
                               [('name', Database.ASCENDING),
                                ('metadata.user', Database.ASCENDING)], unique=True)
-        assert ("name", "metadata.user") in orion_db._get_database()._db['experiments']._indexes
+        assert "name_1_metadata.user_1" in orion_db._get_database()._db['experiments']._indexes
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -80,12 +81,12 @@ class TestRead(object):
     def test_read_experiment(self, exp_config, orion_db):
         """Fetch a whole experiment entries."""
         loaded_config = orion_db.read(
-            'trials', {'experiment': 'supernaedo2', 'status': 'new'})
+            'trials', {'experiment': 'supernaedo2-dendi', 'status': 'new'})
         assert loaded_config == [exp_config[1][3], exp_config[1][4]]
 
         loaded_config = orion_db.read(
             'trials',
-            {'experiment': 'supernaedo2',
+            {'experiment': 'supernaedo2-dendi',
              'submit_time': exp_config[1][3]['submit_time']})
         assert loaded_config == [exp_config[1][3]]
         assert loaded_config[0]['_id'] == exp_config[1][3]['_id']
@@ -113,13 +114,13 @@ class TestRead(object):
         """Fetch value(s) from an entry."""
         value = orion_db.read(
             'trials',
-            {'experiment': 'supernaedo2',
+            {'experiment': 'supernaedo2-dendi',
              'submit_time': {'$gte': datetime(2017, 11, 23, 0, 0, 0)}})
         assert value == [exp_config[1][1]] + exp_config[1][3:7]
 
         value = orion_db.read(
             'trials',
-            {'experiment': 'supernaedo2',
+            {'experiment': 'supernaedo2-dendi',
              'submit_time': {'$gt': datetime(2017, 11, 23, 0, 0, 0)}})
         assert value == exp_config[1][3:7]
 
@@ -127,7 +128,7 @@ class TestRead(object):
         """Fetch value(s) from an entry."""
         all_values = orion_db.read(
             'trials',
-            {'experiment': 'supernaedo2',
+            {'experiment': 'supernaedo2-dendi',
              'end_time': {'$gte': datetime(2017, 11, 1, 0, 0, 0)}})
 
         db = orion_db._get_database()
@@ -136,7 +137,7 @@ class TestRead(object):
 
         values = orion_db.read(
             'trials',
-            {'experiment': 'supernaedo2',
+            {'experiment': 'supernaedo2-dendi',
              'end_time': {'$gte': datetime(2017, 11, 1, 0, 0, 0)}})
         assert len(values) == len(all_values) - 1
 
@@ -174,7 +175,7 @@ class TestWrite(object):
 
     def test_update_many_default(self, orion_db):
         """Should match existing entries, and update some of their keys."""
-        filt = {'metadata.user': 'tsirif'}
+        filt = {'metadata.user': 'dendi'}
         count_before = orion_db._get_database().count('experiments')
         count_query = orion_db._get_database().count('experiments', filt)
         # call interface
@@ -183,8 +184,8 @@ class TestWrite(object):
         assert database['experiments'].count() == count_before
         value = list(database['experiments'].find({}))
         assert value[0]['pool_size'] == 16
-        assert value[1]['pool_size'] == 16
-        assert value[2]['pool_size'] == 16
+        assert value[1]['pool_size'] == 2
+        assert value[2]['pool_size'] == 2
         assert value[3]['pool_size'] == 2
 
     def test_update_with_id(self, exp_config, orion_db):
@@ -210,34 +211,33 @@ class TestReadAndWrite(object):
         # Make sure there is only one match
         documents = orion_db.read(
             'experiments',
-            {'name': 'supernaedo2', 'metadata.user': 'dendi'})
+            {'name': 'supernaedo4'})
         assert len(documents) == 1
 
         # Find and update atomically
         loaded_config = orion_db.read_and_write(
             'experiments',
-            {'name': 'supernaedo2', 'metadata.user': 'dendi'},
+            {'name': 'supernaedo4'},
             {'pool_size': 'lalala'})
         exp_config[0][3]['pool_size'] = 'lalala'
         assert loaded_config == exp_config[0][3]
 
     def test_read_and_write_many(self, orion_db, exp_config):
         """Should update only one entry."""
-        # Make sure there is many matches
-        documents = orion_db.read('experiments', {'name': 'supernaedo2'})
+        documents = orion_db.read('experiments', {'metadata.user': 'tsirif'})
         assert len(documents) > 1
 
         # Find many and update first one only
         loaded_config = orion_db.read_and_write(
             'experiments',
-            {'name': 'supernaedo2'},
+            {'metadata.user': 'tsirif'},
             {'pool_size': 'lalala'})
 
-        exp_config[0][0]['pool_size'] = 'lalala'
-        assert loaded_config == exp_config[0][0]
+        exp_config[0][1]['pool_size'] = 'lalala'
+        assert loaded_config == exp_config[0][1]
 
         # Make sure it only changed the first document found
-        documents = orion_db.read('experiments', {'name': 'supernaedo2'})
+        documents = orion_db.read('experiments', {'metadata.user': 'tsirif'})
         assert documents[0]['pool_size'] == 'lalala'
         assert documents[1]['pool_size'] != 'lalala'
 
@@ -278,7 +278,7 @@ class TestRemove(object):
         database = orion_db._get_database()._db
         assert database['experiments'].count() == count_before - count_filt
         assert database['experiments'].count() == 1
-        assert list(database['experiments'].find()) == [exp_config[0][3]]
+        assert list(database['experiments'].find()) == [exp_config[0][0]]
 
     def test_remove_with_id(self, exp_config, orion_db):
         """Query using ``_id`` key."""
@@ -354,3 +354,61 @@ class TestConcurreny(object):
         Pool(10).starmap(write, (('unique', 1) for i in range(10)))
 
         assert orion_db.count('concurrent', {'unique': 1}) == 1
+
+
+def test_empty_file(orion_db):
+    """Check that db loading can handle empty files"""
+    with open(orion_db.host, 'wb') as f:
+        f.write(b'')
+    orion_db._get_database()
+
+
+def test_unpickable_error_find_document():
+    """Check error messages for pickledb"""
+    class UnpickableClass:
+        i_am_not_pickable = None
+
+    unpickable_doc = {
+        '_id': 2,
+        'a_pickable': 1,
+        'b_unpickable': UnpickableClass(),
+        'c_pickable': 3
+    }
+
+    def make_pickable(uid):
+        return {
+            '_id': uid,
+            'a_pickable': 1,
+            'b_pickable': 2,
+            'c_pickable': 3
+        }
+
+    unpickable_dict_of_dict = [
+        make_pickable(1),
+        unpickable_doc,
+        make_pickable(3)
+    ]
+
+    pickable_dict_of_dict = [
+        make_pickable(1),
+        make_pickable(2),
+        make_pickable(3)
+    ]
+
+    unpickable_collection = EphemeralCollection()
+    unpickable_collection.insert_many(unpickable_dict_of_dict)
+
+    pickable_collection = EphemeralCollection()
+    pickable_collection.insert_many(pickable_dict_of_dict)
+
+    database = {
+        'pickable_collection': pickable_collection,
+        'unpickable_collection': unpickable_collection
+    }
+
+    collection, doc = find_unpickable_doc(database)
+    assert collection == 'unpickable_collection', 'should return the unpickable document'
+
+    key, value = find_unpickable_field(doc)
+    assert key == 'b_unpickable', 'should return the unpickable field'
+    assert isinstance(value, UnpickableClass), 'should return the unpickable value'

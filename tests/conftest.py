@@ -9,10 +9,13 @@ import pytest
 import yaml
 
 from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
+import orion.core
 from orion.core.io import resolve_config
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.worker.trial import Trial
+from orion.storage.base import Storage
+from orion.storage.legacy import Legacy
 
 
 class DumbAlgo(BaseAlgorithm):
@@ -50,7 +53,8 @@ class DumbAlgo(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {'index': self._index, 'suggested': self._suggested, 'num': self._num}
+        return {'index': self._index, 'suggested': self._suggested, 'num': self._num,
+                'done': self.done}
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
@@ -60,6 +64,7 @@ class DumbAlgo(BaseAlgorithm):
         self._index = state_dict['index']
         self._suggested = state_dict['suggested']
         self._num = state_dict['num']
+        self.done = state_dict['done']
 
     def suggest(self, num=1):
         """Suggest based on `value`."""
@@ -109,6 +114,26 @@ OptimizationAlgorithm.types.append(DumbAlgo)
 OptimizationAlgorithm.typenames.append(DumbAlgo.__name__.lower())
 
 
+@pytest.fixture()
+def empty_config():
+    """Return config purged from global definition"""
+    orion.core.DEF_CONFIG_FILES_PATHS = []
+    config = orion.core.build_config()
+    orion.core.config = config
+    resolve_config.config = config
+    return config
+
+
+@pytest.fixture()
+def test_config(empty_config):
+    """Return orion's config overwritten with local config file"""
+    config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "orion_config.yaml")
+    empty_config.load_yaml(config_file)
+
+    return empty_config
+
+
 @pytest.fixture(scope='session')
 def dumbalgo():
     """Return stab algorithm class."""
@@ -118,9 +143,16 @@ def dumbalgo():
 @pytest.fixture()
 def categorical_values():
     """Return a list of all the categorical points possible for `supernaedo2` and `supernaedo3`"""
-    return [('rnn', 'rnn'), ('rnn', 'lstm_with_attention'), ('rnn', 'gru'),
-            ('gru', 'rnn'), ('gru', 'lstm_with_attention'), ('gru', 'gru'),
-            ('lstm', 'rnn'), ('lstm', 'lstm_with_attention'), ('lstm', 'gru')]
+    return [('rnn', 'rnn'), ('lstm_with_attention', 'rnn'), ('gru', 'rnn'),
+            ('rnn', 'gru'), ('lstm_with_attention', 'gru'), ('gru', 'gru'),
+            ('rnn', 'lstm'), ('lstm_with_attention', 'lstm'), ('gru', 'lstm')]
+
+
+@pytest.fixture()
+def exp_config_file():
+    """Return configuration file used for stuff"""
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        'unittests', 'core', 'experiment.yaml')
 
 
 @pytest.fixture()
@@ -132,9 +164,11 @@ def exp_config():
 
     for i, t_dict in enumerate(exp_config[1]):
         exp_config[1][i] = Trial(**t_dict).to_dict()
+
     for i, _ in enumerate(exp_config[0]):
         exp_config[0][i]["metadata"]["user_script"] = os.path.join(
             os.path.dirname(__file__), exp_config[0][i]["metadata"]["user_script"])
+        exp_config[0][i]['version'] = 1
 
     return exp_config
 
@@ -165,6 +199,8 @@ def clean_db(database, exp_config):
 @pytest.fixture()
 def null_db_instances():
     """Nullify singleton instance so that we can assure independent instantiation tests."""
+    Storage.instance = None
+    Legacy.instance = None
     Database.instance = None
     MongoDB.instance = None
 
@@ -194,11 +230,19 @@ def version_XYZ(monkeypatch):
 def create_db_instance(null_db_instances, clean_db):
     """Create and save a singleton database instance."""
     try:
-        db = Database(of_type='MongoDB', name='orion_test',
-                      username='user', password='pass')
+        config = {
+            'database': {
+                'type': 'MongoDB',
+                'name': 'orion_test',
+                'username': 'user',
+                'password': 'pass'
+            }
+        }
+        db = Storage(of_type='legacy', config=config)
     except ValueError:
-        db = Database()
+        db = Storage()
 
+    db = db._db
     return db
 
 

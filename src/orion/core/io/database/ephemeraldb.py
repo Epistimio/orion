@@ -11,9 +11,22 @@
 from collections import defaultdict
 import copy
 
-from orion.core.io.database import AbstractDB, DuplicateKeyError
+from orion.core.io.database import AbstractDB, DatabaseError, DuplicateKeyError
+from orion.core.utils.flatten import flatten, unflatten
 
 
+def _convert_keys_to_name(keys):
+    index = []
+
+    if len(keys) == 1 and keys[0] == '_id':
+        index = '_id_'
+    else:
+        index = '_'.join('{}_1'.format(k) for k in keys)
+
+    return index
+
+
+# pylint: disable=too-many-public-methods
 class EphemeralDB(AbstractDB):
     """Non permanent database
 
@@ -43,6 +56,14 @@ class EphemeralDB(AbstractDB):
         Indexes are only created if `unique` is True.
         """
         self._db[collection_name].create_index(keys, unique=unique)
+
+    def index_information(self, collection_name):
+        """Return dict of names and sorting order of indexes"""
+        return self._db[collection_name].index_information()
+
+    def drop_index(self, collection_name, name):
+        """Remove index from the database"""
+        self._db[collection_name].drop_index(name)
 
     def write(self, collection_name, data, query=None):
         """Write new information to a collection. Perform insert or update.
@@ -138,17 +159,37 @@ class EphemeralCollection(object):
             keys = [(keys, None)]
 
         keys = tuple(key for (key, order) in keys)
-        if unique and keys not in self._indexes:
-            self._indexes[keys] = set()
+        name = _convert_keys_to_name(keys)
+        if unique and name not in self._indexes:
+            data = set()
+
+            self._indexes[name] = (keys, data)
 
             for document in self._documents:
-                self._validate_index(document, indexes=[keys])
-                self._indexes[keys].add(tuple(document[key] for key in keys))
+                self._validate_index(document, indexes=[name])
+                data.add(tuple(document[key] for key in keys))
+
+    def index_information(self):
+        """Return dict of names and sorting order of indexes
+
+        EphemeralCollection may only contain unique indexes.
+        """
+        return {name: True for name in self._indexes}
+
+    def drop_index(self, name):
+        """Remove index from the database
+
+        EphemeralCollection may only contain unique indexes.
+        """
+        if name not in self._indexes:
+            raise DatabaseError('index not found with name {}'.format(name))
+
+        del self._indexes[name]
 
     def _register_keys(self, document):
         """Register index values of a new document"""
-        for index, values in self._indexes.items():
-            values.add(tuple(document[key] for key in index))
+        for keys, values in self._indexes.values():
+            values.add(tuple(document[key] for key in keys))
 
     def find(self, query=None, selection=None):
         """Find documents in the collection and return a value according to the query.
@@ -175,11 +216,12 @@ class EphemeralCollection(object):
         if indexes is None:
             indexes = self._indexes.keys()
 
-        for index in indexes:
-            document_values = tuple(document[key] for key in index)
-            if document_values in self._indexes[index]:
+        for name in indexes:
+            keys, data = self._indexes[name]
+            document_values = tuple(document[key] for key in keys)
+            if document_values in data:
                 raise DuplicateKeyError(
-                    "Duplicate key error: index={} value={}".format(index, document_values))
+                    "Duplicate key error: index={} value={}".format(name, document_values))
 
     def _get_new_id(self):
         """Return max id + 1"""
@@ -271,6 +313,7 @@ class EphemeralCollection(object):
         """Drop the collection, removing all documents and indexes."""
         self._documents = []
         self._indexes = dict()
+        self.create_index('_id', unique=True)
 
 
 class EphemeralDocument(object):
@@ -292,14 +335,14 @@ class EphemeralDocument(object):
 
     def __init__(self, data):
         """Initialise the document with a flattened version of the data"""
-        self._data = _flatten(data)
+        self._data = flatten(data)
 
     def match(self, query=None):
         """Test if the document corresponds to a given query"""
         if query is None or query == {}:
             return True
 
-        query = _flatten(query)
+        query = flatten(query)
         for key, value in query.items():
             if not self.match_key(key, value):
                 return False
@@ -380,9 +423,9 @@ class EphemeralDocument(object):
 
         """
         if not keys:
-            return _unflatten(self._data)
+            return unflatten(self._data)
 
-        keys = _flatten(keys)
+        keys = flatten(keys)
         keys = self._validate_keys(keys)
 
         selection = dict()
@@ -404,7 +447,7 @@ class EphemeralDocument(object):
                 if include and key_is_match(key, selected_key):
                     selection[key] = value
 
-        return _unflatten(selection)
+        return unflatten(selection)
 
     def update(self, data):
         """Update the values of the document.
@@ -416,7 +459,7 @@ class EphemeralDocument(object):
             the data, the corresponding `data[$set]` will be used instead.
 
         """
-        data = _flatten(data.get("$set", data))
+        data = flatten(data.get("$set", data))
         self._data.update(data)
 
     def to_dict(self):
@@ -430,39 +473,3 @@ class EphemeralDocument(object):
     def __contains__(self, key):
         """Test whether the given key is present in the document"""
         return key in self._data
-
-
-def _flatten(dictionary):
-    def __flatten(dictionary):
-        if dictionary == {}:
-            return dictionary
-
-        key, value = dictionary.popitem()
-        if not isinstance(value, dict) or not value:
-            new_dictionary = {key: value}
-            new_dictionary.update(__flatten(dictionary))
-            return new_dictionary
-
-        flat_sub_dictionary = __flatten(value)
-        for flat_sub_key in list(flat_sub_dictionary.keys()):
-            flat_key = key + '.' + flat_sub_key
-            flat_sub_dictionary[flat_key] = flat_sub_dictionary.pop(flat_sub_key)
-
-        new_dictionary = flat_sub_dictionary
-        new_dictionary.update(_flatten(dictionary))
-        return new_dictionary
-
-    return __flatten(copy.deepcopy(dictionary))
-
-
-def _unflatten(dictionary):
-    unflattened_dictionary = dict()
-    for key, value in dictionary.items():
-        parts = key.split(".")
-        sub_dictionary = unflattened_dictionary
-        for part in parts[:-1]:
-            if part not in sub_dictionary:
-                sub_dictionary[part] = dict()
-            sub_dictionary = sub_dictionary[part]
-        sub_dictionary[parts[-1]] = value
-    return unflattened_dictionary

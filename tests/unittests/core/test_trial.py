@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.trial`."""
-
+import bson
 import numpy
 import pytest
 
@@ -123,14 +123,13 @@ class TestTrial(object):
     def test_str_trial(self, exp_config):
         """Test representation of `Trial`."""
         t = Trial(**exp_config[1][1])
-        assert str(t) == "Trial(experiment='supernaedo2', status='completed',\n"\
-                         "      params=/encoding_layer:gru\n"\
-                         "             /decoding_layer:lstm_with_attention)"
+        assert str(t) == "Trial(experiment='supernaedo2-dendi', status='completed', "\
+                         "params=/decoding_layer:lstm_with_attention,/encoding_layer:gru)"
 
     def test_str_value(self, exp_config):
         """Test representation of `Trial.Value`."""
         t = Trial(**exp_config[1][1])
-        assert str(t.params[0]) == "Param(name='/encoding_layer', "\
+        assert str(t.params[1]) == "Param(name='/encoding_layer', "\
                                    "type='categorical', value='gru')"
 
     def test_invalid_result(self, exp_config):
@@ -212,8 +211,8 @@ class TestTrial(object):
     def test_params_repr_property(self, exp_config):
         """Check property `Trial.params_repr`."""
         t = Trial(**exp_config[1][1])
-        assert t.params_repr() == "/encoding_layer:gru,/decoding_layer:lstm_with_attention"
-        assert t.params_repr(sep='\n') == "/encoding_layer:gru\n/decoding_layer:lstm_with_attention"
+        assert t.params_repr() == "/decoding_layer:lstm_with_attention,/encoding_layer:gru"
+        assert t.params_repr(sep='\n') == "/decoding_layer:lstm_with_attention\n/encoding_layer:gru"
 
         t = Trial()
         assert t.params_repr() == ""
@@ -221,7 +220,7 @@ class TestTrial(object):
     def test_hash_name_property(self, exp_config):
         """Check property `Trial.hash_name`."""
         t = Trial(**exp_config[1][1])
-        assert t.hash_name == "af737340845fb882e625d119968fd922"
+        assert t.hash_name == "ebcf6c6c8604f96444af1c3e519aea7f"
 
         t = Trial()
         with pytest.raises(ValueError) as exc:
@@ -231,9 +230,15 @@ class TestTrial(object):
     def test_full_name_property(self, exp_config):
         """Check property `Trial.full_name`."""
         t = Trial(**exp_config[1][1])
-        assert t.full_name == ".encoding_layer:gru-.decoding_layer:lstm_with_attention"
+        assert t.full_name == ".decoding_layer:lstm_with_attention-.encoding_layer:gru"
 
         t = Trial()
         with pytest.raises(ValueError) as exc:
             t.full_name
         assert 'params' in str(exc.value)
+
+    def test_higher_shape_id_is_same(self):
+        """Check if a Trial with a shape > 1 has the same id once it has been through the DB."""
+        x = {'name': '/x', 'value': [1, 2], 'type': 'real'}
+        trial = Trial(params=[x])
+        assert trial.id == Trial(**bson.BSON.decode(bson.BSON.encode(trial.to_dict()))).id

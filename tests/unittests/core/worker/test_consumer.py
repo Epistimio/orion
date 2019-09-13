@@ -45,7 +45,7 @@ def test_trials_interrupted_keyboard_int(config, monkeypatch):
     with pytest.raises(KeyboardInterrupt):
         con.consume(trial)
 
-    trials = exp.fetch_trials({'status': 'interrupted'})
+    trials = exp.fetch_trials_by_status('interrupted')
     assert len(trials)
     assert trials[0].id == trial.id
 
@@ -69,7 +69,7 @@ def test_trials_interrupted_sigterm(config, monkeypatch):
     with pytest.raises(KeyboardInterrupt):
         con.consume(trial)
 
-    trials = exp.fetch_trials({'status': 'interrupted'})
+    trials = exp.fetch_trials_by_status('interrupted')
     assert len(trials)
     assert trials[0].id == trial.id
 

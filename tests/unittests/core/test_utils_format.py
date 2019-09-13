@@ -37,11 +37,16 @@ def test_trial_to_tuple(space, trial, fixed_suggestion):
     assert data == fixed_suggestion
 
     trial.params[0].name = 'lalala'
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError) as exc:
         trial_to_tuple(trial, space)
+
+    assert "Trial params: [\'lalala\', \'yolo2\', \'yolo3\']" in str(exc.value)
+
     trial.params.pop(0)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError) as exc:
         trial_to_tuple(trial, space)
+
+    assert "Trial params: [\'yolo2\', \'yolo3\']" in str(exc.value)
 
 
 def test_tuple_to_trial(space, trial, fixed_suggestion):
