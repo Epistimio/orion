@@ -230,6 +230,21 @@ def test_format_with_properties(parser, cmd_with_properties, hacked_exp):
         {'name': '/prior', 'type': 'categorical', 'value': 'sgd'}])
 
     cmd_line = parser.format(None, trial=trial, experiment=hacked_exp)
+    print(cmd_line)
 
     assert trial.hash_name in cmd_line
-    assert 'supernaedo2' in cmd_line
+    assert 'supernaedo2-dendi' in cmd_line
+
+
+def test_configurable_config_arg(parser_diff_prefix, yaml_sample_path):
+    """Parse from a yaml config only."""
+    parser_diff_prefix.parse(["--config2", yaml_sample_path])
+    config = parser_diff_prefix.priors
+
+    assert len(config.keys()) == 6
+    assert '/layers/1/width' in config
+    assert '/layers/1/type' in config
+    assert '/layers/2/type' in config
+    assert '/training/lr0' in config
+    assert '/training/mbs' in config
+    assert '/something-same' in config

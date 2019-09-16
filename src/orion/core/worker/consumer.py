@@ -27,6 +27,12 @@ def _handler(signum, frame):
     raise KeyboardInterrupt
 
 
+class ExecutionError(Exception):
+    """Error raised when Orion is unable to execute the user's script without errors."""
+
+    pass
+
+
 class Consumer(object):
     """Consume a trial by using it to initialize a black-box box to evaluate it.
 
@@ -91,14 +97,65 @@ class Consumer(object):
 
         except KeyboardInterrupt:
             log.debug("### Save %s as interrupted.", trial)
-            trial.status = 'interrupted'
-            self.experiment.update_trial(trial, status=trial.status)
-
+            self.experiment.set_trial_status(trial, status='interrupted')
             raise
-        except RuntimeError:
+
+        except ExecutionError:
             log.debug("### Save %s as broken.", trial)
-            trial.status = 'broken'
-            self.experiment.update_trial(trial, status=trial.status)
+            self.experiment.set_trial_status(trial, status='broken')
+
+    def get_execution_environment(self, trial, results_file='results.log'):
+        """Set a few environment variables to allow users and
+        underlying processes to know if they are running under orion.
+
+        Parameters
+        ----------
+        results_file: str
+           file used to store results, this is only used by the legacy protocol
+        trial: Trial
+           reference to the trial object that is going to be run
+
+        Notes
+        -----
+        This function defines the environment variables described below
+
+        .. envvar:: ORION_EXPERIMENT_ID
+
+           Current experiment that is being ran.
+
+        .. envvar::  ORION_EXPERIMENT_NAME
+
+           Name of the experiment the worker is currently working on.
+
+        .. envvar::  ORION_EXPERIMENT_VERSION
+
+           Version of the experiment the worker is currently working on.
+
+        .. envvar:: ORION_TRIAL_ID
+
+           Current trial id that is currently being executed in this process.
+
+        .. envvar:: ORION_WORKING_DIRECTORY
+
+           Trial's current working directory.
+
+        .. envvar:: ORION_RESULTS_PATH
+
+           Trial's results file that is read by the legacy protocol to get the results of the trial
+           after a successful run.
+
+        """
+        env = dict(os.environ)
+
+        env['ORION_EXPERIMENT_ID'] = str(self.experiment.id)
+        env['ORION_EXPERIMENT_NAME'] = str(self.experiment.name)
+        env['ORION_EXPERIMENT_VERSION'] = str(self.experiment.version)
+        env['ORION_TRIAL_ID'] = str(trial.id)
+
+        env['ORION_WORKING_DIR'] = str(trial.working_dir)
+        env['ORION_RESULTS_PATH'] = str(results_file)
+
+        return env
 
     def _consume(self, trial, workdirname):
         config_file = tempfile.NamedTemporaryFile(mode='w', prefix='trial_',
@@ -113,30 +170,29 @@ class Consumer(object):
         log.debug("## New temp results file: %s", results_file.name)
 
         log.debug("## Building command line argument and configuration for trial.")
+        env = self.get_execution_environment(trial, results_file.name)
         cmd_args = self.template_builder.build_to(config_file.name, trial, self.experiment)
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
-        self.pacemaker = TrialPacemaker(self.experiment, trial.id)
+        self.pacemaker = TrialPacemaker(trial)
         self.pacemaker.start()
         try:
-            self.execute_process(results_file.name, cmd_args)
+            self.execute_process(cmd_args, env)
         finally:
             # merciless
             self.pacemaker.stop()
 
         return results_file
 
-    def execute_process(self, results_filename, cmd_args):
+    def execute_process(self, cmd_args, environ):
         """Facilitate launching a black-box trial."""
-        env = dict(os.environ)
-        env['ORION_RESULTS_PATH'] = str(results_filename)
         command = [self.script_path] + cmd_args
 
         signal.signal(signal.SIGTERM, _handler)
-        process = subprocess.Popen(command, env=env)
+        process = subprocess.Popen(command, env=environ)
 
         return_code = process.wait()
         if return_code != 0:
-            raise RuntimeError("Something went wrong. Check logs. Process "
-                               "returned with code {} !".format(return_code))
+            raise ExecutionError("Something went wrong. Check logs. Process "
+                                 "returned with code {} !".format(return_code))

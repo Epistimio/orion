@@ -12,8 +12,8 @@ from orion.algo.space import (Categorical, Integer, Real, Space)
 from orion.core.evc import conflicts
 from orion.core.io.convert import (JSONConverter, YAMLConverter)
 from orion.core.io.space_builder import DimensionBuilder
+from orion.core.utils.tests import default_datetime, MockDatetime
 from orion.core.worker.experiment import Experiment
-
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, 'sample_config.yml')
@@ -129,15 +129,8 @@ def with_user_dendi(monkeypatch):
 @pytest.fixture()
 def random_dt(monkeypatch):
     """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    random_dt = datetime.datetime(1903, 4, 25, 0, 0, 0)
-
-    class MockDatetime(datetime.datetime):
-        @classmethod
-        def utcnow(cls):
-            return random_dt
-
     monkeypatch.setattr(datetime, 'datetime', MockDatetime)
-    return random_dt
+    return default_datetime()
 
 
 @pytest.fixture()
@@ -145,8 +138,8 @@ def hacked_exp(with_user_dendi, random_dt, clean_db, create_db_instance):
     """Return an `Experiment` instance with hacked _id to find trials in
     fake database.
     """
-    exp = Experiment('supernaedo2')
-    exp._id = 'supernaedo2'  # white box hack
+    exp = Experiment('supernaedo2-dendi')
+    exp._id = 'supernaedo2-dendi'  # white box hack
     return exp
 
 
@@ -154,7 +147,7 @@ def hacked_exp(with_user_dendi, random_dt, clean_db, create_db_instance):
 def trial_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_instance):
     """Replace trial ids by the actual ids of the experiments."""
     db = create_db_instance
-    experiments = db.read('experiments', {'metadata.user': 'tsirif'})
+    experiments = db.read('experiments', {})
     experiment_dict = dict((experiment['name'], experiment) for experiment in experiments)
     trials = db.read('trials')
 
@@ -175,7 +168,7 @@ def refers_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_inst
 
     for experiment in experiments:
         query = {'_id': experiment['_id']}
-        print(experiment['refers'])
+
         root_id = experiment_dict[experiment['refers']['root_id']]['_id']
         if experiment['refers']['parent_id'] is not None:
             parent_id = experiment_dict[experiment['refers']['parent_id']]['_id']
@@ -198,6 +191,7 @@ def new_config():
     return dict(
         name='test',
         algorithms='fancy',
+        version=1,
         metadata={'VCS': 'to be changed',
                   'user_script': 'abs_path/black_box.py',
                   'user_args':
@@ -211,6 +205,7 @@ def old_config(create_db_instance):
     config = dict(
         name='test',
         algorithms='random',
+        version=1,
         metadata={'VCS': {"type": "git",
                           "is_dirty": False,
                           "HEAD_sha": "test",
@@ -313,3 +308,25 @@ def config_conflict(old_config, new_config):
 def experiment_name_conflict(old_config, new_config):
     """Generate an experiment name conflict"""
     return conflicts.ExperimentNameConflict(old_config, new_config)
+
+
+@pytest.fixture
+def bad_exp_parent_config():
+    """Generate a new experiment configuration"""
+    return dict(
+        _id='test',
+        name='test',
+        metadata={'user': 'corneauf', 'user_args': ['--x~normal(0,1)']},
+        version=1,
+        algorithms='random')
+
+
+@pytest.fixture
+def bad_exp_child_config(bad_exp_parent_config):
+    """Generate a new experiment configuration"""
+    config = copy.deepcopy(bad_exp_parent_config)
+    config['_id'] = "test2"
+    config['refers'] = {'parent_id': 'test'}
+    config['version'] = 2
+
+    return config

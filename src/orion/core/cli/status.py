@@ -15,9 +15,9 @@ import logging
 import tabulate
 
 from orion.core.cli import base as cli
-from orion.core.io.database import Database
 from orion.core.io.evc_builder import EVCBuilder
 from orion.core.io.experiment_builder import ExperimentBuilder
+from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
 
@@ -37,6 +37,11 @@ def add_subparser(parser):
         help=("Aggregate together results of all child experiments. Otherwise they are all "
               "printed hierarchically"))
 
+    status_parser.add_argument(
+        '-e', '--expand-versions', action='store_true',
+        help=("Show all the version of every experiments instead of only the latest one")
+        )
+
     status_parser.set_defaults(func=main)
 
     return status_parser
@@ -46,19 +51,51 @@ def main(args):
     """Fetch config and status experiments"""
     builder = ExperimentBuilder()
     local_config = builder.fetch_full_config(args, use_db=False)
-    builder.setup_database(local_config)
+    builder.setup_storage(local_config)
+
+    args['all_trials'] = args.pop('all', False)
 
     experiments = get_experiments(args)
 
-    if args.get('name'):
-        print_status(experiments[0], all_trials=args.get('all'), collapse=args.get('collapse'))
+    if not experiments:
+        print("No experiment found")
         return
 
-    for exp in filter(lambda e: e.refers.get('parent_id') is None, experiments):
-        if args.get('collapse'):
-            print_status(exp, all_trials=args.get('all'), collapse=True)
+    if args.get('name'):
+        print_evc([experiments[0]], **args)
+        return
+
+    if args.get('version'):
+        if args.get('collapse') or args.get('expand_versions'):
+            raise RuntimeError("Cannot fetch specific version of experiments with --collapse "
+                               "or --expand-versions.")
+
+    print_evc(filter(lambda e: e.refers.get('parent_id') is None, experiments), **args)
+
+
+# pylint: disable=unused-argument
+def print_evc(experiments, version=None, all_trials=False, collapse=False,
+              expand_versions=False, **kwargs):
+    """Print each EVC tree
+
+    Parameters
+    ----------
+    args: dict
+        Commandline arguments.
+
+    """
+    for exp in experiments:
+        cfg = {'name': exp.name, 'version': version}
+        experiment = EVCBuilder().build_view_from(cfg)
+        if version is None:
+            expand_experiment = exp
         else:
-            print_status_recursively(exp, all_trials=args.get('all'))
+            expand_experiment = experiment
+        expand = expand_versions or _has_named_children(expand_experiment)
+        if expand and not collapse:
+            print_status_recursively(expand_experiment, all_trials=all_trials)
+        else:
+            print_status(experiment, all_trials=all_trials, collapse=True)
 
 
 def get_experiments(args):
@@ -70,12 +107,17 @@ def get_experiments(args):
         Commandline arguments.
 
     """
-    projection = {'name': 1}
+    projection = {'name': 1, 'version': 1}
 
     query = {'name': args['name']} if args.get('name') else {}
-    experiments = Database().read("experiments", query, projection)
+    experiments = get_storage().fetch_experiments(query, projection)
 
-    return [EVCBuilder().build_view_from({'name': exp['name']}) for exp in experiments]
+    return [EVCBuilder().build_view_from({'name': exp['name'], 'version': exp.get('version', 1)})
+            for exp in experiments]
+
+
+def _has_named_children(exp):
+    return any(node.name != exp.name for node in exp.node)
 
 
 def print_status_recursively(exp, depth=0, **kwargs):
@@ -108,13 +150,11 @@ def print_status(exp, offset=0, all_trials=False, collapse=False):
         Fetch trials for entire EVCTree. Defaults to False.
 
     """
-    if collapse:
-        trials = exp.fetch_trials_tree({})
-    else:
-        trials = exp.fetch_trials({})
+    trials = exp.fetch_trials(with_evc_tree=collapse)
 
-    print(" " * offset, exp.name, sep="")
-    print(" " * offset, "=" * len(exp.name), sep="")
+    exp_title = exp.node.tree_name
+    print(" " * offset, exp_title, sep="")
+    print(" " * offset, "=" * len(exp_title), sep="")
 
     if all_trials:
         print_all_trials(trials, offset=offset)
@@ -182,6 +222,9 @@ def print_all_trials(trials, offset=0):
             line.append(trial.objective.value)
 
         lines.append(line)
+
+    if not trials:
+        lines.append(['empty', '', ''])
 
     grid = tabulate.tabulate(lines, headers=headers)
     tab = " " * offset

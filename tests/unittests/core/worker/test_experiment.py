@@ -4,127 +4,24 @@
 
 import copy
 import datetime
-import getpass
 import json
 import logging
-import random
 import tempfile
 
 import pytest
 
 from orion.algo.base import BaseAlgorithm
-from orion.core.io.database import Database, DuplicateKeyError
+import orion.core
+from orion.core.io.database import DuplicateKeyError
+from orion.core.utils.exceptions import RaceCondition
+from orion.core.utils.tests import OrionState
+import orion.core.worker.experiment
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
+from orion.storage.base import get_storage
 
 
 logging.basicConfig(level=logging.DEBUG)
-
-
-@pytest.fixture()
-def patch_sample(monkeypatch):
-    """Patch ``random.sample`` to return the first one and check call."""
-    def mock_sample(a_list, should_be_one):
-        assert type(a_list) == list
-        assert len(a_list) >= 1
-        # Part of `TestReserveTrial.test_reserve_success`
-        assert a_list[0].status == 'new'
-        assert a_list[1].status == 'new'
-        assert a_list[2].status == 'interrupted'
-        assert a_list[3].status == 'suspended'
-        assert should_be_one == 1
-        return [a_list[0]]
-
-    monkeypatch.setattr(random, 'sample', mock_sample)
-
-
-@pytest.fixture()
-def patch_sample2(monkeypatch):
-    """Patch ``random.sample`` to return the first one and check call."""
-    def mock_sample(a_list, should_be_one):
-        assert type(a_list) == list
-        assert len(a_list) >= 1
-        # Part of `TestReserveTrial.test_reserve_success2`
-        assert a_list[0].status == 'new'
-        assert a_list[1].status == 'new'
-        assert a_list[2].status == 'interrupted'
-        assert a_list[3].status == 'suspended'
-        assert should_be_one == 1
-        return [a_list[-1]]
-
-    monkeypatch.setattr(random, 'sample', mock_sample)
-
-
-@pytest.fixture()
-def patch_sample_concurrent(monkeypatch, create_db_instance, exp_config):
-    """Patch ``random.sample`` to return the first one and check call.
-
-    The first trial is marked as new, but in DB it is reserved.
-    """
-    def mock_sample(a_list, should_be_one):
-        assert type(a_list) == list
-        assert len(a_list) >= 1
-        # Part of `TestReserveTrial.test_reserve_race_condition`
-        if len(a_list) == 4:
-            assert a_list[0].status == 'new'
-        if len(a_list) == 3:
-            assert a_list[0].status == 'new'
-        if len(a_list) == 2:
-            assert a_list[0].status == 'interrupted'
-        if len(a_list) == 1:
-            assert a_list[0].status == 'suspended'
-
-        assert should_be_one == 1
-
-        if len(a_list) > 3:
-            # Set row's status as 'reserved' just like if it was reserved by
-            # another process right after the call to orion_db.read()
-            create_db_instance.write(
-                "trials",
-                data={"status": "reserved",
-                      "heartbeat": datetime.datetime.utcnow()},
-                query={"_id": a_list[0].id})
-            trial = create_db_instance.read("trials", {"_id": a_list[0].id})
-            assert trial[0]['status'] == 'reserved'
-
-        return [a_list[0]]
-
-    monkeypatch.setattr(random, 'sample', mock_sample)
-
-
-@pytest.fixture()
-def patch_sample_concurrent2(monkeypatch, create_db_instance, exp_config):
-    """Patch ``random.sample`` to return the first one and check call.
-
-    All trials are marked as new, but in DB they are reserved.
-    """
-    def mock_sample(a_list, should_be_one):
-        assert type(a_list) == list
-        assert len(a_list) >= 1
-        # Part of `TestReserveTrial.test_reserve_dead_race_condition`
-        if len(a_list) == 4:
-            assert a_list[0].status == 'new'
-        if len(a_list) == 3:
-            assert a_list[0].status == 'new'
-        if len(a_list) == 2:
-            assert a_list[0].status == 'interrupted'
-        if len(a_list) == 1:
-            assert a_list[0].status == 'suspended'
-
-        assert should_be_one == 1
-
-        # Set row's status as 'reserved' just like if it was reserved by
-        # another process right after the call to orion_db.read()
-        create_db_instance.write(
-            "trials",
-            data={"status": "reserved", 'heartbeat': datetime.datetime.utcnow()},
-            query={"_id": a_list[0].id})
-        trial = create_db_instance.read("trials", {"_id": a_list[0].id})
-        assert trial[0]['status'] == 'reserved'
-
-        return [a_list[0]]
-
-    monkeypatch.setattr(random, 'sample', mock_sample)
 
 
 @pytest.fixture()
@@ -143,6 +40,7 @@ def new_config(random_dt):
                           "HEAD_sha": "fsa7df7a8sdf7a8s7",
                           "active_branch": None,
                           "diff_sha": "diff"}},
+        version=1,
         pool_size=10,
         max_trials=1000,
         working_dir=None,
@@ -154,6 +52,30 @@ def new_config(random_dt):
         something_to_be_ignored='asdfa'
         )
     return new_config
+
+
+@pytest.fixture
+def parent_version_config():
+    """Return a configuration for an experiment."""
+    return dict(_id='parent_config',
+                name="old_experiment",
+                version=1,
+                algorithms='random',
+                metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow(),
+                          'user_args': ['--x~normal(0,1)']}
+                )
+
+
+@pytest.fixture
+def child_version_config(parent_version_config):
+    """Return a configuration for an experiment."""
+    config = copy.deepcopy(parent_version_config)
+    config['_id'] = 'child_config'
+    config['version'] = 2
+    config['refers'] = {'parent_id': 'parent_config'}
+    config['metadata']['datetime'] = datetime.datetime.utcnow()
+    config['metadata']['user_args'].append('--y~+normal(0,1)')
+    return config
 
 
 def assert_protocol(exp, create_db_instance):
@@ -189,31 +111,14 @@ class TestInitExperiment(object):
         assert exp.max_trials is None
         assert exp.algorithms is None
         assert exp.working_dir is None
-        with pytest.raises(AttributeError):
-            exp.this_is_not_in_config = 5
-
-    @pytest.mark.usefixtures("with_user_bouthilx")
-    def test_new_experiment_due_to_username(self, create_db_instance, random_dt):
-        """Hit exp_name, but user's name does not hit the db, create new entry."""
-        exp = Experiment('supernaedo2')
-        assert exp._init_done is False
-        assert_protocol(exp, create_db_instance)
-        assert exp._id is None
-        assert exp.name == 'supernaedo2'
-        assert exp.refers == {}
-        assert exp.metadata['user'] == 'bouthilx'
-        assert len(exp.metadata) == 1
-        assert exp.pool_size is None
-        assert exp.max_trials is None
-        assert exp.algorithms is None
-        assert exp.working_dir is None
+        assert exp.version == 1
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
 
     @pytest.mark.usefixtures("with_user_tsirif")
     def test_existing_experiment(self, create_db_instance, exp_config):
         """Hit exp_name + user's name in the db, fetch most recent entry."""
-        exp = Experiment('supernaedo2')
+        exp = Experiment('supernaedo2-dendi')
         assert exp._init_done is False
         assert_protocol(exp, create_db_instance)
         assert exp._id == exp_config[0][0]['_id']
@@ -224,8 +129,56 @@ class TestInitExperiment(object):
         assert exp.max_trials == exp_config[0][0]['max_trials']
         assert exp.algorithms == exp_config[0][0]['algorithms']
         assert exp.working_dir == exp_config[0][0]['working_dir']
+        assert exp.version == 1
         with pytest.raises(AttributeError):
             exp.this_is_not_in_config = 5
+
+    def test_new_experiment_wout_version(self, create_db_instance):
+        """Create a new and never-seen-before experiment without a version."""
+        exp = Experiment("exp_wout_version")
+        assert exp.version == 1
+
+    def test_new_experiment_w_version(self, create_db_instance):
+        """Create a new and never-seen-before experiment with a version."""
+        exp = Experiment("exp_wout_version", version=1)
+        assert exp.version == 1
+
+    def test_backward_compatibility_no_version(self, create_db_instance, parent_version_config,
+                                               child_version_config):
+        """Branch from parent that has no version field."""
+        parent_version_config.pop('version')
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf")
+        assert exp.version == 2
+
+    def test_old_experiment_wout_version(self, create_db_instance, parent_version_config,
+                                         child_version_config):
+        """Create an already existing experiment without a version."""
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf")
+        assert exp.version == 2
+
+    def test_old_experiment_w_version(self, create_db_instance, parent_version_config,
+                                      child_version_config):
+        """Create an already existing experiment with a version."""
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf", version=1)
+        assert exp.version == 1
+
+    def test_old_experiment_w_version_bigger_than_max(self, create_db_instance,
+                                                      parent_version_config, child_version_config):
+        """Create an already existing experiment with a too large version."""
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf", version=8)
+        assert exp.version == 2
 
 
 @pytest.mark.usefixtures("create_db_instance", "with_user_tsirif")
@@ -237,8 +190,9 @@ class TestConfigProperty(object):
 
         Assuming that experiment's (exp's name, user's name) has hit the database.
         """
-        exp = Experiment('supernaedo2')
+        exp = Experiment('supernaedo2-dendi')
         exp_config[0][0].pop('_id')
+        exp_config[0][0]['version'] = 1
         assert exp.configuration == exp_config[0][0]
 
     def test_get_before_init_no_hit(self, exp_config, random_dt):
@@ -258,6 +212,7 @@ class TestConfigProperty(object):
         assert cfg['max_trials'] is None
         assert cfg['algorithms'] is None
         assert cfg['working_dir'] is None
+        assert cfg['version'] == 1
 
     @pytest.mark.skip(reason='Interactive prompt problems')
     def test_good_set_before_init_hit_with_diffs(self, exp_config):
@@ -283,7 +238,7 @@ class TestConfigProperty(object):
         Everything is normal, nothing changes. Experiment is resumed,
         perhaps with more trials to evaluate (an exception is 'max_trials').
         """
-        exp = Experiment('supernaedo2')
+        exp = Experiment('supernaedo2-dendi')
         # Deliver an external configuration to finalize init
         exp_config[0][0]['max_trials'] = 5000
         exp.configure(exp_config[0][0])
@@ -303,7 +258,7 @@ class TestConfigProperty(object):
         Everything is normal, nothing changes. Experiment is resumed,
         perhaps with more workers that evaluate (an exception is 'pool_size').
         """
-        exp = Experiment('supernaedo2')
+        exp = Experiment('supernaedo2-dendi')
         # Deliver an external configuration to finalize init
         exp_config[0][0]['pool_size'] = 10
         exp.configure(exp_config[0][0])
@@ -348,6 +303,7 @@ class TestConfigProperty(object):
         assert exp.pool_size == new_config['pool_size']
         assert exp.max_trials == new_config['max_trials']
         assert exp.working_dir == new_config['working_dir']
+        assert exp.version == new_config['version']
         #  assert exp.algorithms == new_config['algorithms']
 
     def test_working_dir_is_correctly_set(self, database, new_config):
@@ -409,7 +365,7 @@ class TestConfigProperty(object):
         user's name) has not hit the database. return a yaml compliant form
         of current state, to be used with :mod:`orion.core.cli.esolve_config`.
         """
-        exp = Experiment('supernaedo2')
+        exp = Experiment('supernaedo2-dendi')
         # Deliver an external configuration to finalize init
         experiment_count_before = count_experiment(exp)
         exp.configure(exp_config[0][0])
@@ -453,9 +409,11 @@ class TestConfigProperty(object):
         assert naughty_little_exp._init_done is True
         assert exp._init_done is False
         assert (experiment_count_before + 1) == count_experiment(exp)
+
         # First experiment won't be able to be configured
         with pytest.raises(DuplicateKeyError) as exc_info:
             exp.configure(new_config)
+
         assert 'duplicate key error' in str(exc_info.value)
 
         assert (experiment_count_before + 1) == count_experiment(exp)
@@ -540,7 +498,7 @@ class TestConfigProperty(object):
 
     def test_algorithm_config_with_just_a_string(self, exp_config):
         """Test that configuring an algorithm with just a string is OK."""
-        new_config = copy.deepcopy(exp_config[0][1])
+        new_config = copy.deepcopy(exp_config[0][2])
         new_config['algorithms'] = 'dumbalgo'
         exp = Experiment('supernaedo3')
         exp.configure(new_config)
@@ -561,107 +519,193 @@ class TestConfigProperty(object):
         exp = Experiment('supernaedo4')
 
         # Deliver an external configuration to finalize init
-        exp.configure(exp_config[0][2])
+        exp.configure(exp_config[0][3])
 
         assert exp.is_done
 
         exp = Experiment('supernaedo4')
         # Deliver an external configuration to finalize init
-        exp_config[0][2]['max_trials'] = 1000
-        exp.configure(exp_config[0][2])
+        exp_config[0][3]['max_trials'] = 1000
+        exp.configure(exp_config[0][3])
 
         assert not exp.is_done
 
+    def test_new_child_with_branch(self):
+        """Check that experiment is not incremented when branching with a new name."""
+        user_args = ['--x~normal(0,1)']
+        metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
+        algorithms = {'random': {'seed': None}}
+        config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
 
-@pytest.mark.usefixtures("create_db_instance", "with_user_bouthilx")
-def test_forcing_user(exp_config):
-    """Trying to set by forcing user so that NO differences are found."""
-    assert getpass.getuser() == 'bouthilx'
-    exp = Experiment('supernaedo2')
-    assert exp.metadata['user'] == 'bouthilx'
-    exp = Experiment('supernaedo2', 'tsirif')
-    # Deliver an external configuration to finalize init
-    exp_config[0][0]['max_trials'] = 5000
-    exp.configure(exp_config[0][0])
-    exp_config[0][0]['algorithms']['dumbalgo']['done'] = False
-    exp_config[0][0]['algorithms']['dumbalgo']['judgement'] = None
-    exp_config[0][0]['algorithms']['dumbalgo']['scoring'] = 0
-    exp_config[0][0]['algorithms']['dumbalgo']['suspend'] = False
-    exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
-    exp_config[0][0]['algorithms']['dumbalgo']['seed'] = None
-    exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
-    assert exp._id == exp_config[0][0].pop('_id')
-    assert exp.configuration == exp_config[0][0]
+        get_storage().create_experiment(config)
+        original = Experiment('experiment_test', version=1)
+
+        config['branch'] = ['experiment_2']
+        config['metadata']['user_args'].pop()
+        config['metadata']['user_args'].append("--z~+normal(0,1)")
+        config['version'] = 1
+        exp = Experiment('experiment_test', version=1)
+        exp.configure(config)
+
+        assert exp.version == 1
+        assert '/z' in exp.space
+        assert exp.refers['parent_id'] == original.id
+
+    def test_no_increment_when_child_exist(self):
+        """Check that experiment cannot be incremented when asked for v1 while v2 exists."""
+        user_args = ['--x~normal(0,1)']
+        metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
+        algorithms = {'random': {'seed': None}}
+        config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
+
+        get_storage().create_experiment(config)
+        parent_id = config.pop('_id')
+
+        config['version'] = 2
+        config['metadata']['user_args'].append("--y~+normal(0,1)")
+        config['refers'] = dict(parent_id=parent_id, root_id=parent_id, adapters=[])
+
+        get_storage().create_experiment(config)
+        config.pop('_id')
+
+        config['metadata']['user_args'].pop()
+        config['metadata']['user_args'].append("--z~+normal(0,1)")
+        config['version'] = 1
+        config.pop('refers')
+        exp = Experiment('experiment_test', version=1)
+
+        with pytest.raises(ValueError) as exc_info:
+            exp.configure(config)
+        assert 'Configuration is different and generates a branching' in str(exc_info.value)
+
+    def test_old_experiment_wout_version(self, parent_version_config,
+                                         child_version_config):
+        """Create an already existing experiment without a version."""
+        algorithm = {'random': {'seed': None}}
+        parent_version_config['algorithms'] = algorithm
+        child_version_config['algorithms'] = algorithm
+
+        storage = get_storage()
+        storage.create_experiment(parent_version_config)
+        storage.create_experiment(child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf")
+        exp.configure(child_version_config)
+
+        assert exp.version == 2
+
+    def test_old_experiment_w_version(self, parent_version_config,
+                                      child_version_config):
+        """Create an already existing experiment with a version."""
+        algorithm = {'random': {'seed': None}}
+        parent_version_config['algorithms'] = algorithm
+        child_version_config['algorithms'] = algorithm
+
+        storage = get_storage()
+        storage.create_experiment(parent_version_config)
+        storage.create_experiment(child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf", version=1)
+        exp.configure(parent_version_config)
+
+        assert exp.version == 1
+
+    def test_race_condition_w_version(self):
+        """Test that an experiment loosing the race condition during version increment cannot
+        be resolved automatically if a version number was specified.
+
+        Note that if we would raise RaceCondition, the conflict would still occur since
+        the version number fetched will not be the new one from the resolution but the requested
+        one. Therefore raising and handling RaceCondition would lead to infinite recursion in
+        the experiment builder.
+        """
+        user_args = ['--x~normal(0,1)']
+        metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
+        algorithms = {'random': {'seed': None}}
+        config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
+
+        get_storage().create_experiment(config)
+        parent_id = config.pop('_id')
+
+        looser = Experiment('experiment_test', version=1)
+
+        # Simulate exp2 winning the race condition
+        config2 = copy.deepcopy(config)
+        config2['version'] = 2
+        config2['metadata']['user_args'].append("--y~+normal(0,1)")
+        config2['refers'] = dict(parent_id=parent_id, root_id=parent_id, adapters=[])
+        get_storage().create_experiment(config2)
+
+        # Now exp3 losses the race condition
+        config3 = copy.deepcopy(config)
+        config3['metadata']['user_args'].pop()
+        config3['metadata']['user_args'].append("--z~+normal(0,1)")
+        config3['version'] = 1
+
+        with pytest.raises(ValueError) as exc_info:
+            looser.configure(config3)
+        assert 'Configuration is different and generates a branching' in str(exc_info.value)
+
+    def test_race_condition_wout_version(self):
+        """Test that an experiment loosing the race condition during version increment raises
+        RaceCondition if version number was not specified.
+        """
+        user_args = ['--x~normal(0,1)']
+        metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
+        algorithms = {'random': {'seed': None}}
+        config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
+
+        get_storage().create_experiment(config)
+        parent_id = config.pop('_id')
+
+        looser = Experiment('experiment_test', version=1)
+
+        # Simulate exp2 winning the race condition
+        config2 = copy.deepcopy(config)
+        config2['version'] = 2
+        config2['metadata']['user_args'].append("--y~+normal(0,1)")
+        config2['refers'] = dict(parent_id=parent_id, root_id=parent_id, adapters=[])
+        get_storage().create_experiment(config2)
+
+        # Now exp3 losses the race condition
+        config3 = copy.deepcopy(config)
+        config3['metadata']['user_args'].pop()
+        config3['metadata']['user_args'].append("--z~+normal(0,1)")
+        config3.pop('version')
+
+        with pytest.raises(RaceCondition) as exc_info:
+            looser.configure(config3)
+        assert 'There was likely a race condition' in str(exc_info.value)
 
 
 class TestReserveTrial(object):
     """Calls to interface `Experiment.reserve_trial`."""
 
+    @pytest.mark.usefixtures("create_db_instance")
     def test_reserve_none(self):
         """Find nothing, return None."""
-        try:
-            Database(of_type='MongoDB', name='orion_test',
-                     username='user', password='pass')
-        except (TypeError, ValueError):
-            pass
         exp = Experiment('supernaekei')
         trial = exp.reserve_trial()
         assert trial is None
 
-    @pytest.mark.usefixtures("patch_sample")
-    def test_reserve_success(self, exp_config, hacked_exp, random_dt):
-        """Successfully find new trials in db and reserve one at 'random'."""
-        trial = hacked_exp.reserve_trial()
-        exp_config[1][3]['status'] = 'reserved'
-        exp_config[1][3]['start_time'] = random_dt
-        exp_config[1][3]['heartbeat'] = random_dt
-        assert trial.to_dict() == exp_config[1][3]
+    def test_reserve_success(self, exp_config_file, random_dt):
+        """Successfully find new trials in db and reserve the first one"""
+        with OrionState(from_yaml=exp_config_file) as cfg:
+            exp = cfg.get_experiment('supernaedo2-dendi')
+            trial = exp.reserve_trial()
 
-    @pytest.mark.usefixtures("patch_sample2")
-    def test_reserve_success2(self, exp_config, hacked_exp, random_dt):
-        """Successfully find new trials in db and reserve one at 'random'.
+            cfg.trials[1]['status'] = 'reserved'
+            cfg.trials[1]['start_time'] = random_dt
+            cfg.trials[1]['heartbeat'] = random_dt
 
-        Version that start_time does not get written, because the selected trial
-        was not a 'new' one.
-        """
-        trial = hacked_exp.reserve_trial()
-        exp_config[1][6]['status'] = 'reserved'
-        exp_config[1][6]['heartbeat'] = random_dt
-        assert trial.to_dict() == exp_config[1][6]
+            assert trial.to_dict() == cfg.trials[1]
 
-    @pytest.mark.usefixtures("patch_sample_concurrent")
-    def test_reserve_race_condition(self, exp_config, hacked_exp, random_dt):
-        """Get its trials reserved before by another process once."""
-        trial = hacked_exp.reserve_trial()
-        exp_config[1][4]['status'] = 'reserved'
-        exp_config[1][4]['start_time'] = random_dt
-        exp_config[1][4]['heartbeat'] = random_dt
-        assert trial.to_dict() == exp_config[1][4]
+    def test_reserve_when_exhausted(self, exp_config, hacked_exp):
+        """Return None once all the trials have been allocated"""
+        for _ in range(10):
+            trial = hacked_exp.reserve_trial()
 
-    @pytest.mark.usefixtures("patch_sample_concurrent2")
-    def test_reserve_dead_race_condition(self, exp_config, hacked_exp):
-        """Always get its trials reserved before by another process."""
-        trial = hacked_exp.reserve_trial()
         assert trial is None
-
-    def test_reserve_with_uncallable_score(self, hacked_exp):
-        """Reserve with a score object that cannot do its job."""
-        with pytest.raises(ValueError):
-            hacked_exp.reserve_trial(score_handle='asfa')
-
-    def fake_handle(self, xxx):
-        """Fake score handle for testing."""
-        self.times_called += 1
-        return self.times_called
-
-    def test_reserve_with_score(self, hacked_exp, exp_config, random_dt):
-        """Reserve with a score object that can do its job."""
-        self.times_called = 0
-        hacked_exp.configure(exp_config[0][3])
-        trial = hacked_exp.reserve_trial(score_handle=self.fake_handle)
-        exp_config[1][6]['status'] = 'reserved'
-        exp_config[1][6]['heartbeat'] = random_dt
-        assert trial.to_dict() == exp_config[1][6]
 
     def test_fix_lost_trials(self, hacked_exp, random_dt):
         """Test that a running trial with an old heartbeat is set to interrupted."""
@@ -669,21 +713,19 @@ class TestReserveTrial(object):
         trial = hacked_exp.fetch_trials(exp_query)[0]
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        Database().write('trials', {'status': 'reserved', 'heartbeat': heartbeat},
-                         {'experiment': hacked_exp.id, '_id': trial.id})
+        get_storage().set_trial_status(trial, status='reserved', heartbeat=heartbeat)
 
-        exp_query['status'] = 'reserved'
-        exp_query['_id'] = trial.id
+        def fetch_trials(status='reserved'):
+            trials = hacked_exp.fetch_trials_by_status(status)
+            return list(filter(lambda new_trial: new_trial.id in [trial.id], trials))
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+        assert len(fetch_trials()) == 1
 
         hacked_exp.fix_lost_trials()
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 0
+        assert len(fetch_trials()) == 0
 
-        exp_query['status'] = 'interrupted'
-
-        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+        assert len(fetch_trials('interrupted')) == 1
 
     def test_fix_only_lost_trials(self, hacked_exp, random_dt):
         """Test that an old trial is set to interrupted but not a recent one."""
@@ -694,23 +736,22 @@ class TestReserveTrial(object):
 
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        Database().write('trials', {'status': 'reserved', 'heartbeat': heartbeat},
-                         {'experiment': hacked_exp.id, '_id': lost.id})
-        Database().write('trials', {'status': 'reserved', 'heartbeat': random_dt},
-                         {'experiment': hacked_exp.id, '_id': not_lost.id})
+        get_storage().set_trial_status(lost, status='reserved', heartbeat=heartbeat)
+        get_storage().set_trial_status(not_lost, status='reserved', heartbeat=random_dt)
 
-        exp_query['status'] = 'reserved'
-        exp_query['_id'] = {'$in': [lost.id, not_lost.id]}
+        def fetch_trials():
+            trials = hacked_exp.fetch_trials_by_status('reserved')
+            return list(filter(lambda trial: trial.id in [lost.id, not_lost.id], trials))
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 2
+        assert len(fetch_trials()) == 2
 
         hacked_exp.fix_lost_trials()
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+        assert len(fetch_trials()) == 1
 
         exp_query['status'] = 'interrupted'
 
-        assert len(hacked_exp.fetch_trials(exp_query)) == 1
+        assert len(fetch_trials()) == 1
 
     def test_fix_lost_trials_race_condition(self, hacked_exp, random_dt, monkeypatch):
         """Test that a lost trial fixed by a concurrent process does not cause error."""
@@ -718,8 +759,7 @@ class TestReserveTrial(object):
         trial = hacked_exp.fetch_trials(exp_query)[0]
         heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-        Database().write('trials', {'status': 'interrupted', 'heartbeat': heartbeat},
-                         {'experiment': hacked_exp.id, '_id': trial.id})
+        get_storage().set_trial_status(trial, status='interrupted', heartbeat=heartbeat)
 
         assert hacked_exp.fetch_trials(exp_query)[0].status == 'interrupted'
 
@@ -731,8 +771,31 @@ class TestReserveTrial(object):
             m.setattr(hacked_exp.__class__, 'fetch_trials', fetch_lost_trials)
             hacked_exp.fix_lost_trials()
 
+    def test_fix_lost_trials_configurable_hb(self, hacked_exp, random_dt):
+        """Test that heartbeat is correctly being configured."""
+        exp_query = {'experiment': hacked_exp.id}
+        trial = hacked_exp.fetch_trials(exp_query)[0]
+        old_heartbeat_value = orion.core.config.worker.heartbeat
+        heartbeat = random_dt - datetime.timedelta(seconds=180)
 
-@pytest.mark.usefixtures("patch_sample")
+        get_storage().set_trial_status(trial,
+                                       status='reserved',
+                                       heartbeat=heartbeat)
+
+        trials = get_storage().fetch_trial_by_status(hacked_exp, 'reserved')
+
+        assert trial.id in [t.id for t in trials]
+
+        orion.core.config.worker.heartbeat = 210
+        hacked_exp.fix_lost_trials()
+
+        trials = get_storage().fetch_trial_by_status(hacked_exp, 'reserved')
+
+        assert trial.id in [t.id for t in trials]
+
+        orion.core.config.worker.heartbeat = old_heartbeat_value
+
+
 def test_update_completed_trial(hacked_exp, database, random_dt):
     """Successfully push a completed trial into database."""
     trial = hacked_exp.reserve_trial()
@@ -796,16 +859,6 @@ def test_fetch_all_trials(hacked_exp, exp_config, random_dt):
         assert trials[i].to_dict() == sorted_exp_config[i]
 
 
-def test_fetch_completed_trials(hacked_exp, exp_config, random_dt):
-    """Fetch a list of the unseen yet completed trials."""
-    trials = hacked_exp.fetch_completed_trials()
-    assert len(trials) == 3
-    # Trials are sorted based on submit time
-    assert trials[0].to_dict() == exp_config[1][0]
-    assert trials[1].to_dict() == exp_config[1][2]
-    assert trials[2].to_dict() == exp_config[1][1]
-
-
 def test_fetch_non_completed_trials(hacked_exp, exp_config):
     """Fetch a list of the trials that are not completed
 
@@ -865,15 +918,30 @@ def test_is_done_property_with_algo(hacked_exp):
 def test_broken_property(hacked_exp):
     """Check experiment stopping conditions for maximum number of broken."""
     assert not hacked_exp.is_broken
-    trials = hacked_exp.fetch_trials({})[:3]
-
-    query = {'experiment': hacked_exp.id}
+    trials = hacked_exp.fetch_trials()[:3]
 
     for trial in trials:
-        query['_id'] = trial.id
-        Database().write('trials', {'status': 'broken'}, query)
+        get_storage().set_trial_status(trial, status='broken')
 
     assert hacked_exp.is_broken
+
+
+def test_configurable_broken_property(hacked_exp):
+    """Check if max_broken changes after configuration."""
+    assert not hacked_exp.is_broken
+    trials = hacked_exp.fetch_trials({})[:3]
+    old_broken_value = orion.core.config.worker.max_broken
+
+    for trial in trials:
+        get_storage().set_trial_status(trial, status='broken')
+
+    assert hacked_exp.is_broken
+
+    orion.core.config.worker.max_broken = 4
+
+    assert not hacked_exp.is_broken
+
+    orion.core.config.worker.max_broken = old_broken_value
 
 
 def test_experiment_stats(hacked_exp, exp_config, random_dt):
@@ -882,7 +950,7 @@ def test_experiment_stats(hacked_exp, exp_config, random_dt):
     assert stats['trials_completed'] == 3
     assert stats['best_trials_id'] == exp_config[1][2]['_id']
     assert stats['best_evaluation'] == 2
-    assert stats['start_time'] == exp_config[0][3]['metadata']['datetime']
+    assert stats['start_time'] == exp_config[0][4]['metadata']['datetime']
     assert stats['finish_time'] == exp_config[1][1]['end_time']
     assert stats['duration'] == stats['finish_time'] - stats['start_time']
     assert len(stats) == 6
@@ -899,18 +967,10 @@ class TestInitExperimentView(object):
         assert ("No experiment with given name 'supernaekei' for user 'tsirif'"
                 in str(exc_info.value))
 
-    @pytest.mark.usefixtures("with_user_bouthilx")
-    def test_empty_experiment_view_due_to_username(self):
-        """Hit exp_name, but user's name does not hit the db, create new entry."""
-        with pytest.raises(ValueError) as exc_info:
-            ExperimentView('supernaedo2')
-        assert ("No experiment with given name 'supernaedo2' for user 'bouthilx'"
-                in str(exc_info.value))
-
     @pytest.mark.usefixtures("with_user_tsirif")
     def test_existing_experiment_view(self, create_db_instance, exp_config):
         """Hit exp_name + user's name in the db, fetch most recent entry."""
-        exp = ExperimentView('supernaedo2')
+        exp = ExperimentView('supernaedo2-dendi')
         assert exp._experiment._init_done is False
 
         assert exp._id == exp_config[0][0]['_id']
@@ -919,6 +979,7 @@ class TestInitExperimentView(object):
         assert exp.metadata == exp_config[0][0]['metadata']
         assert exp.pool_size == exp_config[0][0]['pool_size']
         assert exp.max_trials == exp_config[0][0]['max_trials']
+        assert exp.version == exp_config[0][0]['version']
         # TODO: Views are not fully configured until configuration is refactored
         # assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
 
@@ -974,7 +1035,7 @@ def test_fetch_completed_trials_from_view(hacked_exp, exp_config, random_dt):
     experiment_view = ExperimentView(hacked_exp.name)
     experiment_view._experiment = hacked_exp
 
-    trials = experiment_view.fetch_completed_trials()
+    trials = experiment_view.fetch_trials_by_status('completed')
     assert len(trials) == 3
     assert trials[0].to_dict() == exp_config[1][0]
     assert trials[1].to_dict() == exp_config[1][2]
@@ -1025,7 +1086,7 @@ def test_experiment_view_stats(hacked_exp, exp_config, random_dt):
     assert stats['trials_completed'] == 3
     assert stats['best_trials_id'] == exp_config[1][2]['_id']
     assert stats['best_evaluation'] == 2
-    assert stats['start_time'] == exp_config[0][3]['metadata']['datetime']
+    assert stats['start_time'] == exp_config[0][4]['metadata']['datetime']
     assert stats['finish_time'] == exp_config[1][1]['end_time']
     assert stats['duration'] == stats['finish_time'] - stats['start_time']
     assert len(stats) == 6
@@ -1033,13 +1094,14 @@ def test_experiment_view_stats(hacked_exp, exp_config, random_dt):
 
 @pytest.mark.usefixtures("with_user_tsirif")
 def test_experiment_view_protocol_read_only():
-    """Verify that wrapper experiments' database is read-only"""
+    """Verify that wrapper experiments' protocol is read-only"""
     exp = ExperimentView('supernaedo2')
 
-    # Test that _protocol.update_trials indeed exists
-    exp._experiment._storage._storage.update_trial
+    # Test that _protocol.set_trial_status indeed exists
+    exp._experiment._storage._storage.set_trial_status
+
     with pytest.raises(AttributeError):
-        exp._experiment._storage.update_trial
+        exp._experiment._storage.set_trial_status
 
 
 class TestInitExperimentWithEVC(object):
@@ -1062,6 +1124,7 @@ class TestInitExperimentWithEVC(object):
         assert exp.metadata == exp_config[0][4]['metadata']
         assert exp.pool_size is None
         assert exp.max_trials is None
+        assert exp.version == 1
         assert exp.configuration['algorithms'] == {'random': {'seed': None}}
 
     @pytest.mark.usefixtures("with_user_tsirif")
@@ -1078,18 +1141,25 @@ class TestInitExperimentWithEVC(object):
         assert exp.metadata == exp_config[0][4]['metadata']
         assert exp.pool_size == 2
         assert exp.max_trials == 1000
+        assert exp.version == 1
         assert exp.configuration['algorithms'] == {'random': {'seed': None}}
 
     @pytest.mark.usefixtures("with_user_tsirif")
     def test_experiment_non_interactive_branching(self, create_db_instance, random_dt, exp_config,
                                                   monkeypatch):
         """Configure an existing experiment with parent."""
-        monkeypatch.setattr('sys.__stdin__.isatty', lambda: True)
-        exp = Experiment('supernaedo2.1')
-        exp.algorithms = {'dumbalgo': {}}
-        with pytest.raises(OSError):
-            exp.configure(exp.configuration)
-        monkeypatch.undo()
+        def _patch_fetch(config):
+            return {'manual_resolution': True}
+
+        monkeypatch.setattr(orion.core.worker.experiment,
+                            "fetch_branching_configuration", _patch_fetch)
+        with monkeypatch.context() as ctx:
+            ctx.setattr('sys.__stdin__.isatty', lambda: True)
+            exp = Experiment('supernaedo2.1')
+            exp.algorithms = {'dumbalgo': {}}
+            with pytest.raises(OSError):
+                exp.configure(exp.configuration)
+
         with pytest.raises(ValueError) as exc_info:
             exp.configure(exp.configuration)
         assert "Configuration is different and generates a branching" in str(exc_info.value)

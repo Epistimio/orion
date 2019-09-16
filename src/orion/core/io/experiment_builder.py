@@ -18,7 +18,7 @@ hierarchy. From the more global to the more specific, there is:
 
 1. Global configuration:
 
-  Defined by `src.orion.core.io.resolve_config.DEF_CONFIG_FILES_PATHS`.
+  Defined by `orion.core.DEF_CONFIG_FILES_PATHS`.
   Can be scattered in user file system, defaults could look like:
 
     - `/some/path/to/.virtualenvs/orion/share/orion.core`
@@ -28,8 +28,8 @@ hierarchy. From the more global to the more specific, there is:
   Note that some variables have default value even if user do not defined them in global
   configuration:
 
-    - `max_trials = src.orion.core.io.resolve_config.DEF_CMD_MAX_TRIALS`
-    - `pool_size = src.orion.core.io.resolve_config.DEF_CMD_POOL_SIZE`
+    - `max_trials = orion.core.io.resolve_config.DEF_CMD_MAX_TRIALS`
+    - `pool_size = orion.core.io.resolve_config.DEF_CMD_POOL_SIZE`
     - `algorithms = random`
     - Database specific:
 
@@ -90,14 +90,16 @@ import copy
 import logging
 
 from orion.core.io import resolve_config
-from orion.core.io.database import Database, DuplicateKeyError
-from orion.core.utils.exceptions import NoConfigurationError
+from orion.core.io.database import DuplicateKeyError
+from orion.core.utils.exceptions import NoConfigurationError, RaceCondition
 from orion.core.worker.experiment import Experiment, ExperimentView
+from orion.storage.base import Storage
 
 
 log = logging.getLogger(__name__)
 
 
+# pylint: disable=too-many-public-methods
 class ExperimentBuilder(object):
     """Builder for :class:`orion.core.worker.experiment.Experiment`
     and :class:`orion.core.worker.experiment.ExperimentView`
@@ -128,10 +130,11 @@ class ExperimentBuilder(object):
     def fetch_config_from_db(self, cmdargs):
         """Get dictionary of options from experiment found in the database
 
-        Note
-        ----
+        Notes
+        -----
             This method builds an experiment view in the background to fetch the configuration from
             the database.
+
         """
         try:
             experiment_view = self.build_view_from(cmdargs)
@@ -161,8 +164,8 @@ class ExperimentBuilder(object):
         use_db: bool
             Use experiment configuration found in database if True. Defaults to True.
 
-        Note
-        ----
+        Notes
+        -----
             This method builds an experiment view in the background to fetch the configuration from
             the database.
 
@@ -202,7 +205,7 @@ class ExperimentBuilder(object):
         """
         local_config = self.fetch_full_config(cmdargs, use_db=False)
 
-        self.setup_database(local_config)
+        self.setup_storage(local_config)
 
         # Information should be enough to infer experiment's name.
         exp_name = local_config['name']
@@ -211,9 +214,12 @@ class ExperimentBuilder(object):
                                "Please use either `name` cmd line arg or provide "
                                "one in orion's configuration file.")
 
-        return ExperimentView(local_config["name"], local_config.get('user', None))
+        name = local_config['name']
+        user = local_config.get('user', None)
+        version = local_config.get('version', None)
+        return ExperimentView(name, user=user, version=version)
 
-    def build_from(self, cmdargs):
+    def build_from(self, cmdargs, handle_racecondition=True):
         """Build a fully configured (and writable) experiment based on full configuration.
 
         .. seealso::
@@ -230,13 +236,14 @@ class ExperimentBuilder(object):
 
         try:
             experiment = self.build_from_config(full_config)
-        except DuplicateKeyError:
-            # Fails if concurrent experiment with identical (name, metadata.user)
+        except (DuplicateKeyError, RaceCondition):
+            # Fails if concurrent experiment with identical (name, version)
             # is written first in the database.
             # Next build_from(cmdargs) should either load experiment from database
             # and run smoothly if identical or trigger an experiment fork.
             # In other words, there should not be more than 1 level of recursion.
-            experiment = self.build_from(cmdargs)
+            if handle_racecondition:
+                experiment = self.build_from(cmdargs, handle_racecondition=False)
 
         return experiment
 
@@ -257,7 +264,8 @@ class ExperimentBuilder(object):
         config.pop('database', None)
         config.pop('resources', None)
 
-        experiment = Experiment(config['name'], config.get('user', None))
+        experiment = Experiment(config['name'], config.get('user', None),
+                                config.get('version', None))
 
         # Finish experiment's configuration and write it to database.
         try:
@@ -268,8 +276,8 @@ class ExperimentBuilder(object):
 
         return experiment
 
-    def setup_database(self, config):
-        """Create the Database instance from a configuration.
+    def setup_storage(self, config):
+        """Create the storage instance from a configuration.
 
         Parameters
         ----------
@@ -277,15 +285,13 @@ class ExperimentBuilder(object):
             Configuration for the database.
 
         """
-        db_opts = config['database']
+        # TODO: Fix this in config refactoring
+        db_opts = config.get('protocol', {'type': 'legacy'})
         dbtype = db_opts.pop('type')
-
-        if config.get("debug"):
-            dbtype = "EphemeralDB"
 
         log.debug("Creating %s database client with args: %s", dbtype, db_opts)
         try:
-            Database(of_type=dbtype, **db_opts)
+            Storage(of_type=dbtype, config=config, **db_opts)
         except ValueError:
-            if Database().__class__.__name__.lower() != dbtype.lower():
+            if Storage().__class__.__name__.lower() != dbtype.lower():
                 raise

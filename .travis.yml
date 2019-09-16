@@ -56,11 +56,12 @@ before_install: |
     pyenv install $PYTHON
     export PYENV_VERSION=$PYTHON
     export PATH="/Users/travis/.pyenv/shims:${PATH}"
-    pyenv-virtualenv venv
-    source venv/bin/activate
+    pyenv virtualenv venv
+    pyenv activate venv
     python --version
-    brew install mongodb
-    brew services start mongodb
+    brew tap mongodb/brew
+    brew install mongodb-community
+    brew services start mongodb-community
   fi
 
 install:

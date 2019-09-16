@@ -1,19 +1,17 @@
 # Roadmap
-Last update July 5th, 2019
+Last update August 26th, 2019
 
 ## Next releases - Short-Term
-
-### v0.1.6
-
-#### Auto-resolution of EVC
-
-Make branching events automatically solved with sane defaults.
 
 ### v0.1.7
 
 #### Preliminary Python API
-
 Library API to simplify usage of algorithms without Oríon's worker.
+
+#### Journal Protocol Plugins
+Offering:
+- no need to setup DB, can use one's existing backend
+- Can re-use tools provided by backend for visualizations, etc.
 
 ## Next releases - Mid-Term
 

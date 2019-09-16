@@ -12,6 +12,7 @@ import orion.core.cli
 from orion.core.io.database import Database
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.worker.trial import Trial
+from orion.storage.base import get_storage
 
 
 class DumbAlgo(BaseAlgorithm):
@@ -126,14 +127,15 @@ def only_experiments_db(clean_db, database, exp_config):
     database.experiments.insert_many(exp_config[0])
 
 
-def ensure_deterministic_id(name, db_instance, update=None):
+def ensure_deterministic_id(name, db_instance, version=1, update=None):
     """Change the id of experiment to its name."""
-    experiment = db_instance.read('experiments', {'name': name})[0]
+    experiment = db_instance.read('experiments', {'name': name, 'version': version})[0]
     db_instance.remove('experiments', {'_id': experiment['_id']})
-    experiment['_id'] = name
+    _id = name + "_" + str(version)
+    experiment['_id'] = _id
 
     if experiment['refers']['parent_id'] is None:
-        experiment['refers']['root_id'] = name
+        experiment['refers']['root_id'] = _id
 
     if update is not None:
         experiment.update(update)
@@ -146,9 +148,40 @@ def ensure_deterministic_id(name, db_instance, update=None):
 def one_experiment(monkeypatch, db_instance):
     """Create an experiment without trials."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(['init_only', '-n', 'test_single_exp',
+    name = 'test_single_exp'
+    orion.core.cli.main(['init_only', '-n', name,
                          './black_box.py', '--x~uniform(0,1)'])
-    ensure_deterministic_id('test_single_exp', db_instance)
+    ensure_deterministic_id(name, db_instance)
+    return get_storage().fetch_experiments({'name': name})[0]
+
+
+@pytest.fixture
+def one_experiment_changed_vcs(one_experiment):
+    """Create an experiment without trials."""
+    experiment = ExperimentBuilder().build_from({'name': one_experiment['name']})
+
+    experiment.metadata['VCS'] = {
+        'type': 'git', 'is_dirty': False, 'HEAD_sha': 'new', 'active_branch': 'master',
+        'diff_sha': None}
+
+    get_storage().update_experiment(experiment, metadata=experiment.metadata)
+
+
+@pytest.fixture
+def one_experiment_no_version(monkeypatch, one_experiment):
+    """Create an experiment without trials."""
+    one_experiment['name'] = one_experiment['name'] + '-no-version'
+    one_experiment.pop('version')
+
+    def fetch_without_version(query, selection=None):
+        if query.get('name') == one_experiment['name'] or query == {}:
+            return [one_experiment]
+
+        return []
+
+    monkeypatch.setattr(get_storage(), 'fetch_experiments', fetch_without_version)
+
+    return one_experiment
 
 
 @pytest.fixture
@@ -294,3 +327,42 @@ def three_family_branch_with_trials(three_experiments_family_branch, family_with
         trial = Trial(experiment=exp.id, params=[x, y, z], status=status)
         x_value += 1
         Database().write('trials', trial.to_dict())
+
+
+@pytest.fixture
+def two_experiments_same_name(one_experiment, db_instance):
+    """Create two experiments with the same name but different versions."""
+    orion.core.cli.main(['init_only', '-n', 'test_single_exp',
+                         './black_box.py', '--x~uniform(0,1)', '--y~+normal(0,1)'])
+    ensure_deterministic_id('test_single_exp', db_instance, version=2)
+
+
+@pytest.fixture
+def three_experiments_family_same_name(two_experiments_same_name, db_instance):
+    """Create three experiments, two of them with the same name but different versions and one
+    with a child.
+    """
+    orion.core.cli.main(['init_only', '-n', 'test_single_exp', '-v', '1', '-b',
+                         'test_single_exp_child', './black_box.py', '--x~uniform(0,1)',
+                         '--y~+normal(0,1)'])
+    ensure_deterministic_id('test_single_exp_child', db_instance)
+
+
+@pytest.fixture
+def three_experiments_branch_same_name(two_experiments_same_name, db_instance):
+    """Create three experiments, two of them with the same name but different versions and last one
+    with a child.
+    """
+    orion.core.cli.main(['init_only', '-n', 'test_single_exp', '-b',
+                         'test_single_exp_child', './black_box.py', '--x~uniform(0,1)',
+                         '--y~normal(0,1)', '--z~+normal(0,1)'])
+    ensure_deterministic_id('test_single_exp_child', db_instance)
+
+
+@pytest.fixture
+def three_experiments_same_name(two_experiments_same_name, db_instance):
+    """Create three experiments with the same name but different versions."""
+    orion.core.cli.main(['init_only', '-n', 'test_single_exp',
+                         './black_box.py', '--x~uniform(0,1)', '--y~normal(0,1)',
+                         '--z~+normal(0,1)'])
+    ensure_deterministic_id('test_single_exp', db_instance, version=3)

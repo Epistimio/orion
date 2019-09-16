@@ -19,6 +19,7 @@ import logging
 from orion.core.utils import (AbstractSingletonType, SingletonFactory)
 
 
+# pylint: disable=too-many-public-methods
 class AbstractDB(object, metaclass=AbstractSingletonType):
     """Base class for database framework wrappers.
 
@@ -105,6 +106,38 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
 
         """
         pass
+
+    @abstractmethod
+    def index_information(self, collection_name):
+        """Return dict of names and sorting order of indexes
+
+        Paramaters
+        ----------
+        collection_name : str
+           A collection inside database, a table.
+
+        Returns
+        -------
+        dict
+            Dictionary of indexes where each key is the name in the format {name}_{order}
+            and each value represents whether the index is unique.
+
+        """
+        return self._db[collection_name].index_information()
+
+    @abstractmethod
+    def drop_index(self, collection_name, name):
+        """Remove index from the database
+
+        Paramaters
+        ----------
+        collection_name : str
+           A collection inside database, a table.
+        name: str
+            Index name in the format {name}_{order}
+
+        """
+        self._db[collection_name].drop_index(name)
 
     @abstractmethod
     def write(self, collection_name, data, query=None):

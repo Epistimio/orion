@@ -51,6 +51,9 @@ def add_subparser(parser):
              "This is useful if many workers are executed in parallel and the algorithm has a "
              "strategy to sample non-independant trials simultaneously. Otherwise, it is better "
              "to leave `pool_size` to 1 and set a Strategy for Oríon's producer. "
+             "Note that this option is not usefull useless you "
+             "know the algorithm have a strategy to produce multiple trials "
+             "simultaneously. If you have any doubt, leave it to 1. "
              "(default: %s)" % resolve_config.DEF_CMD_POOL_SIZE[1])
 
     evc_cli.get_branching_args_group(hunt_parser)

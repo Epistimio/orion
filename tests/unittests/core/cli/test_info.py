@@ -6,8 +6,9 @@ import itertools
 import pytest
 
 from orion.core.cli.info import (
-    format_algorithm, format_commandline, format_config, format_dict, format_info, format_list,
-    format_metadata, format_refers, format_space, format_stats, format_title, get_trial_params)
+    format_algorithm, format_commandline, format_config, format_dict, format_identification,
+    format_info, format_list, format_metadata, format_refers, format_space, format_stats,
+    format_title, get_trial_params)
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.trial import Trial
 
@@ -362,6 +363,21 @@ def test_format_dict_with_list(dummy_list_of_objects):
 """
 
 
+def test_format_identification():
+    """Test commandline section formatting"""
+    experiment = DummyExperiment()
+    experiment.name = "test"
+    experiment.version = 1
+    experiment.metadata = {'user': 'corneauf'}
+    assert format_identification(experiment) == """\
+Identification
+==============
+name: test
+version: 1
+user: corneauf
+"""
+
+
 def test_format_commandline():
     """Test commandline section formatting"""
     experiment = DummyExperiment()
@@ -413,8 +429,8 @@ def test_format_space():
     assert format_space(experiment) == """\
 Space
 =====
-/some: choices(['random', 'or', 'not'])
 /command: uniform(0, 1)
+/some: choices(['random', 'or', 'not'])
 """
 
 
@@ -424,13 +440,25 @@ def test_format_metadata():
     experiment.metadata = dict(
         user='user',
         datetime='now',
-        orion_version='1.0.1')
+        orion_version='1.0.1',
+        VCS=dict(
+            HEAD_sha='sha',
+            active_branch='branch',
+            diff_sha='smt',
+            is_dirty=True,
+            type='git'))
     assert format_metadata(experiment) == """\
 Meta-data
 =========
 user: user
 datetime: now
 orion version: 1.0.1
+VCS:
+  HEAD_sha: sha
+  active_branch: branch
+  diff_sha: smt
+  is_dirty: True
+  type: git
 """
 
 
@@ -494,14 +522,14 @@ adapter:
 def test_get_trial_params_empty():
     """Test failing to fetch trials does not fail"""
     experiment = DummyExperiment()
-    experiment.fetch_trials = lambda query: []
+    experiment.get_trial = lambda trial=None, uid=None: None
     assert get_trial_params(None, experiment) == {}
 
 
 def test_get_trial_params(dummy_trial):
     """Test params are converted properly to a dict."""
     experiment = DummyExperiment()
-    experiment.fetch_trials = lambda query: [dummy_trial]
+    experiment.get_trial = lambda trial=None, uid=None: dummy_trial
     params = get_trial_params(None, experiment)
     assert params['a'] == 0.0
     assert params['b'] == 1
@@ -518,16 +546,18 @@ def test_format_stats(dummy_trial):
         start_time='yesterday',
         finish_time='now',
         duration='way too long')
-    experiment.fetch_trials = lambda query: [dummy_trial]
+    experiment.get_trial = lambda trial=None, uid=None: dummy_trial
     assert format_stats(experiment) == """\
 Stats
 =====
 trials completed: 10
 best trial:
-  a: 0.0
-  b: 1
-  c: Some
-best evaluation: 0.1
+  id: dummy
+  evaluation: 0.1
+  params:
+    a: 0.0
+    b: 1
+    c: Some
 start time: yesterday
 finish time: now
 duration: way too long
@@ -539,6 +569,8 @@ def test_format_info(algorithm_dict, dummy_trial):
     experiment = DummyExperiment()
     commandline = ['executing.sh', '--some~choices(["random", "or", "not"])',
                    '--command~uniform(0, 1)']
+    experiment.name = 'test'
+    experiment.version = 1
     experiment.metadata = {'user_args': commandline}
     experiment.pool_size = 10
     experiment.max_trials = 100
@@ -549,7 +581,13 @@ def test_format_info(algorithm_dict, dummy_trial):
     experiment.metadata.update(dict(
         user='user',
         datetime='now',
-        orion_version='1.0.1'))
+        orion_version='1.0.1',
+        VCS=dict(
+            HEAD_sha='sha',
+            active_branch='branch',
+            diff_sha='smt',
+            is_dirty=True,
+            type='git')))
 
     ROOT_NAME = 'root-name'
     PARENT_NAME = 'parent-name'
@@ -577,9 +615,16 @@ def test_format_info(algorithm_dict, dummy_trial):
         start_time='yesterday',
         finish_time='now',
         duration='way too long')
-    experiment.fetch_trials = lambda query: [dummy_trial]
+    experiment.get_trial = lambda trial=None, uid=None: dummy_trial
 
     assert format_info(experiment) == """\
+Identification
+==============
+name: test
+version: 1
+user: user
+
+
 Commandline
 ===========
 executing.sh --some~choices(["random", "or", "not"]) --command~uniform(0, 1)
@@ -603,8 +648,8 @@ bayesianoptimizer:
 
 Space
 =====
-/some: choices(['random', 'or', 'not'])
 /command: uniform(0, 1)
+/some: choices(['random', 'or', 'not'])
 
 
 Meta-data
@@ -612,6 +657,12 @@ Meta-data
 user: user
 datetime: now
 orion version: 1.0.1
+VCS:
+  HEAD_sha: sha
+  active_branch: branch
+  diff_sha: smt
+  is_dirty: True
+  type: git
 
 
 Parent experiment
@@ -627,10 +678,12 @@ Stats
 =====
 trials completed: 10
 best trial:
-  a: 0.0
-  b: 1
-  c: Some
-best evaluation: 0.1
+  id: dummy
+  evaluation: 0.1
+  params:
+    a: 0.0
+    b: 1
+    c: Some
 start time: yesterday
 finish time: now
 duration: way too long
