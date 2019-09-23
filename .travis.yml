@@ -37,7 +37,13 @@ jobs:
         dist: xenial
         sudo: true
       - <<: *test
-        env: TOXENV=demo_random
+        env: TOXENV=demo-random
+        python: 3.6
+      - <<: *test
+        env: TOXENV=backward-compatibility, ORION_DB_TYPE=mongodb
+        python: 3.6
+      - <<: *test
+        env: TOXENV=backward-compatibility, ORION_DB_TYPE=pickleddb
         python: 3.6
       - stage: packaging
         env: TOXENV=packaging
