@@ -42,18 +42,16 @@ def main(args):
     operations_stage = OperationsStage(creation_stage)
     stages = [presence_stage, creation_stage, operations_stage]
 
-    try:
-        for stage in stages:
-            for check in stage.checks():
-                print(check.__doc__, end='.. ')
+    for stage in stages:
+        for check in stage.checks():
+            print(check.__doc__, end='.. ')
+            try:
                 status, msg = check()
                 print(status)
-
                 if status == "Skipping":
                     print(msg)
+            except CheckError as ex:
+                print("Failure")
+                print(ex)
 
-            stage.post_stage()
-
-    except CheckError as ex:
-        print("Failure")
-        print(ex)
+        stage.post_stage()
