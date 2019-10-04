@@ -585,9 +585,10 @@ class Experiment:
 
             setattr(self, section, value)
 
+        # TODO: Can we get rid of this try-except clause?
         try:
             space_builder = SpaceBuilder()
-            space = space_builder.build_from(config['metadata']['user_args'])
+            space = space_builder.build(config['metadata']['priors'])
 
             if not space:
                 raise ValueError("Parameter space is empty. There is nothing to optimize.")

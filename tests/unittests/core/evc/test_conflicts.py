@@ -9,6 +9,7 @@ import pytest
 from orion.algo.space import Dimension
 from orion.core import evc
 from orion.core.evc import conflicts as conflict
+from orion.core.utils.tests import populate_parser_fields
 
 
 @pytest.fixture
@@ -327,6 +328,9 @@ class TestScriptConfigConflict(object):
         old_config = {'metadata': {'user_args': yaml_config}}
         new_config = {'metadata': {'user_args': yaml_diff_config}}
 
+        populate_parser_fields(old_config)
+        populate_parser_fields(new_config)
+
         conflicts = list(conflict.ScriptConfigConflict.detect(old_config, new_config))
         assert len(conflicts) == 1
 
@@ -334,6 +338,9 @@ class TestScriptConfigConflict(object):
         """Test that identical configs are not detected as conflict."""
         old_config = {'metadata': {'user_args': yaml_config}}
         new_config = {'metadata': {'user_args': yaml_config + ['--other', 'args']}}
+
+        populate_parser_fields(old_config)
+        populate_parser_fields(new_config)
 
         assert list(conflict.ScriptConfigConflict.detect(old_config, new_config)) == []
 

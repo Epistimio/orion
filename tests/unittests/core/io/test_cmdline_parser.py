@@ -59,11 +59,11 @@ def test_parse_paths(monkeypatch):
 def test_parse_arguments(basic_config):
     """Test the parsing of the commandline arguments"""
     cmdline_parser = CmdlineParser()
-    cmdline_parser._parse_arguments(
+    arguments = cmdline_parser._parse_arguments(
         "python script.py some pos args --with args --and multiple args "
         "--plus --booleans --equal=value".split(" "))
 
-    assert cmdline_parser.arguments == basic_config
+    assert arguments == basic_config
 
 
 def test_parse_arguments_template():
@@ -86,7 +86,9 @@ def test_format(to_format):
 
     cmdline_parser.parse(to_format.split(' '))
 
-    formatted = cmdline_parser.format(cmdline_parser.arguments)
+    arguments = cmdline_parser._parse_arguments(to_format.split(' '))
+
+    formatted = cmdline_parser.format(arguments)
 
     assert formatted == to_format.split(' ')
 
@@ -116,3 +118,28 @@ def test_has_already_been_parsed():
         cmdline_parser.parse(command.split(' '))
 
     assert "already" in str(exc_info.value)
+
+
+def test_get_state_dict():
+    """Test getting state dict."""
+    cmdline_parser = CmdlineParser()
+
+    cmdline_parser.parse(
+        "python script.py some pos args "
+        "--with args --and multiple args --plus --booleans --equal=value".split(" "))
+
+    assert cmdline_parser.get_state_dict() == {
+        'arguments': list(map(list, cmdline_parser.arguments.items())),
+        'template': cmdline_parser.template}
+
+
+def test_set_state_dict():
+    """Test that set_state_dict sets state properly to generate new cmdline."""
+    cmdline_parser = CmdlineParser()
+
+    cmdline_parser.set_state_dict({
+        'arguments': {},
+        'template': ['{_pos_0}', '{_pos_1}', '--with', '{with}', '--plus', '--booleans']})
+
+    assert cmdline_parser.format({'_pos_0': 'voici', '_pos_1': 'voila', 'with': 'classe'}) == [
+        'voici', 'voila', '--with', 'classe', '--plus', '--booleans']

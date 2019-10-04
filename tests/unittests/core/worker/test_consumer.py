@@ -10,6 +10,7 @@ import pytest
 
 from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.format_trials import tuple_to_trial
+from orion.core.utils.tests import populate_parser_fields
 import orion.core.worker.consumer as consumer
 
 
@@ -23,6 +24,7 @@ def config(exp_config):
     config['metadata']['user_args'] = ['--x~uniform(-50, 50)']
     config['name'] = 'exp'
     config['working_dir'] = "/tmp/orion"
+    populate_parser_fields(config)
     return config
 
 

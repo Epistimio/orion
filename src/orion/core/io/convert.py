@@ -21,7 +21,7 @@ files, regardless of their type, according to predefined Oríon's markers.
 
 """
 from abc import (ABC, abstractmethod)
-from collections import (defaultdict, deque)
+from collections import deque
 import importlib
 import os
 
@@ -56,6 +56,15 @@ class BaseConverter(ABC):
     """
 
     file_extensions = []
+
+    # pylint:disable=no-self-use
+    def get_state_dict(self):
+        """Give state dict that can be used to reconstruct the converter"""
+        return {}
+
+    def set_state_dict(self, state):
+        """Reset the converter based on previous state"""
+        pass
 
     @abstractmethod
     def parse(self, filepath):
@@ -155,8 +164,23 @@ class GenericConverter(BaseConverter):
         self.regex = self.re_module.compile(regex)
         self.expression_prefix = expression_prefix
         self.template = None
-        self.has_leading = defaultdict(str)
+        self.has_leading = dict()
         self.conflict_msg = "Namespace conflict in configuration file '{}', under '{}'"
+
+    def get_state_dict(self):
+        """Give state dict that can be used to reconstruct the converter"""
+        return dict(
+            regex=self.regex.pattern,
+            expression_prefix=self.expression_prefix,
+            template=self.template,
+            has_leading=self.has_leading)
+
+    def set_state_dict(self, state):
+        """Reset the converter based on previous state"""
+        self.regex = self.re_module.compile(state['regex'])
+        self.expression_prefix = state['expression_prefix']
+        self.template = state['template']
+        self.has_leading = state['has_leading']
 
     def _raise_conflict(self, path, namespace):
         raise ValueError(self.conflict_msg.format(path, namespace))
@@ -242,8 +266,10 @@ class GenericConverter(BaseConverter):
                     stack.append((['/'.join(namespace + [str(k)])], v))
             else:
                 name = namespace[0]
-                unnested_data[self.has_leading[name] + name] = stuff
+                unnested_data[self.has_leading.get(name, '') + name] = stuff
 
+        print(self.template)
+        print(unnested_data)
         document = self.template.format(**unnested_data)
 
         with open(filepath, 'w') as f:
