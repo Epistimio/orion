@@ -86,7 +86,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
 
         Returns
         -------
-        Returns the reserved trial of None if no trials were found
+        Returns the reserved trial or None if no trials were found
 
         """
         raise NotImplementedError()
