@@ -2,6 +2,10 @@
 Setup Algorithms
 ****************
 
+.. contents::
+   :depth: 2
+   :local:
+
 Default algorithm is a random search based on the probability
 distribution given to a search parameter's definition.
 
@@ -26,6 +30,12 @@ yaml file as shown above with ``learning_rate``.
 
 Included Algorithms
 ===================
+
+.. contents::
+   :depth: 1
+   :local:
+
+.. _random-search:
 
 Random Search
 -------------
@@ -64,10 +74,13 @@ to very optimal resource usage.
 
 The most common way of using ASHA is to reduce the number of epochs,
 but the algorithm is generic and can be applied to any multi-fidelity setting.
-That is, you can use training time, specifying the fidelity with ``--epochs~fidelity()``
-(assuming your script takes this argument in commandline), but you could also use other fidelity
-such as dataset size ``--dataset-size~fidelity()`` (assuming your script takes this argument and
-adapt dataset size accordingly). The placeholder ``fidelity()`` is a special prior for
+That is, you can use training time, specifying the fidelity with
+``--epochs~fidelity(low=1, high=100)``
+(assuming your script takes this argument in commandline),
+but you could also use other fidelity
+such as dataset size ``--dataset-size~fidelity(low=500, high=50000)``
+(assuming your script takes this argument and
+adapt dataset size accordingly). The placeholder ``fidelity(low, high)`` is a special prior for
 multi-fidelity algorithms.
 
 
@@ -83,33 +96,32 @@ Configuration
 
 .. code-block:: yaml
 
-     algorithms:
-        asha:
-           seed: null
-           max_resources: 100
-           grace_period: 1
-           reduction_factor: 4
-           num_brackets: 1
+    algorithms:
+       asha:
+          seed: null
+          num_rungs: null
+          num_brackets: 1
+
+    producer:
+      strategy: StubParallelStrategy
+
+
+.. note::
+
+   Notice the additional ``producer.strategy`` in configuration which is not mandatory for other
+   algorithms. See :ref:`StubParallelStrategy` for more information.
+
 
 ``seed``
 
 Seed for the random number generator used to sample new trials. Default is ``None``.
 
 
-``max_resources``
+``num_rungs``
 
-Maximum amount of resources that will be assigned to trials by ASHA. Only the best
-performing trial will be assigned the maximum amount of resources. Default is 100.
-
-``grace_period``
-
-The minimum number of resources assigned to each trial. Default is 1.
-
-``reduction_factor``
-
-The factor by which ASHA promotes trials. If the reduction factor is 4, it means
-the number of trials from one fidelity level to the next one is roughly divided by 4, and
-each fidelity level has 4 times more resources than the prior one. Default is 4.
+Number of rungs for the largest bracket. If not defined, it will be equal to ``(base + 1)`` of the
+fidelity dimension. In the original paper,
+``num_rungs == log(fidelity.high/fidelity.low) / log(fidelity.base) + 1``.
 
 ``num_brackets``
 
@@ -118,9 +130,10 @@ converging trials that do not lead to best results at convergence (stragglers).
 To overcome this, you can increase the number of brackets, which increases the amount of resources
 required for optimisation but decreases the bias towards stragglers. Default is 1.
 
-
 Algorithm Plugins
 =================
+
+.. _scikit-bayesopt:
 
 Bayesian Optimizer
 ------------------
@@ -210,3 +223,83 @@ True if the target values' mean is expected to differ considerable from
 zero. When enabled, the normalization effectively modifies the GP's
 prior based on the data, which contradicts the likelihood principle;
 normalization is thus disabled per default.
+
+.. _parallel-strategies:
+
+Parallel Strategies
+===================
+
+A parallel strategy is a method to improve parallel optimization
+for sequential algorithms. Such algorithms can only observe
+trials that are completed and have a corresponding objective.
+To get around this, parallel strategies produces *lies*,
+noncompleted trials with fake objectives, which are then
+passed to a temporary copy of the algorithm that will suggest
+a new point. The temporary algorithm is then discarded.
+The original algorithm never obverses lies, and
+the temporary copy always observes lies that are based on
+most up-to-date data.
+The strategies will differ in how they assign objectives
+to the *lies*.
+
+By default, the strategy used is :ref:`MaxParallelStrategy`
+
+NoParallelStrategy
+------------------
+
+Does not return any lie. This is useful to benchmark parallel
+strategies and measure how they can help compared to no
+strategy.
+
+.. _StubParallelStrategy:
+
+StubParallelStrategy
+--------------------
+
+Assign to *lies* an objective of ``None`` so that
+non-completed trials are observed and identifiable by algorithms
+that can leverage parallel optimization.
+
+The value of the objective is customizable with ``stub_value``.
+
+.. code-block:: yaml
+
+    producer:
+      strategy:
+         StubParallelStrategy:
+            stub_value: 'custom value'
+
+.. _MaxParallelStrategy:
+
+MaxParallelStrategy
+-------------------
+
+Assigns to *lies* the best objective observed so far.
+
+The default value assigned to objective when less than 1 trial
+is completed is configurable with ``default_result``. It
+is ``float('inf')`` by default.
+
+.. code-block:: yaml
+
+    producer:
+      strategy:
+         MaxParallelStrategy:
+            default_result: 10000
+
+
+MeanParallelStrategy
+--------------------
+
+Assigns to *lies* the mean of all objectives observed so far.
+
+The default value assigned to objective when less than 2 trials
+are completed is configurable with ``default_result``. It
+is ``float('inf')`` by default.
+
+.. code-block:: yaml
+
+    producer:
+      strategy:
+         MeanParallelStrategy:
+            default_result: 0.5

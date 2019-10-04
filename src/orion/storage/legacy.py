@@ -11,6 +11,7 @@
 import datetime
 import logging
 
+import orion.core
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database
 from orion.core.worker.trial import Trial
@@ -67,6 +68,13 @@ class Legacy(BaseStorageProtocol):
                               [('name', Database.ASCENDING),
                                ('version', Database.ASCENDING)],
                               unique=True)
+
+        # For backward compatibility
+        index_info = self._db.index_information('experiments')
+        for depracated_idx in ['name_1_metadata.user_1', 'name_1_metadata.user_1_version_1']:
+            if depracated_idx in index_info:
+                self._db.drop_index('experiments', depracated_idx)
+
         self._db.ensure_index('experiments', 'metadata.datetime')
 
         self._db.ensure_index('trials', 'experiment')
@@ -184,8 +192,8 @@ class Legacy(BaseStorageProtocol):
 
     def fetch_lost_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_lost_trials`"""
-        # TODO: Configure this
-        threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=60 * 2)
+        heartbeat = orion.core.config.worker.heartbeat
+        threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=heartbeat)
         lte_comparison = {'$lte': threshold}
         query = {
             'experiment': experiment._id,

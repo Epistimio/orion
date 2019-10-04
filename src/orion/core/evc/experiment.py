@@ -91,7 +91,7 @@ class ExperimentNode(TreeNode):
 
             if experiments:
                 parent = experiments[0]
-                exp_node = ExperimentNode(name=parent['name'], version=parent['version'])
+                exp_node = ExperimentNode(name=parent['name'], version=parent.get('version', 1))
                 self.set_parent(exp_node)
         return self._parent
 
@@ -105,13 +105,16 @@ class ExperimentNode(TreeNode):
             may trigger a call to database to build those children live.
 
         """
-        if not self._children and self._no_children_lookup:
+        if self._no_children_lookup:
+            self._children = []
             self._no_children_lookup = False
             query = {'refers.parent_id': self.item.id}
             selection = {'name': 1, 'version': 1}
             experiments = get_storage().fetch_experiments(query, selection)
             for child in experiments:
-                self.add_children(ExperimentNode(name=child['name'], version=child['version']))
+                self.add_children(
+                    ExperimentNode(name=child['name'],
+                                   version=child.get('version', 1)))
 
         return self._children
 

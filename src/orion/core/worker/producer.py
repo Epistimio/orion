@@ -10,7 +10,10 @@
 """
 import copy
 import logging
+import random
+import time
 
+import orion.core
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
 from orion.core.worker.trials_history import TrialsHistory
@@ -27,7 +30,7 @@ class Producer(object):
 
     """
 
-    def __init__(self, experiment, max_attempts=100):
+    def __init__(self, experiment, max_idle_time=None):
         """Initialize a producer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -40,7 +43,9 @@ class Producer(object):
             raise RuntimeError("Experiment object provided to Producer has not yet completed"
                                " initialization.")
         self.algorithm = experiment.algorithms
-        self.max_attempts = max_attempts
+        if max_idle_time is None:
+            max_idle_time = orion.core.config.worker.max_idle_time
+        self.max_idle_time = max_idle_time
         self.strategy = experiment.producer['strategy']
         self.naive_algorithm = None
         # TODO: Move trials_history into PrimaryAlgo during the refactoring of Algorithm with
@@ -53,18 +58,34 @@ class Producer(object):
         """Pool-size of the experiment"""
         return self.experiment.pool_size
 
+    def backoff(self):
+        """Wait some time and update algorithm."""
+        waiting_time = min(0, random.gauss(1, 0.2))
+        log.info('Waiting %d seconds', waiting_time)
+        time.sleep(waiting_time)
+        log.info('Updating algorithm.')
+        self.update()
+
     def produce(self):
         """Create and register new trials."""
         sampled_points = 0
-        n_attempts = 0
 
-        while sampled_points < self.pool_size and n_attempts < self.max_attempts:
-            n_attempts += 1
+        start = time.time()
+        while sampled_points < self.pool_size and not self.algorithm.is_done:
+            if time.time() - start > self.max_idle_time:
+                raise RuntimeError(
+                    "Algorithm could not sample new points in less than {} seconds".format(
+                        self.max_idle_time))
+
             log.debug("### Algorithm suggests new points.")
 
             new_points = self.naive_algorithm.suggest(self.pool_size)
             # Sync state of original algo so that state continues evolving.
             self.algorithm.set_state(self.naive_algorithm.state_dict)
+            if new_points is None:
+                log.info("### Algo opted out.")
+                self.backoff()
+                continue
 
             for new_point in new_points:
                 log.debug("#### Convert point to `Trial` object.")
@@ -75,18 +96,9 @@ class Producer(object):
                     self.experiment.register_trial(new_trial)
                     sampled_points += 1
                 except DuplicateKeyError:
-                    log.debug("#### Duplicate sample. Updating algo to produce new ones.")
-                    self.update()
+                    log.debug("#### Duplicate sample.")
+                    self.backoff()
                     break
-
-        if n_attempts >= self.max_attempts:
-            raise RuntimeError("Looks like the algorithm keeps suggesting trial configurations"
-                               "that already exist in the database. Could be that you reached "
-                               "a point of convergence and the algorithm cannot find anything "
-                               "better. Or... something is broken. Try increasing `max_attempts` "
-                               "or please report this error on "
-                               "https://github.com/epistimio/orion/issues if something looks "
-                               "wrong.")
 
     def update(self):
         """Pull all trials to update model with completed ones and naive model with non completed

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.state` -- Encapsulate Orion state
-========================================================
+:mod:`orion.core.utils.tests` -- Utils for tests
+================================================
 .. module:: state
    :platform: Unix
-   :synopsis: Encapsulate orion state
+   :synopsis: Helper functions for tests
 
 """
 
@@ -14,26 +14,25 @@ import tempfile
 
 import yaml
 
+import orion.core
 from orion.core.io.database import Database
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
+from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.utils import SingletonAlreadyInstantiatedError
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage, Storage
 from orion.storage.legacy import Legacy
-from orion.storage.track import Track
 
 
-def _remove(file_name):
-    if file_name is None:
-        return
-
-    try:
-        os.remove(file_name)
-    except FileNotFoundError:
-        pass
+def populate_parser_fields(config):
+    """Compute parser state and priors based on user_args and populate metadata."""
+    parser = OrionCmdlineParser(orion.core.config.user_script_config)
+    parser.parse(config["metadata"]["user_args"])
+    config["metadata"]["parser"] = parser.get_state_dict()
+    config["metadata"]["priors"] = dict(parser.priors)
 
 
 def _select(lhs, rhs):
@@ -58,16 +57,12 @@ class MockDatetime(datetime.datetime):
 
 def _get_default_test_database():
     """Return default configuration for the test database"""
+    _, filename = tempfile.mkstemp('orion_test')
+
     return {
         'storage_type': 'legacy',
-        'args': {
-            'config': {
-                'database': {
-                    'type': 'PickledDB',
-                    'host': '${file}'
-                }
-            }
-        }
+        'type': 'PickledDB',
+        'host': filename
     }
 
 
@@ -108,14 +103,13 @@ class OrionState:
     """
 
     # TODO: Fix these singletons to remove Legacy, MongoDB, PickledDB and EphemeralDB.
-    SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB, EphemeralDB, Track)
+    SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB, EphemeralDB)
     singletons = {}
     database = None
     experiments = []
     trials = []
     resources = []
     workers = []
-    tempfile = None
 
     def __init__(self, experiments=None, trials=None, workers=None, lies=None, resources=None,
                  from_yaml=None, database=None):
@@ -126,33 +120,24 @@ class OrionState:
                 trials = exp_config[1]
 
         self.database_config = _select(database, _get_default_test_database())
-        self._experiments = _select(experiments, [])
-        self._trials = _select(trials, [])
-        self._workers = _select(workers, [])
-        self._resources = _select(resources, [])
-        self._lies = _select(lies, [])
+        self.experiments = _select(experiments, [])
+        self.trials = _select(trials, [])
+        self.workers = _select(workers, [])
+        self.resources = _select(resources, [])
+        self.lies = _select(lies, [])
 
-        self.trials = []
-        self.experiments = self._experiments
-        self.lies = []
-
-    def init(self, config):
+    def init(self):
         """Initialize environment before testing"""
-        self.storage(config)
-        if hasattr(get_storage(), '_db'):
-            self.database = get_storage()._db
-
+        self.storage()
+        self.database = get_storage()._db
+        self.cleanup()
         self.load_experience_configuration()
         return self
 
     def get_experiment(self, name, user=None, version=None):
         """Make experiment id deterministic"""
         exp = Experiment(name, user=user, version=version)
-
-        # Legacy
-        if self.database is not None:
-            exp._id = exp.name
-
+        exp._id = name
         return exp
 
     def get_trial(self, index):
@@ -161,79 +146,45 @@ class OrionState:
 
     def cleanup(self):
         """Cleanup after testing"""
-        _remove(self.tempfile)
+        self.database.remove('experiments', {})
+        self.database.remove('trials', {})
 
     def load_experience_configuration(self):
         """Load an example database."""
-        for i, t_dict in enumerate(self._trials):
-            self._trials[i] = Trial(**t_dict).to_dict()
+        for i, t_dict in enumerate(self.trials):
+            self.trials[i] = Trial(**t_dict).to_dict()
 
-        for i, t_dict in enumerate(self._lies):
-            self._lies[i] = Trial(**t_dict).to_dict()
+        for i, t_dict in enumerate(self.lies):
+            self.lies[i] = Trial(**t_dict).to_dict()
 
-        self._trials.sort(key=lambda obj: int(obj['_id'], 16), reverse=True)
+        self.trials.sort(key=lambda obj: int(obj['_id'], 16), reverse=True)
 
-        for i, _ in enumerate(self._experiments):
+        for i, _ in enumerate(self.experiments):
             path = os.path.join(
                 os.path.dirname(__file__),
-                self._experiments[i]["metadata"]["user_script"])
+                self.experiments[i]["metadata"]["user_script"])
 
-            self._experiments[i]["metadata"]["user_script"] = path
-            self._experiments[i]['version'] = 1
-            self._experiments[i]['_id'] = i
+            self.experiments[i]["metadata"]["user_script"] = path
+            self.experiments[i]['version'] = 1
+            self.experiments[i]['_id'] = i
 
-        # Legacy
-        if self.database is not None:
-            self.database.write('experiments', self._experiments)
-            self.database.write('trials', self._trials)
+        if self.experiments:
+            self.database.write('experiments', self.experiments)
+        if self.trials:
+            self.database.write('trials', self.trials)
+        if self.workers:
             self.database.write('workers', self.workers)
+        if self.resources:
             self.database.write('resources', self.resources)
-            self.database.write('lying_trials', self._lies)
-
-            self.lies = self._lies
-            self.trials = self._trials
-        else:
-            for exp in self._experiments:
-                get_storage().create_experiment(exp)
-
-            for trial in self._trials:
-                nt = get_storage().register_trial(Trial(**trial))
-                self.trials.append(nt.to_dict())
-
-            for lie in self._lies:
-                nt = get_storage().register_lie(Trial(**lie))
-                self.lies.append(nt.to_dict())
-
-    def make_config(self):
-        """Iterate over the database configuration and replace ${file}
-        by the name of a temporary file
-        """
-        _, self.tempfile = tempfile.mkstemp('_orion_test')
-        _remove(self.tempfile)
-
-        def map_dict(fun, dictionary):
-            """Return a dictionary with fun applied to each values"""
-            return {k: fun(v) for k, v in dictionary.items()}
-
-        def replace_file(v):
-            """Replace `${file}` by a generated temporary file"""
-            if isinstance(v, str):
-                v = v.replace('${file}', self.tempfile)
-
-            if isinstance(v, dict):
-                v = map_dict(replace_file, v)
-
-            return v
-
-        return map_dict(replace_file, self.database_config)
+        if self.lies:
+            self.database.write('lying_trials', self.lies)
 
     def __enter__(self):
         """Load a new database state"""
         for singleton in self.SINGLETONS:
             self.new_singleton(singleton, new_value=None)
 
-        self.cleanup()
-        return self.init(self.make_config())
+        return self.init()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Cleanup database state"""
@@ -251,15 +202,15 @@ class OrionState:
         """Restore a singleton to its previous value"""
         obj.instance = self.singletons.get(obj)
 
-    def storage(self, config=None):
+    def storage(self):
         """Return test storage"""
-        if config is None:
-            return get_storage()
-
         try:
-            storage_type = config.pop('storage_type')
-            kwargs = config['args']
-            db = Storage(of_type=storage_type, **kwargs)
+            storage_type = self.database_config.pop('storage_type', 'legacy')
+            config = {
+                'database': self.database_config
+            }
+            db = Storage(of_type=storage_type, config=config)
+            self.database_config['storage_type'] = storage_type
 
         except SingletonAlreadyInstantiatedError:
             db = get_storage()

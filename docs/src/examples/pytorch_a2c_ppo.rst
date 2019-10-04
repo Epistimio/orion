@@ -4,7 +4,7 @@ Example with ikostrikov/pytorch-a2c-ppo-acktr
 
 .. note ::
 
-    If Oríon not installed: pip install orion.core
+    If Oríon not installed: pip install orion
 
     If the database is not setup, you can follow the instructions here:
     :doc:`/install/database`.

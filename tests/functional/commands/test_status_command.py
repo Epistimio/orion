@@ -18,6 +18,22 @@ def test_no_experiments(clean_db, monkeypatch, capsys):
     assert captured == "No experiment found\n"
 
 
+def test_no_version_backward_compatible(clean_db, one_experiment_no_version, capsys):
+    """Test status with no experiments."""
+    orion.core.cli.main(['status'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp-no-version-v1
+=============================
+empty
+
+
+"""
+    assert captured == expected
+
+
 def test_experiment_without_trials_wout_ac(clean_db, one_experiment, capsys):
     """Test status with only one experiment and no trials."""
     orion.core.cli.main(['status'])
@@ -304,8 +320,9 @@ def test_one_wout_trials_w_a_wout_c(clean_db, one_experiment, capsys):
     expected = """\
 test_single_exp-v1
 ==================
-id    status    best objective
-----  --------  ----------------
+id     status    best objective
+-----  --------  ----------------
+empty
 
 
 """
@@ -923,6 +940,42 @@ reserved              1
 suspended             1
 
 
+  test_double_exp_child-v1
+  ========================
+  status         quantity
+  -----------  ----------
+  broken                1
+  completed             1
+  interrupted           1
+  new                   1
+  reserved              1
+  suspended             1
+
+
+"""
+
+    assert captured == expected
+
+
+def test_experiment_w_parent_w_name(clean_db, three_experiments_with_trials, capsys):
+    """Test status with the name argument and one parent."""
+    orion.core.cli.main(['status', '--name', 'test_double_exp_child'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_double_exp_child-v1
+========================
+status         quantity
+-----------  ----------
+broken                1
+completed             1
+interrupted           1
+new                   2
+reserved              1
+suspended             1
+
+
 """
 
     assert captured == expected
@@ -936,6 +989,69 @@ def test_experiment_same_name_wout_exv(clean_db, three_experiments_same_name, ca
 
     expected = """\
 test_single_exp-v3
+==================
+empty
+
+
+"""
+
+    assert captured == expected
+
+
+def test_experiment_same_name_wout_exv_w_name(clean_db, three_experiments_same_name, capsys):
+    """Test status with three experiments having the same name but different versions."""
+    orion.core.cli.main(['status', '--name', 'test_single_exp'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp-v3
+==================
+empty
+
+
+"""
+
+    assert captured == expected
+
+
+def test_experiment_same_name_wout_exv_w_child_w_name(clean_db,
+                                                      three_experiments_family_same_name, capsys):
+    """Test status name with two experiments having the same name and one with a child."""
+    orion.core.cli.main(['status', '--name', 'test_single_exp'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp-v1
+==================
+empty
+
+
+  test_single_exp-v2
+  ==================
+  empty
+
+
+  test_single_exp_child-v1
+  ========================
+  empty
+
+
+"""
+
+    assert captured == expected
+
+
+def test_experiment_same_name_wout_exv_w_c_w_child_w_name(
+        clean_db, three_experiments_family_same_name, capsys):
+    """Test status name collapsed with two experiments having the same name and one with a child."""
+    orion.core.cli.main(['status', '--name', 'test_single_exp', '--collapse'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp-v2
 ==================
 empty
 

@@ -44,6 +44,7 @@ import re
 from scipy.stats import distributions as sp_dists
 
 from orion.algo.space import (Categorical, Fidelity, Integer, Real, Space)
+from orion.core import config as orion_config
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 
 log = logging.getLogger(__name__)
@@ -140,10 +141,10 @@ class DimensionBuilder(object):
 
         return Categorical(name, args, **kwargs)
 
-    def fidelity(self):
+    def fidelity(self, *args, **kwargs):
         """Create a `Fidelity` dimension."""
         name = self.name
-        return Fidelity(name)
+        return Fidelity(name, *args, **kwargs)
 
     def uniform(self, *args, **kwargs):
         """Create an `Integer` or `Real` uniformly distributed dimension.
@@ -267,7 +268,7 @@ class SpaceBuilder(object):
             The problem's search space definition.
 
         """
-        self.parser = OrionCmdlineParser()
+        self.parser = OrionCmdlineParser(orion_config.user_script_config)
         self.parser.parse(config)
 
         return self.build(self.parser.priors)

@@ -10,8 +10,10 @@ import tempfile
 import pytest
 
 from orion.algo.base import BaseAlgorithm
+import orion.core
 from orion.core.io.database import DuplicateKeyError
-from orion.core.utils.tests import OrionState
+from orion.core.utils.exceptions import RaceCondition
+from orion.core.utils.tests import OrionState, populate_parser_fields
 import orion.core.worker.experiment
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
@@ -45,19 +47,26 @@ def new_config(random_dt):
         # and in general anything which is not in Experiment's slots
         something_to_be_ignored='asdfa'
         )
+
+    populate_parser_fields(new_config)
+
     return new_config
 
 
 @pytest.fixture
 def parent_version_config():
     """Return a configuration for an experiment."""
-    return dict(_id='parent_config',
-                name="old_experiment",
-                version=1,
-                algorithms='random',
-                metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow(),
-                          'user_args': ['--x~normal(0,1)']}
-                )
+    config = dict(
+        _id='parent_config',
+        name="old_experiment",
+        version=1,
+        algorithms='random',
+        metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow(),
+                  'user_args': ['--x~normal(0,1)']})
+
+    populate_parser_fields(config)
+
+    return config
 
 
 @pytest.fixture
@@ -69,6 +78,7 @@ def child_version_config(parent_version_config):
     config['refers'] = {'parent_id': 'parent_config'}
     config['metadata']['datetime'] = datetime.datetime.utcnow()
     config['metadata']['user_args'].append('--y~+normal(0,1)')
+    populate_parser_fields(config)
     return config
 
 
@@ -136,6 +146,16 @@ class TestInitExperiment(object):
         """Create a new and never-seen-before experiment with a version."""
         exp = Experiment("exp_wout_version", version=1)
         assert exp.version == 1
+
+    def test_backward_compatibility_no_version(self, create_db_instance, parent_version_config,
+                                               child_version_config):
+        """Branch from parent that has no version field."""
+        parent_version_config.pop('version')
+        create_db_instance.write('experiments', parent_version_config)
+        create_db_instance.write('experiments', child_version_config)
+
+        exp = Experiment("old_experiment", user="corneauf")
+        assert exp.version == 2
 
     def test_old_experiment_wout_version(self, create_db_instance, parent_version_config,
                                          child_version_config):
@@ -514,64 +534,163 @@ class TestConfigProperty(object):
 
         assert not exp.is_done
 
-    def test_no_increment_when_child_exist(self, create_db_instance):
-        """Check that experiment is not incremented when asked for v1 while v2 exists."""
+    def test_new_child_with_branch(self):
+        """Check that experiment is not incremented when branching with a new name."""
         user_args = ['--x~normal(0,1)']
         metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
         algorithms = {'random': {'seed': None}}
         config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
+        populate_parser_fields(config)
 
         get_storage().create_experiment(config)
         original = Experiment('experiment_test', version=1)
 
-        config['version'] = 2
-        config['metadata']['user_args'].append("--y~+normal(0,1)")
-        config.pop('_id')
-
-        get_storage().create_experiment(config)
-        config.pop('_id')
-
         config['branch'] = ['experiment_2']
         config['metadata']['user_args'].pop()
         config['metadata']['user_args'].append("--z~+normal(0,1)")
+        populate_parser_fields(config)
         config['version'] = 1
         exp = Experiment('experiment_test', version=1)
         exp.configure(config)
 
         assert exp.version == 1
         assert '/z' in exp.space
-        assert '/y' not in exp.space
         assert exp.refers['parent_id'] == original.id
 
-    def test_old_experiment_wout_version(self, create_db_instance, parent_version_config,
+    def test_no_increment_when_child_exist(self):
+        """Check that experiment cannot be incremented when asked for v1 while v2 exists."""
+        user_args = ['--x~normal(0,1)']
+        metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
+        algorithms = {'random': {'seed': None}}
+        config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
+        populate_parser_fields(config)
+
+        get_storage().create_experiment(config)
+        parent_id = config.pop('_id')
+
+        config['version'] = 2
+        config['metadata']['user_args'].append("--y~+normal(0,1)")
+        populate_parser_fields(config)
+        config['refers'] = dict(parent_id=parent_id, root_id=parent_id, adapters=[])
+
+        get_storage().create_experiment(config)
+        config.pop('_id')
+
+        config['metadata']['user_args'].pop()
+        config['metadata']['user_args'].append("--z~+normal(0,1)")
+        populate_parser_fields(config)
+        config['version'] = 1
+        config.pop('refers')
+        exp = Experiment('experiment_test', version=1)
+
+        with pytest.raises(ValueError) as exc_info:
+            exp.configure(config)
+        assert 'Configuration is different and generates a branching' in str(exc_info.value)
+
+    def test_old_experiment_wout_version(self, parent_version_config,
                                          child_version_config):
         """Create an already existing experiment without a version."""
         algorithm = {'random': {'seed': None}}
         parent_version_config['algorithms'] = algorithm
         child_version_config['algorithms'] = algorithm
 
-        create_db_instance.write('experiments', parent_version_config)
-        create_db_instance.write('experiments', child_version_config)
+        storage = get_storage()
+        storage.create_experiment(parent_version_config)
+        storage.create_experiment(child_version_config)
 
         exp = Experiment("old_experiment", user="corneauf")
         exp.configure(child_version_config)
 
         assert exp.version == 2
 
-    def test_old_experiment_w_version(self, create_db_instance, parent_version_config,
+    def test_old_experiment_w_version(self, parent_version_config,
                                       child_version_config):
         """Create an already existing experiment with a version."""
         algorithm = {'random': {'seed': None}}
         parent_version_config['algorithms'] = algorithm
         child_version_config['algorithms'] = algorithm
 
-        create_db_instance.write('experiments', parent_version_config)
-        create_db_instance.write('experiments', child_version_config)
+        storage = get_storage()
+        storage.create_experiment(parent_version_config)
+        storage.create_experiment(child_version_config)
 
         exp = Experiment("old_experiment", user="corneauf", version=1)
         exp.configure(parent_version_config)
 
         assert exp.version == 1
+
+    def test_race_condition_w_version(self):
+        """Test that an experiment loosing the race condition during version increment cannot
+        be resolved automatically if a version number was specified.
+
+        Note that if we would raise RaceCondition, the conflict would still occur since
+        the version number fetched will not be the new one from the resolution but the requested
+        one. Therefore raising and handling RaceCondition would lead to infinite recursion in
+        the experiment builder.
+        """
+        user_args = ['--x~normal(0,1)']
+        metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
+        algorithms = {'random': {'seed': None}}
+        config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
+        populate_parser_fields(config)
+
+        get_storage().create_experiment(config)
+        parent_id = config.pop('_id')
+
+        looser = Experiment('experiment_test', version=1)
+
+        # Simulate exp2 winning the race condition
+        config2 = copy.deepcopy(config)
+        config2['version'] = 2
+        config2['metadata']['user_args'].append("--y~+normal(0,1)")
+        populate_parser_fields(config2)
+        config2['refers'] = dict(parent_id=parent_id, root_id=parent_id, adapters=[])
+        get_storage().create_experiment(config2)
+
+        # Now exp3 losses the race condition
+        config3 = copy.deepcopy(config)
+        config3['metadata']['user_args'].pop()
+        config3['metadata']['user_args'].append("--z~+normal(0,1)")
+        populate_parser_fields(config3)
+        config3['version'] = 1
+
+        with pytest.raises(ValueError) as exc_info:
+            looser.configure(config3)
+        assert 'Configuration is different and generates a branching' in str(exc_info.value)
+
+    def test_race_condition_wout_version(self):
+        """Test that an experiment loosing the race condition during version increment raises
+        RaceCondition if version number was not specified.
+        """
+        user_args = ['--x~normal(0,1)']
+        metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
+        algorithms = {'random': {'seed': None}}
+        config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
+        populate_parser_fields(config)
+
+        get_storage().create_experiment(config)
+        parent_id = config.pop('_id')
+
+        looser = Experiment('experiment_test', version=1)
+
+        # Simulate exp2 winning the race condition
+        config2 = copy.deepcopy(config)
+        config2['version'] = 2
+        config2['metadata']['user_args'].append("--y~+normal(0,1)")
+        populate_parser_fields(config2)
+        config2['refers'] = dict(parent_id=parent_id, root_id=parent_id, adapters=[])
+        get_storage().create_experiment(config2)
+
+        # Now exp3 losses the race condition
+        config3 = copy.deepcopy(config)
+        config3['metadata']['user_args'].pop()
+        config3['metadata']['user_args'].append("--z~+normal(0,1)")
+        populate_parser_fields(config3)
+        config3.pop('version')
+
+        with pytest.raises(RaceCondition) as exc_info:
+            looser.configure(config3)
+        assert 'There was likely a race condition' in str(exc_info.value)
 
 
 class TestReserveTrial(object):
@@ -666,6 +785,30 @@ class TestReserveTrial(object):
         with monkeypatch.context() as m:
             m.setattr(hacked_exp.__class__, 'fetch_trials', fetch_lost_trials)
             hacked_exp.fix_lost_trials()
+
+    def test_fix_lost_trials_configurable_hb(self, hacked_exp, random_dt):
+        """Test that heartbeat is correctly being configured."""
+        exp_query = {'experiment': hacked_exp.id}
+        trial = hacked_exp.fetch_trials(exp_query)[0]
+        old_heartbeat_value = orion.core.config.worker.heartbeat
+        heartbeat = random_dt - datetime.timedelta(seconds=180)
+
+        get_storage().set_trial_status(trial,
+                                       status='reserved',
+                                       heartbeat=heartbeat)
+
+        trials = get_storage().fetch_trial_by_status(hacked_exp, 'reserved')
+
+        assert trial.id in [t.id for t in trials]
+
+        orion.core.config.worker.heartbeat = 210
+        hacked_exp.fix_lost_trials()
+
+        trials = get_storage().fetch_trial_by_status(hacked_exp, 'reserved')
+
+        assert trial.id in [t.id for t in trials]
+
+        orion.core.config.worker.heartbeat = old_heartbeat_value
 
 
 def test_update_completed_trial(hacked_exp, database, random_dt):
@@ -790,12 +933,31 @@ def test_is_done_property_with_algo(hacked_exp):
 def test_broken_property(hacked_exp):
     """Check experiment stopping conditions for maximum number of broken."""
     assert not hacked_exp.is_broken
-    trials = hacked_exp.fetch_trials()[:3]
+    MAX_BROKEN = 3
+    orion.core.config.worker.max_broken = MAX_BROKEN
+    trials = hacked_exp.fetch_trials()[:MAX_BROKEN]
 
     for trial in trials:
         get_storage().set_trial_status(trial, status='broken')
 
     assert hacked_exp.is_broken
+
+
+def test_configurable_broken_property(hacked_exp):
+    """Check if max_broken changes after configuration."""
+    assert not hacked_exp.is_broken
+    MAX_BROKEN = 3
+    orion.core.config.worker.max_broken = MAX_BROKEN
+    trials = hacked_exp.fetch_trials()[:MAX_BROKEN]
+
+    for trial in trials:
+        get_storage().set_trial_status(trial, status='broken')
+
+    assert hacked_exp.is_broken
+
+    orion.core.config.worker.max_broken += 1
+
+    assert not hacked_exp.is_broken
 
 
 def test_experiment_stats(hacked_exp, exp_config, random_dt):

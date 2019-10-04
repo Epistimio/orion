@@ -499,36 +499,66 @@ class TestFidelity(object):
 
     def test_simple_instance(self):
         """Test Fidelity.__init__."""
-        dim = Fidelity('epoch')
+        dim = Fidelity('epoch', 1, 2)
 
-        assert str(dim) == "Fidelity(name=epoch)"
+        assert str(dim) == "Fidelity(name=epoch, low=1, high=2, base=2)"
+        assert dim.low == 1
+        assert dim.high == 2
+        assert dim.base == 2
         assert dim.name == 'epoch'
         assert dim.type == 'fidelity'
         assert dim.shape is None
 
-    def test_sampling(self):
-        """Make sure Fidelity simply returns `fidelity`"""
-        dim = Fidelity('epoch')
+    def test_min_resources(self):
+        """Test that an error is raised if min is smaller than 1"""
+        with pytest.raises(AttributeError) as exc:
+            Fidelity('epoch', 0, 2)
+        assert "Minimum resources must be a positive number." == str(exc.value)
 
-        assert dim.sample() == ['fidelity']
+    def test_min_max_resources(self):
+        """Test that an error is raised if min is larger than max"""
+        with pytest.raises(AttributeError) as exc:
+            Fidelity('epoch', 3, 2)
+        assert "Minimum resources must be smaller than maximum resources." == str(exc.value)
+
+    def test_base(self):
+        """Test that an error is raised if base is smaller than 1"""
+        with pytest.raises(AttributeError) as exc:
+            Fidelity('epoch', 1, 2, 1)
+        assert "Base should be greater than 1" == str(exc.value)
+
+    def test_sampling(self):
+        """Make sure Fidelity simply returns `high`"""
+        dim = Fidelity('epoch', 1, 2)
+        assert dim.sample() == [2]
+        dim = Fidelity('epoch', 1, 5)
+        assert dim.sample() == [5]
+
+    def test_default_value(self):
+        """Make sure Fidelity simply returns `high`"""
+        dim = Fidelity('epoch', 1, 2)
+        assert dim.default_value == 2
+        dim = Fidelity('epoch', 1, 5)
+        assert dim.default_value == 5
 
     def test_contains(self):
-        """Make sure fidelity.__contains__ always returns True"""
-        dim = Fidelity('epoch')
+        """Make sure fidelity.__contains__ tests based on (min, max)"""
+        dim = Fidelity('epoch', 1, 10)
 
-        assert None in dim
-        assert 0 in dim
-        assert object() in dim
+        assert 0 not in dim
+        assert 1 in dim
+        assert 5 in dim
+        assert 10 in dim
+        assert 20 not in dim
 
     def test_interval(self):
-        """Check that error is being raised."""
-        dim = Fidelity('epoch')
-        with pytest.raises(NotImplementedError):
-            dim.interval()
+        """Check that interval() is (min, max)."""
+        dim = Fidelity('epoch', 1, 10)
+        dim.interval() == (1, 10)
 
     def test_cast(self):
         """Check that error is being raised."""
-        dim = Fidelity('epoch')
+        dim = Fidelity('epoch', 1, 10)
         with pytest.raises(NotImplementedError):
             dim.cast()
 

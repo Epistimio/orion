@@ -143,10 +143,22 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
     def suggest(self, num=1):
         """Suggest a `num` of new sets of parameters.
 
-        :param num: how many sets to be suggested.
+        Parameters
+        ----------
+        num: int, optional
+            Number of points to suggest. Defaults to 1.
 
-        .. note:: New parameters must be compliant with the problem's domain
-           `orion.algo.space.Space`.
+        Returns
+        -------
+        list of points or None
+            A list of lists representing points suggested by the algorithm. The algorithm may opt
+            out if it cannot make a good suggestion at the moment (it may be waiting for other
+            trials to complete), in which case it will return None.
+
+        Notes
+        -----
+        New parameters must be compliant with the problem's domain `orion.algo.space.Space`.
+
         """
         pass
 

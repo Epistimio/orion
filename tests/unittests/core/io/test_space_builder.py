@@ -79,9 +79,23 @@ class TestDimensionBuilder(object):
 
     def test_build_a_good_fidelity(self, dimbuilder):
         """Check that a Fidelity dimension is correctly built."""
-        dim = dimbuilder.build('epoch', 'fidelity()')
+        dim = dimbuilder.build('epoch', 'fidelity(1, 16, 4)')
         assert isinstance(dim, Fidelity)
         assert dim.name == 'epoch'
+        assert dim.low == 1
+        assert dim.high == 16
+        assert dim.base == 4
+        assert dim._prior_name == 'None'
+        assert dim.prior is None
+
+    def test_build_fidelity_default_base(self, dimbuilder):
+        """Check that a Fidelity dimension is correctly built with default base."""
+        dim = dimbuilder.build('epoch', 'fidelity(1, 16)')
+        assert isinstance(dim, Fidelity)
+        assert dim.name == 'epoch'
+        assert dim.low == 1
+        assert dim.high == 16
+        assert dim.base == 2
         assert dim._prior_name == 'None'
         assert dim.prior is None
 

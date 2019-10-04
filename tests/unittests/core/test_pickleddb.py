@@ -46,32 +46,32 @@ class TestEnsureIndex(object):
 
     def test_new_index(self, orion_db):
         """Index should be added to pickled database"""
-        assert ("new_field", ) not in orion_db._get_database()._db['new_collection']._indexes
+        assert "new_field_1" not in orion_db._get_database()._db['new_collection']._indexes
 
         orion_db.ensure_index('new_collection', 'new_field', unique=False)
-        assert ("new_field", ) not in orion_db._get_database()._db['new_collection']._indexes
+        assert "new_field_1" not in orion_db._get_database()._db['new_collection']._indexes
 
         orion_db.ensure_index('new_collection', 'new_field', unique=True)
-        assert ("new_field", ) in orion_db._get_database()._db['new_collection']._indexes
+        assert "new_field_1" in orion_db._get_database()._db['new_collection']._indexes
 
     def test_existing_index(self, orion_db):
         """Index should be added to pickled database and reattempt should do nothing"""
-        assert ("new_field", ) not in orion_db._get_database()._db['new_collection']._indexes
+        assert "new_field_1" not in orion_db._get_database()._db['new_collection']._indexes
 
         orion_db.ensure_index('new_collection', 'new_field', unique=True)
-        assert ("new_field", ) in orion_db._get_database()._db['new_collection']._indexes
+        assert "new_field_1" in orion_db._get_database()._db['new_collection']._indexes
 
         # reattempt
         orion_db.ensure_index('new_collection', 'new_field', unique=True)
-        assert ("new_field", ) in orion_db._get_database()._db['new_collection']._indexes
+        assert "new_field_1" in orion_db._get_database()._db['new_collection']._indexes
 
     def test_compound_index(self, orion_db):
         """Tuple of Index should be added as a compound index."""
-        assert ("name", "metadata.user") not in orion_db._get_database()._db['experiments']._indexes
+        assert "name_1_metadata.user_1" not in orion_db._get_database()._db['experiments']._indexes
         orion_db.ensure_index('experiments',
                               [('name', Database.ASCENDING),
                                ('metadata.user', Database.ASCENDING)], unique=True)
-        assert ("name", "metadata.user") in orion_db._get_database()._db['experiments']._indexes
+        assert "name_1_metadata.user_1" in orion_db._get_database()._db['experiments']._indexes
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -354,6 +354,13 @@ class TestConcurreny(object):
         Pool(10).starmap(write, (('unique', 1) for i in range(10)))
 
         assert orion_db.count('concurrent', {'unique': 1}) == 1
+
+
+def test_empty_file(orion_db):
+    """Check that db loading can handle empty files"""
+    with open(orion_db.host, 'wb') as f:
+        f.write(b'')
+    orion_db._get_database()
 
 
 def test_unpickable_error_find_document():

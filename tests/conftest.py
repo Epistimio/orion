@@ -13,6 +13,7 @@ import orion.core
 from orion.core.io import resolve_config
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
+from orion.core.utils.tests import populate_parser_fields
 from orion.core.worker.trial import Trial
 from orion.storage.base import Storage
 from orion.storage.legacy import Legacy
@@ -53,7 +54,8 @@ class DumbAlgo(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {'index': self._index, 'suggested': self._suggested, 'num': self._num}
+        return {'index': self._index, 'suggested': self._suggested, 'num': self._num,
+                'done': self.done}
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
@@ -63,6 +65,7 @@ class DumbAlgo(BaseAlgorithm):
         self._index = state_dict['index']
         self._suggested = state_dict['suggested']
         self._num = state_dict['num']
+        self.done = state_dict['done']
 
     def suggest(self, num=1):
         """Suggest based on `value`."""
@@ -163,10 +166,11 @@ def exp_config():
     for i, t_dict in enumerate(exp_config[1]):
         exp_config[1][i] = Trial(**t_dict).to_dict()
 
-    for i, _ in enumerate(exp_config[0]):
-        exp_config[0][i]["metadata"]["user_script"] = os.path.join(
-            os.path.dirname(__file__), exp_config[0][i]["metadata"]["user_script"])
-        exp_config[0][i]['version'] = 1
+    for config in exp_config[0]:
+        config["metadata"]["user_script"] = os.path.join(
+            os.path.dirname(__file__), config["metadata"]["user_script"])
+        populate_parser_fields(config)
+        config['version'] = 1
 
     return exp_config
 

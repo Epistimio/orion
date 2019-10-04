@@ -14,7 +14,8 @@ import signal
 import subprocess
 import tempfile
 
-from orion.core.io.space_builder import SpaceBuilder
+import orion.core
+from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.utils.working_dir import WorkingDir
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 
@@ -60,8 +61,8 @@ class Consumer(object):
                                " initialization.")
 
         # Fetch space builder
-        self.template_builder = SpaceBuilder()
-        self.template_builder.build_from(experiment.metadata['user_args'])
+        self.template_builder = OrionCmdlineParser(orion.core.config.user_script_config)
+        self.template_builder.set_state_dict(experiment.metadata['parser'])
         # Get path to user's script and infer trial configuration directory
         if experiment.working_dir:
             self.working_dir = os.path.abspath(experiment.working_dir)
@@ -106,7 +107,7 @@ class Consumer(object):
 
     def get_execution_environment(self, trial, results_file='results.log'):
         """Set a few environment variables to allow users and
-        underlying processes to know if they are running under orion
+        underlying processes to know if they are running under orion.
 
         Parameters
         ----------
@@ -120,30 +121,36 @@ class Consumer(object):
         -----
         This function defines the environment variables described below
 
-        ORION_EXPERIMENT_NAME: str
-           name of the experiment the user is currently working on.
-           In Track this is used to initialize/select the Project
+        .. envvar:: ORION_EXPERIMENT_ID
 
-        ORION_EXPERIMENT_ID: str
-           current experiment that is being ran.
-           In Track this is used to initialize/select the TrialGroup
+           Current experiment that is being ran.
 
-        ORION_TRIAL_ID: str
-           current trial id that is currently being executed in this process
-           In Track this is used to select the (Track) Trial
+        .. envvar::  ORION_EXPERIMENT_NAME
 
-        ORION_WORKING_DIRECTORY: str
-           orion current working directory
+           Name of the experiment the worker is currently working on.
 
-        ORION_RESULTS_PATH: str
-           orion results file that is read by the legacy protocol to get the results of the trial
-           after a successful run
+        .. envvar::  ORION_EXPERIMENT_VERSION
+
+           Version of the experiment the worker is currently working on.
+
+        .. envvar:: ORION_TRIAL_ID
+
+           Current trial id that is currently being executed in this process.
+
+        .. envvar:: ORION_WORKING_DIRECTORY
+
+           Trial's current working directory.
+
+        .. envvar:: ORION_RESULTS_PATH
+
+           Trial's results file that is read by the legacy protocol to get the results of the trial
+           after a successful run.
 
         """
         env = dict(os.environ)
-
-        env['ORION_EXPERIMENT_NAME'] = str(self.experiment.name)
         env['ORION_EXPERIMENT_ID'] = str(self.experiment.id)
+        env['ORION_EXPERIMENT_NAME'] = str(self.experiment.name)
+        env['ORION_EXPERIMENT_VERSION'] = str(self.experiment.version)
         env['ORION_TRIAL_ID'] = str(trial.id)
 
         env['ORION_WORKING_DIR'] = str(trial.working_dir)

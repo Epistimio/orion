@@ -18,13 +18,14 @@ def execute():
     """Execute a simple pipeline as an example."""
     # 1. Receive inputs as you want
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', required=True)
+    parser.add_argument('--configuration', required=True)
     inputs = parser.parse_args()
 
-    with open(inputs.config, 'r') as f:
+    with open(inputs.configuration, 'r') as f:
         config = yaml.safe_load(f)
 
     # 2. Perform computations
+
     y, dy = function(config['x'])
 
     # 3. Gather and report results

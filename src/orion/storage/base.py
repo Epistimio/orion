@@ -253,13 +253,15 @@ class ReadOnlyStorageProtocol(object):
 
     __slots__ = ('_storage', )
     valid_attributes = {
+        'get_trial',
         'fetch_trials',
         'fetch_experiments',
         'count_broken_trials',
         'count_completed_trials',
         'fetch_noncompleted_trials',
         'fetch_pending_trials',
-        'fetch_lost_trials'
+        'fetch_lost_trials',
+        'fetch_trial_by_status'
     }
 
     def __init__(self, protocol):

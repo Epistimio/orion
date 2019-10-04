@@ -11,8 +11,9 @@ The :class:`EVCBuilder <orion.core.io.evc_builder.EVCBuilder>` will connect the 
 to the EVC tree, accessible through the
 :attr:`node <orion.core.worker.experiment.Experiment.node>` attribute.
 All trials of the tree can be fetched
-with :meth:`fetch_trials_tree() <orion.core.worker.experiment.Experiment.fetch_trials_tree>`, while
-:meth:`fetch_trials() <orion.core.worker.experiment.Experiment.fetch_trials>` will only fetch the
+with option
+:meth:`fetch_trials(with_evc_tree=True) <orion.core.worker.experiment.Experiment.fetch_trials>`,
+``with_evc_tree=False``` will only fetch the
 trials of the specific experiment.
 
 .. code-block:: python

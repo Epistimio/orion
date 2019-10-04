@@ -234,3 +234,107 @@ def test_format_with_properties(parser, cmd_with_properties, hacked_exp):
 
     assert trial.hash_name in cmd_line
     assert 'supernaedo2-dendi' in cmd_line
+
+
+def test_configurable_config_arg(parser_diff_prefix, yaml_sample_path):
+    """Parse from a yaml config only."""
+    parser_diff_prefix.parse(["--config2", yaml_sample_path])
+    config = parser_diff_prefix.priors
+
+    assert len(config.keys()) == 6
+    assert '/layers/1/width' in config
+    assert '/layers/1/type' in config
+    assert '/layers/2/type' in config
+    assert '/training/lr0' in config
+    assert '/training/mbs' in config
+    assert '/something-same' in config
+
+
+def test_get_state_dict_before_parse(commandline):
+    """Test getting state dict."""
+    parser = OrionCmdlineParser()
+
+    assert parser.get_state_dict() == {
+        'parser': {
+            'arguments': [],
+            'template': []},
+        'cmd_priors': list(map(list, parser.cmd_priors.items())),
+        'file_priors': list(map(list, parser.file_priors.items())),
+        'config_file_data': parser.config_file_data,
+        'config_prefix': parser.config_prefix,
+        'file_config_path': parser.file_config_path,
+        'converter': None}
+
+
+def test_get_state_dict_after_parse_no_config_file(commandline):
+    """Test getting state dict."""
+    parser = OrionCmdlineParser()
+
+    parser.parse(commandline)
+
+    assert parser.get_state_dict() == {
+        'parser': parser.parser.get_state_dict(),
+        'cmd_priors': list(map(list, parser.cmd_priors.items())),
+        'file_priors': list(map(list, parser.file_priors.items())),
+        'config_file_data': parser.config_file_data,
+        'config_prefix': parser.config_prefix,
+        'file_config_path': parser.file_config_path,
+        'converter': None}
+
+
+def test_get_state_dict_after_parse_with_config_file(yaml_config, commandline):
+    """Test getting state dict."""
+    parser = OrionCmdlineParser()
+
+    cmd_args = yaml_config
+    cmd_args.extend(commandline)
+
+    parser.parse(cmd_args)
+
+    assert parser.get_state_dict() == {
+        'parser': parser.parser.get_state_dict(),
+        'cmd_priors': list(map(list, parser.cmd_priors.items())),
+        'file_priors': list(map(list, parser.file_priors.items())),
+        'config_file_data': parser.config_file_data,
+        'config_prefix': parser.config_prefix,
+        'file_config_path': parser.file_config_path,
+        'converter': parser.converter.get_state_dict()}
+
+
+def test_set_state_dict(parser, commandline, json_config, tmpdir, json_converter):
+    """Test that set_state_dict sets state properly to generate new config."""
+    cmd_args = json_config
+    cmd_args.extend(commandline)
+
+    parser.parse(cmd_args)
+
+    state = parser.get_state_dict()
+    parser = None
+
+    blank_parser = OrionCmdlineParser()
+
+    blank_parser.set_state_dict(state)
+
+    trial = Trial(params=[
+        {'name': '/lr', 'type': 'real', 'value': -2.4},
+        {'name': '/prior', 'type': 'categorical', 'value': 'sgd'},
+        {'name': '/layers/1/width', 'type': 'integer', 'value': 100},
+        {'name': '/layers/1/type', 'type': 'categorical', 'value': 'relu'},
+        {'name': '/layers/2/type', 'type': 'categorical', 'value': 'sigmoid'},
+        {'name': '/training/lr0', 'type': 'real', 'value': 0.032},
+        {'name': '/training/mbs', 'type': 'integer', 'value': 64},
+        {'name': '/something-same', 'type': 'categorical', 'value': '3'}])
+
+    output_file = str(tmpdir.join("output.json"))
+
+    cmd_inst = blank_parser.format(output_file, trial)
+
+    assert cmd_inst == ['--config', output_file, "--seed", "555", "--lr", "-2.4",
+                        "--non-prior", "choices({'sgd': 0.2, 'adam': 0.8})", "--prior", "sgd"]
+
+    output_data = json_converter.parse(output_file)
+    assert output_data == {'yo': 5, 'training': {'lr0': 0.032, 'mbs': 64},
+                           'layers': [{'width': 64, 'type': 'relu'},
+                                      {'width': 100, 'type': 'relu'},
+                                      {'width': 16, 'type': 'sigmoid'}],
+                           'something-same': '3'}
