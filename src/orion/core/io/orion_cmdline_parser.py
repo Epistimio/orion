@@ -87,6 +87,32 @@ class OrionCmdlineParser():
         # Look for anything followed by a tilt and possible branching attributes + prior
         self.prior_regex = re.compile(r'(.+)~([\+\-\>]?.+)')
 
+    def get_state_dict(self):
+        """Give state dict that can be used to reconstruct the parser"""
+        return dict(
+            parser=self.parser.get_state_dict(),
+            cmd_priors=list(map(list, self.cmd_priors.items())),
+            file_priors=list(map(list, self.file_priors.items())),
+            config_file_data=self.config_file_data,
+            config_prefix=self.config_prefix,
+            file_config_path=self.file_config_path,
+            converter=self.converter.get_state_dict() if self.converter else None)
+
+    def set_state_dict(self, state):
+        """Reset the parser based on previous state"""
+        self.parser.set_state_dict(state['parser'])
+
+        self.cmd_priors = OrderedDict(state['cmd_priors'])
+        self.file_priors = OrderedDict(state['file_priors'])
+
+        self.config_file_data = state['config_file_data']
+        self.config_prefix = state['config_prefix']
+        self.file_config_path = state['file_config_path']
+
+        if self.file_config_path:
+            self.converter = infer_converter_from_file_type(self.file_config_path)
+            self.converter.set_state_dict(state['converter'])
+
     def parse(self, commandline):
         """Parse the commandline given for the definition of priors.
 

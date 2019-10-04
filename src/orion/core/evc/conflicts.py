@@ -56,7 +56,9 @@ import pprint
 import traceback
 
 from orion.algo.space import Dimension
+import orion.core
 from orion.core.evc import adapters
+from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.diff import colored_diff
 from orion.core.utils.format_trials import standard_param_name
@@ -74,17 +76,17 @@ def _build_extended_user_args(config):
     """
     user_args = config['metadata']['user_args']
 
-    space_builder = SpaceBuilder()
-    space_builder.build_from(user_args)
+    parser = OrionCmdlineParser(orion.core.config.user_script_config)
+    parser.set_state_dict(config['metadata']['parser'])
 
     return user_args + [standard_param_name(key) + value
-                        for key, value in space_builder.parser.config_file_data.items()]
+                        for key, value in parser.config_file_data.items()]
 
 
 def _build_space(config):
     """Build an optimization space based on given configuration"""
     space_builder = SpaceBuilder()
-    space = space_builder.build_from(config['metadata']['user_args'])
+    space = space_builder.build(config['metadata']['priors'])
 
     return space
 
@@ -1209,9 +1211,8 @@ class CommandLineConflict(Conflict):
     @classmethod
     def get_nameless_args(cls, config):
         """Get user's commandline arguments which are not dimension definitions"""
-        space_builder = SpaceBuilder()
-        space_builder.build_from(config['metadata']['user_args'])
-        parser = space_builder.parser
+        parser = OrionCmdlineParser(orion.core.config.user_script_config)
+        parser.set_state_dict(config['metadata']['parser'])
         priors = parser.priors_to_normal()
         nameless_keys = set(parser.parser.arguments.keys()) - set(priors.keys())
 
@@ -1342,11 +1343,11 @@ class ScriptConfigConflict(Conflict):
     @classmethod
     def get_nameless_config(cls, config):
         """Get configuration dict of user's script without dimension definitions"""
-        space_builder = SpaceBuilder()
-        space_builder.build_from(config['metadata']['user_args'])
+        parser = OrionCmdlineParser(orion.core.config.user_script_config)
+        parser.set_state_dict(config['metadata']['parser'])
 
         nameless_config = dict((key, value)
-                               for (key, value) in space_builder.parser.config_file_data.items()
+                               for (key, value) in parser.config_file_data.items()
                                if not (isinstance(value, str) and value.startswith('orion~')))
 
         return nameless_config

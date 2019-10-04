@@ -89,8 +89,10 @@ hierarchy. From the more global to the more specific, there is:
 import copy
 import logging
 
+import orion.core
 from orion.core.io import resolve_config
 from orion.core.io.database import DuplicateKeyError
+from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.utils.exceptions import NoConfigurationError, RaceCondition
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.storage.base import Storage
@@ -267,12 +269,19 @@ class ExperimentBuilder(object):
         experiment = Experiment(config['name'], config.get('user', None),
                                 config.get('version', None))
 
+        # TODO: Handle both from cmdline and python APIs.
+        if 'priors' not in config['metadata'] and 'user_args' not in config['metadata']:
+            raise NoConfigurationError
+
+        # Parse to generate priors
+        if 'user_args' in config['metadata']:
+            parser = OrionCmdlineParser(orion.core.config.user_script_config)
+            parser.parse(config['metadata']['user_args'])
+            config['metadata']['parser'] = parser.get_state_dict()
+            config['metadata']['priors'] = dict(parser.priors)
+
         # Finish experiment's configuration and write it to database.
-        try:
-            experiment.configure(config)
-        except AttributeError as ex:
-            if 'user_script' not in config['metadata']:
-                raise NoConfigurationError from ex
+        experiment.configure(config)
 
         return experiment
 

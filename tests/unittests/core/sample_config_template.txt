@@ -1,0 +1,31 @@
+{lalala!s}
+
+{/lala/la!s}
+{//lala/iela!s}
+{//lala//iela!s}
+
+a:
+   b:
+    [asdfa~/Iamapath/dont_capture_me,
+      ~/Iamapath/dont_capture_me]
+
+yo:
+           {aaalispera!s}
+
+[naedw]
+a_var={a!s}
+
+~
+
+[naekei:naedw]
+other_var = ~
+# Rename it who_names_their_variables_a_seriously
+a_var = {b!s}
+
+{{'oups':
+# remove it
+'{a_serious_name!s}',
+'iela':'{another_serious_name!s}'
+}}
+
+{lala/l2a!s}
