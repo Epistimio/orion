@@ -172,7 +172,7 @@ class Consumer(object):
 
         log.debug("## Building command line argument and configuration for trial.")
         env = self.get_execution_environment(trial, results_file.name)
-        cmd_args = self.template_builder.build_to(config_file.name, trial, self.experiment)
+        cmd_args = self.template_builder.format(config_file.name, trial, self.experiment)
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
