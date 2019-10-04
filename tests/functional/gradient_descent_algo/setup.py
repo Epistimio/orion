@@ -19,7 +19,7 @@ setup_args = dict(
             'gradient_descent = orion.algo.gradient_descent:Gradient_Descent'
             ],
         },
-    install_requires=['orion.core'],
+    install_requires=['orion'],
     setup_requires=['setuptools'],
     # "Zipped eggs don't play nicely with namespace packaging"
     # from https://github.com/pypa/sample-namespace-packages
