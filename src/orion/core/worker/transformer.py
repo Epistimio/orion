@@ -270,6 +270,10 @@ class Enumerate(Transformer):
         self._map = numpy.vectorize(lambda x: map_dict[x], otypes='i')
         self._imap = numpy.vectorize(lambda x: categories[x], otypes=[numpy.object])
 
+    def __deepcopy__(self, memo):
+        """Make a deepcopy"""
+        return type(self)(self.categories)
+
     def transform(self, point):
         """Return integers corresponding uniquely to the categories in `point`.
 
