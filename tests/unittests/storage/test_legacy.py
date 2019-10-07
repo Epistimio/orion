@@ -18,20 +18,21 @@ base_experiment = {
     }
 }
 
-db_backends = [
-    # {
-    #     'type': 'PickledDB',
-    #     'name': 'orion_test'
-    # },
-    # {
-    #     'type': 'EphemeralDB',
-    #     'name': 'orion_test'
-    # },
-    {
+mongodb_config = {
+    'database': {
         'type': 'MongoDB',
         'name': 'orion_test',
         'username': 'user',
         'password': 'pass'
+    }
+}
+
+db_backends = [
+    {
+        'storage_type': 'legacy',
+        'args': {
+            'config': mongodb_config
+        }
     }
 ]
 
