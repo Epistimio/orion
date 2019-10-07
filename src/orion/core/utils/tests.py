@@ -58,17 +58,17 @@ class MockDatetime(datetime.datetime):
 
 def _get_default_test_database():
     """Return default configuration for the test database"""
-    # _, filename = tempfile.mkstemp('orion_test')
+    legacy_config = {
+        'database': {
+            'type': 'PickledDB',
+            'host': '${file}'
+        }
+    }
 
     return {
         'storage_type': 'legacy',
         'args': {
-            'config': {
-                'database': {
-                    'type': 'PickledDB',
-                    'host': '${file}'
-                }
-            }
+            'config': legacy_config
         }
     }
 
