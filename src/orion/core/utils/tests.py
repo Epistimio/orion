@@ -182,6 +182,36 @@ class OrionState:
 
         _remove(self.tempfile)
 
+    def _legacy_set(self):
+        if self._experiments:
+            self.database.write('experiments', self._experiments)
+        if self._trials:
+            self.database.write('trials', self._trials)
+        if self._workers:
+            self.database.write('workers', self._workers)
+        if self._resources:
+            self.database.write('resources', self._resources)
+        if self._lies:
+            self.database.write('lying_trials', self._lies)
+
+        self.lies = self._lies
+        self.trials = self._trials
+
+    def _track_set(self):
+        self.trials = []
+        self.lies = []
+
+        for exp in self._experiments:
+            get_storage().create_experiment(exp)
+
+        for trial in self._trials:
+            nt = get_storage().register_trial(Trial(**trial))
+            self.trials.append(nt.to_dict())
+
+        for lie in self._lies:
+            nt = get_storage().register_lie(Trial(**lie))
+            self.lies.append(nt.to_dict())
+
     def load_experience_configuration(self):
         """Load an example database."""
         for i, t_dict in enumerate(self._trials):
@@ -202,34 +232,10 @@ class OrionState:
             self._experiments[i]['_id'] = i
 
         if self.database is not None:
-            if self._experiments:
-                self.database.write('experiments', self._experiments)
-            if self._trials:
-                self.database.write('trials', self._trials)
-            if self._workers:
-                self.database.write('workers', self._workers)
-            if self._resources:
-                self.database.write('resources', self._resources)
-            if self._lies:
-                self.database.write('lying_trials', self._lies)
-
-            self.lies = self._lies
-            self.trials = self._trials
+            self._legacy_set()
 
         else:
-            self.trials = []
-            self.lies = []
-
-            for exp in self._experiments:
-                get_storage().create_experiment(exp)
-
-            for trial in self._trials:
-                nt = get_storage().register_trial(Trial(**trial))
-                self.trials.append(nt.to_dict())
-
-            for lie in self._lies:
-                nt = get_storage().register_lie(Trial(**lie))
-                self.lies.append(nt.to_dict())
+            self._track_set()
 
     def make_config(self):
         """Iterate over the database configuration and replace ${file}
