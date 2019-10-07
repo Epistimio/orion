@@ -9,7 +9,7 @@ import pytest
 from orion.algo.space import Dimension
 from orion.core import evc
 from orion.core.evc import conflicts as conflict
-from orion.core.utils.tests import populate_parser_fields
+import orion.core.utils.backward as backward
 
 
 @pytest.fixture
@@ -328,8 +328,8 @@ class TestScriptConfigConflict(object):
         old_config = {'metadata': {'user_args': yaml_config}}
         new_config = {'metadata': {'user_args': yaml_diff_config}}
 
-        populate_parser_fields(old_config)
-        populate_parser_fields(new_config)
+        backward.populate_priors(old_config['metadata'])
+        backward.populate_priors(new_config['metadata'])
 
         conflicts = list(conflict.ScriptConfigConflict.detect(old_config, new_config))
         assert len(conflicts) == 1
@@ -339,8 +339,8 @@ class TestScriptConfigConflict(object):
         old_config = {'metadata': {'user_args': yaml_config}}
         new_config = {'metadata': {'user_args': yaml_config + ['--other', 'args']}}
 
-        populate_parser_fields(old_config)
-        populate_parser_fields(new_config)
+        backward.populate_priors(old_config['metadata'])
+        backward.populate_priors(new_config['metadata'])
 
         assert list(conflict.ScriptConfigConflict.detect(old_config, new_config)) == []
 
