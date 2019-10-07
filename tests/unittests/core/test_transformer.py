@@ -17,6 +17,12 @@ from orion.core.worker.transformer import (build_required_space,
 class TestIdentity(object):
     """Test subclasses of `Identity` transformation."""
 
+    def test_deepcopy(self):
+        """Verify that the transformation object can be copied"""
+        t = Identity()
+        t.transform([2])
+        copy.deepcopy(t)
+
     def test_domain_and_target_type(self):
         """Check if attribute-like `domain_type` and `target_type` do
         what's expected.
@@ -52,6 +58,12 @@ class TestIdentity(object):
 
 class TestReverse(object):
     """Test subclasses of `Reverse` transformation."""
+
+    def test_deepcopy(self):
+        """Verify that the transformation object can be copied"""
+        t = Reverse(Quantize())
+        t.transform([2])
+        copy.deepcopy(t)
 
     def test_domain_and_target_type(self):
         """Check if attribute-like `domain_type` and `target_type` do
@@ -93,6 +105,12 @@ class TestReverse(object):
 
 class TestCompose(object):
     """Test subclasses of `Compose` transformation."""
+
+    def test_deepcopy(self):
+        """Verify that the transformation object can be copied"""
+        t = Compose([Enumerate([2, 'asfa', 'ipsi']), OneHotEncode(3)], 'categorical')
+        t.transform([2])
+        copy.deepcopy(t)
 
     def test_domain_and_target_type(self):
         """Check if attribute-like `domain_type` and `target_type` do
@@ -189,6 +207,12 @@ class TestCompose(object):
 class TestQuantize(object):
     """Test subclasses of `Quantize` transformation."""
 
+    def test_deepcopy(self):
+        """Verify that the transformation object can be copied"""
+        t = Quantize()
+        t.transform([2])
+        copy.deepcopy(t)
+
     def test_domain_and_target_type(self):
         """Check if attribute-like `domain_type` and `target_type` do
         what's expected.
@@ -224,6 +248,13 @@ class TestQuantize(object):
 
 class TestEnumerate(object):
     """Test subclasses of `Enumerate` transformation."""
+
+    def test_deepcopy(self):
+        """Verify that the transformation object can be copied"""
+        t = Enumerate([2, 'asfa', 'ipsi'])
+        # Copy won't fail if vectorized function is not called at least once.
+        t.transform([2])
+        copy.deepcopy(t)
 
     def test_domain_and_target_type(self):
         """Check if attribute-like `domain_type` and `target_type` do
@@ -282,6 +313,12 @@ class TestEnumerate(object):
 
 class TestOneHotEncode(object):
     """Test subclasses of `OneHotEncode` transformation."""
+
+    def test_deepcopy(self):
+        """Verify that the transformation object can be copied"""
+        t = OneHotEncode(3)
+        t.transform([2])
+        copy.deepcopy(t)
 
     def test_domain_and_target_type(self):
         """Check if attribute-like `domain_type` and `target_type` do
