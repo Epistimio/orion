@@ -64,9 +64,9 @@ def _get_default_test_database():
         'storage_type': 'legacy',
         'args': {
             'config': {
-                    'database': {
-                        'type': 'PickledDB',
-                        'host': '${file}'
+                'database': {
+                    'type': 'PickledDB',
+                    'host': '${file}'
                 }
             }
         }
