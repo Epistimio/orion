@@ -442,10 +442,15 @@ class EphemeralDocument(object):
                     (key.startswith(selected_key) and
                      key.replace(selected_key, '')[0] == "."))
 
-        for key, value in self._data.items():
-            for selected_key, include in keys.items():
+        for selected_key, include in filter(lambda item: item[1], keys.items()):
+            match = False
+            for key, value in self._data.items():
                 if include and key_is_match(key, selected_key):
+                    match = True
                     selection[key] = value
+
+            if not match:
+                selection[selected_key] = None
 
         return unflatten(selection)
 
@@ -468,7 +473,7 @@ class EphemeralDocument(object):
 
     def __getitem__(self, key):
         """Get the item corresponding to the given key in the document"""
-        return self._data[key]
+        return self._data.get(key, None)
 
     def __contains__(self, key):
         """Test whether the given key is present in the document"""

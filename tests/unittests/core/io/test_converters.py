@@ -187,3 +187,38 @@ a_var = o~>a_serious_name
 
 +gaussian(0, 0.1, shape=(100, 3))
 """
+
+    def test_get_state_dict(self, unknown_type_sample_path, unknown_type_template_path,
+                            generic_converter):
+        """Test getting state dict."""
+        generic_converter.parse(unknown_type_sample_path)
+        assert generic_converter.get_state_dict() == {
+            'expression_prefix': 'o~',
+            'has_leading': {
+                '/lala//iela': '/',
+                '/lala/iela': '/',
+                'lala/la': '/'},
+            'regex': '([\\/]?[\\w|\\/|-]+)~([\\+]?.*\\)|\\-|\\>[A-Za-z_]\\w*)',
+            'template': open(unknown_type_template_path, 'r').read()}
+
+    def test_set_state_dict(self, tmpdir, generic_converter):
+        """Test that set_state_dict sets state properly to generate new config."""
+        generic_converter.set_state_dict({
+            'expression_prefix': '',
+            'has_leading': {
+                'voici': '/'},
+            'regex': generic_converter.regex.pattern,
+            'template': """\
+voici = {/voici}
+voila = voici + {voila}"""})
+
+        output_file = str(tmpdir.join("output.lalal"))
+
+        generic_converter.generate(output_file, {'/voici': 'me voici', 'voila': 'me voila'})
+
+        with open(output_file) as f:
+            out = f.read()
+
+        assert out == """\
+voici = me voici
+voila = voici + me voila"""

@@ -7,7 +7,7 @@
    :platform: Unix
    :synopsis: Parsing and building of the command line input for using script
 
-Simplify the parsing of a command line by storing every values inside an `OrderedDict`
+Simplify the parsing of a command line by storing every values inside a `dict`
 mapping the name of the argument to its value as a key-pair relation. Positional arguments
 are stored in the format `_X` where `X` represent the index of that argument inside
 the command line.
@@ -30,7 +30,7 @@ class CmdlineParser(object):
 
     Attributes
     ----------
-    arguments : OrderedDict
+    arguments : dict
         Commandline arguments' name and value(s).
     template : list
         List of template-ready strings for formatting.
@@ -48,11 +48,22 @@ class CmdlineParser(object):
 
     def __init__(self):
         """See `CmdlineParser` description"""
-        self.arguments = OrderedDict()
-
         # TODO Handle parsing twice.
+        self.arguments = OrderedDict()
         self._already_parsed = False
         self.template = []
+
+    def get_state_dict(self):
+        """Give state dict that can be used to reconstruct the parser"""
+        return dict(
+            arguments=list(map(list, self.arguments.items())),
+            template=self.template)
+
+    def set_state_dict(self, state):
+        """Reset the parser based on previous state"""
+        self.arguments = OrderedDict(state['arguments'])
+        self.template = state['template']
+        self._already_parsed = bool(self.template)
 
     def format(self, configuration):
         """Format the current template.
@@ -98,7 +109,7 @@ class CmdlineParser(object):
 
         Returns
         -------
-        OrderedDict
+        dict
             Dictionary holding the values of every argument. The keys are the name of the arguments.
 
         Raises
@@ -111,8 +122,8 @@ class CmdlineParser(object):
 
         Notes
         -----
-        Each argument is stored inside an `OrderedDict` to preserve its position inside the
-        commandline string. Inside that dictionary, the keys are created following these rules:
+        Each argument is stored inside a `dict`.
+        Inside that dictionary, the keys are created following these rules:
 
         -If the argument is a positional one, its key will be `'_pos_x'` where `x` is its index
         inside the list.
@@ -135,29 +146,28 @@ class CmdlineParser(object):
 
         >>> parser = CmdlineParser()
         >>> parser.parse('python 1 --arg value'.split(' '))
-        OrderedDict([('_pos_0', 'python'), ('_pos_1', '1'), ('arg', 'value')])
+        {'_pos_0': 'python', '_pos_1': '1', 'arg': 'value'}
 
         Named boolean argument:
 
         >>> parser.parse('python --boolean'.split(' '))
-        OrderedDict([('_pos_0', 'python'), ('boolean', True)])
+        {'_pos_0': 'python', 'boolean': True}
 
         Named multi-valued argument:
 
         >>> parser.parse('python --args value1 value2'.split(' '))
-        OrderedDict([('_pos_0', 'python'), ('args', ['value1', 'value2'])])
+        {'_pos_0': 'python', 'args': ['value1', 'value2']}
 
         Named argument defined with `=`:
 
         >>> parser.parse('python --arg=value'.split(' '))
-        OrderedDict([('_pos_0', 'python'), ('arg', 'value')])
+        {'_pos_0': 'python', 'arg': 'value'}
 
         """
         if self._already_parsed:
             raise RuntimeError("The commandline has already been parsed.")
 
-        self.arguments = OrderedDict()
-        self._parse_arguments(commandline)
+        self.arguments = self._parse_arguments(commandline)
 
         for key, value in self.arguments.items():
             # Handle positional arguments
@@ -198,6 +208,8 @@ class CmdlineParser(object):
         return "-" + arg
 
     def _parse_arguments(self, commandline):
+
+        arguments = OrderedDict()
         argument_name = None
 
         for item in commandline:
@@ -209,26 +221,26 @@ class CmdlineParser(object):
                 argument_parts = argument_name.split('=')
                 argument_name = argument_parts[0]
 
-                if argument_name in self.arguments.keys():
+                if argument_name in arguments.keys():
                     raise ValueError("Conflict: two arguments have the same name: {}"
                                      .format(argument_name))
 
-                self.arguments[argument_name] = []
+                arguments[argument_name] = []
 
                 if len(argument_parts) > 1:
-                    self.arguments[argument_name].append(argument_parts[-1])
+                    arguments[argument_name].append(argument_parts[-1])
 
             # If the argument did not start with `-` but we have an argument name
             # That means that this value belongs to that argument name list
             elif argument_name is not None and item.strip(" "):
-                self.arguments[argument_name].append(item)
+                arguments[argument_name].append(item)
 
             # No argument name means we have not reached them yet, so we're still in the
             # Positional arguments part
             elif argument_name is None:
-                self.arguments["_pos_{}".format(len(self.arguments))] = item
+                arguments["_pos_{}".format(len(arguments))] = item
 
-        for key, value in self.arguments.items():
+        for key, value in arguments.items():
             # Loop through the items and check if their value is a list
             # If it is, and the length is 0, that means it is a boolean args.
             # If its value is 1, it only has a single element and we unpack it.
@@ -239,7 +251,9 @@ class CmdlineParser(object):
                     value = value[0]
 
             value = self._parse_paths(value)
-            self.arguments[key] = value
+            arguments[key] = value
+
+        return arguments
 
     def _parse_paths(self, value):
         if isinstance(value, list):

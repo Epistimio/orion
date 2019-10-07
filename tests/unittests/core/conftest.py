@@ -12,7 +12,7 @@ from orion.algo.space import (Categorical, Integer, Real, Space)
 from orion.core.evc import conflicts
 from orion.core.io.convert import (JSONConverter, YAMLConverter)
 from orion.core.io.space_builder import DimensionBuilder
-from orion.core.utils.tests import default_datetime, MockDatetime
+from orion.core.utils.tests import default_datetime, MockDatetime, populate_parser_fields
 from orion.core.worker.experiment import Experiment
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,6 +20,7 @@ YAML_SAMPLE = os.path.join(TEST_DIR, 'sample_config.yml')
 YAML_DIFF_SAMPLE = os.path.join(TEST_DIR, 'sample_config_diff.yml')
 JSON_SAMPLE = os.path.join(TEST_DIR, 'sample_config.json')
 UNKNOWN_SAMPLE = os.path.join(TEST_DIR, 'sample_config.txt')
+UNKNOWN_TEMPLATE = os.path.join(TEST_DIR, 'sample_config_template.txt')
 
 
 @pytest.fixture(scope='session')
@@ -62,6 +63,12 @@ def json_config(json_sample_path):
 def unknown_type_sample_path():
     """Return path with a sample file of unknown configuration filetype."""
     return UNKNOWN_SAMPLE
+
+
+@pytest.fixture(scope='session')
+def unknown_type_template_path():
+    """Return path with a template file of unknown configuration filetype."""
+    return UNKNOWN_TEMPLATE
 
 
 @pytest.fixture(scope='session')
@@ -188,7 +195,7 @@ def refers_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_inst
 @pytest.fixture
 def new_config():
     """Generate a new experiment configuration"""
-    return dict(
+    config = dict(
         name='test',
         algorithms='fancy',
         version=1,
@@ -197,6 +204,10 @@ def new_config():
                   'user_args':
                   ['--new~normal(0,2)', '--changed~normal(0,2)'],
                   'user': 'some_user_name'})
+
+    populate_parser_fields(config)
+
+    return config
 
 
 @pytest.fixture
@@ -216,6 +227,8 @@ def old_config(create_db_instance):
                   'user_args':
                   ['--missing~uniform(-10,10)', '--changed~uniform(-10,10)'],
                   'user': 'some_user_name'})
+
+    populate_parser_fields(config)
 
     create_db_instance.write('experiments', config)
     return config
@@ -295,6 +308,7 @@ def cli_conflict(old_config, new_config):
     new_config = copy.deepcopy(new_config)
     new_config['metadata']['user_args'].append("--some-new=args")
     new_config['metadata']['user_args'].append("--bool-arg")
+    populate_parser_fields(new_config)
     return conflicts.CommandLineConflict(old_config, new_config)
 
 
@@ -313,12 +327,16 @@ def experiment_name_conflict(old_config, new_config):
 @pytest.fixture
 def bad_exp_parent_config():
     """Generate a new experiment configuration"""
-    return dict(
+    config = dict(
         _id='test',
         name='test',
         metadata={'user': 'corneauf', 'user_args': ['--x~normal(0,1)']},
         version=1,
         algorithms='random')
+
+    populate_parser_fields(config)
+
+    return config
 
 
 @pytest.fixture

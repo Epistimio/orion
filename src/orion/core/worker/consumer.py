@@ -14,7 +14,8 @@ import signal
 import subprocess
 import tempfile
 
-from orion.core.io.space_builder import SpaceBuilder
+import orion.core
+from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.utils.working_dir import WorkingDir
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 
@@ -60,8 +61,8 @@ class Consumer(object):
                                " initialization.")
 
         # Fetch space builder
-        self.template_builder = SpaceBuilder()
-        self.template_builder.build_from(experiment.metadata['user_args'])
+        self.template_builder = OrionCmdlineParser(orion.core.config.user_script_config)
+        self.template_builder.set_state_dict(experiment.metadata['parser'])
         # Get path to user's script and infer trial configuration directory
         if experiment.working_dir:
             self.working_dir = os.path.abspath(experiment.working_dir)
@@ -171,7 +172,7 @@ class Consumer(object):
 
         log.debug("## Building command line argument and configuration for trial.")
         env = self.get_execution_environment(trial, results_file.name)
-        cmd_args = self.template_builder.build_to(config_file.name, trial, self.experiment)
+        cmd_args = self.template_builder.format(config_file.name, trial, self.experiment)
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
