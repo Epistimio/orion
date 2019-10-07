@@ -166,7 +166,7 @@ class OrionState:
 
         # Legacy
         if self.database is not None:
-            exp._id = name
+            exp._id = exp.name
 
         return exp
 
@@ -181,29 +181,6 @@ class OrionState:
             self.database.remove('trials', {})
 
         _remove(self.tempfile)
-
-    def make_config(self):
-        """Iterate over the database configuration and replace ${file}
-        by the name of a temporary file
-        """
-        _, self.tempfile = tempfile.mkstemp('_orion_test')
-        _remove(self.tempfile)
-
-        def map_dict(fun, dictionary):
-            """Return a dictionary with fun applied to each values"""
-            return {k: fun(v) for k, v in dictionary.items()}
-
-        def replace_file(v):
-            """Replace `${file}` by a generated temporary file"""
-            if isinstance(v, str):
-                v = v.replace('${file}', self.tempfile)
-
-            if isinstance(v, dict):
-                v = map_dict(replace_file, v)
-
-            return v
-
-        return map_dict(replace_file, self.database_config)
 
     def load_experience_configuration(self):
         """Load an example database."""
@@ -240,16 +217,42 @@ class OrionState:
             self.trials = self._trials
 
         else:
-            for exp in self.experiments:
+            self.trials = []
+            self.lies = []
+
+            for exp in self._experiments:
                 get_storage().create_experiment(exp)
 
-            for trial in self.trials:
+            for trial in self._trials:
                 nt = get_storage().register_trial(Trial(**trial))
                 self.trials.append(nt.to_dict())
 
-            for lie in self.lies:
+            for lie in self._lies:
                 nt = get_storage().register_lie(Trial(**lie))
                 self.lies.append(nt.to_dict())
+
+    def make_config(self):
+        """Iterate over the database configuration and replace ${file}
+        by the name of a temporary file
+        """
+        _, self.tempfile = tempfile.mkstemp('_orion_test')
+        _remove(self.tempfile)
+
+        def map_dict(fun, dictionary):
+            """Return a dictionary with fun applied to each values"""
+            return {k: fun(v) for k, v in dictionary.items()}
+
+        def replace_file(v):
+            """Replace `${file}` by a generated temporary file"""
+            if isinstance(v, str):
+                v = v.replace('${file}', self.tempfile)
+
+            if isinstance(v, dict):
+                v = map_dict(replace_file, v)
+
+            return v
+
+        return map_dict(replace_file, self.database_config)
 
     def __enter__(self):
         """Load a new database state"""
@@ -284,7 +287,6 @@ class OrionState:
             storage_type = config.pop('storage_type')
             kwargs = config['args']
             db = Storage(of_type=storage_type, **kwargs)
-
             self.database_config['storage_type'] = storage_type
 
         except SingletonAlreadyInstantiatedError:
