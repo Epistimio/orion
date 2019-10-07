@@ -13,7 +13,7 @@ import orion.core
 from orion.core.io import resolve_config
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
-from orion.core.utils.tests import populate_parser_fields
+import orion.core.utils.backward as backward
 from orion.core.worker.trial import Trial
 from orion.storage.base import Storage
 from orion.storage.legacy import Legacy
@@ -169,7 +169,7 @@ def exp_config():
     for config in exp_config[0]:
         config["metadata"]["user_script"] = os.path.join(
             os.path.dirname(__file__), config["metadata"]["user_script"])
-        populate_parser_fields(config)
+        backward.populate_priors(config['metadata'])
         config['version'] = 1
 
     return exp_config
