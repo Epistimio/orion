@@ -156,6 +156,8 @@ class OrionState:
         self.storage(config)
         if hasattr(get_storage(), '_db'):
             self.database = get_storage()._db
+            self.database.remove('experiments', {})
+            self.database.remove('trials', {})
 
         self.load_experience_configuration()
         return self
