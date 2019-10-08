@@ -33,7 +33,7 @@ def test_creation_when_not_existing(monkeypatch, tmp_path):
     except FileNotFoundError:
         pass
 
-    orion.core.cli.main(["setup"])
+    orion.core.cli.main(["db", "setup"])
 
     assert os.path.exists(config_path)
 
@@ -54,7 +54,7 @@ def test_creation_when_exists(monkeypatch, tmp_path):
     with open(config_path, 'w') as output:
         yaml.dump(dump, output)
 
-    orion.core.cli.main(["setup"])
+    orion.core.cli.main(["db", "setup"])
 
     with open(config_path, 'r') as output:
         content = yaml.safe_load(output)
@@ -73,7 +73,7 @@ def test_stop_creation_when_exists(monkeypatch, tmp_path):
     with open(config_path, 'w') as output:
         yaml.dump(dump, output)
 
-    orion.core.cli.main(["setup"])
+    orion.core.cli.main(["db", "setup"])
 
     with open(config_path, 'r') as output:
         content = yaml.safe_load(output)
@@ -87,7 +87,7 @@ def test_defaults(monkeypatch, tmp_path):
     monkeypatch.setattr(orion.core, "DEF_CONFIG_FILES_PATHS", [config_path])
     monkeypatch.setattr(builtins, "input", _mock_input(['', '', '']))
 
-    orion.core.cli.main(["setup"])
+    orion.core.cli.main(["db", "setup"])
 
     with open(config_path, 'r') as output:
         content = yaml.safe_load(output)
