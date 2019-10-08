@@ -1,0 +1,6 @@
+pool_size: 1
+max_trials: 10
+
+algorithms:
+  random:
+    seed: 1

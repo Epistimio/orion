@@ -13,7 +13,7 @@ import yaml
 
 import orion.core.cli
 from orion.core.io.experiment_builder import ExperimentBuilder
-from orion.core.utils.tests import populate_parser_fields
+import orion.core.utils.backward as backward
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
 
@@ -204,7 +204,7 @@ def test_workon(database):
     config['metadata']['user_script'] = os.path.abspath(os.path.join(
         os.path.dirname(__file__), "black_box.py"))
     config['metadata']['user_args'] = ["-x~uniform(-50, 50)"]
-    populate_parser_fields(config)
+    backward.populate_priors(config['metadata'])
     experiment.configure(config)
 
     workon(experiment)

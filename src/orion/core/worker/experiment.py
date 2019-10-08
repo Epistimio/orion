@@ -23,6 +23,7 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
+import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import RaceCondition
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
@@ -150,6 +151,9 @@ class Experiment:
 
             config = sorted(config, key=lambda x: x['metadata']['datetime'],
                             reverse=True)[0]
+
+            backward.populate_priors(config['metadata'])
+
             for attrname in self.__slots__:
                 if not attrname.startswith('_') and attrname in config:
                     setattr(self, attrname, config[attrname])

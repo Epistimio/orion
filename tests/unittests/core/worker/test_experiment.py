@@ -13,8 +13,9 @@ import pytest
 from orion.algo.base import BaseAlgorithm
 import orion.core
 from orion.core.io.database import DuplicateKeyError
+import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import RaceCondition
-from orion.core.utils.tests import OrionState, populate_parser_fields
+from orion.core.utils.tests import OrionState
 import orion.core.worker.experiment
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
@@ -52,7 +53,7 @@ def new_config(random_dt):
         something_to_be_ignored='asdfa'
         )
 
-    populate_parser_fields(new_config)
+    backward.populate_priors(new_config['metadata'])
 
     return new_config
 
@@ -68,7 +69,7 @@ def parent_version_config():
         metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow(),
                   'user_args': ['--x~normal(0,1)']})
 
-    populate_parser_fields(config)
+    backward.populate_priors(config['metadata'])
 
     return config
 
@@ -82,7 +83,7 @@ def child_version_config(parent_version_config):
     config['refers'] = {'parent_id': 'parent_config'}
     config['metadata']['datetime'] = datetime.datetime.utcnow()
     config['metadata']['user_args'].append('--y~+normal(0,1)')
-    populate_parser_fields(config)
+    backward.populate_priors(config['metadata'])
     return config
 
 
@@ -544,7 +545,7 @@ class TestConfigProperty(object):
         metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
         algorithms = {'random': {'seed': None}}
         config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
-        populate_parser_fields(config)
+        backward.populate_priors(config['metadata'])
 
         get_storage().create_experiment(config)
         original = Experiment('experiment_test', version=1)
@@ -552,7 +553,7 @@ class TestConfigProperty(object):
         config['branch'] = ['experiment_2']
         config['metadata']['user_args'].pop()
         config['metadata']['user_args'].append("--z~+normal(0,1)")
-        populate_parser_fields(config)
+        backward.populate_priors(config['metadata'])
         config['version'] = 1
         exp = Experiment('experiment_test', version=1)
         exp.configure(config)
@@ -567,14 +568,14 @@ class TestConfigProperty(object):
         metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
         algorithms = {'random': {'seed': None}}
         config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
-        populate_parser_fields(config)
+        backward.populate_priors(config['metadata'])
 
         get_storage().create_experiment(config)
         parent_id = config.pop('_id')
 
         config['version'] = 2
         config['metadata']['user_args'].append("--y~+normal(0,1)")
-        populate_parser_fields(config)
+        backward.populate_priors(config['metadata'])
         config['refers'] = dict(parent_id=parent_id, root_id=parent_id, adapters=[])
 
         get_storage().create_experiment(config)
@@ -582,7 +583,7 @@ class TestConfigProperty(object):
 
         config['metadata']['user_args'].pop()
         config['metadata']['user_args'].append("--z~+normal(0,1)")
-        populate_parser_fields(config)
+        backward.populate_priors(config['metadata'])
         config['version'] = 1
         config.pop('refers')
         exp = Experiment('experiment_test', version=1)
@@ -636,7 +637,7 @@ class TestConfigProperty(object):
         metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
         algorithms = {'random': {'seed': None}}
         config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
-        populate_parser_fields(config)
+        backward.populate_priors(config['metadata'])
 
         get_storage().create_experiment(config)
         parent_id = config.pop('_id')
@@ -647,7 +648,7 @@ class TestConfigProperty(object):
         config2 = copy.deepcopy(config)
         config2['version'] = 2
         config2['metadata']['user_args'].append("--y~+normal(0,1)")
-        populate_parser_fields(config2)
+        backward.populate_priors(config2['metadata'])
         config2['refers'] = dict(parent_id=parent_id, root_id=parent_id, adapters=[])
         get_storage().create_experiment(config2)
 
@@ -655,7 +656,7 @@ class TestConfigProperty(object):
         config3 = copy.deepcopy(config)
         config3['metadata']['user_args'].pop()
         config3['metadata']['user_args'].append("--z~+normal(0,1)")
-        populate_parser_fields(config3)
+        backward.populate_priors(config3['metadata'])
         config3['version'] = 1
 
         with pytest.raises(ValueError) as exc_info:
@@ -670,7 +671,7 @@ class TestConfigProperty(object):
         metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
         algorithms = {'random': {'seed': None}}
         config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
-        populate_parser_fields(config)
+        backward.populate_priors(config['metadata'])
 
         get_storage().create_experiment(config)
         parent_id = config.pop('_id')
@@ -681,7 +682,7 @@ class TestConfigProperty(object):
         config2 = copy.deepcopy(config)
         config2['version'] = 2
         config2['metadata']['user_args'].append("--y~+normal(0,1)")
-        populate_parser_fields(config2)
+        backward.populate_priors(config2['metadata'])
         config2['refers'] = dict(parent_id=parent_id, root_id=parent_id, adapters=[])
         get_storage().create_experiment(config2)
 
@@ -689,7 +690,7 @@ class TestConfigProperty(object):
         config3 = copy.deepcopy(config)
         config3['metadata']['user_args'].pop()
         config3['metadata']['user_args'].append("--z~+normal(0,1)")
-        populate_parser_fields(config3)
+        backward.populate_priors(config3['metadata'])
         config3.pop('version')
 
         with pytest.raises(RaceCondition) as exc_info:

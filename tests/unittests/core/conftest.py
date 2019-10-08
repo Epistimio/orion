@@ -12,7 +12,8 @@ from orion.algo.space import (Categorical, Integer, Real, Space)
 from orion.core.evc import conflicts
 from orion.core.io.convert import (JSONConverter, YAMLConverter)
 from orion.core.io.space_builder import DimensionBuilder
-from orion.core.utils.tests import default_datetime, MockDatetime, populate_parser_fields
+import orion.core.utils.backward as backward
+from orion.core.utils.tests import default_datetime, MockDatetime
 from orion.core.worker.experiment import Experiment
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -205,7 +206,7 @@ def new_config():
                   ['--new~normal(0,2)', '--changed~normal(0,2)'],
                   'user': 'some_user_name'})
 
-    populate_parser_fields(config)
+    backward.populate_priors(config['metadata'])
 
     return config
 
@@ -228,7 +229,7 @@ def old_config(create_db_instance):
                   ['--missing~uniform(-10,10)', '--changed~uniform(-10,10)'],
                   'user': 'some_user_name'})
 
-    populate_parser_fields(config)
+    backward.populate_priors(config['metadata'])
 
     create_db_instance.write('experiments', config)
     return config
@@ -308,7 +309,7 @@ def cli_conflict(old_config, new_config):
     new_config = copy.deepcopy(new_config)
     new_config['metadata']['user_args'].append("--some-new=args")
     new_config['metadata']['user_args'].append("--bool-arg")
-    populate_parser_fields(new_config)
+    backward.populate_priors(new_config['metadata'])
     return conflicts.CommandLineConflict(old_config, new_config)
 
 
@@ -334,7 +335,7 @@ def bad_exp_parent_config():
         version=1,
         algorithms='random')
 
-    populate_parser_fields(config)
+    backward.populate_priors(config['metadata'])
 
     return config
 
