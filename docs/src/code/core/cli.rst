@@ -12,6 +12,5 @@ Command lines
    cli/hunt
    cli/insert
    cli/init_only
-   cli/setup
    cli/db
    cli/evc

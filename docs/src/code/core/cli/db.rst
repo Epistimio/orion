@@ -8,4 +8,5 @@ db commands
    :maxdepth: 1
    :caption: DB command line modules
 
-   cli/db/test
+   db/test
+   db/setup
