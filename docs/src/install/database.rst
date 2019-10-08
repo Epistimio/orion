@@ -91,7 +91,7 @@ Configuring Oríon's Database
 
 There are different ways that database backend attributes can be configured.
 The first one is by using a global configuration file, which can easily be done
-using the command ``orion setup``. This will create a yaml file
+using the command ``orion db setup``. This will create a yaml file
 of the following format.
 
    .. code-block:: yaml
