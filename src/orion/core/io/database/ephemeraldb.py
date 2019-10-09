@@ -149,20 +149,6 @@ class EphemeralCollection(object):
         self._indexes = dict()
         self.create_index('_id', unique=True)
 
-    def __setstate__(self, state):
-        """Set state while ensuring backward compatibility"""
-        self._documents = state['_documents']
-
-        # if indexes are from <=v0.1.6
-        if state['_indexes'] and isinstance(next(iter(state['_indexes'].keys())), tuple):
-            self._indexes = dict()
-            for keys in state['_indexes'].keys():
-                # Re-introduce fake ordering
-                keys = [(key, None) for key in keys]
-                self.create_index(keys, unique=True)
-        else:
-            self._indexes = state['_indexes']
-
     def create_index(self, keys, unique=False):
         """Create given indexes if they do not already exist for this collection.
 
