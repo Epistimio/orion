@@ -11,7 +11,9 @@ import tempfile
 import pytest
 
 from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Space
 import orion.core
+from orion.core.evc.adapters import BaseAdapter
 from orion.core.io.database import DuplicateKeyError
 import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import RaceCondition
@@ -389,6 +391,19 @@ class TestConfigProperty(object):
         assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
         assert experiment_count_before == count_experiment(exp)
+
+    def test_instantiation_after_init(self, exp_config):
+        """Verify that algo, space and refers was instanciated properly"""
+        exp = Experiment('supernaedo2-dendi')
+        assert not isinstance(exp.algorithms, BaseAlgorithm)
+        assert not isinstance(exp.space, Space)
+        assert not isinstance(exp.refers['adapter'], BaseAdapter)
+        # Deliver an external configuration to finalize init
+        exp.configure(exp_config[0][0])
+        assert exp._init_done is True
+        assert isinstance(exp.algorithms, BaseAlgorithm)
+        assert isinstance(exp.space, Space)
+        assert isinstance(exp.refers['adapter'], BaseAdapter)
 
     def test_try_set_after_init(self, exp_config):
         """Cannot set a configuration after init (currently)."""
@@ -1001,6 +1016,7 @@ class TestInitExperimentView(object):
         assert exp.pool_size == exp_config[0][0]['pool_size']
         assert exp.max_trials == exp_config[0][0]['max_trials']
         assert exp.version == exp_config[0][0]['version']
+        assert isinstance(exp.refers['adapter'], BaseAdapter)
         # TODO: Views are not fully configured until configuration is refactored
         # assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
 
