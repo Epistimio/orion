@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.state` -- Encapsulate Orion state
-========================================================
+:mod:`orion.core.utils.tests` -- Utils for tests
+================================================
 .. module:: state
    :platform: Unix
-   :synopsis: Encapsulate orion state
+   :synopsis: Helper functions for tests
 
 """
 

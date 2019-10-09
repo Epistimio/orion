@@ -11,6 +11,7 @@ from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
 import orion.core.cli
 from orion.core.io.database import Database
 from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.utils.backward as backward
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
 
@@ -87,6 +88,10 @@ def exp_config():
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
               'experiment.yaml')) as f:
         exp_config = list(yaml.safe_load_all(f))
+
+    for config in exp_config[0]:
+        backward.populate_priors(config['metadata'])
+
     return exp_config
 
 

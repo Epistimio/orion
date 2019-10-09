@@ -13,7 +13,8 @@ import logging
 
 import orion.core
 from orion.core.io.convert import JSONConverter
-from orion.core.io.database import Database
+from orion.core.io.database import Database, OutdatedDatabaseError
+import orion.core.utils.backward as backward
 from orion.core.worker.trial import Trial
 from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
 
@@ -52,28 +53,31 @@ class Legacy(BaseStorageProtocol):
         configuration definition passed from experiment_builder
         to storage factory to legacy constructor.
         See `~orion.io.database.Database` for more details
+    setup: bool
+        Setup the database (create indexes)
 
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, setup=True):
         if config is not None:
             setup_database(config)
 
         self._db = Database()
-        self._setup_db()
+
+        if setup:
+            self._setup_db()
 
     def _setup_db(self):
         """Database index setup"""
+        if backward.db_is_outdated(self._db):
+            raise OutdatedDatabaseError("The database is outdated. You can upgrade it with the "
+                                        "command `orion db upgrade`.")
+
+        self._db.index_information('experiment')
         self._db.ensure_index('experiments',
                               [('name', Database.ASCENDING),
                                ('version', Database.ASCENDING)],
                               unique=True)
-
-        # For backward compatibility
-        index_info = self._db.index_information('experiments')
-        for depracated_idx in ['name_1_metadata.user_1', 'name_1_metadata.user_1_version_1']:
-            if depracated_idx in index_info:
-                self._db.drop_index('experiments', depracated_idx)
 
         self._db.ensure_index('experiments', 'metadata.datetime')
 
@@ -87,12 +91,21 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.create_experiment`"""
         return self._db.write('experiments', data=config, query=None)
 
-    def update_experiment(self, experiment, where=None, **kwargs):
+    def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
+        if experiment is not None and uid is not None:
+            assert experiment._id == uid
+
+        if uid is None:
+            if experiment is None:
+                raise MissingArguments('Either `experiment` or `uid` should be set')
+
+            uid = experiment._id
+
         if where is None:
             where = dict()
 
-        where['_id'] = experiment._id
+        where['_id'] = uid
         return self._db.write('experiments', data=kwargs, query=where)
 
     def fetch_experiments(self, query, selection=None):

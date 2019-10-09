@@ -305,6 +305,12 @@ class DuplicateKeyError(DatabaseError):
     pass
 
 
+class OutdatedDatabaseError(DatabaseError):
+    """Exception type used when the database is outdated."""
+
+    pass
+
+
 # pylint: disable=too-few-public-methods,abstract-method
 class Database(AbstractDB, metaclass=SingletonFactory):
     """Class used to inject dependency on a database framework."""

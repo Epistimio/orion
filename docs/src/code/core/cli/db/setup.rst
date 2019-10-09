@@ -1,5 +1,5 @@
 setup command
 =============
 
-# .. automodule:: orion.core.cli.setup
+# .. automodule:: orion.core.cli.db.setup
 #    :members:

@@ -11,8 +11,11 @@ import tempfile
 import pytest
 
 from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Space
 import orion.core
+from orion.core.evc.adapters import BaseAdapter
 from orion.core.io.database import DuplicateKeyError
+import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import RaceCondition
 from orion.core.utils.tests import OrionState
 import orion.core.worker.experiment
@@ -51,19 +54,26 @@ def new_config(random_dt):
         # and in general anything which is not in Experiment's slots
         something_to_be_ignored='asdfa'
         )
+
+    backward.populate_priors(new_config['metadata'])
+
     return new_config
 
 
 @pytest.fixture
 def parent_version_config():
     """Return a configuration for an experiment."""
-    return dict(_id='parent_config',
-                name="old_experiment",
-                version=1,
-                algorithms='random',
-                metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow(),
-                          'user_args': ['--x~normal(0,1)']}
-                )
+    config = dict(
+        _id='parent_config',
+        name="old_experiment",
+        version=1,
+        algorithms='random',
+        metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow(),
+                  'user_args': ['--x~normal(0,1)']})
+
+    backward.populate_priors(config['metadata'])
+
+    return config
 
 
 @pytest.fixture
@@ -75,6 +85,7 @@ def child_version_config(parent_version_config):
     config['refers'] = {'parent_id': 'parent_config'}
     config['metadata']['datetime'] = datetime.datetime.utcnow()
     config['metadata']['user_args'].append('--y~+normal(0,1)')
+    backward.populate_priors(config['metadata'])
     return config
 
 
@@ -381,6 +392,19 @@ class TestConfigProperty(object):
         assert exp.configuration == exp_config[0][0]
         assert experiment_count_before == count_experiment(exp)
 
+    def test_instantiation_after_init(self, exp_config):
+        """Verify that algo, space and refers was instanciated properly"""
+        exp = Experiment('supernaedo2-dendi')
+        assert not isinstance(exp.algorithms, BaseAlgorithm)
+        assert not isinstance(exp.space, Space)
+        assert not isinstance(exp.refers['adapter'], BaseAdapter)
+        # Deliver an external configuration to finalize init
+        exp.configure(exp_config[0][0])
+        assert exp._init_done is True
+        assert isinstance(exp.algorithms, BaseAlgorithm)
+        assert isinstance(exp.space, Space)
+        assert isinstance(exp.refers['adapter'], BaseAdapter)
+
     def test_try_set_after_init(self, exp_config):
         """Cannot set a configuration after init (currently)."""
         exp = Experiment('supernaedo2')
@@ -536,6 +560,7 @@ class TestConfigProperty(object):
         metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
         algorithms = {'random': {'seed': None}}
         config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
+        backward.populate_priors(config['metadata'])
 
         get_storage().create_experiment(config)
         original = Experiment('experiment_test', version=1)
@@ -543,6 +568,7 @@ class TestConfigProperty(object):
         config['branch'] = ['experiment_2']
         config['metadata']['user_args'].pop()
         config['metadata']['user_args'].append("--z~+normal(0,1)")
+        backward.populate_priors(config['metadata'])
         config['version'] = 1
         exp = Experiment('experiment_test', version=1)
         exp.configure(config)
@@ -557,12 +583,14 @@ class TestConfigProperty(object):
         metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
         algorithms = {'random': {'seed': None}}
         config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
+        backward.populate_priors(config['metadata'])
 
         get_storage().create_experiment(config)
         parent_id = config.pop('_id')
 
         config['version'] = 2
         config['metadata']['user_args'].append("--y~+normal(0,1)")
+        backward.populate_priors(config['metadata'])
         config['refers'] = dict(parent_id=parent_id, root_id=parent_id, adapters=[])
 
         get_storage().create_experiment(config)
@@ -570,6 +598,7 @@ class TestConfigProperty(object):
 
         config['metadata']['user_args'].pop()
         config['metadata']['user_args'].append("--z~+normal(0,1)")
+        backward.populate_priors(config['metadata'])
         config['version'] = 1
         config.pop('refers')
         exp = Experiment('experiment_test', version=1)
@@ -623,6 +652,7 @@ class TestConfigProperty(object):
         metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
         algorithms = {'random': {'seed': None}}
         config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
+        backward.populate_priors(config['metadata'])
 
         get_storage().create_experiment(config)
         parent_id = config.pop('_id')
@@ -633,6 +663,7 @@ class TestConfigProperty(object):
         config2 = copy.deepcopy(config)
         config2['version'] = 2
         config2['metadata']['user_args'].append("--y~+normal(0,1)")
+        backward.populate_priors(config2['metadata'])
         config2['refers'] = dict(parent_id=parent_id, root_id=parent_id, adapters=[])
         get_storage().create_experiment(config2)
 
@@ -640,6 +671,7 @@ class TestConfigProperty(object):
         config3 = copy.deepcopy(config)
         config3['metadata']['user_args'].pop()
         config3['metadata']['user_args'].append("--z~+normal(0,1)")
+        backward.populate_priors(config3['metadata'])
         config3['version'] = 1
 
         with pytest.raises(ValueError) as exc_info:
@@ -654,6 +686,7 @@ class TestConfigProperty(object):
         metadata = dict(user='tsirif', datetime=datetime.datetime.utcnow(), user_args=user_args)
         algorithms = {'random': {'seed': None}}
         config = dict(name='experiment_test', metadata=metadata, version=1, algorithms=algorithms)
+        backward.populate_priors(config['metadata'])
 
         get_storage().create_experiment(config)
         parent_id = config.pop('_id')
@@ -664,6 +697,7 @@ class TestConfigProperty(object):
         config2 = copy.deepcopy(config)
         config2['version'] = 2
         config2['metadata']['user_args'].append("--y~+normal(0,1)")
+        backward.populate_priors(config2['metadata'])
         config2['refers'] = dict(parent_id=parent_id, root_id=parent_id, adapters=[])
         get_storage().create_experiment(config2)
 
@@ -671,6 +705,7 @@ class TestConfigProperty(object):
         config3 = copy.deepcopy(config)
         config3['metadata']['user_args'].pop()
         config3['metadata']['user_args'].append("--z~+normal(0,1)")
+        backward.populate_priors(config3['metadata'])
         config3.pop('version')
 
         with pytest.raises(RaceCondition) as exc_info:
@@ -918,7 +953,9 @@ def test_is_done_property_with_algo(hacked_exp):
 def test_broken_property(hacked_exp):
     """Check experiment stopping conditions for maximum number of broken."""
     assert not hacked_exp.is_broken
-    trials = hacked_exp.fetch_trials()[:3]
+    MAX_BROKEN = 3
+    orion.core.config.worker.max_broken = MAX_BROKEN
+    trials = hacked_exp.fetch_trials()[:MAX_BROKEN]
 
     for trial in trials:
         get_storage().set_trial_status(trial, status='broken')
@@ -929,19 +966,18 @@ def test_broken_property(hacked_exp):
 def test_configurable_broken_property(hacked_exp):
     """Check if max_broken changes after configuration."""
     assert not hacked_exp.is_broken
-    trials = hacked_exp.fetch_trials({})[:3]
-    old_broken_value = orion.core.config.worker.max_broken
+    MAX_BROKEN = 3
+    orion.core.config.worker.max_broken = MAX_BROKEN
+    trials = hacked_exp.fetch_trials()[:MAX_BROKEN]
 
     for trial in trials:
         get_storage().set_trial_status(trial, status='broken')
 
     assert hacked_exp.is_broken
 
-    orion.core.config.worker.max_broken = 4
+    orion.core.config.worker.max_broken += 1
 
     assert not hacked_exp.is_broken
-
-    orion.core.config.worker.max_broken = old_broken_value
 
 
 def test_experiment_stats(hacked_exp, exp_config, random_dt):
@@ -980,6 +1016,7 @@ class TestInitExperimentView(object):
         assert exp.pool_size == exp_config[0][0]['pool_size']
         assert exp.max_trials == exp_config[0][0]['max_trials']
         assert exp.version == exp_config[0][0]['version']
+        assert isinstance(exp.refers['adapter'], BaseAdapter)
         # TODO: Views are not fully configured until configuration is refactored
         # assert exp.algorithms.configuration == exp_config[0][0]['algorithms']
 

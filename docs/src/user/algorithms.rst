@@ -157,9 +157,8 @@ Configuration
 .. code-block:: yaml
 
      algorithms:
-        bayesopt:
+        BayesianOptimizer:
            seed: null
-           strategy: cl_min
            n_initial_points: 10
            acq_func: gp_hedge
            alpha: 1e-10
@@ -168,13 +167,6 @@ Configuration
            normalize_y: False
 
 ``seed``
-
-
-``strategy``
-
-Method to use to sample multiple points.
-Supported options are `"cl_min"`, `"cl_mean"` or `"cl_max"`.
-Check skopt docs for details.
 
 ``n_initial_points``
 

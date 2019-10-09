@@ -9,6 +9,7 @@ import time
 import pytest
 
 from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.utils.backward as backward
 from orion.core.utils.format_trials import tuple_to_trial
 import orion.core.worker.consumer as consumer
 
@@ -23,6 +24,7 @@ def config(exp_config):
     config['metadata']['user_args'] = ['--x~uniform(-50, 50)']
     config['name'] = 'exp'
     config['working_dir'] = "/tmp/orion"
+    backward.populate_priors(config['metadata'])
     return config
 
 

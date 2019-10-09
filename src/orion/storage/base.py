@@ -35,13 +35,16 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """Insert a new experiment inside the database"""
         raise NotImplementedError()
 
-    def update_experiment(self, experiment, where=None, **kwargs):
+    def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
         """Update a the fields of a given trials
 
         Parameters
         ----------
-        experiment: Experiment
-            Experiment object to update
+        experiment: Experiment, optional
+           experiment object to retrieve from the database
+
+        uid: str, optional
+            experiment id used to retrieve the trial object
 
         where: Optional[dict]
             constraint experiment must respect
@@ -52,6 +55,14 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         Returns
         -------
         returns true if the underlying storage was updated
+
+        Raises
+        ------
+        UndefinedCall
+            if both experiment and uid are not set
+
+        AssertionError
+            if both experiment and uid are provided and they do not match
 
         """
         raise NotImplementedError()

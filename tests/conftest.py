@@ -13,6 +13,8 @@ import orion.core
 from orion.core.io import resolve_config
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
+from orion.core.io.database.pickleddb import PickledDB
+import orion.core.utils.backward as backward
 from orion.core.worker.trial import Trial
 from orion.storage.base import Storage
 from orion.storage.legacy import Legacy
@@ -165,10 +167,11 @@ def exp_config():
     for i, t_dict in enumerate(exp_config[1]):
         exp_config[1][i] = Trial(**t_dict).to_dict()
 
-    for i, _ in enumerate(exp_config[0]):
-        exp_config[0][i]["metadata"]["user_script"] = os.path.join(
-            os.path.dirname(__file__), exp_config[0][i]["metadata"]["user_script"])
-        exp_config[0][i]['version'] = 1
+    for config in exp_config[0]:
+        config["metadata"]["user_script"] = os.path.join(
+            os.path.dirname(__file__), config["metadata"]["user_script"])
+        backward.populate_priors(config['metadata'])
+        config['version'] = 1
 
     return exp_config
 
@@ -203,6 +206,7 @@ def null_db_instances():
     Legacy.instance = None
     Database.instance = None
     MongoDB.instance = None
+    PickledDB.instance = None
 
 
 @pytest.fixture(scope='function')

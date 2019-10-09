@@ -13,6 +13,7 @@ import yaml
 
 import orion.core.cli
 from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.utils.backward as backward
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
 
@@ -203,6 +204,7 @@ def test_workon(database):
     config['metadata']['user_script'] = os.path.abspath(os.path.join(
         os.path.dirname(__file__), "black_box.py"))
     config['metadata']['user_args'] = ["-x~uniform(-50, 50)"]
+    backward.populate_priors(config['metadata'])
     experiment.configure(config)
 
     workon(experiment)
@@ -466,11 +468,14 @@ def test_resilience(monkeypatch):
     """Test if Oríon stops after enough broken trials."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+    MAX_BROKEN = 3
+    orion.core.config.worker.max_broken = 3
+
     orion.core.cli.main(["hunt", "--config", "./orion_config_random.yaml", "./broken_box.py",
                          "-x~uniform(-50, 50)"])
 
     exp = ExperimentBuilder().build_from({'name': 'demo_random_search'})
-    assert len(exp.fetch_trials_by_status('broken')) == 3
+    assert len(exp.fetch_trials_by_status('broken')) == MAX_BROKEN
 
 
 @pytest.mark.usefixtures("clean_db")
