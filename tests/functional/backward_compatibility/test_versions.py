@@ -134,9 +134,9 @@ def fill_db(request):
 class TestBackwardCompatibility:
     """Tests for backward compatibility between Oríon versions."""
 
-    def test_db(self):
-        """Verify test-db command"""
-        out = execute('orion test-db')
+    def test_db_test(self):
+        """Verify db test command"""
+        out = execute('orion db test')
         assert 'Failure' not in out
 
     def test_list(self):
