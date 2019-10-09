@@ -546,7 +546,7 @@ class Experiment:
             if self.refers['parent_id'] is None:
                 log.debug('update refers (name: %s)', config['name'])
                 self.refers['root_id'] = self._id
-                self._storage.update_experiment(self, refers=self.refers)
+                self._storage.update_experiment(self, refers=self.configuration['refers'])
 
         else:
             # Writing the final config to an already existing experiment raises
@@ -605,7 +605,7 @@ class Experiment:
         self.refers.setdefault('parent_id', None)
         self.refers.setdefault('root_id', self._id)
         self.refers.setdefault('adapter', [])
-        if self.refers['adapter'] and not isinstance(self.refers.get('adapter'), BaseAdapter):
+        if not isinstance(self.refers.get('adapter'), BaseAdapter):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
         if not self.producer.get('strategy'):
@@ -716,7 +716,7 @@ class ExperimentView(object):
         self.refers.setdefault('parent_id', None)
         self.refers.setdefault('root_id', self._id)
         self.refers.setdefault('adapter', [])
-        if self.refers['adapter'] and not isinstance(self.refers.get('adapter'), BaseAdapter):
+        if not isinstance(self.refers.get('adapter'), BaseAdapter):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
         # try:
