@@ -23,3 +23,12 @@ def populate_priors(metadata):
     parser.parse(metadata["user_args"])
     metadata["parser"] = parser.get_state_dict()
     metadata["priors"] = dict(parser.priors)
+
+
+def db_is_outdated(database):
+    """Return True if the database scheme is outdated."""
+    deprecated_indices = [('name', 'metadata.user'), ('name', 'metadata.user', 'version'),
+                          'name_1_metadata.user_1', 'name_1_metadata.user_1_version_1']
+
+    index_information = database.index_information('experiments')
+    return any(index in deprecated_indices for index in index_information.keys())

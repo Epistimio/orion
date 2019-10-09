@@ -247,6 +247,8 @@ class ExperimentBuilder(object):
             if handle_racecondition:
                 experiment = self.build_from(cmdargs, handle_racecondition=False)
 
+            raise
+
         return experiment
 
     def build_from_config(self, config):
@@ -295,12 +297,12 @@ class ExperimentBuilder(object):
 
         """
         # TODO: Fix this in config refactoring
-        db_opts = config.get('protocol', {'type': 'legacy'})
-        dbtype = db_opts.pop('type')
+        storage_opts = config.get('protocol', {'type': 'legacy'})
+        storage_type = storage_opts.pop('type')
 
-        log.debug("Creating %s database client with args: %s", dbtype, db_opts)
+        log.debug("Creating %s storage client with args: %s", storage_type, storage_opts)
         try:
-            Storage(of_type=dbtype, config=config, **db_opts)
+            Storage(of_type=storage_type, config=config, **storage_opts)
         except ValueError:
-            if Storage().__class__.__name__.lower() != dbtype.lower():
+            if Storage().__class__.__name__.lower() != storage_type.lower():
                 raise
