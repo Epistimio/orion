@@ -1,9 +1,9 @@
 # Roadmap
-Last update August 26th, 2019
+Last update October 8th, 2019
 
 ## Next releases - Short-Term
 
-### v0.1.7
+### v0.1.8
 
 #### Preliminary Python API
 Library API to simplify usage of algorithms without Oríon's worker.
