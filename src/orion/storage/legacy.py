@@ -91,12 +91,21 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.create_experiment`"""
         return self._db.write('experiments', data=config, query=None)
 
-    def update_experiment(self, experiment, where=None, **kwargs):
+    def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
+        if experiment is not None and uid is not None:
+            assert experiment._id == uid
+
+        if uid is None:
+            if experiment is None:
+                raise MissingArguments('Either `experiment` or `uid` should be set')
+
+            uid = experiment._id
+
         if where is None:
             where = dict()
 
-        where['_id'] = experiment._id
+        where['_id'] = uid
         return self._db.write('experiments', data=kwargs, query=where)
 
     def fetch_experiments(self, query, selection=None):
