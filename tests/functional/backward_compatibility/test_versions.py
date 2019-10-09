@@ -8,6 +8,13 @@ import subprocess
 from pymongo import MongoClient
 import pytest
 
+from orion.core.io.database import Database, OutdatedDatabaseError
+from orion.core.io.database.mongodb import MongoDB
+from orion.core.io.database.pickleddb import PickledDB
+from orion.core.io.experiment_builder import ExperimentBuilder
+from orion.storage.base import get_storage, Storage
+from orion.storage.legacy import Legacy
+
 
 DIRNAME = os.path.dirname(os.path.abspath(__file__))
 
@@ -129,10 +136,48 @@ def fill_db(request):
     orion_version = get_version('orion')
     assert orion_version != 'orion {}'.format(version)
 
+    # Should fail before upgrade
+    if version < '0.1.6':
+        with pytest.raises(OutdatedDatabaseError):
+            build_storage()
+
+    print(execute('orion -vv db upgrade -f'))
+
+
+def null_db_instances():
+    """Nullify singleton instance so that we can assure independent instantiation tests."""
+    Storage.instance = None
+    Legacy.instance = None
+    Database.instance = None
+    MongoDB.instance = None
+    PickledDB.instance = None
+
+
+def build_storage():
+    """Build storage from scratch"""
+    null_db_instances()
+    experiment_builder = ExperimentBuilder()
+    local_config = experiment_builder.fetch_full_config({}, use_db=False)
+    experiment_builder.setup_storage(local_config)
+
+    return get_storage()
+
 
 @pytest.mark.usefixtures('fill_db')
 class TestBackwardCompatibility:
     """Tests for backward compatibility between Oríon versions."""
+
+    def test_db_upgrade(self):
+        """Verify db upgrade was successful"""
+        storage = build_storage()
+
+        index_info = storage._db.index_information('experiments')
+        assert (set([key for key, is_unique in index_info.items() if is_unique]) ==
+                set(['_id_', 'name_1_version_1']))
+
+        experiments = storage.fetch_experiments({})
+        assert 'version' in experiments[0]
+        assert 'priors' in experiments[0]['metadata']
 
     def test_db_test(self):
         """Verify db test command"""

@@ -13,6 +13,7 @@ import orion.core
 from orion.core.io import resolve_config
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
+from orion.core.io.database.pickleddb import PickledDB
 import orion.core.utils.backward as backward
 from orion.core.worker.trial import Trial
 from orion.storage.base import Storage
@@ -205,6 +206,7 @@ def null_db_instances():
     Legacy.instance = None
     Database.instance = None
     MongoDB.instance = None
+    PickledDB.instance = None
 
 
 @pytest.fixture(scope='function')

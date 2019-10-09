@@ -265,3 +265,22 @@ tests fail because of insufficient user access rights on the database.
    Check if database supports read operation... Success
    Check if database supports count operation... Success
    Check if database supports delete operation... Success
+
+
+Upgrade Database
+================
+
+Database scheme may change from one version of Oríon to another. If such change happens, you will
+get the following error after upgrading Oríon.
+
+.. code-block:: sh
+
+   The database is outdated. You can upgrade it with the command `orion db upgrade`.
+
+Make sure to create a backup of your database before upgrading it. You should also make sure that no
+process writes to the database during the upgrade otherwise the latter could fail. When ready,
+simply run the upgrade command.
+
+.. code-block:: sh
+
+   orion db upgrade
