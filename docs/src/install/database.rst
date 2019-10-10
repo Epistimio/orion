@@ -91,7 +91,7 @@ Configuring Oríon's Database
 
 There are different ways that database backend attributes can be configured.
 The first one is by using a global configuration file, which can easily be done
-using the command ``orion setup``. This will create a yaml file
+using the command ``orion db setup``. This will create a yaml file
 of the following format.
 
    .. code-block:: yaml
@@ -199,11 +199,11 @@ EphemeralDB has no arguments.
 Test connection
 ===============
 
-You can use the command ``orion test-db`` to test the setup of your database backend.
+You can use the command ``orion db test`` to test the setup of your database backend.
 
 .. code-block:: sh
 
-   $ orion test-db
+   $ orion db test
 
    Check for a configuration inside the default paths...
        {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
@@ -227,7 +227,7 @@ stage. Here's an example including all three configuration methods.
 
 .. code-block:: sh
 
-   $ ORION_DB_PORT=27018 orion test_db --config local.yaml
+   $ ORION_DB_PORT=27018 orion db test --config local.yaml
 
    Check for a configuration inside the global paths...
        {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
@@ -244,7 +244,7 @@ that will be used and then prints the instance created to confirm the database t
 
 .. code-block:: sh
 
-   $ orion test-db
+   $ orion db test
 
    [...]
 
@@ -257,7 +257,7 @@ tests fail because of insufficient user access rights on the database.
 
 .. code-block:: sh
 
-   $ orion test-db
+   $ orion db test
 
    [...]
 
@@ -265,3 +265,22 @@ tests fail because of insufficient user access rights on the database.
    Check if database supports read operation... Success
    Check if database supports count operation... Success
    Check if database supports delete operation... Success
+
+
+Upgrade Database
+================
+
+Database scheme may change from one version of Oríon to another. If such change happens, you will
+get the following error after upgrading Oríon.
+
+.. code-block:: sh
+
+   The database is outdated. You can upgrade it with the command `orion db upgrade`.
+
+Make sure to create a backup of your database before upgrading it. You should also make sure that no
+process writes to the database during the upgrade otherwise the latter could fail. When ready,
+simply run the upgrade command.
+
+.. code-block:: sh
+
+   orion db upgrade

@@ -349,6 +349,23 @@ class TestIndex(object):
             {'_id_': (('_id',), {(1, ), (2, ), (3, )}),
              'hello_1': (('hello', ), {('there', ), ('here', ), (2, )})})
 
+    def test_index_over_non_existing_field(self, collection):
+        """Test if index values are tracked property."""
+        collection.create_index([('hello', EphemeralDB.DESCENDING),
+                                 ('idontexist', EphemeralDB.ASCENDING)], unique=True)
+
+        collection.insert_many([{'hello': 'here'}, {'hello': 2}])
+        assert (
+            collection._indexes ==
+            {'_id_': (('_id',), {(1, ), (2, ), (3, )}),
+             'hello_1_idontexist_1': (('hello', 'idontexist'),
+                                      {('there', None), ('here', None), (2, None)})})
+        assert (
+            collection.find({}, selection={'hello': 1, 'idontexist': 1}) ==
+            [{'_id': 1, 'hello': 'there', 'idontexist': None},
+             {'_id': 2, 'hello': 'here', 'idontexist': None},
+             {'_id': 3, 'hello': 2, 'idontexist': None}])
+
 
 @pytest.mark.usefixtures("clean_db")
 class TestSelect(object):
@@ -383,6 +400,10 @@ class TestSelect(object):
     def test_mixed_select(self, document):
         """Select one field and unselect _id."""
         assert document.select({'_id': 0, 'hello': 1}) == {'hello': 'there'}
+
+    def test_select_unexisting_field(self, document):
+        """Select field that does not exist and should return None."""
+        assert document.select({'idontexist': 1}) == {'_id': 1, 'idontexist': None}
 
 
 @pytest.mark.usefixtures('clean_db')

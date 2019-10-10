@@ -14,26 +14,16 @@ import tempfile
 
 import yaml
 
-import orion.core
 from orion.core.io.database import Database
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.utils import SingletonAlreadyInstantiatedError
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage, Storage
 from orion.storage.legacy import Legacy
 from orion.storage.track import Track
-
-
-def populate_parser_fields(config):
-    """Compute parser state and priors based on user_args and populate metadata."""
-    parser = OrionCmdlineParser(orion.core.config.user_script_config)
-    parser.parse(config["metadata"]["user_args"])
-    config["metadata"]["parser"] = parser.get_state_dict()
-    config["metadata"]["priors"] = dict(parser.priors)
 
 
 def _select(lhs, rhs):

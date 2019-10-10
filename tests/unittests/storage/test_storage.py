@@ -162,6 +162,32 @@ class TestStorage:
             experiments = storage.fetch_experiments({'name': '-1', 'metadata.user': user})
             assert len(experiments) == 0
 
+    def test_update_experiment(self, monkeypatch, storage, name='0', user='a'):
+        """Test fetch experiments"""
+        with OrionState(experiments=generate_experiments(), database=storage) as cfg:
+            storage = cfg.storage()
+
+            class _Dummy():
+                pass
+
+            experiment = cfg.experiments[0]
+            mocked_experiment = _Dummy()
+            mocked_experiment._id = experiment['_id']
+
+            storage.update_experiment(mocked_experiment, test=True)
+            assert storage.fetch_experiments({'_id': experiment['_id']})[0]['test']
+            assert 'test' not in storage.fetch_experiments({'_id': cfg.experiments[1]['_id']})[0]
+
+            storage.update_experiment(uid=experiment['_id'], test2=True)
+            assert storage.fetch_experiments({'_id': experiment['_id']})[0]['test2']
+            assert 'test2' not in storage.fetch_experiments({'_id': cfg.experiments[1]['_id']})[0]
+
+            with pytest.raises(MissingArguments):
+                storage.update_experiment()
+
+            with pytest.raises(AssertionError):
+                storage.update_experiment(experiment=mocked_experiment, uid='123')
+
     def test_register_trial(self, storage):
         """Test register trial"""
         with OrionState(experiments=[base_experiment], database=storage) as cfg:

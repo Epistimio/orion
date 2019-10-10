@@ -12,11 +12,8 @@
 import argparse
 import logging
 
-from orion.core.cli.checks.creation import CreationStage
-from orion.core.cli.checks.operations import OperationsStage
-from orion.core.cli.checks.presence import PresenceStage
-from orion.core.io.experiment_builder import ExperimentBuilder
-from orion.core.utils.exceptions import CheckError
+from orion.core.cli.db.test import main
+
 
 log = logging.getLogger(__name__)
 
@@ -29,31 +26,14 @@ def add_subparser(parser):
                                 metavar='path-to-config', help="user provided "
                                 "orion configuration file")
 
-    test_db_parser.set_defaults(func=main)
+    test_db_parser.set_defaults(func=wrap_main)
 
     return test_db_parser
 
 
-def main(args):
+def wrap_main(args):
     """Run through all checks for database."""
-    experiment_builder = ExperimentBuilder()
-    presence_stage = PresenceStage(experiment_builder, args)
-    creation_stage = CreationStage(presence_stage)
-    operations_stage = OperationsStage(creation_stage)
-    stages = [presence_stage, creation_stage, operations_stage]
+    log.warning('Command `orion test-db` is deprecated and will be removed in v0.2.0. Use '
+                '`orion db test` instead.')
 
-    try:
-        for stage in stages:
-            for check in stage.checks():
-                print(check.__doc__, end='.. ')
-                status, msg = check()
-                print(status)
-
-                if status == "Skipping":
-                    print(msg)
-
-            stage.post_stage()
-
-    except CheckError as ex:
-        print("Failure")
-        print(ex)
+    main(args)
