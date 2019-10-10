@@ -23,6 +23,9 @@ class Trial:
     experiment : str
        Unique identifier for the experiment that produced this trial.
        Same as an `Experiment._id`.
+    id_override: str
+        Trial id returned by the database. It should be unique for a given
+        set of parameters
     heartbeat : datetime.datetime
         Last time trial was identified as being alive.
     status : str
@@ -57,7 +60,6 @@ class Trial:
     params : list of `Trial.Param`
        List of suggested values for the `Experiment` parameter space.
        Consists a sample to be evaluated.
-
     """
 
     @classmethod
