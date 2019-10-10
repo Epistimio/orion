@@ -742,3 +742,42 @@ class ExperimentView(object):
         """Represent the object as a string."""
         return "ExperimentView(name=%s, metadata.user=%s, version=%s)" % \
             (self.name, self.metadata['user'], self.version)
+
+
+# pylint: disable=too-few-public-methods
+class ExperimentViewNew(object):
+    """Non-writable view of an experiment
+
+    .. seealso::
+
+        :py:class:`orion.core.worker.experiment.Experiment` for writable experiments.
+
+    """
+
+    __slots__ = ('_experiment', )
+
+    #                     Attributes
+    valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials",
+                         "version", "space"] +
+                        # Properties
+                        ["id", "node", "is_done", "space", "algorithms", "stats", "configuration"] +
+                        # Methods
+                        ["fetch_trials", "fetch_trials_by_status",
+                         "connect_to_version_control_tree", "get_trial"])
+
+    def __init__(self, experiment):
+        """TODO"""
+        self._experiment = experiment
+        self._experiment._storage = ReadOnlyStorageProtocol(get_storage())
+
+    def __getattr__(self, name):
+        """Get attribute only if valid"""
+        if name not in self.valid_attributes:
+            raise AttributeError("Cannot access attribute %s on view-only experiments." % name)
+
+        return getattr(self._experiment, name)
+
+    def __repr__(self):
+        """Represent the object as a string."""
+        return "ExperimentView(name=%s, metadata.user=%s, version=%s)" % \
+            (self.name, self.metadata['user'], self.version)
