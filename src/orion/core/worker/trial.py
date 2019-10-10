@@ -60,6 +60,7 @@ class Trial:
     params : list of `Trial.Param`
        List of suggested values for the `Experiment` parameter space.
        Consists a sample to be evaluated.
+
     """
 
     @classmethod
