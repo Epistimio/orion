@@ -23,6 +23,7 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
+import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import RaceCondition
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import (BaseParallelStrategy,
@@ -150,6 +151,9 @@ class Experiment:
 
             config = sorted(config, key=lambda x: x['metadata']['datetime'],
                             reverse=True)[0]
+
+            backward.populate_priors(config['metadata'])
+
             for attrname in self.__slots__:
                 if not attrname.startswith('_') and attrname in config:
                     setattr(self, attrname, config[attrname])
@@ -542,7 +546,7 @@ class Experiment:
             if self.refers['parent_id'] is None:
                 log.debug('update refers (name: %s)', config['name'])
                 self.refers['root_id'] = self._id
-                self._storage.update_experiment(self, refers=self.refers)
+                self._storage.update_experiment(self, refers=self.configuration['refers'])
 
         else:
             # Writing the final config to an already existing experiment raises
@@ -601,7 +605,7 @@ class Experiment:
         self.refers.setdefault('parent_id', None)
         self.refers.setdefault('root_id', self._id)
         self.refers.setdefault('adapter', [])
-        if self.refers['adapter'] and not isinstance(self.refers.get('adapter'), BaseAdapter):
+        if not isinstance(self.refers.get('adapter'), BaseAdapter):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
         if not self.producer.get('strategy'):
@@ -712,7 +716,7 @@ class ExperimentView(object):
         self.refers.setdefault('parent_id', None)
         self.refers.setdefault('root_id', self._id)
         self.refers.setdefault('adapter', [])
-        if self.refers['adapter'] and not isinstance(self.refers.get('adapter'), BaseAdapter):
+        if not isinstance(self.refers.get('adapter'), BaseAdapter):
             self.refers['adapter'] = Adapter.build(self.refers['adapter'])
 
         # try:
