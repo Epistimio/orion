@@ -17,7 +17,8 @@ def test_defined_parser():
     options = parser.parse_args([])
     assert options.manual_resolution is False
     assert options.algorithm_change is False
-    assert options.branch is None
+    assert options.branch_to is None
+    assert options.branch_from is None
     assert options.cli_change_type is None
     assert options.code_change_type is None
     assert options.config_change_type is None

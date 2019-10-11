@@ -26,6 +26,12 @@ def _add_manual_resolution_argument(parser):
         help="Manually resolve conflicts")
 
 
+def _add_branch_from_argument(parser):
+    parser.add_argument(
+        "--branch-from", type=str,
+        help="Create a new child based on experiment defined by `branch-from`")
+
+
 def _add_algorithm_argument(parser, resolution_class):
     parser.add_argument(
         resolution_class.ARGUMENT,
@@ -54,7 +60,7 @@ def _add_config_argument(parser, resolution_class):
         help="Set configuration change type")
 
 
-def _add_branching_argument(parser, resolution_class):
+def _add_branch_to_argument(parser, resolution_class):
     parser.add_argument(
         '-b', resolution_class.ARGUMENT, metavar='stringID',
         help='Unique name for the new branching experiment')
@@ -67,7 +73,8 @@ resolution_arguments = {
     'code_change_type': _add_code_argument,
     'cli_change_type': _add_cli_argument,
     'config_change_type': _add_config_argument,
-    'branch': _add_branching_argument}
+    'branch_from': _add_branch_from_argument,
+    'branch_to': _add_branch_to_argument}
 
 
 UNDEFINED_PARSER_ERROR = (
@@ -83,6 +90,7 @@ def get_branching_args_group(parser):
 
     _add_manual_resolution_argument(branching_args_group)
     _add_auto_resolution_argument(branching_args_group)
+    _add_branch_from_argument(branching_args_group)
 
     for resolution_class in sorted(Resolution.__subclasses__(), key=lambda cls: cls.__name__):
         if not resolution_class.ARGUMENT:

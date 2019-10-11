@@ -198,8 +198,6 @@ class TestConfigProperty(object):
         Assuming that experiment's (exp's name, user's name) has hit the database.
         """
         exp = Experiment('supernaedo2-dendi')
-        exp_config[0][0].pop('_id')
-        exp_config[0][0]['version'] = 1
         assert exp.configuration == exp_config[0][0]
 
     def test_get_before_init_no_hit(self, exp_config, random_dt):
@@ -256,7 +254,6 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
         exp_config[0][0]['algorithms']['dumbalgo']['seed'] = None
         exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
-        assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
 
     def test_good_set_before_init_hit_no_diffs_exc_pool_size(self, exp_config):
@@ -276,7 +273,6 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
         exp_config[0][0]['algorithms']['dumbalgo']['seed'] = None
         exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
-        assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
 
     def test_good_set_before_init_no_hit(self, random_dt, database, new_config):
@@ -384,7 +380,6 @@ class TestConfigProperty(object):
         exp_config[0][0]['algorithms']['dumbalgo']['value'] = 5
         exp_config[0][0]['algorithms']['dumbalgo']['seed'] = None
         exp_config[0][0]['producer']['strategy'] = "NoParallelStrategy"
-        assert exp._id == exp_config[0][0].pop('_id')
         assert exp.configuration == exp_config[0][0]
         assert experiment_count_before == count_experiment(exp)
 
@@ -561,7 +556,7 @@ class TestConfigProperty(object):
         get_storage().create_experiment(config)
         original = Experiment('experiment_test', version=1)
 
-        config['branch'] = ['experiment_2']
+        config['branch_to'] = ['experiment_2']
         config['metadata']['user_args'].pop()
         config['metadata']['user_args'].append("--z~+normal(0,1)")
         backward.populate_priors(config['metadata'])
@@ -996,7 +991,7 @@ class TestInitExperimentView(object):
         """Hit user name, but exp_name does not hit the db."""
         with pytest.raises(ValueError) as exc_info:
             ExperimentView('supernaekei')
-        assert ("No experiment with given name 'supernaekei' for user 'tsirif'"
+        assert ("No experiment with given name 'supernaekei' with version '1'"
                 in str(exc_info.value))
 
     @pytest.mark.usefixtures("with_user_tsirif")

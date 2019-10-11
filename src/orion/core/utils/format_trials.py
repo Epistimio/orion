@@ -10,6 +10,7 @@
 
 """
 
+from orion.core.utils.flatten import flatten
 from orion.core.worker.trial import Trial
 
 

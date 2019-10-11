@@ -251,6 +251,8 @@ class BaseOrionState:
             storage_type = config.pop('storage_type')
             kwargs = config['args']
             db = Storage(of_type=storage_type, **kwargs)
+            # storage_type = self.database_config.pop('storage_type', 'legacy')
+            # db = Storage(of_type=storage_type, database=self.database_config)
             self.database_config['storage_type'] = storage_type
 
         except SingletonAlreadyInstantiatedError:

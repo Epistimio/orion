@@ -5,6 +5,9 @@
 import copy
 import datetime
 import logging
+import json
+import tempfile
+import time
 
 import pytest
 
@@ -459,9 +462,13 @@ class TestStorage:
 
             trial2 = storage.get_trial(trial1)
 
+            # this check that heartbeat is the correct type and that it was updated prior to now
             assert trial1b.heartbeat is None
+            assert trial1.heartbeat is None
             assert trial2.heartbeat is not None
-            # this checks that heartbeat is the correct type and that it was updated prior to now
+
+            # Sleep a bit, because fast CPUs make this test fail
+            time.sleep(0.1)
             assert trial2.heartbeat < datetime.datetime.utcnow()
 
             if storage_name is None:

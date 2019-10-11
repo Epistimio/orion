@@ -36,8 +36,7 @@ def add_subparser(parser):
 
 def main(args):
     """Run through all checks for database."""
-    experiment_builder = ExperimentBuilder()
-    presence_stage = PresenceStage(experiment_builder, args)
+    presence_stage = PresenceStage(args)
     creation_stage = CreationStage(presence_stage)
     operations_stage = OperationsStage(creation_stage)
     stages = [presence_stage, creation_stage, operations_stage]

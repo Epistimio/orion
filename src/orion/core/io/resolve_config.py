@@ -160,7 +160,7 @@ def fetch_env_vars():
 
 def fetch_metadata(cmdargs):
     """Infer rest information about the process + versioning"""
-    metadata = {}
+    metadata = {'user': cmdargs.get('user', getpass.getuser())}
 
     metadata['orion_version'] = orion.core.__version__
 

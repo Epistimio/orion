@@ -111,7 +111,7 @@ def define_experiment_config(config):
         'worker_trials', option_type=int, default=int(10e8))
 
     experiment_config.add_option(
-        'working_dir', option_type=str, default=None)
+        'working_dir', option_type=str, default='')
 
     experiment_config.add_option(
         'algorithms', option_type=dict, default={'random': {'seed': None}})
@@ -142,7 +142,7 @@ def define_evc_config(config):
     evc_config = Configuration()
 
     evc_config.add_option(
-        'auto_resolution', option_type=bool, default=None)
+        'auto_resolution', option_type=bool, default=True)
     evc_config.add_option(
         'manual_resolution', option_type=bool, default=False)
 

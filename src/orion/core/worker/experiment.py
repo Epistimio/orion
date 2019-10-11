@@ -397,23 +397,18 @@ class Experiment:
         for attrname in self.__slots__:
             if attrname.startswith('_'):
                 continue
-            attribute = getattr(self, attrname)
+            attribute = copy.deepcopy(getattr(self, attrname))
+            config[attrname] = attribute
             if self._init_done and attrname == 'algorithms':
                 config[attrname] = attribute.configuration
-            else:
-                config[attrname] = attribute
-
-            if attrname == "refers" and isinstance(attribute.get("adapter"), BaseAdapter):
-                config[attrname] = copy.deepcopy(config[attrname])
+            elif attrname == "refers" and isinstance(attribute.get("adapter"), BaseAdapter):
                 config[attrname]['adapter'] = config[attrname]['adapter'].configuration
-
-            if self._init_done and attrname == "producer" and attribute.get("strategy"):
-                config[attrname] = copy.deepcopy(config[attrname])
+            elif self._init_done and attrname == "producer" and attribute.get("strategy"):
                 config[attrname]['strategy'] = config[attrname]['strategy'].configuration
 
-        # Reason for deepcopy is that some attributes are dictionaries
-        # themselves, we don't want to accidentally change the state of this
-        # object from a getter.
+        if self.id:
+            config['_id'] = self.id
+
         return copy.deepcopy(config)
 
     @property
@@ -619,7 +614,7 @@ class Experiment:
 
         :param config: Conflicting configuration that will change based on prompt.
         """
-        experiment_brancher = ExperimentBranchBuilder(conflicts, branching_configuration)
+        experiment_brancher = ExperimentBranchBuilder(conflicts, **branching_configuration)
 
         needs_manual_resolution = (not experiment_brancher.is_resolved or
                                    experiment_brancher.manual_resolution)
@@ -641,6 +636,7 @@ class Experiment:
         self._instantiate_config(experiment_brancher.conflicting_config)
         self.refers['adapter'] = adapter
         self.refers['parent_id'] = self._id
+        self._id = None
 
     def _is_different_from(self, config):
         """Return True, if current `Experiment`'s configuration as described by
@@ -667,6 +663,27 @@ class Experiment:
         """Represent the object as a string."""
         return "Experiment(name=%s, metadata.user=%s, version=%s)" % \
             (self.name, self.metadata['user'], self.version)
+
+
+# TODO: Remove and replace Experiment's init with this
+class ExperimentNew(Experiment):
+    def __init__(self, name, version=None):
+        self._init_done = True
+
+        self._id = None
+        self.name = name
+        self.version = version if version else 1
+        self._node = None
+        self.refers = {}
+        self.user = None
+        self.metadata = {}
+        self.pool_size = None
+        self.max_trials = None
+        self.algorithms = None
+        self.working_dir = None
+        self.producer = {}
+        # this needs to be an attribute because we override it in ExperienceView
+        self._storage = get_storage()
 
 
 # pylint: disable=too-few-public-methods
@@ -706,9 +723,9 @@ class ExperimentView(object):
         self._experiment = Experiment(name, user, version)
 
         if self._experiment.id is None:
-            raise ValueError("No experiment with given name '%s' for user '%s' inside database, "
+            raise ValueError("No experiment with given name '%s' with version '%s' inside database, "
                              "no view can be created." %
-                             (self._experiment.name, self._experiment.metadata['user']))
+                             (self._experiment.name, self._experiment.version))
 
         # TODO: Views are not fully configured until configuration is refactored
         #       This snippet is to instantiate adapters anyhow, because it is required for

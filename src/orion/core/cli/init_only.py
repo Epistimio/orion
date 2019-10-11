@@ -13,7 +13,7 @@ import logging
 
 from orion.core.cli import base as cli
 from orion.core.cli import evc as evc_cli
-from orion.core.io.experiment_builder import ExperimentBuilder
+from orion.core.io.experiment_builder import ExperimentBuilder, get_storage
 
 log = logging.getLogger(__name__)
 
