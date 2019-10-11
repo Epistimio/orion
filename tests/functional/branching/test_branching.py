@@ -7,7 +7,7 @@ import os
 import pytest
 
 import orion.core.cli
-from orion.core.io.evc_builder import EVCBuilder
+import orion.core.io.experiment_builder as experiment_builder
 from orion.core.worker.experiment import ExperimentView
 from orion.storage.base import get_storage
 
@@ -202,7 +202,7 @@ def test_init(init_full_x, create_db_instance):
 
 def test_full_x_full_y(init_full_x_full_y, create_db_instance):
     """Test if full x full y is properly initialized and can fetch original trial"""
-    experiment = EVCBuilder().build_view_from({'name': 'full_x_full_y'})
+    experiment = experiment_builder.build_view(name='full_x_full_y')
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 1), ('/y', 1)),
                      (('/x', -1), ('/y', 1)),
@@ -219,7 +219,7 @@ def test_full_x_full_y(init_full_x_full_y, create_db_instance):
 
 def test_half_x_full_y(init_half_x_full_y, create_db_instance):
     """Test if half x full y is properly initialized and can fetch from its 2 parents"""
-    experiment = EVCBuilder().build_view_from({'name': 'half_x_full_y'})
+    experiment = experiment_builder.build_view(name='half_x_full_y')
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 2), ('/y', 2)),
                      (('/x', 2), ('/y', -2)))
@@ -234,7 +234,7 @@ def test_half_x_full_y(init_half_x_full_y, create_db_instance):
 
 def test_full_x_half_y(init_full_x_half_y, create_db_instance):
     """Test if full x half y is properly initialized and can fetch from its 2 parents"""
-    experiment = EVCBuilder().build_view_from({'name': 'full_x_half_y'})
+    experiment = experiment_builder.build_view(name='full_x_half_y')
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 3), ('/y', 3)),
                      (('/x', -3), ('/y', 3)))
@@ -249,7 +249,7 @@ def test_full_x_half_y(init_full_x_half_y, create_db_instance):
 
 def test_full_x_rename_y_z(init_full_x_rename_y_z, create_db_instance):
     """Test if full x full z is properly initialized and can fetch from its 2 parents"""
-    experiment = EVCBuilder().build_view_from({'name': 'full_x_rename_y_z'})
+    experiment = experiment_builder.build_view(name='full_x_rename_y_z')
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 4), ('/z', 4)),
                      (('/x', -4), ('/z', 4)),
@@ -270,7 +270,7 @@ def test_full_x_rename_y_z(init_full_x_rename_y_z, create_db_instance):
 
 def test_full_x_rename_half_y_half_z(init_full_x_rename_half_y_half_z, create_db_instance):
     """Test if full x half z is properly initialized and can fetch from its 3 parents"""
-    experiment = EVCBuilder().build_view_from({'name': 'full_x_rename_half_y_half_z'})
+    experiment = experiment_builder.build_view(name='full_x_rename_half_y_half_z')
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 5), ('/z', 5)),
                      (('/x', -5), ('/z', 5)))
@@ -287,7 +287,7 @@ def test_full_x_rename_half_y_half_z(init_full_x_rename_half_y_half_z, create_db
 
 def test_full_x_rename_half_y_full_z(init_full_x_rename_half_y_full_z, create_db_instance):
     """Test if full x half->full z is properly initialized and can fetch from its 3 parents"""
-    experiment = EVCBuilder().build_view_from({'name': 'full_x_rename_half_y_full_z'})
+    experiment = experiment_builder.build_view(name='full_x_rename_half_y_full_z')
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 6), ('/z', 6)),
                      (('/x', -6), ('/z', 6)),
@@ -308,7 +308,7 @@ def test_full_x_rename_half_y_full_z(init_full_x_rename_half_y_full_z, create_db
 
 def test_full_x_remove_y(init_full_x_remove_y, create_db_instance):
     """Test if full x removed y is properly initialized and can fetch from its 2 parents"""
-    experiment = EVCBuilder().build_view_from({'name': 'full_x_remove_y'})
+    experiment = experiment_builder.build_view(name='full_x_remove_y')
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 7), ), (('/x', -7), ))
 
@@ -318,7 +318,7 @@ def test_full_x_remove_y(init_full_x_remove_y, create_db_instance):
 
 def test_full_x_remove_z(init_full_x_remove_z, create_db_instance):
     """Test if full x removed z is properly initialized and can fetch from 2 of its 3 parents"""
-    experiment = EVCBuilder().build_view_from({'name': 'full_x_remove_z'})
+    experiment = experiment_builder.build_view(name='full_x_remove_z')
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 8), ), (('/x', -8), ))
 
@@ -331,7 +331,7 @@ def test_full_x_remove_z_default_4(init_full_x_remove_z_default_4, create_db_ins
     """Test if full x removed z  (default 4) is properly initialized and can fetch
     from 1 of its 3 parents
     """
-    experiment = EVCBuilder().build_view_from({'name': 'full_x_remove_z_default_4'})
+    experiment = experiment_builder.build_view(name='full_x_remove_z_default_4')
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 9), ), (('/x', -9), ))
 
@@ -342,7 +342,7 @@ def test_full_x_remove_z_default_4(init_full_x_remove_z_default_4, create_db_ins
 
 def test_entire_full_x_full_y(init_entire, create_db_instance):
     """Test if full x full y can fetch from its parent and all children"""
-    experiment = EVCBuilder().build_view_from({'name': 'full_x_full_y'})
+    experiment = experiment_builder.build_view(name='full_x_full_y')
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 1), ('/y', 1)),
                      (('/x', -1), ('/y', 1)),
@@ -386,7 +386,7 @@ def test_entire_full_x_full_y(init_entire, create_db_instance):
 
 def test_run_entire_full_x_full_y(init_entire, create_db_instance):
     """Test if branched experiment can be executed without triggering a branching event again"""
-    experiment = EVCBuilder().build_view_from({'name': 'full_x_full_y'})
+    experiment = experiment_builder.build_view(name='full_x_full_y')
     assert len(experiment.fetch_trials(with_evc_tree=True)) == 23
     assert len(experiment.fetch_trials()) == 4
 
@@ -401,7 +401,7 @@ def test_run_entire_full_x_full_y(init_entire, create_db_instance):
 
 def test_run_entire_full_x_full_y_no_args(init_entire, create_db_instance):
     """Test if branched experiment can be executed without script arguments"""
-    experiment = EVCBuilder().build_view_from({'name': 'full_x_full_y'})
+    experiment = experiment_builder.build_view(name='full_x_full_y')
     assert len(experiment.fetch_trials(with_evc_tree=True)) == 23
     assert len(experiment.fetch_trials()) == 4
 
@@ -413,7 +413,7 @@ def test_run_entire_full_x_full_y_no_args(init_entire, create_db_instance):
 
 def test_new_algo(init_full_x_new_algo):
     """Test that new algo conflict is automatically resolved"""
-    experiment = EVCBuilder().build_view_from({'name': 'full_x_new_algo'})
+    experiment = experiment_builder.build_view(name='full_x_new_algo')
     assert len(experiment.fetch_trials(with_evc_tree=True)) == 3
     assert len(experiment.fetch_trials()) == 2
 
@@ -437,7 +437,7 @@ def test_new_algo_not_resolved(init_full_x):
 
 def test_new_cli(init_full_x_new_cli):
     """Test that new cli conflict is automatically resolved"""
-    experiment = EVCBuilder().build_view_from({'name': 'full_x_new_cli'})
+    experiment = experiment_builder.build_view(name='full_x_new_cli')
     assert len(experiment.fetch_trials(with_evc_tree=True)) == 3
     assert len(experiment.fetch_trials()) == 2
 

@@ -85,7 +85,7 @@ class ExperimentNode(TreeNode):
         """
         if self._parent is None and self._no_parent_lookup:
             self._no_parent_lookup = False
-            query = {'_id': self.item.refers['parent_id']}
+            query = {'_id': self.item.refers.get('parent_id')}
             selection = {'name': 1, 'version': 1}
             experiments = get_storage().fetch_experiments(query, selection)
 

@@ -18,15 +18,8 @@ import orion.core.utils.backward as backward
 class PresenceStage:
     """The presence stage of the checks."""
 
-    def __init__(self, experiment_builder, cmdargs):
-        """Create an instance of the stage.
-
-        Parameters
-        ----------
-        experiment_builder: `ExperimentBuilder`
-            An instance of `ExperimentBuilder` to fetch configs.
-
-        """
+    def __init__(self, cmdargs):
+        """Create an instance of the stage."""
         self.cmdargs = cmdargs
         self.db_config = {}
 

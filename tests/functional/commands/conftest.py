@@ -11,7 +11,7 @@ import yaml
 from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
 import orion.core.cli
 from orion.core.io.database import Database
-from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
@@ -164,7 +164,7 @@ def one_experiment(monkeypatch, db_instance):
 @pytest.fixture
 def one_experiment_changed_vcs(one_experiment):
     """Create an experiment without trials."""
-    experiment = ExperimentBuilder().build_from({'name': one_experiment['name']})
+    experiment = experiment_builder.build(name=one_experiment['name'])
 
     experiment.metadata['VCS'] = {
         'type': 'git', 'is_dirty': False, 'HEAD_sha': 'new', 'active_branch': 'master',
@@ -202,7 +202,7 @@ def single_without_success(one_experiment):
     statuses = list(Trial.allowed_stati)
     statuses.remove('completed')
 
-    exp = ExperimentBuilder().build_from({'name': 'test_single_exp'})
+    exp = experiment_builder.build(name='test_single_exp')
     x = {'name': '/x', 'type': 'real'}
 
     x_value = 0
@@ -216,7 +216,7 @@ def single_without_success(one_experiment):
 @pytest.fixture
 def single_with_trials(single_without_success):
     """Create an experiment with all types of trials."""
-    exp = ExperimentBuilder().build_from({'name': 'test_single_exp'})
+    exp = experiment_builder.build(name='test_single_exp')
 
     x = {'name': '/x', 'type': 'real', 'value': 100}
     results = {"name": "obj", "type": "objective", "value": 0}
@@ -241,8 +241,8 @@ def two_experiments(monkeypatch, db_instance):
 @pytest.fixture
 def family_with_trials(two_experiments):
     """Create two related experiments with all types of trials."""
-    exp = ExperimentBuilder().build_from({'name': 'test_double_exp'})
-    exp2 = ExperimentBuilder().build_from({'name': 'test_double_exp_child'})
+    exp = experiment_builder.build(name='test_double_exp')
+    exp2 = experiment_builder.build(name='test_double_exp_child')
     x = {'name': '/x', 'type': 'real'}
     y = {'name': '/y', 'type': 'real'}
 
@@ -261,7 +261,7 @@ def family_with_trials(two_experiments):
 @pytest.fixture
 def unrelated_with_trials(family_with_trials, single_with_trials):
     """Create two unrelated experiments with all types of trials."""
-    exp = ExperimentBuilder().build_from({'name': 'test_double_exp_child'})
+    exp = experiment_builder.build(name='test_double_exp_child')
 
     Database().remove('trials', {'experiment': exp.id})
     Database().remove('experiments', {'_id': exp.id})
@@ -291,7 +291,7 @@ def three_experiments_family(two_experiments, db_instance):
 @pytest.fixture
 def three_family_with_trials(three_experiments_family, family_with_trials):
     """Create three experiments, all related, two direct children, with all types of trials."""
-    exp = ExperimentBuilder().build_from({'name': 'test_double_exp_child2'})
+    exp = experiment_builder.build(name='test_double_exp_child2')
     x = {'name': '/x', 'type': 'real'}
     z = {'name': '/z', 'type': 'real'}
 
@@ -320,7 +320,7 @@ def three_family_branch_with_trials(three_experiments_family_branch, family_with
     with all types of trials.
 
     """
-    exp = ExperimentBuilder().build_from({'name': 'test_double_exp_grand_child'})
+    exp = experiment_builder.build(name='test_double_exp_grand_child')
     x = {'name': '/x', 'type': 'real'}
     y = {'name': '/y', 'type': 'real'}
     z = {'name': '/z', 'type': 'real'}

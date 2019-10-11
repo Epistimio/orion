@@ -13,7 +13,7 @@ import logging
 
 from orion.core.cli import base as cli
 from orion.core.cli import evc as evc_cli
-from orion.core.io.experiment_builder import ExperimentBuilder, get_storage
+import orion.core.io.experiment_builder as experiment_builder
 
 log = logging.getLogger(__name__)
 
@@ -36,4 +36,4 @@ def add_subparser(parser):
 def main(args):
     """Build and initialize experiment"""
     # By building the experiment, we create a new experiment document in database
-    ExperimentBuilder().build_from(args)
+    experiment_builder.build_from_args(args)

@@ -10,7 +10,6 @@
 import logging
 
 from orion.core.cli import base as cli
-from orion.core.io.evc_builder import EVCBuilder
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.pptree import print_tree
 from orion.storage.base import get_storage
@@ -48,6 +47,6 @@ def main(args):
                             if exp['refers'].get('root_id', exp['_id']) == exp['_id']]
 
     for root_experiment in root_experiments:
-        root = EVCBuilder().build_view_from({'name': root_experiment['name'],
-                                             'version': root_experiment.get('version')}).node
+        root = experiment_builder.build_view(name=root_experiment['name'],
+                                             version=root_experiment.get('version')).node
         print_tree(root, nameattr='tree_name')
