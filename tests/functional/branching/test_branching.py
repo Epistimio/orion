@@ -9,6 +9,12 @@ import pytest
 import orion.core.cli
 from orion.core.io.evc_builder import EVCBuilder
 from orion.core.worker.experiment import ExperimentView
+from orion.storage.base import get_storage
+
+
+def execute(command):
+    returncode = orion.core.cli.main(command.split(' '))
+    assert returncode == 0
 
 
 @pytest.fixture

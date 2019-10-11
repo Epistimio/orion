@@ -74,8 +74,12 @@ class OrionArgsParser:
             function(args)
         except NoConfigurationError:
             print("Error: No commandline configuration found for new experiment.")
+            return 1
         except DatabaseError as e:
             print(e)
+            return 1
+
+        return 0
 
 
 def get_basic_args_group(parser):
