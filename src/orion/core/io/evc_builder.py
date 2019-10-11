@@ -59,3 +59,9 @@ class EVCBuilder(object):
         self.connect_to_version_control_tree(experiment)
 
         return experiment
+
+
+def connect_to_version_control_tree(experiment):
+    """Build the EVC and connect the experiment to it"""
+    experiment_node = ExperimentNode(experiment.name, experiment.version, experiment=experiment)
+    experiment.connect_to_version_control_tree(experiment_node)
