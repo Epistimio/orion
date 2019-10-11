@@ -8,7 +8,6 @@ from orion.core.cli.checks.creation import CreationStage
 from orion.core.cli.checks.operations import OperationsStage
 from orion.core.cli.checks.presence import PresenceStage
 from orion.core.io.database.mongodb import MongoDB
-from orion.core.io.experiment_builder import ExperimentBuilder
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import CheckError
@@ -21,15 +20,9 @@ def config():
 
 
 @pytest.fixture
-def builder():
-    """Return an ExperimentBuilder instance."""
-    return ExperimentBuilder()
-
-
-@pytest.fixture
-def presence(builder):
+def presence():
     """Return a PresenceStage instance."""
-    return PresenceStage(builder, [])
+    return PresenceStage([])
 
 
 @pytest.fixture

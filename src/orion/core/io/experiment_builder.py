@@ -96,6 +96,7 @@ import orion.core
 from orion.core.cli.evc import fetch_branching_configuration
 from orion.core.evc.adapters import Adapter
 from orion.core.evc.conflicts import detect_conflicts, ExperimentNameConflict
+from orion.core.evc.experiment import ExperimentNode
 from orion.core.io import resolve_config
 from orion.core.io.database import DuplicateKeyError
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
@@ -112,52 +113,6 @@ from orion.storage.base import get_storage, Storage
 
 log = logging.getLogger(__name__)
 
-
-# pylint: disable=too-many-public-methods
-class ExperimentBuilder(object):
-    """To remove..."""
-
-    # TODO: Remove
-    def build_view_from(self, cmdargs):
-        """Build an experiment view based on full configuration.
-
-        .. seealso::
-
-            `orion.core.io.experiment_builder` for more information on the hierarchy of
-            configurations.
-
-            :class:`orion.core.worker.experiment.ExperimentView` for more information on the
-            experiment view object.
-        """
-        return build_view_from_args(cmdargs)
-
-    # TODO: remove
-    def build_from(self, cmdargs, handle_racecondition=True):
-        """Build a fully configured (and writable) experiment based on full configuration.
-
-        .. seealso::
-
-            `orion.core.io.experiment_builder` for more information on the hierarchy of
-            configurations.
-
-            :class:`orion.core.worker.experiment.Experiment` for more information on the experiment
-            object.
-        """
-        return build_from_args(cmdargs)
-
-    # TODO: Get rid of it
-    def build_from_config(self, config):
-        """Build a fully configured (and writable) experiment based on full configuration.
-
-        .. seealso::
-
-            `orion.core.io.experiment_builder` for more information on the hierarchy of
-            configurations.
-
-            :class:`orion.core.worker.experiment.Experiment` for more information on the experiment
-            object.
-        """
-        return build(**config)
 
 ##
 # Functions to build experiments
@@ -339,6 +294,8 @@ def create_experiment(name, version, space, **kwargs):
     experiment.metadata = kwargs.get('metadata', {'user': kwargs.get('user', getpass.getuser())})
     experiment.refers = kwargs.get('refers', {'parent_id': None, 'root_id': None, 'adapter': []})
     experiment.refers['adapter'] = _instantiate_adapters(experiment.refers.get('adapter', []))
+
+    experiment._node = ExperimentNode(experiment.name, experiment.version, experiment=experiment)
 
     return experiment
 

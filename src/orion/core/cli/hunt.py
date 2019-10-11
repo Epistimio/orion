@@ -16,8 +16,7 @@ import orion.core
 from orion.core.cli import base as cli
 from orion.core.cli import evc as evc_cli
 from orion.core.io import resolve_config
-from orion.core.io.evc_builder import connect_to_version_control_tree
-from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
 from orion.core.worker import workon
 
 log = logging.getLogger(__name__)
@@ -71,8 +70,7 @@ def main(args):
     args['root'] = None
     args['leafs'] = []
     # TODO: simplify when parameter parsing is refactored
-    builder = ExperimentBuilder()
-    experiment = builder.build_from(args)
-    connect_to_version_control_tree(experiment)
-    worker_trials = args.get('worker_trials', orion.core.config.experiment.worker_trials)
+    experiment = experiment_builder.build_from_args(args)
+    config = experiment_builder.get_cmd_config(args)
+    worker_trials = config.get('worker_trials', orion.core.config.experiment.worker_trials)
     workon(experiment, worker_trials)

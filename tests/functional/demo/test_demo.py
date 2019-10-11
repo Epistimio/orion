@@ -12,7 +12,7 @@ import pytest
 import yaml
 
 import orion.core.cli
-from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
 from orion.core.worker import workon
 from orion.core.worker.experiment import Experiment
@@ -474,7 +474,7 @@ def test_resilience(monkeypatch):
     orion.core.cli.main(["hunt", "--config", "./orion_config_random.yaml", "./broken_box.py",
                          "-x~uniform(-50, 50)"])
 
-    exp = ExperimentBuilder().build_from({'name': 'demo_random_search'})
+    exp = experiment_builder.build(name='demo_random_search')
     assert len(exp.fetch_trials_by_status('broken')) == MAX_BROKEN
 
 
