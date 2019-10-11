@@ -800,12 +800,35 @@ class TestResolutionsWithMarkers(object):
         assert resolved_conflicts[1].resolution.conflict.dimension.name == '/x'
         assert resolved_conflicts[1].resolution.new_dimension_conflict.dimension.name == '/w_b'
 
-    def test_name_experiment(self, parent_config, child_config, create_db_instance):
-        """Test if experiment name conflict is automatically resolved"""
+    def test_name_experiment_version_update(self, parent_config, child_config, create_db_instance):
+        """Test if experiment name conflict is automatically resolved with version update"""
+        old_name = 'test'
+        new_version = 2
+        create_db_instance.write('experiments', parent_config)
+        child_config['version'] = 1
+        conflicts = detect_conflicts(parent_config, child_config)
+        ExperimentBranchBuilder(conflicts, {})
+
+        assert len(conflicts.get()) == 1
+        assert len(conflicts.get_resolved()) == 1
+
+        conflict = conflicts.get()[0]
+
+        assert conflict.resolution.new_name == old_name
+        assert conflict.resolution.new_version == 2
+        assert conflict.new_config['name'] == old_name
+        assert conflict.new_config['version'] == new_version
+        assert conflict.is_resolved
+
+    def test_name_experiment_name_change(self, parent_config, child_config, create_db_instance):
+        """Test if experiment name conflict is automatically resolved when new name provided"""
         new_name = 'test2'
         create_db_instance.write('experiments', parent_config)
-        conflicts = detect_conflicts(parent_config, child_config)
-        ExperimentBranchBuilder(conflicts, {'branch': new_name})
+        create_db_instance.write('experiments', child_config)
+        child_config2 = copy.deepcopy(child_config)
+        child_config2['version'] = 1
+        conflicts = detect_conflicts(parent_config, child_config2)
+        ExperimentBranchBuilder(conflicts, branch_to=new_name)
 
         assert len(conflicts.get()) == 1
         assert len(conflicts.get_resolved()) == 1
@@ -813,7 +836,9 @@ class TestResolutionsWithMarkers(object):
         conflict = conflicts.get()[0]
 
         assert conflict.resolution.new_name == new_name
+        assert conflict.resolution.new_version == 1
         assert conflict.new_config['name'] == new_name
+        assert conflict.new_config['version'] == 1
         assert conflict.is_resolved
 
     def test_bad_name_experiment(self, parent_config, child_config, monkeypatch):
@@ -825,7 +850,7 @@ class TestResolutionsWithMarkers(object):
                             _is_unique)
 
         conflicts = detect_conflicts(parent_config, child_config)
-        ExperimentBranchBuilder(conflicts, {'branch': 'test2'})
+        ExperimentBranchBuilder(conflicts, branch_to='test2')
 
         assert len(conflicts.get()) == 1
         assert len(conflicts.get_resolved()) == 0

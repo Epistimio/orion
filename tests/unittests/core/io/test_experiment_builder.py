@@ -26,11 +26,10 @@ def init_storage(clean_db, test_config):
     setup_storage(
         storage={
             'type': 'legacy',
-            'config': {
-                'database': {
-                    'type': 'mongodb',
-                    'name': 'orion_test',
-                    'host': 'mongodb://user:pass@localhost'}}})
+            'database': {
+                'type': 'mongodb',
+                'name': 'orion_test',
+                'host': 'mongodb://user:pass@localhost'}})
 
 
 def test_get_cmd_config(config_file):
@@ -40,12 +39,15 @@ def test_get_cmd_config(config_file):
 
     assert local_config['algorithms'] == 'random'
     assert local_config['producer'] == {'strategy': 'NoParallelStrategy'}
-    assert local_config['database']['host'] == 'mongodb://user:pass@localhost'
-    assert local_config['database']['name'] == 'orion_test'
-    assert local_config['database']['type'] == 'mongodb'
     assert local_config['max_trials'] == 100
     assert local_config['name'] == 'voila_voici'
     assert local_config['pool_size'] == 1
+    assert local_config['storage'] == {
+        'type': 'legacy',
+        'database': {
+            'host': 'mongodb://user:pass@localhost',
+            'name': 'orion_test',
+            'type': 'mongodb'}}
 
 
 def test_get_cmd_config_from_incomplete_config(incomplete_config_file):
@@ -58,11 +60,11 @@ def test_get_cmd_config_from_incomplete_config(incomplete_config_file):
     local_config = experiment_builder.get_cmd_config(cmdargs)
 
     assert 'algorithms' not in local_config
-    assert 'name' not in local_config['database']
     assert 'max_trials' not in local_config
     assert 'pool_size' not in local_config
-    assert local_config['database']['host'] == 'mongodb://user:pass@localhost'
-    assert local_config['database']['type'] == 'incomplete'
+    assert 'name' not in local_config['storage']['database']
+    assert local_config['storage']['database']['host'] == 'mongodb://user:pass@localhost'
+    assert local_config['storage']['database']['type'] == 'incomplete'
     assert local_config['name'] == 'incomplete'
 
 
@@ -102,7 +104,7 @@ def test_build_view_from(config_file, create_db_instance, exp_config, random_dt)
     cmdargs = {'name': 'supernaedo2-dendi', 'config': config_file}
     exp_view = build_view_from_args(cmdargs)
 
-    assert exp_view._experiment._init_done is False
+    assert exp_view._experiment._init_done is True
     assert get_view_db(exp_view) is create_db_instance
     assert exp_view._id == exp_config[0][0]['_id']
     assert exp_view.name == exp_config[0][0]['name']

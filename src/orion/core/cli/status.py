@@ -16,7 +16,7 @@ import tabulate
 
 from orion.core.cli import base as cli
 from orion.core.io.evc_builder import EVCBuilder
-from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
 from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
@@ -49,9 +49,8 @@ def add_subparser(parser):
 
 def main(args):
     """Fetch config and status experiments"""
-    builder = ExperimentBuilder()
-    local_config = builder.fetch_full_config(args, use_db=False)
-    builder.setup_storage(local_config)
+    config = experiment_builder.get_cmd_config(args)
+    experiment_builder.setup_storage(config.get('storage'))
 
     args['all_trials'] = args.pop('all', False)
 

@@ -3,11 +3,14 @@
 """Collection of tests for :mod:`orion.core.cli.checks`."""
 import pytest
 
+import orion.core
 from orion.core.cli.checks.creation import CreationStage
 from orion.core.cli.checks.operations import OperationsStage
 from orion.core.cli.checks.presence import PresenceStage
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
+import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import CheckError
 
 
@@ -51,24 +54,24 @@ def clean_test(database):
 
 def test_check_default_config_pass(monkeypatch, presence, config):
     """Check if the default config test works."""
-    def mock_default_config():
+    def mock_default_config(self):
         return config
 
-    monkeypatch.setattr(presence.builder, 'fetch_default_options', mock_default_config)
+    monkeypatch.setattr(orion.core.config.__class__, 'to_dict', mock_default_config)
 
     result, msg = presence.check_default_config()
 
     assert result == "Success"
     assert msg == ""
-    assert presence.db_config == config['database']
+    assert presence.db_config == config['storage']['database']
 
 
 def test_check_default_config_skip(monkeypatch, presence):
     """Check if test returns skip if no default config is found."""
-    def mock_default_config():
+    def mock_default_config(self):
         return {}
 
-    monkeypatch.setattr(presence.builder, 'fetch_default_options', mock_default_config)
+    monkeypatch.setattr(orion.core.config.__class__, 'to_dict', mock_default_config)
 
     result, msg = presence.check_default_config()
     assert result == "Skipping"
@@ -76,48 +79,27 @@ def test_check_default_config_skip(monkeypatch, presence):
     assert presence.db_config == {}
 
 
-def test_envvar_config_pass(monkeypatch, presence):
-    """Check if test passes when all environment variables are set."""
-    monkeypatch.setenv('ORION_DB_NAME', 'orion')
-    monkeypatch.setenv('ORION_DB_TYPE', 'mongodb')
-    monkeypatch.setenv('ORION_DB_ADDRESS', 'localhost')
-
-    result, msg = presence.check_environment_vars()
-
-    assert result == "Success"
-    assert msg == ""
-    assert presence.db_config == {'name': 'orion', 'type': 'mongodb', 'host': 'localhost'}
-
-
-def test_envvar_config_skip(monkeypatch, presence):
-    """Check if test skips when there is no environment variable."""
-    result, msg = presence.check_environment_vars()
-
-    assert result == "Skipping"
-    assert 'No' in msg
-    assert presence.db_config == {}
-
-
 def test_config_file_config_pass(monkeypatch, presence, config):
     """Check if test passes with valid configuration."""
-    def mock_file_config(self):
+    def mock_file_config(cmdargs):
+        backward.update_db_config(config)
         return config
 
-    monkeypatch.setattr(presence.builder, "fetch_file_config", mock_file_config)
+    monkeypatch.setattr(experiment_builder, "get_cmd_config", mock_file_config)
 
     result, msg = presence.check_configuration_file()
 
     assert result == "Success"
     assert msg == ""
-    assert presence.db_config == config['database']
+    assert presence.db_config == config['storage']['database']
 
 
 def test_config_file_fails_missing_config(monkeypatch, presence, config):
     """Check if test fails with missing configuration."""
-    def mock_file_config(self):
+    def mock_file_config(cmdargs):
         return {}
 
-    monkeypatch.setattr(presence.builder, "fetch_file_config", mock_file_config)
+    monkeypatch.setattr(experiment_builder, "get_cmd_config", mock_file_config)
 
     status, msg = presence.check_configuration_file()
 
@@ -128,10 +110,10 @@ def test_config_file_fails_missing_config(monkeypatch, presence, config):
 
 def test_config_file_fails_missing_database(monkeypatch, presence, config):
     """Check if test fails with missing database configuration."""
-    def mock_file_config(self):
+    def mock_file_config(cmdargs):
         return {'algorithm': 'asha'}
 
-    monkeypatch.setattr(presence.builder, "fetch_file_config", mock_file_config)
+    monkeypatch.setattr(experiment_builder, "get_cmd_config", mock_file_config)
 
     status, msg = presence.check_configuration_file()
 
@@ -142,10 +124,10 @@ def test_config_file_fails_missing_database(monkeypatch, presence, config):
 
 def test_config_file_fails_missing_value(monkeypatch, presence, config):
     """Check if test fails with missing value in database configuration."""
-    def mock_file_config(self):
-        return {'database': {}}
+    def mock_file_config(cmdargs):
+        return {'storage': {'database': {}}}
 
-    monkeypatch.setattr(presence.builder, "fetch_file_config", mock_file_config)
+    monkeypatch.setattr(experiment_builder, "get_cmd_config", mock_file_config)
 
     status, msg = presence.check_configuration_file()
 
@@ -160,7 +142,7 @@ def test_config_file_skips(monkeypatch, presence, config):
         return {}
 
     presence.db_config = config['database']
-    monkeypatch.setattr(presence.builder, "fetch_file_config", mock_file_config)
+    monkeypatch.setattr(experiment_builder, "get_cmd_config", mock_file_config)
 
     result, msg = presence.check_configuration_file()
 

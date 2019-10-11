@@ -22,6 +22,7 @@ and the child experiment.
 import logging
 
 from orion.algo.space import Dimension
+import orion.core
 from orion.core.evc import conflicts
 from orion.core.evc.adapters import CompositeAdapter
 
@@ -31,22 +32,44 @@ log = logging.getLogger(__name__)
 
 # pylint: disable=too-many-public-methods
 class ExperimentBranchBuilder:
-    """Build a new configuration for the experiment based on parent config."""
+    """Build a new configuration for the experiment based on parent config.
+    
+    Parameters
+    ----------
+    conflicts: Conflicts
+        Object reprenting a group of conflicts
+    manual_resolution: bool, optional
+        Starts the prompt to resolve manually the conflicts. Use system's default if not provided.
+    branch_from: str, optional
+        Name of the experiment to branch from.
+    algorithm_change: bool, optional
+        Whether to automatically solve the algorithm conflict (change of algo config).
+        Defaults to True.
+    code_change_type: str, optional
+        How to resolve code change automatically. Must be one of 'noeffect', 'unsure' or
+        'break'.  Defaults to 'break'.
+    cli_change_type: str, optional
+        How to resolve cli change automatically. Must be one of 'noeffect', 'unsure' or 'break'.
+        Defaults to 'break'.
+    config_change_type: str, optional
+        How to resolve config change automatically. Must be one of 'noeffect', 'unsure' or
+        'break'.  Defaults to 'break'.
 
-    def __init__(self, conflicts, branching_configuration):
-        """
-        Initialize the ExperimentBranchBuilder by populating a list of the conflicts inside
-        the two configurations.
-        """
-        self.auto_resolution = branching_configuration.pop('auto_resolution', None)
+    """
 
-        if self.auto_resolution is not None:
-            log.info("Auto-resolution is deprecated and will be removed in v0.2.0.")
-            self.auto_resolution = None
+    def __init__(self, conflicts, manual_resolution=None, **branching_arguments):
+        # TODO: handle all other arguments
+        if manual_resolution is None:
+            manual_resolution = orion.core.config.evc.manual_resolution
 
-        self.manual_resolution = branching_configuration.pop('manual_resolution', False)
+        self.manual_resolution = manual_resolution
         self.conflicts = conflicts
-        self.conflicting_config.update(branching_configuration)
+
+        for key, value in branching_arguments.items():
+            if value is None:
+                branching_arguments[key] = orion.core.config.evc[key]
+
+        self.conflicting_config.update(branching_arguments)
         self.resolve_conflicts()
 
     @property

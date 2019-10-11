@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Common fixtures and utils for unittests and functional tests."""
+import copy
 import os
 
 from pymongo import MongoClient
@@ -180,7 +181,7 @@ def one_experiment_no_version(monkeypatch, one_experiment):
 
     def fetch_without_version(query, selection=None):
         if query.get('name') == one_experiment['name'] or query == {}:
-            return [one_experiment]
+            return [copy.deepcopy(one_experiment)]
 
         return []
 
@@ -232,7 +233,7 @@ def two_experiments(monkeypatch, db_instance):
     ensure_deterministic_id('test_double_exp', db_instance)
 
     orion.core.cli.main(['init_only', '-n', 'test_double_exp',
-                         '--branch', 'test_double_exp_child', './black_box.py',
+                         '--branch-to', 'test_double_exp_child', './black_box.py',
                          '--x~+uniform(0,1,default_value=0)', '--y~+uniform(0,1,default_value=0)'])
     ensure_deterministic_id('test_double_exp_child', db_instance)
 
@@ -282,7 +283,7 @@ def three_experiments_with_trials(family_with_trials, single_with_trials):
 def three_experiments_family(two_experiments, db_instance):
     """Create three experiments, one of which is the parent of the other two."""
     orion.core.cli.main(['init_only', '-n', 'test_double_exp',
-                         '--branch', 'test_double_exp_child2', './black_box.py',
+                         '--branch-to', 'test_double_exp_child2', './black_box.py',
                          '--x~+uniform(0,1,default_value=0)', '--z~+uniform(0,1,default_value=0)'])
     ensure_deterministic_id('test_double_exp_child2', db_instance)
 
@@ -307,7 +308,7 @@ def three_family_with_trials(three_experiments_family, family_with_trials):
 def three_experiments_family_branch(two_experiments, db_instance):
     """Create three experiments, each parent of the following one."""
     orion.core.cli.main(['init_only', '-n', 'test_double_exp_child',
-                         '--branch', 'test_double_exp_grand_child', './black_box.py',
+                         '--branch-to', 'test_double_exp_grand_child', './black_box.py',
                          '--x~+uniform(0,1,default_value=0)', '--y~uniform(0,1,default_value=0)',
                          '--z~+uniform(0,1,default_value=0)'])
     ensure_deterministic_id('test_double_exp_grand_child', db_instance)

@@ -11,7 +11,7 @@ import pytest
 from orion.core.io.database import Database, OutdatedDatabaseError
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
 from orion.storage.base import get_storage, Storage
 from orion.storage.legacy import Legacy
 
@@ -156,9 +156,7 @@ def null_db_instances():
 def build_storage():
     """Build storage from scratch"""
     null_db_instances()
-    experiment_builder = ExperimentBuilder()
-    local_config = experiment_builder.fetch_full_config({}, use_db=False)
-    experiment_builder.setup_storage(local_config)
+    experiment_builder.setup_storage()
 
     return get_storage()
 

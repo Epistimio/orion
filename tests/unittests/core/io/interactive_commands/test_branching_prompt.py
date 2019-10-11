@@ -437,7 +437,7 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_name("test")
         out, err = capsys.readouterr()
-        assert "Experiment name 'test' already exist for user" in out
+        assert "Experiment name 'test' already exist for version '1'" in out
         assert len(conflicts.get_resolved()) == 0
 
     def test_set_experiment_name_twice(self, capsys, conflicts, branch_solver_prompt):

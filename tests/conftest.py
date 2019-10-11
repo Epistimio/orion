@@ -234,15 +234,13 @@ def version_XYZ(monkeypatch):
 def create_db_instance(null_db_instances, clean_db):
     """Create and save a singleton database instance."""
     try:
-        config = {
-            'database': {
-                'type': 'MongoDB',
-                'name': 'orion_test',
-                'username': 'user',
-                'password': 'pass'
-            }
+        database= {
+            'type': 'MongoDB',
+            'name': 'orion_test',
+            'username': 'user',
+            'password': 'pass'
         }
-        db = Storage(of_type='legacy', config=config)
+        db = Storage(of_type='legacy', database=database)
     except ValueError:
         db = Storage()
 

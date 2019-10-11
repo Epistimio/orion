@@ -10,6 +10,10 @@
 
 """
 
+import orion.core
+import orion.core.io.experiment_builder as experiment_builder
+import orion.core.utils.backward as backward
+
 
 class PresenceStage:
     """The presence stage of the checks."""
@@ -23,7 +27,6 @@ class PresenceStage:
             An instance of `ExperimentBuilder` to fetch configs.
 
         """
-        self.builder = experiment_builder
         self.cmdargs = cmdargs
         self.db_config = {}
 
@@ -35,42 +38,29 @@ class PresenceStage:
 
     def check_default_config(self):
         """Check for a configuration inside the default paths."""
-        config = self.builder.fetch_default_options()
+        config = orion.core.config.to_dict()
 
-        if 'database' not in config:
+        backward.update_db_config(config)
+
+        if 'database' not in config.get('storage', {}):
             return "Skipping", "No default configuration found for database."
 
-        self.db_config = config['database']
-        print('\n   ', self.db_config)
-
-        return "Success", ""
-
-    def check_environment_vars(self):
-        """Check for a configuration inside the environment variables."""
-        config = self.builder.fetch_env_vars()
-
-        config = config['database']
-        names = ['type', 'name', 'host', 'port']
-
-        if not any(name in config for name in names):
-            return "Skipping", "No environment variables found."
-
-        self.db_config.update(config)
+        self.db_config = config['storage']['database']
         print('\n   ', self.db_config)
 
         return "Success", ""
 
     def check_configuration_file(self):
         """Check if configuration file has valid database configuration."""
-        config = self.builder.fetch_file_config(self.cmdargs)
+        config = experiment_builder.get_cmd_config(self.cmdargs)
 
         if not len(config):
             return "Skipping", "Missing configuration file."
 
-        if 'database' not in config:
+        if 'database' not in config.get('storage', {}):
             return "Skipping", "No database found in configuration file."
 
-        config = config['database']
+        config = config['storage']['database']
         names = ['type', 'name', 'host', 'port']
 
         if not any(name in config for name in names):
