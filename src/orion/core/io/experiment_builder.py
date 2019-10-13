@@ -168,6 +168,7 @@ def build(name, version=None, branching=None, **config):
             'break'.  Defaults to 'break'.
 
     """
+    config = copy.deepcopy(config)
     for key, value in list(config.items()):
         if key.startswith('_') or value is None:
             config.pop(key)
@@ -194,20 +195,27 @@ def build(name, version=None, branching=None, **config):
     if 'space' not in config:
         raise NoConfigurationError
 
-    experiment = create_experiment(**config)
-    if not experiment.id:
+    experiment = create_experiment(**copy.deepcopy(config))
+    if experiment.id is None:
         experiment._init_done = True
+
         try:
             _register_experiment(experiment)
         except DuplicateKeyError:
-            return build(branching=branching, **config)
+            experiment = build(branching=branching, **config)
+
+        return experiment
 
     conflicts = _get_conflicts(experiment)
-    must_branch = len(conflicts.get()) > 1 or branching.get('branch_from') 
+    must_branch = len(conflicts.get()) > 1 or branching.get('branch_to')
     if must_branch:
         branched_experiment = _branch_experiment(experiment, conflicts, version, branching)
         branched_experiment._init_done = True
-        _register_experiment(branched_experiment)
+        try:
+            _register_experiment(branched_experiment)
+        except DuplicateKeyError as e:
+            raise RaceCondition('There was a race condition during branching.') from e
+
         return branched_experiment
 
     _update_experiment(experiment)
@@ -602,6 +610,7 @@ def get_cmd_config(cmdargs):
     metadata = dict(metadata=resolve_config.fetch_metadata(cmdargs))
 
     cmd_config = resolve_config.merge_configs(cmd_config, cmdargs, metadata)
+    cmd_config.pop('config', None)
 
     backward.populate_priors(cmd_config['metadata'])
     backward.update_db_config(cmd_config)

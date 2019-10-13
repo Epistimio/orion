@@ -86,7 +86,8 @@ def _build_extended_user_args(config):
 def _build_space(config):
     """Build an optimization space based on given configuration"""
     space_builder = SpaceBuilder()
-    space = space_builder.build(config['metadata']['priors'])
+    space_config = config.get('space', config['metadata']['priors'])
+    space = space_builder.build(space_config)
 
     return space
 
@@ -1211,6 +1212,10 @@ class CommandLineConflict(Conflict):
     @classmethod
     def get_nameless_args(cls, config):
         """Get user's commandline arguments which are not dimension definitions"""
+        # Used python API
+        if 'parser' not in config['metadata']:
+            return ""
+
         parser = OrionCmdlineParser(orion.core.config.user_script_config)
         parser.set_state_dict(config['metadata']['parser'])
         priors = parser.priors_to_normal()
@@ -1343,6 +1348,10 @@ class ScriptConfigConflict(Conflict):
     @classmethod
     def get_nameless_config(cls, config):
         """Get configuration dict of user's script without dimension definitions"""
+        # Used python API
+        if 'parser' not in config['metadata']:
+            return ""
+
         parser = OrionCmdlineParser(orion.core.config.user_script_config)
         parser.set_state_dict(config['metadata']['parser'])
 
