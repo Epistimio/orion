@@ -39,7 +39,9 @@ def add_subparser(parser):
 def main(args):
     """Fetch config and insert new point"""
     command_line_user_args = args.pop('user_args', [None])[1:]
-    experiment = experiment_builder.build_from_args(args)
+    experiment_view = experiment_builder.build_view_from_args(args)
+    experiment = experiment_builder.build(name=experiment_view.name,
+                                          version=experiment_view.version)
 
     transformed_args = _build_from(command_line_user_args)
     exp_space = experiment.space

@@ -184,14 +184,15 @@ class BaseOrionState:
 
         self._trials.sort(key=lambda obj: int(obj['_id'], 16), reverse=True)
 
-        for i, _ in enumerate(self._experiments):
-            path = os.path.join(
-                os.path.dirname(__file__),
-                self._experiments[i]["metadata"]["user_script"])
+        for i, experiment in enumerate(self._experiments):
+            if 'user_script' in experiment['metadata']:
+                path = os.path.join(
+                    os.path.dirname(__file__),
+                    experiment["metadata"]["user_script"])
+                experiment["metadata"]["user_script"] = path
 
-            self._experiments[i]["metadata"]["user_script"] = path
-            self._experiments[i]['version'] = 1
-            self._experiments[i]['_id'] = i
+            experiment['version'] = 1
+            experiment['_id'] = i
 
         self._set_tables()
 
