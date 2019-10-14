@@ -96,16 +96,14 @@ import orion.core
 from orion.core.cli.evc import fetch_branching_configuration
 from orion.core.evc.adapters import Adapter
 from orion.core.evc.conflicts import detect_conflicts, ExperimentNameConflict
-from orion.core.evc.experiment import ExperimentNode
 from orion.core.io import resolve_config
 from orion.core.io.database import DuplicateKeyError
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
-from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.io.space_builder import SpaceBuilder
-from orion.core.utils.exceptions import NoConfigurationError, RaceCondition
 import orion.core.utils.backward as backward
-from orion.core.worker.experiment import ExperimentNew, ExperimentViewNew
+from orion.core.utils.exceptions import NoConfigurationError, RaceCondition
+from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import Strategy
 from orion.storage.base import get_storage, Storage
@@ -263,7 +261,7 @@ def build_view(name, version=None):
 
     experiment = create_experiment(**db_config)
 
-    return ExperimentViewNew(experiment)
+    return ExperimentView(experiment)
 
 
 def create_experiment(name, version, space, **kwargs):
@@ -290,8 +288,8 @@ def create_experiment(name, version, space, **kwargs):
         Configuration of the storage backend.
 
     """
-    experiment = ExperimentNew(name=name, version=version)
-    experiment._id = kwargs.get('_id', None)
+    experiment = Experiment(name=name, version=version)
+    experiment._id = kwargs.get('_id', None)  # pylint:disable=protected-access
     experiment.pool_size = kwargs.get('pool_size', orion.core.config.experiment.pool_size)
     experiment.max_trials = kwargs.get('max_trials', orion.core.config.experiment.max_trials)
     space = _instantiate_space(space)
@@ -302,8 +300,6 @@ def create_experiment(name, version, space, **kwargs):
     experiment.metadata = kwargs.get('metadata', {'user': kwargs.get('user', getpass.getuser())})
     experiment.refers = kwargs.get('refers', {'parent_id': None, 'root_id': None, 'adapter': []})
     experiment.refers['adapter'] = _instantiate_adapters(experiment.refers.get('adapter', []))
-
-    experiment._node = ExperimentNode(experiment.name, experiment.version, experiment=experiment)
 
     return experiment
 
@@ -418,12 +414,12 @@ def _register_experiment(experiment):
 
     # XXX: Reminder for future DB implementations:
     # MongoDB, updates an inserted dict with _id, so should you :P
-    experiment._id = config['_id']
+    experiment._id = config['_id']  # pylint:disable=protected-access
 
     # Update refers in db if experiment is root
     if experiment.refers.get('parent_id') is None:
         log.debug('update refers (name: %s)', experiment.name)
-        experiment.refers['root_id'] = experiment._id
+        experiment.refers['root_id'] = experiment.id
         get_storage().update_experiment(experiment, refers=experiment.configuration['refers'])
 
 

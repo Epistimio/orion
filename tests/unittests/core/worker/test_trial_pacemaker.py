@@ -7,7 +7,6 @@ import time
 import pytest
 
 import orion.core.io.experiment_builder as experiment_builder
-import orion.core.utils.backward as backward
 from orion.core.utils.format_trials import tuple_to_trial
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.storage.base import get_storage

@@ -11,8 +11,8 @@ from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
-from orion.core.utils.tests import OrionState
 from orion.core.utils.exceptions import NoConfigurationError, RaceCondition
+from orion.core.utils.tests import OrionState
 from orion.storage.base import get_storage
 
 
@@ -36,6 +36,7 @@ def init_storage(clean_db, test_config):
 
 @pytest.fixture
 def space():
+    """Build a space definition"""
     return {'x': 'uniform(-50,50)'}
 
 
@@ -53,7 +54,7 @@ def python_api_config():
                           "HEAD_sha": "test",
                           "active_branch": None,
                           "diff_sha": "diff"},
-                  'priors': {'x':'uniform(0,10)'}},
+                  'priors': {'x': 'uniform(0,10)'}},
         max_trials=1000,
         working_dir='',
         algorithms={
@@ -117,9 +118,6 @@ def new_config(random_dt, script_path):
     backward.populate_priors(new_config['metadata'])
 
     return new_config
-
-
-
 
 
 @pytest.fixture
@@ -197,7 +195,7 @@ def test_fetch_config_from_db_no_hit(config_file, random_dt):
 @pytest.mark.usefixtures('with_user_tsirif')
 def test_fetch_config_from_db_hit(new_config):
     """Verify db config when experiment is in db"""
-    with OrionState(experiments=[new_config], trials=[]) as cfg:
+    with OrionState(experiments=[new_config], trials=[]):
         db_config = experiment_builder.fetch_config_from_db(name='supernaekei')
 
     assert db_config['name'] == new_config['name']
@@ -213,7 +211,7 @@ def test_build_view_from_args_no_hit(config_file, create_db_instance):
     """Try building experiment view when not in db"""
     cmdargs = {'name': 'supernaekei', 'config': config_file}
 
-    with OrionState(experiments=[], trials=[]) as cfg:
+    with OrionState(experiments=[], trials=[]):
         with pytest.raises(ValueError) as exc_info:
             experiment_builder.build_view_from_args(cmdargs)
         assert "No experiment with given name 'supernaekei' and version '*'" in str(exc_info.value)
@@ -224,7 +222,7 @@ def test_build_view_from_args_hit(config_file, random_dt, new_config):
     """Try building experiment view when in db"""
     cmdargs = {'name': 'supernaekei', 'config': config_file}
 
-    with OrionState(experiments=[new_config], trials=[]) as cfg:
+    with OrionState(experiments=[new_config], trials=[]):
         exp_view = experiment_builder.build_view_from_args(cmdargs)
 
     assert exp_view._experiment._init_done is True
@@ -244,9 +242,7 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
                'user_args': [script_path,
                              'x~uniform(0,10)']}
 
-    with OrionState(experiments=[], trials=[]) as cfg:
-        db_config = experiment_builder.fetch_config_from_db(name='supernaekei')
-
+    with OrionState(experiments=[], trials=[]):
         with pytest.raises(ValueError) as exc_info:
             experiment_builder.build_view_from_args(cmdargs)
         assert "No experiment with given name 'supernaekei' and version '*'" in str(exc_info.value)
@@ -273,7 +269,7 @@ def test_build_from_args_hit(old_config_file, script_path, new_config):
                'user_args': [script_path,
                              '--mini-batch~uniform(32, 256, discrete=True)']}
 
-    with OrionState(experiments=[new_config], trials=[]) as cfg:
+    with OrionState(experiments=[new_config], trials=[]):
         # Test that experiment already exists
         experiment_builder.build_view_from_args(cmdargs)
 
@@ -304,7 +300,7 @@ def test_build_no_hit(config_file, random_dt, script_path):
     space = {'x': 'uniform(0,10)'}
     max_trials = 100
 
-    with OrionState(experiments=[], trials=[]) as cfg:
+    with OrionState(experiments=[], trials=[]):
 
         with pytest.raises(ValueError) as exc_info:
             experiment_builder.build_view(name)
@@ -327,7 +323,7 @@ def test_build_no_hit(config_file, random_dt, script_path):
 
 def test_build_no_commandline_config():
     """Try building experiment with no commandline configuration."""
-    with OrionState(experiments=[], trials=[]) as cfg:
+    with OrionState(experiments=[], trials=[]):
         with pytest.raises(NoConfigurationError):
             experiment_builder.build('supernaekei')
 
@@ -337,7 +333,7 @@ def test_build_hit(python_api_config):
     """Try building experiment from config when in db (no branch)"""
     name = 'supernaekei'
 
-    with OrionState(experiments=[python_api_config], trials=[]) as cfg:
+    with OrionState(experiments=[python_api_config], trials=[]):
 
         # Test that experiment already exists (this should fail otherwise)
         experiment_builder.build_view(name=name)
@@ -359,7 +355,7 @@ def test_build_without_config_hit(python_api_config):
     """Try building experiment without commandline config when in db (no branch)"""
     name = 'supernaekei'
 
-    with OrionState(experiments=[python_api_config], trials=[]) as cfg:
+    with OrionState(experiments=[python_api_config], trials=[]):
 
         # Test that experiment already exists (this should fail otherwise)
         experiment_builder.build_view(name=name)
@@ -383,7 +379,7 @@ def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
     cmdargs = {'name': name,
                'config': old_config_file}
 
-    with OrionState(experiments=[new_config], trials=[]) as cfg:
+    with OrionState(experiments=[new_config], trials=[]):
         # Test that experiment already exists (this should fail otherwise)
         experiment_builder.build_view_from_args(cmdargs)
 
@@ -450,8 +446,9 @@ class TestExperimentVersioning(object):
         assert exp.version == 2
 
 
-@pytest.mark.usefixtures("create_db_instance", "with_user_tsirif")
+@pytest.mark.usefixtures("with_user_tsirif")
 class TestBuild(object):
+    """Test building the experiment"""
 
     def test_good_set_before_init_hit_no_diffs_exc_max_trials(self, new_config):
         """Trying to set, and NO differences were found from the config pulled from db.
@@ -459,7 +456,7 @@ class TestBuild(object):
         Everything is normal, nothing changes. Experiment is resumed,
         perhaps with more trials to evaluate (an exception is 'max_trials').
         """
-        with OrionState(experiments=[new_config], trials=[]) as cfg:
+        with OrionState(experiments=[new_config], trials=[]):
 
             space = new_config['metadata']['priors']
             new_config['max_trials'] = 5000
@@ -480,8 +477,7 @@ class TestBuild(object):
 
     def test_good_set_before_init_no_hit(self, random_dt, new_config):
         """Trying to set, overwrite everything from input."""
-
-        with OrionState(experiments=[], trials=[]) as cfg:
+        with OrionState(experiments=[], trials=[]):
             space = new_config['metadata']['priors']
             exp = experiment_builder.build(space=space, **new_config)
             assert exp._init_done is True
@@ -516,7 +512,7 @@ class TestBuild(object):
 
     def test_working_dir_is_correctly_set(self, new_config):
         """Check if working_dir is correctly changed."""
-        with OrionState(experiments=[], trials=[]) as cfg:
+        with OrionState(experiments=[], trials=[]):
             space = new_config['metadata']['priors']
             new_config['working_dir'] = './'
             exp = experiment_builder.build(space=space, **new_config)
@@ -532,7 +528,7 @@ class TestBuild(object):
 
     def test_working_dir_works_when_db_absent(self, database, new_config):
         """Check if working_dir is correctly when absent from the database."""
-        with OrionState(experiments=[], trials=[]) as cfg:
+        with OrionState(experiments=[], trials=[]):
             space = new_config['metadata']['priors']
             exp = experiment_builder.build(space=space, **new_config)
             assert exp._init_done is True
@@ -552,7 +548,7 @@ class TestBuild(object):
         user's name) has not hit the database. return a yaml compliant form
         of current state, to be used with :mod:`orion.core.cli.esolve_config`.
         """
-        with OrionState(experiments=[new_config], trials=[]) as cfg:
+        with OrionState(experiments=[new_config], trials=[]):
             experiment_count_before = count_experiments()
             space = new_config['metadata']['priors']
             exp = experiment_builder.build(space=space, **new_config)
@@ -572,7 +568,7 @@ class TestBuild(object):
 
     def test_instantiation_after_init(self, new_config):
         """Verify that algo, space and refers was instanciated properly"""
-        with OrionState(experiments=[new_config], trials=[]) as cfg:
+        with OrionState(experiments=[new_config], trials=[]):
             space = new_config['metadata']['priors']
             exp = experiment_builder.build(space=space, **new_config)
 
@@ -588,9 +584,8 @@ class TestBuild(object):
         The experiment from process which first writes to db is initialized
         properly. The experiment which looses the race condition cannot be
         initialized and needs to be rebuilt.
-        """ 
-
-        with OrionState(experiments=[new_config], trials=[]) as cfg:
+        """
+        with OrionState(experiments=[new_config], trials=[]):
             experiment_count_before = count_experiments()
 
             def insert_race_condition(*args, **kwargs):
@@ -608,25 +603,24 @@ class TestBuild(object):
             monkeypatch.setattr(experiment_builder, 'fetch_config_from_db', insert_race_condition)
 
             space = new_config['metadata']['priors']
-            exp = experiment_builder.build(space=space, **new_config)
+            experiment_builder.build(space=space, **new_config)
 
             assert experiment_count_before == count_experiments()
 
         # Should be called
-        # - once in build(), 
-        # - then register fails, 
+        # - once in build(),
+        # - then register fails,
         # - then called once again in build,
         # - then called in build_view to evaluate the conflicts
         assert insert_race_condition.count == 3
 
     def test_algorithm_config_with_just_a_string(self):
         """Test that configuring an algorithm with just a string is OK."""
-
         name = 'supernaedo3'
         space = {'x': 'uniform(0,10)'}
         algorithms = 'dumbalgo'
 
-        with OrionState(experiments=[], trials=[]) as cfg:
+        with OrionState(experiments=[], trials=[]):
             exp = experiment_builder.build(name=name, space=space, algorithms=algorithms)
 
         assert exp.configuration['algorithms'] == {
@@ -644,7 +638,7 @@ class TestBuild(object):
         space = {'x': 'uniform(0, 10)'}
         metadata = {'priors': space}  # TODO: remove when space in db
 
-        with OrionState(experiments=[], trials=[]) as cfg:
+        with OrionState(experiments=[], trials=[]):
             parent = experiment_builder.build(name=name, space=space, metadata=metadata)
 
             assert parent.name == name
@@ -672,7 +666,7 @@ class TestBuild(object):
         space = {'x': 'uniform(0,10)'}
         metadata = {'priors': space}  # TODO: remove when space in db
 
-        with OrionState(experiments=[], trials=[]) as cfg:
+        with OrionState(experiments=[], trials=[]):
             parent = experiment_builder.build(name=name, space=space, metadata=metadata)
             child = experiment_builder.build(name=name, space={'x': 'loguniform(1,10)'})
             assert child.name == parent.name
@@ -691,7 +685,7 @@ class TestBuild(object):
         space = {'x': 'uniform(0,10)'}
         metadata = {'priors': space}  # TODO: remove when space in db
 
-        with OrionState(experiments=[], trials=[]) as cfg:
+        with OrionState(experiments=[], trials=[]):
             parent = experiment_builder.build(name, space=space, metadata=metadata)
             child = experiment_builder.build(name=name, space={'x': 'loguniform(1,10)'})
             assert child.name == parent.name
@@ -699,7 +693,7 @@ class TestBuild(object):
             assert child.version == 2
 
             # Either
-            # 1. 
+            # 1.
             #     fetch_config_from_db only fetch parent
             #     test_version finds other child
             #     -> Detect race condition looking at conflicts
@@ -728,7 +722,7 @@ class TestBuild(object):
                                 insert_race_condition_1)
 
             with pytest.raises(RaceCondition) as exc_info:
-                child2 = experiment_builder.build(name=name, space={'x': 'loguniform(1,10)'})
+                experiment_builder.build(name=name, space={'x': 'loguniform(1,10)'})
             assert 'There was likely a race condition during version' in str(exc_info.value)
 
             def insert_race_condition_2(self, query):
@@ -751,7 +745,7 @@ class TestBuild(object):
                                 insert_race_condition_2)
 
             with pytest.raises(RaceCondition) as exc_info:
-                child2 = experiment_builder.build(name=name, space={'x': 'loguniform(1,10)'})
+                experiment_builder.build(name=name, space={'x': 'loguniform(1,10)'})
             assert 'There was a race condition during branching.' in str(exc_info.value)
 
     def test_race_condition_w_version(self, monkeypatch):
@@ -767,7 +761,7 @@ class TestBuild(object):
         space = {'x': 'uniform(0,10)'}
         metadata = {'priors': space}  # TODO: remove when space in db
 
-        with OrionState(experiments=[], trials=[]) as cfg:
+        with OrionState(experiments=[], trials=[]):
             parent = experiment_builder.build(name, space=space, metadata=metadata)
             child = experiment_builder.build(name=name, space={'x': 'loguniform(1,10)'})
             assert child.name == parent.name
@@ -775,7 +769,7 @@ class TestBuild(object):
             assert child.version == 2
 
             # Either
-            # 1. 
+            # 1.
             #     fetch_config_from_db only fetch parent
             #     test_version finds other child
             #     -> Detect race condition looking at conflicts
@@ -804,8 +798,7 @@ class TestBuild(object):
                                 insert_race_condition_1)
 
             with pytest.raises(ValueError) as exc_info:
-                child2 = experiment_builder.build(name=name, version=1,
-                                                  space={'x': 'loguniform(1,10)'})
+                experiment_builder.build(name=name, version=1, space={'x': 'loguniform(1,10)'})
             assert 'Configuration is different and generates' in str(exc_info.value)
 
             def insert_race_condition_2(self, query):
@@ -828,7 +821,7 @@ class TestBuild(object):
                                 insert_race_condition_2)
 
             with pytest.raises(RaceCondition) as exc_info:
-                child2 = experiment_builder.build(name=name, version=1, space={'x': 'loguniform(1,10)'})
+                experiment_builder.build(name=name, version=1, space={'x': 'loguniform(1,10)'})
             assert 'There was a race condition during branching.' in str(exc_info.value)
 
 
@@ -837,7 +830,7 @@ class TestInitExperimentView(object):
 
     def test_empty_experiment_view(self):
         """Hit user name, but exp_name does not hit the db."""
-        with OrionState(experiments=[], trials=[]) as cfg:
+        with OrionState(experiments=[], trials=[]):
             with pytest.raises(ValueError) as exc_info:
                 experiment_builder.build_view('supernaekei')
             assert ("No experiment with given name 'supernaekei' and version '*'"
@@ -845,7 +838,7 @@ class TestInitExperimentView(object):
 
     def test_existing_experiment_view(self, new_config):
         """Hit exp_name + user's name in the db, fetch most recent entry."""
-        with OrionState(experiments=[new_config], trials=[]) as cfg:
+        with OrionState(experiments=[new_config], trials=[]):
             exp = experiment_builder.build_view(name='supernaekei')
 
         assert exp._experiment._init_done is True

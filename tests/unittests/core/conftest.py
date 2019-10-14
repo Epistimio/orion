@@ -11,10 +11,10 @@ import pytest
 from orion.algo.space import (Categorical, Integer, Real, Space)
 from orion.core.evc import conflicts
 from orion.core.io.convert import (JSONConverter, YAMLConverter)
+import orion.core.io.experiment_builder as experiment_builder
 from orion.core.io.space_builder import DimensionBuilder
 import orion.core.utils.backward as backward
 from orion.core.utils.tests import default_datetime, MockDatetime
-from orion.core.worker.experiment import Experiment
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, 'sample_config.yml')
@@ -146,7 +146,7 @@ def hacked_exp(with_user_dendi, random_dt, clean_db, create_db_instance):
     """Return an `Experiment` instance with hacked _id to find trials in
     fake database.
     """
-    exp = Experiment('supernaedo2-dendi')
+    exp = experiment_builder.build(name='supernaedo2-dendi')
     exp._id = 'supernaedo2-dendi'  # white box hack
     return exp
 

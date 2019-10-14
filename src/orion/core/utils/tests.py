@@ -146,9 +146,10 @@ class BaseOrionState:
         self.load_experience_configuration()
         return self
 
-    def get_experiment(self, name, user=None, version=None):
+    def get_experiment(self, name, version=None):
         """Make experiment id deterministic"""
-        exp = Experiment(name, user=user, version=version)
+        exp = Experiment(name, version=version)
+        exp._id = name
         return exp
 
     def get_trial(self, index):

@@ -8,11 +8,11 @@ import pytest
 
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
-from orion.core.worker.experiment import ExperimentView
 from orion.storage.base import get_storage
 
 
 def execute(command):
+    """Execute orion command and return returncode"""
     returncode = orion.core.cli.main(command.split(' '))
     assert returncode == 0
 
@@ -151,7 +151,8 @@ def init_full_x_new_algo(init_full_x):
     name = "full_x"
     branch = "full_x_new_algo"
     orion.core.cli.main(
-        ("init_only -n {branch} --branch-from {name} --algorithm-change --config new_algo_config.yaml "
+        ("init_only -n {branch} --branch-from {name} "
+         "--algorithm-change --config new_algo_config.yaml "
          "./black_box.py -x~uniform(-10,10)").format(name=name, branch=branch).split(" "))
     orion.core.cli.main("insert -n {branch} script -x=1.1".format(branch=branch).split(" "))
     orion.core.cli.main("insert -n {branch} script -x=-1.1".format(branch=branch).split(" "))
@@ -195,7 +196,7 @@ def get_name_value_pairs(trials):
 
 def test_init(init_full_x, create_db_instance):
     """Test if original experiment contains trial 0"""
-    experiment = ExperimentView('full_x')
+    experiment = experiment_builder.build_view(name='full_x')
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 0), ), )
 
@@ -484,7 +485,8 @@ def test_init_w_version_from_parent_w_children(clean_db, monkeypatch):
     execute("init_only -n experiment ./black_box.py -x~normal(0,1) -y~+normal(0,1)")
 
     with pytest.raises(ValueError) as exc:
-        execute("init_only -n experiment -v 1 ./black_box.py -x~normal(0,1) -y~+normal(0,1) -z~normal(0,1)")
+        execute("init_only -n experiment -v 1 "
+                "./black_box.py -x~normal(0,1) -y~+normal(0,1) -z~normal(0,1)")
 
     assert "Experiment name" in str(exc.value)
 

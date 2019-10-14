@@ -234,7 +234,7 @@ def version_XYZ(monkeypatch):
 def create_db_instance(null_db_instances, clean_db):
     """Create and save a singleton database instance."""
     try:
-        database= {
+        database = {
             'type': 'MongoDB',
             'name': 'orion_test',
             'username': 'user',

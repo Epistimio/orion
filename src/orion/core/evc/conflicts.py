@@ -1641,7 +1641,7 @@ class ExperimentNameConflict(Conflict):
 
         @property
         def is_marked(self):
-            """Return True every time since the `--branch-from` argument is not used when incrementing
-            version of an experiment.
+            """Return True every time since the `--branch-from` argument is not used when
+            incrementing version of an experiment.
             """
             return True
