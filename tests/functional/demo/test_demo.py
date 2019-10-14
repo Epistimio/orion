@@ -13,10 +13,8 @@ import yaml
 
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
-import orion.core.utils.backward as backward
 from orion.core.utils.tests import OrionState
 from orion.core.worker import workon
-from orion.core.worker.experiment import Experiment
 from orion.storage.base import get_storage
 
 
@@ -217,7 +215,6 @@ def test_workon():
         assert len(exp) == 1
         exp = exp[0]
         assert '_id' in exp
-        exp_id = exp['_id']
         assert exp['name'] == name
         assert exp['pool_size'] == 1
         assert exp['max_trials'] == 100

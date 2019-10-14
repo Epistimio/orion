@@ -20,7 +20,6 @@ from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils import SingletonAlreadyInstantiatedError
-from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage, Storage
 from orion.storage.legacy import Legacy

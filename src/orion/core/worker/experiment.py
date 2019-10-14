@@ -294,7 +294,7 @@ class Experiment:
         """
         num_completed_trials = self._storage.count_completed_trials(self)
 
-        return ((num_completed_trials >= self.max_trials) or self.algorithms.is_done)
+        return (num_completed_trials >= self.max_trials) or self.algorithms.is_done
 
     @property
     def is_broken(self):
