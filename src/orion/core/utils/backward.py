@@ -38,5 +38,5 @@ def update_db_config(config):
     """Merge DB config back into storage config"""
     config.setdefault('storage', orion.core.config.storage.to_dict())
     if 'database' in config:
-        config['storage'] = {'type' : 'legacy'}
+        config['storage'] = {'type': 'legacy'}
         config['storage']['database'] = config.pop('database')
