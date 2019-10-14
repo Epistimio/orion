@@ -11,6 +11,7 @@ import time
 
 import pytest
 
+import orion.core
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.tests import OrionState
 from orion.core.worker.trial import Trial
@@ -88,7 +89,8 @@ def make_lost_trial():
     """Make a lost trial"""
     obj = copy.deepcopy(base_trial)
     obj['status'] = 'reserved'
-    obj['heartbeat'] = datetime.datetime.utcnow() - datetime.timedelta(seconds=61 * 2)
+    obj['heartbeat'] = (datetime.datetime.utcnow() -
+                        datetime.timedelta(seconds=orion.core.config.worker.heartbeat * 2))
     obj['params'].append({
         'name': '/index',
         'type': 'categorical',
