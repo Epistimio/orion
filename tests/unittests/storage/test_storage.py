@@ -40,6 +40,7 @@ base_experiment = {
     'metadata': {
         'user': 'default_user',
         'user_script': 'abc',
+        'priors': {'x': 'uniform(0, 10)'},
         'datetime': '2017-11-23T02:00:00'
     }
 }
@@ -227,7 +228,7 @@ class TestStorage:
         with OrionState(
                 experiments=[base_experiment], trials=[base_trial], database=storage) as cfg:
             storage = cfg.storage()
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
 
             trial = storage.reserve_trial(experiment)
             assert trial is not None
@@ -241,7 +242,7 @@ class TestStorage:
                 database=storage) as cfg:
 
             storage = cfg.storage()
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
 
             trial = storage.reserve_trial(experiment)
             assert trial is None
@@ -251,7 +252,7 @@ class TestStorage:
         with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
             storage = cfg.storage()
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
 
             trials1 = storage.fetch_trials(experiment=experiment)
             trials2 = storage.fetch_trials(uid=experiment._id)
@@ -291,7 +292,7 @@ class TestStorage:
                         trials=generate_trials() + [make_lost_trial()], database=storage) as cfg:
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
             trials = storage.fetch_lost_trials(experiment)
 
             count = 0
@@ -368,7 +369,7 @@ class TestStorage:
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
             trials = storage.fetch_pending_trials(experiment)
 
             count = 0
@@ -386,7 +387,7 @@ class TestStorage:
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
             trials = storage.fetch_noncompleted_trials(experiment)
 
             count = 0
@@ -409,7 +410,7 @@ class TestStorage:
                     count += 1
 
             storage = cfg.storage()
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
             trials = storage.fetch_trial_by_status(experiment, 'completed')
 
             assert len(trials) == count
@@ -427,7 +428,7 @@ class TestStorage:
 
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
             trials = storage.count_completed_trials(experiment)
             assert trials == count
 
@@ -442,7 +443,7 @@ class TestStorage:
 
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
             trials = storage.count_broken_trials(experiment)
 
             assert trials == count
