@@ -28,13 +28,6 @@ def add_subparser(parser):
     return info_parser
 
 
-# pylint: disable=protected-access
-def hack_until_config_is_refactored(experiment):
-    """Build the space and the algorithm"""
-    experiment._experiment._instantiate_config(experiment.configuration)
-    experiment._experiment._init_done = True
-
-
 def main(args):
     """Fetch config and info experiments"""
     try:
@@ -42,8 +35,6 @@ def main(args):
     except ValueError:
         print('Experiment {} not found in db.'.format(args.get('name', None)))
         sys.exit(1)
-
-    # hack_until_config_is_refactored(experiment)
 
     print(format_info(experiment))
 
