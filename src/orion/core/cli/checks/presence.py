@@ -26,7 +26,6 @@ class PresenceStage:
     def checks(self):
         """Return the registered checks."""
         yield self.check_default_config
-        yield self.check_environment_vars
         yield self.check_configuration_file
 
     def check_default_config(self):
