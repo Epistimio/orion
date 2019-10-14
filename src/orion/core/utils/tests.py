@@ -18,6 +18,7 @@ from orion.core.io.database import Database
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
+import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils import SingletonAlreadyInstantiatedError
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
@@ -148,7 +149,7 @@ class BaseOrionState:
 
     def get_experiment(self, name, version=None):
         """Make experiment id deterministic"""
-        exp = Experiment(name, version=version)
+        exp = experiment_builder.build(name=name, version=version)
         exp._id = name
         return exp
 
