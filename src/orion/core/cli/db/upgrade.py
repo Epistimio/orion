@@ -83,7 +83,14 @@ def main(args):
             sys.exit(0)
 
     config = experiment_builder.get_cmd_config(args)
-    experiment_builder.setup_storage(config.get('storage'))
+    storage_config = config.get('storage')
+
+    if storage_config is None:
+        storage_config = {'type': 'legacy'}
+
+    storage_config['setup'] = False
+
+    experiment_builder.setup_storage(storage_config)
 
     storage = get_storage()
 
