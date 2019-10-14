@@ -76,13 +76,11 @@ class Experiment:
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials', 'version',
-                 'algorithms', 'producer', 'working_dir', '_init_done', '_id',
+                 'algorithms', 'producer', 'working_dir', '_id',
                  '_node', '_storage')
     non_branching_attrs = ('pool_size', 'max_trials')
 
     def __init__(self, name, version=None):
-        self._init_done = True
-
         self._id = None
         self.name = name
         self.version = version if version else 1
@@ -296,8 +294,7 @@ class Experiment:
         """
         num_completed_trials = self._storage.count_completed_trials(self)
 
-        return ((num_completed_trials >= self.max_trials) or
-                (self._init_done and self.algorithms.is_done))
+        return ((num_completed_trials >= self.max_trials) or self.algorithms.is_done)
 
     @property
     def is_broken(self):
@@ -317,9 +314,7 @@ class Experiment:
 
         .. note:: It will return None, if experiment init is not done.
         """
-        if self._init_done:
-            return self.algorithms.space
-        return None
+        return self.algorithms.space
 
     @property
     def configuration(self):
@@ -330,11 +325,11 @@ class Experiment:
                 continue
             attribute = copy.deepcopy(getattr(self, attrname))
             config[attrname] = attribute
-            if self._init_done and attrname == 'algorithms':
+            if attrname == 'algorithms':
                 config[attrname] = attribute.configuration
             elif attrname == "refers" and isinstance(attribute.get("adapter"), BaseAdapter):
                 config[attrname]['adapter'] = config[attrname]['adapter'].configuration
-            elif self._init_done and attrname == "producer" and attribute.get("strategy"):
+            elif attrname == "producer" and attribute.get("strategy"):
                 config[attrname]['strategy'] = config[attrname]['strategy'].configuration
 
         if self.id:

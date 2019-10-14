@@ -195,8 +195,6 @@ def build(name, version=None, branching=None, **config):
 
     experiment = create_experiment(**copy.deepcopy(config))
     if experiment.id is None:
-        experiment._init_done = True
-
         try:
             _register_experiment(experiment)
         except DuplicateKeyError:
@@ -208,7 +206,6 @@ def build(name, version=None, branching=None, **config):
     must_branch = len(conflicts.get()) > 1 or branching.get('branch_to')
     if must_branch:
         branched_experiment = _branch_experiment(experiment, conflicts, version, branching)
-        branched_experiment._init_done = True
         try:
             _register_experiment(branched_experiment)
         except DuplicateKeyError as e:
@@ -479,9 +476,6 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
 def _get_conflicts(experiment):
     """Get conflicts between current experiment and corresponding configuration in database"""
     db_experiment = build_view(experiment.name, experiment.version)
-    # TODO: Remove when _init_done is removed.
-    experiment._init_done = True
-    db_experiment._experiment._init_done = True
     conflicts = detect_conflicts(db_experiment.configuration, experiment.configuration)
 
     # elif must_branch and not enable_branching:

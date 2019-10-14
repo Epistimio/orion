@@ -225,7 +225,6 @@ def test_build_view_from_args_hit(config_file, random_dt, new_config):
     with OrionState(experiments=[new_config], trials=[]):
         exp_view = experiment_builder.build_view_from_args(cmdargs)
 
-    assert exp_view._experiment._init_done is True
     assert exp_view._id == new_config['_id']
     assert exp_view.name == new_config['name']
     assert exp_view.configuration['refers'] == new_config['refers']
@@ -249,7 +248,6 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
 
         exp = experiment_builder.build_from_args(cmdargs)
 
-    assert exp._init_done is True
     assert exp.name == cmdargs['name']
     assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
     assert exp.metadata['datetime'] == random_dt
@@ -275,7 +273,6 @@ def test_build_from_args_hit(old_config_file, script_path, new_config):
 
         exp = experiment_builder.build_from_args(cmdargs)
 
-    assert exp._init_done is True
     assert exp._id == new_config['_id']
     assert exp.name == new_config['name']
     assert exp.configuration['refers'] == new_config['refers']
@@ -308,7 +305,6 @@ def test_build_no_hit(config_file, random_dt, script_path):
 
         exp = experiment_builder.build(name, space=space, max_trials=max_trials)
 
-    assert exp._init_done is True
     assert exp.name == name
     assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
     assert exp.metadata['datetime'] == random_dt
@@ -341,7 +337,6 @@ def test_build_hit(python_api_config):
         exp = experiment_builder.build(space=python_api_config['metadata']['priors'],
                                        **python_api_config)
 
-    assert exp._init_done is True
     assert exp._id == python_api_config['_id']
     assert exp.name == python_api_config['name']
     assert exp.configuration['refers'] == python_api_config['refers']
@@ -362,7 +357,6 @@ def test_build_without_config_hit(python_api_config):
 
         exp = experiment_builder.build(name=name)
 
-    assert exp._init_done is True
     assert exp._id == python_api_config['_id']
     assert exp.name == python_api_config['name']
     assert exp.configuration['refers'] == python_api_config['refers']
@@ -385,7 +379,6 @@ def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
 
         exp = experiment_builder.build_from_args(cmdargs)
 
-    assert exp._init_done is True
     assert exp._id == new_config['_id']
     assert exp.name == new_config['name']
     assert exp.configuration['refers'] == new_config['refers']
@@ -480,7 +473,6 @@ class TestBuild(object):
         with OrionState(experiments=[], trials=[]):
             space = new_config['metadata']['priors']
             exp = experiment_builder.build(space=space, **new_config)
-            assert exp._init_done is True
             found_config = list(get_storage().fetch_experiments({'name': 'supernaekei',
                                                                  'metadata.user': 'tsirif'}))
 
@@ -516,7 +508,6 @@ class TestBuild(object):
             space = new_config['metadata']['priors']
             new_config['working_dir'] = './'
             exp = experiment_builder.build(space=space, **new_config)
-            assert exp._init_done is True
             storage = get_storage()
             found_config = list(storage.fetch_experiments({'name': 'supernaekei',
                                                            'metadata.user': 'tsirif'}))
@@ -531,7 +522,6 @@ class TestBuild(object):
         with OrionState(experiments=[], trials=[]):
             space = new_config['metadata']['priors']
             exp = experiment_builder.build(space=space, **new_config)
-            assert exp._init_done is True
             storage = get_storage()
             found_config = list(storage.fetch_experiments({'name': 'supernaekei',
                                                            'metadata.user': 'tsirif'}))
@@ -554,7 +544,6 @@ class TestBuild(object):
             exp = experiment_builder.build(space=space, **new_config)
             assert experiment_count_before == count_experiments()
 
-        assert exp._init_done is True
         new_config['algorithms']['dumbalgo']['done'] = False
         new_config['algorithms']['dumbalgo']['judgement'] = None
         new_config['algorithms']['dumbalgo']['scoring'] = 0
@@ -572,7 +561,6 @@ class TestBuild(object):
             space = new_config['metadata']['priors']
             exp = experiment_builder.build(space=space, **new_config)
 
-        assert exp._init_done is True
         assert isinstance(exp.algorithms, BaseAlgorithm)
         assert isinstance(exp.space, Space)
         assert isinstance(exp.refers['adapter'], BaseAdapter)
@@ -840,8 +828,6 @@ class TestInitExperimentView(object):
         """Hit exp_name + user's name in the db, fetch most recent entry."""
         with OrionState(experiments=[new_config], trials=[]):
             exp = experiment_builder.build_view(name='supernaekei')
-
-        assert exp._experiment._init_done is True
 
         assert exp._id == new_config['_id']
         assert exp.name == new_config['name']
