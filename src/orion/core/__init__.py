@@ -145,6 +145,14 @@ def define_evc_config(config):
         'auto_resolution', option_type=bool, default=True)
     evc_config.add_option(
         'manual_resolution', option_type=bool, default=False)
+    evc_config.add_option(
+        'algorithm_change', option_type=bool, default=False)
+    evc_config.add_option(
+        'code_change_type', option_type=str, default='break')
+    evc_config.add_option(
+        'cli_change_type', option_type=str, default='break')
+    evc_config.add_option(
+        'config_change_type', option_type=str, default='break')
 
     config.evc = evc_config
 
