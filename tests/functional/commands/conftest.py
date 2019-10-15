@@ -91,7 +91,7 @@ def exp_config():
         exp_config = list(yaml.safe_load_all(f))
 
     for config in exp_config[0]:
-        backward.populate_priors(config['metadata'])
+        backward.populate_space(config)
 
     return exp_config
 

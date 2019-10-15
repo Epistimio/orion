@@ -48,7 +48,9 @@ class Experiment:
        This attribute can be updated if the rest of the experiment configuration
        is the same. In that case, if trying to set to an already set experiment,
        it will overwrite the previous one.
-    algorithms : dict of dicts or an `PrimaryAlgo` object, after initialization is done.
+    space: Space
+       Object representing the optimization space.
+    algorithms : `PrimaryAlgo` object.
        Complete specification of the optimization and dynamical procedures taking
        place in this `Experiment`.
 
@@ -76,7 +78,7 @@ class Experiment:
     """
 
     __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials', 'version',
-                 'algorithms', 'producer', 'working_dir', '_id',
+                 'space', 'algorithms', 'producer', 'working_dir', '_id',
                  '_node', '_storage')
     non_branching_attrs = ('pool_size', 'max_trials')
 
@@ -89,6 +91,7 @@ class Experiment:
         self.metadata = {}
         self.pool_size = None
         self.max_trials = None
+        self.space = None
         self.algorithms = None
         self.working_dir = None
         self.producer = {}
@@ -309,14 +312,6 @@ class Experiment:
         return num_broken_trials >= orion.core.config.worker.max_broken
 
     @property
-    def space(self):
-        """Return problem's parameter `orion.algo.space.Space`.
-
-        .. note:: It will return None, if experiment init is not done.
-        """
-        return self.algorithms.space
-
-    @property
     def configuration(self):
         """Return a copy of an `Experiment` configuration as a dictionary."""
         config = dict()
@@ -325,7 +320,7 @@ class Experiment:
                 continue
             attribute = copy.deepcopy(getattr(self, attrname))
             config[attrname] = attribute
-            if attrname == 'algorithms':
+            if attrname in ['algorithms', 'space']:
                 config[attrname] = attribute.configuration
             elif attrname == "refers" and isinstance(attribute.get("adapter"), BaseAdapter):
                 config[attrname]['adapter'] = config[attrname]['adapter'].configuration
@@ -409,7 +404,7 @@ class ExperimentView(object):
     valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials",
                          "version", "space"] +
                         # Properties
-                        ["id", "node", "is_done", "space", "algorithms", "stats", "configuration"] +
+                        ["id", "node", "is_done", "algorithms", "stats", "configuration"] +
                         # Methods
                         ["fetch_trials", "fetch_trials_by_status", "get_trial"])
 
