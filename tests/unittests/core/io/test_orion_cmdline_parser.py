@@ -230,7 +230,6 @@ def test_format_with_properties(parser, cmd_with_properties, hacked_exp):
         {'name': '/prior', 'type': 'categorical', 'value': 'sgd'}])
 
     cmd_line = parser.format(None, trial=trial, experiment=hacked_exp)
-    print(cmd_line)
 
     assert trial.hash_name in cmd_line
     assert 'supernaedo2-dendi' in cmd_line

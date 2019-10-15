@@ -51,13 +51,6 @@ def producer(hacked_exp, random_dt, exp_config, categorical_values):
     """Return a setup `Producer`."""
     # make init done
 
-    # TODO: Remove this commented out if test pass
-    # hacked_exp.configure(exp_config[0][3])
-    # # insert fake point
-    # fake_point = ('gru', 'rnn')
-    # assert fake_point in hacked_exp.space
-    # hacked_exp.algorithms.algorithm.value = fake_point
-
     hacked_exp.pool_size = 1
     hacked_exp.algorithms.algorithm.possible_values = categorical_values
     hacked_exp.algorithms.seed_rng(0)

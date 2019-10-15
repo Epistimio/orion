@@ -43,6 +43,15 @@ def test_broken_refers(clean_db, broken_refers, capsys):
     assert captured == " test_single_exp-v1\n"
 
 
+def test_python_api(clean_db, with_experiment_using_python_api, capsys):
+    """Test list if containing exps from cmdline api and python api"""
+    orion.core.cli.main(['list'])
+
+    captured = capsys.readouterr().out
+
+    assert captured == " test_single_exp-v1\n from-python-api-v1\n"
+
+
 def test_two_exp(capsys, clean_db, two_experiments):
     """Test that experiment and child are printed."""
     orion.core.cli.main(['list'])

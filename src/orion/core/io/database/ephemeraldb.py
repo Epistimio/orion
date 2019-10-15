@@ -305,6 +305,7 @@ class EphemeralCollection(object):
             else:
                 deleted += 1
 
+        # Reset indexes
         for name, (keys, _) in self._indexes.items():
             self._indexes[name] = (keys, set())
 

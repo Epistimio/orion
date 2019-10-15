@@ -1,3 +1,5 @@
+.. _Setup Algorithms:
+
 ****************
 Setup Algorithms
 ****************
