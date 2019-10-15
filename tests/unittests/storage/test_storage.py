@@ -172,6 +172,7 @@ class TestStorage:
             mocked_experiment = _Dummy()
             mocked_experiment._id = experiment['_id']
 
+            print(experiment['_id'])
             storage.update_experiment(mocked_experiment, test=True)
             assert storage.fetch_experiments({'_id': experiment['_id']})[0]['test']
             assert 'test' not in storage.fetch_experiments({'_id': cfg.experiments[1]['_id']})[0]

@@ -102,6 +102,46 @@ def to_epoch(date):
     return (date - datetime.datetime(1970, 1, 1)).total_seconds()
 
 
+
+class ExperimentAdapter:
+    """Mock Trial, see `~orion.core.worker.experiment.Experiment`"""
+
+    def __init__(self, group):
+        self.group = group
+
+    def __getitem__(self, item):
+        """Look for attributes in group and metadata"""
+        if item in self.group:
+            return self.group[item]
+
+        if item in self.group['metadata']:
+             return self.group['metadata'][item]
+
+        raise AttributeError
+
+    def __eq__(self, other):
+        """Check for equality only with the keys stored inside other as Track
+        can insert additional information"""
+        for k, v in other.items():
+            equal = self[k] == v
+            if not equal:
+                return False
+
+        return True
+
+    def __contains__(self, item):
+        """Look for attributes in group and metadata"""
+        return item in self.group or item in self.group['metadata']
+
+    def __repr__(self):
+        """Forward repr to dict repr"""
+        return repr(self.group)
+
+    def __str__(self):
+        """Forward str to dict str"""
+        return str(self.group)
+
+
 class TrialAdapter:
     """Mock Trial, see `~orion.core.worker.trial.Trial`
 
@@ -362,9 +402,20 @@ class Track(BaseStorageProtocol):   # noqa: F811
 
     def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
-        self.backend.fetch_and_update_group({
-            'uid': self.group.uid
-        }, 'set_group_metadata', kwargs)
+        if uid and experiment:
+            assert experiment._id == uid
+
+        if uid is None:
+            if experiment is None:
+                raise MissingArguments('experiment or uid need to be defined')
+            else:
+                uid = experiment._id
+
+        self.group = self.backend.fetch_and_update_group({
+            '_uid': uid
+        }, 'set_group_metadata', **kwargs)
+
+        return self.group
 
     def fetch_experiments(self, query, selection=None):
         """Fetch all experiments that match the query"""
@@ -372,8 +423,13 @@ class Track(BaseStorageProtocol):   # noqa: F811
         for k, v in query.items():
             if k == 'name':
                 new_query['metadata.name'] = v
+
             elif k.startswith('metadata'):
                 new_query['metadata.{}'.format(k)] = v
+
+            elif k == '_id':
+                new_query['_uid'] = v
+
             else:
                 new_query[k] = v
 
@@ -383,12 +439,15 @@ class Track(BaseStorageProtocol):   # noqa: F811
         for group in groups:
             version = group.metadata.get('version', 0)
             metadata = group.metadata.get('metadata', {})
-            experiments.append({
+
+            exp = ExperimentAdapter({
                 '_id': group.uid,
+                'version': version,
                 'name': group.project_id,
-                'metadata': metadata,
-                'version': version
+                'metadata': metadata
             })
+
+            experiments.append(exp)
 
         return experiments
 
