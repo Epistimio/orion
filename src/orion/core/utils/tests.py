@@ -74,7 +74,7 @@ def _remove(file_name):
 
 
 # pylint: disable=no-self-use,protected-access
-class OrionState:
+class BaseOrionState:
     """Setup global variables and singleton for tests.
 
     It swaps the singleton with `None` at startup and restores them after the tests.
@@ -112,7 +112,6 @@ class OrionState:
     # TODO: Fix these singletons to remove Legacy, MongoDB, PickledDB and EphemeralDB.
     SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB, EphemeralDB, Track)
     singletons = {}
-    database = None
     experiments = []
     trials = []
     resources = []
@@ -144,22 +143,12 @@ class OrionState:
     def init(self, config):
         """Initialize environment before testing"""
         self.storage(config)
-        if hasattr(get_storage(), '_db'):
-            self.database = get_storage()._db
-            self.database.remove('experiments', {})
-            self.database.remove('trials', {})
-
         self.load_experience_configuration()
         return self
 
     def get_experiment(self, name, user=None, version=None):
         """Make experiment id deterministic"""
         exp = Experiment(name, user=user, version=version)
-
-        # Legacy
-        if self.database is not None:
-            exp._id = exp.name
-
         return exp
 
     def get_trial(self, index):
@@ -168,28 +157,9 @@ class OrionState:
 
     def cleanup(self):
         """Cleanup after testing"""
-        if self.database:
-            self.database.remove('experiments', {})
-            self.database.remove('trials', {})
-
         _remove(self.tempfile)
 
-    def _legacy_set(self):
-        if self._experiments:
-            self.database.write('experiments', self._experiments)
-        if self._trials:
-            self.database.write('trials', self._trials)
-        if self._workers:
-            self.database.write('workers', self._workers)
-        if self._resources:
-            self.database.write('resources', self._resources)
-        if self._lies:
-            self.database.write('lying_trials', self._lies)
-
-        self.lies = self._lies
-        self.trials = self._trials
-
-    def _track_set(self):
+    def _set_tables(self):
         self.trials = []
         self.lies = []
 
@@ -223,11 +193,7 @@ class OrionState:
             self._experiments[i]['version'] = 1
             self._experiments[i]['_id'] = i
 
-        if self.database is not None:
-            self._legacy_set()
-
-        else:
-            self._track_set()
+        self._set_tables()
 
     def make_config(self):
         """Iterate over the database configuration and replace ${file}
@@ -295,3 +261,64 @@ class OrionState:
             raise
 
         return db
+
+
+class LegacyOrionState(BaseOrionState):
+    def __init__(self, *args, **kwargs):
+        super(LegacyOrionState, self).__init__(*args, **kwargs)
+        self.initialized = False
+
+    @property
+    def database(self):
+        return get_storage()._db
+
+    def init(self, config):
+        """Initialize environment before testing"""
+        self.storage(config)
+        self.initialized = True
+
+        if hasattr(get_storage(), '_db'):
+            self.database.remove('experiments', {})
+            self.database.remove('trials', {})
+
+        self.load_experience_configuration()
+        return self
+
+    def get_experiment(self, name, user=None, version=None):
+        """Make experiment id deterministic"""
+        exp = Experiment(name, user=user, version=version)
+        exp._id = exp.name
+        return exp
+
+    def _set_tables(self):
+        if self._experiments:
+            self.database.write('experiments', self._experiments)
+        if self._trials:
+            self.database.write('trials', self._trials)
+        if self._workers:
+            self.database.write('workers', self._workers)
+        if self._resources:
+            self.database.write('resources', self._resources)
+        if self._lies:
+            self.database.write('lying_trials', self._lies)
+
+        self.lies = self._lies
+        self.trials = self._trials
+
+    def cleanup(self):
+        """Cleanup after testing"""
+        if self.initialized:
+            self.database.remove('experiments', {})
+            self.database.remove('trials', {})
+            _remove(self.tempfile)
+        self.initialized = False
+
+
+
+def OrionState(*args, **kwargs):
+    database = kwargs.get('database')
+
+    if not database or database['storage_type'] == 'legacy':
+        return LegacyOrionState(*args, **kwargs)
+
+    return BaseOrionState(*args, **kwargs)
