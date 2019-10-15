@@ -88,7 +88,7 @@ def test_fetch_metadata_executable_users_script(script_path):
 
 def test_fetch_metadata_non_executable_users_script():
     """Verify executable user script keeps given path"""
-    script_path='tests/functional/demo/orion_config.yaml'
+    script_path = 'tests/functional/demo/orion_config.yaml'
     metadata = resolve_config.fetch_metadata(user_args=[script_path])
     assert metadata['user_script'] == script_path
 

@@ -34,6 +34,27 @@ empty
     assert captured == expected
 
 
+def test_python_api(clean_db, with_experiment_using_python_api, capsys):
+    """Test status with experiments built using python api."""
+    orion.core.cli.main(['status'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp-v1
+==================
+empty
+
+
+from-python-api-v1
+==================
+empty
+
+
+"""
+    assert captured == expected
+
+
 def test_experiment_without_trials_wout_ac(clean_db, one_experiment, capsys):
     """Test status with only one experiment and no trials."""
     orion.core.cli.main(['status'])

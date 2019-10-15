@@ -21,19 +21,6 @@ def count_experiments():
     return len(get_storage().fetch_experiments({}))
 
 
-# TODO: Remove and use OrionState instead
-@pytest.fixture
-def init_storage(clean_db, test_config):
-    """Create the storage singleton."""
-    experiment_builder.setup_storage(
-        storage={
-            'type': 'legacy',
-            'database': {
-                'type': 'mongodb',
-                'name': 'orion_test',
-                'host': 'mongodb://user:pass@localhost'}})
-
-
 @pytest.fixture
 def space():
     """Build a space definition"""
@@ -43,7 +30,6 @@ def space():
 @pytest.fixture()
 def python_api_config():
     """Create a configuration without the cli fluff."""
-    # TODO: replace metadata[priors] by space when space in DB
     new_config = dict(
         name='supernaekei',
         version=1,
@@ -481,7 +467,6 @@ class TestBuild(object):
         new_config['algorithms']['dumbalgo']['value'] = 5
         new_config['algorithms']['dumbalgo']['seed'] = None
         new_config['producer']['strategy'] = "NoParallelStrategy"
-        new_config.pop('_id')
         new_config.pop('something_to_be_ignored')
         assert exp.configuration == new_config
 
@@ -520,7 +505,7 @@ class TestBuild(object):
 
     def test_working_dir_is_correctly_set(self, new_config):
         """Check if working_dir is correctly changed."""
-        with OrionState(experiments=[], trials=[]) as exc:
+        with OrionState():
             new_config['working_dir'] = './'
             exp = experiment_builder.build(**new_config)
             storage = get_storage()
@@ -562,7 +547,6 @@ class TestBuild(object):
         new_config['algorithms']['dumbalgo']['value'] = 5
         new_config['algorithms']['dumbalgo']['seed'] = None
         new_config['producer']['strategy'] = "NoParallelStrategy"
-        new_config.pop('_id')
         new_config.pop('something_to_be_ignored')
         assert exp.configuration == new_config
 
@@ -633,10 +617,9 @@ class TestBuild(object):
         """Check that experiment is not incremented when branching with a new name."""
         name = 'parent'
         space = {'x': 'uniform(0, 10)'}
-        metadata = {'priors': space}  # TODO: remove when space in db
 
         with OrionState(experiments=[], trials=[]):
-            parent = experiment_builder.build(name=name, space=space, metadata=metadata)
+            parent = experiment_builder.build(name=name, space=space)
 
             assert parent.name == name
             assert parent.version == 1
@@ -661,10 +644,9 @@ class TestBuild(object):
         """Check that experiment cannot be incremented when asked for v1 while v2 exists."""
         name = 'parent'
         space = {'x': 'uniform(0,10)'}
-        metadata = {'priors': space}  # TODO: remove when space in db
 
         with OrionState(experiments=[], trials=[]):
-            parent = experiment_builder.build(name=name, space=space, metadata=metadata)
+            parent = experiment_builder.build(name=name, space=space)
             child = experiment_builder.build(name=name, space={'x': 'loguniform(1,10)'})
             assert child.name == parent.name
             assert parent.version == 1
@@ -680,10 +662,9 @@ class TestBuild(object):
         """
         name = 'parent'
         space = {'x': 'uniform(0,10)'}
-        metadata = {'priors': space}  # TODO: remove when space in db
 
         with OrionState(experiments=[], trials=[]):
-            parent = experiment_builder.build(name, space=space, metadata=metadata)
+            parent = experiment_builder.build(name, space=space)
             child = experiment_builder.build(name=name, space={'x': 'loguniform(1,10)'})
             assert child.name == parent.name
             assert parent.version == 1
@@ -756,10 +737,9 @@ class TestBuild(object):
         """
         name = 'parent'
         space = {'x': 'uniform(0,10)'}
-        metadata = {'priors': space}  # TODO: remove when space in db
 
         with OrionState(experiments=[], trials=[]):
-            parent = experiment_builder.build(name, space=space, metadata=metadata)
+            parent = experiment_builder.build(name, space=space)
             child = experiment_builder.build(name=name, space={'x': 'loguniform(1,10)'})
             assert child.name == parent.name
             assert parent.version == 1

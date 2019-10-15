@@ -191,6 +191,14 @@ def one_experiment_no_version(monkeypatch, one_experiment):
 
 
 @pytest.fixture
+def with_experiment_using_python_api(monkeypatch, one_experiment):
+    """Create an experiment without trials."""
+    experiment = experiment_builder.build(name='from-python-api', space={'x': 'uniform(0, 10)'})
+
+    return experiment
+
+
+@pytest.fixture
 def broken_refers(one_experiment, db_instance):
     """Create an experiment with broken refers."""
     ensure_deterministic_id('test_single_exp', db_instance, update=dict(refers={'oups': 'broken'}))

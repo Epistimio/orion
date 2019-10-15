@@ -409,7 +409,6 @@ class ExperimentView(object):
                         ["fetch_trials", "fetch_trials_by_status", "get_trial"])
 
     def __init__(self, experiment):
-        """TODO"""
         self._experiment = experiment
         self._experiment._storage = ReadOnlyStorageProtocol(experiment._storage)
 

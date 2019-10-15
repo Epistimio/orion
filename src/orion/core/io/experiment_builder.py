@@ -116,7 +116,6 @@ log = logging.getLogger(__name__)
 # Functions to build experiments
 ##
 
-# TODO: branch_from cannot be passed from build_from_cmdargs, must add --branch-from argument
 def build(name, version=None, branching=None, **config):
     """Build an experiment object
 
@@ -198,7 +197,8 @@ def build(name, version=None, branching=None, **config):
     config.setdefault('version', version)
 
     if 'space' not in config:
-        raise NoConfigurationError
+        raise NoConfigurationError(
+            'Experiment {} does not exist in DB and space was not defined.'.format(name))
 
     experiment = create_experiment(**copy.deepcopy(config))
     if experiment.id is None:
@@ -398,6 +398,7 @@ def _register_experiment(experiment):
     config = experiment.configuration
     # This will raise DuplicateKeyError if a concurrent experiment with
     # identical (name, metadata.user) is written first in the database.
+
     get_storage().create_experiment(config)
 
     # XXX: Reminder for future DB implementations:
