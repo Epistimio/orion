@@ -1112,7 +1112,7 @@ class CodeConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return dict(change_type=adapters.CodeChange.BREAK)
+        return dict(change_type=orion.core.config.evc.code_change_type)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution CodeResolution
@@ -1249,7 +1249,7 @@ class CommandLineConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return dict(change_type=adapters.CommandLineChange.BREAK)
+        return dict(change_type=orion.core.config.evc.cli_change_type)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution CommandLineResolution
@@ -1383,7 +1383,7 @@ class ScriptConfigConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return dict(change_type=adapters.ScriptConfigChange.BREAK)
+        return dict(change_type=orion.core.config.evc.config_change_type)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution ScriptConfigResolution
