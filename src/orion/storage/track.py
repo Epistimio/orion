@@ -15,6 +15,7 @@ import datetime
 import hashlib
 import logging
 import sys
+import warnings
 
 from orion.core.io.database import DuplicateKeyError
 from orion.core.worker.trial import Trial as OrionTrial
@@ -99,18 +100,6 @@ def add_leading_slash(name):
 def to_epoch(date):
     """Convert datetime class into seconds since epochs"""
     return (date - datetime.datetime(1970, 1, 1)).total_seconds()
-
-
-class _WarnOnce:
-    """Call a function once and only once"""
-
-    def __init__(self, fun, *args, **kwargs):
-        self.fun = lambda: fun(*args, **kwargs)
-        self.was_called = False
-
-    def __call__(self, *args, **kwargs):
-        if not self.was_called:
-            return self.fun()
 
 
 class TrialAdapter:
@@ -346,8 +335,6 @@ class Track(BaseStorageProtocol):   # noqa: F811
         self.lies = dict()
         assert self.objective is not None, 'An objective should be defined!'
 
-        self.track_lie_warn = _WarnOnce(log.warning, 'Track does not persist lying trials')
-
     def _get_project(self, name):
         if self.project is None:
             self.project = self.backend.get_project(Project(name=name))
@@ -373,26 +360,11 @@ class Track(BaseStorageProtocol):   # noqa: F811
         config['_id'] = self.group.uid
         return config
 
-    def update_experiment(self, experiment, where=None, **kwargs):
-        """Update the fields of a given trials
-
-        Parameters
-        ----------
-        experiment: Experiment
-            Experiment object to update
-
-        where: Optional[dict]
-            constraint experiment must respect for the update to take place
-
-        **kwargs: dict
-            a dictionary of fields to update
-
-        Returns
-        -------
-        returns true if the underlying storage was updated
-
-        """
-        raise RuntimeError('You should not update a track experiment')
+    def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
+        """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
+        self.backend.fetch_and_update_group({
+            'uid': self.group.uid
+        }, 'set_group_metadata', kwargs)
 
     def fetch_experiments(self, query, selection=None):
         """Fetch all experiments that match the query"""
@@ -471,7 +443,7 @@ class Track(BaseStorageProtocol):   # noqa: F811
             Fake trial to register in the database
 
         """
-        self.track_lie_warn()
+        warnings.warn('Track does not persist lies!')
 
         if trial.id in self.lies:
             raise DuplicateKeyError('Lie already exists')
