@@ -264,12 +264,15 @@ class BaseOrionState:
 
 
 class LegacyOrionState(BaseOrionState):
+    """See :func:`~orion.utils.tests.BaseOrionState`"""
+
     def __init__(self, *args, **kwargs):
         super(LegacyOrionState, self).__init__(*args, **kwargs)
         self.initialized = False
 
     @property
     def database(self):
+        """Retrieve legacy database handle"""
         return get_storage()._db
 
     def init(self, config):
@@ -314,8 +317,10 @@ class LegacyOrionState(BaseOrionState):
         self.initialized = False
 
 
-
+# We are faking a class constructor here
+# pylint: disable-msg=C0103
 def OrionState(*args, **kwargs):
+    """Generic OrionState factory"""
     database = kwargs.get('database')
 
     if not database or database['storage_type'] == 'legacy':
