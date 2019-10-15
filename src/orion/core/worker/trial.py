@@ -23,6 +23,9 @@ class Trial:
     experiment : str
        Unique identifier for the experiment that produced this trial.
        Same as an `Experiment._id`.
+    id_override: str
+        Trial id returned by the database. It should be unique for a given
+        set of parameters
     heartbeat : datetime.datetime
         Last time trial was identified as being alive.
     status : str
@@ -157,7 +160,8 @@ class Trial:
         allowed_types = ('integer', 'real', 'categorical', 'fidelity')
 
     __slots__ = ('experiment', '_id', '_status', 'worker', '_working_dir', 'heartbeat',
-                 'submit_time', 'start_time', 'end_time', '_results', 'params', 'parents')
+                 'submit_time', 'start_time', 'end_time', '_results', 'params', 'parents',
+                 'id_override')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
 
     def __init__(self, **kwargs):
@@ -170,8 +174,8 @@ class Trial:
 
         self.status = 'new'
 
-        # Remove useless item
-        kwargs.pop('_id', None)
+        # Store the id as an override to support different backends
+        self.id_override = kwargs.pop('_id', None)
 
         for attrname, value in kwargs.items():
             if attrname == 'results':
@@ -256,7 +260,9 @@ class Trial:
     @property
     def id(self):
         """Return hash_name which is also the database key `_id`."""
-        return self.__hash__()
+        if self.id_override is None:
+            return self.__hash__()
+        return self.id_override
 
     @property
     def objective(self):

@@ -21,7 +21,7 @@ from orion.storage.base import get_storage
 log = logging.getLogger(__name__)
 
 
-def reserve_trial(experiment, producer):
+def reserve_trial(experiment, producer, _depth=1):
     """Reserve a new trial, or produce and reserve a trial if none are available."""
     trial = experiment.reserve_trial(score_handle=producer.algorithm.score)
 
@@ -34,7 +34,7 @@ def reserve_trial(experiment, producer):
         log.debug("#### Produce new trials.")
         producer.produce()
 
-        return reserve_trial(experiment, producer)
+        return reserve_trial(experiment, producer, _depth=_depth + 1)
 
     return trial
 

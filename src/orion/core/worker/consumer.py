@@ -113,6 +113,7 @@ class Consumer(object):
         ----------
         results_file: str
            file used to store results, this is only used by the legacy protocol
+
         trial: Trial
            reference to the trial object that is going to be run
 
@@ -147,7 +148,6 @@ class Consumer(object):
 
         """
         env = dict(os.environ)
-
         env['ORION_EXPERIMENT_ID'] = str(self.experiment.id)
         env['ORION_EXPERIMENT_NAME'] = str(self.experiment.name)
         env['ORION_EXPERIMENT_VERSION'] = str(self.experiment.version)

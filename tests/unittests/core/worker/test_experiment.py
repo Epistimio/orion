@@ -5,7 +5,6 @@
 import copy
 import datetime
 import json
-import logging
 import tempfile
 
 import pytest
@@ -22,9 +21,6 @@ import orion.core.worker.experiment
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
-
-
-logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.fixture()
