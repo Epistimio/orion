@@ -93,7 +93,13 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         raise NotImplementedError()
 
     def reserve_trial(self, experiment):
-        """Select a pending trial and reserve it for the worker"""
+        """Select a pending trial and reserve it for the worker
+
+        Returns
+        -------
+        Returns the reserved trial or None if no trials were found
+
+        """
         raise NotImplementedError()
 
     def fetch_trials(self, experiment=None, uid=None):
@@ -178,7 +184,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
 
     def fetch_pending_trials(self, experiment):
         """Fetch all trials that are available to be executed by a worker,
-        this includes new, suspended and interupted trials
+        this includes new, suspended and interrupted trials
         """
         raise NotImplementedError()
 

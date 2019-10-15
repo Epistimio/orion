@@ -45,7 +45,8 @@ setup_args = dict(
             'asha = orion.algo.asha:ASHA',
             ],
         'Storage': [
-            'legacy = orion.storage.legacy:Legacy'
+            'track = orion.storage.track:Track',
+            'legacy = orion.storage.legacy:Legacy',
             ]
         },
     install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython', 'filelock',

@@ -8,6 +8,10 @@ bash miniconda.sh -b -p $HOME/miniconda
 export PATH="$HOME/miniconda/bin:$PATH"
 hash -r
 conda config --set always_yes yes --set changeps1 no
+
+pip uninstall -y setuptools
+conda install -c anaconda setuptools
+
 conda update -q conda
 conda info -a
 conda install conda-build anaconda-client

@@ -55,7 +55,8 @@ For a complete example, here is how you can fetch trials from a given experiment
    for trial in experiment.fetch_trials_by_status('completed'):
        print(trial.objective)
 
+
 :class:`<orion.core.worker.experiment.Experiment>` has many methods that allows you to query
-for different trials. You can find them in the code
+for different trials. You can find them in the code reference section.
 
 .. _`mongodb-like syntax`: https://docs.mongodb.com/manual/reference/method/db.collection.find/
