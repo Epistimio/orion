@@ -102,7 +102,6 @@ def to_epoch(date):
     return (date - datetime.datetime(1970, 1, 1)).total_seconds()
 
 
-
 class ExperimentAdapter:
     """Mock Trial, see `~orion.core.worker.experiment.Experiment`"""
 
@@ -115,13 +114,14 @@ class ExperimentAdapter:
             return self.group[item]
 
         if item in self.group['metadata']:
-             return self.group['metadata'][item]
+            return self.group['metadata'][item]
 
         raise AttributeError
 
     def __eq__(self, other):
         """Check for equality only with the keys stored inside other as Track
-        can insert additional information"""
+        can insert additional information
+        """
         for k, v in other.items():
             equal = self[k] == v
             if not equal:
