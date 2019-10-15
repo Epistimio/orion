@@ -318,9 +318,9 @@ class LegacyOrionState(BaseOrionState):
 
 
 # We are faking a class constructor here
-# pylint: disable-msg=C0103
+# pylint: disable=C0103
 def OrionState(*args, **kwargs):
-    """Generic OrionState factory"""
+    """build an orion state in function of the storage type"""
     database = kwargs.get('database')
 
     if not database or database['storage_type'] == 'legacy':
