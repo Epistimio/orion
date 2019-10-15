@@ -25,6 +25,14 @@ def populate_priors(metadata):
     metadata["priors"] = dict(parser.priors)
 
 
+def populate_space(config):
+    """Add the space definition at the root of config."""
+    populate_priors(config['metadata'])
+    # Overwrite space to make sure to include changes from user_args
+    if 'priors' in config['metadata']:
+        config['space'] = config['metadata']['priors']
+
+
 def db_is_outdated(database):
     """Return True if the database scheme is outdated."""
     deprecated_indices = [('name', 'metadata.user'), ('name', 'metadata.user', 'version'),

@@ -86,7 +86,7 @@ def _build_extended_user_args(config):
 def _build_space(config):
     """Build an optimization space based on given configuration"""
     space_builder = SpaceBuilder()
-    space_config = config.get('space', config['metadata']['priors'])
+    space_config = config['space']
     space = space_builder.build(space_config)
 
     return space

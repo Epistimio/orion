@@ -31,7 +31,7 @@ scipy documentation for each specific implentation of a random variable type,
 unless noted otherwise!
 
 """
-
+import copy
 import logging
 import numbers
 
@@ -225,13 +225,28 @@ class Dimension:
 
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
-        args = list(map(str, self._args[:]))
-        args += ["{}={}".format(k, v) for k, v in self._kwargs.items()]
+        args = copy.deepcopy(list(self._args[:]))
+        if self._prior_name == 'uniform' and len(args) == 2:
+            args[1] = args[0] + args[1]
+            args[0] = args[0]
+
+        args = list(map(str, args))
+
+        for k, v in self._kwargs.items():
+            if isinstance(v, str):
+                args += ["{}='{}'".format(k, v)]
+            else:
+                args += ["{}={}".format(k, v)]
+
         if self._shape is not None:
             args += ['shape={}'.format(self._shape)]
         if self.default_value is not self.NO_DEFAULT_VALUE:
             args += ['default_value={}'.format(repr(self.default_value))]
-        return "{prior_name}({args})".format(prior_name=self._prior_name, args=", ".join(args))
+
+        prior_name = self._prior_name
+        if prior_name == 'reciprocal':
+            prior_name = 'loguniform'
+        return "{prior_name}({args})".format(prior_name=prior_name, args=", ".join(args))
 
     def get_string(self):
         """Build the string corresponding to current dimension"""
@@ -495,6 +510,11 @@ class Integer(Real, _Discrete):
             return casted_point.tolist()
 
         return casted_point
+
+    def get_prior_string(self):
+        """Build the string corresponding to current prior"""
+        prior_string = super(Integer, self).get_prior_string()
+        return prior_string[:-1] + ', discrete=True)'
 
 
 class Categorical(Dimension):
@@ -856,6 +876,11 @@ class Space(dict):
     def __iter__(self):
         """Return sorted keys"""
         return iter(sorted(super(Space, self).keys()))
+
+    @property
+    def configuration(self):
+        """Return a dictionary of priors."""
+        return {name: dim.get_prior_string() for name, dim in self.items()}
 
 
 def pack_point(point, space):

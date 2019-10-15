@@ -241,21 +241,6 @@ def build_view(name, version=None):
 
     db_config.setdefault('version', 1)
 
-    if 'space' not in db_config and 'priors' in db_config.get('metadata', {}):
-        db_config['space'] = db_config['metadata']['priors']
-
-    # metadata = db_config['metadata']
-    # if 'space' in db_config:
-    #     space = db_config['space']
-    # # TODO: Remove when space is ready
-    # elif 'priors' in metadata:
-    #     space = metadata['priors']
-    # # Backward compatibility with v0.1.6
-    # else:
-    #     parser = OrionCmdlineParser(orion.core.config.user_script_config)
-    #     parser.parse(metadata['user_args'])
-    #     space = parser.priors
-
     experiment = create_experiment(**db_config)
 
     return ExperimentView(experiment)
@@ -289,8 +274,8 @@ def create_experiment(name, version, space, **kwargs):
     experiment._id = kwargs.get('_id', None)  # pylint:disable=protected-access
     experiment.pool_size = kwargs.get('pool_size', orion.core.config.experiment.pool_size)
     experiment.max_trials = kwargs.get('max_trials', orion.core.config.experiment.max_trials)
-    space = _instantiate_space(space)
-    experiment.algorithms = _instantiate_algo(space, kwargs.get('algorithms'))
+    experiment.space = _instantiate_space(space)
+    experiment.algorithms = _instantiate_algo(experiment.space, kwargs.get('algorithms'))
     experiment.producer = kwargs.get('producer', orion.core.config.experiment.producer.to_dict())
     experiment.producer['strategy'] = _instantiate_strategy(experiment.producer.get('strategy'))
     experiment.working_dir = kwargs.get('working_dir', orion.core.config.experiment.working_dir)
@@ -324,8 +309,7 @@ def fetch_config_from_db(name, version=None):
         log.info("Many versions for experiment %s have been found. Using latest "
                  "version %s.", name, config['version'])
 
-    if 'space' not in config and 'priors' in config.get('metadata', {}):
-        config['space'] = config['metadata']['priors']
+    backward.populate_space(config)
 
     return config
 
@@ -466,8 +450,6 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
     config['refers']['adapter'] = experiment_brancher.create_adapters().configuration
     config['refers']['parent_id'] = experiment.id
 
-    # TODO: Remove when space is in DB
-    config['space'] = config['metadata']['priors']
     config.pop('_id')
 
     return create_experiment(**config)
@@ -562,9 +544,6 @@ def build_from_args(cmdargs):
 
     setup_storage(cmd_config['storage'])
 
-    if 'priors' in cmd_config['metadata']:
-        cmd_config['space'] = cmd_config['metadata']['priors']
-
     cmd_config['branching'] = fetch_branching_configuration(cmd_config)
 
     return build(**cmd_config)
@@ -602,7 +581,7 @@ def get_cmd_config(cmdargs):
     cmd_config = resolve_config.merge_configs(cmd_config, cmdargs, metadata)
     cmd_config.pop('config', None)
 
-    backward.populate_priors(cmd_config['metadata'])
+    backward.populate_space(cmd_config)
     backward.update_db_config(cmd_config)
 
     if 'user' in cmd_config:

@@ -49,7 +49,7 @@ def new_config(random_dt):
         something_to_be_ignored='asdfa'
         )
 
-    backward.populate_priors(new_config['metadata'])
+    backward.populate_space(new_config)
 
     return new_config
 
@@ -65,7 +65,7 @@ def parent_version_config():
         metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow(),
                   'user_args': ['--x~normal(0,1)']})
 
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
 
     return config
 
@@ -79,7 +79,7 @@ def child_version_config(parent_version_config):
     config['refers'] = {'parent_id': 'parent_config'}
     config['metadata']['datetime'] = datetime.datetime.utcnow()
     config['metadata']['user_args'].append('--y~+normal(0,1)')
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
     return config
 
 
