@@ -32,3 +32,11 @@ def db_is_outdated(database):
 
     index_information = database.index_information('experiments')
     return any(index in deprecated_indices for index in index_information.keys())
+
+
+def update_db_config(config):
+    """Merge DB config back into storage config"""
+    config.setdefault('storage', orion.core.config.storage.to_dict())
+    if 'database' in config:
+        config['storage'] = {'type': 'legacy'}
+        config['storage']['database'] = config.pop('database')

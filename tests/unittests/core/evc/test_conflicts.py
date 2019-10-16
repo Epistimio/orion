@@ -418,7 +418,7 @@ class TestExperimentNameConflict(object):
     def test_repr(self, experiment_name_conflict):
         """Verify the representation of conflict for user interface"""
         assert (repr(experiment_name_conflict) ==
-                "Experiment name 'test' already exist for user 'some_user_name'")
+                "Experiment name 'test' already exist with version '1'")
 
 
 class TestConflicts(object):

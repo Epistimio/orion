@@ -13,7 +13,7 @@ import logging
 import sys
 
 from orion.core.cli.base import get_basic_args_group
-from orion.core.io.evc_builder import EVCBuilder
+import orion.core.io.experiment_builder as experiment_builder
 
 log = logging.getLogger(__name__)
 
@@ -28,22 +28,13 @@ def add_subparser(parser):
     return info_parser
 
 
-# pylint: disable=protected-access
-def hack_until_config_is_refactored(experiment):
-    """Build the space and the algorithm"""
-    experiment._experiment._instantiate_config(experiment.configuration)
-    experiment._experiment._init_done = True
-
-
 def main(args):
     """Fetch config and info experiments"""
     try:
-        experiment = EVCBuilder().build_view_from(args)
+        experiment = experiment_builder.build_view_from_args(args)
     except ValueError:
         print('Experiment {} not found in db.'.format(args.get('name', None)))
         sys.exit(1)
-
-    hack_until_config_is_refactored(experiment)
 
     print(format_info(experiment))
 

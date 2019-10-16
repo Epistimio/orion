@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.format_trials import tuple_to_trial
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.storage.base import get_storage
@@ -16,7 +16,7 @@ from orion.storage.base import get_storage
 def config(exp_config):
     """Return a configuration."""
     config = exp_config[0][0]
-    config['metadata']['user_args'] = ['--x~uniform(-50, 50)']
+    config['space'] = {'x': 'uniform(-50, 50)'}
     config['name'] = 'exp'
     return config
 
@@ -24,7 +24,7 @@ def config(exp_config):
 @pytest.fixture
 def exp(config):
     """Return an Experiment."""
-    return ExperimentBuilder().build_from(config)
+    return experiment_builder.build(**config)
 
 
 @pytest.fixture

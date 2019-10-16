@@ -86,7 +86,8 @@ def _build_extended_user_args(config):
 def _build_space(config):
     """Build an optimization space based on given configuration"""
     space_builder = SpaceBuilder()
-    space = space_builder.build(config['metadata']['priors'])
+    space_config = config.get('space', config['metadata']['priors'])
+    space = space_builder.build(space_config)
 
     return space
 
@@ -1111,7 +1112,7 @@ class CodeConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return dict(change_type=adapters.CodeChange.BREAK)
+        return dict(change_type=orion.core.config.evc.code_change_type)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution CodeResolution
@@ -1211,6 +1212,10 @@ class CommandLineConflict(Conflict):
     @classmethod
     def get_nameless_args(cls, config):
         """Get user's commandline arguments which are not dimension definitions"""
+        # Used python API
+        if 'parser' not in config['metadata']:
+            return ""
+
         parser = OrionCmdlineParser(orion.core.config.user_script_config)
         parser.set_state_dict(config['metadata']['parser'])
         priors = parser.priors_to_normal()
@@ -1244,7 +1249,7 @@ class CommandLineConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return dict(change_type=adapters.CommandLineChange.BREAK)
+        return dict(change_type=orion.core.config.evc.cli_change_type)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution CommandLineResolution
@@ -1343,6 +1348,10 @@ class ScriptConfigConflict(Conflict):
     @classmethod
     def get_nameless_config(cls, config):
         """Get configuration dict of user's script without dimension definitions"""
+        # Used python API
+        if 'parser' not in config['metadata']:
+            return ""
+
         parser = OrionCmdlineParser(orion.core.config.user_script_config)
         parser.set_state_dict(config['metadata']['parser'])
 
@@ -1374,7 +1383,7 @@ class ScriptConfigConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return dict(change_type=adapters.ScriptConfigChange.BREAK)
+        return dict(change_type=orion.core.config.evc.config_change_type)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution ScriptConfigResolution
@@ -1493,9 +1502,9 @@ class ExperimentNameConflict(Conflict):
         return {}
 
     @property
-    def username(self):
-        """Retrieve username for configuration"""
-        return self.new_config['metadata']['user']
+    def version(self):
+        """Retrieve version of configuration"""
+        return self.old_config['version']
 
     def try_resolve(self, new_name=None):
         """Try to create a resolution ExperimentNameResolution
@@ -1509,7 +1518,7 @@ class ExperimentNameConflict(Conflict):
         Raises
         ------
         ValueError
-            If name already exists in database for current user.
+            If name already exists in database for current version.
 
         """
         if self.is_resolved:
@@ -1524,8 +1533,8 @@ class ExperimentNameConflict(Conflict):
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
-        return "Experiment name \'{0}\' already exist for user \'{1}\'".format(
-            self.old_config['name'], self.username)
+        return "Experiment name \'{0}\' already exist with version \'{1}\'".format(
+            self.old_config['name'], self.version)
 
     class ExperimentNameResolution(Resolution):
         """Representation of an experiment name resolution
@@ -1543,7 +1552,7 @@ class ExperimentNameConflict(Conflict):
 
         """
 
-        ARGUMENT = "--branch"
+        ARGUMENT = "--branch-to"
 
         def __init__(self, conflict, new_name):
             """Initialize resolution and mark conflict as resolved
@@ -1559,7 +1568,7 @@ class ExperimentNameConflict(Conflict):
             Raises
             ------
             ValueError
-                If name already exists in database with a direct child for current user.
+                If name already exists in database with a direct child for current version.
 
             """
             super(ExperimentNameConflict.ExperimentNameResolution, self).__init__(conflict)
@@ -1573,7 +1582,7 @@ class ExperimentNameConflict(Conflict):
             self.conflict.new_config['version'] = self.new_version
 
         def _validate(self):
-            """Validate new_name is not in database with a direct child for current user"""
+            """Validate new_name is not in database with a direct child for current version"""
             # TODO: WARNING!!! _name_is_unique could lead to race conditions,
             # The resolution may become invalid before the branching experiment is
             # registered. What should we do in such case?
@@ -1590,16 +1599,16 @@ class ExperimentNameConflict(Conflict):
             # the version of the experiment.
             elif self._check_for_greater_versions():
                 raise ValueError(
-                    "Experiment name \'{0}\' already exist for user \'{1}\' and has children. "
+                    "Experiment name \'{0}\' already exist for version \'{1}\' and has children. "
                     "Version cannot be auto-incremented and a new name is required for branching."
-                    .format(self.new_name, self.conflict.username))
+                    .format(self.new_name, self.conflict.version))
             else:
                 self.new_name = self.old_name
                 self.new_version = self.conflict.old_config.get('version', 1) + 1
 
         def _name_is_unique(self):
-            """Return True if given name is not in database for current user"""
-            query = {'name': self.new_name, 'metadata.user': self.conflict.username}
+            """Return True if given name is not in database for current version"""
+            query = {'name': self.new_name, 'version': self.conflict.version}
 
             named_experiments = len(get_storage().fetch_experiments(query))
             return named_experiments == 0
@@ -1632,7 +1641,7 @@ class ExperimentNameConflict(Conflict):
 
         @property
         def is_marked(self):
-            """Return True every time since the `--branch` argument is not used when incrementing
-            version of an experiment.
+            """Return True every time since the `--branch-from` argument is not used when
+            incrementing version of an experiment.
             """
             return True

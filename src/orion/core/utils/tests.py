@@ -18,8 +18,8 @@ from orion.core.io.database import Database
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
+import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils import SingletonAlreadyInstantiatedError
-from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage, Storage
 from orion.storage.legacy import Legacy
@@ -48,17 +48,11 @@ class MockDatetime(datetime.datetime):
 
 def _get_default_test_database():
     """Return default configuration for the test database"""
-    legacy_config = {
+    return {
+        'storage_type': 'legacy',
         'database': {
             'type': 'PickledDB',
             'host': '${file}'
-        }
-    }
-
-    return {
-        'storage_type': 'legacy',
-        'args': {
-            'config': legacy_config
         }
     }
 
@@ -146,9 +140,9 @@ class BaseOrionState:
         self.load_experience_configuration()
         return self
 
-    def get_experiment(self, name, user=None, version=None):
+    def get_experiment(self, name, version=None):
         """Make experiment id deterministic"""
-        exp = Experiment(name, user=user, version=version)
+        exp = experiment_builder.build(name=name, version=version)
         return exp
 
     def get_trial(self, index):
@@ -184,14 +178,15 @@ class BaseOrionState:
 
         self._trials.sort(key=lambda obj: int(obj['_id'], 16), reverse=True)
 
-        for i, _ in enumerate(self._experiments):
-            path = os.path.join(
-                os.path.dirname(__file__),
-                self._experiments[i]["metadata"]["user_script"])
+        for i, experiment in enumerate(self._experiments):
+            if 'user_script' in experiment['metadata']:
+                path = os.path.join(
+                    os.path.dirname(__file__),
+                    experiment["metadata"]["user_script"])
+                experiment["metadata"]["user_script"] = path
 
-            self._experiments[i]["metadata"]["user_script"] = path
-            self._experiments[i]['version'] = 1
-            self._experiments[i]['_id'] = i
+            experiment['version'] = 1
+            experiment['_id'] = i
 
         self._set_tables()
 
@@ -249,10 +244,8 @@ class BaseOrionState:
 
         try:
             storage_type = config.pop('storage_type')
-            kwargs = config['args']
-            db = Storage(of_type=storage_type, **kwargs)
+            db = Storage(of_type=storage_type, **config)
             self.database_config['storage_type'] = storage_type
-
         except SingletonAlreadyInstantiatedError:
             db = get_storage()
 
@@ -287,9 +280,9 @@ class LegacyOrionState(BaseOrionState):
         self.load_experience_configuration()
         return self
 
-    def get_experiment(self, name, user=None, version=None):
+    def get_experiment(self, name, version=None):
         """Make experiment id deterministic"""
-        exp = Experiment(name, user=user, version=version)
+        exp = experiment_builder.build(name, version=version)
         exp._id = exp.name
         return exp
 

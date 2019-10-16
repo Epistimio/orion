@@ -11,7 +11,7 @@ import pytest
 from orion.core.io.database import Database, OutdatedDatabaseError
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
 from orion.storage.base import get_storage, Storage
 from orion.storage.legacy import Legacy
 
@@ -20,6 +20,9 @@ DIRNAME = os.path.dirname(os.path.abspath(__file__))
 
 SCRIPT_PATH = os.path.join(DIRNAME, 'black_box.py')
 CONFIG_FILE = os.path.join(DIRNAME, 'random.yaml')
+
+# Ignore pre-0.1.3 because there was no PickleDB backend.
+VERSIONS = ['0.1.3', '0.1.4', '0.1.5', '0.1.6', '0.1.7']
 
 
 def get_package(version):
@@ -33,8 +36,12 @@ def get_package(version):
     return 'orion.core'
 
 
-# Ignore pre-0.1.3 because there was no PickleDB backend.
-VERSIONS = ['0.1.3', '0.1.4', '0.1.5', '0.1.6']
+def get_branch_argument(version):
+    """Get argument to branch.
+
+    Before v0.1.8 it was --branch. From v0.1.8 and forward it is now --branch-to.
+    """
+    return '--branch' if version < '0.1.8' else '--branch-to'
 
 
 def clean_mongodb():
@@ -120,7 +127,7 @@ def fill_db(request):
 
     print(execute(' '.join([
         orion_script, '-vv', 'init_only', '--name', 'init',
-        '--branch', 'init-branch-old',
+        get_branch_argument(version), 'init-branch-old',
         '--config', CONFIG_FILE])))
 
     print(execute(' '.join([
@@ -130,7 +137,7 @@ def fill_db(request):
 
     print(execute(' '.join([
         orion_script, '-vv', 'hunt', '--name', 'hunt',
-        '--branch', 'hunt-branch-old',
+        get_branch_argument(version), 'hunt-branch-old',
         '--config', CONFIG_FILE])))
 
     orion_version = get_version('orion')
@@ -156,9 +163,7 @@ def null_db_instances():
 def build_storage():
     """Build storage from scratch"""
     null_db_instances()
-    experiment_builder = ExperimentBuilder()
-    local_config = experiment_builder.fetch_full_config({}, use_db=False)
-    experiment_builder.setup_storage(local_config)
+    experiment_builder.setup_storage()
 
     return get_storage()
 
@@ -209,12 +214,12 @@ class TestBackwardCompatibility:
         """Verify init_only command"""
         print(execute(' '.join([
             'orion', 'init_only', '--name', 'init',
-            '--branch', 'init-branch'])))
+            '--branch-to', 'init-branch'])))
 
     def test_hunt(self):
         """Verify hunt command"""
         print(execute(' '.join([
             'orion', 'hunt', '--name', 'hunt',
-            '--branch', 'hunt-branch'])))
+            '--branch-to', 'hunt-branch'])))
 
     # orion.core.cli.main('init-only') # TODO: deprecate init_only

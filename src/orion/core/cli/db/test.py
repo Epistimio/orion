@@ -15,7 +15,6 @@ import logging
 from orion.core.cli.checks.creation import CreationStage
 from orion.core.cli.checks.operations import OperationsStage
 from orion.core.cli.checks.presence import PresenceStage
-from orion.core.io.experiment_builder import ExperimentBuilder
 from orion.core.utils.exceptions import CheckError
 
 log = logging.getLogger(__name__)
@@ -36,8 +35,7 @@ def add_subparser(parser):
 
 def main(args):
     """Run through all checks for database."""
-    experiment_builder = ExperimentBuilder()
-    presence_stage = PresenceStage(experiment_builder, args)
+    presence_stage = PresenceStage(args)
     creation_stage = CreationStage(presence_stage)
     operations_stage = OperationsStage(creation_stage)
     stages = [presence_stage, creation_stage, operations_stage]
