@@ -5,6 +5,7 @@
 import copy
 import datetime
 import json
+import logging
 import tempfile
 
 import pytest
@@ -184,8 +185,9 @@ class TestReserveTrial(object):
 
     def test_reserve_success(self, random_dt):
         """Successfully find new trials in db and reserve the first one"""
+        storage_config = {'storage_type': 'legacy', 'database': {'type': 'EphemeralDB'}}
         with OrionState(trials=generate_trials(['new', 'reserved']),
-                        database={'type': 'EphemeralDB'}) as cfg:
+                        database=storage_config) as cfg:
             exp = Experiment('supernaekei')
             exp._id = cfg.trials[0]['experiment']
 
@@ -268,7 +270,8 @@ class TestReserveTrial(object):
 
                 assert len(exp._storage.fetch_lost_trials(exp)) == 1
 
-                exp.fix_lost_trials()
+                with caplog.at_level(logging.DEBUG):
+                    exp.fix_lost_trials()
 
             assert caplog.records[-1].levelname == 'DEBUG'
             assert caplog.records[-1].msg == 'failed'

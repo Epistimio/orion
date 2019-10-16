@@ -48,17 +48,11 @@ class MockDatetime(datetime.datetime):
 
 def _get_default_test_database():
     """Return default configuration for the test database"""
-    legacy_config = {
+    return {
+        'storage_type': 'legacy',
         'database': {
             'type': 'PickledDB',
             'host': '${file}'
-        }
-    }
-
-    return {
-        'storage_type': 'legacy',
-        'args': {
-            'config': legacy_config
         }
     }
 
@@ -149,7 +143,6 @@ class BaseOrionState:
     def get_experiment(self, name, version=None):
         """Make experiment id deterministic"""
         exp = experiment_builder.build(name=name, version=version)
-        exp._id = name
         return exp
 
     def get_trial(self, index):
@@ -251,12 +244,8 @@ class BaseOrionState:
 
         try:
             storage_type = config.pop('storage_type')
-            kwargs = config['args']
-            db = Storage(of_type=storage_type, **kwargs)
-            # storage_type = self.database_config.pop('storage_type', 'legacy')
-            # db = Storage(of_type=storage_type, database=self.database_config)
+            db = Storage(of_type=storage_type, **config)
             self.database_config['storage_type'] = storage_type
-
         except SingletonAlreadyInstantiatedError:
             db = get_storage()
 
@@ -291,9 +280,9 @@ class LegacyOrionState(BaseOrionState):
         self.load_experience_configuration()
         return self
 
-    def get_experiment(self, name, user=None, version=None):
+    def get_experiment(self, name, version=None):
         """Make experiment id deterministic"""
-        exp = Experiment(name, user=user, version=version)
+        exp = experiment_builder.build(name, version=version)
         exp._id = exp.name
         return exp
 
