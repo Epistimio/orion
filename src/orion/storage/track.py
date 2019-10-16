@@ -398,14 +398,14 @@ class Track(BaseStorageProtocol):   # noqa: F811
         experiments = []
         for group in groups:
             version = group.metadata.get('version', 0)
-            metadata = group.metadata.get('metadata', {})
 
-            exp = {
+            # metadata is experiment config
+            exp = group.metadata
+            exp.update({
                 '_id': group.uid,
                 'version': version,
                 'name': group.project_id,
-                'metadata': metadata
-            }
+            })
 
             experiments.append(exp)
 
