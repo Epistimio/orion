@@ -102,46 +102,6 @@ def to_epoch(date):
     return (date - datetime.datetime(1970, 1, 1)).total_seconds()
 
 
-class ExperimentAdapter:
-    """Mock Trial, see `~orion.core.worker.experiment.Experiment`"""
-
-    def __init__(self, group):
-        self.group = group
-
-    def __getitem__(self, item):
-        """Look for attributes in group and metadata"""
-        if item in self.group:
-            return self.group[item]
-
-        if item in self.group['metadata']:
-            return self.group['metadata'][item]
-
-        raise AttributeError
-
-    def __eq__(self, other):
-        """Check for equality only with the keys stored inside other as Track
-        can insert additional information
-        """
-        for k, v in other.items():
-            equal = self[k] == v
-            if not equal:
-                return False
-
-        return True
-
-    def __contains__(self, item):
-        """Look for attributes in group and metadata"""
-        return item in self.group or item in self.group['metadata']
-
-    def __repr__(self):
-        """Forward repr to dict repr"""
-        return repr(self.group)
-
-    def __str__(self):
-        """Forward str to dict str"""
-        return str(self.group)
-
-
 class TrialAdapter:
     """Mock Trial, see `~orion.core.worker.trial.Trial`
 
@@ -440,12 +400,12 @@ class Track(BaseStorageProtocol):   # noqa: F811
             version = group.metadata.get('version', 0)
             metadata = group.metadata.get('metadata', {})
 
-            exp = ExperimentAdapter({
+            exp = {
                 '_id': group.uid,
                 'version': version,
                 'name': group.project_id,
                 'metadata': metadata
-            })
+            }
 
             experiments.append(exp)
 
