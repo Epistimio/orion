@@ -5,8 +5,6 @@
 import copy
 import datetime
 import logging
-import json
-import tempfile
 import time
 
 import pytest
@@ -30,9 +28,7 @@ if not HAS_TRACK:
 else:
     storage_backends.append({
         'storage_type': 'track',
-        'args': {
-            'uri': 'file://${file}?objective=loss'
-        }
+        'uri': 'file://${file}?objective=loss'
     })
 
 base_experiment = {
@@ -457,7 +453,7 @@ class TestStorage:
             storage_name = storage
             storage = cfg.storage()
 
-            exp = cfg.get_experiment('default_name', 'default_user')
+            exp = cfg.get_experiment('default_name')
             trial1 = storage.fetch_trial_by_status(exp, status='reserved')[0]
             trial1b = copy.deepcopy(trial1)
 
