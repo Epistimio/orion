@@ -210,3 +210,11 @@ class TestSpaceBuilder(object):
 
         space = spacebuilder.build_from(["--seed=555", "--naedw"])
         assert not space
+
+    def test_configuration_rebuild(self, spacebuilder):
+        """Test that configuration can be used to recreate a space."""
+        prior = {'x': 'uniform(0, 10, discrete=True)',
+                 'y': 'loguniform(1e-08, 1)',
+                 'z': 'choices([\'voici\', \'voila\', 2])'}
+        space = spacebuilder.build(prior)
+        assert space.configuration == prior

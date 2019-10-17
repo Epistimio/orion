@@ -47,14 +47,14 @@ def python_api_config():
     new_config = dict(
         name='supernaekei',
         version=1,
+        space={'x': 'uniform(0,10)'},
         metadata={'user': 'tsirif',
                   'orion_version': 'XYZ',
                   'VCS': {"type": "git",
                           "is_dirty": False,
                           "HEAD_sha": "test",
                           "active_branch": None,
-                          "diff_sha": "diff"},
-                  'priors': {'x': 'uniform(0,10)'}},
+                          "diff_sha": "diff"}},
         max_trials=1000,
         working_dir='',
         algorithms={
@@ -115,7 +115,7 @@ def new_config(random_dt, script_path):
             adapter=[])
         )
 
-    backward.populate_priors(new_config['metadata'])
+    backward.populate_space(new_config)
 
     return new_config
 
@@ -131,7 +131,7 @@ def parent_version_config():
         metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow(),
                   'user_args': ['--x~normal(0,1)']})
 
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
 
     return config
 
@@ -145,7 +145,7 @@ def child_version_config(parent_version_config):
     config['refers'] = {'parent_id': 'parent_config'}
     config['metadata']['datetime'] = datetime.datetime.utcnow()
     config['metadata']['user_args'].append('--y~+normal(0,1)')
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
     return config
 
 
@@ -294,7 +294,7 @@ def test_build_from_args_force_user(old_config_file, random_dt):
 def test_build_no_hit(config_file, random_dt, script_path):
     """Try building experiment from config when not in db"""
     name = 'supernaekei'
-    space = {'x': 'uniform(0,10)'}
+    space = {'x': 'uniform(0, 10)'}
     max_trials = 100
 
     with OrionState(experiments=[], trials=[]):
@@ -309,9 +309,7 @@ def test_build_no_hit(config_file, random_dt, script_path):
     assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
     assert exp.metadata['datetime'] == random_dt
     assert exp.metadata['user'] == 'tsirif'
-    # TODO: Replace when space in db
-    assert 'space' not in exp.configuration
-    # assert exp.configuration['space'] == space
+    assert exp.configuration['space'] == space
     assert exp.max_trials == max_trials
     assert not exp.is_done
     assert exp.algorithms.configuration == {'random': {'seed': None}}
@@ -334,8 +332,7 @@ def test_build_hit(python_api_config):
         # Test that experiment already exists (this should fail otherwise)
         experiment_builder.build_view(name=name)
 
-        exp = experiment_builder.build(space=python_api_config['metadata']['priors'],
-                                       **python_api_config)
+        exp = experiment_builder.build(**python_api_config)
 
     assert exp._id == python_api_config['_id']
     assert exp.name == python_api_config['name']
@@ -451,10 +448,9 @@ class TestBuild(object):
         """
         with OrionState(experiments=[new_config], trials=[]):
 
-            space = new_config['metadata']['priors']
             new_config['max_trials'] = 5000
 
-            exp = experiment_builder.build(space=space, **new_config)
+            exp = experiment_builder.build(**new_config)
 
         # Deliver an external configuration to finalize init
         new_config['algorithms']['dumbalgo']['done'] = False
@@ -471,8 +467,7 @@ class TestBuild(object):
     def test_good_set_before_init_no_hit(self, random_dt, new_config):
         """Trying to set, overwrite everything from input."""
         with OrionState(experiments=[], trials=[]):
-            space = new_config['metadata']['priors']
-            exp = experiment_builder.build(space=space, **new_config)
+            exp = experiment_builder.build(**new_config)
             found_config = list(get_storage().fetch_experiments({'name': 'supernaekei',
                                                                  'metadata.user': 'tsirif'}))
 
@@ -505,30 +500,26 @@ class TestBuild(object):
     def test_working_dir_is_correctly_set(self, new_config):
         """Check if working_dir is correctly changed."""
         with OrionState(experiments=[], trials=[]):
-            space = new_config['metadata']['priors']
             new_config['working_dir'] = './'
-            exp = experiment_builder.build(space=space, **new_config)
+            exp = experiment_builder.build(**new_config)
             storage = get_storage()
             found_config = list(storage.fetch_experiments({'name': 'supernaekei',
                                                            'metadata.user': 'tsirif'}))
 
         found_config = found_config[0]
-        space = found_config['metadata']['priors']
-        exp = experiment_builder.build(space=space, **found_config)
+        exp = experiment_builder.build(**found_config)
         assert exp.working_dir == './'
 
     def test_working_dir_works_when_db_absent(self, database, new_config):
         """Check if working_dir is correctly when absent from the database."""
         with OrionState(experiments=[], trials=[]):
-            space = new_config['metadata']['priors']
-            exp = experiment_builder.build(space=space, **new_config)
+            exp = experiment_builder.build(**new_config)
             storage = get_storage()
             found_config = list(storage.fetch_experiments({'name': 'supernaekei',
                                                            'metadata.user': 'tsirif'}))
 
         found_config = found_config[0]
-        space = found_config['metadata']['priors']
-        exp = experiment_builder.build(space=space, **found_config)
+        exp = experiment_builder.build(**found_config)
         assert exp.working_dir == ''
 
     def test_configuration_hit_no_diffs(self, new_config):
@@ -540,8 +531,7 @@ class TestBuild(object):
         """
         with OrionState(experiments=[new_config], trials=[]):
             experiment_count_before = count_experiments()
-            space = new_config['metadata']['priors']
-            exp = experiment_builder.build(space=space, **new_config)
+            exp = experiment_builder.build(**new_config)
             assert experiment_count_before == count_experiments()
 
         new_config['algorithms']['dumbalgo']['done'] = False
@@ -558,8 +548,7 @@ class TestBuild(object):
     def test_instantiation_after_init(self, new_config):
         """Verify that algo, space and refers was instanciated properly"""
         with OrionState(experiments=[new_config], trials=[]):
-            space = new_config['metadata']['priors']
-            exp = experiment_builder.build(space=space, **new_config)
+            exp = experiment_builder.build(**new_config)
 
         assert isinstance(exp.algorithms, BaseAlgorithm)
         assert isinstance(exp.space, Space)
@@ -590,8 +579,7 @@ class TestBuild(object):
 
             monkeypatch.setattr(experiment_builder, 'fetch_config_from_db', insert_race_condition)
 
-            space = new_config['metadata']['priors']
-            experiment_builder.build(space=space, **new_config)
+            experiment_builder.build(**new_config)
 
             assert experiment_count_before == count_experiments()
 
