@@ -95,9 +95,9 @@ def test_demo(database, monkeypatch):
             assert result['name'] == 'example_gradient'
     params = trials[-1]['params']
     assert len(params) == 1
-    assert params[0]['name'] == '/x'
-    assert params[0]['type'] == 'real'
-    assert (params[0]['value'] - 34.56789) < 1e-5
+    assert params['/x']['name'] == '/x'
+    assert params['/x']['type'] == 'real'
+    assert (params['/x']['value'] - 34.56789) < 1e-5
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -140,9 +140,9 @@ def test_demo_with_script_config(database, monkeypatch):
             assert result['name'] == 'example_gradient'
     params = trials[-1]['params']
     assert len(params) == 1
-    assert params[0]['name'] == '/x'
-    assert params[0]['type'] == 'real'
-    assert (params[0]['value'] - 34.56789) < 1e-5
+    assert params['/x']['name'] == '/x'
+    assert params['/x']['type'] == 'real'
+    assert (params['/x']['value'] - 34.56789) < 1e-5
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -185,8 +185,8 @@ def test_demo_two_workers(database, monkeypatch):
     assert status['new'] < 5
     params = trials[-1]['params']
     assert len(params) == 1
-    assert params[0]['name'] == '/x'
-    assert params[0]['type'] == 'real'
+    assert params['/x']['name'] == '/x'
+    assert params['/x']['type'] == 'real'
 
 
 def test_workon():
@@ -241,9 +241,9 @@ def test_workon():
                 assert result.name == 'example_gradient'
         params = trials[-1].params
         assert len(params) == 1
-        assert params[0].name == '/x'
-        assert params[0].type == 'real'
-        assert (params[0].value - 34.56789) < 1e-5
+        assert params['/x'].name == '/x'
+        assert params['/x'].type == 'real'
+        assert (params['/x'].value - 34.56789) < 1e-5
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -282,9 +282,9 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     # things from the past. This is intended to be shown with the assertions
     # in the for-loop below.
     trials_c = list(database.trials.find({'experiment': exp_id, 'status': 'completed'}))
-    list_of_cx = [trial['params'][0]['value'] for trial in trials_c]
+    list_of_cx = [trial['params']['/x']['value'] for trial in trials_c]
     trials_b = list(database.trials.find({'experiment': exp_id, 'status': 'broken'}))
-    list_of_bx = [trial['params'][0]['value'] for trial in trials_b]
+    list_of_bx = [trial['params']['/x']['value'] for trial in trials_b]
     for bx in list_of_bx:
         assert bx in list_of_cx
 
@@ -533,8 +533,8 @@ def test_demo_with_nondefault_config_keyword(database, monkeypatch):
             assert result['name'] == 'example_gradient'
     params = trials[-1]['params']
     assert len(params) == 1
-    assert params[0]['name'] == '/x'
-    assert params[0]['type'] == 'real'
-    assert (params[0]['value'] - 34.56789) < 1e-5
+    assert params['/x']['name'] == '/x'
+    assert params['/x']['type'] == 'real'
+    assert (params['/x']['value'] - 34.56789) < 1e-5
 
     orion.core.config.user_script_config = 'config'

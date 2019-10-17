@@ -20,7 +20,7 @@ def observations():
 @pytest.fixture
 def incomplete_trial():
     """Return a single trial without results"""
-    return Trial(params=[{'name': 'a', 'type': 'integer', 'value': 6}])
+    return Trial(params=dict(a={'name': 'a', 'type': 'integer', 'value': 6}))
 
 
 class TestStrategyFactory:

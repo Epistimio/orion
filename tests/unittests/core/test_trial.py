@@ -21,7 +21,7 @@ class TestTrial(object):
         assert t.start_time is None
         assert t.end_time is None
         assert t.results == []
-        assert t.params == []
+        assert t.params == {}
         assert t.working_dir is None
 
     def test_init_full(self, exp_config):
@@ -37,17 +37,18 @@ class TestTrial(object):
         assert t.results[0].name == exp_config[1][1]['results'][0]['name']
         assert t.results[0].type == exp_config[1][1]['results'][0]['type']
         assert t.results[0].value == exp_config[1][1]['results'][0]['value']
-        assert list(map(lambda x: x.to_dict(), t.params)) == exp_config[1][1]['params']
+        assert ({name: param.to_dict() for name, param in t.params.items()} ==
+                exp_config[1][1]['params'])
         assert t.working_dir is None
 
     def test_higher_shapes_not_ndarray(self):
         """Test that `numpy.ndarray` values are converted to list."""
         value = numpy.zeros([3])
         expected = value.tolist()
-        params = [dict(name='/x', type='real', value=value)]
+        params = {'/x': dict(name='/x', type='real', value=value)}
         trial = Trial(params=params)
 
-        assert trial.params[0].value == expected
+        assert trial.params['/x'].value == expected
 
     def test_bad_access(self):
         """Other than `Trial.__slots__` are not allowed."""
@@ -117,8 +118,10 @@ class TestTrial(object):
         """Compare Param objects using __eq__"""
         trials = Trial.build(exp_config[1])
 
-        assert trials[0].params[0] == Trial.Param(**exp_config[1][0]['params'][0])
-        assert trials[0].params[1] != Trial.Param(**exp_config[1][0]['params'][0])
+        assert (trials[0].params['/decoding_layer'] ==
+                Trial.Param(**exp_config[1][0]['params']['/decoding_layer']))
+        assert (trials[0].params['/encoding_layer'] ==
+                Trial.Param(**exp_config[1][0]['params']['/encoding_layer']))
 
     def test_str_trial(self, exp_config):
         """Test representation of `Trial`."""
@@ -129,8 +132,8 @@ class TestTrial(object):
     def test_str_value(self, exp_config):
         """Test representation of `Trial.Value`."""
         t = Trial(**exp_config[1][1])
-        assert str(t.params[1]) == "Param(name='/encoding_layer', "\
-                                   "type='categorical', value='gru')"
+        assert str(t.params['/encoding_layer']) == "Param(name='/encoding_layer', "\
+                                                   "type='categorical', value='gru')"
 
     def test_invalid_result(self, exp_config):
         """Test that invalid objectives cannot be set"""
@@ -227,6 +230,21 @@ class TestTrial(object):
             t.hash_name
         assert 'params' in str(exc.value)
 
+    def test_hash_name_consistency(self, exp_config):
+        """Check that hash_name is always the same."""
+        assert (Trial(params={'x': {'name': 'x', 'type': 'integer', 'value': 1},
+                              'y': {'name': 'y', 'type': 'integer', 'value': 2}}).hash_name ==
+                Trial(params={'x': {'name': 'x', 'type': 'integer', 'value': 1},
+                              'y': {'name': 'y', 'type': 'integer', 'value': 2}}).hash_name)
+        assert (Trial(params={'x': {'name': 'x', 'type': 'integer', 'value': 1},
+                              'y': {'name': 'y', 'type': 'integer', 'value': 2}}).hash_name ==
+                Trial(params=[{'name': 'x', 'type': 'integer', 'value': 1},
+                              {'name': 'y', 'type': 'integer', 'value': 2}]).hash_name)
+        assert (Trial(params=[{'name': 'x', 'type': 'integer', 'value': 1},
+                              {'name': 'y', 'type': 'integer', 'value': 2}]).hash_name ==
+                Trial(params=[{'name': 'x', 'type': 'integer', 'value': 1},
+                              {'name': 'y', 'type': 'integer', 'value': 2}]).hash_name)
+
     def test_full_name_property(self, exp_config):
         """Check property `Trial.full_name`."""
         t = Trial(**exp_config[1][1])
@@ -240,5 +258,5 @@ class TestTrial(object):
     def test_higher_shape_id_is_same(self):
         """Check if a Trial with a shape > 1 has the same id once it has been through the DB."""
         x = {'name': '/x', 'value': [1, 2], 'type': 'real'}
-        trial = Trial(params=[x])
+        trial = Trial(params={'/x': x})
         assert trial.id == Trial(**bson.BSON.decode(bson.BSON.encode(trial.to_dict()))).id

@@ -23,10 +23,10 @@ class DummyExperiment():
 def dummy_trial():
     """Return a dummy trial object"""
     trial = Trial()
-    trial.params = [
-        Trial.Param(name='a', type='real', value=0.0),
-        Trial.Param(name='b', type='integer', value=1),
-        Trial.Param(name='c', type='categorical', value='Some')]
+    trial.params = dict(
+        a=Trial.Param(name='a', type='real', value=0.0),
+        b=Trial.Param(name='b', type='integer', value=1),
+        c=Trial.Param(name='c', type='categorical', value='Some'))
     return trial
 
 

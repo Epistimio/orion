@@ -344,16 +344,18 @@ def test_register_trials(random_dt):
         exp._id = 0
 
         trials = [
-            Trial(params=[{'name': 'a', 'type': 'integer', 'value': 5}]),
-            Trial(params=[{'name': 'b', 'type': 'integer', 'value': 6}]),
+            Trial(params={'a': {'name': 'a', 'type': 'integer', 'value': 5}}),
+            Trial(params={'b': {'name': 'b', 'type': 'integer', 'value': 6}}),
             ]
         for trial in trials:
             exp.register_trial(trial)
 
         yo = list(map(lambda trial: trial.to_dict(), get_storage().fetch_trials(exp)))
         assert len(yo) == len(trials)
-        assert yo[0]['params'] == list(map(lambda x: x.to_dict(), trials[0].params))
-        assert yo[1]['params'] == list(map(lambda x: x.to_dict(), trials[1].params))
+        assert yo[0]['params'] == {name: param.to_dict()
+                                   for name, param in trials[0].params.items()}
+        assert yo[1]['params'] == {name: param.to_dict()
+                                   for name, param in trials[1].params.items()}
         assert yo[0]['status'] == 'new'
         assert yo[1]['status'] == 'new'
         assert yo[0]['submit_time'] == random_dt

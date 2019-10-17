@@ -51,7 +51,7 @@ def test_insert_single_trial(database, monkeypatch, script_path):
     trial = trials[0]
 
     assert trial['status'] == 'new'
-    assert trial['params'][0]['value'] == 1
+    assert trial['params']['/x']['value'] == 1
 
 
 @pytest.mark.usefixtures("only_experiments_db")
@@ -76,7 +76,7 @@ def test_insert_single_trial_default_value(database, monkeypatch):
     trial = trials[0]
 
     assert trial['status'] == 'new'
-    assert trial['params'][0]['value'] == 1
+    assert trial['params']['/x']['value'] == 1
 
 
 @pytest.mark.usefixtures("only_experiments_db")
@@ -143,8 +143,8 @@ def test_insert_two_hyperparameters(database, monkeypatch):
     trial = trials[0]
 
     assert trial['status'] == 'new'
-    assert trial['params'][0]['value'] == 1
-    assert trial['params'][1]['value'] == 2
+    assert trial['params']['/x']['value'] == 1
+    assert trial['params']['/y']['value'] == 2
 
 
 @pytest.mark.usefixtures("clean_db")

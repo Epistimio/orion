@@ -177,14 +177,15 @@ def test_register_new_trials(producer, database, random_dt):
     assert new_trials[0]['start_time'] is None
     assert new_trials[0]['end_time'] is None
     assert new_trials[0]['results'] == []
-    assert new_trials[0]['params'] == [
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'},
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'rnn'}
-        ]
+    assert new_trials[0]['params'] == {
+        '/decoding_layer': {
+            'name': '/decoding_layer',
+            'type': 'categorical',
+            'value': 'gru'},
+        '/encoding_layer': {
+            'name': '/encoding_layer',
+            'type': 'categorical',
+            'value': 'rnn'}}
 
 
 def test_no_lies_if_all_trials_completed(producer, database, random_dt):
@@ -423,23 +424,25 @@ def test_concurent_producers(producer, database, random_dt):
     assert new_trials[0]['start_time'] is None
     assert new_trials[0]['end_time'] is None
     assert new_trials[0]['results'] == []
-    assert new_trials[0]['params'] == [
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'},
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'rnn'}
-        ]
+    assert new_trials[0]['params'] == {
+        '/decoding_layer': {
+            'name': '/decoding_layer',
+            'type': 'categorical',
+            'value': 'gru'},
+        '/encoding_layer': {
+            'name': '/encoding_layer',
+            'type': 'categorical',
+            'value': 'rnn'}}
 
-    assert new_trials[1]['params'] == [
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'},
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'gru'}
-        ]
+    assert new_trials[1]['params'] == {
+        '/decoding_layer': {
+            'name': '/decoding_layer',
+            'type': 'categorical',
+            'value': 'gru'},
+        '/encoding_layer': {
+            'name': '/encoding_layer',
+            'type': 'categorical',
+            'value': 'gru'}}
 
 
 def test_duplicate_within_pool(producer, database, random_dt):
@@ -469,23 +472,25 @@ def test_duplicate_within_pool(producer, database, random_dt):
     assert new_trials[0]['start_time'] is None
     assert new_trials[0]['end_time'] is None
     assert new_trials[0]['results'] == []
-    assert new_trials[0]['params'] == [
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'},
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'rnn'}
-        ]
+    assert new_trials[0]['params'] == {
+        '/decoding_layer': {
+            'name': '/decoding_layer',
+            'type': 'categorical',
+            'value': 'gru'},
+        '/encoding_layer': {
+            'name': '/encoding_layer',
+            'type': 'categorical',
+            'value': 'rnn'}}
 
-    assert new_trials[1]['params'] == [
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'},
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'gru'}
-        ]
+    assert new_trials[1]['params'] == {
+        '/decoding_layer': {
+            'name': '/decoding_layer',
+            'type': 'categorical',
+            'value': 'gru'},
+        '/encoding_layer': {
+            'name': '/encoding_layer',
+            'type': 'categorical',
+            'value': 'gru'}}
 
 
 def test_duplicate_within_pool_and_db(producer, database, random_dt):
@@ -515,23 +520,25 @@ def test_duplicate_within_pool_and_db(producer, database, random_dt):
     assert new_trials[0]['start_time'] is None
     assert new_trials[0]['end_time'] is None
     assert new_trials[0]['results'] == []
-    assert new_trials[0]['params'] == [
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'},
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'rnn'}
-        ]
+    assert new_trials[0]['params'] == {
+        '/decoding_layer': {
+            'name': '/decoding_layer',
+            'type': 'categorical',
+            'value': 'gru'},
+        '/encoding_layer': {
+            'name': '/encoding_layer',
+            'type': 'categorical',
+            'value': 'rnn'}}
 
-    assert new_trials[1]['params'] == [
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'},
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'gru'}
-        ]
+    assert new_trials[1]['params'] == {
+        '/decoding_layer': {
+            'name': '/decoding_layer',
+            'type': 'categorical',
+            'value': 'gru'},
+        '/encoding_layer': {
+            'name': '/encoding_layer',
+            'type': 'categorical',
+            'value': 'gru'}}
 
 
 def test_exceed_max_idle_time_because_of_duplicates(producer, database, random_dt):

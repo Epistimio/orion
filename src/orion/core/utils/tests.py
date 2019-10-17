@@ -20,6 +20,7 @@ from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils import SingletonAlreadyInstantiatedError
+import orion.core.utils.backward as backward
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage, Storage
 from orion.storage.legacy import Legacy
@@ -171,6 +172,7 @@ class BaseOrionState:
     def load_experience_configuration(self):
         """Load an example database."""
         for i, t_dict in enumerate(self._trials):
+            backward.params_to_dict(t_dict)
             self._trials[i] = Trial(**t_dict).to_dict()
 
         for i, t_dict in enumerate(self._lies):

@@ -71,11 +71,11 @@ def trials(small_prior, large_prior, normal_prior, disjoint_prior,
 
     trials = []
     for _ in range(N_TRIALS):
-        params = []
+        params = {}
         for name, prior in priors.items():
             dimension = DimensionBuilder().build(name, prior)
             value = dimension.sample()[0]
-            params.append(Trial.Param(name=name, type=dimension.type, value=value).to_dict())
+            params[name] = Trial.Param(name=name, type=dimension.type, value=value).to_dict()
         trials.append(Trial(params=params))
 
     return trials
@@ -290,9 +290,9 @@ class TestDimensionAdditionForwardBackward(object):
 
         adapted_trials = dimension_addition_adapter.forward(trials)
 
-        assert adapted_trials[0].params[-1] == new_param
-        assert adapted_trials[4].params[-1] == new_param
-        assert adapted_trials[-1].params[-1] == new_param
+        assert adapted_trials[0].params[new_param.name] == new_param
+        assert adapted_trials[4].params[new_param.name] == new_param
+        assert adapted_trials[-1].params[new_param.name] == new_param
 
     def test_dimension_addition_forward_already_existing(self, trials):
         """Test :meth:`orion.core.evc.adapters.DimensionAddition.forward`
@@ -316,32 +316,32 @@ class TestDimensionAdditionForwardBackward(object):
         for trial in trials:
             random_param = new_param.to_dict()
             random_param['value'] = sampler.sample()
-            trial.params.append(Trial.Param(**random_param))
+            trial.params[random_param['name']] = Trial.Param(**random_param)
 
         adapted_trials = dimension_addition_adapter.backward(trials)
         assert len(adapted_trials) == 0
 
-        trials[0].params[-1].value = 1
-        assert trials[0].params[-1] == new_param
+        trials[0].params[new_param.name].value = 1
+        assert trials[0].params[new_param.name] == new_param
 
         adapted_trials = dimension_addition_adapter.backward(trials)
         assert len(adapted_trials) == 1
 
-        trials[4].params[-1].value = 1
-        assert trials[4].params[-1] == new_param
+        trials[4].params[new_param.name].value = 1
+        assert trials[4].params[new_param.name] == new_param
 
         adapted_trials = dimension_addition_adapter.backward(trials)
         assert len(adapted_trials) == 2
 
-        trials[-1].params[-1].value = 1
-        assert trials[-1].params[-1] == new_param
+        trials[-1].params[new_param.name].value = 1
+        assert trials[-1].params[new_param.name] == new_param
 
         adapted_trials = dimension_addition_adapter.backward(trials)
         assert len(adapted_trials) == 3
 
-        assert new_param not in (adapted_trials[0].params)
-        assert new_param not in (adapted_trials[1].params)
-        assert new_param not in (adapted_trials[2].params)
+        assert new_param not in list(adapted_trials[0].params.values())
+        assert new_param not in list(adapted_trials[1].params.values())
+        assert new_param not in list(adapted_trials[2].params.values())
 
     def test_dimension_addition_backward_not_existing(self, trials):
         """Test :meth:`orion.core.evc.adapters.DimensionAddition.backward`
@@ -371,32 +371,32 @@ class TestDimensionDeletionForwardBackward(object):
         for trial in trials:
             random_param = new_param.to_dict()
             random_param['value'] = sampler.sample()
-            trial.params.append(Trial.Param(**random_param))
+            trial.params[random_param['name']] = Trial.Param(**random_param)
 
         adapted_trials = dimension_deletion_adapter.forward(trials)
         assert len(adapted_trials) == 0
 
-        trials[0].params[-1].value = 1
-        assert trials[0].params[-1] == new_param
+        trials[0].params[new_param.name].value = 1
+        assert trials[0].params[new_param.name] == new_param
 
         adapted_trials = dimension_deletion_adapter.forward(trials)
         assert len(adapted_trials) == 1
 
-        trials[4].params[-1].value = 1
-        assert trials[4].params[-1] == new_param
+        trials[4].params[new_param.name].value = 1
+        assert trials[4].params[new_param.name] == new_param
 
         adapted_trials = dimension_deletion_adapter.forward(trials)
         assert len(adapted_trials) == 2
 
-        trials[-1].params[-1].value = 1
-        assert trials[-1].params[-1] == new_param
+        trials[-1].params[new_param.name].value = 1
+        assert trials[-1].params[new_param.name] == new_param
 
         adapted_trials = dimension_deletion_adapter.forward(trials)
         assert len(adapted_trials) == 3
 
-        assert new_param not in (adapted_trials[0].params)
-        assert new_param not in (adapted_trials[1].params)
-        assert new_param not in (adapted_trials[2].params)
+        assert new_param not in list(adapted_trials[0].params.values())
+        assert new_param not in list(adapted_trials[1].params.values())
+        assert new_param not in list(adapted_trials[2].params.values())
 
     def test_dimension_deletion_forward_not_existing(self, trials):
         """Test :meth:`orion.core.evc.adapters.DimensionDeletion.forward`
@@ -418,9 +418,9 @@ class TestDimensionDeletionForwardBackward(object):
 
         adapted_trials = dimension_deletion_adapter.backward(trials)
 
-        assert adapted_trials[0].params[-1] == new_param
-        assert adapted_trials[4].params[-1] == new_param
-        assert adapted_trials[-1].params[-1] == new_param
+        assert adapted_trials[0].params[new_param.name] == new_param
+        assert adapted_trials[4].params[new_param.name] == new_param
+        assert adapted_trials[-1].params[new_param.name] == new_param
 
     def test_dimension_deletion_backward_already_existing(self, trials):
         """Test :meth:`orion.core.evc.adapters.DimensionDeletion.backward`
@@ -504,11 +504,11 @@ class TestDimensionRenamingForwardBackward(object):
 
         assert len(adapted_trials) == len(trials)
 
-        assert new_name in [param.name for param in adapted_trials[0].params]
-        assert old_name not in [param.name for param in adapted_trials[0].params]
+        assert new_name in [param.name for param in adapted_trials[0].params.values()]
+        assert old_name not in [param.name for param in adapted_trials[0].params.values()]
 
-        assert new_name in [param.name for param in adapted_trials[-1].params]
-        assert old_name not in [param.name for param in adapted_trials[-1].params]
+        assert new_name in [param.name for param in adapted_trials[-1].params.values()]
+        assert old_name not in [param.name for param in adapted_trials[-1].params.values()]
 
     def test_dimension_renaming_forward_incompatible(self, trials):
         """Test :meth:`orion.core.evc.adapters.DimensionRenaming.forward`
@@ -536,11 +536,11 @@ class TestDimensionRenamingForwardBackward(object):
 
         assert len(adapted_trials) == len(trials)
 
-        assert old_name in [param.name for param in adapted_trials[0].params]
-        assert new_name not in [param.name for param in adapted_trials[0].params]
+        assert old_name in [param.name for param in adapted_trials[0].params.values()]
+        assert new_name not in [param.name for param in adapted_trials[0].params.values()]
 
-        assert old_name in [param.name for param in adapted_trials[-1].params]
-        assert new_name not in [param.name for param in adapted_trials[-1].params]
+        assert old_name in [param.name for param in adapted_trials[-1].params.values()]
+        assert new_name not in [param.name for param in adapted_trials[-1].params.values()]
 
     def test_dimension_renaming_backward_incompatible(self, trials):
         """Test :meth:`orion.core.evc.adapters.DimensionRenaming.backward`
@@ -672,9 +672,9 @@ class TestCompositeAdapterForwardBackward(object):
 
         adapted_trials = composite_adapter.forward(trials)
 
-        assert adapted_trials[0].params[-1] == new_param
-        assert adapted_trials[4].params[-1] == new_param
-        assert adapted_trials[-1].params[-1] == new_param
+        assert adapted_trials[0].params[new_param.name] == new_param
+        assert adapted_trials[4].params[new_param.name] == new_param
+        assert adapted_trials[-1].params[new_param.name] == new_param
 
         composite_adapter = CompositeAdapter(dimension_addition_adapter, dimension_deletion_adapter)
 
@@ -682,9 +682,9 @@ class TestCompositeAdapterForwardBackward(object):
 
         assert len(adapted_trials) == len(trials)
 
-        assert new_param not in (adapted_trials[0].params)
-        assert new_param not in (adapted_trials[4].params)
-        assert new_param not in (adapted_trials[-1].params)
+        assert new_param not in list(adapted_trials[0].params.values())
+        assert new_param not in list(adapted_trials[4].params.values())
+        assert new_param not in list(adapted_trials[-1].params.values())
 
     def test_composite_adapter_backward(self, dummy_param, trials):
         """Test :meth:`orion.core.evc.adapters.CompositeAdapter.backward` with two adapters"""
@@ -697,9 +697,9 @@ class TestCompositeAdapterForwardBackward(object):
 
         adapted_trials = composite_adapter.backward(trials)
 
-        assert adapted_trials[0].params[-1] == new_param
-        assert adapted_trials[4].params[-1] == new_param
-        assert adapted_trials[-1].params[-1] == new_param
+        assert adapted_trials[0].params[new_param.name] == new_param
+        assert adapted_trials[4].params[new_param.name] == new_param
+        assert adapted_trials[-1].params[new_param.name] == new_param
 
         composite_adapter = CompositeAdapter(dimension_addition_adapter, dimension_deletion_adapter)
 
@@ -707,9 +707,9 @@ class TestCompositeAdapterForwardBackward(object):
 
         assert len(adapted_trials) == len(trials)
 
-        assert new_param not in (adapted_trials[0].params)
-        assert new_param not in (adapted_trials[4].params)
-        assert new_param not in (adapted_trials[-1].params)
+        assert new_param not in list(adapted_trials[0].params.values())
+        assert new_param not in list(adapted_trials[4].params.values())
+        assert new_param not in list(adapted_trials[-1].params.values())
 
 
 def test_dimension_addition_configuration(dummy_param):

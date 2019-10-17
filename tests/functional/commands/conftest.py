@@ -208,7 +208,7 @@ def single_without_success(one_experiment):
     x_value = 0
     for status in statuses:
         x['value'] = x_value
-        trial = Trial(experiment=exp.id, params=[x], status=status)
+        trial = Trial(experiment=exp.id, params={'/x': x}, status=status)
         x_value += 1
         Database().write('trials', trial.to_dict())
 
@@ -220,7 +220,7 @@ def single_with_trials(single_without_success):
 
     x = {'name': '/x', 'type': 'real', 'value': 100}
     results = {"name": "obj", "type": "objective", "value": 0}
-    trial = Trial(experiment=exp.id, params=[x], status='completed', results=[results])
+    trial = Trial(experiment=exp.id, params={'/x': x}, status='completed', results=[results])
     Database().write('trials', trial.to_dict())
 
 
@@ -250,9 +250,9 @@ def family_with_trials(two_experiments):
     for status in Trial.allowed_stati:
         x['value'] = x_value
         y['value'] = x_value
-        trial = Trial(experiment=exp.id, params=[x], status=status)
+        trial = Trial(experiment=exp.id, params={'/x': x}, status=status)
         x['value'] = x_value
-        trial2 = Trial(experiment=exp2.id, params=[x, y], status=status)
+        trial2 = Trial(experiment=exp2.id, params={'/x': x, '/y': y}, status=status)
         x_value += 1
         Database().write('trials', trial.to_dict())
         Database().write('trials', trial2.to_dict())
@@ -299,7 +299,7 @@ def three_family_with_trials(three_experiments_family, family_with_trials):
     for status in Trial.allowed_stati:
         x['value'] = x_value
         z['value'] = x_value * 100
-        trial = Trial(experiment=exp.id, params=[x, z], status=status)
+        trial = Trial(experiment=exp.id, params={'/x': x, '/z': z}, status=status)
         x_value += 1
         Database().write('trials', trial.to_dict())
 
@@ -330,7 +330,7 @@ def three_family_branch_with_trials(three_experiments_family_branch, family_with
         x['value'] = x_value
         y['value'] = x_value * 10
         z['value'] = x_value * 100
-        trial = Trial(experiment=exp.id, params=[x, y, z], status=status)
+        trial = Trial(experiment=exp.id, params={'/x': x, '/y': y, '/z': z}, status=status)
         x_value += 1
         Database().write('trials', trial.to_dict())
 

@@ -186,7 +186,7 @@ def get_name_value_pairs(trials):
     pairs = []
     for trial in trials:
         pairs.append([])
-        for param in trial.params:
+        for param in trial.params.values():
             pairs[-1].append((param.name, param.value))
 
         pairs[-1] = tuple(pairs[-1])

@@ -19,7 +19,7 @@ def trial_to_tuple(trial, space):
     The order within the tuple is dictated by the defined
     `orion.algo.space.Space` object.
     """
-    params = {param.name: param.value for param in trial.params}
+    params = {param.name: param.value for param in trial.params.values()}
     trial_keys = set(params.keys())
     space_keys = set(space.keys())
     if trial_keys != space_keys:
@@ -40,13 +40,13 @@ def tuple_to_trial(data, space):
     :type space: `orion.algo.space.Space`
     """
     assert len(data) == len(space)
-    params = []
+    params = dict()
     for i, dim in enumerate(space.values()):
-        params.append(dict(
+        params[dim.name] = dict(
             name=dim.name,
             type=dim.type,
             value=data[i]
-            ))
+            )
     return Trial(params=params)
 
 

@@ -165,6 +165,7 @@ def exp_config():
         exp_config = list(yaml.safe_load_all(f))
 
     for i, t_dict in enumerate(exp_config[1]):
+        backward.params_to_dict(t_dict)
         exp_config[1][i] = Trial(**t_dict).to_dict()
 
     for config in exp_config[0]:

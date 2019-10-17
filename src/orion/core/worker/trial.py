@@ -12,6 +12,7 @@
 import hashlib
 import logging
 
+
 log = logging.getLogger(__name__)
 
 
@@ -167,8 +168,10 @@ class Trial:
     def __init__(self, **kwargs):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
         for attrname in self.__slots__:
-            if attrname in ('_results', 'params', 'parents'):
+            if attrname in ('_results', 'parents'):
                 setattr(self, attrname, list())
+            elif attrname == 'params':
+                setattr(self, attrname, dict())
             else:
                 setattr(self, attrname, None)
 
@@ -182,10 +185,13 @@ class Trial:
                 attr = getattr(self, attrname)
                 for item in value:
                     attr.append(self.Result(**item))
+            elif attrname == 'params' and isinstance(value, dict):
+                for key, item in value.items():
+                    self.params[key] = self.Param(**item)
+            # Backward compatibility with < 0.1.8
             elif attrname == 'params':
-                attr = getattr(self, attrname)
                 for item in value:
-                    attr.append(self.Param(**item))
+                    self.params[item['name']] = self.Param(**item)
             else:
                 setattr(self, attrname, value)
 
@@ -202,9 +208,8 @@ class Trial:
 
         # Overwrite "results" and "params" with list of dictionaries rather
         # than list of Value objects
-        for attrname in ('results', 'params'):
-            trial_dictionary[attrname] = list(map(lambda x: x.to_dict(),
-                                                  getattr(self, attrname)))
+        trial_dictionary[attrname] = list(map(lambda x: x.to_dict(), self.results))
+        trial_dictionary[attrname] = {key: param.to_dict() for key, param in self.params.items()}
 
         trial_dictionary['_id'] = trial_dictionary.pop('id')
 
@@ -294,7 +299,7 @@ class Trial:
 
     def params_repr(self, sep=','):
         """Represent with a string the parameters contained in this `Trial` object."""
-        return self._repr_values(self.params, sep)
+        return self._repr_values(self.params.values(), sep)
 
     @property
     def hash_name(self):

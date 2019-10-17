@@ -408,7 +408,7 @@ class OrionCmdlineParser():
         # Create a copy of the template
         instance = copy.deepcopy(self.config_file_data)
 
-        for param in trial.params:
+        for param in trial.params.values():
             # The param will only correspond to config keyd
             # that require a prior, so we make sure to skip
             # the ones that do not.
@@ -445,8 +445,8 @@ class OrionCmdlineParser():
     def _build_configuration(self, trial):
         configuration = copy.deepcopy(self.parser.arguments)
 
-        for param in trial.params:
-            name = param.name.lstrip('/')
+        for name, param in trial.params.items():
+            name = name.lstrip('/')
             configuration[name] = param.value
 
         return configuration

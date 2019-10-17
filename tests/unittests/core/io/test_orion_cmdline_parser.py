@@ -155,9 +155,11 @@ def test_format_commandline_only(parser, commandline):
     """Format the commandline using only args."""
     parser.parse(commandline)
 
-    trial = Trial(params=[
-        {'name': '/lr', 'type': 'real', 'value': -2.4},
-        {'name': '/prior', 'type': 'categorical', 'value': 'sgd'}])
+    trial = Trial(params={
+        '/lr': {
+            'name': '/lr', 'type': 'real', 'value': -2.4},
+        '/prior': {
+            'name': '/prior', 'type': 'categorical', 'value': 'sgd'}})
 
     cmd_inst = parser.format(trial=trial)
     assert cmd_inst == ["--seed", "555",
@@ -173,15 +175,15 @@ def test_format_commandline_and_config(parser, commandline, json_config, tmpdir,
 
     parser.parse(cmd_args)
 
-    trial = Trial(params=[
-        {'name': '/lr', 'type': 'real', 'value': -2.4},
-        {'name': '/prior', 'type': 'categorical', 'value': 'sgd'},
-        {'name': '/layers/1/width', 'type': 'integer', 'value': 100},
-        {'name': '/layers/1/type', 'type': 'categorical', 'value': 'relu'},
-        {'name': '/layers/2/type', 'type': 'categorical', 'value': 'sigmoid'},
-        {'name': '/training/lr0', 'type': 'real', 'value': 0.032},
-        {'name': '/training/mbs', 'type': 'integer', 'value': 64},
-        {'name': '/something-same', 'type': 'categorical', 'value': '3'}])
+    trial = Trial(params={
+        '/lr': {'name': '/lr', 'type': 'real', 'value': -2.4},
+        '/prior': {'name': '/prior', 'type': 'categorical', 'value': 'sgd'},
+        '/layers/1/width': {'name': '/layers/1/width', 'type': 'integer', 'value': 100},
+        '/layers/1/type': {'name': '/layers/1/type', 'type': 'categorical', 'value': 'relu'},
+        '/layers/2/type': {'name': '/layers/2/type', 'type': 'categorical', 'value': 'sigmoid'},
+        '/training/lr0': {'name': '/training/lr0', 'type': 'real', 'value': 0.032},
+        '/training/mbs': {'name': '/training/mbs', 'type': 'integer', 'value': 64},
+        '/something-same': {'name': '/something-same', 'type': 'categorical', 'value': '3'}})
 
     output_file = str(tmpdir.join("output.json"))
 
@@ -205,15 +207,15 @@ def test_format_without_config_path(parser, commandline, json_config, tmpdir, js
 
     parser.parse(cmd_args)
 
-    trial = Trial(params=[
-        {'name': '/lr', 'type': 'real', 'value': -2.4},
-        {'name': '/prior', 'type': 'categorical', 'value': 'sgd'},
-        {'name': '/layers/1/width', 'type': 'integer', 'value': 100},
-        {'name': '/layers/1/type', 'type': 'categorical', 'value': 'relu'},
-        {'name': '/layers/2/type', 'type': 'categorical', 'value': 'sigmoid'},
-        {'name': '/training/lr0', 'type': 'real', 'value': 0.032},
-        {'name': '/training/mbs', 'type': 'integer', 'value': 64},
-        {'name': '/something-same', 'type': 'categorical', 'value': '3'}])
+    trial = Trial(params={
+        '/lr': {'name': '/lr', 'type': 'real', 'value': -2.4},
+        '/prior': {'name': '/prior', 'type': 'categorical', 'value': 'sgd'},
+        '/layers/1/width': {'name': '/layers/1/width', 'type': 'integer', 'value': 100},
+        '/layers/1/type': {'name': '/layers/1/type', 'type': 'categorical', 'value': 'relu'},
+        '/layers/2/type': {'name': '/layers/2/type', 'type': 'categorical', 'value': 'sigmoid'},
+        '/training/lr0': {'name': '/training/lr0', 'type': 'real', 'value': 0.032},
+        '/training/mbs': {'name': '/training/mbs', 'type': 'integer', 'value': 64},
+        '/something-same': {'name': '/something-same', 'type': 'categorical', 'value': '3'}})
 
     with pytest.raises(ValueError) as exc_info:
         parser.format(trial=trial)
@@ -225,9 +227,9 @@ def test_format_with_properties(parser, cmd_with_properties, hacked_exp):
     """Test if format correctly puts the value of `trial` and `exp` when used as properties"""
     parser.parse(cmd_with_properties)
 
-    trial = Trial(experiment='trial_test', params=[
-        {'name': '/lr', 'type': 'real', 'value': -2.4},
-        {'name': '/prior', 'type': 'categorical', 'value': 'sgd'}])
+    trial = Trial(experiment='trial_test', params={
+        '/lr': {'name': '/lr', 'type': 'real', 'value': -2.4},
+        '/prior': {'name': '/prior', 'type': 'categorical', 'value': 'sgd'}})
 
     cmd_line = parser.format(None, trial=trial, experiment=hacked_exp)
     print(cmd_line)
@@ -315,15 +317,15 @@ def test_set_state_dict(parser, commandline, json_config, tmpdir, json_converter
 
     blank_parser.set_state_dict(state)
 
-    trial = Trial(params=[
-        {'name': '/lr', 'type': 'real', 'value': -2.4},
-        {'name': '/prior', 'type': 'categorical', 'value': 'sgd'},
-        {'name': '/layers/1/width', 'type': 'integer', 'value': 100},
-        {'name': '/layers/1/type', 'type': 'categorical', 'value': 'relu'},
-        {'name': '/layers/2/type', 'type': 'categorical', 'value': 'sigmoid'},
-        {'name': '/training/lr0', 'type': 'real', 'value': 0.032},
-        {'name': '/training/mbs', 'type': 'integer', 'value': 64},
-        {'name': '/something-same', 'type': 'categorical', 'value': '3'}])
+    trial = Trial(params={
+        '/lr': {'name': '/lr', 'type': 'real', 'value': -2.4},
+        '/prior': {'name': '/prior', 'type': 'categorical', 'value': 'sgd'},
+        '/layers/1/width': {'name': '/layers/1/width', 'type': 'integer', 'value': 100},
+        '/layers/1/type': {'name': '/layers/1/type', 'type': 'categorical', 'value': 'relu'},
+        '/layers/2/type': {'name': '/layers/2/type', 'type': 'categorical', 'value': 'sigmoid'},
+        '/training/lr0': {'name': '/training/lr0', 'type': 'real', 'value': 0.032},
+        '/training/mbs': {'name': '/training/mbs', 'type': 'integer', 'value': 64},
+        '/something-same': {'name': '/something-same', 'type': 'categorical', 'value': '3'}})
 
     output_file = str(tmpdir.join("output.json"))
 

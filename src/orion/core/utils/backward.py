@@ -40,3 +40,15 @@ def update_db_config(config):
     if 'database' in config:
         config['storage'] = {'type': 'legacy'}
         config['storage']['database'] = config.pop('database')
+
+
+def params_to_dict(trial_dict):
+    """Convert list of params of trial to a dict"""
+    if isinstance(trial_dict['params'], dict):
+        return
+
+    params = {}
+    for param in trial_dict['params']:
+        params[param['name']] = param
+
+    trial_dict['params'] = params

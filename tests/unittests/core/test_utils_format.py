@@ -11,23 +11,22 @@ from orion.core.worker.trial import Trial
 @pytest.fixture()
 def trial():
     """Stab trial to match tuple from fixture `fixed_suggestion`."""
-    params = [
-        dict(
+    params = dict(
+        yolo=dict(
             name='yolo',
             type='categorical',
             value=('asdfa', 2)
             ),
-        dict(
+        yolo2=dict(
             name='yolo2',
             type='integer',
             value=0
             ),
-        dict(
+        yolo3=dict(
             name='yolo3',
             type='real',
             value=3.5
-            )
-        ]
+            ))
     return Trial(params=params)
 
 
@@ -36,13 +35,14 @@ def test_trial_to_tuple(space, trial, fixed_suggestion):
     data = trial_to_tuple(trial, space)
     assert data == fixed_suggestion
 
-    trial.params[0].name = 'lalala'
+    print(trial.params)
+    trial.params['yolo'].name = 'lalala'
     with pytest.raises(ValueError) as exc:
         trial_to_tuple(trial, space)
 
     assert "Trial params: [\'lalala\', \'yolo2\', \'yolo3\']" in str(exc.value)
 
-    trial.params.pop(0)
+    trial.params.pop('yolo')
     with pytest.raises(ValueError) as exc:
         trial_to_tuple(trial, space)
 
@@ -60,8 +60,8 @@ def test_tuple_to_trial(space, trial, fixed_suggestion):
     assert t.end_time is None
     assert t.results == []
     assert len(t.params) == len(trial.params)
-    for i in range(len(t.params)):
-        assert t.params[i].to_dict() == trial.params[i].to_dict()
+    for key in t.params:
+        assert t.params[key].to_dict() == trial.params[key].to_dict()
 
 
 def test_tuple_to_trial_to_tuple(space, trial, fixed_suggestion):
@@ -78,5 +78,5 @@ def test_tuple_to_trial_to_tuple(space, trial, fixed_suggestion):
     assert t.end_time is None
     assert t.results == []
     assert len(t.params) == len(trial.params)
-    for i in range(len(t.params)):
-        assert t.params[i].to_dict() == trial.params[i].to_dict()
+    for key in t.params:
+        assert t.params[key].to_dict() == trial.params[key].to_dict()

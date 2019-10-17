@@ -56,14 +56,16 @@ base_trial = {
          'type': 'objective',  # objective, constraint
          'value': 2}
     ],
-    'params': [
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'rnn'},
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'lstm_with_attention'}
-    ]
+    'params': {
+        '/encoding_layer': {
+            'name': '/encoding_layer',
+            'type': 'categorical',
+            'value': 'rnn'},
+        '/decoding_layer': {
+            'name': '/decoding_layer',
+            'type': 'categorical',
+            'value': 'lstm_with_attention'}
+    }
 }
 
 
@@ -87,11 +89,11 @@ def make_lost_trial():
     obj['status'] = 'reserved'
     obj['heartbeat'] = (datetime.datetime.utcnow() -
                         datetime.timedelta(seconds=orion.core.config.worker.heartbeat * 2))
-    obj['params'].append({
+    obj['params']['/index'] = {
         'name': '/index',
         'type': 'categorical',
         'value': 'lost_trial'
-    })
+    }
     return obj
 
 
@@ -107,11 +109,11 @@ def generate_trials(status=None):
 
     # make each trial unique
     for i, trial in enumerate(new_trials):
-        trial['params'].append({
+        trial['params']['/index'] = {
             'name': '/index',
             'type': 'categorical',
             'value': i
-        })
+        }
 
     return new_trials
 

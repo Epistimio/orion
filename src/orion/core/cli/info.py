@@ -15,6 +15,7 @@ import sys
 from orion.core.cli.base import get_basic_args_group
 import orion.core.io.experiment_builder as experiment_builder
 
+
 log = logging.getLogger(__name__)
 
 
@@ -427,4 +428,5 @@ def get_trial_params(trial_id, experiment):
     if not best_trial:
         return {}
 
-    return dict((param.name, param.value) for param in best_trial.params)
+    params = dict((param.name, param.value) for param in best_trial.params.values())
+    return params
