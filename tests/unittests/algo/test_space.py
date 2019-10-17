@@ -3,6 +3,7 @@
 """Example usage and tests for :mod:`orion.algo.space`."""
 
 from collections import (defaultdict, OrderedDict)
+import sys
 
 import numpy as np
 from numpy.testing import assert_array_equal as assert_eq
@@ -157,6 +158,7 @@ class TestDimension(object):
         assert dim.prior is None
         assert dim._prior_name is 'None'
 
+    @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
     def test_get_prior_string(self):
         """Test that prior string can be rebuilt."""
         dim = Dimension('yolo', 'alpha', 1, 2, 3, some='args', plus='fluff', n=4)
