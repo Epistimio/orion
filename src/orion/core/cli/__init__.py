@@ -36,9 +36,7 @@ def main(argv=None):
 
     load_modules_parser(orion_parser)
 
-    orion_parser.execute(argv)
-
-    return 0
+    return orion_parser.execute(argv)
 
 
 if __name__ == "__main__":

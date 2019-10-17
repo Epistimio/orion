@@ -56,10 +56,11 @@ class Configuration:
 
     """
 
-    SPECIAL_KEYS = ['_config', '_yaml', '_default', '_env_var']
+    SPECIAL_KEYS = ['_config', '_subconfigs', '_yaml', '_default', '_env_var']
 
     def __init__(self):
         self._config = {}
+        self._subconfigs = {}
 
     def load_yaml(self, path):
         """Load yaml file and set global default configuration
@@ -105,9 +106,12 @@ class Configuration:
         """
         if key == 'config':
             raise AttributeError
-        if key not in self._config:
+
+        if key not in self._config and key not in self._subconfigs:
             raise ConfigurationError("Configuration does not have an attribute "
                                      "'{}'.".format(key))
+        if key in self._subconfigs:
+            return self._subconfigs[key]
 
         config_setting = self._config[key]
         if 'value' in config_setting:
@@ -153,8 +157,14 @@ class Configuration:
             self._validate(key, value)
             self._config[key]['value'] = value
 
-        elif key == '_config' or isinstance(value, Configuration):
+        elif key in ['_config', '_subconfigs']:
             super(Configuration, self).__setattr__(key, value)
+
+        elif key in self._subconfigs:
+            raise ValueError('Configuration already contains subconfiguration {}'.format(key))
+
+        elif isinstance(value, Configuration):
+            self._subconfigs[key] = value
 
         else:
             raise TypeError("Can only set {} as a Configuration, not {}. Use add_option to set a "
@@ -261,8 +271,21 @@ class Configuration:
             YAML configuration file.
 
         """
+        if key in self._config or key in self._subconfigs:
+            raise ValueError('Configuration already contains {}'.format(key))
         self._config[key] = {'type': option_type}
         if env_var is not None:
             self._config[key]['env_var'] = env_var
         if default is not NOT_SET:
             self._config[key]['default'] = default
+
+    def to_dict(self):
+        """Return a dictionary representation of the configuration"""
+        config = dict()
+        for key in self._config:
+            config[key] = self[key]
+
+        for key in self._subconfigs:
+            config[key] = self[key].to_dict()
+
+        return config

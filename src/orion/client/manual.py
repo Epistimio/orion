@@ -9,11 +9,11 @@
       and link them with a particular existing experiment.
 
 """
-from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils import format_trials
 
 
-def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
+def insert_trials(experiment_name, points, raise_exc=True):
     """Insert sets of parameters manually, defined in `points`, as new trials
     for the experiment name, `experiment_name`.
 
@@ -31,14 +31,9 @@ def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
        the database.
 
     """
-    cmdconfig = cmdconfig if cmdconfig else {}
-    cmdconfig['name'] = experiment_name
-
-    experiment_view = ExperimentBuilder().build_view_from({'config': cmdconfig})
+    experiment_view = experiment_builder.build_view(name=experiment_name)
 
     valid_points = []
-
-    print(experiment_view.space)
 
     for point in points:
         try:
@@ -55,5 +50,7 @@ def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
         map(lambda data: format_trials.tuple_to_trial(data, experiment_view.space),
             valid_points))
 
+    experiment = experiment_builder.build(name=experiment_view.name,
+                                          version=experiment_view.version)
     for new_trial in new_trials:
-        ExperimentBuilder().build_from(experiment_view.configuration).register_trial(new_trial)
+        experiment.register_trial(new_trial)

@@ -30,7 +30,7 @@ def setup_database(config):
         Configuration for the database.
 
     """
-    db_opts = config['database']
+    db_opts = config
     dbtype = db_opts.pop('type')
 
     if config.get("debug"):
@@ -58,9 +58,9 @@ class Legacy(BaseStorageProtocol):
 
     """
 
-    def __init__(self, config=None, setup=True):
-        if config is not None:
-            setup_database(config)
+    def __init__(self, database=None, setup=True):
+        if database is not None:
+            setup_database(database)
 
         self._db = Database()
 
@@ -195,7 +195,7 @@ class Legacy(BaseStorageProtocol):
 
         return Trial(**result[0])
 
-    def _update_trial(self, trial: Trial, where=None, **kwargs) -> Trial:
+    def _update_trial(self, trial: Trial, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
         if where is None:
             where = dict()

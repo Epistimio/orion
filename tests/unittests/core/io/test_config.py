@@ -239,3 +239,37 @@ def test_local_precedence(yaml_path):
     assert config.test == "comme_ci_comme_ca"
 
     del os.environ['TOP_SECRET_MESSAGE']
+
+
+def test_overwrite_subconfig():
+    """Test that subconfig cannot be overwritten"""
+    config = Configuration()
+    config.nested = Configuration()
+    with pytest.raises(ValueError) as exc:
+        config.add_option('nested', option_type=str)
+    assert "Configuration already contains nested" == str(exc.value)
+
+    with pytest.raises(ValueError) as exc:
+        config.nested = Configuration()
+    assert "Configuration already contains subconfiguration nested" == str(exc.value)
+
+
+def test_to_dict():
+    """Test dictionary representation of the configuration"""
+    config = Configuration()
+    config.add_option('test', option_type=str, default="voici_voila")
+    config.nested = Configuration()
+    config.nested.add_option('test2', option_type=str, default="zici")
+
+    assert config.to_dict() == {
+        'test': 'voici_voila',
+        'nested': {
+            'test2': 'zici'}}
+
+    config.test = 'hello'
+    config.nested.test2 = 'labas'
+
+    assert config.to_dict() == {
+        'test': 'hello',
+        'nested': {
+            'test2': 'labas'}}

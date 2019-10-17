@@ -5,9 +5,11 @@
 import copy
 import datetime
 import logging
+import time
 
 import pytest
 
+import orion.core
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.tests import OrionState
 from orion.core.worker.trial import Trial
@@ -26,9 +28,7 @@ if not HAS_TRACK:
 else:
     storage_backends.append({
         'storage_type': 'track',
-        'args': {
-            'uri': 'file://${file}?objective=loss'
-        }
+        'uri': 'file://${file}?objective=loss'
     })
 
 base_experiment = {
@@ -37,6 +37,7 @@ base_experiment = {
     'metadata': {
         'user': 'default_user',
         'user_script': 'abc',
+        'priors': {'x': 'uniform(0, 10)'},
         'datetime': '2017-11-23T02:00:00'
     }
 }
@@ -84,7 +85,8 @@ def make_lost_trial():
     """Make a lost trial"""
     obj = copy.deepcopy(base_trial)
     obj['status'] = 'reserved'
-    obj['heartbeat'] = datetime.datetime.utcnow() - datetime.timedelta(seconds=61 * 2)
+    obj['heartbeat'] = (datetime.datetime.utcnow() -
+                        datetime.timedelta(seconds=orion.core.config.worker.heartbeat * 2))
     obj['params'].append({
         'name': '/index',
         'type': 'categorical',
@@ -224,7 +226,7 @@ class TestStorage:
         with OrionState(
                 experiments=[base_experiment], trials=[base_trial], database=storage) as cfg:
             storage = cfg.storage()
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
 
             trial = storage.reserve_trial(experiment)
             assert trial is not None
@@ -238,7 +240,7 @@ class TestStorage:
                 database=storage) as cfg:
 
             storage = cfg.storage()
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
 
             trial = storage.reserve_trial(experiment)
             assert trial is None
@@ -248,7 +250,7 @@ class TestStorage:
         with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
             storage = cfg.storage()
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
 
             trials1 = storage.fetch_trials(experiment=experiment)
             trials2 = storage.fetch_trials(uid=experiment._id)
@@ -288,7 +290,7 @@ class TestStorage:
                         trials=generate_trials() + [make_lost_trial()], database=storage) as cfg:
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
             trials = storage.fetch_lost_trials(experiment)
 
             count = 0
@@ -365,7 +367,7 @@ class TestStorage:
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
             trials = storage.fetch_pending_trials(experiment)
 
             count = 0
@@ -383,7 +385,7 @@ class TestStorage:
                 experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
             trials = storage.fetch_noncompleted_trials(experiment)
 
             count = 0
@@ -406,7 +408,7 @@ class TestStorage:
                     count += 1
 
             storage = cfg.storage()
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
             trials = storage.fetch_trial_by_status(experiment, 'completed')
 
             assert len(trials) == count
@@ -424,7 +426,7 @@ class TestStorage:
 
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
             trials = storage.count_completed_trials(experiment)
             assert trials == count
 
@@ -439,7 +441,7 @@ class TestStorage:
 
             storage = cfg.storage()
 
-            experiment = cfg.get_experiment('default_name', 'default_user', version=None)
+            experiment = cfg.get_experiment('default_name', version=None)
             trials = storage.count_broken_trials(experiment)
 
             assert trials == count
@@ -451,7 +453,7 @@ class TestStorage:
             storage_name = storage
             storage = cfg.storage()
 
-            exp = cfg.get_experiment('default_name', 'default_user')
+            exp = cfg.get_experiment('default_name')
             trial1 = storage.fetch_trial_by_status(exp, status='reserved')[0]
             trial1b = copy.deepcopy(trial1)
 
@@ -459,9 +461,13 @@ class TestStorage:
 
             trial2 = storage.get_trial(trial1)
 
+            # this check that heartbeat is the correct type and that it was updated prior to now
             assert trial1b.heartbeat is None
+            assert trial1.heartbeat is None
             assert trial2.heartbeat is not None
-            # this checks that heartbeat is the correct type and that it was updated prior to now
+
+            # Sleep a bit, because fast CPUs make this test fail
+            time.sleep(0.1)
             assert trial2.heartbeat < datetime.datetime.utcnow()
 
             if storage_name is None:

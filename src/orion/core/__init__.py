@@ -51,13 +51,29 @@ DEF_CONFIG_FILES_PATHS = [
 def define_config():
     """Create and define the fields of the configuration object."""
     config = Configuration()
-    define_database_config(config)
+    define_storage_config(config)
+    define_experiment_config(config)
     define_worker_config(config)
+    define_evc_config(config)
 
     config.add_option(
         'user_script_config', option_type=str, default='config')
 
     return config
+
+
+def define_storage_config(config):
+    """Create and define the fields of the storage configuration."""
+    storage_config = Configuration()
+
+    storage_config.add_option(
+        'type', option_type=str, default='legacy', env_var='ORION_STORAGE_TYPE')
+
+    config.storage = storage_config
+
+    define_database_config(config.storage)
+    # Backward compatibility, should be removed in v0.2.0
+    define_database_config(config)
 
 
 def define_database_config(config):
@@ -81,6 +97,32 @@ def define_database_config(config):
     config.database = database_config
 
 
+def define_experiment_config(config):
+    """Create and define the fields of generic experiment configuration."""
+    experiment_config = Configuration()
+
+    experiment_config.add_option(
+        'pool_size', option_type=int, default=1)
+
+    experiment_config.add_option(
+        'max_trials', option_type=int, default=int(10e8))
+
+    experiment_config.add_option(
+        'worker_trials', option_type=int, default=int(10e8))
+
+    experiment_config.add_option(
+        'working_dir', option_type=str, default='')
+
+    experiment_config.add_option(
+        'algorithms', option_type=dict, default={'random': {'seed': None}})
+
+    experiment_config.producer = Configuration()
+    experiment_config.producer.add_option(
+        'strategy', option_type=dict, default={'MaxParallelStrategy': {}})
+
+    config.experiment = experiment_config
+
+
 def define_worker_config(config):
     """Create and define the fields of the worker configuration."""
     worker_config = Configuration()
@@ -93,6 +135,26 @@ def define_worker_config(config):
         'max_idle_time', option_type=int, default=60)
 
     config.worker = worker_config
+
+
+def define_evc_config(config):
+    """Create and define the fields of the evc configuration."""
+    evc_config = Configuration()
+
+    evc_config.add_option(
+        'auto_resolution', option_type=bool, default=True)
+    evc_config.add_option(
+        'manual_resolution', option_type=bool, default=False)
+    evc_config.add_option(
+        'algorithm_change', option_type=bool, default=False)
+    evc_config.add_option(
+        'code_change_type', option_type=str, default='break')
+    evc_config.add_option(
+        'cli_change_type', option_type=str, default='break')
+    evc_config.add_option(
+        'config_change_type', option_type=str, default='break')
+
+    config.evc = evc_config
 
 
 def build_config():

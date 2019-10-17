@@ -10,8 +10,7 @@
 import logging
 
 from orion.core.cli import base as cli
-from orion.core.io.evc_builder import EVCBuilder
-from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.pptree import print_tree
 from orion.storage.base import get_storage
 
@@ -31,9 +30,8 @@ def add_subparser(parser):
 
 def main(args):
     """List all experiments inside database."""
-    builder = ExperimentBuilder()
-    config = builder.fetch_full_config(args, use_db=False)
-    builder.setup_storage(config)
+    config = experiment_builder.get_cmd_config(args)
+    experiment_builder.setup_storage(config.get('storage'))
 
     query = {}
 
@@ -49,6 +47,6 @@ def main(args):
                             if exp['refers'].get('root_id', exp['_id']) == exp['_id']]
 
     for root_experiment in root_experiments:
-        root = EVCBuilder().build_view_from({'name': root_experiment['name'],
-                                             'version': root_experiment.get('version')}).node
+        root = experiment_builder.build_view(name=root_experiment['name'],
+                                             version=root_experiment.get('version')).node
         print_tree(root, nameattr='tree_name')

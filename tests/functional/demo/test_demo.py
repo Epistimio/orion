@@ -12,10 +12,10 @@ import pytest
 import yaml
 
 import orion.core.cli
-from orion.core.io.experiment_builder import ExperimentBuilder
-import orion.core.utils.backward as backward
+import orion.core.io.experiment_builder as experiment_builder
+from orion.core.utils.tests import OrionState
 from orion.core.worker import workon
-from orion.core.worker.experiment import Experiment
+from orion.storage.base import get_storage
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -189,11 +189,10 @@ def test_demo_two_workers(database, monkeypatch):
     assert params[0]['type'] == 'real'
 
 
-@pytest.mark.usefixtures("create_db_instance")
-def test_workon(database):
+def test_workon():
     """Test scenario having a configured experiment already setup."""
-    experiment = Experiment('voila_voici')
-    config = experiment.configuration
+    name = 'voici_voila'
+    config = {'name': name}
     config['algorithms'] = {
         'gradient_descent': {
             'learning_rate': 0.1
@@ -201,48 +200,50 @@ def test_workon(database):
         }
     config['pool_size'] = 1
     config['max_trials'] = 100
-    config['metadata']['user_script'] = os.path.abspath(os.path.join(
-        os.path.dirname(__file__), "black_box.py"))
-    config['metadata']['user_args'] = ["-x~uniform(-50, 50)"]
-    backward.populate_priors(config['metadata'])
-    experiment.configure(config)
+    config['user_args'] = [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "black_box.py")),
+        "-x~uniform(-50, 50)"]
 
-    workon(experiment)
+    with OrionState():
+        experiment = experiment_builder.build_from_args(config)
 
-    exp = list(database.experiments.find({'name': 'voila_voici'}))
-    assert len(exp) == 1
-    exp = exp[0]
-    assert '_id' in exp
-    exp_id = exp['_id']
-    assert exp['name'] == 'voila_voici'
-    assert exp['pool_size'] == 1
-    assert exp['max_trials'] == 100
-    assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
-                                                      'dx_tolerance': 1e-7}}
-    assert 'user' in exp['metadata']
-    assert 'datetime' in exp['metadata']
-    assert 'user_script' in exp['metadata']
-    assert os.path.isabs(exp['metadata']['user_script'])
-    assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
+        workon(experiment)
 
-    trials = list(database.trials.find({'experiment': exp_id}))
-    assert len(trials) <= 15
-    trials = list(sorted(trials, key=lambda trial: trial['submit_time']))
-    assert trials[-1]['status'] == 'completed'
-    for result in trials[-1]['results']:
-        assert result['type'] != 'constraint'
-        if result['type'] == 'objective':
-            assert abs(result['value'] - 23.4) < 1e-6
-            assert result['name'] == 'example_objective'
-        elif result['type'] == 'gradient':
-            res = numpy.asarray(result['value'])
-            assert 0.1 * numpy.sqrt(res.dot(res)) < 1e-7
-            assert result['name'] == 'example_gradient'
-    params = trials[-1]['params']
-    assert len(params) == 1
-    assert params[0]['name'] == '/x'
-    assert params[0]['type'] == 'real'
-    assert (params[0]['value'] - 34.56789) < 1e-5
+        storage = get_storage()
+
+        exp = list(storage.fetch_experiments({'name': name}))
+        assert len(exp) == 1
+        exp = exp[0]
+        assert '_id' in exp
+        assert exp['name'] == name
+        assert exp['pool_size'] == 1
+        assert exp['max_trials'] == 100
+        assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
+                                                          'dx_tolerance': 1e-7}}
+        assert 'user' in exp['metadata']
+        assert 'datetime' in exp['metadata']
+        assert 'user_script' in exp['metadata']
+        assert os.path.isabs(exp['metadata']['user_script'])
+        assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
+
+        trials = list(storage.fetch_trials(experiment))
+        assert len(trials) <= 15
+        trials = list(sorted(trials, key=lambda trial: trial.submit_time))
+        assert trials[-1].status == 'completed'
+        for result in trials[-1].results:
+            assert result.type != 'constraint'
+            if result.type == 'objective':
+                assert abs(result.value - 23.4) < 1e-6
+                assert result.name == 'example_objective'
+            elif result.type == 'gradient':
+                res = numpy.asarray(result.value)
+                assert 0.1 * numpy.sqrt(res.dot(res)) < 1e-7
+                assert result.name == 'example_gradient'
+        params = trials[-1].params
+        assert len(params) == 1
+        assert params[0].name == '/x'
+        assert params[0].type == 'real'
+        assert (params[0].value - 34.56789) < 1e-5
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -318,7 +319,7 @@ def test_working_dir_argument_cmdline(database, monkeypatch, tmp_path):
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
 def test_tmpdir_is_deleted(database, monkeypatch, tmp_path):
-    """Check that a permanent directory is used instead of tmpdir"""
+    """Check that temporary directory is deletid tmpdir"""
     tmp_path = os.path.join(tempfile.gettempdir(), 'orion')
     if os.path.exists(tmp_path):
         shutil.rmtree(tmp_path)
@@ -474,7 +475,7 @@ def test_resilience(monkeypatch):
     orion.core.cli.main(["hunt", "--config", "./orion_config_random.yaml", "./broken_box.py",
                          "-x~uniform(-50, 50)"])
 
-    exp = ExperimentBuilder().build_from({'name': 'demo_random_search'})
+    exp = experiment_builder.build(name='demo_random_search')
     assert len(exp.fetch_trials_by_status('broken')) == MAX_BROKEN
 
 
@@ -488,7 +489,7 @@ def test_demo_with_shutdown_quickly(monkeypatch):
         ["orion", "hunt", "--config", "./orion_config_random.yaml", "--max-trials", "30",
          "./black_box.py", "-x~uniform(-50, 50)"])
 
-    assert process.wait(timeout=10) == 0
+    assert process.wait(timeout=20) == 0
 
 
 @pytest.mark.usefixtures("clean_db")
