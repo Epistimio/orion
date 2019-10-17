@@ -2,7 +2,8 @@
 Oríon
 *****
 
-|pypi| |py_versions| |license| |rtfd| |codecov| |travis|
+|pypi| |py_versions| |license| |doi|
+|rtfd| |codecov| |travis|
 
 .. |pypi| image:: https://img.shields.io/pypi/v/orion.svg
     :target: https://pypi.python.org/pypi/orion
@@ -15,6 +16,10 @@ Oríon
 .. |license| image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
     :target: https://opensource.org/licenses/BSD-3-Clause
     :alt: BSD 3-clause license
+
+.. |doi| image:: https://zenodo.org/badge/102697867.svg
+   :target: https://zenodo.org/badge/latestdoi/102697867
+   :alt: DOI
 
 .. |rtfd| image:: https://readthedocs.org/projects/orion/badge/?version=latest
     :target: https://orion.readthedocs.io/en/latest/?badge=latest
@@ -102,6 +107,36 @@ Roadmap
 ========
 
 You can find our roadmap here: `<https://github.com/Epistimio/orion/blob/master/ROADMAP.md>`_
+
+Citation
+========
+
+If you use Oríon for published work, please cite our work using the following bibtex entry.
+
+.. code-block:: bibtex
+
+   @software{xavier_bouthillier_2019_3478593,
+     author       = {Xavier Bouthillier and
+                     Christos Tsirigotis and
+                     François Corneau-Tremblay and
+                     Pierre Delaunay and
+                     Reyhane Askari and
+                     Dendi Suhubdy and
+                     Michael Noukhovitch and
+                     Dmitriy Serdyuk and
+                     Arnaud Bergeron and
+                     Peter Henderson and
+                     Pascal Lamblin and
+                     Mirko Bronzi and
+                     Christopher Beckham},
+     title        = {Oríon - Asynchronous Distributed Hyperparameter Optimization},
+     month        = oct,
+     year         = 2019,
+     publisher    = {Zenodo},
+     version      = {v0.1.7},
+     doi          = {10.5281/zenodo.3478593},
+     url          = {https://doi.org/10.5281/zenodo.3478593}
+   }
 
 License
 =======
