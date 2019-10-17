@@ -170,7 +170,7 @@ def exp_config():
     for config in exp_config[0]:
         config["metadata"]["user_script"] = os.path.join(
             os.path.dirname(__file__), config["metadata"]["user_script"])
-        backward.populate_priors(config['metadata'])
+        backward.populate_space(config)
         config['version'] = 1
 
     return exp_config

@@ -24,7 +24,7 @@ def config(exp_config):
     config['metadata']['user_args'] = ['--x~uniform(-50, 50)']
     config['name'] = 'exp'
     config['working_dir'] = "/tmp/orion"
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
     config['space'] = config['metadata']['priors']
     return config
 
