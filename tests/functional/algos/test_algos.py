@@ -65,7 +65,7 @@ def test_simple(monkeypatch, config_file):
     assert best_trial.objective.name == 'example_objective'
     assert abs(best_trial.objective.value - 23.4) < 1e-5
     assert len(best_trial.params) == 1
-    param = best_trial.params[0]
+    param = best_trial._params[0]
     assert param.name == '/x'
     assert param.type == 'real'
 
@@ -107,10 +107,10 @@ def test_with_fidelity(database, monkeypatch, config_file):
     assert best_trial.objective.name == 'example_objective'
     assert abs(best_trial.objective.value - 23.4) < 1e-5
     assert len(best_trial.params) == 2
-    fidelity = best_trial.params[0]
+    fidelity = best_trial._params[0]
     assert fidelity.name == '/fidelity'
     assert fidelity.type == 'fidelity'
     assert fidelity.value == 10
-    param = best_trial.params[1]
+    param = best_trial._params[1]
     assert param.name == '/x'
     assert param.type == 'real'

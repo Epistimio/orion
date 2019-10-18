@@ -232,12 +232,12 @@ def test_renaming_forward(create_db_instance):
     assert len(parent_trials) == 6
     assert len(exp_node.item.fetch_trials(query)) == 4
 
-    assert all((trial.params[0].name == "/encoding_layer") for trial in parent_trials)
+    assert all((trial._params[0].name == "/encoding_layer") for trial in parent_trials)
 
     adapter = experiment.refers['adapter']
     adapted_parent_trials = adapter.forward(parent_trials)
     assert len(adapted_parent_trials) == 6
-    assert all((trial.params[0].name == "/encoding") for trial in adapted_parent_trials)
+    assert all((trial._params[0].name == "/encoding") for trial in adapted_parent_trials)
 
     assert len(experiment.fetch_trials_tree(query)) == 6 + 4
 
@@ -268,12 +268,12 @@ def test_renaming_backward(create_db_instance):
     assert len(children_trials) == 4
     assert len(exp_node.item.fetch_trials(query)) == 6
 
-    assert all((trial.params[0].name == "/encoding") for trial in children_trials)
+    assert all((trial._params[0].name == "/encoding") for trial in children_trials)
 
     adapter = exp_node.children[0].item.refers['adapter']
     adapted_children_trials = adapter.backward(children_trials)
     assert len(adapted_children_trials) == 4
-    assert all((trial.params[0].name == "/encoding_layer") for trial in adapted_children_trials)
+    assert all((trial._params[0].name == "/encoding_layer") for trial in adapted_children_trials)
 
     assert len(experiment.fetch_trials_tree(query)) == 6 + 4
 

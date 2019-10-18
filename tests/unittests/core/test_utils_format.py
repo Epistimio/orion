@@ -36,13 +36,13 @@ def test_trial_to_tuple(space, trial, fixed_suggestion):
     data = trial_to_tuple(trial, space)
     assert data == fixed_suggestion
 
-    trial.params[0].name = 'lalala'
+    trial._params[0].name = 'lalala'
     with pytest.raises(ValueError) as exc:
         trial_to_tuple(trial, space)
 
     assert "Trial params: [\'lalala\', \'yolo2\', \'yolo3\']" in str(exc.value)
 
-    trial.params.pop(0)
+    trial._params.pop(0)
     with pytest.raises(ValueError) as exc:
         trial_to_tuple(trial, space)
 
@@ -59,9 +59,9 @@ def test_tuple_to_trial(space, trial, fixed_suggestion):
     assert t.start_time is None
     assert t.end_time is None
     assert t.results == []
-    assert len(t.params) == len(trial.params)
+    assert len(t._params) == len(trial.params)
     for i in range(len(t.params)):
-        assert t.params[i].to_dict() == trial.params[i].to_dict()
+        assert t._params[i].to_dict() == trial._params[i].to_dict()
 
 
 def test_tuple_to_trial_to_tuple(space, trial, fixed_suggestion):
@@ -77,6 +77,6 @@ def test_tuple_to_trial_to_tuple(space, trial, fixed_suggestion):
     assert t.start_time is None
     assert t.end_time is None
     assert t.results == []
-    assert len(t.params) == len(trial.params)
-    for i in range(len(t.params)):
-        assert t.params[i].to_dict() == trial.params[i].to_dict()
+    assert len(t._params) == len(trial._params)
+    for i in range(len(t._params)):
+        assert t._params[i].to_dict() == trial._params[i].to_dict()

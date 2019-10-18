@@ -217,7 +217,7 @@ def apply_if_valid(name, trial, callback=None, raise_if_not=True):
         Else, output of callback(trial, item).
 
     """
-    for param in trial.params:
+    for param in trial._params:  # pylint: disable=protected-access
         if param.name == name:
             return callback is None or callback(trial, param)
 
@@ -282,7 +282,8 @@ class DimensionAddition(BaseAdapter):
                                    (self.param.name, trial))
 
             adapted_trial = copy.deepcopy(trial)
-            adapted_trial.params.append(copy.deepcopy(self.param))
+            # pylint: disable=protected-access
+            adapted_trial._params.append(copy.deepcopy(self.param))
             adapted_trials.append(adapted_trial)
 
         return adapted_trials
@@ -300,7 +301,8 @@ class DimensionAddition(BaseAdapter):
             """Remove the param and keep the trial if param has default value"""
             if param == self.param:
                 adapted_trial = copy.deepcopy(trial)
-                del adapted_trial.params[adapted_trial.params.index(self.param)]
+                # pylint: disable=protected-access
+                del adapted_trial._params[adapted_trial._params.index(self.param)]
                 adapted_trials.append(adapted_trial)
                 return True
 
