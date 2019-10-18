@@ -352,8 +352,8 @@ def test_register_trials(random_dt):
 
         yo = list(map(lambda trial: trial.to_dict(), get_storage().fetch_trials(exp)))
         assert len(yo) == len(trials)
-        assert yo[0]['params'] == list(map(lambda x: x.to_dict(), trials[0].params))
-        assert yo[1]['params'] == list(map(lambda x: x.to_dict(), trials[1].params))
+        assert yo[0]['params'] == list(map(lambda x: x.to_dict(), trials[0]._params))
+        assert yo[1]['params'] == list(map(lambda x: x.to_dict(), trials[1]._params))
         assert yo[0]['status'] == 'new'
         assert yo[1]['status'] == 'new'
         assert yo[0]['submit_time'] == random_dt

@@ -122,7 +122,6 @@ class TrialAdapter:
         self.storage = copy.deepcopy(storage_trial)
         self.memory = orion_trial
         self.session_group = None
-        self._params = None
         self.objective_key = objective
         self.objectives_values = None
         self._results = []
@@ -133,7 +132,7 @@ class TrialAdapter:
 
     def __str__(self):
         """Represent partially with a string."""
-        param_rep = ','.join(map(lambda value: "{0.name}:{0.value}".format(value), self.params))
+        param_rep = ','.join(map(lambda value: "{0.name}:{0.value}".format(value), self._params))
         ret = "TrialAdapter(uid={3}, experiment={0}, status={1}, params={2})".format(
             repr(self.experiment[:10]), repr(self.status), param_rep, self.storage.uid)
         return ret
@@ -163,15 +162,21 @@ class TrialAdapter:
         if self.memory is not None:
             return self.memory.params
 
+        return {param.name: param.value for param in self._params}
+
+    @property
+    def _params(self):
+        """See `~orion.core.worker.trial.Trial`"""
+        if self.memory is not None:
+            return self.memory._params
+
         types = self.storage.metadata['params_types']
         params = self.storage.parameters
 
-        self._params = [
+        return [
             OrionTrial.Param(name=add_leading_slash(name), value=params.get(name), type=vtype)
             for name, vtype in types.items()
         ]
-
-        return self._params
 
     @property
     def status(self):
@@ -194,7 +199,7 @@ class TrialAdapter:
         trial = copy.deepcopy(self.storage.metadata)
         trial.update({
             'results': [r.to_dict() for r in self.results],
-            'params': [p.to_dict() for p in self.params],
+            'params': [p.to_dict() for p in self._params],
             '_id': self.storage.uid,
             'submit_time': self.submit_time,
             'experiment': self.experiment,
@@ -417,7 +422,8 @@ class Track(BaseStorageProtocol):   # noqa: F811
         trial.submit_time = stamp
 
         metadata = dict()
-        metadata['params_types'] = {remove_leading_slash(p.name): p.type for p in trial.params}
+        # pylint: disable=protected-access
+        metadata['params_types'] = {remove_leading_slash(p.name): p.type for p in trial._params}
         metadata['submit_time'] = to_json(trial.submit_time)
         metadata['end_time'] = to_json(trial.end_time)
         metadata['worker'] = trial.worker
@@ -437,7 +443,7 @@ class Track(BaseStorageProtocol):   # noqa: F811
             status=get_track_status(trial.status),
             project_id=self.project.uid,
             group_id=self.group.uid,
-            parameters={p.name: p.value for p in trial.params},
+            parameters=trial.params,
             metadata=metadata,
             metrics=metrics
         ), auto_increment=False)

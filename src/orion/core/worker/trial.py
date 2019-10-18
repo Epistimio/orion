@@ -57,8 +57,8 @@ class Trial:
        List of evaluated metrics for this particular set of params. One and only
        one of them is necessarily an *objective* function value. The other are
        *constraints*, the value of an expression desired to be larger/equal to 0.
-    params : list of `Trial.Param`
-       List of suggested values for the `Experiment` parameter space.
+    params : dict of params
+       Dict of suggested values for the `Experiment` parameter space.
        Consists a sample to be evaluated.
 
     """
@@ -160,14 +160,14 @@ class Trial:
         allowed_types = ('integer', 'real', 'categorical', 'fidelity')
 
     __slots__ = ('experiment', '_id', '_status', 'worker', '_working_dir', 'heartbeat',
-                 'submit_time', 'start_time', 'end_time', '_results', 'params', 'parents',
+                 'submit_time', 'start_time', 'end_time', '_results', '_params', 'parents',
                  'id_override')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
 
     def __init__(self, **kwargs):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
         for attrname in self.__slots__:
-            if attrname in ('_results', 'params', 'parents'):
+            if attrname in ('_results', '_params', 'parents'):
                 setattr(self, attrname, list())
             else:
                 setattr(self, attrname, None)
@@ -183,9 +183,8 @@ class Trial:
                 for item in value:
                     attr.append(self.Result(**item))
             elif attrname == 'params':
-                attr = getattr(self, attrname)
                 for item in value:
-                    attr.append(self.Param(**item))
+                    self._params.append(self.Param(**item))
             else:
                 setattr(self, attrname, value)
 
@@ -202,9 +201,8 @@ class Trial:
 
         # Overwrite "results" and "params" with list of dictionaries rather
         # than list of Value objects
-        for attrname in ('results', 'params'):
-            trial_dictionary[attrname] = list(map(lambda x: x.to_dict(),
-                                                  getattr(self, attrname)))
+        trial_dictionary['results'] = list(map(lambda x: x.to_dict(), self.results))
+        trial_dictionary['params'] = list(map(lambda x: x.to_dict(), self._params))
 
         trial_dictionary['_id'] = trial_dictionary.pop('id')
 
@@ -216,6 +214,11 @@ class Trial:
             repr(self.experiment), repr(self._status), self.params_repr())
 
     __repr__ = __str__
+
+    @property
+    def params(self):
+        """Parameters of the trial"""
+        return {param.name: param.value for param in self._params}
 
     @property
     def results(self):
@@ -294,7 +297,7 @@ class Trial:
 
     def params_repr(self, sep=','):
         """Represent with a string the parameters contained in this `Trial` object."""
-        return self._repr_values(self.params, sep)
+        return self._repr_values(self._params, sep)
 
     @property
     def hash_name(self):
@@ -302,7 +305,7 @@ class Trial:
 
         .. note:: Two trials that have the same `params` must have the same `hash_name`.
         """
-        if not self.params and not self.experiment:
+        if not self._params and not self.experiment:
             raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
                              "have not been set.")
         params_repr = self.params_repr()
@@ -317,7 +320,7 @@ class Trial:
     @property
     def full_name(self):
         """Generate a unique name using the full definition of parameters."""
-        if not self.params or not self.experiment:
+        if not self._params or not self.experiment:
             raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
                              "have not been set.")
         return self.params_repr(sep='-').replace('/', '.')
