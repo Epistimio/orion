@@ -427,4 +427,4 @@ def get_trial_params(trial_id, experiment):
     if not best_trial:
         return {}
 
-    return dict((param.name, param.value) for param in best_trial.params)
+    return best_trial.params

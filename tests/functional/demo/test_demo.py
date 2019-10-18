@@ -239,7 +239,7 @@ def test_workon():
                 res = numpy.asarray(result.value)
                 assert 0.1 * numpy.sqrt(res.dot(res)) < 1e-7
                 assert result.name == 'example_gradient'
-        params = trials[-1].params
+        params = trials[-1]._params
         assert len(params) == 1
         assert params[0].name == '/x'
         assert params[0].type == 'real'
