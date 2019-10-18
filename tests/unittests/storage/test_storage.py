@@ -27,7 +27,7 @@ if not HAS_TRACK:
     log.warning('Track is not tested because: %s!', REASON)
 else:
     storage_backends.append({
-        'storage_type': 'track',
+        'type': 'track',
         'uri': 'file://${file}?objective=loss'
     })
 
@@ -129,7 +129,7 @@ class TestStorage:
 
     def test_create_experiment(self, storage):
         """Test create experiment"""
-        with OrionState(experiments=[], database=storage) as cfg:
+        with OrionState(experiments=[], storage=storage) as cfg:
             storage = cfg.storage()
 
             storage.create_experiment(base_experiment)
@@ -146,7 +146,7 @@ class TestStorage:
 
     def test_fetch_experiments(self, storage, name='0', user='a'):
         """Test fetch experiments"""
-        with OrionState(experiments=generate_experiments(), database=storage) as cfg:
+        with OrionState(experiments=generate_experiments(), storage=storage) as cfg:
             storage = cfg.storage()
 
             experiments = storage.fetch_experiments({})
@@ -164,7 +164,7 @@ class TestStorage:
 
     def test_update_experiment(self, monkeypatch, storage, name='0', user='a'):
         """Test fetch experiments"""
-        with OrionState(experiments=generate_experiments(), database=storage) as cfg:
+        with OrionState(experiments=generate_experiments(), storage=storage) as cfg:
             storage = cfg.storage()
 
             class _Dummy():
@@ -191,7 +191,7 @@ class TestStorage:
 
     def test_register_trial(self, storage):
         """Test register trial"""
-        with OrionState(experiments=[base_experiment], database=storage) as cfg:
+        with OrionState(experiments=[base_experiment], storage=storage) as cfg:
             storage = cfg.storage()
             trial1 = storage.register_trial(Trial(**base_trial))
             trial2 = storage.get_trial(trial1)
@@ -201,7 +201,7 @@ class TestStorage:
     def test_register_duplicate_trial(self, storage):
         """Test register trial"""
         with OrionState(
-                experiments=[base_experiment], trials=[base_trial], database=storage) as cfg:
+                experiments=[base_experiment], trials=[base_trial], storage=storage) as cfg:
             storage = cfg.storage()
 
             with pytest.raises(DuplicateKeyError):
@@ -209,13 +209,13 @@ class TestStorage:
 
     def test_register_lie(self, storage):
         """Test register lie"""
-        with OrionState(experiments=[base_experiment], database=storage) as cfg:
+        with OrionState(experiments=[base_experiment], storage=storage) as cfg:
             storage = cfg.storage()
             storage.register_lie(Trial(**base_trial))
 
     def test_register_lie_fail(self, storage):
         """Test register lie"""
-        with OrionState(experiments=[base_experiment], lies=[base_trial], database=storage) as cfg:
+        with OrionState(experiments=[base_experiment], lies=[base_trial], storage=storage) as cfg:
             storage = cfg.storage()
 
             with pytest.raises(DuplicateKeyError):
@@ -224,7 +224,7 @@ class TestStorage:
     def test_reserve_trial_success(self, storage):
         """Test reserve trial"""
         with OrionState(
-                experiments=[base_experiment], trials=[base_trial], database=storage) as cfg:
+                experiments=[base_experiment], trials=[base_trial], storage=storage) as cfg:
             storage = cfg.storage()
             experiment = cfg.get_experiment('default_name', version=None)
 
@@ -237,7 +237,7 @@ class TestStorage:
         with OrionState(
                 experiments=[base_experiment],
                 trials=generate_trials(status=['completed', 'reserved']),
-                database=storage) as cfg:
+                storage=storage) as cfg:
 
             storage = cfg.storage()
             experiment = cfg.get_experiment('default_name', version=None)
@@ -248,7 +248,7 @@ class TestStorage:
     def test_fetch_trials(self, storage):
         """Test fetch experiment trials"""
         with OrionState(
-                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+                experiments=[base_experiment], trials=generate_trials(), storage=storage) as cfg:
             storage = cfg.storage()
             experiment = cfg.get_experiment('default_name', version=None)
 
@@ -267,7 +267,7 @@ class TestStorage:
     def test_get_trial(self, storage):
         """Test get trial"""
         with OrionState(
-                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+                experiments=[base_experiment], trials=generate_trials(), storage=storage) as cfg:
             storage = cfg.storage()
 
             trial_dict = cfg.trials[0]
@@ -287,7 +287,7 @@ class TestStorage:
     def test_fetch_lost_trials(self, storage):
         """Test update heartbeat"""
         with OrionState(experiments=[base_experiment],
-                        trials=generate_trials() + [make_lost_trial()], database=storage) as cfg:
+                        trials=generate_trials() + [make_lost_trial()], storage=storage) as cfg:
             storage = cfg.storage()
 
             experiment = cfg.get_experiment('default_name', version=None)
@@ -319,7 +319,7 @@ class TestStorage:
         def check_status_change(new_status):
             with OrionState(
                     experiments=[base_experiment],
-                    trials=generate_trials(), database=storage) as cfg:
+                    trials=generate_trials(), storage=storage) as cfg:
                 trial = get_storage().get_trial(cfg.get_trial(0))
                 assert trial is not None, 'was not able to retrieve trial for test'
 
@@ -343,7 +343,7 @@ class TestStorage:
         def check_status_change(new_status):
             with OrionState(
                     experiments=[base_experiment],
-                    trials=generate_trials(), database=storage) as cfg:
+                    trials=generate_trials(), storage=storage) as cfg:
                 trial = get_storage().get_trial(cfg.get_trial(0))
                 assert trial is not None, 'Was not able to retrieve trial for test'
                 assert trial.status != new_status
@@ -364,7 +364,7 @@ class TestStorage:
     def test_fetch_pending_trials(self, storage):
         """Test fetch pending trials"""
         with OrionState(
-                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+                experiments=[base_experiment], trials=generate_trials(), storage=storage) as cfg:
             storage = cfg.storage()
 
             experiment = cfg.get_experiment('default_name', version=None)
@@ -382,7 +382,7 @@ class TestStorage:
     def test_fetch_noncompleted_trials(self, storage):
         """Test fetch non completed trials"""
         with OrionState(
-                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+                experiments=[base_experiment], trials=generate_trials(), storage=storage) as cfg:
             storage = cfg.storage()
 
             experiment = cfg.get_experiment('default_name', version=None)
@@ -401,7 +401,7 @@ class TestStorage:
     def test_fetch_trial_by_status(self, storage):
         """Test fetch completed trials"""
         with OrionState(
-                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+                experiments=[base_experiment], trials=generate_trials(), storage=storage) as cfg:
             count = 0
             for trial in cfg.trials:
                 if trial['status'] == 'completed':
@@ -418,7 +418,7 @@ class TestStorage:
     def test_count_completed_trials(self, storage):
         """Test count completed trials"""
         with OrionState(
-                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+                experiments=[base_experiment], trials=generate_trials(), storage=storage) as cfg:
             count = 0
             for trial in cfg.trials:
                 if trial['status'] == 'completed':
@@ -433,7 +433,7 @@ class TestStorage:
     def test_count_broken_trials(self, storage):
         """Test count broken trials"""
         with OrionState(
-                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+                experiments=[base_experiment], trials=generate_trials(), storage=storage) as cfg:
             count = 0
             for trial in cfg.trials:
                 if trial['status'] == 'broken':
@@ -449,7 +449,7 @@ class TestStorage:
     def test_update_heartbeat(self, storage):
         """Test update heartbeat"""
         with OrionState(
-                experiments=[base_experiment], trials=generate_trials(), database=storage) as cfg:
+                experiments=[base_experiment], trials=generate_trials(), storage=storage) as cfg:
             storage_name = storage
             storage = cfg.storage()
 

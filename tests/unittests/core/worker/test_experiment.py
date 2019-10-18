@@ -185,9 +185,9 @@ class TestReserveTrial(object):
 
     def test_reserve_success(self, random_dt):
         """Successfully find new trials in db and reserve the first one"""
-        storage_config = {'storage_type': 'legacy', 'database': {'type': 'EphemeralDB'}}
+        storage_config = {'type': 'legacy', 'database': {'type': 'EphemeralDB'}}
         with OrionState(trials=generate_trials(['new', 'reserved']),
-                        database=storage_config) as cfg:
+                        storage=storage_config) as cfg:
             exp = Experiment('supernaekei')
             exp._id = cfg.trials[0]['experiment']
 
