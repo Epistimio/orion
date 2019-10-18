@@ -310,6 +310,26 @@ class TestRemove(object):
             backward.populate_space(loaded_config)
         assert loaded_configs == exp_config[0][1:]
 
+    def test_remove_update_indexes(self, exp_config, database, orion_db):
+        """Verify that indexes are properly update after deletion."""
+        with pytest.raises(DuplicateKeyError):
+            orion_db.write('experiments', {'_id': exp_config[0][0]['_id']})
+        with pytest.raises(DuplicateKeyError):
+            orion_db.write('experiments', {'_id': exp_config[0][1]['_id']})
+
+        filt = {'_id': exp_config[0][0]['_id']}
+
+        count_before = database['experiments'].count()
+        # call interface
+        assert orion_db.remove('experiments', filt) == 1
+        assert database['experiments'].count() == count_before - 1
+        # Should not fail now, otherwise it means the indexes were not updated properly during
+        # remove()
+        orion_db.write('experiments', filt)
+        # And this should still fail
+        with pytest.raises(DuplicateKeyError):
+            orion_db.write('experiments', {'_id': exp_config[0][1]['_id']})
+
 
 @pytest.mark.usefixtures("clean_db")
 class TestCount(object):
