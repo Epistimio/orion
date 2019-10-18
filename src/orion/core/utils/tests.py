@@ -46,10 +46,10 @@ class MockDatetime(datetime.datetime):
         return default_datetime()
 
 
-def _get_default_test_database():
-    """Return default configuration for the test database"""
+def _get_default_test_storage():
+    """Return default configuration for the test storage"""
     return {
-        'storage_type': 'legacy',
+        'type': 'legacy',
         'database': {
             'type': 'PickledDB',
             'host': '${file}'
@@ -77,23 +77,20 @@ class BaseOrionState:
 
     Parameters
     ----------
-    config: YAML
-        YAML config to apply for this test
-
-    experiments: list
+    experiments: list, optional
         List of experiments to insert into the database
-
-    trials: list
+    trials: list, optional
         List of trials to insert into the database
-
-    workers: list
+    workers: list, optional
         List of workers to insert into the database
-
-    resources: list
+    lies: list, optional
+        List of lies to insert into the database
+    resources: list, optional
         List of resources to insert into the database
-
-    database: dict
-        Configuration of the underlying database
+    from_yaml: YAML, optional
+        YAML config to apply for this test
+    storage: dict, optional
+        Configuration of the underlying storage backend
 
     Examples
     --------
@@ -112,7 +109,7 @@ class BaseOrionState:
     workers = []
 
     def __init__(self, experiments=None, trials=None, workers=None, lies=None, resources=None,
-                 from_yaml=None, database=None):
+                 from_yaml=None, storage=None):
         if from_yaml is not None:
             with open(from_yaml) as f:
                 exp_config = list(yaml.safe_load_all(f))
@@ -120,7 +117,7 @@ class BaseOrionState:
                 trials = exp_config[1]
 
         self.tempfile = None
-        self.database_config = _select(database, _get_default_test_database())
+        self.storage_config = _select(storage, _get_default_test_storage())
 
         self._experiments = _select(experiments, [])
         self._trials = _select(trials, [])
@@ -185,7 +182,6 @@ class BaseOrionState:
                     experiment["metadata"]["user_script"])
                 experiment["metadata"]["user_script"] = path
 
-            experiment['version'] = 1
             experiment['_id'] = i
 
         self._set_tables()
@@ -211,7 +207,7 @@ class BaseOrionState:
 
             return v
 
-        return map_dict(replace_file, self.database_config)
+        return map_dict(replace_file, self.storage_config)
 
     def __enter__(self):
         """Load a new database state"""
@@ -243,14 +239,14 @@ class BaseOrionState:
             return get_storage()
 
         try:
-            storage_type = config.pop('storage_type')
-            db = Storage(of_type=storage_type, **config)
-            self.database_config['storage_type'] = storage_type
+            config['of_type'] = config.pop('type')
+            db = Storage(**config)
+            self.storage_config = config
         except SingletonAlreadyInstantiatedError:
             db = get_storage()
 
         except KeyError:
-            print(self.database_config)
+            print(self.storage_config)
             raise
 
         return db
@@ -314,9 +310,9 @@ class LegacyOrionState(BaseOrionState):
 # pylint: disable=C0103
 def OrionState(*args, **kwargs):
     """Build an orion state in function of the storage type"""
-    database = kwargs.get('database')
+    storage = kwargs.get('storage')
 
-    if not database or database['storage_type'] == 'legacy':
+    if not storage or storage['type'] == 'legacy':
         return LegacyOrionState(*args, **kwargs)
 
     return BaseOrionState(*args, **kwargs)

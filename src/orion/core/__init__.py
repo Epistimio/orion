@@ -73,7 +73,7 @@ def define_storage_config(config):
 
     define_database_config(config.storage)
     # Backward compatibility, should be removed in v0.2.0
-    define_database_config(config)
+    config.database = config.storage.database
 
 
 def define_database_config(config):

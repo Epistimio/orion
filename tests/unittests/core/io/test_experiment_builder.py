@@ -183,12 +183,16 @@ def test_get_cmd_config_from_incomplete_config(incomplete_config_file):
     assert local_config['storage']['database']['host'] == 'mongodb://user:pass@localhost'
     assert local_config['storage']['database']['type'] == 'incomplete'
     assert local_config['name'] == 'incomplete'
+    assert local_config['metadata'] == {
+        'orion_version': 'XYZ',
+        'user': 'tsirif'}
 
 
-@pytest.mark.usefixtures('init_storage')
-def test_fetch_config_from_db_no_hit(config_file, random_dt):
+def test_fetch_config_from_db_no_hit():
     """Verify that fetch_config_from_db returns an empty dict when the experiment is not in db"""
-    db_config = experiment_builder.fetch_config_from_db(name='supernaekei')
+    with OrionState(experiments=[], trials=[]):
+        db_config = experiment_builder.fetch_config_from_db(name='supernaekei')
+
     assert db_config == {}
 
 
@@ -204,10 +208,11 @@ def test_fetch_config_from_db_hit(new_config):
     assert db_config['pool_size'] == new_config['pool_size']
     assert db_config['max_trials'] == new_config['max_trials']
     assert db_config['algorithms'] == new_config['algorithms']
+    assert db_config['metadata'] == new_config['metadata']
 
 
-@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
-def test_build_view_from_args_no_hit(config_file, create_db_instance):
+@pytest.mark.usefixtures("with_user_tsirif")
+def test_build_view_from_args_no_hit(config_file):
     """Try building experiment view when not in db"""
     cmdargs = {'name': 'supernaekei', 'config': config_file}
 
@@ -281,16 +286,18 @@ def test_build_from_args_hit(old_config_file, script_path, new_config):
     assert exp.algorithms.configuration == new_config['algorithms']
 
 
-@pytest.mark.usefixtures("clean_db", "with_user_bouthilx")
-def test_build_from_args_force_user(old_config_file, random_dt):
+@pytest.mark.usefixtures("with_user_bouthilx")
+def test_build_from_args_force_user(new_config):
     """Try building experiment view when in db"""
-    cmdargs = {'name': 'supernaedo2', 'config': old_config_file}
+    cmdargs = {'name': new_config['name']}
     cmdargs['user'] = 'tsirif'
-    exp_view = experiment_builder.build_from_args(cmdargs)
+    with OrionState(experiments=[new_config], trials=[]):
+        # Test that experiment already exists
+        exp_view = experiment_builder.build_from_args(cmdargs)
     assert exp_view.metadata['user'] == 'tsirif'
 
 
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
 def test_build_no_hit(config_file, random_dt, script_path):
     """Try building experiment from config when not in db"""
     name = 'supernaekei'
@@ -384,55 +391,61 @@ def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
     assert exp.algorithms.configuration == new_config['algorithms']
 
 
-@pytest.mark.usefixtures("create_db_instance", "with_user_tsirif")
+@pytest.mark.usefixtures("with_user_tsirif")
 class TestExperimentVersioning(object):
     """Create new Experiment with auto-versioning."""
 
     def test_new_experiment_wout_version(self, space):
         """Create a new and never-seen-before experiment without a version."""
-        exp = experiment_builder.build(name="exp_wout_version", space=space)
+        with OrionState():
+            exp = experiment_builder.build(name="exp_wout_version", space=space)
+
         assert exp.version == 1
 
     def test_new_experiment_w_version(self, space):
         """Create a new and never-seen-before experiment with a version."""
-        exp = experiment_builder.build(name="exp_wout_version", version=1, space=space)
+        with OrionState():
+            exp = experiment_builder.build(name="exp_wout_version", version=1, space=space)
+
         assert exp.version == 1
 
-    def test_backward_compatibility_no_version(self, create_db_instance, parent_version_config,
-                                               child_version_config):
+    def test_backward_compatibility_no_version(self, parent_version_config):
         """Branch from parent that has no version field."""
         parent_version_config.pop('version')
-        create_db_instance.write('experiments', parent_version_config)
-        create_db_instance.write('experiments', child_version_config)
+        with OrionState(experiments=[parent_version_config]):
+            exp = experiment_builder.build(name=parent_version_config["name"],
+                                           space={'y': 'uniform(0, 10)'})
 
-        exp = experiment_builder.build(name="old_experiment")
         assert exp.version == 2
 
-    def test_old_experiment_wout_version(self, create_db_instance, parent_version_config,
-                                         child_version_config):
+    def test_old_experiment_wout_version(self, parent_version_config):
         """Create an already existing experiment without a version."""
-        create_db_instance.write('experiments', parent_version_config)
-        create_db_instance.write('experiments', child_version_config)
+        with OrionState(experiments=[parent_version_config]):
+            exp = experiment_builder.build(name=parent_version_config["name"])
 
-        exp = experiment_builder.build(name="old_experiment")
-        assert exp.version == 2
-
-    def test_old_experiment_w_version(self, create_db_instance, parent_version_config,
-                                      child_version_config):
-        """Create an already existing experiment with a version."""
-        create_db_instance.write('experiments', parent_version_config)
-        create_db_instance.write('experiments', child_version_config)
-
-        exp = experiment_builder.build(name="old_experiment", version=1)
         assert exp.version == 1
 
-    def test_old_experiment_w_version_bigger_than_max(self, create_db_instance,
-                                                      parent_version_config, child_version_config):
-        """Create an already existing experiment with a too large version."""
-        create_db_instance.write('experiments', parent_version_config)
-        create_db_instance.write('experiments', child_version_config)
+    def test_old_experiment_2_wout_version(self, parent_version_config, child_version_config):
+        """Create an already existing experiment without a version and getting last one."""
+        with OrionState(experiments=[parent_version_config, child_version_config]):
+            exp = experiment_builder.build(name=parent_version_config["name"])
 
-        exp = experiment_builder.build(name="old_experiment", version=8)
+        assert exp.version == 2
+
+    def test_old_experiment_w_version(self, parent_version_config, child_version_config):
+        """Create an already existing experiment with a version."""
+        with OrionState(experiments=[parent_version_config, child_version_config]):
+            exp = experiment_builder.build(name=parent_version_config["name"], version=1)
+
+        assert exp.version == 1
+
+    def test_old_experiment_w_version_bigger_than_max(self, parent_version_config,
+                                                      child_version_config):
+        """Create an already existing experiment with a too large version."""
+        print(child_version_config['name'])
+        with OrionState(experiments=[parent_version_config, child_version_config]):
+            exp = experiment_builder.build(name=parent_version_config["name"], version=8)
+
         assert exp.version == 2
 
 
@@ -499,16 +512,16 @@ class TestBuild(object):
 
     def test_working_dir_is_correctly_set(self, new_config):
         """Check if working_dir is correctly changed."""
-        with OrionState(experiments=[], trials=[]):
+        with OrionState(experiments=[], trials=[]) as exc:
             new_config['working_dir'] = './'
             exp = experiment_builder.build(**new_config)
             storage = get_storage()
             found_config = list(storage.fetch_experiments({'name': 'supernaekei',
                                                            'metadata.user': 'tsirif'}))
 
-        found_config = found_config[0]
-        exp = experiment_builder.build(**found_config)
-        assert exp.working_dir == './'
+            found_config = found_config[0]
+            exp = experiment_builder.build(**found_config)
+            assert exp.working_dir == './'
 
     def test_working_dir_works_when_db_absent(self, database, new_config):
         """Check if working_dir is correctly when absent from the database."""
@@ -518,9 +531,9 @@ class TestBuild(object):
             found_config = list(storage.fetch_experiments({'name': 'supernaekei',
                                                            'metadata.user': 'tsirif'}))
 
-        found_config = found_config[0]
-        exp = experiment_builder.build(**found_config)
-        assert exp.working_dir == ''
+            found_config = found_config[0]
+            exp = experiment_builder.build(**found_config)
+            assert exp.working_dir == ''
 
     def test_configuration_hit_no_diffs(self, new_config):
         """Return a configuration dict according to an experiment object.
@@ -585,7 +598,7 @@ class TestBuild(object):
 
         # Should be called
         # - once in build(),
-        # - then register fails,
+        #     -> then register fails,
         # - then called once again in build,
         # - then called in build_view to evaluate the conflicts
         assert insert_race_condition.count == 3

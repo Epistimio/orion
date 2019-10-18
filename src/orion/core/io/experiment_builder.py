@@ -506,8 +506,7 @@ def setup_storage(storage=None):
 
     """
     if storage is None:
-        storage = {'type': 'legacy'}
-        # TODO: storage = orion.core.config.storage.to_dict()
+        storage = orion.core.config.storage.to_dict()
 
     if storage['type'] == 'legacy':
 
