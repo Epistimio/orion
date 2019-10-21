@@ -167,6 +167,9 @@ class Legacy(BaseStorageProtocol):
         This does not update the database!
 
         """
+        if results_file is None:
+            return trial
+
         results = JSONConverter().parse(results_file.name)
 
         trial.results = [
