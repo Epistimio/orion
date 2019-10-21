@@ -163,7 +163,7 @@ class Experiment:
             except FailedUpdate:
                 log.debug('failed')
 
-    def update_completed_trial(self, trial, results_file):
+    def update_completed_trial(self, trial, results_file=None):
         """Inform database about an evaluated `trial` with results.
 
         :param trial: Corresponds to a successful evaluation of a particular run.
