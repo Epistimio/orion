@@ -195,3 +195,42 @@ def create_experiment(name, version=None, space=None, algorithms=None,
     producer = Producer(experiment)
 
     return ExperimentClient(experiment, producer)
+
+
+# pylint: disable=too-many-arguments
+def workon(function, space, name='loop', algorithms=None, max_trials=None):
+    """TODO
+
+    Parameters
+    ----------
+    name: str
+        Name of the experiment
+    version: int, optional
+        Version of the experiment. Defaults to last existing version for a given `name`
+        or 1 for new experiment.
+    space: dict, optional
+        Optimization space of the algorithm. Should have the form `dict(name='<prior>(args)')`.
+    algorithms: str or dict, optional
+        Algorithm used for optimization.
+    max_trials: int, optional
+        Maximum number or trials before the experiment is considered done.
+
+    Raises
+    ------
+    `NotImplementedError`
+        If the algorithm specified is not properly installed.
+
+    """
+    experiment_builder.setup_storage(
+        storage={'type': 'legacy', 'database': {'type': 'EphemeralDB'}})
+
+    experiment = experiment_builder.build(
+        name, version=1, space=space, algorithms=algorithms,
+        strategy='NoParallelStrategy', max_trials=max_trials)
+
+    producer = Producer(experiment)
+
+    experiment_client = ExperimentClient(experiment, producer)
+    experiment_client.workon(function, max_trials=max_trials)
+
+    return experiment_client
