@@ -9,6 +9,7 @@ import pytest
 
 from orion import client
 import orion.core
+from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils import SingletonNotInstantiatedError
 from orion.core.utils.exceptions import NoConfigurationError, RaceCondition
@@ -18,6 +19,7 @@ from orion.storage.legacy import Legacy
 
 
 create_experiment = client.create_experiment
+workon = client.workon
 
 
 config = dict(
@@ -328,3 +330,38 @@ class TestCreateExperiment:
                 create_experiment(config['name'], version=1, space=new_space)
 
             assert "Configuration is different and generates" in str(exc.value)
+
+
+class TestWorkon:
+    """Test the helper function for sequential API"""
+
+    def test_workon(self):
+        """Verify that workon processes properly"""
+        def foo(x):
+            return [dict(name='result', type='objective', value=x * 2)]
+
+        experiment = workon(foo, space={'x': 'uniform(0, 10)'}, max_trials=5)
+        assert len(experiment.fetch_trials()) == 5
+        assert experiment.name == 'loop'
+        assert isinstance(experiment._experiment._storage, Legacy)
+        assert isinstance(experiment._experiment._storage._db, EphemeralDB)
+
+    def test_workon_algo(self):
+        """Verify that algo config is processed properly"""
+        def foo(x):
+            return [dict(name='result', type='objective', value=x * 2)]
+
+        experiment = workon(
+            foo, space={'x': 'uniform(0, 10)'}, max_trials=5,
+            algorithms={'random': {'seed': 5}})
+
+        assert experiment.algorithms.algorithm.seed == 5
+
+    def test_workon_name(self):
+        """Verify setting the name with workon"""
+        def foo(x):
+            return [dict(name='result', type='objective', value=x * 2)]
+
+        experiment = workon(foo, space={'x': 'uniform(0, 10)'}, max_trials=5, name='voici')
+
+        assert experiment.name == 'voici'
