@@ -171,6 +171,9 @@ def build(name, version=None, branching=None, **config):
         if key.startswith('_') or value is None:
             config.pop(key)
 
+    if 'strategy' in config:
+        config['producer'] = {'strategy': config.pop('strategy')}
+
     if branching is None:
         branching = {}
 
@@ -280,7 +283,7 @@ def create_experiment(name, version, space, **kwargs):
     experiment.max_trials = kwargs.get('max_trials', orion.core.config.experiment.max_trials)
     experiment.space = _instantiate_space(space)
     experiment.algorithms = _instantiate_algo(experiment.space, kwargs.get('algorithms'))
-    experiment.producer = kwargs.get('producer', orion.core.config.experiment.producer.to_dict())
+    experiment.producer = kwargs.get('producer', {})
     experiment.producer['strategy'] = _instantiate_strategy(experiment.producer.get('strategy'))
     experiment.working_dir = kwargs.get('working_dir', orion.core.config.experiment.working_dir)
     experiment.metadata = kwargs.get('metadata', {'user': kwargs.get('user', getpass.getuser())})
@@ -378,7 +381,7 @@ def _instantiate_strategy(config=None):
 
     """
     if not config:
-        config = orion.core.config.experiment.producer.to_dict().get('strategy')
+        config = orion.core.config.experiment.strategy
 
     if isinstance(config, str):
         strategy_type = config

@@ -116,8 +116,7 @@ def define_experiment_config(config):
     experiment_config.add_option(
         'algorithms', option_type=dict, default={'random': {'seed': None}})
 
-    experiment_config.producer = Configuration()
-    experiment_config.producer.add_option(
+    experiment_config.add_option(
         'strategy', option_type=dict, default={'MaxParallelStrategy': {}})
 
     config.experiment = experiment_config
