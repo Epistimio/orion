@@ -149,6 +149,7 @@ def child_version_config(parent_version_config):
     return config
 
 
+@pytest.mark.usefixtures('with_user_tsirif', 'version_XYZ')
 def test_get_cmd_config(config_file):
     """Test local config (cmdconfig, cmdargs)"""
     cmdargs = {"config": config_file}
@@ -165,8 +166,12 @@ def test_get_cmd_config(config_file):
             'host': 'mongodb://user:pass@localhost',
             'name': 'orion_test',
             'type': 'mongodb'}}
+    assert local_config['metadata'] == {
+        'orion_version': 'XYZ',
+        'user': 'tsirif'}
 
 
+@pytest.mark.usefixtures('with_user_tsirif', 'version_XYZ')
 def test_get_cmd_config_from_incomplete_config(incomplete_config_file):
     """Test local config with incomplete user configuration file
     (default, env_vars, cmdconfig, cmdargs)
@@ -314,8 +319,10 @@ def test_build_no_hit(config_file, random_dt, script_path):
 
     assert exp.name == name
     assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
-    assert exp.metadata['datetime'] == random_dt
-    assert exp.metadata['user'] == 'tsirif'
+    assert exp.metadata == {
+        'datetime': random_dt,
+        'user': 'tsirif',
+        'orion_version': 'XYZ'}
     assert exp.configuration['space'] == space
     assert exp.max_trials == max_trials
     assert not exp.is_done
@@ -344,12 +351,13 @@ def test_build_hit(python_api_config):
     assert exp._id == python_api_config['_id']
     assert exp.name == python_api_config['name']
     assert exp.configuration['refers'] == python_api_config['refers']
+    python_api_config['metadata']['user'] = 'dendi'
     assert exp.metadata == python_api_config['metadata']
     assert exp.max_trials == python_api_config['max_trials']
     assert exp.algorithms.configuration == python_api_config['algorithms']
 
 
-@pytest.mark.usefixtures("with_user_dendi")
+@pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
 def test_build_without_config_hit(python_api_config):
     """Try building experiment without commandline config when in db (no branch)"""
     name = 'supernaekei'
@@ -449,7 +457,7 @@ class TestExperimentVersioning(object):
         assert exp.version == 2
 
 
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
 class TestBuild(object):
     """Test building the experiment"""
 
