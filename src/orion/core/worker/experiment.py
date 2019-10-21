@@ -206,7 +206,7 @@ class Experiment:
         lying_trial.end_time = datetime.datetime.utcnow()
         self._storage.register_lie(lying_trial)
 
-    def register_trial(self, trial):
+    def register_trial(self, trial, status='new'):
         """Register new trial in the database.
 
         Inform database about *new* suggested trial with specific parameter values. Trials may only
@@ -227,7 +227,7 @@ class Experiment:
         """
         stamp = datetime.datetime.utcnow()
         trial.experiment = self._id
-        trial.status = 'new'
+        trial.status = status
         trial.submit_time = stamp
 
         self._storage.register_trial(trial)
@@ -327,7 +327,7 @@ class Experiment:
             elif attrname == "producer" and attribute.get("strategy"):
                 config[attrname]['strategy'] = config[attrname]['strategy'].configuration
 
-        if self.id:
+        if self.id is not None:
             config['_id'] = self.id
 
         return copy.deepcopy(config)
