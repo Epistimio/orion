@@ -182,6 +182,10 @@ def build(name, version=None, branching=None, **config):
 
     config = resolve_config.merge_configs(db_config, config)
 
+    metadata = resolve_config.fetch_metadata(config.get('user'), config.get('user_args'))
+
+    config = resolve_config.merge_configs(db_config, config, {'metadata': metadata})
+
     # TODO: Find a better solution
     if isinstance(config.get('algorithms'), dict) and len(config['algorithms']) > 1:
         for key in list(db_config['algorithms'].keys()):
@@ -574,16 +578,13 @@ def get_cmd_config(cmdargs):
 
     """
     cmd_config = resolve_config.fetch_config(cmdargs)
+    cmd_config = resolve_config.merge_configs(cmd_config, cmdargs)
 
-    metadata = dict(metadata=resolve_config.fetch_metadata(cmdargs))
-
-    cmd_config = resolve_config.merge_configs(cmd_config, cmdargs, metadata)
+    metadata = resolve_config.fetch_metadata(cmd_config.get('user'), cmd_config.get('user_args'))
+    cmd_config['metadata'] = metadata
     cmd_config.pop('config', None)
 
     backward.populate_space(cmd_config)
     backward.update_db_config(cmd_config)
-
-    if 'user' in cmd_config:
-        cmd_config['metadata']['user'] = cmd_config['user']
 
     return cmd_config

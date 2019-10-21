@@ -223,8 +223,8 @@ def version_XYZ(monkeypatch):
     """Force orion version XYZ on output of resolve_config.fetch_metadata"""
     non_patched_fetch_metadata = resolve_config.fetch_metadata
 
-    def fetch_metadata(cmdargs):
-        metadata = non_patched_fetch_metadata(cmdargs)
+    def fetch_metadata(user=None, user_args=None):
+        metadata = non_patched_fetch_metadata(user, user_args)
         metadata['orion_version'] = 'XYZ'
         return metadata
     monkeypatch.setattr(resolve_config, "fetch_metadata", fetch_metadata)

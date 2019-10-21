@@ -158,14 +158,14 @@ def fetch_env_vars():
     return env_vars
 
 
-def fetch_metadata(cmdargs):
+def fetch_metadata(user=None, user_args=None):
     """Infer rest information about the process + versioning"""
-    metadata = {'user': cmdargs.get('user', getpass.getuser())}
+    metadata = {'user': user if user else getpass.getuser()}
 
     metadata['orion_version'] = orion.core.__version__
 
-    # Move 'user_script' and 'user_args' to 'metadata' key
-    user_args = cmdargs.get('user_args', [])
+    if user_args is None:
+        user_args = []
 
     # Trailing white space are catched by argparse as an empty argument
     if len(user_args) == 1 and user_args[0] == '':
@@ -188,7 +188,6 @@ def fetch_metadata(cmdargs):
     if user_args:
         metadata['user_args'] = user_args[1:]
 
-    metadata['user'] = getpass.getuser()
     return metadata
 
 
