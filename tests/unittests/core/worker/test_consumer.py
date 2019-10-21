@@ -84,7 +84,7 @@ def test_pacemaker_termination(config, monkeypatch):
 
     trial = tuple_to_trial((1.0,), exp.space)
 
-    exp.register_trial(trial)
+    exp.register_trial(trial, status='reserved')
 
     con = Consumer(exp)
 
@@ -105,7 +105,7 @@ def test_trial_working_dir_is_changed(config, monkeypatch):
 
     trial = tuple_to_trial((1.0,), exp.space)
 
-    exp.register_trial(trial)
+    exp.register_trial(trial, status='reserved')
 
     con = Consumer(exp)
     con.consume(trial)

@@ -10,9 +10,12 @@ import pytest
 
 from orion.core.utils.tests import OrionState
 from orion.core.worker.trial import Trial
+from orion.storage.base import FailedUpdate
+
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.WARNING)
+
 
 base_experiment = {
     'name': 'default_name',
@@ -70,9 +73,11 @@ class TestLegacyStorage:
 
     def test_push_trial_results(self, storage=None):
         """Successfully push a completed trial into database."""
-        with OrionState(experiments=[], trials=[base_trial], storage=storage) as cfg:
+        reserved_trial = copy.deepcopy(base_trial)
+        reserved_trial['status'] = 'reserved'
+        with OrionState(experiments=[], trials=[reserved_trial], storage=storage) as cfg:
             storage = cfg.storage()
-            trial = storage.get_trial(Trial(**base_trial))
+            trial = storage.get_trial(Trial(**reserved_trial))
             results = [
                 Trial.Result(name='loss', type='objective', value=2)
             ]
@@ -81,6 +86,18 @@ class TestLegacyStorage:
 
             trial2 = storage.get_trial(trial)
             assert trial2.results == results
+
+    def test_push_trial_results_unreserved(self, storage=None):
+        """Successfully push a completed trial into database."""
+        with OrionState(experiments=[], trials=[base_trial], storage=storage) as cfg:
+            storage = cfg.storage()
+            trial = storage.get_trial(Trial(**base_trial))
+            results = [
+                Trial.Result(name='loss', type='objective', value=2)
+            ]
+            trial.results = results
+            with pytest.raises(FailedUpdate):
+                storage.push_trial_results(trial)
 
     def retrieve_result(self, storage, generated_result):
         """Test retrieve result"""

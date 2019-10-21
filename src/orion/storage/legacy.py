@@ -221,7 +221,12 @@ class Legacy(BaseStorageProtocol):
 
     def push_trial_results(self, trial):
         """See :func:`~orion.storage.BaseStorageProtocol.push_trial_results`"""
-        return self._update_trial(trial, **trial.to_dict(), where={'_id': trial.id})
+        rc = self._update_trial(trial, **trial.to_dict(),
+                                where={'_id': trial.id, 'status': 'reserved'})
+        if not rc:
+            raise FailedUpdate()
+
+        return rc
 
     def set_trial_status(self, trial, status, heartbeat=None):
         """See :func:`~orion.storage.BaseStorageProtocol.set_trial_status`"""
@@ -233,17 +238,13 @@ class Legacy(BaseStorageProtocol):
             heartbeat=heartbeat,
             experiment=trial.experiment
         )
-        if trial.status == 'new':
-            update["start_time"] = datetime.datetime.utcnow()
-
-        elif status == 'completed':
-            update["end_time"] = datetime.datetime.utcnow()
 
         rc = self._update_trial(trial, **update, where={'status': trial.status, '_id': trial.id})
-        trial.status = status
 
         if not rc:
             raise FailedUpdate()
+
+        trial.status = status
 
     def fetch_pending_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_pending_trials`"""
