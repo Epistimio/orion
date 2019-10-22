@@ -8,6 +8,8 @@
    :synopsis: Wraps the core Experiment object to provide further functionalities for the user
 
 """
+import atexit
+import functools
 import logging
 
 from numpy import inf as infinity
@@ -21,6 +23,16 @@ from orion.storage.base import FailedUpdate
 
 
 log = logging.getLogger(__name__)
+
+
+def set_broken_trials(client):
+    """Release all trials with status broken if the process exits without releasing them."""
+    for trial_id in list(client._pacemakers.keys()):  # pylint: disable=protected-access
+        trial = client.get_trial(uid=trial_id)
+        if trial is None:
+            log.warning('Trial {} was not found in storage, could not set status to `broken`.')
+            continue
+        client.release(trial, status='broken')
 
 
 # pylint: disable=too-many-public-methods
@@ -43,6 +55,8 @@ class ExperimentClient:
         self._experiment = experiment
         self._producer = producer
         self._pacemakers = {}
+        self.set_broken_trials = functools.partial(set_broken_trials, client=self)
+        atexit.register(self.set_broken_trials)
 
     ###
     # Attributes
@@ -454,6 +468,15 @@ class ExperimentClient:
             trials += 1
 
         return trials
+
+    def close(self):
+        """Verify that no reserved trials are remaining and unregister atexit()."""
+        if self._pacemakers:
+            raise RuntimeError("There is still reserved trials: {}\nRelease all trials before "
+                               "closing the client, using "
+                               "client.release(trial).".format(self._pacemakers.keys()))
+
+        atexit.unregister(self.set_broken_trials)
 
     ###
     # Private
