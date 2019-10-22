@@ -247,10 +247,7 @@ def get_storage():
     with the appropriate arguments for the chosen backend
 
     """
-    try:
-        return Storage()
-    except TypeError as exception:
-        raise RuntimeError('Singleton `Storage` was not initialized!') from exception
+    return Storage()
 
 
 # pylint: disable=too-few-public-methods

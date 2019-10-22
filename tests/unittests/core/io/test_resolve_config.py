@@ -76,30 +76,28 @@ def test_fetch_env_vars():
 @pytest.mark.usefixtures("version_XYZ")
 def test_fetch_metadata_orion_version():
     """Verify orion version"""
-    metadata = resolve_config.fetch_metadata({})
+    metadata = resolve_config.fetch_metadata()
     assert metadata['orion_version'] == 'XYZ'
 
 
 def test_fetch_metadata_executable_users_script(script_path):
     """Verify executable user script with absolute path"""
-    cmdargs = {'user_args': [script_path]}
-    metadata = resolve_config.fetch_metadata(cmdargs)
+    metadata = resolve_config.fetch_metadata(user_args=[script_path])
     assert metadata['user_script'] == os.path.abspath(script_path)
 
 
 def test_fetch_metadata_non_executable_users_script():
     """Verify executable user script keeps given path"""
-    cmdargs = {'user_args': ['tests/functional/demo/orion_config.yaml']}
-    metadata = resolve_config.fetch_metadata(cmdargs)
-    assert metadata['user_script'] == 'tests/functional/demo/orion_config.yaml'
+    script_path = 'tests/functional/demo/orion_config.yaml'
+    metadata = resolve_config.fetch_metadata(user_args=[script_path])
+    assert metadata['user_script'] == script_path
 
 
 def test_fetch_metadata_not_existed_path():
     """Verfiy the raise of error when user_script path does not exist"""
     path = 'dummy/path'
-    cmdargs = {'user_args': [path]}
     with pytest.raises(OSError) as exc_info:
-        resolve_config.fetch_metadata(cmdargs)
+        resolve_config.fetch_metadata(user_args=[path])
     assert "The path specified for the script does not exist" in str(exc_info.value)
 
 
@@ -107,8 +105,7 @@ def test_fetch_metadata_not_existed_path():
 def test_fetch_metadata_user_args(script_path):
     """Verify user args"""
     user_args = [os.path.abspath(script_path)] + list(map(str, range(10)))
-    cmdargs = {'user_args': user_args}
-    metadata = resolve_config.fetch_metadata(cmdargs)
+    metadata = resolve_config.fetch_metadata(user_args=user_args)
     assert metadata['user_script'] == user_args[0]
     assert metadata['user_args'] == user_args[1:]
 
@@ -116,13 +113,13 @@ def test_fetch_metadata_user_args(script_path):
 @pytest.mark.usefixtures("with_user_tsirif")
 def test_fetch_metadata_user_tsirif():
     """Verify user name"""
-    metadata = resolve_config.fetch_metadata({})
+    metadata = resolve_config.fetch_metadata()
     assert metadata['user'] == "tsirif"
 
 
 def test_fetch_metadata():
     """Verify no additional data is stored in metadata"""
-    metadata = resolve_config.fetch_metadata({})
+    metadata = resolve_config.fetch_metadata()
     len(metadata) == 4
 
 

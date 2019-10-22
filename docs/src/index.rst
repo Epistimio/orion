@@ -15,6 +15,7 @@
    :maxdepth: 1
 
    user/pytorch
+   user/api
    user/monitoring
    user/searchspace
    user/algorithms

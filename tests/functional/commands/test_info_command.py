@@ -47,3 +47,23 @@ def test_info_no_branching(clean_db, one_experiment_changed_vcs, capsys):
     captured = capsys.readouterr().out
 
     assert '\nversion: 1\n' in captured
+
+
+def test_info_python_api(clean_db, with_experiment_using_python_api, capsys):
+    """Test info if config built using python api"""
+    orion.core.cli.main(['info', '--name', 'from-python-api'])
+
+    captured = capsys.readouterr().out
+
+    assert 'from-python-api' in captured
+    assert 'Commandline' not in captured
+
+
+def test_info_cmdline_api(clean_db, with_experiment_using_python_api, capsys):
+    """Test info if config built using cmdline api"""
+    orion.core.cli.main(['info', '--name', 'test_single_exp'])
+
+    captured = capsys.readouterr().out
+
+    assert 'test_single_exp' in captured
+    assert 'Commandline' in captured

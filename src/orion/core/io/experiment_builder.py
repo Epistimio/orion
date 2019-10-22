@@ -116,7 +116,6 @@ log = logging.getLogger(__name__)
 # Functions to build experiments
 ##
 
-# TODO: branch_from cannot be passed from build_from_cmdargs, must add --branch-from argument
 def build(name, version=None, branching=None, **config):
     """Build an experiment object
 
@@ -171,6 +170,9 @@ def build(name, version=None, branching=None, **config):
         if key.startswith('_') or value is None:
             config.pop(key)
 
+    if 'strategy' in config:
+        config['producer'] = {'strategy': config.pop('strategy')}
+
     if branching is None:
         branching = {}
 
@@ -182,6 +184,10 @@ def build(name, version=None, branching=None, **config):
 
     config = resolve_config.merge_configs(db_config, config)
 
+    metadata = resolve_config.fetch_metadata(config.get('user'), config.get('user_args'))
+
+    config = resolve_config.merge_configs(db_config, config, {'metadata': metadata})
+
     # TODO: Find a better solution
     if isinstance(config.get('algorithms'), dict) and len(config['algorithms']) > 1:
         for key in list(db_config['algorithms'].keys()):
@@ -191,7 +197,8 @@ def build(name, version=None, branching=None, **config):
     config.setdefault('version', version)
 
     if 'space' not in config:
-        raise NoConfigurationError
+        raise NoConfigurationError(
+            'Experiment {} does not exist in DB and space was not defined.'.format(name))
 
     experiment = create_experiment(**copy.deepcopy(config))
     if experiment.id is None:
@@ -276,7 +283,7 @@ def create_experiment(name, version, space, **kwargs):
     experiment.max_trials = kwargs.get('max_trials', orion.core.config.experiment.max_trials)
     experiment.space = _instantiate_space(space)
     experiment.algorithms = _instantiate_algo(experiment.space, kwargs.get('algorithms'))
-    experiment.producer = kwargs.get('producer', orion.core.config.experiment.producer.to_dict())
+    experiment.producer = kwargs.get('producer', {})
     experiment.producer['strategy'] = _instantiate_strategy(experiment.producer.get('strategy'))
     experiment.working_dir = kwargs.get('working_dir', orion.core.config.experiment.working_dir)
     experiment.metadata = kwargs.get('metadata', {'user': kwargs.get('user', getpass.getuser())})
@@ -374,7 +381,7 @@ def _instantiate_strategy(config=None):
 
     """
     if not config:
-        config = orion.core.config.experiment.producer.to_dict().get('strategy')
+        config = orion.core.config.experiment.strategy
 
     if isinstance(config, str):
         strategy_type = config
@@ -391,6 +398,7 @@ def _register_experiment(experiment):
     config = experiment.configuration
     # This will raise DuplicateKeyError if a concurrent experiment with
     # identical (name, metadata.user) is written first in the database.
+
     get_storage().create_experiment(config)
 
     # XXX: Reminder for future DB implementations:
@@ -506,8 +514,7 @@ def setup_storage(storage=None):
 
     """
     if storage is None:
-        storage = {'type': 'legacy'}
-        # TODO: storage = orion.core.config.storage.to_dict()
+        storage = orion.core.config.storage.to_dict()
 
     if storage['type'] == 'legacy':
 
@@ -575,16 +582,13 @@ def get_cmd_config(cmdargs):
 
     """
     cmd_config = resolve_config.fetch_config(cmdargs)
+    cmd_config = resolve_config.merge_configs(cmd_config, cmdargs)
 
-    metadata = dict(metadata=resolve_config.fetch_metadata(cmdargs))
-
-    cmd_config = resolve_config.merge_configs(cmd_config, cmdargs, metadata)
+    metadata = resolve_config.fetch_metadata(cmd_config.get('user'), cmd_config.get('user_args'))
+    cmd_config['metadata'] = metadata
     cmd_config.pop('config', None)
 
     backward.populate_space(cmd_config)
     backward.update_db_config(cmd_config)
-
-    if 'user' in cmd_config:
-        cmd_config['metadata']['user'] = cmd_config['user']
 
     return cmd_config
