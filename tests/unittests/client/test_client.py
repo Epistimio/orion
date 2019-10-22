@@ -13,7 +13,7 @@ from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils import SingletonNotInstantiatedError
 from orion.core.utils.exceptions import NoConfigurationError, RaceCondition
-from orion.core.utils.tests import OrionState
+from orion.core.utils.tests import OrionState, update_singletons
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 
@@ -153,9 +153,7 @@ class TestCreateExperiment:
         with OrionState(storage=orion.core.config.storage.to_dict()) as cfg:
             # Reset the Storage and drop instances so that get_storage() would fail.
             cfg.cleanup()
-            for singleton in cfg.SINGLETONS:
-                cfg.singletons[singleton] = None
-                singleton.instance = None
+            cfg.singletons = update_singletons()
 
             # Make sure storage must be instantiated during `create_experiment()`
             with pytest.raises(SingletonNotInstantiatedError):
@@ -179,6 +177,9 @@ class TestCreateExperiment:
     def test_create_experiment_bad_storage(self):
         """Test error message if storage is not configured properly"""
         name = 'oopsie_bad_storage'
+        # Make sure there is no existing storage singleton
+        update_singletons()
+
         with pytest.raises(NotImplementedError) as exc:
             create_experiment(name=name, storage={'type': 'legacy',
                                                   'database': {'type': 'idontexist'}})
