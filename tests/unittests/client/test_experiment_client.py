@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.client.experiment`."""
+import atexit
 from contextlib import contextmanager
 import copy
 import datetime
@@ -108,11 +109,13 @@ def create_experiment(exp_config=None, trial_config=None, stati=None):
         stati = ['new', 'interrupted', 'suspended', 'reserved', 'completed']
 
     with OrionState(experiments=[exp_config], trials=generate_trials(trial_config, stati)) as cfg:
-        experiment = experiment_builder.build(name='supernaekei')
+        experiment = experiment_builder.build(name=exp_config['name'])
         if cfg.trials:
             experiment._id = cfg.trials[0]['experiment']
         client = ExperimentClient(experiment, Producer(experiment))
         yield cfg, experiment, client
+
+    client.close()
 
 
 def compare_trials(trials_a, trials_b):
@@ -246,7 +249,7 @@ class TestInsert:
             trial = client.insert(dict(x=100), reserve=True)
             assert trial.status == 'reserved'
             assert client._pacemakers[trial.id].is_alive()
-            client._pacemakers[trial.id].stop()
+            client._pacemakers.pop(trial.id).stop()
 
     def test_insert_params_fails_not_reserved(self):
         """Test that failed insertion because of duplicated trials will not reserve the original
@@ -290,7 +293,7 @@ class TestReserve:
             assert trial.status == 'reserved'
             assert experiment.get_trial(trial).status == 'reserved'
             assert client._pacemakers[trial.id].is_alive()
-            client._pacemakers[trial.id].stop()
+            client._pacemakers.pop(trial.id).stop()
 
     def test_reserve_dont_exist(self):
         """Verify that unregistered trials cannot be reserved."""
@@ -314,7 +317,7 @@ class TestReserve:
             assert 'Trial {} is already reserved.'.format(trial.id) == caplog.records[-1].message
 
             assert client._pacemakers[trial.id].is_alive()
-            client._pacemakers[trial.id].stop()
+            client._pacemakers.pop(trial.id).stop()
 
     def test_reserve_reserved_remotely(self):
         """Verify that a trial cannot be reserved if already reserved by another process"""
@@ -429,6 +432,113 @@ class TestRelease:
             assert client._pacemakers == {}
 
 
+class TestClose:
+    """Test close method of the client"""
+
+    def test_close_empty(self):
+        """Test client can close when no trial is reserved"""
+        with create_experiment() as (cfg, experiment, client):
+            client.close()
+
+    def test_close_with_reserved(self):
+        """Test client cannot be closed if trials are reserved."""
+        with create_experiment() as (cfg, experiment, client):
+            trial = client.suggest()
+
+            with pytest.raises(RuntimeError) as exc:
+                client.close()
+
+            assert "There is still reserved trials" in str(exc.value)
+
+            client.release(trial)
+
+    def test_close_unregister_atexit(self, monkeypatch):
+        """Test close properly unregister the atexit function"""
+        def please_dont_call_me(client):
+            raise RuntimeError("Please don't call me!!!")
+
+        monkeypatch.setattr('orion.client.experiment.set_broken_trials', please_dont_call_me)
+
+        with create_experiment() as (cfg, experiment, client):
+            # The registered function in atexit is called as expected
+            with pytest.raises(RuntimeError) as exc:
+                atexit._run_exitfuncs()
+
+            assert "Please don't call me!!!" == str(exc.value)
+
+            # Unregister the function
+            client.close()
+
+
+class TestBroken:
+    """Test handling of broken trials with atexit()"""
+
+    def test_broken_trial(self):
+        """Test that broken trials are detected"""
+        with create_experiment() as (cfg, experiment, client):
+            trial = client.suggest()
+            assert trial.status == 'reserved'
+
+            atexit._run_exitfuncs()
+
+            assert client._pacemakers == {}
+            assert client.get_trial(trial).status == 'broken'
+
+    def test_atexit_with_multiple_clients(self):
+        """Test that each client has a separate atexit function"""
+        config1 = copy.deepcopy(config)
+        config2 = copy.deepcopy(config)
+        config2['name'] = 'cloned'
+        with create_experiment(exp_config=config1) as (_, _, client1):
+            with create_experiment(exp_config=config2) as (_, _, client2):
+                trial1 = client1.suggest()
+                trial2 = client2.suggest()
+
+                assert trial1.status == 'reserved'
+                assert trial2.status == 'reserved'
+
+                atexit._run_exitfuncs()
+
+                assert client1._pacemakers == {}
+                assert client2._pacemakers == {}
+                assert client1.get_trial(trial1).status == 'broken'
+                assert client2.get_trial(trial2).status == 'broken'
+
+    def test_atexit_with_multiple_clients_unregister(self, monkeypatch):
+        """Test that each client has a separate atexit function that can be unregistered"""
+        config1 = copy.deepcopy(config)
+        config2 = copy.deepcopy(config)
+        config2['name'] = 'cloned'
+        with create_experiment(exp_config=config1) as (_, _, client1):
+
+            def please_dont_call_me(client):
+                raise RuntimeError("Please don't call me!!!")
+
+            monkeypatch.setattr('orion.client.experiment.set_broken_trials', please_dont_call_me)
+
+            with create_experiment(exp_config=config2) as (_, _, client2):
+                trial1 = client1.suggest()
+                trial2 = client2.suggest()
+
+                # The registered function in atexit is called as expected
+                with pytest.raises(RuntimeError) as exc:
+                    atexit._run_exitfuncs()
+
+                assert "Please don't call me!!!" == str(exc.value)
+
+                # Unregister the function
+                client2.release(trial2)
+                client2.close()
+
+                # It should not be called
+                atexit._run_exitfuncs()
+
+                assert client1._pacemakers == {}
+                assert client2._pacemakers == {}
+                assert client1.get_trial(trial1).status == 'broken'
+                assert client2.get_trial(trial2).status == 'interrupted'
+
+
 class TestSuggest:
     """Tests for ExperimentClient.suggest"""
 
@@ -441,7 +551,7 @@ class TestSuggest:
 
             assert len(experiment.fetch_trials()) == 5
             assert client._pacemakers[trial.id].is_alive()
-            client._pacemakers[trial.id].stop()
+            client._pacemakers.pop(trial.id).stop()
 
     def test_suggest_new(self):
         """Verify that suggest can create, register and reserved new trials."""
@@ -459,7 +569,8 @@ class TestSuggest:
             assert len(experiment.fetch_trials()) == 6
 
             assert client._pacemakers[trial.id].is_alive()
-            client._pacemakers[trial.id].stop()
+            for trial_id in list(client._pacemakers.keys()):
+                client._pacemakers.pop(trial_id).stop()
 
     def test_suggest_race_condition(self, monkeypatch):
         """Verify that race conditions to register new trials is handled"""
@@ -492,7 +603,7 @@ class TestSuggest:
 
             assert len(experiment.fetch_trials()) == 2
             assert client._pacemakers[trial.id].is_alive()
-            client._pacemakers[trial.id].stop()
+            client._pacemakers.pop(trial.id).stop()
 
     def test_suggest_algo_opt_out(self, monkeypatch):
         """Verify that None is returned when algo cannot sample new trials (opting opt)"""
@@ -619,7 +730,7 @@ class TestObserve:
 
             assert 'Given type, bad bad bad, not one of: ' in str(exc.value)
             assert client._pacemakers[trial.id].is_alive()
-            client._pacemakers[trial.id].stop()
+            client._pacemakers.pop(trial.id).stop()
 
     def test_observe_race_condition(self):
         """Verify that race condition during `observe()` is detected and raised"""
