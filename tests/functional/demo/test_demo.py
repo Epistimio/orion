@@ -483,11 +483,13 @@ def test_demo_with_shutdown_quickly(monkeypatch):
     """Check simple pipeline with random search is reasonably fast."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+    monkeypatch.setattr(orion.core.config.worker, 'heartbeat', 120)
+
     process = subprocess.Popen(
-        ["orion", "hunt", "--config", "./orion_config_random.yaml", "--max-trials", "30",
+        ["orion", "hunt", "--config", "./orion_config_random.yaml", "--max-trials", "10",
          "./black_box.py", "-x~uniform(-50, 50)"])
 
-    assert process.wait(timeout=30) == 0
+    assert process.wait(timeout=40) == 0
 
 
 @pytest.mark.usefixtures("clean_db")
