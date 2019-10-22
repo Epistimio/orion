@@ -380,5 +380,3 @@ class TestWorkon:
 
         assert experiment2.name == 'voici'
         assert len(experiment2.fetch_trials()) == 1
-
-        pytest.set_trace()
