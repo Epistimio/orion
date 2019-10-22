@@ -67,6 +67,22 @@ def _remove(file_name):
         pass
 
 
+SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB, EphemeralDB, Track)
+
+
+def update_singletons(values=None):
+    """Replace singletons by given values and return previous singleton objects"""
+    if values is None:
+        values = {}
+
+    singletons = {}
+    for singleton in SINGLETONS:
+        singletons[singleton] = singleton.instance
+        singleton.instance = values.get(singleton, None)
+
+    return singletons
+
+
 # pylint: disable=no-self-use,protected-access
 class BaseOrionState:
     """Setup global variables and singleton for tests.
@@ -101,7 +117,6 @@ class BaseOrionState:
     """
 
     # TODO: Fix these singletons to remove Legacy, MongoDB, PickledDB and EphemeralDB.
-    SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB, EphemeralDB, Track)
     singletons = {}
     experiments = []
     trials = []
@@ -211,9 +226,7 @@ class BaseOrionState:
 
     def __enter__(self):
         """Load a new database state"""
-        for singleton in self.SINGLETONS:
-            self.new_singleton(singleton, new_value=None)
-
+        self.singletons = update_singletons()
         self.cleanup()
         return self.init(self.make_config())
 
@@ -221,17 +234,7 @@ class BaseOrionState:
         """Cleanup database state"""
         self.cleanup()
 
-        for obj in self.singletons:
-            self.restore_singleton(obj)
-
-    def new_singleton(self, obj, new_value=None):
-        """Replace a singleton by another value"""
-        self.singletons[obj] = obj.instance
-        obj.instance = new_value
-
-    def restore_singleton(self, obj):
-        """Restore a singleton to its previous value"""
-        obj.instance = self.singletons.get(obj)
+        update_singletons(self.singletons)
 
     def storage(self, config=None):
         """Return test storage"""
