@@ -94,12 +94,19 @@ def create_experiment(name, version=None, space=None, algorithms=None,
     A previous version can be accessed by specifying the ``version`` argument.
 
     Causes of experiment branching are:
+
     - Change of search space
+
         - New dimension
+
         - Different prior
+
         - Missing dimension
+
     - Change of algorithm
+
     - Change of strategy (Not implemented yet)
+
     - Change of code version (Only supported by commandline API for now)
 
     Parameters
