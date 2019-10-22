@@ -13,6 +13,7 @@ import os
 from orion.client.experiment import ExperimentClient
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.exceptions import RaceCondition
+from orion.core.utils.tests import update_singletons
 from orion.core.worker.producer import Producer
 
 
@@ -197,9 +198,19 @@ def create_experiment(name, version=None, space=None, algorithms=None,
     return ExperimentClient(experiment, producer)
 
 
-# pylint: disable=too-many-arguments
 def workon(function, space, name='loop', algorithms=None, max_trials=None):
-    """TODO
+    """Optimize a function over a given search space
+
+    This will create a new experiment with an in-memory storage and optimize the given function
+    until `max_trials` is reached or the `algorithm` is done
+    (some algorithms like random search are never done).
+
+    For informations on how to fetch results, see
+    :py:class:`orion.client.experiment.ExperimentClient`.
+
+    .. note::
+
+        Each call to this function will create a separate in-memory storage.
 
     Parameters
     ----------
@@ -221,6 +232,9 @@ def workon(function, space, name='loop', algorithms=None, max_trials=None):
         If the algorithm specified is not properly installed.
 
     """
+    # Clear singletons and keep pointers to restore them.
+    singletons = update_singletons()
+
     experiment_builder.setup_storage(
         storage={'type': 'legacy', 'database': {'type': 'EphemeralDB'}})
 
@@ -232,5 +246,8 @@ def workon(function, space, name='loop', algorithms=None, max_trials=None):
 
     experiment_client = ExperimentClient(experiment, producer)
     experiment_client.workon(function, max_trials=max_trials)
+
+    # Restore singletons
+    update_singletons(singletons)
 
     return experiment_client

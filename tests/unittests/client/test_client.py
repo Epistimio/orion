@@ -365,3 +365,20 @@ class TestWorkon:
         experiment = workon(foo, space={'x': 'uniform(0, 10)'}, max_trials=5, name='voici')
 
         assert experiment.name == 'voici'
+
+    def test_workon_twice(self):
+        """Verify setting the each experiment has its own storage"""
+        def foo(x):
+            return [dict(name='result', type='objective', value=x * 2)]
+
+        experiment = workon(foo, space={'x': 'uniform(0, 10)'}, max_trials=5, name='voici')
+
+        assert experiment.name == 'voici'
+        assert len(experiment.fetch_trials()) == 5
+
+        experiment2 = workon(foo, space={'x': 'uniform(0, 10)'}, max_trials=1, name='voici')
+
+        assert experiment2.name == 'voici'
+        assert len(experiment2.fetch_trials()) == 1
+
+        pytest.set_trace()
