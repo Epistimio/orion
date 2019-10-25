@@ -1222,7 +1222,7 @@ class CommandLineConflict(Conflict):
         nameless_keys = set(parser.parser.arguments.keys()) - set(priors.keys())
 
         nameless_args = {key: arg for key, arg in parser.parser.arguments.items()
-                         if key in nameless_keys and key not in orion.core.config.non_monitored}
+                         if key in nameless_keys and key not in orion.core.config.non_monitored_arguments}
 
         return " ".join(" ".join([key, str(arg)]) for key, arg in
                         sorted(nameless_args.items(), key=lambda a: a[0]))
