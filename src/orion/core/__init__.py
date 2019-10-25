@@ -59,6 +59,9 @@ def define_config():
     config.add_option(
         'user_script_config', option_type=str, default='config')
 
+    config.add_option(
+        'non_monitored_arguments', option_type=list, default=[])
+
     return config
 
 
