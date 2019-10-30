@@ -248,7 +248,7 @@ class TestCodeConflict(object):
         old_config = {'metadata': {'VCS': {}}}
         new_config = {'metadata': {'VCS': {}}}
 
-        assert list(conflict.CodeConflict.detect(old_config, new_config)) == []
+        assert list(conflict.CodeConflict.detect(, old_config, new_config) == []
 
 
 class TestCommandLineConflict(object):
@@ -331,7 +331,7 @@ class TestScriptConfigConflict(object):
         backward.populate_space(old_config)
         backward.populate_space(new_config)
 
-        conflicts = list(conflict.ScriptConfigConflict.detect(old_config, new_config))
+        conflicts = list(conflict.ScriptConfigConflict.detect(, old_config, new_config)
         assert len(conflicts) == 1
 
     def test_comparison_idem(self, yaml_config):
@@ -342,7 +342,7 @@ class TestScriptConfigConflict(object):
         backward.populate_space(old_config)
         backward.populate_space(new_config)
 
-        assert list(conflict.ScriptConfigConflict.detect(old_config, new_config)) == []
+        assert list(conflict.ScriptConfigConflict.detect(, old_config, new_config) == []
 
 
 @pytest.mark.usefixtures("create_db_instance")

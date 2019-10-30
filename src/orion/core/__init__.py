@@ -59,9 +59,6 @@ def define_config():
     config.add_option(
         'user_script_config', option_type=str, default='config')
 
-    config.add_option(
-        'non_monitored_arguments', option_type=list, default=[])
-
     return config
 
 
@@ -147,6 +144,8 @@ def define_evc_config(config):
         'auto_resolution', option_type=bool, default=True)
     evc_config.add_option(
         'manual_resolution', option_type=bool, default=False)
+    evc_config.add_option(
+        'non_monitored_arguments', option_type=list, default=[])
     evc_config.add_option(
         'algorithm_change', option_type=bool, default=False)
     evc_config.add_option(

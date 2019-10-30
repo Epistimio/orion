@@ -92,11 +92,11 @@ def _build_space(config):
     return space
 
 
-def detect_conflicts(old_config, new_config):
+def detect_conflicts(old_config, new_config, branching):
     """Generate a Conflicts object with all conflicts found in pair (old_config, new_config)"""
     conflicts = Conflicts()
     for conflict_class in sorted(Conflict.__subclasses__(), key=lambda cls: cls.__name__):
-        for conflict in conflict_class.detect(old_config, new_config):
+        for conflict in conflict_class.detect(old_config, new_config, branching):
             conflicts.register(conflict)
 
     return conflicts
@@ -307,8 +307,10 @@ class Conflict(object, metaclass=ABCMeta):
     """
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect all conflicts in given pair (old_config, new_config) and return a list of them"""
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect all conflicts in given pair (old_config, new_config) and return a list of them
+        :param branching_config:
+        """
         pass
 
     def __init__(self, old_config, new_config):
@@ -528,8 +530,10 @@ class NewDimensionConflict(Conflict):
     """
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect all new dimensions in `new_config` based on `old_config`"""
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect all new dimensions in `new_config` based on `old_config`
+        :param branching_config:
+        """
         old_space = _build_space(old_config)
         new_space = _build_space(new_config)
         for name, dim in new_space.items():
@@ -658,8 +662,10 @@ class ChangedDimensionConflict(Conflict):
     """
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect all changed dimensions in `new_config` based on `old_config`"""
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect all changed dimensions in `new_config` based on `old_config`
+        :param branching_config:
+        """
         old_space = _build_space(old_config)
         new_space = _build_space(new_config)
         for name, dim in new_space.items():
@@ -742,8 +748,10 @@ class MissingDimensionConflict(Conflict):
     """
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect all missing dimensions in `new_config` based on `old_config`"""
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect all missing dimensions in `new_config` based on `old_config`
+        :param branching_config:
+        """
         for conflict in NewDimensionConflict.detect(new_config, old_config):
             yield cls(old_config, new_config, conflict.dimension, conflict.prior)
 
@@ -1033,8 +1041,10 @@ class AlgorithmConflict(Conflict):
     """
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect if algorithm definition in `new_config` differs from `old_config`"""
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect if algorithm definition in `new_config` differs from `old_config`
+        :param branching_config:
+        """
         if old_config['algorithms'] != new_config['algorithms']:
             yield cls(old_config, new_config)
 
@@ -1091,8 +1101,10 @@ class CodeConflict(Conflict):
     """
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect if commit hash in `new_config` differs from `old_config`"""
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect if commit hash in `new_config` differs from `old_config`
+        :param branching_config:
+        """
         old_hash_commit = old_config['metadata'].get('VCS', None)
         new_hash_commit = new_config['metadata'].get('VCS')
 
@@ -1210,29 +1222,37 @@ class CommandLineConflict(Conflict):
     """
 
     @classmethod
-    def get_nameless_args(cls, config):
+    def get_nameless_args(cls, config, user_script_config=None,
+                          non_monitored_arguments=None, **kwargs):
         """Get user's commandline arguments which are not dimension definitions"""
         # Used python API
         if 'parser' not in config['metadata']:
             return ""
 
-        parser = OrionCmdlineParser(orion.core.config.user_script_config)
+        if user_script_config is None:
+            user_script_config = orion.core.config.user_script_config
+        if non_monitored_arguments is None:
+            non_monitored_arguments = orion.core.config.evc.non_monitored_arguments
+
+        parser = OrionCmdlineParser(user_script_config)
         parser.set_state_dict(config['metadata']['parser'])
         priors = parser.priors_to_normal()
         nameless_keys = set(parser.parser.arguments.keys()) - set(priors.keys())
 
         nameless_args = {key: arg for key, arg in parser.parser.arguments.items()
                          if key in nameless_keys and
-                         key not in orion.core.config.non_monitored_arguments}
+                         key not in non_monitored_arguments}
 
         return " ".join(" ".join([key, str(arg)]) for key, arg in
                         sorted(nameless_args.items(), key=lambda a: a[0]))
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect if command line call in `new_config` differs from `old_config`"""
-        old_nameless_args = cls.get_nameless_args(old_config)
-        new_nameless_args = cls.get_nameless_args(new_config)
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect if command line call in `new_config` differs from `old_config`
+        :param branching_config:
+        """
+        old_nameless_args = cls.get_nameless_args(old_config, **branching_config)
+        new_nameless_args = cls.get_nameless_args(new_config, **branching_config)
 
         if old_nameless_args != new_nameless_args:
             yield cls(old_config, new_config)
@@ -1363,8 +1383,10 @@ class ScriptConfigConflict(Conflict):
         return nameless_config
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect if user's script's config file in `new_config` differs from `old_config`"""
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect if user's script's config file in `new_config` differs from `old_config`
+        :param branching_config:
+        """
         old_script_config = cls.get_nameless_config(old_config)
         new_script_config = cls.get_nameless_config(new_config)
 
@@ -1480,10 +1502,11 @@ class ExperimentNameConflict(Conflict):
     """
 
     @classmethod
-    def detect(cls, old_config, new_config):
+    def detect(cls, old_config, new_config, branching_config=None):
         """Return experiment name conflict no matter what
 
         Branching event cannot be triggered experiment name is not the same.
+        :param branching_config:
         """
         yield cls(old_config, new_config)
 

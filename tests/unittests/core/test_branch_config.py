@@ -313,9 +313,9 @@ class TestConflictDetection(object):
 
     def test_cli_ignored_conflict(self, parent_config, changed_cli_config):
         """Test if ignored changed command line call is detected as a conflict"""
-        parent_config['non_monitored_arguments'] = 'another'
-        changed_cli_config['non_monitored_arguments'] = 'another'
-        conflicts = detect_conflicts(parent_config, changed_cli_config)
+        changed_cli_config['metadata']['user_args'].pop()
+        conflicts = detect_conflicts(parent_config, changed_cli_config,
+                                     {'non_monitored_arguments': ['u', 'another']})
 
         assert len(conflicts.get()) == 1
 
