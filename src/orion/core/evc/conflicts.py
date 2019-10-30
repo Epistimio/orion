@@ -92,7 +92,7 @@ def _build_space(config):
     return space
 
 
-def detect_conflicts(old_config, new_config, branching):
+def detect_conflicts(old_config, new_config, branching=None):
     """Generate a Conflicts object with all conflicts found in pair (old_config, new_config)"""
     conflicts = Conflicts()
     for conflict_class in sorted(Conflict.__subclasses__(), key=lambda cls: cls.__name__):
@@ -1252,6 +1252,8 @@ class CommandLineConflict(Conflict):
         """Detect if command line call in `new_config` differs from `old_config`
         :param branching_config:
         """
+        if branching_config is None:
+            branching_config = {}
         old_nameless_args = cls.get_nameless_args(old_config, **branching_config)
         new_nameless_args = cls.get_nameless_args(new_config, **branching_config)
 
