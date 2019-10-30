@@ -1221,6 +1221,7 @@ class CommandLineConflict(Conflict):
 
     """
 
+    # pylint: disable=unused-argument
     @classmethod
     def get_nameless_args(cls, config, user_script_config=None,
                           non_monitored_arguments=None, **kwargs):
