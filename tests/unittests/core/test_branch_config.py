@@ -281,6 +281,13 @@ class TestConflictDetection(object):
         assert conflict.new_config['metadata']['VCS']['HEAD_sha'] == 'new_test'
         assert isinstance(conflict, CodeConflict)
 
+    def test_ignore_code_conflict(self, parent_config, changed_code_config):
+        """Test if ignored code commit hash change is detected as a conflict"""
+        conflicts = detect_conflicts(parent_config, changed_code_config,
+                                     {'ignore_code_changes': True})
+
+        assert len(conflicts.get()) == 1
+
     def test_config_new_name_no_conflict(self, parent_config, same_userconfig_config):
         """Test if same configuration file with a different name is not detected as a conflict"""
         conflicts = detect_conflicts(parent_config, same_userconfig_config)

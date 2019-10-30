@@ -1108,7 +1108,9 @@ class CodeConflict(Conflict):
         old_hash_commit = old_config['metadata'].get('VCS', None)
         new_hash_commit = new_config['metadata'].get('VCS')
 
-        if new_hash_commit and old_hash_commit != new_hash_commit:
+        ignore_code_changes = branching_config is not None and \
+            branching_config['ignore_code_changes']
+        if not ignore_code_changes and new_hash_commit and old_hash_commit != new_hash_commit:
             yield cls(old_config, new_config)
 
     def get_marked_arguments(self, conflicts):
