@@ -147,6 +147,8 @@ def define_evc_config(config):
     evc_config.add_option(
         'non_monitored_arguments', option_type=list, default=[])
     evc_config.add_option(
+        'ignore_code_changes', option_type=bool, default=False)
+    evc_config.add_option(
         'algorithm_change', option_type=bool, default=False)
     evc_config.add_option(
         'code_change_type', option_type=str, default='break')
