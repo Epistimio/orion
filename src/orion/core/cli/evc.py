@@ -105,6 +105,7 @@ def get_branching_args_group(parser):
 
     _add_manual_resolution_argument(branching_args_group)
     _add_non_monitored_arguments_argument(branching_args_group)
+    _add_ignore_code_changes_argument(branching_args_group)
     _add_auto_resolution_argument(branching_args_group)
     _add_branch_from_argument(branching_args_group)
 
