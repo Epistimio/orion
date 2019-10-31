@@ -28,8 +28,7 @@ def _add_manual_resolution_argument(parser):
 
 def _add_non_monitored_arguments_argument(parser):
     parser.add_argument(
-        "--non-monitored-arguments",
-        action="store_true",
+        "--non-monitored-arguments", type=str, nargs='*',
         help="Ignore these arguments when looking for differences")
 
 
@@ -105,6 +104,7 @@ def get_branching_args_group(parser):
         description="Arguments to automatically resolved branching events.")
 
     _add_manual_resolution_argument(branching_args_group)
+    _add_non_monitored_arguments_argument(branching_args_group)
     _add_auto_resolution_argument(branching_args_group)
     _add_branch_from_argument(branching_args_group)
 
