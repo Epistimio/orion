@@ -28,7 +28,7 @@ def _add_manual_resolution_argument(parser):
 
 def _add_non_monitored_arguments_argument(parser):
     parser.add_argument(
-        "--non-monitored-arguments", type=list,
+        "--non-monitored-arguments", type=str, nargs='*',
         help="Ignore these arguments when looking for differences")
 
 
