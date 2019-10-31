@@ -151,6 +151,8 @@ def build(name, version=None, branching=None, **config):
             Name of the experiment to branch from.
         manual_resolution: bool, optional
             Starts the prompt to resolve manually the conflicts. Defaults to False.
+        non_monitored_arguments: list of str, optional
+            Will ignore these arguments while looking for differences. Defaults to [].
         algorithm_change: bool, optional
             Whether to automatically solve the algorithm conflict (change of algo config).
             Defaults to True.
@@ -209,7 +211,7 @@ def build(name, version=None, branching=None, **config):
 
         return experiment
 
-    conflicts = _get_conflicts(experiment)
+    conflicts = _get_conflicts(experiment, branching)
     must_branch = len(conflicts.get()) > 1 or branching.get('branch_to')
     if must_branch:
         branched_experiment = _branch_experiment(experiment, conflicts, version, branching)
@@ -463,10 +465,11 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
     return create_experiment(**config)
 
 
-def _get_conflicts(experiment):
+def _get_conflicts(experiment, branching):
     """Get conflicts between current experiment and corresponding configuration in database"""
     db_experiment = build_view(experiment.name, experiment.version)
-    conflicts = detect_conflicts(db_experiment.configuration, experiment.configuration)
+    conflicts = detect_conflicts(db_experiment.configuration, experiment.configuration,
+                                 branching)
 
     # elif must_branch and not enable_branching:
     #     raise ValueError("Configuration is different and generate a branching event")

@@ -311,6 +311,16 @@ class TestConflictDetection(object):
         assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
         assert not conflicts.get([CommandLineConflict])[0].is_resolved
 
+    def test_cli_ignored_conflict(self, parent_config, changed_cli_config):
+        """Test if ignored changed command line call is detected as a conflict"""
+        changed_cli_config['metadata']['user_args'].pop()
+        conflicts = detect_conflicts(parent_config, changed_cli_config,
+                                     {'non_monitored_arguments': ['u', 'another']})
+
+        assert len(conflicts.get()) == 1
+
+        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+
 
 class TestResolutions(object):
     """Test resolution of conflicts"""
