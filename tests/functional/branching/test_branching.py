@@ -171,6 +171,18 @@ def init_full_x_new_cli(init_full_x):
 
 
 @pytest.fixture
+def init_full_x_ignore_cli(init_full_x):
+    """Remove z from full x full z and give a default value of 4"""
+    name = "full_x"
+    orion.core.cli.main(
+        ("init_only -n {name} --non-monitored-arguments a_new --cli-change-type noeffect "
+         "./black_box_new.py "
+         "-x~uniform(-10,10) --a-new argument").format(name=name).split(" "))
+    orion.core.cli.main("insert -n {name} script -x=1.2".format(name=name).split(" "))
+    orion.core.cli.main("insert -n {name} script -x=-1.2".format(name=name).split(" "))
+
+
+@pytest.fixture
 def init_entire(init_half_x_full_y,  # 1.1.1
                 init_full_x_rename_half_y_half_z,  # 1.1.2.1
                 init_full_x_rename_half_y_full_z,  # 1.1.2.2
@@ -434,6 +446,15 @@ def test_new_algo_not_resolved(init_full_x):
              "--manual-resolution ./black_box.py -x~uniform(-10,10)")
             .format(name=name, branch=branch).split(" "))
     assert "Configuration is different and generates a branching event" in str(exc.value)
+
+
+def test_new_algo_ignore_cli(init_full_x_ignore_cli):
+    """Test that a non-monitored parameter conflict is not generating a child"""
+    name = "full_x"
+    orion.core.cli.main(
+        ("init_only -n {name} --non-monitored-arguments a_new --config new_algo_config.yaml "
+         "--manual-resolution ./black_box.py -x~uniform(-10,10)")
+        .format(name=name).split(" "))
 
 
 def test_new_cli(init_full_x_new_cli):
