@@ -8,6 +8,7 @@ import pytest
 
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
+from orion.core.io import resolve_config
 from orion.storage.base import get_storage
 
 
@@ -176,8 +177,7 @@ def init_full_x_ignore_cli(init_full_x):
     name = "full_x"
     orion.core.cli.main(
         ("init_only -n {name} --non-monitored-arguments a-new --cli-change-type noeffect "
-         "./black_box_new.py "
-         "-x~uniform(-10,10) --a-new argument").format(name=name).split(" "))
+         "./black_box_new.py -x~uniform(-10,10) --a-new argument").format(name=name).split(" "))
     orion.core.cli.main("insert -n {name} script -x=1.2".format(name=name).split(" "))
     orion.core.cli.main("insert -n {name} script -x=-1.2".format(name=name).split(" "))
 
@@ -455,6 +455,32 @@ def test_new_algo_ignore_cli(init_full_x_ignore_cli):
         ("init_only -n {name} --non-monitored-arguments a-new --config new_algo_config.yaml "
          "--manual-resolution ./black_box.py -x~uniform(-10,10)")
         .format(name=name).split(" "))
+
+
+def test_new_algo_triggers_code_conflict(init_full_x, monkeypatch):
+    """..."""
+    name = "full_x"
+    orion.core.cli.main(("init_only -n {name} --config orion_config.yaml ./black_box.py "
+                         "-x~uniform(-10,10)").format(name=name).split(" "))
+    orion.core.cli.main("insert -n {name} script -x=0".format(name=name).split(" "))
+
+    def fixed_dictionary(_):
+        """Create VCS"""
+        vcs = {}
+        vcs['type'] = 'git'
+        vcs['is_dirty'] = False
+        vcs['HEAD_sha'] = "different"
+        vcs['active_branch'] = None
+        vcs['diff_sha'] = "diff"
+        return vcs
+    monkeypatch.setattr(resolve_config, "infer_versioning_metadata", fixed_dictionary)
+
+    with pytest.raises(ValueError) as exc:
+        orion.core.cli.main(
+            ("init_only -n {name} --non-monitored-arguments a-new --config new_algo_config.yaml "
+             "--manual-resolution ./black_box.py -x~uniform(-10,10)")
+            .format(name=name).split(" "))
+    assert "Configuration is different and generates a branching event" in str(exc.value)
 
 
 def test_new_cli(init_full_x_new_cli):
