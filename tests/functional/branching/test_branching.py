@@ -8,7 +8,6 @@ import pytest
 
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
-from orion.core.io import resolve_config
 from orion.storage.base import get_storage
 
 
@@ -173,7 +172,7 @@ def init_full_x_new_cli(init_full_x):
 
 @pytest.fixture
 def init_full_x_ignore_cli(init_full_x):
-    """Uses the --non-monitored-arguments argument"""
+    """Use the --non-monitored-arguments argument"""
     name = "full_x"
     orion.core.cli.main(
         ("init_only -n {name} --non-monitored-arguments a-new --cli-change-type noeffect "
@@ -184,7 +183,7 @@ def init_full_x_ignore_cli(init_full_x):
 
 @pytest.fixture
 def init_full_x_ignore_code_change_cli(init_full_x):
-    """Uses the --ignore-code-changes argument"""
+    """Use the --ignore-code-changes argument"""
     name = "full_x"
     orion.core.cli.main(
         ("init_only -n {name} --ignore-code-changes --cli-change-type noeffect "
