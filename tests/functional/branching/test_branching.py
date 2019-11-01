@@ -480,7 +480,7 @@ def test_new_code_triggers_code_conflict():
 
 
 @pytest.mark.usefixtures('init_full_x_ignore_code_change_cli', 'mock_infer_versioning_metadata')
-def test_new_algo_ignores_code_conflict():
+def test_new_code_ignores_code_conflict():
     """Test that a different git hash is *not* generating a child if --ignore-code-changes"""
     name = "full_x"
     orion.core.cli.main(
