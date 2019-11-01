@@ -468,7 +468,7 @@ def test_new_algo_ignore_cli(init_full_x_ignore_cli):
 
 
 @pytest.mark.usefixtures('init_full_x', 'mock_infer_versioning_metadata')
-def test_new_algo_triggers_code_conflict():
+def test_new_code_triggers_code_conflict():
     """Test that a different git hash is generating a child"""
     name = "full_x"
     with pytest.raises(ValueError) as exc:
