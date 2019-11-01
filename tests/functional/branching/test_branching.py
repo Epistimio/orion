@@ -186,7 +186,7 @@ def init_full_x_ignore_code_change_cli(init_full_x):
     """Use the --ignore-code-changes argument"""
     name = "full_x"
     orion.core.cli.main(
-        ("init_only -n {name} --ignore-code-changes --cli-change-type noeffect "
+        ("init_only -n {name} --ignore-code-changes "
          "./black_box_new.py -x~uniform(-10,10)").format(name=name).split(" "))
     orion.core.cli.main("insert -n {name} script -x=1.2".format(name=name).split(" "))
     orion.core.cli.main("insert -n {name} script -x=-1.2".format(name=name).split(" "))
