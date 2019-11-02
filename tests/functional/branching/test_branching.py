@@ -473,7 +473,7 @@ def test_new_code_triggers_code_conflict():
     name = "full_x"
     with pytest.raises(ValueError) as exc:
         orion.core.cli.main(
-            ("init_only -n {name} --config new_algo_config.yaml "
+            ("init_only -n {name} "
              "--manual-resolution ./black_box.py -x~uniform(-10,10)")
             .format(name=name).split(" "))
     assert "Configuration is different and generates a branching event" in str(exc.value)
