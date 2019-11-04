@@ -153,6 +153,8 @@ def build(name, version=None, branching=None, **config):
             Starts the prompt to resolve manually the conflicts. Defaults to False.
         non_monitored_arguments: list of str, optional
             Will ignore these arguments while looking for differences. Defaults to [].
+        ignore_code_changes: bool, optional
+            Will ignore code changes while looking for differences. Defaults to False.
         algorithm_change: bool, optional
             Whether to automatically solve the algorithm conflict (change of algo config).
             Defaults to True.
