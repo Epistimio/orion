@@ -182,17 +182,6 @@ def init_full_x_ignore_cli(init_full_x):
 
 
 @pytest.fixture
-def init_full_x_ignore_code_change(init_full_x):
-    """Use the --ignore-code-changes argument"""
-    name = "full_x"
-    orion.core.cli.main(
-        ("init_only -n {name} --ignore-code-changes "
-         "./black_box_new.py -x~uniform(-10,10)").format(name=name).split(" "))
-    orion.core.cli.main("insert -n {name} script -x=1.2".format(name=name).split(" "))
-    orion.core.cli.main("insert -n {name} script -x=-1.2".format(name=name).split(" "))
-
-
-@pytest.fixture
 def init_entire(init_half_x_full_y,  # 1.1.1
                 init_full_x_rename_half_y_half_z,  # 1.1.2.1
                 init_full_x_rename_half_y_full_z,  # 1.1.2.2
@@ -479,7 +468,7 @@ def test_new_code_triggers_code_conflict():
     assert "Configuration is different and generates a branching event" in str(exc.value)
 
 
-@pytest.mark.usefixtures('init_full_x_ignore_code_change', 'mock_infer_versioning_metadata')
+@pytest.mark.usefixtures('init_full_x', 'mock_infer_versioning_metadata')
 def test_new_code_ignores_code_conflict():
     """Test that a different git hash is *not* generating a child if --ignore-code-changes"""
     name = "full_x"
