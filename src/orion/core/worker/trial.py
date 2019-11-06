@@ -12,6 +12,9 @@
 import hashlib
 import logging
 
+from orion.core.utils.flatten import unflatten
+
+
 log = logging.getLogger(__name__)
 
 
@@ -218,7 +221,7 @@ class Trial:
     @property
     def params(self):
         """Parameters of the trial"""
-        return {param.name: param.value for param in self._params}
+        return unflatten({param.name: param.value for param in self._params})
 
     @property
     def results(self):

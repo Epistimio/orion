@@ -218,3 +218,14 @@ class TestSpaceBuilder(object):
                  'z': 'choices([\'voici\', \'voila\', 2])'}
         space = spacebuilder.build(prior)
         assert space.configuration == prior
+
+    def test_subdict_dimensions(self, spacebuilder):
+        """Test space can have hierarchical structure."""
+        prior = {'a': {'x': 'uniform(0, 10, discrete=True)'},
+                 'b': {'y': 'loguniform(1e-08, 1)',
+                       'z': 'choices([\'voici\', \'voila\', 2])'}}
+        space = spacebuilder.build(prior)
+        assert len(space) == 3
+        assert 'a.x' in space
+        assert 'b.y' in space
+        assert 'b.z' in space

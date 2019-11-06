@@ -15,6 +15,7 @@ import logging
 from numpy import inf as infinity
 
 from orion.core.io.database import DuplicateKeyError
+from orion.core.utils.flatten import flatten, unflatten
 import orion.core.utils.format_trials as format_trials
 import orion.core.worker
 from orion.core.worker.trial import Trial
@@ -457,13 +458,14 @@ class ExperimentClient:
 
         """
         trials = 0
+        kwargs = flatten(kwargs)
         while not self.is_done and trials < max_trials:
             trial = self.suggest()
             if trial is None:
                 log.warning('Algorithm could not sample new points')
                 return trials
-            kwargs.update(trial.params)
-            results = fct(**kwargs)
+            kwargs.update(flatten(trial.params))
+            results = fct(**unflatten(kwargs))
             self.observe(trial, results=results)
             trials += 1
 
