@@ -559,6 +559,26 @@ class TestBuild(object):
         assert isinstance(exp.space, Space)
         assert isinstance(exp.refers['adapter'], BaseAdapter)
 
+    def test_hierarchical_space(self, new_config):
+        """Verify space can have hierarchical structure"""
+        space = {'a': {'x': 'uniform(0, 10, discrete=True)'},
+                 'b': {'y': 'loguniform(1e-08, 1)',
+                       'z': 'choices([\'voici\', \'voila\', 2])'}}
+
+        with OrionState(experiments=[], trials=[]):
+            exp = experiment_builder.build('hierarchy', space=space)
+
+            exp2 = experiment_builder.build('hierarchy')
+
+        assert 'a.x' in exp.space
+        assert 'b.y' in exp.space
+        assert 'b.z' in exp.space
+
+        # Make sure it can be fetched properly from db as well
+        assert 'a.x' in exp2.space
+        assert 'b.y' in exp2.space
+        assert 'b.z' in exp2.space
+
     def test_try_set_after_race_condition(self, new_config, monkeypatch):
         """Cannot set a configuration after init if it looses a race
         condition.

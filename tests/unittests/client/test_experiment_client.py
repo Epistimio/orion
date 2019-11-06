@@ -686,6 +686,24 @@ class TestSuggest:
             assert len(experiment.fetch_trials()) == 1
             assert client.is_broken
 
+    def test_suggest_hierarchical_space(self):
+        """Verify that suggest returns trial with proper hierarchical parameter."""
+        exp_config = copy.deepcopy(config)
+        exp_config['space'] = {
+            'a': {'x': 'uniform(0, 10, discrete=True)'},
+            'b': {'y': 'loguniform(1e-08, 1)',
+                  'z': 'choices([\'voici\', \'voila\', 2])'}}
+        with create_experiment(exp_config=exp_config, stati=[]) as (cfg, experiment, client):
+            trial = client.suggest()
+            assert trial.status == 'reserved'
+            assert len(trial.params) == 2
+            assert 'x' in trial.params['a']
+            assert 'y' in trial.params['b']
+            assert 'z' in trial.params['b']
+
+            assert client._pacemakers[trial.id].is_alive()
+            client._pacemakers.pop(trial.id).stop()
+
 
 class TestObserve:
     """Tests for ExperimentClient.observe"""
@@ -784,3 +802,27 @@ class TestWorkon:
             client.workon(foo, max_trials=1, y=default_y)
             assert len(experiment.fetch_trials()) == 1
             assert experiment.fetch_trials()[0].params['y'] != 2
+
+    def test_workon_hierarchical_partial_with_override(self):
+        """Verify that hierarchical partial is overriden by trial.params"""
+        default_y = 2
+        default_z = 'voila'
+
+        def foo(a, b):
+            assert b['y'] != default_y
+            assert b['z'] == default_z
+            return [dict(name='result', type='objective', value=a['x'] * 2 + b['y'])]
+
+        ext_config = copy.deepcopy(config)
+        ext_config['space'] = {
+            'a': {'x': 'uniform(0, 10, discrete=True)'},
+            'b': {'y': 'loguniform(1e-08, 1)'}}
+
+        with create_experiment(exp_config=ext_config, stati=[]) as (cfg, experiment, client):
+            assert len(experiment.fetch_trials()) == 0
+            client.workon(foo, max_trials=1, b={'y': default_y, 'z': default_z})
+            assert len(experiment.fetch_trials()) == 1
+            params = experiment.fetch_trials()[0].params
+            assert len(params)
+            assert 'x' in params['a']
+            assert 'y' in params['b']
