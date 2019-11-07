@@ -227,6 +227,13 @@ class TestTrial(object):
             t.hash_name
         assert 'params' in str(exc.value)
 
+    def test_AAAA_name_property(self, exp_config):
+        """Check property `Trial.hash_name`."""
+        t = Trial(**exp_config[1][1])
+        #MIRKO
+        assert t.AAAA_name == "ebcf6c6c8604f96444af1c3e519aea7f"
+        t._params['']
+
     def test_full_name_property(self, exp_config):
         """Check property `Trial.full_name`."""
         t = Trial(**exp_config[1][1])

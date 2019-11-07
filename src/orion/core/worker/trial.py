@@ -298,9 +298,13 @@ class Trial:
         """Represent with a string the given values."""
         return sep.join(map(lambda value: "{0.name}:{0.value}".format(value), values))
 
-    def params_repr(self, sep=','):
+    def params_repr(self, sep=',', ignore_fidelity=False):
         """Represent with a string the parameters contained in this `Trial` object."""
-        return self._repr_values(self._params, sep)
+        if ignore_fidelity:
+            params = [x for x in self._params if x.type != 'fidelity']
+        else:
+            params = self._params
+        return self._repr_values(params, sep)
 
     @property
     def hash_name(self):
@@ -315,6 +319,19 @@ class Trial:
         experiment_repr = str(self.experiment)
         lie_repr = self._repr_values([self.lie]) if self.lie else ""
         return hashlib.md5((params_repr + experiment_repr + lie_repr).encode('utf-8')).hexdigest()
+
+    @property
+    def AAAA_name(self): # MIRKO - change name
+        """Generate a unique name with an md5sum hash for this `Trial`.
+
+        .. note:: Two trials that have the same `params` must have the same `hash_name`.
+        """
+        if not self._params and not self.experiment:
+            raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
+                             "have not been set.")
+        params_repr = self.params_repr(ignore_fidelity=True)
+        experiment_repr = str(self.experiment)
+        return hashlib.md5((params_repr + experiment_repr).encode('utf-8')).hexdigest()
 
     def __hash__(self):
         """Return the hashname for this trial"""
