@@ -116,7 +116,6 @@ log = logging.getLogger(__name__)
 # Functions to build experiments
 ##
 
-# TODO: branch_from cannot be passed from build_from_cmdargs, must add --branch-from argument
 def build(name, version=None, branching=None, **config):
     """Build an experiment object
 
@@ -152,6 +151,10 @@ def build(name, version=None, branching=None, **config):
             Name of the experiment to branch from.
         manual_resolution: bool, optional
             Starts the prompt to resolve manually the conflicts. Defaults to False.
+        non_monitored_arguments: list of str, optional
+            Will ignore these arguments while looking for differences. Defaults to [].
+        ignore_code_changes: bool, optional
+            Will ignore code changes while looking for differences. Defaults to False.
         algorithm_change: bool, optional
             Whether to automatically solve the algorithm conflict (change of algo config).
             Defaults to True.
@@ -171,6 +174,9 @@ def build(name, version=None, branching=None, **config):
         if key.startswith('_') or value is None:
             config.pop(key)
 
+    if 'strategy' in config:
+        config['producer'] = {'strategy': config.pop('strategy')}
+
     if branching is None:
         branching = {}
 
@@ -182,6 +188,10 @@ def build(name, version=None, branching=None, **config):
 
     config = resolve_config.merge_configs(db_config, config)
 
+    metadata = resolve_config.fetch_metadata(config.get('user'), config.get('user_args'))
+
+    config = resolve_config.merge_configs(db_config, config, {'metadata': metadata})
+
     # TODO: Find a better solution
     if isinstance(config.get('algorithms'), dict) and len(config['algorithms']) > 1:
         for key in list(db_config['algorithms'].keys()):
@@ -191,7 +201,8 @@ def build(name, version=None, branching=None, **config):
     config.setdefault('version', version)
 
     if 'space' not in config:
-        raise NoConfigurationError
+        raise NoConfigurationError(
+            'Experiment {} does not exist in DB and space was not defined.'.format(name))
 
     experiment = create_experiment(**copy.deepcopy(config))
     if experiment.id is None:
@@ -202,7 +213,7 @@ def build(name, version=None, branching=None, **config):
 
         return experiment
 
-    conflicts = _get_conflicts(experiment)
+    conflicts = _get_conflicts(experiment, branching)
     must_branch = len(conflicts.get()) > 1 or branching.get('branch_to')
     if must_branch:
         branched_experiment = _branch_experiment(experiment, conflicts, version, branching)
@@ -241,21 +252,6 @@ def build_view(name, version=None):
 
     db_config.setdefault('version', 1)
 
-    if 'space' not in db_config and 'priors' in db_config.get('metadata', {}):
-        db_config['space'] = db_config['metadata']['priors']
-
-    # metadata = db_config['metadata']
-    # if 'space' in db_config:
-    #     space = db_config['space']
-    # # TODO: Remove when space is ready
-    # elif 'priors' in metadata:
-    #     space = metadata['priors']
-    # # Backward compatibility with v0.1.6
-    # else:
-    #     parser = OrionCmdlineParser(orion.core.config.user_script_config)
-    #     parser.parse(metadata['user_args'])
-    #     space = parser.priors
-
     experiment = create_experiment(**db_config)
 
     return ExperimentView(experiment)
@@ -289,9 +285,9 @@ def create_experiment(name, version, space, **kwargs):
     experiment._id = kwargs.get('_id', None)  # pylint:disable=protected-access
     experiment.pool_size = kwargs.get('pool_size', orion.core.config.experiment.pool_size)
     experiment.max_trials = kwargs.get('max_trials', orion.core.config.experiment.max_trials)
-    space = _instantiate_space(space)
-    experiment.algorithms = _instantiate_algo(space, kwargs.get('algorithms'))
-    experiment.producer = kwargs.get('producer', orion.core.config.experiment.producer.to_dict())
+    experiment.space = _instantiate_space(space)
+    experiment.algorithms = _instantiate_algo(experiment.space, kwargs.get('algorithms'))
+    experiment.producer = kwargs.get('producer', {})
     experiment.producer['strategy'] = _instantiate_strategy(experiment.producer.get('strategy'))
     experiment.working_dir = kwargs.get('working_dir', orion.core.config.experiment.working_dir)
     experiment.metadata = kwargs.get('metadata', {'user': kwargs.get('user', getpass.getuser())})
@@ -324,8 +320,7 @@ def fetch_config_from_db(name, version=None):
         log.info("Many versions for experiment %s have been found. Using latest "
                  "version %s.", name, config['version'])
 
-    if 'space' not in config and 'priors' in config.get('metadata', {}):
-        config['space'] = config['metadata']['priors']
+    backward.populate_space(config)
 
     return config
 
@@ -390,7 +385,7 @@ def _instantiate_strategy(config=None):
 
     """
     if not config:
-        config = orion.core.config.experiment.producer.to_dict().get('strategy')
+        config = orion.core.config.experiment.strategy
 
     if isinstance(config, str):
         strategy_type = config
@@ -407,6 +402,7 @@ def _register_experiment(experiment):
     config = experiment.configuration
     # This will raise DuplicateKeyError if a concurrent experiment with
     # identical (name, metadata.user) is written first in the database.
+
     get_storage().create_experiment(config)
 
     # XXX: Reminder for future DB implementations:
@@ -466,17 +462,16 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
     config['refers']['adapter'] = experiment_brancher.create_adapters().configuration
     config['refers']['parent_id'] = experiment.id
 
-    # TODO: Remove when space is in DB
-    config['space'] = config['metadata']['priors']
     config.pop('_id')
 
     return create_experiment(**config)
 
 
-def _get_conflicts(experiment):
+def _get_conflicts(experiment, branching):
     """Get conflicts between current experiment and corresponding configuration in database"""
     db_experiment = build_view(experiment.name, experiment.version)
-    conflicts = detect_conflicts(db_experiment.configuration, experiment.configuration)
+    conflicts = detect_conflicts(db_experiment.configuration, experiment.configuration,
+                                 branching)
 
     # elif must_branch and not enable_branching:
     #     raise ValueError("Configuration is different and generate a branching event")
@@ -524,8 +519,7 @@ def setup_storage(storage=None):
 
     """
     if storage is None:
-        storage = {'type': 'legacy'}
-        # TODO: storage = orion.core.config.storage.to_dict()
+        storage = orion.core.config.storage.to_dict()
 
     if storage['type'] == 'legacy':
 
@@ -562,9 +556,6 @@ def build_from_args(cmdargs):
 
     setup_storage(cmd_config['storage'])
 
-    if 'priors' in cmd_config['metadata']:
-        cmd_config['space'] = cmd_config['metadata']['priors']
-
     cmd_config['branching'] = fetch_branching_configuration(cmd_config)
 
     return build(**cmd_config)
@@ -596,16 +587,13 @@ def get_cmd_config(cmdargs):
 
     """
     cmd_config = resolve_config.fetch_config(cmdargs)
+    cmd_config = resolve_config.merge_configs(cmd_config, cmdargs)
 
-    metadata = dict(metadata=resolve_config.fetch_metadata(cmdargs))
-
-    cmd_config = resolve_config.merge_configs(cmd_config, cmdargs, metadata)
+    metadata = resolve_config.fetch_metadata(cmd_config.get('user'), cmd_config.get('user_args'))
+    cmd_config['metadata'] = metadata
     cmd_config.pop('config', None)
 
-    backward.populate_priors(cmd_config['metadata'])
+    backward.populate_space(cmd_config)
     backward.update_db_config(cmd_config)
-
-    if 'user' in cmd_config:
-        cmd_config['metadata']['user'] = cmd_config['user']
 
     return cmd_config

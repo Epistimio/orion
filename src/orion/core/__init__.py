@@ -73,7 +73,7 @@ def define_storage_config(config):
 
     define_database_config(config.storage)
     # Backward compatibility, should be removed in v0.2.0
-    define_database_config(config)
+    config.database = config.storage.database
 
 
 def define_database_config(config):
@@ -116,8 +116,7 @@ def define_experiment_config(config):
     experiment_config.add_option(
         'algorithms', option_type=dict, default={'random': {'seed': None}})
 
-    experiment_config.producer = Configuration()
-    experiment_config.producer.add_option(
+    experiment_config.add_option(
         'strategy', option_type=dict, default={'MaxParallelStrategy': {}})
 
     config.experiment = experiment_config
@@ -145,6 +144,10 @@ def define_evc_config(config):
         'auto_resolution', option_type=bool, default=True)
     evc_config.add_option(
         'manual_resolution', option_type=bool, default=False)
+    evc_config.add_option(
+        'non_monitored_arguments', option_type=list, default=[])
+    evc_config.add_option(
+        'ignore_code_changes', option_type=bool, default=False)
     evc_config.add_option(
         'algorithm_change', option_type=bool, default=False)
     evc_config.add_option(

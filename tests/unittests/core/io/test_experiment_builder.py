@@ -21,19 +21,6 @@ def count_experiments():
     return len(get_storage().fetch_experiments({}))
 
 
-# TODO: Remove and use OrionState instead
-@pytest.fixture
-def init_storage(clean_db, test_config):
-    """Create the storage singleton."""
-    experiment_builder.setup_storage(
-        storage={
-            'type': 'legacy',
-            'database': {
-                'type': 'mongodb',
-                'name': 'orion_test',
-                'host': 'mongodb://user:pass@localhost'}})
-
-
 @pytest.fixture
 def space():
     """Build a space definition"""
@@ -43,18 +30,17 @@ def space():
 @pytest.fixture()
 def python_api_config():
     """Create a configuration without the cli fluff."""
-    # TODO: replace metadata[priors] by space when space in DB
     new_config = dict(
         name='supernaekei',
         version=1,
+        space={'x': 'uniform(0,10)'},
         metadata={'user': 'tsirif',
                   'orion_version': 'XYZ',
                   'VCS': {"type": "git",
                           "is_dirty": False,
                           "HEAD_sha": "test",
                           "active_branch": None,
-                          "diff_sha": "diff"},
-                  'priors': {'x': 'uniform(0,10)'}},
+                          "diff_sha": "diff"}},
         max_trials=1000,
         working_dir='',
         algorithms={
@@ -115,7 +101,7 @@ def new_config(random_dt, script_path):
             adapter=[])
         )
 
-    backward.populate_priors(new_config['metadata'])
+    backward.populate_space(new_config)
 
     return new_config
 
@@ -131,7 +117,7 @@ def parent_version_config():
         metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow(),
                   'user_args': ['--x~normal(0,1)']})
 
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
 
     return config
 
@@ -145,10 +131,11 @@ def child_version_config(parent_version_config):
     config['refers'] = {'parent_id': 'parent_config'}
     config['metadata']['datetime'] = datetime.datetime.utcnow()
     config['metadata']['user_args'].append('--y~+normal(0,1)')
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
     return config
 
 
+@pytest.mark.usefixtures('with_user_tsirif', 'version_XYZ')
 def test_get_cmd_config(config_file):
     """Test local config (cmdconfig, cmdargs)"""
     cmdargs = {"config": config_file}
@@ -165,8 +152,12 @@ def test_get_cmd_config(config_file):
             'host': 'mongodb://user:pass@localhost',
             'name': 'orion_test',
             'type': 'mongodb'}}
+    assert local_config['metadata'] == {
+        'orion_version': 'XYZ',
+        'user': 'tsirif'}
 
 
+@pytest.mark.usefixtures('with_user_tsirif', 'version_XYZ')
 def test_get_cmd_config_from_incomplete_config(incomplete_config_file):
     """Test local config with incomplete user configuration file
     (default, env_vars, cmdconfig, cmdargs)
@@ -183,12 +174,16 @@ def test_get_cmd_config_from_incomplete_config(incomplete_config_file):
     assert local_config['storage']['database']['host'] == 'mongodb://user:pass@localhost'
     assert local_config['storage']['database']['type'] == 'incomplete'
     assert local_config['name'] == 'incomplete'
+    assert local_config['metadata'] == {
+        'orion_version': 'XYZ',
+        'user': 'tsirif'}
 
 
-@pytest.mark.usefixtures('init_storage')
-def test_fetch_config_from_db_no_hit(config_file, random_dt):
+def test_fetch_config_from_db_no_hit():
     """Verify that fetch_config_from_db returns an empty dict when the experiment is not in db"""
-    db_config = experiment_builder.fetch_config_from_db(name='supernaekei')
+    with OrionState(experiments=[], trials=[]):
+        db_config = experiment_builder.fetch_config_from_db(name='supernaekei')
+
     assert db_config == {}
 
 
@@ -204,10 +199,11 @@ def test_fetch_config_from_db_hit(new_config):
     assert db_config['pool_size'] == new_config['pool_size']
     assert db_config['max_trials'] == new_config['max_trials']
     assert db_config['algorithms'] == new_config['algorithms']
+    assert db_config['metadata'] == new_config['metadata']
 
 
-@pytest.mark.usefixtures("clean_db", "null_db_instances", "with_user_tsirif")
-def test_build_view_from_args_no_hit(config_file, create_db_instance):
+@pytest.mark.usefixtures("with_user_tsirif")
+def test_build_view_from_args_no_hit(config_file):
     """Try building experiment view when not in db"""
     cmdargs = {'name': 'supernaekei', 'config': config_file}
 
@@ -281,20 +277,22 @@ def test_build_from_args_hit(old_config_file, script_path, new_config):
     assert exp.algorithms.configuration == new_config['algorithms']
 
 
-@pytest.mark.usefixtures("clean_db", "with_user_bouthilx")
-def test_build_from_args_force_user(old_config_file, random_dt):
+@pytest.mark.usefixtures("with_user_bouthilx")
+def test_build_from_args_force_user(new_config):
     """Try building experiment view when in db"""
-    cmdargs = {'name': 'supernaedo2', 'config': old_config_file}
+    cmdargs = {'name': new_config['name']}
     cmdargs['user'] = 'tsirif'
-    exp_view = experiment_builder.build_from_args(cmdargs)
+    with OrionState(experiments=[new_config], trials=[]):
+        # Test that experiment already exists
+        exp_view = experiment_builder.build_from_args(cmdargs)
     assert exp_view.metadata['user'] == 'tsirif'
 
 
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
 def test_build_no_hit(config_file, random_dt, script_path):
     """Try building experiment from config when not in db"""
     name = 'supernaekei'
-    space = {'x': 'uniform(0,10)'}
+    space = {'x': 'uniform(0, 10)'}
     max_trials = 100
 
     with OrionState(experiments=[], trials=[]):
@@ -307,11 +305,11 @@ def test_build_no_hit(config_file, random_dt, script_path):
 
     assert exp.name == name
     assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
-    assert exp.metadata['datetime'] == random_dt
-    assert exp.metadata['user'] == 'tsirif'
-    # TODO: Replace when space in db
-    assert 'space' not in exp.configuration
-    # assert exp.configuration['space'] == space
+    assert exp.metadata == {
+        'datetime': random_dt,
+        'user': 'tsirif',
+        'orion_version': 'XYZ'}
+    assert exp.configuration['space'] == space
     assert exp.max_trials == max_trials
     assert not exp.is_done
     assert exp.algorithms.configuration == {'random': {'seed': None}}
@@ -334,18 +332,18 @@ def test_build_hit(python_api_config):
         # Test that experiment already exists (this should fail otherwise)
         experiment_builder.build_view(name=name)
 
-        exp = experiment_builder.build(space=python_api_config['metadata']['priors'],
-                                       **python_api_config)
+        exp = experiment_builder.build(**python_api_config)
 
     assert exp._id == python_api_config['_id']
     assert exp.name == python_api_config['name']
     assert exp.configuration['refers'] == python_api_config['refers']
+    python_api_config['metadata']['user'] = 'dendi'
     assert exp.metadata == python_api_config['metadata']
     assert exp.max_trials == python_api_config['max_trials']
     assert exp.algorithms.configuration == python_api_config['algorithms']
 
 
-@pytest.mark.usefixtures("with_user_dendi")
+@pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
 def test_build_without_config_hit(python_api_config):
     """Try building experiment without commandline config when in db (no branch)"""
     name = 'supernaekei'
@@ -387,59 +385,65 @@ def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
     assert exp.algorithms.configuration == new_config['algorithms']
 
 
-@pytest.mark.usefixtures("create_db_instance", "with_user_tsirif")
+@pytest.mark.usefixtures("with_user_tsirif")
 class TestExperimentVersioning(object):
     """Create new Experiment with auto-versioning."""
 
     def test_new_experiment_wout_version(self, space):
         """Create a new and never-seen-before experiment without a version."""
-        exp = experiment_builder.build(name="exp_wout_version", space=space)
+        with OrionState():
+            exp = experiment_builder.build(name="exp_wout_version", space=space)
+
         assert exp.version == 1
 
     def test_new_experiment_w_version(self, space):
         """Create a new and never-seen-before experiment with a version."""
-        exp = experiment_builder.build(name="exp_wout_version", version=1, space=space)
+        with OrionState():
+            exp = experiment_builder.build(name="exp_wout_version", version=1, space=space)
+
         assert exp.version == 1
 
-    def test_backward_compatibility_no_version(self, create_db_instance, parent_version_config,
-                                               child_version_config):
+    def test_backward_compatibility_no_version(self, parent_version_config):
         """Branch from parent that has no version field."""
         parent_version_config.pop('version')
-        create_db_instance.write('experiments', parent_version_config)
-        create_db_instance.write('experiments', child_version_config)
+        with OrionState(experiments=[parent_version_config]):
+            exp = experiment_builder.build(name=parent_version_config["name"],
+                                           space={'y': 'uniform(0, 10)'})
 
-        exp = experiment_builder.build(name="old_experiment")
         assert exp.version == 2
 
-    def test_old_experiment_wout_version(self, create_db_instance, parent_version_config,
-                                         child_version_config):
+    def test_old_experiment_wout_version(self, parent_version_config):
         """Create an already existing experiment without a version."""
-        create_db_instance.write('experiments', parent_version_config)
-        create_db_instance.write('experiments', child_version_config)
+        with OrionState(experiments=[parent_version_config]):
+            exp = experiment_builder.build(name=parent_version_config["name"])
 
-        exp = experiment_builder.build(name="old_experiment")
-        assert exp.version == 2
-
-    def test_old_experiment_w_version(self, create_db_instance, parent_version_config,
-                                      child_version_config):
-        """Create an already existing experiment with a version."""
-        create_db_instance.write('experiments', parent_version_config)
-        create_db_instance.write('experiments', child_version_config)
-
-        exp = experiment_builder.build(name="old_experiment", version=1)
         assert exp.version == 1
 
-    def test_old_experiment_w_version_bigger_than_max(self, create_db_instance,
-                                                      parent_version_config, child_version_config):
-        """Create an already existing experiment with a too large version."""
-        create_db_instance.write('experiments', parent_version_config)
-        create_db_instance.write('experiments', child_version_config)
+    def test_old_experiment_2_wout_version(self, parent_version_config, child_version_config):
+        """Create an already existing experiment without a version and getting last one."""
+        with OrionState(experiments=[parent_version_config, child_version_config]):
+            exp = experiment_builder.build(name=parent_version_config["name"])
 
-        exp = experiment_builder.build(name="old_experiment", version=8)
+        assert exp.version == 2
+
+    def test_old_experiment_w_version(self, parent_version_config, child_version_config):
+        """Create an already existing experiment with a version."""
+        with OrionState(experiments=[parent_version_config, child_version_config]):
+            exp = experiment_builder.build(name=parent_version_config["name"], version=1)
+
+        assert exp.version == 1
+
+    def test_old_experiment_w_version_bigger_than_max(self, parent_version_config,
+                                                      child_version_config):
+        """Create an already existing experiment with a too large version."""
+        print(child_version_config['name'])
+        with OrionState(experiments=[parent_version_config, child_version_config]):
+            exp = experiment_builder.build(name=parent_version_config["name"], version=8)
+
         assert exp.version == 2
 
 
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
 class TestBuild(object):
     """Test building the experiment"""
 
@@ -451,10 +455,9 @@ class TestBuild(object):
         """
         with OrionState(experiments=[new_config], trials=[]):
 
-            space = new_config['metadata']['priors']
             new_config['max_trials'] = 5000
 
-            exp = experiment_builder.build(space=space, **new_config)
+            exp = experiment_builder.build(**new_config)
 
         # Deliver an external configuration to finalize init
         new_config['algorithms']['dumbalgo']['done'] = False
@@ -464,15 +467,13 @@ class TestBuild(object):
         new_config['algorithms']['dumbalgo']['value'] = 5
         new_config['algorithms']['dumbalgo']['seed'] = None
         new_config['producer']['strategy'] = "NoParallelStrategy"
-        new_config.pop('_id')
         new_config.pop('something_to_be_ignored')
         assert exp.configuration == new_config
 
     def test_good_set_before_init_no_hit(self, random_dt, new_config):
         """Trying to set, overwrite everything from input."""
         with OrionState(experiments=[], trials=[]):
-            space = new_config['metadata']['priors']
-            exp = experiment_builder.build(space=space, **new_config)
+            exp = experiment_builder.build(**new_config)
             found_config = list(get_storage().fetch_experiments({'name': 'supernaekei',
                                                                  'metadata.user': 'tsirif'}))
 
@@ -504,32 +505,28 @@ class TestBuild(object):
 
     def test_working_dir_is_correctly_set(self, new_config):
         """Check if working_dir is correctly changed."""
-        with OrionState(experiments=[], trials=[]):
-            space = new_config['metadata']['priors']
+        with OrionState():
             new_config['working_dir'] = './'
-            exp = experiment_builder.build(space=space, **new_config)
+            exp = experiment_builder.build(**new_config)
             storage = get_storage()
             found_config = list(storage.fetch_experiments({'name': 'supernaekei',
                                                            'metadata.user': 'tsirif'}))
 
-        found_config = found_config[0]
-        space = found_config['metadata']['priors']
-        exp = experiment_builder.build(space=space, **found_config)
-        assert exp.working_dir == './'
+            found_config = found_config[0]
+            exp = experiment_builder.build(**found_config)
+            assert exp.working_dir == './'
 
     def test_working_dir_works_when_db_absent(self, database, new_config):
         """Check if working_dir is correctly when absent from the database."""
         with OrionState(experiments=[], trials=[]):
-            space = new_config['metadata']['priors']
-            exp = experiment_builder.build(space=space, **new_config)
+            exp = experiment_builder.build(**new_config)
             storage = get_storage()
             found_config = list(storage.fetch_experiments({'name': 'supernaekei',
                                                            'metadata.user': 'tsirif'}))
 
-        found_config = found_config[0]
-        space = found_config['metadata']['priors']
-        exp = experiment_builder.build(space=space, **found_config)
-        assert exp.working_dir == ''
+            found_config = found_config[0]
+            exp = experiment_builder.build(**found_config)
+            assert exp.working_dir == ''
 
     def test_configuration_hit_no_diffs(self, new_config):
         """Return a configuration dict according to an experiment object.
@@ -540,8 +537,7 @@ class TestBuild(object):
         """
         with OrionState(experiments=[new_config], trials=[]):
             experiment_count_before = count_experiments()
-            space = new_config['metadata']['priors']
-            exp = experiment_builder.build(space=space, **new_config)
+            exp = experiment_builder.build(**new_config)
             assert experiment_count_before == count_experiments()
 
         new_config['algorithms']['dumbalgo']['done'] = False
@@ -551,19 +547,37 @@ class TestBuild(object):
         new_config['algorithms']['dumbalgo']['value'] = 5
         new_config['algorithms']['dumbalgo']['seed'] = None
         new_config['producer']['strategy'] = "NoParallelStrategy"
-        new_config.pop('_id')
         new_config.pop('something_to_be_ignored')
         assert exp.configuration == new_config
 
     def test_instantiation_after_init(self, new_config):
         """Verify that algo, space and refers was instanciated properly"""
         with OrionState(experiments=[new_config], trials=[]):
-            space = new_config['metadata']['priors']
-            exp = experiment_builder.build(space=space, **new_config)
+            exp = experiment_builder.build(**new_config)
 
         assert isinstance(exp.algorithms, BaseAlgorithm)
         assert isinstance(exp.space, Space)
         assert isinstance(exp.refers['adapter'], BaseAdapter)
+
+    def test_hierarchical_space(self, new_config):
+        """Verify space can have hierarchical structure"""
+        space = {'a': {'x': 'uniform(0, 10, discrete=True)'},
+                 'b': {'y': 'loguniform(1e-08, 1)',
+                       'z': 'choices([\'voici\', \'voila\', 2])'}}
+
+        with OrionState(experiments=[], trials=[]):
+            exp = experiment_builder.build('hierarchy', space=space)
+
+            exp2 = experiment_builder.build('hierarchy')
+
+        assert 'a.x' in exp.space
+        assert 'b.y' in exp.space
+        assert 'b.z' in exp.space
+
+        # Make sure it can be fetched properly from db as well
+        assert 'a.x' in exp2.space
+        assert 'b.y' in exp2.space
+        assert 'b.z' in exp2.space
 
     def test_try_set_after_race_condition(self, new_config, monkeypatch):
         """Cannot set a configuration after init if it looses a race
@@ -590,14 +604,13 @@ class TestBuild(object):
 
             monkeypatch.setattr(experiment_builder, 'fetch_config_from_db', insert_race_condition)
 
-            space = new_config['metadata']['priors']
-            experiment_builder.build(space=space, **new_config)
+            experiment_builder.build(**new_config)
 
             assert experiment_count_before == count_experiments()
 
         # Should be called
         # - once in build(),
-        # - then register fails,
+        #     -> then register fails,
         # - then called once again in build,
         # - then called in build_view to evaluate the conflicts
         assert insert_race_condition.count == 3
@@ -624,10 +637,9 @@ class TestBuild(object):
         """Check that experiment is not incremented when branching with a new name."""
         name = 'parent'
         space = {'x': 'uniform(0, 10)'}
-        metadata = {'priors': space}  # TODO: remove when space in db
 
         with OrionState(experiments=[], trials=[]):
-            parent = experiment_builder.build(name=name, space=space, metadata=metadata)
+            parent = experiment_builder.build(name=name, space=space)
 
             assert parent.name == name
             assert parent.version == 1
@@ -652,10 +664,9 @@ class TestBuild(object):
         """Check that experiment cannot be incremented when asked for v1 while v2 exists."""
         name = 'parent'
         space = {'x': 'uniform(0,10)'}
-        metadata = {'priors': space}  # TODO: remove when space in db
 
         with OrionState(experiments=[], trials=[]):
-            parent = experiment_builder.build(name=name, space=space, metadata=metadata)
+            parent = experiment_builder.build(name=name, space=space)
             child = experiment_builder.build(name=name, space={'x': 'loguniform(1,10)'})
             assert child.name == parent.name
             assert parent.version == 1
@@ -671,10 +682,9 @@ class TestBuild(object):
         """
         name = 'parent'
         space = {'x': 'uniform(0,10)'}
-        metadata = {'priors': space}  # TODO: remove when space in db
 
         with OrionState(experiments=[], trials=[]):
-            parent = experiment_builder.build(name, space=space, metadata=metadata)
+            parent = experiment_builder.build(name, space=space)
             child = experiment_builder.build(name=name, space={'x': 'loguniform(1,10)'})
             assert child.name == parent.name
             assert parent.version == 1
@@ -747,10 +757,9 @@ class TestBuild(object):
         """
         name = 'parent'
         space = {'x': 'uniform(0,10)'}
-        metadata = {'priors': space}  # TODO: remove when space in db
 
         with OrionState(experiments=[], trials=[]):
-            parent = experiment_builder.build(name, space=space, metadata=metadata)
+            parent = experiment_builder.build(name, space=space)
             child = experiment_builder.build(name=name, space={'x': 'loguniform(1,10)'})
             assert child.name == parent.name
             assert parent.version == 1

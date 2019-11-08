@@ -91,7 +91,7 @@ def exp_config():
         exp_config = list(yaml.safe_load_all(f))
 
     for config in exp_config[0]:
-        backward.populate_priors(config['metadata'])
+        backward.populate_space(config)
 
     return exp_config
 
@@ -188,6 +188,14 @@ def one_experiment_no_version(monkeypatch, one_experiment):
     monkeypatch.setattr(get_storage(), 'fetch_experiments', fetch_without_version)
 
     return one_experiment
+
+
+@pytest.fixture
+def with_experiment_using_python_api(monkeypatch, one_experiment):
+    """Create an experiment without trials."""
+    experiment = experiment_builder.build(name='from-python-api', space={'x': 'uniform(0, 10)'})
+
+    return experiment
 
 
 @pytest.fixture

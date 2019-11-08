@@ -49,7 +49,7 @@ def new_config(random_dt):
         something_to_be_ignored='asdfa'
         )
 
-    backward.populate_priors(new_config['metadata'])
+    backward.populate_space(new_config)
 
     return new_config
 
@@ -65,7 +65,7 @@ def parent_version_config():
         metadata={'user': 'corneauf', 'datetime': datetime.datetime.utcnow(),
                   'user_args': ['--x~normal(0,1)']})
 
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
 
     return config
 
@@ -79,7 +79,7 @@ def child_version_config(parent_version_config):
     config['refers'] = {'parent_id': 'parent_config'}
     config['metadata']['datetime'] = datetime.datetime.utcnow()
     config['metadata']['user_args'].append('--y~+normal(0,1)')
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
     return config
 
 
@@ -185,9 +185,9 @@ class TestReserveTrial(object):
 
     def test_reserve_success(self, random_dt):
         """Successfully find new trials in db and reserve the first one"""
-        storage_config = {'storage_type': 'legacy', 'database': {'type': 'EphemeralDB'}}
+        storage_config = {'type': 'legacy', 'database': {'type': 'EphemeralDB'}}
         with OrionState(trials=generate_trials(['new', 'reserved']),
-                        database=storage_config) as cfg:
+                        storage=storage_config) as cfg:
             exp = Experiment('supernaekei')
             exp._id = cfg.trials[0]['experiment']
 
@@ -352,8 +352,8 @@ def test_register_trials(random_dt):
 
         yo = list(map(lambda trial: trial.to_dict(), get_storage().fetch_trials(exp)))
         assert len(yo) == len(trials)
-        assert yo[0]['params'] == list(map(lambda x: x.to_dict(), trials[0].params))
-        assert yo[1]['params'] == list(map(lambda x: x.to_dict(), trials[1].params))
+        assert yo[0]['params'] == list(map(lambda x: x.to_dict(), trials[0]._params))
+        assert yo[1]['params'] == list(map(lambda x: x.to_dict(), trials[1]._params))
         assert yo[0]['status'] == 'new'
         assert yo[1]['status'] == 'new'
         assert yo[0]['submit_time'] == random_dt

@@ -46,6 +46,8 @@ from scipy.stats import distributions as sp_dists
 from orion.algo.space import (Categorical, Fidelity, Integer, Real, Space)
 from orion.core import config as orion_config
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
+from orion.core.utils.flatten import flatten
+
 
 log = logging.getLogger(__name__)
 
@@ -292,7 +294,7 @@ class SpaceBuilder(object):
 
         """
         self.space = Space()
-        for namespace, expression in configuration.items():
+        for namespace, expression in flatten(configuration).items():
             if _should_not_be_built(expression):
                 continue
 

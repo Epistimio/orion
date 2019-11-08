@@ -9,13 +9,23 @@
       and link them with a particular existing experiment.
 
 """
-import orion.core.io.experiment_builder as experiment_builder
+import logging
+
+from orion.client import create_experiment
 from orion.core.utils import format_trials
+
+
+log = logging.getLogger(__name__)
 
 
 def insert_trials(experiment_name, points, raise_exc=True):
     """Insert sets of parameters manually, defined in `points`, as new trials
     for the experiment name, `experiment_name`.
+
+    .. warning::
+
+        This function is deprecated and will be removed in 0.3.0.
+        You should use ExperimentClient.insert() instead.
 
     :param experiment_name: Name of the experiment which the new trials are
        going to be associated with
@@ -31,13 +41,15 @@ def insert_trials(experiment_name, points, raise_exc=True):
        the database.
 
     """
-    experiment_view = experiment_builder.build_view(name=experiment_name)
+    log.warning('insert_trials() is deprecated and will be removed in 0.3.0. '
+                'You should use ExperimentClient.insert() instead.')
+    experiment = create_experiment(experiment_name)
 
     valid_points = []
 
     for point in points:
         try:
-            assert point in experiment_view.space
+            assert point in experiment.space
             valid_points.append(point)
         except AssertionError:
             if raise_exc:
@@ -47,10 +59,8 @@ def insert_trials(experiment_name, points, raise_exc=True):
         return
 
     new_trials = list(
-        map(lambda data: format_trials.tuple_to_trial(data, experiment_view.space),
+        map(lambda data: format_trials.tuple_to_trial(data, experiment.space),
             valid_points))
 
-    experiment = experiment_builder.build(name=experiment_view.name,
-                                          version=experiment_view.version)
     for new_trial in new_trials:
-        experiment.register_trial(new_trial)
+        experiment.insert(new_trial.params)

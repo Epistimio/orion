@@ -67,7 +67,7 @@ def parent_config(user_config):
 
     config['metadata']['user_args'].append('--config=%s' % config_file_path)
 
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
 
     yield config
     os.remove(config_file_path)
@@ -88,7 +88,7 @@ def missing_config(child_config):
     """Create a child config with a missing dimension"""
     del(child_config['metadata']['user_args'][1])  # del -x
     del(child_config['metadata']['user_args'][1])  # del -y
-    backward.populate_priors(child_config['metadata'])
+    backward.populate_space(child_config)
     return child_config
 
 
@@ -96,7 +96,7 @@ def missing_config(child_config):
 def new_config(child_config):
     """Create a child config with a new dimension"""
     child_config['metadata']['user_args'].append('-w_d~normal(0,1)')
-    backward.populate_priors(child_config['metadata'])
+    backward.populate_space(child_config)
     return child_config
 
 
@@ -106,7 +106,7 @@ def changed_config(child_config):
     second_element = child_config['metadata']['user_args'][2]
     second_element = second_element.replace('normal', 'uniform')
     child_config['metadata']['user_args'][2] = second_element
-    backward.populate_priors(child_config['metadata'])
+    backward.populate_space(child_config)
     return child_config
 
 
@@ -131,7 +131,7 @@ def same_userconfig_config(user_config, child_config):
     with open(config_file_path, 'w') as f:
         yaml.dump(user_config, f)
     child_config['metadata']['user_args'][-1] = '--config=%s' % config_file_path
-    backward.populate_priors(child_config['metadata'])
+    backward.populate_space(child_config)
     yield child_config
     os.remove(config_file_path)
 
@@ -145,7 +145,7 @@ def changed_userconfig_config(user_config, child_config):
     with open(config_file_path, 'w') as f:
         yaml.dump(user_config, f)
     child_config['metadata']['user_args'][-1] = '--config=%s' % config_file_path
-    backward.populate_priors(child_config['metadata'])
+    backward.populate_space(child_config)
     yield child_config
     os.remove(config_file_path)
 
@@ -154,7 +154,7 @@ def changed_userconfig_config(user_config, child_config):
 def changed_cli_config(child_config):
     """Create a child config with a changed dimension"""
     child_config['metadata']['user_args'] += ['-u=0', '--another=test', 'positional']
-    backward.populate_priors(child_config['metadata'])
+    backward.populate_space(child_config)
     return child_config
 
 
@@ -165,7 +165,7 @@ def list_arg_with_equals_cli_config(child_config):
     """
     child_config['metadata']['user_args'] += ['--args=1',
                                               '--args=2', '--args=3']
-    backward.populate_priors(child_config['metadata'])
+    backward.populate_space(child_config)
     return child_config
 
 
@@ -182,7 +182,7 @@ def cl_config(create_db_instance):
                   ['--nameless=option', '-x~>w_d', '-w_d~+normal(0,1)', '-y~+uniform(0,1)', '-z~-',
                    '--omega~+normal(0,1)'],
                   'user': 'some_user_name'})
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
     return config
 
 
@@ -281,6 +281,13 @@ class TestConflictDetection(object):
         assert conflict.new_config['metadata']['VCS']['HEAD_sha'] == 'new_test'
         assert isinstance(conflict, CodeConflict)
 
+    def test_ignore_code_conflict(self, parent_config, changed_code_config):
+        """Test if ignored code commit hash change is detected as a conflict"""
+        conflicts = detect_conflicts(parent_config, changed_code_config,
+                                     {'ignore_code_changes': True})
+
+        assert len(conflicts.get()) == 1
+
     def test_config_new_name_no_conflict(self, parent_config, same_userconfig_config):
         """Test if same configuration file with a different name is not detected as a conflict"""
         conflicts = detect_conflicts(parent_config, same_userconfig_config)
@@ -311,6 +318,16 @@ class TestConflictDetection(object):
         assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
         assert not conflicts.get([CommandLineConflict])[0].is_resolved
 
+    def test_cli_ignored_conflict(self, parent_config, changed_cli_config):
+        """Test if ignored changed command line call is detected as a conflict"""
+        changed_cli_config['metadata']['user_args'].pop()
+        conflicts = detect_conflicts(parent_config, changed_cli_config,
+                                     {'non_monitored_arguments': ['u', 'another']})
+
+        assert len(conflicts.get()) == 1
+
+        assert not conflicts.get([ExperimentNameConflict])[0].is_resolved
+
 
 class TestResolutions(object):
     """Test resolution of conflicts"""
@@ -318,7 +335,7 @@ class TestResolutions(object):
     def test_add_single_hit(self, parent_config, new_config):
         """Test if adding a dimension only touches the correct status"""
         del new_config['metadata']['user_args'][1]
-        backward.populate_priors(new_config['metadata'])
+        backward.populate_space(new_config)
         conflicts = detect_conflicts(parent_config, new_config)
         branch_builder = ExperimentBranchBuilder(conflicts, manual_resolution=True)
         branch_builder.add_dimension('w_d')
@@ -373,7 +390,7 @@ class TestResolutions(object):
     def test_rename_missing(self, parent_config, missing_config):
         """Test if renaming a dimension to another solves both conflicts"""
         missing_config['metadata']['user_args'].append('-w_d~uniform(0,1)')
-        backward.populate_priors(missing_config['metadata'])
+        backward.populate_space(missing_config)
         conflicts = detect_conflicts(parent_config, missing_config)
         branch_builder = ExperimentBranchBuilder(conflicts, manual_resolution=True)
         branch_builder.rename_dimension('x', 'w_d')
@@ -398,7 +415,7 @@ class TestResolutions(object):
         creates a new one which is not solved
         """
         missing_config['metadata']['user_args'].append('-w_d~normal(0,1)')
-        backward.populate_priors(missing_config['metadata'])
+        backward.populate_space(missing_config)
         conflicts = detect_conflicts(parent_config, missing_config)
         branch_builder = ExperimentBranchBuilder(conflicts, manual_resolution=True)
 
@@ -447,8 +464,8 @@ class TestResolutions(object):
 
     def test_name_experiment(self, bad_exp_parent_config, bad_exp_child_config, create_db_instance):
         """Test if having the same experiment name does not create a conflict."""
-        backward.populate_priors(bad_exp_parent_config['metadata'])
-        backward.populate_priors(bad_exp_child_config['metadata'])
+        backward.populate_space(bad_exp_parent_config)
+        backward.populate_space(bad_exp_child_config)
         create_db_instance.write('experiments', bad_exp_parent_config)
         create_db_instance.write('experiments', bad_exp_child_config)
         conflicts = detect_conflicts(bad_exp_parent_config, bad_exp_parent_config)
@@ -627,7 +644,7 @@ class TestResolutionsWithMarkers(object):
     def test_add_new_default(self, parent_config, new_config):
         """Test if new dimension conflict is automatically resolved"""
         new_config['metadata']['user_args'][-1] = '-w_d~+normal(0,1,default_value=0)'
-        backward.populate_priors(new_config['metadata'])
+        backward.populate_space(new_config)
         conflicts = detect_conflicts(parent_config, new_config)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
 
@@ -643,7 +660,7 @@ class TestResolutionsWithMarkers(object):
     def test_add_bad_default(self, parent_config, new_config):
         """Test if new dimension conflict raises an error if marked with invalid default value"""
         new_config['metadata']['user_args'][-1] = '-w_d~+normal(0,1,default_value=\'a\')'
-        backward.populate_priors(new_config['metadata'])
+        backward.populate_space(new_config)
         with pytest.raises(TypeError) as exc:
             detect_conflicts(parent_config, new_config)
         assert "Parameter \'/w_d\': Incorrect arguments." in str(exc.value)
@@ -666,7 +683,7 @@ class TestResolutionsWithMarkers(object):
     def test_remove_missing(self, parent_config, child_config):
         """Test if missing dimension conflict is automatically resolved"""
         child_config['metadata']['user_args'][1] = '-x~-'
-        backward.populate_priors(child_config['metadata'])
+        backward.populate_space(child_config)
         conflicts = detect_conflicts(parent_config, child_config)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
 
@@ -681,7 +698,7 @@ class TestResolutionsWithMarkers(object):
     def test_remove_missing_default(self, parent_config, child_config):
         """Test if missing dimension conflict is automatically resolved"""
         child_config['metadata']['user_args'][1] = '-x~-0.5'
-        backward.populate_priors(child_config['metadata'])
+        backward.populate_space(child_config)
         conflicts = detect_conflicts(parent_config, child_config)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
 
@@ -697,7 +714,7 @@ class TestResolutionsWithMarkers(object):
     def test_remove_missing_bad_default(self, parent_config, child_config):
         """Test if missing dimension conflict raises an error if marked with invalid default"""
         child_config['metadata']['user_args'][1] = '-x~--100'
-        backward.populate_priors(child_config['metadata'])
+        backward.populate_space(child_config)
         conflicts = detect_conflicts(parent_config, child_config)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
 
@@ -714,7 +731,7 @@ class TestResolutionsWithMarkers(object):
         child_config['metadata']['user_args'].append('-w_a~uniform(0,1)')
         child_config['metadata']['user_args'].append('-w_b~normal(0,1)')
         child_config['metadata']['user_args'][1] = '-x~>w_a'
-        backward.populate_priors(child_config['metadata'])
+        backward.populate_space(child_config)
         conflicts = detect_conflicts(parent_config, child_config)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
 
@@ -738,7 +755,7 @@ class TestResolutionsWithMarkers(object):
         child_config['metadata']['user_args'].append('-w_a~uniform(0,1)')
         child_config['metadata']['user_args'].append('-w_b~uniform(0,1)')
         child_config['metadata']['user_args'][1] = '-x~>w_c'
-        backward.populate_priors(child_config['metadata'])
+        backward.populate_space(child_config)
         conflicts = detect_conflicts(parent_config, child_config)
         with pytest.raises(ValueError) as exc:
             ExperimentBranchBuilder(conflicts, manual_resolution=True)
@@ -751,7 +768,7 @@ class TestResolutionsWithMarkers(object):
         child_config['metadata']['user_args'].append('-w_a~uniform(0,1)')
         child_config['metadata']['user_args'].append('-w_b~normal(0,1)')
         child_config['metadata']['user_args'][1] = '-x~>w_b'
-        backward.populate_priors(child_config['metadata'])
+        backward.populate_space(child_config)
         conflicts = detect_conflicts(parent_config, child_config)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
 
@@ -778,7 +795,7 @@ class TestResolutionsWithMarkers(object):
         child_config['metadata']['user_args'].append('-w_a~uniform(0,1)')
         child_config['metadata']['user_args'].append('-w_b~+normal(0,1)')
         child_config['metadata']['user_args'][1] = '-x~>w_b'
-        backward.populate_priors(child_config['metadata'])
+        backward.populate_space(child_config)
         conflicts = detect_conflicts(parent_config, child_config)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
 
@@ -961,7 +978,7 @@ class TestAdapters(object):
     def test_adapter_rename_missing(self, parent_config, cl_config):
         """Test if a DimensionRenaming is created when solving a new conflict"""
         cl_config['metadata']['user_args'] = ['-x~>w_d', '-w_d~+uniform(0,1)']
-        backward.populate_priors(cl_config['metadata'])
+        backward.populate_space(cl_config)
 
         conflicts = detect_conflicts(parent_config, cl_config)
         branch_builder = ExperimentBranchBuilder(conflicts, manual_resolution=True)

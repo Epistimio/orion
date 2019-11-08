@@ -111,6 +111,20 @@ def space():
 
 
 @pytest.fixture(scope='module')
+def hierarchical_space():
+    """Construct a space with hierarchical Dimensions."""
+    space = Space()
+    categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 4: 0.4}
+    dim = Categorical('yolo.first', categories, shape=2)
+    space.register(dim)
+    dim = Integer('yolo.second', 'uniform', -3, 6)
+    space.register(dim)
+    dim = Real('yoloflat', 'alpha', 0.9)
+    space.register(dim)
+    return space
+
+
+@pytest.fixture(scope='module')
 def fixed_suggestion():
     """Return the same tuple/sample from a possible space."""
     return (('asdfa', 2), 0, 3.5)
@@ -206,7 +220,7 @@ def new_config():
                   ['--new~normal(0,2)', '--changed~normal(0,2)'],
                   'user': 'some_user_name'})
 
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
 
     return config
 
@@ -229,7 +243,7 @@ def old_config(create_db_instance):
                   ['--missing~uniform(-10,10)', '--changed~uniform(-10,10)'],
                   'user': 'some_user_name'})
 
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
 
     create_db_instance.write('experiments', config)
     return config
@@ -309,7 +323,7 @@ def cli_conflict(old_config, new_config):
     new_config = copy.deepcopy(new_config)
     new_config['metadata']['user_args'].append("--some-new=args")
     new_config['metadata']['user_args'].append("--bool-arg")
-    backward.populate_priors(new_config['metadata'])
+    backward.populate_space(new_config)
     return conflicts.CommandLineConflict(old_config, new_config)
 
 
@@ -335,7 +349,7 @@ def bad_exp_parent_config():
         version=1,
         algorithms='random')
 
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
 
     return config
 

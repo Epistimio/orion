@@ -408,16 +408,16 @@ class OrionCmdlineParser():
         # Create a copy of the template
         instance = copy.deepcopy(self.config_file_data)
 
-        for param in trial.params:
+        for name, value in trial.params.items():
             # The param will only correspond to config keyd
             # that require a prior, so we make sure to skip
             # the ones that do not.
-            if param.name not in self.file_priors.keys():
+            if name not in self.file_priors.keys():
                 continue
 
             # Since namespace start with '/', we must skip
             # the first element of the list.
-            path = param.name.split('/')[1:]
+            path = name.split('/')[1:]
             current_depth = instance
 
             for key in path:
@@ -436,7 +436,7 @@ class OrionCmdlineParser():
                         break
 
                 if isinstance(current_depth[key], str):
-                    current_depth[key] = param.value
+                    current_depth[key] = value
                 else:
                     current_depth = current_depth[key]
 
@@ -445,9 +445,9 @@ class OrionCmdlineParser():
     def _build_configuration(self, trial):
         configuration = copy.deepcopy(self.parser.arguments)
 
-        for param in trial.params:
-            name = param.name.lstrip('/')
-            configuration[name] = param.value
+        for name, value in trial.params.items():
+            name = name.lstrip('/')
+            configuration[name] = value
 
         return configuration
 

@@ -138,7 +138,6 @@ def test_validate_input_value_categorical_integer_nohit(categorical_space):
     """Test if bad integer value passed to categorical space is rejected properly"""
     namespace = '/x'
 
-    # pytest.set_trace()
     is_valid, casted_value = _validate_input_value("15", categorical_space, namespace)
     assert not is_valid
 

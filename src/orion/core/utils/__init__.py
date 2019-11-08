@@ -34,7 +34,7 @@ class SingletonAlreadyInstantiatedError(ValueError):
 
     def __init__(self, name):
         """Pass the same constant message to ValueError underneath."""
-        super().__init__('No singleton instance of (type: {}) was created'
+        super().__init__("A singleton instance of (type: {}) has already been instantiated."
                          .format(name))
 
 
@@ -45,7 +45,7 @@ class SingletonNotInstantiatedError(TypeError):
 
     def __init__(self, name):
         """Pass the same constant message to TypeError underneath."""
-        super().__init__("A singleton instance of (type: {}) has already been instantiated."
+        super().__init__('No singleton instance of (type: {}) was created'
                          .format(name))
 
 

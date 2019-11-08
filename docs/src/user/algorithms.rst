@@ -1,3 +1,5 @@
+.. _Setup Algorithms:
+
 ****************
 Setup Algorithms
 ****************
@@ -161,7 +163,7 @@ Configuration
            seed: null
            n_initial_points: 10
            acq_func: gp_hedge
-           alpha: 1e-10
+           alpha: 1.0e-10
            n_restarts_optimizer: 0
            noise: "gaussian"
            normalize_y: False

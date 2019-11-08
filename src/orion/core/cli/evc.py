@@ -26,6 +26,19 @@ def _add_manual_resolution_argument(parser):
         help="Manually resolve conflicts")
 
 
+def _add_non_monitored_arguments_argument(parser):
+    parser.add_argument(
+        "--non-monitored-arguments", type=str, nargs='*',
+        help="Ignore these arguments when looking for differences")
+
+
+def _add_ignore_code_changes_argument(parser):
+    parser.add_argument(
+        "--ignore-code-changes",
+        action="store_true",
+        help="Ignore these arguments when looking for differences")
+
+
 def _add_branch_from_argument(parser):
     parser.add_argument(
         "--branch-from", type=str,
@@ -69,6 +82,8 @@ def _add_branch_to_argument(parser, resolution_class):
 resolution_arguments = {
     'auto_resolution': _add_auto_resolution_argument,
     'manual_resolution': _add_manual_resolution_argument,
+    'non_monitored_arguments': _add_non_monitored_arguments_argument,
+    'ignore_code_changes': _add_ignore_code_changes_argument,
     'algorithm_change': _add_algorithm_argument,
     'code_change_type': _add_code_argument,
     'cli_change_type': _add_cli_argument,
@@ -89,6 +104,8 @@ def get_branching_args_group(parser):
         description="Arguments to automatically resolved branching events.")
 
     _add_manual_resolution_argument(branching_args_group)
+    _add_non_monitored_arguments_argument(branching_args_group)
+    _add_ignore_code_changes_argument(branching_args_group)
     _add_auto_resolution_argument(branching_args_group)
     _add_branch_from_argument(branching_args_group)
 

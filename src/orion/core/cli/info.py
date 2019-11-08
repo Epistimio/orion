@@ -273,6 +273,9 @@ COMMANDLINE_TEMPLATE = """\
 
 def format_commandline(experiment):
     """Render a string for commandline section"""
+    if 'user_args' not in experiment.metadata:
+        return ''
+
     commandline_string = COMMANDLINE_TEMPLATE.format(
         title=format_title("Commandline"),
         commandline=" ".join(experiment.metadata['user_args']))
@@ -427,4 +430,4 @@ def get_trial_params(trial_id, experiment):
     if not best_trial:
         return {}
 
-    return dict((param.name, param.value) for param in best_trial.params)
+    return best_trial.params
