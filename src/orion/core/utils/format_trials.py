@@ -20,7 +20,7 @@ def trial_to_tuple(trial, space):
     The order within the tuple is dictated by the defined
     `orion.algo.space.Space` object.
     """
-    params = trial.params
+    params = flatten(trial.params)
     trial_keys = set(params.keys())
     space_keys = set(space.keys())
     if trial_keys != space_keys:
@@ -28,7 +28,6 @@ def trial_to_tuple(trial, space):
 The trial {} has wrong params:
 Trial params: {}
 Space dims: {}""".format(trial.id, sorted(trial_keys), sorted(space_keys)))
-
     return tuple(params[name] for name in space.keys())
 
 
