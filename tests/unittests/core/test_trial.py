@@ -227,12 +227,14 @@ class TestTrial(object):
             t.hash_name
         assert 'params' in str(exc.value)
 
-    def test_AAAA_name_property(self, exp_config):
-        """Check property `Trial.hash_name`."""
-        t = Trial(**exp_config[1][1])
-        #MIRKO
-        assert t.AAAA_name == "ebcf6c6c8604f96444af1c3e519aea7f"
-        t._params['']
+    def test_param_name_property(self, exp_config):
+        """Check property `Trial.hash_params`."""
+        exp_config[1][1]['params'].append({'name': '/max_epoch', 'type': 'fidelity', 'value': '1'})
+        t1 = Trial(**exp_config[1][1])
+        exp_config[1][1]['params'][-1]['value'] = '2'  # changing the fidelity
+        t2 = Trial(**exp_config[1][1])
+        assert t1.hash_name != t2.hash_name
+        assert t1.hash_params == t2.hash_params
 
     def test_full_name_property(self, exp_config):
         """Check property `Trial.full_name`."""
