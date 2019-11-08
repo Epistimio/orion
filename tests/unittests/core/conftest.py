@@ -111,6 +111,20 @@ def space():
 
 
 @pytest.fixture(scope='module')
+def hierarchical_space():
+    """Construct a space with hierarchical Dimensions."""
+    space = Space()
+    categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 4: 0.4}
+    dim = Categorical('yolo.first', categories, shape=2)
+    space.register(dim)
+    dim = Integer('yolo.second', 'uniform', -3, 6)
+    space.register(dim)
+    dim = Real('yoloflat', 'alpha', 0.9)
+    space.register(dim)
+    return space
+
+
+@pytest.fixture(scope='module')
 def fixed_suggestion():
     """Return the same tuple/sample from a possible space."""
     return (('asdfa', 2), 0, 3.5)
