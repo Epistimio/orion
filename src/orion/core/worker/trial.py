@@ -321,10 +321,10 @@ class Trial:
         return hashlib.md5((params_repr + experiment_repr + lie_repr).encode('utf-8')).hexdigest()
 
     @property
-    def AAAA_name(self): # MIRKO - change name
-        """Generate a unique name with an md5sum hash for this `Trial`.
+    def hash_params(self):
+        """Generate a unique param md5sum hash for this `Trial`.
 
-        .. note:: Two trials that have the same `params` must have the same `hash_name`.
+        .. note:: The params contributing to the hash do not include the fidelity.
         """
         if not self._params and not self.experiment:
             raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
