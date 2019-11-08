@@ -820,8 +820,8 @@ class TestWorkon:
 
         with create_experiment(exp_config=ext_config, stati=[]) as (cfg, experiment, client):
             assert len(experiment.fetch_trials()) == 0
-            client.workon(foo, max_trials=1, b={'y': default_y, 'z': default_z})
-            assert len(experiment.fetch_trials()) == 1
+            client.workon(foo, max_trials=5, b={'y': default_y, 'z': default_z})
+            assert len(experiment.fetch_trials()) == 5
             params = experiment.fetch_trials()[0].params
             assert len(params)
             assert 'x' in params['a']
