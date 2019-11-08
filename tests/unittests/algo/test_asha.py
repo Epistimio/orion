@@ -7,7 +7,7 @@ import hashlib
 import numpy as np
 import pytest
 
-from orion.algo.asha import ASHA, Bracket
+from orion.algo.asha import ASHA, Bracket, compute_budgets
 from orion.algo.space import Fidelity, Real, Space
 
 
@@ -64,6 +64,30 @@ def rung_2(rung_1):
     """Create fake points and objectives for rung 1."""
     return (9, {hashlib.md5(str([value[0]]).encode('utf-8')).hexdigest(): value for value in
             map(lambda v: (v[0], (9, v[0])), sorted(rung_1[1].values()))})
+
+
+def test_compute_budgets():
+    """Verify proper computation of budgets on a logarithmic scale"""
+    # Check typical values
+    assert compute_budgets(1, 16, 4, 3) == [1, 4, 16]
+    # Check rounding (max_resources is not a multiple of reduction_factor)
+    assert compute_budgets(1, 30, 4, 3) == [1, 5, 30]
+    # Check min_resources
+    assert compute_budgets(5, 125, 5, 3) == [5, 25, 125]
+    # Check num_rungs
+    assert compute_budgets(1, 16, 2, 5) == [1, 2, 4, 8, 16]
+
+
+def test_compute_compressed_budgets():
+    """Verify proper computation of budgets when scale is small and integer rounding creates
+    duplicates
+    """
+    assert compute_budgets(1, 16, 2, 10) == [1, 2, 3, 4, 5, 6, 7, 8, 11, 16]
+
+    with pytest.raises(ValueError) as exc:
+        compute_budgets(1, 2, 2, 10)
+
+    assert 'Cannot build budgets below max_resources' in str(exc.value)
 
 
 class TestBracket():

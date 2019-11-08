@@ -33,6 +33,24 @@ https://orion.readthedocs.io/en/develop/user/algorithms.html#asha
 """
 
 
+def compute_budgets(min_resources, max_resources, reduction_factor, num_rungs):
+    """Compute the budgets used for ASHA"""
+    budgets = numpy.logspace(
+        numpy.log(min_resources) / numpy.log(reduction_factor),
+        numpy.log(max_resources) / numpy.log(reduction_factor),
+        num_rungs, base=reduction_factor).astype(int)
+
+    for i in range(num_rungs - 1):
+        if budgets[i] >= budgets[i + 1]:
+            budgets[i + 1] = budgets[i] + 1
+
+    if budgets[-1] > max_resources:
+        raise ValueError(
+            'Cannot build budgets below max_resources {}: {}'.format(max_resources, budgets))
+
+    return list(budgets)
+
+
 class ASHA(BaseAlgorithm):
     """Asynchronous Successive Halving Algorithm
 
@@ -122,10 +140,7 @@ class ASHA(BaseAlgorithm):
 
         self.num_rungs = num_rungs
 
-        budgets = numpy.logspace(
-            numpy.log(min_resources) / numpy.log(reduction_factor),
-            numpy.log(max_resources) / numpy.log(reduction_factor),
-            num_rungs, base=reduction_factor).astype(int)
+        budgets = compute_budgets(min_resources, max_resources, reduction_factor, num_rungs)
 
         # Tracks state for new trial add
         self.brackets = [
