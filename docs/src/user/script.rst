@@ -93,7 +93,8 @@ Templates                  Description
 
 ``trial.working_dir``      Working dir of the trial
 
-#MIRKO - also add hash_name (2 lines)
+``trial.hash_params``      md5sum hash for the parameters (w/o fidelity)
+
 ========================== ====================================
 
 .. note::
