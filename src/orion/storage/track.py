@@ -18,7 +18,6 @@ import sys
 import warnings
 
 from orion.core.io.database import DuplicateKeyError
-from orion.core.worker.trial import Trial as OrionTrial
 from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
 
 log = logging.getLogger(__name__)
@@ -167,6 +166,8 @@ class TrialAdapter:
     @property
     def _params(self):
         """See `~orion.core.worker.trial.Trial`"""
+        from orion.core.worker.trial import Trial as OrionTrial
+
         if self.memory is not None:
             return self.memory._params
 
@@ -221,6 +222,8 @@ class TrialAdapter:
     @property
     def objective(self):
         """See `~orion.core.worker.trial.Trial`"""
+        from orion.core.worker.trial import Trial as OrionTrial
+
         def result(val):
             return OrionTrial.Result(name=self.objective_key, value=val, type='objective')
 
@@ -251,6 +254,8 @@ class TrialAdapter:
     @property
     def results(self):
         """See `~orion.core.worker.trial.Trial`"""
+        from orion.core.worker.trial import Trial as OrionTrial
+
         self._results = []
 
         for k, values in self.storage.metrics.items():
