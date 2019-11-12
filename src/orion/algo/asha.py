@@ -32,6 +32,11 @@ For more information on the configuration and usage of ASHA, see
 https://orion.readthedocs.io/en/develop/user/algorithms.html#asha
 """
 
+BUDGET_ERROR = """
+Cannot build budgets below max_resources;
+(max: {}) - (min: {}) > (num_rungs: {})
+"""
+
 
 def compute_budgets(min_resources, max_resources, reduction_factor, num_rungs):
     """Compute the budgets used for ASHA"""
@@ -45,8 +50,7 @@ def compute_budgets(min_resources, max_resources, reduction_factor, num_rungs):
             budgets[i + 1] = budgets[i] + 1
 
     if budgets[-1] > max_resources:
-        raise ValueError(
-            'Cannot build budgets below max_resources {}: {}'.format(max_resources, budgets))
+        raise ValueError(BUDGET_ERROR.format(min_resources, max_resources, num_rungs))
 
     return list(budgets)
 
