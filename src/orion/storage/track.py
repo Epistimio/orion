@@ -570,7 +570,6 @@ class Track(BaseStorageProtocol):   # noqa: F811
             trial = trial.storage
 
         refreshed_trial = self.backend.get_trial(trial)[0]
-        
         new_trial = TrialAdapter(refreshed_trial, objective=self.objective)
 
         assert new_trial.objective is not None, 'Trial should have returned an objective value!'
