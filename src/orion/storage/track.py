@@ -268,7 +268,8 @@ class TrialAdapter:
                 items = list(values.items())
                 items.sort(key=lambda v: v[0])
 
-                self._results.append(OrionTrial.Result(name=k, type=result_type, value=items[-1][1]))
+                val = items[-1][1]
+                self._results.append(OrionTrial.Result(name=k, type=result_type, value=val))
             elif isinstance(values, list):
                 self._results.append(OrionTrial.Result(name=k, type=result_type, value=values[-1]))
 
