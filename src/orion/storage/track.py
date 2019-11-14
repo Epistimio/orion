@@ -569,9 +569,8 @@ class Track(BaseStorageProtocol):   # noqa: F811
         if isinstance(trial, TrialAdapter):
             trial = trial.storage
 
-        trials = self.backend.get_trial(trial)
-
-        refreshed_trial = trials[0]
+        refreshed_trial = self.backend.get_trial(trial)[0]
+        
         new_trial = TrialAdapter(refreshed_trial, objective=self.objective)
 
         assert new_trial.objective is not None, 'Trial should have returned an objective value!'
@@ -687,7 +686,7 @@ class Track(BaseStorageProtocol):   # noqa: F811
 
     def push_trial_results(self, trial):
         """Push the trial's results to the database"""
-        # self.backend.log_trial_metrics()
+        # Track already pushed the info no need to do it here
         pass
 
     def fetch_noncompleted_trials(self, experiment):
