@@ -18,6 +18,7 @@ import sys
 import warnings
 
 from orion.core.io.database import DuplicateKeyError
+from orion.core.utils.flatten import flatten, unflatten
 from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
 
 log = logging.getLogger(__name__)
@@ -161,7 +162,7 @@ class TrialAdapter:
         if self.memory is not None:
             return self.memory.params
 
-        return {param.name: param.value for param in self._params}
+        return unflatten({param.name: param.value for param in self._params})
 
     @property
     def _params(self):
@@ -172,7 +173,7 @@ class TrialAdapter:
             return self.memory._params
 
         types = self.storage.metadata['params_types']
-        params = self.storage.parameters
+        params = flatten(self.storage.parameters)
 
         return [
             OrionTrial.Param(name=add_leading_slash(name), value=params.get(name), type=vtype)
@@ -263,7 +264,13 @@ class TrialAdapter:
             if k == self.objective_key:
                 result_type = 'objective'
 
-            self._results.append(OrionTrial.Result(name=k, type=result_type, value=values[-1]))
+            if isinstance(values, dict):
+                items = list(values.items())
+                items.sort(key=lambda v: v[0])
+
+                self._results.append(OrionTrial.Result(name=k, type=result_type, value=items[-1][1]))
+            elif isinstance(values, list):
+                self._results.append(OrionTrial.Result(name=k, type=result_type, value=values[-1]))
 
         return self._results
 
@@ -562,7 +569,9 @@ class Track(BaseStorageProtocol):   # noqa: F811
         if isinstance(trial, TrialAdapter):
             trial = trial.storage
 
-        refreshed_trial = self.backend.get_trial(trial)[0]
+        trials = self.backend.get_trial(trial)
+
+        refreshed_trial = trials[0]
         new_trial = TrialAdapter(refreshed_trial, objective=self.objective)
 
         assert new_trial.objective is not None, 'Trial should have returned an objective value!'
@@ -678,7 +687,8 @@ class Track(BaseStorageProtocol):   # noqa: F811
 
     def push_trial_results(self, trial):
         """Push the trial's results to the database"""
-        self.backend.log_trial_metrics()
+        # self.backend.log_trial_metrics()
+        pass
 
     def fetch_noncompleted_trials(self, experiment):
         """Fetch all non completed trials"""
