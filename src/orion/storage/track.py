@@ -346,6 +346,11 @@ class Track(BaseStorageProtocol):   # noqa: F811
     """
 
     def __init__(self, uri):
+        if not HAS_TRACK:
+            # We ignored the import error above in case we did not need track
+            # but now that we do we can rethrow it
+            raise ImportError('Track is not installed!')
+
         self.uri = uri
         self.options = parse_uri(uri)['query']
 
