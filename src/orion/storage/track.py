@@ -286,11 +286,6 @@ class TrialAdapter:
         return None
 
     @property
-    def parents(self):
-        """See `~orion.core.worker.trial.Trial`"""
-        return []
-
-    @property
     def submit_time(self):
         """See `~orion.core.worker.trial.Trial`"""
         return datetime.datetime.utcfromtimestamp(self.storage.metadata.get('submit_time'))
@@ -312,6 +307,16 @@ class TrialAdapter:
         if heartbeat:
             return datetime.datetime.utcfromtimestamp(heartbeat)
         return None
+
+    @property
+    def parents(self):
+        """See `~orion.core.worker.trial.Trial`"""
+        return self.storage.metadata.get('parent', [])
+
+    @parents.setter
+    def parents(self, other):
+        """See `~orion.core.worker.trial.Trial`"""
+        self.storage.metadata['parent'] = other
 
 
 def experiment_uid(exp=None, name=None, version=None):
@@ -348,7 +353,6 @@ class Track(BaseStorageProtocol):   # noqa: F811
         self.backend = self.client.protocol
         self.project = None
         self.group = None
-        self.current_trial = None
         self.objective = self.options.get('objective')
         self.lies = dict()
         assert self.objective is not None, 'An objective should be defined!'
@@ -359,6 +363,8 @@ class Track(BaseStorageProtocol):   # noqa: F811
 
             if self.project is None:
                 self.project = self.backend.new_project(Project(name=name))
+
+        assert self.project, 'Project should have been found'
 
     def create_experiment(self, config):
         """Insert a new experiment inside the database"""
@@ -401,6 +407,8 @@ class Track(BaseStorageProtocol):   # noqa: F811
         for k, v in query.items():
             if k == 'name':
                 new_query['metadata.name'] = v
+                # FIXME
+                self._get_project(v)
 
             elif k.startswith('metadata'):
                 new_query['metadata.{}'.format(k)] = v
@@ -451,7 +459,7 @@ class Track(BaseStorageProtocol):   # noqa: F811
         for p in trial.results:
             metrics[p.name] = [p.value]
 
-        self.current_trial = self.backend.new_trial(TrackTrial(
+        trial = self.backend.new_trial(TrackTrial(
             _hash=trial.hash_name,
             status=get_track_status(trial.status),
             project_id=self.project.uid,
@@ -461,10 +469,10 @@ class Track(BaseStorageProtocol):   # noqa: F811
             metrics=metrics
         ), auto_increment=False)
 
-        if self.current_trial is None:
+        if trial is None:
             raise DuplicateKeyError('Was not able to register Trial!')
 
-        return TrialAdapter(self.current_trial, objective=self.objective)
+        return TrialAdapter(trial, objective=self.objective)
 
     def register_lie(self, trial):
         """Register a *fake* trial created by the strategist.
