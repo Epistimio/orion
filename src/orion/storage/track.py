@@ -407,8 +407,6 @@ class Track(BaseStorageProtocol):   # noqa: F811
         for k, v in query.items():
             if k == 'name':
                 new_query['metadata.name'] = v
-                # FIXME
-                self._get_project(v)
 
             elif k.startswith('metadata'):
                 new_query['metadata.{}'.format(k)] = v
@@ -458,6 +456,9 @@ class Track(BaseStorageProtocol):   # noqa: F811
         metrics = defaultdict(list)
         for p in trial.results:
             metrics[p.name] = [p.value]
+
+        if self.project is None:
+            self._get_project(self.group.project_id)
 
         trial = self.backend.new_trial(TrackTrial(
             _hash=trial.hash_name,
