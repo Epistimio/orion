@@ -18,6 +18,7 @@ import sys
 import warnings
 
 from orion.core.io.database import DuplicateKeyError
+from orion.core.utils.flatten import flatten, unflatten
 from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
 
 log = logging.getLogger(__name__)
@@ -161,7 +162,7 @@ class TrialAdapter:
         if self.memory is not None:
             return self.memory.params
 
-        return {param.name: param.value for param in self._params}
+        return unflatten({param.name: param.value for param in self._params})
 
     @property
     def _params(self):
@@ -172,7 +173,7 @@ class TrialAdapter:
             return self.memory._params
 
         types = self.storage.metadata['params_types']
-        params = self.storage.parameters
+        params = flatten(self.storage.parameters)
 
         return [
             OrionTrial.Param(name=add_leading_slash(name), value=params.get(name), type=vtype)
@@ -263,7 +264,14 @@ class TrialAdapter:
             if k == self.objective_key:
                 result_type = 'objective'
 
-            self._results.append(OrionTrial.Result(name=k, type=result_type, value=values[-1]))
+            if isinstance(values, dict):
+                items = list(values.items())
+                items.sort(key=lambda v: v[0])
+
+                val = items[-1][1]
+                self._results.append(OrionTrial.Result(name=k, type=result_type, value=val))
+            elif isinstance(values, list):
+                self._results.append(OrionTrial.Result(name=k, type=result_type, value=values[-1]))
 
         return self._results
 
@@ -276,11 +284,6 @@ class TrialAdapter:
     def gradient(self):
         """See `~orion.core.worker.trial.Trial`"""
         return None
-
-    @property
-    def parents(self):
-        """See `~orion.core.worker.trial.Trial`"""
-        return []
 
     @property
     def submit_time(self):
@@ -304,6 +307,16 @@ class TrialAdapter:
         if heartbeat:
             return datetime.datetime.utcfromtimestamp(heartbeat)
         return None
+
+    @property
+    def parents(self):
+        """See `~orion.core.worker.trial.Trial`"""
+        return self.storage.metadata.get('parent', [])
+
+    @parents.setter
+    def parents(self, other):
+        """See `~orion.core.worker.trial.Trial`"""
+        self.storage.metadata['parent'] = other
 
 
 def experiment_uid(exp=None, name=None, version=None):
@@ -333,6 +346,11 @@ class Track(BaseStorageProtocol):   # noqa: F811
     """
 
     def __init__(self, uri):
+        if not HAS_TRACK:
+            # We ignored the import error above in case we did not need track
+            # but now that we do we can rethrow it
+            raise ImportError('Track is not installed!')
+
         self.uri = uri
         self.options = parse_uri(uri)['query']
 
@@ -340,7 +358,6 @@ class Track(BaseStorageProtocol):   # noqa: F811
         self.backend = self.client.protocol
         self.project = None
         self.group = None
-        self.current_trial = None
         self.objective = self.options.get('objective')
         self.lies = dict()
         assert self.objective is not None, 'An objective should be defined!'
@@ -351,6 +368,8 @@ class Track(BaseStorageProtocol):   # noqa: F811
 
             if self.project is None:
                 self.project = self.backend.new_project(Project(name=name))
+
+        assert self.project, 'Project should have been found'
 
     def create_experiment(self, config):
         """Insert a new experiment inside the database"""
@@ -443,7 +462,10 @@ class Track(BaseStorageProtocol):   # noqa: F811
         for p in trial.results:
             metrics[p.name] = [p.value]
 
-        self.current_trial = self.backend.new_trial(TrackTrial(
+        if self.project is None:
+            self._get_project(self.group.project_id)
+
+        trial = self.backend.new_trial(TrackTrial(
             _hash=trial.hash_name,
             status=get_track_status(trial.status),
             project_id=self.project.uid,
@@ -453,10 +475,10 @@ class Track(BaseStorageProtocol):   # noqa: F811
             metrics=metrics
         ), auto_increment=False)
 
-        if self.current_trial is None:
+        if trial is None:
             raise DuplicateKeyError('Was not able to register Trial!')
 
-        return TrialAdapter(self.current_trial, objective=self.objective)
+        return TrialAdapter(trial, objective=self.objective)
 
     def register_lie(self, trial):
         """Register a *fake* trial created by the strategist.
@@ -678,7 +700,8 @@ class Track(BaseStorageProtocol):   # noqa: F811
 
     def push_trial_results(self, trial):
         """Push the trial's results to the database"""
-        self.backend.log_trial_metrics()
+        # Track already pushed the info no need to do it here
+        pass
 
     def fetch_noncompleted_trials(self, experiment):
         """Fetch all non completed trials"""
