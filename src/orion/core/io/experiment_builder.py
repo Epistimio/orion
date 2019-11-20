@@ -186,6 +186,7 @@ def build(name, version=None, branching=None, **config):
 
     db_config = fetch_config_from_db(name, version)
 
+    new_config = config
     config = resolve_config.merge_configs(db_config, config)
 
     metadata = resolve_config.fetch_metadata(config.get('user'), config.get('user_args'))
@@ -194,8 +195,7 @@ def build(name, version=None, branching=None, **config):
 
     # TODO: Find a better solution
     if isinstance(config.get('algorithms'), dict) and len(config['algorithms']) > 1:
-        for key in list(db_config['algorithms'].keys()):
-            config['algorithms'].pop(key)
+        config['algorithms'] = new_config['algorithms']
 
     config.setdefault('name', name)
     config.setdefault('version', version)
