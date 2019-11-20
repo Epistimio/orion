@@ -92,6 +92,9 @@ Templates                  Description
 ``trial.id``               Unique ID of the trial
 
 ``trial.working_dir``      Working dir of the trial
+
+``trial.hash_params``      md5sum hash for the parameters (w/o fidelity)
+
 ========================== ====================================
 
 .. note::

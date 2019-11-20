@@ -15,7 +15,6 @@ import orion.core
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database, OutdatedDatabaseError
 import orion.core.utils.backward as backward
-from orion.core.worker.trial import Trial
 from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
 
 log = logging.getLogger(__name__)
@@ -127,6 +126,8 @@ class Legacy(BaseStorageProtocol):
 
     def _fetch_trials(self, query, selection=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
+        from orion.core.worker.trial import Trial
+
         def sort_key(item):
             submit_time = item.submit_time
             if submit_time is None:
@@ -167,6 +168,8 @@ class Legacy(BaseStorageProtocol):
         This does not update the database!
 
         """
+        from orion.core.worker.trial import Trial
+
         if results_file is None:
             return trial
 
@@ -183,6 +186,8 @@ class Legacy(BaseStorageProtocol):
 
     def get_trial(self, trial=None, uid=None):
         """See :func:`~orion.storage.BaseStorageProtocol.get_trial`"""
+        from orion.core.worker.trial import Trial
+
         if trial is not None and uid is not None:
             assert trial._id == uid
 
@@ -198,7 +203,7 @@ class Legacy(BaseStorageProtocol):
 
         return Trial(**result[0])
 
-    def _update_trial(self, trial: Trial, where=None, **kwargs):
+    def _update_trial(self, trial, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
         if where is None:
             where = dict()
@@ -256,6 +261,8 @@ class Legacy(BaseStorageProtocol):
 
     def reserve_trial(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.reserve_trial`"""
+        from orion.core.worker.trial import Trial
+
         query = dict(
             experiment=experiment._id,
             status={'$in': ['interrupted', 'new', 'suspended']}
