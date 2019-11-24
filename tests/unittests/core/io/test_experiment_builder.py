@@ -559,6 +559,14 @@ class TestBuild(object):
         assert isinstance(exp.space, Space)
         assert isinstance(exp.refers['adapter'], BaseAdapter)
 
+    def test_algo_case_insensitive(self, new_config):
+        """Verify that algo with uppercase or lowercase leads to same experiment"""
+        with OrionState(experiments=[new_config], trials=[]):
+            new_config['algorithms']['DUMBALGO'] = new_config['algorithms'].pop('dumbalgo')
+            exp = experiment_builder.build(**new_config)
+
+            assert exp.version == 1
+
     def test_hierarchical_space(self, new_config):
         """Verify space can have hierarchical structure"""
         space = {'a': {'x': 'uniform(0, 10, discrete=True)'},
