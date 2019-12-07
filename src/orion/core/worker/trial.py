@@ -300,7 +300,7 @@ class Trial:
 
         .. note:: Two trials that have the same `params` must have the same `hash_name`.
         """
-        return self._hash(ignore_fidelity=False)
+        return self.compute_trial_hash(self, ignore_fidelity=False)
 
     @property
     def hash_params(self):
@@ -308,21 +308,7 @@ class Trial:
 
         .. note:: The params contributing to the hash do not include the fidelity.
         """
-        return self._hash(ignore_fidelity=True)
-
-    def _hash(self, ignore_fidelity=False):
-        if not self._params and not self.experiment:
-            raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
-                             "have not been set.")
-
-        params = self.params_repr(self._params, ignore_fidelity)
-        experiment_repr = str(self.experiment)
-
-        lie_repr = ""
-        if not ignore_fidelity and self.lie:
-            lie_repr = self.values_repr([self.lie])
-
-        return hashlib.md5((params + experiment_repr + lie_repr).encode('utf-8')).hexdigest()
+        return self.compute_trial_hash(self, ignore_fidelity=True)
 
     def __hash__(self):
         """Return the hashname for this trial"""
@@ -365,5 +351,21 @@ class Trial:
             params = [x for x in params if x.type != 'fidelity']
         else:
             params = params
-        return self.values_repr(params, sep)
+        return Trial.values_repr(params, sep)
+
+    @staticmethod
+    def compute_trial_hash(trial, ignore_fidelity=False):
+        """Generate a unique param md5sum hash for a given `Trial`"""
+        if not trial._params and not trial.experiment:
+            raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
+                             "have not been set.")
+
+        params = trial.params_repr(trial._params, ignore_fidelity)
+        experiment_repr = str(trial.experiment)
+
+        lie_repr = ""
+        if not ignore_fidelity and trial.lie:
+            lie_repr = trial.values_repr([trial.lie])
+
+        return hashlib.md5((params + experiment_repr + lie_repr).encode('utf-8')).hexdigest()
 

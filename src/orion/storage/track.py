@@ -279,7 +279,7 @@ class TrialAdapter:
     def hash_params(self):
         """See `~orion.core.worker.trial.Trial`"""
         from orion.core.worker.trial import Trial as OrionTrial
-        return OrionTrial._hash(self, ignore_fidelity=True)
+        return OrionTrial.compute_trial_hash(self, ignore_fidelity=True)
 
     @results.setter
     def results(self, value):
