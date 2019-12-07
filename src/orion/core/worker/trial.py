@@ -320,7 +320,7 @@ class Trial:
         if not self._params or not self.experiment:
             raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
                              "have not been set.")
-        return self.params_repr(self._params, sep='-').replace('/', '.')
+        return self.format_values(self._params, sep='-').replace('/', '.')
 
     def _fetch_one_result_of_type(self, result_type, results=None):
         if results is None:
