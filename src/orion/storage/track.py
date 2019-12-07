@@ -277,6 +277,7 @@ class TrialAdapter:
 
     @property
     def hash_params(self):
+        """See `~orion.core.worker.trial.Trial`"""
         from orion.core.worker.trial import Trial as OrionTrial
 
         params = [x for x in self._params if x.type != 'fidelity']
