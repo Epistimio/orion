@@ -368,4 +368,3 @@ class Trial:
             lie_repr = trial.values_repr([trial.lie])
 
         return hashlib.md5((params + experiment_repr + lie_repr).encode('utf-8')).hexdigest()
-
