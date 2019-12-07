@@ -214,7 +214,7 @@ class Trial:
     def __str__(self):
         """Represent partially with a string."""
         return "Trial(experiment={0}, status={1}, params={2})".format(
-            repr(self.experiment), repr(self._status), self.params_repr())
+            repr(self.experiment), repr(self._status), self.format_params(self._params))
 
     __repr__ = __str__
 
@@ -340,18 +340,18 @@ class Trial:
         return value[0]
 
     @staticmethod
-    def values_repr(values, sep=','):
+    def format_values(values, sep=','):
         """Represent with a string the given values."""
         return sep.join(map(lambda value: "{0.name}:{0.value}".format(value), values))
 
     @staticmethod
-    def params_repr(params, sep=',', ignore_fidelity=False):
+    def format_params(params, sep=',', ignore_fidelity=False):
         """Represent with a string the parameters contained in this `Trial` object."""
         if ignore_fidelity:
             params = [x for x in params if x.type != 'fidelity']
         else:
             params = params
-        return Trial.values_repr(params, sep)
+        return Trial.format_values(params, sep)
 
     @staticmethod
     def compute_trial_hash(trial, ignore_fidelity=False):
@@ -360,7 +360,7 @@ class Trial:
             raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
                              "have not been set.")
 
-        params = trial.params_repr(trial._params, ignore_fidelity=ignore_fidelity)
+        params = trial.format_params(trial._params, ignore_fidelity=ignore_fidelity)
         experiment_repr = str(trial.experiment)
 
         lie_repr = ""
