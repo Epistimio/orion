@@ -360,7 +360,7 @@ class Trial:
             raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
                              "have not been set.")
 
-        params = trial.params_repr(trial._params, ignore_fidelity)
+        params = trial.params_repr(trial._params, ignore_fidelity=ignore_fidelity)
         experiment_repr = str(trial.experiment)
 
         lie_repr = ""
