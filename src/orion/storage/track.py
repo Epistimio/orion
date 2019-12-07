@@ -279,13 +279,7 @@ class TrialAdapter:
     def hash_params(self):
         """See `~orion.core.worker.trial.Trial`"""
         from orion.core.worker.trial import Trial as OrionTrial
-
-        params = [x for x in self._params if x.type != 'fidelity']
-        params_repr = OrionTrial._repr_values(None, params, sep=',')
-        experiment_repr = str(self.experiment)
-        lie_repr = OrionTrial._repr_values(None, [self.lie]) if self.lie else ""
-
-        return hashlib.md5((params_repr + experiment_repr + lie_repr).encode('utf-8')).hexdigest()
+        return OrionTrial._hash(self, ignore_fidelity=True)
 
     @results.setter
     def results(self, value):
