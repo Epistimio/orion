@@ -320,7 +320,7 @@ class Trial:
 
         lie_repr = ""
         if not ignore_fidelity and self.lie:
-            self.values_repr([self.lie])
+            lie_repr = self.values_repr([self.lie])
 
         return hashlib.md5((params + experiment_repr + lie_repr).encode('utf-8')).hexdigest()
 
