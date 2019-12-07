@@ -360,11 +360,11 @@ class Trial:
             raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
                              "have not been set.")
 
-        params = trial.format_params(trial._params, ignore_fidelity=ignore_fidelity)
+        params = Trial.format_params(trial._params, ignore_fidelity=ignore_fidelity)
         experiment_repr = str(trial.experiment)
 
         lie_repr = ""
         if not ignore_fidelity and trial.lie:
-            lie_repr = trial.format_values([trial.lie])
+            lie_repr = Trial.format_values([trial.lie])
 
         return hashlib.md5((params + experiment_repr + lie_repr).encode('utf-8')).hexdigest()
