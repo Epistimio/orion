@@ -211,9 +211,9 @@ class TestTrial(object):
     def test_params_repr_property(self, exp_config):
         """Check property `Trial.params_repr`."""
         t = Trial(**exp_config[1][1])
-        assert Trial.format_params(t) == \
+        assert Trial.format_params(t._params) == \
             "/decoding_layer:lstm_with_attention,/encoding_layer:gru"
-        assert Trial.format_params(t, sep='\n') == \
+        assert Trial.format_params(t._params, sep='\n') == \
             "/decoding_layer:lstm_with_attention\n/encoding_layer:gru"
 
         t = Trial()
