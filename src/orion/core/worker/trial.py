@@ -339,6 +339,14 @@ class Trial:
 
         return value[0]
 
+    def _repr_values(self, values, sep=','):
+        """Represent with a string the given values."""
+        return Trial.format_values(values, sep)
+
+    def params_repr(self, sep=',', ignore_fidelity=False):
+        """Represent with a string the parameters contained in this `Trial` object."""
+        return Trial.format_params(self._params, sep)
+
     @staticmethod
     def format_values(values, sep=','):
         """Represent with a string the given values."""

@@ -217,7 +217,7 @@ class TestTrial(object):
             "/decoding_layer:lstm_with_attention\n/encoding_layer:gru"
 
         t = Trial()
-        assert t.params_repr() == ""
+        assert Trial.format_params(t._params) == ""
 
     def test_hash_name_property(self, exp_config):
         """Check property `Trial.hash_name`."""
