@@ -211,11 +211,13 @@ class TestTrial(object):
     def test_params_repr_property(self, exp_config):
         """Check property `Trial.params_repr`."""
         t = Trial(**exp_config[1][1])
-        assert t.params_repr() == "/decoding_layer:lstm_with_attention,/encoding_layer:gru"
-        assert t.params_repr(sep='\n') == "/decoding_layer:lstm_with_attention\n/encoding_layer:gru"
+        assert Trial.format_params(t._params) == \
+            "/decoding_layer:lstm_with_attention,/encoding_layer:gru"
+        assert Trial.format_params(t._params, sep='\n') == \
+            "/decoding_layer:lstm_with_attention\n/encoding_layer:gru"
 
         t = Trial()
-        assert t.params_repr() == ""
+        assert Trial.format_params(t._params) == ""
 
     def test_hash_name_property(self, exp_config):
         """Check property `Trial.hash_name`."""

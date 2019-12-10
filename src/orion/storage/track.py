@@ -41,6 +41,7 @@ try:
     from track.structure import CustomStatus, Status as TrackStatus
     from track.structure import Project, Trial as TrackTrial, TrialGroup
     from track.persistence.local import ConcurrentWrite
+    from track.utils import ItemNotFound
 
     HAS_TRACK = True
 except ImportError:
@@ -274,6 +275,12 @@ class TrialAdapter:
                 self._results.append(OrionTrial.Result(name=k, type=result_type, value=values[-1]))
 
         return self._results
+
+    @property
+    def hash_params(self):
+        """See `~orion.core.worker.trial.Trial`"""
+        from orion.core.worker.trial import Trial as OrionTrial
+        return OrionTrial.compute_trial_hash(self, ignore_fidelity=True)
 
     @results.setter
     def results(self, value):
@@ -614,13 +621,14 @@ class Track(BaseStorageProtocol):   # noqa: F811
             does not match the status in the database
 
         """
-        result_trial = self.backend.fetch_and_update_trial({
-            'uid': trial.id,
-            'status': get_track_status(trial.status)
-        }, 'set_trial_status', status=get_track_status(status))
+        try:
+            result_trial = self.backend.fetch_and_update_trial({
+                'uid': trial.id,
+                'status': get_track_status(trial.status)
+            }, 'set_trial_status', status=get_track_status(status))
 
-        if result_trial is None:
-            raise FailedUpdate()
+        except ItemNotFound as e:
+            raise FailedUpdate() from e
 
         trial.status = status
         return result_trial
@@ -673,10 +681,14 @@ class Track(BaseStorageProtocol):   # noqa: F811
             status={'$in': ['new', 'suspended', 'interrupted']}
         )
 
-        trial = self.backend.fetch_and_update_trial(
-            query,
-            'set_trial_status',
-            status=get_track_status('reserved'))
+        try:
+            trial = self.backend.fetch_and_update_trial(
+                query,
+                'set_trial_status',
+                status=get_track_status('reserved'))
+
+        except ItemNotFound:
+            return None
 
         if trial is None:
             return None
