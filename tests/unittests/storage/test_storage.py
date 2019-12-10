@@ -167,16 +167,20 @@ class TestStorage:
         with OrionState(experiments=generate_experiments(), storage=storage) as cfg:
             storage = cfg.storage()
 
-            class _Dummy():
+            class _Dummy:
                 pass
 
             experiment = cfg.experiments[0]
             mocked_experiment = _Dummy()
             mocked_experiment._id = experiment['_id']
 
-            print(experiment['_id'])
             storage.update_experiment(mocked_experiment, test=True)
-            assert storage.fetch_experiments({'_id': experiment['_id']})[0]['test']
+            experiments = storage.fetch_experiments({'_id': experiment['_id']})
+            assert len(experiments) == 1
+
+            fetched_experiment = experiments[0]
+            assert fetched_experiment['test']
+
             assert 'test' not in storage.fetch_experiments({'_id': cfg.experiments[1]['_id']})[0]
 
             storage.update_experiment(uid=experiment['_id'], test2=True)
@@ -229,6 +233,7 @@ class TestStorage:
             experiment = cfg.get_experiment('default_name', version=None)
 
             trial = storage.reserve_trial(experiment)
+
             assert trial is not None
             assert trial.status == 'reserved'
 
