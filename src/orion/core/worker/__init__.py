@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 
 
 class WaitingForTrials(Exception):
+    """Raised when no trials could be reserved after multiple retries"""
     pass
 
 
