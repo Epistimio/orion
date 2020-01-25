@@ -393,7 +393,7 @@ class ExperimentClient:
 
         try:
             trial = orion.core.worker.reserve_trial(self._experiment, self._producer)
-        except RuntimeError:
+        except RuntimeError as e:
             return None
 
         if trial is not None:
