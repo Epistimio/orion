@@ -11,6 +11,7 @@
 import atexit
 import functools
 import logging
+import traceback
 
 from numpy import inf as infinity
 
@@ -383,14 +384,23 @@ class ExperimentClient:
             Reserved trial for execution. Will return None if experiment is done or broken
             of if the algorithm cannot suggest until other trials complete.
 
+        Raises
+        ------
+        raises `WaitingForTrials` if the HPO is not finished but no trials are available at the moment
         """
+        from orion.core.worker import WaitingForTrials
+
         if self.is_done or self.is_broken:
             return None
 
         try:
             trial = orion.core.worker.reserve_trial(self._experiment, self._producer)
-        except RuntimeError as e:
-            return None
+
+        except WaitingForTrials as e:
+            raise e
+
+        except RuntimeError:
+            raise
 
         if trial is not None:
             self._maintain_reservation(trial)
