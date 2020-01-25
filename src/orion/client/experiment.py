@@ -11,7 +11,6 @@
 import atexit
 import functools
 import logging
-import traceback
 
 from numpy import inf as infinity
 
@@ -386,7 +385,9 @@ class ExperimentClient:
 
         Raises
         ------
-        raises `WaitingForTrials` if the HPO is not finished but no trials are available at the moment
+        raises `WaitingForTrials` if the HPO is not finished but
+        no trials are available at the moment
+
         """
         from orion.core.worker import WaitingForTrials
 
