@@ -23,6 +23,7 @@ Set up
 
     cd pytorch-cifar
     
+Add python shebang (using ``sed`` here)
 
 .. code-block:: bash
 
