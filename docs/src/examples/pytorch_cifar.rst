@@ -12,9 +12,9 @@ Example with pytorch-cifar
     Alternatively, you can test the example without setting up a database by
     using the option `--debug`, but note that all data gathered during an
     execution will be lost at the end of it.
-    
+
 Set up
-    
+
 .. code-block:: bash
 
     pip3 install torch torchvision
@@ -22,7 +22,7 @@ Set up
     git clone git@github.com:kuangliu/pytorch-cifar.git
 
     cd pytorch-cifar
-    
+
 Add python shebang (using ``sed`` here)
 
 .. code-block:: bash
