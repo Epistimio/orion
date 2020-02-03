@@ -15,7 +15,7 @@ Example with pytorch-cifar
 
 pip3 install torch torchvision
 
-git clone git@github.com:kuangliu/pytorch-cifar.git
+git clone https://github.com/kuangliu/pytorch-cifar.git
 
 cd pytorch-cifar
 

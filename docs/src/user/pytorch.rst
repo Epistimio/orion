@@ -16,7 +16,7 @@ PyTorch `examples repository`_:
 .. code-block:: bash
 
     $ pip3 install torch torchvision
-    $ git clone git@github.com:pytorch/examples.git
+    $ git clone https://github.com/pytorch/examples.git
 
 
 .. _examples repository: https://github.com/pytorch/examples
