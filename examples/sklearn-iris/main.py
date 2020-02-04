@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 
+from orion.client import report_results
 from sklearn.datasets import load_iris
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import balanced_accuracy_score
@@ -19,3 +20,8 @@ y_pred = clf.predict(X_test)
 accuracy = balanced_accuracy_score(y_test, y_pred)
 
 print("Accuracy is {}".format(accuracy))
+
+report_results([dict(
+    name='accuracy',
+    type='objective',
+    value=1 - accuracy)])
