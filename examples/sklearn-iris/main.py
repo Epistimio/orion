@@ -1,3 +1,5 @@
+#!/usr/bin/env python/
+
 from sklearn.datasets import load_iris
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import balanced_accuracy_score
