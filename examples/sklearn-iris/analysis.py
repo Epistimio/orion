@@ -14,4 +14,4 @@ ax.set_xscale('log')
 ax.set_xticks([0.00001, 0.0001, 0.001, 0.01, 0.1, 1])
 
 plt.savefig("hyperparameter-optimization.pdf", format='pdf')
-plt.show()
+# plt.show()  # If tkinter is installed (sudo apt-get install python3-tk)
