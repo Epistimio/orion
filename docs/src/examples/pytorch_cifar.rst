@@ -19,8 +19,7 @@ Set up
 
     pip3 install torch torchvision
 
-    git clone git@github.com:kuangliu/pytorch-cifar.git
-
+    git clone https://github.com/kuangliu/pytorch-cifar.git
     cd pytorch-cifar
 
 Add python shebang (using ``sed`` here)
