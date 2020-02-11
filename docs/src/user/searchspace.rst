@@ -123,7 +123,7 @@ using the :ref:`EVC system`, so that experiments where an hyperparameter is dele
 adapt trials from other experiments by using the default value.
 
 ``precision``
-------------
+-------------
 
 ex: ``loguniform(1e-5, 1e-2, precision=2)``
 

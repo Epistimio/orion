@@ -43,7 +43,7 @@ def build_required_space(requirements, original_space):
 
     """
     requirements = requirements if isinstance(requirements, list) else [requirements]
-    if len(requirements) == 0:
+    if not requirements:
         requirements = [None]
 
     space = TransformedSpace()
@@ -258,7 +258,8 @@ class Precision(Transformer):
         """Round `point` to the requested precision, as numpy arrays."""
         # numpy.format_float_scientific precision starts at 0
         if isinstance(point, list):
-            point = map(lambda x: numpy.format_float_scientific(x, precision=self.precision - 1), point)
+            point = map(lambda x: numpy.format_float_scientific(x, precision=self.precision - 1),
+                        point)
             point = list(map(float, point))
         else:
             point = float(numpy.format_float_scientific(point, precision=self.precision - 1))

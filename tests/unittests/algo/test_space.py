@@ -776,6 +776,7 @@ class TestSpace(object):
             'yolo4': 'choices([\'asdfa\', 2])'}
 
     def test_precision(self):
+        """Test that precision is correctly handled."""
         space = Space()
         space.register(Real('yolo1', 'norm', 0.9, precision=6))
         space.register(Real('yolo2', 'norm', 0.9, precision=None))

@@ -226,7 +226,8 @@ class TestPrecision(object):
         t = Precision(precision=4)
         assert t.transform(8.654321098) == 8.654
         assert t.transform(0.000123456789) == 0.0001235
-        assert numpy.all(t.transform([8.654321098, 0.000123456789]) == numpy.array([8.654, 0.0001235], dtype=float))
+        assert numpy.all(t.transform([8.654321098, 0.000123456789]) ==
+                         numpy.array([8.654, 0.0001235], dtype=float))
 
     def test_reverse(self):
         """Check if it reverses `transform` properly, if possible."""
