@@ -774,3 +774,17 @@ class TestSpace(object):
             'yolo2': 'uniform(-3, 3, shape=(2,), discrete=True)',
             'yolo3': 'norm(0.9)',
             'yolo4': 'choices([\'asdfa\', 2])'}
+
+    def test_precision(self):
+        space = Space()
+        space.register(Real('yolo1', 'norm', 0.9, precision=6))
+        space.register(Real('yolo2', 'norm', 0.9, precision=None))
+
+        assert space['yolo1'].precision == 6
+        assert space['yolo2'].precision is None
+
+        with pytest.raises(TypeError):
+            space.register(Real('yolo3', 'norm', 0.9, precision=-12))
+
+        with pytest.raises(TypeError):
+            space.register(Real('yolo4', 'norm', 0.9, precision=0.6))

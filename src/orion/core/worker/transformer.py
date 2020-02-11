@@ -43,13 +43,18 @@ def build_required_space(requirements, original_space):
 
     """
     requirements = requirements if isinstance(requirements, list) else [requirements]
+    if len(requirements) == 0:
+        requirements = [None]
+
     space = TransformedSpace()
     for dim in original_space.values():
         transformers = []
         type_ = dim.type
         base_domain_type = type_
         for requirement in requirements:
-            if type_ == 'real' and requirement in ('real', None):
+            if type_ == 'real' and requirement in ('real', None) and dim.precision is not None:
+                transformers.append(Precision(dim.precision))
+            elif type_ == 'real' and requirement in ('real', None):
                 pass
             elif type_ == 'real' and requirement == 'integer':
                 transformers.append(Quantize())
@@ -237,6 +242,32 @@ class Reverse(Transformer):
     def domain_type(self):
         """Return `target_type` of composed `transformer`."""
         return self.transformer.target_type
+
+
+class Precision(Transformer):
+    """Round real numbers to requested precision."""
+
+    domain_type = 'real'
+    target_type = 'real'
+
+    def __init__(self, precision=4):
+        """Initialize a precision transformation. Precision must be a non-negative integer."""
+        self.precision = precision
+
+    def transform(self, point):
+        """Round `point` to the requested precision, as numpy arrays."""
+        # numpy.format_float_scientific precision starts at 0
+        if isinstance(point, list):
+            point = map(lambda x: numpy.format_float_scientific(x, precision=self.precision - 1), point)
+            point = list(map(float, point))
+        else:
+            point = float(numpy.format_float_scientific(point, precision=self.precision - 1))
+
+        return numpy.asarray(point)
+
+    def reverse(self, transformed_point):
+        """Cast `transformed_point` to floats, as numpy arrays."""
+        return numpy.asarray(transformed_point).astype(float)
 
 
 class Quantize(Transformer):

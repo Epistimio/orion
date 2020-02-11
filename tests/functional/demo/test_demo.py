@@ -535,6 +535,6 @@ def test_demo_with_nondefault_config_keyword(database, monkeypatch):
     assert len(params) == 1
     assert params[0]['name'] == '/x'
     assert params[0]['type'] == 'real'
-    assert (params[0]['value'] - 34.56789) < 1e-5
+    assert (params[0]['value'] - 34.568) < 1e-5
 
     orion.core.config.user_script_config = 'config'

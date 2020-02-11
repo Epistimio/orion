@@ -1,1 +1,1 @@
-x: 'orion~uniform(-50, 50)'
+x: 'orion~uniform(-50, 50, precision=5)'
