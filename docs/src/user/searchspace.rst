@@ -110,7 +110,7 @@ Special arguments
 
 ex: ``uniform(0, 10, discrete=True)``
 
-Argument to cast a continous distribution into :ref:`integer-dim`. Defaults to ``False``.
+Argument to cast a continuous distribution into :ref:`integer-dim`. Defaults to ``False``.
 
 ``default_value``
 -----------------
@@ -121,6 +121,14 @@ Dimensions can be set to a default value so that commandline call `insert` can s
 without specifing this hyperparameter, assigning it the default value. This is also usefull in when
 using the :ref:`EVC system`, so that experiments where an hyperparameter is deleted or added can
 adapt trials from other experiments by using the default value.
+
+``precision``
+------------
+
+ex: ``loguniform(1e-5, 1e-2, precision=2)``
+
+Argument to sample a continuous distribution up to the requested precision. Defaults to ``4``.
+The above example would sample values such as 6.7e-4 or 2.9e-3 but not 6.789e-4.
 
 ``shape``
 ---------

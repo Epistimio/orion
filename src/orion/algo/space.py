@@ -346,6 +346,13 @@ class Real(Dimension):
             raise ValueError("Lower bound {} has to be less than upper bound {}"
                              .format(self._low, self._high))
 
+        precision = kwargs.pop('precision', 4)
+        if (isinstance(precision, int) and precision > 0) or precision is None:
+            self.precision = precision
+        else:
+            raise TypeError(f'Precision should be a non-negative int or None, '
+                            f'instead was {precision} of type {type(precision)}.')
+
         super(Real, self).__init__(name, prior, *args, **kwargs)
 
     def __contains__(self, point):
