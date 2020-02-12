@@ -40,6 +40,10 @@ Change interface to support trial object instead of curated lists. This is neces
 - Specific to hyper parameter optimizations
 - Provide status of experiments
 
+#### Leveraging previous experiences
+Leveraging the knowledge base contained in the EVC of previous trials to optimize and drive new
+ trials.
+
 ## Next releases - Long-Term
 
 #### Conditional Space
