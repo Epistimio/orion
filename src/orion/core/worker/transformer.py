@@ -264,7 +264,7 @@ class Precision(Transformer):
 
     def reverse(self, transformed_point):
         """Cast `transformed_point` to floats, as numpy arrays."""
-        return numpy.asarray(transformed_point).astype(float)
+        return self.transform(transformed_point)
 
     def repr_format(self, what):
         """Format a string for calling ``__repr__`` in `TransformedDimension`."""

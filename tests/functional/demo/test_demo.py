@@ -559,4 +559,4 @@ def test_demo_precision(database, monkeypatch):
     trials = list(sorted(trials, key=lambda trial: trial['submit_time']))
     params = trials[-1]['params']
 
-    assert params[0]['value'] == numpy.format_float_scientific(params[0]['value'], precision=4)
+    assert params[0]['value'] == float(numpy.format_float_scientific(params[0]['value'], precision=4))
