@@ -338,6 +338,8 @@ class Real(Dimension):
            Lower bound (inclusive), optional; default ``-numpy.inf``.
         high : float:
            Upper bound (exclusive), optional; default ``numpy.inf``.
+        precision : int
+            Precision, optional; default ``4``.
 
         """
         self._low = kwargs.pop('low', -numpy.inf)
