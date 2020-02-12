@@ -565,7 +565,7 @@ class TestSuggest:
 
             trial = client.suggest()
             assert trial.status == 'reserved'
-            assert trial.params['x'] == 57.567291697517554
+            assert trial.params['x'] == 57.57
             assert len(experiment.fetch_trials()) == 6
 
             assert client._pacemakers[trial.id].is_alive()
