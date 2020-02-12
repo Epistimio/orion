@@ -22,6 +22,9 @@ results = dummy(**trial.arguments)
 experiment.observe(trial, results)
 ```
 
+### Algorithms
+Introducing new algorithms: [TPE](https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf), [HyperBand](https://arxiv.org/abs/1603.06560)
+
 ## Next releases - Mid-Term
 
 ### v0.3
