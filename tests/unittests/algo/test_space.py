@@ -780,9 +780,11 @@ class TestSpace(object):
         space = Space()
         space.register(Real('yolo1', 'norm', 0.9, precision=6))
         space.register(Real('yolo2', 'norm', 0.9, precision=None))
+        space.register(Real('yolo5', 'norm', 0.9))
 
         assert space['yolo1'].precision == 6
         assert space['yolo2'].precision is None
+        assert space['yolo5'].precision == 4
 
         with pytest.raises(TypeError):
             space.register(Real('yolo3', 'norm', 0.9, precision=-12))

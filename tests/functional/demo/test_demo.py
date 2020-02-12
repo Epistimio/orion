@@ -535,6 +535,34 @@ def test_demo_with_nondefault_config_keyword(database, monkeypatch):
     assert len(params) == 1
     assert params[0]['name'] == '/x'
     assert params[0]['type'] == 'real'
-    assert (params[0]['value'] - 34.568) < 1e-5
+    assert (params[0]['value'] - 34.56789) < 1e-5
 
     orion.core.config.user_script_config = 'config'
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_demo_precision(database, monkeypatch):
+    """Test a simple usage scenario."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+    user_args = [
+        "-x~uniform(-50, 50, precision=5)",
+        "--test-env",
+        "--experiment-id", '{exp.id}',
+        "--experiment-name", '{exp.name}',
+        "--experiment-version", '{exp.version}',
+        "--trial-id", '{trial.id}',
+        "--working-dir", '{trial.working_dir}']
+
+    orion.core.cli.main([
+        "hunt", "--config", "./orion_config.yaml", "./black_box.py"] + user_args)
+
+    exp = list(database.experiments.find({'name': 'voila_voici'}))
+    exp = exp[0]
+    exp_id = exp['_id']
+    trials = list(database.trials.find({'experiment': exp_id}))
+    trials = list(sorted(trials, key=lambda trial: trial['submit_time']))
+    params = trials[-1]['params']
+
+    assert (params[0]['value'] - 34.568) < 1e-5
