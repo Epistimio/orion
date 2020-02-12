@@ -1,5 +1,5 @@
 # Roadmap
-Last update October 8th, 2019
+Last update February 12th, 2020
 
 ## Next releases - Short-Term
 
