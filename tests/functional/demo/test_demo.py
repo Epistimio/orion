@@ -224,7 +224,7 @@ def test_workon():
         assert 'datetime' in exp['metadata']
         assert 'user_script' in exp['metadata']
         assert os.path.isabs(exp['metadata']['user_script'])
-        assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
+        assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50, precision=None)']
 
         trials = list(storage.fetch_trials(experiment))
         assert len(trials) <= 15
