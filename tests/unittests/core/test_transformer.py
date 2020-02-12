@@ -244,7 +244,7 @@ class TestPrecision(object):
     def test_repr_format(self):
         """Check representation of a transformed dimension."""
         t = Precision()
-        assert t.repr_format('asfa') == 'Precision(asfa)'
+        assert t.repr_format('asfa') == 'Precision(4, asfa)'
 
 
 class TestQuantize(object):
@@ -706,7 +706,7 @@ class TestRequiredSpaceBuilder(object):
         assert tspace[1].type == 'categorical'
         assert tspace[2].type == 'integer'
         assert (str(tspace) ==
-                "Space([Precision(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
+                "Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
                 "       Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None),\n"  # noqa
                 "       Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None)])")  # noqa
 
@@ -716,7 +716,7 @@ class TestRequiredSpaceBuilder(object):
         assert tspace[1].type == 'categorical'
         assert tspace[2].type == 'integer'
         assert (str(tspace) ==
-                "Space([Precision(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
+                "Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
                 "       Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None),\n"  # noqa
                 "       Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None)])")  # noqa
 
@@ -740,7 +740,7 @@ class TestRequiredSpaceBuilder(object):
         assert tspace[1].type == 'real'
         assert tspace[2].type == 'real'
         assert(str(tspace) ==
-               "Space([Precision(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
+               "Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
                "       OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None))),\n"  # noqa
                "       ReverseQuantize(Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None))])")  # noqa
 

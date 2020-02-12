@@ -18,6 +18,7 @@ import numpy
 from orion.algo.space import (Dimension, Space)
 
 
+# pylint: disable=too-many-branches
 def build_required_space(requirements, original_space):
     """Build a `Space` object which agrees to the `requirements` imposed
     by the desired optimization algorithm.
@@ -129,7 +130,6 @@ class Identity(Transformer):
     """Implement an identity transformation. Everything as it is."""
 
     def __init__(self, domain_type=None):
-        """Initialize an identity transformation. Domain type is equal to target type."""
         self._domain_type = domain_type
 
     def transform(self, point):
@@ -156,11 +156,10 @@ class Identity(Transformer):
 
 
 class Compose(Transformer):
-    """Implement a composite transformation."""
+    """Initialize composite transformer with a list of `Transformer` objects
+    and domain type on which it will be applied."""
 
     def __init__(self, transformers, base_domain_type=None):
-        """Initialize composite transformer with a list of `Transformer` objects
-        and domain type on which it will be applied."""
         try:
             self.apply = transformers.pop()
         except IndexError:
@@ -214,10 +213,6 @@ class Reverse(Transformer):
     """Apply the reverse transformation that another one would do."""
 
     def __init__(self, transformer: Transformer):
-        """Initialize object with an existing `transformer`.
-
-        This will apply `transformer`'s methods in reverse.
-        """
         assert not isinstance(transformer, OneHotEncode), "real to categorical is pointless"
         self.transformer = transformer
 
@@ -251,7 +246,6 @@ class Precision(Transformer):
     target_type = 'real'
 
     def __init__(self, precision=4):
-        """Initialize a precision transformation. Precision must be a non-negative integer."""
         self.precision = precision
 
     def transform(self, point):
@@ -269,6 +263,10 @@ class Precision(Transformer):
     def reverse(self, transformed_point):
         """Cast `transformed_point` to floats, as numpy arrays."""
         return numpy.asarray(transformed_point).astype(float)
+
+    def repr_format(self, what):
+        """Format a string for calling ``__repr__`` in `TransformedDimension`."""
+        return "{}({}, {})".format(self.__class__.__name__, self.precision, what)
 
 
 class Quantize(Transformer):
@@ -296,7 +294,6 @@ class Enumerate(Transformer):
     target_type = 'integer'
 
     def __init__(self, categories):
-        """Initialize `Enumerate` transformation with a list of `categories`."""
         self.categories = categories
         map_dict = {cat: i for i, cat in enumerate(categories)}
         self._map = numpy.vectorize(lambda x: map_dict[x], otypes='i')
@@ -328,9 +325,6 @@ class OneHotEncode(Transformer):
     target_type = 'real'
 
     def __init__(self, bound: int):
-        """Initialize `OneHotEncode` transformer, so that it can construct
-        a `bound`-dimensional real vector representation of some integer less than `bound`.
-        """
         self.num_cats = bound
 
     def transform(self, point):
