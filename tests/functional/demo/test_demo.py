@@ -254,7 +254,7 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     """
     # XXX: return and complete test when there is a way to control random
     # seed of Oríon
-    how_many = 50
+    how_many = 2
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["hunt", "--max-trials={}".format(how_many),
                          "--pool-size=1",
@@ -550,7 +550,7 @@ def test_demo_precision(database, monkeypatch):
         "-x~uniform(-50, 50, precision=5)"]
 
     orion.core.cli.main([
-        "hunt", "--config", "./orion_config.yaml", "./black_box.py"] + user_args)
+        "hunt", "--config", "./orion_config.yaml", "--max-trials", "2", "./black_box.py"] + user_args)
 
     exp = list(database.experiments.find({'name': 'voila_voici'}))
     exp = exp[0]
