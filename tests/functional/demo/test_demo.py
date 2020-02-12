@@ -550,7 +550,8 @@ def test_demo_precision(database, monkeypatch):
         "-x~uniform(-50, 50, precision=5)"]
 
     orion.core.cli.main([
-        "hunt", "--config", "./orion_config.yaml", "--max-trials", "2", "./black_box.py"] + user_args)
+        "hunt", "--config", "./orion_config.yaml", "--max-trials", "2",
+                            "./black_box.py"] + user_args)
 
     exp = list(database.experiments.find({'name': 'voila_voici'}))
     exp = exp[0]
