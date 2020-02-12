@@ -516,7 +516,7 @@ def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
     # experiment
     orion.core.cli.main(
         ("init_only -n {branch} --branch-from {name} ./black_box_with_y.py "
-         "-x~uniform(0,10) "
+         "-x~uniform(0,10, precision=None) "
          "-w~fidelity(1,10)").format(name=name, branch=branch).split(" "))
 
 

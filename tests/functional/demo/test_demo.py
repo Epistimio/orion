@@ -53,7 +53,7 @@ def test_demo(database, monkeypatch):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     user_args = [
-        "-x~uniform(-50, 50)",
+        "-x~uniform(-50, 50, precision=None)",
         "--test-env",
         "--experiment-id", '{exp.id}',
         "--experiment-name", '{exp.name}',
@@ -202,7 +202,7 @@ def test_workon():
     config['max_trials'] = 100
     config['user_args'] = [
         os.path.abspath(os.path.join(os.path.dirname(__file__), "black_box.py")),
-        "-x~uniform(-50, 50)"]
+        "-x~uniform(-50, 50, precision=None)"]
 
     with OrionState():
         experiment = experiment_builder.build_from_args(config)
