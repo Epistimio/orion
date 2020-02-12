@@ -547,13 +547,7 @@ def test_demo_precision(database, monkeypatch):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     user_args = [
-        "-x~uniform(-50, 50, precision=5)",
-        "--test-env",
-        "--experiment-id", '{exp.id}',
-        "--experiment-name", '{exp.name}',
-        "--experiment-version", '{exp.version}',
-        "--trial-id", '{trial.id}',
-        "--working-dir", '{trial.working_dir}']
+        "-x~uniform(-50, 50, precision=5)"]
 
     orion.core.cli.main([
         "hunt", "--config", "./orion_config.yaml", "./black_box.py"] + user_args)
@@ -565,4 +559,4 @@ def test_demo_precision(database, monkeypatch):
     trials = list(sorted(trials, key=lambda trial: trial['submit_time']))
     params = trials[-1]['params']
 
-    assert (params[0]['value'] - 34.568) < 1e-5
+    assert params[0]['value'] == numpy.format_float_scientific(params[0]['value'], precision=4)
