@@ -6,7 +6,7 @@ Last update February 12th, 2020
 ### v0.2
 #### Journal Protocol Plugins
 Offering:
-- no need to setup DB, can use one's existing backend
+- No need to setup DB, can use one's existing backend
 - Can re-use tools provided by backend for visualizations, etc.
 #### Python API
 
