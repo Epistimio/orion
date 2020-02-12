@@ -77,7 +77,8 @@ def test_with_fidelity(database, monkeypatch, config_file):
     """Test a scenario with fidelity."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["hunt", "--config", config_file,
-                         "./black_box.py", "-x~uniform(-50, 50, precision=None)", "--fidelity~fidelity(1,10,4)"])
+                         "./black_box.py", "-x~uniform(-50, 50, precision=None)",
+                         "--fidelity~fidelity(1,10,4)"])
 
     with open(config_file, 'rb') as f:
         config = yaml.safe_load(f)
@@ -97,7 +98,8 @@ def test_with_fidelity(database, monkeypatch, config_file):
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
     assert os.path.isabs(exp['metadata']['user_script'])
-    assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50, precision=None)', "--fidelity~fidelity(1,10,4)"]
+    assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50, precision=None)',
+                                            "--fidelity~fidelity(1,10,4)"]
 
     trials = storage.fetch_trials(uid=exp_id)
     assert len(trials) <= config['max_trials']
