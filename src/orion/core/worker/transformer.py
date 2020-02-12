@@ -45,7 +45,7 @@ def build_required_space(requirements, original_space):
     """
     requirements = requirements if isinstance(requirements, list) else [requirements]
     if not requirements:
-        requirements = [None]
+        requirements = []
 
     space = TransformedSpace()
     for dim in original_space.values():

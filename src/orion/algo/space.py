@@ -350,8 +350,8 @@ class Real(Dimension):
         if (isinstance(precision, int) and precision > 0) or precision is None:
             self.precision = precision
         else:
-            raise TypeError(f'Precision should be a non-negative int or None, '
-                            f'instead was {precision} of type {type(precision)}.')
+            raise TypeError("Precision should be a non-negative int or None, "
+                            "instead was {} of type {}.".format(precision, type(precision)))
 
         super(Real, self).__init__(name, prior, *args, **kwargs)
 

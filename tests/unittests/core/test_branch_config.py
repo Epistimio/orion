@@ -140,7 +140,7 @@ def same_userconfig_config(user_config, child_config):
 def changed_userconfig_config(user_config, child_config):
     """Create a child config with a changed dimension"""
     config_file_path = './changed_config.yaml'
-    user_config['b'] = 'orion~uniform(-20, 0)'
+    user_config['b'] = 'orion~uniform(-20, 0, precision=None)'
     user_config['some_other'] = 'hello'
     with open(config_file_path, 'w') as f:
         yaml.dump(user_config, f)
