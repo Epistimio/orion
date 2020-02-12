@@ -70,6 +70,8 @@ def build_required_space(requirements, original_space):
                 transformers.append(Enumerate(dim.categories))
             elif type_ == 'categorical' and requirement is None:
                 pass
+            elif requirement is not None:
+                pass
             else:
                 raise TypeError("Unsupported dimension type ('{}') "
                                 "or requirement ('{}')".format(requirement, type_))
