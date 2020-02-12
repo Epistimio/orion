@@ -36,11 +36,11 @@ Change interface to support trial object instead of curated lists. This is neces
 - PBT
 - BOHB
 
-## Next releases - Long-Term
-
 #### Simple dashboard specific to monitoring and benchmarking of Black-Box optimization
 - Specific to hyper parameter optimizations
 - Provide status of experiments
+
+## Next releases - Long-Term
 
 #### Conditional Space
 
