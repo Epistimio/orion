@@ -3,7 +3,7 @@ Last update February 12th, 2020
 
 ## Next releases - Short-Term
 
-### v0.2: ETA End of summer 2019
+### v0.2
 #### Journal Protocol Plugins
 Offering:
 - no need to setup DB, can use one's existing backend
