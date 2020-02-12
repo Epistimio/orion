@@ -3,8 +3,6 @@ Last update February 12th, 2020
 
 ## Next releases - Short-Term
 
-## Next releases - Mid-Term
-
 ### v0.2: ETA End of summer 2019
 #### Journal Protocol Plugins
 Offering:
@@ -23,6 +21,8 @@ trial = experiment.suggest()
 results = dummy(**trial.arguments)
 experiment.observe(trial, results)
 ```
+
+## Next releases - Mid-Term
 
 ### v0.3
 #### Generic `Optimizer` interface supporting various types of algorithms
