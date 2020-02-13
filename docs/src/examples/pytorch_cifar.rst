@@ -13,11 +13,16 @@ Example with pytorch-cifar
     using the option `--debug`, but note that all data gathered during an
     execution will be lost at the end of it.
 
-pip3 install torch torchvision
+Set up
 
-git clone git@github.com:kuangliu/pytorch-cifar.git
+.. code-block:: bash
 
-cd pytorch-cifar
+    pip3 install torch torchvision
+
+    git clone https://github.com/kuangliu/pytorch-cifar.git
+    cd pytorch-cifar
+
+Add python shebang (using ``sed`` here)
 
 .. code-block:: bash
 

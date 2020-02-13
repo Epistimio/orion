@@ -214,7 +214,7 @@ class Trial:
     def __str__(self):
         """Represent partially with a string."""
         return "Trial(experiment={0}, status={1}, params={2})".format(
-            repr(self.experiment), repr(self._status), self.params_repr())
+            repr(self.experiment), repr(self._status), self.format_params(self._params))
 
     __repr__ = __str__
 
@@ -294,31 +294,13 @@ class Trial:
         """
         return self._fetch_one_result_of_type('gradient')
 
-    def _repr_values(self, values, sep=','):
-        """Represent with a string the given values."""
-        return sep.join(map(lambda value: "{0.name}:{0.value}".format(value), values))
-
-    def params_repr(self, sep=',', ignore_fidelity=False):
-        """Represent with a string the parameters contained in this `Trial` object."""
-        if ignore_fidelity:
-            params = [x for x in self._params if x.type != 'fidelity']
-        else:
-            params = self._params
-        return self._repr_values(params, sep)
-
     @property
     def hash_name(self):
         """Generate a unique name with an md5sum hash for this `Trial`.
 
         .. note:: Two trials that have the same `params` must have the same `hash_name`.
         """
-        if not self._params and not self.experiment:
-            raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
-                             "have not been set.")
-        params_repr = self.params_repr()
-        experiment_repr = str(self.experiment)
-        lie_repr = self._repr_values([self.lie]) if self.lie else ""
-        return hashlib.md5((params_repr + experiment_repr + lie_repr).encode('utf-8')).hexdigest()
+        return self.compute_trial_hash(self, ignore_fidelity=False)
 
     @property
     def hash_params(self):
@@ -326,12 +308,7 @@ class Trial:
 
         .. note:: The params contributing to the hash do not include the fidelity.
         """
-        if not self._params and not self.experiment:
-            raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
-                             "have not been set.")
-        params_repr = self.params_repr(ignore_fidelity=True)
-        experiment_repr = str(self.experiment)
-        return hashlib.md5((params_repr + experiment_repr).encode('utf-8')).hexdigest()
+        return self.compute_trial_hash(self, ignore_fidelity=True)
 
     def __hash__(self):
         """Return the hashname for this trial"""
@@ -343,7 +320,7 @@ class Trial:
         if not self._params or not self.experiment:
             raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
                              "have not been set.")
-        return self.params_repr(sep='-').replace('/', '.')
+        return self.format_values(self._params, sep='-').replace('/', '.')
 
     def _fetch_one_result_of_type(self, result_type, results=None):
         if results is None:
@@ -361,3 +338,41 @@ class Trial:
                         "Optimizing according to the first one only: %s", value[0])
 
         return value[0]
+
+    def _repr_values(self, values, sep=','):
+        """Represent with a string the given values."""
+        return Trial.format_values(values, sep)
+
+    def params_repr(self, sep=',', ignore_fidelity=False):
+        """Represent with a string the parameters contained in this `Trial` object."""
+        return Trial.format_params(self._params, sep)
+
+    @staticmethod
+    def format_values(values, sep=','):
+        """Represent with a string the given values."""
+        return sep.join(map(lambda value: "{0.name}:{0.value}".format(value), values))
+
+    @staticmethod
+    def format_params(params, sep=',', ignore_fidelity=False):
+        """Represent with a string the parameters contained in this `Trial` object."""
+        if ignore_fidelity:
+            params = [x for x in params if x.type != 'fidelity']
+        else:
+            params = params
+        return Trial.format_values(params, sep)
+
+    @staticmethod
+    def compute_trial_hash(trial, ignore_fidelity=False):
+        """Generate a unique param md5sum hash for a given `Trial`"""
+        if not trial._params and not trial.experiment:
+            raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
+                             "have not been set.")
+
+        params = Trial.format_params(trial._params, ignore_fidelity=ignore_fidelity)
+        experiment_repr = str(trial.experiment)
+
+        lie_repr = ""
+        if not ignore_fidelity and trial.lie:
+            lie_repr = Trial.format_values([trial.lie])
+
+        return hashlib.md5((params + experiment_repr + lie_repr).encode('utf-8')).hexdigest()

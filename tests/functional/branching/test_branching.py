@@ -447,11 +447,11 @@ def test_new_algo_not_resolved(init_full_x):
     assert "Configuration is different and generates a branching event" in str(exc.value)
 
 
-def test_new_algo_ignore_cli(init_full_x_ignore_cli):
+def test_ignore_cli(init_full_x_ignore_cli):
     """Test that a non-monitored parameter conflict is not generating a child"""
     name = "full_x"
     orion.core.cli.main(
-        ("init_only -n {name} --non-monitored-arguments a-new --config new_algo_config.yaml "
+        ("init_only -n {name} --non-monitored-arguments a-new "
          "--manual-resolution ./black_box.py -x~uniform(-10,10)")
         .format(name=name).split(" "))
 
@@ -516,7 +516,7 @@ def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
     # experiment
     orion.core.cli.main(
         ("init_only -n {branch} --branch-from {name} ./black_box_with_y.py "
-         "-x~uniform(0,10) "
+         "-x~uniform(0,10, precision=None) "
          "-w~fidelity(1,10)").format(name=name, branch=branch).split(" "))
 
 
