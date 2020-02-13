@@ -31,7 +31,6 @@ precedence is respected when building the settings dictionary:
 .. note:: `Optimization` entries are required, `Dynamic` entry is optional.
 
 """
-import errno
 import getpass
 import hashlib
 import logging
