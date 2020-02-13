@@ -53,7 +53,7 @@ def test_demo(database, monkeypatch):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     user_args = [
-        "-x~uniform(-50, 50)",
+        "-x~uniform(-50, 50, precision=None)",
         "--test-env",
         "--experiment-id", '{exp.id}',
         "--experiment-name", '{exp.name}',
@@ -202,7 +202,7 @@ def test_workon():
     config['max_trials'] = 100
     config['user_args'] = [
         os.path.abspath(os.path.join(os.path.dirname(__file__), "black_box.py")),
-        "-x~uniform(-50, 50)"]
+        "-x~uniform(-50, 50, precision=None)"]
 
     with OrionState():
         experiment = experiment_builder.build_from_args(config)
@@ -224,7 +224,7 @@ def test_workon():
         assert 'datetime' in exp['metadata']
         assert 'user_script' in exp['metadata']
         assert os.path.isabs(exp['metadata']['user_script'])
-        assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
+        assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50, precision=None)']
 
         trials = list(storage.fetch_trials(experiment))
         assert len(trials) <= 15
@@ -254,7 +254,7 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     """
     # XXX: return and complete test when there is a way to control random
     # seed of Oríon
-    how_many = 50
+    how_many = 2
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["hunt", "--max-trials={}".format(how_many),
                          "--pool-size=1",
@@ -538,3 +538,27 @@ def test_demo_with_nondefault_config_keyword(database, monkeypatch):
     assert (params[0]['value'] - 34.56789) < 1e-5
 
     orion.core.config.user_script_config = 'config'
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_demo_precision(database, monkeypatch):
+    """Test a simple usage scenario."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+    user_args = [
+        "-x~uniform(-50, 50, precision=5)"]
+
+    orion.core.cli.main([
+        "hunt", "--config", "./orion_config.yaml", "--max-trials", "2",
+                            "./black_box.py"] + user_args)
+
+    exp = list(database.experiments.find({'name': 'voila_voici'}))
+    exp = exp[0]
+    exp_id = exp['_id']
+    trials = list(database.trials.find({'experiment': exp_id}))
+    trials = list(sorted(trials, key=lambda trial: trial['submit_time']))
+    params = trials[-1]['params']
+    value = params[0]['value']
+
+    assert value == float(numpy.format_float_scientific(value, precision=4))

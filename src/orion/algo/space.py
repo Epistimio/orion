@@ -338,6 +338,8 @@ class Real(Dimension):
            Lower bound (inclusive), optional; default ``-numpy.inf``.
         high : float:
            Upper bound (exclusive), optional; default ``numpy.inf``.
+        precision : int
+            Precision, optional; default ``4``.
 
         """
         self._low = kwargs.pop('low', -numpy.inf)
@@ -345,6 +347,13 @@ class Real(Dimension):
         if self._high <= self._low:
             raise ValueError("Lower bound {} has to be less than upper bound {}"
                              .format(self._low, self._high))
+
+        precision = kwargs.pop('precision', 4)
+        if (isinstance(precision, int) and precision > 0) or precision is None:
+            self.precision = precision
+        else:
+            raise TypeError("Precision should be a non-negative int or None, "
+                            "instead was {} of type {}.".format(precision, type(precision)))
 
         super(Real, self).__init__(name, prior, *args, **kwargs)
 
