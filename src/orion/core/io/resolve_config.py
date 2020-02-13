@@ -170,7 +170,7 @@ def fetch_metadata(user=None, user_args=None):
     if len(user_args) == 1 and user_args[0] == '':
         user_args = []
 
-    user_script = user_args
+    user_script = user_args[0] if user_args else None
 
     if user_script:
         metadata['user_script'] = user_script
