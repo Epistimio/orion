@@ -42,7 +42,6 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert os.path.isabs(exp['metadata']['user_script'])
     assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
 
 
@@ -122,7 +121,6 @@ def test_demo_with_script_config(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert os.path.isabs(exp['metadata']['user_script'])
     assert exp['metadata']['user_args'] == ['--config', 'script_config.yaml']
 
     trials = list(database.trials.find({'experiment': exp_id}))
@@ -174,7 +172,6 @@ def test_demo_two_workers(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert os.path.isabs(exp['metadata']['user_script'])
     assert exp['metadata']['user_args'] == ['-x~norm(34, 3)']
 
     trials = list(database.trials.find({'experiment': exp_id}))
@@ -223,7 +220,6 @@ def test_workon():
         assert 'user' in exp['metadata']
         assert 'datetime' in exp['metadata']
         assert 'user_script' in exp['metadata']
-        assert os.path.isabs(exp['metadata']['user_script'])
         assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50, precision=None)']
 
         trials = list(storage.fetch_trials(experiment))
@@ -515,7 +511,6 @@ def test_demo_with_nondefault_config_keyword(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert os.path.isabs(exp['metadata']['user_script'])
     assert exp['metadata']['user_args'] == ['--configuration', 'script_config.yaml']
 
     trials = list(database.trials.find({'experiment': exp_id}))
