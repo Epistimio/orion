@@ -171,7 +171,7 @@ def fetch_metadata(user=None, user_args=None):
     if len(user_args) == 1 and user_args[0] == '':
         user_args = []
 
-    user_script = fetch_user_script(user_args)
+    user_script = user_args
 
     if user_script:
         metadata['user_script'] = user_script
@@ -181,18 +181,6 @@ def fetch_metadata(user=None, user_args=None):
         metadata['user_args'] = user_args[1:]
 
     return metadata
-
-
-def fetch_user_script(user_args):
-    user_script = user_args[0] if user_args else None
-    if user_script:
-        # MIRKO: make this line robust w.r.t. entry point
-        abs_user_script = os.path.abspath(user_script)
-        if is_exe(abs_user_script):
-            user_script = abs_user_script
-    if user_script and not os.path.exists(user_script):
-        raise OSError(errno.ENOENT, "The path specified for the script does not exist", user_script)
-    return user_script
 
 
 def merge_configs(*configs):
