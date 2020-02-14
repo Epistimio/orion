@@ -77,7 +77,6 @@ def test_demo(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert os.path.isabs(exp['metadata']['user_script'])
     assert exp['metadata']['user_args'] == user_args
     trials = list(database.trials.find({'experiment': exp_id}))
     assert len(trials) <= 15
