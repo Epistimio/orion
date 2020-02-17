@@ -5,7 +5,7 @@ Scikit-learn
    repository. We invoke this file from index.rst
 
 In this example, we're going to demonstrate how Oríon can be integrated to a minimal model using
-scitkit-learn (cite) on the iris dataset (cite). The files mentioned in this example are
+scikit-learn [scikit]_ on the iris dataset [iris]_. The files mentioned in this example are
 available in the folder examples/scikit-learn-iris/.
 
 The requirements are listed in requirements.txt. You can quickly install them using :command:`$ pip
@@ -45,3 +45,11 @@ Adapting to Orion
 
 .. caution::
    TODO
+
+
+.. [scikit] Pedregosa, Fabian, Gaël Varoquaux, Alexandre Gramfort, Vincent Michel, Bertrand Thirion,
+            Olivier Grisel, Mathieu Blondel et al. "Scikit-learn: Machine Learning in Python"
+            Journal of machine learning research 12, no. Oct (2011): 2825-2830.
+
+.. [iris] Fisher, Ronald A. "The use of multiple measurements in taxonomic problems"
+          Annals of eugenics 7, no. 2 (1936): 179-188.
