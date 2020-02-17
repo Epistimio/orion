@@ -6,7 +6,7 @@ Scikit-learn
 
 In this example, we're going to demonstrate how Oríon can be integrated to a minimal model using
 scikit-learn [scikit]_ on the iris dataset [iris]_. The files mentioned in this example are
-available in the folder examples/scikit-learn-iris/.
+available in the folder :file:`examples/scikit-learn-iris/`.
 
 The requirements are listed in requirements.txt. You can quickly install them using :command:`$ pip
 install -r requirements.txt`. If you haven't installed Oríon previously, make sure to see
