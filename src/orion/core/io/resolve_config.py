@@ -31,6 +31,8 @@ precedence is respected when building the settings dictionary:
 .. note:: `Optimization` entries are required, `Dynamic` entry is optional.
 
 """
+import distutils
+import errno
 import getpass
 import hashlib
 import logging
@@ -170,7 +172,7 @@ def fetch_metadata(user=None, user_args=None):
     if len(user_args) == 1 and user_args[0] == '':
         user_args = []
 
-    user_script = user_args[0] if user_args else None
+    user_script = fetch_script(user_args)
 
     if user_script:
         metadata['user_script'] = user_script
@@ -182,8 +184,24 @@ def fetch_metadata(user=None, user_args=None):
     return metadata
 
 
+def fetch_script(user_args):
+    if not user_args:
+        return None
+    if user_args[0] == 'python':
+        user_script = user_args[1]
+    else:
+        user_script = user_args[0]
+
+    if os.path.exists(user_script):
+        return user_script
+    elif len(distutils.spawn.find_executable(user_script)) > 0:
+        return user_script
+    else:
+        raise OSError(errno.ENOENT, "The path specified for the script does not exist", user_script)
+
+
 def merge_configs(*configs):
-    """Merge configuration dictionnaries following the given hierarchy
+    """Merge configuration dictionaries following the given hierarchy
 
     Suppose function is called as merge_configs(A, B, C). Then any pair (key, value) in C would
     overwrite any previous value from A or B. Same apply for B over A.
