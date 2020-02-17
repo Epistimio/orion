@@ -193,12 +193,9 @@ def fetch_script(user_args):
     else:
         user_script = user_args[0]
 
-    if os.path.exists(user_script):
-        return user_script
-    elif distutils.spawn.find_executable(user_script):
-        return user_script
-    else:
+    if not os.path.exists(user_script) or not distutils.spawn.find_executable(user_script):
         raise OSError(errno.ENOENT, "The path specified for the script does not exist", user_script)
+    return user_args[0]
 
 
 def merge_configs(*configs):
