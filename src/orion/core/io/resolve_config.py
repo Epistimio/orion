@@ -185,6 +185,9 @@ def fetch_metadata(user=None, user_args=None):
 
 
 def fetch_script(user_args):
+    """
+    Infer the script name and perform some checks
+    """
     if not user_args:
         return None
     if user_args[0] == 'python':
@@ -194,7 +197,7 @@ def fetch_script(user_args):
 
     if os.path.exists(user_script):
         return user_script
-    elif len(distutils.spawn.find_executable(user_script)) > 0:
+    elif distutils.spawn.find_executable(user_script):
         return user_script
     else:
         raise OSError(errno.ENOENT, "The path specified for the script does not exist", user_script)
