@@ -34,7 +34,7 @@ The script is divided in three parts:
    The workflow presented in the script is simplified compared to the reality on purpose. The
    objective of this example is to illustrate the basic steps to use Oríon.
 
-To execute the experience, one would do ``$ ./main.py <epsilon>``, callling this script multiple
+To execute the experience, one would do ``$ ./main.py <epsilon>``, calling this script multiple
 times to try different values for ``<epsilon>``.
 
 .. caution::
