@@ -185,9 +185,7 @@ def fetch_metadata(user=None, user_args=None):
 
 
 def fetch_script(user_args):
-    """
-    Infer the script name and perform some checks
-    """
+    """Infer the script name and perform some checks"""
     if not user_args:
         return None
     if user_args[0] == 'python':
