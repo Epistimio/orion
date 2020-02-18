@@ -31,12 +31,12 @@ precedence is respected when building the settings dictionary:
 .. note:: `Optimization` entries are required, `Dynamic` entry is optional.
 
 """
-import distutils
 import errno
 import getpass
 import hashlib
 import logging
 import os
+import shutil
 
 import git
 from numpy import inf as infinity
@@ -193,7 +193,7 @@ def fetch_script(user_args):
     else:
         user_script = user_args[0]
 
-    if not os.path.exists(user_script) or not distutils.spawn.find_executable(user_script):
+    if not os.path.exists(user_script) or not shutil.which(user_script):
         raise OSError(errno.ENOENT, "The path specified for the script does not exist", user_script)
     return user_args[0]
 
