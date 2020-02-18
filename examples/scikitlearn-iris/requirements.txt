@@ -1,5 +1,2 @@
 scikit-learn
 orion
-matplotlib
-pandas
-seaborn
