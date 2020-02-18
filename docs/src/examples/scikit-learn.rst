@@ -22,11 +22,13 @@ Sample script
 This very basic script takes in parameter one positional argument for the hyper-parameter *epsilon*
 which control the loss in the script.
 
-The script is divided in three parts:
+The script is divided in five parts:
 
 #. Parsing of the script arguments
-#. Loading and splitting the data, then training a classifier using the researcher-defined *epsilon*
-#. Testing the classifier and reporting the accuracy
+#. Loading and splitting the dataset
+#. Training a classifier using the researcher-defined *epsilon*
+#. Evaluating the classifier using the testing set
+#. Reporting the performance of the model. i.e., the accuracy.
 
 .. note::
    The workflow presented in the script is simplified compared to the reality on purpose. The
