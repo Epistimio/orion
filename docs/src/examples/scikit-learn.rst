@@ -15,7 +15,7 @@ install -r requirements.txt``. If you haven't installed Oríon previously, make 
 Sample script
 ---------------
 
-.. literalinclude:: ../../../examples/scitkitlearn-iris/main.py
+.. literalinclude:: ../../../examples/scikitlearn-iris/main.py
    :language: python
    :lines: 1-3, 5-23
 
@@ -58,7 +58,7 @@ Updating the script
 We only need to make one small change to the script: we report to Oríon the objective that we
 want to **minimize** at the end of the script using :py:func:`orion.client.report_results`:
 
-.. literalinclude:: ../../../examples/scitkitlearn-iris/main.py
+.. literalinclude:: ../../../examples/scikitlearn-iris/main.py
    :language: python
    :lines: 24-
 
