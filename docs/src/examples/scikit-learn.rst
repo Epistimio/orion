@@ -6,7 +6,7 @@ Scikit-learn
 
 In this example, we're going to demonstrate how Oríon can be integrated to a minimal model using
 scikit-learn [scikit]_ on the iris dataset [iris]_. The files mentioned in this example are
-available in the folder :file:`examples/scikit-learn-iris/`.
+available in the folder :file:`examples/scikitlearn-iris/`.
 
 The requirements are listed in requirements.txt. You can quickly install them using ``$ pip
 install -r requirements.txt``. If you haven't installed Oríon previously, make sure to
@@ -15,7 +15,7 @@ install -r requirements.txt``. If you haven't installed Oríon previously, make 
 Example script
 ---------------
 
-.. literalinclude:: ../../../examples/sklearn-iris/main.py
+.. literalinclude:: ../../../examples/scitkitlearn-iris/main.py
    :language: python
    :lines: 1-3, 5-23
 
@@ -56,7 +56,7 @@ Updating the script
 We only need to make one small change to the script: we report to Oríon the objective that we
 want to **minimize** at the end of the script using :py:func:`orion.client.report_results`:
 
-.. literalinclude:: ../../../examples/sklearn-iris/main.py
+.. literalinclude:: ../../../examples/scitkitlearn-iris/main.py
    :language: python
    :lines: 24-
 
