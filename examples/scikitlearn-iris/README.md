@@ -13,7 +13,7 @@ Prerequisites:
 Using the commands: 
 
 - Normally would be called `./main.py <epsilon>`
-- `orion -v hunt -n sklearn-tutorial --max-trials 500 ./main.py 'orion~loguniform(1e-5, 1.0)'`
+- `orion hunt -n scitkit-iris-tutorial --max-trials 500 ./main.py 'orion~loguniform(1e-5, 1.0)'`
     
     `--max-trials` specifies the budget of the hyper-parameter optimization.
    
