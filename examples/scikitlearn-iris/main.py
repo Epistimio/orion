@@ -13,10 +13,10 @@ print("Epsilon is {}".format(hyper_epsilon))
 
 # Loading the iris dataset and splitting it into training and testing set.
 X, y = load_iris(return_X_y=True)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
 # Training the model with the training set with the specified 'epsilon' to control the huber loss.
-clf = SGDClassifier(random_state=42, loss='huber', epsilon=float(hyper_epsilon))
+clf = SGDClassifier(loss='huber', epsilon=float(hyper_epsilon))
 clf.fit(X_train, y_train)
 
 # Evaluating the accuracy using the testing set.
