@@ -8,21 +8,19 @@ In this example, we're going to demonstrate how Oríon can be integrated to a mi
 scikit-learn [scikit]_ on the iris dataset [iris]_. The files mentioned in this example are
 available in the folder :file:`examples/scikit-learn-iris/`.
 
-The requirements are listed in requirements.txt. You can quickly install them using :command:`$ pip
-install -r requirements.txt`. If you haven't installed Oríon previously, make sure to see
+The requirements are listed in requirements.txt. You can quickly install them using ``$ pip
+install -r requirements.txt``. If you haven't installed Oríon previously, make sure to
 :doc:`configure it properly <../install/core>` before going further.
 
-Original script
+Example script
 ---------------
-
-Our script looks like this
 
 .. literalinclude:: ../../../examples/sklearn-iris/main.py
    :language: python
-   :lines: 2-3, 5-23
+   :lines: 1-3, 5-23
 
 This very basic script takes in parameter one positional argument for the hyper-parameter *epsilon*
-which control the loss in the script
+which control the loss in the script.
 
 The script is divided in three parts:
 
@@ -32,20 +30,77 @@ The script is divided in three parts:
 
 .. note::
    The workflow presented in the script is simplified compared to the reality on purpose. The
-   objective of this example is to illustrate the basic steps to use Oríon.
+   objective of this example is to illustrate the basic steps involved in using Oríon.
 
-To execute the experience, one would do ``$ ./main.py <epsilon>``, calling this script multiple
-times to try different values for ``<epsilon>``.
+To find a good *epsilon*, a user would run empirically ``$ ./main.py <epsilon>`` multiple times,
+choosing a new value for *epsilon* manually.
 
-.. caution::
-   TODO
+This ad-hoc hyper-parameter optimization is unreliable, slow, and requires a lot of work from the
+user. Oríon solves this problem by providing cutting-edge hyper-parameter optimization
+algorithms without disrupting the workflow of the user. Integrating it only require minimal
+adjustments to your current workflow as we'll demonstrate in the next section.
 
-Adapting to Orion
------------------
+Enter Orion
+-----------
+Integrating Oríon into your workflow requires only two non-invasive changes:
+   1. Define an objective to optimize.
+   2. Specify the hyper-parameter space.
 
-.. caution::
-   TODO
+For the former, this step takes place in the script training the model. The latter can either be
+specified in a configuration file or directly while calling the script with Oríon.
+For the purpose of the example, we'll configure the hyper-parameter space directly as a
+command-line argument.
 
+Updating the script
+^^^^^^^^^^^^^^^^^^^
+We only need to make one small change to the script: we report to Oríon the objective that we
+want to **minimize** at the end of the script using :py:func:`orion.client.report_results`:
+
+.. literalinclude:: ../../../examples/sklearn-iris/main.py
+   :language: python
+   :lines: 24-
+
+In our example, we measure the accuracy of the model to qualify its performance. To get the best
+accuracy possible, we need to minimize the difference between 1 and the accuracy to get it as
+close to 1 as possible. Otherwise, we'll be minimizing the accuracy which will yield a poor model.
+
+:py:func:`orion.client.report_results` can be imported using :
+
+.. code-block:: python
+
+   from orion.client import report_results
+
+Updating the script call
+^^^^^^^^^^^^^^^^^^^^^^^^
+The last missing piece in automating the hyper-parameter optimization of our example model is to
+supply Oríon with the values to use for *epsilon*.
+
+We specify the search space in the command line using ``orion~loguniform(1e-5, 1.0)``
+as the argument for *espilon*. This argument will tell Oríon to use a log uniform distribution
+between ``1e-5`` and ``1`` for the values of *epsilon*.
+
+Putting everything together, we need to call ./main.py with Oríon. The syntax is the
+following: ``$ orion hunt ./main.py 'orion~loguniform(1e-5, 1.0)'``. Before executing it on your
+terminal, you have to specify the name of the experiment using the ``-n`` option. It is also a
+good idea to specify a stopping condition using ``--max-trials`` otherwise the optimization will
+not stop unless you interrupt it with :kbd:`ctrl-c`:
+
+.. code-block:: bash
+
+   $ orion hunt -n scitkit-tutorial --max-trials 50 ./main.py 'orion~loguniform(1e-5, 1.0)'
+
+.. warning::
+   Make sure you installed the dependencies for the script before running it using ``pip install
+   -r requirements.txt``.
+
+Viewing the results
+-------------------
+Once the optimization reached its stopping condition, you can query Oríon to give you the results
+of the optimization with the sub-command ``$ orion info``:
+
+.. code-block:: bash
+
+   orion info -n scitkit-tutorial
 
 .. [scikit] Pedregosa, Fabian, Gaël Varoquaux, Alexandre Gramfort, Vincent Michel, Bertrand Thirion,
             Olivier Grisel, Mathieu Blondel et al. "Scikit-learn: Machine Learning in Python"
