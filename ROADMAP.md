@@ -34,7 +34,7 @@ Change interface to support trial object instead of curated lists. This is neces
 
 #### More Optimizers
 - [PBT](https://arxiv.org/abs/1711.09846)
-- BOHB
+- [BOHB](https://ml.informatik.uni-freiburg.de/papers/18-ICML-BOHB.pdf)
 
 #### Simple dashboard specific to monitoring and benchmarking of Black-Box optimization
 - Specific to hyper parameter optimizations
