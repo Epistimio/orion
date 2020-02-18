@@ -33,7 +33,7 @@ Introducing new algorithms: [TPE](https://papers.nips.cc/paper/4443-algorithms-f
 Change interface to support trial object instead of curated lists. This is necessary to support algorithms such as PBT.
 
 #### More Optimizers
-- PBT
+- [PBT](https://arxiv.org/abs/1711.09846)
 - BOHB
 
 #### Simple dashboard specific to monitoring and benchmarking of Black-Box optimization
