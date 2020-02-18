@@ -12,7 +12,7 @@ The requirements are listed in requirements.txt. You can quickly install them us
 install -r requirements.txt``. If you haven't installed Oríon previously, make sure to
 :doc:`configure it properly <../install/core>` before going further.
 
-Example script
+Sample script
 ---------------
 
 .. literalinclude:: ../../../examples/scitkitlearn-iris/main.py
