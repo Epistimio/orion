@@ -193,7 +193,7 @@ def fetch_script(user_args):
     else:
         user_script = user_args[0]
 
-    if not os.path.exists(user_script) or not shutil.which(user_script):
+    if not os.path.exists(user_script) and not shutil.which(user_script):
         raise OSError(errno.ENOENT, "The path specified for the script does not exist", user_script)
     return user_args[0]
 
