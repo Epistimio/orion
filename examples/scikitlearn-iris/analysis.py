@@ -3,7 +3,7 @@ import pandas as pd
 import seaborn as sns
 from orion.client import create_experiment
 
-experiment = create_experiment(name="sklearn-tutorial")
+experiment = create_experiment(name="scitkit-iris-tutorial")
 data = [(1 - trial.objective.value, trial.params['/_pos_0']) for trial in experiment.fetch_trials_by_status('completed')]
 
 df = pd.DataFrame(data, columns=['accuracy', 'epsilon']).sort_values('accuracy')
