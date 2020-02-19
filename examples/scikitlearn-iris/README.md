@@ -5,8 +5,4 @@ This folder contains a simple example script (main.py) used to showcase the simp
 ## Pre-requisites
 - Install the dependencies `$ pip install -r requirements.txt`
 - Configure Oríon database ([documentation](https://orion.readthedocs.io/en/latest/install/database.html)) 
-- _main.py_ and _analysis.py_ are executable files (`$ chmod +x <file>`)
-
-## Misc   
-- Generate a graph from the data produced by Orion: `./analysis.py`
-- View the graph using `xdg-open hyperparameter-optimization.pdf`
+- _main.py_ is executable (`$ chmod +x main.py`)
