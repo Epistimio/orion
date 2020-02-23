@@ -119,7 +119,7 @@ class DimensionBuilder(object):
     Real(name=learning_rate, prior={reciprocal: (0.001, 1), {}}, shape=(10,))
     >>> dimbuilder.build('something_else', 'poisson(mu=3)')
     Integer(name=something_else, prior={poisson: (), {'mu': 3}}, shape=())
-    >>> dim = dimbuilder.build('other2', 'random(-5, 2)')
+    >>> dim = dimbuilder.build('other2', 'uniform(-5, 2)')
     >>> dim
     Real(name=other2, prior={uniform: (-5, 7), {}}, shape=())
     >>> dim.interval()
