@@ -33,7 +33,8 @@ def init_full_x_full_y(init_full_x):
     name = "full_x"
     branch = "full_x_full_y"
     orion.core.cli.main(
-        ("init_only -n {branch} --branch-from {name} ./black_box_with_y.py "
+        ("init_only -n {branch} --branch-from {name} --cli-change-type noeffect "
+         "./black_box_with_y.py "
          "-x~uniform(-10,10) "
          "-y~+uniform(-10,10,default_value=1)").format(name=name, branch=branch).split(" "))
     orion.core.cli.main("insert -n {branch} script -x=1 -y=1".format(branch=branch).split(" "))
@@ -73,7 +74,8 @@ def init_full_x_rename_y_z(init_full_x_full_y):
     """Rename y from full x full y to z"""
     name = "full_x_full_y"
     branch = "full_x_rename_y_z"
-    orion.core.cli.main(("init_only -n {branch} --branch-from {name} ./black_box_with_z.py "
+    orion.core.cli.main(("init_only -n {branch} --branch-from {name} --cli-change-type noeffect "
+                         "./black_box_with_z.py "
                          "-x~uniform(-10,10) -y~>z -z~uniform(-10,10,default_value=1)"
                          ).format(name=name, branch=branch).split(" "))
     orion.core.cli.main("insert -n {branch} script -x=4 -z=4".format(branch=branch).split(" "))
@@ -87,7 +89,8 @@ def init_full_x_rename_half_y_half_z(init_full_x_half_y):
     """Rename y from full x half y to z"""
     name = "full_x_half_y"
     branch = "full_x_rename_half_y_half_z"
-    orion.core.cli.main(("init_only -n {branch} --branch-from {name} ./black_box_with_z.py "
+    orion.core.cli.main(("init_only -n {branch} --branch-from {name} --cli-change-type noeffect "
+                         "./black_box_with_z.py "
                          "-x~uniform(-10,10) -y~>z -z~uniform(0,10,default_value=1)"
                          ).format(name=name, branch=branch).split(" "))
     orion.core.cli.main("insert -n {branch} script -x=5 -z=5".format(branch=branch).split(" "))
@@ -100,7 +103,8 @@ def init_full_x_rename_half_y_full_z(init_full_x_half_y):
     name = "full_x_half_y"
     branch = "full_x_rename_half_y_full_z"
     orion.core.cli.main(
-        ("init_only -n {branch} --branch-from {name} ./black_box_with_z.py "
+        ("init_only -n {branch} --branch-from {name} --cli-change-type noeffect "
+         "./black_box_with_z.py "
          "-x~uniform(-10,10) -y~>z "
          "-z~+uniform(-10,10,default_value=1)").format(name=name, branch=branch).split(" "))
     orion.core.cli.main("insert -n {branch} script -x=6 -z=6".format(branch=branch).split(" "))
@@ -115,7 +119,8 @@ def init_full_x_remove_y(init_full_x_full_y):
     name = "full_x_full_y"
     branch = "full_x_remove_y"
     orion.core.cli.main(
-        ("init_only -n {branch} --branch-from {name} ./black_box.py "
+        ("init_only -n {branch} --branch-from {name} --cli-change-type noeffect "
+         "./black_box.py "
          "-x~uniform(-10,10) -y~-").format(name=name, branch=branch).split(" "))
     orion.core.cli.main("insert -n {branch} script -x=7".format(branch=branch).split(" "))
     orion.core.cli.main("insert -n {branch} script -x=-7".format(branch=branch).split(" "))
@@ -127,7 +132,8 @@ def init_full_x_remove_z(init_full_x_rename_y_z):
     name = "full_x_rename_y_z"
     branch = "full_x_remove_z"
     orion.core.cli.main(
-        ("init_only -n {branch} --branch-from {name} ./black_box.py "
+        ("init_only -n {branch} --branch-from {name} --cli-change-type noeffect "
+         "./black_box.py "
          "-x~uniform(-10,10) -z~-").format(name=name, branch=branch).split(" "))
     orion.core.cli.main("insert -n {branch} script -x=8".format(branch=branch).split(" "))
     orion.core.cli.main("insert -n {branch} script -x=-8".format(branch=branch).split(" "))
@@ -139,7 +145,8 @@ def init_full_x_remove_z_default_4(init_full_x_rename_y_z):
     name = "full_x_rename_y_z"
     branch = "full_x_remove_z_default_4"
     orion.core.cli.main(
-        ("init_only -n {branch} --branch-from {name} ./black_box.py "
+        ("init_only -n {branch} --branch-from {name} --cli-change-type noeffect "
+         "./black_box.py "
          "-x~uniform(-10,10) -z~-4").format(name=name, branch=branch).split(" "))
     orion.core.cli.main("insert -n {branch} script -x=9".format(branch=branch).split(" "))
     orion.core.cli.main("insert -n {branch} script -x=-9".format(branch=branch).split(" "))
@@ -173,10 +180,15 @@ def init_full_x_new_cli(init_full_x):
 @pytest.fixture
 def init_full_x_ignore_cli(init_full_x):
     """Use the --non-monitored-arguments argument"""
-    name = "full_x"
+    name = "full_x_with_new_opt"
+    orion.core.cli.main(("init_only -n {name} --config orion_config.yaml ./black_box_new.py "
+                         "-x~uniform(-10,10)").format(name=name).split(" "))
+    orion.core.cli.main("insert -n {name} script -x=0".format(name=name).split(" "))
+
     orion.core.cli.main(
-        ("init_only -n {name} --non-monitored-arguments a-new --cli-change-type noeffect "
-         "./black_box_new.py -x~uniform(-10,10) --a-new argument").format(name=name).split(" "))
+        ("init_only -n {name} --non-monitored-arguments a-new "
+         "--config orion_config.yaml ./black_box_new.py "
+         "-x~uniform(-10,10) --a-new argument").format(name=name).split(" "))
     orion.core.cli.main("insert -n {name} script -x=1.2".format(name=name).split(" "))
     orion.core.cli.main("insert -n {name} script -x=-1.2".format(name=name).split(" "))
 
