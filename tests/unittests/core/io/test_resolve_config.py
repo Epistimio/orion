@@ -93,6 +93,12 @@ def test_fetch_metadata_non_executable_users_script():
     assert metadata['user_script'] == script_path
 
 
+def test_fetch_metadata_python_users_script(script_path):
+    """Verify user script is correctly infered if called with python"""
+    metadata = resolve_config.fetch_metadata(user_args=['python', script_path, 'some', 'args'])
+    assert metadata['user_script'] == script_path
+
+
 def test_fetch_metadata_not_existed_path():
     """Verfiy the raise of error when user_script path does not exist"""
     path = 'dummy/path'
@@ -107,7 +113,7 @@ def test_fetch_metadata_user_args(script_path):
     user_args = [os.path.abspath(script_path)] + list(map(str, range(10)))
     metadata = resolve_config.fetch_metadata(user_args=user_args)
     assert metadata['user_script'] == user_args[0]
-    assert metadata['user_args'] == user_args[1:]
+    assert metadata['user_args'] == user_args
 
 
 @pytest.mark.usefixtures("with_user_tsirif")

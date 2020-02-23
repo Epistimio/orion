@@ -422,15 +422,15 @@ bayesianoptimizer:
 def test_format_space():
     """Test space section formatting"""
     experiment = DummyExperiment()
-    commandline = ['executing.sh', '--some~choices(["random", "or", "not"])',
-                   '--command~uniform(0, 1)']
-    space = SpaceBuilder().build_from(commandline)
+    space = SpaceBuilder().build(
+        {"some": 'choices(["random", "or", "not"])',
+         "command": 'uniform(0, 1)'})
     experiment.space = space
     assert format_space(experiment) == """\
 Space
 =====
-/command: uniform(0, 1)
-/some: choices(['random', 'or', 'not'])
+command: uniform(0, 1)
+some: choices(['random', 'or', 'not'])
 """
 
 
@@ -576,7 +576,9 @@ def test_format_info(algorithm_dict, dummy_trial):
     experiment.max_trials = 100
     experiment.configuration = {'algorithms': algorithm_dict}
 
-    space = SpaceBuilder().build_from(commandline)
+    space = SpaceBuilder().build(
+        {"some": 'choices(["random", "or", "not"])',
+         "command": 'uniform(0, 1)'})
     experiment.space = space
     experiment.metadata.update(dict(
         user='user',
@@ -648,8 +650,8 @@ bayesianoptimizer:
 
 Space
 =====
-/command: uniform(0, 1)
-/some: choices(['random', 'or', 'not'])
+command: uniform(0, 1)
+some: choices(['random', 'or', 'not'])
 
 
 Meta-data
