@@ -289,6 +289,10 @@ class Dimension:
                                                    **self._kwargs)
         return size
 
+    def capacity(self):
+        """Return the capacity size of all the possible points from `Dimension`, default `numpy.inf`"""
+        return numpy.inf
+
 
 def _is_numeric_array(point):
     """Test whether a point is numerical object or an array containing only numerical objects"""
@@ -525,6 +529,14 @@ class Integer(Real, _Discrete):
         prior_string = super(Integer, self).get_prior_string()
         return prior_string[:-1] + ', discrete=True)'
 
+    def capacity(self):
+        """Return the capacity size of all the possible points from Integer `Dimension` """
+        low, high = self.interval()
+        shape_value = 1
+        if len(self.shape) > 0:
+            for dim in self.shape:
+                shape_value = shape_value * dim
+        return shape_value * int(high - low)
 
 class Categorical(Dimension):
     """Subclass of `Dimension` for representing categorical parameters.
@@ -567,6 +579,10 @@ class Categorical(Dimension):
         prior = distributions.rv_discrete(values=(list(range(len(self.categories))),
                                                   self._probs))
         super(Categorical, self).__init__(name, prior, **kwargs)
+
+    def capacity(self):
+        """Return the capacity size of all the possible values from Categorical `Dimension` """
+        return len(self.categories)
 
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
@@ -891,6 +907,12 @@ class Space(dict):
         """Return a dictionary of priors."""
         return {name: dim.get_prior_string() for name, dim in self.items()}
 
+    def samplescapacity(self):
+        """Return the capacity size of all all possible sets of samples in the space"""
+        capacities = 1
+        for dim in self.values():
+            capacities *= dim.capacity()
+        return capacities
 
 def pack_point(point, space):
     """Take a list of points and pack it appropriately as a point from `space`.
