@@ -683,6 +683,26 @@ class TestSpace(object):
 
         assert space.interval() == [categories, (-3, 3), (-np.inf, np.inf)]
 
+    def test_capacity(self):
+        """Check whether space capacity is correct"""
+        space = Space()
+        probs = (0.1, 0.2, 0.3, 0.4)
+        categories = ('asdfa', 2, 3, 4)
+        dim = Categorical('yolo', OrderedDict(zip(categories, probs)), shape=2)
+        space.register(dim)
+        dim = Integer('yolo2', 'uniform', -3, 6)
+        space.register(dim)
+
+        assert 24 == space.samplescapacity()
+
+        dim = Integer('yolo3', 'uniform', -3, 2, shape=2)
+        space.register(dim)
+        assert 96 == space.samplescapacity()
+
+        dim = Real('yolo4', 'norm', 0.9)
+        space.register(dim)
+        assert np.inf == space.samplescapacity()
+
     def test_bad_setitem(self):
         """Check exceptions in setting items in Space."""
         space = Space()
