@@ -493,9 +493,9 @@ class TransformedDimension(object):
         return self.transform(self.original_dimension.cast(point))
 
     @property
-    def capacity(self):
+    def cardinality(self):
         """Wrap original `Dimension` capacity"""
-        return self.original_dimension.capacity
+        return self.original_dimension.cardinality
 
 
 class TransformedSpace(Space):

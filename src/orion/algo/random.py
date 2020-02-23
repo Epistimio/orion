@@ -25,7 +25,7 @@ class Random(BaseAlgorithm):
         """
         super(Random, self).__init__(space, seed=seed)
         self.alreadyrun = 0
-        self.capacity = space.samplescapacity
+        self.cardinality = space.cardinality
 
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
@@ -69,6 +69,6 @@ class Random(BaseAlgorithm):
     @property
     def is_done(self):
         """Return True, if all possible sets of parameters has been tried."""
-        if self.alreadyrun >= self.capacity:
+        if self.alreadyrun >= self.cardinality:
             return True
         return False
