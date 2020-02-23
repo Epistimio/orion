@@ -71,3 +71,4 @@ class Random(BaseAlgorithm):
         """Return True, if all possible sets of parameters has been tried."""
         if self.alreadyrun >= self.capacity:
             return True
+        return False
