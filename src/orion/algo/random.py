@@ -25,7 +25,7 @@ class Random(BaseAlgorithm):
         """
         super(Random, self).__init__(space, seed=seed)
         self.alreadyrun = 0
-        self.capacity = space.samplescapacity()
+        self.capacity = space.samplescapacity
 
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
