@@ -291,8 +291,8 @@ class Dimension:
 
     # pylint:disable=no-self-use
     @property
-    def capacity(self):
-        """Return the capacity size of all the possible points from `Dimension`.
+    def cardinality(self):
+        """Return the number of all the possible points from `Dimension`.
         The default value is `numpy.inf`.
         """
         return numpy.inf
@@ -534,13 +534,24 @@ class Integer(Real, _Discrete):
         return prior_string[:-1] + ', discrete=True)'
 
     @property
-    def capacity(self):
-        """Return the capacity size of all the possible points from Integer `Dimension`"""
+    def cardinality(self):
+        """Return the number of all the possible points from Integer `Dimension`"""
         low, high = self.interval()
-        shape_value = 1
-        for dim in self.shape:
-            shape_value = shape_value * dim
-        return shape_value * int(high - low)
+        return _get_shape_cardinality(self.shape) * int(high - low)
+
+
+def _get_shape_cardinality(shape):
+    """Get the cardinality in a shape which can be int or tuple"""
+    shape_cardinality = 1
+    if shape is None:
+        return shape_cardinality
+
+    if isinstance(shape, int):
+        shape = (shape, )
+
+    for cardinality in shape:
+        shape_cardinality *= cardinality
+    return shape_cardinality
 
 
 class Categorical(Dimension):
@@ -586,9 +597,9 @@ class Categorical(Dimension):
         super(Categorical, self).__init__(name, prior, **kwargs)
 
     @property
-    def capacity(self):
-        """Return the capacity size of all the possible values from Categorical `Dimension`"""
-        return len(self.categories)
+    def cardinality(self):
+        """Return the number of all the possible values from Categorical `Dimension`"""
+        return len(self.categories) * _get_shape_cardinality(self._shape)
 
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
@@ -914,11 +925,11 @@ class Space(dict):
         return {name: dim.get_prior_string() for name, dim in self.items()}
 
     @property
-    def samplescapacity(self):
-        """Return the capacity size of all all possible sets of samples in the space"""
+    def cardinality(self):
+        """Return the number of all all possible sets of samples in the space"""
         capacities = 1
         for dim in self.values():
-            capacities *= dim.capacity
+            capacities *= dim.cardinality
         return capacities
 
 

@@ -693,15 +693,15 @@ class TestSpace(object):
         dim = Integer('yolo2', 'uniform', -3, 6)
         space.register(dim)
 
-        assert 24 == space.samplescapacity
+        assert (4 * 2) * 6 == space.cardinality
 
-        dim = Integer('yolo3', 'uniform', -3, 2, shape=2)
+        dim = Integer('yolo3', 'uniform', -3, 2, shape=(3, 1))
         space.register(dim)
-        assert 96 == space.samplescapacity
+        assert (4 * 2) * 6 * (2 * 3 * 1) == space.cardinality
 
         dim = Real('yolo4', 'norm', 0.9)
         space.register(dim)
-        assert np.inf == space.samplescapacity
+        assert np.inf == space.cardinality
 
     def test_bad_setitem(self):
         """Check exceptions in setting items in Space."""

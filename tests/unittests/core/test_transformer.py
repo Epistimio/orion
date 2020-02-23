@@ -747,7 +747,7 @@ class TestRequiredSpaceBuilder(object):
     def test_capacity(self, space_each_type):
         """Check transformer space capacity"""
         tspace = build_required_space('real', space_each_type)
-        assert tspace.samplescapacity == numpy.inf
+        assert tspace.cardinality == numpy.inf
 
         space = Space()
         probs = (0.1, 0.2, 0.3, 0.4)
@@ -757,7 +757,12 @@ class TestRequiredSpaceBuilder(object):
         dim = Integer('yolo2', 'uniform', -3, 6)
         space.register(dim)
         tspace = build_required_space('integer', space)
-        assert tspace.samplescapacity == 24
+        assert tspace.cardinality == (4 * 2) * 6
+
+        dim = Integer('yolo3', 'uniform', -3, 6, shape=(2, 1))
+        space.register(dim)
+        tspace = build_required_space('integer', space)
+        assert tspace.cardinality == (4 * 2) * 6 * 6 * (2 * 1)
 
 
 def test_quantization_does_not_violate_bounds():
