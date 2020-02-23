@@ -24,7 +24,7 @@ class Random(BaseAlgorithm):
         :param seed: Integer seed for the random number generator.
         """
         super(Random, self).__init__(space, seed=seed)
-        self.alreadyRun = 0
+        self.alreadyrun = 0
         self.capacity = space.samplescapacity()
 
     def seed_rng(self, seed):
@@ -64,10 +64,10 @@ class Random(BaseAlgorithm):
 
         A simple random sampler though does not take anything into account.
         """
-        self.alreadyRun += len(points)
+        self.alreadyrun += len(points)
 
     @property
     def is_done(self):
         """Return True, if all possible sets of parameters has been tried."""
-        if self.alreadyRun >= self.capacity:
+        if self.alreadyrun >= self.capacity:
             return True

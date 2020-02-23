@@ -289,8 +289,12 @@ class Dimension:
                                                    **self._kwargs)
         return size
 
+    # pylint:disable=no-self-use
+    @property
     def capacity(self):
-        """Return the capacity size of all the possible points from `Dimension`, default `numpy.inf`"""
+        """Return the capacity size of all the possible points from `Dimension`.
+        The default value is `numpy.inf`.
+        """
         return numpy.inf
 
 
@@ -529,14 +533,15 @@ class Integer(Real, _Discrete):
         prior_string = super(Integer, self).get_prior_string()
         return prior_string[:-1] + ', discrete=True)'
 
+    @property
     def capacity(self):
-        """Return the capacity size of all the possible points from Integer `Dimension` """
+        """Return the capacity size of all the possible points from Integer `Dimension`"""
         low, high = self.interval()
         shape_value = 1
-        if len(self.shape) > 0:
-            for dim in self.shape:
-                shape_value = shape_value * dim
+        for dim in self.shape:
+            shape_value = shape_value * dim
         return shape_value * int(high - low)
+
 
 class Categorical(Dimension):
     """Subclass of `Dimension` for representing categorical parameters.
@@ -580,8 +585,9 @@ class Categorical(Dimension):
                                                   self._probs))
         super(Categorical, self).__init__(name, prior, **kwargs)
 
+    @property
     def capacity(self):
-        """Return the capacity size of all the possible values from Categorical `Dimension` """
+        """Return the capacity size of all the possible values from Categorical `Dimension`"""
         return len(self.categories)
 
     def sample(self, n_samples=1, seed=None):
@@ -907,12 +913,14 @@ class Space(dict):
         """Return a dictionary of priors."""
         return {name: dim.get_prior_string() for name, dim in self.items()}
 
+    @property
     def samplescapacity(self):
         """Return the capacity size of all all possible sets of samples in the space"""
         capacities = 1
         for dim in self.values():
-            capacities *= dim.capacity()
+            capacities *= dim.capacity
         return capacities
+
 
 def pack_point(point, space):
     """Take a list of points and pack it appropriately as a point from `space`.

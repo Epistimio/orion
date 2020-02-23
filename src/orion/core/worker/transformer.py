@@ -492,9 +492,10 @@ class TransformedDimension(object):
         """Cast a point according to original_dimension and then transform it"""
         return self.transform(self.original_dimension.cast(point))
 
+    @property
     def capacity(self):
         """Wrap original `Dimension` capacity"""
-        return self.original_dimension.capacity()
+        return self.original_dimension.capacity
 
 
 class TransformedSpace(Space):
