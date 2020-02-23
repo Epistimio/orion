@@ -42,7 +42,7 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
+    assert exp['metadata']['user_args'] == ["./black_box.py", '-x~uniform(-50, 50)']
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -52,6 +52,7 @@ def test_demo(database, monkeypatch):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     user_args = [
+        "./black_box.py",
         "-x~uniform(-50, 50, precision=None)",
         "--test-env",
         "--experiment-id", '{exp.id}',
@@ -61,7 +62,7 @@ def test_demo(database, monkeypatch):
         "--working-dir", '{trial.working_dir}']
 
     orion.core.cli.main([
-        "hunt", "--config", "./orion_config.yaml", "./black_box.py"] + user_args)
+        "hunt", "--config", "./orion_config.yaml"] + user_args)
 
     exp = list(database.experiments.find({'name': 'voila_voici'}))
     assert len(exp) == 1
@@ -120,7 +121,8 @@ def test_demo_with_script_config(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert exp['metadata']['user_args'] == ['--config', 'script_config.yaml']
+    assert exp['metadata']['user_args'] == ['./black_box_w_config.py', '--config',
+                                            'script_config.yaml']
 
     trials = list(database.trials.find({'experiment': exp_id}))
     assert len(trials) <= 15
@@ -148,7 +150,7 @@ def test_demo_with_python_and_script(database, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["hunt", "--config", "./orion_config.yaml",
-                         "python", "./black_box_w_config.py", "--config", "script_config.yaml"])
+                         "python", "black_box_w_config.py", "--config", "script_config.yaml"])
 
     exp = list(database.experiments.find({'name': 'voila_voici'}))
     assert len(exp) == 1
@@ -164,7 +166,7 @@ def test_demo_with_python_and_script(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert exp['metadata']['user_args'] == ['./black_box_w_config.py',
+    assert exp['metadata']['user_args'] == ['python', 'black_box_w_config.py',
                                             '--config', 'script_config.yaml']
 
     trials = list(database.trials.find({'experiment': exp_id}))
@@ -216,7 +218,7 @@ def test_demo_two_workers(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert exp['metadata']['user_args'] == ['-x~norm(34, 3)']
+    assert exp['metadata']['user_args'] == ['./black_box.py', '-x~norm(34, 3)']
 
     trials = list(database.trials.find({'experiment': exp_id}))
     status = defaultdict(int)
@@ -264,7 +266,7 @@ def test_workon():
         assert 'user' in exp['metadata']
         assert 'datetime' in exp['metadata']
         assert 'user_script' in exp['metadata']
-        assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50, precision=None)']
+        assert exp['metadata']['user_args'] == config['user_args']
 
         trials = list(storage.fetch_trials(experiment))
         assert len(trials) <= 15
@@ -555,7 +557,8 @@ def test_demo_with_nondefault_config_keyword(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert exp['metadata']['user_args'] == ['--configuration', 'script_config.yaml']
+    assert exp['metadata']['user_args'] == ['./black_box_w_config_other.py', '--configuration',
+                                            'script_config.yaml']
 
     trials = list(database.trials.find({'experiment': exp_id}))
     assert len(trials) <= 15
