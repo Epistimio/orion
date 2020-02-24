@@ -72,7 +72,7 @@ def new_config(random_dt, script_path):
                   'orion_version': 'XYZ',
                   'user_script': script_path,
                   'user_config': 'abs_path/hereitis.yaml',
-                  'user_args': ['--mini-batch~uniform(32, 256, discrete=True)'],
+                  'user_args': [script_path, '--mini-batch~uniform(32, 256, discrete=True)'],
                   'VCS': {"type": "git",
                           "is_dirty": False,
                           "HEAD_sha": "test",
@@ -249,7 +249,7 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
     assert exp.metadata['datetime'] == random_dt
     assert exp.metadata['user'] == 'dendi'
     assert exp.metadata['user_script'] == cmdargs['user_args'][0]
-    assert exp.metadata['user_args'] == cmdargs['user_args'][1:]
+    assert exp.metadata['user_args'] == cmdargs['user_args']
     assert exp.pool_size == 1
     assert exp.max_trials == 100
     assert exp.algorithms.configuration == {'random': {'seed': None}}
@@ -271,6 +271,7 @@ def test_build_from_args_hit(old_config_file, script_path, new_config):
 
     assert exp._id == new_config['_id']
     assert exp.name == new_config['name']
+    assert exp.version == 1
     assert exp.configuration['refers'] == new_config['refers']
     assert exp.metadata == new_config['metadata']
     assert exp.max_trials == new_config['max_trials']

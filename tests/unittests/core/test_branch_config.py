@@ -42,6 +42,7 @@ def user_config():
 @pytest.fixture
 def parent_config(user_config):
     """Create a configuration that will not hit the database."""
+    user_script = 'abs_path/black_box.py'
     config = dict(
         _id='test',
         name='test',
@@ -53,10 +54,10 @@ def parent_config(user_config):
                           "active_branch": None,
                           "diff_sha": "diff",
                           },
-                  'user_script': 'abs_path/black_box.py',
-                  'user_args':
-                  ['--nameless=option', '-x~uniform(0,1)', '-y~normal(0,1)', '-z~uniform(0,10)',
-                   '--manual-resolution'],
+                  'user_script': user_script,
+                  'user_args': [
+                      user_script, '--nameless=option', '-x~uniform(0,1)', '-y~normal(0,1)',
+                      '-z~uniform(0,10)', '--manual-resolution'],
                   'user': 'some_user_name'},
         refers={})
 
@@ -86,8 +87,8 @@ def child_config(parent_config, create_db_instance):
 @pytest.fixture
 def missing_config(child_config):
     """Create a child config with a missing dimension"""
-    del(child_config['metadata']['user_args'][1])  # del -x
-    del(child_config['metadata']['user_args'][1])  # del -y
+    del(child_config['metadata']['user_args'][2])  # del -x
+    del(child_config['metadata']['user_args'][2])  # del -y
     backward.populate_space(child_config)
     return child_config
 
@@ -103,9 +104,9 @@ def new_config(child_config):
 @pytest.fixture
 def changed_config(child_config):
     """Create a child config with a changed dimension"""
-    second_element = child_config['metadata']['user_args'][2]
+    second_element = child_config['metadata']['user_args'][3]
     second_element = second_element.replace('normal', 'uniform')
-    child_config['metadata']['user_args'][2] = second_element
+    child_config['metadata']['user_args'][3] = second_element
     backward.populate_space(child_config)
     return child_config
 
@@ -172,15 +173,16 @@ def list_arg_with_equals_cli_config(child_config):
 @pytest.fixture
 def cl_config(create_db_instance):
     """Create a child config with markers for commandline solving"""
+    user_script = 'abs_path/black_box.py'
     config = dict(
         name='test',
         branch='test2',
         algorithms='random',
         metadata={'hash_commit': 'old',
-                  'user_script': 'abs_path/black_box.py',
-                  'user_args':
-                  ['--nameless=option', '-x~>w_d', '-w_d~+normal(0,1)', '-y~+uniform(0,1)', '-z~-',
-                   '--omega~+normal(0,1)'],
+                  'user_script': user_script,
+                  'user_args': [
+                      user_script, '--nameless=option', '-x~>w_d', '-w_d~+normal(0,1)',
+                      '-y~+uniform(0,1)', '-z~-', '--omega~+normal(0,1)'],
                   'user': 'some_user_name'})
     backward.populate_space(config)
     return config
@@ -334,7 +336,7 @@ class TestResolutions(object):
 
     def test_add_single_hit(self, parent_config, new_config):
         """Test if adding a dimension only touches the correct status"""
-        del new_config['metadata']['user_args'][1]
+        del new_config['metadata']['user_args'][2]
         backward.populate_space(new_config)
         conflicts = detect_conflicts(parent_config, new_config)
         branch_builder = ExperimentBranchBuilder(conflicts, manual_resolution=True)
@@ -667,8 +669,8 @@ class TestResolutionsWithMarkers(object):
 
     def test_add_changed(self, parent_config, changed_config):
         """Test if changed dimension conflict is automatically resolved"""
-        changed_config['metadata']['user_args'][2] = (
-            changed_config['metadata']['user_args'][2].replace("~", "~+"))
+        changed_config['metadata']['user_args'][3] = (
+            changed_config['metadata']['user_args'][3].replace("~", "~+"))
         conflicts = detect_conflicts(parent_config, changed_config)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
 
@@ -682,7 +684,7 @@ class TestResolutionsWithMarkers(object):
 
     def test_remove_missing(self, parent_config, child_config):
         """Test if missing dimension conflict is automatically resolved"""
-        child_config['metadata']['user_args'][1] = '-x~-'
+        child_config['metadata']['user_args'][2] = '-x~-'
         backward.populate_space(child_config)
         conflicts = detect_conflicts(parent_config, child_config)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
@@ -697,7 +699,7 @@ class TestResolutionsWithMarkers(object):
 
     def test_remove_missing_default(self, parent_config, child_config):
         """Test if missing dimension conflict is automatically resolved"""
-        child_config['metadata']['user_args'][1] = '-x~-0.5'
+        child_config['metadata']['user_args'][2] = '-x~-0.5'
         backward.populate_space(child_config)
         conflicts = detect_conflicts(parent_config, child_config)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
@@ -713,7 +715,7 @@ class TestResolutionsWithMarkers(object):
 
     def test_remove_missing_bad_default(self, parent_config, child_config):
         """Test if missing dimension conflict raises an error if marked with invalid default"""
-        child_config['metadata']['user_args'][1] = '-x~--100'
+        child_config['metadata']['user_args'][2] = '-x~--100'
         backward.populate_space(child_config)
         conflicts = detect_conflicts(parent_config, child_config)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
@@ -730,7 +732,7 @@ class TestResolutionsWithMarkers(object):
         """Test if renaming is automatically applied with both conflicts resolved"""
         child_config['metadata']['user_args'].append('-w_a~uniform(0,1)')
         child_config['metadata']['user_args'].append('-w_b~normal(0,1)')
-        child_config['metadata']['user_args'][1] = '-x~>w_a'
+        child_config['metadata']['user_args'][2] = '-x~>w_a'
         backward.populate_space(child_config)
         conflicts = detect_conflicts(parent_config, child_config)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
@@ -754,7 +756,7 @@ class TestResolutionsWithMarkers(object):
         """Test if renaming to invalid dimension raises an error"""
         child_config['metadata']['user_args'].append('-w_a~uniform(0,1)')
         child_config['metadata']['user_args'].append('-w_b~uniform(0,1)')
-        child_config['metadata']['user_args'][1] = '-x~>w_c'
+        child_config['metadata']['user_args'][2] = '-x~>w_c'
         backward.populate_space(child_config)
         conflicts = detect_conflicts(parent_config, child_config)
         with pytest.raises(ValueError) as exc:
@@ -767,7 +769,7 @@ class TestResolutionsWithMarkers(object):
         """
         child_config['metadata']['user_args'].append('-w_a~uniform(0,1)')
         child_config['metadata']['user_args'].append('-w_b~normal(0,1)')
-        child_config['metadata']['user_args'][1] = '-x~>w_b'
+        child_config['metadata']['user_args'][2] = '-x~>w_b'
         backward.populate_space(child_config)
         conflicts = detect_conflicts(parent_config, child_config)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
@@ -794,7 +796,7 @@ class TestResolutionsWithMarkers(object):
         """
         child_config['metadata']['user_args'].append('-w_a~uniform(0,1)')
         child_config['metadata']['user_args'].append('-w_b~+normal(0,1)')
-        child_config['metadata']['user_args'][1] = '-x~>w_b'
+        child_config['metadata']['user_args'][2] = '-x~>w_b'
         backward.populate_space(child_config)
         conflicts = detect_conflicts(parent_config, child_config)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)

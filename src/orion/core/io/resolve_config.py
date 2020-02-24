@@ -31,12 +31,10 @@ precedence is respected when building the settings dictionary:
 .. note:: `Optimization` entries are required, `Dynamic` entry is optional.
 
 """
-import errno
 import getpass
 import hashlib
 import logging
 import os
-import shutil
 
 import git
 from numpy import inf as infinity
@@ -45,6 +43,7 @@ import yaml
 import orion
 import orion.core
 from orion.core import config
+from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 
 
 def is_exe(path):
@@ -172,30 +171,19 @@ def fetch_metadata(user=None, user_args=None):
     if len(user_args) == 1 and user_args[0] == '':
         user_args = []
 
-    user_script = fetch_script(user_args)
+    cmdline_parser = OrionCmdlineParser(config.user_script_config)
+    cmdline_parser.parse(user_args)
 
-    if user_script:
-        metadata['user_script'] = user_script
-        metadata['VCS'] = infer_versioning_metadata(metadata['user_script'])
+    if cmdline_parser.user_script:
+        # TODO: Remove this, it is all in cmdline_parser now
+        metadata['user_script'] = cmdline_parser.user_script
+        metadata['VCS'] = infer_versioning_metadata(cmdline_parser.user_script)
 
     if user_args:
-        metadata['user_args'] = user_args[1:]
+        # TODO: Remove this, it is all in cmdline_parser now
+        metadata['user_args'] = user_args
 
     return metadata
-
-
-def fetch_script(user_args):
-    """Infer the script name and perform some checks"""
-    if not user_args:
-        return None
-    if user_args[0] == 'python':
-        user_script = user_args[1]
-    else:
-        user_script = user_args[0]
-
-    if not os.path.exists(user_script) and not shutil.which(user_script):
-        raise OSError(errno.ENOENT, "The path specified for the script does not exist", user_script)
-    return user_args[0]
 
 
 def merge_configs(*configs):
