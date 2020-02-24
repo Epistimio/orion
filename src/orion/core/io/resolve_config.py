@@ -31,7 +31,6 @@ precedence is respected when building the settings dictionary:
 .. note:: `Optimization` entries are required, `Dynamic` entry is optional.
 
 """
-import errno
 import getpass
 import hashlib
 import logging
@@ -44,6 +43,7 @@ import yaml
 import orion
 import orion.core
 from orion.core import config
+from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 
 
 def is_exe(path):
@@ -171,28 +171,23 @@ def fetch_metadata(user=None, user_args=None):
     if len(user_args) == 1 and user_args[0] == '':
         user_args = []
 
-    user_script = user_args[0] if user_args else None
+    cmdline_parser = OrionCmdlineParser(config.user_script_config)
+    cmdline_parser.parse(user_args)
 
-    if user_script:
-        abs_user_script = os.path.abspath(user_script)
-        if is_exe(abs_user_script):
-            user_script = abs_user_script
-
-    if user_script and not os.path.exists(user_script):
-        raise OSError(errno.ENOENT, "The path specified for the script does not exist", user_script)
-
-    if user_script:
-        metadata['user_script'] = user_script
-        metadata['VCS'] = infer_versioning_metadata(metadata['user_script'])
+    if cmdline_parser.user_script:
+        # TODO: Remove this, it is all in cmdline_parser now
+        metadata['user_script'] = cmdline_parser.user_script
+        metadata['VCS'] = infer_versioning_metadata(cmdline_parser.user_script)
 
     if user_args:
-        metadata['user_args'] = user_args[1:]
+        # TODO: Remove this, it is all in cmdline_parser now
+        metadata['user_args'] = user_args
 
     return metadata
 
 
 def merge_configs(*configs):
-    """Merge configuration dictionnaries following the given hierarchy
+    """Merge configuration dictionaries following the given hierarchy
 
     Suppose function is called as merge_configs(A, B, C). Then any pair (key, value) in C would
     overwrite any previous value from A or B. Same apply for B over A.

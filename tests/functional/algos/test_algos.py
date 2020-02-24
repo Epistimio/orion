@@ -54,8 +54,7 @@ def test_simple(monkeypatch, config_file):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert os.path.isabs(exp['metadata']['user_script'])
-    assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
+    assert exp['metadata']['user_args'] == ['./black_box.py', '-x~uniform(-50, 50)']
 
     trials = storage.fetch_trials(uid=exp_id)
     assert len(trials) <= config['max_trials']
@@ -97,9 +96,8 @@ def test_with_fidelity(database, monkeypatch, config_file):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert os.path.isabs(exp['metadata']['user_script'])
-    assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50, precision=None)',
-                                            "--fidelity~fidelity(1,10,4)"]
+    assert exp['metadata']['user_args'] == ['./black_box.py', '-x~uniform(-50, 50, precision=None)',
+                                            '--fidelity~fidelity(1,10,4)']
 
     trials = storage.fetch_trials(uid=exp_id)
     assert len(trials) <= config['max_trials']

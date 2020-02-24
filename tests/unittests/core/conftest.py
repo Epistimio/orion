@@ -210,14 +210,15 @@ def refers_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_inst
 @pytest.fixture
 def new_config():
     """Generate a new experiment configuration"""
+    user_script = 'abs_path/black_box.py'
     config = dict(
         name='test',
         algorithms='fancy',
         version=1,
         metadata={'VCS': 'to be changed',
-                  'user_script': 'abs_path/black_box.py',
-                  'user_args':
-                  ['--new~normal(0,2)', '--changed~normal(0,2)'],
+                  'user_script': user_script,
+                  'user_args': [
+                      user_script, '--new~normal(0,2)', '--changed~normal(0,2)'],
                   'user': 'some_user_name'})
 
     backward.populate_space(config)
@@ -228,6 +229,7 @@ def new_config():
 @pytest.fixture
 def old_config(create_db_instance):
     """Generate an old experiment configuration"""
+    user_script = 'abs_path/black_box.py'
     config = dict(
         name='test',
         algorithms='random',
@@ -238,9 +240,9 @@ def old_config(create_db_instance):
                           "active_branch": None,
                           "diff_sha": "diff",
                           },
-                  'user_script': 'abs_path/black_box.py',
-                  'user_args':
-                  ['--missing~uniform(-10,10)', '--changed~uniform(-10,10)'],
+                  'user_script': user_script,
+                  'user_args': [
+                      user_script, '--missing~uniform(-10,10)', '--changed~uniform(-10,10)'],
                   'user': 'some_user_name'})
 
     backward.populate_space(config)
