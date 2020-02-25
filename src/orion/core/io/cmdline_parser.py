@@ -49,6 +49,7 @@ class CmdlineParser(object):
     def __init__(self):
         """See `CmdlineParser` description"""
         # TODO Handle parsing twice.
+        self.keys = dict()
         self.arguments = OrderedDict()
         self._already_parsed = False
         self.template = []
@@ -57,10 +58,15 @@ class CmdlineParser(object):
         """Give state dict that can be used to reconstruct the parser"""
         return dict(
             arguments=list(map(list, self.arguments.items())),
+            keys=list(map(list, self.keys.items())),
             template=self.template)
 
     def set_state_dict(self, state):
         """Reset the parser based on previous state"""
+        if state.get('keys') is None:
+            # NOTE: To support experiments prior to 0.1.9
+            state['keys'] = [(key, self._key_to_arg(key)) for key in state['arguments']]
+        self.keys = OrderedDict(state['keys'])
         self.arguments = OrderedDict(state['arguments'])
         self.template = state['template']
         self._already_parsed = bool(self.template)
@@ -138,7 +144,6 @@ class CmdlineParser(object):
         value following it until the next named argument.
 
         Positional arguments following a named argument are not currently supported.
-        Aggregation of single characters arguments is not supported yet. Ex: `-xzvf`
 
         Examples
         --------
@@ -167,17 +172,18 @@ class CmdlineParser(object):
         if self._already_parsed:
             raise RuntimeError("The commandline has already been parsed.")
 
-        self.arguments = self._parse_arguments(commandline)
+        keys, arguments = self._parse_arguments(commandline)
+        self.arguments = arguments
+        self.keys = keys
 
-        for key, value in self.arguments.items():
+        for key, value in arguments.items():
             # Handle positional arguments
             if key.startswith("_"):
                 self.template.append("{" + key + "}")
 
             # Handle optional ones
             else:
-                arg = self._key_to_arg(key)
-
+                arg = self.keys[key]
                 if arg in self.template:
                     continue
 
@@ -210,35 +216,39 @@ class CmdlineParser(object):
     def _parse_arguments(self, commandline):
 
         arguments = OrderedDict()
-        argument_name = None
+        keys = OrderedDict()
+        key = None
 
         for item in commandline:
             # Handle keyworded arguments
             if item.startswith("-"):
                 # Make sure we're not defining the same argument twice
-                argument_name = item.lstrip('-')
                 # If the argument is in the form of `--name=value`
-                argument_parts = argument_name.split('=')
+                argument_parts = item.split('=')
                 argument_name = argument_parts[0]
+                key = argument_name.lstrip('-')
 
-                if argument_name in arguments.keys():
+                if key in keys:
                     raise ValueError("Conflict: two arguments have the same name: {}"
-                                     .format(argument_name))
+                                     .format(key))
 
-                arguments[argument_name] = []
+                arguments[key] = []
+                keys[key] = argument_name
 
                 if len(argument_parts) > 1:
-                    arguments[argument_name].append(argument_parts[-1])
+                    arguments[key].append(argument_parts[-1])
 
             # If the argument did not start with `-` but we have an argument name
             # That means that this value belongs to that argument name list
-            elif argument_name is not None and item.strip(" "):
-                arguments[argument_name].append(item)
+            elif key is not None and item.strip(" "):
+                arguments[key].append(item)
 
             # No argument name means we have not reached them yet, so we're still in the
             # Positional arguments part
-            elif argument_name is None:
-                arguments["_pos_{}".format(len(arguments))] = item
+            elif key is None:
+                _pos_key = "_pos_{}".format(len(arguments))
+                keys[_pos_key] = _pos_key
+                arguments[_pos_key] = item
 
         for key, value in arguments.items():
             # Loop through the items and check if their value is a list
@@ -253,7 +263,7 @@ class CmdlineParser(object):
             value = self._parse_paths(value)
             arguments[key] = value
 
-        return arguments
+        return keys, arguments
 
     def _parse_paths(self, value):
         if isinstance(value, list):
