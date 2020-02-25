@@ -4,5 +4,5 @@ This folder contains a simple example script (main.py) used to showcase the simp
 
 ## Pre-requisites
 - Install the dependencies `$ pip install -r requirements.txt`
-- Configure Oríon database ([documentation](https://orion.readthedocs.io/en/latest/install/database.html)) 
-- _main.py_ is executable (`$ chmod +x main.py`)
+- Configure Oríon database ([documentation](https://orion.readthedocs.io/en/latest/install/database.html))
+ 

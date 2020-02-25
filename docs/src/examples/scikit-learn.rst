@@ -17,7 +17,7 @@ Sample script
 
 .. literalinclude:: ../../../examples/scikitlearn-iris/main.py
    :language: python
-   :lines: 1-3, 5-9, 13-27
+   :lines: 1-2, 5-9, 13-30
 
 This very basic script takes in parameter one positional argument for the hyper-parameter *epsilon*
 which control the loss in the script.
@@ -34,8 +34,8 @@ The script is divided in five parts:
    The workflow presented in the script is simplified compared to the reality on purpose. The
    objective of this example is to illustrate the basic steps involved in using Oríon.
 
-To find a good *epsilon*, a user would run empirically ``$ ./main.py <epsilon>`` multiple times,
-choosing a new value for *epsilon* manually.
+To find a good *epsilon*, a user would run empirically ``$ python main.py <epsilon>`` multiple
+times, choosing a new value for *epsilon* manually.
 
 This ad-hoc hyper-parameter optimization is unreliable, slow, and requires a lot of work from the
 user. Oríon solves this problem by providing cutting-edge hyper-parameter optimization
@@ -60,7 +60,7 @@ want to **minimize** at the end of the script using :py:func:`orion.client.repor
 
 .. literalinclude:: ../../../examples/scikitlearn-iris/main.py
    :language: python
-   :lines: 33-
+   :lines: 32-
 
 In our example, we measure the accuracy of the model to qualify its performance. To get the best
 accuracy possible, we need to minimize the difference between 1 and the accuracy to get it as
@@ -82,8 +82,8 @@ as the argument for *espilon*. This argument will tell Oríon to use a log unifo
 between ``1e-5`` and ``1`` for the values of *epsilon*.
 
 Putting everything together, we need to call ./main.py with Oríon. The syntax is the
-following: ``$ orion hunt ./main.py 'orion~loguniform(1e-5, 1.0)'``. Before executing it on your
-terminal, you have to specify the name of the experiment using the ``-n`` option. It is also a
+following: ``$ orion hunt python main.py 'orion~loguniform(1e-5, 1.0)'``. Before executing it on
+your terminal, you have to specify the name of the experiment using the ``-n`` option. It is also a
 good idea to specify a stopping condition using ``--max-trials`` otherwise the optimization will
 not stop unless you interrupt it with :kbd:`ctrl-c`:
 

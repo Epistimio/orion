@@ -31,7 +31,7 @@ def test_orion_runs_script(monkeypatch, database):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     config = "orion_config.yaml"
 
-    orion.core.cli.main(["hunt", "--config", config, script,
+    orion.core.cli.main(["hunt", "--config", config, "python", script,
                          "orion~choices([0.1])"])
 
     exps = list(database.experiments.find({'name': 'scikit-iris-tutorial'}))
@@ -40,7 +40,7 @@ def test_orion_runs_script(monkeypatch, database):
     exp = exps[0]
     assert exp['version'] == 1
     assert len(exp['space']) == 1
-    assert '/_pos_0' in exp['space']
+    assert '/_pos_2' in exp['space']
 
     storage = get_storage()
     trials = storage.fetch_trials(uid=exp['_id'])
@@ -48,7 +48,7 @@ def test_orion_runs_script(monkeypatch, database):
 
     trial = trials[0]
     assert trial.status == 'completed'
-    assert trial.params['/_pos_0'] == 0.1
+    assert trial.params['/_pos_2'] == 0.1
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -61,7 +61,7 @@ def test_script_results(monkeypatch):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     config = "orion_config.yaml"
 
-    orion.core.cli.main(["hunt", "--config", config, script,
+    orion.core.cli.main(["hunt", "--config", config, "python", script,
                          "orion~choices([0.1])"])
 
     experiment = create_experiment(name="scikit-iris-tutorial")
