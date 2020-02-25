@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 import sys
 
+import numpy as np
 from orion.client import report_results
 from sklearn.datasets import load_iris
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import train_test_split
+
+# Make the execution reproducible
+np.random.seed(1)
 
 # Parsing the value for the hyper-parameter 'epsilon' given as a command line argument.
 hyper_epsilon = sys.argv[1]
