@@ -18,7 +18,7 @@ Here is an example of all the sections provided by the command.
 
    Commandline
    ===========
-   --lr~loguniform(1e-5, 1.0)
+   python main.py --lr~loguniform(1e-5, 1.0)
 
 
    Config
