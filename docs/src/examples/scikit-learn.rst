@@ -17,7 +17,7 @@ Sample script
 
 .. literalinclude:: ../../../examples/scikitlearn-iris/main.py
    :language: python
-   :lines: 1-3, 5-27
+   :lines: 1-3, 5-9, 13-27
 
 This very basic script takes in parameter one positional argument for the hyper-parameter *epsilon*
 which control the loss in the script.
@@ -60,7 +60,7 @@ want to **minimize** at the end of the script using :py:func:`orion.client.repor
 
 .. literalinclude:: ../../../examples/scikitlearn-iris/main.py
    :language: python
-   :lines: 29-
+   :lines: 33-
 
 In our example, we measure the accuracy of the model to qualify its performance. To get the best
 accuracy possible, we need to minimize the difference between 1 and the accuracy to get it as
