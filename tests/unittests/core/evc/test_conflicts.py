@@ -285,7 +285,9 @@ class TestCommandLineConflict(object):
     def test_repr(self, cli_conflict):
         """Verify the representation of conflict for user interface"""
         assert (
-            repr(cli_conflict) == "Old arguments '' != new arguments 'bool-arg True some-new args'")
+            repr(cli_conflict) == (
+                "Old arguments '_pos_0 abs_path/black_box.py' != "
+                "new arguments '_pos_0 abs_path/black_box.py bool-arg True some-new args'"))
 
 
 class TestScriptConfigConflict(object):

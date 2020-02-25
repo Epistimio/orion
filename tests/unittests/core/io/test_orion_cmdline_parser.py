@@ -10,13 +10,13 @@ from orion.core.worker.trial import Trial
 @pytest.fixture
 def parser():
     """Return an instance of `OrionCmdlineParser`."""
-    return OrionCmdlineParser()
+    return OrionCmdlineParser(allow_non_existing_user_script=True)
 
 
 @pytest.fixture
 def parser_diff_prefix():
     """Return an instance of `OrionCmdlineParser` with a different config prefix."""
-    return OrionCmdlineParser(config_prefix='config2')
+    return OrionCmdlineParser(config_prefix='config2', allow_non_existing_user_script=True)
 
 
 @pytest.fixture
@@ -91,11 +91,11 @@ def test_parse_from_unknown_config(parser, some_sample_config):
 
 def test_parse_equivalency(yaml_config, json_config):
     """Templates found from json and yaml are the same."""
-    parser_yaml = OrionCmdlineParser()
+    parser_yaml = OrionCmdlineParser(allow_non_existing_user_script=True)
     parser_yaml.parse(yaml_config)
     dict_from_yaml = parser_yaml.config_file_data
 
-    parser_json = OrionCmdlineParser()
+    parser_json = OrionCmdlineParser(allow_non_existing_user_script=True)
     parser_json.parse(json_config)
     dict_from_json = parser_json.config_file_data
     assert dict_from_json == dict_from_yaml
@@ -249,10 +249,8 @@ def test_configurable_config_arg(parser_diff_prefix, yaml_sample_path):
     assert '/something-same' in config
 
 
-def test_get_state_dict_before_parse(commandline):
+def test_get_state_dict_before_parse(parser, commandline):
     """Test getting state dict."""
-    parser = OrionCmdlineParser()
-
     assert parser.get_state_dict() == {
         'parser': {
             'arguments': [],
@@ -265,10 +263,8 @@ def test_get_state_dict_before_parse(commandline):
         'converter': None}
 
 
-def test_get_state_dict_after_parse_no_config_file(commandline):
+def test_get_state_dict_after_parse_no_config_file(parser, commandline):
     """Test getting state dict."""
-    parser = OrionCmdlineParser()
-
     parser.parse(commandline)
 
     assert parser.get_state_dict() == {
@@ -281,10 +277,8 @@ def test_get_state_dict_after_parse_no_config_file(commandline):
         'converter': None}
 
 
-def test_get_state_dict_after_parse_with_config_file(yaml_config, commandline):
+def test_get_state_dict_after_parse_with_config_file(parser, yaml_config, commandline):
     """Test getting state dict."""
-    parser = OrionCmdlineParser()
-
     cmd_args = yaml_config
     cmd_args.extend(commandline)
 
@@ -310,7 +304,7 @@ def test_set_state_dict(parser, commandline, json_config, tmpdir, json_converter
     state = parser.get_state_dict()
     parser = None
 
-    blank_parser = OrionCmdlineParser()
+    blank_parser = OrionCmdlineParser(allow_non_existing_user_script=True)
 
     blank_parser.set_state_dict(state)
 

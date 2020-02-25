@@ -44,8 +44,6 @@ import re
 from scipy.stats import distributions as sp_dists
 
 from orion.algo.space import (Categorical, Fidelity, Integer, Real, Space)
-from orion.core import config as orion_config
-from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.utils.flatten import flatten
 
 
@@ -257,23 +255,6 @@ class SpaceBuilder(object):
 
         self.converter = None
         self.parser = None
-
-    def build_from(self, config):
-        """Build a `Space` object from a configuration.
-
-        Initialize a new parser for this commandline and parse the given config then
-        build a `Space` object from that configuration.
-
-        Returns
-        -------
-        `orion.algo.space.Space`
-            The problem's search space definition.
-
-        """
-        self.parser = OrionCmdlineParser(orion_config.user_script_config)
-        self.parser.parse(config)
-
-        return self.build(self.parser.priors)
 
     def build(self, configuration):
         """Create a definition of the problem's search space.
