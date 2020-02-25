@@ -744,6 +744,26 @@ class TestRequiredSpaceBuilder(object):
                "       OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None))),\n"  # noqa
                "       ReverseQuantize(Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None))])")  # noqa
 
+    def test_capacity(self, space_each_type):
+        """Check transformer space capacity"""
+        tspace = build_required_space('real', space_each_type)
+        assert tspace.cardinality == numpy.inf
+
+        space = Space()
+        probs = (0.1, 0.2, 0.3, 0.4)
+        categories = ('asdfa', 2, 3, 4)
+        dim = Categorical('yolo', OrderedDict(zip(categories, probs)), shape=2)
+        space.register(dim)
+        dim = Integer('yolo2', 'uniform', -3, 6)
+        space.register(dim)
+        tspace = build_required_space('integer', space)
+        assert tspace.cardinality == (4 * 2) * 6
+
+        dim = Integer('yolo3', 'uniform', -3, 6, shape=(2, 1))
+        space.register(dim)
+        tspace = build_required_space('integer', space)
+        assert tspace.cardinality == (4 * 2) * 6 * 6 * (2 * 1)
+
 
 def test_quantization_does_not_violate_bounds():
     """Regress on bug that converts valid float in tdim to non valid excl. upper bound."""
