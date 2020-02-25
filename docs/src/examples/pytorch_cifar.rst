@@ -23,12 +23,6 @@ Set up
 
     cd pytorch-cifar
 
-Add python shebang (using ``sed`` here)
-
-.. code-block:: bash
-
-    sed -i '1 i\#!/usr/bin/env python' main.py
-
 Add to last line of test()
 
 .. code-block:: python
