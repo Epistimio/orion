@@ -1,16 +1,16 @@
+"""Tests the minimalist example script on scitkit-learn and its integration to Oríon."""
 import os
 import subprocess
 
-import orion.core.cli
 import pytest
+
 from orion.client import create_experiment
+import orion.core.cli
 from orion.storage.base import get_storage
 
 
 def test_script_integrity(capsys):
-    """
-    Verifies the example script can run in standalone via `python ...`.
-    """
+    """Verifies the example script can run in standalone via `python ...`."""
     script = os.path.abspath("examples/scikitlearn-iris/main.py")
 
     return_code = subprocess.call(["python", script, '0.1'])
@@ -24,9 +24,7 @@ def test_script_integrity(capsys):
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
 def test_orion_runs_script(monkeypatch, database):
-    """
-    Verifies Oríon can execute the example script.
-    """
+    """Verifies Oríon can execute the example script."""
     script = os.path.abspath("examples/scikitlearn-iris/main.py")
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     config = "orion_config.yaml"
@@ -54,9 +52,7 @@ def test_orion_runs_script(monkeypatch, database):
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
 def test_script_results(monkeypatch):
-    """
-    Verifies the script results stays consistent (with respect to the documentation).
-    """
+    """Verifies the script results stays consistent (with respect to the documentation)."""
     script = os.path.abspath("examples/scikitlearn-iris/main.py")
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     config = "orion_config.yaml"
