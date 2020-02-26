@@ -104,13 +104,19 @@ def get_experiments(args):
         Commandline arguments.
 
     """
-    projection = {'name': 1, 'version': 1}
+    projection = {'name': 1, 'version': 1, 'refers': 1}
 
     query = {'name': args['name']} if args.get('name') else {}
     experiments = get_storage().fetch_experiments(query, projection)
 
+    if args['name']:
+        root_experiments = experiments
+    else:
+        root_experiments = [exp for exp in experiments
+                            if exp['refers'].get('root_id', exp['_id']) == exp['_id']]
+
     return [experiment_builder.build_view(name=exp['name'], version=exp.get('version', 1))
-            for exp in experiments]
+            for exp in root_experiments]
 
 
 def _has_named_children(exp):
