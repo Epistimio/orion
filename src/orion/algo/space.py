@@ -289,6 +289,14 @@ class Dimension:
                                                    **self._kwargs)
         return size
 
+    # pylint:disable=no-self-use
+    @property
+    def cardinality(self):
+        """Return the number of all the possible points from `Dimension`.
+        The default value is `numpy.inf`.
+        """
+        return numpy.inf
+
 
 def _is_numeric_array(point):
     """Test whether a point is numerical object or an array containing only numerical objects"""
@@ -338,6 +346,8 @@ class Real(Dimension):
            Lower bound (inclusive), optional; default ``-numpy.inf``.
         high : float:
            Upper bound (exclusive), optional; default ``numpy.inf``.
+        precision : int
+            Precision, optional; default ``4``.
 
         """
         self._low = kwargs.pop('low', -numpy.inf)
@@ -345,6 +355,13 @@ class Real(Dimension):
         if self._high <= self._low:
             raise ValueError("Lower bound {} has to be less than upper bound {}"
                              .format(self._low, self._high))
+
+        precision = kwargs.pop('precision', 4)
+        if (isinstance(precision, int) and precision > 0) or precision is None:
+            self.precision = precision
+        else:
+            raise TypeError("Precision should be a non-negative int or None, "
+                            "instead was {} of type {}.".format(precision, type(precision)))
 
         super(Real, self).__init__(name, prior, *args, **kwargs)
 
@@ -516,6 +533,26 @@ class Integer(Real, _Discrete):
         prior_string = super(Integer, self).get_prior_string()
         return prior_string[:-1] + ', discrete=True)'
 
+    @property
+    def cardinality(self):
+        """Return the number of all the possible points from Integer `Dimension`"""
+        low, high = self.interval()
+        return _get_shape_cardinality(self.shape) * int(high - low)
+
+
+def _get_shape_cardinality(shape):
+    """Get the cardinality in a shape which can be int or tuple"""
+    shape_cardinality = 1
+    if shape is None:
+        return shape_cardinality
+
+    if isinstance(shape, int):
+        shape = (shape, )
+
+    for cardinality in shape:
+        shape_cardinality *= cardinality
+    return shape_cardinality
+
 
 class Categorical(Dimension):
     """Subclass of `Dimension` for representing categorical parameters.
@@ -558,6 +595,11 @@ class Categorical(Dimension):
         prior = distributions.rv_discrete(values=(list(range(len(self.categories))),
                                                   self._probs))
         super(Categorical, self).__init__(name, prior, **kwargs)
+
+    @property
+    def cardinality(self):
+        """Return the number of all the possible values from Categorical `Dimension`"""
+        return len(self.categories) * _get_shape_cardinality(self._shape)
 
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
@@ -881,6 +923,14 @@ class Space(dict):
     def configuration(self):
         """Return a dictionary of priors."""
         return {name: dim.get_prior_string() for name, dim in self.items()}
+
+    @property
+    def cardinality(self):
+        """Return the number of all all possible sets of samples in the space"""
+        capacities = 1
+        for dim in self.values():
+            capacities *= dim.cardinality
+        return capacities
 
 
 def pack_point(point, space):
