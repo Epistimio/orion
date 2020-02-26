@@ -7,7 +7,8 @@ import json
 
 import pytest
 
-from orion import client
+import orion.client
+import orion.client.cli as cli
 import orion.core
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
@@ -18,8 +19,8 @@ from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 
 
-create_experiment = client.create_experiment
-workon = client.workon
+create_experiment = orion.client.create_experiment
+workon = orion.client.workon
 
 
 config = dict(
@@ -72,7 +73,7 @@ class TestReportResults(object):
         Then: It should print `data` parameter instead to stdout.
         """
         monkeypatch.delenv('ORION_RESULTS_PATH', raising=False)
-        reloaded_client = reload(client)
+        reloaded_client = reload(cli)
 
         assert reloaded_client.IS_ORION_ON is False
         assert reloaded_client.RESULTS_FILENAME is None
@@ -92,7 +93,7 @@ class TestReportResults(object):
         with open(path, mode='w'):
             pass
         monkeypatch.setenv('ORION_RESULTS_PATH', path)
-        reloaded_client = reload(client)
+        reloaded_client = reload(cli)
 
         assert reloaded_client.IS_ORION_ON is True
         assert reloaded_client.RESULTS_FILENAME == path
@@ -116,7 +117,7 @@ class TestReportResults(object):
         monkeypatch.setenv('ORION_RESULTS_PATH', path)
 
         with pytest.raises(RuntimeWarning) as exc:
-            reload(client)
+            reload(cli)
 
         assert "existing file" in str(exc.value)
 
@@ -125,7 +126,7 @@ class TestReportResults(object):
         if function has already been called once.
         """
         monkeypatch.delenv('ORION_RESULTS_PATH', raising=False)
-        reloaded_client = reload(client)
+        reloaded_client = reload(cli)
 
         reloaded_client.report_results(data)
         with pytest.raises(RuntimeWarning) as exc:

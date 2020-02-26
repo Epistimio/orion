@@ -132,6 +132,8 @@ def define_worker_config(config):
         'max_broken', option_type=int, default=3)
     worker_config.add_option(
         'max_idle_time', option_type=int, default=60)
+    worker_config.add_option(
+        'interrupt_signal_code', option_type=int, default=130, env_var='ORION_INTERRUPT_CODE')
 
     config.worker = worker_config
 

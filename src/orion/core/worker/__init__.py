@@ -70,7 +70,7 @@ def workon(experiment, worker_trials=None):
     stats = experiment.stats
 
     if not stats:
-        log.info("No trials completed.")
+        print("No trials completed.")
         return
 
     best = get_storage().get_trial(uid=stats['best_trials_id'])
@@ -83,6 +83,8 @@ def workon(experiment, worker_trials=None):
     pprint.pprint(best.to_dict()['params'], stream=best_stream)
     best_string = best_stream.getvalue()
 
-    log.info("#####  Search finished successfully  #####")
-    log.info("\nRESULTS\n=======\n%s\n", stats_string)
-    log.info("\nBEST PARAMETERS\n===============\n%s", best_string)
+    print("#####  Search finished successfully  #####")
+    print("\nRESULTS\n=======\n")
+    print(stats_string)
+    print("\nBEST PARAMETERS\n===============")
+    print(best_string)
