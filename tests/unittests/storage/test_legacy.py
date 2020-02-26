@@ -8,6 +8,7 @@ import tempfile
 
 import pytest
 
+from orion.core.utils.exceptions import MissingResultFile
 from orion.core.utils.tests import OrionState
 from orion.core.worker.trial import Trial
 from orion.storage.base import FailedUpdate
@@ -148,7 +149,7 @@ class TestLegacyStorage:
 
             trial = Trial(**base_trial)
 
-            with pytest.raises(json.decoder.JSONDecodeError) as exec:
+            with pytest.raises(MissingResultFile) as exec:
                 storage.retrieve_result(trial, results_file)
 
-        assert exec.match(r'Expecting value: line 1 column 1 \(char 0\)')
+        assert exec.match(r'Cannot parse result file')

@@ -28,8 +28,9 @@ Adapting the code for Oríon
 To use Oríon with any code we need to do three things
 
 1. make the ``main.py`` file a python executable
-2. import the ``orion.client.report_results`` helper function
-3. call `report_results` on the final objective output to be minimized (e.g. final test error rate)
+2. import the ``orion.client.report_objective`` helper function
+3. call `report_objective` on the final objective output to be minimized (e.g. final test error
+   rate)
 
 After cloning pytorch examples repository, cd to mnist folder:
 
@@ -46,11 +47,11 @@ the ``main.py`` and make it executable, for example:
     $ chmod +x main.py
 
 2. At the top of the file, below the imports, add one line of import the helper function
-``orion.client.report_results()``:
+``orion.client.report_objective()``:
 
 .. code-block:: python
 
-    from orion.client import report_results
+    from orion.client import report_objective
 
 3. We need the test error rate so we're going to add a line to the function ``test()`` to return it
 
@@ -58,18 +59,16 @@ the ``main.py`` and make it executable, for example:
 
     return 1 - (correct / len(test_loader.dataset))
 
-Finally, we get back this test error rate and call ``report_results`` to
-return the final objective value to Oríon. Note that ``report_results`` is meant to
+Finally, we get back this test error rate and call ``report_objective`` to
+return the final objective value to Oríon. Note that ``report_objective`` is meant to
 be called only once because Oríon only looks at 1 ``'objective'`` value per run.
 
 .. code-block:: python
 
         test_error_rate = test(args, model, device, test_loader)
 
-    report_results([dict(
-        name='test_error_rate',
-        type='objective',
-        value=test_error_rate)])
+    report_objective(test_error_rate)
+
 
 Execution
 =========
@@ -156,8 +155,12 @@ validation set.
 Oríon will always **minimize** the objective so make sure you never try to
 optimize something like the accuracy of the model unless you are looking for very very bad models.
 
-You can also ``report_results`` of types ``'gradient'`` and ``'constraint'`` for
-algorithms which require those parameters as well.
+You can also report results of types ``'gradient'`` and ``'constraint'`` for
+algorithms which require those parameters as well, or ``'statistic'`` for metrics
+to be saved with the trial. See
+:py:func:`report_results() <orion.client.cli.report_results>`
+for more details.
+
 
 Debugging
 =========
