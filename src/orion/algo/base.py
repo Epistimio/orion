@@ -21,6 +21,14 @@ log = logging.getLogger(__name__)
 class BaseAlgorithm(object, metaclass=ABCMeta):
     """Base class describing what an algorithm can do.
 
+    Parameters
+    ----------
+    space : `orion.algo.space.Space`
+       Definition of a problem's parameter space.
+    kwargs : dict
+       Tunable elements of a particular algorithm, a dictionary from
+       hyperparameter names to values.
+
     Notes
     -----
     We are using the No Free Lunch theorem's [1]_[3]_ formulation of an
@@ -85,17 +93,6 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
     requires = []
 
     def __init__(self, space, **kwargs):
-        """Declare problem's parameter space and set up algo's hyperparameters.
-
-        Parameters
-        ----------
-        space : `orion.algo.space.Space`
-           Definition of a problem's parameter space.
-        kwargs : dict
-           Tunable elements of a particular algorithm, a dictionary from
-           hyperparameter names to values.
-
-        """
         log.debug("Creating Algorithm object of %s type with parameters:\n%s",
                   type(self).__name__, kwargs)
         self._space = space
