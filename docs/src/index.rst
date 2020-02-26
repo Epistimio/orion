@@ -36,7 +36,6 @@
 
    plugins/base
    plugins/algorithms
-   plugins/database
 
 .. .. toctree::
 ..    :caption: Plan
