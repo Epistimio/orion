@@ -1,0 +1,14 @@
+name: voila_voici
+
+pool_size: 1
+max_trials: 100
+
+algorithms: random
+
+producer:
+    strategy: NoParallelStrategy
+
+database:
+  type: 'mongodb'
+  name: 'orion_test'
+  host: 'mongodb://user:pass@localhost'
