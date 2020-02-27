@@ -1,0 +1,38 @@
+# Example `orion` database, first are the "primary keys" (there's also an
+# implicit _id key here in MongoDB, but we cannot base our search based on that)
+---
+
+# Example of entries in `experiments` collection
+# configurations: some are inferred automatically,
+# but most depend on user's input to `orion`
+- name: supernaedo2-dendi
+
+  metadata:
+    user: dendi
+    datetime: 2017-11-22T20:00:00
+    orion_version: XYZ
+    user_script: functional/demo/black_box.py
+    user_args: ["--encoding_layer~choices(['rnn', 'lstm', 'gru'])", "--decoding_layer~choices(['rnn', 'lstm_with_attention', 'gru'])"]
+    VCS:
+      type: git
+      is_dirty: False
+      HEAD_sha: "test"
+      active_branch: null
+      diff_sha: "diff"
+  refers:
+    root_id: supernaedo2-dendi
+    parent_id: null
+    adapter: []
+  pool_size: 2
+  max_trials: 1000
+  working_dir:
+  algorithms:
+    invalidalgo:  # this must be logged as `Experiment` would log it, complete specification
+      seed: null
+      value: 5
+      scoring: 0
+      judgement: ~
+      suspend: False
+      done: False
+  producer:
+    strategy: NoParallelStrategy
