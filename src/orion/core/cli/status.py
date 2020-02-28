@@ -68,7 +68,7 @@ def main(args):
             raise RuntimeError("Cannot fetch specific version of experiments with --collapse "
                                "or --expand-versions.")
 
-    print_evc(filter(lambda e: e.refers.get('parent_id') is None, experiments), **args)
+    print_evc(experiments, **args)
 
 
 # pylint: disable=unused-argument
