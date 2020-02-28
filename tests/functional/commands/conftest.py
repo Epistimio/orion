@@ -96,19 +96,6 @@ def exp_config():
     return exp_config
 
 
-@pytest.fixture()
-def invalidalgo_exp_config():
-    """Load an example database."""
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-              'invalidalgo_experiment.yaml')) as f:
-        exp_config = list(yaml.safe_load_all(f))
-
-    for config in exp_config[0]:
-        backward.populate_space(config)
-
-    return exp_config
-
-
 @pytest.fixture(scope='session')
 def database():
     """Return Mongo database object to test with example entries."""
@@ -138,12 +125,6 @@ def db_instance(null_db_instances):
         db = Database()
 
     return db
-
-
-@pytest.fixture
-def only_invalidalgo_experiments_db(clean_db, database, invalidalgo_exp_config):
-    """Clean the database and insert only experiments."""
-    database.experiments.insert_many(invalidalgo_exp_config[0])
 
 
 @pytest.fixture

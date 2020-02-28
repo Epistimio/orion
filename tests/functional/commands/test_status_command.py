@@ -93,7 +93,7 @@ suspended             1
     assert captured == expected
 
 
-def test_experiment_number_same_list_status(clean_db, only_invalidalgo_experiments_db,
+def test_experiment_number_same_list_status(clean_db,
                                             single_without_success, capsys):
     """Test status and list command output the consistent number of experiments"""
     orion.core.cli.main(['status'])
@@ -118,7 +118,7 @@ suspended             1
     orion.core.cli.main(['list'])
 
     captured = capsys.readouterr().out
-    print(captured)
+
     assert captured == " test_single_exp-v1\n"
 
 
