@@ -253,6 +253,7 @@ def test_get_state_dict_before_parse(parser, commandline):
     """Test getting state dict."""
     assert parser.get_state_dict() == {
         'parser': {
+            'keys': [],
             'arguments': [],
             'template': []},
         'cmd_priors': list(map(list, parser.cmd_priors.items())),
