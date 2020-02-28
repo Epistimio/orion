@@ -153,6 +153,7 @@ class Configuration:
             configuration object.
 
         """
+        key = self._curate(key)
         if key not in self.SPECIAL_KEYS and key in self._config:
             self._validate(key, value)
             self._config[key]['value'] = value
@@ -205,7 +206,7 @@ class Configuration:
             A general object to set an option.
 
         """
-        keys = key.split(".")
+        keys = list(map(self._curate, key.split(".")))
 
         # Set in current config for special keys
         if len(keys) == 2 and keys[-1] in self.SPECIAL_KEYS:
@@ -236,7 +237,9 @@ class Configuration:
             Ex: 'first.second.third'
 
         """
-        keys = key.split(".")
+        print(key)
+        keys = list(map(self._curate, key.split(".")))
+
         # Recursively in sub configurations
         if len(keys) > 1:
             subconfig = getattr(self, keys[0])
@@ -271,6 +274,7 @@ class Configuration:
             YAML configuration file.
 
         """
+        key = self._curate(key)
         if key in self._config or key in self._subconfigs:
             raise ValueError('Configuration already contains {}'.format(key))
         self._config[key] = {'type': option_type}
@@ -278,6 +282,9 @@ class Configuration:
             self._config[key]['env_var'] = env_var
         if default is not NOT_SET:
             self._config[key]['default'] = default
+
+    def _curate(self, key):
+        return key.replace('-', '_')
 
     def to_dict(self):
         """Return a dictionary representation of the configuration"""

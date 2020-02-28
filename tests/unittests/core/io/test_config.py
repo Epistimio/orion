@@ -273,3 +273,40 @@ def test_to_dict():
         'test': 'hello',
         'nested': {
             'test2': 'labas'}}
+
+
+def test_key_curation():
+    """Test that both - and _ maps to same options"""
+    config = Configuration()
+    config.add_option('test-with-dashes', option_type=int, default=1)
+    config.add_option('test_with_underscores', option_type=int, default=2)
+    config.add_option('test-all_mixedup', option_type=int, default=3)
+
+    assert config['test-with-dashes'] == 1
+    assert config['test_with_underscores'] == 2
+    assert config['test-all_mixedup'] == 3
+
+    assert config['test_with_dashes'] == 1
+    assert config['test-with-underscores'] == 2
+    assert config['test_all-mixedup'] == 3
+
+    assert config.test_with_dashes == 1
+    assert config.test_with_underscores == 2
+    assert config.test_all_mixedup == 3
+
+    config['test_with_dashes'] = 4
+    assert config['test-with-dashes'] == 4
+
+
+def test_nested_key_curation():
+    """Test that both - and _ maps to same options in nested configs as well"""
+    config = Configuration()
+    config.add_option('test-with-dashes', option_type=str, default="voici_voila")
+    config.nested = Configuration()
+    config.nested.add_option('test_with_underscores', option_type=str, default="zici")
+
+    assert config['nested']['test_with_underscores'] == 'zici'
+    assert config['nested']['test-with-underscores'] == 'zici'
+
+    config['nested']['test-with-underscores'] = 'labas'
+    assert config.nested.test_with_underscores == 'labas'
