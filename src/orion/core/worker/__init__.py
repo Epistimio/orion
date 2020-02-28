@@ -9,14 +9,13 @@
       with parameter values suggested.
 
 """
-import io
 import itertools
 import logging
-import pprint
 
+from orion.core.utils.format_terminal import format_stats
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer
-from orion.storage.base import get_storage
+
 
 log = logging.getLogger(__name__)
 
@@ -39,6 +38,36 @@ def reserve_trial(experiment, producer, _depth=1):
     return trial
 
 
+COMPLETION_MESSAGE = """\
+Hints
+=====
+
+Info
+----
+
+To get more information on the experiment, run the command
+
+orion info --name {experiment.name} --version {experiment.version}
+
+"""
+
+
+NONCOMPLETED_MESSAGE = """\
+Status
+------
+
+To get the status of the trials, run the command
+
+orion status --name {experiment.name} --version {experiment.version}
+
+
+For a detailed view with status of each trial listed, use the argument `--all`
+
+orion status --name {experiment.name} --version {experiment.version} --all
+
+"""
+
+
 def workon(experiment, worker_trials=None):
     """Try to find solution to the search problem defined in `experiment`."""
     producer = Producer(experiment)
@@ -54,10 +83,11 @@ def workon(experiment, worker_trials=None):
     for _ in iterator:
         log.debug("#### Poll for experiment termination.")
         if experiment.is_broken:
-            log.info("#### Experiment has reached broken trials threshold, terminating.")
-            return
+            print("#### Experiment has reached broken trials threshold, terminating.")
+            break
 
         if experiment.is_done:
+            print("#####  Search finished successfully  #####")
             break
 
         log.debug("#### Try to reserve a new trial to evaluate.")
@@ -67,22 +97,8 @@ def workon(experiment, worker_trials=None):
             log.debug("#### Successfully reserved %s to evaluate. Consuming...", trial)
             consumer.consume(trial)
 
-    stats = experiment.stats
+    print('\n' + format_stats(experiment))
 
-    if not stats:
-        log.info("No trials completed.")
-        return
-
-    best = get_storage().get_trial(uid=stats['best_trials_id'])
-
-    stats_stream = io.StringIO()
-    pprint.pprint(stats, stream=stats_stream)
-    stats_string = stats_stream.getvalue()
-
-    best_stream = io.StringIO()
-    pprint.pprint(best.to_dict()['params'], stream=best_stream)
-    best_string = best_stream.getvalue()
-
-    log.info("#####  Search finished successfully  #####")
-    log.info("\nRESULTS\n=======\n%s\n", stats_string)
-    log.info("\nBEST PARAMETERS\n===============\n%s", best_string)
+    print('\n' + COMPLETION_MESSAGE.format(experiment=experiment))
+    if not experiment.is_done:
+        print(NONCOMPLETED_MESSAGE.format(experiment=experiment))

@@ -29,6 +29,25 @@ def basic_config():
 
 
 @pytest.fixture
+def basic_keys():
+    """Return keys of a simple configuration"""
+    keys = OrderedDict()
+
+    keys['_pos_0'] = '_pos_0'
+    keys['_pos_1'] = '_pos_1'
+    keys['_pos_2'] = '_pos_2'
+    keys['_pos_3'] = '_pos_3'
+    keys['_pos_4'] = '_pos_4'
+    keys['with'] = '--with'
+    keys['and'] = '--and'
+    keys['plus'] = '--plus'
+    keys['booleans'] = '--booleans'
+    keys['equal'] = '--equal'
+
+    return keys
+
+
+@pytest.fixture
 def to_format():
     """Return a commandline to format"""
     return "python 1 --arg value --args value1 value2 --boolean"
@@ -56,14 +75,15 @@ def test_parse_paths(monkeypatch):
     assert parsed_values[3] == os.path.abspath(__file__)
 
 
-def test_parse_arguments(basic_config):
+def test_parse_arguments(basic_config, basic_keys):
     """Test the parsing of the commandline arguments"""
     cmdline_parser = CmdlineParser()
-    arguments = cmdline_parser._parse_arguments(
+    keys, arguments = cmdline_parser._parse_arguments(
         "python script.py some pos args --with args --and multiple args "
         "--plus --booleans --equal=value".split(" "))
 
     assert arguments == basic_config
+    assert keys == basic_keys
 
 
 def test_parse_arguments_template():
@@ -86,7 +106,7 @@ def test_format(to_format):
 
     cmdline_parser.parse(to_format.split(' '))
 
-    arguments = cmdline_parser._parse_arguments(to_format.split(' '))
+    keys, arguments = cmdline_parser._parse_arguments(to_format.split(' '))
 
     formatted = cmdline_parser.format(arguments)
 
@@ -129,6 +149,7 @@ def test_get_state_dict():
         "--with args --and multiple args --plus --booleans --equal=value".split(" "))
 
     assert cmdline_parser.get_state_dict() == {
+        'keys': list(map(list, cmdline_parser.keys.items())),
         'arguments': list(map(list, cmdline_parser.arguments.items())),
         'template': cmdline_parser.template}
 
@@ -143,3 +164,42 @@ def test_set_state_dict():
 
     assert cmdline_parser.format({'_pos_0': 'voici', '_pos_1': 'voila', 'with': 'classe'}) == [
         'voici', 'voila', '--with', 'classe', '--plus', '--booleans']
+
+
+def test_parse_not_enough_dashes():
+    """Test that arguments with many chars but one dash are supported even if it is not standard"""
+    cmdline_parser = CmdlineParser()
+    keys, arguments = cmdline_parser._parse_arguments(
+        "pos -not-enough dashes "
+        "--enough dashes -o my".split(" "))
+
+    assert arguments == OrderedDict((
+        ('_pos_0', 'pos'),
+        ('not-enough', 'dashes'),
+        ('enough', 'dashes'),
+        ('o', 'my')))
+
+    assert keys == OrderedDict((
+        ('_pos_0', '_pos_0'),
+        ('not-enough', '-not-enough'),
+        ('enough', '--enough'),
+        ('o', '-o')))
+
+
+def test_parse_fugly_underscores():
+    """Test that underscores are kept as such no matter how fugly this is"""
+    cmdline_parser = CmdlineParser()
+    keys, arguments = cmdline_parser._parse_arguments(
+        "pos -my_poor eyes --are_bleeding because --of-these underscores".split(" "))
+
+    assert arguments == OrderedDict((
+        ('_pos_0', 'pos'),
+        ('my_poor', 'eyes'),
+        ('are_bleeding', 'because'),
+        ('of-these', 'underscores')))
+
+    assert keys == OrderedDict((
+        ('_pos_0', '_pos_0'),
+        ('my_poor', '-my_poor'),
+        ('are_bleeding', '--are_bleeding'),
+        ('of-these', '--of-these')))

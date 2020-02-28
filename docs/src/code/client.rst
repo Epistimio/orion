@@ -6,6 +6,7 @@ Client helper functions
    :maxdepth: 1
    :caption: Modules
 
+   client/cli
    client/experiment
    client/manual
 
