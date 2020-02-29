@@ -13,7 +13,7 @@ import orion.core
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils import SingletonNotInstantiatedError
-from orion.core.utils.exceptions import NoConfigurationError, RaceCondition
+from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
 from orion.core.utils.tests import OrionState, update_singletons
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
@@ -328,7 +328,7 @@ class TestCreateExperiment:
         with OrionState(experiments=[config]):
             create_experiment(config['name'], space=new_space)
 
-            with pytest.raises(ValueError) as exc:
+            with pytest.raises(BranchingEvent) as exc:
                 create_experiment(config['name'], version=1, space=new_space)
 
             assert "Configuration is different and generates" in str(exc.value)

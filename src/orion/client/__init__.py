@@ -133,7 +133,7 @@ def create_experiment(
         means that different modifications occured during each race condition resolution. This is
         likely due to quick code change during experiment creation. Make sure your script is not
         generating files within your code repository.
-    `ValueError`
+    `orion.core.utils.exceptions.BranchingEvent`
         The configuration is different than the corresponding one in DB and the branching cannot be
         solved automatically. This usually happens if the version=x is specified but the experiment
         ``(name, x)`` already has a child ``(name, x+1)``. If you really need to branch from version
