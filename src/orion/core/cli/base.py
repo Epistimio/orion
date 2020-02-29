@@ -15,7 +15,7 @@ import textwrap
 
 import orion
 from orion.core.io.database import DatabaseError
-from orion.core.utils.exceptions import MissingResultFile, NoConfigurationError
+from orion.core.utils.exceptions import BranchingEvent, MissingResultFile, NoConfigurationError
 
 
 CLI_DOC_HEADER = """
@@ -73,7 +73,7 @@ class OrionArgsParser:
         try:
             args, function = self.parse(argv)
             function(args)
-        except (NoConfigurationError, DatabaseError, MissingResultFile) as e:
+        except (NoConfigurationError, DatabaseError, MissingResultFile, BranchingEvent) as e:
             print('Error:', e, file=sys.stderr)
 
             if args.get('verbose', 0) >= 2:

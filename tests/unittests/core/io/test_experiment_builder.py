@@ -11,7 +11,7 @@ from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
-from orion.core.utils.exceptions import NoConfigurationError, RaceCondition
+from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
 from orion.core.utils.tests import OrionState
 from orion.storage.base import get_storage
 
@@ -681,7 +681,7 @@ class TestBuild(object):
             assert parent.version == 1
             assert child.version == 2
 
-            with pytest.raises(ValueError) as exc_info:
+            with pytest.raises(BranchingEvent) as exc_info:
                 experiment_builder.build(name=name, version=1, space={'x': 'loguniform(1,10)'})
             assert 'Configuration is different and generates a branching' in str(exc_info.value)
 
@@ -803,7 +803,7 @@ class TestBuild(object):
             monkeypatch.setattr(get_storage().__class__, 'fetch_experiments',
                                 insert_race_condition_1)
 
-            with pytest.raises(ValueError) as exc_info:
+            with pytest.raises(BranchingEvent) as exc_info:
                 experiment_builder.build(name=name, version=1, space={'x': 'loguniform(1,10)'})
             assert 'Configuration is different and generates' in str(exc_info.value)
 

@@ -11,10 +11,10 @@ import orion.core.io.experiment_builder as experiment_builder
 from orion.storage.base import get_storage
 
 
-def execute(command):
+def execute(command, assert_code=0):
     """Execute orion command and return returncode"""
     returncode = orion.core.cli.main(command.split(' '))
-    assert returncode == 0
+    assert returncode == assert_code
 
 
 @pytest.fixture
@@ -447,16 +447,20 @@ def test_new_algo(init_full_x_new_algo):
     assert len(experiment.fetch_trials()) == 20
 
 
-def test_new_algo_not_resolved(init_full_x):
+def test_new_algo_not_resolved(init_full_x, capsys):
     """Test that new algo conflict is not automatically resolved"""
     name = "full_x"
     branch = "full_x_new_algo"
-    with pytest.raises(ValueError) as exc:
-        orion.core.cli.main(
-            ("init_only -n {branch} --branch-from {name} --config new_algo_config.yaml "
-             "--manual-resolution ./black_box.py -x~uniform(-10,10)")
-            .format(name=name, branch=branch).split(" "))
-    assert "Configuration is different and generates a branching event" in str(exc.value)
+    error_code = orion.core.cli.main(
+        ("init_only -n {branch} --branch-from {name} --config new_algo_config.yaml "
+         "--manual-resolution ./black_box.py -x~uniform(-10,10)")
+        .format(name=name, branch=branch).split(" "))
+    assert error_code == 1
+
+    captured = capsys.readouterr()
+    assert captured.out == ''
+    assert "Configuration is different and generates a branching event" in captured.err
+    assert "gradient_descent" in captured.err
 
 
 def test_ignore_cli(init_full_x_ignore_cli):
@@ -469,15 +473,19 @@ def test_ignore_cli(init_full_x_ignore_cli):
 
 
 @pytest.mark.usefixtures('init_full_x', 'mock_infer_versioning_metadata')
-def test_new_code_triggers_code_conflict():
+def test_new_code_triggers_code_conflict(capsys):
     """Test that a different git hash is generating a child"""
     name = "full_x"
-    with pytest.raises(ValueError) as exc:
-        orion.core.cli.main(
-            ("init_only -n {name} "
-             "--manual-resolution ./black_box.py -x~uniform(-10,10)")
-            .format(name=name).split(" "))
-    assert "Configuration is different and generates a branching event" in str(exc.value)
+    error_code = orion.core.cli.main(
+        ("init_only -n {name} "
+         "--manual-resolution ./black_box.py -x~uniform(-10,10)")
+        .format(name=name).split(" "))
+    assert error_code == 1
+
+    captured = capsys.readouterr()
+    assert captured.out == ''
+    assert "Configuration is different and generates a branching event" in captured.err
+    assert "--code-change-type" in captured.err
 
 
 @pytest.mark.usefixtures('init_full_x', 'mock_infer_versioning_metadata')
@@ -532,17 +540,21 @@ def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
          "-w~fidelity(1,10)").format(name=name, branch=branch).split(" "))
 
 
-def test_init_w_version_from_parent_w_children(clean_db, monkeypatch):
+def test_init_w_version_from_parent_w_children(clean_db, monkeypatch, capsys):
     """Test that init of experiment from version with children fails."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute("init_only -n experiment --config orion_config.yaml ./black_box.py -x~normal(0,1)")
     execute("init_only -n experiment ./black_box.py -x~normal(0,1) -y~+normal(0,1)")
 
-    with pytest.raises(ValueError) as exc:
-        execute("init_only -n experiment -v 1 "
-                "./black_box.py -x~normal(0,1) -y~+normal(0,1) -z~normal(0,1)")
+    execute(
+        "init_only -n experiment -v 1 "
+        "./black_box.py -x~normal(0,1) -y~+normal(0,1) -z~normal(0,1)",
+        assert_code=1)
 
-    assert "Experiment name" in str(exc.value)
+    captured = capsys.readouterr()
+    assert captured.out == ''
+    assert "Configuration is different and generates a branching event" in captured.err
+    assert "Experiment name" in captured.err
 
 
 def test_init_w_version_from_exp_wout_child(clean_db, monkeypatch):
