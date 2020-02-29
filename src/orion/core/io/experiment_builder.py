@@ -102,7 +102,7 @@ from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
 import orion.core.utils.backward as backward
-from orion.core.utils.exceptions import NoConfigurationError, RaceCondition
+from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import Strategy
@@ -449,9 +449,7 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
         branching_prompt = BranchingPrompt(experiment_brancher)
 
         if not sys.__stdin__.isatty():
-            raise ValueError(
-                "Configuration is different and generates a branching event:\n{}".format(
-                    branching_prompt.get_status()))
+            raise BranchingEvent(branching_prompt.get_status())
 
         branching_prompt.cmdloop()
 
