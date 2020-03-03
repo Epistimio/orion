@@ -16,6 +16,7 @@ import time
 import orion.core
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
+from orion.core.worker.trial import Trial
 from orion.core.worker.trials_history import TrialsHistory
 
 log = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ class Producer(object):
         # TODO: Move trials_history into PrimaryAlgo during the refactoring of Algorithm with
         #       Strategist and Scheduler.
         self.trials_history = TrialsHistory()
+        self.params_hashes = set()
         self.naive_trials_history = None
 
     @property
@@ -78,7 +80,6 @@ class Producer(object):
                         self.max_idle_time))
 
             log.debug("### Algorithm suggests new points.")
-
             new_points = self.naive_algorithm.suggest(self.pool_size)
             # Sync state of original algo so that state continues evolving.
             self.algorithm.set_state(self.naive_algorithm.state_dict)
@@ -91,20 +92,33 @@ class Producer(object):
                 log.debug("#### Convert point to `Trial` object.")
                 new_trial = format_trials.tuple_to_trial(new_point, self.space)
                 try:
+                    self._prevalidate_trial(new_trial)
                     new_trial.parents = self.naive_trials_history.children
                     log.debug("#### Register new trial to database: %s", new_trial)
                     self.experiment.register_trial(new_trial)
+                    self._update_params_hashes([new_trial])
                     sampled_points += 1
                 except DuplicateKeyError:
                     log.debug("#### Duplicate sample.")
                     self.backoff()
                     break
 
+    def _prevalidate_trial(self, new_trial):
+        """Verify if trial is not in parent history"""
+        if Trial.compute_trial_hash(new_trial, ignore_experiment=True) in self.params_hashes:
+            raise DuplicateKeyError
+
+    def _update_params_hashes(self, trials):
+        """Register locally all param hashes of trials"""
+        for trial in trials:
+            self.params_hashes.add(
+                Trial.compute_trial_hash(trial, ignore_experiment=True, ignore_lie=True))
+
     def update(self):
         """Pull all trials to update model with completed ones and naive model with non completed
         ones.
         """
-        trials = self.experiment.fetch_trials()
+        trials = self.experiment.fetch_trials(with_evc_tree=True)
 
         self._update_algorithm([trial for trial in trials if trial.status == 'completed'])
         self._update_naive_algorithm([trial for trial in trials if trial.status != 'completed'])
@@ -130,6 +144,7 @@ class Producer(object):
             self.trials_history.update(new_completed_trials)
             self.algorithm.observe(points, results)
             self.strategy.observe(points, results)
+            self._update_params_hashes(new_completed_trials)
 
     def _produce_lies(self, incomplete_trials):
         """Add fake objective results to incomplete trials
@@ -172,3 +187,4 @@ class Producer(object):
             log.debug("### Observe them.")
             self.naive_trials_history.update(lying_trials)
             self.naive_algorithm.observe(points, results)
+            self._update_params_hashes(lying_trials)

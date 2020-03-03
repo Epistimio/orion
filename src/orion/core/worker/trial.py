@@ -308,7 +308,7 @@ class Trial:
 
         .. note:: The params contributing to the hash do not include the fidelity.
         """
-        return self.compute_trial_hash(self, ignore_fidelity=True)
+        return self.compute_trial_hash(self, ignore_fidelity=True, ignore_lie=True)
 
     def __hash__(self):
         """Return the hashname for this trial"""
@@ -362,17 +362,21 @@ class Trial:
         return Trial.format_values(params, sep)
 
     @staticmethod
-    def compute_trial_hash(trial, ignore_fidelity=False):
+    def compute_trial_hash(trial, ignore_fidelity=False, ignore_experiment=False,
+                           ignore_lie=False):
         """Generate a unique param md5sum hash for a given `Trial`"""
         if not trial._params and not trial.experiment:
             raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
                              "have not been set.")
 
         params = Trial.format_params(trial._params, ignore_fidelity=ignore_fidelity)
-        experiment_repr = str(trial.experiment)
+
+        experiment_repr = ""
+        if not ignore_experiment:
+            experiment_repr = str(trial.experiment)
 
         lie_repr = ""
-        if not ignore_fidelity and trial.lie:
+        if not ignore_lie and trial.lie:
             lie_repr = Trial.format_values([trial.lie])
 
         return hashlib.md5((params + experiment_repr + lie_repr).encode('utf-8')).hexdigest()
