@@ -238,6 +238,29 @@ class TestTrial(object):
         assert t1.hash_name != t2.hash_name
         assert t1.hash_params == t2.hash_params
 
+    def test_hash_ignore_experiment(self, exp_config):
+        """Check property `Trial.compute_trial_hash(ignore_experiment=True)`."""
+        exp_config[1][1]['params'].append({'name': '/max_epoch', 'type': 'fidelity', 'value': '1'})
+        t1 = Trial(**exp_config[1][1])
+        exp_config[1][1]['experiment'] = 'test'  # changing the experiment name
+        t2 = Trial(**exp_config[1][1])
+        assert t1.hash_name != t2.hash_name
+        assert t1.hash_params != t2.hash_params
+        assert (Trial.compute_trial_hash(t1, ignore_experiment=True) ==
+                Trial.compute_trial_hash(t2, ignore_experiment=True))
+
+    def test_hash_ignore_lie(self, exp_config):
+        """Check property `Trial.compute_trial_hash(ignore_lie=True)`."""
+        exp_config[1][1]['params'].append({'name': '/max_epoch', 'type': 'fidelity', 'value': '1'})
+        t1 = Trial(**exp_config[1][1])
+        # Add a lie
+        exp_config[1][1]['results'].append({'name': 'lie', 'type': 'lie', 'value': 1})
+        t2 = Trial(**exp_config[1][1])
+        assert t1.hash_name != t2.hash_name
+        assert t1.hash_params == t2.hash_params
+        assert (Trial.compute_trial_hash(t1, ignore_lie=True) ==
+                Trial.compute_trial_hash(t2, ignore_lie=True))
+
     def test_full_name_property(self, exp_config):
         """Check property `Trial.full_name`."""
         t = Trial(**exp_config[1][1])
