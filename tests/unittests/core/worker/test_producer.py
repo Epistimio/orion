@@ -7,6 +7,7 @@ import time
 
 import pytest
 
+from orion.core.io.experiment_builder import build
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial
 
@@ -619,3 +620,28 @@ def test_original_seeding(producer, database):
 
     assert prev_suggested != producer.algorithm.algorithm._suggested
     assert prev_index < producer.algorithm.algorithm._index
+
+
+def test_evc(monkeypatch, producer):
+    """Verify that producer is using available trials from EVC"""
+    experiment = producer.experiment
+    new_experiment = build(experiment.name, algorithms='random')
+
+    # Replace parent with hacked exp, otherwise parent ID does not match trials in DB
+    # and fetch_trials() won't return anything.
+    new_experiment._node.parent._item = experiment
+
+    assert len(new_experiment.fetch_trials(with_evc_tree=True)) == len(experiment.fetch_trials())
+
+    producer.experiment = new_experiment
+
+    def update_algo(trials):
+        assert len(trials) == 3
+
+    def update_naive_algo(trials):
+        assert len(trials) == 4
+
+    monkeypatch.setattr(producer, '_update_algorithm', update_algo)
+    monkeypatch.setattr(producer, '_update_naive_algorithm', update_naive_algo)
+
+    producer.update()
