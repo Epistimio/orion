@@ -40,10 +40,7 @@ Last line of the main() function
 
         test_error_rate = test(epoch)
 
-    report_results([dict(
-        name='test_error_rate',
-        type='objective',
-        value=test_error_rate)])
+    report_objective(objective, name='test_error_rate')
 
 .. code-block:: bash
 

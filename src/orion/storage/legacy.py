@@ -9,12 +9,14 @@
 
 """
 import datetime
+import json
 import logging
 
 import orion.core
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database, OutdatedDatabaseError
 import orion.core.utils.backward as backward
+from orion.core.utils.exceptions import MissingResultFile
 from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
 
 log = logging.getLogger(__name__)
@@ -173,7 +175,10 @@ class Legacy(BaseStorageProtocol):
         if results_file is None:
             return trial
 
-        results = JSONConverter().parse(results_file.name)
+        try:
+            results = JSONConverter().parse(results_file.name)
+        except json.decoder.JSONDecodeError:
+            raise MissingResultFile()
 
         trial.results = [
             Trial.Result(
