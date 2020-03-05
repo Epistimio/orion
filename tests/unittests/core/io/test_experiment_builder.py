@@ -142,12 +142,11 @@ def test_get_cmd_config(config_file):
     local_config = experiment_builder.get_cmd_config(cmdargs)
 
     assert local_config['algorithms'] == 'random'
-    assert local_config['producer'] == {'strategy': 'NoParallelStrategy'}
+    assert local_config['strategy'] == 'NoParallelStrategy'
     assert local_config['max_trials'] == 100
     assert local_config['name'] == 'voila_voici'
     assert local_config['pool_size'] == 1
     assert local_config['storage'] == {
-        'type': 'legacy',
         'database': {
             'host': 'mongodb://user:pass@localhost',
             'name': 'orion_test',

@@ -44,6 +44,7 @@ import orion
 import orion.core
 from orion.core import config
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
+from orion.core.utils.flatten import unflatten
 
 
 def is_exe(path):
@@ -80,16 +81,152 @@ ENV_VARS = dict(
     )
 
 
+def _convert_dashes(config, ref):
+    """Convert dash in keys to underscores based on a reference dict.
+
+    The reference is used to avoid converting keys in dictionary that are values
+    of options.
+    """
+    for key in config.keys():
+        converted_key = key.replace('-', '_')
+        if converted_key in ref:
+            config[converted_key] = config.pop(key)
+
+            if all(isinstance(item[converted_key], dict) for item in [config, ref]):
+                _convert_dashes(config[converted_key], ref[converted_key])
+
+
+def fetch_config_from_cmdargs(cmdargs):
+    """Turn flat cmdargs into nested dicts like orion.core.config."""
+    cmdargs_config = {}
+
+    if cmdargs.get('max_trials') is not None:
+        log.warning(
+            '--max-trials is deprecated and will be removed in v0.3. '
+            'Use --exp-max-trials instead')
+        cmdargs_config['experiment.max_trials'] = cmdargs.pop('max_trials')
+
+    if cmdargs.get('worker_trials') is not None:
+        log.warning(
+            '--worker-trials is deprecated and will be removed in v0.3. '
+            'Use --worker-max-trials instead')
+        cmdargs_config['worker.max_trials'] = cmdargs.pop('worker_trials')
+
+    mappings = dict(
+        experiment=dict(
+            exp_max_broken='max_broken',
+            exp_max_trials='max_trials'),
+        worker=dict(
+            worker_max_broken='max_broken',
+            worker_max_trials='max_trials'))
+
+    mappings = dict(
+        experiment=dict(
+            max_broken='exp_max_broken',
+            max_trials='exp_max_trials'),
+        worker=dict(
+            max_broken='worker_max_broken',
+            max_trials='worker_max_trials'))
+
+    global_config = config.to_dict()
+
+    for key in ['config', 'user', 'user_args']:
+        if cmdargs.get(key) not in [False, None]:
+            cmdargs_config[key] = cmdargs[key]
+
+    for key in ['name', 'version']:
+        if cmdargs.get(key) not in [False, None]:
+            cmdargs_config[f'experiment.{key}'] = cmdargs[key]
+
+    for key in ['branch_from', 'branch_to']:
+        if cmdargs.get(key) not in [False, None]:
+            cmdargs_config[f'evc.{key}'] = cmdargs[key]
+
+    for key in ['experiment', 'worker', 'evc']:
+        for subkey in global_config[key].keys():
+
+            # Adapt to cli arguments
+            cli_key = mappings.get(key, {}).get(subkey, subkey)
+
+            value = cmdargs.pop(cli_key, None)
+            if value is not None:
+                cmdargs_config[f'{key}.{subkey}'] = value
+
+    return unflatten(cmdargs_config)
+
+
 def fetch_config(args):
     """Return the config inside the .yaml file if present."""
     orion_file = args.get('config')
-    config = dict()
+    local_config = {}
     if orion_file:
         log.debug("Found orion configuration file at: %s", os.path.abspath(orion_file.name))
         orion_file.seek(0)
-        config = yaml.safe_load(orion_file)
+        tmp_config = yaml.safe_load(orion_file)
 
-    return config
+        global_config = config.to_dict()
+
+        _convert_dashes(tmp_config, global_config)
+
+        # Fix deprecations first because some names are shared by experiment and worker
+        max_trials = tmp_config.pop('max_trials', None)
+        if max_trials is not None:
+            log.warning(
+                '(DEPRECATED) Option `max_trials` is deprecated'
+                'and will be removed in v0.3. Use instead the option'
+                '\nexperiment:\n  max_trials: %s', max_trials)
+            local_config['experiment.max_trials'] = max_trials
+
+        worker_trials = tmp_config.get('experiment', {}).pop('worker_trials', None)
+        if worker_trials is not None:
+            log.warning(
+                '(DEPRECATED) Option `experiment.worker_trials` is deprecated'
+                'and will be removed in v0.3. Use instead the option'
+                '\nworker:\n  max_trials: %s', worker_trials)
+            local_config['worker.max_trials'] = worker_trials
+
+        worker_trials = tmp_config.pop('worker_trials', None)
+        if worker_trials is not None:
+            log.warning(
+                '(DEPRECATED) Option `worker_trials` is deprecated'
+                'and will be removed in v0.3. Use instead the option'
+                '\nworker:\n  max_trials: %s', worker_trials)
+            local_config['worker.max_trials'] = worker_trials
+
+        producer = tmp_config.pop('producer', None)
+        if producer is not None:
+            log.warning(
+                '(DEPRECATED) Option `producer` is deprecated'
+                'and will be removed in v0.3. Use instead the option'
+                '\nexperiment:\n  strategy: %s', producer['strategy'])
+            local_config['experiment.strategy'] = producer['strategy']
+
+        local_config = unflatten(local_config)
+
+        # For backward compatibility
+        for key in ['storage', 'experiment', 'worker', 'evc']:
+            subkeys = list(global_config[key].keys())
+
+            # Arguments that are only supported locally
+            if key == 'experiment':
+                subkeys += ['name', 'version', 'user']
+            elif key == 'evc':
+                subkeys += ['branch_from', 'branch_to']
+
+            for subkey in subkeys:
+                # Backward compatibility
+                backward_value = tmp_config.pop(subkey, None)
+                if backward_value is not None:
+                    log.warning(
+                        '(DEPRECATED) Option `%s` and will be removed in v0.3. '
+                        'Use instead the option' '\n%s:\n  %s: %s',
+                        subkey, key, subkey, repr(backward_value))
+                value = tmp_config.get(key, {}).pop(subkey, backward_value)
+                if value is not None:
+                    local_config.setdefault(key, {})
+                    local_config[key][subkey] = value
+
+    return local_config
 
 
 def fetch_default_options():
