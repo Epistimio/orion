@@ -20,6 +20,21 @@ from orion.storage.base import Storage
 from orion.storage.legacy import Legacy
 
 
+@pytest.fixture(scope="session", autouse=True)
+def shield_from_user_config(request):
+    """Do not read user's yaml global config."""
+    _pop_out_yaml_from_config(orion.core.config)
+
+
+def _pop_out_yaml_from_config(config):
+    """Remove any configuration fetch from yaml file"""
+    for key in config._config.keys():
+        config._config[key].pop('yaml', None)
+
+    for key in config._subconfigs.keys():
+        _pop_out_yaml_from_config(config._subconfigs[key])
+
+
 class DumbAlgo(BaseAlgorithm):
     """Stab class for `BaseAlgorithm`."""
 
