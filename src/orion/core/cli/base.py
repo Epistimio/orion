@@ -88,11 +88,13 @@ class OrionArgsParser:
         return 0
 
 
-def get_basic_args_group(parser):
+def get_basic_args_group(
+        parser,
+        group_name="Oríon arguments",
+        group_help="These arguments determine orion's behaviour"):
     """Return the basic arguments for any command."""
     basic_args_group = parser.add_argument_group(
-        "Oríon arguments (optional)",
-        description="These arguments determine orion's behaviour")
+        group_name, description=group_help)
 
     basic_args_group.add_argument(
         '-n', '--name',
