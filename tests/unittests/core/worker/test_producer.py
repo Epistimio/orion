@@ -7,6 +7,8 @@ import time
 
 import pytest
 
+from orion.core.io.experiment_builder import build
+from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial
 
@@ -619,3 +621,57 @@ def test_original_seeding(producer, database):
 
     assert prev_suggested != producer.algorithm.algorithm._suggested
     assert prev_index < producer.algorithm.algorithm._index
+
+
+def test_evc(monkeypatch, producer):
+    """Verify that producer is using available trials from EVC"""
+    experiment = producer.experiment
+    new_experiment = build(experiment.name, algorithms='random')
+
+    # Replace parent with hacked exp, otherwise parent ID does not match trials in DB
+    # and fetch_trials() won't return anything.
+    new_experiment._node.parent._item = experiment
+
+    assert len(new_experiment.fetch_trials(with_evc_tree=True)) == len(experiment.fetch_trials())
+
+    producer.experiment = new_experiment
+
+    def update_algo(trials):
+        assert len(trials) == 3
+
+    def update_naive_algo(trials):
+        assert len(trials) == 4
+
+    monkeypatch.setattr(producer, '_update_algorithm', update_algo)
+    monkeypatch.setattr(producer, '_update_naive_algorithm', update_naive_algo)
+
+    producer.update()
+
+
+def test_evc_duplicates(monkeypatch, producer):
+    """Verify that producer wont register samples that are available in parent experiment"""
+    experiment = producer.experiment
+    new_experiment = build(experiment.name, algorithms='random')
+
+    # Replace parent with hacked exp, otherwise parent ID does not match trials in DB
+    # and fetch_trials() won't return anything.
+    new_experiment._node.parent._item = experiment
+
+    assert len(new_experiment.fetch_trials(with_evc_tree=True)) == len(experiment.fetch_trials())
+
+    def suggest(pool_size):
+        return [trial_to_tuple(experiment.fetch_trials()[-1], experiment.space)]
+
+    producer.experiment = new_experiment
+    producer.algorithm = new_experiment.algorithms
+    producer.max_idle_time = 1
+
+    monkeypatch.setattr(new_experiment.algorithms, 'suggest', suggest)
+
+    producer.update()
+    with pytest.raises(RuntimeError) as exc:
+        producer.produce()
+
+    assert exc.match('Algorithm could not sample new points in less')
+
+    assert len(new_experiment.fetch_trials(with_evc_tree=False)) == 0
