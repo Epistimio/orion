@@ -24,7 +24,7 @@ __all__ = ['interrupt_trial', 'report_bad_trial', 'report_objective', 'report_re
 def create_experiment(
         name, version=None, space=None, algorithms=None,
         strategy=None, max_trials=None, storage=None, branching=None,
-        working_dir=None):
+        max_idle_time=None, heartbeat=None, working_dir=None):
     """Create an experiment
 
     There is 2 main scenarios
@@ -95,6 +95,18 @@ def create_experiment(
     working_dir: str, optional
         Working directory created for the experiment inside which a unique folder will be created
         for each trial. Defaults to a temporary directory that is deleted at end of execution.
+    max_idle_time: int, optional
+        Maximum time the producer can spend trying to generate a new suggestion.
+        Such timeout are generally caused by slow database, large number of
+        concurrent workers leading to many race conditions or small search spaces
+        with integer/categorical dimensions that may be fully explored.
+        Defaults to `orion.core.config.worker.max_idle_time`.
+    heartbeat: int, optional
+        Frequency (seconds) at which the heartbeat of the trial is updated.
+        If the heartbeat of a `reserved` trial is larger than twice the configured
+        heartbeat, Oríon will reset the status of the trial to `interrupted`.
+        This allows restoring lost trials (ex: due to killed worker).
+        Defaults to `orion.core.config.worker.max_idle_time`.
     branching: dict, optional
         Arguments to control the branching.
 
@@ -166,9 +178,9 @@ def create_experiment(
                 "creation. Make sure your script is not generating files within your code "
                 "repository.") from e
 
-    producer = Producer(experiment)
+    producer = Producer(experiment, max_idle_time)
 
-    return ExperimentClient(experiment, producer)
+    return ExperimentClient(experiment, producer, heartbeat)
 
 
 def workon(function, space, name='loop', algorithms=None, max_trials=None):
