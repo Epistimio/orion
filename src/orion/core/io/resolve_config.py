@@ -130,11 +130,11 @@ def fetch_config_from_cmdargs(cmdargs):
 
     global_config = config.to_dict()
 
-    for key in ['config', 'user', 'user_args']:
+    for key in ['config', 'user_args']:
         if cmdargs.get(key) not in [False, None]:
             cmdargs_config[key] = cmdargs[key]
 
-    for key in ['name', 'version']:
+    for key in ['name', 'user', 'version']:
         if cmdargs.get(key) not in [False, None]:
             cmdargs_config[f'experiment.{key}'] = cmdargs[key]
 
