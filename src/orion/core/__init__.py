@@ -87,13 +87,18 @@ def define_database_config(config):
         default_host = 'localhost'
 
     database_config.add_option(
-        'name', option_type=str, default='orion', env_var='ORION_DB_NAME')
+        'name', option_type=str, default='orion', env_var='ORION_DB_NAME',
+        help='Name of the database.')
     database_config.add_option(
-        'type', option_type=str, default='MongoDB', env_var='ORION_DB_TYPE')
+        'type', option_type=str, default='MongoDB', env_var='ORION_DB_TYPE',
+        help=('Type of database. Builtin backends are ``mongodb``, '
+              '``pickleddb`` and ``ephemeraldb``.'))
     database_config.add_option(
-        'host', option_type=str, default=default_host, env_var='ORION_DB_ADDRESS')
+        'host', option_type=str, default=default_host, env_var='ORION_DB_ADDRESS',
+        help='URI for ``mongodb``, or file path for ``pickleddb``.')
     database_config.add_option(
-        'port', option_type=int, default=27017, env_var='ORION_DB_PORT')
+        'port', option_type=int, default=27017, env_var='ORION_DB_PORT',
+        help='Port address for ``mongodb``.')
 
     config.database = database_config
 
@@ -112,7 +117,7 @@ def define_experiment_config(config):
         'worker_trials', option_type=int, default=int(10e8),
         deprecate=dict(version='v0.3', alternative='worker.max_trials',
                        name='experiment.worker_trials'),
-        help="This argument will be removed in v0.3. Use --exp-max-trials instead.")
+        help="This argument will be removed in v0.3. Use --worker-max-trials instead.")
 
     experiment_config.add_option(
         'max_broken', option_type=int, default=3, env_var='ORION_EXP_MAX_BROKEN',
@@ -128,10 +133,12 @@ def define_experiment_config(config):
         help="This argument will be removed in v0.3.")
 
     experiment_config.add_option(
-        'algorithms', option_type=dict, default={'random': {'seed': None}})
+        'algorithms', option_type=dict, default={'random': {'seed': None}},
+        help='Algorithm configuration for the experiment.')
 
     experiment_config.add_option(
-        'strategy', option_type=dict, default={'MaxParallelStrategy': {}})
+        'strategy', option_type=dict, default={'MaxParallelStrategy': {}},
+        help='Parallel strategy to use with the algorithm.')
 
     config.experiment = experiment_config
 
@@ -155,7 +162,7 @@ def define_worker_config(config):
 
     worker_config.add_option(
         'max_broken', option_type=int, default=3, env_var='ORION_WORKER_MAX_BROKEN',
-        help=('Maximum number of broken trials before experiment stops.'))
+        help=('Maximum number of broken trials before worker stops.'))
 
     worker_config.add_option(
         'max_idle_time', option_type=int, default=60, env_var='ORION_MAX_IDLE_TIME',
@@ -195,39 +202,74 @@ def define_evc_config(config):
     evc_config.add_option(
         'manual_resolution', option_type=bool, default=False,
         env_var='ORION_EVC_MANUAL_RESOLUTION',
-        help="Enter evc conflict resolver for manual resolution on branching events.")
+        help=("If ``True``, enter experiment version control conflict resolver for "
+              "manual resolution on branching events. Otherwise, auto-resolution is "
+              "attempted."))
 
     evc_config.add_option(
         'non_monitored_arguments', option_type=list, default=[],
         env_var='ORION_EVC_NON_MONITORED_ARGUMENTS',
-        help=("Ignore these arguments when looking for differences. "
+        help=("Ignore these commandline arguments when looking for differences in "
+              "user's commandline call. "
               "Environment variable and commandline only supports one argument. "
               "Use global config or local config to pass a list of arguments to ignore."))
 
     evc_config.add_option(
         'ignore_code_changes', option_type=bool, default=False,
         env_var='ORION_EVC_IGNORE_CODE_CHANGES',
-        help=("Ignore code changes when looking for differences"))
+        help=("If ``True``, ignore code changes when looking for differences."))
 
     evc_config.add_option(
         'algorithm_change', option_type=bool, default=False,
         env_var='ORION_EVC_ALGO_CHANGE',
-        help="Set algorithm change as resolved if a branching event occur")
+        help=("Set algorithm change as resolved if a branching event occur. "
+              "Child and parent experiment have access to all trials from each other "
+              "when the only difference between them is the algorithm configuration."))
 
     evc_config.add_option(
         'code_change_type', option_type=str, default='break',
         env_var='ORION_EVC_CODE_CHANGE',
-        help="Set default code change type")
+        help=("One of ``break``, ``unsure`` or ``noeffet``. "
+              "Defines how trials should be filtered in Experiment Version Control tree "
+              "if there is a change in the user's code repository. "
+              "If the effect of the change is ``unsure``, "
+              "the child experiment will access the trials of the parent but not "
+              "the other way around. "
+              "This is to ensure parent experiment does not get corrupted with possibly "
+              "incompatible results. "
+              "The child cannot access the trials from parent if ``code_change_type`` "
+              "is ``break``. The parent cannot access trials from child if "
+              "``code_change_type`` is ``unsure`` or ``break``."))
 
     evc_config.add_option(
         'cli_change_type', option_type=str, default='break',
         env_var='ORION_EVC_CMDLINE_CHANGE',
-        help="Set default command line change type")
+        help=("One of ``break``, ``unsure`` or ``noeffet``. "
+              "Defines how trials should be filtered in Experiment Version Control tree "
+              "if there is a change in the user's commandline call. "
+              "If the effect of the change is ``unsure``, "
+              "the child experiment will access the trials of the parent but not "
+              "the other way around. "
+              "This is to ensure parent experiment does not get corrupted with possibly "
+              "incompatible results. "
+              "The child cannot access the trials from parent if ``cli_change_type`` "
+              "is ``break``. The parent cannot access trials from child if "
+              "``cli_change_type`` is ``unsure`` or ``break``."))
 
     evc_config.add_option(
         'config_change_type', option_type=str, default='break',
         env_var='ORION_EVC_CONFIG_CHANGE',
-        help="Set default user script config change type")
+        help=("One of ``break``, ``unsure`` or ``noeffet``. "
+              "Defines how trials should be filtered in Experiment Version Control tree "
+              "if there is a change in the user's script. "
+              "If the effect of the change is ``unsure``, "
+              "the child experiment will access the trials of the parent but not "
+              "the other way around. "
+              "This is to ensure parent experiment does not get corrupted with possibly "
+              "incompatible results. "
+              "The child cannot access the trials from parent if ``config_change_type`` "
+              "is ``break``. The parent cannot access trials from child if "
+              "``config_change_type`` is ``unsure`` or ``break``."))
 
     config.evc = evc_config
 
