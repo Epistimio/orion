@@ -31,6 +31,7 @@ precedence is respected when building the settings dictionary:
 .. note:: `Optimization` entries are required, `Dynamic` entry is optional.
 
 """
+import copy
 import getpass
 import hashlib
 import logging
@@ -87,17 +88,26 @@ def _convert_dashes(config, ref):
     The reference is used to avoid converting keys in dictionary that are values
     of options.
     """
-    for key in config.keys():
+    config = copy.deepcopy(config)
+    for key in list(config.keys()):
         converted_key = key.replace('-', '_')
         if converted_key in ref:
             config[converted_key] = config.pop(key)
 
             if all(isinstance(item[converted_key], dict) for item in [config, ref]):
-                _convert_dashes(config[converted_key], ref[converted_key])
+                config[converted_key] = _convert_dashes(config[converted_key], ref[converted_key])
+
+    return config
 
 
 def fetch_config_from_cmdargs(cmdargs):
     """Turn flat cmdargs into nested dicts like orion.core.config."""
+    config_file = cmdargs.pop('config', None)
+    tmp_cmdargs = copy.deepcopy(cmdargs)
+    tmp_cmdargs['config'] = config_file
+    cmdargs['config'] = config_file
+    cmdargs = tmp_cmdargs
+
     cmdargs_config = {}
 
     if cmdargs.get('max_trials') is not None:
@@ -166,7 +176,7 @@ def fetch_config(args):
 
         global_config = config.to_dict()
 
-        _convert_dashes(tmp_config, global_config)
+        tmp_config = _convert_dashes(tmp_config, global_config)
 
         # Fix deprecations first because some names are shared by experiment and worker
         max_trials = tmp_config.pop('max_trials', None)

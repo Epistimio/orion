@@ -1,5 +1,5 @@
 .. _configuration:
-    
+
 **********************
 Advanced Configuration
 **********************
@@ -15,7 +15,7 @@ lower ones. The levels are the following:
 5. Local configuration
 6. Commandline arguments
 
-Where larger numbers have precedence over 
+Where larger numbers have precedence over
 the lower ones. We describe here further each
 type of configuration.
 
@@ -40,13 +40,13 @@ This list is an example and will likely be differ on your end.
 
 **3. Environment Variables**
 
-Most options are configurable through environment variables as well. 
-These are provided in the documented below at the **Env var** fields, 
+Most options are configurable through environment variables as well.
+These are provided in the documented below at the **Env var** fields,
 whenever configurable otherwise the field is left empty.
 
 **4. Experiment Configuration from Database**
 
-\*Experiment configuration from database is not configurable by the user per say, 
+\*Experiment configuration from database is not configurable by the user per say,
 but it is represented here because whenever something differs between the experiment's
 configuration and the levels below, the experiment's configuration will have precedence.
 For instance if ``experiment.max_trials`` is set to 10 in global configuration
@@ -287,7 +287,7 @@ worker_trials
 
 :Type: int
 :Default: 1000000000
-:Env var: 
+:Env var:
 :Description:
     (DEPRECATED) This argument will be removed in v0.3.
     See :ref:`worker: max_trials <config_worker_max_trials>` instead.
@@ -313,7 +313,7 @@ working_dir
 ~~~~~~~~~~~
 
 :Type: str
-:Default: 
+:Default:
 :Env var: ORION_WORKING_DIR
 :Description:
     Set working directory for running experiment.
@@ -331,7 +331,7 @@ pool_size
 
 :Type: int
 :Default: 1
-:Env var: 
+:Env var:
 :Description:
     (DEPRECATED) This argument will be removed in v0.3.
 
@@ -343,7 +343,7 @@ algorithms
 
 :Type: dict
 :Default: random
-:Env var: 
+:Env var:
 :Description:
     Algorithm configuration for the experiment.
 
@@ -356,7 +356,7 @@ strategy
 
 :Type: dict
 :Default: MaxParallelStrategy
-:Env var: 
+:Env var:
 :Description:
     Parallel strategy to use with the algorithm.
 
@@ -500,10 +500,11 @@ auto_resolution
 
 :Type: bool
 :Default: True
-:Env var: 
+:Env var:
 :Description:
     (DEPRECATED) This argument will be removed in v0.3. Conflicts are now resolved automatically by
-    default. See :ref:`evc: manual_resolution <config_evc_manual_resolution>` to avoid auto-resolution.
+    default. See :ref:`evc: manual_resolution <config_evc_manual_resolution>` to avoid
+    auto-resolution.
 
 
 .. _config_evc_manual_resolution:
