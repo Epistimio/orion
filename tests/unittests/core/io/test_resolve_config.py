@@ -161,12 +161,12 @@ def test_fetch_config_from_cmdargs():
 
     config = resolve_config.fetch_config_from_cmdargs(cmdargs)
 
-    assert config.pop('config') is None
-    assert config.pop('user') == 'me'
+    assert config.pop('config', None) is None
 
     exp_config = config.pop('experiment')
     assert exp_config.pop('name') == 'test'
     assert exp_config.pop('version') == 1
+    assert exp_config.pop('user') == 'me'
     assert exp_config.pop('max_trials') == 'exp_max_trials'
     assert exp_config.pop('max_broken') == 'exp_max_broken'
     assert exp_config.pop('working_dir') == 'working_dir'
@@ -217,7 +217,7 @@ def test_fetch_config_from_cmdargs_no_empty(argument):
 
     config = resolve_config.fetch_config_from_cmdargs({argument: 1})
 
-    if argument in ['name', 'version']:
+    if argument in ['name', 'user', 'version']:
         assert config == {'experiment': {argument: 1}}
     elif argument in ['branch_from', 'branch_to']:
         assert config == {'evc': {argument: 1}}

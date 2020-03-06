@@ -584,14 +584,14 @@ def get_cmd_config(cmdargs):
     cmd_config = resolve_config.fetch_config(cmdargs)
     cmd_config = resolve_config.merge_configs(cmd_config, cmdargs)
 
+    cmd_config.update(cmd_config.pop('experiment', {}))
+    cmd_config['branching'] = cmd_config.pop('evc', {})
+
     metadata = resolve_config.fetch_metadata(cmd_config.get('user'), cmd_config.get('user_args'))
     cmd_config['metadata'] = metadata
     cmd_config.pop('config', None)
 
     backward.populate_space(cmd_config)
     backward.update_db_config(cmd_config)
-
-    cmd_config.update(cmd_config.pop('experiment'))
-    cmd_config['branching'] = cmd_config.pop('evc', {})
 
     return cmd_config
