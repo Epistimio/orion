@@ -9,6 +9,9 @@
 *.pkl
 *.lock
 
+# OS generated files
+.DS_Store
+
 # StarUML documentation
 *.mdj
 

@@ -42,8 +42,7 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert os.path.isabs(exp['metadata']['user_script'])
-    assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
+    assert exp['metadata']['user_args'] == ["./black_box.py", '-x~uniform(-50, 50)']
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -53,7 +52,8 @@ def test_demo(database, monkeypatch):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     user_args = [
-        "-x~uniform(-50, 50)",
+        "./black_box.py",
+        "-x~uniform(-50, 50, precision=None)",
         "--test-env",
         "--experiment-id", '{exp.id}',
         "--experiment-name", '{exp.name}',
@@ -62,7 +62,7 @@ def test_demo(database, monkeypatch):
         "--working-dir", '{trial.working_dir}']
 
     orion.core.cli.main([
-        "hunt", "--config", "./orion_config.yaml", "./black_box.py"] + user_args)
+        "hunt", "--config", "./orion_config.yaml"] + user_args)
 
     exp = list(database.experiments.find({'name': 'voila_voici'}))
     assert len(exp) == 1
@@ -78,7 +78,6 @@ def test_demo(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert os.path.isabs(exp['metadata']['user_script'])
     assert exp['metadata']['user_args'] == user_args
     trials = list(database.trials.find({'experiment': exp_id}))
     assert len(trials) <= 15
@@ -122,8 +121,53 @@ def test_demo_with_script_config(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert os.path.isabs(exp['metadata']['user_script'])
-    assert exp['metadata']['user_args'] == ['--config', 'script_config.yaml']
+    assert exp['metadata']['user_args'] == ['./black_box_w_config.py', '--config',
+                                            'script_config.yaml']
+
+    trials = list(database.trials.find({'experiment': exp_id}))
+    assert len(trials) <= 15
+    assert trials[-1]['status'] == 'completed'
+    trials = list(sorted(trials, key=lambda trial: trial['submit_time']))
+    for result in trials[-1]['results']:
+        assert result['type'] != 'constraint'
+        if result['type'] == 'objective':
+            assert abs(result['value'] - 23.4) < 1e-6
+            assert result['name'] == 'example_objective'
+        elif result['type'] == 'gradient':
+            res = numpy.asarray(result['value'])
+            assert 0.1 * numpy.sqrt(res.dot(res)) < 1e-7
+            assert result['name'] == 'example_gradient'
+    params = trials[-1]['params']
+    assert len(params) == 1
+    assert params[0]['name'] == '/x'
+    assert params[0]['type'] == 'real'
+    assert (params[0]['value'] - 34.56789) < 1e-5
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_demo_with_python_and_script(database, monkeypatch):
+    """Test a simple usage scenario."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    orion.core.cli.main(["hunt", "--config", "./orion_config.yaml",
+                         "python", "black_box_w_config.py", "--config", "script_config.yaml"])
+
+    exp = list(database.experiments.find({'name': 'voila_voici'}))
+    assert len(exp) == 1
+    exp = exp[0]
+    assert '_id' in exp
+    exp_id = exp['_id']
+    assert exp['name'] == 'voila_voici'
+    assert exp['pool_size'] == 1
+    assert exp['max_trials'] == 100
+    assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
+                                                      'dx_tolerance': 1e-7}}
+    assert 'user' in exp['metadata']
+    assert 'datetime' in exp['metadata']
+    assert 'orion_version' in exp['metadata']
+    assert 'user_script' in exp['metadata']
+    assert exp['metadata']['user_args'] == ['python', 'black_box_w_config.py',
+                                            '--config', 'script_config.yaml']
 
     trials = list(database.trials.find({'experiment': exp_id}))
     assert len(trials) <= 15
@@ -174,8 +218,7 @@ def test_demo_two_workers(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert os.path.isabs(exp['metadata']['user_script'])
-    assert exp['metadata']['user_args'] == ['-x~norm(34, 3)']
+    assert exp['metadata']['user_args'] == ['./black_box.py', '-x~norm(34, 3)']
 
     trials = list(database.trials.find({'experiment': exp_id}))
     status = defaultdict(int)
@@ -202,7 +245,7 @@ def test_workon():
     config['max_trials'] = 100
     config['user_args'] = [
         os.path.abspath(os.path.join(os.path.dirname(__file__), "black_box.py")),
-        "-x~uniform(-50, 50)"]
+        "-x~uniform(-50, 50, precision=None)"]
 
     with OrionState():
         experiment = experiment_builder.build_from_args(config)
@@ -223,8 +266,7 @@ def test_workon():
         assert 'user' in exp['metadata']
         assert 'datetime' in exp['metadata']
         assert 'user_script' in exp['metadata']
-        assert os.path.isabs(exp['metadata']['user_script'])
-        assert exp['metadata']['user_args'] == ['-x~uniform(-50, 50)']
+        assert exp['metadata']['user_args'] == config['user_args']
 
         trials = list(storage.fetch_trials(experiment))
         assert len(trials) <= 15
@@ -254,7 +296,7 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     """
     # XXX: return and complete test when there is a way to control random
     # seed of Oríon
-    how_many = 50
+    how_many = 2
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["hunt", "--max-trials={}".format(how_many),
                          "--pool-size=1",
@@ -515,8 +557,8 @@ def test_demo_with_nondefault_config_keyword(database, monkeypatch):
     assert 'datetime' in exp['metadata']
     assert 'orion_version' in exp['metadata']
     assert 'user_script' in exp['metadata']
-    assert os.path.isabs(exp['metadata']['user_script'])
-    assert exp['metadata']['user_args'] == ['--configuration', 'script_config.yaml']
+    assert exp['metadata']['user_args'] == ['./black_box_w_config_other.py', '--configuration',
+                                            'script_config.yaml']
 
     trials = list(database.trials.find({'experiment': exp_id}))
     assert len(trials) <= 15
@@ -538,3 +580,27 @@ def test_demo_with_nondefault_config_keyword(database, monkeypatch):
     assert (params[0]['value'] - 34.56789) < 1e-5
 
     orion.core.config.user_script_config = 'config'
+
+
+@pytest.mark.usefixtures("clean_db")
+@pytest.mark.usefixtures("null_db_instances")
+def test_demo_precision(database, monkeypatch):
+    """Test a simple usage scenario."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+    user_args = [
+        "-x~uniform(-50, 50, precision=5)"]
+
+    orion.core.cli.main([
+        "hunt", "--config", "./orion_config.yaml", "--max-trials", "2",
+                            "./black_box.py"] + user_args)
+
+    exp = list(database.experiments.find({'name': 'voila_voici'}))
+    exp = exp[0]
+    exp_id = exp['_id']
+    trials = list(database.trials.find({'experiment': exp_id}))
+    trials = list(sorted(trials, key=lambda trial: trial['submit_time']))
+    params = trials[-1]['params']
+    value = params[0]['value']
+
+    assert value == float(numpy.format_float_scientific(value, precision=4))

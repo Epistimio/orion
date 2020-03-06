@@ -683,6 +683,26 @@ class TestSpace(object):
 
         assert space.interval() == [categories, (-3, 3), (-np.inf, np.inf)]
 
+    def test_capacity(self):
+        """Check whether space capacity is correct"""
+        space = Space()
+        probs = (0.1, 0.2, 0.3, 0.4)
+        categories = ('asdfa', 2, 3, 4)
+        dim = Categorical('yolo', OrderedDict(zip(categories, probs)), shape=2)
+        space.register(dim)
+        dim = Integer('yolo2', 'uniform', -3, 6)
+        space.register(dim)
+
+        assert (4 * 2) * 6 == space.cardinality
+
+        dim = Integer('yolo3', 'uniform', -3, 2, shape=(3, 1))
+        space.register(dim)
+        assert (4 * 2) * 6 * (2 * 3 * 1) == space.cardinality
+
+        dim = Real('yolo4', 'norm', 0.9)
+        space.register(dim)
+        assert np.inf == space.cardinality
+
     def test_bad_setitem(self):
         """Check exceptions in setting items in Space."""
         space = Space()
@@ -774,3 +794,20 @@ class TestSpace(object):
             'yolo2': 'uniform(-3, 3, shape=(2,), discrete=True)',
             'yolo3': 'norm(0.9)',
             'yolo4': 'choices([\'asdfa\', 2])'}
+
+    def test_precision(self):
+        """Test that precision is correctly handled."""
+        space = Space()
+        space.register(Real('yolo1', 'norm', 0.9, precision=6))
+        space.register(Real('yolo2', 'norm', 0.9, precision=None))
+        space.register(Real('yolo5', 'norm', 0.9))
+
+        assert space['yolo1'].precision == 6
+        assert space['yolo2'].precision is None
+        assert space['yolo5'].precision == 4
+
+        with pytest.raises(TypeError):
+            space.register(Real('yolo3', 'norm', 0.9, precision=-12))
+
+        with pytest.raises(TypeError):
+            space.register(Real('yolo4', 'norm', 0.9, precision=0.6))

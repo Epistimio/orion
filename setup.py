@@ -80,7 +80,7 @@ setup_args['classifiers'] = [
     'Topic :: Scientific/Engineering',
     'Topic :: Scientific/Engineering :: Artificial Intelligence',
 ] + [('Programming Language :: Python :: %s' % x)
-     for x in '3 3.5 3.6 3.7'.split()]
+     for x in '3 3.6 3.7 3.8'.split()]
 
 if __name__ == '__main__':
     setup(**setup_args)

@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.client` -- Helper function for returning results from script
-==========================================================================
+:mod:`orion.client` -- Python API
+=================================
 
 .. module:: client
    :platform: Unix
    :synopsis: Provides functions for communicating with `orion.core`.
 
 """
-import os
-
+from orion.client.cli import (
+    interrupt_trial, report_bad_trial, report_objective, report_results)
 from orion.client.experiment import ExperimentClient
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.exceptions import RaceCondition
@@ -17,48 +17,14 @@ from orion.core.utils.tests import update_singletons
 from orion.core.worker.producer import Producer
 
 
-IS_ORION_ON = False
-_HAS_REPORTED_RESULTS = False
-RESULTS_FILENAME = os.getenv('ORION_RESULTS_PATH', None)
-if RESULTS_FILENAME and os.path.isfile(RESULTS_FILENAME):
-    import json
-    IS_ORION_ON = True
-
-if RESULTS_FILENAME and not IS_ORION_ON:
-    raise RuntimeWarning("Results file path provided in environmental variable "
-                         "does not correspond to an existing file.")
-
-
-def report_results(data):
-    """Facilitate the reporting of results for a user's script acting as a
-    black-box computation.
-
-    :param data: A dictionary containing experimental results
-
-    .. note:: To be called only once in order to report a final evaluation
-       of a particular trial.
-
-    .. note:: In case that user's script is not running in a orion's context,
-       this function will act as a Python `print` function.
-
-    .. note:: For your own good, this can be called **only once**.
-
-    """
-    global _HAS_REPORTED_RESULTS  # pylint:disable=global-statement
-    if _HAS_REPORTED_RESULTS:
-        raise RuntimeWarning("Has already reported evaluation results once.")
-    if IS_ORION_ON:
-        with open(RESULTS_FILENAME, 'w') as results_file:
-            json.dump(data, results_file)
-    else:
-        print(data)
-    _HAS_REPORTED_RESULTS = True
+__all__ = ['interrupt_trial', 'report_bad_trial', 'report_objective', 'report_results']
 
 
 # pylint: disable=too-many-arguments
-def create_experiment(name, version=None, space=None, algorithms=None,
-                      strategy=None, max_trials=None, storage=None, branching=None,
-                      working_dir=None):
+def create_experiment(
+        name, version=None, space=None, algorithms=None,
+        strategy=None, max_trials=None, storage=None, branching=None,
+        working_dir=None):
     """Create an experiment
 
     There is 2 main scenarios
@@ -167,7 +133,7 @@ def create_experiment(name, version=None, space=None, algorithms=None,
         means that different modifications occured during each race condition resolution. This is
         likely due to quick code change during experiment creation. Make sure your script is not
         generating files within your code repository.
-    `ValueError`
+    `orion.core.utils.exceptions.BranchingEvent`
         The configuration is different than the corresponding one in DB and the branching cannot be
         solved automatically. This usually happens if the version=x is specified but the experiment
         ``(name, x)`` already has a child ``(name, x+1)``. If you really need to branch from version

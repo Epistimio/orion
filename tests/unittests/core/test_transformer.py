@@ -10,7 +10,7 @@ import pytest
 from orion.algo.space import (Categorical, Dimension, Integer, Real, Space,)
 from orion.core.worker.transformer import (build_required_space,
                                            Compose, Enumerate, Identity,
-                                           OneHotEncode, Quantize, Reverse,
+                                           OneHotEncode, Precision, Quantize, Reverse,
                                            TransformedDimension, TransformedSpace,)
 
 
@@ -202,6 +202,49 @@ class TestCompose(object):
         """Check representation of a transformed dimension."""
         t = Compose([Enumerate([2, 'asfa', 'ipsi']), OneHotEncode(3)], 'categorical')
         assert t.repr_format('asfa') == 'OneHotEncode(Enumerate(asfa))'
+
+
+class TestPrecision(object):
+    """Test subclasses of `Precision` transformation."""
+
+    def test_deepcopy(self):
+        """Verify that the transformation object can be copied"""
+        t = Precision()
+        t.transform([2])
+        copy.deepcopy(t)
+
+    def test_domain_and_target_type(self):
+        """Check if attribute-like `domain_type` and `target_type` do
+        what's expected.
+        """
+        t = Precision()
+        assert t.domain_type == 'real'
+        assert t.target_type == 'real'
+
+    def test_transform(self):
+        """Check if it transforms properly."""
+        t = Precision(precision=4)
+        assert t.transform(8.654321098) == 8.654
+        assert t.transform(0.000123456789) == 0.0001235
+        assert numpy.all(t.transform([8.654321098, 0.000123456789]) ==
+                         numpy.array([8.654, 0.0001235], dtype=float))
+
+    def test_reverse(self):
+        """Check if it reverses `transform` properly, if possible."""
+        t = Precision()
+        assert t.reverse(9.) == 9.
+        assert t.reverse(5.) == 5.
+        assert numpy.all(t.reverse([9., 5.]) == numpy.array([9., 5.], dtype=float))
+
+    def test_infer_target_shape(self):
+        """Check if it infers the shape of a transformed `Dimension`."""
+        t = Precision()
+        assert t.infer_target_shape((5,)) == (5,)
+
+    def test_repr_format(self):
+        """Check representation of a transformed dimension."""
+        t = Precision()
+        assert t.repr_format('asfa') == 'Precision(4, asfa)'
 
 
 class TestQuantize(object):
@@ -662,14 +705,20 @@ class TestRequiredSpaceBuilder(object):
         assert tspace[0].type == 'real'
         assert tspace[1].type == 'categorical'
         assert tspace[2].type == 'integer'
-        assert str(tspace) == str(space_each_type)
+        assert (str(tspace) ==
+                "Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
+                "       Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None),\n"  # noqa
+                "       Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None)])")  # noqa
 
         tspace = build_required_space([], space_each_type)
         assert len(tspace) == 3
         assert tspace[0].type == 'real'
         assert tspace[1].type == 'categorical'
         assert tspace[2].type == 'integer'
-        assert str(tspace) == str(space_each_type)
+        assert (str(tspace) ==
+                "Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
+                "       Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None),\n"  # noqa
+                "       Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None)])")  # noqa
 
     def test_integer_requirement(self, space_each_type):
         """Check what is built using 'integer' requirement."""
@@ -691,9 +740,29 @@ class TestRequiredSpaceBuilder(object):
         assert tspace[1].type == 'real'
         assert tspace[2].type == 'real'
         assert(str(tspace) ==
-               "Space([Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None),\n"  # noqa
+               "Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
                "       OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None))),\n"  # noqa
                "       ReverseQuantize(Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None))])")  # noqa
+
+    def test_capacity(self, space_each_type):
+        """Check transformer space capacity"""
+        tspace = build_required_space('real', space_each_type)
+        assert tspace.cardinality == numpy.inf
+
+        space = Space()
+        probs = (0.1, 0.2, 0.3, 0.4)
+        categories = ('asdfa', 2, 3, 4)
+        dim = Categorical('yolo', OrderedDict(zip(categories, probs)), shape=2)
+        space.register(dim)
+        dim = Integer('yolo2', 'uniform', -3, 6)
+        space.register(dim)
+        tspace = build_required_space('integer', space)
+        assert tspace.cardinality == (4 * 2) * 6
+
+        dim = Integer('yolo3', 'uniform', -3, 6, shape=(2, 1))
+        space.register(dim)
+        tspace = build_required_space('integer', space)
+        assert tspace.cardinality == (4 * 2) * 6 * 6 * (2 * 1)
 
 
 def test_quantization_does_not_violate_bounds():

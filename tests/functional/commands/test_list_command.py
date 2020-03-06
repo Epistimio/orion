@@ -13,7 +13,7 @@ def test_no_exp(monkeypatch, clean_db, capsys):
 
     captured = capsys.readouterr().out
 
-    assert captured == ""
+    assert captured == "No experiment found\n"
 
 
 def test_single_exp(clean_db, one_experiment, capsys):
@@ -84,7 +84,7 @@ def test_no_exp_name(clean_db, three_experiments, monkeypatch, capsys):
 
     captured = capsys.readouterr().out
 
-    assert captured == ""
+    assert captured == "No experiment found\n"
 
 
 def test_exp_name(clean_db, three_experiments, monkeypatch, capsys):

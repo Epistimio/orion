@@ -13,11 +13,16 @@ Example with pytorch-cifar
     using the option `--debug`, but note that all data gathered during an
     execution will be lost at the end of it.
 
-pip3 install torch torchvision
+Set up
 
-git clone git@github.com:kuangliu/pytorch-cifar.git
+.. code-block:: bash
 
-cd pytorch-cifar
+    pip3 install torch torchvision
+
+    git clone https://github.com/kuangliu/pytorch-cifar.git
+    cd pytorch-cifar
+
+Add python shebang (using ``sed`` here)
 
 .. code-block:: bash
 
@@ -35,10 +40,7 @@ Last line of the main() function
 
         test_error_rate = test(epoch)
 
-    report_results([dict(
-        name='test_error_rate',
-        type='objective',
-        value=test_error_rate)])
+    report_objective(objective, name='test_error_rate')
 
 .. code-block:: bash
 

@@ -11,7 +11,7 @@ from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
-from orion.core.utils.exceptions import NoConfigurationError, RaceCondition
+from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
 from orion.core.utils.tests import OrionState
 from orion.storage.base import get_storage
 
@@ -72,7 +72,7 @@ def new_config(random_dt, script_path):
                   'orion_version': 'XYZ',
                   'user_script': script_path,
                   'user_config': 'abs_path/hereitis.yaml',
-                  'user_args': ['--mini-batch~uniform(32, 256, discrete=True)'],
+                  'user_args': [script_path, '--mini-batch~uniform(32, 256, discrete=True)'],
                   'VCS': {"type": "git",
                           "is_dirty": False,
                           "HEAD_sha": "test",
@@ -249,7 +249,7 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
     assert exp.metadata['datetime'] == random_dt
     assert exp.metadata['user'] == 'dendi'
     assert exp.metadata['user_script'] == cmdargs['user_args'][0]
-    assert exp.metadata['user_args'] == cmdargs['user_args'][1:]
+    assert exp.metadata['user_args'] == cmdargs['user_args']
     assert exp.pool_size == 1
     assert exp.max_trials == 100
     assert exp.algorithms.configuration == {'random': {'seed': None}}
@@ -271,6 +271,7 @@ def test_build_from_args_hit(old_config_file, script_path, new_config):
 
     assert exp._id == new_config['_id']
     assert exp.name == new_config['name']
+    assert exp.version == 1
     assert exp.configuration['refers'] == new_config['refers']
     assert exp.metadata == new_config['metadata']
     assert exp.max_trials == new_config['max_trials']
@@ -680,7 +681,7 @@ class TestBuild(object):
             assert parent.version == 1
             assert child.version == 2
 
-            with pytest.raises(ValueError) as exc_info:
+            with pytest.raises(BranchingEvent) as exc_info:
                 experiment_builder.build(name=name, version=1, space={'x': 'loguniform(1,10)'})
             assert 'Configuration is different and generates a branching' in str(exc_info.value)
 
@@ -802,7 +803,7 @@ class TestBuild(object):
             monkeypatch.setattr(get_storage().__class__, 'fetch_experiments',
                                 insert_race_condition_1)
 
-            with pytest.raises(ValueError) as exc_info:
+            with pytest.raises(BranchingEvent) as exc_info:
                 experiment_builder.build(name=name, version=1, space={'x': 'loguniform(1,10)'})
             assert 'Configuration is different and generates' in str(exc_info.value)
 

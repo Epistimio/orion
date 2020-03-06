@@ -46,6 +46,10 @@ def main(args):
         root_experiments = [exp for exp in experiments
                             if exp['refers'].get('root_id', exp['_id']) == exp['_id']]
 
+    if not root_experiments:
+        print("No experiment found")
+        return
+
     for root_experiment in root_experiments:
         root = experiment_builder.build_view(name=root_experiment['name'],
                                              version=root_experiment.get('version')).node

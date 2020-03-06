@@ -69,8 +69,6 @@ class Consumer(object):
         else:
             self.working_dir = os.path.join(tempfile.gettempdir(), 'orion')
 
-        self.script_path = experiment.metadata['user_script']
-
         self.pacemaker = None
 
     def consume(self, trial):
@@ -155,6 +153,7 @@ class Consumer(object):
 
         env['ORION_WORKING_DIR'] = str(trial.working_dir)
         env['ORION_RESULTS_PATH'] = str(results_file)
+        env['ORION_INTERRUPT_CODE'] = str(orion.core.config.worker.interrupt_signal_code)
 
         return env
 
@@ -186,14 +185,18 @@ class Consumer(object):
 
         return results_file
 
+    # pylint: disable = no-self-use
     def execute_process(self, cmd_args, environ):
         """Facilitate launching a black-box trial."""
-        command = [self.script_path] + cmd_args
+        command = cmd_args
 
         signal.signal(signal.SIGTERM, _handler)
         process = subprocess.Popen(command, env=environ)
 
         return_code = process.wait()
-        if return_code != 0:
+
+        if return_code == orion.core.config.worker.interrupt_signal_code:
+            raise KeyboardInterrupt()
+        elif return_code != 0:
             raise ExecutionError("Something went wrong. Check logs. Process "
                                  "returned with code {} !".format(return_code))

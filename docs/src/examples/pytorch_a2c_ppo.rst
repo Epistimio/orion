@@ -45,7 +45,7 @@ we add:
 .. code-block:: python
 
     #!/usr/bin/env python
-    from orion.client import report_results
+    from orion.client import report_objective
 
 
 and then we run
@@ -86,10 +86,7 @@ algorithm:
                                              args.cuda,
                                              eval_env_seeds)
 
-    report_results([dict(
-        name='validation_return',
-        type='objective',
-        value=np.mean(validation_returns))])
+    report_objective(name='validation_return', objective=np.mean(validation_returns))
 
 Now we're ready to go to run orion's hyperparameter optimization!
 

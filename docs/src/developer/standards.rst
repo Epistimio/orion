@@ -34,16 +34,6 @@ To run all of expected linters execute::
 .. _readme_renderer: https://pypi.org/project/readme_renderer/
 .. _PyPI: https://pypi.org/
 
-Project Structure
-=================
-
-TODO
-
-Source Repository Structure
-===========================
-
-TODO
-
 Fork and Pull Request
 =====================
 
