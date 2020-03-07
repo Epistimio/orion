@@ -14,6 +14,7 @@ import logging
 
 from numpy import inf as infinity
 
+from orion.core.exceptions import BrokenExperiment, SampleTimeout, WaitingForTrials
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.flatten import flatten, unflatten
 import orion.core.utils.format_trials as format_trials
@@ -392,20 +393,31 @@ class ExperimentClient:
         raises `WaitingForTrials` if the HPO is not finished but
         no trials are available at the moment
 
-        """
-        from orion.core.worker import WaitingForTrials
+        raises `BrokenExperiment` if the trials failed to run
 
-        if self.is_done or self.is_broken:
+        raises `SampleTimeout` if the HPO could not sample new points
+
+        """
+        if self.is_broken:
+            raise BrokenExperiment("Trials failed too many times")
+
+        if self.is_done:
             return None
 
         try:
             trial = orion.core.worker.reserve_trial(self._experiment, self._producer)
 
         except WaitingForTrials as e:
+            if self.is_broken:
+                raise BrokenExperiment("Trials failed too many times") from e
+
             raise e
 
-        except RuntimeError:
-            raise
+        except SampleTimeout as e:
+            if self.is_broken:
+                raise BrokenExperiment("Trials failed too many times") from e
+
+            raise e
 
         if trial is not None:
             self._maintain_reservation(trial)
