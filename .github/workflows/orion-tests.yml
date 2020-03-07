@@ -3,7 +3,98 @@ name: orion-tests
 on: [push]
 
 jobs:
-  orion-ci:
+  orion-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+
+      - name: cache-pip
+        uses: actions/cache@v1
+        with:
+          path: venv
+          key: ${{ runner.OS }}-build-${{ hashFiles('setup.py') }}
+          restore-keys: |
+            ${{ runner.OS }}-build-${{ env.cache-name }}-
+            ${{ runner.OS }}-build-
+            ${{ runner.OS }}-
+
+      - name: docs
+        run: |
+          pip install virtualenv tox
+          python -m venv venv
+          . venv/bin/activate
+          TOXENV=docs tox
+
+      - name: doc8
+        run: |
+          pip install virtualenv tox
+          python -m venv venv
+          . venv/bin/activate
+          TOXENV=doc8 tox
+
+  orion-flake8:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+
+      - name: cache-pip
+        uses: actions/cache@v1
+        with:
+          path: venv
+          key: ${{ runner.OS }}-build-${{ hashFiles('setup.py') }}
+          restore-keys: |
+            ${{ runner.OS }}-build-${{ env.cache-name }}-
+            ${{ runner.OS }}-build-
+            ${{ runner.OS }}-
+
+      - name: flake8
+        run: |
+          pip install virtualenv tox
+          python -m venv venv
+          . venv/bin/activate
+          TOXENV=flake8 tox
+
+  orion-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.7
+
+      - name: cache-pip
+        uses: actions/cache@v1
+        with:
+          path: venv
+          key: ${{ runner.OS }}-build-${{ hashFiles('setup.py') }}
+          restore-keys: |
+            ${{ runner.OS }}-build-${{ env.cache-name }}-
+            ${{ runner.OS }}-build-
+            ${{ runner.OS }}-
+
+      - name: flake8
+        run: |
+          pip install virtualenv tox
+          python -m venv venv
+          . venv/bin/activate
+          TOXENV=pylint tox
+
+  orion-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -27,7 +118,7 @@ jobs:
           ${{ runner.OS }}-build-
           ${{ runner.OS }}-
 
-    - name: flake8
+    - name: units
       run: |
         pip install virtualenv tox
         python -m venv venv
