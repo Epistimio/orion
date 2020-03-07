@@ -95,7 +95,9 @@ jobs:
           TOXENV=pylint tox
 
   orion-tests:
-    runs-on: mongo
+    runs:
+      using: 'docker'
+      image: 'mongo:latest'
 
     steps:
     - uses: actions/checkout@v1
