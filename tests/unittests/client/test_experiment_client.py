@@ -619,7 +619,8 @@ class TestSuggest:
 
             assert len(experiment.fetch_trials()) == 1
 
-            assert client.suggest() is None
+            with pytest.raises(SampleTimeout):
+                client.suggest()
 
     def test_suggest_is_done(self):
         """Verify that completed experiments cannot suggest new trials"""
@@ -681,7 +682,8 @@ class TestSuggest:
             assert len(experiment.fetch_trials()) == 1
             assert not client.is_broken
 
-            assert client.suggest() is None
+            with pytest.raises(BrokenExperiment):
+                client.suggest()
 
             assert len(experiment.fetch_trials()) == 1
             assert client.is_broken
