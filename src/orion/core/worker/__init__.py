@@ -12,18 +12,13 @@
 import itertools
 import logging
 
+from orion.core.exceptions import WaitingForTrials
 from orion.core.utils.format_terminal import format_stats
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer
 
 
 log = logging.getLogger(__name__)
-
-
-class WaitingForTrials(Exception):
-    """Raised when no trials could be reserved after multiple retries"""
-
-    pass
 
 
 def reserve_trial(experiment, producer, _depth=1):

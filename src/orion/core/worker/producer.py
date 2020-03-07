@@ -14,6 +14,7 @@ import random
 import time
 
 import orion.core
+from orion.core.exceptions import SampleTimeout
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
 from orion.core.worker.trial import Trial
@@ -54,6 +55,7 @@ class Producer(object):
         self.trials_history = TrialsHistory()
         self.params_hashes = set()
         self.naive_trials_history = None
+        self.failure_count = 0
 
     @property
     def pool_size(self):
@@ -67,41 +69,69 @@ class Producer(object):
         time.sleep(waiting_time)
         log.info('Updating algorithm.')
         self.update()
+        self.failure_count += 1
+
+    def _sample_guard(self, start):
+        """Check that the time taken sampling is less than max_idle_time"""
+        # FIXME: time taken is arbitrary, should be refactored to retry time
+        # this guard from not sampling too many times without success
+        if time.time() - start > self.max_idle_time:
+            raise SampleTimeout(
+                "Algorithm could not sample new points in less than {} seconds."
+                "Failed to sample points {} times".format(self.max_idle_time, self.failure_count))
 
     def produce(self):
         """Create and register new trials."""
         sampled_points = 0
 
+        # reset the number of time we failed to sample points
+        self.failure_count = 0
         start = time.time()
+
         while sampled_points < self.pool_size and not self.algorithm.is_done:
-            if time.time() - start > self.max_idle_time:
-                raise RuntimeError(
-                    "Algorithm could not sample new points in less than {} seconds".format(
-                        self.max_idle_time))
+            self._sample_guard(start)
 
             log.debug("### Algorithm suggests new points.")
             new_points = self.naive_algorithm.suggest(self.pool_size)
+
             # Sync state of original algo so that state continues evolving.
             self.algorithm.set_state(self.naive_algorithm.state_dict)
+
             if new_points is None:
                 log.info("### Algo opted out.")
                 self.backoff()
                 continue
 
             for new_point in new_points:
-                log.debug("#### Convert point to `Trial` object.")
-                new_trial = format_trials.tuple_to_trial(new_point, self.space)
-                try:
-                    self._prevalidate_trial(new_trial)
-                    new_trial.parents = self.naive_trials_history.children
-                    log.debug("#### Register new trial to database: %s", new_trial)
-                    self.experiment.register_trial(new_trial)
-                    self._update_params_hashes([new_trial])
-                    sampled_points += 1
-                except DuplicateKeyError:
-                    log.debug("#### Duplicate sample.")
-                    self.backoff()
-                    break
+                sampled_points += self.register_trials(new_point)
+
+    def register_trials(self, new_point):
+        """Register a new set of sampled parameters into the DB
+        guaranteeing their uniqueness
+
+        Parameters
+        ----------
+        new_point: tuple
+            tuple of values representing the hyperparameters values
+        """
+        # FIXME: Relying on DB to guarantee uniqueness
+        # when the trial history will be  held by that algo we can move that logic out of the DB
+
+        log.debug("#### Convert point to `Trial` object.")
+        new_trial = format_trials.tuple_to_trial(new_point, self.space)
+
+        try:
+            self._prevalidate_trial(new_trial)
+            new_trial.parents = self.naive_trials_history.children
+            log.debug("#### Register new trial to database: %s", new_trial)
+            self.experiment.register_trial(new_trial)
+            self._update_params_hashes([new_trial])
+            return 1
+
+        except DuplicateKeyError:
+            log.debug("#### Duplicate sample.")
+            self.backoff()
+            return 0
 
     def _prevalidate_trial(self, new_trial):
         """Verify if trial is not in parent history"""
