@@ -8,8 +8,6 @@
    :synopsis: Draw and deliver samples from prior defined in problem's domain.
 
 """
-import hashlib
-
 import numpy
 
 from orion.algo.base import BaseAlgorithm
@@ -26,8 +24,6 @@ class Random(BaseAlgorithm):
         :param seed: Integer seed for the random number generator.
         """
         super(Random, self).__init__(space, seed=seed)
-        self.trial_info = {}  # Stores Unique Trial -> Result
-        self.cardinality = space.cardinality
 
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
@@ -39,7 +35,7 @@ class Random(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {'rng_state': self.rng.get_state(), 'trial_info': self.trial_info}
+        return {'rng_state': self.rng.get_state()}
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
@@ -48,7 +44,6 @@ class Random(BaseAlgorithm):
         """
         self.seed_rng(0)
         self.rng.set_state(state_dict['rng_state'])
-        self.trial_info = state_dict['trial_info']
 
     def suggest(self, num=1):
         """Suggest a `num` of new sets of parameters. Randomly draw samples
@@ -67,16 +62,4 @@ class Random(BaseAlgorithm):
 
         A simple random sampler though does not take anything into account.
         """
-        for point, result in zip(points, results):
-            _point = list(point)
-            _id = hashlib.md5(str(_point).encode('utf-8')).hexdigest()
-
-            if _id not in self.trial_info:
-                self.trial_info[_id] = result
-
-    @property
-    def is_done(self):
-        """Return True, if all possible sets of parameters has been tried."""
-        if len(self.trial_info) >= self.cardinality:
-            return True
-        return False
+        pass

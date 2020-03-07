@@ -73,7 +73,7 @@ class Producer(object):
         sampled_points = 0
 
         start = time.time()
-        while sampled_points < self.pool_size and not self.algorithm.is_done:
+        while sampled_points < self.pool_size and not self.naive_algorithm.is_done:
             if time.time() - start > self.max_idle_time:
                 raise RuntimeError(
                     "Algorithm could not sample new points in less than {} seconds".format(

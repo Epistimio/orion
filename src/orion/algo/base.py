@@ -10,6 +10,7 @@
 
 """
 from abc import (ABCMeta, abstractmethod)
+import hashlib
 import logging
 
 from orion.core.utils import Factory
@@ -95,6 +96,8 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
     def __init__(self, space, **kwargs):
         log.debug("Creating Algorithm object of %s type with parameters:\n%s",
                   type(self).__name__, kwargs)
+        self._trials_info = {}  # Stores Unique Trial -> Result
+        self._cardinality = space.cardinality
         self._space = space
         self._param_names = list(kwargs.keys())
         # Instantiate tunable parameters of an algorithm
@@ -185,11 +188,21 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
            or equal to zero by the problem's definition.
 
         """
-        pass
+        for point, result in zip(points, results):
+            _point = list(point)
+            _id = hashlib.md5(str(_point).encode('utf-8')).hexdigest()
+
+            if _id not in self._trials_info:
+                self._trials_info[_id] = result
 
     @property
     def is_done(self):
-        """Return True, if an algorithm holds that there can be no further improvement."""
+        """Return True, if an algorithm holds that there can be no further improvement.
+        By default, the cardinality of the specified search space will be used to check
+        if all possible sets of parameters has been tried.
+        """
+        if len(self._trials_info) >= self._cardinality:
+            return True
         return False
 
     def score(self, point):  # pylint:disable=no-self-use,unused-argument

@@ -8,7 +8,6 @@
    :synopsis: Performs checks and organizes required transformations of points.
 
 """
-
 from orion.algo.base import BaseAlgorithm
 from orion.core.worker.transformer import build_required_space
 
@@ -80,6 +79,8 @@ Space: {}""".format(point, self.transformed_space))
 
         return [self.transformed_space.reverse(point) for point in points]
 
+    # pylint:disable=bad-super-call
+    # Bad first argument 'NoneType' given to super() (bad-super-call)
     def observe(self, points, results):
         """Observe evaluation `results` corresponding to list of `points` in
         space.
@@ -92,6 +93,7 @@ Space: {}""".format(point, self.transformed_space))
             assert point in self.space
             tpoints.append(self.transformed_space.transform(point))
         self.algorithm.observe(tpoints, results)
+        super(self.algorithm.__class__, self.algorithm).observe(tpoints, results)
 
     @property
     def is_done(self):
