@@ -24,7 +24,7 @@ omitted from the command samples.
 
 .. code-block:: bash
 
-    $ orion hunt -n orion-tutorial ./main.py --lr~'loguniform(1e-5, 1.0)' --momentum~'uniform(0, 1)'
+    $ orion hunt -n orion-tutorial python main.py --lr~'loguniform(1e-5, 1.0)' --momentum~'uniform(0, 1)'
 
 This cannot be the same as the experiment ``orion-tutorial`` since the space of optimization is now
 different. Such a call will trigger an experiment branching, meaning that a new experiment will
@@ -82,7 +82,7 @@ change our commandline like this.
 
 .. code-block:: bash
 
-    $ orion hunt -n orion-tutorial ./main.py --lr~'loguniform(1e-5, 1.0)' --momentum~+'uniform(0, 1)'
+    $ orion hunt -n orion-tutorial python main.py --lr~'loguniform(1e-5, 1.0)' --momentum~+'uniform(0, 1)'
 
 Let's look back at the prompt above. Following the resolution of ``momentum`` conflict we see
 that it is now marked as resolved in the `Resolutions` list, while the experiment name is still
@@ -119,14 +119,14 @@ the prompt, and the resolution will be marked accordingly.
 
 .. code-block:: bash
 
-    $ orion hunt -n orion-tutorial -b orion-tutorial-with-momentum ./main.py --lr~'loguniform(1e-5, 1.0)' --momentum~+'uniform(0, 1)'
+    $ orion hunt -n orion-tutorial -b orion-tutorial-with-momentum python main.py --lr~'loguniform(1e-5, 1.0)' --momentum~+'uniform(0, 1)'
 
 You can execute again this branched experiment by reusing the same commandline but replacing the new
 experiment name ``orion-tutorial-with-momentum``.
 
 .. code-block:: bash
 
-    $ orion hunt -n orion-tutorial-with-momentum ./main.py --lr~'loguniform(1e-5, 1.0)' --momentum~'uniform(0, 1)'
+    $ orion hunt -n orion-tutorial-with-momentum python main.py --lr~'loguniform(1e-5, 1.0)' --momentum~'uniform(0, 1)'
 
 Or as always by only specifying the experiment name.
 

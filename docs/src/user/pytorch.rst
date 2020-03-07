@@ -25,12 +25,11 @@ PyTorch `examples repository`_:
 Adapting the code for Oríon
 ===========================
 
-To use Oríon with any code we need to do three things
+To use Oríon with any code we need to do two things
 
-1. make the ``main.py`` file a python executable
-2. import the ``orion.client.report_objective`` helper function
-3. call `report_objective` on the final objective output to be minimized (e.g. final test error
-   rate)
+1. import the ``orion.client.report_objective`` helper function
+2. call `report_objective` on the final objective output to be minimized
+   (e.g. final test error rate)
 
 After cloning pytorch examples repository, cd to mnist folder:
 
@@ -38,22 +37,14 @@ After cloning pytorch examples repository, cd to mnist folder:
 
     $ cd examples/mnist
 
-1. In your favourite editor add a shebang line ``#!/usr/bin/env python`` to
-the ``main.py`` and make it executable, for example:
-
-.. code-block:: bash
-
-    $ sed -i '1s/^/#!/usr/bin/env python/' main.py
-    $ chmod +x main.py
-
-2. At the top of the file, below the imports, add one line of import the helper function
+1. At the top of the file, below the imports, add one line of import for the helper function
 ``orion.client.report_objective()``:
 
 .. code-block:: python
 
     from orion.client import report_objective
 
-3. We need the test error rate so we're going to add a line to the function ``test()`` to return it
+2. We need the test error rate so we're going to add a line to the function ``test()`` to return it
 
 .. code-block:: python
 
@@ -78,7 +69,7 @@ rather simple. Normally you would call the script the following way.
 
 .. code-block:: bash
 
-    $ ./main.py --lr 0.01
+    $ python main.py --lr 0.01
 
 To use it with Oríon, you simply need to prepend the call with
 ``orion hunt -n <experiment name>`` and specify the hyper-parameter prior
@@ -86,9 +77,9 @@ distributions.
 
 .. code-block:: bash
 
-    $ orion hunt -n orion-tutorial ./main.py --lr~'loguniform(1e-5, 1.0)'
+    $ orion hunt -n orion-tutorial python main.py --lr~'loguniform(1e-5, 1.0)'
 
-This commandline call will sequentially execute ``./main.py --lr=<value>`` with random
+This commandline call will sequentially execute ``python main.py --lr=<value>`` with random
 values sampled from the distribution ``loguniform(1e-5, 1.0)``. We support all
 distributions from scipy.stats_, plus ``choices()`` for categorical
 hyper-parameters (similar to numpy's `choice function`_).
@@ -114,7 +105,7 @@ You can also register experiments without executing them.
 
 .. code-block:: bash
 
-    $ orion init_only -n orion-tutorial ./main.py --lr~'loguniform(1e-5, 1.0)'
+    $ orion init_only -n orion-tutorial python main.py --lr~'loguniform(1e-5, 1.0)'
 
 
 Results
@@ -171,7 +162,7 @@ don't use ``--debug`` you will likely quickly fill your database with broken exp
 
 .. code-block:: bash
 
-    $ orion --debug hunt -n orion-tutorial ./main.py --lr~'loguniform(1e-5, 1.0)'
+    $ orion --debug hunt -n orion-tutorial python main.py --lr~'loguniform(1e-5, 1.0)'
 
 Hunting Options
 ---------------
