@@ -563,7 +563,6 @@ def test_exceed_max_idle_time_because_of_optout(producer, database, random_dt, m
     assert producer.experiment.pool_size == 1
 
     producer.update()
-    start = time.time()
 
     with pytest.raises(WaitingForTrials):
         producer.produce()
