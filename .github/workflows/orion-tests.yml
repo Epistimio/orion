@@ -17,7 +17,7 @@ jobs:
       - name: cache-pip
         uses: actions/cache@v1
         with:
-          path: venv
+          path: .tox
           key: ${{ runner.OS }}-build-${{ hashFiles('setup.py') }}
           restore-keys: |
             ${{ runner.OS }}-build-${{ env.cache-name }}-
@@ -26,16 +26,10 @@ jobs:
 
       - name: docs
         run: |
-          pip install virtualenv tox
-          python -m venv venv
-          . venv/bin/activate
           TOXENV=docs tox
 
       - name: doc8
         run: |
-          pip install virtualenv tox
-          python -m venv venv
-          . venv/bin/activate
           TOXENV=doc8 tox
 
   orion-flake8:
@@ -52,7 +46,7 @@ jobs:
       - name: cache-pip
         uses: actions/cache@v1
         with:
-          path: venv
+          path: .tox
           key: ${{ runner.OS }}-build-${{ hashFiles('setup.py') }}
           restore-keys: |
             ${{ runner.OS }}-build-${{ env.cache-name }}-
@@ -61,9 +55,6 @@ jobs:
 
       - name: flake8
         run: |
-          pip install virtualenv tox
-          python -m venv venv
-          . venv/bin/activate
           TOXENV=flake8 tox
 
   orion-lint:
@@ -80,7 +71,7 @@ jobs:
       - name: cache-pip
         uses: actions/cache@v1
         with:
-          path: venv
+          path: .tox
           key: ${{ runner.OS }}-build-${{ hashFiles('setup.py') }}
           restore-keys: |
             ${{ runner.OS }}-build-${{ env.cache-name }}-
@@ -89,9 +80,6 @@ jobs:
 
       - name: pylint
         run: |
-          pip install virtualenv tox
-          python -m venv venv
-          . venv/bin/activate
           TOXENV=pylint tox
 
   orion-tests:
@@ -113,7 +101,7 @@ jobs:
     - name: cache-pip
       uses: actions/cache@v1
       with:
-        path: venv
+        path: .tox
         key: ${{ runner.OS }}-build-${{ hashFiles('setup.py') }}
         restore-keys: |
           ${{ runner.OS }}-build-${{ env.cache-name }}-
@@ -122,10 +110,6 @@ jobs:
 
     - name: units
       run: |
-        python -m pip install --upgrade pip
-        pip install wheel
-        pip install tox
-
         mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
         TOXENV=py37 tox
 
