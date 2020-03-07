@@ -54,22 +54,17 @@ class TrialIterator:
 
     wait_time: int
         time to wait for trying to sample new trials
+
     """
+
     def __init__(self, experiment, retries=2, wait_for_trials=True, wait_time=10):
         self.experiment = experiment
-        self.time = StatStream(drop_first_obs=1)
         self.retries = retries
         self.wait_for_trials = wait_for_trials
         self.wait_time = wait_time
 
-    def __iter__(self):
-        return self
-
-    @property
-    def is_finished(self):
-        return self.experiment.is_done or self.experiment.is_broken
-
-    def __next__(self, _depth=0):
+    def next_trial(self, _depth=0):
+        """Iterate through Orion's suggestions"""
         if _depth >= self.retries and not self.experiment.is_done:
             log.error(f'Retried {_depth} times without success')
             raise SampleTimeout(
@@ -80,7 +75,6 @@ class TrialIterator:
             log.info('Orion does not have more trials to suggest')
             raise StopIteration
 
-        start = datetime.utcnow()
         try:
             trial = self.experiment.suggest()
 
@@ -88,23 +82,21 @@ class TrialIterator:
             if self.wait_for_trials:
                 # Do not increase depth this is not a retry
                 time.sleep(self.wait_time)
-                return self.next(_depth)
+                return self.next_trial(_depth)
 
             raise StopIteration
 
         except SampleTimeout:
             log.warning('Could not sample new trials')
-            return self.next(-_depth + 1)
+            return self.next_trial(-_depth + 1)
 
         except BrokenExperiment:
             log.error('Experiment is broken and cannot continue')
             raise
 
-        self.time += (datetime.utcnow() - start).total_seconds()
-
         return trial
 
-    next = __next__
+    __next__ = next_trial
 
 
 # pylint: disable=too-many-public-methods
@@ -497,9 +489,9 @@ class ExperimentClient:
 
         Notes
         -----
-
         You should observe the trials' result in between suggestion
         for the iterator to continue
+
         """
         return TrialIterator(self)
 
