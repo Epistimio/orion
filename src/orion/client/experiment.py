@@ -38,6 +38,7 @@ def set_broken_trials(client):
         client.release(trial, status='broken')
 
 
+# pylint: disable=too-few-public-methods
 class TrialIterator:
     """Take an Orion experiment client and iterate through all the trials it suggests
 
