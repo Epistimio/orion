@@ -639,7 +639,8 @@ class TestSuggest:
             assert len(experiment.fetch_trials()) == 10
             assert client.is_broken
 
-            assert client.suggest() is None
+            with pytest.raises(BrokenExperiment):
+                client.suggest()
 
     def test_suggest_is_done_race_condition(self, monkeypatch):
         """Verify that inability to suggest because is_done becomes True during produce() is
