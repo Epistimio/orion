@@ -11,6 +11,7 @@
 import atexit
 import functools
 import logging
+import time
 
 from numpy import inf as infinity
 
@@ -35,6 +36,75 @@ def set_broken_trials(client):
             log.warning('Trial {} was not found in storage, could not set status to `broken`.')
             continue
         client.release(trial, status='broken')
+
+
+class TrialIterator:
+    """Take an Orion experiment client and iterate through all the trials it suggests
+
+    Parameters
+    ----------
+    experiment: ExperimentClient
+        Orion Experiment
+
+    retries: int
+        Number of retry after receiving the `SampleTimeout` exception
+
+    wait_for_trials: bool
+        should the iterator wait for trials to finish or should it stop
+
+    wait_time: int
+        time to wait for trying to sample new trials
+    """
+    def __init__(self, experiment, retries=2, wait_for_trials=True, wait_time=10):
+        self.experiment = experiment
+        self.time = StatStream(drop_first_obs=1)
+        self.retries = retries
+        self.wait_for_trials = wait_for_trials
+        self.wait_time = wait_time
+
+    def __iter__(self):
+        return self
+
+    @property
+    def is_finished(self):
+        return self.experiment.is_done or self.experiment.is_broken
+
+    def __next__(self, _depth=0):
+        if _depth >= self.retries and not self.experiment.is_done:
+            log.error(f'Retried {_depth} times without success')
+            raise SampleTimeout(
+                'HPO is not able to sample new unique points after {} retries'.format(
+                    self.retries))
+
+        if self.experiment.is_done:
+            log.info('Orion does not have more trials to suggest')
+            raise StopIteration
+
+        start = datetime.utcnow()
+        try:
+            trial = self.experiment.suggest()
+
+        except WaitingForTrials:
+            if self.wait_for_trials:
+                # Do not increase depth this is not a retry
+                time.sleep(self.wait_time)
+                return self.next(_depth)
+
+            raise StopIteration
+
+        except SampleTimeout:
+            log.warning('Could not sample new trials')
+            return self.next(-_depth + 1)
+
+        except BrokenExperiment:
+            log.error('Experiment is broken and cannot continue')
+            raise
+
+        self.time += (datetime.utcnow() - start).total_seconds()
+
+        return trial
+
+    next = __next__
 
 
 # pylint: disable=too-many-public-methods
@@ -386,12 +456,14 @@ class ExperimentClient:
 
         Raises
         ------
-        raises `WaitingForTrials` if the HPO is not finished but
-        no trials are available at the moment
+        `WaitingForTrials`
+            if the HPO has not finished but no trials are available at the moment
 
-        raises `BrokenExperiment` if the trials failed to run
+        `BrokenExperiment`
+            if the trials failed to run and the HPO cannot continue
 
-        raises `SampleTimeout` if the HPO could not sample new points
+        `SampleTimeout`
+            if the HPO could not sample new unique new points
 
         """
         if self.is_broken:
@@ -419,6 +491,17 @@ class ExperimentClient:
             self._maintain_reservation(trial)
 
         return trial
+
+    def __iter__(self):
+        """Iterate through all the suggestion of the experiment
+
+        Notes
+        -----
+
+        You should observe the trials' result in between suggestion
+        for the iterator to continue
+        """
+        return TrialIterator(self)
 
     def observe(self, trial, results):
         """Observe trial results

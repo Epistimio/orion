@@ -98,9 +98,8 @@ class Producer(object):
             self.algorithm.set_state(self.naive_algorithm.state_dict)
 
             if new_points is None:
-                log.info("### Algo opted out.")
-                self.backoff()
-                continue
+                raise WaitingForTrials('Algo does not have more trials to sample.'
+                                       'Waiting for current trials to finish')
 
             for new_point in new_points:
                 sampled_points += self.register_trials(new_point)
