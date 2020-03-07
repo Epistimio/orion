@@ -117,9 +117,7 @@ jobs:
 
     - name: units
       run: |
-        pip install virtualenv tox
-        python -m venv venv
-        . venv/bin/activate
+        pip install tox wheel
 
         mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
         TOXENV=py37 tox
