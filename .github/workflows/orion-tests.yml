@@ -95,9 +95,11 @@ jobs:
           TOXENV=pylint tox
 
   orion-tests:
+    runs-on: ubuntu-latest
+    
     container:
       image: mongo
-    
+
     steps:
     - uses: actions/checkout@v1
 
