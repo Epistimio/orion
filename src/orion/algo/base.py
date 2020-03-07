@@ -130,14 +130,15 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {}
+        return {'_trials_info': self._trials_info}
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        pass
+        self._trials_info = state_dict['_trials_info']
+        del state_dict['_trials_info']
 
     @abstractmethod
     def suggest(self, num=1):
