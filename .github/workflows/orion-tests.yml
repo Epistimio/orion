@@ -100,13 +100,10 @@ jobs:
     steps:
     - uses: actions/checkout@v1
 
-    - name: Install python
+    - name: Install mongo
       run: |
         sudo apt-get update
         sudo apt-get install mongodb mongodb-clients
-
-    - name: Start MongoDB
-      uses: superchargejs/mongodb-github-action@1.1.0
 
     - name: cache-pip
       uses: actions/cache@v1
