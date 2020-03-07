@@ -2,10 +2,12 @@ name: orion-tests
 
 on: [push]
 
+runs:
+  using: 'docker'
+  image: 'mongo:latest'
+
 jobs:
   orion-docs:
-    runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v1
 
@@ -39,8 +41,6 @@ jobs:
           TOXENV=doc8 tox
 
   orion-flake8:
-    runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v1
 
@@ -67,8 +67,6 @@ jobs:
           TOXENV=flake8 tox
 
   orion-lint:
-    runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v1
 
@@ -95,15 +93,8 @@ jobs:
           TOXENV=pylint tox
 
   orion-tests:
-    runs:
-      using: 'docker'
-      image: 'mongo:latest'
-
     steps:
     - uses: actions/checkout@v1
-
-    - name: Start MongoDB
-      uses: superchargejs/mongodb-github-action@1.1.0
 
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
