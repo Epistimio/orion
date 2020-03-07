@@ -113,6 +113,7 @@ class Producer(object):
         ----------
         new_point: tuple
             tuple of values representing the hyperparameters values
+
         """
         # FIXME: Relying on DB to guarantee uniqueness
         # when the trial history will be  held by that algo we can move that logic out of the DB
