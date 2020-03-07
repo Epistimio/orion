@@ -767,7 +767,7 @@ class Fidelity(Dimension):
 
     def sample(self, n_samples=1, seed=None):
         """Do not do anything."""
-        return [self.high]
+        return [self.high for i in range(n_samples)]
 
     def interval(self, alpha=1.0):
         """Do not do anything."""
