@@ -100,7 +100,7 @@ class Producer(object):
             if new_points is None:
                 if self.algorithm.is_done:
                     return
-                
+
                 raise WaitingForTrials('Algo does not have more trials to sample.'
                                        'Waiting for current trials to finish')
 
