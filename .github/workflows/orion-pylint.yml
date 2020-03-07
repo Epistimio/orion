@@ -1,4 +1,4 @@
-name: orion-CI
+name: orion-lint
 
 on: [push]
 

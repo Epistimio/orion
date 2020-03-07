@@ -1,4 +1,4 @@
-name: orion-CI
+name: orion-tests
 
 on: [push]
 
@@ -8,6 +8,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+
+    - name: Start MongoDB
+      uses: superchargejs/mongodb-github-action@1.1.0
 
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
@@ -29,5 +32,8 @@ jobs:
         pip install virtualenv tox
         python -m venv venv
         . venv/bin/activate
+
+        mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
         TOXENV=py37 tox
 
+        tox -e final-coverage
