@@ -97,7 +97,7 @@ class Producer(object):
             # Sync state of original algo so that state continues evolving.
             self.algorithm.set_state(self.naive_algorithm.state_dict)
 
-            if new_points is None:
+            if new_points is None and not self.algorithm.is_done:
                 raise WaitingForTrials('Algo does not have more trials to sample.'
                                        'Waiting for current trials to finish')
 
