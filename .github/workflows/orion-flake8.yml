@@ -25,9 +25,9 @@ jobs:
           ${{ runner.OS }}-
 
     - name: flake8
-        run: |
-          pip install virtualenv tox
-          python -m venv venv
-          . venv/bin/activate
-          TOXENV=flake8 tox
+      run: |
+        pip install virtualenv tox
+        python -m venv venv
+        . venv/bin/activate
+        TOXENV=flake8 tox
 
