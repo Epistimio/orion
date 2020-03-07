@@ -14,7 +14,7 @@ import random
 import time
 
 import orion.core
-from orion.core.exceptions import SampleTimeout
+from orion.core.exceptions import SampleTimeout, WaitingForTrials
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
 from orion.core.worker.trial import Trial
