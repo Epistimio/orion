@@ -23,6 +23,6 @@ class WaitingForTrials(Exception):
 
 
 class BrokenExperiment(Exception):
-    """Raised a trial has been tried too many times without success"""
+    """Raised when a trial has been tried too many times without success"""
 
     pass
