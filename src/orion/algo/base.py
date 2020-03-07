@@ -97,7 +97,6 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         log.debug("Creating Algorithm object of %s type with parameters:\n%s",
                   type(self).__name__, kwargs)
         self._trials_info = {}  # Stores Unique Trial -> Result
-        self._cardinality = space.cardinality
         self._space = space
         self._param_names = list(kwargs.keys())
         # Instantiate tunable parameters of an algorithm
@@ -137,8 +136,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        self._trials_info = state_dict['_trials_info']
-        del state_dict['_trials_info']
+        self._trials_info = state_dict.get('_trials_info')
 
     @abstractmethod
     def suggest(self, num=1):
@@ -202,7 +200,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         By default, the cardinality of the specified search space will be used to check
         if all possible sets of parameters has been tried.
         """
-        if len(self._trials_info) >= self._cardinality:
+        if len(self._trials_info) >= self.space.cardinality:
             return True
         return False
 
