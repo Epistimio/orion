@@ -568,8 +568,6 @@ def test_exceed_max_idle_time_because_of_optout(producer, database, random_dt, m
     with pytest.raises(WaitingForTrials):
         producer.produce()
 
-    assert timeout <= time.time() - start < timeout + 1
-
 
 def test_stops_if_algo_done(producer, database, random_dt, monkeypatch):
     """Test that producer stops producing when algo is done."""
