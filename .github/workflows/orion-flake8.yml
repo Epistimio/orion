@@ -1,4 +1,4 @@
-name: orion-CI
+name: orion-flake
 
 on: [push]
 
