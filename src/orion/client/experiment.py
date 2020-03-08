@@ -454,7 +454,8 @@ class ExperimentClient:
         Raises
         ------
         `WaitingForTrials`
-            if the HPO has not finished but no trials are available at the moment
+            if the experiment is not completed and algorithm needs to wait for some
+            trials to complete before it can suggest new trials.
 
         `BrokenExperiment`
             if the trials failed to run and the HPO cannot continue
