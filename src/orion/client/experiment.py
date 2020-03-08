@@ -460,7 +460,7 @@ class ExperimentClient:
             if the trials failed to run and the HPO cannot continue
 
         `SampleTimeout`
-            if the HPO could not sample new unique new points
+            if the algorithm of the experiment could not sample new unique points.
 
         """
         if self.is_broken:
