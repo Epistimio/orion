@@ -454,7 +454,8 @@ class ExperimentClient:
             trials to complete before it can suggest new trials.
 
         `BrokenExperiment`
-            if the trials failed to run and the HPO cannot continue
+            if too many trials failed to run and the experiment cannot continue.
+            This is determined by ``max_broken`` in the configuration of the experiment.
 
         `SampleTimeout`
             if the algorithm of the experiment could not sample new unique points.
