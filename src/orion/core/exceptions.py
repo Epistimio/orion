@@ -17,7 +17,7 @@ class SampleTimeout(Exception):
 
 
 class WaitingForTrials(Exception):
-    """Raised when no trials could be reserved after multiple retries"""
+    """Raised when the algorithm needs to wait for some trials to complete before it can suggest new ones"""
 
     pass
 
