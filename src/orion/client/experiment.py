@@ -73,7 +73,7 @@ class TrialIterator:
                     self.retries))
 
         if self.experiment.is_done:
-            log.info('Orion does not have more trials to suggest')
+            log.info('Experiment is completed, no more trials to suggest.')
             raise StopIteration
 
         try:
