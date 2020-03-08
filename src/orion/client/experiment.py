@@ -444,7 +444,7 @@ class ExperimentClient:
         Returns
         -------
         `orior.core.worker.trial.Trial` or None
-            Reserved trial for execution. Will return None if experiment is done or broken
+            Reserved trial for execution. Will return None if experiment is done.
             of if the algorithm cannot suggest until other trials complete.
 
         Raises
