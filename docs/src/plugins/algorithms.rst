@@ -32,12 +32,6 @@ Implement Basic Algorithms
 ==========================
 
 Template `src/orion/algo/gradient_descent.py <gradient_descent_algo_code>`_
-TODO
-
-The Space Class
-===============
-
-TODO
 
 .. _gradient_descent_algo: https://github.com/epistimio/orion/tree/master/tests/functional/gradient_descent_algo
 .. _gradient_descent_algo_code: https://github.com/epistimio/orion/blob/master/tests/functional/gradient_descent_algo/src/orion/algo/gradient_descent.py
