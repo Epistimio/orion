@@ -11,7 +11,7 @@
 
 
 class SampleTimeout(Exception):
-    """Raises when the algorithm is not able to sample new unique points in time"""
+    """Raised when the algorithm is not able to sample new unique points in time"""
 
     pass
 
