@@ -15,7 +15,7 @@ TODO
 TODO
 
 ### How to submit changes
-Short and sweet message, giving an overview of our process. Refer to the developer documentation in the docs.
+Short and sweet message, giving an overview of our process (Such as how to make a PR).Refer to the developer documentation in the docs.
 
 ---
 Thank you for contributing! We really appreciate it!

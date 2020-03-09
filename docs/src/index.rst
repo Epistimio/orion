@@ -57,6 +57,7 @@
    :caption: Developer's Guide
    :maxdepth: 1
 
+   developer/overview
    developer/testing
    developer/documenting
    developer/standards
