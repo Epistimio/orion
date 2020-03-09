@@ -94,7 +94,7 @@ Contribute or Ask
 
 Do you have a question or issues?
 Do you want to report a bug or suggest a feature? Name it!
-Please contact us by opening an issue in our repository below:
+Please contact us by opening an issue in our repository below and checkout our `contribution guidelines <https://github.com/Epistimio/orion/blob/master/CONTRIBUTING.md>`_:
 
 - Issue Tracker: `<https://github.com/epistimio/orion/issues>`_
 - Source Code: `<https://github.com/epistimio/orion>`_
