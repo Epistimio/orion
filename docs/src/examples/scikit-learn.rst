@@ -38,7 +38,7 @@ To find a good *epsilon*, a user would run empirically ``$ python main.py <epsil
 times, choosing a new value for *epsilon* manually.
 
 This ad-hoc hyper-parameter optimization is unreliable, slow, and requires a lot of work from the
-user. Oríon solves this problem by providing cutting-edge hyper-parameter optimization
+user. Oríon solves this problem by providing established hyper-parameter optimization
 algorithms without disrupting the workflow of the user. Integrating it only require minimal
 adjustments to your current workflow as we'll demonstrate in the next section.
 
