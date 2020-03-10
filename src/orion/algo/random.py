@@ -35,13 +35,16 @@ class Random(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {'rng_state': self.rng.get_state()}
+        _state_dict = super(Random, self).state_dict
+        _state_dict['rng_state'] = self.rng.get_state()
+        return _state_dict
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
 
         :param state_dict: Dictionary representing state of an algorithm
         """
+        super(Random, self).set_state(state_dict)
         self.seed_rng(0)
         self.rng.set_state(state_dict['rng_state'])
 
@@ -55,11 +58,3 @@ class Random(BaseAlgorithm):
            `orion.algo.space.Space`.
         """
         return self.space.sample(num, seed=tuple(self.rng.randint(0, 1000000, size=3)))
-
-    def observe(self, points, results):
-        """Observe evaluation `results` corresponding to list of `points` in
-        space.
-
-        A simple random sampler though does not take anything into account.
-        """
-        pass
