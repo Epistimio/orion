@@ -38,68 +38,6 @@ def set_broken_trials(client):
         client.release(trial, status='broken')
 
 
-# pylint: disable=too-few-public-methods
-class TrialIterator:
-    """Take an Orion experiment client and iterate through all the trials it suggests
-
-    Parameters
-    ----------
-    experiment: ExperimentClient
-        Orion Experiment
-
-    retries: int
-        Number of retry after receiving the `SampleTimeout` exception
-
-    wait_for_trials: bool
-        should the iterator wait for trials to finish or should it stop
-
-    wait_time: int
-        time to wait for trying to sample new trials
-
-    """
-
-    def __init__(self, experiment, retries=2, wait_for_trials=True, wait_time=10):
-        self.experiment = experiment
-        self.retries = retries
-        self.wait_for_trials = wait_for_trials
-        self.wait_time = wait_time
-
-    def next_trial(self, _depth=0):
-        """Iterate through Orion's suggestions"""
-        if _depth >= self.retries and not self.experiment.is_done:
-            log.error(f'Retried {_depth} times without success')
-            raise SampleTimeout(
-                'HPO is not able to sample new unique points after {} retries'.format(
-                    self.retries))
-
-        if self.experiment.is_done:
-            log.info('Experiment is completed, no more trials to suggest.')
-            raise StopIteration
-
-        try:
-            trial = self.experiment.suggest()
-
-        except WaitingForTrials:
-            if self.wait_for_trials:
-                # Do not increase depth this is not a retry
-                time.sleep(self.wait_time)
-                return self.next_trial(_depth)
-
-            raise StopIteration
-
-        except SampleTimeout:
-            log.warning('Could not sample new trials')
-            return self.next_trial(-_depth + 1)
-
-        except BrokenExperiment:
-            log.error('Experiment is broken and cannot continue')
-            raise
-
-        return trial
-
-    __next__ = next_trial
-
-
 # pylint: disable=too-many-public-methods
 class ExperimentClient:
     """ExperimentClient providing all functionalities for the python API
@@ -490,17 +428,6 @@ class ExperimentClient:
             self._maintain_reservation(trial)
 
         return trial
-
-    def __iter__(self):
-        """Iterate through all the suggestion of the experiment
-
-        Notes
-        -----
-        You should observe the trials' result in between suggestion
-        for the iterator to continue
-
-        """
-        return TrialIterator(self)
 
     def observe(self, trial, results):
         """Observe trial results
