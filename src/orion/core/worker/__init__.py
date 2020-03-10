@@ -12,7 +12,7 @@
 import itertools
 import logging
 
-from orion.core.exceptions import WaitingForTrials
+from orion.core.utils.exceptions import WaitingForTrials
 from orion.core.utils.format_terminal import format_stats
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer

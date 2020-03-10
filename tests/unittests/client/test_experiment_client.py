@@ -11,9 +11,9 @@ import pytest
 
 from orion.client.experiment import ExperimentClient
 import orion.core
-from orion.core.exceptions import BrokenExperiment, SampleTimeout
 from orion.core.io.database import DuplicateKeyError
 import orion.core.io.experiment_builder as experiment_builder
+from orion.core.utils.exceptions import BrokenExperiment, SampleTimeout
 from orion.core.utils.tests import OrionState
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial

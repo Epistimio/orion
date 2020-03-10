@@ -11,12 +11,11 @@
 import atexit
 import functools
 import logging
-import time
 
 from numpy import inf as infinity
 
-from orion.core.exceptions import BrokenExperiment, SampleTimeout, WaitingForTrials
 from orion.core.io.database import DuplicateKeyError
+from orion.core.utils.exceptions import BrokenExperiment, SampleTimeout, WaitingForTrials
 from orion.core.utils.flatten import flatten, unflatten
 import orion.core.utils.format_trials as format_trials
 import orion.core.worker

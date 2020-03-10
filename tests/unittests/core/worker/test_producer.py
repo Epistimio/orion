@@ -7,8 +7,8 @@ import time
 
 import pytest
 
-from orion.core.exceptions import SampleTimeout, WaitingForTrials
 from orion.core.io.experiment_builder import build
+from orion.core.utils.exceptions import SampleTimeout, WaitingForTrials
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial
