@@ -104,6 +104,10 @@ of the optimization with the sub-command ``$ orion info``:
 
    orion info -n scitkit-iris-tutorial
 
+You can also query the results from the database using Oríon's python API. Check out
+https://orion.readthedocs.io/en/latest/user/monitoring.html#library-api to learn more and see
+examples.
+
 .. [scikit] Pedregosa, Fabian, Gaël Varoquaux, Alexandre Gramfort, Vincent Michel, Bertrand Thirion,
             Olivier Grisel, Mathieu Blondel et al. "Scikit-learn: Machine Learning in Python"
             Journal of machine learning research 12, no. Oct (2011): 2825-2830.
