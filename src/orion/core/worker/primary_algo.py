@@ -48,9 +48,7 @@ class PrimaryAlgo(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        _state_dict = self.algorithm.state_dict
-        _state_dict.update(super(self.algorithm.__class__, self.algorithm).state_dict)
-        return _state_dict
+        return self.algorithm.state_dict
 
     # pylint:disable=bad-super-call
     # Bad first argument 'NoneType' given to super() (bad-super-call)
@@ -59,7 +57,6 @@ class PrimaryAlgo(BaseAlgorithm):
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        super(self.algorithm.__class__, self.algorithm).set_state(state_dict)
         self.algorithm.set_state(state_dict)
 
     def suggest(self, num=1):
@@ -98,8 +95,6 @@ Space: {}""".format(point, self.transformed_space))
             assert point in self.space
             tpoints.append(self.transformed_space.transform(point))
         self.algorithm.observe(tpoints, results)
-
-        super(self.algorithm.__class__, self.algorithm).observe(tpoints, results)
 
     @property
     def is_done(self):

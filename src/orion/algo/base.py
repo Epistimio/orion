@@ -161,7 +161,6 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         """
         pass
 
-    @abstractmethod
     def observe(self, points, results):
         """Observe the `results` of the evaluation of the `points` in the
         process defined in user's script.
