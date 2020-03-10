@@ -56,7 +56,7 @@ command-line argument.
 Updating the script
 ^^^^^^^^^^^^^^^^^^^
 We only need to make one small change to the script: we report to Oríon the objective that we
-want to **minimize** at the end of the script using :py:func:`orion.client.report_results`:
+want to **minimize** at the end of the script using :py:func:`orion.client.report_objective`:
 
 .. literalinclude:: ../../../examples/scikitlearn-iris/main.py
    :language: python
@@ -66,11 +66,11 @@ In our example, we measure the accuracy of the model to qualify its performance.
 accuracy possible, we need to minimize the difference between 1 and the accuracy to get it as
 close to 1 as possible. Otherwise, we'll be minimizing the accuracy which will yield a poor model.
 
-:py:func:`orion.client.report_results` can be imported using :
+:py:func:`orion.client.report_objective` can be imported using :
 
 .. code-block:: python
 
-   from orion.client import report_results
+   from orion.client import report_objective
 
 Updating the script call
 ^^^^^^^^^^^^^^^^^^^^^^^^

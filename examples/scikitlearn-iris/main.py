@@ -1,7 +1,7 @@
 import sys
 
 import numpy as np
-from orion.client import report_results
+from orion.client import report_objective
 from sklearn.datasets import load_iris
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import balanced_accuracy_score
@@ -29,7 +29,4 @@ accuracy = balanced_accuracy_score(y_test, y_pred)
 # Reporting the results
 print("Accuracy is {}".format(accuracy))
 
-report_results([dict(
-    name='accuracy',
-    type='objective',
-    value=1 - accuracy)])
+report_objective(1 - accuracy)
