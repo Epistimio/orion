@@ -68,18 +68,20 @@ orion status --name {experiment.name} --version {experiment.version} --all
 """
 
 
-def workon(experiment, worker_trials=None):
+def workon(experiment, max_trials=None, max_broken=None, max_idle_time=None, heartbeat=None,
+           user_script_config=None, interrupt_signal_code=None):
     """Try to find solution to the search problem defined in `experiment`."""
-    producer = Producer(experiment)
-    consumer = Consumer(experiment)
+    producer = Producer(experiment, max_idle_time)
+    consumer = Consumer(experiment, heartbeat, user_script_config, interrupt_signal_code)
 
     log.debug("#####  Init Experiment  #####")
     try:
-        iterator = range(int(worker_trials))
+        iterator = range(int(max_trials))
     except (OverflowError, TypeError):
         # When worker_trials is inf
         iterator = itertools.count()
 
+    worker_broken_trials = 0
     for _ in iterator:
         log.debug("#### Poll for experiment termination.")
         if experiment.is_broken:
@@ -95,7 +97,14 @@ def workon(experiment, worker_trials=None):
 
         if trial is not None:
             log.debug("#### Successfully reserved %s to evaluate. Consuming...", trial)
-            consumer.consume(trial)
+            success = consumer.consume(trial)
+            if not success:
+                worker_broken_trials += 1
+
+        if worker_broken_trials >= max_broken:
+            print("#### Worker has reached broken trials threshold, terminating.")
+            print(worker_broken_trials, max_broken)
+            break
 
     print('\n' + format_stats(experiment))
 
