@@ -5,8 +5,8 @@ Scikit-learn
    repository. We invoke this file from index.rst
 
 In this example, we're going to demonstrate how Oríon can be integrated to a minimal model using
-scikit-learn [scikit]_ on the iris dataset [iris]_. The files mentioned in this example are
-available in the folder :file:`examples/scikitlearn-iris/`.
+`scikit-learn <https://scikit-learn.org/stable/index.html>`_ on the `iris dataset <https://en.wikipedia.org/wiki/Iris_flower_data_set>`_. The files mentioned in this example are
+available at https://github.com/Epistimio/orion/tree/master/examples/scikitlearn-iris/.
 
 The requirements are listed in requirements.txt. You can quickly install them using ``$ pip
 install -r requirements.txt``. If you haven't installed Oríon previously, make sure to
@@ -107,10 +107,3 @@ of the optimization with the sub-command ``$ orion info``:
 You can also query the results from the database using Oríon's python API. Check out
 https://orion.readthedocs.io/en/latest/user/monitoring.html#library-api to learn more and see
 examples.
-
-.. [scikit] Pedregosa, Fabian, Gaël Varoquaux, Alexandre Gramfort, Vincent Michel, Bertrand Thirion,
-            Olivier Grisel, Mathieu Blondel et al. "Scikit-learn: Machine Learning in Python"
-            Journal of machine learning research 12, no. Oct (2011): 2825-2830.
-
-.. [iris] Fisher, Ronald A. "The use of multiple measurements in taxonomic problems"
-          Annals of eugenics 7, no. 2 (1936): 179-188.
