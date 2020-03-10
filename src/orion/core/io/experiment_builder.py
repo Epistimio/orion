@@ -93,7 +93,6 @@ import sys
 
 from orion.algo.space import Space
 import orion.core
-from orion.core.cli.evc import fetch_branching_configuration
 from orion.core.evc.adapters import Adapter
 from orion.core.evc.conflicts import detect_conflicts, ExperimentNameConflict
 from orion.core.io import resolve_config
@@ -519,10 +518,10 @@ def setup_storage(storage=None):
     if storage is None:
         storage = orion.core.config.storage.to_dict()
 
-    if storage['type'] == 'legacy':
-
-        if 'database' not in storage:
-            storage['database'] = orion.core.config.storage.database.to_dict()
+    if storage.get('type') == 'legacy' and 'database' not in storage:
+        storage['database'] = orion.core.config.storage.database.to_dict()
+    elif storage.get('type') is None and 'database' in storage:
+        storage['type'] = 'legacy'
 
     storage_type = storage.pop('type')
 
@@ -554,8 +553,6 @@ def build_from_args(cmdargs):
 
     setup_storage(cmd_config['storage'])
 
-    cmd_config['branching'] = fetch_branching_configuration(cmd_config)
-
     return build(**cmd_config)
 
 
@@ -582,10 +579,13 @@ def get_cmd_config(cmdargs):
     """Fetch configuration defined by commandline and local configuration file.
 
     Arguments of commandline have priority over options in configuration file.
-
     """
+    cmdargs = resolve_config.fetch_config_from_cmdargs(cmdargs)
     cmd_config = resolve_config.fetch_config(cmdargs)
     cmd_config = resolve_config.merge_configs(cmd_config, cmdargs)
+
+    cmd_config.update(cmd_config.pop('experiment', {}))
+    cmd_config['branching'] = cmd_config.pop('evc', {})
 
     metadata = resolve_config.fetch_metadata(cmd_config.get('user'), cmd_config.get('user_args'))
     cmd_config['metadata'] = metadata

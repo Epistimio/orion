@@ -52,11 +52,14 @@ class ExperimentClient:
 
     """
 
-    def __init__(self, experiment, producer):
+    def __init__(self, experiment, producer, heartbeat=None):
         self._experiment = experiment
         self._producer = producer
         self._pacemakers = {}
         self.set_broken_trials = functools.partial(set_broken_trials, client=self)
+        if heartbeat is None:
+            heartbeat = orion.core.config.worker.heartbeat
+        self.heartbeat = heartbeat
         atexit.register(self.set_broken_trials)
 
     ###
@@ -319,10 +322,11 @@ class ExperimentClient:
         Notes
         -----
         When reserved, a `TrialPacemaker` is started to update an heartbeat in storage. The
-        frequency of the heartbeat is configurable with `orion.core.config.worker.heartbeat`.
+        frequency of the heartbeat is configurable at creation of experiment
+        or with `orion.core.config.worker.heartbeat`.
         If the process terminates unexpectedly, the heartbeat will cease and remote processes
         may reset the status of the trial to 'interrupted' when the heartbeat has not been updated
-        since twice the value of `orion.core.config.worker.heartbeat`.
+        since twice the value of `heartbeat`.
 
         """
         if trial.status == 'reserved' and trial.id in self._pacemakers:
@@ -331,7 +335,7 @@ class ExperimentClient:
         elif trial.status == 'reserved' and trial.id not in self._pacemakers:
             raise RuntimeError('Trial {} is already reserved by another process.'.format(trial.id))
         try:
-            self._experiment.set_trial_status(trial, 'reserved', heartbeat=None)
+            self._experiment.set_trial_status(trial, 'reserved', heartbeat=self.heartbeat)
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
                 raise ValueError('Trial {} does not exist in database.'.format(trial.id)) from e

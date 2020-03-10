@@ -134,9 +134,6 @@ class Experiment:
         """
         log.debug('reserving trial with (score: %s)', score_handle)
 
-        if score_handle is not None:
-            log.warning("Argument `score_handle` is deprecated")
-
         self.fix_lost_trials()
 
         selected_trial = self._storage.reserve_trial(self)
