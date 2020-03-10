@@ -29,6 +29,15 @@ When reporting a bug, please include:
 - Extra details about your setup that might help us to reproduce the bug if not included previously
 
 ### How to propose enhancements
+We're thrilled to hear you found a way to make Oríon better through minor improvements to completely new features! 
+Before creating enhancement suggestions, please check that your idea is not already present in the list of issues. You might find that you don't need to create one and can just join in the discussion directly and give your opinion!
+
+When suggesting enhancements, it is a good idea to:
+- A clear and descriptive title for the issue
+- Motivate why this feature is relevant regarding [Oríon's mission](https://github.com/Epistimio/orion).
+- Explain in detail how it would work.
+- Keep the scope as narrow as possible, to make it easier to implement.
+- Add as much details as possible!
 
 ### How to submit changes
 Short and sweet message, giving an overview of our process (Such as how to make a PR).Refer to the developer documentation in the docs.
