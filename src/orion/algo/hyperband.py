@@ -130,7 +130,7 @@ class Hyperband(BaseAlgorithm):
             raise RuntimeError(
                 'Hyperband keeps sampling already existing points. This should not happen, '
                 'please report this error to '
-                'https://github.com/bouthilx/orion.algo.hyperband/issues')
+                'https://github.com/Epistimio/orion/issues')
 
         return points
 
