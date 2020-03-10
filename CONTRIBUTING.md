@@ -15,7 +15,7 @@ Depending on what you want to do, we're suggesting you read the respective guide
 In some cases, you might want to add a new algorithm for Oríon, make sure to check out the [plugin documentation](https://orion.readthedocs.io/en/latest/plugins/base.html).
 
 ### How to ask a question
-TODO
+Asking a question is also a contribution to the project! We'll be happy to help you if you have any question. Before opening a new issue, make sure to do a quick search. It's possible your question has already been answered! Otherwise, go ahead. We're looking forward to help you.
 
 ### How to report a bug
 TODO
