@@ -18,7 +18,16 @@ In some cases, you might want to add a new algorithm for Oríon, make sure to ch
 Asking a question is also a contribution to the project! We'll be happy to help you if you have any question. Before opening a new issue, make sure to do a quick search. It's possible your question has already been answered! Otherwise, go ahead. We're looking forward to help you.
 
 ### How to report a bug
-TODO
+You found a bug? Great! Before submitting, make sure you're experiencing the bug on the latest version of Oríon and that it's not already opened in our issue tracker.
+
+When reporting a bug, please include: 
+- A clear and descriptive title for the issue
+- Your operating system and its version
+- The version of Oríon (even if you're using the latest!)
+- A description of the bug
+- The steps to reproduce the bug
+- Extra details about your setup that might help us to reproduce the bug if not included previously
+
 ### How to propose enhancements
 
 ### How to submit changes
