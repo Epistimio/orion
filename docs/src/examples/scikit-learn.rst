@@ -31,7 +31,7 @@ The script is divided in five parts:
 #. Reporting the performance of the model. i.e., the accuracy.
 
 .. note::
-   The workflow presented in the script is simplified compared to the reality on purpose. The
+   The workflow presented in the script is simplified on purpose compared to real ones. The
    objective of this example is to illustrate the basic steps involved in using Oríon.
 
 To find a good *epsilon*, a user would run empirically ``$ python main.py <epsilon>`` multiple
