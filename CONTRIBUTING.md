@@ -26,7 +26,7 @@ When reporting a bug, please include:
 - The version of Oríon (even if you're using the latest!)
 - A description of the bug
 - The steps to reproduce the bug
-- Extra details about your setup that might help us to reproduce the bug if not included previously
+- Extra details (e.g., database, algortihm, configuration) about your setup that might help us to reproduce the bug if not included previously
 
 ### How to propose enhancements
 We're thrilled to hear you found a way to make Oríon better through minor improvements to completely new features! 
