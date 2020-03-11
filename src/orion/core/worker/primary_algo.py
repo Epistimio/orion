@@ -50,8 +50,6 @@ class PrimaryAlgo(BaseAlgorithm):
         """Return a state dict that can be used to reset the state of the algorithm."""
         return self.algorithm.state_dict
 
-    # pylint:disable=bad-super-call
-    # Bad first argument 'NoneType' given to super() (bad-super-call)
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
 
@@ -81,8 +79,6 @@ Space: {}""".format(point, self.transformed_space))
 
         return [self.transformed_space.reverse(point) for point in points]
 
-    # pylint:disable=bad-super-call
-    # Bad first argument 'NoneType' given to super() (bad-super-call)
     def observe(self, points, results):
         """Observe evaluation `results` corresponding to list of `points` in
         space.
