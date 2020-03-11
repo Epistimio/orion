@@ -40,7 +40,20 @@ When suggesting enhancements, it is a good idea to:
 - Add as much details as possible!
 
 ### How to submit changes
-Short and sweet message, giving an overview of our process (Such as how to make a PR).Refer to the developer documentation in the docs.
+We're grateful you're considering making changes to Oríon! To get started, you need to first fork the repository and then create a new branch on your fork where you'll do your changes. Once you implemented the changes, submit a [pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests>). All changes to Oríon are done through PRs, where they will be peer-reviewed and checked against our continuous integration system to ensure the quality of the code base.
+
+During this processs keep in mind to:
+- Set a descriptive and short branch name
+- Create a descriptive and clear title for the PR
+- Motivate the *why* and *how* of the PR (get inspiration from current or past PRs!)
+- Write [good commits](https://chris.beams.io/posts/git-commit/)
+
+Next, you need to get familiar with the developer documentation. You will find the instructions to set up your development environment, including how to use the test suite and verify you changes will pass the CI as well as our style guides for source code and documentation.
+
+-> https://orion.readthedocs.io/en/latest/developer/overview.html
+
+#### Your first contribution
+If you are not sure about what to work on first, we suggest you take a look on the [help wanted](https://github.com/Epistimio/orion/labels/help%20wanted) and [good first issues](https://github.com/Epistimio/orion/labels/good%20first%20issue) opened. They are great places to start!
 
 ---
 Thank you for contributing! We really appreciate it!
