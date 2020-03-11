@@ -51,7 +51,7 @@ def test_orion_runs_script(monkeypatch, database):
 
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
-def test_script_results(monkeypatch):
+def test_result_reproducibility(monkeypatch):
     """Verifies the script results stays consistent (with respect to the documentation)."""
     script = os.path.abspath("examples/scikitlearn-iris/main.py")
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
