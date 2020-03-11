@@ -91,7 +91,7 @@ not stop unless you interrupt it with :kbd:`ctrl-c`:
 
 .. code-block:: bash
 
-   $ orion hunt -n scitkit-iris-tutorial --max-trials 50 ./main.py 'orion~loguniform(1e-5, 1.0)'
+   $ orion hunt -n scitkit-iris-tutorial --max-trials 50 python main.py 'orion~loguniform(1e-5, 1.0)'
 
 .. warning::
    Make sure you installed the dependencies for the script before running it using ``pip install
