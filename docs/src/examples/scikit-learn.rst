@@ -83,7 +83,7 @@ We specify the search space in the command line using ``orion~loguniform(1e-5, 1
 as the argument for *espilon*. This argument will tell Oríon to use a log uniform distribution
 between ``1e-5`` and ``1`` for the values of *epsilon*.
 
-Putting everything together, we need to call ./main.py with Oríon. The syntax is the
+Putting everything together, we need to call ``main.py`` with Oríon. The syntax is the
 following: ``$ orion hunt python main.py 'orion~loguniform(1e-5, 1.0)'``. Before executing it on
 your terminal, you have to specify the name of the experiment using the ``-n`` option. It is also a
 good idea to specify a stopping condition using ``--max-trials`` otherwise the optimization will
