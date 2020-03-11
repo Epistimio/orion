@@ -59,5 +59,3 @@ If you are not sure about what to work on first, we suggest you take a look on t
 
 ---
 Thank you for contributing! We really appreciate it!
-
--- The Oríon team
