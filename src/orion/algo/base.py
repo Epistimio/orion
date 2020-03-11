@@ -187,7 +187,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
         """
         for point, result in zip(points, results):
-            _point = list(point) if isinstance(point, list) else point
+            _point = list(point)
             _id = hashlib.md5(str(_point).encode('utf-8')).hexdigest()
 
             if _id not in self._trials_info:

@@ -97,7 +97,7 @@ def test_is_done(monkeypatch, dumbalgo):
     algo = dumbalgo(space)
     algo.suggest()
     for i in range(1, 5):
-        algo.observe([i], [{'objective': 3}])
+        algo.observe([[i]], [{'objective': 3}])
 
     assert len(algo.state_dict['_trials_info']) == 4
     assert algo.is_done
@@ -108,7 +108,7 @@ def test_is_done(monkeypatch, dumbalgo):
     algo = dumbalgo(space)
     algo.suggest()
     for i in range(1, 5):
-        algo.observe([i], [{'objective': 3}])
+        algo.observe([[i]], [{'objective': 3}])
 
     assert len(algo.state_dict['_trials_info']) == 4
     assert not algo.is_done
