@@ -13,6 +13,7 @@ from orion.client.experiment import ExperimentClient
 import orion.core
 from orion.core.io.database import DuplicateKeyError
 import orion.core.io.experiment_builder as experiment_builder
+from orion.core.utils.exceptions import BrokenExperiment, SampleTimeout
 from orion.core.utils.tests import OrionState
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial
@@ -619,7 +620,8 @@ class TestSuggest:
 
             assert len(experiment.fetch_trials()) == 1
 
-            assert client.suggest() is None
+            with pytest.raises(SampleTimeout):
+                client.suggest()
 
     def test_suggest_is_done(self):
         """Verify that completed experiments cannot suggest new trials"""
@@ -637,7 +639,8 @@ class TestSuggest:
             assert len(experiment.fetch_trials()) == 10
             assert client.is_broken
 
-            assert client.suggest() is None
+            with pytest.raises(BrokenExperiment):
+                client.suggest()
 
     def test_suggest_is_done_race_condition(self, monkeypatch):
         """Verify that inability to suggest because is_done becomes True during produce() is
@@ -681,7 +684,8 @@ class TestSuggest:
             assert len(experiment.fetch_trials()) == 1
             assert not client.is_broken
 
-            assert client.suggest() is None
+            with pytest.raises(BrokenExperiment):
+                client.suggest()
 
             assert len(experiment.fetch_trials()) == 1
             assert client.is_broken

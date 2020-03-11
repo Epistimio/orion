@@ -568,6 +568,8 @@ class TestFidelity(object):
         assert dim.sample() == [2]
         dim = Fidelity('epoch', 1, 5)
         assert dim.sample() == [5]
+        dim = Fidelity('epoch', 1, 5)
+        assert dim.sample(4) == [5] * 4
 
     def test_default_value(self):
         """Make sure Fidelity simply returns `high`"""

@@ -66,8 +66,10 @@ class ExperimentBranchBuilder:
         self.conflicts = conflicts
 
         for key, value in branching_arguments.items():
-            if value is None:
+            if value is None and key in orion.core.config.evc:
                 branching_arguments[key] = orion.core.config.evc[key]
+
+        self.branching_arguments = branching_arguments
 
         self.conflicting_config.update(branching_arguments)
         self.resolve_conflicts()
@@ -93,7 +95,7 @@ class ExperimentBranchBuilder:
 
             resolution = self.conflicts.try_resolve(
                 conflict, silence_errors=silence_errors,
-                **conflict.get_marked_arguments(self.conflicts))
+                **conflict.get_marked_arguments(self.conflicts, **self.branching_arguments))
 
             if resolution and (self.manual_resolution and not resolution.is_marked):
                 self.conflicts.revert(resolution)
