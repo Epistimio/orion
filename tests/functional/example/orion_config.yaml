@@ -7,6 +7,5 @@ algorithms:
     seed: 1
 
 database:
-  type: 'mongodb'
-  name: 'orion_test'
-  host: 'mongodb://user:pass@localhost'
+  type: 'pickleddb'
+  host: '~/.config/orion.core/test-db.pkl'
