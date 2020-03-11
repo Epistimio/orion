@@ -3,6 +3,7 @@
 """Example usage and tests for :mod:`orion.algo.base`."""
 
 from orion.algo.base import BaseAlgorithm
+from orion.algo.space import Integer, Real, Space
 
 
 def test_init(dumbalgo):
@@ -69,3 +70,45 @@ def test_space_setter(dumbalgo):
     assert algo.naedw.value == 9
     assert algo.naekei.space == 'etsh'
     assert algo.naekei.judgement == 10
+
+
+def test_state_dict(dumbalgo):
+    """Check whether trials_info is in the state dict"""
+    nested_algo = {'DumbAlgo': dict(
+        value=6,
+        scoring=5
+        )}
+    algo = dumbalgo(8, value=1, subone=nested_algo)
+    algo.suggest()
+    assert not algo.state_dict['_trials_info']
+    algo.observe([(1, 2)], [{'objective': 3}])
+    assert len(algo.state_dict['_trials_info']) == 1
+    algo.observe([(1, 2)], [{'objective': 3}])
+    assert len(algo.state_dict['_trials_info']) == 1
+
+
+def test_is_done(monkeypatch, dumbalgo):
+    """Check whether algorithm will stop with base algorithm cardinality check"""
+    monkeypatch.delattr(dumbalgo, 'is_done')
+
+    space = Space()
+    space.register(Integer('yolo1', 'uniform', 1, 4))
+
+    algo = dumbalgo(space)
+    algo.suggest()
+    for i in range(1, 5):
+        algo.observe([i], [{'objective': 3}])
+
+    assert len(algo.state_dict['_trials_info']) == 4
+    assert algo.is_done
+
+    space = Space()
+    space.register(Real('yolo1', 'uniform', 1, 4))
+
+    algo = dumbalgo(space)
+    algo.suggest()
+    for i in range(1, 5):
+        algo.observe([i], [{'objective': 3}])
+
+    assert len(algo.state_dict['_trials_info']) == 4
+    assert not algo.is_done
