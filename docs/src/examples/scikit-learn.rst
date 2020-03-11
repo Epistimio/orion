@@ -104,6 +104,5 @@ of the optimization with the sub-command ``$ orion info``:
 
    orion info -n scitkit-iris-tutorial
 
-You can also query the results from the database using Oríon's python API. Check out
-https://orion.readthedocs.io/en/latest/user/monitoring.html#library-api to learn more and see
-examples.
+You can also query the results from the database using :ref:`Oríon's python API
+<library-api-results>`. Check it out to learn more and see examples.
