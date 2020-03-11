@@ -73,8 +73,6 @@ class Producer(object):
 
     def _sample_guard(self, start):
         """Check that the time taken sampling is less than max_idle_time"""
-        # FIXME: time taken is arbitrary, should be refactored to retry time
-        # this guard from not sampling too many times without success
         if time.time() - start > self.max_idle_time:
             raise SampleTimeout(
                 "Algorithm could not sample new points in less than {} seconds."
@@ -118,7 +116,7 @@ class Producer(object):
 
         """
         # FIXME: Relying on DB to guarantee uniqueness
-        # when the trial history will be  held by that algo we can move that logic out of the DB
+        # when the trial history will be held by that algo we can move that logic out of the DB
 
         log.debug("#### Convert point to `Trial` object.")
         new_trial = format_trials.tuple_to_trial(new_point, self.space)
