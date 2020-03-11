@@ -8,6 +8,13 @@ from orion.client import create_experiment
 import orion.core.cli
 from orion.storage.base import get_storage
 
+@pytest.fixture(autouse=True)
+def cleanup_files(monkeypatch):
+    yield
+    file_path = '~/.config/orion.core/test-db.pkl'
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
 
 def test_script_integrity(capsys):
     """Verifies the example script can run in standalone via `python ...`."""
@@ -23,7 +30,7 @@ def test_script_integrity(capsys):
 
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
-def test_orion_runs_script(monkeypatch, database):
+def test_orion_runs_script(monkeypatch):
     """Verifies Oríon can execute the example script."""
     script = os.path.abspath("examples/scikitlearn-iris/main.py")
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -32,16 +39,14 @@ def test_orion_runs_script(monkeypatch, database):
     orion.core.cli.main(["hunt", "--config", config, "python", script,
                          "orion~choices([0.1])"])
 
-    exps = list(database.experiments.find({'name': 'scikit-iris-tutorial'}))
-    assert len(exps) == 1
-
-    exp = exps[0]
-    assert exp['version'] == 1
-    assert len(exp['space']) == 1
-    assert '/_pos_2' in exp['space']
+    experiment = create_experiment(name="scikit-iris-tutorial")
+    assert experiment is not None
+    assert experiment.version == 1
+    assert len(experiment.space.items()) == 1
+    assert experiment.space.items()[0][0] == '/_pos_2'
 
     storage = get_storage()
-    trials = storage.fetch_trials(uid=exp['_id'])
+    trials = storage.fetch_trials(uid=experiment.id)
     assert len(trials) == 1
 
     trial = trials[0]
