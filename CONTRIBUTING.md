@@ -33,7 +33,7 @@ We're thrilled to hear you found a way to make Oríon better through minor impro
 Before creating enhancement suggestions, please check that your idea is not already present in the list of issues. You might find that you don't need to create one and can just join in the discussion directly and give your opinion!
 
 When suggesting enhancements, it is a good idea to:
-- A clear and descriptive title for the issue
+- Write a clear and descriptive title for the issue
 - Motivate why this feature is relevant regarding [Oríon's mission](https://github.com/Epistimio/orion).
 - Explain in detail how it would work.
 - Keep the scope as narrow as possible, to make it easier to implement.
