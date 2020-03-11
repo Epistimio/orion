@@ -47,6 +47,8 @@ During this processs keep in mind to:
 - Create a descriptive and clear title for the PR
 - Motivate the *why* and *how* of the PR (get inspiration from current or past PRs!)
 - Write [good commits](https://chris.beams.io/posts/git-commit/)
+- Include tests for new features or bug fixes
+- Update the source code documentation (docstring) and, if applicable, the [general documentation](https://orion.readthedocs.io/en/latest/index.html)
 
 Next, you need to get familiar with the developer documentation. You will find the instructions to set up your development environment, including how to use the test suite and verify you changes will pass the CI as well as our style guides for source code and documentation.
 
