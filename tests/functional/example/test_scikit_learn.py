@@ -42,8 +42,10 @@ def test_orion_runs_script(monkeypatch):
     experiment = create_experiment(name="scikit-iris-tutorial")
     assert experiment is not None
     assert experiment.version == 1
-    assert len(experiment.space.items()) == 1
-    assert experiment.space.items()[0][0] == '/_pos_2'
+
+    keys = experiment.space.keys()
+    assert len(keys) == 1
+    assert '/_pos_2' in keys
 
     storage = get_storage()
     trials = storage.fetch_trials(uid=experiment.id)
