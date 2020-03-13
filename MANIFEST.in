@@ -2,6 +2,7 @@
 include LICENSE
 include *.rst
 include ROADMAP.md
+include CONTRIBUTING.md
 exclude RESEARCH.md
 
 # Control and setup helpers
