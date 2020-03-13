@@ -17,3 +17,5 @@ def setup_database():
     os.environ['ORION_DB_ADDRESS'] = temporary_file.name
     yield
     temporary_file.close()
+    os.environ.unsetenv("ORION_DB_TYPE")
+    os.environ.unsetenv("ORION_DB_ADDRESS")
