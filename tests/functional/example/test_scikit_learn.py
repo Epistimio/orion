@@ -21,8 +21,6 @@ def test_script_integrity(capsys):
         "The example script encountered an error during its execution."
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
 @pytest.mark.usefixtures("setup_database")
 def test_orion_runs_script(monkeypatch):
     """Verifies Oríon can execute the example script."""
@@ -50,8 +48,6 @@ def test_orion_runs_script(monkeypatch):
     assert trial.params['/_pos_2'] == 0.1
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
 @pytest.mark.usefixtures("setup_database")
 def test_result_reproducibility(monkeypatch):
     """Verifies the script results stays consistent (with respect to the documentation)."""
