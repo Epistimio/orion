@@ -9,15 +9,6 @@ import orion.core.cli
 from orion.storage.base import get_storage
 
 
-@pytest.fixture(autouse=True)
-def cleanup_files(monkeypatch):
-    """Clean up the database file after tests."""
-    yield
-    file_path = '~/.config/orion.core/test-db.pkl'
-    if os.path.exists(file_path):
-        os.remove(file_path)
-
-
 def test_script_integrity(capsys):
     """Verifies the example script can run in standalone via `python ...`."""
     script = os.path.abspath("examples/scikitlearn-iris/main.py")
@@ -32,6 +23,7 @@ def test_script_integrity(capsys):
 
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
+@pytest.mark.usefixtures("setup_database")
 def test_orion_runs_script(monkeypatch):
     """Verifies Oríon can execute the example script."""
     script = os.path.abspath("examples/scikitlearn-iris/main.py")
@@ -60,6 +52,7 @@ def test_orion_runs_script(monkeypatch):
 
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
+@pytest.mark.usefixtures("setup_database")
 def test_result_reproducibility(monkeypatch):
     """Verifies the script results stays consistent (with respect to the documentation)."""
     script = os.path.abspath("examples/scikitlearn-iris/main.py")

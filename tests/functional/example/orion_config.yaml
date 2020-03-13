@@ -5,7 +5,3 @@ max_trials: 1
 algorithms:
   random:
     seed: 1
-
-database:
-  type: 'pickleddb'
-  host: '~/.config/orion.core/test-db.pkl'
