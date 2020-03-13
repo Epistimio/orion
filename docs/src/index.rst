@@ -21,6 +21,7 @@
    user/algorithms
    user/script
    user/evc
+   user/config
 
 .. toctree::
    :caption: Examples

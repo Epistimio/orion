@@ -250,7 +250,7 @@ def test_workon():
     with OrionState():
         experiment = experiment_builder.build_from_args(config)
 
-        workon(experiment)
+        workon(experiment, 100, 100, 100, 100, 100)
 
         storage = get_storage()
 

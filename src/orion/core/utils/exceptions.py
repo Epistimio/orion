@@ -85,3 +85,23 @@ class BranchingEvent(Exception):
 
     def __init__(self, status, message=BRANCHING_ERROR_MESSAGE):
         super().__init__(message.format(status))
+
+
+class SampleTimeout(Exception):
+    """Raised when the algorithm is not able to sample new unique points in time"""
+
+    pass
+
+
+class WaitingForTrials(Exception):
+    """Raised when the algorithm needs to wait for some trials to complete before it can suggest new
+    ones
+    """
+
+    pass
+
+
+class BrokenExperiment(Exception):
+    """Raised when too many trials failed in an experiment and it is now considered broken"""
+
+    pass

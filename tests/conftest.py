@@ -20,6 +20,21 @@ from orion.storage.base import Storage
 from orion.storage.legacy import Legacy
 
 
+@pytest.fixture(scope="session", autouse=True)
+def shield_from_user_config(request):
+    """Do not read user's yaml global config."""
+    _pop_out_yaml_from_config(orion.core.config)
+
+
+def _pop_out_yaml_from_config(config):
+    """Remove any configuration fetch from yaml file"""
+    for key in config._config.keys():
+        config._config[key].pop('yaml', None)
+
+    for key in config._subconfigs.keys():
+        _pop_out_yaml_from_config(config._subconfigs[key])
+
+
 class DumbAlgo(BaseAlgorithm):
     """Stab class for `BaseAlgorithm`."""
 
@@ -55,14 +70,17 @@ class DumbAlgo(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {'index': self._index, 'suggested': self._suggested, 'num': self._num,
-                'done': self.done}
+        _state_dict = super(DumbAlgo, self).state_dict
+        _state_dict.update({'index': self._index, 'suggested': self._suggested, 'num': self._num,
+                            'done': self.done})
+        return _state_dict
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
 
         :param state_dict: Dictionary representing state of an algorithm
         """
+        super(DumbAlgo, self).set_state(state_dict)
         self._index = state_dict['index']
         self._suggested = state_dict['suggested']
         self._num = state_dict['num']
@@ -84,6 +102,7 @@ class DumbAlgo(BaseAlgorithm):
 
     def observe(self, points, results):
         """Log inputs."""
+        super(DumbAlgo, self).observe(points, results)
         self._points += points
         self._results += results
 

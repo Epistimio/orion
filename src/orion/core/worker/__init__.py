@@ -12,6 +12,7 @@
 import itertools
 import logging
 
+from orion.core.utils.exceptions import WaitingForTrials
 from orion.core.utils.format_terminal import format_stats
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer
@@ -25,6 +26,11 @@ def reserve_trial(experiment, producer, _depth=1):
     trial = experiment.reserve_trial()
 
     if trial is None and not experiment.is_done:
+
+        if _depth > 10:
+            raise WaitingForTrials('No trials are available at the moment '
+                                   'wait for current trials to finish')
+
         log.debug("#### Failed to pull a new trial from database.")
 
         log.debug("#### Fetch most recent completed trials and update algorithm.")
@@ -68,18 +74,20 @@ orion status --name {experiment.name} --version {experiment.version} --all
 """
 
 
-def workon(experiment, worker_trials=None):
+def workon(experiment, max_trials=None, max_broken=None, max_idle_time=None, heartbeat=None,
+           user_script_config=None, interrupt_signal_code=None):
     """Try to find solution to the search problem defined in `experiment`."""
-    producer = Producer(experiment)
-    consumer = Consumer(experiment)
+    producer = Producer(experiment, max_idle_time)
+    consumer = Consumer(experiment, heartbeat, user_script_config, interrupt_signal_code)
 
     log.debug("#####  Init Experiment  #####")
     try:
-        iterator = range(int(worker_trials))
+        iterator = range(int(max_trials))
     except (OverflowError, TypeError):
         # When worker_trials is inf
         iterator = itertools.count()
 
+    worker_broken_trials = 0
     for _ in iterator:
         log.debug("#### Poll for experiment termination.")
         if experiment.is_broken:
@@ -95,7 +103,14 @@ def workon(experiment, worker_trials=None):
 
         if trial is not None:
             log.debug("#### Successfully reserved %s to evaluate. Consuming...", trial)
-            consumer.consume(trial)
+            success = consumer.consume(trial)
+            if not success:
+                worker_broken_trials += 1
+
+        if worker_broken_trials >= max_broken:
+            print("#### Worker has reached broken trials threshold, terminating.")
+            print(worker_broken_trials, max_broken)
+            break
 
     print('\n' + format_stats(experiment))
 

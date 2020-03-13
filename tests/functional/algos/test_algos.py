@@ -11,7 +11,7 @@ from orion.storage.base import get_storage
 
 
 config_files = ['random_config.yaml']
-fidelity_config_files = ['random_config.yaml', 'asha_config.yaml']
+fidelity_config_files = ['random_config.yaml', 'asha_config.yaml', 'hyperband.yaml']
 fidelity_only_config_files = list(set(fidelity_config_files) - set(config_files))
 
 
