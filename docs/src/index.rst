@@ -60,8 +60,8 @@
    :maxdepth: 1
 
    developer/overview
+   developer/standards
    developer/testing
    developer/documenting
-   developer/standards
 
 .. Don't fetch reference/viz
