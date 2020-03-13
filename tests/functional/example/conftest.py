@@ -11,5 +11,9 @@ import pytest
 @pytest.fixture(scope="function")
 def setup_database():
     """Configure the database"""
+    temporary_file = tempfile.NamedTemporaryFile()
+
     os.environ['ORION_DB_TYPE'] = "pickleddb"
-    os.environ['ORION_DB_ADDRESS'] = tempfile.NamedTemporaryFile().name
+    os.environ['ORION_DB_ADDRESS'] = temporary_file.name
+    yield
+    temporary_file.close()
