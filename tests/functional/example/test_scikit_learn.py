@@ -8,8 +8,10 @@ from orion.client import create_experiment
 import orion.core.cli
 from orion.storage.base import get_storage
 
+
 @pytest.fixture(autouse=True)
 def cleanup_files(monkeypatch):
+    """Clean up the database file after tests."""
     yield
     file_path = '~/.config/orion.core/test-db.pkl'
     if os.path.exists(file_path):
