@@ -15,6 +15,7 @@ import logging
 from numpy import inf as infinity
 
 from orion.core.io.database import DuplicateKeyError
+from orion.core.utils.exceptions import BrokenExperiment, SampleTimeout, WaitingForTrials
 from orion.core.utils.flatten import flatten, unflatten
 import orion.core.utils.format_trials as format_trials
 import orion.core.worker
@@ -384,17 +385,43 @@ class ExperimentClient:
         Returns
         -------
         `orior.core.worker.trial.Trial` or None
-            Reserved trial for execution. Will return None if experiment is done or broken
+            Reserved trial for execution. Will return None if experiment is done.
             of if the algorithm cannot suggest until other trials complete.
 
+        Raises
+        ------
+        `WaitingForTrials`
+            if the experiment is not completed and algorithm needs to wait for some
+            trials to complete before it can suggest new trials.
+
+        `BrokenExperiment`
+            if too many trials failed to run and the experiment cannot continue.
+            This is determined by ``max_broken`` in the configuration of the experiment.
+
+        `SampleTimeout`
+            if the algorithm of the experiment could not sample new unique points.
+
         """
-        if self.is_done or self.is_broken:
+        if self.is_broken:
+            raise BrokenExperiment("Trials failed too many times")
+
+        if self.is_done:
             return None
 
         try:
             trial = orion.core.worker.reserve_trial(self._experiment, self._producer)
-        except RuntimeError:
-            return None
+
+        except WaitingForTrials as e:
+            if self.is_broken:
+                raise BrokenExperiment("Trials failed too many times") from e
+
+            raise e
+
+        except SampleTimeout as e:
+            if self.is_broken:
+                raise BrokenExperiment("Trials failed too many times") from e
+
+            raise e
 
         if trial is not None:
             self._maintain_reservation(trial)

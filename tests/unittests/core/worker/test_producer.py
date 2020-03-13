@@ -8,6 +8,7 @@ import time
 import pytest
 
 from orion.core.io.experiment_builder import build
+from orion.core.utils.exceptions import SampleTimeout, WaitingForTrials
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial
@@ -540,11 +541,11 @@ def test_exceed_max_idle_time_because_of_duplicates(producer, database, random_d
     producer.update()
 
     start = time.time()
-    with pytest.raises(RuntimeError) as exc_info:
-        producer.produce()
-    assert timeout <= time.time() - start < timeout + 1
 
-    assert "Algorithm could not sample new points" in str(exc_info.value)
+    with pytest.raises(SampleTimeout):
+        producer.produce()
+
+    assert timeout <= time.time() - start < timeout + 1
 
 
 def test_exceed_max_idle_time_because_of_optout(producer, database, random_dt, monkeypatch):
@@ -563,12 +564,8 @@ def test_exceed_max_idle_time_because_of_optout(producer, database, random_dt, m
 
     producer.update()
 
-    start = time.time()
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(WaitingForTrials):
         producer.produce()
-    assert timeout <= time.time() - start < timeout + 1
-
-    assert "Algorithm could not sample new points" in str(exc_info.value)
 
 
 def test_stops_if_algo_done(producer, database, random_dt, monkeypatch):
@@ -669,9 +666,7 @@ def test_evc_duplicates(monkeypatch, producer):
     monkeypatch.setattr(new_experiment.algorithms, 'suggest', suggest)
 
     producer.update()
-    with pytest.raises(RuntimeError) as exc:
+    with pytest.raises(SampleTimeout):
         producer.produce()
-
-    assert exc.match('Algorithm could not sample new points in less')
 
     assert len(new_experiment.fetch_trials(with_evc_tree=False)) == 0
