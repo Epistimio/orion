@@ -8,7 +8,7 @@ import tempfile
 import pytest
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def setup_database():
     """Configure the database"""
     os.environ['ORION_DB_TYPE'] = "pickleddb"
