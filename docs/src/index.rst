@@ -27,6 +27,7 @@
    :caption: Examples
    :maxdepth: 1
 
+   examples/scikit-learn
    examples/pytorch_cifar
    examples/pytorch_a2c_ppo
    examples/cluster
