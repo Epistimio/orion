@@ -60,6 +60,7 @@
    :maxdepth: 1
 
    developer/overview
+   developer/installing
    developer/standards
    developer/testing
    developer/documenting
