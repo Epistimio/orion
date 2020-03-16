@@ -10,7 +10,7 @@ We can jump straight into getting you started for your first contribution.
 The steps are:
 
 #. :doc:`Installing the development environment <installing>`.
-#. Get familiar with the :doc:`coding conventions <standards>`
+#. Get familiar with the :doc:`project's standards and guidelines <standards>`
 #. Implement your changes and :doc:`testing <testing>`
 #. :doc:`Document your changes <documenting>`
 #. Submit a `pull request <https://github.com/epistimio/orion/pulls>`_ and ask for a review when the build is passing in the CI.
