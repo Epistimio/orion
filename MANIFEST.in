@@ -19,7 +19,7 @@ exclude .mailmap
 prune conda/
 
 # Include src, tests, docs
-recursive-include docs *.rst *.py *.gitkeep
+recursive-include docs *.rst *.py *.gitkeep *.png
 include docs/requirements.txt
 prune docs/build
 prune docs/src/reference
