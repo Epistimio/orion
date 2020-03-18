@@ -14,4 +14,5 @@ TODO
    algo/space
    algo/base
    algo/random
+   algo/hyperband
    algo/asha
