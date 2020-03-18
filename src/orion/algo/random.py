@@ -10,7 +10,7 @@
 """
 import numpy
 
-from orion.algo.base import BaseAlgorithm
+from orion.algo.base import BaseAlgorithm, infer_trial_id
 
 
 class Random(BaseAlgorithm):
@@ -57,4 +57,15 @@ class Random(BaseAlgorithm):
         .. note:: New parameters must be compliant with the problem's domain
            `orion.algo.space.Space`.
         """
-        return self.space.sample(num, seed=tuple(self.rng.randint(0, 1000000, size=3)))
+        points = []
+        point_ids = set(self._trials_info.keys())
+        i = 0
+        while len(points) < num:
+            new_point = self.space.sample(1, seed=tuple(self.rng.randint(0, 1000000, size=3)))[0]
+            point_id = infer_trial_id(new_point)
+            if point_id not in point_ids:
+                point_ids.add(point_id)
+                points.append(new_point)
+            i += 1
+
+        return points
