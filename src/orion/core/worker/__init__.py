@@ -99,7 +99,12 @@ def workon(experiment, max_trials=None, max_broken=None, max_idle_time=None, hea
             break
 
         log.debug("#### Try to reserve a new trial to evaluate.")
-        trial = reserve_trial(experiment, producer)
+        try:
+            trial = reserve_trial(experiment, producer)
+        except WaitingForTrials as ex:
+            print("### Experiment failed to reserve new trials: {reason}, terminating. "
+                  .format(reason=str(ex)))
+            break
 
         if trial is not None:
             log.debug("#### Successfully reserved %s to evaluate. Consuming...", trial)

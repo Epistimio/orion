@@ -58,6 +58,58 @@ Configuration
 
 Seed for the random number generator used to sample new trials. Default is ``None``.
 
+.. _hyperband-algorithm:
+
+Hyperband
+---------
+
+`Hyperband`_ extends the `SuccessiveHalving`_ algorithm by providing an way to exploit a
+fixed budget with different number of configurations for ``SuccessiveHalving`` algorithm to
+evaluate. Each run of ``SuccessiveHalving`` will be defined as a ``bracket`` in Hyperband.
+Hyperband requires two inputs (1) ``R``, the maximum amount of resource that can be allocated
+to a single configuration, and (2) ``eta``, an input that controls the proportion of
+configurations discarded in each round of SuccessiveHalving.
+
+To use Hyperband in Oríon, you must specify one parameter with ``fidelity(low, high, base)``
+as the prior, ``low`` will be ignored, ``high`` will be taken as the maximum resource ``R``
+and ``base`` will be taken as the reduction factor ``eta``.
+
+Number of epochs usually can be used as the resource but the algorithm is generic and can be
+applied to any multi-fidelity setting. That is, you can use training time, specifying the
+fidelity with ``--epochs~fidelity(low=1, high=81, base=3)``
+(assuming your script takes this argument in commandline),
+but you could also use other fidelity
+such as dataset size ``--dataset-size~fidelity(low=500, high=50000)``
+(assuming your script takes this argument and adapt dataset size accordingly).
+
+
+.. _SuccessiveHalving: https://arxiv.org/abs/1502.07943
+
+.. note::
+
+   Current implementation does not support more than one fidelity dimension.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+    algorithms:
+       asha:
+          seed: null
+          frequency: 1
+
+
+``seed``
+
+Seed for the random number generator used to sample new trials. Default is ``None``.
+
+``frequency``
+
+Number of execution for Hyperband. Default is ``numpy.inf`` which means to run Hyperband
+until no new trials can be suggested.
+
+
 .. _ASHA:
 
 ASHA
