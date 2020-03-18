@@ -45,6 +45,7 @@ class Producer(object):
             raise RuntimeError("Experiment object provided to Producer has not yet completed"
                                " initialization.")
         self.algorithm = experiment.algorithms
+        self.algorithm.algorithm.max_trials = experiment.max_trials
         if max_idle_time is None:
             max_idle_time = orion.core.config.worker.max_idle_time
         self.max_idle_time = max_idle_time
@@ -64,7 +65,7 @@ class Producer(object):
 
     def backoff(self):
         """Wait some time and update algorithm."""
-        waiting_time = min(0, random.gauss(1, 0.2))
+        waiting_time = max(0, random.gauss(1, 0.2))
         log.info('Waiting %d seconds', waiting_time)
         time.sleep(waiting_time)
         log.info('Updating algorithm.')
@@ -86,7 +87,8 @@ class Producer(object):
         self.failure_count = 0
         start = time.time()
 
-        while sampled_points < self.pool_size and not self.algorithm.is_done:
+        while (sampled_points < self.pool_size and
+               not (self.experiment.is_done or self.naive_algorithm.is_done)):
             self._sample_guard(start)
 
             log.debug("### Algorithm suggests new points.")

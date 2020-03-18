@@ -386,9 +386,11 @@ def test_fetch_non_completed_trials():
         assert set(trial.status for trial in trials) == set(non_completed_stati)
 
 
-def test_is_done_property(algorithm):
-    """Check experiment stopping conditions for maximum number of trials completed."""
-    with OrionState(trials=generate_trials((['completed'] * 10) + (['reserved'] * 5))) as cfg:
+def test_is_done_property_with_pending(algorithm):
+    """Check experiment stopping conditions when there is pending trials."""
+    completed = ['completed'] * 10
+    reserved = ['reserved'] * 5
+    with OrionState(trials=generate_trials(completed + reserved)) as cfg:
         exp = Experiment('supernaekei')
         exp._id = cfg.trials[0]['experiment']
 
@@ -397,24 +399,35 @@ def test_is_done_property(algorithm):
 
         assert exp.is_done
 
-        exp.max_trials = 1000
+        exp.max_trials = 15
 
+        # There is only 10 completed trials
+        assert not exp.is_done
+
+        exp.algorithms.algorithm.done = True
+
+        # Algorithm is done but 5 trials are pending
         assert not exp.is_done
 
 
-def test_is_done_property_with_algo(algorithm):
-    """Check experiment stopping conditions for algo which converged."""
-    # Configure experiment to have instantiated algo
-    with OrionState(trials=generate_trials((['completed'] * 10) + (['reserved'] * 5))) as cfg:
+def test_is_done_property_no_pending(algorithm):
+    """Check experiment stopping conditions when there is no pending trials."""
+    completed = ['completed'] * 10
+    broken = ['broken'] * 5
+    with OrionState(trials=generate_trials(completed + broken)) as cfg:
         exp = Experiment('supernaekei')
         exp._id = cfg.trials[0]['experiment']
-        exp.max_trials = 100
+
         exp.algorithms = algorithm
 
+        exp.max_trials = 15
+
+        # There is only 10 completed trials and algo not done.
         assert not exp.is_done
 
-        algorithm.algorithm.done = True
+        exp.algorithms.algorithm.done = True
 
+        # Algorithm is done and no pending trials
         assert exp.is_done
 
 
@@ -487,9 +500,11 @@ def test_fetch_completed_trials_from_view():
         assert trials[0].status == 'completed'
 
 
-def test_view_is_done_property(algorithm):
-    """Check experiment stopping conditions accessed from view."""
-    with OrionState(trials=generate_trials((['completed'] * 10) + (['reserved'] * 5))) as cfg:
+def test_view_is_done_property_with_pending(algorithm):
+    """Check experiment stopping conditions from view when there is pending trials."""
+    completed = ['completed'] * 10
+    reserved = ['reserved'] * 5
+    with OrionState(trials=generate_trials(completed + reserved)) as cfg:
         exp = Experiment('supernaekei')
         exp._id = cfg.trials[0]['experiment']
         exp.algorithms = algorithm
@@ -499,14 +514,22 @@ def test_view_is_done_property(algorithm):
 
         assert exp_view.is_done
 
-        exp.max_trials = 1000
+        exp.max_trials = 15
 
+        # There is only 10 completed trials
+        assert not exp_view.is_done
+
+        exp.algorithms.algorithm.done = True
+
+        # Algorithm is done but 5 trials are pending
         assert not exp_view.is_done
 
 
-def test_view_algo_is_done_property(algorithm):
-    """Check experiment's algo stopping conditions accessed from view."""
-    with OrionState(trials=generate_trials((['completed'] * 10) + (['reserved'] * 5))) as cfg:
+def test_view_is_done_property_no_pending(algorithm):
+    """Check experiment stopping conditions from view when there is no pending trials."""
+    completed = ['completed'] * 10
+    broken = ['broken'] * 5
+    with OrionState(trials=generate_trials(completed + broken)) as cfg:
         exp = Experiment('supernaekei')
         exp._id = cfg.trials[0]['experiment']
         exp.algorithms = algorithm
@@ -514,10 +537,16 @@ def test_view_algo_is_done_property(algorithm):
 
         exp_view = ExperimentView(exp)
 
+        exp.algorithms = algorithm
+
+        exp.max_trials = 15
+
+        # There is only 10 completed trials and algo not done.
         assert not exp_view.is_done
 
-        algorithm.algorithm.done = True
+        exp.algorithms.algorithm.done = True
 
+        # Algorithm is done and no pending trials
         assert exp_view.is_done
 
 
