@@ -79,7 +79,7 @@ def test_compute_budgets():
                                       [(9, 9), (3, 27), (1, 81)],
                                       [(6, 27), (2, 81)], [(5, 81)]]
     assert compute_budgets(16, 4) == [[(16, 1), (4, 4), (1, 16)], [(4, 4), (1, 16)], [(3, 16)]]
-    assert compute_budgets(16, 5) == [[(5, 4), (1, 16)], [(2, 16)]]
+    assert compute_budgets(16, 5) == [[(5, 3), (1, 16)], [(2, 16)]]
 
 
 class TestBracket():
