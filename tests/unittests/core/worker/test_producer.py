@@ -50,7 +50,7 @@ def update_naive_algorithm(producer):
 
 
 @pytest.fixture()
-def producer(hacked_exp, random_dt, exp_config, categorical_values):
+def producer(monkeypatch, hacked_exp, random_dt, exp_config, categorical_values):
     """Return a setup `Producer`."""
     # make init done
 
@@ -60,7 +60,16 @@ def producer(hacked_exp, random_dt, exp_config, categorical_values):
 
     hacked_exp.producer['strategy'] = DumbParallelStrategy()
 
-    return Producer(hacked_exp)
+    producer = Producer(hacked_exp)
+
+    def backoff(self):
+        """Dont wait, just update."""
+        self.update()
+        self.failure_count += 1
+
+    monkeypatch.setattr(Producer, 'backoff', backoff)
+
+    return producer
 
 
 def test_algo_observe_completed(producer):
@@ -670,3 +679,30 @@ def test_evc_duplicates(monkeypatch, producer):
         producer.produce()
 
     assert len(new_experiment.fetch_trials(with_evc_tree=False)) == 0
+
+
+def test_algorithm_is_done(monkeypatch, producer):
+    """Verify that producer won't register new samples if algorithm is done meanwhile."""
+    producer.experiment.max_trials = 8
+    producer.experiment.pool_size = 10
+    # Reset Producer to test that max_trial is set properly during init.
+    producer = Producer(producer.experiment)
+
+    def suggest_one_only(self, num=1):
+        """Return only one point, whatever `num` is"""
+        return [('gru', 'rnn')]
+
+    monkeypatch.delattr(producer.experiment.algorithms.algorithm.__class__, 'is_done')
+    monkeypatch.setattr(producer.experiment.algorithms.algorithm.__class__, 'suggest',
+                        suggest_one_only)
+
+    assert producer.experiment.pool_size == 10
+    trials_in_exp_before = len(producer.experiment.fetch_trials())
+    assert trials_in_exp_before == producer.experiment.max_trials - 1
+
+    producer.update()
+    producer.produce()
+
+    assert len(producer.experiment.fetch_trials()) == producer.experiment.max_trials
+    assert producer.naive_algorithm.is_done
+    assert not producer.experiment.is_done

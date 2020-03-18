@@ -205,6 +205,10 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         """
         if len(self._trials_info) >= self.space.cardinality:
             return True
+
+        if len(self._trials_info) >= getattr(self, 'max_trials', float('inf')):
+            return True
+
         return False
 
     def score(self, point):  # pylint:disable=no-self-use,unused-argument

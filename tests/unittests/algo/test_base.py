@@ -87,7 +87,7 @@ def test_state_dict(dumbalgo):
     assert len(algo.state_dict['_trials_info']) == 1
 
 
-def test_is_done(monkeypatch, dumbalgo):
+def test_is_done_cardinality(monkeypatch, dumbalgo):
     """Check whether algorithm will stop with base algorithm cardinality check"""
     monkeypatch.delattr(dumbalgo, 'is_done')
 
@@ -112,3 +112,22 @@ def test_is_done(monkeypatch, dumbalgo):
 
     assert len(algo.state_dict['_trials_info']) == 4
     assert not algo.is_done
+
+
+def test_is_done_max_trials(monkeypatch, dumbalgo):
+    """Check whether algorithm will stop with base algorithm max_trials check"""
+    monkeypatch.delattr(dumbalgo, 'is_done')
+
+    space = Space()
+    space.register(Real('yolo1', 'uniform', 1, 4))
+
+    algo = dumbalgo(space)
+    algo.suggest()
+    for i in range(1, 5):
+        algo.observe([[i]], [{'objective': 3}])
+
+    assert len(algo.state_dict['_trials_info']) == 4
+    assert not algo.is_done
+
+    dumbalgo.max_trials = 4
+    assert algo.is_done
