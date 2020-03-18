@@ -6,9 +6,10 @@ import logging
 from multiprocessing import Pool
 import os
 
+from filelock import FileLock, Timeout
 import pytest
 
-from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.io.database import Database, DatabaseTimeout, DuplicateKeyError
 from orion.core.io.database.ephemeraldb import EphemeralCollection
 from orion.core.io.database.pickleddb import find_unpickable_doc, find_unpickable_field, PickledDB
 import orion.core.utils.backward as backward
@@ -443,3 +444,19 @@ def test_unpickable_error_find_document():
     key, value = find_unpickable_field(doc)
     assert key == 'b_unpickable', 'should return the unpickable field'
     assert isinstance(value, UnpickableClass), 'should return the unpickable value'
+
+
+def test_query_timeout(monkeypatch, orion_db):
+    """Verify that filelock.Timeout is catched and reraised as DatabaseTimeout"""
+    orion_db.timeout = 0.1
+
+    def never_acquire(self, *arg, **kwargs):
+        """Do not try to acquire, raise timeout"""
+        raise Timeout(self)
+
+    monkeypatch.setattr(FileLock, 'acquire', never_acquire)
+
+    with pytest.raises(DatabaseTimeout) as exc:
+        orion_db.read('whatever', {'it should': 'fail'})
+
+    assert exc.match('Could not acquire lock for PickledDB after 0.1 seconds.')
