@@ -313,7 +313,6 @@ class Hyperband(BaseAlgorithm):
         """
         for point, result in zip(points, results):
 
-            self._refresh_bracket()
             bracket = self._get_bracket(point)
 
             try:
