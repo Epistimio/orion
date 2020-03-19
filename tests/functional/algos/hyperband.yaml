@@ -4,7 +4,7 @@ max_trials: 100
 
 algorithms:
   hyperband:
-    frequency: 5
+    repetitions: 5
     seed: 1
 
 database:

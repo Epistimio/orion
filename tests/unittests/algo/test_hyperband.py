@@ -29,7 +29,7 @@ def budgets():
 @pytest.fixture
 def hyperband(space):
     """Return an instance of Hyperband."""
-    return Hyperband(space, frequency=1)
+    return Hyperband(space, repetitions=1)
 
 
 @pytest.fixture
@@ -209,7 +209,7 @@ class TestBracket():
         bracket.rungs[1] = rung_1
         bracket.rungs[2] = rung_2
 
-        assert str(bracket) == 'Bracket(resource=[1, 3, 9], frequency id=1)'
+        assert str(bracket) == 'Bracket(resource=[1, 3, 9], repetition id=1)'
 
 
 class TestHyperband():
@@ -415,7 +415,7 @@ class TestHyperband():
 
     def test_suggest_duplicates_between_execution(self, monkeypatch, hyperband, budgets):
         """Test that sampling collisions are handled."""
-        hyperband.frequency = 2
+        hyperband.repetitions = 2
         bracket = Bracket(hyperband, budgets, 1)
         hyperband.brackets = [bracket]
         bracket.hyperband = hyperband
@@ -731,7 +731,7 @@ class TestHyperband():
         assert hyperband.suggest() is None
 
         # Refresh repeat and execution times property
-        monkeypatch.setattr(hyperband, 'frequency', 2)
+        monkeypatch.setattr(hyperband, 'repetitions', 2)
         monkeypatch.setattr(hyperband, 'executed_times', 0)
         hyperband.observe([(9, 12)], [{'objective': 3 - i}])
         assert not hyperband.is_done

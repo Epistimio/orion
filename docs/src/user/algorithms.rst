@@ -63,7 +63,7 @@ Seed for the random number generator used to sample new trials. Default is ``Non
 Hyperband
 ---------
 
-`Hyperband`_ extends the `SuccessiveHalving`_ algorithm by providing an way to exploit a
+`Hyperband`_ extends the `SuccessiveHalving`_ algorithm by providing a way to exploit a
 fixed budget with different number of configurations for ``SuccessiveHalving`` algorithm to
 evaluate. Each run of ``SuccessiveHalving`` will be defined as a ``bracket`` in Hyperband.
 Hyperband requires two inputs (1) ``R``, the maximum amount of resource that can be allocated
@@ -95,18 +95,20 @@ Configuration
 .. code-block:: yaml
 
     algorithms:
-       asha:
+       hyperband:
           seed: null
-          frequency: 1
+          repetitions: 1
 
 
 ``seed``
 
 Seed for the random number generator used to sample new trials. Default is ``None``.
 
-``frequency``
+``repetitions``
 
-Number of execution for Hyperband. Default is ``numpy.inf`` which means to run Hyperband
+Number of executions for Hyperband. A single execution of Hyperband takes a finite
+budget of ``(log(R)/log(eta) + 1) * (log(R)/log(eta) + 1) * R``, and ``repetitions`` allows you
+to run multiple executions of Hyperband. Default is ``numpy.inf`` which means to run Hyperband
 until no new trials can be suggested.
 
 
