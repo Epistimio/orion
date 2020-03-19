@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.algo.hyperband` -- A Novel Bandit-Based Approach to Hyperparameter Optimization
-============================================================================================
+===========================================================================================
 
 .. module:: hyperband
     :platform: Unix
@@ -108,15 +108,15 @@ class Hyperband(BaseAlgorithm):
     seed: None, int or sequence of int
         Seed for the random number generator used to sample new trials.
         Default: ``None``
-    frequency: int
+    repetitions: int
         Number of execution of Hyperband. Default is numpy.inf which means to
         run Hyperband until no new trials can be suggested.
 
     """
 
-    def __init__(self, space, seed=None, frequency=numpy.inf):
+    def __init__(self, space, seed=None, repetitions=numpy.inf):
         self.brackets = []
-        super(Hyperband, self).__init__(space, seed=seed, frequency=frequency)
+        super(Hyperband, self).__init__(space, seed=seed, repetitions=repetitions)
 
         self.trial_info_wo_fidelity = {}  # Stores Point id (with no fidelity) -> Bracket
 
@@ -135,7 +135,7 @@ class Hyperband(BaseAlgorithm):
         if self.reduction_factor < 2:
             raise AttributeError("Reduction factor for Hyperband needs to be at least 2.")
 
-        self.frequency = frequency
+        self.repetitions = repetitions
 
         # Counter for how many times Hyperband been executed
         self.executed_times = 0
@@ -163,7 +163,7 @@ class Hyperband(BaseAlgorithm):
 
             if _id_wo_fidelity not in self.points_in_suggest_call and \
                     (not _bracket_observed or
-                     (_bracket_observed.frequency_id < bracket.frequency_id and
+                     (_bracket_observed.repetition_id < bracket.repetition_id and
                       _bracket_observed.get_point_max_resource(point) <
                       bracket.rungs[0]['resources'])):
                 # if no duplicated found or the duplicated found existing in previous hyperband
@@ -260,12 +260,12 @@ class Hyperband(BaseAlgorithm):
     def _refresh_bracket(self):
         """Refresh bracket if one hyperband execution is done"""
         if all(bracket.is_done for bracket in self.brackets):
-            self.executed_times = self.brackets[0].frequency_id
+            self.executed_times = self.brackets[0].repetition_id
             logger.debug('Hyperband execution %i is done, required to execute %s times',
-                         self.executed_times, str(self.frequency))
+                         self.executed_times, str(self.repetitions))
 
             # Continue to the next execution if need
-            if self.executed_times < self.frequency:
+            if self.executed_times < self.repetitions:
                 self.brackets = [
                     Bracket(self, bracket_budgets, self.executed_times + 1)
                     for bracket_budgets in self.budgets
@@ -336,7 +336,7 @@ class Hyperband(BaseAlgorithm):
     @property
     def is_done(self):
         """Return True, if all required execution been done."""
-        if self.executed_times >= self.frequency:
+        if self.executed_times >= self.repetitions:
             return True
         return False
 
@@ -360,17 +360,17 @@ class Bracket():
         The hyperband algorithm object which this bracket will be part of.
     budgets: list of tuple
         Each tuple gives the (n_trials, resource_budget) for the respective rung.
-    frequency_id: int
+    repetition_id: int
         The id of hyperband execution this bracket belongs to
 
     """
 
-    def __init__(self, hyperband, budgets, frequency_id):
+    def __init__(self, hyperband, budgets, repetition_id):
         self.hyperband = hyperband
         self.rungs = [dict(resources=budget, n_trials=n_trials, results=dict())
                       for n_trials, budget in budgets]
         self.seed = None
-        self.frequency_id = frequency_id
+        self.repetition_id = repetition_id
 
         logger.debug('Bracket budgets: %s', str(budgets))
 
@@ -384,7 +384,7 @@ class Bracket():
         return self.has_rung_filled(0)
 
     def get_point_max_resource(self, point):
-        """Return the max resource value been tried for a point"""
+        """Return the max resource value that has been tried for a point"""
         max_resource = 0
         _id_wo_fidelity = self.hyperband.get_id(point)
         for rung in self.rungs:
@@ -510,5 +510,5 @@ class Bracket():
 
     def __repr__(self):
         """Return representation of bracket with fidelity levels"""
-        return 'Bracket(resource={}, frequency id={})' \
-            .format([rung['resources'] for rung in self.rungs], self.frequency_id)
+        return 'Bracket(resource={}, repetition id={})' \
+            .format([rung['resources'] for rung in self.rungs], self.repetition_id)
