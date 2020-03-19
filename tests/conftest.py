@@ -47,6 +47,7 @@ class DumbAlgo(BaseAlgorithm):
         self._num = 0
         self._index = 0
         self._points = []
+        self._suggested = None
         self._results = []
         self._score_point = None
         self._judge_point = None
