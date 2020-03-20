@@ -18,6 +18,11 @@ from orion.core.utils import Factory
 log = logging.getLogger(__name__)
 
 
+def infer_trial_id(point):
+    """Compute a hashing of a point"""
+    return hashlib.md5(str(list(point)).encode('utf-8')).hexdigest()
+
+
 # pylint: disable=too-many-public-methods
 class BaseAlgorithm(object, metaclass=ABCMeta):
     """Base class describing what an algorithm can do.
@@ -187,11 +192,10 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
         """
         for point, result in zip(points, results):
-            _point = list(point)
-            _id = hashlib.md5(str(_point).encode('utf-8')).hexdigest()
+            point_id = infer_trial_id(point)
 
-            if _id not in self._trials_info:
-                self._trials_info[_id] = result
+            if point_id not in self._trials_info:
+                self._trials_info[point_id] = result
 
     @property
     def is_done(self):
@@ -201,6 +205,10 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         """
         if len(self._trials_info) >= self.space.cardinality:
             return True
+
+        if len(self._trials_info) >= getattr(self, 'max_trials', float('inf')):
+            return True
+
         return False
 
     def score(self, point):  # pylint:disable=no-self-use,unused-argument

@@ -2,6 +2,7 @@
 *~
 *.sw*
 .idea/
+.vscode/
 .spyderproject
 .spyproject
 .ropeproject
