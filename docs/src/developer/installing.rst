@@ -1,12 +1,12 @@
+***************
 Getting started
-===============
-
+***************
 In this section, we'll guide you to install the dependencies and environment to develop on Oríon.
 We made our best to automate most of the process using Python's ecosystem goodness to facilitate
 your onboarding. Let us know how we can improve!
 
 Oríon
-----------------
+=====
 The first step is to clone your remote repository from Github (if not already done, make sure to
 fork our repository_ first).
 
@@ -30,12 +30,11 @@ Then, you need to deploy the project in `development mode`_ by invoking the ``se
    $ python setup.py develop --optimize=1
 
 Database
------------------------
-
+========
 Follow the same instructions as to install the :ref:`install_database` regularly.
 
 Verifying the installation
---------------------------
+==========================
 For developer's convenience the packages enlisted in the requirements file
 ``dev-requirements.txt`` are meant to facilitate the development process.
 Packages include `tox <https://tox.readthedocs.io/en/latest/>`_ for defining
@@ -51,7 +50,7 @@ verification, and release macros with it. All contexts are defined in
 ``$ tox -e <context name>``.
 
 Continuous Integration
-----------------------
+======================
 .. image:: https://travis-ci.org/epistimio/orion.svg?branch=master
    :target: https://travis-ci.org/epistimio/orion
 
