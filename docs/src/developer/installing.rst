@@ -1,5 +1,5 @@
-Development environment
-=======================
+Getting started
+===============
 
 In this section, we'll guide you to install the dependencies and environment to develop on Oríon.
 We made our best to automate most of the process using Python's ecosystem goodness to facilitate

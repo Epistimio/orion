@@ -1,8 +1,8 @@
 .. contents:: Developer's Guide 102: Documenting
 
-********
-Document
-********
+***********
+Documenting
+***********
 
 We are using `Read The Docs`_ theme for Sphinx_.
 
