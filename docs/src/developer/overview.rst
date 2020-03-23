@@ -11,5 +11,6 @@ The documentation for developers is organized in the following, easy to read, se
 * :doc:`Conventions <standards>`. Get familiar with the project's standards and guidelines
 * :doc:`Testing <testing>`. Implementing your changes and how to test your code
 * :doc:`Documenting <documenting>`. Documenting your changes and updating the documentation
+* :doc:`Continuous Integration <ci>`. Get familiar with our continuous integration setup
 
 When you're done, don't forget to submit your `pull request <https://github.com/epistimio/orion/pulls>`_ and ask for a review when the build is passing in the CI.
