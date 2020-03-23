@@ -44,9 +44,10 @@ specify a location of the tests:
 .. code-block:: sh
 
    $ tox -e devel -- 'path/to/your/tests/'
+   $ tox -e devel -- 'path/to/your/tests/file.py'
+   $ tox -e devel -- 'path/to/your/tests/file.py::test_name'
 
-This way, the tests will be ran automatically everytime you make a change in the specified path.
-You can specify a folder, a file or a specific test.
-This option is also avalable for ``$ tox -e py``.
+This way, the tests will be ran automatically every time you make a change in the specified path,
+file or specific test. This option is also avalable for ``$ tox -e py``.
 
 .. _pytest: https://docs.pytest.org/en/latest/
