@@ -1,6 +1,6 @@
-************************
-Standards and guidelines
-************************
+***********
+Conventions
+***********
 
 In this chapter, we present the different standards we use throughout the project. The coding and
 documentation standards are enforced during the PR process automatically.
