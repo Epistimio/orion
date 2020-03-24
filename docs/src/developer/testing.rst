@@ -31,23 +31,29 @@ This will call tests for the particular shell's environment Python's executable.
 If the tests are successful, then a code **coverage** summary will be printed
 on shell's screen.
 
-However, during development we recommend using
+However, during development consider using
 
 .. code-block:: sh
 
    $ tox -e devel
 
 This will run in the background and run the tests on a code change event (e.g., you save a file)
-automatically run the tests when you make a change. It's particularly useful when you
-specify a location of the tests:
+automatically run the tests when you make a change. It's particularly useful when you also
+specify the location of the tests:
 
 .. code-block:: sh
 
    $ tox -e devel -- 'path/to/your/tests/'
+
+.. code-block:: sh
+
    $ tox -e devel -- 'path/to/your/tests/file.py'
+
+.. code-block:: sh
+
    $ tox -e devel -- 'path/to/your/tests/file.py::test_name'
 
-This way, the tests will be ran automatically every time you make a change in the specified path,
-file or specific test. This option is also avalable for ``$ tox -e py``.
+This way, the tests will be ran automatically every time you make a change in the specified folder,
+file, or test respectively. This option is also avalable for ``$ tox -e py``.
 
 .. _pytest: https://docs.pytest.org/en/latest/

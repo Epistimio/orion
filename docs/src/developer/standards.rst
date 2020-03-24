@@ -2,8 +2,8 @@
 Conventions
 ***********
 
-In this chapter, we present the different standards we use throughout the project. The coding and
-documentation standards are enforced during the PR process automatically.
+In this chapter, we present the different standards and guidelines we use throughout the project.
+All the conventions are enforced automatically during the PR process.
 
 You can verify if your code will pass the checks locally beforehand using:
 
@@ -39,6 +39,8 @@ When creating a release, we use the pattern *release-{version}rc*. This branch r
 candidate that will be merge in the master branch when the changes are ready to be launched in
 production.
 
+Synchronization
+---------------
 Regarding merges, we recommend you keep your changes in your forked repository for as long as
 possible and rebase your branch to Oríon's develop branch before submitting a PR.
 Most probably, the develop branch will have changed by the time your PR is approved. In such cases,
@@ -46,6 +48,11 @@ we recommend to merge the changes from develop to your branch and then merge you
 We discourage rebases after the PR has been submitted as it can cause problems in GitHub's review
 system. On another note, merges are always done with the creation of a merge commit, also known
 as a *non fast-forward merge*.
+
+In some cases where the PR has small and focused changes contained in one or two commits,
+the contribution may be integrated to the development branch using `squash and merge <https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-request-merges#squash-and-merge-your-pull-request-commits>`_ to avoid clutter.
+It is strongly encouraged to make small pull requests.
+They are simpler to implement, easier to integrate and faster to review.
 
 .. _standard-documenting:
 

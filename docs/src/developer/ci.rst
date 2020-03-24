@@ -8,10 +8,12 @@ Continuous Integration
    :target: https://codecov.io/gh/epistimio/orion
 
 We use travis-ci_ and codecov_ for continuous integration and tox_ to automate the process at
-the repository level. When a commit is pushed in a pull request, a call to ``$ tox`` will be made by
-TravisCI which will trigger a call to multiple contexts. *py35*, *py36*, *py37*, ... for running
-tests and checking coverage, *flake8*, *pylint*, *doc8*, *packaging* for linting code,
-documentation and Python packaging-related files, and finally *docs* for
+the repository level.
+
+When a commit is pushed in a pull request, a call to ``$ tox`` will be made by
+TravisCI which will trigger a call to multiple contexts. *py35*, *py36*, *py37*, ... for running all
+the tests and checking coverage; *flake8*, *pylint*, *doc8*, *packaging* for linting code,
+documentation and Python packaging-related files; finally *docs* for
 building the Sphinx documentation.
 
 .. _codecov: https://codecov.io/

@@ -14,3 +14,5 @@ The documentation for developers is organized in the following, easy to read, se
 * :doc:`Continuous Integration <ci>`. Get familiar with our continuous integration setup
 
 When you're done, don't forget to submit your `pull request <https://github.com/epistimio/orion/pulls>`_ and ask for a review when the build is passing in the CI.
+
+If you have any question or suggestion feel free to reach out to us by email or by `opening an issue <https://github.com/Epistimio/orion/issues>`_.
