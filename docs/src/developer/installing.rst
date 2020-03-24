@@ -44,6 +44,8 @@ for linting as we will see in a next chapter.
 Check everything is ready by running the test suite using ``$ tox`` (this will take some time).
 If the tests can't be run to completion, contact us by opening a `new issue <https://github.com/Epistimio/orion/issues/new>`_. We'll do our best to help you!
 
+About tox
+=========
 tox_ is an automation tool that execute tasks in virtual environments. We automate all our testing,
 verification, and release macros with it. All contexts are defined in
 `tox.ini <https://github.com/epistimio/orion/blob/master/tox.ini>`_. They can be executed using
