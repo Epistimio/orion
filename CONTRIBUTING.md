@@ -40,7 +40,12 @@ When suggesting enhancements, it is a good idea to:
 - Add as much details as possible!
 
 ### How to submit changes
-We're grateful you're considering making changes to Oríon! To get started, you need to first fork the repository and then create a new branch on your fork where you'll do your changes. Once you implemented the changes, submit a [pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests). All changes to Oríon are done through PRs, where they will be peer-reviewed and checked against our continuous integration system to ensure the quality of the code base.
+We're grateful you're considering making changes to Oríon!
+ 
+To get started, you need to first fork the repository and then create a new branch on your fork where you'll do your changes. 
+
+Once you implemented the changes, make sure to [rebase](https://www.atlassian.com/git/tutorials/rewriting-history/git-rebase) your branch on the latest Oríon's *develop* branch and finally submit a [pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests). 
+All changes to Oríon are done through PRs, where they will be peer-reviewed and checked against our continuous integration system to ensure the quality of the code base.
 
 During this processs keep in mind to:
 - Set a descriptive and short branch name
