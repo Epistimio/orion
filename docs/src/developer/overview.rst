@@ -9,7 +9,7 @@ We can jump straight into getting you started for your first contribution.
 
 The steps are:
 
-#. :doc:`Installing the development environment <../install/core>`.
+#. :doc:`Installing the development environment </install/core>`.
 #. Checking everything is ready by running the test suite using ``$ tox``
 #. Get familiar with the :doc:`coding conventions <standards>`
 #. Implement your changes and :doc:`testing <testing>`
