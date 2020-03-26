@@ -38,6 +38,13 @@ time to create the release artifacts and publish the release.
 
 Publishing the release
 ======================
+Once the release is correctly documented and integrated to the VCS workflow, we can publish it to
+the public.
+
+* Publish the GitHub release. The source code archives will be added automatically by GitHub to the
+  release.
+* Publish the new version to PyPI_ by executing ``$ tox -e release`` from the tagged commit on the
+  master branch.
 
 After the release
 =================
