@@ -21,8 +21,20 @@ the README.md.
 #. Run the stress tests according to the instruct-codingions in stress test's documentation.
 #. Update the **Citation** section in the project's README.md with the latest version of Oríon.
 
+.. _release-make:
+
 Making the release
 ==================
+Once the release is throughly tested and the core contributors are confident in the release, it's
+time to create the release artifacts and publish the release.
+
+#. Merge the release candidate branch to master (no fast-forward merge, we want a merge commit).
+#. Create a `new draft release <https://github.com/Epistimio/orion/releases/new>` on GitHub. Set the
+   target branch to *master* and the tag version to ``v{version}``. Reuse the changelog from the
+   release candidate pull request's for the descriptione. See the `0.1.6
+   <https://github.com/Epistimio/orion/releases/tag/v0.1.6>` version example.
+#. Merge the release candidate branch back to develop.
+#. Delete the release candidate branch.
 
 Publishing the release
 ======================
