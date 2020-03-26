@@ -65,5 +65,6 @@
    developer/testing
    developer/documenting
    developer/ci
+   developer/release
 
 .. Don't fetch reference/viz
