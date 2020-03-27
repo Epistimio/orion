@@ -50,9 +50,10 @@ such cases, we recommend that you merge the changes from develop to your branch 
 approves your pull request and then the maintainer will merge your branch to develop, closing your
 pull request.
 
-We discourage rebases after the PR has been submitted as it can cause problems in GitHub's review
-system. On another note, merges are always done with the creation of a merge commit, also known as a
-*non fast-forward merge*.
+We discourage rebases after the pull resquest has been submitted as it can cause problems in
+GitHub's review system which makes it loose track of the comments on the pull request. On another
+note, merges are always done with the creation of a merge commit, also known as a *non fast-forward
+merge*.
 
 In some cases where the PR has small and focused changes contained in one or two commits,
 the contribution may be integrated to the development branch using `squash and merge <https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-request-merges#squash-and-merge-your-pull-request-commits>`_ to avoid clutter.
