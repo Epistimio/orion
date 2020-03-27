@@ -41,8 +41,9 @@ Packages include `tox <https://tox.readthedocs.io/en/latest/>`_ for defining
 and organizing macros of sh commands in virtual environments, and packages
 for linting as we will see in a next chapter.
 
-Check everything is ready by running the test suite using ``$ tox`` (this will take some time).
-If the tests can't be run to completion, contact us by opening a `new issue <https://github.com/Epistimio/orion/issues/new>`_. We'll do our best to help you!
+Check everything is ready by running python 3.6 the test suite using ``$ tox -e py36`` (this will
+take some time). If the tests can't be run to completion, contact us by opening a `new issue
+<https://github.com/Epistimio/orion/issues/new>`_. We'll do our best to help you!
 
 About tox
 =========
