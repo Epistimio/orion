@@ -1,7 +1,7 @@
 Iterative Results with EVC
 --------------------------
 
-When using the experiment version control (described `here <user/evc>`_),
+When using the experiment version control (described :doc:`here </user/evc>`),
 the experiments are connected in a tree structure which we call the EVC tree.
 You can retrieve results from different experiments with the EVC tree similarly
 as described in previous section. All trials of the tree can be fetched
