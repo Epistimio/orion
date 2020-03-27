@@ -12,12 +12,12 @@ at `examples/scikitlearn-iris/
 
 The requirements are listed in requirements.txt. You can quickly install them using ``$ pip
 install -r requirements.txt``. If you haven't installed Oríon previously, make sure to
-:doc:`configure it properly <../install/core>` before going further.
+:doc:`configure it properly </install/core>` before going further.
 
 Sample script
 ---------------
 
-.. literalinclude:: ../../../examples/scikitlearn-iris/main.py
+.. literalinclude:: /../../examples/scikitlearn-iris/main.py
    :language: python
    :lines: 1-2, 5-9, 13-30
 
@@ -60,7 +60,7 @@ Updating the script
 We only need to make one small change to the script: we report to Oríon the objective that we
 want to **minimize** at the end of the script using :py:func:`orion.client.report_objective`:
 
-.. literalinclude:: ../../../examples/scikitlearn-iris/main.py
+.. literalinclude:: /../../examples/scikitlearn-iris/main.py
    :language: python
    :lines: 32-
 
@@ -104,7 +104,7 @@ of the optimization with the sub-command ``$ orion info``:
 
 .. code-block:: bash
 
-   orion info -n scitkit-iris-tutorial
+   $ orion info -n scitkit-iris-tutorial
 
 You can also query the results from the database using :ref:`Oríon's python API
 <library-api-results>`. Check it out to learn more and see examples.
