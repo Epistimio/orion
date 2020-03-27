@@ -16,7 +16,7 @@ tests:
 The tests are made with pytest_. We highly recommend you check it out and take a look at the
 existing tests in the ``tests`` folder.
 
-We recommend invoking the tests using *tox* as this will be the path used by the CI system.
+We recommend invoking the tests using ``tox`` as this will be the method used by the CI system.
 It will avoid you headaches when trying to run tests and nasty surprises when submitting PRs.
 
 Running tests
