@@ -17,6 +17,10 @@ Our coding standards are specified via flake8_ and pylint_. Their configurations
 ``tox.ini`` and ``.pylintrc`` respectively. You can verify the conformity of your changes locally
 by running ``$ tox -e flake8`` and ``$ tox -e pylint``.
 
+In addition, we follow `Numpy's docstring standards
+<https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard>`_ to ensure a good
+quality of documentation for the project.
+
 .. _standard-vcs:
 
 Version Control Guidelines
