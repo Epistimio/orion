@@ -55,10 +55,11 @@ GitHub's review system which makes it loose track of the comments on the pull re
 note, merges are always done with the creation of a merge commit, also known as a *non fast-forward
 merge*.
 
-In some cases where the PR has small and focused changes contained in one or two commits,
-the contribution may be integrated to the development branch using `squash and merge <https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-request-merges#squash-and-merge-your-pull-request-commits>`_ to avoid clutter.
-It is strongly encouraged to make small pull requests.
-They are simpler to implement, easier to integrate and faster to review.
+In some cases where the pull request embodies contributions which are scattered across multiple
+commits containing incremental changes (e.g., ``fix pep8``, ``update based on feedback``), the pull
+request may be integrated to the development branch using `squash and merge <https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-request-merges#squash-and-merge-your-pull-request-commits>`_
+to avoid clutter. It is strongly encouraged to make small pull requests. They are simpler to
+implement, easier to integrate and faster to review.
 
 .. _standard-documenting:
 
