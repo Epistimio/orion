@@ -31,10 +31,10 @@ To collaborate through VCS, we follow the
 workflow. The *develop* and *master* branches are protected and can only be changed with pull
 requests.
 
-For branch names, we recommend prefixing the name of the branch with *feature/*, *fix/*, et
+For branch names, we recommend prefixing the name of the branch with *feature/*, *fix/*, and
 *doc/* depending on the change you're implementing. Additionally, we encourage adding the issue's id
-at the start of the branch name, after the prefix. For example the branch name for a bug represented
-by issue 225 would be ``fix/225-short-bug-description``.
+(if there is one) at the start of the branch name, after the prefix. For example the branch name for
+a bug represented by issue 225 would be ``fix/225-short-bug-description``.
 
 When creating a release, we use the pattern *release-{version}rc*. This branch represent the release
 candidate that will be merged in the master branch when the changes are ready to be launched in
