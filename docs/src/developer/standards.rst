@@ -66,8 +66,9 @@ implement, easier to integrate and faster to review.
 Documenting standard
 ====================
 
-Our documentation standard is upheld via doc8_. You can verify your documentation modifications
-by running ``$ tox -e doc8``.
+Our documentation standard is upheld via doc8_. You can verify your documentation modifications by
+running ``$ tox -e doc8``. The information about writing and generating documentation is available
+in the :doc:`documenting` chapter.
 
 .. _standard-repository:
 
