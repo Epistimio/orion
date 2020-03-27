@@ -5,11 +5,8 @@ Conventions
 In this chapter, we present the different standards and guidelines we use throughout the project.
 All the conventions are enforced automatically during the PR process.
 
-You can verify if your code will pass the checks locally beforehand using:
-
-.. code-block:: sh
-
-   tox -e lint
+You can verify if your code will pass the checks locally beforehand using ``$ tox -e lint`` (which
+is the equivalent of ``$ tox -e flake8,pylint,doc8,packaging``).
 
 .. _standard-coding:
 
