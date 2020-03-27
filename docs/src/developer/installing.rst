@@ -31,7 +31,7 @@ Then, you need to deploy the project in `development mode`_ by invoking the ``se
 
 Database
 ========
-Follow the same instructions as to install the :ref:`install_database` regularly.
+Follow the same instructions as to install the :ref:`install_database` locally.
 
 Verifying the installation
 ==========================

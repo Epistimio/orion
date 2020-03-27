@@ -36,7 +36,7 @@ at the start of the branch name, after the prefix. For example the branch name f
 by issue 225 would be ``fix/225-short-bug-description``.
 
 When creating a release, we use the pattern *release-{version}rc*. This branch represent the release
-candidate that will be merge in the master branch when the changes are ready to be launched in
+candidate that will be merged in the master branch when the changes are ready to be launched in
 production.
 
 Synchronization
