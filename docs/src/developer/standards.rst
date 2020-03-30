@@ -58,8 +58,8 @@ merge*.
 In some cases where the pull request embodies contributions which are scattered across multiple
 commits containing incremental changes (e.g., ``fix pep8``, ``update based on feedback``), the pull
 request may be integrated to the development branch using `squash and merge <https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-request-merges#squash-and-merge-your-pull-request-commits>`_
-to avoid clutter. It is strongly encouraged to make small pull requests. They are simpler to
-implement, easier to integrate and faster to review.
+by the maintainer to avoid clutter. It is strongly encouraged to make small pull requests. They are
+simpler to implement, easier to integrate and faster to review.
 
 .. _standard-documenting:
 
