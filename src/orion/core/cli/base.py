@@ -16,6 +16,9 @@ import orion
 from orion.core.io.database import DatabaseError
 from orion.core.utils.exceptions import NoConfigurationError
 
+# from ..io.database import DatabaseError
+# from ..utils.exceptions import NoConfigurationError
+
 
 CLI_DOC_HEADER = """
 orion:
