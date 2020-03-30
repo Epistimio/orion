@@ -8,10 +8,7 @@
    :synopsis: Executes transfer optimization of learning search space.
 
 """
-import io
-import itertools
 import logging
-import pprint
 import numpy as np
 
 # from orion.core.worker.consumer import Consumer
@@ -44,7 +41,7 @@ log = logging.getLogger(__name__)
 
 
 def rep_task(hist_tasks, curr_task):
-    """represent search space as matrix"""
+    """Represent search space as matrix"""
     hpp_idx_map = {}
     # idx_hpp_map = {}
     curr_bound = np.zeros((2, len(curr_task["space"])))  # 0: lower, 1: upper
@@ -101,7 +98,7 @@ def shrink_ellips_space(hist_tasks, curr_task):
 
 
 def rej_sampling_ellips_space(matrix_a, vector_b, curr_task):
-    """reject sample from ellipsoidal search space example"""
+    """Reject sample from ellipsoidal search space example"""
     hyper_param_dim = vector_b.shape[0]
     _, curr_bound = rep_task([], curr_task)
 
@@ -122,14 +119,15 @@ def rej_sampling_ellips_space(matrix_a, vector_b, curr_task):
     # x is in the same order as curr_task representation
     return x
 
+
 if __name__ == "__main__":
     # curr_task = {"space":
     #                   [{"lr": [0.001, 0.04]},
     #                    {"wd": [0.00001, 0.00005]}]}
 
     curr_task = {"space":
-                     [{"lr": [0.001, 0.04]},
-                      {"wd": [0.00001, 0.01]}]}
+                 [{"lr": [0.001, 0.04]},
+                  {"wd": [0.00001, 0.01]}]}
 
     hist_task = [{"params":
                   [{"name": "lr", "type": "real", "value": 0.05},
@@ -138,10 +136,8 @@ if __name__ == "__main__":
                   [{"name": "lr", "type": "real", "value": 0.02},
                    {"name": "wd", "type": "real", "value": 0.0003}]},
                  {"params":
-                   [{"name": "lr", "type": "real", "value": 0.007},
-                    {"name": "wd", "type": "real", "value": 0.0002}]}]
+                  [{"name": "lr", "type": "real", "value": 0.007},
+                   {"name": "wd", "type": "real", "value": 0.0002}]}]
 
     shrink_bbox_space(hist_task, curr_task)
-
     print("update curr task:", curr_task)
-
