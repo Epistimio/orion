@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.transfer` -- Coordination of the transfer optimization procedure of learning search space
+:mod:`orion.core.transfer` -- Coordination of transfer optimization of learning search space
 ======================================================================
 
 .. module:: transfer
