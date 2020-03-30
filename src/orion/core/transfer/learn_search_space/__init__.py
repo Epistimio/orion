@@ -8,16 +8,12 @@
    :synopsis: Executes transfer optimization of learning search space.
 
 """
-
 import logging
+
 import numpy as np
 
-# from orion.core.worker.consumer import Consumer
-# from orion.core.worker.producer import Producer
-# from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
-
 # It should apply experiment and trials objects (in its same root path?)
 # to represent current task (experiment) and historical tasks (trials)
 # and update the space domain in the experiment object
