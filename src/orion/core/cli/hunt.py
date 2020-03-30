@@ -72,11 +72,5 @@ def main(args):
     # TODO: simplify when parameter parsing is refactored
     experiment = experiment_builder.build_from_args(args)
     config = experiment_builder.get_cmd_config(args)
-
-    # print("iamhereeeeee!!!!!!!!!", config)
-
     worker_trials = config.get('worker_trials', orion.core.config.experiment.worker_trials)
-
-    transfer_search_space(experiment)
-
     workon(experiment, worker_trials)
