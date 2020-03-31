@@ -198,7 +198,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """Fetch all non completed trials"""
         raise NotImplementedError()
 
-    def fetch_trial_by_status(self, experiment, status):
+    def fetch_trials_by_status(self, experiment, status):
         """Fetch all trials with the given status"""
         raise NotImplementedError()
 
@@ -302,7 +302,7 @@ class ReadOnlyStorageProtocol(object):
         'fetch_noncompleted_trials',
         'fetch_pending_trials',
         'fetch_lost_trials',
-        'fetch_trial_by_status'
+        'fetch_trials_by_status'
     }
 
     def __init__(self, protocol):
