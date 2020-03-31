@@ -105,7 +105,7 @@ from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, Ra
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import Strategy
-from orion.storage.base import get_storage, Storage
+from orion.storage.base import get_storage, setup_storage
 
 
 log = logging.getLogger(__name__)
@@ -504,33 +504,6 @@ def _fetch_config_version(configs, version=None):
     configs = filter(lambda exp: exp.get('version', 1) == version, configs)
 
     return next(iter(configs))
-
-
-def setup_storage(storage=None):
-    """Create the storage instance from a configuration.
-
-    Parameters
-    ----------
-    config: dict
-        Configuration for the storage backend.
-
-    """
-    if storage is None:
-        storage = orion.core.config.storage.to_dict()
-
-    if storage.get('type') == 'legacy' and 'database' not in storage:
-        storage['database'] = orion.core.config.storage.database.to_dict()
-    elif storage.get('type') is None and 'database' in storage:
-        storage['type'] = 'legacy'
-
-    storage_type = storage.pop('type')
-
-    log.debug("Creating %s storage client with args: %s", storage_type, storage)
-    try:
-        Storage(of_type=storage_type, **storage)
-    except ValueError:
-        if Storage().__class__.__name__.lower() != storage_type.lower():
-            raise
 
 
 ###

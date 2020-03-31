@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.storage.legacy -- Track Storage Protocol
+:mod:`orion.storage.track` -- Track Storage Protocol
 ====================================================
 
 .. module:: base
