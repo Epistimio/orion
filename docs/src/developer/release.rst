@@ -53,6 +53,9 @@ they can update their version or learn about Oríon.
 
 * Verify Oríon's Zenodo_ page has been updated to reflect the new release on GitHub_. Zenodo is
   configured to automatically create a new version whenever a new release is published on GitHub.
+* Verify Oríon's Anaconda_ page contains the new version. Binaries for the new version are uploaded
+  automatically by TravisCI when the tests pass for the merge commit tagged with the new version on
+  the master branch .
 * Announce the new release on your #orion's slack channel.
 * Announce the new release on relevant communication channels (e.g., email, forums, google groups)
 * Celebrate! You published a new version of Oríon! Congratulations!
@@ -60,3 +63,4 @@ they can update their version or learn about Oríon.
 .. _GitHub: https://github.com/Epistimio/orion/releases
 .. _Zenodo: https://doi.org/10.5281/zenodo.3478592
 .. _PyPI: https://pypi.org/project/orion/
+.. _Anaconda: https://anaconda.org/epistimio/orion
