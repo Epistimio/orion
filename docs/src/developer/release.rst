@@ -58,7 +58,7 @@ they can update their version or learn about Oríon.
   the master branch .
 * Announce the new release on your #orion's slack channel.
 * Announce the new release on relevant communication channels (e.g., email, forums, google groups)
-* Celebrate! You published a new version of Oríon! Congratulations!
+* Congratulations, you published a new version of Oríon! 
 
 .. _GitHub: https://github.com/Epistimio/orion/releases
 .. _Zenodo: https://doi.org/10.5281/zenodo.3478592
