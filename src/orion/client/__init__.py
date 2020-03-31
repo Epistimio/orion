@@ -17,7 +17,8 @@ from orion.core.utils.tests import update_singletons
 from orion.core.worker.producer import Producer
 
 
-__all__ = ['interrupt_trial', 'report_bad_trial', 'report_objective', 'report_results']
+__all__ = ['interrupt_trial', 'report_bad_trial', 'report_objective', 'report_results',
+           'create_experiment', 'workon']
 
 
 # pylint: disable=too-many-arguments

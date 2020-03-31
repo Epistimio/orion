@@ -20,6 +20,7 @@
    user/searchspace
    user/monitoring
    user/evc
+   user/storage
    user/config
 
 .. toctree::

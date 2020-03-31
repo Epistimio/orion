@@ -242,7 +242,7 @@ class Experiment:
 
         :return: list of `Trial` objects
         """
-        return self._select_evc_call(with_evc_tree, 'fetch_trial_by_status', status)
+        return self._select_evc_call(with_evc_tree, 'fetch_trials_by_status', status)
 
     def fetch_noncompleted_trials(self, with_evc_tree=False):
         """Fetch non-completed trials of this `Experiment` instance.
