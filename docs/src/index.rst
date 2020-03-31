@@ -21,6 +21,7 @@
    user/algorithms
    user/script
    user/evc
+   user/storage
    user/config
 
 .. toctree::
@@ -51,9 +52,10 @@
    :maxdepth: 2
    :caption: Code Reference
 
-   code/core
    code/algo
    code/client
+   code/core
+   code/storage
 
 .. toctree::
    :caption: Developer's Guide
