@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.storage.legacy` -- Legacy storage
-=============================================================================
+=============================================
 
 .. module:: legacy
    :platform: Unix
@@ -22,7 +22,27 @@ from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArgumen
 log = logging.getLogger(__name__)
 
 
-def setup_database(config):
+def get_database():
+    """Return current database
+
+    This is a wrapper around the Database Singleton object to provide
+    better error message when it is used without being initialized.
+
+    Raises
+    ------
+    RuntimeError
+        If the underlying database was not initialized prior to calling this function
+
+    Notes
+    -----
+    To initialize the underlying database you must first call `Database(...)`
+    with the appropriate arguments for the chosen backend
+
+    """
+    return Database()
+
+
+def setup_database(config=None):
     """Create the Database instance from a configuration.
 
     Parameters
@@ -31,6 +51,10 @@ def setup_database(config):
         Configuration for the database.
 
     """
+    if config is None:
+        # TODO: How could we support orion.core.config.storage.database as well?
+        config = orion.core.config.database.to_dict()
+
     db_opts = config
     dbtype = db_opts.pop('type')
 

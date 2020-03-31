@@ -1,16 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.storage.base -- Generic Storage Protocol
-====================================================
+:mod:`orion.storage.base` -- Generic Storage Protocol
+=====================================================
 
 .. module:: base
    :platform: Unix
    :synopsis: Implement a generic protocol to allow Orion to communicate using
-   different storage backend
+              different storage backend
 
 """
 
+import logging
+
+import orion.core
 from orion.core.utils import (AbstractSingletonType, SingletonFactory)
+
+
+log = logging.getLogger(__name__)
 
 
 class FailedUpdate(Exception):
@@ -248,6 +254,33 @@ def get_storage():
 
     """
     return Storage()
+
+
+def setup_storage(storage=None):
+    """Create the storage instance from a configuration.
+
+    Parameters
+    ----------
+    config: dict
+        Configuration for the storage backend.
+
+    """
+    if storage is None:
+        storage = orion.core.config.storage.to_dict()
+
+    if storage.get('type') == 'legacy' and 'database' not in storage:
+        storage['database'] = orion.core.config.storage.database.to_dict()
+    elif storage.get('type') is None and 'database' in storage:
+        storage['type'] = 'legacy'
+
+    storage_type = storage.pop('type')
+
+    log.debug("Creating %s storage client with args: %s", storage_type, storage)
+    try:
+        Storage(of_type=storage_type, **storage)
+    except ValueError:
+        if Storage().__class__.__name__.lower() != storage_type.lower():
+            raise
 
 
 # pylint: disable=too-few-public-methods

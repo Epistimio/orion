@@ -8,10 +8,16 @@ import tempfile
 
 import pytest
 
+import orion.core
+from orion.core.io.database import Database
+from orion.core.io.database.ephemeraldb import EphemeralDB
+from orion.core.io.database.pickleddb import PickledDB
+from orion.core.utils import SingletonAlreadyInstantiatedError, SingletonNotInstantiatedError
 from orion.core.utils.exceptions import MissingResultFile
-from orion.core.utils.tests import OrionState
+from orion.core.utils.tests import OrionState, update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import FailedUpdate
+from orion.storage.legacy import get_database, setup_database
 
 
 log = logging.getLogger(__name__)
@@ -67,6 +73,83 @@ db_backends = [
         'database': mongodb_config
     }
 ]
+
+
+def test_setup_database_default():
+    """Test that database is setup using default config"""
+    update_singletons()
+    orion.core.config.database.type = 'pickleddb'
+    orion.core.config.database.host = 'test.pkl'
+    setup_database()
+    database = Database()
+    assert isinstance(database, PickledDB)
+
+
+def test_setup_database_bad():
+    """Test how setup fails when configuring with non-existant backends"""
+    update_singletons()
+    with pytest.raises(NotImplementedError) as exc:
+        setup_database({'type': 'idontexist'})
+
+    assert exc.match('idontexist')
+
+
+def test_setup_database_custom():
+    """Test setup with local configuration"""
+    update_singletons()
+    setup_database({'type': 'pickleddb', 'host': 'test.pkl'})
+    database = Database()
+    assert isinstance(database, PickledDB)
+    assert database.host == 'test.pkl'
+
+
+def test_setup_database_debug():
+    """Test setup in debug mode"""
+    update_singletons()
+    setup_database({'type': 'mongodb', 'debug': True})
+    database = Database()
+    assert isinstance(database, EphemeralDB)
+
+
+def test_setup_database_bad_override():
+    """Test setup with different type than existing singleton"""
+    update_singletons()
+    setup_database({'type': 'pickleddb', 'host': 'test.pkl'})
+    database = Database()
+    assert isinstance(database, PickledDB)
+    with pytest.raises(SingletonAlreadyInstantiatedError) as exc:
+        setup_database({'type': 'mongodb'})
+
+    assert exc.match('A singleton instance of \(type: Database\)')
+
+
+@pytest.mark.xfail(reason='Fix this when introducing #135 in v0.2.0')
+def test_setup_database_bad_config_override():
+    """Test setup with different config than existing singleton"""
+    update_singletons()
+    setup_database({'type': 'pickleddb', 'host': 'test.pkl'})
+    database = Database()
+    assert isinstance(database, PickledDB)
+    with pytest.raises(SingletonAlreadyInstantiatedError):
+        setup_database({'type': 'pickleddb', 'host': 'other.pkl'})
+
+
+def test_get_database_uninitiated():
+    """Test that get database fails if no database singleton exist"""
+    update_singletons()
+    with pytest.raises(SingletonNotInstantiatedError) as exc:
+        get_database()
+
+    assert exc.match('No singleton instance of \(type: Database\) was created')
+
+
+def test_get_database():
+    """Test that get database gets the singleton"""
+    update_singletons()
+    setup_database({'type': 'pickleddb', 'host': 'test.pkl'})
+    database = get_database()
+    assert isinstance(database, PickledDB)
+    assert get_database() == database
 
 
 class TestLegacyStorage:
