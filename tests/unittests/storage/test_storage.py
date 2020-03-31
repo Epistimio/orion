@@ -502,7 +502,7 @@ class TestStorage:
 
             assert len(trials) == count
 
-    def test_fetch_trial_by_status(self, storage):
+    def test_fetch_trials_by_status(self, storage):
         """Test fetch completed trials"""
         with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), storage=storage) as cfg:
@@ -513,7 +513,7 @@ class TestStorage:
 
             storage = cfg.storage()
             experiment = cfg.get_experiment('default_name', version=None)
-            trials = storage.fetch_trial_by_status(experiment, 'completed')
+            trials = storage.fetch_trials_by_status(experiment, 'completed')
 
             assert len(trials) == count
             for trial in trials:
@@ -558,7 +558,7 @@ class TestStorage:
             storage = cfg.storage()
 
             exp = cfg.get_experiment('default_name')
-            trial1 = storage.fetch_trial_by_status(exp, status='reserved')[0]
+            trial1 = storage.fetch_trials_by_status(exp, status='reserved')[0]
             trial1b = copy.deepcopy(trial1)
 
             storage.update_heartbeat(trial1)
@@ -575,7 +575,7 @@ class TestStorage:
             assert trial2.heartbeat < datetime.datetime.utcnow()
 
             if storage_name is None:
-                trial3 = storage.fetch_trial_by_status(exp, status='completed')[0]
+                trial3 = storage.fetch_trials_by_status(exp, status='completed')[0]
                 storage.update_heartbeat(trial3)
 
                 assert trial3.heartbeat is None, \
