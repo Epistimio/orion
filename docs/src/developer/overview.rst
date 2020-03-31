@@ -12,6 +12,7 @@ The documentation for developers is organized in the following, easy to read, se
 * :doc:`Testing <testing>`. Implementing your changes and how to test your code
 * :doc:`Documenting <documenting>`. Documenting your changes and updating the documentation
 * :doc:`Continuous Integration <ci>`. Get familiar with our continuous integration setup
+* :doc:`Releasing a new version <release>`. How to create and ship a new release
 
 When you're done, don't forget to `rebase <https://www.atlassian.com/git/tutorials/rewriting-history/git-rebase>`_
 your changes to the latest version of the *develop* branch of https://github.com/Epistimio/orion.
