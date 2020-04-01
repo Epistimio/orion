@@ -7,13 +7,13 @@ external repositories and installed as plugins. The installation process is very
 need to install them as you would for Oríon's core (see :doc:`/install/core`). They will be
 automatically detected and available for Oríon at run-time.
 
-Note that active development is currently focused on the core. Therefore only one algorithm plugin
-is available for now.
-
-For more information about how to develop your own plugins, see section :doc:`/plugins/base`.
+For more information about how to develop your own plugins, see section :doc:`/plugins/algorithms`.
 
 Algorithms
 ==========
+
+Note that active development is currently focused on the core. Therefore only one algorithm plugin
+is available for now.
 
 Skopt algorithms
 ----------------
