@@ -16,7 +16,7 @@ registered on PyPI under `orion`.
    pip install orion
 
 This will install all the core components. Note that the only algorithm provided with it
-is random search. To install more algorithms, you can look at section :doc:`/install/plugins`.
+is random search. To install more algorithms, you can look at section :doc:`/plugins/install`.
 
 Via Git
 =======
