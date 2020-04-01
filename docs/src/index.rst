@@ -7,6 +7,9 @@
 
    install/core
    install/database
+..    roadmap
+..    changelog
+..    contributors
 
 .. toctree::
    :caption: User Guide
@@ -37,13 +40,6 @@
    plugins/base
    plugins/install
    plugins/algorithms
-
-.. .. toctree::
-..    :caption: Plan
-
-..    roadmap
-..    changelog
-..    contributors
 
 .. toctree::
    :caption: Developer Guide
