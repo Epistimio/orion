@@ -81,7 +81,7 @@ class Consumer(object):
             heartbeat = orion.core.config.worker.heartbeat
 
         if user_script_config is None:
-            user_script_config = orion.core.config.user_script_config
+            user_script_config = orion.core.config.worker.user_script_config
 
         if interrupt_signal_code is None:
             interrupt_signal_code = orion.core.config.worker.interrupt_signal_code

@@ -318,7 +318,7 @@ def fetch_metadata(user=None, user_args=None):
     if len(user_args) == 1 and user_args[0] == '':
         user_args = []
 
-    cmdline_parser = OrionCmdlineParser(config.user_script_config)
+    cmdline_parser = OrionCmdlineParser(config.worker.user_script_config)
     cmdline_parser.parse(user_args)
 
     if cmdline_parser.user_script:

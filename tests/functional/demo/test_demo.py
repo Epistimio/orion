@@ -539,7 +539,7 @@ def test_demo_with_shutdown_quickly(monkeypatch):
 def test_demo_with_nondefault_config_keyword(database, monkeypatch):
     """Check that the user script configuration file is correctly used with a new keyword."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.config.user_script_config = 'configuration'
+    orion.core.config.worker.user_script_config = 'configuration'
     orion.core.cli.main(["hunt", "--config", "./orion_config_other.yaml",
                          "./black_box_w_config_other.py", "--configuration", "script_config.yaml"])
 
@@ -579,7 +579,7 @@ def test_demo_with_nondefault_config_keyword(database, monkeypatch):
     assert params[0]['type'] == 'real'
     assert (params[0]['value'] - 34.56789) < 1e-5
 
-    orion.core.config.user_script_config = 'config'
+    orion.core.config.worker.user_script_config = 'config'
 
 
 @pytest.mark.usefixtures("clean_db")

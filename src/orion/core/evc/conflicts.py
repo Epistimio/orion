@@ -1238,7 +1238,7 @@ class CommandLineConflict(Conflict):
             return ""
 
         if user_script_config is None:
-            user_script_config = orion.core.config.user_script_config
+            user_script_config = orion.core.config.worker.user_script_config
         if non_monitored_arguments is None:
             non_monitored_arguments = orion.core.config.evc.non_monitored_arguments
 
@@ -1387,7 +1387,7 @@ class ScriptConfigConflict(Conflict):
             return ""
 
         if user_script_config is None:
-            user_script_config = orion.core.config.user_script_config
+            user_script_config = orion.core.config.worker.user_script_config
 
         parser = OrionCmdlineParser(user_script_config)
         parser.set_state_dict(config['metadata']['parser'])
