@@ -1,6 +1,6 @@
-****************************
-Installation of Orion's core
-****************************
+****************
+Installing Orion
+****************
 
 Oríon should work on most Linux distributions and Mac OS X. It is tested on Ubuntu 16.04 LTS and Mac
 OS X 10.13. We do not support Windows and there is no short term plan to do so.

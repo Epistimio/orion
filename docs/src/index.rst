@@ -9,7 +9,7 @@
    install/database
 
 .. toctree::
-   :caption: User's Guide
+   :caption: User Guide
    :maxdepth: 1
 
    user/api
@@ -46,7 +46,7 @@
 ..    contributors
 
 .. toctree::
-   :caption: Developer's Guide
+   :caption: Developer Guide
    :maxdepth: 1
 
    developer/overview
