@@ -1,8 +1,7 @@
 .. include:: ../../README.rst
 
-
 .. toctree::
-   :caption: Installation Guide
+   :caption: Welcome
    :maxdepth: 1
 
    install/core
