@@ -44,9 +44,3 @@ Then call ``orion hunt`` with the configuration file.
     $ orion hunt --config bayes.yaml ./script.sh --lr~'loguniform(1e-5, 1.0)'
 
 Now, we have a Bayesian optimizer sampling learning-rate values to optimize the error rate.
-
-
-Database backend
-================
-
-TODO
