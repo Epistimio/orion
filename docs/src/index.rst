@@ -12,7 +12,6 @@
    :caption: User's Guide
    :maxdepth: 1
 
-   user/pytorch
    user/api
    user/monitoring
    user/searchspace
@@ -25,6 +24,7 @@
    :caption: Tutorials
    :maxdepth: 1
 
+   tutorials/pytorch
    tutorials/scikit-learn
    tutorials/pytorch_cifar
    tutorials/pytorch_a2c_ppo
