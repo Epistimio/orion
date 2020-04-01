@@ -31,7 +31,7 @@
    tutorials/cluster
 
 .. toctree::
-   :caption: Plugin development's Guide
+   :caption: Plugins
    :maxdepth: 1
 
    plugins/base
