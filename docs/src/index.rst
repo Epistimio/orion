@@ -7,8 +7,6 @@
 
    install/core
    install/database
-   install/plugins
-
 
 .. toctree::
    :caption: User's Guide
@@ -37,6 +35,7 @@
    :maxdepth: 1
 
    plugins/base
+   plugins/install
    plugins/algorithms
 
 .. .. toctree::
