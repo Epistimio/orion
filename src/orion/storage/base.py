@@ -256,13 +256,17 @@ def get_storage():
     return Storage()
 
 
-def setup_storage(storage=None):
+def setup_storage(storage=None, debug=False):
     """Create the storage instance from a configuration.
 
     Parameters
     ----------
-    config: dict
-        Configuration for the storage backend.
+    config: dict, optional
+        Configuration for the storage backend. If not defined, global configuration
+        is used.
+    debug: bool, optional
+        If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
+        Defaults to False.
 
     """
     if storage is None:
@@ -272,6 +276,9 @@ def setup_storage(storage=None):
         storage['database'] = orion.core.config.storage.database.to_dict()
     elif storage.get('type') is None and 'database' in storage:
         storage['type'] = 'legacy'
+
+    if debug:
+        storage = {'type': 'legacy', 'database': {'type': 'EphemeralDB'}}
 
     storage_type = storage.pop('type')
 

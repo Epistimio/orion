@@ -524,7 +524,7 @@ def build_from_args(cmdargs):
     """
     cmd_config = get_cmd_config(cmdargs)
 
-    setup_storage(cmd_config['storage'])
+    setup_storage(cmd_config['storage'], debug=cmd_config.get('debug'))
 
     return build(**cmd_config)
 
@@ -540,7 +540,7 @@ def build_view_from_args(cmdargs):
     """
     cmd_config = get_cmd_config(cmdargs)
 
-    setup_storage(cmd_config['storage'])
+    setup_storage(cmd_config['storage'], debug=cmd_config.get('debug'))
 
     name = cmd_config.get('name')
     version = cmd_config.get('version')
