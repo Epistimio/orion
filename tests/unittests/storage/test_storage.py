@@ -126,11 +126,10 @@ def generate_experiments():
     return [_generate(exp, 'name', value=str(i)) for i, exp in enumerate(exps)]
 
 
+@pytest.mark.usefixtures("setup_pickleddb_database")
 def test_setup_storage_default():
     """Test that storage is setup using default config"""
     update_singletons()
-    orion.core.config.storage.database['type'] = 'pickleddb'
-    orion.core.config.storage.database['host'] = 'test.pkl'
     setup_storage()
     storage = Storage()
     assert isinstance(storage, Legacy)
@@ -166,16 +165,15 @@ def test_setup_storage_custom_type_missing():
     assert storage._db.host == 'test.pkl'
 
 
+@pytest.mark.usefixtures("setup_pickleddb_database")
 def test_setup_storage_custom_legacy_emtpy():
     """Test setup with local configuration with legacy but no config"""
     update_singletons()
-    orion.core.config.storage.database['type'] = 'pickleddb'
-    orion.core.config.storage.database['host'] = 'default.pkl'
     setup_storage({'type': 'legacy'})
     storage = Storage()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
-    assert storage._db.host == 'default.pkl'
+    assert storage._db.host == orion.core.config.storage.database.host
 
 
 def test_setup_storage_bad_override():

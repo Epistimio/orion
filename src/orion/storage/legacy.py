@@ -48,7 +48,8 @@ def setup_database(config=None):
     Parameters
     ----------
     config: dict
-        Configuration for the database.
+        Configuration for the database backend. If not defined, global configuration
+        is used.
 
     """
     if config is None:
@@ -57,9 +58,6 @@ def setup_database(config=None):
 
     db_opts = config
     dbtype = db_opts.pop('type')
-
-    if config.get("debug"):
-        dbtype = "EphemeralDB"
 
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
     try:

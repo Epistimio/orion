@@ -8,9 +8,7 @@ import tempfile
 
 import pytest
 
-import orion.core
 from orion.core.io.database import Database
-from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils import SingletonAlreadyInstantiatedError, SingletonNotInstantiatedError
 from orion.core.utils.exceptions import MissingResultFile
@@ -75,11 +73,10 @@ db_backends = [
 ]
 
 
-def test_setup_database_default():
+@pytest.mark.usefixtures("setup_pickleddb_database")
+def test_setup_database_default(monkeypatch):
     """Test that database is setup using default config"""
     update_singletons()
-    orion.core.config.database.type = 'pickleddb'
-    orion.core.config.database.host = 'test.pkl'
     setup_database()
     database = Database()
     assert isinstance(database, PickledDB)
@@ -101,14 +98,6 @@ def test_setup_database_custom():
     database = Database()
     assert isinstance(database, PickledDB)
     assert database.host == 'test.pkl'
-
-
-def test_setup_database_debug():
-    """Test setup in debug mode"""
-    update_singletons()
-    setup_database({'type': 'mongodb', 'debug': True})
-    database = Database()
-    assert isinstance(database, EphemeralDB)
 
 
 def test_setup_database_bad_override():

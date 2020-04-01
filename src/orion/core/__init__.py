@@ -60,6 +60,10 @@ def define_config():
         'user_script_config', option_type=str, default='config',
         deprecate=dict(version='v0.3', alternative='worker.user_script_config'))
 
+    config.add_option(
+        'debug', option_type=bool, default=False,
+        help='Turn Oríon into debug mode. Storage will be overriden to in-memory EphemeralDB.')
+
     return config
 
 
