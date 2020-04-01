@@ -46,15 +46,6 @@
 ..    changelog
 ..    contributors
 
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Code Reference
-
-   code/core
-   code/algo
-   code/client
-
 .. toctree::
    :caption: Developer's Guide
    :maxdepth: 1
@@ -66,5 +57,13 @@
    developer/documenting
    developer/ci
    developer/release
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Code Reference
+
+   code/core
+   code/algo
+   code/client
 
 .. Don't fetch reference/viz
