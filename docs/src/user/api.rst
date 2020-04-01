@@ -1,6 +1,6 @@
-************
-Hunting APIs
-************
+********
+Optimize
+********
 
 .. contents::
    :depth: 2
