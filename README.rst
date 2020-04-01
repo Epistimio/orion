@@ -48,9 +48,9 @@ now what you have to do looks like this:
 
 ``orion -n experiment_name ./run.py --mini-batch~'randint(32, 256)'``
 
-Check out `user's guide-101`_ for the simplest of demonstrations!
+Check out our `pytorch example`_ for a quick demonstration!
 
-.. _user's guide-101: https://orion.readthedocs.io/en/latest/user/pytorch.html
+.. _pytorch example: https://orion.readthedocs.io/en/latest/tutorials/pytorch.html
 
 Features
 ========
@@ -68,7 +68,7 @@ Features
   **only** a single line of code.
 - More algorithms:
   Implementing and distributing algorithms is as easy as possible!
-  Check `developer's guide-101`_. Expect algorithm plugins to pop out quickly!
+  Check the `plugin documentation`_. Expect algorithm plugins to pop out quickly!
 - Came up with an idea?
   Your intuition is still at play:
   Help your optima hunter now by a command line interface.
@@ -76,7 +76,7 @@ Features
 
 .. _MongoDB: https://www.mongodb.com/
 .. _Skopt: https://scikit-optimize.github.io/
-.. _developer's guide-101: https://orion.readthedocs.io/en/latest/developer/testing.html
+.. _plugin documentation: https://orion.readthedocs.io/en/latest/plugins/base.html
 
 Installation
 ============
