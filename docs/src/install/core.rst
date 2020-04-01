@@ -1,5 +1,5 @@
 ****************
-Installing Orion
+Installing Oríon
 ****************
 
 Oríon should work on most Linux distributions and Mac OS X. It is tested on Ubuntu 16.04 LTS and Mac
