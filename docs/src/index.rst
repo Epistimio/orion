@@ -24,13 +24,13 @@
    user/config
 
 .. toctree::
-   :caption: Examples
+   :caption: Tutorials
    :maxdepth: 1
 
-   examples/scikit-learn
-   examples/pytorch_cifar
-   examples/pytorch_a2c_ppo
-   examples/cluster
+   tutorials/scikit-learn
+   tutorials/pytorch_cifar
+   tutorials/pytorch_a2c_ppo
+   tutorials/cluster
 
 .. toctree::
    :caption: Plugin development's Guide
