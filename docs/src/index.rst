@@ -14,11 +14,11 @@
    :caption: User Guide
    :maxdepth: 1
 
-   user/api
-   user/monitoring
-   user/searchspace
-   user/algorithms
    user/script
+   user/api
+   user/algorithms
+   user/searchspace
+   user/monitoring
    user/evc
    user/config
 
