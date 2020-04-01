@@ -27,7 +27,7 @@ def populate_priors(metadata):
 
     update_user_args(metadata)
 
-    parser = OrionCmdlineParser(orion.core.config.user_script_config,
+    parser = OrionCmdlineParser(orion.core.config.worker.user_script_config,
                                 allow_non_existing_user_script=True)
     parser.parse(metadata["user_args"])
     metadata["parser"] = parser.get_state_dict()
