@@ -1,6 +1,6 @@
-***********************
-Installation of plugins
-***********************
+**********
+Installing
+**********
 
 Oríon is built to be easily extensible. Algorithms and database backends can be implemented in
 external repositories and installed as plugins. The installation process is very simple, you only
