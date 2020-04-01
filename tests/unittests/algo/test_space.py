@@ -298,6 +298,11 @@ class TestInteger(object):
         assert dim.type == 'integer'
         assert dim.shape == ()
 
+    def test_inclusive_intervals(self):
+        """Test that discretized bounds are valid"""
+        dim = Integer('yolo', 'uniform', -3, 5.5)
+        assert dim.interval() == (-3, 3)
+
     def test_contains(self):
         """Check for integer test."""
         dim = Integer('yolo', 'uniform', -3, 6)
