@@ -54,6 +54,6 @@ specify the location of the tests:
    $ tox -e devel -- 'path/to/your/tests/file.py::test_name'
 
 This way, the tests will be ran automatically every time you make a change in the specified folder,
-file, or test respectively. This option is also avalable for ``$ tox -e py``.
+file, or test respectively. This option is also available for ``$ tox -e py``.
 
 .. _pytest: https://docs.pytest.org/en/latest/
