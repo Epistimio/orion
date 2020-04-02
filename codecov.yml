@@ -40,8 +40,7 @@ coverage:
       default:
         branches: null
 
-  ignore:
-    - tests/*
+  ignore: null
   fixes:
     - .tox
 
