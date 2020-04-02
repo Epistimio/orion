@@ -1,62 +1,47 @@
 .. include:: ../../README.rst
 
-
 .. toctree::
-   :caption: Installation Guide
+   :caption: Welcome
    :maxdepth: 1
 
    install/core
    install/database
-   install/plugins
-
-
-.. toctree::
-   :caption: User's Guide
-   :maxdepth: 1
-
-   user/pytorch
-   user/api
-   user/monitoring
-   user/searchspace
-   user/algorithms
-   user/script
-   user/evc
-   user/config
-
-.. toctree::
-   :caption: Examples
-   :maxdepth: 1
-
-   examples/scikit-learn
-   examples/pytorch_cifar
-   examples/pytorch_a2c_ppo
-   examples/cluster
-
-.. toctree::
-   :caption: Plugin development's Guide
-   :maxdepth: 1
-
-   plugins/base
-   plugins/algorithms
-
-.. .. toctree::
-..    :caption: Plan
-
 ..    roadmap
 ..    changelog
 ..    contributors
 
+.. toctree::
+   :caption: User Guide
+   :maxdepth: 1
+
+   user/script
+   user/api
+   user/algorithms
+   user/searchspace
+   user/monitoring
+   user/evc
+   user/config
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Code Reference
+   :caption: Tutorials
+   :maxdepth: 1
 
-   code/core
-   code/algo
-   code/client
+   tutorials/pytorch
+   tutorials/scikit-learn
+   tutorials/pytorch_cifar
+   tutorials/pytorch_a2c_ppo
+   tutorials/cluster
 
 .. toctree::
-   :caption: Developer's Guide
+   :caption: Plugins
+   :maxdepth: 1
+
+   plugins/base
+   plugins/install
+   plugins/algorithms
+
+.. toctree::
+   :caption: Developer Guide
    :maxdepth: 1
 
    developer/overview
@@ -66,5 +51,13 @@
    developer/documenting
    developer/ci
    developer/release
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Code Reference
+
+   code/core
+   code/algo
+   code/client
 
 .. Don't fetch reference/viz
