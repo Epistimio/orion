@@ -458,11 +458,9 @@ class _Discrete(Dimension):
         except OverflowError:  # infinity cannot be converted to Python int type
             int_low = -numpy.inf
         try:
-            int_high = int(numpy.floor(high))
+            int_high = int(numpy.ceil(high))
         except OverflowError:  # infinity cannot be converted to Python int type
             int_high = numpy.inf
-        if int_high < high:  # Inclusive upper bound
-            int_high += 1
         return (int_low, int_high)
 
     def __contains__(self, point):
