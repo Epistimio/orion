@@ -1,8 +1,8 @@
 .. _install_database:
 
-**************
-Setup Database
-**************
+********
+Database
+********
 
 .. note::
 
