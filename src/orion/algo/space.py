@@ -468,7 +468,7 @@ class _Discrete(Dimension):
 
 
 class Integer(Real, _Discrete):
-    """Search space dimension that can take on any real value.
+    """Search space dimension representing integer values.
 
     Parameters
     ----------
