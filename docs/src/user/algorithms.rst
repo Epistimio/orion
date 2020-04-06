@@ -1,8 +1,8 @@
 .. _Setup Algorithms:
 
-****************
-Setup Algorithms
-****************
+**********
+Algorithms
+**********
 
 .. contents::
    :depth: 2

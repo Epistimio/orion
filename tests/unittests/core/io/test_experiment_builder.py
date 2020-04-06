@@ -9,11 +9,14 @@ import pytest
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
+from orion.core.io.database.ephemeraldb import EphemeralDB
+from orion.core.io.database.pickleddb import PickledDB
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
-from orion.core.utils.tests import OrionState
+from orion.core.utils.tests import OrionState, update_singletons
 from orion.storage.base import get_storage
+from orion.storage.legacy import Legacy
 
 
 def count_experiments():
@@ -286,6 +289,54 @@ def test_build_from_args_force_user(new_config):
         # Test that experiment already exists
         exp_view = experiment_builder.build_from_args(cmdargs)
     assert exp_view.metadata['user'] == 'tsirif'
+
+
+@pytest.mark.usefixtures("setup_pickleddb_database")
+def test_build_from_args_debug_mode(script_path):
+    """Try building experiment in debug mode"""
+    update_singletons()
+    experiment_builder.build_from_args(
+        {'name': 'whatever', 'user_args': [script_path]})
+
+    storage = get_storage()
+
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, PickledDB)
+
+    update_singletons()
+
+    experiment_builder.build_from_args(
+        {'name': 'whatever', 'user_args': [script_path], 'debug': True})
+    storage = get_storage()
+
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, EphemeralDB)
+
+
+@pytest.mark.usefixtures("setup_pickleddb_database")
+def test_build_view_from_args_debug_mode(script_path):
+    """Try building experiment view in debug mode"""
+    update_singletons()
+
+    # Can't build view if none exist. It's fine we only want to test the storage creation.
+    with pytest.raises(ValueError):
+        experiment_builder.build_view_from_args({'name': 'whatever'})
+
+    storage = get_storage()
+
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, PickledDB)
+
+    update_singletons()
+
+    # Can't build view if none exist. It's fine we only want to test the storage creation.
+    with pytest.raises(ValueError):
+        experiment_builder.build_view_from_args({'name': 'whatever', 'debug': True})
+
+    storage = get_storage()
+
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, EphemeralDB)
 
 
 @pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")

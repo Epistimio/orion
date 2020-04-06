@@ -1,6 +1,6 @@
-************
-Hunting APIs
-************
+********
+Optimize
+********
 
 .. contents::
    :depth: 2
@@ -89,7 +89,8 @@ Service API
 -----------
 
 Experiments are created using the helper function
-:py:func:`orion.client.create_experiment`. You can then sample new trials with
+:py:func:`orion.client.create_experiment`.
+You can then sample new trials with
 :py:meth:`experiment.suggest() <orion.client.experiment.ExperimentClient.suggest>`.
 The parameters of the trials are provided as a dictionary with
 :py:meth:`trial.params <orion.core.worker.trial.Trial.params>`.

@@ -1,6 +1,6 @@
-**********
-Algorithms
-**********
+*********************
+Developing algorithms
+*********************
 
 The absolute bare **minimum interface** an optimization algorithm needs to have
 is an ``observe`` method and a ``suggest`` method, so that:

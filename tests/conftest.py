@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Common fixtures and utils for unittests and functional tests."""
 import os
+import tempfile
 
 import numpy
 from pymongo import MongoClient
@@ -15,6 +16,7 @@ from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
 import orion.core.utils.backward as backward
+from orion.core.utils.tests import update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import Storage
 from orion.storage.legacy import Legacy
@@ -287,3 +289,17 @@ def mock_infer_versioning_metadata(monkeypatch):
         vcs['diff_sha'] = "diff"
         return vcs
     monkeypatch.setattr(resolve_config, "infer_versioning_metadata", fixed_dictionary)
+
+
+@pytest.fixture(scope="function")
+def setup_pickleddb_database():
+    """Configure the database"""
+    update_singletons()
+    temporary_file = tempfile.NamedTemporaryFile()
+
+    os.environ['ORION_DB_TYPE'] = "pickleddb"
+    os.environ['ORION_DB_ADDRESS'] = temporary_file.name
+    yield
+    temporary_file.close()
+    del os.environ['ORION_DB_TYPE']
+    del os.environ['ORION_DB_ADDRESS']

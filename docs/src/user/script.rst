@@ -1,8 +1,8 @@
-******************
-Script Integration
-******************
+*********
+Integrate
+*********
 
-This section describes how to adapt the integration of the user script with Oríon.
+This section describes how to adapt a user script with Oríon.
 To customize how Oríon parses the commandline or execution environment see :ref:`customization`.
 If the user script requires information about the running trial, such as its id,
 the working directory or the experiment's name, look at :ref:`commandline_templates` or
