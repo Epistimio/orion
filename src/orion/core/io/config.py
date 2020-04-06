@@ -12,6 +12,7 @@
 Highly inspired from https://github.com/mila-iqia/blocks/blob/master/blocks/config.py.
 
 """
+import contextlib
 import logging
 import os
 
@@ -24,6 +25,16 @@ logger = logging.getLogger(__name__)
 
 
 NOT_SET = object()
+
+
+@contextlib.contextmanager
+def _disable_logger(disable=True):
+    if disable:
+        logger.disabled = True
+    yield
+
+    if disable:
+        logger.disabled = False
 
 
 class ConfigurationError(Exception):
@@ -61,7 +72,8 @@ class Configuration:
 
     """
 
-    SPECIAL_KEYS = ['_config', '_subconfigs', '_yaml', '_default', '_env_var', '_help']
+    SPECIAL_KEYS = ['_config', '_subconfigs', '_yaml', '_default', '_env_var', '_help',
+                    '_deprecated']
 
     def __init__(self):
         self._config = {}
@@ -87,9 +99,13 @@ class Configuration:
                 return
             # implies that yaml must be in dict form
             for key, value in flatten(cfg).items():
-                default = self[key]
+                default = self[key + '._default']
+                deprecated = self[key + '._deprecated']
                 logger.debug('Overwritting "%s" default %s with %s', key, default, value)
                 self[key + '._yaml'] = value
+                if deprecated and deprecated.get('alternative'):
+                    logger.debug('Overwritting "%s" default %s with %s', key, default, value)
+                    self[deprecated.get('alternative') + '._yaml'] = value
 
     def __getattr__(self, key):
         """Get the value of the option
@@ -189,7 +205,25 @@ class Configuration:
         if 'alternative' in deprecate:
             message += " Use `%s` instead."
             args.append(deprecate['alternative'])
+
         logger.warning(message, *args)
+
+    def get(self, key, deprecated='warn'):
+        """Access value
+
+        Parameters
+        ----------
+        key: str
+            Key to access in the configuration. Similar to config.key.
+        deprecated: str, optional
+            If 'warn', the access to deprecated options will log a deprecation warning.
+            else if 'ignore', no warning will be logged for access to deprecated options.
+
+        """
+        with _disable_logger(disable=(deprecated == 'ignore')):
+            value = self[key]
+
+        return value
 
     def _validate(self, key, value):
         """Validate the (key, value) option
@@ -263,11 +297,16 @@ class Configuration:
 
         # Recursively in sub configurations
         if len(keys) == 2 and keys[1] in self.SPECIAL_KEYS:
-            return self._config[keys[0]][keys[1][1:]]
+            key_config = self._config.get(keys[0], None)
+            if key_config is None:
+                raise ConfigurationError("Configuration does not have an attribute "
+                                         "'{}'.".format(keys[0]))
+            return key_config.get(keys[1][1:], None)
         elif len(keys) > 1:
             subconfig = getattr(self, keys[0])
             if subconfig is None:
-                raise KeyError("'{}' is not defined in configuration.".format(keys[0]))
+                raise ConfigurationError("Configuration does not have an attribute "
+                                         "'{}'.".format(key))
             return subconfig[".".join(keys[1:])]
         # Set in current configuration
         else:
@@ -371,10 +410,12 @@ class Configuration:
     def to_dict(self):
         """Return a dictionary representation of the configuration"""
         config = dict()
-        for key in self._config:
-            config[key] = self[key]
 
-        for key in self._subconfigs:
-            config[key] = self[key].to_dict()
+        with _disable_logger():
+            for key in self._config:
+                config[key] = self[key]
+
+            for key in self._subconfigs:
+                config[key] = self[key].to_dict()
 
         return config
