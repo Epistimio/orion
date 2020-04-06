@@ -35,7 +35,7 @@ __license__ = 'BSD-3-Clause'
 __author__ = u'Epistímio'
 __author_short__ = u'Epistímio'
 __author_email__ = 'xavier.bouthillier@umontreal.ca'
-__copyright__ = u'2017-2019, Epistímio'
+__copyright__ = u'2017-2020, Epistímio'
 __url__ = 'https://github.com/epistimio/orion'
 
 DIRS = AppDirs(__name__, __author_short__)
@@ -59,6 +59,10 @@ def define_config():
     config.add_option(
         'user_script_config', option_type=str, default='config',
         deprecate=dict(version='v0.3', alternative='worker.user_script_config'))
+
+    config.add_option(
+        'debug', option_type=bool, default=False,
+        help='Turn Oríon into debug mode. Storage will be overriden to in-memory EphemeralDB.')
 
     return config
 

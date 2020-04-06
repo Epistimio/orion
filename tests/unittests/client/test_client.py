@@ -141,15 +141,11 @@ class TestReportResults(object):
 class TestCreateExperiment:
     """Test creation of experiment with `client.create_experiment()`"""
 
-    def test_create_experiment_no_storage(self):
+    @pytest.mark.usefixtures("setup_pickleddb_database")
+    def test_create_experiment_no_storage(self, monkeypatch):
         """Test creation if storage is not configured"""
         name = 'oopsie_forgot_a_storage'
-        storage_type = 'legacy'
-        db_type = 'pickleddb'
-        host = 'test.pkl'
-        orion.core.config.storage.type = storage_type
-        orion.core.config.storage.database.type = db_type
-        orion.core.config.storage.database.host = host
+        host = orion.core.config.storage.database.host
 
         with OrionState(storage=orion.core.config.storage.to_dict()) as cfg:
             # Reset the Storage and drop instances so that get_storage() would fail.
@@ -332,6 +328,30 @@ class TestCreateExperiment:
                 create_experiment(config['name'], version=1, space=new_space)
 
             assert "Configuration is different and generates" in str(exc.value)
+
+    def test_create_experiment_debug_mode(self):
+        """Test that EphemeralDB is used in debug mode whatever the storage config given"""
+        update_singletons()
+
+        create_experiment(
+            config['name'], space={'x': 'uniform(0, 10)'},
+            storage={'type': 'legacy', 'database': {'type': 'pickleddb'}})
+
+        storage = get_storage()
+
+        assert isinstance(storage, Legacy)
+        assert isinstance(storage._db, PickledDB)
+
+        update_singletons()
+
+        create_experiment(
+            config['name'], space={'x': 'uniform(0, 10)'},
+            storage={'type': 'legacy', 'database': {'type': 'pickleddb'}}, debug=True)
+
+        storage = get_storage()
+
+        assert isinstance(storage, Legacy)
+        assert isinstance(storage._db, EphemeralDB)
 
 
 class TestWorkon:

@@ -12,10 +12,12 @@ import pytest
 import yaml
 
 import orion.core.cli
+from orion.core.io.database.ephemeraldb import EphemeralDB
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.tests import OrionState
 from orion.core.worker import workon
 from orion.storage.base import get_storage
+from orion.storage.legacy import Legacy
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -604,3 +606,21 @@ def test_demo_precision(database, monkeypatch):
     value = params[0]['value']
 
     assert value == float(numpy.format_float_scientific(value, precision=4))
+
+
+@pytest.mark.usefixtures("setup_pickleddb_database")
+def test_debug_mode(monkeypatch):
+    """Test debug mode."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+    user_args = [
+        "-x~uniform(-50, 50, precision=5)"]
+
+    orion.core.cli.main([
+        "--debug", "hunt", "--config", "./orion_config.yaml", "--max-trials", "2",
+        "./black_box.py"] + user_args)
+
+    storage = get_storage()
+
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, EphemeralDB)

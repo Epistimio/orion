@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.storage.legacy` -- Legacy storage
-=============================================================================
+=============================================
 
 .. module:: legacy
    :platform: Unix
@@ -22,20 +22,42 @@ from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArgumen
 log = logging.getLogger(__name__)
 
 
-def setup_database(config):
+def get_database():
+    """Return current database
+
+    This is a wrapper around the Database Singleton object to provide
+    better error message when it is used without being initialized.
+
+    Raises
+    ------
+    RuntimeError
+        If the underlying database was not initialized prior to calling this function
+
+    Notes
+    -----
+    To initialize the underlying database you must first call `Database(...)`
+    with the appropriate arguments for the chosen backend
+
+    """
+    return Database()
+
+
+def setup_database(config=None):
     """Create the Database instance from a configuration.
 
     Parameters
     ----------
     config: dict
-        Configuration for the database.
+        Configuration for the database backend. If not defined, global configuration
+        is used.
 
     """
+    if config is None:
+        # TODO: How could we support orion.core.config.storage.database as well?
+        config = orion.core.config.database.to_dict()
+
     db_opts = config
     dbtype = db_opts.pop('type')
-
-    if config.get("debug"):
-        dbtype = "EphemeralDB"
 
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
     try:
@@ -316,8 +338,8 @@ class Legacy(BaseStorageProtocol):
         """Update trial's heartbeat"""
         return self._update_trial(trial, heartbeat=datetime.datetime.utcnow(), status='reserved')
 
-    def fetch_trial_by_status(self, experiment, status):
-        """See :func:`~orion.storage.BaseStorageProtocol.fetch_trial_by_status`"""
+    def fetch_trials_by_status(self, experiment, status):
+        """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials_by_status`"""
         query = dict(
             experiment=experiment._id,
             status=status
