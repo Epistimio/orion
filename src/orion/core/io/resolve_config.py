@@ -100,6 +100,9 @@ def _convert_dashes(config, ref):
     return config
 
 
+# NOTE: Silencing this pylint error for now, but seriously this function is quite horrible.
+#       We'll need to clean this up at some point...
+# pylint:disable=too-many-branches
 def fetch_config_from_cmdargs(cmdargs):
     """Turn flat cmdargs into nested dicts like orion.core.config."""
     config_file = cmdargs.pop('config', None)
@@ -152,6 +155,17 @@ def fetch_config_from_cmdargs(cmdargs):
         if cmdargs.get(key) not in [False, None]:
             cmdargs_config[f'evc.{key}'] = cmdargs[key]
 
+    # Apply config at the root
+    for key in ['debug']:
+
+        # Adapt to cli arguments
+        cli_key = mappings.get(key, key)
+
+        value = cmdargs.pop(cli_key, None)
+        if value is not None:
+            cmdargs_config[f'{key}'] = value
+
+    # Apply to subconfigs
     for key in ['experiment', 'worker', 'evc']:
         for subkey in global_config[key].keys():
 

@@ -11,9 +11,12 @@ import pytest
 
 import orion.core
 from orion.core.io.database import DuplicateKeyError
-from orion.core.utils.tests import OrionState
+from orion.core.io.database.pickleddb import PickledDB
+from orion.core.utils import SingletonAlreadyInstantiatedError, SingletonNotInstantiatedError
+from orion.core.utils.tests import OrionState, update_singletons
 from orion.core.worker.trial import Trial
-from orion.storage.base import FailedUpdate, get_storage, MissingArguments
+from orion.storage.base import FailedUpdate, get_storage, MissingArguments, setup_storage, Storage
+from orion.storage.legacy import Legacy
 from orion.storage.track import HAS_TRACK, REASON
 
 log = logging.getLogger(__name__)
@@ -121,6 +124,100 @@ def generate_experiments():
     users = ['a', 'b', 'c']
     exps = [_generate(base_experiment, 'metadata', 'user', value=u) for u in users]
     return [_generate(exp, 'name', value=str(i)) for i, exp in enumerate(exps)]
+
+
+@pytest.mark.usefixtures("setup_pickleddb_database")
+def test_setup_storage_default():
+    """Test that storage is setup using default config"""
+    update_singletons()
+    setup_storage()
+    storage = Storage()
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, PickledDB)
+
+
+def test_setup_storage_bad():
+    """Test how setup fails when configuring with non-existant backends"""
+    update_singletons()
+    with pytest.raises(NotImplementedError) as exc:
+        setup_storage({'type': 'idontexist'})
+
+    assert exc.match('idontexist')
+
+
+def test_setup_storage_custom():
+    """Test setup with local configuration"""
+    update_singletons()
+    setup_storage({'type': 'legacy', 'database': {'type': 'pickleddb', 'host': 'test.pkl'}})
+    storage = Storage()
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, PickledDB)
+    assert storage._db.host == 'test.pkl'
+
+
+def test_setup_storage_custom_type_missing():
+    """Test setup with local configuration with type missing"""
+    update_singletons()
+    setup_storage({'database': {'type': 'pickleddb', 'host': 'test.pkl'}})
+    storage = Storage()
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, PickledDB)
+    assert storage._db.host == 'test.pkl'
+
+
+@pytest.mark.usefixtures("setup_pickleddb_database")
+def test_setup_storage_custom_legacy_emtpy():
+    """Test setup with local configuration with legacy but no config"""
+    update_singletons()
+    setup_storage({'type': 'legacy'})
+    storage = Storage()
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, PickledDB)
+    assert storage._db.host == orion.core.config.storage.database.host
+
+
+def test_setup_storage_bad_override():
+    """Test setup with different type than existing singleton"""
+    update_singletons()
+    setup_storage({'type': 'legacy', 'database': {'type': 'pickleddb', 'host': 'test.pkl'}})
+    storage = Storage()
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, PickledDB)
+    with pytest.raises(SingletonAlreadyInstantiatedError) as exc:
+        setup_storage({'type': 'track'})
+
+    assert exc.match('A singleton instance of \(type: Storage\)')
+
+
+@pytest.mark.xfail(reason='Fix this when introducing #135 in v0.2.0')
+def test_setup_storage_bad_config_override():
+    """Test setup with different config than existing singleton"""
+    update_singletons()
+    setup_storage({'database': {'type': 'pickleddb', 'host': 'test.pkl'}})
+    storage = Storage()
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, PickledDB)
+    with pytest.raises(SingletonAlreadyInstantiatedError):
+        setup_storage({'database': {'type': 'mongodb'}})
+
+
+def test_get_storage_uninitiated():
+    """Test that get storage fails if no storage singleton exist"""
+    update_singletons()
+    with pytest.raises(SingletonNotInstantiatedError) as exc:
+        get_storage()
+
+    assert exc.match('No singleton instance of \(type: Storage\) was created')
+
+
+def test_get_storage():
+    """Test that get storage gets the singleton"""
+    update_singletons()
+    setup_storage({'database': {'type': 'pickleddb', 'host': 'test.pkl'}})
+    storage = get_storage()
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, PickledDB)
+    assert get_storage() == storage
 
 
 @pytest.mark.parametrize('storage', storage_backends)
@@ -403,7 +500,7 @@ class TestStorage:
 
             assert len(trials) == count
 
-    def test_fetch_trial_by_status(self, storage):
+    def test_fetch_trials_by_status(self, storage):
         """Test fetch completed trials"""
         with OrionState(
                 experiments=[base_experiment], trials=generate_trials(), storage=storage) as cfg:
@@ -414,7 +511,7 @@ class TestStorage:
 
             storage = cfg.storage()
             experiment = cfg.get_experiment('default_name', version=None)
-            trials = storage.fetch_trial_by_status(experiment, 'completed')
+            trials = storage.fetch_trials_by_status(experiment, 'completed')
 
             assert len(trials) == count
             for trial in trials:
@@ -459,7 +556,7 @@ class TestStorage:
             storage = cfg.storage()
 
             exp = cfg.get_experiment('default_name')
-            trial1 = storage.fetch_trial_by_status(exp, status='reserved')[0]
+            trial1 = storage.fetch_trials_by_status(exp, status='reserved')[0]
             trial1b = copy.deepcopy(trial1)
 
             storage.update_heartbeat(trial1)
@@ -476,7 +573,7 @@ class TestStorage:
             assert trial2.heartbeat < datetime.datetime.utcnow()
 
             if storage_name is None:
-                trial3 = storage.fetch_trial_by_status(exp, status='completed')[0]
+                trial3 = storage.fetch_trials_by_status(exp, status='completed')[0]
                 storage.update_heartbeat(trial3)
 
                 assert trial3.heartbeat is None, \

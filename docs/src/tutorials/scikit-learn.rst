@@ -4,9 +4,9 @@ Scikit-learn
 .. Might also think of moving this file to examples/ then we an example auto contained in the
    repository. We invoke this file from index.rst
 
-In this example, we're going to demonstrate how Oríon can be integrated to a minimal model using
+In this tutorial, we're going to demonstrate how Oríon can be integrated to a minimal model using
 `scikit-learn <https://scikit-learn.org/stable/index.html>`_ on the `iris dataset
-<http://archive.ics.uci.edu/ml/datasets/Iris>`_. The files mentioned in this example are available
+<http://archive.ics.uci.edu/ml/datasets/Iris>`_. The files mentioned in this tutorial are available
 at `examples/scikitlearn-iris/
 <https://github.com/Epistimio/orion/tree/master/examples/scikitlearn-iris/>`_ in Oríon's repository.
 

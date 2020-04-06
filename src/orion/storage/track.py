@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.storage.legacy -- Track Storage Protocol
+:mod:`orion.storage.track` -- Track Storage Protocol
 ====================================================
 
 .. module:: base
@@ -723,7 +723,7 @@ class Track(BaseStorageProtocol):   # noqa: F811
         )
         return self.backend.fetch_trials(query)
 
-    def fetch_trial_by_status(self, experiment, status):
+    def fetch_trials_by_status(self, experiment, status):
         """Fetch all trials with the given status"""
         trials = self._fetch_trials(dict(status=status, group_id=experiment.id))
         return trials

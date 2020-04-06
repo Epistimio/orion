@@ -15,16 +15,18 @@ import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.exceptions import RaceCondition
 from orion.core.utils.tests import update_singletons
 from orion.core.worker.producer import Producer
+from orion.storage.base import setup_storage
 
 
-__all__ = ['interrupt_trial', 'report_bad_trial', 'report_objective', 'report_results']
+__all__ = ['interrupt_trial', 'report_bad_trial', 'report_objective', 'report_results',
+           'create_experiment', 'workon']
 
 
 # pylint: disable=too-many-arguments
 def create_experiment(
         name, version=None, space=None, algorithms=None,
         strategy=None, max_trials=None, storage=None, branching=None,
-        max_idle_time=None, heartbeat=None, working_dir=None):
+        max_idle_time=None, heartbeat=None, working_dir=None, debug=False):
     """Create an experiment
 
     There is 2 main scenarios
@@ -107,6 +109,9 @@ def create_experiment(
         heartbeat, Oríon will reset the status of the trial to `interrupted`.
         This allows restoring lost trials (ex: due to killed worker).
         Defaults to `orion.core.config.worker.max_idle_time`.
+    debug: bool, optional
+        If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
+        Defaults to False.
     branching: dict, optional
         Arguments to control the branching.
 
@@ -154,7 +159,7 @@ def create_experiment(
         If the algorithm, storage or strategy specified is not properly installed.
 
     """
-    experiment_builder.setup_storage(storage=storage)
+    setup_storage(storage=storage, debug=debug)
 
     try:
         experiment = experiment_builder.build(
@@ -220,8 +225,7 @@ def workon(function, space, name='loop', algorithms=None, max_trials=None):
     # Clear singletons and keep pointers to restore them.
     singletons = update_singletons()
 
-    experiment_builder.setup_storage(
-        storage={'type': 'legacy', 'database': {'type': 'EphemeralDB'}})
+    setup_storage(storage={'type': 'legacy', 'database': {'type': 'EphemeralDB'}})
 
     experiment = experiment_builder.build(
         name, version=1, space=space, algorithms=algorithms,
