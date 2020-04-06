@@ -20,6 +20,7 @@
    user/searchspace
    user/monitoring
    user/evc
+   user/storage
    user/config
 
 .. toctree::
@@ -59,5 +60,6 @@
    code/core
    code/algo
    code/client
+   code/storage
 
 .. Don't fetch reference/viz

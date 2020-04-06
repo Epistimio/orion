@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.strategies`."""
+import logging
+
 import pytest
 
 from orion.core.worker.strategy import (
@@ -21,6 +23,40 @@ def observations():
 def incomplete_trial():
     """Return a single trial without results"""
     return Trial(params=[{'name': 'a', 'type': 'integer', 'value': 6}])
+
+
+@pytest.fixture
+def corrupted_trial():
+    """Return a corrupted trial with results but status reserved"""
+    return Trial(params=[{'name': 'a', 'type': 'integer', 'value': 6}],
+                 results=[{'name': 'objective', 'type': 'objective', 'value': 1}],
+                 status='reserved')
+
+
+strategies = [
+    'MaxParallelStrategy', 'MeanParallelStrategy', 'NoParallelStrategy', 'StubParallelStrategy']
+
+
+@pytest.mark.parametrize('strategy', strategies)
+def test_handle_corrupted_trials(caplog, strategy, corrupted_trial):
+    """Verify that corrupted trials are handled properly"""
+    with caplog.at_level(logging.WARNING, logger="orion.core.worker.strategy"):
+        lie = Strategy(strategy).lie(corrupted_trial)
+
+    match = "Trial `{}` has an objective but status is not completed".format(corrupted_trial.id)
+    assert match in caplog.text
+
+    assert lie is not None
+    assert lie.value == corrupted_trial.objective.value
+
+
+@pytest.mark.parametrize('strategy', strategies)
+def test_handle_uncorrupted_trials(caplog, strategy, incomplete_trial):
+    """Verify that no warning is logged if trial is valid"""
+    with caplog.at_level(logging.WARNING, logger="orion.core.worker.strategy"):
+        Strategy(strategy).lie(incomplete_trial)
+
+    assert "Trial `{}` has an objective but status is not completed" not in caplog.text
 
 
 class TestStrategyFactory:

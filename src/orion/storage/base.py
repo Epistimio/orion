@@ -1,16 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.storage.base -- Generic Storage Protocol
-====================================================
+:mod:`orion.storage.base` -- Generic Storage Protocol
+=====================================================
 
 .. module:: base
    :platform: Unix
    :synopsis: Implement a generic protocol to allow Orion to communicate using
-   different storage backend
+              different storage backend
 
 """
 
+import logging
+
+import orion.core
 from orion.core.utils import (AbstractSingletonType, SingletonFactory)
+
+
+log = logging.getLogger(__name__)
 
 
 class FailedUpdate(Exception):
@@ -192,7 +198,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """Fetch all non completed trials"""
         raise NotImplementedError()
 
-    def fetch_trial_by_status(self, experiment, status):
+    def fetch_trials_by_status(self, experiment, status):
         """Fetch all trials with the given status"""
         raise NotImplementedError()
 
@@ -250,6 +256,40 @@ def get_storage():
     return Storage()
 
 
+def setup_storage(storage=None, debug=False):
+    """Create the storage instance from a configuration.
+
+    Parameters
+    ----------
+    config: dict, optional
+        Configuration for the storage backend. If not defined, global configuration
+        is used.
+    debug: bool, optional
+        If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
+        Defaults to False.
+
+    """
+    if storage is None:
+        storage = orion.core.config.storage.to_dict()
+
+    if storage.get('type') == 'legacy' and 'database' not in storage:
+        storage['database'] = orion.core.config.storage.database.to_dict()
+    elif storage.get('type') is None and 'database' in storage:
+        storage['type'] = 'legacy'
+
+    if debug:
+        storage = {'type': 'legacy', 'database': {'type': 'EphemeralDB'}}
+
+    storage_type = storage.pop('type')
+
+    log.debug("Creating %s storage client with args: %s", storage_type, storage)
+    try:
+        Storage(of_type=storage_type, **storage)
+    except ValueError:
+        if Storage().__class__.__name__.lower() != storage_type.lower():
+            raise
+
+
 # pylint: disable=too-few-public-methods
 class ReadOnlyStorageProtocol(object):
     """Read-only interface from a storage protocol.
@@ -269,7 +309,7 @@ class ReadOnlyStorageProtocol(object):
         'fetch_noncompleted_trials',
         'fetch_pending_trials',
         'fetch_lost_trials',
-        'fetch_trial_by_status'
+        'fetch_trials_by_status'
     }
 
     def __init__(self, protocol):
