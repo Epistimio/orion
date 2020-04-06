@@ -134,8 +134,8 @@ If you use Oríon for published work, please cite our work using the following b
      year         = 2019,
      publisher    = {Zenodo},
      version      = {v0.1.7},
-     doi          = {10.5281/zenodo.3478593},
-     url          = {https://doi.org/10.5281/zenodo.3478593}
+     doi          = {10.5281/zenodo.3478592},
+     url          = {https://doi.org/10.5281/zenodo.3478592}
    }
 
 License
