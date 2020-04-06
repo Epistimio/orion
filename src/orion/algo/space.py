@@ -327,6 +327,9 @@ class Real(Dimension):
        Lower bound (inclusive), optional; default ``-numpy.inf``.
     high : float:
        Upper bound (inclusive), optional; default ``numpy.inf``.
+       The upper bound must be inclusive because of rounding errors
+       during optimization which may cause values to round exactly
+       to the upper bound.
     precision : int
         Precision, optional; default ``4``.
     shape : tuple
