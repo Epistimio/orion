@@ -13,7 +13,7 @@ the repository level.
 When a commit is pushed in a pull request, a call to ``$ tox`` is made by
 TravisCI which triggers the following chain of events:
 
-#. A test environment is spun up for each version of python tested (definined in ``tox.ini``).
+#. A test environment is spun up for each version of python tested (defined in ``tox.ini``).
 #. Code styles verifications, and quality checks are run (``flake8``, ``pylint``, ``doc8``). The
    documentation is also built at this time (``docs``).
 #. The test suite is run completely with coverage, including the dedicated backward
@@ -24,8 +24,8 @@ TravisCI which triggers the following chain of events:
 The coverage results show the difference of coverage introduced by the changes. We always aim to
 have changes that improve coverage.
 
-If a step fails at any point in any environment, the build will be immediatly stopped, marked as
-failed and reported to the pull requestion and repository. In such case, the maintainers and
+If a step fails at any point in any environment, the build will be immediately stopped, marked as
+failed and reported to the pull request and repository. In such case, the maintainers and
 relevant contributors will be alerted.
 
 .. _codecov: https://codecov.io/
