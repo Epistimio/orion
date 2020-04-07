@@ -770,12 +770,11 @@ def test_quantization_does_not_violate_bounds():
     dim = Integer('yo', 'uniform', 3, 7)
     transformers = [Reverse(Quantize())]
     tdim = TransformedDimension(Compose(transformers, dim.type), dim)
-    assert 10 not in dim
-    assert 9 in dim
-    assert 10 not in dim
-    assert 9 in dim
-    # but be careful, because upper bound is exclusive
-    assert 9.6 in tdim
+    assert 11 not in dim
+    assert 10 in dim
+    # but be careful, because upper bound is inclusive
+    assert 11.5 not in tdim
+    assert 10.6 in tdim
     assert tdim.reverse(9.6) in dim
     # solution is to quantize with 'floor' instead of 'round'
     assert tdim.reverse(9.6) == 9
