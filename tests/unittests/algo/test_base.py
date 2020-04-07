@@ -96,10 +96,10 @@ def test_is_done_cardinality(monkeypatch, dumbalgo):
 
     algo = dumbalgo(space)
     algo.suggest()
-    for i in range(1, 5):
+    for i in range(1, 6):
         algo.observe([[i]], [{'objective': 3}])
 
-    assert len(algo.state_dict['_trials_info']) == 4
+    assert len(algo.state_dict['_trials_info']) == 5
     assert algo.is_done
 
     space = Space()
@@ -107,10 +107,10 @@ def test_is_done_cardinality(monkeypatch, dumbalgo):
 
     algo = dumbalgo(space)
     algo.suggest()
-    for i in range(1, 5):
+    for i in range(1, 6):
         algo.observe([[i]], [{'objective': 3}])
 
-    assert len(algo.state_dict['_trials_info']) == 4
+    assert len(algo.state_dict['_trials_info']) == 5
     assert not algo.is_done
 
 

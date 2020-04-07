@@ -492,3 +492,33 @@ def test_deprecate_option_print_with_different_name(caplog):
     assert caplog.record_tuples == [(
         'orion.core.io.config', logging.WARNING,
         '(DEPRECATED) Option `nested.option` will be removed in v1.0. Use `None! T_T` instead.')]
+
+
+def test_get_deprecated_key(caplog):
+    """Verify deprecation warning using get()."""
+    config = Configuration()
+    config.add_option(
+        'option', option_type=str, default='hello',
+        deprecate=dict(version='v1.0', alternative='None! T_T'))
+
+    # Access the deprecated option and trigger a warning.
+    with caplog.at_level(logging.WARNING, logger="orion.core.io.config"):
+        assert config.get('option') == 'hello'
+
+    assert caplog.record_tuples == [(
+        'orion.core.io.config', logging.WARNING,
+        '(DEPRECATED) Option `option` will be removed in v1.0. Use `None! T_T` instead.')]
+
+
+def test_get_deprecated_key_ignore_warning(caplog):
+    """Verify deprecation warning using get(deprecated='ignore')."""
+    config = Configuration()
+    config.add_option(
+        'option', option_type=str, default='hello',
+        deprecate=dict(version='v1.0', alternative='None! T_T'))
+
+    # Access the deprecated option and trigger a warning.
+    with caplog.at_level(logging.WARNING, logger="orion.core.io.config"):
+        assert config.get('option', deprecated='ignore') == 'hello'
+
+    assert caplog.record_tuples == []
