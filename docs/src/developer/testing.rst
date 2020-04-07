@@ -57,3 +57,6 @@ This way, the tests will be ran automatically every time you make a change in th
 file, or test respectively. This option is also available for ``$ tox -e py``.
 
 .. _pytest: https://docs.pytest.org/en/latest/
+
+
+.. include:: stress.rst
