@@ -52,24 +52,17 @@ Check out our `pytorch example`_ for a quick demonstration!
 
 .. _pytorch example: https://orion.readthedocs.io/en/latest/tutorials/pytorch.html
 
-Features
-========
-*As simple and as complex you want*
+Why Oríon?
+==========
+*Effortless to adopt, deeply customizable*
 
-- Simple and natural, but also explicit and verbose, search domain definitions
-- Minimal and non-intrusive client interface for reporting
-  target function values
-- Database logging (currently powered by MongoDB_)
-- Flexible configuration
-- Explicit experiment termination conditions
-- Algorithms algorithms algorithms:
-  Skopt_'s bayesian optimizers are at hand without writing.
-  Random search is the default.
-  **only** a single line of code.
-
-.. _MongoDB: https://www.mongodb.com/
-.. _Skopt: https://scikit-optimize.github.io/
-.. _plugin documentation: https://orion.readthedocs.io/en/latest/plugins/base.html
+- Adopt it with a single line of code
+- Natively asynchronous. Built for distributed computing
+- Offers the latest established hyperparameter algorithms
+- Elegant and powerful search-space definitions
+- Comprehensive configuration system with smart defaults
+- Transparent persistence in local or remote database
+- Integrate seamlessly your own hyper-optimization algorithms
 
 Installation
 ============
