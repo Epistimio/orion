@@ -69,9 +69,6 @@ Features
 - More algorithms:
   Implementing and distributing algorithms is as easy as possible!
   Check the `plugin documentation`_. Expect algorithm plugins to pop out quickly!
-- Came up with an idea?
-  Your intuition is still at play:
-  Help your optima hunter now by a command line interface.
 - And other many more already there or coming soon!
 
 .. _MongoDB: https://www.mongodb.com/
