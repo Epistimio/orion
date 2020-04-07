@@ -66,10 +66,6 @@ Features
   Skopt_'s bayesian optimizers are at hand without writing.
   Random search is the default.
   **only** a single line of code.
-- More algorithms:
-  Implementing and distributing algorithms is as easy as possible!
-  Check the `plugin documentation`_. Expect algorithm plugins to pop out quickly!
-- And other many more already there or coming soon!
 
 .. _MongoDB: https://www.mongodb.com/
 .. _Skopt: https://scikit-optimize.github.io/
