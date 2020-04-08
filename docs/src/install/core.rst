@@ -5,30 +5,27 @@ Installing Oríon
 Oríon is compatible with most Linux distributions and Mac OS X. It is tested on Ubuntu 16.04 LTS and
 Mac OS X 10.13. We do not support Windows and there is no short term plan to do so.
 
-Via PyPI
-========
-
-The easiest way to install Oríon is using the Python package manager. The core of Oríon is
-registered on PyPI_ under `orion`.
+The easiest way to install the latest version of Oríon is through the Python package manager. Oríon
+is registered on PyPI_ under `orion`. Use the following command to install Oríon:
 
 .. code-block:: sh
 
    pip install orion
 
-This will install all the core components. Note that the only algorithm provided with it
-is random search. To install more algorithms, you can look at section :doc:`/plugins/install`.
+Note that the only algorithm provided by default is random search. More algorithms are available in
+the :doc:`plugin section </plugins/install>`, their installation procedure is the same as Oríon's.
 
 .. _PyPI: https://pypi.org/project/orion/
 
-Via Git
-=======
+Bleeding edge
+=============
 
-This way is recommended if you want to work with the bleeding edge version
-of Oríon.
+If you want to work with the bleeding edge version of Oríon, we recommend you install it with the
+following command:
 
 .. code-block:: sh
 
    pip install git+https://github.com/epistimio/orion.git@develop
 
-Note that the bleeding-edge branch is develop. The master branch is the same as the latest version
+Note that the bleeding edge branch is develop. The master branch is the same as the latest version
 on PyPI.
