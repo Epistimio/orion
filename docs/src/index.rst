@@ -14,6 +14,7 @@
    :caption: User Guide
    :maxdepth: 1
 
+   user/overview
    user/script
    user/api
    user/algorithms
