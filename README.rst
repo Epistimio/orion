@@ -57,7 +57,7 @@ Why Oríon?
 *Effortless to adopt, deeply customizable*
 
 - Adopt it with a single line of code
-- Natively asynchronous. Built for distributed computing
+- Natively asynchronous, thus resilient and easy to parallelize
 - Offers the latest established hyperparameter algorithms
 - Elegant and rich search-space definitions
 - Comprehensive configuration system with smart defaults
