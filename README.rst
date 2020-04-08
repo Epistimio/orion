@@ -59,7 +59,7 @@ Why Oríon?
 - Adopt it with a single line of code
 - Natively asynchronous. Built for distributed computing
 - Offers the latest established hyperparameter algorithms
-- Elegant and powerful search-space definitions
+- Elegant and rich search-space definitions
 - Comprehensive configuration system with smart defaults
 - Transparent persistence in local or remote database
 - Integrate seamlessly your own hyper-optimization algorithms
