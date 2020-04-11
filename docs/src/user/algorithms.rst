@@ -186,6 +186,71 @@ converging trials that do not lead to best results at convergence (stragglers).
 To overcome this, you can increase the number of brackets, which increases the amount of resources
 required for optimisation but decreases the bias towards stragglers. Default is 1.
 
+
+.. _tpe-algorithm:
+
+TPE
+---------
+
+`Tree-structured Parzen Estimator`_ (TPE) algorithm is one of Sequential Model-Based
+Global Optimization (SMBO) algorithms, which will build models to propose new points based
+on the historical observed trials.
+
+Instead of modeling p(y|x) like other SMBO algorithms, TPE models p(x|y) and p(y),
+and p(x|y) is modeled by transforming that generative process, replacing the distributions of
+the configuration prior with non-parametric densities.
+
+The TPE defines p(x|y) using two such densities l(x) and g(x) while l(x) is distribution of
+good points and g(x) is the distribution of bad points. New point candidates will be sampled
+with l(x) and Expected Improvement (EI) optimization scheme will be used to find the most
+promising point among the candidates.
+
+
+.. _Tree-structured Parzen Estimator:
+    https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf
+
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+    algorithms:
+       tpe:
+          seed: null
+          n_initial_points: 20
+          n_ei_candidates: 25
+          gamma: 0.25
+          equal_weight: False
+          prior_weight: 1.0
+
+
+``seed``
+
+Seed to sample initial points and candidates points. Default is ``None``.
+
+``n_initial_points``
+
+Number of initial points randomly sampled. Default is ``20``.
+
+``n_ei_candidates``
+
+Number of candidates points sampled for ei compute. Default is ``24``.
+
+``gamma``
+
+Ratio to split the observed trials into good and bad distributions. Default is ``0.25``.
+
+``equal_weight``
+
+True to set equal weights for observed points. Default is ``False``.
+
+``seed``
+
+The weight given to the prior point of the input space. Default is ``1.0``.
+
+
+
 Algorithm Plugins
 =================
 

@@ -187,6 +187,24 @@ class TestDimension(object):
         dim = Dimension('yolo', 'reciprocal', 1e-10, 1)
         assert dim.get_prior_string() == 'loguniform(1e-10, 1)'
 
+    def test_prior_name(self):
+        """Test prior name is correct in dimension"""
+        dim = Dimension('yolo', 'reciprocal', 1e-10, 1)
+        assert dim.prior_name == 'reciprocal'
+
+        dim = Dimension('yolo', 'norm', 0.9)
+        assert dim.prior_name == 'norm'
+
+        dim = Real('yolo', 'uniform', 1, 2)
+        assert dim.prior_name == 'uniform'
+
+        dim = Integer('yolo1', 'uniform', -3, 6)
+        assert dim.prior_name == 'int_uniform'
+
+        categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
+        dim = Categorical('yolo', categories)
+        assert dim.prior_name == 'choices'
+
 
 class TestReal(object):
     """Test methods of a `Real` object."""

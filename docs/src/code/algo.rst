@@ -16,3 +16,4 @@ TODO
    algo/random
    algo/hyperband
    algo/asha
+   algo/tpe
