@@ -87,7 +87,7 @@ def display_budgets(budgets_tab, max_resources, reduction_factor):
     table_str += col_format_str.format(*col_sub_list)
     table_str += 'max resource={}, eta={}, trials number of one execution={}\n' \
         .format(max_resources, reduction_factor, total_trials)
-    logger.warning(table_str)
+    logger.debug(table_str)
 
 
 class Hyperband(BaseAlgorithm):

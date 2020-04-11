@@ -10,7 +10,7 @@ import orion.core.cli
 from orion.storage.base import get_storage
 
 
-config_files = ['random_config.yaml']
+config_files = ['random_config.yaml', 'tpe.yaml']
 fidelity_config_files = ['random_config.yaml', 'asha_config.yaml', 'hyperband.yaml']
 fidelity_only_config_files = list(set(fidelity_config_files) - set(config_files))
 
@@ -71,9 +71,9 @@ def test_simple(monkeypatch, config_file):
 
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
-@pytest.mark.parametrize('config_file', config_files)
-def test_random_stop(monkeypatch, config_file):
+def test_random_stop(monkeypatch):
     """Test a simple usage scenario."""
+    config_file = 'random_config.yaml'
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["hunt", "--config", config_file,
                          "./black_box.py", "-x~uniform(-10, 5, discrete=True)"])
