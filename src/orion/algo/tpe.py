@@ -156,7 +156,7 @@ class TPE(BaseAlgorithm):
                                   equal_weight=equal_weight,
                                   prior_weight=prior_weight)
 
-        for _, dimension in self.space.items():
+        for dimension in self.space.values():
 
             if dimension.type not in ['real']:
                 raise ValueError("TPE now only supports Real Dimension.")
@@ -211,7 +211,6 @@ class TPE(BaseAlgorithm):
         samples = []
         if len(self._trials_info) < self.n_initial_points:
             new_point = self.space.sample(1, seed=tuple(self.rng.randint(0, 1000000, size=3)))[0]
-            print(type(new_point), type(new_point[0]), new_point)
             samples.append(new_point)
         else:
             point = []
@@ -219,7 +218,7 @@ class TPE(BaseAlgorithm):
             below_points = numpy.array([flatten_dims(point, self.space) for point in below_points])
             above_points = numpy.array([flatten_dims(point, self.space) for point in above_points])
             idx = 0
-            for i, dimension in enumerate(self.space.values()):
+            for dimension in self.space.values():
 
                 if dimension.type == 'real':
                     shape = dimension.shape
@@ -271,7 +270,6 @@ class TPE(BaseAlgorithm):
 
         below = sorted_points[:split_index]
         above = sorted_points[split_index:]
-        print(below)
 
         return below, above
 
