@@ -479,6 +479,7 @@ class TransformedDimension(object):
 
     @property
     def prior_name(self):
+        """Do not change the prior name of the original dimension."""
         return self.original_dimension.prior_name
 
     @property
