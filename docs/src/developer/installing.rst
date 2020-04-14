@@ -12,7 +12,7 @@ fork our repository_ first).
 
 .. code-block:: sh
 
-   $ git clone https://github.com/epistimio/orion.git --branch develop
+   $ git clone https://github.com/epistimio/orion.git
 
 .. tip::
 
