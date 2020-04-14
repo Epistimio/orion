@@ -56,13 +56,13 @@ Why Oríon?
 ==========
 *Effortless to adopt, deeply customizable*
 
-- Adopt it with a single line of code
-- Natively asynchronous, thus resilient and easy to parallelize
-- Offers the latest established hyperparameter algorithms
-- Elegant and rich search-space definitions
-- Comprehensive configuration system with smart defaults
-- Transparent persistence in local or remote database
-- Integrate seamlessly your own hyper-optimization algorithms
+- :doc:`Adopt it </user/script>` with a single line of code
+- :doc:`Natively asynchronous </code/core>`, thus resilient and easy to parallelize
+- Offers the latest established hyperparameter :doc:`algorithms </user/algorithms>`
+- Elegant and rich :doc:`search-space definitions </user/searchspace>`
+- Comprehensive :doc:`configuration </user/config>` system with smart defaults
+- Transparent persistence in local or remote :doc:`database </install/database>`
+- :doc:`Integrate seamlessly </plugins/base>` your own hyper-optimization algorithms
 
 Installation
 ============
