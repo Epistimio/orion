@@ -4,6 +4,7 @@
    :caption: Welcome
    :maxdepth: 1
 
+   install/gettingstarted
    install/core
    install/database
 ..    contributors
