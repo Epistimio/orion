@@ -18,6 +18,23 @@ Scaling up
 Search Space
 ============
 
+The search space is defined by priors for each hyperparameter to optimize. In the snippet earlier,
+we used the *loguniform* prior. We support almost all the distributions from `scipy
+<https://docs.scipy.org/doc/scipy/reference/stats.html>`_ out of the box. You can define them either
+directly in the command line (as shown previously) or in a configuration file:
+
+.. code-block:: yaml
+
+    lr: 'orion~loguniform(1e-5, 1.0)'
+
+And then use it with:
+
+.. code-block:: console
+
+   $ orion hunt main.py --config config.yaml
+
+Make sure to visit :doc:`/user/searchspace` for an exhaustive list of priors and their parameters.
+
 Algorithms
 ==========
 
