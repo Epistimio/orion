@@ -2,6 +2,38 @@
 Getting Started
 ***************
 
+Welcome! In this chapter, we give a quick overview of Oríon's main features and how it can help you
+streamline your machine learning workflow whether you are a researcher or engineer.
+
+Oríon is a black box function optimization library with a key focus on usability and integrability
+for its users. For example, as an machine learning engineer, you can integrate Oríon to your
+existing ML workflow to handle reliably the hyperparameter optimization and tuning phase. As a ML
+researcher, you can use Oríon to tune your models but also integrate your own algorithms to Oríon to
+serve as an efficient optimization engine and compare with other algorithms in the same context and
+conditions.
+
+Oríon is built to be non-intrusive, highly integrable, operate in parallel environments, and produce
+reproducible experiments. It takes only one line of code to start using it in your existing
+projects. It's natively asynchronous so it can perform efficiently on your laptop and in a computing
+farm with thousands of processors, without the need to configure a master and workers. Oríon
+supports the latest established hyperparameter algorithms out of the box, making it easy to switch
+between them or create benchmarks. It also supports a vast range of search spaces. Oríon uses a
+configuration agnostic approaches where you can use any configuration file you're comfortable with.
+The results are always stored in a database that can be either in-memory, local or remote. These
+results can be queried directly from the database itself or using convenient methods from Oríon's
+API. Additionally, the experiments are versioned -- think of a git for scientific experimentation --
+enabling you to keep track of all your trials with their parameters. It guarantees you can reproduce
+or trace back the steps in your work. Finally, a plugin system enables you to integrate and
+distribute your algorithms easily to other members of the community.
+
+However Oríon is not:
+- A machine learning pipeline
+- A machine learning framework
+- An AutoML product
+
+We assume a basic understanding of machine learning concepts and that you already have installed
+Oríon on your machine. If it's not the case please refer to our
+:doc:`installation instructions </install/core>`.
 
 Integration
 ===========
