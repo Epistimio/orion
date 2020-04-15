@@ -21,6 +21,7 @@
    user/evc
    user/storage
    user/config
+   user/parallel
 
 .. toctree::
    :caption: Tutorials
