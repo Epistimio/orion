@@ -21,6 +21,16 @@ Search Space
 Algorithms
 ==========
 
+Similarly to search spaces, Oríon supports multiple algorithms out of the box: :ref:`random-search`,
+:ref:`ASHA`, and :ref:`hyperband-algorithm`. Each one is fully configurable through the
+configuration file. The samples of hyperparameter are based on the previous trials.
+
+Make sure to checkout `this presentation
+<https://docs.google.com/presentation/d/18g7Q4xRuhMtcVbwmFwDfH7v9gKS252-laOi9HrEQ7a4/present?slide=id.g6ba6d709b9_4_19>`_
+for an quick overview of each algorithm and to visit :doc:´/user/algorithms´ to learn about the
+algorithms and get recommendations about their use cases.
+
+
 Monitoring
 ==========
 
