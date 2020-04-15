@@ -6,8 +6,6 @@
 
    install/core
    install/database
-..    roadmap
-..    changelog
 ..    contributors
 
 .. toctree::
