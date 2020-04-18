@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from orion.algo.asha import ASHA, Bracket, compute_budgets
-from orion.algo.space import Fidelity, Real, Space
+from orion.algo.space import Fidelity, Integer, Real, Space
 
 
 @pytest.fixture
@@ -393,6 +393,21 @@ class TestASHA():
             asha.suggest()
 
         assert 'ASHA keeps sampling already existing points.' in str(exc.value)
+
+    def test_suggest_in_finite_cardinality(self):
+        """Test that suggest None when search space is empty"""
+        space = Space()
+        space.register(Integer('yolo1', 'uniform', 0, 6))
+        space.register(Fidelity('epoch', 1, 9, 3))
+
+        asha = ASHA(space)
+        for i in range(6):
+            asha.observe([(1, i)], [{'objective': i}])
+
+        for i in range(2):
+            asha.observe([(3, i)], [{'objective': i}])
+
+        assert asha.suggest() is None
 
     def test_suggest_promote(self, asha, bracket, rung_0):
         """Test that correct point is promoted and returned."""

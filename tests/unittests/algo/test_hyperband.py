@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from orion.algo.hyperband import Bracket, compute_budgets, Hyperband
-from orion.algo.space import Fidelity, Real, Space
+from orion.algo.space import Fidelity, Integer, Real, Space
 
 
 @pytest.fixture
@@ -368,7 +368,9 @@ class TestHyperband():
         assert points[1] == (1.0, 1)
 
     def test_suggest_duplicates_between_calls(self, monkeypatch, hyperband, bracket):
-        """Test that sampling collisions are handled."""
+        """Test that same points are not allowed in different suggest call of
+        the same hyperband execution.
+        """
         hyperband.brackets = [bracket]
         bracket.hyperband = hyperband
 
@@ -390,7 +392,9 @@ class TestHyperband():
         assert hyperband.suggest()[0][1] == new_point[1]
 
     def test_suggest_duplicates_one_call(self, monkeypatch, hyperband, bracket):
-        """Test that sampling collisions are handled."""
+        """Test that same points are not allowed in the same suggest call ofxs
+        the same hyperband execution.
+        """
         hyperband.brackets = [bracket]
         bracket.hyperband = hyperband
 
@@ -414,7 +418,7 @@ class TestHyperband():
         assert zhe_samples[1][1] == 4.0
 
     def test_suggest_duplicates_between_execution(self, monkeypatch, hyperband, budgets):
-        """Test that sampling collisions are handled."""
+        """Test that sampling collisions are handled between different hyperband execution."""
         hyperband.repetitions = 2
         bracket = Bracket(hyperband, budgets, 1)
         hyperband.brackets = [bracket]
@@ -440,7 +444,7 @@ class TestHyperband():
         assert zhe_samples == [(9, 1), (9, 2)]
 
     def test_suggest_inf_duplicates(self, monkeypatch, hyperband, bracket, rung_0, rung_1, rung_2):
-        """Test that sampling inf collisions raises runtime error."""
+        """Test that sampling inf collisions will return None."""
         hyperband.brackets = [bracket]
         bracket.hyperband = hyperband
 
@@ -451,6 +455,18 @@ class TestHyperband():
             return [zhe_point] * num
 
         monkeypatch.setattr(hyperband.space, 'sample', sample)
+
+        assert hyperband.suggest() is None
+
+    def test_suggest_in_finite_cardinality(self):
+        """Test that suggest None when search space is empty"""
+        space = Space()
+        space.register(Integer('yolo1', 'uniform', 0, 6))
+        space.register(Fidelity('epoch', 1, 9, 3))
+
+        hyperband = Hyperband(space, repetitions=1)
+        for i in range(6):
+            hyperband.observe([(1, i)], [{'objective': i}])
 
         assert hyperband.suggest() is None
 

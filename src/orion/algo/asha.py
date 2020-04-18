@@ -147,6 +147,11 @@ class ASHA(BaseAlgorithm):
         budgets = compute_budgets(min_resources, max_resources, reduction_factor, num_rungs)
 
         # Tracks state for new trial add
+        if num_brackets > num_rungs:
+            logger.warning("The input num_brackets %i is larger than the number of rungs %i, "
+                           "set num_brackets as %i", num_brackets, num_rungs, num_rungs)
+            num_brackets = num_rungs
+
         self.brackets = [
             Bracket(self, reduction_factor, budgets[bracket_index:])
             for bracket_index in range(num_brackets)
@@ -194,7 +199,7 @@ class ASHA(BaseAlgorithm):
                 return [candidate]
 
         if all(bracket.is_filled for bracket in self.brackets):
-            logger.debug('All brackets are filled.')
+            logger.warning('All brackets are filled.')
             return None
 
         for _attempt in range(100):
@@ -202,10 +207,20 @@ class ASHA(BaseAlgorithm):
             if self.get_id(point) not in self.trial_info:
                 break
 
+        num_sample_trials = 0
         if self.get_id(point) in self.trial_info:
-            raise RuntimeError(
-                'ASHA keeps sampling already existing points. This should not happen, '
-                'please report this error to https://github.com/Epistimio/orion/issues')
+            for bracket in self.brackets:
+                num_sample_trials += len(bracket.rungs[0][1])
+
+            if num_sample_trials >= self.space.cardinality:
+                logger.warning('The number of unique trials of bottom rungs exceeds the search '
+                               'space cardinality %i, ASHA algorithm exits.',
+                               self.space.cardinality)
+                return None
+            else:
+                raise RuntimeError(
+                    'ASHA keeps sampling already existing points. This should not happen, '
+                    'please report this error to https://github.com/Epistimio/orion/issues')
 
         sizes = numpy.array([len(b.rungs) for b in self.brackets])
         probs = numpy.e**(sizes - sizes.max())
