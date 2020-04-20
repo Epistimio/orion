@@ -56,13 +56,13 @@ Why Oríon?
 ==========
 *Effortless to adopt, deeply customizable*
 
-- :doc:`Adopt it </user/script>` with a single line of code
-- :doc:`Natively asynchronous </code/core>`, thus resilient and easy to parallelize
-- Offers the latest established hyperparameter :doc:`algorithms </user/algorithms>`
-- Elegant and rich :doc:`search-space definitions </user/searchspace>`
-- Comprehensive :doc:`configuration </user/config>` system with smart defaults
-- Transparent persistence in local or remote :doc:`database </install/database>`
-- :doc:`Integrate seamlessly </plugins/base>` your own hyper-optimization algorithms
+- `Adopt it <https://orion.readthedocs.io/en/latest/user/script.html>`_ with a single line of code
+- `Natively asynchronous <https://orion.readthedocs.io/en/latest/code/core.html>`_, thus resilient and easy to parallelize
+- Offers the latest established hyperparameter `algorithms <https://orion.readthedocs.io/en/latest/user/algorithms.html>`_
+- Elegant and rich `search-space definitions <https://orion.readthedocs.io/en/latest/user/searchspace.html>`_
+- Comprehensive `configuration <https://orion.readthedocs.io/en/develop/user/config.html>`_ system with smart defaults
+- Transparent persistence in local or remote `database <https://orion.readthedocs.io/en/latest/install/database.html>`_
+- `Integrate seamlessly <https://orion.readthedocs.io/en/latest/plugins/base.html>`_ your own hyper-optimization algorithms
 
 Installation
 ============
