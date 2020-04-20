@@ -71,13 +71,10 @@ Why Oríon?
 Installation
 ============
 
-Install Oríon by running:
+Install Oríon by running ``$ pip install orion``. For more information consult the `installation
+guide`_.
 
-``pip install orion``
-
-For more information read the `full installation docs`_.
-
-.. _full installation docs: https://orion.readthedocs.io/en/stable/install/core.html
+.. _installation guide: https://orion.readthedocs.io/en/stable/install/core.html
 
 Contribute or Ask
 =================
