@@ -63,7 +63,6 @@ Why Oríon?
 - Comprehensive `configuration <https://orion.readthedocs.io/en/latest/user/config.html>`_ system with smart defaults
 - Transparent persistence in local or remote `database <https://orion.readthedocs.io/en/stable/install/database.html>`_
 - `Integrate seamlessly <https://orion.readthedocs.io/en/stable/plugins/base.html>`_ your own hyper-optimization algorithms
-
 Installation
 ============
 
@@ -73,7 +72,7 @@ Install Oríon by running:
 
 For more information read the `full installation docs`_.
 
-.. _full installation docs: https://orion.readthedocs.io/en/latest/install/core.html
+.. _full installation docs: https://orion.readthedocs.io/en/stable/install/core.html
 
 Contribute or Ask
 =================
