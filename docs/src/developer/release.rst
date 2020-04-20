@@ -10,7 +10,7 @@ Creating a release candidate
 The first step in releasing a new version is to create a release candidate. A release candidate
 allows us to thoroughly test the new version and iron out the remaining bugs. Additionally, it's
 also at this time that we make sure to change the version number and update related documentation
-such as the README.md.
+such as the README.rst.
 
 #. Create a new branch from the *develop* branch named ``release-{version}rc``, where
    ``{version}`` is replaced by the number of the new version (e.g., ``1.2.0``). This effectively
@@ -19,7 +19,7 @@ such as the README.md.
 #. Create a new pull request for the branch created in the last step and list all the changes by
    category. Example: https://github.com/Epistimio/orion/pull/283.
 #. Run the stress tests according to the instructions in stress test's documentation.
-#. Update the **Citation** section in the project's README.md with the latest version of Oríon.
+#. Update the **Citation** section in the project's README.rst with the latest version of Oríon.
 
 .. _release-make:
 
