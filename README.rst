@@ -62,7 +62,9 @@ Why Oríon?
 - Elegant and rich `search-space definitions <https://orion.readthedocs.io/en/stable/user/searchspace.html>`_
 - Comprehensive `configuration <https://orion.readthedocs.io/en/latest/user/config.html>`_ system with smart defaults
 - Transparent persistence in local or remote `database <https://orion.readthedocs.io/en/stable/install/database.html>`_
-- `Integrate seamlessly <https://orion.readthedocs.io/en/stable/plugins/base.html>`_ your own hyper-optimization algorithms
+- `Integrate seamlessly <https://orion.readthedocs.io/en/stable/plugins/base.html>`_ your own
+  hyper-optimization algorithms
+
 Installation
 ============
 
