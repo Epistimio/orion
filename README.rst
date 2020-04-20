@@ -48,8 +48,11 @@ now what you have to do looks like this:
 
 ``orion -n experiment_name ./run.py --mini-batch~'randint(32, 256)'``
 
-Check out our `pytorch example`_ for a quick demonstration!
+Check out our `getting started guide`_ for an overview, or our `pytorch example`_ for a more
+hands-on experience. Finally we encourage you to browse our `documentation`_.
 
+.. _getting started guide: https://orion.readthedocs.io/en/latest/insall/gettingstarted.html
+.. _documentation: https://orion.readthedocs.io/
 .. _pytorch example: https://orion.readthedocs.io/en/latest/tutorials/pytorch.html
 
 Why Oríon?
