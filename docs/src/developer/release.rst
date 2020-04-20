@@ -16,6 +16,8 @@ such as the README.rst.
    ``{version}`` is replaced by the number of the new version (e.g., ``1.2.0``). This effectively
    freezes the feature set for this new version, while allowing regular development to continue take
    place in the *develop* branch. More information is available in :ref:`standard-vcs`.
+#. In README.rst, replace any link pointing to ``https://orion.readthedocs.io/en/latest/**`` to
+   ``https://orion.readthedocs.io/en/stable/**``.
 #. Create a new pull request for the branch created in the last step and list all the changes by
    category. Example: https://github.com/Epistimio/orion/pull/283.
 #. Run the stress tests according to the instructions in stress test's documentation.
