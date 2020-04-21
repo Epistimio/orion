@@ -90,11 +90,6 @@ Start by starring and forking our Github repo!
 
 Thanks for the support!
 
-Roadmap
-========
-
-See `ROADMAP.md <https://github.com/Epistimio/orion/blob/master/ROADMAP.md>`_.
-
 Citation
 ========
 
@@ -124,6 +119,11 @@ If you use Oríon for published work, please cite our work using the following b
      doi          = {10.5281/zenodo.3478592},
      url          = {https://doi.org/10.5281/zenodo.3478592}
    }
+
+Roadmap
+=======
+
+See `ROADMAP.md <https://github.com/Epistimio/orion/blob/master/ROADMAP.md>`_.
 
 License
 =======
