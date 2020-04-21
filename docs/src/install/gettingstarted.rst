@@ -89,6 +89,18 @@ algorithms and get recommendations about their use cases.
 Monitoring
 ==========
 
+Oríon offers different ways to get information about your experiments and trials.
+
+* ``$ orion list`` gives an overview of all the experiments.
+* ``$ orion status``gives an overview of trials for experiments.
+* ``$ orion info`` gives a detailed description of a given experiment such as priors and best
+  trials.
+
+Each command is described in detail in :doc:`/user/monitoring`.
+
+If you want a more fine grained approach, you can always query the database directly or via Oríon's
+python API. Check out :doc:`/user/storage` for more information.
+
 Next steps
 ==========
 
