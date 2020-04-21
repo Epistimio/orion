@@ -198,6 +198,25 @@ class ASHA(BaseAlgorithm):
                 logger.debug('Promoting')
                 return [candidate]
 
+        point = self._grow_point_for_bottom_rung()
+        if not point:
+            return None
+
+        sizes = numpy.array([len(b.rungs) for b in self.brackets])
+        probs = numpy.e**(sizes - sizes.max())
+        probs = numpy.array([prob * int(not bracket.is_filled)
+                             for prob, bracket in zip(probs, self.brackets)])
+        normalized = probs / probs.sum()
+        idx = self.rng.choice(len(self.brackets), p=normalized)
+
+        point[self.fidelity_index] = self.brackets[idx].rungs[0][0]
+
+        logger.debug('Sampling for bracket %s %s', idx, self.brackets[idx])
+
+        return [tuple(point)]
+
+    def _grow_point_for_bottom_rung(self):
+        """Sample point for the bottom rung"""
         if all(bracket.is_filled for bracket in self.brackets):
             logger.warning('All brackets are filled.')
             return None
@@ -222,18 +241,7 @@ class ASHA(BaseAlgorithm):
                     'ASHA keeps sampling already existing points. This should not happen, '
                     'please report this error to https://github.com/Epistimio/orion/issues')
 
-        sizes = numpy.array([len(b.rungs) for b in self.brackets])
-        probs = numpy.e**(sizes - sizes.max())
-        probs = numpy.array([prob * int(not bracket.is_filled)
-                             for prob, bracket in zip(probs, self.brackets)])
-        normalized = probs / probs.sum()
-        idx = self.rng.choice(len(self.brackets), p=normalized)
-
-        point[self.fidelity_index] = self.brackets[idx].rungs[0][0]
-
-        logger.debug('Sampling for bracket %s %s', idx, self.brackets[idx])
-
-        return [tuple(point)]
+        return point
 
     def get_id(self, point):
         """Compute a unique hash for a point based on params, but not fidelity level."""
