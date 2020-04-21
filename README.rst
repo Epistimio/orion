@@ -92,7 +92,7 @@ Thanks for the support!
 Roadmap
 ========
 
-You can find our roadmap here: `<https://github.com/Epistimio/orion/blob/master/ROADMAP.md>`_
+See `ROADMAP.md <https://github.com/Epistimio/orion/blob/master/ROADMAP.md>`_.
 
 Citation
 ========
