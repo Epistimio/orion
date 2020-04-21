@@ -44,8 +44,21 @@ We also made a presentation_ if you prefer easy to read slides!
 Integration
 ===========
 
+The core value of Oríon is to be non-intrusive. As such, we made it very easy to integrate it in
+your machine learning environment. Suppose you're normally executing ``./script.py --lr=0.1``, with
+``lr`` controlling your learning rate.
+
+The only modification you have to do is to call :py:func:`orion.client.report_objective` at the end
+of your script to report the results of the hyper-parameter optimization with the objective to
+minimize as the parameter.
+
+We made :doc:`a tutorial </tutorials/scikit-learn>` to guide you through those steps.
+
 Python API
 ----------
+Oríon can also be run from Python using our Python API, making it easy to integrate it in any
+machine learning workflow or product. A detailed overview of this feature is available in
+:doc:`/user/api` and :doc:`/user/storage`.
 
 Optimize
 ========
