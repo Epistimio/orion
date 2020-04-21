@@ -50,8 +50,33 @@ Python API
 Optimize
 ========
 
+To actually optimize the hyper-parameters, we use Oríon ``hunt`` command to start the black-box
+optimization process.
+
+For the previous example, we would run
+
+.. code-block:: console
+
+   $ orion hunt -n <experiment name> script.py --lr~'loguniform(1e-5, 1.0)'
+
+This is going to start the optimization process using the default optimization algorithm and sample
+the values for the **lr** hyper-parameter in a log uniform distribution between 0.00001 et 1.0. Each
+trial will be stored in the database that you configured during the installation process.
+
+You can fine-tune the distribution and algorithm with many options either with more arguments or by
+using a configuration file. Learn more at `/user/api`.
+
+
 Scaling up
 ----------
+
+Due to the native asynchronous nature of Oríon, it's very easy to run it on parallel or distributed
+environments. Oríon does not rely on a traditional master/slave setup. The synchronization point is
+the database, each worker will separately generate a new trial based on the state of the experiment
+stored in the database.
+
+Make sure to visit :doc:`/user/parallel` to learn more about it and checkout the tutorial to run
+Oríon in :doc:`HPC environments </tutorials/cluster>`.
 
 Search Space
 ============
