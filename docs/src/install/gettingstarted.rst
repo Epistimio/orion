@@ -37,7 +37,7 @@ concepts and that you already have installed Oríon on your machine and selected
 not the case please refer to our :doc:`installation instructions </install/core>` and :doc:`database
 setup </install/database>`.
 
-We also made a presentation_ if you prefer easy to read slides!
+We also made a presentation_ if you prefer easy-to-read slides!
 
 .. _presentation: https://docs.google.com/presentation/d/18g7Q4xRuhMtcVbwmFwDfH7v9gKS252-laOi9HrEQ7a4/edit?usp=sharing
 
@@ -79,7 +79,6 @@ trial will be stored in the database that you configured during the installation
 You can fine-tune the distribution and algorithm with many options either with more arguments or by
 using a configuration file. Learn more at `/user/api`.
 
-
 Scaling up
 ----------
 
@@ -107,7 +106,7 @@ And then use it with:
 
 .. code-block:: console
 
-   $ orion hunt main.py --config config.yaml
+   $ orion hunt -n <experiment name> script.py --config config.yaml
 
 Make sure to visit :doc:`/user/searchspace` for an exhaustive list of priors and their parameters.
 
@@ -120,9 +119,8 @@ configuration file. The samples of hyperparameter are based on the previous tria
 
 Make sure to checkout `this presentation
 <https://docs.google.com/presentation/d/18g7Q4xRuhMtcVbwmFwDfH7v9gKS252-laOi9HrEQ7a4/present?slide=id.g6ba6d709b9_4_19>`_
-for an quick overview of each algorithm and to visit :doc:´/user/algorithms´ to learn about the
+for an quick overview of each algorithm and to visit :doc:`/user/algorithms` to learn about the
 algorithms and get recommendations about their use cases.
-
 
 Monitoring
 ==========
@@ -130,7 +128,7 @@ Monitoring
 Oríon offers different ways to get information about your experiments and trials.
 
 * ``$ orion list`` gives an overview of all the experiments.
-* ``$ orion status``gives an overview of trials for experiments.
+* ``$ orion status`` gives an overview of trials for experiments.
 * ``$ orion info`` gives a detailed description of a given experiment such as priors and best
   trials.
 
@@ -145,6 +143,7 @@ Next steps
 It's worth to take a look at the :doc:`configuration system </user/config>` to learn more about how
 to make the most out of Oríon and define precise behaviors for your algorithms and experiments.
 
-Explore the :doc:`User Manual </user/overview>`, orion is simple from the outside but is feature
-rich! If you're a researcher or develop you might be interested to :doc:`contribute
-</developer/overview>` or develop your own :doc:`algorithms plugins </plugins/base>`!
+Explore the :doc:`User Manual </user/overview>`, oríon is simple from the outside but is feature
+rich! We also have a few tutorials available. If you're a researcher or develop you might be
+interested to :doc:`contribute </developer/overview>` or develop your own :doc:`algorithms plugins
+</plugins/base>`!
