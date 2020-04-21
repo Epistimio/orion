@@ -18,22 +18,23 @@ projects. It's natively asynchronous so it can perform efficiently on your lapto
 farm with thousands of processors, without the need to configure a master and workers. Oríon
 supports the latest established hyperparameter algorithms out of the box, making it easy to switch
 between them or create benchmarks. It also supports a vast range of search spaces. Oríon uses a
-configuration agnostic approaches where you can use any configuration file you're comfortable with.
-The results are always stored in a database that can be either in-memory, local or remote. These
-results can be queried directly from the database itself or using convenient methods from Oríon's
-API. Additionally, the experiments are versioned -- think of a git for scientific experimentation --
-enabling you to keep track of all your trials with their parameters. It guarantees you can reproduce
-or trace back the steps in your work. Finally, a plugin system enables you to integrate and
-distribute your algorithms easily to other members of the community.
+configuration agnostic approach where you can use any configuration file format you're comfortable
+with. The results are always stored in a database that can be either in-memory, local or remote.
+These results can be queried directly from the database itself or using convenient methods from
+Oríon's API. Additionally, the experiments are versioned -- think of it as a git for scientific
+experimentation -- enabling you to keep track of all your trials with their parameters. This
+guarantees that you can reproduce or trace back the steps in your work for free. Finally, a plugin
+system enables you to integrate and distribute your algorithms easily to other members of the
+community.
 
-However Oríon is not:
-- A machine learning pipeline
-- A machine learning framework
-- An AutoML product
+Conversely, Oríon does not aim to be a machine learning framework or pipeline, or an automatic
+machine learning product. Oríon focuses essentially on black box optimization. However, we do
+encourage developers to integrate Oríon into that kind of systems as a component and we will do
+our best to help you if you're interested.
 
-We assume a basic understanding of machine learning concepts and that you already have installed
-Oríon on your machine. If it's not the case please refer to our
-:doc:`installation instructions </install/core>`.
+Before continuing the overview, we assume that you have a basic understanding of machine learning
+concepts and that you already have installed Oríon on your machine. If it's not the case please
+refer to our :doc:`installation instructions </install/core>`.
 
 Integration
 ===========
