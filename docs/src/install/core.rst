@@ -16,6 +16,9 @@ Note that Oríon comes with the following algorithms: Random Search, Hyperband, 
 algorithms are available in the :doc:`plugin section </plugins/install>`, their installation
 is also done through ``pip``.
 
+Afterwards, we recommend to :doc:`select a database </install/database>` for Oríon to use unless
+you're comfortable with the default option.
+
 .. _PyPI: https://pypi.org/project/orion/
 
 Bleeding edge
