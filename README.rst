@@ -128,4 +128,4 @@ If you use Oríon for published work, please cite our work using the following b
 License
 =======
 
-The project is licensed under the BSD license.
+The project is licensed under the `BSD license <https://github.com/Epistimio/orion/blob/master/LICENSE>`_.
