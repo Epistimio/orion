@@ -51,7 +51,7 @@ now what you have to do looks like this:
 Check out our `getting started guide`_ for an overview, or our `pytorch example`_ for a more
 hands-on experience. Finally we encourage you to browse our `documentation`_.
 
-.. _getting started guide: https://orion.readthedocs.io/en/latest/insall/gettingstarted.html
+.. _getting started guide: https://orion.readthedocs.io/en/latest/install/gettingstarted.html
 .. _documentation: https://orion.readthedocs.io/
 .. _pytorch example: https://orion.readthedocs.io/en/latest/tutorials/pytorch.html
 
