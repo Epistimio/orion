@@ -541,7 +541,7 @@ class Integer(Real, _Discrete):
     @property
     def prior_name(self):
         """Return the name of the prior"""
-        return "int_uniform"
+        return 'int_{}'.format(super(Integer, self).prior_name)
 
     @property
     def cardinality(self):

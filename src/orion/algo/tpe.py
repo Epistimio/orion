@@ -8,12 +8,15 @@
    :synopsis: Tree-structured Parzen Estimator Approach
 
 """
+import logging
 
 import numpy
 from scipy.stats import norm
 
 from orion.algo.base import BaseAlgorithm
 from orion.core.utils.points import flatten_dims, regroup_dims
+
+logger = logging.getLogger(__name__)
 
 
 def compute_max_ei_point(points, below_likelis, above_likelis):
@@ -40,10 +43,14 @@ def adaptive_parzen_estimator(mus, low, high,
                               flat_num=25):
     """Return the sorted mus, the corresponding sigmas and weights with adaptive kernel estimator.
 
+    This adaptive parzen window estimator is based on the original papers and also refer the use of
+    prior mean in `this implementation
+    <https://github.com/hyperopt/hyperopt/blob/40bd617a0ca47e09368fb65919464ba0bfa85962/hyperopt/tpe.py#L400-L468>`_.
+
     :param mus: list of real values for observed mus.
     :param low: real value for lower bound of points.
     :param high: real value for upper bound of points.
-    :param prior_weight: real value for the weight of prior point.
+    :param prior_weight: real value for the weight of the prior mean.
     :param equal_weight: bool value indicating if all points with equal weights.
     :param flat_num: int value indicating the number of latest points with equal weights,
                      it is only valid if `equal_weight` is False.
@@ -89,6 +96,7 @@ def adaptive_parzen_estimator(mus, low, high,
 
     else:
         if prior_mu < mus[0]:
+
             mixture_mus = numpy.array([prior_mu, mus[0]])
             sigmas = numpy.array([prior_sigma, prior_sigma * 0.5])
             mixture_weights = numpy.array([prior_weight, 1.0])
@@ -111,13 +119,17 @@ class TPE(BaseAlgorithm):
     and p(x|y) is modeled by transforming that generative process, replacing the distributions of
     the configuration prior with non-parametric densities.
 
-    The TPE defines p(xjy) using two such densities l(x) and g(x) while l(x) is distribution of
+    The TPE defines p(x|y) using two such densities l(x) and g(x) while l(x) is distribution of
     good points and g(x) is the distribution of bad points. New point candidates will be sampled
     with l(x) and Expected Improvement (EI) optimization scheme will be used to find the most
     promising point among the candidates.
 
-    For more information on the algorithm, see original paper at
-    https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf
+    For more information on the algorithm, see original papers at:
+
+    - `Algorithms for Hyper-Parameter Optimization
+      <https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf>`_
+    - `Making a Science of Model Search: Hyperparameter Optimizationin Hundreds of Dimensions
+      for Vision Architectures <http://proceedings.mlr.press/v28/bergstra13.pdf>`_
 
     Parameters
     ----------
@@ -168,6 +180,16 @@ class TPE(BaseAlgorithm):
             if shape and len(shape) != 1:
                 raise ValueError("TPE now only supports 1D shape.")
 
+        if n_initial_points < 2:
+            n_initial_points = 2
+            logger.warning('n_initial_points %s is not valid, set n_initial_points = 2',
+                           str(n_initial_points))
+
+        if n_ei_candidates < 1:
+            n_ei_candidates = 1
+            logger.warning('n_ei_candidates %s is not valid, set n_ei_candidates = 1',
+                           str(n_ei_candidates))
+
         self.seed_rng(seed)
 
     def seed_rng(self, seed):
@@ -217,49 +239,72 @@ class TPE(BaseAlgorithm):
             below_points, above_points = self.split_trials()
             below_points = numpy.array([flatten_dims(point, self.space) for point in below_points])
             above_points = numpy.array([flatten_dims(point, self.space) for point in above_points])
+
             idx = 0
             for dimension in self.space.values():
 
-                if dimension.type == 'real':
-                    shape = dimension.shape
-                    if not shape:
-                        shape = (1,)
-                    # Unpack dimension
-                    for j in range(shape[0]):
-                        idx = idx + j
-                        new_point = self._sample_real(dimension,
-                                                      below_points[:, idx],
-                                                      above_points[:, idx])
-                        point.append(new_point)
+                shape = dimension.shape
+                if not shape:
+                    shape = (1,)
 
+                if dimension.type == 'real':
+                    points = self.sample_real_dimension(dimension, shape[0],
+                                                        below_points[:, idx: idx + shape[0]],
+                                                        above_points[:, idx: idx + shape[0]])
                 else:
                     raise ValueError("TPE now only support Real Dimension.")
 
-                idx += 1
+                if len(points) < shape[0]:
+                    logger.warning('TPE failed to sample new point with configuration %s',
+                                   self.configuration)
+                    return None
+
+                idx += shape[0]
+                point += points
+
             point = regroup_dims(point, self.space)
             samples.append(point)
+
         return samples
 
-    def _sample_real(self, dimension, below_points, above_points):
-        """Return a real point based on the observed good and bad points"""
+    def sample_real_dimension(self, dimension, shape_size, below_points, above_points):
+        """Sample values for a real dimension
+
+        :param dimension: Real Dimension.
+        :param shape_size: 1D Shape Size of the Real Dimension.
+        :param below_points: good points with shape (m, n), n=shape_size.
+        :param above_points: bad points with shape (m, n), n=shape_size.
+        """
+        points = []
+
+        for j in range(shape_size):
+            new_point = self._sample_real_point(dimension, below_points[:, j], above_points[:, j])
+            if new_point:
+                points.append(new_point)
+
+        return points
+
+    def _sample_real_point(self, dimension, below_points, above_points):
+        """Sample one value for a real dimension based on the observed good and bad points"""
         low, high = dimension.interval()
-        below_mus, below_sigmas, blow_weights = \
+        below_mus, below_sigmas, below_weights = \
             adaptive_parzen_estimator(below_points, low, high, self.prior_weight,
                                       self.equal_weight, flat_num=25)
         above_mus, above_sigmas, above_weights = \
             adaptive_parzen_estimator(above_points, low, high, self.prior_weight,
                                       self.equal_weight, flat_num=25)
 
-        gmm_sampler_below = GMMSampler(self, below_mus, below_sigmas, low, high, blow_weights)
+        gmm_sampler_below = GMMSampler(self, below_mus, below_sigmas, low, high, below_weights)
         gmm_sampler_above = GMMSampler(self, above_mus, above_sigmas, low, high, above_weights)
 
-        points = gmm_sampler_below.sample(self.n_ei_candidates)
-        lik_blow = gmm_sampler_below.get_loglikelis(points)
-        lik_above = gmm_sampler_above.get_loglikelis(points)
+        candidate_points = gmm_sampler_below.sample(self.n_ei_candidates)
+        if candidate_points:
+            lik_blow = gmm_sampler_below.get_loglikelis(candidate_points)
+            lik_above = gmm_sampler_above.get_loglikelis(candidate_points)
+            new_point = compute_max_ei_point(candidate_points, lik_blow, lik_above)
+            return new_point
 
-        new_point = compute_max_ei_point(points, lik_blow, lik_above)
-
-        return new_point
+        return None
 
     def split_trials(self):
         """Split the observed trials into good and bad ones based on the ratio `gamma``"""

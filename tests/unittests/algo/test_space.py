@@ -201,6 +201,9 @@ class TestDimension(object):
         dim = Integer('yolo1', 'uniform', -3, 6)
         assert dim.prior_name == 'int_uniform'
 
+        dim = Integer('yolo1', 'norm', -3, 6)
+        assert dim.prior_name == 'int_norm'
+
         categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
         dim = Categorical('yolo', categories)
         assert dim.prior_name == 'choices'

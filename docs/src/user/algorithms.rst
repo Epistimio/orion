@@ -200,10 +200,11 @@ Instead of modeling p(y|x) like other SMBO algorithms, TPE models p(x|y) and p(y
 and p(x|y) is modeled by transforming that generative process, replacing the distributions of
 the configuration prior with non-parametric densities.
 
-The TPE defines p(x|y) using two such densities l(x) and g(x) while l(x) is distribution of
-good points and g(x) is the distribution of bad points. New point candidates will be sampled
-with l(x) and Expected Improvement (EI) optimization scheme will be used to find the most
-promising point among the candidates.
+The TPE defines p(x|y) using two such densities l(x) and g(x) where l(x) is distribution of
+good points and g(x) is the distribution of bad points. Good and bad points are split from observed
+points so far with a parameter `gamma` which defines the ratio of good points. New point candidates
+will be sampled with l(x) and Expected Improvement (EI) optimization scheme will be used to find
+the most promising point among the candidates.
 
 
 .. _Tree-structured Parzen Estimator:
@@ -245,7 +246,7 @@ Ratio to split the observed trials into good and bad distributions. Default is `
 
 True to set equal weights for observed points. Default is ``False``.
 
-``seed``
+``prior_weight``
 
 The weight given to the prior point of the input space. Default is ``1.0``.
 
