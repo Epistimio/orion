@@ -73,6 +73,8 @@ def test_simple(monkeypatch, config_file):
 @pytest.mark.usefixtures("null_db_instances")
 def test_random_stop(monkeypatch):
     """Test a simple usage scenario."""
+    # TODO: TPE should support this case once discrete is added,
+    #  then parametrized config_file should be used
     config_file = 'random_config.yaml'
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["hunt", "--config", config_file,
