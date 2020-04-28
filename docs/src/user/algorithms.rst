@@ -224,6 +224,7 @@ Configuration
           gamma: 0.25
           equal_weight: False
           prior_weight: 1.0
+          full_weight_num: 25
 
 
 ``seed``
@@ -250,6 +251,11 @@ True to set equal weights for observed points. Default is ``False``.
 
 The weight given to the prior point of the input space. Default is ``1.0``.
 
+``full_weight_num``
+
+The number of the most recent trials which get the full weight where the others will be
+applied with a linear ramp from 0 to 1.0. It will only take effect if ``equal_weight``
+is ``False``. Default is ``25``.
 
 
 Algorithm Plugins

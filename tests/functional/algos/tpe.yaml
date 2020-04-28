@@ -10,6 +10,7 @@ algorithms:
     gamma: 0.25
     equal_weight: False
     prior_weight: 1.0
+    full_weight_num: 25
 
 database:
   type: 'mongodb'

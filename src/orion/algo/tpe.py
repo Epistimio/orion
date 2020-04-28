@@ -52,8 +52,9 @@ def adaptive_parzen_estimator(mus, low, high,
     :param high: real value for upper bound of points.
     :param prior_weight: real value for the weight of the prior mean.
     :param equal_weight: bool value indicating if all points with equal weights.
-    :param flat_num: int value indicating the number of latest points with equal weights,
-                     it is only valid if `equal_weight` is False.
+    :param flat_num: int value indicating the number of the most recent trials which
+        get the full weight where the others will be applied with a linear ramp
+        from 0 to 1.0. It will only take effect if equal_weight is False.
     """
     def update_weights(total_num):
         """Generate weights for all components"""
@@ -153,12 +154,18 @@ class TPE(BaseAlgorithm):
     prior_weight: int
         The weight given to the prior point of the input space.
         Default: ``1.0``
+    full_weight_num: int
+        The number of the most recent trials which get the full weight where the others will be
+        applied with a linear ramp from 0 to 1.0. It will only take effect if equal_weight
+        is False.
 
     """
 
+    # pylint:disable=too-many-arguments
     def __init__(self, space, seed=None,
                  n_initial_points=20, n_ei_candidates=24,
-                 gamma=0.25, equal_weight=False, prior_weight=1.0):
+                 gamma=0.25, equal_weight=False,
+                 prior_weight=1.0, full_weight_num=25):
 
         super(TPE, self).__init__(space,
                                   seed=seed,
@@ -166,7 +173,8 @@ class TPE(BaseAlgorithm):
                                   n_ei_candidates=n_ei_candidates,
                                   gamma=gamma,
                                   equal_weight=equal_weight,
-                                  prior_weight=prior_weight)
+                                  prior_weight=prior_weight,
+                                  full_weight_num=full_weight_num)
 
         for dimension in self.space.values():
 
@@ -289,10 +297,10 @@ class TPE(BaseAlgorithm):
         low, high = dimension.interval()
         below_mus, below_sigmas, below_weights = \
             adaptive_parzen_estimator(below_points, low, high, self.prior_weight,
-                                      self.equal_weight, flat_num=25)
+                                      self.equal_weight, flat_num=self.full_weight_num)
         above_mus, above_sigmas, above_weights = \
             adaptive_parzen_estimator(above_points, low, high, self.prior_weight,
-                                      self.equal_weight, flat_num=25)
+                                      self.equal_weight, flat_num=self.full_weight_num)
 
         gmm_sampler_below = GMMSampler(self, below_mus, below_sigmas, low, high, below_weights)
         gmm_sampler_above = GMMSampler(self, above_mus, above_sigmas, low, high, above_weights)
