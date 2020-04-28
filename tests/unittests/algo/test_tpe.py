@@ -85,9 +85,12 @@ def test_adaptive_parzen_normal_estimator_weight():
     # prior weight
     mus, sigmas, weights = adaptive_parzen_estimator(obs_mus, low, high, prior_weight=0.5,
                                                      equal_weight=False, flat_num=25)
+    print(weights)
     prior_pos = numpy.searchsorted(mus, 2)
+    assert numpy.all(weights[:30 - 25] == (numpy.linspace(1.0 / 30, 1.0, num=30 - 25) / 31))
+    assert numpy.all(weights[33 - 25:prior_pos] == 1 / 31)
     assert weights[prior_pos] == 0.5 / 31
-    assert numpy.all(weights[31 - prior_pos:] == weights[-1])
+    assert numpy.all(weights[prior_pos + 1:] == 1 / 31)
     assert numpy.all(sigmas == 6 / 10)
 
 
@@ -170,7 +173,7 @@ class TestGMMSampler():
     def test_get_loglikelis(self):
         """Test to get log likelis of points"""
         mus = numpy.linspace(-10, 10, num=10, endpoint=False)
-        weights = [0.009, 0.006, 0.1, 0.02, 0.004, 0.26, 0.04, 0.5, 0.06, 0.001]
+        weights = [0.009, 0.006, 0.1, 0.02, 0.003, 0.26, 0.04, 0.5, 0.061, 0.001]
 
         sigmas = [0.00001] * 10
         gmm_sampler = GMMSampler(tpe, mus, sigmas, -11, 9, weights)
@@ -256,7 +259,7 @@ class TestTPE():
         assert 'TPE now only supports 1D shape' in str(ex.value)
 
     def test_split_trials(self, tpe):
-        """Test observed trails can be split based on TPE gamma"""
+        """Test observed trials can be split based on TPE gamma"""
         space = Space()
         dim1 = Real('yolo1', 'uniform', -3, 6)
         space.register(dim1)
