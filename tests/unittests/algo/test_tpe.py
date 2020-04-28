@@ -85,7 +85,7 @@ def test_adaptive_parzen_normal_estimator_weight():
     # prior weight
     mus, sigmas, weights = adaptive_parzen_estimator(obs_mus, low, high, prior_weight=0.5,
                                                      equal_weight=False, flat_num=25)
-    print(weights)
+
     prior_pos = numpy.searchsorted(mus, 2)
     assert numpy.all(weights[:30 - 25] == (numpy.linspace(1.0 / 30, 1.0, num=30 - 25) / 31))
     assert numpy.all(weights[33 - 25:prior_pos] == 1 / 31)
