@@ -93,6 +93,13 @@ def test_adaptive_parzen_normal_estimator_weight():
     assert numpy.all(weights[prior_pos + 1:] == 1 / 31)
     assert numpy.all(sigmas == 6 / 10)
 
+    # full weights number
+    mus, sigmas, weights = adaptive_parzen_estimator(obs_mus, low, high, prior_weight=1.0,
+                                                     equal_weight=False, flat_num=15)
+    assert numpy.all(weights[:30 - 15] == (numpy.linspace(1.0 / 30, 1.0, num=30 - 15) / 31))
+    assert numpy.all(weights[33 - 15:] == 1 / 31)
+    assert numpy.all(sigmas == 6 / 10)
+
 
 def test_adaptive_parzen_normal_estimator_sigma_clip():
     """Test that the magic clip of sigmas for parzen estimator"""
