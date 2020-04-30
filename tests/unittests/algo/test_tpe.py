@@ -59,14 +59,19 @@ def test_adaptive_parzen_normal_estimator():
                                                      equal_weight=False, flat_num=25)
     assert list(mus) == [2, 3.4]
     assert list(sigmas) == [6, 3]
-    assert list(weights) == [0.5 / 2, 1.0 / 2]
+    assert list(weights) == [0.5 / 1.5, 1.0 / 1.5]
 
     obs_mus = numpy.linspace(-1, 5, num=30, endpoint=False)
     mus, sigmas, weights = adaptive_parzen_estimator(obs_mus, low, high, prior_weight=1.0,
                                                      equal_weight=False, flat_num=25)
 
+    ramp = numpy.linspace(1.0 / 30, 1.0, num=30 - 25)
+    full = numpy.ones(25 + 1)
+    all_weights = (numpy.concatenate([ramp, full]))
+
     assert len(mus) == len(sigmas) == len(weights) == 30 + 1
-    assert numpy.all(weights[-25:] == 1 / 31)
+    assert numpy.all(weights[:30 - 25] == ramp / all_weights.sum())
+    assert numpy.all(weights[30 - 25:] == 1 / all_weights.sum())
     assert numpy.all(sigmas == 6 / 10)
 
 
@@ -86,18 +91,32 @@ def test_adaptive_parzen_normal_estimator_weight():
     mus, sigmas, weights = adaptive_parzen_estimator(obs_mus, low, high, prior_weight=0.5,
                                                      equal_weight=False, flat_num=25)
 
+    ramp = numpy.linspace(1.0 / 30, 1.0, num=30 - 25)
+    full = numpy.ones(25 + 1)
+    all_weights = (numpy.concatenate([ramp, full]))
     prior_pos = numpy.searchsorted(mus, 2)
-    assert numpy.all(weights[:30 - 25] == (numpy.linspace(1.0 / 30, 1.0, num=30 - 25) / 31))
-    assert numpy.all(weights[33 - 25:prior_pos] == 1 / 31)
-    assert weights[prior_pos] == 0.5 / 31
-    assert numpy.all(weights[prior_pos + 1:] == 1 / 31)
+    all_weights[prior_pos] = 0.5
+
+    assert numpy.all(weights[:30 - 25] == (numpy.linspace(1.0 / 30, 1.0, num=30 - 25) /
+                                           all_weights.sum()))
+    assert numpy.all(weights[33 - 25:prior_pos] == 1 / all_weights.sum())
+    assert weights[prior_pos] == 0.5 / all_weights.sum()
+    assert numpy.all(weights[prior_pos + 1:] == 1 / all_weights.sum())
     assert numpy.all(sigmas == 6 / 10)
 
     # full weights number
     mus, sigmas, weights = adaptive_parzen_estimator(obs_mus, low, high, prior_weight=1.0,
                                                      equal_weight=False, flat_num=15)
-    assert numpy.all(weights[:30 - 15] == (numpy.linspace(1.0 / 30, 1.0, num=30 - 15) / 31))
-    assert numpy.all(weights[33 - 15:] == 1 / 31)
+
+    ramp = numpy.linspace(1.0 / 30, 1.0, num=30 - 15)
+    full = numpy.ones(15 + 1)
+    all_weights = (numpy.concatenate([ramp, full]))
+    prior_pos = numpy.searchsorted(mus, 2)
+    all_weights[prior_pos] = 1.0
+
+    assert numpy.all(weights[:30 - 15] == (numpy.linspace(1.0 / 30, 1.0, num=30 - 15) /
+                                           all_weights.sum()))
+    assert numpy.all(weights[30 - 15:] == 1 / all_weights.sum())
     assert numpy.all(sigmas == 6 / 10)
 
 

@@ -106,7 +106,7 @@ def adaptive_parzen_estimator(mus, low, high,
             sigmas = numpy.array([prior_sigma * 0.5, prior_sigma])
             mixture_weights = numpy.array([1.0, prior_weight])
 
-    weights = mixture_weights / len(mixture_weights)
+    weights = mixture_weights / mixture_weights.sum()
 
     return mixture_mus, sigmas, weights
 
