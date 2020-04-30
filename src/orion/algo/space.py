@@ -759,6 +759,14 @@ class Fidelity(Dimension):
         """Return `high`"""
         return self.high
 
+    # pylint:disable=no-self-use
+    @property
+    def cardinality(self):
+        """Return cardinality of Fidelity dimension, leave it to 1 as Fidelity dimension
+        does not contribute to cardinality in a fixed way now.
+        """
+        return 1
+
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
         return 'fidelity({}, {}, {})'.format(self.low, self.high, self.base)

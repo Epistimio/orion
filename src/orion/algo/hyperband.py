@@ -245,6 +245,12 @@ class Hyperband(BaseAlgorithm):
 
         # Either all brackets are done or none are ready and algo needs to wait for some trials to
         # complete
+        if len(self.trial_info_wo_fidelity) >= self.space.cardinality:
+            logger.warning('The number of unique trials of bottom rungs exceeds the search space '
+                           'cardinality %i, Hyperband algorithm exits.', self.space.cardinality)
+        else:
+            logger.warning('Hyeprband can not suggest new samples, exit.')
+
         return None
 
     def get_id(self, point, ignore_fidelity=True):

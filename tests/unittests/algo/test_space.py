@@ -711,7 +711,7 @@ class TestSpace(object):
 
         assert space.interval() == [categories, (-3, 3), (-np.inf, np.inf)]
 
-    def test_capacity(self):
+    def test_cardinality(self):
         """Check whether space capacity is correct"""
         space = Space()
         probs = (0.1, 0.2, 0.3, 0.4)
@@ -720,12 +720,14 @@ class TestSpace(object):
         space.register(dim)
         dim = Integer('yolo2', 'uniform', -3, 6)
         space.register(dim)
+        dim = Fidelity('epoch', 1, 9, 3)
+        space.register(dim)
 
-        assert (4 * 2) * 6 == space.cardinality
+        assert (4 * 2) * 6 * 1 == space.cardinality
 
         dim = Integer('yolo3', 'uniform', -3, 2, shape=(3, 1))
         space.register(dim)
-        assert (4 * 2) * 6 * (2 * 3 * 1) == space.cardinality
+        assert (4 * 2) * 6 * 1 * (2 * 3 * 1) == space.cardinality
 
         dim = Real('yolo4', 'norm', 0.9)
         space.register(dim)
