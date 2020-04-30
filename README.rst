@@ -52,31 +52,17 @@ Check out our `pytorch example`_ for a quick demonstration!
 
 .. _pytorch example: https://orion.readthedocs.io/en/latest/tutorials/pytorch.html
 
-Features
-========
-*As simple and as complex you want*
+Why Oríon?
+==========
+*Effortless to adopt, deeply customizable*
 
-- Simple and natural, but also explicit and verbose, search domain definitions
-- Minimal and non-intrusive client interface for reporting
-  target function values
-- Database logging (currently powered by MongoDB_)
-- Flexible configuration
-- Explicit experiment termination conditions
-- Algorithms algorithms algorithms:
-  Skopt_'s bayesian optimizers are at hand without writing.
-  Random search is the default.
-  **only** a single line of code.
-- More algorithms:
-  Implementing and distributing algorithms is as easy as possible!
-  Check the `plugin documentation`_. Expect algorithm plugins to pop out quickly!
-- Came up with an idea?
-  Your intuition is still at play:
-  Help your optima hunter now by a command line interface.
-- And other many more already there or coming soon!
-
-.. _MongoDB: https://www.mongodb.com/
-.. _Skopt: https://scikit-optimize.github.io/
-.. _plugin documentation: https://orion.readthedocs.io/en/latest/plugins/base.html
+- `Adopt it <https://orion.readthedocs.io/en/stable/user/script.html>`_ with a single line of code
+- `Natively asynchronous <https://orion.readthedocs.io/en/stable/code/core.html>`_, thus resilient and easy to parallelize
+- Offers the latest established hyperparameter `algorithms <https://orion.readthedocs.io/en/stable/user/algorithms.html>`_
+- Elegant and rich `search-space definitions <https://orion.readthedocs.io/en/stable/user/searchspace.html>`_
+- Comprehensive `configuration <https://orion.readthedocs.io/en/latest/user/config.html>`_ system with smart defaults
+- Transparent persistence in local or remote `database <https://orion.readthedocs.io/en/stable/install/database.html>`_
+- `Integrate seamlessly <https://orion.readthedocs.io/en/stable/plugins/base.html>`_ your own hyper-optimization algorithms
 
 Installation
 ============
