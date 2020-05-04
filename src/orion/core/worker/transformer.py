@@ -253,7 +253,7 @@ class Precision(Transformer):
     def transform(self, point):
         """Round `point` to the requested precision, as numpy arrays."""
         # numpy.format_float_scientific precision starts at 0
-        if isinstance(point, list):
+        if isinstance(point, (list, tuple)) or (isinstance(point, numpy.ndarray) and point.shape):
             point = map(lambda x: numpy.format_float_scientific(x, precision=self.precision - 1),
                         point)
             point = list(map(float, point))
@@ -476,6 +476,11 @@ class TransformedDimension(object):
         """Ask transformer which is its target class."""
         type_ = self.transformer.target_type
         return type_ if type_ != 'invariant' else self.original_dimension.type
+
+    @property
+    def prior_name(self):
+        """Do not change the prior name of the original dimension."""
+        return self.original_dimension.prior_name
 
     @property
     def shape(self):
