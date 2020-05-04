@@ -62,7 +62,8 @@ Why Oríon?
 - Elegant and rich `search-space definitions <https://orion.readthedocs.io/en/stable/user/searchspace.html>`_
 - Comprehensive `configuration <https://orion.readthedocs.io/en/latest/user/config.html>`_ system with smart defaults
 - Transparent persistence in local or remote `database <https://orion.readthedocs.io/en/stable/install/database.html>`_
-- `Integrate seamlessly <https://orion.readthedocs.io/en/stable/plugins/base.html>`_ your own hyper-optimization algorithms
+- `Integrate seamlessly <https://orion.readthedocs.io/en/stable/plugins/base.html>`_ your own
+  hyper-optimization algorithms
 
 Installation
 ============
@@ -73,14 +74,14 @@ Install Oríon by running:
 
 For more information read the `full installation docs`_.
 
-.. _full installation docs: https://orion.readthedocs.io/en/latest/install/core.html
+.. _full installation docs: https://orion.readthedocs.io/en/stable/install/core.html
 
 Contribute or Ask
 =================
 
 Do you have a question or issues?
 Do you want to report a bug or suggest a feature? Name it!
-Please contact us by opening an issue in our repository below and checkout our `contribution guidelines <https://github.com/Epistimio/orion/blob/master/CONTRIBUTING.md>`_:
+Please contact us by opening an issue in our repository below and checkout our `contribution guidelines <https://github.com/Epistimio/orion/blob/develop/CONTRIBUTING.md>`_:
 
 - Issue Tracker: `<https://github.com/epistimio/orion/issues>`_
 - Source Code: `<https://github.com/epistimio/orion>`_
@@ -92,7 +93,7 @@ Thanks for the support!
 Roadmap
 ========
 
-You can find our roadmap here: `<https://github.com/Epistimio/orion/blob/master/ROADMAP.md>`_
+Our current roadmap is available here: `<https://github.com/Epistimio/orion/blob/develop/ROADMAP.md>`_
 
 Citation
 ========

@@ -195,7 +195,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
             point_id = infer_trial_id(point)
 
             if point_id not in self._trials_info:
-                self._trials_info[point_id] = result
+                self._trials_info[point_id] = (point, result)
 
     @property
     def is_done(self):

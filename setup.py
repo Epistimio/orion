@@ -45,6 +45,7 @@ setup_args = dict(
             'random = orion.algo.random:Random',
             'asha = orion.algo.asha:ASHA',
             'hyperband = orion.algo.hyperband:Hyperband',
+            'tpe = orion.algo.tpe:TPE',
             ],
         'Storage': [
             'track = orion.storage.track:Track',
