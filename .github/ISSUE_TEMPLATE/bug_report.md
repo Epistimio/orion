@@ -19,7 +19,8 @@ Describe the steps to reproduce the bug, if applicable:
 **Environment (please complete the following information):**
  - OS: [e.g. Ubuntu 18.04]
  - Python version: [e.g. 3.7]
- - Oríon version [e.g. 0.1.7]
+ - Oríon version: [e.g. 0.1.7]
+ - Database: [e.g. PickleDB, MongoDB]
 
 **Additional context**
 If applicable, attach any log of screenshots that can help explain the problem.
