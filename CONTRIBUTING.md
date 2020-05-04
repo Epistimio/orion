@@ -1,7 +1,7 @@
 # Contributing to Oríon
 Hi there 👋. Thank you for considering contributing to Oríon 🎉. We're excited to have you here!
 
-We present the guidelines for contributing to the project. They are not hard rules, use your best judgment, and feel free to propose changes to this document in a pull request. If you havn't already, it's a good idea to quickly pass through our [code of conduct](https://github.com/Epistimio/orion/blob/master/CODE_OF_CONDUCT.md) to ensure everyone has a good time.
+We present the guidelines for contributing to the project. They are not hard rules, use your best judgment, and feel free to propose changes to this document in a pull request. If you havn't already, it's a good idea to quickly pass through our [code of conduct](https://github.com/Epistimio/orion/blob/develop/CODE_OF_CONDUCT.md) to ensure everyone has a good time.
 
 ## Where do I go from here?
 If you have a question, found a bug or have a feature request, you're welcome to open a new issue at https://github.com/Epistimio/orion/issues. It's generally best if you get confirmation of your bug or approval for your feature request before starting to code.
@@ -20,7 +20,7 @@ Asking a question is also a contribution to the project! We'll be happy to help 
 ### How to report a bug
 You found a bug? Great! Before submitting, make sure you're experiencing the bug on the latest version of Oríon and that it's not already opened in our issue tracker.
 
-When reporting a bug, please include: 
+When reporting a bug, please include:
 - A clear and descriptive title for the issue
 - Your operating system and its version
 - The version of Oríon (even if you're using the latest!)
@@ -29,7 +29,7 @@ When reporting a bug, please include:
 - Extra details (e.g., database, algortihm, configuration) about your setup that might help us to reproduce the bug if not included previously
 
 ### How to propose enhancements
-We're thrilled to hear you found a way to make Oríon better through minor improvements to completely new features! 
+We're thrilled to hear you found a way to make Oríon better through minor improvements to completely new features!
 Before creating enhancement suggestions, please check that your idea is not already present in the list of issues. You might find that you don't need to create one and can just join in the discussion directly and give your opinion!
 
 When suggesting enhancements, it is a good idea to:
@@ -41,10 +41,10 @@ When suggesting enhancements, it is a good idea to:
 
 ### How to submit changes
 We're grateful you're considering making changes to Oríon!
- 
-To get started, you need to first fork the repository and then create a new branch on your fork where you'll do your changes. 
 
-Once you implemented the changes, make sure to [rebase](https://www.atlassian.com/git/tutorials/rewriting-history/git-rebase) your branch on the latest Oríon's *develop* branch and finally submit a [pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests). 
+To get started, you need to first fork the repository and then create a new branch on your fork where you'll do your changes.
+
+Once you implemented the changes, make sure to [rebase](https://www.atlassian.com/git/tutorials/rewriting-history/git-rebase) your branch on the latest Oríon's *develop* branch and finally submit a [pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests).
 All changes to Oríon are done through PRs, where they will be peer-reviewed and checked against our continuous integration system to ensure the quality of the code base.
 
 During this processs keep in mind to:
