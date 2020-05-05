@@ -49,8 +49,9 @@ now what you have to do looks like this:
 ``orion -n experiment_name ./run.py --mini-batch~'randint(32, 256)'``
 
 Check out our `getting started guide`_ or `this presentation
-<https://docs.google.com/presentation/d/18g7Q4xRuhMtcVbwmFwDfH7v9gKS252-laOi9HrEQ7a4/edit?usp=sharing>`_
-for an overview, or our `pytorch example`_ for a more hands-on experience. Finally we encourage you to browse our `documentation`_.
+<https://bluejeans.com/playback/s/4WUezzFCmb9StHzYgB0RjVbTUCKnRcptBvzBMP7t2UpLyKuAq7Emieo911BqEMnI>`_
+for an overview, or our `pytorch example`_ for a more hands-on experience. Finally we encourage you
+to browse our `documentation`_.
 
 .. _getting started guide: https://orion.readthedocs.io/en/latest/install/gettingstarted.html
 .. _documentation: https://orion.readthedocs.io/
