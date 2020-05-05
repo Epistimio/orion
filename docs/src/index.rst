@@ -30,9 +30,9 @@
 
    tutorials/scikit-learn
    tutorials/pytorch-mnist
+   tutorials/cluster
    tutorials/pytorch_cifar
    tutorials/pytorch_a2c_ppo
-   tutorials/cluster
 
 .. toctree::
    :caption: Plugins
