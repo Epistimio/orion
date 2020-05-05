@@ -87,7 +87,7 @@ def display_budgets(budgets_tab, max_resources, reduction_factor):
     table_str += col_format_str.format(*col_sub_list)
     table_str += 'max resource={}, eta={}, trials number of one execution={}\n' \
         .format(max_resources, reduction_factor, total_trials)
-    logger.warning(table_str)
+    logger.debug(table_str)
 
 
 class Hyperband(BaseAlgorithm):
@@ -245,6 +245,12 @@ class Hyperband(BaseAlgorithm):
 
         # Either all brackets are done or none are ready and algo needs to wait for some trials to
         # complete
+        if len(self.trial_info_wo_fidelity) >= self.space.cardinality:
+            logger.warning('The number of unique trials of bottom rungs exceeds the search space '
+                           'cardinality %i, Hyperband algorithm exits.', self.space.cardinality)
+        else:
+            logger.warning('Hyeprband can not suggest new samples, exit.')
+
         return None
 
     def get_id(self, point, ignore_fidelity=True):

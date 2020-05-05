@@ -620,6 +620,11 @@ class TestTransformedDimension(object):
         assert tdim.type == 'integer'
         assert tdim2.type == 'real'
 
+    def test_prior_name_property(self, tdim, tdim2):
+        """Check property `prior_name`."""
+        assert tdim.prior_name == 'norm'
+        assert tdim2.prior_name == 'choices'
+
     def test_shape_property(self, tdim, tdim2):
         """Check property `shape`."""
         assert tdim.original_dimension.shape == (3, 2)

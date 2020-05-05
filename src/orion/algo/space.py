@@ -274,6 +274,11 @@ class Dimension:
         return self.__class__.__name__.lower()
 
     @property
+    def prior_name(self):
+        """Return the name of the prior"""
+        return self._prior_name
+
+    @property
     def shape(self):
         """Return the shape of dimension."""
         # Default shape `None` corresponds to 0-dim (scalar) or shape == ().
@@ -534,6 +539,11 @@ class Integer(Real, _Discrete):
         return prior_string[:-1] + ', discrete=True)'
 
     @property
+    def prior_name(self):
+        """Return the name of the prior"""
+        return 'int_{}'.format(super(Integer, self).prior_name)
+
+    @property
     def cardinality(self):
         """Return the number of all the possible points from Integer `Dimension`"""
         low, high = self.interval()
@@ -665,6 +675,11 @@ class Categorical(Dimension):
 
         return 'choices({args})'.format(args=', '.join(args))
 
+    @property
+    def prior_name(self):
+        """Return the name of the prior"""
+        return "choices"
+
     def cast(self, point):
         """Cast a point to some category
 
@@ -743,6 +758,14 @@ class Fidelity(Dimension):
     def default_value(self):
         """Return `high`"""
         return self.high
+
+    # pylint:disable=no-self-use
+    @property
+    def cardinality(self):
+        """Return cardinality of Fidelity dimension, leave it to 1 as Fidelity dimension
+        does not contribute to cardinality in a fixed way now.
+        """
+        return 1
 
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
