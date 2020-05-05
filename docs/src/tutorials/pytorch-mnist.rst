@@ -1,5 +1,5 @@
 **************
-Simple example
+PyTorch MNIST
 **************
 
 This is a simple tutorial on running hyperparameter search with Oríon on Pytorch's MNIST example

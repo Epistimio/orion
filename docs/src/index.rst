@@ -28,8 +28,8 @@
    :caption: Tutorials
    :maxdepth: 1
 
-   tutorials/pytorch
    tutorials/scikit-learn
+   tutorials/pytorch-mnist
    tutorials/pytorch_cifar
    tutorials/pytorch_a2c_ppo
    tutorials/cluster
