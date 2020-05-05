@@ -12,9 +12,9 @@ is registered on PyPI_ under `orion`. Use the following command to install Orío
 
    pip install orion
 
-Note that Oríon comes with the following algorithms: Random Search, Hyperband, and ASHA. More
-algorithms are available in the :doc:`plugin section </plugins/install>`, their installation
-is also done through ``pip``.
+Note that Oríon comes with the following algorithms: Random Search, Hyperband, TPE, and ASHA. More
+algorithms are available in the :doc:`plugin section </plugins/install>`, their installation is also
+done through ``pip``.
 
 Afterwards, we recommend to :doc:`select a database </install/database>` for Oríon to use unless
 you're comfortable with the default option.
