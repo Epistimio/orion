@@ -1,5 +1,5 @@
 *********************************************
-Example with ikostrikov/pytorch-a2c-ppo-acktr
+PyTorch A2C PPO ACKTR
 *********************************************
 
 .. note ::
