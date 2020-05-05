@@ -37,9 +37,9 @@ concepts and that you already have installed Oríon on your machine and selected
 not the case please refer to our :doc:`installation instructions </install/core>` and :doc:`database
 setup </install/database>`.
 
-We also made a presentation_ if you prefer easy-to-read slides!
+We also made a presentation_ if you prefer going along with narrated content!
 
-.. _presentation: https://docs.google.com/presentation/d/18g7Q4xRuhMtcVbwmFwDfH7v9gKS252-laOi9HrEQ7a4/edit?usp=sharing
+.. _presentation: https://bluejeans.com/playback/s/4WUezzFCmb9StHzYgB0RjVbTUCKnRcptBvzBMP7t2UpLyKuAq7Emieo911BqEMnI
 
 Integration
 ===========
