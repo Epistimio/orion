@@ -77,7 +77,7 @@ the values for the ``lr`` hyper-parameter in a log uniform distribution between 
 trial will be stored in the database that you configured during the installation process.
 
 You can fine-tune the distribution and algorithm with many options either with more arguments or by
-using a configuration file. Learn more at `/user/api`.
+using a configuration file. Learn more at :doc:`/user/api`.
 
 Scaling up
 ----------
