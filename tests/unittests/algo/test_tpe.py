@@ -9,8 +9,6 @@ from scipy.stats import norm
 from orion.algo.space import Integer, Real, Space
 from orion.algo.tpe import adaptive_parzen_estimator, compute_max_ei_point, GMMSampler, TPE
 
-numpy.random.seed(1)
-
 
 @pytest.fixture()
 def space():
