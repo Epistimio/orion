@@ -6,7 +6,7 @@ Welcome! In this chapter, we give a quick overview of Oríon's main features and
 streamline your machine learning workflow whether you are a researcher or engineer.
 
 Oríon is a black box function optimization library with a key focus on usability and integrability
-for its users. For example, as an machine learning engineer, you can integrate Oríon to your
+for its users. For example, as a machine learning engineer, you can integrate Oríon to your
 existing ML workflow to handle reliably the hyperparameter optimization and tuning phase. As a ML
 researcher, you can use Oríon to tune your models but also integrate your own algorithms to Oríon to
 serve as an efficient optimization engine and compare with other algorithms in the same context and
@@ -73,7 +73,7 @@ For the previous example, we would run
    $ orion hunt -n <experiment name> script.py --lr~'loguniform(1e-5, 1.0)'
 
 This is going to start the optimization process using the default optimization algorithm and sample
-the values for the **lr** hyper-parameter in a log uniform distribution between 0.00001 et 1.0. Each
+the values for the ``lr`` hyper-parameter in a log uniform distribution between 0.00001 et 1.0. Each
 trial will be stored in the database that you configured during the installation process.
 
 You can fine-tune the distribution and algorithm with many options either with more arguments or by
@@ -87,7 +87,7 @@ environments. Oríon does not rely on a traditional master/slave setup. The sync
 the database, each worker will separately generate a new trial based on the state of the experiment
 stored in the database.
 
-Make sure to visit :doc:`/user/parallel` to learn more about it and checkout the tutorial to run
+Make sure to visit :doc:`/user/parallel` to learn more about it and check out the tutorial to run
 Oríon in :doc:`HPC environments </tutorials/cluster>`.
 
 Search Space
@@ -119,7 +119,7 @@ configuration file. The samples of hyperparameter are based on the previous tria
 
 Make sure to checkout `this presentation
 <https://docs.google.com/presentation/d/18g7Q4xRuhMtcVbwmFwDfH7v9gKS252-laOi9HrEQ7a4/present?slide=id.g6ba6d709b9_4_19>`_
-for an quick overview of each algorithm and to visit :doc:`/user/algorithms` to learn about the
+for a quick overview of each algorithm and to visit :doc:`/user/algorithms` to learn about the
 algorithms and get recommendations about their use cases.
 
 Monitoring
@@ -143,7 +143,7 @@ Next steps
 It's worth to take a look at the :doc:`configuration system </user/config>` to learn more about how
 to make the most out of Oríon and define precise behaviors for your algorithms and experiments.
 
-Explore the :doc:`User Manual </user/overview>`, oríon is simple from the outside but is feature
-rich! We also have a few tutorials available. If you're a researcher or develop you might be
+Explore the :doc:`User Manual </user/overview>`, Oríon is simple from the outside but is feature
+rich! We also have a few tutorials available. If you're a researcher or developper you might be
 interested to :doc:`contribute </developer/overview>` or develop your own :doc:`algorithms plugins
 </plugins/base>`!
