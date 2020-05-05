@@ -21,6 +21,7 @@ The user guide is organized in the following sections:
   experiments.
 * :doc:`/user/storage`. Describes how to interact with the experiment database directly.
 * :doc:`/user/config`. Details in depth how the configuration system works.
+* :doc:`/user/parallel`. Describes how to run multiple workers for the same experiment.
 
 If you have any questions or feel something is missing in the documentation, always feel free to
 start a `new issue <https://github.com/Epistimio/orion/issues/new>`_ and tell us!
