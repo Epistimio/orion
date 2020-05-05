@@ -23,8 +23,10 @@ executed on a personal laptop.
   :align: center
   :figclass: align-center
 
-If we spawn more worker for the experiment, their workflow is unchanged because the workers are
-synchronized during the creation of a new trial based on what other trials were already completed.
+More workers can be invoked by simply running the ``$ orion hunt -n exp ...`` command multiple
+times. Each call spawns a new worker for the given experiment. The workers' workflow is unchanged
+because the workers are synchronized during the creation of a new trial based on what other trials
+were already completed by other workers.
 
 .. figure:: /_resources/synchronization.png
   :alt: Multiple workers are synchronized while creating a new trial.
