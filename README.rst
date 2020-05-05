@@ -50,12 +50,12 @@ now what you have to do looks like this:
 
 Check out our `getting started guide`_ or `this presentation
 <https://bluejeans.com/playback/s/4WUezzFCmb9StHzYgB0RjVbTUCKnRcptBvzBMP7t2UpLyKuAq7Emieo911BqEMnI>`_
-for an overview, or our `pytorch example`_ for a more hands-on experience. Finally we encourage you
+for an overview, or our `scikit-learn example`_ for a more hands-on experience. Finally we encourage you
 to browse our `documentation`_.
 
 .. _getting started guide: https://orion.readthedocs.io/en/latest/install/gettingstarted.html
 .. _documentation: https://orion.readthedocs.io/
-.. _pytorch example: https://orion.readthedocs.io/en/latest/tutorials/pytorch.html
+.. _scikit-learn example: https://orion.readthedocs.io/en/latest/tutorials/scikit-learn.html
 
 Why Oríon?
 ==========
