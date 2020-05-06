@@ -25,7 +25,7 @@ def space():
 @pytest.fixture
 def tpe(space):
     """Return an instance of TPE."""
-    return TPE(space)
+    return TPE(space, seed=1)
 
 
 def test_compute_max_ei_point():
@@ -185,7 +185,9 @@ class TestGMMSampler():
 
         mus = numpy.linspace(-10, 10, num=10, endpoint=False)
         sigmas = [0.00001] * 10
-        weights = [0.009, 0.006, 0.1, 0.02, 0.004, 0.26, 0.04, 0.5, 0.06, 0.001]
+        weights = numpy.linspace(1, 10, num=10) ** 3
+        numpy.random.shuffle(weights)
+        weights = weights / weights.sum()
 
         gmm_sampler = GMMSampler(tpe, mus, sigmas, -11, 9, weights)
         points = gmm_sampler.sample(10000)
@@ -199,7 +201,9 @@ class TestGMMSampler():
     def test_get_loglikelis(self):
         """Test to get log likelis of points"""
         mus = numpy.linspace(-10, 10, num=10, endpoint=False)
-        weights = [0.009, 0.006, 0.1, 0.02, 0.003, 0.26, 0.04, 0.5, 0.061, 0.001]
+        weights = numpy.linspace(1, 10, num=10) ** 3
+        numpy.random.shuffle(weights)
+        weights = weights / weights.sum()
 
         sigmas = [0.00001] * 10
         gmm_sampler = GMMSampler(tpe, mus, sigmas, -11, 9, weights)
@@ -208,7 +212,7 @@ class TestGMMSampler():
         pdf = norm(mus[7], sigmas[7])
         point_likeli = numpy.log(pdf.pdf(mus[7]) * weights[7])
         likelis = gmm_sampler.get_loglikelis(points)
-        print(likelis[0], point_likeli)
+
         assert list(likelis) == point_likeli
         assert likelis[0] == point_likeli
 
