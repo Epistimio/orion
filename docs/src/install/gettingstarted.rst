@@ -12,21 +12,6 @@ researcher, you can use Oríon to tune your models but also integrate your own a
 serve as an efficient optimization engine and compare with other algorithms in the same context and
 conditions.
 
-Oríon is built to be non-intrusive, highly integrable, operate in parallel environments, and produce
-reproducible experiments. It takes only one line of code to start using it in your existing
-projects. It's natively asynchronous so it can perform efficiently on your laptop and in a computing
-farm with thousands of processors, without the need to configure a master and workers. Oríon
-supports the latest established hyperparameter algorithms out of the box, making it easy to switch
-between them or create benchmarks. It also supports a vast range of search spaces. Oríon uses a
-configuration agnostic approach where you can use any configuration file format you're comfortable
-with. The results are always stored in a database that can be either in-memory, local or remote.
-These results can be queried directly from the database itself or using convenient methods from
-Oríon's API. Additionally, the experiments are versioned -- think of it as a git for scientific
-experimentation -- enabling you to keep track of all your trials with their parameters. This
-guarantees that you can reproduce or trace back the steps in your work for free. Finally, a plugin
-system enables you to integrate and distribute your algorithms easily to other members of the
-community.
-
 Conversely, Oríon does not aim to be a machine learning framework or pipeline, or an automatic
 machine learning product. Oríon focuses essentially on black box optimization. However, we do
 encourage developers to integrate Oríon into that kind of systems as a component and we will do
@@ -74,7 +59,12 @@ For the previous example, we would run
 
 This is going to start the optimization process using the default optimization algorithm and sample
 the values for the ``lr`` hyper-parameter in a log uniform distribution between 0.00001 et 1.0. Each
-trial will be stored in the database that you configured during the installation process.
+trial will be stored in the database that you configured during the installation process (which can
+be in-memory, a file, or a local or remote MongoDB instance).
+
+Additionally, the experiments are versioned -- think of it as a git for scientific experimentation
+-- enabling you to keep track of all your trials with their parameters. This guarantees that you can
+reproduce or trace back the steps in your work for free.
 
 You can fine-tune the distribution and algorithm with many options either with more arguments or by
 using a configuration file. Learn more at :doc:`/user/api`.
@@ -82,9 +72,12 @@ using a configuration file. Learn more at :doc:`/user/api`.
 Scaling up
 ----------
 
-Due to the native asynchronous nature of Oríon, it's very easy to run it on parallel or distributed
-environments. Oríon does not rely on a traditional master/slave setup. The synchronization point is
-the database, each worker will separately generate a new trial based on the state of the experiment
+Oríon is built to operate in parallel environments and is natively asynchronous; it runs efficiently
+whether you execute it on your laptop or in a computing farm with thousands of processors.
+
+Moreover, adding more workers is as easy as executing the ``$ orion hunt`` command for each extra
+worker needed. Indeed, Oríon doesn't uses a master / worker approach. The synchronization point is
+the database: each worker will separately generate a new trial based on the state of the experiment
 stored in the database.
 
 Make sure to visit :doc:`/user/parallel` to learn more about it and check out the tutorial to run
@@ -94,9 +87,10 @@ Search Space
 ============
 
 The search space is defined by priors for each hyperparameter to optimize. In the snippet earlier,
-we used the *loguniform* prior. We support almost all the distributions from `scipy
-<https://docs.scipy.org/doc/scipy/reference/stats.html>`_ out of the box. You can define them either
-directly in the command line (as shown previously) or in a configuration file:
+we used the *loguniform* prior. Oríon supports a vast range of search spaces, including almost all
+the distributions from `scipy <https://docs.scipy.org/doc/scipy/reference/stats.html>`_ out of the
+box. You can define them either directly in the command line (as shown previously) or in a
+configuration file:
 
 .. code-block:: yaml
 
@@ -113,9 +107,14 @@ Make sure to visit :doc:`/user/searchspace` for an exhaustive list of priors and
 Algorithms
 ==========
 
-Similarly to search spaces, Oríon supports multiple algorithms out of the box: :ref:`random-search`,
-:ref:`ASHA`, :ref:`tpe-algorithm`, and :ref:`hyperband-algorithm`. Each one is fully configurable
-through the configuration file. The samples of hyperparameter are based on the previous trials.
+Oríon supports the latest established hyperparameter algorithms out of the box such as
+:ref:`random-search`, :ref:`ASHA`, :ref:`tpe-algorithm`, and :ref:`hyperband-algorithm`; making it
+easy to switch between them or create benchmarks. Each algorithm is fully configurable through the
+configuration file.
+
+You can also bring your own algorithms to Oríon with its plugin system, where you can compare it
+against other algorithms using the same framework and dataset. It also enables you to easily share
+and publish your algorithm to other members of the community.
 
 Make sure to checkout `this presentation
 <https://docs.google.com/presentation/d/18g7Q4xRuhMtcVbwmFwDfH7v9gKS252-laOi9HrEQ7a4/present?slide=id.g6ba6d709b9_4_19>`_
@@ -142,6 +141,8 @@ Next steps
 
 It's worth to take a look at the :doc:`configuration system </user/config>` to learn more about how
 to make the most out of Oríon and define precise behaviors for your algorithms and experiments.
+Oríon uses a configuration agnostic approach where you can use any configuration file format you're
+comfortable with.
 
 Explore the :doc:`User Manual </user/overview>`, Oríon is simple from the outside but is feature
 rich! We also have a few tutorials available (e.g., :doc:`/tutorials/scikit-learn`,
