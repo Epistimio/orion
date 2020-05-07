@@ -33,8 +33,8 @@ encourage developers to integrate Oríon into that kind of systems as a componen
 our best to help you if you're interested.
 
 Before continuing the overview, we assume that you have a basic understanding of machine learning
-concepts and that you already have installed Oríon on your machine and selected a database. If it's
-not the case please refer to our :doc:`installation instructions </install/core>` and :doc:`database
+concepts. You may also want to install Oríon on your machine and configure it for a database before
+continuing. Please refer to our :doc:`installation instructions </install/core>` and :doc:`database
 setup </install/database>`.
 
 We also made a presentation_ if you prefer going along with narrated content!
