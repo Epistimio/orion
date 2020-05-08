@@ -6,18 +6,25 @@ import numpy
 import pytest
 from scipy.stats import norm
 
-from orion.algo.space import Integer, Real, Space
-from orion.algo.tpe import adaptive_parzen_estimator, compute_max_ei_point, GMMSampler, TPE
+from orion.algo.space import Categorical, Fidelity, Integer, Real, Space
+from orion.algo.tpe import adaptive_parzen_estimator, CategoricalSampler, \
+    compute_max_ei_point, GMMSampler, ramp_up_weights, TPE
 
 
 @pytest.fixture()
 def space():
     """Return an optimization space"""
     space = Space()
+
     dim1 = Real('yolo1', 'uniform', -10, 20)
     space.register(dim1)
-    dim2 = Real('yolo2', 'uniform', -5, 10)
+
+    dim2 = Integer('yolo2', 'uniform', -5, 10)
     space.register(dim2)
+
+    categories = ['a', 0.1, 2, 'c']
+    dim3 = Categorical('yolo3', categories)
+    space.register(dim3)
 
     return space
 
@@ -40,6 +47,26 @@ def test_compute_max_ei_point():
 
     max_ei_point = compute_max_ei_point(points, below_likelis, above_likes)
     assert max_ei_point == points[max_ei_index]
+
+
+def test_ramp_up_weights():
+    """Test TPE adjust observed points correctly"""
+    weights = ramp_up_weights(25, 15, True)
+    assert len(weights) == 25
+    assert numpy.all(weights == 1.0)
+
+    weights = ramp_up_weights(25, 15, False)
+    assert len(weights) == 25
+    assert numpy.all(weights[:10] == (numpy.linspace(1.0 / 25, 1.0, num=10)))
+    assert numpy.all(weights[10:] == 1.0)
+
+    weights = ramp_up_weights(10, 15, False)
+    assert len(weights) == 10
+    assert numpy.all(weights == 1.0)
+
+    weights = ramp_up_weights(25, 0, False)
+    assert len(weights) == 25
+    assert numpy.all(weights == (numpy.linspace(1.0 / 25, 1.0, num=25)))
 
 
 def test_adaptive_parzen_normal_estimator():
@@ -157,6 +184,87 @@ def test_adaptive_parzen_normal_estimator_sigma_clip():
     assert numpy.all(sigmas <= 6) and numpy.all(sigmas >= 6 / 100)
 
 
+class TestCategoricalSampler():
+    """Tests for TPE Categorical Sampler"""
+
+    def test_cat_sampler_creation(self, tpe):
+        """Test CategoricalSampler creation"""
+        obs = [0, 3, 9]
+        choices = list(range(-5, 5))
+        cat_sampler = CategoricalSampler(tpe, obs, choices)
+        assert len(cat_sampler.weights) == len(choices)
+
+        obs = [0, 3, 9]
+        choices = ['a', 'b', 11, 15, 17, 18, 19, 20, 25, 'c']
+        cat_sampler = CategoricalSampler(tpe, obs, choices)
+
+        assert len(cat_sampler.weights) == len(choices)
+
+        tpe.equal_weight = True
+        tpe.prior_weight = 1.0
+        obs = numpy.random.randint(0, 10, 100)
+        cat_sampler = CategoricalSampler(tpe, obs, choices)
+        counts_obs = numpy.bincount(obs) + 1.0
+        weights = counts_obs / counts_obs.sum()
+
+        assert numpy.all(cat_sampler.weights == weights)
+
+        tpe.equal_weight = False
+        tpe.prior_weight = 0.5
+        tpe.full_weight_num = 30
+        obs = numpy.random.randint(0, 10, 100)
+
+        cat_sampler = CategoricalSampler(tpe, obs, choices)
+
+        ramp = numpy.linspace(1.0 / 100, 1.0, num=100 - 30)
+        full = numpy.ones(30)
+        ramp_weights = (numpy.concatenate([ramp, full]))
+
+        counts_obs = numpy.bincount(obs, weights=ramp_weights) + 0.5
+        weights = counts_obs / counts_obs.sum()
+
+        assert numpy.all(cat_sampler.weights == weights)
+
+    def test_sample(self, tpe):
+        """Test CategoricalSampler sample function"""
+        obs = numpy.random.randint(0, 10, 100)
+        choices = ['a', 'b', 11, 15, 17, 18, 19, 20, 25, 'c']
+        cat_sampler = CategoricalSampler(tpe, obs, choices)
+
+        points = cat_sampler.sample(25)
+
+        assert len(points) == 25
+        assert numpy.all(points >= 0)
+        assert numpy.all(points < 10)
+
+        weights = numpy.linspace(1, 10, num=10) ** 3
+        numpy.random.shuffle(weights)
+        weights = weights / weights.sum()
+        cat_sampler = CategoricalSampler(tpe, obs, choices)
+        cat_sampler.weights = weights
+
+        points = cat_sampler.sample(10000)
+        points = numpy.array(points)
+        hist = numpy.bincount(points)
+
+        assert numpy.all(hist.argsort() == weights.argsort())
+        assert len(points) == 10000
+        assert numpy.all(points >= 0)
+        assert numpy.all(points < 10)
+
+    def test_get_loglikelis(self, tpe):
+        """Test to get log likelis of points"""
+        obs = numpy.random.randint(0, 10, 100)
+        choices = ['a', 'b', 11, 15, 17, 18, 19, 20, 25, 'c']
+        cat_sampler = CategoricalSampler(tpe, obs, choices)
+
+        points = cat_sampler.sample(25)
+
+        likelis = cat_sampler.get_loglikelis(points)
+
+        assert numpy.all(likelis == numpy.log(numpy.asarray(cat_sampler.weights)[points]))
+
+
 class TestGMMSampler():
     """Tests for TPE GMM Sampler"""
 
@@ -262,13 +370,13 @@ class TestTPE():
     def test_unsupported_space(self):
         """Test tpe only work for supported search space"""
         space = Space()
-        dim = Integer('yolo1', 'uniform', -2, 4)
+        dim = Fidelity('epoch', 1, 9, 3)
         space.register(dim)
 
         with pytest.raises(ValueError) as ex:
             TPE(space)
 
-        assert 'TPE now only supports Real Dimension' in str(ex.value)
+        assert 'TPE now only supports Real, Integer and Categorical Dimension' in str(ex.value)
 
         space = Space()
         dim = Real('yolo1', 'norm', 0.9)
@@ -277,7 +385,7 @@ class TestTPE():
         with pytest.raises(ValueError) as ex:
             TPE(space)
 
-        assert 'TPE now only supports uniform as prior' in str(ex.value)
+        assert 'TPE now only supports uniform, uniform discrete and choices' in str(ex.value)
 
         space = Space()
         dim = Real('yolo1', 'uniform', 0.9, shape=(2, 1))
@@ -316,6 +424,69 @@ class TestTPE():
         assert below_points == [[-3.0], [-2.4]]
         assert len(above_points) == 8
 
+    def test_sample_int_dimension(self):
+        """Test sample values for a integer dimension"""
+        space = Space()
+        dim1 = Integer('yolo1', 'uniform', -10, 20)
+        space.register(dim1)
+
+        dim2 = Integer('yolo2', 'uniform', -5, 10, shape=(2))
+        space.register(dim2)
+
+        tpe = TPE(space)
+
+        obs_points = numpy.random.randint(-10, 10, 100)
+        below_points = [obs_points[:25]]
+        above_points = [obs_points[25:]]
+        points = tpe.sample_one_dimension(dim1, 1,
+                                          below_points, above_points, tpe._sample_int_point)
+        assert len(points) == 1
+
+        obs_points = numpy.random.randint(-5, 5, 100)
+        below_points = [obs_points[:25], obs_points[25:50]]
+        above_points = [obs_points[50:75], obs_points[75:]]
+        points = tpe.sample_one_dimension(dim2, 2,
+                                          below_points, above_points, tpe._sample_int_point)
+        assert len(points) == 2
+
+        tpe.n_ei_candidates = 0
+        points = tpe.sample_one_dimension(dim2, 2,
+                                          below_points, above_points, tpe._sample_int_point)
+        assert len(points) == 0
+
+    def test_sample_categorical_dimension(self):
+        """Test sample values for a categorical dimension"""
+        space = Space()
+        categories = ['a', 'b', 11, 15, 17, 18, 19, 20, 25, 'c']
+        dim1 = Categorical('yolo1', categories)
+        space.register(dim1)
+        dim2 = Categorical('yolo2', categories, shape=(2))
+        space.register(dim2)
+
+        tpe = TPE(space)
+
+        obs_points = numpy.random.randint(0, 10, 100)
+        obs_points = [categories[point] for point in obs_points]
+        below_points = [obs_points[:25]]
+        above_points = [obs_points[25:]]
+        points = tpe.sample_one_dimension(dim1, 1,
+                                          below_points, above_points, tpe._sample_categorical_point)
+        assert len(points) == 1
+
+        obs_points = numpy.random.randint(0, 10, 100)
+        obs_points = [categories[point] for point in obs_points]
+        below_points = [obs_points[:25], obs_points[25:50]]
+        above_points = [obs_points[50:75], obs_points[75:]]
+
+        points = tpe.sample_one_dimension(dim2, 2,
+                                          below_points, above_points, tpe._sample_categorical_point)
+        assert len(points) == 2
+
+        tpe.n_ei_candidates = 0
+        points = tpe.sample_one_dimension(dim2, 2,
+                                          below_points, above_points, tpe._sample_categorical_point)
+        assert len(points) == 0
+
     def test_sample_real_dimension(self):
         """Test sample values for a real dimension"""
         space = Space()
@@ -325,20 +496,23 @@ class TestTPE():
         space.register(dim2)
 
         tpe = TPE(space)
-        points = numpy.random.uniform(-10, 10, 20).reshape(20, 1)
-        below_points = points[:6, :]
-        above_points = points[6:, :]
-        points = tpe.sample_real_dimension(dim1, 1, below_points, above_points)
+        points = numpy.random.uniform(-10, 10, 20)
+        below_points = [points[:8]]
+        above_points = [points[8:]]
+        points = tpe.sample_one_dimension(dim1, 1,
+                                          below_points, above_points, tpe._sample_real_point)
         assert len(points) == 1
 
-        points = numpy.random.uniform(-5, 5, 32).reshape(16, 2)
-        below_points = points[:4, :]
-        above_points = points[4:, :]
-        points = tpe.sample_real_dimension(dim2, 2, below_points, above_points)
+        points = numpy.random.uniform(-5, 5, 32)
+        below_points = [points[:8], points[8:16]]
+        above_points = [points[16:24], points[24:]]
+        points = tpe.sample_one_dimension(dim2, 2,
+                                          below_points, above_points, tpe._sample_real_point)
         assert len(points) == 2
 
         tpe.n_ei_candidates = 0
-        points = tpe.sample_real_dimension(dim2, 2, below_points, above_points)
+        points = tpe.sample_one_dimension(dim2, 2,
+                                          below_points, above_points, tpe._sample_real_point)
         assert len(points) == 0
 
     def test_suggest(self, tpe):
@@ -348,13 +522,13 @@ class TestTPE():
         for i in range(10):
             point = tpe.suggest(1)
             assert len(point) == 1
-            assert len(point[0]) == 2
+            assert len(point[0]) == 3
             assert not isinstance(point[0][0], tuple)
             tpe.observe(point, [{'objective': results[i]}])
 
         point = tpe.suggest(1)
         assert len(point) == 1
-        assert len(point[0]) == 2
+        assert len(point[0]) == 3
         assert not isinstance(point[0][0], tuple)
 
     def test_1d_shape(self, tpe):
@@ -383,7 +557,7 @@ class TestTPE():
 
     def test_suggest_initial_points(self, tpe, monkeypatch):
         """Test that initial points can be sampled correctly"""
-        points = [(i, i**2) for i in range(1, 12)]
+        points = [(i, i - 6, 'c') for i in range(1, 12)]
 
         global index
         index = 0
@@ -400,11 +574,11 @@ class TestTPE():
         results = numpy.random.random(10)
         for i in range(1, 11):
             point = tpe.suggest(1)[0]
-            assert point == (i, i**2)
+            assert point == (i, i - 6, 'c')
             tpe.observe([point], [{'objective': results[i - 1]}])
 
         point = tpe.suggest(1)[0]
-        assert point != (11, 11 * 2)
+        assert point != (11, 5, 'c')
 
     def test_suggest_ei_candidates(self, tpe):
         """Test suggest with no shape dimensions"""
@@ -415,7 +589,7 @@ class TestTPE():
         for i in range(2):
             point = tpe.suggest(1)
             assert len(point) == 1
-            assert len(point[0]) == 2
+            assert len(point[0]) == 3
             assert not isinstance(point[0][0], tuple)
             tpe.observe(point, [{'objective': results[i]}])
 

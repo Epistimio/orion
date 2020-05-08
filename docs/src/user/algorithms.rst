@@ -210,6 +210,10 @@ the most promising point among the candidates.
 .. _Tree-structured Parzen Estimator:
     https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf
 
+.. note::
+
+   Current implementation only supports uniform, uniform discrete and choices as prior.
+   As for choices prior, the probabilities if any given will be ignored.
 
 Configuration
 ~~~~~~~~~~~~~
