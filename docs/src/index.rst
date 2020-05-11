@@ -4,16 +4,16 @@
    :caption: Welcome
    :maxdepth: 1
 
+   install/gettingstarted
    install/core
    install/database
-..    roadmap
-..    changelog
 ..    contributors
 
 .. toctree::
    :caption: User Guide
    :maxdepth: 1
 
+   user/overview
    user/script
    user/api
    user/algorithms
@@ -22,16 +22,17 @@
    user/evc
    user/storage
    user/config
+   user/parallel
 
 .. toctree::
    :caption: Tutorials
    :maxdepth: 1
 
-   tutorials/pytorch
    tutorials/scikit-learn
+   tutorials/pytorch-mnist
+   tutorials/cluster
    tutorials/pytorch_cifar
    tutorials/pytorch_a2c_ppo
-   tutorials/cluster
 
 .. toctree::
    :caption: Plugins
