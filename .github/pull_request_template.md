@@ -20,7 +20,7 @@ _You can also fill these out after creating the PR if it's a work in progress (b
 
 ## Tests
 - [ ] I added corresponding tests for bug fixes and new features. If possible, the tests fail without the changes
-- [ ] All new and existing tests are passing
+- [ ] All new and existing tests are passing (`$ tox -e py38`; replace `38` by your Python version if necessary)
 
 ## Documentation
 - [ ] I have updated the relevant documentation related to my changes
@@ -29,7 +29,6 @@ _You can also fill these out after creating the PR if it's a work in progress (b
 - [ ] I have read the [CONTRIBUTING](https://github.com/Epistimio/orion/blob/develop/CONTRIBUTING.md) doc
 - [ ] My commits messages follow [this format](https://chris.beams.io/posts/git-commit/)
 - [ ] My code follows the style guidelines (`$ tox -e lint`)
-- [ ] I have performed a self-review of my own code
 
 # Further comments
 _Please include any additional information or comment that you feel will be helpful to the review of this pull request._
