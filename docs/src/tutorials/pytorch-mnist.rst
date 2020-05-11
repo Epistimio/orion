@@ -1,6 +1,6 @@
-**************
+*************
 PyTorch MNIST
-**************
+*************
 
 This is a simple tutorial on running hyperparameter search with Oríon on Pytorch's MNIST example
 
@@ -236,4 +236,3 @@ useful if many workers are executed in parallel and the algorithm has a strategy
 non-independant trials simultaneously. Otherwise, it is better to leave ``pool_size`` to its default
 value 1. Note that this option is not usefull useless you know the algorithm have a strategy
 to produce multiple trials simultaneously. If you have any doubt, leave it to 1. :)
-
