@@ -2,7 +2,7 @@
 Running on HPC
 **************
 
-This guide is based on the example described in :doc:`/tutorials/pytorch`.
+This guide is based on the example described in :doc:`/tutorials/pytorch-mnist`.
 
 Parallel optimization using arrays
 ==================================

@@ -48,9 +48,14 @@ now what you have to do looks like this:
 
 ``orion -n experiment_name ./run.py --mini-batch~'randint(32, 256)'``
 
-Check out our `pytorch example`_ for a quick demonstration!
+Check out our `getting started guide`_ or `this presentation
+<https://bluejeans.com/playback/s/4WUezzFCmb9StHzYgB0RjVbTUCKnRcptBvzBMP7t2UpLyKuAq7Emieo911BqEMnI>`_
+for an overview, or our `scikit-learn example`_ for a more hands-on experience. Finally we encourage you
+to browse our `documentation`_.
 
-.. _pytorch example: https://orion.readthedocs.io/en/latest/tutorials/pytorch.html
+.. _getting started guide: https://orion.readthedocs.io/en/latest/install/gettingstarted.html
+.. _documentation: https://orion.readthedocs.io/
+.. _scikit-learn example: https://orion.readthedocs.io/en/latest/tutorials/scikit-learn.html
 
 Why Oríon?
 ==========
@@ -68,13 +73,10 @@ Why Oríon?
 Installation
 ============
 
-Install Oríon by running:
+Install Oríon by running ``$ pip install orion``. For more information consult the `installation
+guide`_.
 
-``pip install orion``
-
-For more information read the `full installation docs`_.
-
-.. _full installation docs: https://orion.readthedocs.io/en/stable/install/core.html
+.. _installation guide: https://orion.readthedocs.io/en/stable/install/core.html
 
 Contribute or Ask
 =================
@@ -89,11 +91,6 @@ Please contact us by opening an issue in our repository below and checkout our `
 Start by starring and forking our Github repo!
 
 Thanks for the support!
-
-Roadmap
-========
-
-Our current roadmap is available here: `<https://github.com/Epistimio/orion/blob/develop/ROADMAP.md>`_
 
 Citation
 ========
@@ -125,7 +122,12 @@ If you use Oríon for published work, please cite our work using the following b
      url          = {https://doi.org/10.5281/zenodo.3478592}
    }
 
+Roadmap
+=======
+
+See `ROADMAP.md <https://github.com/Epistimio/orion/blob/master/ROADMAP.md>`_.
+
 License
 =======
 
-The project is licensed under the BSD license.
+The project is licensed under the `BSD license <https://github.com/Epistimio/orion/blob/master/LICENSE>`_.
