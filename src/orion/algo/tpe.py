@@ -304,8 +304,8 @@ class TPE(BaseAlgorithm):
 
         :param dimension: Dimension.
         :param shape_size: 1D Shape Size of the Real Dimension.
-        :param below_points: good points with shape (m, n), n=shape_size.
-        :param above_points: bad points with shape (m, n), n=shape_size.
+        :param below_points: good points with shape (m, n), m=shape_size.
+        :param above_points: bad points with shape (m, n), m=shape_size.
         :param sampler: method to sample one value for upon the dimension.
         """
         points = []
@@ -353,10 +353,10 @@ class TPE(BaseAlgorithm):
         if list(candidate_points):
             sampler_above = CategoricalSampler(self, above_points, choices)
 
-            lik_blow = sampler_below.get_loglikelis(candidate_points)
+            lik_below = sampler_below.get_loglikelis(candidate_points)
             lik_above = sampler_above.get_loglikelis(candidate_points)
 
-            new_point = compute_max_ei_point(candidate_points, lik_blow, lik_above)
+            new_point = compute_max_ei_point(candidate_points, lik_below, lik_above)
             new_point = new_point + low
             return new_point
 
@@ -375,10 +375,10 @@ class TPE(BaseAlgorithm):
         if list(candidate_points):
             sampler_above = CategoricalSampler(self, above_points, choices)
 
-            lik_blow = sampler_below.get_loglikelis(candidate_points)
+            lik_below = sampler_below.get_loglikelis(candidate_points)
             lik_above = sampler_above.get_loglikelis(candidate_points)
 
-            new_point_index = compute_max_ei_point(candidate_points, lik_blow, lik_above)
+            new_point_index = compute_max_ei_point(candidate_points, lik_below, lik_above)
             new_point = choices[new_point_index]
 
             return new_point
