@@ -440,14 +440,29 @@ class TestTPE():
         above_points = [obs_points[25:]]
         points = tpe.sample_one_dimension(dim1, 1,
                                           below_points, above_points, tpe._sample_int_point)
+        points = numpy.asarray(points)
         assert len(points) == 1
+        assert all(points >= -10)
+        assert all(points < 10)
+
+        obs_points_below = numpy.random.randint(-10, 0, 25).reshape(1, 25)
+        obs_points_above = numpy.random.randint(0, 10, 75).reshape(1, 75)
+        points = tpe.sample_one_dimension(dim1, 1,
+                                          obs_points_below, obs_points_above, tpe._sample_int_point)
+        points = numpy.asarray(points)
+        assert len(points) == 1
+        assert all(points >= -10)
+        assert all(points < 0)
 
         obs_points = numpy.random.randint(-5, 5, 100)
         below_points = [obs_points[:25], obs_points[25:50]]
         above_points = [obs_points[50:75], obs_points[75:]]
         points = tpe.sample_one_dimension(dim2, 2,
                                           below_points, above_points, tpe._sample_int_point)
+        points = numpy.asarray(points)
         assert len(points) == 2
+        assert all(points >= -10)
+        assert all(points < 10)
 
         tpe.n_ei_candidates = 0
         points = tpe.sample_one_dimension(dim2, 2,
@@ -472,6 +487,16 @@ class TestTPE():
         points = tpe.sample_one_dimension(dim1, 1,
                                           below_points, above_points, tpe._sample_categorical_point)
         assert len(points) == 1
+        assert points[0] in categories
+
+        obs_points_below = numpy.random.randint(0, 3, 25)
+        obs_points_above = numpy.random.randint(3, 10, 75)
+        below_points = [[categories[point] for point in obs_points_below]]
+        above_points = [[categories[point] for point in obs_points_above]]
+        points = tpe.sample_one_dimension(dim1, 1,
+                                          below_points, above_points, tpe._sample_categorical_point)
+        assert len(points) == 1
+        assert points[0] in categories[:3]
 
         obs_points = numpy.random.randint(0, 10, 100)
         obs_points = [categories[point] for point in obs_points]
@@ -481,6 +506,8 @@ class TestTPE():
         points = tpe.sample_one_dimension(dim2, 2,
                                           below_points, above_points, tpe._sample_categorical_point)
         assert len(points) == 2
+        assert points[0] in categories
+        assert points[1] in categories
 
         tpe.n_ei_candidates = 0
         points = tpe.sample_one_dimension(dim2, 2,
@@ -501,14 +528,29 @@ class TestTPE():
         above_points = [points[8:]]
         points = tpe.sample_one_dimension(dim1, 1,
                                           below_points, above_points, tpe._sample_real_point)
+        points = numpy.asarray(points)
         assert len(points) == 1
+        assert all(points >= -10)
+        assert all(points < 10)
+
+        below_points = numpy.random.uniform(-10, 0, 25).reshape(1, 25)
+        above_points = numpy.random.uniform(0, 10, 75).reshape(1, 75)
+        points = tpe.sample_one_dimension(dim1, 1,
+                                          below_points, above_points, tpe._sample_real_point)
+        points = numpy.asarray(points)
+        assert len(points) == 1
+        assert all(points >= -10)
+        assert all(points < 0)
 
         points = numpy.random.uniform(-5, 5, 32)
         below_points = [points[:8], points[8:16]]
         above_points = [points[16:24], points[24:]]
         points = tpe.sample_one_dimension(dim2, 2,
                                           below_points, above_points, tpe._sample_real_point)
+        points = numpy.asarray(points)
         assert len(points) == 2
+        assert all(points >= -10)
+        assert all(points < 10)
 
         tpe.n_ei_candidates = 0
         points = tpe.sample_one_dimension(dim2, 2,
