@@ -93,6 +93,35 @@ suspended             1
     assert captured == expected
 
 
+def test_experiment_number_same_list_status(clean_db,
+                                            single_without_success, capsys):
+    """Test status and list command output the consistent number of experiments"""
+    orion.core.cli.main(['status'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp-v1
+==================
+status         quantity
+-----------  ----------
+broken                1
+interrupted           1
+new                   1
+reserved              1
+suspended             1
+
+
+"""
+    assert captured == expected
+
+    orion.core.cli.main(['list'])
+
+    captured = capsys.readouterr().out
+
+    assert captured == " test_single_exp-v1\n"
+
+
 def test_experiment_w_trials_wout_ac(clean_db, single_with_trials, capsys):
     """Test status with only one experiment and all trials."""
     orion.core.cli.main(['status'])
@@ -993,7 +1022,7 @@ broken                1
 completed             1
 interrupted           1
 new                   2
-reserved              1
+reserved              2
 suspended             1
 
 

@@ -1,6 +1,6 @@
-************
-Hunting APIs
-************
+********
+Optimize
+********
 
 .. contents::
    :depth: 2
@@ -20,20 +20,26 @@ Suppose you normally execute your script with the following command
 
 .. code-block:: bash
 
-    $ ./main.py --lr 0.1
+    $ python main.py --lr 0.1
 
 Using the commandline API you can turn your script into a hyper-parameter process by wrapping it
 with Oríon.
 
 .. code-block:: bash
 
-    $ orion hunt -n exp-name ./main.py --lr~'loguniform(1e-5, 1.0)'
+    $ orion hunt -n exp-name python main.py --lr~'loguniform(1e-5, 1.0)'
 
 An experiment called ``exp-name`` will now be created and your script will be called with
-the argument ``--lr`` assigned to values sampled by the optimization algorthm.
+the argument ``--lr`` assigned to values sampled by the optimization algorithm.
 
 Configuration of the algorithm can be done inside a yaml file passed to ``--config`` as described in
 :ref:`Setup Algorithms`.
+
+To return the results to orion, you must add a call to
+:py:func:`orion.client.report_objective(value) <orion.client.cli.report_objective>`
+in your script at the end of the execution.
+
+See :py:mod:`orion.client.cli` for more information on all helper functions available.
 
 
 Python APIs
@@ -83,7 +89,8 @@ Service API
 -----------
 
 Experiments are created using the helper function
-:py:func:`orion.client.create_experiment`. You can then sample new trials with
+:py:func:`orion.client.create_experiment`.
+You can then sample new trials with
 :py:meth:`experiment.suggest() <orion.client.experiment.ExperimentClient.suggest>`.
 The parameters of the trials are provided as a dictionary with
 :py:meth:`trial.params <orion.core.worker.trial.Trial.params>`.

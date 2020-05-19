@@ -10,11 +10,12 @@
 """
 import argparse
 import logging
+import sys
 import textwrap
 
 import orion
 from orion.core.io.database import DatabaseError
-from orion.core.utils.exceptions import NoConfigurationError
+from orion.core.utils.exceptions import BranchingEvent, MissingResultFile, NoConfigurationError
 
 
 CLI_DOC_HEADER = """
@@ -72,21 +73,28 @@ class OrionArgsParser:
         try:
             args, function = self.parse(argv)
             function(args)
-        except NoConfigurationError:
-            print("Error: No commandline configuration found for new experiment.")
+        except (NoConfigurationError, DatabaseError, MissingResultFile, BranchingEvent) as e:
+            print('Error:', e, file=sys.stderr)
+
+            if args.get('verbose', 0) >= 2:
+                raise e
+
             return 1
-        except DatabaseError as e:
-            print(e)
-            return 1
+
+        except KeyboardInterrupt:
+            print('Orion is interrupted.')
+            return 130
 
         return 0
 
 
-def get_basic_args_group(parser):
+def get_basic_args_group(
+        parser,
+        group_name="Oríon arguments",
+        group_help="These arguments determine orion's behaviour"):
     """Return the basic arguments for any command."""
     basic_args_group = parser.add_argument_group(
-        "Oríon arguments (optional)",
-        description="These arguments determine orion's behaviour")
+        group_name, description=group_help)
 
     basic_args_group.add_argument(
         '-n', '--name',

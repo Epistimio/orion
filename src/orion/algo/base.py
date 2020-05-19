@@ -10,6 +10,7 @@
 
 """
 from abc import (ABCMeta, abstractmethod)
+import hashlib
 import logging
 
 from orion.core.utils import Factory
@@ -17,9 +18,22 @@ from orion.core.utils import Factory
 log = logging.getLogger(__name__)
 
 
+def infer_trial_id(point):
+    """Compute a hashing of a point"""
+    return hashlib.md5(str(list(point)).encode('utf-8')).hexdigest()
+
+
 # pylint: disable=too-many-public-methods
 class BaseAlgorithm(object, metaclass=ABCMeta):
     """Base class describing what an algorithm can do.
+
+    Parameters
+    ----------
+    space : `orion.algo.space.Space`
+       Definition of a problem's parameter space.
+    kwargs : dict
+       Tunable elements of a particular algorithm, a dictionary from
+       hyperparameter names to values.
 
     Notes
     -----
@@ -85,19 +99,9 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
     requires = []
 
     def __init__(self, space, **kwargs):
-        """Declare problem's parameter space and set up algo's hyperparameters.
-
-        Parameters
-        ----------
-        space : `orion.algo.space.Space`
-           Definition of a problem's parameter space.
-        kwargs : dict
-           Tunable elements of a particular algorithm, a dictionary from
-           hyperparameter names to values.
-
-        """
         log.debug("Creating Algorithm object of %s type with parameters:\n%s",
                   type(self).__name__, kwargs)
+        self._trials_info = {}  # Stores Unique Trial -> Result
         self._space = space
         self._param_names = list(kwargs.keys())
         # Instantiate tunable parameters of an algorithm
@@ -130,14 +134,14 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {}
+        return {'_trials_info': self._trials_info}
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        pass
+        self._trials_info = state_dict.get('_trials_info')
 
     @abstractmethod
     def suggest(self, num=1):
@@ -162,7 +166,6 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         """
         pass
 
-    @abstractmethod
     def observe(self, points, results):
         """Observe the `results` of the evaluation of the `points` in the
         process defined in user's script.
@@ -188,11 +191,24 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
            or equal to zero by the problem's definition.
 
         """
-        pass
+        for point, result in zip(points, results):
+            point_id = infer_trial_id(point)
+
+            if point_id not in self._trials_info:
+                self._trials_info[point_id] = (point, result)
 
     @property
     def is_done(self):
-        """Return True, if an algorithm holds that there can be no further improvement."""
+        """Return True, if an algorithm holds that there can be no further improvement.
+        By default, the cardinality of the specified search space will be used to check
+        if all possible sets of parameters has been tried.
+        """
+        if len(self._trials_info) >= self.space.cardinality:
+            return True
+
+        if len(self._trials_info) >= getattr(self, 'max_trials', float('inf')):
+            return True
+
         return False
 
     def score(self, point):  # pylint:disable=no-self-use,unused-argument

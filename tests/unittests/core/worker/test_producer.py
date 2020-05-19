@@ -7,6 +7,9 @@ import time
 
 import pytest
 
+from orion.core.io.experiment_builder import build
+from orion.core.utils.exceptions import SampleTimeout, WaitingForTrials
+from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial
 
@@ -47,7 +50,7 @@ def update_naive_algorithm(producer):
 
 
 @pytest.fixture()
-def producer(hacked_exp, random_dt, exp_config, categorical_values):
+def producer(monkeypatch, hacked_exp, random_dt, exp_config, categorical_values):
     """Return a setup `Producer`."""
     # make init done
 
@@ -57,7 +60,16 @@ def producer(hacked_exp, random_dt, exp_config, categorical_values):
 
     hacked_exp.producer['strategy'] = DumbParallelStrategy()
 
-    return Producer(hacked_exp)
+    producer = Producer(hacked_exp)
+
+    def backoff(self):
+        """Dont wait, just update."""
+        self.update()
+        self.failure_count += 1
+
+    monkeypatch.setattr(Producer, 'backoff', backoff)
+
+    return producer
 
 
 def test_algo_observe_completed(producer):
@@ -538,11 +550,11 @@ def test_exceed_max_idle_time_because_of_duplicates(producer, database, random_d
     producer.update()
 
     start = time.time()
-    with pytest.raises(RuntimeError) as exc_info:
-        producer.produce()
-    assert timeout <= time.time() - start < timeout + 1
 
-    assert "Algorithm could not sample new points" in str(exc_info.value)
+    with pytest.raises(SampleTimeout):
+        producer.produce()
+
+    assert timeout <= time.time() - start < timeout + 1
 
 
 def test_exceed_max_idle_time_because_of_optout(producer, database, random_dt, monkeypatch):
@@ -561,12 +573,8 @@ def test_exceed_max_idle_time_because_of_optout(producer, database, random_dt, m
 
     producer.update()
 
-    start = time.time()
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(WaitingForTrials):
         producer.produce()
-    assert timeout <= time.time() - start < timeout + 1
-
-    assert "Algorithm could not sample new points" in str(exc_info.value)
 
 
 def test_stops_if_algo_done(producer, database, random_dt, monkeypatch):
@@ -619,3 +627,82 @@ def test_original_seeding(producer, database):
 
     assert prev_suggested != producer.algorithm.algorithm._suggested
     assert prev_index < producer.algorithm.algorithm._index
+
+
+def test_evc(monkeypatch, producer):
+    """Verify that producer is using available trials from EVC"""
+    experiment = producer.experiment
+    new_experiment = build(experiment.name, algorithms='random')
+
+    # Replace parent with hacked exp, otherwise parent ID does not match trials in DB
+    # and fetch_trials() won't return anything.
+    new_experiment._node.parent._item = experiment
+
+    assert len(new_experiment.fetch_trials(with_evc_tree=True)) == len(experiment.fetch_trials())
+
+    producer.experiment = new_experiment
+
+    def update_algo(trials):
+        assert len(trials) == 3
+
+    def update_naive_algo(trials):
+        assert len(trials) == 4
+
+    monkeypatch.setattr(producer, '_update_algorithm', update_algo)
+    monkeypatch.setattr(producer, '_update_naive_algorithm', update_naive_algo)
+
+    producer.update()
+
+
+def test_evc_duplicates(monkeypatch, producer):
+    """Verify that producer wont register samples that are available in parent experiment"""
+    experiment = producer.experiment
+    new_experiment = build(experiment.name, algorithms='random')
+
+    # Replace parent with hacked exp, otherwise parent ID does not match trials in DB
+    # and fetch_trials() won't return anything.
+    new_experiment._node.parent._item = experiment
+
+    assert len(new_experiment.fetch_trials(with_evc_tree=True)) == len(experiment.fetch_trials())
+
+    def suggest(pool_size):
+        return [trial_to_tuple(experiment.fetch_trials()[-1], experiment.space)]
+
+    producer.experiment = new_experiment
+    producer.algorithm = new_experiment.algorithms
+    producer.max_idle_time = 1
+
+    monkeypatch.setattr(new_experiment.algorithms, 'suggest', suggest)
+
+    producer.update()
+    with pytest.raises(SampleTimeout):
+        producer.produce()
+
+    assert len(new_experiment.fetch_trials(with_evc_tree=False)) == 0
+
+
+def test_algorithm_is_done(monkeypatch, producer):
+    """Verify that producer won't register new samples if algorithm is done meanwhile."""
+    producer.experiment.max_trials = 8
+    producer.experiment.pool_size = 10
+    # Reset Producer to test that max_trial is set properly during init.
+    producer = Producer(producer.experiment)
+
+    def suggest_one_only(self, num=1):
+        """Return only one point, whatever `num` is"""
+        return [('gru', 'rnn')]
+
+    monkeypatch.delattr(producer.experiment.algorithms.algorithm.__class__, 'is_done')
+    monkeypatch.setattr(producer.experiment.algorithms.algorithm.__class__, 'suggest',
+                        suggest_one_only)
+
+    assert producer.experiment.pool_size == 10
+    trials_in_exp_before = len(producer.experiment.fetch_trials())
+    assert trials_in_exp_before == producer.experiment.max_trials - 1
+
+    producer.update()
+    producer.produce()
+
+    assert len(producer.experiment.fetch_trials()) == producer.experiment.max_trials
+    assert producer.naive_algorithm.is_done
+    assert not producer.experiment.is_done

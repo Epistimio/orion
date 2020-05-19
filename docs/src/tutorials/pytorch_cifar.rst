@@ -1,6 +1,6 @@
-**************************
-Example with pytorch-cifar
-**************************
+***************
+PyTorch CIFAR10
+***************
 
 .. note ::
 
@@ -22,12 +22,6 @@ Set up
     git clone https://github.com/kuangliu/pytorch-cifar.git
     cd pytorch-cifar
 
-Add python shebang (using ``sed`` here)
-
-.. code-block:: bash
-
-    sed -i '1 i\#!/usr/bin/env python' main.py
-
 Add to last line of test()
 
 .. code-block:: python
@@ -40,10 +34,7 @@ Last line of the main() function
 
         test_error_rate = test(epoch)
 
-    report_results([dict(
-        name='test_error_rate',
-        type='objective',
-        value=test_error_rate)])
+    report_objective(objective, name='test_error_rate')
 
 .. code-block:: bash
 

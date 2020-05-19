@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=redefined-builtin
 """
 :mod:`orion.core.io.config` -- Configuration object
 ===================================================
@@ -11,6 +12,7 @@
 Highly inspired from https://github.com/mila-iqia/blocks/blob/master/blocks/config.py.
 
 """
+import contextlib
 import logging
 import os
 
@@ -25,8 +27,22 @@ logger = logging.getLogger(__name__)
 NOT_SET = object()
 
 
+@contextlib.contextmanager
+def _disable_logger(disable=True):
+    if disable:
+        logger.disabled = True
+    yield
+
+    if disable:
+        logger.disabled = False
+
+
 class ConfigurationError(Exception):
     """Error raised when a configuration value is requested but not set."""
+
+
+def _curate(key):
+    return key.replace('-', '_')
 
 
 class Configuration:
@@ -56,7 +72,8 @@ class Configuration:
 
     """
 
-    SPECIAL_KEYS = ['_config', '_subconfigs', '_yaml', '_default', '_env_var']
+    SPECIAL_KEYS = ['_config', '_subconfigs', '_yaml', '_default', '_env_var', '_help',
+                    '_deprecated']
 
     def __init__(self):
         self._config = {}
@@ -82,9 +99,13 @@ class Configuration:
                 return
             # implies that yaml must be in dict form
             for key, value in flatten(cfg).items():
-                default = self[key]
+                default = self[key + '._default']
+                deprecated = self[key + '._deprecated']
                 logger.debug('Overwritting "%s" default %s with %s', key, default, value)
                 self[key + '._yaml'] = value
+                if deprecated and deprecated.get('alternative'):
+                    logger.debug('Overwritting "%s" default %s with %s', key, default, value)
+                    self[deprecated.get('alternative') + '._yaml'] = value
 
     def __getattr__(self, key):
         """Get the value of the option
@@ -127,6 +148,9 @@ class Configuration:
             raise ConfigurationError("Configuration not set and no default "
                                      "provided: {}.".format(key))
 
+        if config_setting.get('deprecated'):
+            self._deprecate(key)
+
         return config_setting['type'](value)
 
     def __setattr__(self, key, value):
@@ -153,9 +177,12 @@ class Configuration:
             configuration object.
 
         """
+        key = _curate(key)
         if key not in self.SPECIAL_KEYS and key in self._config:
             self._validate(key, value)
             self._config[key]['value'] = value
+            if self._config[key].get('deprecated'):
+                self._deprecate(key, value)
 
         elif key in ['_config', '_subconfigs']:
             super(Configuration, self).__setattr__(key, value)
@@ -169,6 +196,34 @@ class Configuration:
         else:
             raise TypeError("Can only set {} as a Configuration, not {}. Use add_option to set a "
                             "new option.".format(key, type(value)))
+
+    # pylint: disable=unused-argument
+    def _deprecate(self, key, value=NOT_SET):
+        deprecate = self._config[key]['deprecated']
+        message = "(DEPRECATED) Option `%s` will be removed in %s."
+        args = [deprecate.get('name', key), deprecate['version']]
+        if 'alternative' in deprecate:
+            message += " Use `%s` instead."
+            args.append(deprecate['alternative'])
+
+        logger.warning(message, *args)
+
+    def get(self, key, deprecated='warn'):
+        """Access value
+
+        Parameters
+        ----------
+        key: str
+            Key to access in the configuration. Similar to config.key.
+        deprecated: str, optional
+            If 'warn', the access to deprecated options will log a deprecation warning.
+            else if 'ignore', no warning will be logged for access to deprecated options.
+
+        """
+        with _disable_logger(disable=(deprecated == 'ignore')):
+            value = self[key]
+
+        return value
 
     def _validate(self, key, value):
         """Validate the (key, value) option
@@ -205,13 +260,15 @@ class Configuration:
             A general object to set an option.
 
         """
-        keys = key.split(".")
+        keys = list(map(_curate, key.split(".")))
 
         # Set in current config for special keys
         if len(keys) == 2 and keys[-1] in self.SPECIAL_KEYS:
             key, field = keys
             self._validate(key, value)
             self._config[key][field.lstrip('_')] = value
+            if self._config[key].get('deprecated'):
+                self._deprecate(key)
 
         # Set in current configuration
         elif len(keys) == 1:
@@ -236,18 +293,27 @@ class Configuration:
             Ex: 'first.second.third'
 
         """
-        keys = key.split(".")
+        keys = list(map(_curate, key.split(".")))
+
         # Recursively in sub configurations
-        if len(keys) > 1:
+        if len(keys) == 2 and keys[1] in self.SPECIAL_KEYS:
+            key_config = self._config.get(keys[0], None)
+            if key_config is None:
+                raise ConfigurationError("Configuration does not have an attribute "
+                                         "'{}'.".format(keys[0]))
+            return key_config.get(keys[1][1:], None)
+        elif len(keys) > 1:
             subconfig = getattr(self, keys[0])
             if subconfig is None:
-                raise KeyError("'{}' is not defined in configuration.".format(keys[0]))
+                raise ConfigurationError("Configuration does not have an attribute "
+                                         "'{}'.".format(key))
             return subconfig[".".join(keys[1:])]
         # Set in current configuration
         else:
             return getattr(self, keys[0])
 
-    def add_option(self, key, option_type, default=NOT_SET, env_var=None):
+    def add_option(self, key, option_type, default=NOT_SET, env_var=None, deprecate=None,
+                   help=None):
         """Add a configuration setting.
 
         Parameters
@@ -269,8 +335,20 @@ class Configuration:
             The environment variable name that holds this configuration
             value. If not given, this configuration can only be set in the
             YAML configuration file.
+        deprecate: `dict`, optional
+            Should define dict(version, alternative), version at which the deprecated option will be
+            removed and alternative to use. A deprecation warning will be logged each time this
+            option is set by user. The option `name` can be used in addition to `version` and
+            `alternative` to provide a different name then the key. This is useful if the key
+            is in a subconfiguration and we want the deprecation error message to include the full
+            path. This will add (DEPRECATED) at the beginning of the help message.
+        help : str, optionial
+            Documentation for the option. Can be reused to build documentation
+            or to build parsers with help messages.
+            Default help message is 'Undocumented'.
 
         """
+        key = _curate(key)
         if key in self._config or key in self._subconfigs:
             raise ValueError('Configuration already contains {}'.format(key))
         self._config[key] = {'type': option_type}
@@ -278,14 +356,66 @@ class Configuration:
             self._config[key]['env_var'] = env_var
         if default is not NOT_SET:
             self._config[key]['default'] = default
+        if deprecate is not None:
+            if 'version' not in deprecate:
+                raise ValueError(f'`version` is missing in deprecate option: {deprecate}')
+            self._config[key]['deprecated'] = deprecate
+
+        if help is None:
+            help = 'Undocumented'
+
+        if default is not NOT_SET:
+            help += ' (default: {})'.format(default)
+        if deprecate is not None:
+            help = '(DEPRECATED) ' + help
+        self._config[key]['help'] = help
+
+    def help(self, key):
+        """Return the help message for the given option."""
+        return self[key + '._help']
+
+    def add_arguments(self, parser, rename=None):
+        """Add arguments to an `argparse` parser based on configuration
+
+        This does not support subconfigurations. They will be ignored.
+
+        Parameters
+        ----------
+        parser: `argparse.ArgumentParser`
+            Parser to which this function will add arguments
+        rename: dict, optional
+            Mappings to provide different commandline names. Ex `{key: --my-arg}`
+
+        """
+        if rename is None:
+            rename = dict()
+
+        for key in self._config:
+            # TODO: Try with list and nargs='*', but it may case issues with
+            # nargs=argparse.REMAINDER.
+            if self._config[key]['type'] in (dict, list, tuple):
+                continue
+
+            # NOTE: Do not set default, if parser.parse_argv().options[key] is None, then code
+            # should look to config[key].
+            arg_name = rename.get(key, "--{}".format(key.replace('_', '-')))
+            parser.add_argument(
+                arg_name, type=self._config[key]['type'],
+                help=self._config[key].get('help'))
+
+    def __contains__(self, key):
+        """Return True if the option is defined."""
+        return key in self._config or key in self._subconfigs
 
     def to_dict(self):
         """Return a dictionary representation of the configuration"""
         config = dict()
-        for key in self._config:
-            config[key] = self[key]
 
-        for key in self._subconfigs:
-            config[key] = self[key].to_dict()
+        with _disable_logger():
+            for key in self._config:
+                config[key] = self[key]
+
+            for key in self._subconfigs:
+                config[key] = self[key].to_dict()
 
         return config

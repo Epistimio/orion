@@ -45,14 +45,31 @@ class Consumer(object):
     has been defined in a special orion environmental variable which is set
     into the child process' environment.
 
+    Parameters
+    ----------
+    experiment: `orion.core.worker.experiment.Experiment`
+        Manager of this experiment, provides convenient interface for interacting with
+        the database.
+
+    heartbeat: int, optional
+        Frequency (seconds) at which the heartbeat of the trial is updated.
+        If the heartbeat of a `reserved` trial is larger than twice the configured
+        heartbeat, Oríon will reset the status of the trial to `interrupted`.
+        This allows restoring lost trials (ex: due to killed worker).
+        Defaults to `orion.core.config.worker.heartbeat`.
+
+    user_script_config: str, optional
+        Config argument name of user's script (--config).
+        Defaults to `orion.core.config.worker.user_script_config`.
+
+    interrupt_signal_code: int, optional
+        Signal returned by user script to signal to Oríon that it was interrupted.
+        Defaults to `orion.core.config.worker.interrupt_signal_code`.
+
     """
 
-    def __init__(self, experiment):
-        """Initialize a consumer.
-
-        :param experiment: Manager of this experiment, provides convenient
-           interface for interacting with the database.
-        """
+    def __init__(self, experiment, heartbeat=None, user_script_config=None,
+                 interrupt_signal_code=None):
         log.debug("Creating Consumer object.")
         self.experiment = experiment
         self.space = experiment.space
@@ -60,8 +77,20 @@ class Consumer(object):
             raise RuntimeError("Experiment object provided to Consumer has not yet completed"
                                " initialization.")
 
+        if heartbeat is None:
+            heartbeat = orion.core.config.worker.heartbeat
+
+        if user_script_config is None:
+            user_script_config = orion.core.config.worker.user_script_config
+
+        if interrupt_signal_code is None:
+            interrupt_signal_code = orion.core.config.worker.interrupt_signal_code
+
+        self.heartbeat = heartbeat
+        self.interrupt_signal_code = interrupt_signal_code
+
         # Fetch space builder
-        self.template_builder = OrionCmdlineParser(orion.core.config.user_script_config)
+        self.template_builder = OrionCmdlineParser(user_script_config)
         self.template_builder.set_state_dict(experiment.metadata['parser'])
         # Get path to user's script and infer trial configuration directory
         if experiment.working_dir:
@@ -69,15 +98,21 @@ class Consumer(object):
         else:
             self.working_dir = os.path.join(tempfile.gettempdir(), 'orion')
 
-        self.script_path = experiment.metadata['user_script']
-
         self.pacemaker = None
 
     def consume(self, trial):
         """Execute user's script as a block box using the options contained
         within `trial`.
 
-        :type trial: `orion.core.worker.trial.Trial`
+        Parameters
+        ----------
+        trial: `orion.core.worker.trial.Trial`
+            Orion trial to execute.
+
+        Returns
+        -------
+        bool
+            True if the trial was successfully executed. False if the trial is broken.
 
         """
         log.debug("### Create new directory at '%s':", self.working_dir)
@@ -96,6 +131,8 @@ class Consumer(object):
                 log.debug("## Parse results from file and fill corresponding Trial object.")
                 self.experiment.update_completed_trial(trial, results_file)
 
+            success = True
+
         except KeyboardInterrupt:
             log.debug("### Save %s as interrupted.", trial)
             self.experiment.set_trial_status(trial, status='interrupted')
@@ -104,6 +141,10 @@ class Consumer(object):
         except ExecutionError:
             log.debug("### Save %s as broken.", trial)
             self.experiment.set_trial_status(trial, status='broken')
+
+            success = False
+
+        return success
 
     def get_execution_environment(self, trial, results_file='results.log'):
         """Set a few environment variables to allow users and
@@ -155,6 +196,7 @@ class Consumer(object):
 
         env['ORION_WORKING_DIR'] = str(trial.working_dir)
         env['ORION_RESULTS_PATH'] = str(results_file)
+        env['ORION_INTERRUPT_CODE'] = str(self.interrupt_signal_code)
 
         return env
 
@@ -176,7 +218,7 @@ class Consumer(object):
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
-        self.pacemaker = TrialPacemaker(trial)
+        self.pacemaker = TrialPacemaker(trial, self.heartbeat)
         self.pacemaker.start()
         try:
             self.execute_process(cmd_args, env)
@@ -186,14 +228,18 @@ class Consumer(object):
 
         return results_file
 
+    # pylint: disable = no-self-use
     def execute_process(self, cmd_args, environ):
         """Facilitate launching a black-box trial."""
-        command = [self.script_path] + cmd_args
+        command = cmd_args
 
         signal.signal(signal.SIGTERM, _handler)
         process = subprocess.Popen(command, env=environ)
 
         return_code = process.wait()
-        if return_code != 0:
+
+        if return_code == self.interrupt_signal_code:
+            raise KeyboardInterrupt()
+        elif return_code != 0:
             raise ExecutionError("Something went wrong. Check logs. Process "
                                  "returned with code {} !".format(return_code))

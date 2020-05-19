@@ -76,7 +76,9 @@ def _build_extended_user_args(config):
     """
     user_args = config['metadata']['user_args']
 
-    parser = OrionCmdlineParser(orion.core.config.user_script_config)
+    # No need to pass config_prefix because we have access to everything
+    # required in config[metadata][parser] (parsed data)
+    parser = OrionCmdlineParser()
     parser.set_state_dict(config['metadata']['parser'])
 
     return user_args + [standard_param_name(key) + value
@@ -326,7 +328,7 @@ class Conflict(object, metaclass=ABCMeta):
         return self._is_resolved or self.resolution is not None
 
     # pylint:disable=unused-argument,no-self-use
-    def get_marked_arguments(self, conflicts):
+    def get_marked_arguments(self, conflicts, **branching_kwargs):
         """Return arguments from marked resolutions in new configuration
 
         Some conflicts may be passed arguments with their marker to automate conflict resolution.
@@ -761,7 +763,7 @@ class MissingDimensionConflict(Conflict):
         self.dimension = dimension
         self.prior = prior
 
-    def get_marked_arguments(self, conflicts):
+    def get_marked_arguments(self, conflicts, **branching_kwargs):
         """Find and return marked arguments for remove or rename resolution
 
         .. seealso::
@@ -1113,7 +1115,7 @@ class CodeConflict(Conflict):
         if not ignore_code_changes and new_hash_commit and old_hash_commit != new_hash_commit:
             yield cls(old_config, new_config)
 
-    def get_marked_arguments(self, conflicts):
+    def get_marked_arguments(self, conflicts, code_change_type=None, **branching_kwargs):
         """Find and return marked arguments for code change conflict
 
         .. seealso::
@@ -1126,7 +1128,10 @@ class CodeConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return dict(change_type=orion.core.config.evc.code_change_type)
+        if code_change_type is None:
+            code_change_type = orion.core.config.evc.code_change_type
+
+        return dict(change_type=code_change_type)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution CodeResolution
@@ -1233,7 +1238,7 @@ class CommandLineConflict(Conflict):
             return ""
 
         if user_script_config is None:
-            user_script_config = orion.core.config.user_script_config
+            user_script_config = orion.core.config.worker.user_script_config
         if non_monitored_arguments is None:
             non_monitored_arguments = orion.core.config.evc.non_monitored_arguments
 
@@ -1261,7 +1266,7 @@ class CommandLineConflict(Conflict):
         if old_nameless_args != new_nameless_args:
             yield cls(old_config, new_config)
 
-    def get_marked_arguments(self, conflicts):
+    def get_marked_arguments(self, conflicts, cli_change_type=None, **branching_kwargs):
         """Find and return marked arguments for cli change conflict
 
         .. seealso::
@@ -1274,7 +1279,10 @@ class CommandLineConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return dict(change_type=orion.core.config.evc.cli_change_type)
+        if cli_change_type is None:
+            cli_change_type = orion.core.config.evc.cli_change_type
+
+        return dict(change_type=cli_change_type)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution CommandLineResolution
@@ -1370,14 +1378,18 @@ class ScriptConfigConflict(Conflict):
 
     """
 
+    # pylint:disable=unused-argument
     @classmethod
-    def get_nameless_config(cls, config):
+    def get_nameless_config(cls, config, user_script_config=None, **branching_kwargs):
         """Get configuration dict of user's script without dimension definitions"""
         # Used python API
         if 'parser' not in config['metadata']:
             return ""
 
-        parser = OrionCmdlineParser(orion.core.config.user_script_config)
+        if user_script_config is None:
+            user_script_config = orion.core.config.worker.user_script_config
+
+        parser = OrionCmdlineParser(user_script_config)
         parser.set_state_dict(config['metadata']['parser'])
 
         nameless_config = dict((key, value)
@@ -1391,13 +1403,16 @@ class ScriptConfigConflict(Conflict):
         """Detect if user's script's config file in `new_config` differs from `old_config`
         :param branching_config:
         """
-        old_script_config = cls.get_nameless_config(old_config)
-        new_script_config = cls.get_nameless_config(new_config)
+        if branching_config is None:
+            branching_config = {}
+
+        old_script_config = cls.get_nameless_config(old_config, **branching_config)
+        new_script_config = cls.get_nameless_config(new_config, **branching_config)
 
         if old_script_config != new_script_config:
             yield cls(old_config, new_config)
 
-    def get_marked_arguments(self, conflicts):
+    def get_marked_arguments(self, conflicts, config_change_type=None, **branching_kwargs):
         """Find and return marked arguments for user's script's config change conflict
 
         .. seealso::
@@ -1410,7 +1425,10 @@ class ScriptConfigConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return dict(change_type=orion.core.config.evc.config_change_type)
+        if config_change_type is None:
+            config_change_type = orion.core.config.evc.config_change_type
+
+        return dict(change_type=config_change_type)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution ScriptConfigResolution
@@ -1514,7 +1532,7 @@ class ExperimentNameConflict(Conflict):
         """
         yield cls(old_config, new_config)
 
-    def get_marked_arguments(self, conflicts):
+    def get_marked_arguments(self, conflicts, **branching_kwargs):
         """Find and return marked arguments for experiment name conflict
 
         .. seealso::

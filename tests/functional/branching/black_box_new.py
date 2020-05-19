@@ -18,7 +18,7 @@ def execute():
     # 1. Receive inputs as you want
     parser = argparse.ArgumentParser()
     parser.add_argument('-x', type=float, required=True)
-    parser.add_argument('--a-new', type=str, required=True)
+    parser.add_argument('--a-new', type=str)
     inputs = parser.parse_args()
 
     # 2. Perform computations

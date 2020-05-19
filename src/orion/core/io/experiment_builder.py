@@ -93,7 +93,6 @@ import sys
 
 from orion.algo.space import Space
 import orion.core
-from orion.core.cli.evc import fetch_branching_configuration
 from orion.core.evc.adapters import Adapter
 from orion.core.evc.conflicts import detect_conflicts, ExperimentNameConflict
 from orion.core.io import resolve_config
@@ -102,11 +101,11 @@ from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
 import orion.core.utils.backward as backward
-from orion.core.utils.exceptions import NoConfigurationError, RaceCondition
+from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import Strategy
-from orion.storage.base import get_storage, Storage
+from orion.storage.base import get_storage, setup_storage
 
 
 log = logging.getLogger(__name__)
@@ -283,7 +282,10 @@ def create_experiment(name, version, space, **kwargs):
     """
     experiment = Experiment(name=name, version=version)
     experiment._id = kwargs.get('_id', None)  # pylint:disable=protected-access
-    experiment.pool_size = kwargs.get('pool_size', orion.core.config.experiment.pool_size)
+    experiment.pool_size = kwargs.get('pool_size')
+    if experiment.pool_size is None:
+        experiment.pool_size = orion.core.config.experiment.get(
+            'pool_size', deprecated='ignore')
     experiment.max_trials = kwargs.get('max_trials', orion.core.config.experiment.max_trials)
     experiment.space = _instantiate_space(space)
     experiment.algorithms = _instantiate_algo(experiment.space, kwargs.get('algorithms'))
@@ -449,9 +451,7 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
         branching_prompt = BranchingPrompt(experiment_brancher)
 
         if not sys.__stdin__.isatty():
-            raise ValueError(
-                "Configuration is different and generates a branching event:\n{}".format(
-                    branching_prompt.get_status()))
+            raise BranchingEvent(branching_prompt.get_status())
 
         branching_prompt.cmdloop()
 
@@ -509,33 +509,6 @@ def _fetch_config_version(configs, version=None):
     return next(iter(configs))
 
 
-def setup_storage(storage=None):
-    """Create the storage instance from a configuration.
-
-    Parameters
-    ----------
-    config: dict
-        Configuration for the storage backend.
-
-    """
-    if storage is None:
-        storage = orion.core.config.storage.to_dict()
-
-    if storage['type'] == 'legacy':
-
-        if 'database' not in storage:
-            storage['database'] = orion.core.config.storage.database.to_dict()
-
-    storage_type = storage.pop('type')
-
-    log.debug("Creating %s storage client with args: %s", storage_type, storage)
-    try:
-        Storage(of_type=storage_type, **storage)
-    except ValueError:
-        if Storage().__class__.__name__.lower() != storage_type.lower():
-            raise
-
-
 ###
 # Functions for commandline API
 ###
@@ -554,9 +527,7 @@ def build_from_args(cmdargs):
     """
     cmd_config = get_cmd_config(cmdargs)
 
-    setup_storage(cmd_config['storage'])
-
-    cmd_config['branching'] = fetch_branching_configuration(cmd_config)
+    setup_storage(cmd_config['storage'], debug=cmd_config.get('debug'))
 
     return build(**cmd_config)
 
@@ -572,7 +543,7 @@ def build_view_from_args(cmdargs):
     """
     cmd_config = get_cmd_config(cmdargs)
 
-    setup_storage(cmd_config['storage'])
+    setup_storage(cmd_config['storage'], debug=cmd_config.get('debug'))
 
     name = cmd_config.get('name')
     version = cmd_config.get('version')
@@ -584,10 +555,13 @@ def get_cmd_config(cmdargs):
     """Fetch configuration defined by commandline and local configuration file.
 
     Arguments of commandline have priority over options in configuration file.
-
     """
+    cmdargs = resolve_config.fetch_config_from_cmdargs(cmdargs)
     cmd_config = resolve_config.fetch_config(cmdargs)
     cmd_config = resolve_config.merge_configs(cmd_config, cmdargs)
+
+    cmd_config.update(cmd_config.pop('experiment', {}))
+    cmd_config['branching'] = cmd_config.pop('evc', {})
 
     metadata = resolve_config.fetch_metadata(cmd_config.get('user'), cmd_config.get('user_args'))
     cmd_config['metadata'] = metadata

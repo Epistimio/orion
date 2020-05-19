@@ -203,14 +203,6 @@ class TestDimensionBuilder(object):
 class TestSpaceBuilder(object):
     """Check whether space definition from various input format is successful."""
 
-    def test_build_with_nothing(self, spacebuilder):
-        """Return an empty space if nothing is provided."""
-        space = spacebuilder.build_from([])
-        assert not space
-
-        space = spacebuilder.build_from(["--seed=555", "--naedw"])
-        assert not space
-
     def test_configuration_rebuild(self, spacebuilder):
         """Test that configuration can be used to recreate a space."""
         prior = {'x': 'uniform(0, 10, discrete=True)',

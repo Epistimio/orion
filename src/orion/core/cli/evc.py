@@ -36,7 +36,7 @@ def _add_ignore_code_changes_argument(parser):
     parser.add_argument(
         "--ignore-code-changes",
         action="store_true",
-        help="Ignore these arguments when looking for differences")
+        help="Ignore code changes when looking for differences")
 
 
 def _add_branch_from_argument(parser):

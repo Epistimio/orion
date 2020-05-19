@@ -15,6 +15,7 @@ import logging
 from numpy import inf as infinity
 
 from orion.core.io.database import DuplicateKeyError
+from orion.core.utils.exceptions import BrokenExperiment, SampleTimeout, WaitingForTrials
 from orion.core.utils.flatten import flatten, unflatten
 import orion.core.utils.format_trials as format_trials
 import orion.core.worker
@@ -52,11 +53,14 @@ class ExperimentClient:
 
     """
 
-    def __init__(self, experiment, producer):
+    def __init__(self, experiment, producer, heartbeat=None):
         self._experiment = experiment
         self._producer = producer
         self._pacemakers = {}
         self.set_broken_trials = functools.partial(set_broken_trials, client=self)
+        if heartbeat is None:
+            heartbeat = orion.core.config.worker.heartbeat
+        self.heartbeat = heartbeat
         atexit.register(self.set_broken_trials)
 
     ###
@@ -319,10 +323,11 @@ class ExperimentClient:
         Notes
         -----
         When reserved, a `TrialPacemaker` is started to update an heartbeat in storage. The
-        frequency of the heartbeat is configurable with `orion.core.config.worker.heartbeat`.
+        frequency of the heartbeat is configurable at creation of experiment
+        or with `orion.core.config.worker.heartbeat`.
         If the process terminates unexpectedly, the heartbeat will cease and remote processes
         may reset the status of the trial to 'interrupted' when the heartbeat has not been updated
-        since twice the value of `orion.core.config.worker.heartbeat`.
+        since twice the value of `heartbeat`.
 
         """
         if trial.status == 'reserved' and trial.id in self._pacemakers:
@@ -331,7 +336,7 @@ class ExperimentClient:
         elif trial.status == 'reserved' and trial.id not in self._pacemakers:
             raise RuntimeError('Trial {} is already reserved by another process.'.format(trial.id))
         try:
-            self._experiment.set_trial_status(trial, 'reserved', heartbeat=None)
+            self._experiment.set_trial_status(trial, 'reserved', heartbeat=self.heartbeat)
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
                 raise ValueError('Trial {} does not exist in database.'.format(trial.id)) from e
@@ -380,17 +385,43 @@ class ExperimentClient:
         Returns
         -------
         `orior.core.worker.trial.Trial` or None
-            Reserved trial for execution. Will return None if experiment is done or broken
+            Reserved trial for execution. Will return None if experiment is done.
             of if the algorithm cannot suggest until other trials complete.
 
+        Raises
+        ------
+        `WaitingForTrials`
+            if the experiment is not completed and algorithm needs to wait for some
+            trials to complete before it can suggest new trials.
+
+        `BrokenExperiment`
+            if too many trials failed to run and the experiment cannot continue.
+            This is determined by ``max_broken`` in the configuration of the experiment.
+
+        `SampleTimeout`
+            if the algorithm of the experiment could not sample new unique points.
+
         """
-        if self.is_done or self.is_broken:
+        if self.is_broken:
+            raise BrokenExperiment("Trials failed too many times")
+
+        if self.is_done:
             return None
 
         try:
             trial = orion.core.worker.reserve_trial(self._experiment, self._producer)
-        except RuntimeError:
-            return None
+
+        except WaitingForTrials as e:
+            if self.is_broken:
+                raise BrokenExperiment("Trials failed too many times") from e
+
+            raise e
+
+        except SampleTimeout as e:
+            if self.is_broken:
+                raise BrokenExperiment("Trials failed too many times") from e
+
+            raise e
 
         if trial is not None:
             self._maintain_reservation(trial)

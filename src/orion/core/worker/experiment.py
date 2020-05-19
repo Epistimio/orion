@@ -134,9 +134,6 @@ class Experiment:
         """
         log.debug('reserving trial with (score: %s)', score_handle)
 
-        if score_handle is not None:
-            log.warning("Argument `score_handle` is deprecated")
-
         self.fix_lost_trials()
 
         selected_trial = self._storage.reserve_trial(self)
@@ -245,7 +242,7 @@ class Experiment:
 
         :return: list of `Trial` objects
         """
-        return self._select_evc_call(with_evc_tree, 'fetch_trial_by_status', status)
+        return self._select_evc_call(with_evc_tree, 'fetch_trials_by_status', status)
 
     def fetch_noncompleted_trials(self, with_evc_tree=False):
         """Fetch non-completed trials of this `Experiment` instance.
@@ -288,16 +285,26 @@ class Experiment:
         """Return True, if this experiment is considered to be finished.
 
         1. Count how many trials have been completed and compare with `max_trials`.
-        2. Ask `algorithms` if they consider there is a chance for further improvement.
+        2. Ask `algorithms` if they consider there is a chance for further improvement, and
+           verify is there is any pending trial.
 
         .. note::
 
             To be used as a terminating condition in a ``Worker``.
 
         """
-        num_completed_trials = self._storage.count_completed_trials(self)
+        trials = self.fetch_trials(with_evc_tree=True)
+        num_completed_trials = 0
+        num_pending_trials = 0
+        for trial in trials:
+            if trial.status == 'completed':
+                num_completed_trials += 1
+            elif trial.status in ['new', 'reserved', 'interrupted']:
+                num_pending_trials += 1
 
-        return (num_completed_trials >= self.max_trials) or self.algorithms.is_done
+        return (
+            (num_completed_trials >= self.max_trials) or
+            (self.algorithms.is_done and num_pending_trials == 0))
 
     @property
     def is_broken(self):

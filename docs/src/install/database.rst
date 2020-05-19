@@ -1,8 +1,8 @@
 .. _install_database:
 
-**************
-Setup Database
-**************
+********
+Database
+********
 
 .. note::
 
@@ -22,10 +22,6 @@ not intending to use an already existing one, is necessary.
 
 We are going to follow an example of installing and setting up a minimal
 database locally.
-
-.. note::
-
-   This is the same database required to be setup in order to run the tests.
 
 Local MongoDB Installation
 ==========================

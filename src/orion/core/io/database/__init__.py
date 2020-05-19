@@ -305,6 +305,12 @@ class DuplicateKeyError(DatabaseError):
     pass
 
 
+class DatabaseTimeout(DatabaseError):
+    """Exception type used when there is a timeout during database operations."""
+
+    pass
+
+
 class OutdatedDatabaseError(DatabaseError):
     """Exception type used when the database is outdated."""
 

@@ -48,53 +48,42 @@ now what you have to do looks like this:
 
 ``orion -n experiment_name ./run.py --mini-batch~'randint(32, 256)'``
 
-Check out `user's guide-101`_ for the simplest of demonstrations!
+Check out our `getting started guide`_ or `this presentation
+<https://bluejeans.com/playback/s/4WUezzFCmb9StHzYgB0RjVbTUCKnRcptBvzBMP7t2UpLyKuAq7Emieo911BqEMnI>`_
+for an overview, or our `scikit-learn example`_ for a more hands-on experience. Finally we encourage you
+to browse our `documentation`_.
 
-.. _user's guide-101: https://orion.readthedocs.io/en/latest/user/pytorch.html
+.. _getting started guide: https://orion.readthedocs.io/en/latest/install/gettingstarted.html
+.. _documentation: https://orion.readthedocs.io/
+.. _scikit-learn example: https://orion.readthedocs.io/en/latest/tutorials/scikit-learn.html
 
-Features
-========
-*As simple and as complex you want*
+Why Oríon?
+==========
+*Effortless to adopt, deeply customizable*
 
-- Simple and natural, but also explicit and verbose, search domain definitions
-- Minimal and non-intrusive client interface for reporting
-  target function values
-- Database logging (currently powered by MongoDB_)
-- Flexible configuration
-- Explicit experiment termination conditions
-- Algorithms algorithms algorithms:
-  Skopt_'s bayesian optimizers are at hand without writing.
-  Random search is the default.
-  **only** a single line of code.
-- More algorithms:
-  Implementing and distributing algorithms is as easy as possible!
-  Check `developer's guide-101`_. Expect algorithm plugins to pop out quickly!
-- Came up with an idea?
-  Your intuition is still at play:
-  Help your optima hunter now by a command line interface.
-- And other many more already there or coming soon!
-
-.. _MongoDB: https://www.mongodb.com/
-.. _Skopt: https://scikit-optimize.github.io/
-.. _developer's guide-101: https://orion.readthedocs.io/en/latest/developer/testing.html
+- `Adopt it <https://orion.readthedocs.io/en/stable/user/script.html>`_ with a single line of code
+- `Natively asynchronous <https://orion.readthedocs.io/en/stable/code/core.html>`_, thus resilient and easy to parallelize
+- Offers the latest established hyperparameter `algorithms <https://orion.readthedocs.io/en/stable/user/algorithms.html>`_
+- Elegant and rich `search-space definitions <https://orion.readthedocs.io/en/stable/user/searchspace.html>`_
+- Comprehensive `configuration <https://orion.readthedocs.io/en/latest/user/config.html>`_ system with smart defaults
+- Transparent persistence in local or remote `database <https://orion.readthedocs.io/en/stable/install/database.html>`_
+- `Integrate seamlessly <https://orion.readthedocs.io/en/stable/plugins/base.html>`_ your own
+  hyper-optimization algorithms
 
 Installation
 ============
 
-Install Oríon by running:
+Install Oríon by running ``$ pip install orion``. For more information consult the `installation
+guide`_.
 
-``pip install orion``
-
-For more information read the `full installation docs`_.
-
-.. _full installation docs: https://orion.readthedocs.io/en/latest/installing.html
+.. _installation guide: https://orion.readthedocs.io/en/stable/install/core.html
 
 Contribute or Ask
 =================
 
 Do you have a question or issues?
 Do you want to report a bug or suggest a feature? Name it!
-Please contact us by opening an issue in our repository below:
+Please contact us by opening an issue in our repository below and checkout our `contribution guidelines <https://github.com/Epistimio/orion/blob/develop/CONTRIBUTING.md>`_:
 
 - Issue Tracker: `<https://github.com/epistimio/orion/issues>`_
 - Source Code: `<https://github.com/epistimio/orion>`_
@@ -102,11 +91,6 @@ Please contact us by opening an issue in our repository below:
 Start by starring and forking our Github repo!
 
 Thanks for the support!
-
-Roadmap
-========
-
-You can find our roadmap here: `<https://github.com/Epistimio/orion/blob/master/ROADMAP.md>`_
 
 Citation
 ========
@@ -134,11 +118,16 @@ If you use Oríon for published work, please cite our work using the following b
      year         = 2019,
      publisher    = {Zenodo},
      version      = {v0.1.7},
-     doi          = {10.5281/zenodo.3478593},
-     url          = {https://doi.org/10.5281/zenodo.3478593}
+     doi          = {10.5281/zenodo.3478592},
+     url          = {https://doi.org/10.5281/zenodo.3478592}
    }
+
+Roadmap
+=======
+
+See `ROADMAP.md <https://github.com/Epistimio/orion/blob/master/ROADMAP.md>`_.
 
 License
 =======
 
-The project is licensed under the BSD license.
+The project is licensed under the `BSD license <https://github.com/Epistimio/orion/blob/master/LICENSE>`_.

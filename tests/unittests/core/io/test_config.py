@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.config`."""
 
+import argparse
+import logging
 import os
 
 import pytest
@@ -273,3 +275,250 @@ def test_to_dict():
         'test': 'hello',
         'nested': {
             'test2': 'labas'}}
+
+
+def test_key_curation():
+    """Test that both - and _ maps to same options"""
+    config = Configuration()
+    config.add_option('test-with-dashes', option_type=int, default=1)
+    config.add_option('test_with_underscores', option_type=int, default=2)
+    config.add_option('test-all_mixedup', option_type=int, default=3)
+
+    assert config['test-with-dashes'] == 1
+    assert config['test_with_underscores'] == 2
+    assert config['test-all_mixedup'] == 3
+
+    assert config['test_with_dashes'] == 1
+    assert config['test-with-underscores'] == 2
+    assert config['test_all-mixedup'] == 3
+
+    assert config.test_with_dashes == 1
+    assert config.test_with_underscores == 2
+    assert config.test_all_mixedup == 3
+
+    config['test_with_dashes'] = 4
+    assert config['test-with-dashes'] == 4
+
+
+def test_nested_key_curation():
+    """Test that both - and _ maps to same options in nested configs as well"""
+    config = Configuration()
+    config.add_option('test-with-dashes', option_type=str, default="voici_voila")
+    config.nested = Configuration()
+    config.nested.add_option('test_with_underscores', option_type=str, default="zici")
+
+    assert config['nested']['test_with_underscores'] == 'zici'
+    assert config['nested']['test-with-underscores'] == 'zici'
+
+    config['nested']['test-with-underscores'] = 'labas'
+    assert config.nested.test_with_underscores == 'labas'
+
+
+def test_help_option():
+    """Verify adding documentation to options."""
+    config = Configuration()
+    config.add_option('option', option_type=str, help='A useless option!')
+
+    assert config.help('option') == 'A useless option!'
+
+
+def test_help_nested_option():
+    """Verify adding documentation to a nested option."""
+    config = Configuration()
+    config.add_option('option', option_type=str, help='A useless option!')
+    config.nested = Configuration()
+    config.nested.add_option('option', option_type=str, help='A useless nested option!')
+
+    assert config.help('nested.option') == 'A useless nested option!'
+    assert config.nested.help('option') == 'A useless nested option!'
+
+
+def test_help_option_with_default():
+    """Verify adding documentation to options with default value."""
+    config = Configuration()
+    config.add_option('option', option_type=str, default='a', help='A useless option!')
+
+    assert config.help('option') == 'A useless option! (default: a)'
+
+
+def test_no_help_option():
+    """Verify not adding documentation to options."""
+    config = Configuration()
+    config.add_option('option', option_type=str)
+
+    assert config.help('option') == 'Undocumented'
+
+
+def test_argument_parser():
+    """Verify the argument parser built based on config."""
+    config = Configuration()
+    config.add_option('option', option_type=str)
+
+    parser = argparse.ArgumentParser()
+    config.add_arguments(parser)
+
+    options = parser.parse_args(['--option', 'a'])
+
+    assert options.option == 'a'
+
+
+def test_argument_parser_ignore_default():
+    """Verify the argument parser does not get default values."""
+    config = Configuration()
+    config.add_option('option', option_type=str, default='b')
+
+    parser = argparse.ArgumentParser()
+    config.add_arguments(parser)
+
+    options = parser.parse_args([])
+
+    assert options.option is None
+
+
+def test_argument_parser_rename():
+    """Verify the argument parser built based on config with some options renamed."""
+    config = Configuration()
+    config.add_option('option', option_type=str)
+
+    parser = argparse.ArgumentParser()
+    config.add_arguments(parser, rename=dict(option='--new-option'))
+
+    with pytest.raises(SystemExit) as exc:
+        options = parser.parse_args(['--option', 'a'])
+
+    assert exc.match('2')
+
+    options = parser.parse_args(['--new-option', 'a'])
+
+    assert options.new_option == 'a'
+
+
+def test_argument_parser_dict_list_tuple():
+    """Verify the argument parser does not contain options of type dict/list/tuple in config."""
+    config = Configuration()
+    config.add_option('st', option_type=str)
+    config.add_option('di', option_type=dict)
+    config.add_option('li', option_type=list)
+    config.add_option('tu', option_type=tuple)
+
+    parser = argparse.ArgumentParser()
+    config.add_arguments(parser)
+
+    options = parser.parse_args([])
+    assert vars(options) == {'st': None}
+
+    with pytest.raises(SystemExit) as exc:
+        options = parser.parse_args(['--di', 'ct'])
+
+    assert exc.match('2')
+
+
+def test_deprecate_option(caplog):
+    """Test deprecating an option."""
+    config = Configuration()
+    config.add_option(
+        'option', option_type=str, default='hello',
+        deprecate=dict(version='v1.0', alternative='None! T_T'))
+
+    config.add_option(
+        'ok', option_type=str, default='hillo')
+
+    # Access the deprecated option and trigger a warning.
+    with caplog.at_level(logging.WARNING, logger="orion.core.io.config"):
+        assert config.option == 'hello'
+
+    assert caplog.record_tuples == [(
+        'orion.core.io.config', logging.WARNING,
+        '(DEPRECATED) Option `option` will be removed in v1.0. Use `None! T_T` instead.')]
+
+    caplog.clear()
+
+    # Access the non-deprecated option and trigger no warnings.
+    with caplog.at_level(logging.WARNING, logger="orion.core.io.config"):
+        assert config.ok == 'hillo'
+
+    assert caplog.record_tuples == []
+
+
+def test_deprecate_option_missing_version():
+    """Verify option deprecation if version is missing."""
+    config = Configuration()
+    with pytest.raises(ValueError) as exc:
+        config.add_option(
+            'option', option_type=str,
+            deprecate=dict(alternative='None! T_T'))
+
+    assert exc.match('`version` is missing in deprecate option')
+
+
+def test_deprecate_option_no_alternative(caplog):
+    """Verify option deprecation when there is no alternative."""
+    config = Configuration()
+    config.add_option(
+        'option', option_type=str, default='hello',
+        deprecate=dict(version='v1.0'))
+
+    # Access the deprecated option and trigger a warning.
+    with caplog.at_level(logging.WARNING, logger="orion.core.io.config"):
+        assert config.option == 'hello'
+
+    assert caplog.record_tuples == [(
+        'orion.core.io.config', logging.WARNING,
+        '(DEPRECATED) Option `option` will be removed in v1.0.')]
+
+
+def test_deprecate_option_help():
+    """Verify help message of a deprecated option."""
+    config = Configuration()
+    config.add_option(
+        'option', option_type=str,
+        deprecate=dict(version='v1.0', alternative='None! T_T'),
+        help='A useless option!')
+
+    assert config.help('option') == '(DEPRECATED) A useless option!'
+
+
+def test_deprecate_option_print_with_different_name(caplog):
+    """Verify deprecation warning with different name (for nested options)."""
+    config = Configuration()
+    config.add_option(
+        'option', option_type=str, default='hello',
+        deprecate=dict(version='v1.0', alternative='None! T_T', name='nested.option'))
+
+    # Access the deprecated option and trigger a warning.
+    with caplog.at_level(logging.WARNING, logger="orion.core.io.config"):
+        assert config.option == 'hello'
+
+    assert caplog.record_tuples == [(
+        'orion.core.io.config', logging.WARNING,
+        '(DEPRECATED) Option `nested.option` will be removed in v1.0. Use `None! T_T` instead.')]
+
+
+def test_get_deprecated_key(caplog):
+    """Verify deprecation warning using get()."""
+    config = Configuration()
+    config.add_option(
+        'option', option_type=str, default='hello',
+        deprecate=dict(version='v1.0', alternative='None! T_T'))
+
+    # Access the deprecated option and trigger a warning.
+    with caplog.at_level(logging.WARNING, logger="orion.core.io.config"):
+        assert config.get('option') == 'hello'
+
+    assert caplog.record_tuples == [(
+        'orion.core.io.config', logging.WARNING,
+        '(DEPRECATED) Option `option` will be removed in v1.0. Use `None! T_T` instead.')]
+
+
+def test_get_deprecated_key_ignore_warning(caplog):
+    """Verify deprecation warning using get(deprecated='ignore')."""
+    config = Configuration()
+    config.add_option(
+        'option', option_type=str, default='hello',
+        deprecate=dict(version='v1.0', alternative='None! T_T'))
+
+    # Access the deprecated option and trigger a warning.
+    with caplog.at_level(logging.WARNING, logger="orion.core.io.config"):
+        assert config.get('option', deprecated='ignore') == 'hello'
+
+    assert caplog.record_tuples == []

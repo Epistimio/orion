@@ -13,6 +13,7 @@ repo_root = os.path.dirname(os.path.abspath(__file__))
 
 tests_require = [
     'pytest>=3.0.0'
+    'scikit-learn'
     ]
 
 
@@ -43,6 +44,8 @@ setup_args = dict(
         'OptimizationAlgorithm': [
             'random = orion.algo.random:Random',
             'asha = orion.algo.asha:ASHA',
+            'hyperband = orion.algo.hyperband:Hyperband',
+            'tpe = orion.algo.tpe:TPE',
             ],
         'Storage': [
             'track = orion.storage.track:Track',
@@ -80,7 +83,7 @@ setup_args['classifiers'] = [
     'Topic :: Scientific/Engineering',
     'Topic :: Scientific/Engineering :: Artificial Intelligence',
 ] + [('Programming Language :: Python :: %s' % x)
-     for x in '3 3.5 3.6 3.7'.split()]
+     for x in '3 3.6 3.7 3.8'.split()]
 
 if __name__ == '__main__':
     setup(**setup_args)

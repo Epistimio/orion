@@ -14,12 +14,21 @@ import orion.core
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 
 
+def update_user_args(metadata):
+    """Make sure user script is not removed from metadata"""
+    if "user_script" in metadata and metadata["user_script"] not in metadata["user_args"]:
+        metadata["user_args"] = [metadata["user_script"]] + metadata["user_args"]
+
+
 def populate_priors(metadata):
     """Compute parser state and priors based on user_args and populate metadata."""
     if 'user_args' not in metadata:
         return
 
-    parser = OrionCmdlineParser(orion.core.config.user_script_config)
+    update_user_args(metadata)
+
+    parser = OrionCmdlineParser(orion.core.config.worker.user_script_config,
+                                allow_non_existing_user_script=True)
     parser.parse(metadata["user_args"])
     metadata["parser"] = parser.get_state_dict()
     metadata["priors"] = dict(parser.priors)

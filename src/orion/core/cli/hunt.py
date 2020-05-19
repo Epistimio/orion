@@ -15,7 +15,6 @@ import logging
 import orion.core
 from orion.core.cli import base as cli
 from orion.core.cli import evc as evc_cli
-from orion.core.io import resolve_config
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.worker import workon
 
@@ -26,35 +25,24 @@ def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
     hunt_parser = parser.add_parser('hunt', help='hunt help')
 
-    orion_group = cli.get_basic_args_group(hunt_parser)
+    orion_group = cli.get_basic_args_group(
+        hunt_parser, group_name='Hunt arguments', group_help='')
+
+    orion.core.config.experiment.add_arguments(
+        orion_group,
+        rename=dict(max_broken='--exp-max-broken', max_trials='--exp-max-trials'))
 
     orion_group.add_argument(
         '--max-trials', type=int, metavar='#',
-        help="number of trials to be completed for the experiment. This value "
-             "will be saved within the experiment configuration and reused "
-             "across all workers to determine experiment's completion. "
-             "(default: %s)" % resolve_config.DEF_CMD_MAX_TRIALS[1])
+        help="(DEPRECATED) This argument will be removed in v0.3. Use --exp-max-trials instead")
 
-    orion_group.add_argument(
-        '--worker-trials', type=int, metavar='#',
-        help="number of trials to be completed for this worker. "
-             "If the experiment is completed, the worker will die even if it "
-             "did not reach its maximum number of trials "
-             "(default: %s)" % resolve_config.DEF_CMD_WORKER_TRIALS[1])
+    worker_args_group = hunt_parser.add_argument_group(
+        "Worker arguments (optional)",
+        description="Arguments to automatically resolved branching events.")
 
-    orion_group.add_argument('--working-dir', type=str,
-                             help="Set working directory for running experiment.")
-
-    orion_group.add_argument(
-        "--pool-size", type=int, metavar='#',
-        help="number of simultaneous trials the algorithm should suggest. "
-             "This is useful if many workers are executed in parallel and the algorithm has a "
-             "strategy to sample non-independant trials simultaneously. Otherwise, it is better "
-             "to leave `pool_size` to 1 and set a Strategy for Oríon's producer. "
-             "Note that this option is not usefull useless you "
-             "know the algorithm have a strategy to produce multiple trials "
-             "simultaneously. If you have any doubt, leave it to 1. "
-             "(default: %s)" % resolve_config.DEF_CMD_POOL_SIZE[1])
+    orion.core.config.worker.add_arguments(
+        worker_args_group,
+        rename=dict(max_broken='--worker-max-broken', max_trials='--worker-max-trials'))
 
     evc_cli.get_branching_args_group(hunt_parser)
 
@@ -72,5 +60,8 @@ def main(args):
     # TODO: simplify when parameter parsing is refactored
     experiment = experiment_builder.build_from_args(args)
     config = experiment_builder.get_cmd_config(args)
-    worker_trials = config.get('worker_trials', orion.core.config.experiment.worker_trials)
-    workon(experiment, worker_trials)
+    worker_config = orion.core.config.worker.to_dict()
+    if config.get('worker'):
+        worker_config.update(config.get('worker'))
+
+    workon(experiment, **worker_config)

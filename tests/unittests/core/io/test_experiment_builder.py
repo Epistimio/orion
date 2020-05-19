@@ -9,11 +9,14 @@ import pytest
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
+from orion.core.io.database.ephemeraldb import EphemeralDB
+from orion.core.io.database.pickleddb import PickledDB
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
-from orion.core.utils.exceptions import NoConfigurationError, RaceCondition
-from orion.core.utils.tests import OrionState
+from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
+from orion.core.utils.tests import OrionState, update_singletons
 from orion.storage.base import get_storage
+from orion.storage.legacy import Legacy
 
 
 def count_experiments():
@@ -72,7 +75,7 @@ def new_config(random_dt, script_path):
                   'orion_version': 'XYZ',
                   'user_script': script_path,
                   'user_config': 'abs_path/hereitis.yaml',
-                  'user_args': ['--mini-batch~uniform(32, 256, discrete=True)'],
+                  'user_args': [script_path, '--mini-batch~uniform(32, 256, discrete=True)'],
                   'VCS': {"type": "git",
                           "is_dirty": False,
                           "HEAD_sha": "test",
@@ -142,12 +145,11 @@ def test_get_cmd_config(config_file):
     local_config = experiment_builder.get_cmd_config(cmdargs)
 
     assert local_config['algorithms'] == 'random'
-    assert local_config['producer'] == {'strategy': 'NoParallelStrategy'}
+    assert local_config['strategy'] == 'NoParallelStrategy'
     assert local_config['max_trials'] == 100
     assert local_config['name'] == 'voila_voici'
     assert local_config['pool_size'] == 1
     assert local_config['storage'] == {
-        'type': 'legacy',
         'database': {
             'host': 'mongodb://user:pass@localhost',
             'name': 'orion_test',
@@ -249,7 +251,7 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
     assert exp.metadata['datetime'] == random_dt
     assert exp.metadata['user'] == 'dendi'
     assert exp.metadata['user_script'] == cmdargs['user_args'][0]
-    assert exp.metadata['user_args'] == cmdargs['user_args'][1:]
+    assert exp.metadata['user_args'] == cmdargs['user_args']
     assert exp.pool_size == 1
     assert exp.max_trials == 100
     assert exp.algorithms.configuration == {'random': {'seed': None}}
@@ -271,6 +273,7 @@ def test_build_from_args_hit(old_config_file, script_path, new_config):
 
     assert exp._id == new_config['_id']
     assert exp.name == new_config['name']
+    assert exp.version == 1
     assert exp.configuration['refers'] == new_config['refers']
     assert exp.metadata == new_config['metadata']
     assert exp.max_trials == new_config['max_trials']
@@ -286,6 +289,54 @@ def test_build_from_args_force_user(new_config):
         # Test that experiment already exists
         exp_view = experiment_builder.build_from_args(cmdargs)
     assert exp_view.metadata['user'] == 'tsirif'
+
+
+@pytest.mark.usefixtures("setup_pickleddb_database")
+def test_build_from_args_debug_mode(script_path):
+    """Try building experiment in debug mode"""
+    update_singletons()
+    experiment_builder.build_from_args(
+        {'name': 'whatever', 'user_args': [script_path]})
+
+    storage = get_storage()
+
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, PickledDB)
+
+    update_singletons()
+
+    experiment_builder.build_from_args(
+        {'name': 'whatever', 'user_args': [script_path], 'debug': True})
+    storage = get_storage()
+
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, EphemeralDB)
+
+
+@pytest.mark.usefixtures("setup_pickleddb_database")
+def test_build_view_from_args_debug_mode(script_path):
+    """Try building experiment view in debug mode"""
+    update_singletons()
+
+    # Can't build view if none exist. It's fine we only want to test the storage creation.
+    with pytest.raises(ValueError):
+        experiment_builder.build_view_from_args({'name': 'whatever'})
+
+    storage = get_storage()
+
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, PickledDB)
+
+    update_singletons()
+
+    # Can't build view if none exist. It's fine we only want to test the storage creation.
+    with pytest.raises(ValueError):
+        experiment_builder.build_view_from_args({'name': 'whatever', 'debug': True})
+
+    storage = get_storage()
+
+    assert isinstance(storage, Legacy)
+    assert isinstance(storage._db, EphemeralDB)
 
 
 @pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
@@ -680,7 +731,7 @@ class TestBuild(object):
             assert parent.version == 1
             assert child.version == 2
 
-            with pytest.raises(ValueError) as exc_info:
+            with pytest.raises(BranchingEvent) as exc_info:
                 experiment_builder.build(name=name, version=1, space={'x': 'loguniform(1,10)'})
             assert 'Configuration is different and generates a branching' in str(exc_info.value)
 
@@ -802,7 +853,7 @@ class TestBuild(object):
             monkeypatch.setattr(get_storage().__class__, 'fetch_experiments',
                                 insert_race_condition_1)
 
-            with pytest.raises(ValueError) as exc_info:
+            with pytest.raises(BranchingEvent) as exc_info:
                 experiment_builder.build(name=name, version=1, space={'x': 'loguniform(1,10)'})
             assert 'Configuration is different and generates' in str(exc_info.value)
 

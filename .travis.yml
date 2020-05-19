@@ -21,9 +21,6 @@ jobs:
         after_success:
           - tox -e final-coverage
           - tox -e codecov
-        env: TOXENV=py35
-        python: 3.5
-      - <<: *test
         env: TOXENV=py36
         python: 3.6
       - <<: *test
@@ -34,7 +31,12 @@ jobs:
       - <<: *test
         env: TOXENV=py37
         python: 3.7
-        dist: xenial
+        dist: bionic
+        sudo: true
+      - <<: *test
+        env: TOXENV=py38
+        python: 3.8
+        dist: bionic
         sudo: true
       - <<: *test
         env: TOXENV=demo-random

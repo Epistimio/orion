@@ -2,12 +2,16 @@
 *~
 *.sw*
 .idea/
+.vscode/
 .spyderproject
 .spyproject
 .ropeproject
 *.log
 *.pkl
 *.lock
+
+# OS generated files
+.DS_Store
 
 # StarUML documentation
 *.mdj

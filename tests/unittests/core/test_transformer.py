@@ -620,6 +620,11 @@ class TestTransformedDimension(object):
         assert tdim.type == 'integer'
         assert tdim2.type == 'real'
 
+    def test_prior_name_property(self, tdim, tdim2):
+        """Check property `prior_name`."""
+        assert tdim.prior_name == 'norm'
+        assert tdim2.prior_name == 'choices'
+
     def test_shape_property(self, tdim, tdim2):
         """Check property `shape`."""
         assert tdim.original_dimension.shape == (3, 2)
@@ -744,18 +749,37 @@ class TestRequiredSpaceBuilder(object):
                "       OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None))),\n"  # noqa
                "       ReverseQuantize(Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None))])")  # noqa
 
+    def test_capacity(self, space_each_type):
+        """Check transformer space capacity"""
+        tspace = build_required_space('real', space_each_type)
+        assert tspace.cardinality == numpy.inf
+
+        space = Space()
+        probs = (0.1, 0.2, 0.3, 0.4)
+        categories = ('asdfa', 2, 3, 4)
+        dim = Categorical('yolo', OrderedDict(zip(categories, probs)), shape=2)
+        space.register(dim)
+        dim = Integer('yolo2', 'uniform', -3, 6)
+        space.register(dim)
+        tspace = build_required_space('integer', space)
+        assert tspace.cardinality == (4 * 2) * 6
+
+        dim = Integer('yolo3', 'uniform', -3, 6, shape=(2, 1))
+        space.register(dim)
+        tspace = build_required_space('integer', space)
+        assert tspace.cardinality == (4 * 2) * 6 * 6 * (2 * 1)
+
 
 def test_quantization_does_not_violate_bounds():
     """Regress on bug that converts valid float in tdim to non valid excl. upper bound."""
     dim = Integer('yo', 'uniform', 3, 7)
     transformers = [Reverse(Quantize())]
     tdim = TransformedDimension(Compose(transformers, dim.type), dim)
-    assert 10 not in dim
-    assert 9 in dim
-    assert 10 not in dim
-    assert 9 in dim
-    # but be careful, because upper bound is exclusive
-    assert 9.6 in tdim
+    assert 11 not in dim
+    assert 10 in dim
+    # but be careful, because upper bound is inclusive
+    assert 11.5 not in tdim
+    assert 10.6 in tdim
     assert tdim.reverse(9.6) in dim
     # solution is to quantize with 'floor' instead of 'round'
     assert tdim.reverse(9.6) == 9

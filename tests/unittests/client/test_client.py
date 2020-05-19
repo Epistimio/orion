@@ -7,19 +7,20 @@ import json
 
 import pytest
 
-from orion import client
+import orion.client
+import orion.client.cli as cli
 import orion.core
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils import SingletonNotInstantiatedError
-from orion.core.utils.exceptions import NoConfigurationError, RaceCondition
+from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
 from orion.core.utils.tests import OrionState, update_singletons
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 
 
-create_experiment = client.create_experiment
-workon = client.workon
+create_experiment = orion.client.create_experiment
+workon = orion.client.workon
 
 
 config = dict(
@@ -72,7 +73,7 @@ class TestReportResults(object):
         Then: It should print `data` parameter instead to stdout.
         """
         monkeypatch.delenv('ORION_RESULTS_PATH', raising=False)
-        reloaded_client = reload(client)
+        reloaded_client = reload(cli)
 
         assert reloaded_client.IS_ORION_ON is False
         assert reloaded_client.RESULTS_FILENAME is None
@@ -92,7 +93,7 @@ class TestReportResults(object):
         with open(path, mode='w'):
             pass
         monkeypatch.setenv('ORION_RESULTS_PATH', path)
-        reloaded_client = reload(client)
+        reloaded_client = reload(cli)
 
         assert reloaded_client.IS_ORION_ON is True
         assert reloaded_client.RESULTS_FILENAME == path
@@ -116,7 +117,7 @@ class TestReportResults(object):
         monkeypatch.setenv('ORION_RESULTS_PATH', path)
 
         with pytest.raises(RuntimeWarning) as exc:
-            reload(client)
+            reload(cli)
 
         assert "existing file" in str(exc.value)
 
@@ -125,7 +126,7 @@ class TestReportResults(object):
         if function has already been called once.
         """
         monkeypatch.delenv('ORION_RESULTS_PATH', raising=False)
-        reloaded_client = reload(client)
+        reloaded_client = reload(cli)
 
         reloaded_client.report_results(data)
         with pytest.raises(RuntimeWarning) as exc:
@@ -140,15 +141,11 @@ class TestReportResults(object):
 class TestCreateExperiment:
     """Test creation of experiment with `client.create_experiment()`"""
 
-    def test_create_experiment_no_storage(self):
+    @pytest.mark.usefixtures("setup_pickleddb_database")
+    def test_create_experiment_no_storage(self, monkeypatch):
         """Test creation if storage is not configured"""
         name = 'oopsie_forgot_a_storage'
-        storage_type = 'legacy'
-        db_type = 'pickleddb'
-        host = 'test.pkl'
-        orion.core.config.storage.type = storage_type
-        orion.core.config.storage.database.type = db_type
-        orion.core.config.storage.database.host = host
+        host = orion.core.config.storage.database.host
 
         with OrionState(storage=orion.core.config.storage.to_dict()) as cfg:
             # Reset the Storage and drop instances so that get_storage() would fail.
@@ -327,10 +324,34 @@ class TestCreateExperiment:
         with OrionState(experiments=[config]):
             create_experiment(config['name'], space=new_space)
 
-            with pytest.raises(ValueError) as exc:
+            with pytest.raises(BranchingEvent) as exc:
                 create_experiment(config['name'], version=1, space=new_space)
 
             assert "Configuration is different and generates" in str(exc.value)
+
+    def test_create_experiment_debug_mode(self):
+        """Test that EphemeralDB is used in debug mode whatever the storage config given"""
+        update_singletons()
+
+        create_experiment(
+            config['name'], space={'x': 'uniform(0, 10)'},
+            storage={'type': 'legacy', 'database': {'type': 'pickleddb'}})
+
+        storage = get_storage()
+
+        assert isinstance(storage, Legacy)
+        assert isinstance(storage._db, PickledDB)
+
+        update_singletons()
+
+        create_experiment(
+            config['name'], space={'x': 'uniform(0, 10)'},
+            storage={'type': 'legacy', 'database': {'type': 'pickleddb'}}, debug=True)
+
+        storage = get_storage()
+
+        assert isinstance(storage, Legacy)
+        assert isinstance(storage._db, EphemeralDB)
 
 
 class TestWorkon:

@@ -1,11 +1,10 @@
-name: voila_voici
+experiment:
+    name: voila_voici
+    pool_size: 1
+    max_trials: 100
 
-pool_size: 1
-max_trials: 100
+    algorithms: 'random'
 
-algorithms: 'random'
-
-producer:
     strategy: NoParallelStrategy
 
 database:

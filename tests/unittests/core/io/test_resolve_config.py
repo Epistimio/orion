@@ -93,6 +93,12 @@ def test_fetch_metadata_non_executable_users_script():
     assert metadata['user_script'] == script_path
 
 
+def test_fetch_metadata_python_users_script(script_path):
+    """Verify user script is correctly infered if called with python"""
+    metadata = resolve_config.fetch_metadata(user_args=['python', script_path, 'some', 'args'])
+    assert metadata['user_script'] == script_path
+
+
 def test_fetch_metadata_not_existed_path():
     """Verfiy the raise of error when user_script path does not exist"""
     path = 'dummy/path'
@@ -107,7 +113,7 @@ def test_fetch_metadata_user_args(script_path):
     user_args = [os.path.abspath(script_path)] + list(map(str, range(10)))
     metadata = resolve_config.fetch_metadata(user_args=user_args)
     assert metadata['user_script'] == user_args[0]
-    assert metadata['user_args'] == user_args[1:]
+    assert metadata['user_args'] == user_args
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
@@ -123,6 +129,102 @@ def test_fetch_metadata():
     len(metadata) == 4
 
 
+def test_fetch_config_from_cmdargs():
+    """Verify fetch_config returns empty dict on no config file path"""
+    cmdargs = {
+        'name': 'test',
+        'user': 'me',
+        'version': 1,
+        'config': None,
+        'exp_max_trials': 'exp_max_trials',
+        'worker_trials': 'worker_trials',
+        'exp_max_broken': 'exp_max_broken',
+        'working_dir': 'working_dir',
+        'pool_size': 'pool_size',
+        'max_trials': 'max_trials',
+        'heartbeat': 'heartbeat',
+        'worker_max_trials': 'worker_max_trials',
+        'worker_max_broken': 'worker_max_broken',
+        'max_idle_time': 'max_idle_time',
+        'interrupt_signal_code': 'interrupt_signal_code',
+        'user_script_config': 'user_script_config',
+        'manual_resolution': 'manual_resolution',
+        'non_monitored_arguments': 'non_monitored_arguments',
+        'ignore_code_changes': 'ignore_code_changes',
+        'auto_resolution': 'auto_resolution',
+        'branch_from': 'branch_from',
+        'algorithm_change': 'algorithm_change',
+        'code_change_type': 'code_change_type',
+        'cli_change_type': 'cli_change_type',
+        'branch_to': 'branch_to',
+        'config_change_type': 'config_change_type'}
+
+    config = resolve_config.fetch_config_from_cmdargs(cmdargs)
+
+    assert config.pop('config', None) is None
+
+    exp_config = config.pop('experiment')
+    assert exp_config.pop('name') == 'test'
+    assert exp_config.pop('version') == 1
+    assert exp_config.pop('user') == 'me'
+    assert exp_config.pop('max_trials') == 'exp_max_trials'
+    assert exp_config.pop('max_broken') == 'exp_max_broken'
+    assert exp_config.pop('working_dir') == 'working_dir'
+    assert exp_config.pop('pool_size') == 'pool_size'
+
+    assert exp_config == {}
+
+    worker_config = config.pop('worker')
+    assert worker_config.pop('heartbeat') == 'heartbeat'
+    assert worker_config.pop('max_trials') == 'worker_max_trials'
+    assert worker_config.pop('max_broken') == 'worker_max_broken'
+    assert worker_config.pop('max_idle_time') == 'max_idle_time'
+    assert worker_config.pop('interrupt_signal_code') == 'interrupt_signal_code'
+    assert worker_config.pop('user_script_config') == 'user_script_config'
+
+    assert worker_config == {}
+
+    evc_config = config.pop('evc')
+    assert evc_config.pop('manual_resolution') == 'manual_resolution'
+    assert evc_config.pop('non_monitored_arguments') == 'non_monitored_arguments'
+    assert evc_config.pop('ignore_code_changes') == 'ignore_code_changes'
+    assert evc_config.pop('auto_resolution') == 'auto_resolution'
+    assert evc_config.pop('branch_from') == 'branch_from'
+    assert evc_config.pop('algorithm_change') == 'algorithm_change'
+    assert evc_config.pop('code_change_type') == 'code_change_type'
+    assert evc_config.pop('cli_change_type') == 'cli_change_type'
+    assert evc_config.pop('branch_to') == 'branch_to'
+    assert evc_config.pop('config_change_type') == 'config_change_type'
+
+    assert evc_config == {}
+
+    assert config == {}
+
+
+@pytest.mark.parametrize(
+    "argument",
+    ['config', 'user', 'user_args', 'name', 'version', 'branch_from', 'branch_to'])
+def test_fetch_config_from_cmdargs_no_empty(argument):
+    """Verify fetch_config returns only defined arguments."""
+    config = resolve_config.fetch_config_from_cmdargs({})
+    assert config == {}
+
+    config = resolve_config.fetch_config_from_cmdargs({argument: None})
+    assert config == {}
+
+    config = resolve_config.fetch_config_from_cmdargs({argument: False})
+    assert config == {}
+
+    config = resolve_config.fetch_config_from_cmdargs({argument: 1})
+
+    if argument in ['name', 'user', 'version']:
+        assert config == {'experiment': {argument: 1}}
+    elif argument in ['branch_from', 'branch_to']:
+        assert config == {'evc': {argument: 1}}
+    else:
+        assert config == {argument: 1}
+
+
 def test_fetch_config_no_hit():
     """Verify fetch_config returns empty dict on no config file path"""
     config = resolve_config.fetch_config({"config": ""})
@@ -133,14 +235,139 @@ def test_fetch_config(config_file):
     """Verify fetch_config returns valid dictionnary"""
     config = resolve_config.fetch_config({"config": config_file})
 
-    assert config['algorithms'] == 'random'
-    assert config['database']['host'] == 'mongodb://user:pass@localhost'
-    assert config['database']['name'] == 'orion_test'
-    assert config['database']['type'] == 'mongodb'
+    assert config.pop('storage') == {
+        'database': {
+            'host': 'mongodb://user:pass@localhost',
+            'name': 'orion_test',
+            'type': 'mongodb'}}
 
-    assert config['max_trials'] == 100
-    assert config['name'] == 'voila_voici'
-    assert config['pool_size'] == 1
+    assert config.pop('experiment') == {
+        'max_trials': 100,
+        'name': 'voila_voici',
+        'pool_size': 1,
+        'algorithms': 'random',
+        'strategy': 'NoParallelStrategy'}
+
+    assert config == {}
+
+
+def test_fetch_config_global_local_coherence(monkeypatch, config_file):
+    """Verify fetch_config parses local config according to global config structure."""
+    def mocked_config(file_object):
+        return orion.core.config.to_dict()
+    monkeypatch.setattr('yaml.safe_load', mocked_config)
+
+    config = resolve_config.fetch_config({"config": config_file})
+
+    # Test storage subconfig
+    storage_config = config.pop('storage')
+    database_config = storage_config.pop('database')
+    assert storage_config.pop('type') == orion.core.config.storage.type
+    assert storage_config == {}
+
+    assert database_config.pop('host') == orion.core.config.storage.database.host
+    assert database_config.pop('name') == orion.core.config.storage.database.name
+    assert database_config.pop('port') == orion.core.config.storage.database.port
+    assert database_config.pop('type') == orion.core.config.storage.database.type
+
+    assert database_config == {}
+
+    # Test experiment subconfig
+    exp_config = config.pop('experiment')
+    assert exp_config.pop('max_trials') == orion.core.config.experiment.max_trials
+    assert exp_config.pop('max_broken') == orion.core.config.experiment.max_broken
+    assert exp_config.pop('working_dir') == orion.core.config.experiment.working_dir
+    assert exp_config.pop('pool_size') == orion.core.config.experiment.pool_size
+    assert exp_config.pop('algorithms') == orion.core.config.experiment.algorithms
+    assert exp_config.pop('strategy') == orion.core.config.experiment.strategy
+
+    assert exp_config == {}
+
+    # Test worker subconfig
+    worker_config = config.pop('worker')
+    assert worker_config.pop('heartbeat') == orion.core.config.worker.heartbeat
+    assert worker_config.pop('max_trials') == orion.core.config.worker.max_trials
+    assert worker_config.pop('max_broken') == orion.core.config.worker.max_broken
+    assert worker_config.pop('max_idle_time') == orion.core.config.worker.max_idle_time
+    assert (worker_config.pop('interrupt_signal_code') ==
+            orion.core.config.worker.interrupt_signal_code)
+    assert (worker_config.pop('user_script_config') ==
+            orion.core.config.worker.user_script_config)
+
+    assert worker_config == {}
+
+    # Test evc subconfig
+    evc_config = config.pop('evc')
+    assert evc_config.pop('auto_resolution') == orion.core.config.evc.auto_resolution
+    assert evc_config.pop('manual_resolution') == orion.core.config.evc.manual_resolution
+    assert (evc_config.pop('non_monitored_arguments') ==
+            orion.core.config.evc.non_monitored_arguments)
+    assert evc_config.pop('ignore_code_changes') == orion.core.config.evc.ignore_code_changes
+    assert evc_config.pop('algorithm_change') == orion.core.config.evc.algorithm_change
+    assert evc_config.pop('code_change_type') == orion.core.config.evc.code_change_type
+    assert evc_config.pop('cli_change_type') == orion.core.config.evc.cli_change_type
+    assert evc_config.pop('config_change_type') == orion.core.config.evc.config_change_type
+
+    assert evc_config == {}
+
+    # Confirm that all fields were tested.
+    assert config == {}
+
+
+def test_fetch_config_dash(monkeypatch, config_file):
+    """Verify fetch_config supports dash."""
+    def mocked_config(file_object):
+        return {'experiment': {'max-broken': 10, 'algorithms': {'dont-change': 'me'}}}
+    monkeypatch.setattr('yaml.safe_load', mocked_config)
+
+    config = resolve_config.fetch_config({"config": config_file})
+
+    assert config == {'experiment': {'max_broken': 10, 'algorithms': {'dont-change': 'me'}}}
+
+
+def test_fetch_config_underscore(monkeypatch, config_file):
+    """Verify fetch_config supports underscore as well."""
+    def mocked_config(file_object):
+        return {'experiment': {'max_broken': 10, 'algorithms': {'dont-change': 'me'}}}
+    monkeypatch.setattr('yaml.safe_load', mocked_config)
+
+    config = resolve_config.fetch_config({"config": config_file})
+
+    assert config == {'experiment': {'max_broken': 10, 'algorithms': {'dont-change': 'me'}}}
+
+
+def test_fetch_config_deprecated_max_trials(monkeypatch, config_file):
+    """Verify fetch_config will overwrite deprecated value if also properly defined."""
+    def mocked_config(file_object):
+        return {'experiment': {'max_trials': 10}, 'max_trials': 20}
+    monkeypatch.setattr('yaml.safe_load', mocked_config)
+
+    config = resolve_config.fetch_config({"config": config_file})
+
+    assert config == {'experiment': {'max_trials': 10}}
+
+
+def test_fetch_config_deprecate_tricky_names(monkeypatch, config_file):
+    """Verify fetch_config assigns values properly for the similar names."""
+    def mocked_config(file_object):
+        return {
+            'experiment': {
+                'worker_trials': 'should_be_ignored'},
+            'max_trials': 'exp_max_trials',
+            'max_broken': 'exp_max_broken',
+            'worker_trials': 'worker_max_trials',
+            'name': 'exp_name'
+        }
+    monkeypatch.setattr('yaml.safe_load', mocked_config)
+
+    config = resolve_config.fetch_config({"config": config_file})
+
+    assert config == {
+        'experiment': {
+            'name': 'exp_name',
+            'max_trials': 'exp_max_trials',
+            'max_broken': 'exp_max_broken'},
+        'worker': {'max_trials': 'worker_max_trials'}}
 
 
 def test_merge_configs_update_two():

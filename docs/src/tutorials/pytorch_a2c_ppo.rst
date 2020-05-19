@@ -1,5 +1,5 @@
 *********************************************
-Example with ikostrikov/pytorch-a2c-ppo-acktr
+PyTorch A2C PPO ACKTR
 *********************************************
 
 .. note ::
@@ -44,17 +44,7 @@ we add:
 
 .. code-block:: python
 
-    #!/usr/bin/env python
-    from orion.client import report_results
-
-
-and then we run
-
-.. code-block:: bash
-
-    chmod +x main.py
-
-To make it executable.
+    from orion.client import report_objective
 
 Then, we ensure that we evaluate on a separate set of hold out random seeds for
 the environment (which should be different than the test set and training seed).
@@ -86,10 +76,7 @@ algorithm:
                                              args.cuda,
                                              eval_env_seeds)
 
-    report_results([dict(
-        name='validation_return',
-        type='objective',
-        value=np.mean(validation_returns))])
+    report_objective(name='validation_return', objective=np.mean(validation_returns))
 
 Now we're ready to go to run orion's hyperparameter optimization!
 
@@ -99,7 +86,7 @@ How to search for hyperparameters
 .. code-block:: bash
 
   orion -v hunt -n ppo_hopper \
-    ./main.py --env-name "Hopper-v2" --algo ppo --use-gae --vis-interval 1 \
+    python main.py --env-name "Hopper-v2" --algo ppo --use-gae --vis-interval 1 \
     --log-interval 1 --num-stack 1 --num-steps 2048 --num-processes 1 \
     --lr~'loguniform(1e-5, 1.0)' --entropy-coef 0 --value-loss-coef 1 \
     --ppo-epoch 10 --num-mini-batch 32 --gamma~'uniform(.95, .9995)' --tau 0.95 \

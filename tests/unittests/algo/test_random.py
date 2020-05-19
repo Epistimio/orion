@@ -43,3 +43,38 @@ def test_set_state(space):
 
     random_search.set_state(state)
     assert numpy.allclose(a, random_search.suggest(1)[0])
+
+
+def test_suggest_unique():
+    """Verify that RandomSearch do not sample duplicates"""
+    space = Space()
+    space.register(Integer('yolo1', 'uniform', -3, 6))
+
+    random_search = Random(space)
+
+    n_samples = 6
+    values = sum(random_search.suggest(n_samples), tuple())
+    assert len(values) == n_samples
+    assert len(set(values)) == n_samples
+
+
+def test_suggest_unique_history():
+    """Verify that RandomSearch do not sample duplicates based observed points"""
+    space = Space()
+    space.register(Integer('yolo1', 'uniform', -3, 6))
+
+    random_search = Random(space)
+
+    n_samples = 3
+    values = sum(random_search.suggest(n_samples), tuple())
+    assert len(values) == n_samples
+    assert len(set(values)) == n_samples
+
+    random_search.observe([[value] for value in values], [1] * n_samples)
+
+    n_samples = 3
+    new_values = sum(random_search.suggest(n_samples), tuple())
+    assert len(new_values) == n_samples
+    assert len(set(new_values)) == n_samples
+    # No duplicates
+    assert (set(new_values) & set(values)) == set()

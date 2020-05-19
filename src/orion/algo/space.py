@@ -200,8 +200,6 @@ class Dimension:
         then it will be attempted to calculate the interval from which
         a variable is `alpha`-likely to be drawn from.
 
-        .. note:: Lower bound is inclusive, upper bound is exclusive.
-
         """
         return self.prior.interval(alpha, *self._args, **self._kwargs)
 
@@ -276,6 +274,11 @@ class Dimension:
         return self.__class__.__name__.lower()
 
     @property
+    def prior_name(self):
+        """Return the name of the prior"""
+        return self._prior_name
+
+    @property
     def shape(self):
         """Return the shape of dimension."""
         # Default shape `None` corresponds to 0-dim (scalar) or shape == ().
@@ -288,6 +291,14 @@ class Dimension:
                                                    size=self._shape,
                                                    **self._kwargs)
         return size
+
+    # pylint:disable=no-self-use
+    @property
+    def cardinality(self):
+        """Return the number of all the possible points from `Dimension`.
+        The default value is `numpy.inf`.
+        """
+        return numpy.inf
 
 
 def _is_numeric_array(point):
@@ -304,44 +315,35 @@ def _is_numeric_array(point):
 
 
 class Real(Dimension):
-    """Subclass of `Dimension` for representing real parameters.
+    """Search space dimension that can take on any real value.
 
-    Attributes
+    Parameters
     ----------
     name : str
-    type : str
-    prior : `scipy.stats.distributions.rv_generic`
-    shape : tuple
-       See Attributes of `Dimension`.
+    prior : str
+       See Parameters of `Dimension.__init__`.
+    args : list
+    kwargs : dict
+       See Parameters of `Dimension.__init__` for general.
+
+    Real kwargs (extra)
+    -------------------
     low : float
-       Constrain with a lower bound (inclusive), default ``-numpy.inf``.
-    high : float
-       Constrain with an upper bound (exclusive), default ``numpy.inf``.
+       Lower bound (inclusive), optional; default ``-numpy.inf``.
+    high : float:
+       Upper bound (inclusive), optional; default ``numpy.inf``.
+       The upper bound must be inclusive because of rounding errors
+       during optimization which may cause values to round exactly
+       to the upper bound.
+    precision : int
+        Precision, optional; default ``4``.
+    shape : tuple
+       Defines how many dimensions are packed in this `Dimension`.
+       Describes the shape of the corresponding tensor.
 
     """
 
     def __init__(self, name, prior, *args, **kwargs):
-        """Search space dimension that can take on any real value.
-
-        Parameters
-        ----------
-        name : str
-        prior : str
-           See Parameters of `Dimension.__init__`.
-        args : list
-        kwargs : dict
-           See Parameters of `Dimension.__init__` for general.
-
-        Real kwargs (extra)
-        -------------------
-        low : float
-           Lower bound (inclusive), optional; default ``-numpy.inf``.
-        high : float:
-           Upper bound (exclusive), optional; default ``numpy.inf``.
-        precision : int
-            Precision, optional; default ``4``.
-
-        """
         self._low = kwargs.pop('low', -numpy.inf)
         self._high = kwargs.pop('high', numpy.inf)
         if self._high <= self._low:
@@ -377,7 +379,7 @@ class Real(Dimension):
         if point_.shape != self.shape:
             return False
 
-        return numpy.all(point_ < high) and numpy.all(point_ >= low)
+        return numpy.all(point_ >= low) and numpy.all(point_ <= high)
 
     def interval(self, alpha=1.0):
         """Return a tuple containing lower and upper bound for parameters.
@@ -386,7 +388,7 @@ class Real(Dimension):
         then it will be attempted to calculate the interval from which
         a variable is `alpha`-likely to be drawn from.
 
-        .. note:: Lower bound is inclusive, upper bound is exclusive.
+        .. note:: Both lower and upper bounds are inclusive.
 
         """
         prior_low, prior_high = super(Real, self).interval(alpha)
@@ -455,7 +457,7 @@ class _Discrete(Dimension):
 
         Bounds are integers.
 
-        .. note:: Lower bound is inclusive, upper bound is exclusive.
+        .. note:: Both lower and upper bounds are inclusive.
 
         """
         low, high = super(_Discrete, self).interval(alpha)
@@ -464,11 +466,9 @@ class _Discrete(Dimension):
         except OverflowError:  # infinity cannot be converted to Python int type
             int_low = -numpy.inf
         try:
-            int_high = int(numpy.floor(high))
+            int_high = int(numpy.ceil(high))
         except OverflowError:  # infinity cannot be converted to Python int type
             int_high = numpy.inf
-        if int_high < high:  # Exclusive upper bound
-            int_high += 1
         return (int_low, int_high)
 
     def __contains__(self, point):
@@ -476,15 +476,28 @@ class _Discrete(Dimension):
 
 
 class Integer(Real, _Discrete):
-    """Subclass of `Dimension` for representing integer parameters.
+    """Search space dimension representing integer values.
 
-    Attributes
+    Parameters
     ----------
     name : str
-    type : str
-    prior : `scipy.stats.distributions.rv_generic`
+    prior : str
+       See Parameters of `Dimension.__init__`.
+    args : list
+    kwargs : dict
+       See Parameters of `Dimension.__init__` for general.
+
+    Real kwargs (extra)
+    -------------------
+    low : float
+       Lower bound (inclusive), optional; default ``-numpy.inf``.
+    high : float:
+       Upper bound (inclusive), optional; default ``numpy.inf``.
+    precision : int
+        Precision, optional; default ``4``.
     shape : tuple
-       See Attributes of `Dimension`.
+       Defines how many dimensions are packed in this `Dimension`.
+       Describes the shape of the corresponding tensor.
 
     """
 
@@ -525,36 +538,48 @@ class Integer(Real, _Discrete):
         prior_string = super(Integer, self).get_prior_string()
         return prior_string[:-1] + ', discrete=True)'
 
+    @property
+    def prior_name(self):
+        """Return the name of the prior"""
+        return 'int_{}'.format(super(Integer, self).prior_name)
+
+    @property
+    def cardinality(self):
+        """Return the number of all the possible points from Integer `Dimension`"""
+        low, high = self.interval()
+        return _get_shape_cardinality(self.shape) * int(high - low)
+
+
+def _get_shape_cardinality(shape):
+    """Get the cardinality in a shape which can be int or tuple"""
+    shape_cardinality = 1
+    if shape is None:
+        return shape_cardinality
+
+    if isinstance(shape, int):
+        shape = (shape, )
+
+    for cardinality in shape:
+        shape_cardinality *= cardinality
+    return shape_cardinality
+
 
 class Categorical(Dimension):
-    """Subclass of `Dimension` for representing categorical parameters.
+    """Search space dimension that can take on categorical values.
 
-    Attributes
+    Parameters
     ----------
     name : str
-    type : str
-    prior : `scipy.stats.distributions.rv_generic`
-    shape : tuple
-       See Attributes of `Dimension`.
-    categories : tuple
-       A set of unordered stuff to pick out from, except if enum
+       See Parameters of `Dimension.__init__`.
+    categories : dict or other iterable
+       A dictionary would associate categories to probabilities, else
+       it assumes to be drawn uniformly from the iterable.
+    kwargs : dict
+       See Parameters of `Dimension.__init__` for general.
 
     """
 
     def __init__(self, name, categories, **kwargs):
-        """Search space dimension that can take on categorical values.
-
-        Parameters
-        ----------
-        name : str
-           See Parameters of `Dimension.__init__`.
-        categories : dict or other iterable
-           A dictionary would associate categories to probabilities, else
-           it assumes to be drawn uniformly from the iterable.
-        kwargs : dict
-           See Parameters of `Dimension.__init__` for general.
-
-        """
         if isinstance(categories, dict):
             self.categories = tuple(categories.keys())
             self._probs = tuple(categories.values())
@@ -567,6 +592,11 @@ class Categorical(Dimension):
         prior = distributions.rv_discrete(values=(list(range(len(self.categories))),
                                                   self._probs))
         super(Categorical, self).__init__(name, prior, **kwargs)
+
+    @property
+    def cardinality(self):
+        """Return the number of all the possible values from Categorical `Dimension`"""
+        return len(self.categories) * _get_shape_cardinality(self._shape)
 
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
@@ -644,6 +674,11 @@ class Categorical(Dimension):
             args += ['default_value={}'.format(repr(self.default_value))]
 
         return 'choices({args})'.format(args=', '.join(args))
+
+    @property
+    def prior_name(self):
+        """Return the name of the prior"""
+        return "choices"
 
     def cast(self, point):
         """Cast a point to some category
@@ -724,6 +759,14 @@ class Fidelity(Dimension):
         """Return `high`"""
         return self.high
 
+    # pylint:disable=no-self-use
+    @property
+    def cardinality(self):
+        """Return cardinality of Fidelity dimension, leave it to 1 as Fidelity dimension
+        does not contribute to cardinality in a fixed way now.
+        """
+        return 1
+
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
         return 'fidelity({}, {}, {})'.format(self.low, self.high, self.base)
@@ -734,7 +777,7 @@ class Fidelity(Dimension):
 
     def sample(self, n_samples=1, seed=None):
         """Do not do anything."""
-        return [self.high]
+        return [self.high for i in range(n_samples)]
 
     def interval(self, alpha=1.0):
         """Do not do anything."""
@@ -802,11 +845,7 @@ class Space(dict):
         return list(zip(*samples))
 
     def interval(self, alpha=1.0):
-        """Return a list with the intervals for each contained dimension.
-
-        .. note:: Lower bound is inclusive, upper bound is exclusive.
-
-        """
+        """Return a list with the intervals for each contained dimension."""
         res = list()
         for dim in self.values():
             if dim.type == 'categorical':
@@ -890,6 +929,14 @@ class Space(dict):
     def configuration(self):
         """Return a dictionary of priors."""
         return {name: dim.get_prior_string() for name, dim in self.items()}
+
+    @property
+    def cardinality(self):
+        """Return the number of all all possible sets of samples in the space"""
+        capacities = 1
+        for dim in self.values():
+            capacities *= dim.cardinality
+        return capacities
 
 
 def pack_point(point, space):
