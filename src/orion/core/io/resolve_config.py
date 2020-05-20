@@ -251,8 +251,8 @@ def fetch_config(args):
                 if backward_value is not None:
                     log.warning(
                         '(DEPRECATED) Option `%s` and will be removed in v0.3. '
-                        'Use instead the option' '\n%s:\n  %s: %s',
-                        subkey, key, subkey, repr(backward_value))
+                        'Use instead the option' '\n%s:\n  %s:\n    %s',
+                        subkey, key, subkey, yaml.dump(backward_value, indent=6))
                 value = tmp_config.get(key, {}).pop(subkey, backward_value)
                 if value is not None:
                     local_config.setdefault(key, {})
