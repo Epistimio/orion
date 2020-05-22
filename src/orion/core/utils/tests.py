@@ -11,8 +11,10 @@
 import datetime
 import os
 import tempfile
+import copy
 
 import yaml
+from contextlib import contextmanager
 
 from orion.core.io.database import Database
 from orion.core.io.database.ephemeraldb import EphemeralDB
@@ -21,6 +23,7 @@ from orion.core.io.database.pickleddb import PickledDB
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils import SingletonAlreadyInstantiatedError
 from orion.core.worker.trial import Trial
+from orion.core.worker.producer import Producer
 from orion.storage.base import get_storage, Storage
 from orion.storage.legacy import Legacy
 from orion.storage.track import Track
@@ -35,6 +38,72 @@ def _select(lhs, rhs):
 def default_datetime():
     """Return default datetime"""
     return datetime.datetime(1903, 4, 25, 0, 0, 0)
+
+
+def generate_trials(trial_config, status):
+    """Generate Trials with different configurations"""
+
+    def _generate(obj, *args, value):
+        if obj is None:
+            return None
+
+        obj = copy.deepcopy(obj)
+        data = obj
+
+        for arg in args[:-1]:
+            data = data[arg]
+
+        data[args[-1]] = value
+        return obj
+
+    new_trials = [_generate(trial_config, 'status', value=s) for s in status]
+
+    for i, trial in enumerate(new_trials):
+        trial['submit_time'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=i)
+        if trial['status'] != 'new':
+            trial['start_time'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=i)
+
+    for i, trial in enumerate(new_trials):
+        if trial['status'] == 'completed':
+            trial['end_time'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=i)
+
+    # make each trial unique
+    for i, trial in enumerate(new_trials):
+        if trial['status'] == 'completed':
+            trial['results'].append({
+                'name': 'loss',
+                'type': 'objective',
+                'value': i})
+
+        trial['params'].append({
+            'name': 'x',
+            'type': 'real',
+            'value': i
+        })
+
+    return new_trials
+
+@contextmanager
+def create_experiment(exp_config=None, trial_config=None, stati=None):
+    """Context manager for the creation of an ExperimentClient and storage init"""
+
+    from orion.client.experiment import ExperimentClient # Has to be initialized after the singletons.
+
+    if exp_config is None:
+        exp_config = config
+    if trial_config is None:
+        trial_config = base_trial
+    if stati is None:
+        stati = ['new', 'interrupted', 'suspended', 'reserved', 'completed']
+
+    with OrionState(experiments=[exp_config], trials=generate_trials(trial_config, stati)) as cfg:
+        experiment = experiment_builder.build(name=exp_config['name'])
+        if cfg.trials:
+            experiment._id = cfg.trials[0]['experiment']
+        client = ExperimentClient(experiment, Producer(experiment))
+        yield cfg, experiment, client
+
+    client.close()
 
 
 class MockDatetime(datetime.datetime):
