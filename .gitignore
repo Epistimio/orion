@@ -77,3 +77,6 @@ docs/src/reference
 
 # PyBuilder
 target/
+
+# Notebooks
+tests/**.ipynb
