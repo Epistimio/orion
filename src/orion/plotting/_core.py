@@ -2,6 +2,8 @@ def learning(experiment, **kwargs):
     """
     Make a plot to visualize the learning performance of the hyper-optimization process.
 
+    The x-axis contain the trials and the y-axis their respective best performance.
+
     Parameters
     ----------
         experiment: ExperimentClient
@@ -21,7 +23,7 @@ def learning(experiment, **kwargs):
         If no experiment is provided.
 
     """
-    if experiment is None:
+    if not experiment:
         raise ValueError("Parameter 'experiment' is None")
     
     raise NotImplementedError
@@ -43,7 +45,7 @@ class PlotAccessor:
     """
 
     def __init__(self, experiment):
-        if experiment is None:
+        if not experiment:
             raise ValueError("Parameter 'experiment' is None")
         self._experiment = experiment
 
