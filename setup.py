@@ -21,7 +21,8 @@ packages = [
     'orion.core',
     'orion.client',
     'orion.algo',
-    'orion.storage'
+    'orion.storage',
+    'orion.plotting'
     ]
 
 setup_args = dict(
