@@ -389,7 +389,7 @@ class TPE(BaseAlgorithm):
 
     def _sample_categorical_point(self, dimension, below_points, above_points):
         """Sample one value for categorical dimension based on the observed good and bad points"""
-        _, choices = dimension.interval()
+        choices = dimension.interval()
 
         below_points = [choices.index(point) for point in below_points]
         above_points = [choices.index(point) for point in above_points]
