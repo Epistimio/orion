@@ -11,7 +11,7 @@
 import logging
 
 import numpy
-from scipy.stats import norm
+from scipy.stats import lognorm, norm
 
 from orion.algo.base import BaseAlgorithm
 from orion.core.utils.points import flatten_dims, regroup_dims
@@ -171,7 +171,7 @@ class TPE(BaseAlgorithm):
 
     # pylint:disable=too-many-arguments
     def __init__(self, space, seed=None,
-                 n_initial_points=5, n_ei_candidates=24,
+                 n_initial_points=20, n_ei_candidates=24,
                  gamma=0.25, equal_weight=False,
                  prior_weight=1.0, full_weight_num=25):
 
@@ -185,12 +185,13 @@ class TPE(BaseAlgorithm):
                                   full_weight_num=full_weight_num)
 
         for dimension in self.space.values():
+
             if dimension.type not in ['real', 'integer', 'categorical']:
                 raise ValueError("TPE now only supports Real, Integer "
                                  "and Categorical Dimension.")
 
-            if dimension.prior_name not in ['uniform', 'int_uniform', 'choices']:
-                raise ValueError("TPE now only supports uniform, uniform discrete "
+            if dimension.prior_name not in ['uniform', 'reciprocal', 'int_uniform', 'choices']:
+                raise ValueError("TPE now only supports uniform, loguniform, uniform discrete "
                                  "and choices as prior.")
 
             shape = dimension.shape
@@ -267,11 +268,10 @@ class TPE(BaseAlgorithm):
                 if not shape:
                     shape = (1,)
 
-                if dimension.type == 'real' and dimension.prior_name == 'uniform':
-                    points = self.sample_one_dimension(dimension, shape[0],
-                                                       below_points[idx: idx + shape[0]],
-                                                       above_points[idx: idx + shape[0]],
-                                                       self._sample_real_point)
+                if dimension.type == 'real':
+                    points = self._sample_real_dimension(dimension, shape[0],
+                                                         below_points[idx: idx + shape[0]],
+                                                         above_points[idx: idx + shape[0]])
                 elif dimension.type == 'integer' and dimension.prior_name == 'int_uniform':
                     points = self.sample_one_dimension(dimension, shape[0],
                                                        below_points[idx: idx + shape[0]],
@@ -317,9 +317,32 @@ class TPE(BaseAlgorithm):
 
         return points
 
-    def _sample_real_point(self, dimension, below_points, above_points):
+    def _sample_real_dimension(self, dimension, shape_size, below_points, above_points):
+        """Sample values for real dimension"""
+        if dimension.prior_name == 'uniform':
+            return self.sample_one_dimension(dimension, shape_size, below_points, above_points,
+                                             self._sample_real_point)
+        elif dimension.prior_name == 'reciprocal':
+            return self.sample_one_dimension(dimension, shape_size, below_points, above_points,
+                                             self._sample_loguniform_real_point)
+        else:
+            raise NotImplementedError()
+
+    def _sample_loguniform_real_point(self, dimension, below_points, above_points):
+        """Sample one value for real dimension in a loguniform way"""
+        return self._sample_real_point(dimension, below_points, above_points, is_log=True)
+
+    def _sample_real_point(self, dimension, below_points, above_points, is_log=False):
         """Sample one value for real dimension based on the observed good and bad points"""
         low, high = dimension.interval()
+        if is_log:
+            below_points = numpy.log(below_points)
+            above_points = numpy.log(above_points)
+
+            # scipy.stats loguniform
+            low = numpy.log(low)
+            high = numpy.log(high)
+
         below_mus, below_sigmas, below_weights = \
             adaptive_parzen_estimator(below_points, low, high, self.prior_weight,
                                       self.equal_weight, flat_num=self.full_weight_num)
@@ -327,8 +350,10 @@ class TPE(BaseAlgorithm):
             adaptive_parzen_estimator(above_points, low, high, self.prior_weight,
                                       self.equal_weight, flat_num=self.full_weight_num)
 
-        gmm_sampler_below = GMMSampler(self, below_mus, below_sigmas, low, high, below_weights)
-        gmm_sampler_above = GMMSampler(self, above_mus, above_sigmas, low, high, above_weights)
+        gmm_sampler_below = GMMSampler(self, below_mus, below_sigmas,
+                                       low, high, below_weights, is_log=is_log)
+        gmm_sampler_above = GMMSampler(self, above_mus, above_sigmas,
+                                       low, high, above_weights, is_log=is_log)
 
         candidate_points = gmm_sampler_below.sample(self.n_ei_candidates)
         if candidate_points:
@@ -364,7 +389,7 @@ class TPE(BaseAlgorithm):
 
     def _sample_categorical_point(self, dimension, below_points, above_points):
         """Sample one value for categorical dimension based on the observed good and bad points"""
-        choices = dimension.categories
+        _, choices = dimension.interval()
 
         below_points = [choices.index(point) for point in below_points]
         above_points = [choices.index(point) for point in above_points]
@@ -427,7 +452,7 @@ class GMMSampler():
 
     """
 
-    def __init__(self, tpe, mus, sigmas, low, high, weights=None):
+    def __init__(self, tpe, mus, sigmas, low, high, weights=None, is_log=False):
         self.tpe = tpe
 
         self.mus = mus
@@ -435,6 +460,10 @@ class GMMSampler():
         self.low = low
         self.high = high
         self.weights = weights if weights is not None else len(mus) * [1.0 / len(mus)]
+        self.is_log = is_log
+        if is_log:
+            self.low = numpy.exp(low)
+            self.high = numpy.exp(high)
 
         self.pdfs = []
         self._build_mixture()
@@ -442,7 +471,10 @@ class GMMSampler():
     def _build_mixture(self):
         """Build the Gaussian components in the GMM"""
         for mu, sigma in zip(self.mus, self.sigmas):
-            self.pdfs.append(norm(mu, sigma))
+            if self.is_log:
+                self.pdfs.append(lognorm(s=sigma, loc=0, scale=numpy.exp(mu)))
+            else:
+                self.pdfs.append(norm(mu, sigma))
 
     def sample(self, num=1):
         """Sample required number of points"""
@@ -463,6 +495,7 @@ class GMMSampler():
         weight_likelis = [numpy.log(self.weights[i] * pdf.pdf(points))
                           for i, pdf in enumerate(self.pdfs)]
         weight_likelis = numpy.array(weight_likelis)
+        # (num_weights, num_points) => (num_points, num_weights)
         weight_likelis = weight_likelis.transpose()
 
         # log-sum-exp trick

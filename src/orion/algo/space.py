@@ -611,15 +611,8 @@ class Categorical(Dimension):
         return samples
 
     def interval(self, alpha=1.0):
-        """Return a tuple of possible values that this categorical dimension
-        can take.
-
-        .. warning:: This method makes no sense for categorical variables. Use
-           ``self.categories`` instead.
-
-        """
-        raise RuntimeError("Categories have no ``interval`` (as they are not ordered).\n"
-                           "Use ``self.categories`` instead.")
+        """Return a tuple of possible values that this categorical dimension can take."""
+        return self.categories
 
     def __contains__(self, point):
         """Check if constraints hold for this `point` of `Dimension`.
