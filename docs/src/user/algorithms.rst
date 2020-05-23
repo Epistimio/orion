@@ -212,7 +212,7 @@ the most promising point among the candidates.
 
 .. note::
 
-   Current implementation only supports uniform, uniform discrete and choices as prior.
+   Current implementation only supports uniform, loguniform, uniform discrete and choices as prior.
    As for choices prior, the probabilities if any given will be ignored.
 
 Configuration

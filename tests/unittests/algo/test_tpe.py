@@ -4,7 +4,7 @@
 
 import numpy
 import pytest
-from scipy.stats import norm
+from scipy.stats import lognorm, norm
 
 from orion.algo.space import Categorical, Fidelity, Integer, Real, Space
 from orion.algo.tpe import adaptive_parzen_estimator, CategoricalSampler, \
@@ -278,6 +278,11 @@ class TestGMMSampler():
         assert len(gmm_sampler.weights) == 12
         assert len(gmm_sampler.pdfs) == 12
 
+        gmm_sampler = GMMSampler(tpe, mus, sigmas, -3, 3, is_log=True)
+
+        assert len(gmm_sampler.weights) == 12
+        assert len(gmm_sampler.pdfs) == 12
+
     def test_sample(self, tpe):
         """Test GMMSampler sample function"""
         mus = numpy.linspace(-3, 3, num=12, endpoint=False)
@@ -306,6 +311,18 @@ class TestGMMSampler():
         assert numpy.all(points >= -11)
         assert numpy.all(points < 9)
 
+        # loguniform
+        gmm_sampler = GMMSampler(tpe, mus, sigmas, -11, 9, weights, is_log=True)
+        points = gmm_sampler.sample(10000)
+        points = numpy.array(points)
+
+        bins = numpy.array([-11, -9, -7, -5, -3, -1, 1, 3, 5, 7, 9])
+        hist = numpy.histogram(points, bins=numpy.exp(bins))
+
+        assert numpy.all(hist[0].argsort() == numpy.array(weights).argsort())
+        assert numpy.all(points >= numpy.exp(-11))
+        assert numpy.all(points < numpy.exp(9))
+
     def test_get_loglikelis(self):
         """Test to get log likelis of points"""
         mus = numpy.linspace(-10, 10, num=10, endpoint=False)
@@ -331,6 +348,26 @@ class TestGMMSampler():
         pdfs = []
         for i in range(10):
             pdfs.append(norm(mus[i], sigmas[i]))
+        for pdf, weight in zip(pdfs, weights):
+            log_pdf.append(numpy.log(pdf.pdf(0) * weight))
+        point_likeli = numpy.log(numpy.sum(numpy.exp(log_pdf)))
+
+        points = numpy.random.uniform(-11, 9, 30)
+        points = numpy.insert(points, 10, 0)
+        likelis = gmm_sampler.get_loglikelis(points)
+
+        point_likeli = numpy.format_float_scientific(point_likeli, precision=10)
+        gmm_likeli = numpy.format_float_scientific(likelis[10], precision=10)
+        assert point_likeli == gmm_likeli
+        assert len(likelis) == len(points)
+
+        # loguniform
+        gmm_sampler = GMMSampler(tpe, mus, sigmas, -11, 9, weights, is_log=True)
+
+        log_pdf = []
+        pdfs = []
+        for i in range(10):
+            pdfs.append(lognorm(s=sigmas[i], loc=0, scale=numpy.exp(mus[i])))
         for pdf, weight in zip(pdfs, weights):
             log_pdf.append(numpy.log(pdf.pdf(0) * weight))
         point_likeli = numpy.log(numpy.sum(numpy.exp(log_pdf)))
@@ -385,7 +422,8 @@ class TestTPE():
         with pytest.raises(ValueError) as ex:
             TPE(space)
 
-        assert 'TPE now only supports uniform, uniform discrete and choices' in str(ex.value)
+        assert 'TPE now only supports uniform, loguniform, uniform discrete and choices' \
+               in str(ex.value)
 
         space = Space()
         dim = Real('yolo1', 'uniform', 0.9, shape=(2, 1))
@@ -521,22 +559,34 @@ class TestTPE():
         space.register(dim1)
         dim2 = Real('yolo2', 'uniform', -5, 10, shape=(2))
         space.register(dim2)
+        dim3 = Real('yolo3', 'reciprocal', 1, 20)
+        space.register(dim3)
 
         tpe = TPE(space)
         points = numpy.random.uniform(-10, 10, 20)
         below_points = [points[:8]]
         above_points = [points[8:]]
-        points = tpe.sample_one_dimension(dim1, 1,
-                                          below_points, above_points, tpe._sample_real_point)
+        points = tpe._sample_real_dimension(dim1, 1,
+                                            below_points, above_points)
         points = numpy.asarray(points)
         assert len(points) == 1
         assert all(points >= -10)
         assert all(points < 10)
 
+        points = numpy.random.uniform(1, 20, 20)
+        below_points = [points[:8]]
+        above_points = [points[8:]]
+        points = tpe._sample_real_dimension(dim3, 1,
+                                            below_points, above_points)
+        points = numpy.asarray(points)
+        assert len(points) == 1
+        assert all(points >= 1)
+        assert all(points < 20)
+
         below_points = numpy.random.uniform(-10, 0, 25).reshape(1, 25)
         above_points = numpy.random.uniform(0, 10, 75).reshape(1, 75)
-        points = tpe.sample_one_dimension(dim1, 1,
-                                          below_points, above_points, tpe._sample_real_point)
+        points = tpe._sample_real_dimension(dim1, 1,
+                                            below_points, above_points)
         points = numpy.asarray(points)
         assert len(points) == 1
         assert all(points >= -10)
@@ -545,16 +595,16 @@ class TestTPE():
         points = numpy.random.uniform(-5, 5, 32)
         below_points = [points[:8], points[8:16]]
         above_points = [points[16:24], points[24:]]
-        points = tpe.sample_one_dimension(dim2, 2,
-                                          below_points, above_points, tpe._sample_real_point)
+        points = tpe._sample_real_dimension(dim2, 2,
+                                            below_points, above_points)
         points = numpy.asarray(points)
         assert len(points) == 2
         assert all(points >= -10)
         assert all(points < 10)
 
         tpe.n_ei_candidates = 0
-        points = tpe.sample_one_dimension(dim2, 2,
-                                          below_points, above_points, tpe._sample_real_point)
+        points = tpe._sample_real_dimension(dim2, 2,
+                                            below_points, above_points)
         assert len(points) == 0
 
     def test_suggest(self, tpe):
