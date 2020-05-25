@@ -338,7 +338,7 @@ class Bracket():
         next_rung = self.rungs[rung_id + 1][1]
 
         rung = list(sorted((objective, point) for objective, point in rung.values()
-                           if objective is not None))
+                           if objective not in (None, float('inf'))))
         k = len(rung) // self.reduction_factor
         k = min(k, len(rung))
 
