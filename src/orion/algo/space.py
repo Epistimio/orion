@@ -751,7 +751,7 @@ class Fidelity(Dimension):
         elif low > high:
             raise AttributeError("Minimum resources must be smaller than maximum resources.")
         if base < 1:
-            raise AttributeError("Base should be greater than 1")
+            raise AttributeError("Base should be great than or equal to 1")
         self.name = name
         self.low = int(low)
         self.high = int(high)
