@@ -37,13 +37,6 @@ def main(argv=None):
 
     load_modules_parser(orion_parser)
 
-    argv = ["-v", "hunt", "--config", "/Users/xuechao/aaa/work/gitRepo/orion_ibm/local_mongo_config.yaml",
-            "-n", "test61", "--max-trials", "100",
-            "/Users/xuechao/aaa/work/gitRepo/orion_ibm/dummy_orion/dummy_orion.py",
-            "--x0~uniform(0, 1, discrete=False)", "--x1~uniform(0, 2, discrete=True)",
-            "--x2~uniform(0, 1, discrete=False)", "--x3~choices([0, 3, 1])",
-            "--x4~fidelity(1, 16, 2)"]
-
     return orion_parser.execute(argv)
 
 
