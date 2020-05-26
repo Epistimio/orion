@@ -132,7 +132,7 @@ class Producer(object):
             return 1
 
         except DuplicateKeyError:
-            log.debug("#### Duplicate sample.")
+            log.info("#### Duplicate sample.")
             self.backoff()
             return 0
 

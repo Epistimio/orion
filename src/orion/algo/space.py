@@ -676,6 +676,11 @@ class Categorical(Dimension):
         return 'choices({args})'.format(args=', '.join(args))
 
     @property
+    def get_prior(self):
+        """Return the priors"""
+        return self._probs
+
+    @property
     def prior_name(self):
         """Return the name of the prior"""
         return "choices"
@@ -745,7 +750,7 @@ class Fidelity(Dimension):
             raise AttributeError("Minimum resources must be a positive number.")
         elif low > high:
             raise AttributeError("Minimum resources must be smaller than maximum resources.")
-        if base <= 1:
+        if base < 1:
             raise AttributeError("Base should be greater than 1")
         self.name = name
         self.low = int(low)
@@ -913,7 +918,7 @@ class Space(dict):
         """Return items sorted according to keys"""
         return [(k, self[k]) for k in self.keys()]
 
-    def values(self):
+    def values(self) -> object:
         """Return values sorted according to keys"""
         return [self[k] for k in self.keys()]
 
