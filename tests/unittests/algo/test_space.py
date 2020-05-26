@@ -586,7 +586,7 @@ class TestFidelity(object):
         """Test that an error is raised if base is smaller than 1"""
         with pytest.raises(AttributeError) as exc:
             Fidelity('epoch', 1, 2, 0)
-        assert "Base should be greater than 1" == str(exc.value)
+        assert "Base should be great than or equal to 1" == str(exc.value)
 
     def test_sampling(self):
         """Make sure Fidelity simply returns `high`"""
