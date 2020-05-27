@@ -9,5 +9,5 @@ def test_init_require_experiment():
 def test_instance_call_defined():
     pass # TODO
 
-def test_learning():
+def test_regret():
     pass # TODO
