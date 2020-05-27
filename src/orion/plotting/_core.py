@@ -1,6 +1,6 @@
-def learning(experiment, **kwargs):
+def regret(experiment, **kwargs):
     """
-    Make a plot to visualize the learning performance of the hyper-optimization process.
+    Make a plot to visualize the performance of the hyper-optimization process.
 
     The x-axis contain the trials and the y-axis their respective best performance.
 
@@ -58,7 +58,7 @@ class PlotAccessor:
         # TODO: Delegate call to correct plotting functions.
 
 
-    def learning(self):
+    def regret(self):
         """ Convenience method for :meth:`orion.plotting.learning`"""
         raise NotImplementedError()
         # TODO: Call self(kind='learning')

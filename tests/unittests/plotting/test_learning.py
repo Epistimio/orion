@@ -1,6 +1,6 @@
 import pytest
-from orion.plotting import learning
+from orion.plotting import regret
 
-def test_learning_requires_argument():
+def test_regret_requires_argument():
     with pytest.raises(ValueError):
-        learning(None)
+        regret(None)
