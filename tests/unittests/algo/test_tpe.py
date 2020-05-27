@@ -4,7 +4,7 @@
 
 import numpy
 import pytest
-from scipy.stats import lognorm, norm
+from scipy.stats import norm
 
 from orion.algo.space import Categorical, Fidelity, Integer, Real, Space
 from orion.algo.tpe import adaptive_parzen_estimator, CategoricalSampler, \
@@ -278,11 +278,6 @@ class TestGMMSampler():
         assert len(gmm_sampler.weights) == 12
         assert len(gmm_sampler.pdfs) == 12
 
-        gmm_sampler = GMMSampler(tpe, mus, sigmas, -3, 3, is_log=True)
-
-        assert len(gmm_sampler.weights) == 12
-        assert len(gmm_sampler.pdfs) == 12
-
     def test_sample(self, tpe):
         """Test GMMSampler sample function"""
         mus = numpy.linspace(-3, 3, num=12, endpoint=False)
@@ -310,18 +305,6 @@ class TestGMMSampler():
         assert numpy.all(hist[0].argsort() == numpy.array(weights).argsort())
         assert numpy.all(points >= -11)
         assert numpy.all(points < 9)
-
-        # loguniform
-        gmm_sampler = GMMSampler(tpe, mus, sigmas, -11, 9, weights, is_log=True)
-        points = gmm_sampler.sample(10000)
-        points = numpy.array(points)
-
-        bins = numpy.array([-11, -9, -7, -5, -3, -1, 1, 3, 5, 7, 9])
-        hist = numpy.histogram(points, bins=numpy.exp(bins))
-
-        assert numpy.all(hist[0].argsort() == numpy.array(weights).argsort())
-        assert numpy.all(points >= numpy.exp(-11))
-        assert numpy.all(points < numpy.exp(9))
 
     def test_get_loglikelis(self):
         """Test to get log likelis of points"""
@@ -361,26 +344,6 @@ class TestGMMSampler():
         assert point_likeli == gmm_likeli
         assert len(likelis) == len(points)
 
-        # loguniform
-        gmm_sampler = GMMSampler(tpe, mus, sigmas, -11, 9, weights, is_log=True)
-
-        log_pdf = []
-        pdfs = []
-        for i in range(10):
-            pdfs.append(lognorm(s=sigmas[i], loc=0, scale=numpy.exp(mus[i])))
-        for pdf, weight in zip(pdfs, weights):
-            log_pdf.append(numpy.log(pdf.pdf(0) * weight))
-        point_likeli = numpy.log(numpy.sum(numpy.exp(log_pdf)))
-
-        points = numpy.random.uniform(-11, 9, 30)
-        points = numpy.insert(points, 10, 0)
-        likelis = gmm_sampler.get_loglikelis(points)
-
-        point_likeli = numpy.format_float_scientific(point_likeli, precision=10)
-        gmm_likeli = numpy.format_float_scientific(likelis[10], precision=10)
-        assert point_likeli == gmm_likeli
-        assert len(likelis) == len(points)
-
 
 class TestTPE():
     """Tests for the algo TPE."""
@@ -407,13 +370,16 @@ class TestTPE():
     def test_unsupported_space(self):
         """Test tpe only work for supported search space"""
         space = Space()
-        dim = Fidelity('epoch', 1, 9, 3)
-        space.register(dim)
-
-        with pytest.raises(ValueError) as ex:
-            TPE(space)
-
-        assert 'TPE now only supports Real, Integer and Categorical Dimension' in str(ex.value)
+        dim1 = Real('yolo1', 'uniform', -10, 10)
+        space.register(dim1)
+        dim2 = Real('yolo2', 'reciprocal', 10, 20)
+        space.register(dim2)
+        categories = ['a', 0.1, 2, 'c']
+        dim3 = Categorical('yolo3', categories)
+        space.register(dim3)
+        dim4 = Fidelity('epoch', 1, 9, 3)
+        space.register(dim4)
+        TPE(space)
 
         space = Space()
         dim = Real('yolo1', 'norm', 0.9)

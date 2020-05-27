@@ -11,7 +11,7 @@
 import logging
 
 import numpy
-from scipy.stats import lognorm, norm
+from scipy.stats import norm
 
 from orion.algo.base import BaseAlgorithm
 from orion.core.utils.points import flatten_dims, regroup_dims
@@ -186,11 +186,8 @@ class TPE(BaseAlgorithm):
 
         for dimension in self.space.values():
 
-            if dimension.type not in ['real', 'integer', 'categorical']:
-                raise ValueError("TPE now only supports Real, Integer "
-                                 "and Categorical Dimension.")
-
-            if dimension.prior_name not in ['uniform', 'reciprocal', 'int_uniform', 'choices']:
+            if dimension.type != 'fidelity' and \
+                    dimension.prior_name not in ['uniform', 'reciprocal', 'int_uniform', 'choices']:
                 raise ValueError("TPE now only supports uniform, loguniform, uniform discrete "
                                  "and choices as prior.")
 
@@ -283,7 +280,8 @@ class TPE(BaseAlgorithm):
                                                        above_points[idx: idx + shape[0]],
                                                        self._sample_categorical_point)
                 else:
-                    raise NotImplementedError()
+                    # fidelity dimension
+                    points = dimension.sample(num)
 
                 if len(points) < shape[0]:
                     logger.warning('TPE failed to sample new point with configuration %s',
@@ -336,12 +334,10 @@ class TPE(BaseAlgorithm):
         """Sample one value for real dimension based on the observed good and bad points"""
         low, high = dimension.interval()
         if is_log:
-            below_points = numpy.log(below_points)
-            above_points = numpy.log(above_points)
-
-            # scipy.stats loguniform
             low = numpy.log(low)
             high = numpy.log(high)
+            below_points = numpy.log(below_points)
+            above_points = numpy.log(above_points)
 
         below_mus, below_sigmas, below_weights = \
             adaptive_parzen_estimator(below_points, low, high, self.prior_weight,
@@ -351,15 +347,19 @@ class TPE(BaseAlgorithm):
                                       self.equal_weight, flat_num=self.full_weight_num)
 
         gmm_sampler_below = GMMSampler(self, below_mus, below_sigmas,
-                                       low, high, below_weights, is_log=is_log)
+                                       low, high, below_weights)
         gmm_sampler_above = GMMSampler(self, above_mus, above_sigmas,
-                                       low, high, above_weights, is_log=is_log)
+                                       low, high, above_weights)
 
         candidate_points = gmm_sampler_below.sample(self.n_ei_candidates)
         if candidate_points:
             lik_blow = gmm_sampler_below.get_loglikelis(candidate_points)
             lik_above = gmm_sampler_above.get_loglikelis(candidate_points)
             new_point = compute_max_ei_point(candidate_points, lik_blow, lik_above)
+
+            if is_log:
+                new_point = numpy.exp(new_point)
+
             return new_point
 
         return None
@@ -452,7 +452,7 @@ class GMMSampler():
 
     """
 
-    def __init__(self, tpe, mus, sigmas, low, high, weights=None, is_log=False):
+    def __init__(self, tpe, mus, sigmas, low, high, weights=None):
         self.tpe = tpe
 
         self.mus = mus
@@ -460,10 +460,6 @@ class GMMSampler():
         self.low = low
         self.high = high
         self.weights = weights if weights is not None else len(mus) * [1.0 / len(mus)]
-        self.is_log = is_log
-        if is_log:
-            self.low = numpy.exp(low)
-            self.high = numpy.exp(high)
 
         self.pdfs = []
         self._build_mixture()
@@ -471,10 +467,7 @@ class GMMSampler():
     def _build_mixture(self):
         """Build the Gaussian components in the GMM"""
         for mu, sigma in zip(self.mus, self.sigmas):
-            if self.is_log:
-                self.pdfs.append(lognorm(s=sigma, loc=0, scale=numpy.exp(mu)))
-            else:
-                self.pdfs.append(norm(mu, sigma))
+            self.pdfs.append(norm(mu, sigma))
 
     def sample(self, num=1):
         """Sample required number of points"""
