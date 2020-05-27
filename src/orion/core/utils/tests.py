@@ -87,14 +87,14 @@ def generate_trials(trial_config, status):
 def create_experiment(exp_config=None, trial_config=None, stati=None):
     """Context manager for the creation of an ExperimentClient and storage init"""
 
-    from orion.client.experiment import ExperimentClient # Has to be initialized after the singletons.
-
     if exp_config is None:
-        exp_config = config
+        raise ValueError("Parameter 'exp_config' is missing")
     if trial_config is None:
-        trial_config = base_trial
+        raise ValueError("Parameter 'trial_config' is missing")
     if stati is None:
         stati = ['new', 'interrupted', 'suspended', 'reserved', 'completed']
+        
+    from orion.client.experiment import ExperimentClient # Has to be initialized after the singletons.
 
     with OrionState(experiments=[exp_config], trials=generate_trials(trial_config, stati)) as cfg:
         experiment = experiment_builder.build(name=exp_config['name'])

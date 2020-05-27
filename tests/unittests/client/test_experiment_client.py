@@ -70,6 +70,12 @@ def compare_without_heartbeat(trial_a, trial_b):
     assert trial_a_dict == trial_b_dict
 
 
+def test_plot_is_defined():
+    with create_experiment(config, base_trial) as (_, _, client):
+        with pytest.raises(NotImplementedError):
+            client.plot()
+
+
 def test_experiment_fetch_trials():
     """Test compliance of client and experiment `fetch_trials()`"""
     with create_experiment(config, base_trial) as (cfg, experiment, client):
