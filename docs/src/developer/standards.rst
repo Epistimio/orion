@@ -85,6 +85,28 @@ Versioning standard
 We follow the `semantic versioning <https://semver.org/>`_ convention to name the versions of Oríon.
 While in beta, we prepend a ``0`` on the left of the major version.
 
+GitHub labels
+=============
+
+The labels are divided in a few categories. The objective is to have precise labels while staying lean.
+Each category is identified with a color. Bold colors should be used for tags that should be easily findable when looking at the issues.
+
+===========  ===========================================================================================  ==================================================
+Category     Description                                                                                  Labels
+===========  ===========================================================================================  ==================================================
+Topic        Specify an area in the software or meta concerns.                                            ``documentation`` ``tests``
+Addition     New feature                                                                                  ``feature``
+Improvement  Improves a feature or non-functional aspects (e.g., optimization, prettify, technical debt)  ``enhancement``
+problems     Indicates an unexpected problem or unintended behavior                                       ``bug``
+Status       Status of the issue or PR                                                                    ``blocked`` ``in progress`` ``in review``
+Discussion   Questions or feedback about the project                                                      ``user question`` ``dev question`` ``feedback``
+Community    Related to the community, calls to action                                                    ``help wanted`` ``good first issue``
+Priority     Qualifies priority bugs and features                                                         ``critical`` ``high`` ``medium`` ``low``
+Inactive     No action needed or possible. The issue is either fixed, addressed                           ``on hold`` ``wont fix`` ``duplicate`` ``invalid``
+===========  ===========================================================================================  ==================================================
+
+The priority category enables the maintainers to identify which issues should be done in priority. Each label has a different shade based on the priority.
+
 .. _Github: https://github.com
 .. _flake8: http://flake8.pycqa.org/en/latest/
 .. _doc8: https://pypi.org/project/doc8/
