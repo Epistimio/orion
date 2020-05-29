@@ -23,15 +23,40 @@ def regret(experiment, **kwargs):
         If no experiment is provided.
 
     """
+
     if not experiment:
         raise ValueError("Parameter 'experiment' is None")
-    
-    raise NotImplementedError
-    # TODO: Make a plot using Plotly
+
+    import pandas as pd
+    import plotly.graph_objects as go
+
+    trials = experiment.fetch_trials()
+
+    data = [(trial.id, trial.status, trial.submit_time, trial.objective.value) for trial in trials]
+
+    df = pd.DataFrame(data, columns=['id', 'status', 'submit', 'objective'])
+    df['best'] = df['objective'].cummin()
+
+    fig = go.Figure()
+
+    fig.add_scatter(y=df['objective'],
+                    mode='markers',
+                    name='objective')
+
+    fig.add_scatter(y=df['best'],
+                    mode='lines',
+                    name='best')
+
+    fig.update_layout(title="Regret for experiment '{}'".format(experiment.name),
+                      xaxis_title="Trials",
+                      yaxis_title="Performance")
+
+    return fig
+
 
 class PlotAccessor:
-    """ 
-    Make plots of ExperimentClient. 
+    """
+    Make plots of ExperimentClient.
 
     Parameters
     ----------
@@ -41,14 +66,13 @@ class PlotAccessor:
     Raises
     ------
     ValueError
-        If no experiment is provided. 
+        If no experiment is provided.
     """
 
     def __init__(self, experiment):
         if not experiment:
             raise ValueError("Parameter 'experiment' is None")
         self._experiment = experiment
-
 
     def __call__(self, *args, **kwargs):
         """
@@ -57,9 +81,7 @@ class PlotAccessor:
         raise NotImplementedError()
         # TODO: Delegate call to correct plotting functions.
 
-
     def regret(self):
         """ Convenience method for :meth:`orion.plotting.learning`"""
         raise NotImplementedError()
         # TODO: Call self(kind='learning')
-

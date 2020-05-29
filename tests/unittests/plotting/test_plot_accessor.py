@@ -5,9 +5,9 @@ from orion.core.utils.tests import create_experiment
 
 
 config = dict(
-    name='supernaekei',
+    name='experiment-name',
     space={'x': 'uniform(0, 200)'},
-    metadata={'user': 'tsirif',
+    metadata={'user': 'test-user',
               'orion_version': 'XYZ',
               'VCS': {"type": "git",
                       "is_dirty": False,
@@ -20,11 +20,7 @@ config = dict(
     working_dir='',
     algorithms={'random': {'seed': 1}},
     producer={'strategy': 'NoParallelStrategy'},
-    refers=dict(
-        root_id='supernaekei',
-        parent_id=None,
-        adapter=[])
-    )
+)
 
 
 trial_config = {
@@ -43,11 +39,13 @@ def test_init_require_experiment():
     with pytest.raises(ValueError):
         PlotAccessor(None)
 
+
 def test_instance_call_defined():
     with create_experiment(config, trial_config) as (_, _, experiment):
         pa = PlotAccessor(experiment)
         with pytest.raises(NotImplementedError):
             pa()
+
 
 def test_regret():
     with create_experiment(config, trial_config) as (_, _, experiment):
