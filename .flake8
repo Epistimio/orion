@@ -1,0 +1,43 @@
+[flake8]
+count = True
+show-source = True
+doctests = True
+
+ignore =
+    # Missing docstring in __init__
+    D107
+    # blank-line after doc summaries (annoying for modules' doc)
+    D205
+    # conflicts with D211: No blank lines allowed before class docstring
+    D203
+    # do not enforce first-line-period at module docs
+    D400
+    # conflicts with E133: closing bracket is missing indentation
+    E123
+
+exclude =
+    .tox,
+    .git,
+    __pycache__,
+    docs,
+    config,
+    build,
+    dist,
+    *.pyc,
+    *.egg-info,
+    .cache,
+    .eggs,
+    src/orion/core/_version.py,
+    src/orion/core/utils/_appdirs.py
+
+# Line length
+max-line-length = 100
+
+# McCabe complexity checker
+max-complexity = 20
+
+# flake8-import-order: style
+import-order-style = google
+
+# flake8-import-order: local module name checker
+application-import-names = orion, versioneer
