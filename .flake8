@@ -6,14 +6,30 @@ doctests = True
 ignore =
     # Missing docstring in __init__
     D107
+
     # blank-line after doc summaries (annoying for modules' doc)
     D205
+
     # conflicts with D211: No blank lines allowed before class docstring
     D203
+
     # do not enforce first-line-period at module docs
     D400
+
     # conflicts with E133: closing bracket is missing indentation
     E123
+
+    # Line break after binary operator
+    W504
+
+    # Invalid escape sequence
+    W605
+
+    # Local variable never used
+    F841
+
+    # Use of == / != to compare constant literals
+    F632
 
 exclude =
     .tox,
