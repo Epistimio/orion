@@ -1,9 +1,2 @@
+# The only dev package necessary is `tox` in order to run the different environments used for testing, linting and releasing.
 tox
-flake8 == 3.5.0
-flake8-import-order == 0.15
-flake8-docstrings == 1.1.0
-flake8-bugbear == 17.4.0
-pylint == 1.8.1
-doc8 == 0.8.0
-check-manifest
-readme_renderer
