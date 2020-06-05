@@ -35,20 +35,43 @@ trial_config = {
 }
 
 
+def check_regret_plot(plot):
+    assert plot
+    assert "regret" in plot.layout.title.text.lower()
+    assert 2 == len(plot.data)
+
+
 def test_init_require_experiment():
     with pytest.raises(ValueError):
         PlotAccessor(None)
 
 
-def test_instance_call_defined():
-    with create_experiment(config, trial_config) as (_, _, experiment):
+def test_call_nonexistent_kind():
+    with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
         pa = PlotAccessor(experiment)
-        with pytest.raises(NotImplementedError):
-            pa()
+        with pytest.raises(KeyError):
+            pa(kind='nonexistent')
 
 
-def test_regret():
-    with create_experiment(config, trial_config) as (_, _, experiment):
+def test_regret_is_default_plot():
+    with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
         pa = PlotAccessor(experiment)
-        with pytest.raises(NotImplementedError):
-            pa.regret()
+        plot = pa()
+
+        check_regret_plot(plot)
+
+
+def test_regret_kind():
+    with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
+        pa = PlotAccessor(experiment)
+        plot = pa(kind='regret')
+
+        check_regret_plot(plot)
+
+
+def test_call_to_regret():
+    with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
+        pa = PlotAccessor(experiment)
+        plot = pa.regret()
+
+        check_regret_plot(plot)
