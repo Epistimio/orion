@@ -30,28 +30,24 @@ def regret(experiment, **kwargs):
     import pandas as pd
     import plotly.graph_objects as go
 
-    trials = experiment.fetch_trials()
+    trials = list(filter(lambda trial: trial.status == 'completed', experiment.fetch_trials()))
 
-    data = [(trial.id, trial.status, trial.submit_time, trial.objective.value)
-            for trial in trials
-            if trial.status == 'completed']
-
+    data = [(trial.id, trial.status, trial.submit_time, trial.objective.value) for trial in trials]
     df = pd.DataFrame(data, columns=['id', 'status', 'submit', 'objective'])
     df['best'] = df['objective'].cummin()
 
     fig = go.Figure()
-
     fig.add_scatter(y=df['objective'],
                     mode='markers',
-                    name='objective')
-
+                    name='trials')
     fig.add_scatter(y=df['best'],
                     mode='lines',
-                    name='best')
+                    name='best-to-date')
 
-    fig.update_layout(title="Regret for experiment '{}'".format(experiment.name),
-                      xaxis_title="Trials",
-                      yaxis_title="Performance")
+    y_axis_label = f"{trials[0].objective.type.capitalize()} '{trials[0].objective.name}'"
+    fig.update_layout(title=f"Regret for experiment '{experiment.name}'",
+                      xaxis_title="Trials by submit order",
+                      yaxis_title=y_axis_label)
 
     return fig
 
