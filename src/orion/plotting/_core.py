@@ -54,6 +54,9 @@ def regret(experiment, **kwargs):
     return fig
 
 
+PLOT_METHODS = {'regret': regret}
+
+
 class PlotAccessor:
     """
     Make plots of ExperimentClient.
@@ -74,14 +77,22 @@ class PlotAccessor:
             raise ValueError("Parameter 'experiment' is None")
         self._experiment = experiment
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, kind='regret'):
         """
-        Convenience method to call different types of plots or ExperimentClient.
+        Make different kinds of plots of ExperimentClient.
+
+        Parameters
+        ----------
+
+        kind : str
+            The kind of plot to produce:
+
+            - 'regret' : Regret plot (default)
+
+
         """
-        raise NotImplementedError()
-        # TODO: Delegate call to correct plotting functions.
+        return PLOT_METHODS[kind](self._experiment)
 
     def regret(self):
-        """ Convenience method for :meth:`orion.plotting.learning`"""
-        raise NotImplementedError()
-        # TODO: Call self(kind='learning')
+        """ Makes a regret plot."""
+        return self(kind="regret")
