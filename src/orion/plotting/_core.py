@@ -32,7 +32,9 @@ def regret(experiment, **kwargs):
 
     trials = experiment.fetch_trials()
 
-    data = [(trial.id, trial.status, trial.submit_time, trial.objective.value) for trial in trials]
+    data = [(trial.id, trial.status, trial.submit_time, trial.objective.value)
+            for trial in trials
+            if trial.status == 'completed']
 
     df = pd.DataFrame(data, columns=['id', 'status', 'submit', 'objective'])
     df['best'] = df['objective'].cummin()
