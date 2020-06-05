@@ -35,14 +35,20 @@ def regret(experiment, **kwargs):
     data = [(trial.id, trial.status, trial.submit_time, trial.objective.value) for trial in trials]
     df = pd.DataFrame(data, columns=['id', 'status', 'submit', 'objective'])
     df['best'] = df['objective'].cummin()
+    df['best_id'] = get_best_ids(df)
 
     fig = go.Figure()
+
     fig.add_scatter(y=df['objective'],
                     mode='markers',
-                    name='trials')
+                    name='trials',
+                    customdata=list(zip(df['id'], df['submit'])),
+                    hovertemplate="<b>ID: %{customdata[0]}</b><br>value: %{y}<br>submitted: %{customdata[1]}<extra></extra>")
     fig.add_scatter(y=df['best'],
                     mode='lines',
-                    name='best-to-date')
+                    name='best-to-date',
+                    customdata=list(zip(df['best_id'], df['best'])),
+                    hovertemplate="<b>Best ID: %{customdata[0]}</b><br>value: %{customdata[1]}<extra></extra>")
 
     y_axis_label = f"{trials[0].objective.type.capitalize()} '{trials[0].objective.name}'"
     fig.update_layout(title=f"Regret for experiment '{experiment.name}'",
@@ -94,3 +100,15 @@ class PlotAccessor:
     def regret(self):
         """ Makes a regret plot."""
         return self(kind="regret")
+
+
+def get_best_ids(df):
+    best_id = None
+    result = []
+
+    for i, id in enumerate(df.id):
+        if df.objective[i] == df.best[i]:
+            best_id = id
+        result.append(best_id)
+
+    return result
