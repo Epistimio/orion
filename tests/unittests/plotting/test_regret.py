@@ -36,19 +36,19 @@ trial_config = {
 
 def assert_regret_plot(plot):
     assert plot.layout.title.text == "Regret for experiment 'experiment-name'"
-    assert plot.layout.xaxis.title.text == "Trials"
-    assert plot.layout.yaxis.title.text == "Performance"
+    assert plot.layout.xaxis.title.text == "Trials by submit order"
+    assert plot.layout.yaxis.title.text == "Objective 'loss'"
 
     trace1 = plot.data[0]
     assert trace1.type == "scatter"
-    assert trace1.name == "objective"
+    assert trace1.name == "trials"
     assert trace1.mode == "markers"
     assert len(trace1.y) == 1
     assert not trace1.x
 
     trace2 = plot.data[1]
     assert trace2.type == "scatter"
-    assert trace2.name == "best"
+    assert trace2.name == "best-to-date"
     assert trace2.mode == "lines"
     assert len(trace2.y) == 1
     assert not trace2.x
