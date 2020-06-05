@@ -34,22 +34,7 @@ trial_config = {
 }
 
 
-def test_requires_argument():
-    with pytest.raises(ValueError):
-        regret(None)
-
-
-def test_returns_plotly_object():
-    with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
-        plot = regret(experiment)
-
-    assert type(plot) is plotly.graph_objects.Figure
-
-
-def test_basic_graph_layout():
-    with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
-        plot = regret(experiment)
-
+def assert_regret_plot(plot):
     assert plot.layout.title.text == "Regret for experiment 'experiment-name'"
     assert plot.layout.xaxis.title.text == "Trials"
     assert plot.layout.yaxis.title.text == "Performance"
@@ -67,3 +52,29 @@ def test_basic_graph_layout():
     assert trace2.mode == "lines"
     assert len(trace2.y) == 1
     assert not trace2.x
+
+
+def test_requires_argument():
+    with pytest.raises(ValueError):
+        regret(None)
+
+
+def test_returns_plotly_object():
+    with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
+        plot = regret(experiment)
+
+    assert type(plot) is plotly.graph_objects.Figure
+
+
+def test_graph_layout():
+    with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
+        plot = regret(experiment)
+
+    assert_regret_plot(plot)
+
+
+def test_ignore_uncompleted_statuses():
+    with create_experiment(config, trial_config) as (_, _, experiment):
+        plot = regret(experiment)
+
+    assert_regret_plot(plot)
