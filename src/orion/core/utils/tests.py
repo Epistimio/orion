@@ -40,7 +40,7 @@ def default_datetime():
     return datetime.datetime(1903, 4, 25, 0, 0, 0)
 
 
-def generate_trials(trial_config, status):
+def generate_trials(trial_config, statuses):
     """Generate Trials with different configurations"""
 
     def _generate(obj, *args, value):
@@ -56,7 +56,7 @@ def generate_trials(trial_config, status):
         data[args[-1]] = value
         return obj
 
-    new_trials = [_generate(trial_config, 'status', value=s) for s in status]
+    new_trials = [_generate(trial_config, 'status', value=s) for s in statuses]
 
     for i, trial in enumerate(new_trials):
         trial['submit_time'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=i)
@@ -83,20 +83,22 @@ def generate_trials(trial_config, status):
 
     return new_trials
 
+
 @contextmanager
-def create_experiment(exp_config=None, trial_config=None, stati=None):
+def create_experiment(exp_config=None, trial_config=None, statuses=None):
     """Context manager for the creation of an ExperimentClient and storage init"""
 
     if exp_config is None:
         raise ValueError("Parameter 'exp_config' is missing")
     if trial_config is None:
         raise ValueError("Parameter 'trial_config' is missing")
-    if stati is None:
-        stati = ['new', 'interrupted', 'suspended', 'reserved', 'completed']
-        
-    from orion.client.experiment import ExperimentClient # Has to be initialized after the singletons.
+    if statuses is None:
+        statuses = ['new', 'interrupted', 'suspended', 'reserved', 'completed']
 
-    with OrionState(experiments=[exp_config], trials=generate_trials(trial_config, stati)) as cfg:
+    from orion.client.experiment import ExperimentClient
+
+    with OrionState(experiments=[exp_config],
+                    trials=generate_trials(trial_config, statuses)) as cfg:
         experiment = experiment_builder.build(name=exp_config['name'])
         if cfg.trials:
             experiment._id = cfg.trials[0]['experiment']
@@ -179,8 +181,8 @@ class BaseOrionState:
 
     Examples
     --------
-    >>> myconfig = {...}
-    >>> with OrionState(myconfig):
+    >>> my_config = {...}
+    >>> with OrionState(my_config):
         ...
 
     """
