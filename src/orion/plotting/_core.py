@@ -81,7 +81,7 @@ class PlotAccessor:
             raise ValueError("Parameter 'experiment' is None")
         self._experiment = experiment
 
-    def __call__(self, kind='regret'):
+    def __call__(self, **kwargs):
         """
         Make different kinds of plots of ExperimentClient.
 
@@ -92,14 +92,15 @@ class PlotAccessor:
             The kind of plot to produce:
 
             - 'regret' : Regret plot (default)
-
-
         """
-        return PLOT_METHODS[kind](self._experiment)
 
-    def regret(self):
+        kind = kwargs.pop('kind', 'regret')
+
+        return PLOT_METHODS[kind](self._experiment, **kwargs)
+
+    def regret(self, **kwargs):
         """ Makes a regret plot."""
-        return self(kind="regret")
+        return self(kind="regret", **kwargs)
 
 
 def get_best_ids(df):
