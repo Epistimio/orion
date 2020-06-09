@@ -279,9 +279,11 @@ class TPE(BaseAlgorithm):
                                                        below_points[idx: idx + shape[0]],
                                                        above_points[idx: idx + shape[0]],
                                                        self._sample_categorical_point)
-                else:
+                elif dimension.type == 'fidelity':
                     # fidelity dimension
                     points = dimension.sample(num)
+                else:
+                    raise NotImplementedError()
 
                 if len(points) < shape[0]:
                     logger.warning('TPE failed to sample new point with configuration %s',
