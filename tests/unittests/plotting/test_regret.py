@@ -36,7 +36,7 @@ trial_config = {
 
 def assert_regret_plot(plot):
     assert plot.layout.title.text == "Regret for experiment 'experiment-name'"
-    assert plot.layout.xaxis.title.text == "Trials by submit order"
+    assert plot.layout.xaxis.title.text == "Trials ordered by suggested time"
     assert plot.layout.yaxis.title.text == "Objective 'loss'"
 
     trace1 = plot.data[0]
@@ -78,3 +78,9 @@ def test_ignore_uncompleted_statuses():
         plot = regret(experiment)
 
     assert_regret_plot(plot)
+
+
+def test_unsupported_order_key():
+    with create_experiment(config, trial_config) as (_, _, experiment):
+        with pytest.raises(ValueError):
+            regret(experiment, order_by='unsupported')
