@@ -54,33 +54,31 @@ def assert_regret_plot(plot):
     assert not trace2.x
 
 
-def test_requires_argument():
-    with pytest.raises(ValueError):
-        regret(None)
+class TestRegret:
 
-
-def test_returns_plotly_object():
-    with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
-        plot = regret(experiment)
-
-    assert type(plot) is plotly.graph_objects.Figure
-
-
-def test_graph_layout():
-    with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
-        plot = regret(experiment)
-
-    assert_regret_plot(plot)
-
-
-def test_ignore_uncompleted_statuses():
-    with create_experiment(config, trial_config) as (_, _, experiment):
-        plot = regret(experiment)
-
-    assert_regret_plot(plot)
-
-
-def test_unsupported_order_key():
-    with create_experiment(config, trial_config) as (_, _, experiment):
+    def test_requires_argument(self):
         with pytest.raises(ValueError):
-            regret(experiment, order_by='unsupported')
+            regret(None)
+
+    def test_returns_plotly_object(self):
+        with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
+            plot = regret(experiment)
+
+        assert type(plot) is plotly.graph_objects.Figure
+
+    def test_graph_layout(self):
+        with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
+            plot = regret(experiment)
+
+        assert_regret_plot(plot)
+
+    def test_ignore_uncompleted_statuses(self):
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            plot = regret(experiment)
+
+        assert_regret_plot(plot)
+
+    def test_unsupported_order_key(self):
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            with pytest.raises(ValueError):
+                regret(experiment, order_by='unsupported')
