@@ -2,6 +2,41 @@ import orion.plotting.backend_plotly as backend
 
 
 def regret(experiment, order_by='suggested', **kwargs):
+    """
+    Make a plot to visualize the performance of the hyper-optimization process.
+
+    The x-axis contain the trials and the y-axis their respective best performance.
+
+    Parameters
+    ----------
+        experiment: ExperimentClient
+            The orion object containing the data
+
+        order_by: str
+            Indicates how the trials should be ordered. Acceptable options are below.
+            See attributes of `Trial` for more details.
+
+            * 'suggested': Sort by trial suggested time (default).
+            * 'reserved': Sort by trial reserved time.
+            * 'completed': Sort by trial completed time.
+
+        verbose_hover: bool
+            Indicates whether to display the hyperparameter in hover tooltips.
+
+        **kwargs
+            All other plotting keyword arguments to be passed to
+            :meth:`plotly.express.line`.
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+
+    Raises
+    ------
+    ValueError
+        If no experiment is provided.
+
+    """
     return backend.regret(experiment, order_by, **kwargs)
 
 
@@ -46,5 +81,5 @@ class PlotAccessor:
         return PLOT_METHODS[kind](self._experiment, **kwargs)
 
     def regret(self, **kwargs):
-        """ Makes a regret plot."""
+        __doc__ = regret.__doc__
         return self(kind="regret", **kwargs)
