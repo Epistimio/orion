@@ -19,6 +19,7 @@ import warnings
 
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.flatten import flatten, unflatten
+from orion.core.worker.trial import Trial as OrionTrial, validate_status
 from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
 
 log = logging.getLogger(__name__)
@@ -168,8 +169,6 @@ class TrialAdapter:
     @property
     def _params(self):
         """See `~orion.core.worker.trial.Trial`"""
-        from orion.core.worker.trial import Trial as OrionTrial
-
         if self.memory is not None:
             return self.memory._params
 
@@ -224,8 +223,6 @@ class TrialAdapter:
     @property
     def objective(self):
         """See `~orion.core.worker.trial.Trial`"""
-        from orion.core.worker.trial import Trial as OrionTrial
-
         def result(val):
             return OrionTrial.Result(name=self.objective_key, value=val, type='objective')
 
@@ -256,8 +253,6 @@ class TrialAdapter:
     @property
     def results(self):
         """See `~orion.core.worker.trial.Trial`"""
-        from orion.core.worker.trial import Trial as OrionTrial
-
         self._results = []
 
         for k, values in self.storage.metrics.items():
@@ -279,7 +274,6 @@ class TrialAdapter:
     @property
     def hash_params(self):
         """See `~orion.core.worker.trial.Trial`"""
-        from orion.core.worker.trial import Trial as OrionTrial
         return OrionTrial.compute_trial_hash(self, ignore_fidelity=True)
 
     @results.setter
@@ -621,6 +615,7 @@ class Track(BaseStorageProtocol):   # noqa: F811
             does not match the status in the database
 
         """
+        validate_status(status)
         try:
             result_trial = self.backend.fetch_and_update_trial({
                 'uid': trial.id,

@@ -384,6 +384,16 @@ class TestRelease:
             assert trial.id not in client._pacemakers
             assert not pacemaker.is_alive()
 
+    def test_release_invalid_status(self):
+        """Test releasing with a specific status"""
+        with create_experiment() as (cfg, experiment, client):
+            trial = experiment.get_trial(uid=cfg.trials[1]['_id'])
+            client.reserve(trial)
+            with pytest.raises(ValueError) as exc:
+                client.release(trial, 'mouf mouf')
+
+            assert exc.match('Given status `mouf mouf` not one of')
+
     def test_release_dont_exist(self, monkeypatch):
         """Verify that unregistered trials cannot be released"""
         with create_experiment() as (cfg, experiment, client):
