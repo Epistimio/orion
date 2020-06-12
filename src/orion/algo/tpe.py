@@ -36,6 +36,23 @@ def compute_max_ei_point(points, below_likelis, above_likelis):
     return points[point_index]
 
 
+def ramp_up_weights(total_num, flat_num, equal_weight):
+    """Adjust weights of observed trials.
+
+    :param total_num: total number of observed trials.
+    :param flat_num: the number of the most recent trials which
+        get the full weight where the others will be applied with a linear ramp
+        from 0 to 1.0. It will only take effect if equal_weight is False.
+    :param equal_weight: whether all the observed trails share the same weights.
+    """
+    if total_num < flat_num or equal_weight:
+        return numpy.ones(total_num)
+
+    ramp_weights = numpy.linspace(1.0 / total_num, 1.0, num=total_num - flat_num)
+    flat_weights = numpy.ones(flat_num)
+    return numpy.concatenate([ramp_weights, flat_weights])
+
+
 # pylint:disable=assignment-from-no-return
 def adaptive_parzen_estimator(mus, low, high,
                               prior_weight=1.0,
@@ -56,15 +73,6 @@ def adaptive_parzen_estimator(mus, low, high,
         get the full weight where the others will be applied with a linear ramp
         from 0 to 1.0. It will only take effect if equal_weight is False.
     """
-    def update_weights(total_num):
-        """Generate weights for all components"""
-        if total_num < flat_num or equal_weight:
-            return numpy.ones(total_num)
-
-        ramp_weights = numpy.linspace(1.0 / total_num, 1.0, num=total_num - flat_num)
-        flat_weights = numpy.ones(flat_num)
-        return numpy.concatenate([ramp_weights, flat_weights])
-
     mus = numpy.asarray(mus)
 
     prior_mu = (low + high) * 0.5
@@ -76,7 +84,7 @@ def adaptive_parzen_estimator(mus, low, high,
         sorted_mus = mus[order]
         prior_mu_pos = numpy.searchsorted(sorted_mus, prior_mu)
 
-        weights = update_weights(size)
+        weights = ramp_up_weights(size, flat_num, equal_weight)
 
         mixture_mus = numpy.zeros(size + 1)
         mixture_mus[:prior_mu_pos] = sorted_mus[:prior_mu_pos]
@@ -178,11 +186,10 @@ class TPE(BaseAlgorithm):
 
         for dimension in self.space.values():
 
-            if dimension.type not in ['real']:
-                raise ValueError("TPE now only supports Real Dimension.")
-
-            if dimension.prior_name not in ['uniform']:
-                raise ValueError("TPE now only supports uniform as prior.")
+            if dimension.type != 'fidelity' and \
+                    dimension.prior_name not in ['uniform', 'reciprocal', 'int_uniform', 'choices']:
+                raise ValueError("TPE now only supports uniform, loguniform, uniform discrete "
+                                 "and choices as prior.")
 
             shape = dimension.shape
             if shape and len(shape) != 1:
@@ -245,8 +252,11 @@ class TPE(BaseAlgorithm):
         else:
             point = []
             below_points, above_points = self.split_trials()
-            below_points = numpy.array([flatten_dims(point, self.space) for point in below_points])
-            above_points = numpy.array([flatten_dims(point, self.space) for point in above_points])
+
+            below_points = [flatten_dims(point, self.space) for point in below_points]
+            above_points = [flatten_dims(point, self.space) for point in above_points]
+            below_points = list(map(list, zip(*below_points)))
+            above_points = list(map(list, zip(*above_points)))
 
             idx = 0
             for dimension in self.space.values():
@@ -256,11 +266,24 @@ class TPE(BaseAlgorithm):
                     shape = (1,)
 
                 if dimension.type == 'real':
-                    points = self.sample_real_dimension(dimension, shape[0],
-                                                        below_points[:, idx: idx + shape[0]],
-                                                        above_points[:, idx: idx + shape[0]])
+                    points = self._sample_real_dimension(dimension, shape[0],
+                                                         below_points[idx: idx + shape[0]],
+                                                         above_points[idx: idx + shape[0]])
+                elif dimension.type == 'integer' and dimension.prior_name == 'int_uniform':
+                    points = self.sample_one_dimension(dimension, shape[0],
+                                                       below_points[idx: idx + shape[0]],
+                                                       above_points[idx: idx + shape[0]],
+                                                       self._sample_int_point)
+                elif dimension.type == 'categorical' and dimension.prior_name == 'choices':
+                    points = self.sample_one_dimension(dimension, shape[0],
+                                                       below_points[idx: idx + shape[0]],
+                                                       above_points[idx: idx + shape[0]],
+                                                       self._sample_categorical_point)
+                elif dimension.type == 'fidelity':
+                    # fidelity dimension
+                    points = dimension.sample(num)
                 else:
-                    raise ValueError("TPE now only support Real Dimension.")
+                    raise NotImplementedError()
 
                 if len(points) < shape[0]:
                     logger.warning('TPE failed to sample new point with configuration %s',
@@ -275,26 +298,49 @@ class TPE(BaseAlgorithm):
 
         return samples
 
-    def sample_real_dimension(self, dimension, shape_size, below_points, above_points):
-        """Sample values for a real dimension
+    # pylint:disable=no-self-use
+    def sample_one_dimension(self, dimension, shape_size, below_points, above_points, sampler):
+        """Sample values for a dimension
 
-        :param dimension: Real Dimension.
+        :param dimension: Dimension.
         :param shape_size: 1D Shape Size of the Real Dimension.
-        :param below_points: good points with shape (m, n), n=shape_size.
-        :param above_points: bad points with shape (m, n), n=shape_size.
+        :param below_points: good points with shape (m, n), m=shape_size.
+        :param above_points: bad points with shape (m, n), m=shape_size.
+        :param sampler: method to sample one value for upon the dimension.
         """
         points = []
 
         for j in range(shape_size):
-            new_point = self._sample_real_point(dimension, below_points[:, j], above_points[:, j])
-            if new_point:
+            new_point = sampler(dimension, below_points[j], above_points[j])
+            if new_point is not None:
                 points.append(new_point)
 
         return points
 
-    def _sample_real_point(self, dimension, below_points, above_points):
-        """Sample one value for a real dimension based on the observed good and bad points"""
+    def _sample_real_dimension(self, dimension, shape_size, below_points, above_points):
+        """Sample values for real dimension"""
+        if dimension.prior_name == 'uniform':
+            return self.sample_one_dimension(dimension, shape_size, below_points, above_points,
+                                             self._sample_real_point)
+        elif dimension.prior_name == 'reciprocal':
+            return self.sample_one_dimension(dimension, shape_size, below_points, above_points,
+                                             self._sample_loguniform_real_point)
+        else:
+            raise NotImplementedError()
+
+    def _sample_loguniform_real_point(self, dimension, below_points, above_points):
+        """Sample one value for real dimension in a loguniform way"""
+        return self._sample_real_point(dimension, below_points, above_points, is_log=True)
+
+    def _sample_real_point(self, dimension, below_points, above_points, is_log=False):
+        """Sample one value for real dimension based on the observed good and bad points"""
         low, high = dimension.interval()
+        if is_log:
+            low = numpy.log(low)
+            high = numpy.log(high)
+            below_points = numpy.log(below_points)
+            above_points = numpy.log(above_points)
+
         below_mus, below_sigmas, below_weights = \
             adaptive_parzen_estimator(below_points, low, high, self.prior_weight,
                                       self.equal_weight, flat_num=self.full_weight_num)
@@ -302,16 +348,67 @@ class TPE(BaseAlgorithm):
             adaptive_parzen_estimator(above_points, low, high, self.prior_weight,
                                       self.equal_weight, flat_num=self.full_weight_num)
 
-        gmm_sampler_below = GMMSampler(self, below_mus, below_sigmas, low, high, below_weights)
-        gmm_sampler_above = GMMSampler(self, above_mus, above_sigmas, low, high, above_weights)
+        gmm_sampler_below = GMMSampler(self, below_mus, below_sigmas,
+                                       low, high, below_weights)
+        gmm_sampler_above = GMMSampler(self, above_mus, above_sigmas,
+                                       low, high, above_weights)
 
         candidate_points = gmm_sampler_below.sample(self.n_ei_candidates)
         if candidate_points:
             lik_blow = gmm_sampler_below.get_loglikelis(candidate_points)
             lik_above = gmm_sampler_above.get_loglikelis(candidate_points)
             new_point = compute_max_ei_point(candidate_points, lik_blow, lik_above)
+
+            if is_log:
+                new_point = numpy.exp(new_point)
+
             return new_point
 
+        return None
+
+    def _sample_int_point(self, dimension, below_points, above_points):
+        """Sample one value for integer dimension based on the observed good and bad points"""
+        low, high = dimension.interval()
+        choices = range(low, high)
+
+        below_points = numpy.array(below_points).astype(int) - low
+        above_points = numpy.array(above_points).astype(int) - low
+
+        sampler_below = CategoricalSampler(self, below_points, choices)
+        candidate_points = sampler_below.sample(self.n_ei_candidates)
+
+        if list(candidate_points):
+            sampler_above = CategoricalSampler(self, above_points, choices)
+
+            lik_below = sampler_below.get_loglikelis(candidate_points)
+            lik_above = sampler_above.get_loglikelis(candidate_points)
+
+            new_point = compute_max_ei_point(candidate_points, lik_below, lik_above)
+            new_point = new_point + low
+            return new_point
+
+        return None
+
+    def _sample_categorical_point(self, dimension, below_points, above_points):
+        """Sample one value for categorical dimension based on the observed good and bad points"""
+        choices = dimension.interval()
+
+        below_points = [choices.index(point) for point in below_points]
+        above_points = [choices.index(point) for point in above_points]
+
+        sampler_below = CategoricalSampler(self, below_points, choices)
+        candidate_points = sampler_below.sample(self.n_ei_candidates)
+
+        if list(candidate_points):
+            sampler_above = CategoricalSampler(self, above_points, choices)
+
+            lik_below = sampler_below.get_loglikelis(candidate_points)
+            lik_above = sampler_above.get_loglikelis(candidate_points)
+
+            new_point_index = compute_max_ei_point(candidate_points, lik_below, lik_above)
+            new_point = choices[new_point_index]
+
+            return new_point
         return None
 
     def split_trials(self):
@@ -393,6 +490,7 @@ class GMMSampler():
         weight_likelis = [numpy.log(self.weights[i] * pdf.pdf(points))
                           for i, pdf in enumerate(self.pdfs)]
         weight_likelis = numpy.array(weight_likelis)
+        # (num_weights, num_points) => (num_points, num_weights)
         weight_likelis = weight_likelis.transpose()
 
         # log-sum-exp trick
@@ -402,3 +500,48 @@ class GMMSampler():
                                                axis=1))
 
         return point_likeli
+
+
+class CategoricalSampler():
+    """Categorical Sampler for discrete integer and categorical choices
+
+    Parameters
+    ----------
+    tpe: `TPE` algorithm
+        The tpe algorithm object which this sampler will be part of.
+    observations: list
+        Observed values in the dimension
+    choices: list
+        Candidate values for the dimension
+
+    """
+
+    def __init__(self, tpe, observations, choices):
+        self.tpe = tpe
+        self.obs = observations
+        self.choices = choices
+
+        self._build_multinomial_weights()
+
+    def _build_multinomial_weights(self):
+        """Build weights for categorical distribution based on observations"""
+        weights_obs = ramp_up_weights(len(self.obs),
+                                      self.tpe.full_weight_num, self.tpe.equal_weight)
+        counts_obs = numpy.bincount(self.obs, minlength=len(self.choices), weights=weights_obs)
+        counts_obs = counts_obs + self.tpe.prior_weight
+        self.weights = counts_obs / counts_obs.sum()
+
+    def sample(self, num=1):
+        """Sample required number of points"""
+        samples = self.tpe.rng.multinomial(n=1, pvals=self.weights, size=num)
+
+        assert samples.shape == (num,) + (len(self.weights),)
+
+        samples_index = samples.argmax(-1)
+        assert samples_index.shape == (num,)
+
+        return samples_index
+
+    def get_loglikelis(self, points):
+        """Return the log likelihood for the points"""
+        return numpy.log(numpy.asarray(self.weights)[points])

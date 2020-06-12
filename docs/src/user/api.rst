@@ -78,7 +78,7 @@ you can optimize a function with a single line of code.
    experiment = workon(foo, space=dict(x='uniform(-50,50)'))
 
 
-The experiment object returned is can be used to fetch the database of trials
+The experiment object returned can be used to fetch the database of trials
 and analyze the optimization process. Note that the storage for `workon` is
 in-memory and requires no setup. This means however that :py:func:`orion.client.workon`
 cannot be used for parallel optimisation.
