@@ -9,8 +9,8 @@ def regret(experiment, order_by='suggested', verbose_hover=False, **kwargs):
 
     Parameters
     ----------
-        experiment: ExperimentClient
-            The orion object containing the data
+        experiment: ExperimentClient, Experiment or ExperimentView
+            The orion object containing the experiment data
 
         order_by: str
             Indicates how the trials should be ordered. Acceptable options are below.
