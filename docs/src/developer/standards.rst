@@ -98,55 +98,88 @@ Topic
 
 Specifies an area in the software or meta concerns.
 
-* ``documentation``
-* ``tests``
+* |documentation|_
+* |tests|_
+
+.. |documentation| replace:: ``documentation``
+.. |tests| replace:: ``tests``
+.. _documentation: https://github.com/Epistimio/orion/labels/documentation
+.. _tests: https://github.com/Epistimio/orion/labels/tests
 
 Addition
 --------
 
 Specifies a new feature.
 
-* ``feature``
+* |feature|_
+
+.. |feature| replace:: ``feature``
+.. _feature: https://github.com/Epistimio/orion/labels/feature
 
 Improvement
 -----------
 
 Improves a feature or non-functional aspects (e.g., optimization, prettify, technical debt)
 
-* ``enhancement``
+* |enhancement|_
+
+.. |enhancement| replace:: ``enhancement``
+.. _enhancement: https://github.com/Epistimio/orion/labels/enhancement
 
 Problems
 --------
 
 Indicates an unexpected problem or unintended behavior
 
-* ``bug``
+* |bug|_
+
+.. |bug| replace:: ``bug``
+.. _bug: https://github.com/Epistimio/orion/labels/bug
 
 Status
 ------
 
 Status of the issue or Priority
 
-* ``blocked``
-* ``in progress``
-* ``in review``
+* |blocked|_
+* |in progress|_
+* |in review|_
+
+.. |blocked| replace:: ``blocked``
+.. _blocked: https://github.com/Epistimio/orion/labels/blocked
+.. |in progress| replace:: ``in progress``
+.. _in progress: https://github.com/Epistimio/orion/labels/in%20progress
+.. |in review| replace:: ``in review``
+.. _in review: https://github.com/Epistimio/orion/labels/in%20review
 
 Discussion
 ----------
 
 Questions or feedback about the project
 
-* ``user question``
-* ``dev question``
-* ``feedback``
+* |user question|_
+* |dev question|_
+* |feedback|_
+
+.. |user question| replace:: ``user question``
+.. _user question: https://github.com/Epistimio/orion/labels/user%20question
+.. |dev question| replace:: ``dev question``
+.. _dev question: https://github.com/Epistimio/orion/labels/dev%20question
+.. |feedback| replace:: ``feedback``
+.. _feedback: https://github.com/Epistimio/orion/labels/feedback
 
 Community
 ---------
 
 Related to the community, calls to application
 
-* ``help wanted``
-* ``good first issue``
+* |help wanted|_
+* |good first issue|_
+
+.. |help wanted| replace:: ``help wanted``
+.. _help wanted: https://github.com/Epistimio/orion/labels/help%20wanted
+.. |good first issue| replace:: ``good first issue``
+.. _good first issue: https://github.com/Epistimio/orion/labels/good%20first%20issue
 
 Priority
 --------
@@ -155,20 +188,38 @@ Qualifies priority bugs and features.
 This category enables the maintainers to identify which issues should be done in priority.
 Each label has a different shade based on the priority.
 
-* ``critical``
-* ``high``
-* ``medium``
-* ``low``
+* |critical|_
+* |high|_
+* |medium|_
+* |low|_
+
+.. |critical| replace:: ``critical``
+.. _critical: https://github.com/Epistimio/orion/labels/critical
+.. |high| replace:: ``high``
+.. _high: https://github.com/Epistimio/orion/labels/high
+.. |medium| replace:: ``medium``
+.. _medium: https://github.com/Epistimio/orion/labels/medium
+.. |low| replace:: ``low``
+.. _low: https://github.com/Epistimio/orion/labels/low
 
 Inactive
 --------
 
 No action needed or possible. The issue is either fixed, addressed
 
-* ``on hold``
-* ``wont fix``
-* ``duplicate``
-* ``invalid``
+* |on hold|_
+* |wont fix|_
+* |duplicate|_
+* |invalid|_
+
+.. |on hold| replace:: ``on hold``
+.. _on hold: https://github.com/Epistimio/orion/labels/on%20hold
+.. |wont fix| replace:: ``wont fix``
+.. _wont fix: https://github.com/Epistimio/orion/labels/wont%20fix
+.. |duplicate| replace:: ``duplicate``
+.. _duplicate: https://github.com/Epistimio/orion/labels/duplicate
+.. |invalid| replace:: ``invalid``
+.. _invalid: https://github.com/Epistimio/orion/labels/invalid
 
 .. _Github: https://github.com
 .. _flake8: http://flake8.pycqa.org/en/latest/
