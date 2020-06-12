@@ -18,6 +18,13 @@ from orion.core.utils.flatten import unflatten
 log = logging.getLogger(__name__)
 
 
+def validate_status(status):
+    """Verify if given status is valid."""
+    if status is not None and status not in Trial.allowed_stati:
+        raise ValueError("Given status `{0}` not one of: {1}".format(
+            status, Trial.allowed_stati))
+
+
 class Trial:
     """Represents an entry in database/trials collection.
 
@@ -258,9 +265,7 @@ class Trial:
 
     @status.setter
     def status(self, status):
-        if status is not None and status not in self.allowed_stati:
-            raise ValueError("Given status, {0}, not one of: {1}".format(
-                status, self.allowed_stati))
+        validate_status(status)
         self._status = status
 
     @property
