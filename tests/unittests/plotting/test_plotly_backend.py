@@ -3,6 +3,7 @@ import plotly
 
 from orion.plotting import regret
 from orion.core.utils.tests import create_experiment
+from orion.core.worker.experiment import ExperimentView
 
 config = dict(
     name='experiment-name',
@@ -69,6 +70,18 @@ class TestRegret:
     def test_graph_layout(self):
         with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
             plot = regret(experiment)
+
+        assert_regret_plot(plot)
+
+    def test_experiment_worker_as_parameter(self):
+        with create_experiment(config, trial_config, ['completed']) as (_, experiment, _):
+            plot = regret(experiment)
+
+        assert_regret_plot(plot)
+
+    def test_experiment_view_as_parameter(self):
+        with create_experiment(config, trial_config, ['completed']) as (_, experiment, _):
+            plot = regret(ExperimentView(experiment))
 
         assert_regret_plot(plot)
 
