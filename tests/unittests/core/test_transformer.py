@@ -531,7 +531,7 @@ class TestTransformedDimension(object):
 
     def test_interval_from_categorical(self, tdim2):
         """Check how we should treat interval when original dimension is categorical."""
-        assert tdim2.interval() == (-0.1, 1.1)
+        assert tdim2.interval() == ('asdfa', '2', '3', '4')
 
     def test_contains(self, tdim):
         """Check method `__contains__`."""

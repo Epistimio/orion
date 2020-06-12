@@ -71,11 +71,9 @@ def test_simple(monkeypatch, config_file):
 
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
-def test_random_stop(monkeypatch):
+@pytest.mark.parametrize('config_file', config_files)
+def test_random_stop(monkeypatch, config_file):
     """Test a simple usage scenario."""
-    # TODO: TPE should support this case once discrete is added,
-    #  then parametrized config_file should be used
-    config_file = 'random_config.yaml'
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(["hunt", "--config", config_file,
                          "./black_box.py", "-x~uniform(-10, 5, discrete=True)"])
