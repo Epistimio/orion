@@ -43,7 +43,8 @@ def compute_budgets(min_resources, max_resources, reduction_factor, num_rungs):
     budgets = numpy.logspace(
         numpy.log(min_resources) / numpy.log(reduction_factor),
         numpy.log(max_resources) / numpy.log(reduction_factor),
-        num_rungs, base=reduction_factor).astype(int)
+        num_rungs, base=reduction_factor)
+    budgets = (budgets + 0.5).astype(int)
 
     for i in range(num_rungs - 1):
         if budgets[i] >= budgets[i + 1]:
