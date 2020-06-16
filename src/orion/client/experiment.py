@@ -11,6 +11,7 @@
 import atexit
 import functools
 import logging
+import sys
 
 from numpy import inf as infinity
 
@@ -29,12 +30,17 @@ log = logging.getLogger(__name__)
 
 def set_broken_trials(client):
     """Release all trials with status broken if the process exits without releasing them."""
+    if sys.exc_info()[0] is KeyboardInterrupt:
+        status = 'interrupted'
+    else:
+        status = 'broken'
+
     for trial_id in list(client._pacemakers.keys()):  # pylint: disable=protected-access
         trial = client.get_trial(uid=trial_id)
         if trial is None:
             log.warning('Trial {} was not found in storage, could not set status to `broken`.')
             continue
-        client.release(trial, status='broken')
+        client.release(trial, status=status)
 
 
 # pylint: disable=too-many-public-methods
