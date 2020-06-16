@@ -549,6 +549,20 @@ class TestBroken:
                 assert client1.get_trial(trial1).status == 'broken'
                 assert client2.get_trial(trial2).status == 'interrupted'
 
+    def test_interrupted_trial(self):
+        """Test that interrupted trials are not set to broken"""
+        with create_experiment() as (cfg, experiment, client):
+            trial = client.suggest()
+            assert trial.status == 'reserved'
+
+            try:
+                raise KeyboardInterrupt
+            except KeyboardInterrupt as e:
+                atexit._run_exitfuncs()
+
+            assert client._pacemakers == {}
+            assert client.get_trial(trial).status == 'interrupted'
+
 
 class TestSuggest:
     """Tests for ExperimentClient.suggest"""
