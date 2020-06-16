@@ -27,7 +27,7 @@ Params: {params}
 """
 
 SPACE_ERROR = """
-ASHA cannot be used if space does contain a fidelity dimension.
+ASHA can only be used if there is one fidelity dimension.
 For more information on the configuration and usage of ASHA, see
 https://orion.readthedocs.io/en/develop/user/algorithms.html#asha
 """
