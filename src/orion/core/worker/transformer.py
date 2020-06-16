@@ -411,12 +411,11 @@ class TransformedDimension(object):
 
     def interval(self, alpha=1.0):
         """Map the interval bounds to the transformed ones."""
-        try:
-            low, high = self.original_dimension.interval(alpha)
-        except RuntimeError as exc:
-            if "Categories" in str(exc):
-                return (-0.1, 1.1)
-            raise
+        if self.original_dimension.prior_name == 'choices':
+            return self.original_dimension.categories
+
+        low, high = self.original_dimension.interval(alpha)
+
         return self.transform(low), self.transform(high)
 
     def __contains__(self, point):
