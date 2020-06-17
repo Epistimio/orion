@@ -20,24 +20,13 @@ Asking a question is also a contribution to the project! We'll be happy to help 
 ### How to report a bug
 You found a bug? Great! Before submitting, make sure you're experiencing the bug on the latest version of Oríon and that it's not already opened in our issue tracker.
 
-When reporting a bug, please include:
-- A clear and descriptive title for the issue
-- Your operating system and its version
-- The version of Oríon (even if you're using the latest!)
-- A description of the bug
-- The steps to reproduce the bug
-- Extra details (e.g., database, algortihm, configuration) about your setup that might help us to reproduce the bug if not included previously
+Please use the [bug report template](https://github.com/Epistimio/orion/issues/new/choose) to open a new bug; make sure to choose a clear and descriptive title for your issue.
 
 ### How to propose enhancements
 We're thrilled to hear you found a way to make Oríon better through minor improvements to completely new features!
 Before creating enhancement suggestions, please check that your idea is not already present in the list of issues. You might find that you don't need to create one and can just join in the discussion directly and give your opinion!
 
-When suggesting enhancements, it is a good idea to:
-- Write a clear and descriptive title for the issue
-- Motivate why this feature is relevant regarding [Oríon's mission](https://github.com/Epistimio/orion).
-- Explain in detail how it would work.
-- Keep the scope as narrow as possible, to make it easier to implement.
-- Add as much details as possible!
+Please use the [feature request template](https://github.com/Epistimio/orion/issues/new/choose) to propose changes; make sure to choose a clear and descriptive title for your issue.
 
 ### How to submit changes
 We're grateful you're considering making changes to Oríon!
@@ -47,7 +36,7 @@ To get started, you need to first fork the repository and then create a new bran
 Once you implemented the changes, make sure to [rebase](https://www.atlassian.com/git/tutorials/rewriting-history/git-rebase) your branch on the latest Oríon's *develop* branch and finally submit a [pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests).
 All changes to Oríon are done through PRs, where they will be peer-reviewed and checked against our continuous integration system to ensure the quality of the code base.
 
-During this processs keep in mind to:
+During this process keep in mind to:
 - Set a descriptive and short branch name
 - Create a descriptive and clear title for the PR
 - Motivate the *why* and *how* of the PR (get inspiration from current or past PRs!)
