@@ -55,6 +55,11 @@ the local one passed to
 created. To access the particular working directory of a trial, see next sections
 :ref:`commandline_templates` and :ref:`env_vars`.
 
+Language compatibility
+======================
+The command line works for scripts and programs in any language.
+The only requirement is that the executed script returns a JSON string with the objective value.
+
 .. _commandline_templates:
 
 Command-line templating
