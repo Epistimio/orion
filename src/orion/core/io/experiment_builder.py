@@ -563,6 +563,7 @@ def get_cmd_config(cmdargs):
     cmd_config.update(cmd_config.pop('experiment', {}))
     cmd_config['branching'] = cmd_config.pop('evc', {})
 
+    # TODO: user_args won't be defined if reading from DB only (`orion hunt -n <exp> ` alone)
     metadata = resolve_config.fetch_metadata(cmd_config.get('user'), cmd_config.get('user_args'))
     cmd_config['metadata'] = metadata
     cmd_config.pop('config', None)
