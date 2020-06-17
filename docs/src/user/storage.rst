@@ -8,6 +8,107 @@
 Storage
 *******
 
+Commands are available to help
+:ref:`configure <storage_setup>`,
+:ref:`test <storage_test>` and
+:ref:`upgrade <storage_upgrade>` the storage of Oríon.
+There is additionally commands to :ref:`delete <storage_rm>` experiment and trials
+or :ref:`update <storage_set>` values in the storage.
+
+For more flexibility, there is the :ref:`storage_python_apis`.
+
+.. _storage_commands:
+
+Commands
+========
+
+.. _storage_setup:
+
+``setup`` Storage configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``setup`` command helps creating a global configuration file
+for the configuration of Oríon's storage. For more details on its usage
+see :ref:`Database Configuration` in the database
+installation and configuration section.
+
+.. _storage_test:
+
+``test`` Test storage configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``test`` command provides a simple and efficient way of testing the storage configuration. For
+more details on its usage see :ref:`Test Connection` in the database installation and configuration
+section.
+
+.. _storage_rm:
+
+``rm`` Delete data from storage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Command to delete experiments and trials.
+
+To delete an experiment and its trials, simply give the experiment's name.
+
+.. code-block:: sh
+
+   orion db rm my-exp-name
+
+To delete only trials that are broken, simply add ``--status`` broken.
+Note that the experiment will not be deleted, only the trials.
+
+.. code-block:: sh
+
+   orion db rm my-exp-name --status broken
+
+Or ``--status *`` to delete all trials of the experiment.
+
+.. code-block:: sh
+
+   orion db rm my-exp-name --status *
+
+By default, the last version of the experiment is deleted. Add ``--version``
+to select a prior version. Note that all child of the selected version
+will be deleted as well. You cannot delete a parent experiment without
+deleting the child experiments.
+
+.. code-block:: sh
+
+   orion db rm my-exp-name --version 1
+
+
+.. _storage_set:
+
+``set`` Change value of data in storage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Coming soon
+
+.. _storage_upgrade:
+
+``upgrade`` Upgrade database scheme
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Database scheme may change from one version of Oríon to another. If such change happens, you will
+get the following error after upgrading Oríon.
+
+.. code-block:: sh
+
+   The database is outdated. You can upgrade it with the command `orion db upgrade`.
+
+Make sure to create a backup of your database before upgrading it. You should also make sure that no
+process writes to the database during the upgrade otherwise the latter could fail. When ready,
+simply run the upgrade command.
+
+.. code-block:: sh
+
+   orion db upgrade
+
+.. _storage_python_apis:
+
+Python APIs
+===========
+
 In short, users are expected to only use the
 :py:class:`ExperimentClient <orion.client.experiment.ExperimentClient>` to interact
 with the storage client, to fetch and register trials. Creation of experiments
@@ -22,10 +123,12 @@ Finally, legacy databases supported by Oríon can also be accessed directly in l
 resort if the storage backend is not flexible enough. See :ref:`database_backend` section
 for more details.
 
+
+
 .. _experiment_client:
 
 ExperimentClient
-================
+~~~~~~~~~~~~~~~~
 
 The experiment client must be created with the helper function
 :py:func:`create_experiment() <orion.client.create_experiment>` which will take care of
@@ -90,7 +193,7 @@ Here is a short example to fetch trials or insert a new one.
 .. _storage_backend:
 
 Storage
-=======
+~~~~~~~
 
 .. warning::
 
@@ -165,10 +268,16 @@ In both case, you can access it with
 .. automethod:: orion.storage.base.BaseStorageProtocol.update_experiment
    :noindex:
 
-:hidden:`fetch_experiment`
---------------------------
+:hidden:`fetch_experiments`
+---------------------------
 
 .. automethod:: orion.storage.base.BaseStorageProtocol.fetch_experiments
+   :noindex:
+
+:hidden:`delete_experiment`
+---------------------------
+
+.. automethod:: orion.storage.base.BaseStorageProtocol.delete_experiment
    :noindex:
 
 :hidden:`register_trial`
@@ -187,6 +296,12 @@ In both case, you can access it with
 ----------------------
 
 .. automethod:: orion.storage.base.BaseStorageProtocol.fetch_trials
+   :noindex:
+
+:hidden:`delete_trials`
+-----------------------
+
+.. automethod:: orion.storage.base.BaseStorageProtocol.delete_trials
    :noindex:
 
 :hidden:`get_trial`
@@ -241,7 +356,7 @@ In both case, you can access it with
 .. _database_backend:
 
 Database
-========
+~~~~~~~~
 
 .. warning::
 

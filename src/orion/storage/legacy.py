@@ -18,7 +18,8 @@ from orion.core.io.database import Database, OutdatedDatabaseError
 import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import MissingResultFile
 from orion.core.worker.trial import Trial, validate_status
-from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
+from orion.storage.base import (
+    BaseStorageProtocol, FailedUpdate, get_experiment_uid, MissingArguments)
 
 log = logging.getLogger(__name__)
 
@@ -115,21 +116,20 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.create_experiment`"""
         return self._db.write('experiments', data=config, query=None)
 
+    def delete_experiment(self, experiment=None, uid=None):
+        """See :func:`~orion.storage.BaseStorageProtocol.delete_experiment`"""
+        uid = get_experiment_uid(experiment, uid)
+        return self._db.remove('experiments', query={'_id': uid})
+
     def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
-        if experiment is not None and uid is not None:
-            assert experiment._id == uid
-
-        if uid is None:
-            if experiment is None:
-                raise MissingArguments('Either `experiment` or `uid` should be set')
-
-            uid = experiment._id
+        uid = get_experiment_uid(experiment, uid)
 
         if where is None:
             where = dict()
 
-        where['_id'] = uid
+        if uid is not None:
+            where['_id'] = uid
         return self._db.write('experiments', data=kwargs, query=where)
 
     def fetch_experiments(self, query, selection=None):
@@ -138,14 +138,7 @@ class Legacy(BaseStorageProtocol):
 
     def fetch_trials(self, experiment=None, uid=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
-        if experiment is not None and uid is not None:
-            assert experiment._id == uid
-
-        if uid is None:
-            if experiment is None:
-                raise MissingArguments('Either `experiment` or `uid` should be set')
-
-            uid = experiment._id
+        uid = get_experiment_uid(experiment, uid)
 
         return self._fetch_trials(dict(experiment=uid))
 
@@ -166,6 +159,17 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.register_trial`"""
         self._db.write('trials', trial.to_dict())
         return trial
+
+    def delete_trials(self, experiment=None, uid=None, where=None):
+        """See :func:`~orion.storage.BaseStorageProtocol.delete_trials`"""
+        uid = get_experiment_uid(experiment, uid, force_uid=False)
+
+        if where is None:
+            where = dict()
+
+        if uid is not None:
+            where['experiment'] = uid
+        return self._db.remove('trials', query=where)
 
     def register_lie(self, trial):
         """See :func:`~orion.storage.BaseStorageProtocol.register_lie`"""
