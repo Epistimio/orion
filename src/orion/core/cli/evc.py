@@ -89,6 +89,15 @@ def _add_config_argument(parser, resolution_class):
     )
 
 
+def _add_orion_version_argument(parser, resolution_class):
+    parser.add_argument(
+        resolution_class.ARGUMENT,
+        action="store_true",
+        default=None,
+        help="Set orion version change as resolved if branching event occured",
+    )
+
+
 def _add_branch_to_argument(parser, resolution_class):
     parser.add_argument(
         "-b",
@@ -107,6 +116,7 @@ resolution_arguments = {
     "code_change_type": _add_code_argument,
     "cli_change_type": _add_cli_argument,
     "config_change_type": _add_config_argument,
+    "orion_version_change": _add_orion_version_argument,
     "branch_from": _add_branch_from_argument,
     "branch_to": _add_branch_to_argument,
 }

@@ -864,6 +864,45 @@ class ScriptConfigChange(BaseAdapter):
         return ret
 
 
+class OrionVersionChange(BaseAdapter):
+    """Adapter for changes of Oríon version
+
+    .. note::
+
+        Does nothing...
+
+    """
+
+    def forward(self, trials):
+        """Pass all trials from parent experiment to child experiment
+
+        .. seealso::
+
+            :meth:`orion.core.evc.BaseAdapter.forward`
+        """
+        return trials
+
+    def backward(self, trials):
+        """Pass all trials from child experiment to parent experiment
+
+        .. seealso::
+
+            :meth:`orion.core.evc.BaseAdapter.forward`
+        """
+        return trials
+
+    def to_dict(self):
+        """Provide the configuration of the adapter as a dictionary
+
+        .. seealso::
+
+            :meth:`orion.core.evc.adapters.BaseAdapter.to_dict`
+        """
+        ret = dict(
+            of_type=self.__class__.__name__.lower())
+        return ret
+
+
 # pylint: disable=too-few-public-methods,abstract-method
 class Adapter(BaseAdapter, metaclass=Factory):
     """Class used to inject dependency on an adapter implementation.

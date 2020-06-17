@@ -864,6 +864,21 @@ def test_new_code_ignores_code_conflict():
     )
 
 
+@pytest.mark.usefixtures("init_full_x", "version_XYZ")
+def test_new_orion_version_triggers_conflict(capsys):
+    """Test that a different git hash is generating a child"""
+    name = "full_x"
+    error_code = orion.core.cli.main(
+        ("hunt --init-only -n {name} --manual-resolution").format(name=name).split(" ")
+    )
+    assert error_code == 1
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "Configuration is different and generates a branching event" in captured.err
+    assert "XYZ" in captured.err
+
+
 def test_new_cli(init_full_x_new_cli):
     """Test that new cli conflict is automatically resolved"""
     experiment = experiment_builder.build_view(name="full_x_new_cli")

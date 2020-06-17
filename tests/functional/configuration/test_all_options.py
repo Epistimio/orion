@@ -730,6 +730,7 @@ class TestEVCConfig(ConfigurationTestSuite):
             "code_change_type": "noeffect",
             "cli_change_type": "noeffect",
             "config_change_type": "noeffect",
+            "orion_version_change": True,
         }
     }
 
@@ -741,6 +742,7 @@ class TestEVCConfig(ConfigurationTestSuite):
         "ORION_EVC_CODE_CHANGE": "unsure",
         "ORION_EVC_CMDLINE_CHANGE": "unsure",
         "ORION_EVC_CONFIG_CHANGE": "unsure",
+        "ORION_EVC_ORION_VERSION_CHANGE": "",
     }
 
     local = {
@@ -752,6 +754,7 @@ class TestEVCConfig(ConfigurationTestSuite):
             "code_change_type": "break",
             "cli_change_type": "break",
             "config_change_type": "noeffect",
+            "orion_version_change": True,
         }
     }
 
@@ -763,6 +766,7 @@ class TestEVCConfig(ConfigurationTestSuite):
         "code-change-type": "noeffect",
         "cli-change-type": "unsure",
         "config-change-type": "break",
+        "orion-version-change": False,
     }
 
     def sanity_check(self):
@@ -864,6 +868,7 @@ class TestEVCConfig(ConfigurationTestSuite):
         assert orion.core.config.evc.code_change_type == "unsure"
         assert orion.core.config.evc.cli_change_type == "unsure"
         assert orion.core.config.evc.config_change_type == "unsure"
+        assert not orion.core.config.evc.orion_version_change
 
         script = os.path.abspath(__file__)
         name = "env-var-test"
