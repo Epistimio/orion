@@ -5,16 +5,13 @@ import atexit
 import copy
 import datetime
 import logging
-from contextlib import contextmanager
+
+import pytest
 
 import orion.core
-import orion.core.io.experiment_builder as experiment_builder
-import pytest
-from orion.client.experiment import ExperimentClient
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import BrokenExperiment, SampleTimeout
-from orion.core.utils.tests import OrionState, create_experiment
-from orion.core.worker.producer import Producer
+from orion.core.utils.tests import create_experiment
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
 
@@ -38,7 +35,7 @@ config = dict(
         root_id='supernaekei',
         parent_id=None,
         adapter=[])
-    )
+)
 
 
 base_trial = {
@@ -71,6 +68,7 @@ def compare_without_heartbeat(trial_a, trial_b):
 
 
 def test_plot_is_defined():
+    """Tests plot() method is defined"""
     with create_experiment(config, base_trial) as (_, _, client):
         with pytest.raises(NotImplementedError):
             client.plot()
@@ -440,8 +438,8 @@ class TestBroken:
         config1 = copy.deepcopy(config)
         config2 = copy.deepcopy(config)
         config2['name'] = 'cloned'
-        with create_experiment(exp_config=config1, trial_config = base_trial) as (_, _, client1):
-            with create_experiment(exp_config=config2, trial_config = base_trial) as (_, _, client2):
+        with create_experiment(exp_config=config1, trial_config=base_trial) as (_, _, client1):
+            with create_experiment(exp_config=config2, trial_config=base_trial) as (_, _, client2):
                 trial1 = client1.suggest()
                 trial2 = client2.suggest()
 
@@ -460,14 +458,14 @@ class TestBroken:
         config1 = copy.deepcopy(config)
         config2 = copy.deepcopy(config)
         config2['name'] = 'cloned'
-        with create_experiment(exp_config=config1, trial_config = base_trial) as (_, _, client1):
+        with create_experiment(exp_config=config1, trial_config=base_trial) as (_, _, client1):
 
             def please_dont_call_me(client):
                 raise RuntimeError("Please don't call me!!!")
 
             monkeypatch.setattr('orion.client.experiment.set_broken_trials', please_dont_call_me)
 
-            with create_experiment(exp_config=config2, trial_config = base_trial) as (_, _, client2):
+            with create_experiment(exp_config=config2, trial_config=base_trial) as (_, _, client2):
                 trial1 = client1.suggest()
                 trial2 = client2.suggest()
 
@@ -555,7 +553,8 @@ class TestSuggest:
 
         amnesia.count = 0
 
-        with create_experiment(config, base_trial, stati=['completed']) as (cfg, experiment, client):
+        with create_experiment(config, base_trial,
+                               stati=['completed']) as (cfg, experiment, client):
 
             monkeypatch.setattr(experiment.algorithms, 'suggest', amnesia)
 
@@ -578,7 +577,8 @@ class TestSuggest:
 
         monkeypatch.setattr(orion.core.config.worker, 'max_idle_time', 0)
 
-        with create_experiment(config, base_trial, stati=['completed']) as (cfg, experiment, client):
+        with create_experiment(config, base_trial,
+                               stati=['completed']) as (cfg, experiment, client):
 
             monkeypatch.setattr(experiment.algorithms, 'suggest', opt_out)
 
@@ -589,7 +589,8 @@ class TestSuggest:
 
     def test_suggest_is_done(self):
         """Verify that completed experiments cannot suggest new trials"""
-        with create_experiment(config, base_trial, stati=['completed'] * 10) as (cfg, experiment, client):
+        with create_experiment(config, base_trial,
+                               stati=['completed'] * 10) as (cfg, experiment, client):
 
             assert len(experiment.fetch_trials()) == 10
             assert client.is_done
@@ -598,7 +599,8 @@ class TestSuggest:
 
     def test_suggest_is_broken(self):
         """Verify that broken experiments cannot suggest new trials"""
-        with create_experiment(config, base_trial, stati=['broken'] * 10) as (cfg, experiment, client):
+        with create_experiment(config, base_trial,
+                               stati=['broken'] * 10) as (cfg, experiment, client):
 
             assert len(experiment.fetch_trials()) == 10
             assert client.is_broken
@@ -610,7 +612,8 @@ class TestSuggest:
         """Verify that inability to suggest because is_done becomes True during produce() is
         handled.
         """
-        with create_experiment(config, base_trial, stati=['completed'] * 5) as (cfg, experiment, client):
+        with create_experiment(config, base_trial,
+                               stati=['completed'] * 5) as (cfg, experiment, client):
             def is_done(self):
                 """Experiment is done"""
                 return True
@@ -633,7 +636,8 @@ class TestSuggest:
         """Verify that experiments that gets broken during local algo.suggest gets properly
         handled
         """
-        with create_experiment(config, base_trial, stati=['broken'] * 1) as (cfg, experiment, client):
+        with create_experiment(config, base_trial,
+                               stati=['broken'] * 1) as (cfg, experiment, client):
 
             def is_broken(self):
                 """Experiment is broken"""
@@ -661,7 +665,9 @@ class TestSuggest:
             'a': {'x': 'uniform(0, 10, discrete=True)'},
             'b': {'y': 'loguniform(1e-08, 1)',
                   'z': 'choices([\'voici\', \'voila\', 2])'}}
-        with create_experiment(exp_config=exp_config, trial_config=base_trial, stati=[]) as (cfg, experiment, client):
+        with create_experiment(exp_config=exp_config,
+                               trial_config=base_trial,
+                               stati=[]) as (cfg, experiment, client):
             trial = client.suggest()
             assert trial.status == 'reserved'
             assert len(trial.params) == 2
@@ -764,7 +770,9 @@ class TestWorkon:
         ext_config = copy.deepcopy(config)
         ext_config['space']['y'] = 'uniform(0, 10)'
 
-        with create_experiment(exp_config=ext_config, trial_config = base_trial, stati=[]) as (cfg, experiment, client):
+        with create_experiment(exp_config=ext_config,
+                               trial_config=base_trial,
+                               stati=[]) as (cfg, experiment, client):
             default_y = 2
             assert len(experiment.fetch_trials()) == 0
             client.workon(foo, max_trials=1, y=default_y)
@@ -786,7 +794,9 @@ class TestWorkon:
             'a': {'x': 'uniform(0, 10, discrete=True)'},
             'b': {'y': 'loguniform(1e-08, 1)'}}
 
-        with create_experiment(exp_config=ext_config, trial_config = base_trial, stati=[]) as (cfg, experiment, client):
+        with create_experiment(exp_config=ext_config,
+                               trial_config=base_trial,
+                               stati=[]) as (cfg, experiment, client):
             assert len(experiment.fetch_trials()) == 0
             client.workon(foo, max_trials=5, b={'y': default_y, 'z': default_z})
             assert len(experiment.fetch_trials()) == 5

@@ -7,14 +7,15 @@
    :synopsis: Helper functions for tests
 
 """
+# pylint: disable=protected-access
 
+from contextlib import contextmanager
+import copy
 import datetime
 import os
 import tempfile
-import copy
 
 import yaml
-from contextlib import contextmanager
 
 from orion.core.io.database import Database
 from orion.core.io.database.ephemeraldb import EphemeralDB
@@ -22,8 +23,8 @@ from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils import SingletonAlreadyInstantiatedError
-from orion.core.worker.trial import Trial
 from orion.core.worker.producer import Producer
+from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage, Storage
 from orion.storage.legacy import Legacy
 from orion.storage.track import Track
@@ -87,7 +88,6 @@ def generate_trials(trial_config, statuses):
 @contextmanager
 def create_experiment(exp_config=None, trial_config=None, statuses=None):
     """Context manager for the creation of an ExperimentClient and storage init"""
-
     if exp_config is None:
         raise ValueError("Parameter 'exp_config' is missing")
     if trial_config is None:
