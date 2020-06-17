@@ -58,9 +58,10 @@
    :maxdepth: 2
    :caption: Code Reference
 
-   code/core
    code/algo
    code/client
+   code/core
+   code/plotting
    code/storage
 
 .. Don't fetch reference/viz

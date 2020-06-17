@@ -6,7 +6,7 @@ the data structure and can be a `ExperimentClient`. For example,
 for ``ec.plot()`` the parameter `data` will contain the ExperimentClient `ec`.
 
 The parameter `kind` will be one of:
-- regret
+    * regret
 """
 
 from orion.plotting._core import (PlotAccessor, regret)
