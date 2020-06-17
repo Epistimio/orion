@@ -1,7 +1,8 @@
+"""Collection of tests for :mod:`orion.plotting.orion.plotting.PlotAccessor`."""
 import pytest
 
-from orion.plotting import PlotAccessor
 from orion.core.utils.tests import create_experiment
+from orion.plotting import PlotAccessor
 
 
 config = dict(
@@ -36,17 +37,20 @@ trial_config = {
 
 
 def check_regret_plot(plot):
+    """Verifies that existence of the regret plot"""
     assert plot
     assert "regret" in plot.layout.title.text.lower()
     assert 2 == len(plot.data)
 
 
 def test_init_require_experiment():
+    """Tests that a `PlotAccessor` requires an instance of `ExperimentClient`"""
     with pytest.raises(ValueError):
         PlotAccessor(None)
 
 
 def test_call_nonexistent_kind():
+    """Tests that specifying a non existent kind will fail"""
     with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
         pa = PlotAccessor(experiment)
         with pytest.raises(KeyError):
@@ -54,6 +58,7 @@ def test_call_nonexistent_kind():
 
 
 def test_regret_is_default_plot():
+    """Tests that the regret plot is the default plot"""
     with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
         pa = PlotAccessor(experiment)
         plot = pa()
@@ -62,6 +67,7 @@ def test_regret_is_default_plot():
 
 
 def test_regret_kind():
+    """Tests that a regret plot can be created from specifying `kind` as a parameter."""
     with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
         pa = PlotAccessor(experiment)
         plot = pa(kind='regret')
@@ -70,6 +76,7 @@ def test_regret_kind():
 
 
 def test_call_to_regret():
+    """Tests instance calls to `PlotAccessor.regret()`"""
     with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
         pa = PlotAccessor(experiment)
         plot = pa.regret()

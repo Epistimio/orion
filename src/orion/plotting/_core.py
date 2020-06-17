@@ -1,3 +1,12 @@
+"""
+:mod:`orion.plotting._core` -- Provides public plotting API
+===========================================================
+
+.. module:: _core
+   :platform: Unix
+   :synopsis: Provides public plotting API
+
+"""
 import orion.plotting.backend_plotly as backend
 
 
@@ -69,17 +78,16 @@ class PlotAccessor:
 
         Parameters
         ----------
-
         kind : str
             The kind of plot to produce:
 
             - 'regret' : Regret plot (default)
         """
-
         kind = kwargs.pop('kind', 'regret')
 
         return PLOT_METHODS[kind](self._experiment, **kwargs)
 
     def regret(self, **kwargs):
+        """Make a plot to visualize the performance of the hyper-optimization process."""
         __doc__ = regret.__doc__
         return self(kind="regret", **kwargs)

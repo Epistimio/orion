@@ -1,9 +1,17 @@
+"""
+:mod:`orion.core.plotting.backend_plotly` -- Plotly backend for plotting methods
+================================================================================
+
+.. module:: backend_plotly
+   :platform: Unix
+   :synopsis: Plotly backend for plotting methods
+"""
 import pandas as pd
 import plotly.graph_objects as go
 
 
 def regret(experiment, order_by, verbose_hover, **kwargs):
-
+    """Plotly implementation of `orion.plotting.regret`."""
     def template_trials():
         template = '<b>ID: %{customdata[0]}</b><br>' \
             'value: %{y}<br>' \
@@ -31,8 +39,9 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
 
     trials = list(filter(lambda trial: trial.status == 'completed', experiment.fetch_trials()))
 
-    data = [(trial.id, trial.status, trial.submit_time, trial.start_time,
-             trial.end_time, format_hyperparameters(trial.params), trial.objective.value) for trial in trials]
+    data = [(trial.id, trial.status,
+             trial.submit_time, trial.start_time, trial.end_time,
+             _format_hyperparameters(trial.params), trial.objective.value) for trial in trials]
 
     df = pd.DataFrame(data, columns=['id', 'status', ORDER_KEYS[0],
                                      ORDER_KEYS[1], ORDER_KEYS[2], 'params', 'objective'])
@@ -40,7 +49,7 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
     df = df.sort_values(order_by)
 
     df['best'] = df['objective'].cummin()
-    df['best_id'] = get_best_ids(df)
+    df['best_id'] = _get_best_ids(df)
 
     fig = go.Figure()
 
@@ -63,7 +72,7 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
     return fig
 
 
-def get_best_ids(df):
+def _get_best_ids(df):
     best_id = None
     result = []
 
@@ -75,7 +84,7 @@ def get_best_ids(df):
     return result
 
 
-def format_value(value):
+def _format_value(value):
     """
     Hyperparameter can have many types, sometimes they can even be lists.
     If one of the value is a float, it has to be compact.
@@ -84,7 +93,7 @@ def format_value(value):
         return value
 
     try:
-        return f"[{','.join(format_value(x) for x in value)}]"
+        return f"[{','.join(_format_value(x) for x in value)}]"
 
     except TypeError:
         if isinstance(value, float):
@@ -93,11 +102,11 @@ def format_value(value):
             return value
 
 
-def format_hyperparameters(hyperparameters):
+def _format_hyperparameters(hyperparameters):
     result = ''
 
     for name, value in hyperparameters.items():
-        x = f'<br>  {name[1:]}: {format_value(value)}'
+        x = f'<br>  {name[1:]}: {_format_value(value)}'
         result += x
 
     return result
