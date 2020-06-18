@@ -65,7 +65,11 @@ class OrionArgsParser:
                   2: logging.DEBUG}
         logging.basicConfig(level=levels.get(verbose, logging.DEBUG))
 
-        function = args.pop('func')
+        function = args.pop('func', None)
+
+        if function is None:
+            self.parser.parse_args(['--help'])
+
         return args, function
 
     def execute(self, argv):
