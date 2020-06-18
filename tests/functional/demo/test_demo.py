@@ -624,3 +624,14 @@ def test_debug_mode(monkeypatch):
 
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, EphemeralDB)
+
+
+def test_no_args(capsys):
+    """Test that help is printed when no args are given."""
+    with pytest.raises(SystemExit):
+        orion.core.cli.main([])
+
+    captured = capsys.readouterr().out
+
+    assert 'usage:' in captured
+    assert 'Traceback' not in captured
