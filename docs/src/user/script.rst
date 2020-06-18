@@ -54,6 +54,8 @@ the local one passed to
 created. To access the particular working directory of a trial, see next sections
 :ref:`commandline_templates` and :ref:`env_vars`.
 
+.. _language_compatibility:
+
 Language compatibility
 ======================
 The command line works for scripts and programs in any language.
