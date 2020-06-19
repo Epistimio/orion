@@ -40,4 +40,6 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    main()
+    returncode = main()
+    if returncode > 0:
+        raise SystemExit(returncode)

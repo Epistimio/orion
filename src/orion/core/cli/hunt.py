@@ -49,6 +49,7 @@ def add_subparser(parser):
     cli.get_user_args_group(hunt_parser)
 
     hunt_parser.set_defaults(func=main)
+    hunt_parser.set_defaults(help_empty=True)  # Print help if command is empty
 
     return hunt_parser
 
