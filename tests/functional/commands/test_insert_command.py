@@ -171,3 +171,13 @@ def test_insert_with_version(create_db_instance, monkeypatch, script_path):
     trials = list(get_storage().fetch_trials(uid=exp['_id']))
 
     assert len(trials) == 1
+
+
+def test_no_args(capsys):
+    """Try to run the command without any arguments"""
+    returncode = orion.core.cli.main(["init_only"])
+    assert returncode == 1
+
+    captured = capsys.readouterr().err
+
+    assert captured == 'Error: No name provided for the experiment.\n'

@@ -67,3 +67,13 @@ def test_info_cmdline_api(clean_db, with_experiment_using_python_api, capsys):
 
     assert 'test_single_exp' in captured
     assert 'Commandline' in captured
+
+
+def test_no_args(capsys):
+    """Try to run the command without any arguments"""
+    returncode = orion.core.cli.main(["info"])
+    assert returncode == 1
+
+    captured = capsys.readouterr().err
+
+    assert captured == 'Error: No name provided for the experiment.\n'
