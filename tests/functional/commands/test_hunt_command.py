@@ -1,12 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Perform a functional test of the hunt command."""
+import pytest
+
 import orion.core.cli
 
 
 def test_no_args(capsys):
-    """Try to run the command without any arguments"""
-    returncode = orion.core.cli.main(["hunt"])
+    """Test that help is printed when no args are given."""
+    with pytest.raises(SystemExit):
+        orion.core.cli.main(['hunt'])
+
+    captured = capsys.readouterr().out
+
+    assert 'usage:' in captured
+    assert 'Traceback' not in captured
+
+
+def test_no_name(capsys):
+    """Try to run the command without providing an experiment name"""
+    returncode = orion.core.cli.main(["hunt", "--exp-max-trials", "10"])
     assert returncode == 1
 
     captured = capsys.readouterr().err

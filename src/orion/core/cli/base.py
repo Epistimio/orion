@@ -70,7 +70,8 @@ class OrionArgsParser:
             self.parser.parse_args(['--help'])
 
         function = args.pop('func', None)
-        if function is None:
+        empty_command = (argv[-1] if argv else sys.argv[-1]) == args['command']
+        if function is None or (empty_command and args.pop('help_empty', False)):
             self.parser.parse_args([args['command'], '--help'])
 
         return args, function
