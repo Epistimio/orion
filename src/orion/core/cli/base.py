@@ -50,7 +50,7 @@ class OrionArgsParser:
             '-d', '--debug', action='store_true',
             help="Use debugging mode with EphemeralDB.")
 
-        self.subparsers = self.parser.add_subparsers(help='sub-command help')
+        self.subparsers = self.parser.add_subparsers(dest='command', help='sub-command help')
 
     def get_subparsers(self):
         """Return the subparser object for this parser."""
@@ -66,10 +66,12 @@ class OrionArgsParser:
                   2: logging.DEBUG}
         logging.basicConfig(level=levels.get(verbose, logging.DEBUG))
 
-        function = args.pop('func', None)
-
-        if function is None:
+        if args['command'] is None:
             self.parser.parse_args(['--help'])
+
+        function = args.pop('func', None)
+        if function is None:
+            self.parser.parse_args([args['command'], '--help'])
 
         return args, function
 
