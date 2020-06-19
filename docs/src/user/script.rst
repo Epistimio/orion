@@ -55,6 +55,28 @@ the local one passed to
 created. To access the particular working directory of a trial, see next sections
 :ref:`commandline_templates` and :ref:`env_vars`.
 
+.. _language_compatibility:
+
+Language compatibility
+======================
+The command line works for scripts and programs in any language.
+The only requirement is that the executed script returns a JSON string with the objective value.
+
+The format is
+
+.. code-block:: json
+
+   [
+      {
+         "name": "some-objective",
+         "type": "objective",
+         "value": 1
+      }
+   ]
+
+
+See :meth:`orion.client.report_results` for more details.
+
 .. _commandline_templates:
 
 Command-line templating
