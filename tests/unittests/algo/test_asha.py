@@ -72,6 +72,8 @@ def test_compute_budgets():
     assert compute_budgets(1, 16, 4, 3) == [1, 4, 16]
     # Check rounding (max_resources is not a multiple of reduction_factor)
     assert compute_budgets(1, 30, 4, 3) == [1, 5, 30]
+    # Check rounding (min_resources may be rounded below its actual value)
+    assert compute_budgets(25, 1000, 2, 6) == [25, 52, 109, 229, 478, 1000]
     # Check min_resources
     assert compute_budgets(5, 125, 5, 3) == [5, 25, 125]
     # Check num_rungs
@@ -82,7 +84,7 @@ def test_compute_compressed_budgets():
     """Verify proper computation of budgets when scale is small and integer rounding creates
     duplicates
     """
-    assert compute_budgets(1, 16, 2, 10) == [1, 2, 3, 4, 5, 6, 7, 8, 11, 16]
+    assert compute_budgets(1, 16, 2, 10) == [1, 2, 3, 4, 5, 6, 7, 9, 12, 16]
 
     with pytest.raises(ValueError) as exc:
         compute_budgets(1, 2, 2, 10)

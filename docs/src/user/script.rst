@@ -23,7 +23,8 @@ this:
 
 .. code-block:: yaml
 
-    user_script_config: configuration
+    worker:
+        user_script_config: configuration
 
 It is then possible to run ``orion hunt`` like here:
 

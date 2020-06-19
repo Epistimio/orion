@@ -18,9 +18,10 @@ In a Oríon configuration YAML, define:
 
 .. code-block:: yaml
 
-   algorithms:
-     gradient_descent:
-       learning_rate: 0.1
+   experiment:
+       algorithms:
+           gradient_descent:
+               learning_rate: 0.1
 
 In this particular example, the name of the algorithm extension class to be
 imported and instantiated is ``Gradient_Descent``, so the lower-case identifier
@@ -49,9 +50,10 @@ Configuration
 
 .. code-block:: yaml
 
-     algorithms:
-        random:
-           seed: null
+    experiment:
+        algorithms:
+            random:
+                seed: null
 
 
 ``seed``
@@ -94,10 +96,19 @@ Configuration
 
 .. code-block:: yaml
 
-    algorithms:
-       hyperband:
-          seed: null
-          repetitions: 1
+    experiment:
+        algorithms:
+            hyperband:
+                seed: null
+                repetitions: 1
+
+        strategy: StubParallelStrategy
+
+
+.. note::
+
+   Notice the additional ``strategy`` in configuration which is not mandatory for most other
+   algorithms. See :ref:`StubParallelStrategy` for more information.
 
 
 ``seed``
@@ -152,19 +163,19 @@ Configuration
 
 .. code-block:: yaml
 
-    algorithms:
-       asha:
-          seed: null
-          num_rungs: null
-          num_brackets: 1
+    experiment:
+        algorithms:
+            asha:
+                seed: null
+                num_rungs: null
+                num_brackets: 1
 
-    producer:
-      strategy: StubParallelStrategy
+        strategy: StubParallelStrategy
 
 
 .. note::
 
-   Notice the additional ``producer.strategy`` in configuration which is not mandatory for other
+   Notice the additional ``strategy`` in configuration which is not mandatory for most other
    algorithms. See :ref:`StubParallelStrategy` for more information.
 
 
@@ -210,21 +221,26 @@ the most promising point among the candidates.
 .. _Tree-structured Parzen Estimator:
     https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf
 
+.. note::
+
+   Current implementation only supports uniform, loguniform, uniform discrete and choices as prior.
+   As for choices prior, the probabilities if any given will be ignored.
 
 Configuration
 ~~~~~~~~~~~~~
 
 .. code-block:: yaml
 
-    algorithms:
-       tpe:
-          seed: null
-          n_initial_points: 20
-          n_ei_candidates: 25
-          gamma: 0.25
-          equal_weight: False
-          prior_weight: 1.0
-          full_weight_num: 25
+    experiment:
+        algorithms:
+            tpe:
+                seed: null
+                n_initial_points: 20
+                n_ei_candidates: 25
+                gamma: 0.25
+                equal_weight: False
+                prior_weight: 1.0
+                full_weight_num: 25
 
 
 ``seed``
@@ -284,15 +300,16 @@ Configuration
 
 .. code-block:: yaml
 
-     algorithms:
-        BayesianOptimizer:
-           seed: null
-           n_initial_points: 10
-           acq_func: gp_hedge
-           alpha: 1.0e-10
-           n_restarts_optimizer: 0
-           noise: "gaussian"
-           normalize_y: False
+    experiment:
+        algorithms:
+            BayesianOptimizer:
+                seed: null
+                n_initial_points: 10
+                acq_func: gp_hedge
+                alpha: 1.0e-10
+                n_restarts_optimizer: 0
+                noise: "gaussian"
+                normalize_y: False
 
 ``seed``
 
@@ -384,10 +401,10 @@ The value of the objective is customizable with ``stub_value``.
 
 .. code-block:: yaml
 
-    producer:
-      strategy:
-         StubParallelStrategy:
-            stub_value: 'custom value'
+    experiment:
+        strategy:
+            StubParallelStrategy:
+                stub_value: 'custom value'
 
 .. _MaxParallelStrategy:
 
@@ -402,10 +419,10 @@ is ``float('inf')`` by default.
 
 .. code-block:: yaml
 
-    producer:
-      strategy:
-         MaxParallelStrategy:
-            default_result: 10000
+    experiment:
+        strategy:
+            MaxParallelStrategy:
+                default_result: 10000
 
 
 MeanParallelStrategy
@@ -419,7 +436,7 @@ is ``float('inf')`` by default.
 
 .. code-block:: yaml
 
-    producer:
-      strategy:
-         MeanParallelStrategy:
-            default_result: 0.5
+    experiment:
+        strategy:
+            MeanParallelStrategy:
+                default_result: 0.5
