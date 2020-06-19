@@ -10,14 +10,24 @@
 
 
 NO_CONFIGURATION_FOUND = """\
-No commandline configuration found for new experiment.
-"""
+No commandline configuration found for new experiment."""
+
+
+NO_EXP_NAME_PROVIDED = """\
+No name provided for the experiment."""
 
 
 class NoConfigurationError(Exception):
     """Raise when commandline configuration is empty."""
 
     def __init__(self, message=NO_CONFIGURATION_FOUND):
+        super().__init__(message)
+
+
+class NoNameError(Exception):
+    """Raise when no name is provided for an experiment."""
+
+    def __init__(self, message=NO_EXP_NAME_PROVIDED):
         super().__init__(message)
 
 
