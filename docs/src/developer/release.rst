@@ -21,6 +21,7 @@ such as the README.rst.
 #. Create a new pull request for the branch created in the last step and list all the changes by
    category. Example: https://github.com/Epistimio/orion/pull/283.
 #. Update the **Citation** section in the project's README.rst with the latest version of Oríon.
+#. Update the ``ROADMAP.md``.
 #. Update the linters ``flake8``, ``pylint``, and ``doc8`` to their latest versions in ``tox.ini``,
    and address any new error.
 #. Run the stress tests according to the instructions in stress test's documentation.
