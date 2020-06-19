@@ -59,10 +59,6 @@ def main(args):
     args['leafs'] = []
     # TODO: simplify when parameter parsing is refactored
     experiment = experiment_builder.build_from_args(args)
-
-    if len(experiment.space) == 0:
-        raise ValueError("No prior found. Please include at least one.")
-
     config = experiment_builder.get_cmd_config(args)
     worker_config = orion.core.config.worker.to_dict()
     if config.get('worker'):
