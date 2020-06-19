@@ -39,6 +39,7 @@ def add_subparser(parser):
     cli.get_user_args_group(init_only_parser)
 
     init_only_parser.set_defaults(func=main)
+    init_only_parser.set_defaults(help_empty=True)  # Print help if command is empty
 
     return init_only_parser
 
