@@ -69,6 +69,8 @@ Why Oríon?
 - Transparent persistence in local or remote `database <https://orion.readthedocs.io/en/stable/install/database.html>`_
 - `Integrate seamlessly <https://orion.readthedocs.io/en/stable/plugins/base.html>`_ your own
   hyper-optimization algorithms
+- `Language <https://orion.readthedocs.io/en/latest/user/script.html#language-compatibility>`_
+  and `configuration file <https://orion.readthedocs.io/en/latest/user/searchspace.html#configuration-file>`_ agnostic
 
 Installation
 ============

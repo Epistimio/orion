@@ -1,22 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Perform a functional test of the hunt command."""
+"""Perform a functional test of the init_only command."""
 import pytest
 
 import orion.core.cli
 
 
-def test_hunt_no_prior(clean_db, one_experiment):
-    """Test at least one prior is specified"""
-    with(pytest.raises(ValueError)) as exception:
-        orion.core.cli.main(["hunt", "-n", "test", "./black_box.py"])
-
-    assert "No prior found" in str(exception.value)
-    
 def test_no_args(capsys):
     """Test that help is printed when no args are given."""
     with pytest.raises(SystemExit):
-        orion.core.cli.main(['hunt'])
+        orion.core.cli.main(['init_only'])
 
     captured = capsys.readouterr().out
 
@@ -26,7 +19,7 @@ def test_no_args(capsys):
 
 def test_no_name(capsys):
     """Try to run the command without providing an experiment name"""
-    returncode = orion.core.cli.main(["hunt", "--exp-max-trials", "10"])
+    returncode = orion.core.cli.main(["init_only", "--exp-max-trials", "10"])
     assert returncode == 1
 
     captured = capsys.readouterr().err

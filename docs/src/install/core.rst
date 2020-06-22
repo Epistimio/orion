@@ -2,8 +2,9 @@
 Installing Oríon
 ****************
 
-Oríon is compatible with most Linux distributions and Mac OS X. It is tested on Ubuntu 16.04 LTS and
-Mac OS X 10.13. We do not support Windows and there is no short term plan to do so.
+Oríon is compatible with most Linux distributions and Mac OS X.
+Windows 10 is also supported through the `Windows Subsystem for Linux <https://docs.microsoft.com/en-us/windows/wsl/about>`_.
+Oríon is tested on Ubuntu 16.04 LTS and Mac OS X 10.13.
 
 The easiest way to install the latest version of Oríon is through the Python package manager. Oríon
 is registered on PyPI_ under `orion`. Use the following command to install Oríon:

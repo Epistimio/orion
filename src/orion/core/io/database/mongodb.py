@@ -267,7 +267,7 @@ class MongoDB(AbstractDB):
 
         """
         dbcollection = self._db[collection_name]
-        if hasattr(dbcollection, 'count_documents'):
+        if not isinstance(getattr(dbcollection, 'count_documents'), pymongo.collection.Collection):
             return dbcollection.count_documents(filter=query if query else {})
 
         return dbcollection.count(filter=query)

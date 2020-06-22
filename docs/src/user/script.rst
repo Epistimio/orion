@@ -23,7 +23,8 @@ this:
 
 .. code-block:: yaml
 
-    user_script_config: configuration
+    worker:
+        user_script_config: configuration
 
 It is then possible to run ``orion hunt`` like here:
 
@@ -53,6 +54,28 @@ the local one passed to
 ``hunt --config <file_path>``. This working directory is where all trial directories will be
 created. To access the particular working directory of a trial, see next sections
 :ref:`commandline_templates` and :ref:`env_vars`.
+
+.. _language_compatibility:
+
+Language compatibility
+======================
+The command line works for scripts and programs in any language.
+The only requirement is that the executed script returns a JSON string with the objective value.
+
+The format is
+
+.. code-block:: json
+
+   [
+      {
+         "name": "some-objective",
+         "type": "objective",
+         "value": 1
+      }
+   ]
+
+
+See :meth:`orion.client.report_results` for more details.
 
 .. _commandline_templates:
 
