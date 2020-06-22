@@ -12,7 +12,8 @@ def test_hunt_no_prior(clean_db, one_experiment):
         orion.core.cli.main(["hunt", "-n", "test", "./black_box.py"])
 
     assert "No prior found" in str(exception.value)
-    
+
+
 def test_no_args(capsys):
     """Test that help is printed when no args are given."""
     with pytest.raises(SystemExit):
