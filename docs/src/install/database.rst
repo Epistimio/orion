@@ -133,7 +133,7 @@ EphemeralDB is the `in-memory` database used when executing Oríon with the argu
 EphemeralDB has no arguments.
 
 Test connection
-===============
+---------------
 
 You can use the command ``orion db test`` to test the setup of your database backend.
 
