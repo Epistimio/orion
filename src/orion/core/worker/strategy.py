@@ -22,7 +22,7 @@ Trial `%s` has an objective but status is not completed.
 This is likely due to a corrupted database, possibly because of
 database timeouts. Try setting manually status to `completed`.
 You can find documention to do this at
-https://orion.readthedocs.io/en/latest/user/storage.html#storage-backend.
+https://orion.readthedocs.io/en/stable/user/storage.html#storage-backend.
 
 If you encounter this issue often, please consider reporting it to
 https://github.com/Epistimio/orion/issues."""

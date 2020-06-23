@@ -44,7 +44,7 @@ This is likely due to one or many of the following scenarios:
 
 If you cannot solve the issues listed above that are causing timeouts, you
 may need to setup the MongoDB backend for better performance.
-See https://orion.readthedocs.io/en/latest/install/database.html
+See https://orion.readthedocs.io/en/stable/install/database.html
 """
 
 
