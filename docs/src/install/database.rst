@@ -23,6 +23,8 @@ not intending to use an already existing one, is necessary.
 We are going to follow an example of installing and setting up a minimal
 database locally.
 
+.. _mongodb_install:
+
 Local MongoDB Installation
 ==========================
 
