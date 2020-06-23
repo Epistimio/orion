@@ -204,8 +204,8 @@ tests fail because of insufficient user access rights on the database.
 
 .. _mongodb_install:
 
-Local MongoDB Installation
-==========================
+Installing MongoDB
+==================
 
 Supposing we are in a Linux machine, follow the installation process
 (preferably respecting the package manager of your distribution) discussed in
@@ -263,8 +263,8 @@ Atlas MongoDB
 11. Configure Oríon's YAML file (See next section).
 
 
-Upgrade Database
-================
+Upgrading the database
+======================
 
 Database scheme may change from one version of Oríon to another. If such change happens, you will
 get the following error after upgrading Oríon.
