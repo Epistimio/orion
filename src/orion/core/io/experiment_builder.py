@@ -205,7 +205,7 @@ def build(name, version=None, branching=None, **config):
             'Experiment {} does not exist in DB and space was not defined.'.format(name))
 
     if len(config['space']) == 0:
-        raise ValueError("No prior found. Please include at least one.")
+        raise NoConfigurationError("No prior found. Please include at least one.")
 
     experiment = create_experiment(**copy.deepcopy(config))
     if experiment.id is None:
