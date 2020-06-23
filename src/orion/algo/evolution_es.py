@@ -9,6 +9,7 @@ The Evolved Transformer and large-scale evolution of image classifiers
     :synopsis: Implement evolution to exploit configurations with fixed resource efficiently
 
 """
+import importlib
 import logging
 
 import numpy as np
@@ -96,16 +97,16 @@ class EvolutionES(Hyperband):
 
     """
 
-    def __init__(self, space, seed=None, repetitions=np.inf):
+    def __init__(self, space, seed=None, repetitions=np.inf, nums_population=20, mutate=None):
         super(EvolutionES, self).__init__(space, seed=seed, repetitions=repetitions)
 
-        nums_population = 20
-        pair = 10
+        pair = nums_population // 2
         mutate_ratio = 0.3
         self.volatility = 0.001
         self.nums_population = nums_population
         self.nums_comp_pairs = pair
         self.mutate_ratio = mutate_ratio
+        self.mutate_attr = mutate
         self.nums_mutate_gene = int((len(self.space.values()) - 1) * mutate_ratio) if int(
             (len(self.space.values()) - 1) * mutate_ratio) > 0 else 1
 
@@ -117,8 +118,6 @@ class EvolutionES(Hyperband):
                 self.population[key] = -1 * np.ones(nums_population)
 
         self.performance = np.inf * np.ones(nums_population)
-        # self.population_status = -1 * np.ones(
-        #     nums_population)  # 0: no run more; 1: run reuse weight; 2: run from scratch
 
         self.budgets = compute_budgets(self.min_resources, self.max_resources,
                                        self.reduction_factor, nums_population, pair)
@@ -152,10 +151,22 @@ class BracketEVES(Bracket):
         super(BracketEVES, self).__init__(evolutiones, budgets, repetition_id)
         self.eves = self.hyperband
         self.space = space
-        self._search_space_remove_fidelity = []
+        self.search_space_remove_fidelity = []
+
+        if evolutiones.mutate_attr:
+            self.mutate_attr = evolutiones.mutate_attr
+        else:
+            self.mutate_attr = {"function": "orion.algo.mutate_functions.default_mutate",
+                                "multiply_factor": 3.0, "add_factor": 1}
+
+        function_string = self.mutate_attr["function"]
+        mod_name, func_name = function_string.rsplit('.', 1)
+        mod = importlib.import_module(mod_name)
+        self.mutate_func = getattr(mod, func_name)
+
         for i in range(len(space.values())):
             if not i == self.eves.fidelity_index:
-                self._search_space_remove_fidelity.append(i)
+                self.search_space_remove_fidelity.append(i)
 
     def get_candidates(self, rung_id):
         """Get a candidate for promotion"""
@@ -169,7 +180,7 @@ class BracketEVES(Bracket):
                             else len(list(rung.values())))
 
         for i in range(population_range):
-            for j in self._search_space_remove_fidelity:
+            for j in self.search_space_remove_fidelity:
                 self.eves.population[j][i] = list(rung.values())[i][1][j]
             self.eves.performance[i] = list(rung.values())[i][0]
 
@@ -180,8 +191,6 @@ class BracketEVES(Bracket):
 
         winner_list = []
         loser_list = []
-        # draw_bye_list = list(set(population_index).difference(set(
-        # np.append(red_team, blue_team))))
 
         hurdles = 0
         for i, _ in enumerate(red_team):
@@ -202,10 +211,6 @@ class BracketEVES(Bracket):
 
         logger.debug('Evolution hurdles are: %s', str(self.eves.hurdles))
 
-        # self.eves.population_status[winner_list] = 1
-        # self.eves.population_status[loser_list] = 2
-        # self.eves.population_status[draw_bye_list] = 0
-
         points = []
         for i in range(population_range):
             point = [0] * len(self.space)
@@ -214,7 +219,7 @@ class BracketEVES(Bracket):
                 point[self.eves.fidelity_index] = \
                     list(rung.values())[i][1][self.eves.fidelity_index]
 
-                for j in self._search_space_remove_fidelity:
+                for j in self.search_space_remove_fidelity:
                     if self.space.values()[j].type == "integer" or \
                        self.space.values()[j].type == "categorical":
                         point[j] = int(self.eves.population[j][i])
@@ -238,62 +243,11 @@ class BracketEVES(Bracket):
         return points
 
     def _mutate(self, winner_id, loser_id):
-        multiply_factor = 3.0
-        add_factor = 1
+        self.mutate_func(self, winner_id, loser_id,
+                         self.mutate_attr["multiply_factor"],
+                         self.mutate_attr["add_factor"])
 
-        select_genes_key_list = np.random.choice(self._search_space_remove_fidelity,
-                                                 self.eves.nums_mutate_gene,
-                                                 replace=False)
-        self._copy_winner(winner_id, loser_id)
-        for i, _ in enumerate(select_genes_key_list):
-            lower_bound = -np.inf
-            upper_bound = np.inf
-            if self.space.values()[select_genes_key_list[i]].type == "real":
-                if self.space.values()[select_genes_key_list[i]].prior.name == "uniform" or \
-                   self.space.values()[select_genes_key_list[i]].prior.name == "loguniform":
-                    lower_bound = self.space.values()[select_genes_key_list[i]].prior.a
-                    upper_bound = self.space.values()[select_genes_key_list[i]].prior.b
-
-                factors = (1.0 / multiply_factor + (multiply_factor - 1.0 / multiply_factor) *
-                           np.random.random())
-                if lower_bound <= \
-                    self.eves.population[select_genes_key_list[i]][loser_id] * factors \
-                               <= upper_bound:
-                    self.eves.population[select_genes_key_list[i]][loser_id] *= factors
-                elif lower_bound > \
-                        self.eves.population[select_genes_key_list[i]][loser_id] * factors:
-                    self.eves.population[select_genes_key_list[i]][loser_id] = \
-                        lower_bound + self.eves.volatility * np.random.random()
-                else:
-                    self.eves.population[select_genes_key_list[i]][
-                        loser_id] = upper_bound - self.eves.volatility * np.random.random()
-            elif self.space.values()[select_genes_key_list[i]].type == "integer":
-                if self.space.values()[select_genes_key_list[i]].prior.name == "uniform" or \
-                   self.space.values()[select_genes_key_list[i]].prior.name == "loguniform":
-                    lower_bound = self.space.values()[select_genes_key_list[i]].prior.a
-                    upper_bound = self.space.values()[select_genes_key_list[i]].prior.b
-
-                factors = int(add_factor * (2 * np.random.randint(2) - 1))
-                if lower_bound <= \
-                    self.eves.population[select_genes_key_list[i]][loser_id] + factors \
-                               <= upper_bound:
-                    self.eves.population[select_genes_key_list[i]][loser_id] += factors
-                elif lower_bound > \
-                        self.eves.population[select_genes_key_list[i]][loser_id] + factors:
-                    self.eves.population[select_genes_key_list[i]][loser_id] = int(lower_bound)
-                else:
-                    self.eves.population[select_genes_key_list[i]][loser_id] = int(upper_bound)
-            elif self.space.values()[select_genes_key_list[i]].type == "categorical":
-                sample_index = \
-                    np.where(np.random.multinomial(1,
-                                                   list(self.space.values()
-                                                        [select_genes_key_list[
-                                                            i]].get_prior)) == 1)[0][0]
-                self.eves.population[select_genes_key_list[i]][loser_id] = \
-                    self.space.values()[select_genes_key_list[i]].categories[sample_index]
-
-        self.eves.performance[loser_id] = -1
-
-    def _copy_winner(self, winner_id, loser_id):
-        for key in self._search_space_remove_fidelity:
+    def copy_winner(self, winner_id, loser_id):
+        """Copy winner to loser"""
+        for key in self.search_space_remove_fidelity:
             self.eves.population[key][loser_id] = self.eves.population[key][winner_id].copy()
