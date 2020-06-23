@@ -4,24 +4,21 @@
 Database Setup
 **************
 
-.. note::
+Oríon needs a database to operate. It is where we store the optimization execution and results data
+to enable fast, seamless, and scalable storage integration.
 
-   You can avoid the complexity of setting up a MongoDB server and give a try to the simple
-   alternative we are currently integrating in Oríon following the configuration steps
-   :ref:`here <Database Configuration>` for :ref:`PickledDB <PickledDB Config>`.
-   We plan to make PickledDB the default database backend in release v0.2.0.
+Out of the box, we support three database backend:
 
-We are currently using a MongoDB_ dependent API
-to persistently record history changes and have it serve as
-a central worker to the asynchronous communication between the
-workers who produce and evaluate suggested points in a problem's
-parameter space.
+#. PickledDB_, a file-based database (default)
+#. :ref:`EphemeralDB <EphemeralDB>`, an in-memory database
+#. MongoDB_, a document-oriented database
 
-Hence, an installation requirement to MongoDB_ and the setup of a database, if
-not intending to use an already existing one, is necessary.
+In this document, we'll review the different methods by which you can configure which database Oríon
+will use during its execution. This page also contains the installation instructions for MongoDB and
+how to upgrade the database if necessary.
 
-We are going to follow an example of installing and setting up a minimal
-database locally.
+.. _PickledDB: https://pythonhosted.org/pickleDB/
+.. _MongoDB: https://www.mongodb.com/
 
 .. _mongodb_install:
 
