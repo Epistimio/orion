@@ -22,8 +22,8 @@ how to upgrade the database if necessary.
 
 .. _Database Configuration:
 
-Configuring Oríon's Database
-============================
+Configuring the database
+========================
 
 There are different ways that database backend attributes can be configured.
 The first one is by using a global configuration file, which can easily be done
@@ -132,8 +132,8 @@ EphemeralDB is the `in-memory` database used when executing Oríon with the argu
 
 EphemeralDB has no arguments.
 
-Test connection
----------------
+Testing the configuration
+-------------------------
 
 You can use the command ``orion db test`` to test the setup of your database backend.
 
