@@ -242,7 +242,7 @@ And start MongoDB::
    sudo service mongod start
 
 Atlas MongoDB
-=============
+-------------
 1. Create an account `here <https://www.mongodb.com/cloud/atlas>`_.
 2. Follow the defaults to create a free cluster.
 3. Add cluster name and click on "Create Cluster".
