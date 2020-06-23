@@ -266,17 +266,15 @@ Atlas MongoDB
 Upgrading the database
 ======================
 
-Database scheme may change from one version of Oríon to another. If such change happens, you will
-get the following error after upgrading Oríon.
+The database's schema may change between major version of Oríon. If this happens, you will get the
+following error after upgrading Oríon.
 
 .. code-block:: sh
 
    The database is outdated. You can upgrade it with the command `orion db upgrade`.
 
-Make sure to create a backup of your database before upgrading it. You should also make sure that no
-process writes to the database during the upgrade otherwise the latter could fail. When ready,
-simply run the upgrade command.
+**Before upgrading the database**, make sure to create a backup of it. You should also make sure
+that there is no process writing to the database during the upgrade otherwise the latter could fail
+and corrupt the database.
 
-.. code-block:: sh
-
-   orion db upgrade
+When ready, simply run the upgrade command ``orion db upgrade``.
