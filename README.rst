@@ -119,7 +119,7 @@ If you use Oríon for published work, please cite our work using the following b
      month        = oct,
      year         = 2019,
      publisher    = {Zenodo},
-     version      = {v0.1.7},
+     version      = {v0.1.8},
      doi          = {10.5281/zenodo.3478592},
      url          = {https://doi.org/10.5281/zenodo.3478592}
    }
