@@ -2,7 +2,7 @@
 import pytest
 
 from orion.core.utils.tests import create_experiment
-from orion.plotting import PlotAccessor
+from orion.plotting.base import PlotAccessor
 
 
 config = dict(

@@ -1,8 +1,8 @@
 """
-:mod:`orion.plotting._core` -- Provides public plotting API
+:mod:`orion.plotting.base` -- Provides public plotting API
 ===========================================================
 
-.. module:: _core
+.. module:: base
    :platform: Unix
    :synopsis: Provides public plotting API
 
