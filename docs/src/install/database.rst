@@ -65,6 +65,11 @@ As described above, local configuration file can be used in combination with glo
 variable definitions. Local configuration values will overwrite configuration from both other
 methods.
 
+Supported databases
+===================
+
+In this section, we show snippets of configuration for each database backend.
+
 MongoDB
 -------
 
