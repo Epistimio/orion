@@ -18,23 +18,23 @@ def regret(experiment, order_by='suggested', verbose_hover=False, **kwargs):
 
     Parameters
     ----------
-        experiment: ExperimentClient, Experiment or ExperimentView
-            The orion object containing the experiment data
+    experiment: ExperimentClient, Experiment or ExperimentView
+        The orion object containing the experiment data
 
-        order_by: str
-            Indicates how the trials should be ordered. Acceptable options are below.
-            See attributes of ``Trial`` for more details.
+    order_by: str
+        Indicates how the trials should be ordered. Acceptable options are below.
+        See attributes of ``Trial`` for more details.
 
-            * 'suggested': Sort by trial suggested time (default).
-            * 'reserved': Sort by trial reserved time.
-            * 'completed': Sort by trial completed time.
+        * 'suggested': Sort by trial suggested time (default).
+        * 'reserved': Sort by trial reserved time.
+        * 'completed': Sort by trial completed time.
 
-        verbose_hover: bool
-            Indicates whether to display the hyperparameter in hover tooltips. False by default.
+    verbose_hover: bool
+        Indicates whether to display the hyperparameter in hover tooltips. False by default.
 
-        kwargs: dict
-            All other plotting keyword arguments to be passed to
-            :meth:`plotly.express.line`.
+    kwargs: dict
+        All other plotting keyword arguments to be passed to
+        :meth:`plotly.express.line`.
 
     Returns
     -------
