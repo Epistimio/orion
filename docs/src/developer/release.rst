@@ -38,7 +38,7 @@ time to create the release artifacts and publish the release.
    target branch to *master* and the tag version to ``v{version}``. Reuse the changelog from the
    release candidate pull request's for the description. See the `0.1.6
    <https://github.com/Epistimio/orion/releases/tag/v0.1.6>`_ version example.
-#. Merge the release candidate branch back to develop.
+#. Merge the master branch back to develop.
 #. Delete the release candidate branch.
 
 Publishing the release
