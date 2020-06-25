@@ -51,9 +51,6 @@ def generate_trials(trial_config, statuses):
         obj = copy.deepcopy(obj)
         data = obj
 
-        for arg in args[:-1]:
-            data = data[arg]
-
         data[args[-1]] = value
         return obj
 
