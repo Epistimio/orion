@@ -251,7 +251,7 @@ scale a MongoDB database in just a few clicks.
 3. Add cluster name and click on "Create Cluster".
 4. Wait for the cluster to be created.
 5. In "Overview" tab, click on "CONNECT".
-6. Add the IP of your compuer to the whitelist or "Allow access from anywhere."
+6. Add the IP of your computer to the whitelist or "Allow access from anywhere."
 7. Click on "Connect your application".
 8. Orion supports MongoDB drive 3.4, so choose driver 3.4.
 9. Copy the generated SRV address and replace "USERNAME" and "PASSWORD" with your
