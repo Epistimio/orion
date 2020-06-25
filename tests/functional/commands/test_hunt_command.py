@@ -6,6 +6,16 @@ import pytest
 import orion.core.cli
 
 
+def test_hunt_no_prior(clean_db, one_experiment, capsys):
+    """Test at least one prior is specified"""
+    orion.core.cli.main(["hunt", "-n", "test", "./black_box.py"])
+
+    captured = capsys.readouterr().err
+
+    assert "No prior found" in captured
+    assert 'Traceback' not in captured
+
+
 def test_no_args(capsys):
     """Test that help is printed when no args are given."""
     with pytest.raises(SystemExit):

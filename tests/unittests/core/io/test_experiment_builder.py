@@ -296,7 +296,8 @@ def test_build_from_args_debug_mode(script_path):
     """Try building experiment in debug mode"""
     update_singletons()
     experiment_builder.build_from_args(
-        {'name': 'whatever', 'user_args': [script_path]})
+        {'name': 'whatever',
+         'user_args': [script_path, '--mini-batch~uniform(32, 256)']})
 
     storage = get_storage()
 
@@ -306,7 +307,9 @@ def test_build_from_args_debug_mode(script_path):
     update_singletons()
 
     experiment_builder.build_from_args(
-        {'name': 'whatever', 'user_args': [script_path], 'debug': True})
+        {'name': 'whatever',
+         'user_args': [script_path, '--mini-batch~uniform(32, 256)'],
+         'debug': True})
     storage = get_storage()
 
     assert isinstance(storage, Legacy)
