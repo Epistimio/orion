@@ -29,6 +29,22 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
             'value: %{customdata[1]}' \
             '<extra></extra>'
 
+    def build_frame(trials):
+        """ Builds the dataframe for the plot """
+        data = [(trial.id, trial.status,
+                trial.submit_time, trial.start_time, trial.end_time,
+                _format_hyperparameters(trial.params), trial.objective.value) for trial in trials]
+
+        df = pd.DataFrame(data, columns=['id', 'status', ORDER_KEYS[0],
+                                         ORDER_KEYS[1], ORDER_KEYS[2], 'params', 'objective'])
+
+        df = df.sort_values(order_by)
+
+        df['best'] = df['objective'].cummin()
+        df['best_id'] = _get_best_ids(df)
+
+        return df
+
     ORDER_KEYS = ['suggested', 'reserved', 'completed']
 
     if not experiment:
@@ -38,18 +54,7 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
         raise ValueError(f"Parameter 'order_by' is not one of {ORDER_KEYS}")
 
     trials = list(filter(lambda trial: trial.status == 'completed', experiment.fetch_trials()))
-
-    data = [(trial.id, trial.status,
-             trial.submit_time, trial.start_time, trial.end_time,
-             _format_hyperparameters(trial.params), trial.objective.value) for trial in trials]
-
-    df = pd.DataFrame(data, columns=['id', 'status', ORDER_KEYS[0],
-                                     ORDER_KEYS[1], ORDER_KEYS[2], 'params', 'objective'])
-
-    df = df.sort_values(order_by)
-
-    df['best'] = df['objective'].cummin()
-    df['best_id'] = _get_best_ids(df)
+    df = build_frame(trials)
 
     fig = go.Figure()
 
