@@ -73,67 +73,66 @@ In this section, we show snippets of configuration for each database backend.
 MongoDB
 -------
 
-   .. code-block:: yaml
-
-      database:
-        type: 'mongodb'
-        name: 'orion_test'
-        host: 'mongodb://user:pass@localhost'
-
-MongoDB backend is the recommended one for large scale parallel optimisation, where
+MongoDB backend is the recommended one for large scale parallel optimization, where
 number of workers gets higher than 50.
+
+.. code-block:: yaml
+
+   database:
+      type: 'mongodb'
+      name: 'orion_test'
+      host: 'mongodb://user:pass@localhost'
 
 Arguments
 ~~~~~~~~~
 
-``name``
+.. list-table::
 
-Name of the mongodb database.
-
-``host``
-
-Can be either the host address  (hostname or IP address) or a mongodb URI. Default is ``localhost``.
-
-``port``
-
-Port that database servers listens to for requests. Default is 27017.
-
-
+   * - ``name``
+     - Name of the mongodb database.
+   * - ``host``
+     - Can be either the host address  (hostname or IP address) or a mongodb URI. Default is ``localhost``.
+   * - ``port``
+     - Port that database servers listens to for requests. Default is 27017.
 
 .. _PickledDB Config:
 
 PickledDB
 ---------
 
-   .. code-block:: yaml
-
-      database:
-        type: 'pickleddb'
-        host: '/some/path/to/a/file/to/save.pkl'
-
 PickledDB is recommended for its simplicity to setup but it is generally not suited
-for parallel optimisation with more than 50 workers. This is however just a rule of thumb and
+for parallel optimization with more than 50 workers. This is however just a rule of thumb and
 you may find PickledDB to work properly with more workers if your tasks take a significant
 amount of time to execute.
+
+.. code-block:: yaml
+
+   database:
+      type: 'pickleddb'
+      host: '/path/to/a/save/file.pkl'
 
 Arguments
 ~~~~~~~~~
 
-``host``
+.. list-table::
 
-File path where the database is saved. All workers require access to this file for parallel
-optimisation so make sure it is on a shared file system.
+   * - ``host``
+     - File path where the database is saved. All workers require access to this file for parallel
+       optimization so make sure it is on a shared file system.
 
 EphemeralDB
 -----------
 
-   .. code-block:: yaml
-
-      database:
-        type: 'ephemeraldb'
-
 EphemeralDB is the `in-memory` database used when executing Oríon with the argument
 ``--debug``. It is wiped out of memory at end of execution.
+
+.. code-block:: yaml
+
+   database:
+      type: 'ephemeraldb'
+
+Arguments
+~~~~~~~~~
 
 EphemeralDB has no arguments.
 
