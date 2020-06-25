@@ -135,7 +135,13 @@ EphemeralDB has no arguments.
 Testing the configuration
 -------------------------
 
-You can use the command ``orion db test`` to test the setup of your database backend.
+Once you specified a database, use the command ``orion db test`` to test that the configuration is
+correct.
+
+The test goes through 3 phases. First one is the aggregation of the configuration across
+global, environment variable and local configuration (note that you can pass ``--config`` to include
+a local configuration in the tests). The tests will print the resulting configuration at each
+stage.
 
 .. code-block:: sh
 
@@ -144,38 +150,40 @@ You can use the command ``orion db test`` to test the setup of your database bac
    Check for a configuration inside the default paths...
        {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
    Success
+
    Check for a configuration inside the environment variables... Skipping
    No environment variables found.
+
    Check if configuration file has valid database configuration... Skipping
    Missing configuration file.
-   Using configuration: {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
-   Check if database of specified type can be created... Success
-   DB instance <orion.core.io.database.mongodb.MongoDB object at 0x7f86d70067f0>
-   Check if database supports write operation... Success
-   Check if database supports read operation... Success
-   Check if database supports count operation... Success
-   Check if database supports delete operation... Success
 
-The tests goes throught 3 phases. First one is the aggregation of the configuration across
-global, environment variable and local configuration (note that you can pass ``--config`` to include
-a local configuration in the tests). The tests will print the resulting configuration at each
-stage. Here's an example including all three configuration methods.
+   [...]
+
+In the last example, we can observe that the last two tests were skipped because there were no
+environment variables or local configuration file specified.
+
+Alternatively, here's an example including all three configuration methods.
 
 .. code-block:: sh
 
-   $ ORION_DB_PORT=27018 orion db test --config local.yaml
+   $ ORION_DB_PORT=27018
+   $ orion db test --config local.yaml
 
    Check for a configuration inside the global paths...
        {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
    Success
+
    Check for a configuration inside the environment variables...
        {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost', 'port': '27018'}
    Success
+
    Check if configuration file has valid database configuration...
        {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost', 'port': '27017'}
    Success
 
-The second phase is the creation of the database, which prints out the final configuration
+   [...]
+
+The second phase tests the creation of the database, which prints out the final configuration
 that will be used and then prints the instance created to confirm the database type.
 
 .. code-block:: sh
@@ -187,6 +195,8 @@ that will be used and then prints the instance created to confirm the database t
    Using configuration: {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
    Check if database of specified type can be created... Success
    DB instance <orion.core.io.database.mongodb.MongoDB object at 0x7f86d70067f0>
+
+   [...]
 
 The third phase verifies if all operations are supported by the database. It is possible that these
 tests fail because of insufficient user access rights on the database.
