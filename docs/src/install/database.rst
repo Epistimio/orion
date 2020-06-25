@@ -9,26 +9,22 @@ to enable fast, seamless, and scalable storage integration.
 
 Out of the box, we support three database backend:
 
-#. PickledDB_, a file-based database (default)
-#. :ref:`EphemeralDB <EphemeralDB>`, an in-memory database
-#. MongoDB_, a document-oriented database
+#. :ref:`PickledDB Config`, a file-based database (default)
+#. :ref:`MongoDB Config`, a document-oriented database
+#. :ref:`EphemeralDB Config`, an in-memory database
 
 In this document, we'll review the different methods by which you can configure which database Oríon
-will use during its execution. This page also contains the installation instructions for MongoDB and
-how to upgrade the database if necessary.
-
-.. _PickledDB: https://pythonhosted.org/pickleDB/
-.. _MongoDB: https://www.mongodb.com/
+will use during its execution. This page also contains the :ref:`installation instructions for
+MongoDB <mongodb_install>` and how to :ref:`upgrade the database <upgrade_database>` if necessary.
 
 .. _Database Configuration:
 
 Configuring the database
 ========================
 
-There are different ways that database backend attributes can be configured.
-The first one is by using a global configuration file, which can easily be done
-using the command ``orion db setup``. This will create a yaml file
-of the following format.
+There are different ways that database backend attributes can be configured. The first way is by
+using a global configuration file, which can easily be done using the command ``orion db setup``.
+This will create a yaml file of the following format.
 
    .. code-block:: yaml
 
@@ -145,16 +141,21 @@ tests fail because of insufficient user access rights on the database.
    Check if database supports count operation... Success
    Check if database supports delete operation... Success
 
+.. _Supported Databases:
+
 Supported databases
 ===================
 
 In this section, we show snippets of configuration for each database backend.
 
+.. _MongoDB Config:
+
 MongoDB
 -------
 
-MongoDB backend is the recommended one for large scale parallel optimization, where
-number of workers gets higher than 50.
+MongoDB_ is the recommended backend for large-scale parallel optimizations, where the number of
+workers gets higher than 50. Make sure to review our :ref:`MongoDB installation instructions
+<mongodb_install>`.
 
 .. code-block:: yaml
 
@@ -162,6 +163,8 @@ number of workers gets higher than 50.
       type: 'mongodb'
       name: 'orion_test'
       host: 'mongodb://user:pass@localhost'
+
+.. _MongoDB: https://www.mongodb.com/
 
 Arguments
 ~~~~~~~~~
@@ -180,7 +183,7 @@ Arguments
 PickledDB
 ---------
 
-PickledDB is recommended for its simplicity to setup but it is generally not suited
+PickledDB_ is recommended for its simplicity to setup but it is generally not suited
 for parallel optimization with more than 50 workers. This is however just a rule of thumb and
 you may find PickledDB to work properly with more workers if your tasks take a significant
 amount of time to execute.
@@ -191,6 +194,8 @@ amount of time to execute.
       type: 'pickleddb'
       host: '/path/to/a/save/file.pkl'
 
+.. _PickledDB: https://pythonhosted.org/pickleDB/
+
 Arguments
 ~~~~~~~~~
 
@@ -200,11 +205,13 @@ Arguments
      - File path where the database is saved. All workers require access to this file for parallel
        optimization so make sure it is on a shared file system.
 
+.. _EphemeralDB Config:
+
 EphemeralDB
 -----------
 
-EphemeralDB is the `in-memory` database used when executing Oríon with the argument
-``--debug``. It is wiped out of memory at end of execution.
+:ref:`EphemeralDB <EphemeralDB>` is the `in-memory` database used when executing Oríon with the
+argument ``--debug``. It is wiped out of memory at end of the execution.
 
 .. code-block:: yaml
 
@@ -276,6 +283,7 @@ Atlas MongoDB
 
 11. Configure Oríon's YAML file (See next section).
 
+.. _upgrade_database:
 
 Upgrading the database
 ======================
