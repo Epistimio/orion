@@ -4,7 +4,7 @@ import pytest
 
 from orion.core.utils.tests import create_experiment
 from orion.core.worker.experiment import ExperimentView
-from orion.plotting import regret
+from orion.plotting.base import regret
 
 config = dict(
     name='experiment-name',
