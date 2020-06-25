@@ -65,77 +65,6 @@ As described above, local configuration file can be used in combination with glo
 variable definitions. Local configuration values will overwrite configuration from both other
 methods.
 
-Supported databases
-===================
-
-In this section, we show snippets of configuration for each database backend.
-
-MongoDB
--------
-
-MongoDB backend is the recommended one for large scale parallel optimization, where
-number of workers gets higher than 50.
-
-.. code-block:: yaml
-
-   database:
-      type: 'mongodb'
-      name: 'orion_test'
-      host: 'mongodb://user:pass@localhost'
-
-Arguments
-~~~~~~~~~
-
-.. list-table::
-
-   * - ``name``
-     - Name of the mongodb database.
-   * - ``host``
-     - Can be either the host address  (hostname or IP address) or a mongodb URI. Default is ``localhost``.
-   * - ``port``
-     - Port that database servers listens to for requests. Default is 27017.
-
-.. _PickledDB Config:
-
-PickledDB
----------
-
-PickledDB is recommended for its simplicity to setup but it is generally not suited
-for parallel optimization with more than 50 workers. This is however just a rule of thumb and
-you may find PickledDB to work properly with more workers if your tasks take a significant
-amount of time to execute.
-
-.. code-block:: yaml
-
-   database:
-      type: 'pickleddb'
-      host: '/path/to/a/save/file.pkl'
-
-Arguments
-~~~~~~~~~
-
-.. list-table::
-
-   * - ``host``
-     - File path where the database is saved. All workers require access to this file for parallel
-       optimization so make sure it is on a shared file system.
-
-EphemeralDB
------------
-
-EphemeralDB is the `in-memory` database used when executing Oríon with the argument
-``--debug``. It is wiped out of memory at end of execution.
-
-.. code-block:: yaml
-
-   database:
-      type: 'ephemeraldb'
-
-Arguments
-~~~~~~~~~
-
-EphemeralDB has no arguments.
-
 Testing the configuration
 -------------------------
 
@@ -215,6 +144,77 @@ tests fail because of insufficient user access rights on the database.
    Check if database supports read operation... Success
    Check if database supports count operation... Success
    Check if database supports delete operation... Success
+
+Supported databases
+===================
+
+In this section, we show snippets of configuration for each database backend.
+
+MongoDB
+-------
+
+MongoDB backend is the recommended one for large scale parallel optimization, where
+number of workers gets higher than 50.
+
+.. code-block:: yaml
+
+   database:
+      type: 'mongodb'
+      name: 'orion_test'
+      host: 'mongodb://user:pass@localhost'
+
+Arguments
+~~~~~~~~~
+
+.. list-table::
+
+   * - ``name``
+     - Name of the mongodb database.
+   * - ``host``
+     - Can be either the host address  (hostname or IP address) or a mongodb URI. Default is ``localhost``.
+   * - ``port``
+     - Port that database servers listens to for requests. Default is 27017.
+
+.. _PickledDB Config:
+
+PickledDB
+---------
+
+PickledDB is recommended for its simplicity to setup but it is generally not suited
+for parallel optimization with more than 50 workers. This is however just a rule of thumb and
+you may find PickledDB to work properly with more workers if your tasks take a significant
+amount of time to execute.
+
+.. code-block:: yaml
+
+   database:
+      type: 'pickleddb'
+      host: '/path/to/a/save/file.pkl'
+
+Arguments
+~~~~~~~~~
+
+.. list-table::
+
+   * - ``host``
+     - File path where the database is saved. All workers require access to this file for parallel
+       optimization so make sure it is on a shared file system.
+
+EphemeralDB
+-----------
+
+EphemeralDB is the `in-memory` database used when executing Oríon with the argument
+``--debug``. It is wiped out of memory at end of execution.
+
+.. code-block:: yaml
+
+   database:
+      type: 'ephemeraldb'
+
+Arguments
+~~~~~~~~~
+
+EphemeralDB has no arguments.
 
 .. _mongodb_install:
 
