@@ -45,9 +45,10 @@ def check_regret_plot(plot):
 
 def test_init_require_experiment():
     """Tests that a `PlotAccessor` requires an instance of `ExperimentClient`"""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as exception:
         PlotAccessor(None)
 
+    assert "Parameter 'experiment' is None" in str(exception.value)
 
 
 def test_call_nonexistent_kind():
