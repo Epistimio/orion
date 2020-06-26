@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 
 
 def regret(experiment, order_by, verbose_hover, **kwargs):
-    """Plotly implementation of `orion.plotting.regret`."""
+    """Plotly implementation of `orion.plotting.regret`"""
     def template_trials():
         template = '<b>ID: %{customdata[0]}</b><br>' \
             'value: %{y}<br>' \
@@ -30,7 +30,7 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
             '<extra></extra>'
 
     def build_frame(trials):
-        """ Builds the dataframe for the plot """
+        """Builds the dataframe for the plot"""
         data = [(trial.id, trial.status,
                 trial.submit_time, trial.start_time, trial.end_time,
                 _format_hyperparameters(trial.params), trial.objective.value) for trial in trials]
