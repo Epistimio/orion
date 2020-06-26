@@ -77,12 +77,13 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
     return fig
 
 
-def _get_best_ids(df):
+def _get_best_ids(dataframe):
+    """Links the cumulative best objectives with their respective ids"""
     best_id = None
     result = []
 
-    for i, id in enumerate(df.id):
-        if df.objective[i] == df.best[i]:
+    for i, id in enumerate(dataframe.id):
+        if dataframe.objective[i] == dataframe.best[i]:
             best_id = id
         result.append(best_id)
 
