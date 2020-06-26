@@ -323,7 +323,7 @@ class TestRelease:
 
     def test_release_invalid_status(self):
         """Test releasing with a specific status"""
-        with create_experiment() as (cfg, experiment, client):
+        with create_experiment(config, base_trial) as (cfg, experiment, client):
             trial = experiment.get_trial(uid=cfg.trials[1]['_id'])
             client.reserve(trial)
             with pytest.raises(ValueError) as exc:
@@ -488,7 +488,7 @@ class TestBroken:
 
     def test_interrupted_trial(self):
         """Test that interrupted trials are not set to broken"""
-        with create_experiment() as (cfg, experiment, client):
+        with create_experiment(config, base_trial) as (cfg, experiment, client):
             trial = client.suggest()
             assert trial.status == 'reserved'
 
