@@ -70,8 +70,7 @@ def compare_without_heartbeat(trial_a, trial_b):
 def test_plot_is_defined():
     """Tests plot() method is defined"""
     with create_experiment(config, base_trial) as (_, _, client):
-        with pytest.raises(NotImplementedError):
-            client.plot()
+        assert client.plot()
 
 
 def test_experiment_fetch_trials():
