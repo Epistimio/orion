@@ -49,12 +49,15 @@ def test_init_require_experiment():
         PlotAccessor(None)
 
 
+
 def test_call_nonexistent_kind():
     """Tests that specifying a non existent kind will fail"""
     with create_experiment(config, trial_config, ['completed']) as (_, _, experiment):
         pa = PlotAccessor(experiment)
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError) as exception:
             pa(kind='nonexistent')
+
+        assert "Plot of kind 'nonexistent' is not one of" in str(exception.value)
 
 
 def test_regret_is_default_plot():

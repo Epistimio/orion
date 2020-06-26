@@ -85,6 +85,9 @@ class PlotAccessor:
         """
         kind = kwargs.pop('kind', 'regret')
 
+        if kind not in PLOT_METHODS.keys():
+            raise ValueError(f"Plot of kind '{kind}' is not one of {list(PLOT_METHODS.keys())}")
+
         return PLOT_METHODS[kind](self._experiment, **kwargs)
 
     def regret(self, **kwargs):
