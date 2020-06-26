@@ -553,7 +553,7 @@ class TestSuggest:
         amnesia.count = 0
 
         with create_experiment(config, base_trial,
-                               stati=['completed']) as (cfg, experiment, client):
+                               statuses=['completed']) as (cfg, experiment, client):
 
             monkeypatch.setattr(experiment.algorithms, 'suggest', amnesia)
 
@@ -577,7 +577,7 @@ class TestSuggest:
         monkeypatch.setattr(orion.core.config.worker, 'max_idle_time', 0)
 
         with create_experiment(config, base_trial,
-                               stati=['completed']) as (cfg, experiment, client):
+                               statuses=['completed']) as (cfg, experiment, client):
 
             monkeypatch.setattr(experiment.algorithms, 'suggest', opt_out)
 
@@ -589,7 +589,7 @@ class TestSuggest:
     def test_suggest_is_done(self):
         """Verify that completed experiments cannot suggest new trials"""
         with create_experiment(config, base_trial,
-                               stati=['completed'] * 10) as (cfg, experiment, client):
+                               statuses=['completed'] * 10) as (cfg, experiment, client):
 
             assert len(experiment.fetch_trials()) == 10
             assert client.is_done
@@ -599,7 +599,7 @@ class TestSuggest:
     def test_suggest_is_broken(self):
         """Verify that broken experiments cannot suggest new trials"""
         with create_experiment(config, base_trial,
-                               stati=['broken'] * 10) as (cfg, experiment, client):
+                               statuses=['broken'] * 10) as (cfg, experiment, client):
 
             assert len(experiment.fetch_trials()) == 10
             assert client.is_broken
@@ -612,7 +612,7 @@ class TestSuggest:
         handled.
         """
         with create_experiment(config, base_trial,
-                               stati=['completed'] * 5) as (cfg, experiment, client):
+                               statuses=['completed'] * 5) as (cfg, experiment, client):
             def is_done(self):
                 """Experiment is done"""
                 return True
@@ -636,7 +636,7 @@ class TestSuggest:
         handled
         """
         with create_experiment(config, base_trial,
-                               stati=['broken'] * 1) as (cfg, experiment, client):
+                               statuses=['broken'] * 1) as (cfg, experiment, client):
 
             def is_broken(self):
                 """Experiment is broken"""
@@ -666,7 +666,7 @@ class TestSuggest:
                   'z': 'choices([\'voici\', \'voila\', 2])'}}
         with create_experiment(exp_config=exp_config,
                                trial_config=base_trial,
-                               stati=[]) as (cfg, experiment, client):
+                               statuses=[]) as (cfg, experiment, client):
             trial = client.suggest()
             assert trial.status == 'reserved'
             assert len(trial.params) == 2
@@ -746,7 +746,7 @@ class TestWorkon:
         def foo(x):
             return [dict(name='result', type='objective', value=x * 2)]
 
-        with create_experiment(config, base_trial, stati=[]) as (cfg, experiment, client):
+        with create_experiment(config, base_trial, statuses=[]) as (cfg, experiment, client):
             client.workon(foo, max_trials=5)
             assert len(experiment.fetch_trials()) == 5
             assert client._pacemakers == {}
@@ -756,7 +756,7 @@ class TestWorkon:
         def foo(x, y):
             return [dict(name='result', type='objective', value=x * 2 + y)]
 
-        with create_experiment(config, base_trial, stati=[]) as (cfg, experiment, client):
+        with create_experiment(config, base_trial, statuses=[]) as (cfg, experiment, client):
             client.workon(foo, max_trials=10, y=2)
             assert len(experiment.fetch_trials()) == 10
             assert client._pacemakers == {}
@@ -771,7 +771,7 @@ class TestWorkon:
 
         with create_experiment(exp_config=ext_config,
                                trial_config=base_trial,
-                               stati=[]) as (cfg, experiment, client):
+                               statuses=[]) as (cfg, experiment, client):
             default_y = 2
             assert len(experiment.fetch_trials()) == 0
             client.workon(foo, max_trials=1, y=default_y)
@@ -795,7 +795,7 @@ class TestWorkon:
 
         with create_experiment(exp_config=ext_config,
                                trial_config=base_trial,
-                               stati=[]) as (cfg, experiment, client):
+                               statuses=[]) as (cfg, experiment, client):
             assert len(experiment.fetch_trials()) == 0
             client.workon(foo, max_trials=5, b={'y': default_y, 'z': default_z})
             assert len(experiment.fetch_trials()) == 5
