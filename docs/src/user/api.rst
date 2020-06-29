@@ -7,14 +7,14 @@ Optimize
    :local:
 
 
-There are two ways of using Oríon for optimization. One is using the commandline interface which
+There are two ways of using Oríon for optimization. One is using the command line interface which
 conveniently turn a simple script into a hyper-parameter optimization process at the level of the
 command line.
 The other is using the python interface which gives total control
 over the pipeline of optimization.
 
-Commandline API
-===============
+Command line API
+================
 
 Suppose you normally execute your script with the following command
 
