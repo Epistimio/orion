@@ -10,8 +10,8 @@ to enable fast, seamless, and scalable storage integration.
 Out of the box, we support three database backend:
 
 #. :ref:`EphemeralDB Config`, an in-memory database
-#. :ref:`PickledDB Config`, a file-based database (default)
-#. :ref:`MongoDB Config`, a document-oriented database
+#. :ref:`PickledDB Config`, a file-based database
+#. :ref:`MongoDB Config`, a document-oriented database (default)
 
 In this document, we'll review the different methods by which you can configure which database Oríon
 will use during its execution. This page also contains the :ref:`installation instructions for
