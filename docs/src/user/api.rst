@@ -59,7 +59,7 @@ Service API
 
 Using the helper :py:func:`orion.client.workon`, you can quickly optimize a function with a single
 line of code. The experiment object returned can be used to fetch the database of trials and analyze
-the optimization process. However, it is not persisted as it only exists in memory.
+the optimization process. However, it is not persistent as it only exists in memory.
 
 .. code-block:: python
 
