@@ -301,11 +301,16 @@ class EphemeralCollection(object):
         retained_documents = []
         for document in self._documents:
             if not document.match(query):
-                retained_documents.append(document)
+                retained_documents.append(document.to_dict())
             else:
                 deleted += 1
 
-        self._documents = retained_documents
+        # Reset indexes
+        for name, (keys, _) in self._indexes.items():
+            self._indexes[name] = (keys, set())
+
+        self._documents = []
+        self.insert_many(retained_documents)
 
         return deleted
 

@@ -13,7 +13,7 @@ import functools
 import pymongo
 
 from orion.core.io.database import (
-    AbstractDB, DatabaseError, DuplicateKeyError)
+    AbstractDB, DatabaseError, DatabaseTimeout, DuplicateKeyError)
 
 
 AUTH_FAILED_MESSAGES = [
@@ -42,6 +42,20 @@ def mongodb_exception_wrapper(method):
 
         try:
             rval = method(self, *args, **kwargs)
+        except pymongo.errors.ExecutionTimeout as e:
+            # Raised when a database operation times out, exceeding the $maxTimeMS set in
+            # the query or command option.
+            raise DatabaseTimeout() from e
+        except pymongo.errors.NetworkTimeout as e:
+            # An operation on an open connection exceeded socketTimeoutMS.
+            #
+            # The remaining connections in the pool stay open. In the case of a
+            # write operation, you cannot know whether it succeeded or failed.
+            raise DatabaseTimeout() from e
+        except pymongo.errors.WTimeoutError as e:
+            # Raised when a database operation times out (i.e. wtimeout expires)
+            # before replication completes.
+            raise DatabaseTimeout() from e
         except pymongo.errors.DuplicateKeyError as e:
             raise DuplicateKeyError(str(e)) from e
         except pymongo.errors.BulkWriteError as e:
@@ -253,7 +267,7 @@ class MongoDB(AbstractDB):
 
         """
         dbcollection = self._db[collection_name]
-        if hasattr(dbcollection, 'count_documents'):
+        if not isinstance(getattr(dbcollection, 'count_documents'), pymongo.collection.Collection):
             return dbcollection.count_documents(filter=query if query else {})
 
         return dbcollection.count(filter=query)

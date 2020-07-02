@@ -6,11 +6,13 @@ import logging
 from multiprocessing import Pool
 import os
 
+from filelock import FileLock, Timeout
 import pytest
 
-from orion.core.io.database import Database, DuplicateKeyError
+from orion.core.io.database import Database, DatabaseTimeout, DuplicateKeyError
 from orion.core.io.database.ephemeraldb import EphemeralCollection
 from orion.core.io.database.pickleddb import find_unpickable_doc, find_unpickable_field, PickledDB
+import orion.core.utils.backward as backward
 
 
 @pytest.fixture()
@@ -94,6 +96,7 @@ class TestRead(object):
     def test_read_with_id(self, exp_config, orion_db):
         """Query using ``_id`` key."""
         loaded_config = orion_db.read('experiments', {'_id': exp_config[0][2]['_id']})
+        backward.populate_space(loaded_config[0])
         assert loaded_config == [exp_config[0][2]]
 
     def test_read_default(self, exp_config, orion_db):
@@ -220,6 +223,7 @@ class TestReadAndWrite(object):
             {'name': 'supernaedo4'},
             {'pool_size': 'lalala'})
         exp_config[0][3]['pool_size'] = 'lalala'
+        backward.populate_space(loaded_config)
         assert loaded_config == exp_config[0][3]
 
     def test_read_and_write_many(self, orion_db, exp_config):
@@ -234,6 +238,7 @@ class TestReadAndWrite(object):
             {'pool_size': 'lalala'})
 
         exp_config[0][1]['pool_size'] = 'lalala'
+        backward.populate_space(loaded_config)
         assert loaded_config == exp_config[0][1]
 
         # Make sure it only changed the first document found
@@ -278,7 +283,9 @@ class TestRemove(object):
         database = orion_db._get_database()._db
         assert database['experiments'].count() == count_before - count_filt
         assert database['experiments'].count() == 1
-        assert list(database['experiments'].find()) == [exp_config[0][0]]
+        loaded_config = list(database['experiments'].find())
+        backward.populate_space(loaded_config[0])
+        assert loaded_config == [exp_config[0][0]]
 
     def test_remove_with_id(self, exp_config, orion_db):
         """Query using ``_id`` key."""
@@ -290,7 +297,32 @@ class TestRemove(object):
         assert orion_db.remove('experiments', filt) == 1
         database = orion_db._get_database()._db
         assert database['experiments'].count() == count_before - 1
-        assert database['experiments'].find() == exp_config[0][1:]
+        loaded_configs = database['experiments'].find()
+        for loaded_config in loaded_configs:
+            backward.populate_space(loaded_config)
+        assert loaded_configs == exp_config[0][1:]
+
+    def test_remove_update_indexes(self, exp_config, orion_db):
+        """Verify that indexes are properly update after deletion."""
+        with pytest.raises(DuplicateKeyError):
+            orion_db.write('experiments', {'_id': exp_config[0][0]['_id']})
+        with pytest.raises(DuplicateKeyError):
+            orion_db.write('experiments', {'_id': exp_config[0][1]['_id']})
+
+        filt = {'_id': exp_config[0][0]['_id']}
+
+        database = orion_db._get_database()._db
+        count_before = database['experiments'].count()
+        # call interface
+        assert orion_db.remove('experiments', filt) == 1
+        database = orion_db._get_database()._db
+        assert database['experiments'].count() == count_before - 1
+        # Should not fail now, otherwise it means the indexes were not updated properly during
+        # remove()
+        orion_db.write('experiments', filt)
+        # And this should still fail
+        with pytest.raises(DuplicateKeyError):
+            orion_db.write('experiments', {'_id': exp_config[0][1]['_id']})
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -412,3 +444,19 @@ def test_unpickable_error_find_document():
     key, value = find_unpickable_field(doc)
     assert key == 'b_unpickable', 'should return the unpickable field'
     assert isinstance(value, UnpickableClass), 'should return the unpickable value'
+
+
+def test_query_timeout(monkeypatch, orion_db):
+    """Verify that filelock.Timeout is catched and reraised as DatabaseTimeout"""
+    orion_db.timeout = 0.1
+
+    def never_acquire(self, *arg, **kwargs):
+        """Do not try to acquire, raise timeout"""
+        raise Timeout(self)
+
+    monkeypatch.setattr(FileLock, 'acquire', never_acquire)
+
+    with pytest.raises(DatabaseTimeout) as exc:
+        orion_db.read('whatever', {'it should': 'fail'})
+
+    assert exc.match('Could not acquire lock for PickledDB after 0.1 seconds.')

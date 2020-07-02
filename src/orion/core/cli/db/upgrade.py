@@ -16,7 +16,7 @@ import sys
 from orion.core.io.database.ephemeraldb import EphemeralCollection
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
@@ -82,11 +82,15 @@ def main(args):
         if action in ['no', 'n']:
             sys.exit(0)
 
-    experiment_builder = ExperimentBuilder()
-    local_config = experiment_builder.fetch_full_config(args, use_db=False)
-    local_config['protocol'] = {'type': 'legacy', 'setup': False}
+    config = experiment_builder.get_cmd_config(args)
+    storage_config = config.get('storage')
 
-    experiment_builder.setup_storage(local_config)
+    if storage_config is None:
+        storage_config = {'type': 'legacy'}
+
+    storage_config['setup'] = False
+
+    experiment_builder.setup_storage(storage_config)
 
     storage = get_storage()
 
@@ -115,7 +119,7 @@ def upgrade_documents(storage):
     """Upgrade scheme of the documents"""
     for experiment in storage.fetch_experiments({}):
         add_version(experiment)
-        add_priors(experiment)
+        add_space(experiment)
         storage.update_experiment(uid=experiment.pop('_id'), **experiment)
 
 
@@ -124,9 +128,9 @@ def add_version(experiment):
     experiment.setdefault('version', 1)
 
 
-def add_priors(experiment):
-    """Add priors to metadata if not present"""
-    backward.populate_priors(experiment['metadata'])
+def add_space(experiment):
+    """Add space to metadata if not present"""
+    backward.populate_space(experiment)
 
 
 def update_indexes(database):

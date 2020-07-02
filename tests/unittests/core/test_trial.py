@@ -21,7 +21,7 @@ class TestTrial(object):
         assert t.start_time is None
         assert t.end_time is None
         assert t.results == []
-        assert t.params == []
+        assert t.params == {}
         assert t.working_dir is None
 
     def test_init_full(self, exp_config):
@@ -37,7 +37,7 @@ class TestTrial(object):
         assert t.results[0].name == exp_config[1][1]['results'][0]['name']
         assert t.results[0].type == exp_config[1][1]['results'][0]['type']
         assert t.results[0].value == exp_config[1][1]['results'][0]['value']
-        assert list(map(lambda x: x.to_dict(), t.params)) == exp_config[1][1]['params']
+        assert list(map(lambda x: x.to_dict(), t._params)) == exp_config[1][1]['params']
         assert t.working_dir is None
 
     def test_higher_shapes_not_ndarray(self):
@@ -47,7 +47,7 @@ class TestTrial(object):
         params = [dict(name='/x', type='real', value=value)]
         trial = Trial(params=params)
 
-        assert trial.params[0].value == expected
+        assert trial._params[0].value == expected
 
     def test_bad_access(self):
         """Other than `Trial.__slots__` are not allowed."""
@@ -117,8 +117,8 @@ class TestTrial(object):
         """Compare Param objects using __eq__"""
         trials = Trial.build(exp_config[1])
 
-        assert trials[0].params[0] == Trial.Param(**exp_config[1][0]['params'][0])
-        assert trials[0].params[1] != Trial.Param(**exp_config[1][0]['params'][0])
+        assert trials[0]._params[0] == Trial.Param(**exp_config[1][0]['params'][0])
+        assert trials[0]._params[1] != Trial.Param(**exp_config[1][0]['params'][0])
 
     def test_str_trial(self, exp_config):
         """Test representation of `Trial`."""
@@ -129,8 +129,8 @@ class TestTrial(object):
     def test_str_value(self, exp_config):
         """Test representation of `Trial.Value`."""
         t = Trial(**exp_config[1][1])
-        assert str(t.params[1]) == "Param(name='/encoding_layer', "\
-                                   "type='categorical', value='gru')"
+        assert (str(t._params[1]) ==
+                "Param(name='/encoding_layer', type='categorical', value='gru')")
 
     def test_invalid_result(self, exp_config):
         """Test that invalid objectives cannot be set"""
@@ -211,11 +211,13 @@ class TestTrial(object):
     def test_params_repr_property(self, exp_config):
         """Check property `Trial.params_repr`."""
         t = Trial(**exp_config[1][1])
-        assert t.params_repr() == "/decoding_layer:lstm_with_attention,/encoding_layer:gru"
-        assert t.params_repr(sep='\n') == "/decoding_layer:lstm_with_attention\n/encoding_layer:gru"
+        assert Trial.format_params(t._params) == \
+            "/decoding_layer:lstm_with_attention,/encoding_layer:gru"
+        assert Trial.format_params(t._params, sep='\n') == \
+            "/decoding_layer:lstm_with_attention\n/encoding_layer:gru"
 
         t = Trial()
-        assert t.params_repr() == ""
+        assert Trial.format_params(t._params) == ""
 
     def test_hash_name_property(self, exp_config):
         """Check property `Trial.hash_name`."""
@@ -226,6 +228,38 @@ class TestTrial(object):
         with pytest.raises(ValueError) as exc:
             t.hash_name
         assert 'params' in str(exc.value)
+
+    def test_param_name_property(self, exp_config):
+        """Check property `Trial.hash_params`."""
+        exp_config[1][1]['params'].append({'name': '/max_epoch', 'type': 'fidelity', 'value': '1'})
+        t1 = Trial(**exp_config[1][1])
+        exp_config[1][1]['params'][-1]['value'] = '2'  # changing the fidelity
+        t2 = Trial(**exp_config[1][1])
+        assert t1.hash_name != t2.hash_name
+        assert t1.hash_params == t2.hash_params
+
+    def test_hash_ignore_experiment(self, exp_config):
+        """Check property `Trial.compute_trial_hash(ignore_experiment=True)`."""
+        exp_config[1][1]['params'].append({'name': '/max_epoch', 'type': 'fidelity', 'value': '1'})
+        t1 = Trial(**exp_config[1][1])
+        exp_config[1][1]['experiment'] = 'test'  # changing the experiment name
+        t2 = Trial(**exp_config[1][1])
+        assert t1.hash_name != t2.hash_name
+        assert t1.hash_params != t2.hash_params
+        assert (Trial.compute_trial_hash(t1, ignore_experiment=True) ==
+                Trial.compute_trial_hash(t2, ignore_experiment=True))
+
+    def test_hash_ignore_lie(self, exp_config):
+        """Check property `Trial.compute_trial_hash(ignore_lie=True)`."""
+        exp_config[1][1]['params'].append({'name': '/max_epoch', 'type': 'fidelity', 'value': '1'})
+        t1 = Trial(**exp_config[1][1])
+        # Add a lie
+        exp_config[1][1]['results'].append({'name': 'lie', 'type': 'lie', 'value': 1})
+        t2 = Trial(**exp_config[1][1])
+        assert t1.hash_name != t2.hash_name
+        assert t1.hash_params == t2.hash_params
+        assert (Trial.compute_trial_hash(t1, ignore_lie=True) ==
+                Trial.compute_trial_hash(t2, ignore_lie=True))
 
     def test_full_name_property(self, exp_config):
         """Check property `Trial.full_name`."""

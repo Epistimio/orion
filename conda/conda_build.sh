@@ -8,13 +8,18 @@ bash miniconda.sh -b -p $HOME/miniconda
 export PATH="$HOME/miniconda/bin:$PATH"
 hash -r
 conda config --set always_yes yes --set changeps1 no
+
+pip uninstall -y setuptools
+conda install -c anaconda setuptools
+
 conda update -q conda
 conda info -a
 conda install conda-build anaconda-client
 
-conda build conda --python 3.5
+conda build conda --python 3.6
 conda build conda --python 3.6
 conda build conda --python 3.7
+conda build conda --python 3.8
 
 if [[ -n "${TRAVIS_TAG}" ]]
 then

@@ -25,7 +25,7 @@ def test_insert_invalid_experiment(database, monkeypatch):
         orion.core.cli.main(["insert", "-n", "dumb_experiment",
                              "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1"])
 
-    assert ("No experiment with given name 'dumb_experiment' for user 'corneau'"
+    assert ("No experiment with given name 'dumb_experiment' and version '*'"
             in str(exc_info.value))
 
 
@@ -171,3 +171,24 @@ def test_insert_with_version(create_db_instance, monkeypatch, script_path):
     trials = list(get_storage().fetch_trials(uid=exp['_id']))
 
     assert len(trials) == 1
+
+
+def test_no_args(capsys):
+    """Test that help is printed when no args are given."""
+    with pytest.raises(SystemExit):
+        orion.core.cli.main(['insert'])
+
+    captured = capsys.readouterr().out
+
+    assert 'usage:' in captured
+    assert 'Traceback' not in captured
+
+
+def test_no_name(capsys):
+    """Try to run the command without providing an experiment name"""
+    returncode = orion.core.cli.main(["insert", "--version", "1"])
+    assert returncode == 1
+
+    captured = capsys.readouterr().err
+
+    assert captured == 'Error: No name provided for the experiment.\n'

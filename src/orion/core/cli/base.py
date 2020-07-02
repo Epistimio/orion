@@ -10,11 +10,13 @@
 """
 import argparse
 import logging
+import sys
 import textwrap
 
 import orion
 from orion.core.io.database import DatabaseError
-from orion.core.utils.exceptions import NoConfigurationError
+from orion.core.utils.exceptions import (
+    BranchingEvent, MissingResultFile, NoConfigurationError, NoNameError)
 
 
 CLI_DOC_HEADER = """
@@ -48,7 +50,7 @@ class OrionArgsParser:
             '-d', '--debug', action='store_true',
             help="Use debugging mode with EphemeralDB.")
 
-        self.subparsers = self.parser.add_subparsers(help='sub-command help')
+        self.subparsers = self.parser.add_subparsers(dest='command', help='sub-command help')
 
     def get_subparsers(self):
         """Return the subparser object for this parser."""
@@ -64,7 +66,14 @@ class OrionArgsParser:
                   2: logging.DEBUG}
         logging.basicConfig(level=levels.get(verbose, logging.DEBUG))
 
-        function = args.pop('func')
+        if args['command'] is None:
+            self.parser.parse_args(['--help'])
+
+        function = args.pop('func', None)
+        empty_command = (argv[-1] if argv else sys.argv[-1]) == args['command']
+        if function is None or (empty_command and args.pop('help_empty', False)):
+            self.parser.parse_args([args['command'], '--help'])
+
         return args, function
 
     def execute(self, argv):
@@ -72,17 +81,29 @@ class OrionArgsParser:
         try:
             args, function = self.parse(argv)
             function(args)
-        except NoConfigurationError:
-            print("Error: No commandline configuration found for new experiment.")
-        except DatabaseError as e:
-            print(e)
+        except (NoConfigurationError, NoNameError, DatabaseError, MissingResultFile,
+                BranchingEvent) as e:
+            print('Error:', e, file=sys.stderr)
+
+            if args.get('verbose', 0) >= 2:
+                raise e
+
+            return 1
+
+        except KeyboardInterrupt:
+            print('Orion is interrupted.')
+            return 130
+
+        return 0
 
 
-def get_basic_args_group(parser):
+def get_basic_args_group(
+        parser,
+        group_name="Oríon arguments",
+        group_help="These arguments determine orion's behaviour"):
     """Return the basic arguments for any command."""
     basic_args_group = parser.add_argument_group(
-        "Oríon arguments (optional)",
-        description="These arguments determine orion's behaviour")
+        group_name, description=group_help)
 
     basic_args_group.add_argument(
         '-n', '--name',

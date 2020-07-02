@@ -1,8 +1,8 @@
-******************
-Script Integration
-******************
+*********
+Integrate
+*********
 
-This section describes how to adapt the integration of the user script with Oríon.
+This section describes how to adapt a user script with Oríon.
 To customize how Oríon parses the commandline or execution environment see :ref:`customization`.
 If the user script requires information about the running trial, such as its id,
 the working directory or the experiment's name, look at :ref:`commandline_templates` or
@@ -23,7 +23,8 @@ this:
 
 .. code-block:: yaml
 
-    user_script_config: configuration
+    worker:
+        user_script_config: configuration
 
 It is then possible to run ``orion hunt`` like here:
 
@@ -53,6 +54,28 @@ the local one passed to
 ``hunt --config <file_path>``. This working directory is where all trial directories will be
 created. To access the particular working directory of a trial, see next sections
 :ref:`commandline_templates` and :ref:`env_vars`.
+
+.. _language_compatibility:
+
+Language compatibility
+======================
+The command line works for scripts and programs in any language.
+The only requirement is that the executed script returns a JSON string with the objective value.
+
+The format is
+
+.. code-block:: json
+
+   [
+      {
+         "name": "some-objective",
+         "type": "objective",
+         "value": 1
+      }
+   ]
+
+
+See :meth:`orion.client.report_results` for more details.
 
 .. _commandline_templates:
 
@@ -92,6 +115,9 @@ Templates                  Description
 ``trial.id``               Unique ID of the trial
 
 ``trial.working_dir``      Working dir of the trial
+
+``trial.hash_params``      md5sum hash for the parameters (w/o fidelity)
+
 ========================== ====================================
 
 .. note::

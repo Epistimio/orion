@@ -27,10 +27,33 @@ Params: {params}
 """
 
 SPACE_ERROR = """
-ASHA cannot be used if space does contain a fidelity dimension.
+ASHA can only be used if there is one fidelity dimension.
 For more information on the configuration and usage of ASHA, see
 https://orion.readthedocs.io/en/develop/user/algorithms.html#asha
 """
+
+BUDGET_ERROR = """
+Cannot build budgets below max_resources;
+(max: {}) - (min: {}) > (num_rungs: {})
+"""
+
+
+def compute_budgets(min_resources, max_resources, reduction_factor, num_rungs):
+    """Compute the budgets used for ASHA"""
+    budgets = numpy.logspace(
+        numpy.log(min_resources) / numpy.log(reduction_factor),
+        numpy.log(max_resources) / numpy.log(reduction_factor),
+        num_rungs, base=reduction_factor)
+    budgets = (budgets + 0.5).astype(int)
+
+    for i in range(num_rungs - 1):
+        if budgets[i] >= budgets[i + 1]:
+            budgets[i + 1] = budgets[i] + 1
+
+    if budgets[-1] > max_resources:
+        raise ValueError(BUDGET_ERROR.format(min_resources, max_resources, num_rungs))
+
+    return list(budgets)
 
 
 class ASHA(BaseAlgorithm):
@@ -122,12 +145,14 @@ class ASHA(BaseAlgorithm):
 
         self.num_rungs = num_rungs
 
-        budgets = numpy.logspace(
-            numpy.log(min_resources) / numpy.log(reduction_factor),
-            numpy.log(max_resources) / numpy.log(reduction_factor),
-            num_rungs, base=reduction_factor).astype(int)
+        budgets = compute_budgets(min_resources, max_resources, reduction_factor, num_rungs)
 
         # Tracks state for new trial add
+        if num_brackets > num_rungs:
+            logger.warning("The input num_brackets %i is larger than the number of rungs %i, "
+                           "set num_brackets as %i", num_brackets, num_rungs, num_rungs)
+            num_brackets = num_rungs
+
         self.brackets = [
             Bracket(self, reduction_factor, budgets[bracket_index:])
             for bracket_index in range(num_brackets)
@@ -174,19 +199,9 @@ class ASHA(BaseAlgorithm):
                 logger.debug('Promoting')
                 return [candidate]
 
-        if all(bracket.is_filled for bracket in self.brackets):
-            logger.debug('All brackets are filled.')
+        point = self._grow_point_for_bottom_rung()
+        if not point:
             return None
-
-        for _attempt in range(100):
-            point = list(self.space.sample(1, seed=tuple(self.rng.randint(0, 1000000, size=3)))[0])
-            if self.get_id(point) not in self.trial_info:
-                break
-
-        if self.get_id(point) in self.trial_info:
-            raise RuntimeError(
-                'ASHA keeps sampling already existing points. This should not happen, '
-                'please report this error to https://github.com/Epistimio/orion/issues')
 
         sizes = numpy.array([len(b.rungs) for b in self.brackets])
         probs = numpy.e**(sizes - sizes.max())
@@ -200,6 +215,34 @@ class ASHA(BaseAlgorithm):
         logger.debug('Sampling for bracket %s %s', idx, self.brackets[idx])
 
         return [tuple(point)]
+
+    def _grow_point_for_bottom_rung(self):
+        """Sample point for the bottom rung"""
+        if all(bracket.is_filled for bracket in self.brackets):
+            logger.warning('All brackets are filled.')
+            return None
+
+        for _attempt in range(100):
+            point = list(self.space.sample(1, seed=tuple(self.rng.randint(0, 1000000, size=3)))[0])
+            if self.get_id(point) not in self.trial_info:
+                break
+
+        num_sample_trials = 0
+        if self.get_id(point) in self.trial_info:
+            for bracket in self.brackets:
+                num_sample_trials += len(bracket.rungs[0][1])
+
+            if num_sample_trials >= self.space.cardinality:
+                logger.warning('The number of unique trials of bottom rungs exceeds the search '
+                               'space cardinality %i, ASHA algorithm exits.',
+                               self.space.cardinality)
+                return None
+            else:
+                raise RuntimeError(
+                    'ASHA keeps sampling already existing points. This should not happen, '
+                    'please report this error to https://github.com/Epistimio/orion/issues')
+
+        return point
 
     def get_id(self, point):
         """Compute a unique hash for a point based on params, but not fidelity level."""

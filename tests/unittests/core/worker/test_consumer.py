@@ -8,7 +8,7 @@ import time
 
 import pytest
 
-from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
 from orion.core.utils.format_trials import tuple_to_trial
 import orion.core.worker.consumer as consumer
@@ -24,7 +24,8 @@ def config(exp_config):
     config['metadata']['user_args'] = ['--x~uniform(-50, 50)']
     config['name'] = 'exp'
     config['working_dir'] = "/tmp/orion"
-    backward.populate_priors(config['metadata'])
+    backward.populate_space(config)
+    config['space'] = config['metadata']['priors']
     return config
 
 
@@ -34,7 +35,7 @@ def test_trials_interrupted_keyboard_int(config, monkeypatch):
     def mock_Popen(*args, **kwargs):
         raise KeyboardInterrupt
 
-    exp = ExperimentBuilder().build_from(config)
+    exp = experiment_builder.build(**config)
 
     monkeypatch.setattr(consumer.subprocess, "Popen", mock_Popen)
 
@@ -58,7 +59,7 @@ def test_trials_interrupted_sigterm(config, monkeypatch):
     def mock_popen(*args, **kwargs):
         os.kill(os.getpid(), signal.SIGTERM)
 
-    exp = ExperimentBuilder().build_from(config)
+    exp = experiment_builder.build(**config)
 
     monkeypatch.setattr(subprocess.Popen, "wait", mock_popen)
 
@@ -79,11 +80,11 @@ def test_trials_interrupted_sigterm(config, monkeypatch):
 @pytest.mark.usefixtures("create_db_instance")
 def test_pacemaker_termination(config, monkeypatch):
     """Check if pacemaker stops as soon as the trial completes."""
-    exp = ExperimentBuilder().build_from(config)
+    exp = experiment_builder.build(**config)
 
     trial = tuple_to_trial((1.0,), exp.space)
 
-    exp.register_trial(trial)
+    exp.register_trial(trial, status='reserved')
 
     con = Consumer(exp)
 
@@ -100,11 +101,11 @@ def test_pacemaker_termination(config, monkeypatch):
 @pytest.mark.usefixtures("create_db_instance")
 def test_trial_working_dir_is_changed(config, monkeypatch):
     """Check that trial has its working_dir attribute changed."""
-    exp = ExperimentBuilder().build_from(config)
+    exp = experiment_builder.build(**config)
 
     trial = tuple_to_trial((1.0,), exp.space)
 
-    exp.register_trial(trial)
+    exp.register_trial(trial, status='reserved')
 
     con = Consumer(exp)
     con.consume(trial)

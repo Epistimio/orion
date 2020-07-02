@@ -17,6 +17,17 @@ from orion.core.worker.trial import Trial
 log = logging.getLogger(__name__)
 
 
+CORRUPTED_DB_WARNING = """\
+Trial `%s` has an objective but status is not completed.
+This is likely due to a corrupted database, possibly because of
+database timeouts. Try setting manually status to `completed`.
+You can find documention to do this at
+https://orion.readthedocs.io/en/stable/user/storage.html#storage-backend.
+
+If you encounter this issue often, please consider reporting it to
+https://github.com/Epistimio/orion/issues."""
+
+
 def get_objective(trial):
     """Get the value for the objective, if it exists, for this trial
 
@@ -57,15 +68,33 @@ class BaseParallelStrategy(object, metaclass=ABCMeta):
         # converted to expect trials instead of lists and dictionaries.
         pass
 
-    @abstractmethod
+    # pylint: disable=no-self-use
     def lie(self, trial):
         """Construct a fake result for an incomplete trial
 
-        :param trial: `orion.core.worker.trial.Trial`
-        :return: Float or None
-            The fake objective result corresponding to the trial given
+        Parameters
+        ----------
+        trial: `orion.core.worker.trial.Trial`
+            A trial object which is not supposed to be completed.
+
+        Returns
+        -------
+        ``orion.core.worker.trial.Trial.Result``
+            The fake objective result corresponding to the trial given.
+
+        Notes
+        -----
+        If the trial has an objective even if not completed, a warning is printed to user
+        with a pointer to documentation to resolve the database corruption. The result returned is
+        the corresponding objective instead of the lie.
+
         """
-        pass
+        objective = get_objective(trial)
+        if objective:
+            log.warning(CORRUPTED_DB_WARNING, trial.id)
+            return Trial.Result(name='lie', type='lie', value=objective)
+
+        return None
 
     @property
     def configuration(self):
@@ -83,7 +112,11 @@ class NoParallelStrategy(BaseParallelStrategy):
 
     def lie(self, trial):
         """See BaseParallelStrategy.lie"""
-        pass
+        result = super(NoParallelStrategy, self).lie(trial)
+        if result:
+            return result
+
+        return None
 
 
 class MaxParallelStrategy(BaseParallelStrategy):
@@ -101,8 +134,9 @@ class MaxParallelStrategy(BaseParallelStrategy):
 
     def lie(self, trial):
         """See BaseParallelStrategy.lie"""
-        if get_objective(trial):
-            raise RuntimeError("Trial {} is completed but should not be.".format(trial.id))
+        result = super(MaxParallelStrategy, self).lie(trial)
+        if result:
+            return result
 
         return Trial.Result(name='lie', type='lie', value=self.max_result)
 
@@ -123,8 +157,9 @@ class MeanParallelStrategy(BaseParallelStrategy):
 
     def lie(self, trial):
         """See BaseParallelStrategy.lie"""
-        if get_objective(trial):
-            raise RuntimeError("Trial {} is completed but should not be.".format(trial.id))
+        result = super(MeanParallelStrategy, self).lie(trial)
+        if result:
+            return result
 
         return Trial.Result(name='lie', type='lie', value=self.mean_result)
 
@@ -142,8 +177,9 @@ class StubParallelStrategy(BaseParallelStrategy):
 
     def lie(self, trial):
         """See BaseParallelStrategy.lie"""
-        if get_objective(trial):
-            raise RuntimeError("Trial {} is completed but should not be.".format(trial.id))
+        result = super(StubParallelStrategy, self).lie(trial)
+        if result:
+            return result
 
         return Trial.Result(name='lie', type='lie', value=self.stub_value)
 

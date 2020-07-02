@@ -18,7 +18,10 @@ utility functions to build it again as a list or an already formatted string.
 
 from collections import defaultdict, OrderedDict
 import copy
+import errno
+import os
 import re
+import shutil
 
 from orion.core.io.cmdline_parser import CmdlineParser
 from orion.core.io.convert import infer_converter_from_file_type
@@ -51,6 +54,8 @@ class OrionCmdlineParser():
         An OrderedDict obtained by parsing the config file, if one was found.
     priors : OrderedDict
         An OrderedDict obtained from merging `cmd_priors` and `file_priors`.
+    user_script : str
+        File path of the script executed (inferred from parsed commandline)
     config_prefix : str
         Prefix for the configuration file used by the parser to identify it.
     file_config_path : str
@@ -67,7 +72,7 @@ class OrionCmdlineParser():
 
     """
 
-    def __init__(self, config_prefix='config'):
+    def __init__(self, config_prefix='config', allow_non_existing_user_script=False):
         """Create an `OrionCmdlineParser`."""
         self.parser = CmdlineParser()
         self.cmd_priors = OrderedDict()
@@ -77,6 +82,9 @@ class OrionCmdlineParser():
         self.config_prefix = config_prefix
         self.file_config_path = None
         self.converter = None
+
+        self.allow_non_existing_user_script = allow_non_existing_user_script
+        self.user_script = None
 
         # Extraction methods for the file parsing part.
         self._extraction_method = {dict: self._extract_dict,
@@ -126,6 +134,7 @@ class OrionCmdlineParser():
             If a prior inside the commandline and the config file have the same name.
 
         """
+        self.infer_user_script(commandline)
         replaced = self._replace_priors(commandline)
         configuration = self.parser.parse(replaced)
         self._build_priors(configuration)
@@ -134,6 +143,24 @@ class OrionCmdlineParser():
         if duplicated_priors:
             raise ValueError("Conflict: definition of same prior in commandline and config: "
                              "{}".format(duplicated_priors))
+
+    def infer_user_script(self, user_args):
+        """Infer the script name and perform some checks"""
+        if not user_args:
+            return
+
+        # TODO: Parse commandline for any options to python and pick the script filepath properly
+        if user_args[0] == 'python':
+            user_script = user_args[1]
+        else:
+            user_script = user_args[0]
+
+        if (not os.path.exists(user_script) and not shutil.which(user_script) and
+                not self.allow_non_existing_user_script):
+            raise OSError(errno.ENOENT, "The path specified for the script does not exist",
+                          user_script)
+
+        self.user_script = user_script
 
     @property
     def priors(self):
@@ -408,16 +435,16 @@ class OrionCmdlineParser():
         # Create a copy of the template
         instance = copy.deepcopy(self.config_file_data)
 
-        for param in trial.params:
+        for name, value in trial.params.items():
             # The param will only correspond to config keyd
             # that require a prior, so we make sure to skip
             # the ones that do not.
-            if param.name not in self.file_priors.keys():
+            if name not in self.file_priors.keys():
                 continue
 
             # Since namespace start with '/', we must skip
             # the first element of the list.
-            path = param.name.split('/')[1:]
+            path = name.split('/')[1:]
             current_depth = instance
 
             for key in path:
@@ -436,7 +463,7 @@ class OrionCmdlineParser():
                         break
 
                 if isinstance(current_depth[key], str):
-                    current_depth[key] = param.value
+                    current_depth[key] = value
                 else:
                     current_depth = current_depth[key]
 
@@ -445,9 +472,9 @@ class OrionCmdlineParser():
     def _build_configuration(self, trial):
         configuration = copy.deepcopy(self.parser.arguments)
 
-        for param in trial.params:
-            name = param.name.lstrip('/')
-            configuration[name] = param.value
+        for name, value in trial.params.items():
+            name = name.lstrip('/')
+            configuration[name] = value
 
         return configuration
 

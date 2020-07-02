@@ -3,43 +3,39 @@ Results
 
 You can fetch experiments and trials using python code. There is no need to understand the
 specific database backend used (such as MongoDB) since you can fetch results using the
-:class:`orion.core.worker.experiment.Experiment` object.
-The class :class:`orion.core.io.experiment_builder.ExperimentBuilder`
-provides simple methods to fetch experiments
+:class:`orion.client.experiment.ExperimentClient` object.
+The helper function :py:func:`orion.client.create_experiment`
+provides a simple way to fetch experiments
 using their unique names. You do not need to explicitly open a connection to the database since it
 will automatically infer its configuration from the global configuration file as when calling Oríon
-in commandline. Otherwise you can pass other arguments to
-:meth:`ExperimentBuilder().build_view_from() \
-<orion.core.io.experiment_builder.ExperimentBuilder.build_view_from>`.
-
-using the same dictionary structure as in the configuration file.
+in commandline. Otherwise you can specify the configuration directly to
+:py:func:`create_experiment() <orion.client.create_experiment>`. Take a look at the documentation
+for more details on all configuration arguments that are supported.
 
 .. code-block:: python
 
    # Database automatically inferred
-   ExperimentBuilder().build_view_from(
-       {"name": "orion-tutorial"})
+   create_experiment(name="orion-tutorial")
 
    # Database manually set
-   ExperimentBuilder().build_view_from(
-       {"name": "orion-tutorial",
-        "dataset": {
-            "type": "mongodb",
-            "name": "myother",
-            "host": "localhost"}})
+   create_experiment(
+       name="orion-tutorial",
+       storage={
+           'type': 'legacy',
+           'database': {
+               'type': 'mongodb',
+               'name': 'myother',
+               'host': 'localhost'}})
 
 For a complete example, here is how you can fetch trials from a given experiment.
 
 .. code-block:: python
 
-   import datetime
    import pprint
 
-   from orion.core.io.experiment_builder import ExperimentBuilder
+   from orion.client import create_experiment
 
-   some_datetime = datetime.datetime.now() - datetime.timedelta(minutes=5)
-
-   experiment = ExperimentBuilder().build_view_from({"name": "orion-tutorial"})
+   experiment = create_experiment(name="orion-tutorial")
 
    pprint.pprint(experiment.stats)
 
@@ -55,7 +51,7 @@ For a complete example, here is how you can fetch trials from a given experiment
    for trial in experiment.fetch_trials_by_status('completed'):
        print(trial.objective)
 
-:class:`<orion.core.worker.experiment.Experiment>` has many methods that allows you to query
-for different trials. You can find them in the code
 
-.. _`mongodb-like syntax`: https://docs.mongodb.com/manual/reference/method/db.collection.find/
+:py:class:`ExperimentClient <orion.client.experiment.ExperimentClient>`
+has many methods that allows you to query
+for different trials. You can find them in the code reference section.

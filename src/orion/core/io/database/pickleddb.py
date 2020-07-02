@@ -15,15 +15,37 @@ import os
 import pickle
 from pickle import PicklingError
 
-from filelock import FileLock
+from filelock import FileLock, Timeout
 
 import orion.core
-from orion.core.io.database import AbstractDB
+from orion.core.io.database import AbstractDB, DatabaseTimeout
 from orion.core.io.database.ephemeraldb import EphemeralDB
 
 log = logging.getLogger(__name__)
 
 DEFAULT_HOST = os.path.join(orion.core.DIRS.user_data_dir, 'orion', 'orion_db.pkl')
+
+TIMEOUT_ERROR_MESSAGE = """\
+Could not acquire lock for PickledDB after {} seconds.
+
+This is likely due to one or many of the following scenarios:
+
+1. There is a large amount of workers and many simultaneous queries. This typically occurs
+   when the task to optimize is short (few minutes). Try to reduce the amount of workers
+   at least below 50.
+
+2. The database is growing large with thousands of trials and many experiments.
+   If so, you can use a different PickleDB (different file, that is, different `host`)
+   for each experiment seperately to alleviate this issue.
+
+3. The filesystem is slow. Parallel filesystems on HPC often suffer from
+   large pool of users generating frequent I/O. In this case try using a separate
+   partition that may be less affected.
+
+If you cannot solve the issues listed above that are causing timeouts, you
+may need to setup the MongoDB backend for better performance.
+See https://orion.readthedocs.io/en/stable/install/database.html
+"""
 
 
 def find_unpickable_doc(dict_of_dict):
@@ -69,12 +91,17 @@ class PickledDB(AbstractDB):
     host: str
         File path to save pickled ephemeraldb.  Default is {user data dir}/orion/orion_db.pkl ex:
         $HOME/.local/share/orion/orion_db.pkl
+    timeout: int
+        Maximum number of seconds to wait for the lock before raising DatabaseTimeout.
+        Default is 60.
 
     """
 
     # pylint: disable=unused-argument
-    def __init__(self, host=DEFAULT_HOST, *args, **kwargs):
+    def __init__(self, host=DEFAULT_HOST, timeout=60, *args, **kwargs):
         super(PickledDB, self).__init__(host)
+
+        self.timeout = timeout
 
         if os.path.dirname(host):
             os.makedirs(os.path.dirname(host), exist_ok=True)
@@ -198,10 +225,13 @@ class PickledDB(AbstractDB):
         """Lock database file during wrapped operation call."""
         lock = FileLock(self.host + '.lock')
 
-        with lock.acquire(timeout=60):
-            database = self._get_database()
+        try:
+            with lock.acquire(timeout=self.timeout):
+                database = self._get_database()
 
-            yield database
+                yield database
 
-            if write:
-                self._dump_database(database)
+                if write:
+                    self._dump_database(database)
+        except Timeout as e:
+            raise DatabaseTimeout(TIMEOUT_ERROR_MESSAGE.format(self.timeout)) from e

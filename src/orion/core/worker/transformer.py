@@ -18,6 +18,7 @@ import numpy
 from orion.algo.space import (Dimension, Space)
 
 
+# pylint: disable=too-many-branches
 def build_required_space(requirements, original_space):
     """Build a `Space` object which agrees to the `requirements` imposed
     by the desired optimization algorithm.
@@ -43,13 +44,18 @@ def build_required_space(requirements, original_space):
 
     """
     requirements = requirements if isinstance(requirements, list) else [requirements]
+    if not requirements:
+        requirements = [None]
+
     space = TransformedSpace()
     for dim in original_space.values():
         transformers = []
         type_ = dim.type
         base_domain_type = type_
         for requirement in requirements:
-            if type_ == 'real' and requirement in ('real', None):
+            if type_ == 'real' and requirement in ('real', None) and dim.precision is not None:
+                transformers.append(Precision(dim.precision))
+            elif type_ == 'real' and requirement in ('real', None):
                 pass
             elif type_ == 'real' and requirement == 'integer':
                 transformers.append(Quantize())
@@ -64,9 +70,11 @@ def build_required_space(requirements, original_space):
                 transformers.append(Enumerate(dim.categories))
             elif type_ == 'categorical' and requirement is None:
                 pass
+            elif type_ == 'fidelity' and requirement is None:
+                pass
             else:
                 raise TypeError("Unsupported dimension type ('{}') "
-                                "or requirement ('{}')".format(requirement, type_))
+                                "or requirement ('{}')".format(type_, requirement))
             try:
                 last_type = transformers[-1].target_type
                 type_ = last_type if last_type != 'invariant' else type_
@@ -124,7 +132,6 @@ class Identity(Transformer):
     """Implement an identity transformation. Everything as it is."""
 
     def __init__(self, domain_type=None):
-        """Initialize an identity transformation. Domain type is equal to target type."""
         self._domain_type = domain_type
 
     def transform(self, point):
@@ -151,11 +158,10 @@ class Identity(Transformer):
 
 
 class Compose(Transformer):
-    """Implement a composite transformation."""
+    """Initialize composite transformer with a list of `Transformer` objects
+    and domain type on which it will be applied."""
 
     def __init__(self, transformers, base_domain_type=None):
-        """Initialize composite transformer with a list of `Transformer` objects
-        and domain type on which it will be applied."""
         try:
             self.apply = transformers.pop()
         except IndexError:
@@ -209,10 +215,6 @@ class Reverse(Transformer):
     """Apply the reverse transformation that another one would do."""
 
     def __init__(self, transformer: Transformer):
-        """Initialize object with an existing `transformer`.
-
-        This will apply `transformer`'s methods in reverse.
-        """
         assert not isinstance(transformer, OneHotEncode), "real to categorical is pointless"
         self.transformer = transformer
 
@@ -237,6 +239,36 @@ class Reverse(Transformer):
     def domain_type(self):
         """Return `target_type` of composed `transformer`."""
         return self.transformer.target_type
+
+
+class Precision(Transformer):
+    """Round real numbers to requested precision."""
+
+    domain_type = 'real'
+    target_type = 'real'
+
+    def __init__(self, precision=4):
+        self.precision = precision
+
+    def transform(self, point):
+        """Round `point` to the requested precision, as numpy arrays."""
+        # numpy.format_float_scientific precision starts at 0
+        if isinstance(point, (list, tuple)) or (isinstance(point, numpy.ndarray) and point.shape):
+            point = map(lambda x: numpy.format_float_scientific(x, precision=self.precision - 1),
+                        point)
+            point = list(map(float, point))
+        else:
+            point = float(numpy.format_float_scientific(point, precision=self.precision - 1))
+
+        return numpy.asarray(point)
+
+    def reverse(self, transformed_point):
+        """Cast `transformed_point` to floats, as numpy arrays."""
+        return self.transform(transformed_point)
+
+    def repr_format(self, what):
+        """Format a string for calling ``__repr__`` in `TransformedDimension`."""
+        return "{}({}, {})".format(self.__class__.__name__, self.precision, what)
 
 
 class Quantize(Transformer):
@@ -264,7 +296,6 @@ class Enumerate(Transformer):
     target_type = 'integer'
 
     def __init__(self, categories):
-        """Initialize `Enumerate` transformation with a list of `categories`."""
         self.categories = categories
         map_dict = {cat: i for i, cat in enumerate(categories)}
         self._map = numpy.vectorize(lambda x: map_dict[x], otypes='i')
@@ -296,9 +327,6 @@ class OneHotEncode(Transformer):
     target_type = 'real'
 
     def __init__(self, bound: int):
-        """Initialize `OneHotEncode` transformer, so that it can construct
-        a `bound`-dimensional real vector representation of some integer less than `bound`.
-        """
         self.num_cats = bound
 
     def transform(self, point):
@@ -383,12 +411,11 @@ class TransformedDimension(object):
 
     def interval(self, alpha=1.0):
         """Map the interval bounds to the transformed ones."""
-        try:
-            low, high = self.original_dimension.interval(alpha)
-        except RuntimeError as exc:
-            if "Categories" in str(exc):
-                return (-0.1, 1.1)
-            raise
+        if self.original_dimension.prior_name == 'choices':
+            return self.original_dimension.categories
+
+        low, high = self.original_dimension.interval(alpha)
+
         return self.transform(low), self.transform(high)
 
     def __contains__(self, point):
@@ -450,6 +477,11 @@ class TransformedDimension(object):
         return type_ if type_ != 'invariant' else self.original_dimension.type
 
     @property
+    def prior_name(self):
+        """Do not change the prior name of the original dimension."""
+        return self.original_dimension.prior_name
+
+    @property
     def shape(self):
         """Wrap original shape with transformer, because it may have changed."""
         return self.transformer.infer_target_shape(self.original_dimension.shape)
@@ -463,6 +495,11 @@ class TransformedDimension(object):
     def cast(self, point):
         """Cast a point according to original_dimension and then transform it"""
         return self.transform(self.original_dimension.cast(point))
+
+    @property
+    def cardinality(self):
+        """Wrap original `Dimension` capacity"""
+        return self.original_dimension.cardinality
 
 
 class TransformedSpace(Space):

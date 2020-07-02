@@ -203,10 +203,21 @@ class TestDimensionBuilder(object):
 class TestSpaceBuilder(object):
     """Check whether space definition from various input format is successful."""
 
-    def test_build_with_nothing(self, spacebuilder):
-        """Return an empty space if nothing is provided."""
-        space = spacebuilder.build_from([])
-        assert not space
+    def test_configuration_rebuild(self, spacebuilder):
+        """Test that configuration can be used to recreate a space."""
+        prior = {'x': 'uniform(0, 10, discrete=True)',
+                 'y': 'loguniform(1e-08, 1)',
+                 'z': 'choices([\'voici\', \'voila\', 2])'}
+        space = spacebuilder.build(prior)
+        assert space.configuration == prior
 
-        space = spacebuilder.build_from(["--seed=555", "--naedw"])
-        assert not space
+    def test_subdict_dimensions(self, spacebuilder):
+        """Test space can have hierarchical structure."""
+        prior = {'a': {'x': 'uniform(0, 10, discrete=True)'},
+                 'b': {'y': 'loguniform(1e-08, 1)',
+                       'z': 'choices([\'voici\', \'voila\', 2])'}}
+        space = spacebuilder.build(prior)
+        assert len(space) == 3
+        assert 'a.x' in space
+        assert 'b.y' in space
+        assert 'b.z' in space

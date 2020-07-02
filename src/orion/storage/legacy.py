@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.storage.legacy` -- Legacy storage
-=============================================================================
+=============================================
 
 .. module:: legacy
    :platform: Unix
@@ -9,32 +9,56 @@
 
 """
 import datetime
+import json
 import logging
 
 import orion.core
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database, OutdatedDatabaseError
 import orion.core.utils.backward as backward
-from orion.core.worker.trial import Trial
+from orion.core.utils.exceptions import MissingResultFile
+from orion.core.worker.trial import Trial, validate_status
 from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
 
 log = logging.getLogger(__name__)
 
 
-def setup_database(config):
+def get_database():
+    """Return current database
+
+    This is a wrapper around the Database Singleton object to provide
+    better error message when it is used without being initialized.
+
+    Raises
+    ------
+    RuntimeError
+        If the underlying database was not initialized prior to calling this function
+
+    Notes
+    -----
+    To initialize the underlying database you must first call `Database(...)`
+    with the appropriate arguments for the chosen backend
+
+    """
+    return Database()
+
+
+def setup_database(config=None):
     """Create the Database instance from a configuration.
 
     Parameters
     ----------
     config: dict
-        Configuration for the database.
+        Configuration for the database backend. If not defined, global configuration
+        is used.
 
     """
-    db_opts = config['database']
-    dbtype = db_opts.pop('type')
+    if config is None:
+        # TODO: How could we support orion.core.config.storage.database as well?
+        config = orion.core.config.database.to_dict()
 
-    if config.get("debug"):
-        dbtype = "EphemeralDB"
+    db_opts = config
+    dbtype = db_opts.pop('type')
 
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
     try:
@@ -58,9 +82,9 @@ class Legacy(BaseStorageProtocol):
 
     """
 
-    def __init__(self, config=None, setup=True):
-        if config is not None:
-            setup_database(config)
+    def __init__(self, database=None, setup=True):
+        if database is not None:
+            setup_database(database)
 
         self._db = Database()
 
@@ -167,7 +191,13 @@ class Legacy(BaseStorageProtocol):
         This does not update the database!
 
         """
-        results = JSONConverter().parse(results_file.name)
+        if results_file is None:
+            return trial
+
+        try:
+            results = JSONConverter().parse(results_file.name)
+        except json.decoder.JSONDecodeError:
+            raise MissingResultFile()
 
         trial.results = [
             Trial.Result(
@@ -195,7 +225,7 @@ class Legacy(BaseStorageProtocol):
 
         return Trial(**result[0])
 
-    def _update_trial(self, trial: Trial, where=None, **kwargs) -> Trial:
+    def _update_trial(self, trial, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
         if where is None:
             where = dict()
@@ -218,7 +248,12 @@ class Legacy(BaseStorageProtocol):
 
     def push_trial_results(self, trial):
         """See :func:`~orion.storage.BaseStorageProtocol.push_trial_results`"""
-        return self._update_trial(trial, **trial.to_dict(), where={'_id': trial.id})
+        rc = self._update_trial(trial, **trial.to_dict(),
+                                where={'_id': trial.id, 'status': 'reserved'})
+        if not rc:
+            raise FailedUpdate()
+
+        return rc
 
     def set_trial_status(self, trial, status, heartbeat=None):
         """See :func:`~orion.storage.BaseStorageProtocol.set_trial_status`"""
@@ -230,17 +265,15 @@ class Legacy(BaseStorageProtocol):
             heartbeat=heartbeat,
             experiment=trial.experiment
         )
-        if trial.status == 'new':
-            update["start_time"] = datetime.datetime.utcnow()
 
-        elif status == 'completed':
-            update["end_time"] = datetime.datetime.utcnow()
+        validate_status(status)
 
         rc = self._update_trial(trial, **update, where={'status': trial.status, '_id': trial.id})
-        trial.status = status
 
         if not rc:
             raise FailedUpdate()
+
+        trial.status = status
 
     def fetch_pending_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_pending_trials`"""
@@ -300,8 +333,8 @@ class Legacy(BaseStorageProtocol):
         """Update trial's heartbeat"""
         return self._update_trial(trial, heartbeat=datetime.datetime.utcnow(), status='reserved')
 
-    def fetch_trial_by_status(self, experiment, status):
-        """See :func:`~orion.storage.BaseStorageProtocol.fetch_trial_by_status`"""
+    def fetch_trials_by_status(self, experiment, status):
+        """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials_by_status`"""
         query = dict(
             experiment=experiment._id,
             status=status

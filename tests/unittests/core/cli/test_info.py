@@ -5,11 +5,11 @@ import itertools
 
 import pytest
 
-from orion.core.cli.info import (
+from orion.core.io.space_builder import SpaceBuilder
+from orion.core.utils.format_terminal import (
     format_algorithm, format_commandline, format_config, format_dict, format_identification,
     format_info, format_list, format_metadata, format_refers, format_space, format_stats,
     format_title, get_trial_params)
-from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.trial import Trial
 
 
@@ -23,7 +23,7 @@ class DummyExperiment():
 def dummy_trial():
     """Return a dummy trial object"""
     trial = Trial()
-    trial.params = [
+    trial._params = [
         Trial.Param(name='a', type='real', value=0.0),
         Trial.Param(name='b', type='integer', value=1),
         Trial.Param(name='c', type='categorical', value='Some')]
@@ -422,15 +422,15 @@ bayesianoptimizer:
 def test_format_space():
     """Test space section formatting"""
     experiment = DummyExperiment()
-    commandline = ['executing.sh', '--some~choices(["random", "or", "not"])',
-                   '--command~uniform(0, 1)']
-    space = SpaceBuilder().build_from(commandline)
+    space = SpaceBuilder().build(
+        {"some": 'choices(["random", "or", "not"])',
+         "command": 'uniform(0, 1)'})
     experiment.space = space
     assert format_space(experiment) == """\
 Space
 =====
-/command: uniform(0, 1)
-/some: choices(['random', 'or', 'not'])
+command: uniform(0, 1)
+some: choices(['random', 'or', 'not'])
 """
 
 
@@ -576,7 +576,9 @@ def test_format_info(algorithm_dict, dummy_trial):
     experiment.max_trials = 100
     experiment.configuration = {'algorithms': algorithm_dict}
 
-    space = SpaceBuilder().build_from(commandline)
+    space = SpaceBuilder().build(
+        {"some": 'choices(["random", "or", "not"])',
+         "command": 'uniform(0, 1)'})
     experiment.space = space
     experiment.metadata.update(dict(
         user='user',
@@ -648,8 +650,8 @@ bayesianoptimizer:
 
 Space
 =====
-/command: uniform(0, 1)
-/some: choices(['random', 'or', 'not'])
+command: uniform(0, 1)
+some: choices(['random', 'or', 'not'])
 
 
 Meta-data

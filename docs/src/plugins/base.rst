@@ -1,16 +1,8 @@
-************************************
-How to setup and distribute a plugin
-************************************
+********
+Overview
+********
 
+Developing plugins for Oríon is easy. We offer a plugin template powered by cookiecutter_. The
+instructions are on the `template's page <https://github.com/Epistimio/cookiecutter-orion.algo>`_.
 
-Setup
-=====
-
-
-Distribution
-============
-
-Template `setup.py <gradient_descent_algo_setup>`_
-TODO
-
-.. _gradient_descent_algo_setup: https://github.com/epistimio/orion/blob/master/tests/functional/gradient_descent_algo/setup.py
+.. _cookiecutter: https://github.com/cookiecutter/cookiecutter

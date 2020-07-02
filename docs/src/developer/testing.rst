@@ -1,79 +1,62 @@
-.. contents:: Developer's Guide 101: Tools & Testing
-
 *******
 Testing
 *******
 
-For developer's convenience the packages enlisted in the requirements file
-``dev-requirements.txt`` are meant to facilitate the development process.
-Packages include `tox <https://tox.readthedocs.io/en/latest/>`_ for defining
-and organizing macros of sh commands in virtual environments, and packages
-for linting as we will see in a next chapter.
+All the tests for our software are located and organized in the directory
+``/tests`` relative to the root of the code repository. There are three kinds of
+tests:
 
+#. Unit tests, located under ``/tests/unittests``.
+   They test individual features, often at the class granularity.
+#. Functional tests, located under ``/tests/functional``.
+   They test end to end functionality, invoking Oríon's executable from shell.
+#. Stress tests, located under ``/tests/stress``.
+   They test the resilience and performance.
 
-Continuous Integration
-======================
+The tests are made with pytest_. We highly recommend you check it out and take a look at the
+existing tests in the ``tests`` folder.
 
-We use **TravisCI** and **CodeCov**.
+We recommend invoking the tests using ``tox`` as this will be the method used by the CI system.
+It will avoid you headaches when trying to run tests and nasty surprises when submitting PRs.
 
-.. image:: https://travis-ci.org/epistimio/orion.svg?branch=master
-   :target: https://travis-ci.org/epistimio/orion
-
-.. image:: https://codecov.io/gh/epistimio/orion/branch/master/graphs/badge.svg?branch=master
-   :target: https://codecov.io/gh/epistimio/orion
-
-Continuous Testing
-==================
-
-Using ``tox`` we can automate many processes of continuous testing into macros.
-All contexts are defined in `/tox.ini <https://github.com/epistimio/orion/blob/master/tox.ini>`_.
-
-By calling::
-
-   tox
-
-one attempts to call all contexts that matter for our Continuous Integration in
-the same call. Those are *py35*, *py36*, *py37* for running tests and
-checking coverage, *flake8*, *pylint*, *doc8*, *packaging* for linting code,
-documentation and Python packaging-related files, and finally *docs* for
-building the Sphinx documentation.
+Running tests
+=============
+To run the complete test suite, you can use
 
 .. code-block:: sh
 
-   tox -e py
+   $ tox -e py
 
 This will call tests for the particular shell's environment Python's executable.
 If the tests are successful, then a code **coverage** summary will be printed
 on shell's screen.
 
+However, during development consider using
+
 .. code-block:: sh
 
-   tox -e devel
+   $ tox -e devel
 
-This will finally always run the tests on background and on a code change event,
-it automatically performs **regression testing**.
+This will run in the background and run the tests on a code change event (e.g., you save a file)
+automatically run the tests when you make a change. It's particularly useful when you also
+specify the location of the tests:
 
-Test
-====
+.. code-block:: sh
 
-All the tests for our software are located and organized in the directory
-``/tests`` relative to the root of the code repository. There are two kinds of
-tests: Unit tests are located under ``/tests/unittests`` and functional tests
-(tests which invoke Oríon's executable from shell) under ``/tests/functional``.
+   $ tox -e devel -- 'path/to/your/tests/'
 
-Our software requires pytest_ ``>=3.0.0`` for automated testing.
-Also, it requires the particular database setup described in
-:doc:`/install/database` to have been followed.
+.. code-block:: sh
 
-Hence the tests can be invoked with::
+   $ tox -e devel -- 'path/to/your/tests/file.py'
 
-   python setup.py test
+.. code-block:: sh
 
-For instance::
+   $ tox -e devel -- 'path/to/your/tests/file.py::test_name'
 
-   python setup.py test --addopts 'tests/unittests'
-
-will only execute tests located under ``/tests/unittests``, this is all unit
-tests.
+This way, the tests will be ran automatically every time you make a change in the specified folder,
+file, or test respectively. This option is also available for ``$ tox -e py``.
 
 .. _pytest: https://docs.pytest.org/en/latest/
+
+
+.. include:: stress.rst

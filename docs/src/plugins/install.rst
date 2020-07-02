@@ -1,19 +1,19 @@
-***********************
-Installation of plugins
-***********************
+**********
+Installing
+**********
 
 Oríon is built to be easily extensible. Algorithms and database backends can be implemented in
 external repositories and installed as plugins. The installation process is very simple, you only
 need to install them as you would for Oríon's core (see :doc:`/install/core`). They will be
 automatically detected and available for Oríon at run-time.
 
-Note that active development is currently focused on the core. Therefore only one algorithm plugin
-is available for now.
-
-For more information about how to develop your own plugins, see section :doc:`/plugins/base`.
+For more information about how to develop your own plugins, see section :doc:`/plugins/algorithms`.
 
 Algorithms
 ==========
+
+Note that active development is currently focused on the core. Therefore only one algorithm plugin
+is available for now.
 
 Skopt algorithms
 ----------------
@@ -34,8 +34,9 @@ Next we define the file ``bayes.yaml`` as this
 
 .. code-block:: yaml
 
-     name: orion-with-bayes
-     algorithms: BayesianOptimizer
+    experiment:
+        name: orion-with-bayes
+        algorithms: BayesianOptimizer
 
 Then call ``orion hunt`` with the configuration file.
 
@@ -44,9 +45,3 @@ Then call ``orion hunt`` with the configuration file.
     $ orion hunt --config bayes.yaml ./script.sh --lr~'loguniform(1e-5, 1.0)'
 
 Now, we have a Bayesian optimizer sampling learning-rate values to optimize the error rate.
-
-
-Database backend
-================
-
-TODO

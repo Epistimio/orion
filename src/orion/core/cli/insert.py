@@ -17,7 +17,7 @@ import re
 
 from orion.core.cli import base as cli
 from orion.core.io.convert import infer_converter_from_file_type
-from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.format_trials import tuple_to_trial
 
 log = logging.getLogger(__name__)
@@ -32,6 +32,7 @@ def add_subparser(parser):
     cli.get_user_args_group(insert_parser)
 
     insert_parser.set_defaults(func=main)
+    insert_parser.set_defaults(help_empty=True)  # Print help if command is empty
 
     return insert_parser
 
@@ -39,10 +40,9 @@ def add_subparser(parser):
 def main(args):
     """Fetch config and insert new point"""
     command_line_user_args = args.pop('user_args', [None])[1:]
-    # TODO: Views are not fully configured until configuration is refactored
-    experiment = ExperimentBuilder().build_view_from(args)
-    # TODO: Remove this line when views gets fully configured
-    experiment = ExperimentBuilder().build_from(args)
+    experiment_view = experiment_builder.build_view_from_args(args)
+    experiment = experiment_builder.build(name=experiment_view.name,
+                                          version=experiment_view.version)
 
     transformed_args = _build_from(command_line_user_args)
     exp_space = experiment.space

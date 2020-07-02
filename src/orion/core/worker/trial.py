@@ -12,7 +12,17 @@
 import hashlib
 import logging
 
+from orion.core.utils.flatten import unflatten
+
+
 log = logging.getLogger(__name__)
+
+
+def validate_status(status):
+    """Verify if given status is valid."""
+    if status is not None and status not in Trial.allowed_stati:
+        raise ValueError("Given status `{0}` not one of: {1}".format(
+            status, Trial.allowed_stati))
 
 
 class Trial:
@@ -23,6 +33,9 @@ class Trial:
     experiment : str
        Unique identifier for the experiment that produced this trial.
        Same as an `Experiment._id`.
+    id_override: str
+        Trial id returned by the database. It should be unique for a given
+        set of parameters
     heartbeat : datetime.datetime
         Last time trial was identified as being alive.
     status : str
@@ -54,8 +67,8 @@ class Trial:
        List of evaluated metrics for this particular set of params. One and only
        one of them is necessarily an *objective* function value. The other are
        *constraints*, the value of an expression desired to be larger/equal to 0.
-    params : list of `Trial.Param`
-       List of suggested values for the `Experiment` parameter space.
+    params : dict of params
+       Dict of suggested values for the `Experiment` parameter space.
        Consists a sample to be evaluated.
 
     """
@@ -157,21 +170,22 @@ class Trial:
         allowed_types = ('integer', 'real', 'categorical', 'fidelity')
 
     __slots__ = ('experiment', '_id', '_status', 'worker', '_working_dir', 'heartbeat',
-                 'submit_time', 'start_time', 'end_time', '_results', 'params', 'parents')
+                 'submit_time', 'start_time', 'end_time', '_results', '_params', 'parents',
+                 'id_override')
     allowed_stati = ('new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken')
 
     def __init__(self, **kwargs):
         """See attributes of `Trial` for meaning and possible arguments for `kwargs`."""
         for attrname in self.__slots__:
-            if attrname in ('_results', 'params', 'parents'):
+            if attrname in ('_results', '_params', 'parents'):
                 setattr(self, attrname, list())
             else:
                 setattr(self, attrname, None)
 
         self.status = 'new'
 
-        # Remove useless item
-        kwargs.pop('_id', None)
+        # Store the id as an override to support different backends
+        self.id_override = kwargs.pop('_id', None)
 
         for attrname, value in kwargs.items():
             if attrname == 'results':
@@ -179,9 +193,8 @@ class Trial:
                 for item in value:
                     attr.append(self.Result(**item))
             elif attrname == 'params':
-                attr = getattr(self, attrname)
                 for item in value:
-                    attr.append(self.Param(**item))
+                    self._params.append(self.Param(**item))
             else:
                 setattr(self, attrname, value)
 
@@ -198,9 +211,8 @@ class Trial:
 
         # Overwrite "results" and "params" with list of dictionaries rather
         # than list of Value objects
-        for attrname in ('results', 'params'):
-            trial_dictionary[attrname] = list(map(lambda x: x.to_dict(),
-                                                  getattr(self, attrname)))
+        trial_dictionary['results'] = list(map(lambda x: x.to_dict(), self.results))
+        trial_dictionary['params'] = list(map(lambda x: x.to_dict(), self._params))
 
         trial_dictionary['_id'] = trial_dictionary.pop('id')
 
@@ -209,9 +221,14 @@ class Trial:
     def __str__(self):
         """Represent partially with a string."""
         return "Trial(experiment={0}, status={1}, params={2})".format(
-            repr(self.experiment), repr(self._status), self.params_repr())
+            repr(self.experiment), repr(self._status), self.format_params(self._params))
 
     __repr__ = __str__
+
+    @property
+    def params(self):
+        """Parameters of the trial"""
+        return unflatten({param.name: param.value for param in self._params})
 
     @property
     def results(self):
@@ -248,15 +265,15 @@ class Trial:
 
     @status.setter
     def status(self, status):
-        if status is not None and status not in self.allowed_stati:
-            raise ValueError("Given status, {0}, not one of: {1}".format(
-                status, self.allowed_stati))
+        validate_status(status)
         self._status = status
 
     @property
     def id(self):
         """Return hash_name which is also the database key `_id`."""
-        return self.__hash__()
+        if self.id_override is None:
+            return self.__hash__()
+        return self.id_override
 
     @property
     def objective(self):
@@ -282,27 +299,21 @@ class Trial:
         """
         return self._fetch_one_result_of_type('gradient')
 
-    def _repr_values(self, values, sep=','):
-        """Represent with a string the given values."""
-        return sep.join(map(lambda value: "{0.name}:{0.value}".format(value), values))
-
-    def params_repr(self, sep=','):
-        """Represent with a string the parameters contained in this `Trial` object."""
-        return self._repr_values(self.params, sep)
-
     @property
     def hash_name(self):
         """Generate a unique name with an md5sum hash for this `Trial`.
 
         .. note:: Two trials that have the same `params` must have the same `hash_name`.
         """
-        if not self.params and not self.experiment:
-            raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
-                             "have not been set.")
-        params_repr = self.params_repr()
-        experiment_repr = str(self.experiment)
-        lie_repr = self._repr_values([self.lie]) if self.lie else ""
-        return hashlib.md5((params_repr + experiment_repr + lie_repr).encode('utf-8')).hexdigest()
+        return self.compute_trial_hash(self, ignore_fidelity=False)
+
+    @property
+    def hash_params(self):
+        """Generate a unique param md5sum hash for this `Trial`.
+
+        .. note:: The params contributing to the hash do not include the fidelity.
+        """
+        return self.compute_trial_hash(self, ignore_fidelity=True, ignore_lie=True)
 
     def __hash__(self):
         """Return the hashname for this trial"""
@@ -311,10 +322,10 @@ class Trial:
     @property
     def full_name(self):
         """Generate a unique name using the full definition of parameters."""
-        if not self.params or not self.experiment:
+        if not self._params or not self.experiment:
             raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
                              "have not been set.")
-        return self.params_repr(sep='-').replace('/', '.')
+        return self.format_values(self._params, sep='-').replace('/', '.')
 
     def _fetch_one_result_of_type(self, result_type, results=None):
         if results is None:
@@ -332,3 +343,45 @@ class Trial:
                         "Optimizing according to the first one only: %s", value[0])
 
         return value[0]
+
+    def _repr_values(self, values, sep=','):
+        """Represent with a string the given values."""
+        return Trial.format_values(values, sep)
+
+    def params_repr(self, sep=',', ignore_fidelity=False):
+        """Represent with a string the parameters contained in this `Trial` object."""
+        return Trial.format_params(self._params, sep)
+
+    @staticmethod
+    def format_values(values, sep=','):
+        """Represent with a string the given values."""
+        return sep.join(map(lambda value: "{0.name}:{0.value}".format(value), values))
+
+    @staticmethod
+    def format_params(params, sep=',', ignore_fidelity=False):
+        """Represent with a string the parameters contained in this `Trial` object."""
+        if ignore_fidelity:
+            params = [x for x in params if x.type != 'fidelity']
+        else:
+            params = params
+        return Trial.format_values(params, sep)
+
+    @staticmethod
+    def compute_trial_hash(trial, ignore_fidelity=False, ignore_experiment=False,
+                           ignore_lie=False):
+        """Generate a unique param md5sum hash for a given `Trial`"""
+        if not trial._params and not trial.experiment:
+            raise ValueError("Cannot distinguish this trial, as 'params' or 'experiment' "
+                             "have not been set.")
+
+        params = Trial.format_params(trial._params, ignore_fidelity=ignore_fidelity)
+
+        experiment_repr = ""
+        if not ignore_experiment:
+            experiment_repr = str(trial.experiment)
+
+        lie_repr = ""
+        if not ignore_lie and trial.lie:
+            lie_repr = Trial.format_values([trial.lie])
+
+        return hashlib.md5((params + experiment_repr + lie_repr).encode('utf-8')).hexdigest()

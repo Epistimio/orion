@@ -9,13 +9,23 @@
       and link them with a particular existing experiment.
 
 """
-from orion.core.io.experiment_builder import ExperimentBuilder
+import logging
+
+from orion.client import create_experiment
 from orion.core.utils import format_trials
 
 
-def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
+log = logging.getLogger(__name__)
+
+
+def insert_trials(experiment_name, points, raise_exc=True):
     """Insert sets of parameters manually, defined in `points`, as new trials
     for the experiment name, `experiment_name`.
+
+    .. warning::
+
+        This function is deprecated and will be removed in 0.3.0.
+        You should use ExperimentClient.insert() instead.
 
     :param experiment_name: Name of the experiment which the new trials are
        going to be associated with
@@ -31,18 +41,15 @@ def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
        the database.
 
     """
-    cmdconfig = cmdconfig if cmdconfig else {}
-    cmdconfig['name'] = experiment_name
-
-    experiment_view = ExperimentBuilder().build_view_from({'config': cmdconfig})
+    log.warning('insert_trials() is deprecated and will be removed in 0.3.0. '
+                'You should use ExperimentClient.insert() instead.')
+    experiment = create_experiment(experiment_name)
 
     valid_points = []
 
-    print(experiment_view.space)
-
     for point in points:
         try:
-            assert point in experiment_view.space
+            assert point in experiment.space
             valid_points.append(point)
         except AssertionError:
             if raise_exc:
@@ -52,8 +59,8 @@ def insert_trials(experiment_name, points, cmdconfig=None, raise_exc=True):
         return
 
     new_trials = list(
-        map(lambda data: format_trials.tuple_to_trial(data, experiment_view.space),
+        map(lambda data: format_trials.tuple_to_trial(data, experiment.space),
             valid_points))
 
     for new_trial in new_trials:
-        ExperimentBuilder().build_from(experiment_view.configuration).register_trial(new_trial)
+        experiment.insert(new_trial.params)

@@ -1,6 +1,8 @@
-****************
-Setup Algorithms
-****************
+.. _Setup Algorithms:
+
+**********
+Algorithms
+**********
 
 .. contents::
    :depth: 2
@@ -16,9 +18,10 @@ In a Oríon configuration YAML, define:
 
 .. code-block:: yaml
 
-   algorithms:
-     gradient_descent:
-       learning_rate: 0.1
+   experiment:
+       algorithms:
+           gradient_descent:
+               learning_rate: 0.1
 
 In this particular example, the name of the algorithm extension class to be
 imported and instantiated is ``Gradient_Descent``, so the lower-case identifier
@@ -47,14 +50,78 @@ Configuration
 
 .. code-block:: yaml
 
-     algorithms:
-        random:
-           seed: null
+    experiment:
+        algorithms:
+            random:
+                seed: null
 
 
 ``seed``
 
 Seed for the random number generator used to sample new trials. Default is ``None``.
+
+.. _hyperband-algorithm:
+
+Hyperband
+---------
+
+`Hyperband`_ extends the `SuccessiveHalving`_ algorithm by providing a way to exploit a
+fixed budget with different number of configurations for ``SuccessiveHalving`` algorithm to
+evaluate. Each run of ``SuccessiveHalving`` will be defined as a ``bracket`` in Hyperband.
+Hyperband requires two inputs (1) ``R``, the maximum amount of resource that can be allocated
+to a single configuration, and (2) ``eta``, an input that controls the proportion of
+configurations discarded in each round of SuccessiveHalving.
+
+To use Hyperband in Oríon, you must specify one parameter with ``fidelity(low, high, base)``
+as the prior, ``low`` will be ignored, ``high`` will be taken as the maximum resource ``R``
+and ``base`` will be taken as the reduction factor ``eta``.
+
+Number of epochs usually can be used as the resource but the algorithm is generic and can be
+applied to any multi-fidelity setting. That is, you can use training time, specifying the
+fidelity with ``--epochs~fidelity(low=1, high=81, base=3)``
+(assuming your script takes this argument in commandline),
+but you could also use other fidelity
+such as dataset size ``--dataset-size~fidelity(low=500, high=50000)``
+(assuming your script takes this argument and adapt dataset size accordingly).
+
+
+.. _SuccessiveHalving: https://arxiv.org/abs/1502.07943
+
+.. note::
+
+   Current implementation does not support more than one fidelity dimension.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+    experiment:
+        algorithms:
+            hyperband:
+                seed: null
+                repetitions: 1
+
+        strategy: StubParallelStrategy
+
+
+.. note::
+
+   Notice the additional ``strategy`` in configuration which is not mandatory for most other
+   algorithms. See :ref:`StubParallelStrategy` for more information.
+
+
+``seed``
+
+Seed for the random number generator used to sample new trials. Default is ``None``.
+
+``repetitions``
+
+Number of executions for Hyperband. A single execution of Hyperband takes a finite
+budget of ``(log(R)/log(eta) + 1) * (log(R)/log(eta) + 1) * R``, and ``repetitions`` allows you
+to run multiple executions of Hyperband. Default is ``numpy.inf`` which means to run Hyperband
+until no new trials can be suggested.
+
 
 .. _ASHA:
 
@@ -96,19 +163,19 @@ Configuration
 
 .. code-block:: yaml
 
-    algorithms:
-       asha:
-          seed: null
-          num_rungs: null
-          num_brackets: 1
+    experiment:
+        algorithms:
+            asha:
+                seed: null
+                num_rungs: null
+                num_brackets: 1
 
-    producer:
-      strategy: StubParallelStrategy
+        strategy: StubParallelStrategy
 
 
 .. note::
 
-   Notice the additional ``producer.strategy`` in configuration which is not mandatory for other
+   Notice the additional ``strategy`` in configuration which is not mandatory for most other
    algorithms. See :ref:`StubParallelStrategy` for more information.
 
 
@@ -129,6 +196,83 @@ Using a grace period that is too small may bias ASHA too strongly towards fast
 converging trials that do not lead to best results at convergence (stragglers).
 To overcome this, you can increase the number of brackets, which increases the amount of resources
 required for optimisation but decreases the bias towards stragglers. Default is 1.
+
+
+.. _tpe-algorithm:
+
+TPE
+---------
+
+`Tree-structured Parzen Estimator`_ (TPE) algorithm is one of Sequential Model-Based
+Global Optimization (SMBO) algorithms, which will build models to propose new points based
+on the historical observed trials.
+
+Instead of modeling p(y|x) like other SMBO algorithms, TPE models p(x|y) and p(y),
+and p(x|y) is modeled by transforming that generative process, replacing the distributions of
+the configuration prior with non-parametric densities.
+
+The TPE defines p(x|y) using two such densities l(x) and g(x) where l(x) is distribution of
+good points and g(x) is the distribution of bad points. Good and bad points are split from observed
+points so far with a parameter `gamma` which defines the ratio of good points. New point candidates
+will be sampled with l(x) and Expected Improvement (EI) optimization scheme will be used to find
+the most promising point among the candidates.
+
+
+.. _Tree-structured Parzen Estimator:
+    https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf
+
+.. note::
+
+   Current implementation only supports uniform, loguniform, uniform discrete and choices as prior.
+   As for choices prior, the probabilities if any given will be ignored.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+    experiment:
+        algorithms:
+            tpe:
+                seed: null
+                n_initial_points: 20
+                n_ei_candidates: 25
+                gamma: 0.25
+                equal_weight: False
+                prior_weight: 1.0
+                full_weight_num: 25
+
+
+``seed``
+
+Seed to sample initial points and candidates points. Default is ``None``.
+
+``n_initial_points``
+
+Number of initial points randomly sampled. Default is ``20``.
+
+``n_ei_candidates``
+
+Number of candidates points sampled for ei compute. Default is ``24``.
+
+``gamma``
+
+Ratio to split the observed trials into good and bad distributions. Default is ``0.25``.
+
+``equal_weight``
+
+True to set equal weights for observed points. Default is ``False``.
+
+``prior_weight``
+
+The weight given to the prior point of the input space. Default is ``1.0``.
+
+``full_weight_num``
+
+The number of the most recent trials which get the full weight where the others will be
+applied with a linear ramp from 0 to 1.0. It will only take effect if ``equal_weight``
+is ``False``. Default is ``25``.
+
 
 Algorithm Plugins
 =================
@@ -156,15 +300,16 @@ Configuration
 
 .. code-block:: yaml
 
-     algorithms:
-        BayesianOptimizer:
-           seed: null
-           n_initial_points: 10
-           acq_func: gp_hedge
-           alpha: 1e-10
-           n_restarts_optimizer: 0
-           noise: "gaussian"
-           normalize_y: False
+    experiment:
+        algorithms:
+            BayesianOptimizer:
+                seed: null
+                n_initial_points: 10
+                acq_func: gp_hedge
+                alpha: 1.0e-10
+                n_restarts_optimizer: 0
+                noise: "gaussian"
+                normalize_y: False
 
 ``seed``
 
@@ -256,10 +401,10 @@ The value of the objective is customizable with ``stub_value``.
 
 .. code-block:: yaml
 
-    producer:
-      strategy:
-         StubParallelStrategy:
-            stub_value: 'custom value'
+    experiment:
+        strategy:
+            StubParallelStrategy:
+                stub_value: 'custom value'
 
 .. _MaxParallelStrategy:
 
@@ -274,10 +419,10 @@ is ``float('inf')`` by default.
 
 .. code-block:: yaml
 
-    producer:
-      strategy:
-         MaxParallelStrategy:
-            default_result: 10000
+    experiment:
+        strategy:
+            MaxParallelStrategy:
+                default_result: 10000
 
 
 MeanParallelStrategy
@@ -291,7 +436,7 @@ is ``float('inf')`` by default.
 
 .. code-block:: yaml
 
-    producer:
-      strategy:
-         MeanParallelStrategy:
-            default_result: 0.5
+    experiment:
+        strategy:
+            MeanParallelStrategy:
+                default_result: 0.5

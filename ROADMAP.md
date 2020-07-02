@@ -1,24 +1,20 @@
 # Roadmap
-Last update October 8th, 2019
+Last update February 25th, 2020
 
 ## Next releases - Short-Term
+### v0.1.9
+#### Default database backend
+PickledDB will become the default database backend instead of MongoDB. This initiative reduces
+initial configuration, allowing users to get started faster.
 
-### v0.1.8
+#### Deleting experiments
+Adding a new (very requested) feature enabling the deletion of experiments from the CLI or python 
+API.
 
-#### Preliminary Python API
-Library API to simplify usage of algorithms without Oríon's worker.
-
+### v0.2
 #### Journal Protocol Plugins
 Offering:
-- no need to setup DB, can use one's existing backend
-- Can re-use tools provided by backend for visualizations, etc.
-
-## Next releases - Mid-Term
-
-### v0.2: ETA End of summer 2019
-#### Journal Protocol Plugins
-Offering:
-- no need to setup DB, can use one's existing backend
+- No need to setup DB, can use one's existing backend
 - Can re-use tools provided by backend for visualizations, etc.
 #### Python API
 
@@ -34,20 +30,29 @@ results = dummy(**trial.arguments)
 experiment.observe(trial, results)
 ```
 
+### Algorithms
+Introducing new algorithms: [TPE](https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf), [HyperBand](https://arxiv.org/abs/1603.06560)
+
+## Next releases - Mid-Term
+
 ### v0.3
 #### Generic `Optimizer` interface supporting various types of algorithms
 
 Change interface to support trial object instead of curated lists. This is necessary to support algorithms such as PBT.
 
 #### More Optimizers
-- PBT
-- BOHB
-
-## Next releases - Long-Term
+- [PBT](https://arxiv.org/abs/1711.09846)
+- [BOHB](https://ml.informatik.uni-freiburg.de/papers/18-ICML-BOHB.pdf)
 
 #### Simple dashboard specific to monitoring and benchmarking of Black-Box optimization
 - Specific to hyper parameter optimizations
 - Provide status of experiments
+
+#### Leveraging previous experiences
+Leveraging the knowledge base contained in the EVC of previous trials to optimize and drive new
+ trials.
+
+## Next releases - Long-Term
 
 #### Conditional Space
 

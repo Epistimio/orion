@@ -2,7 +2,7 @@
 Running on HPC
 **************
 
-This guide is based on the example described in :doc:`/user/pytorch`.
+This guide is based on the example described in :doc:`/tutorials/pytorch-mnist`.
 
 Parallel optimization using arrays
 ==================================
@@ -19,7 +19,7 @@ together. A minimal Slurm script to launch 10 workers would thus only require th
 
     #SBATCH --array=1-10
 
-    orion hunt -n parallel-exp ./main.py --lr~'loguniform(1e-5, 1.0)'
+    orion hunt -n parallel-exp python main.py --lr~'loguniform(1e-5, 1.0)'
 
 All workers are optimizing the experiment ``parallel-exp`` in parallel, each holding a copy of the
 optimization algorithm. Adding Slurm options to execute the mnist example with proper ressources
@@ -36,7 +36,7 @@ gives the following
     #SBATCH --mem=10GB
     #SBATCH --time=2:59:00
 
-    orion hunt -n parallel-exp --worker-trials 1 ./main.py --lr~'loguniform(1e-5, 1.0)'
+    orion hunt -n parallel-exp --worker-trials 1 python main.py --lr~'loguniform(1e-5, 1.0)'
 
 For now, Oríon does not provide detection of lost trials if a worker gets killed due to a
 timeout. Such trial would be indefinitely marked as ``pending`` in the DB and thus could not be
@@ -57,7 +57,7 @@ character ``%`` (ex: ``#SBATCH --array=1-100%10``).
     #SBATCH --mem=10GB
     #SBATCH --time=2:59:00
 
-    orion hunt -n parallel-exp --worker-trials 1 ./main.py --lr~'loguniform(1e-5, 1.0)'
+    orion hunt -n parallel-exp --worker-trials 1 python main.py --lr~'loguniform(1e-5, 1.0)'
 
 
 SSH tunnels
@@ -135,7 +135,7 @@ These lines can then be added to the script to submit workers in parallel.
 
     ssh -o StrictHostKeyChecking=no <gateway address> -L $ORION_DB_PORT:<db address>:27017 -n -N -f
 
-    orion hunt -n parallel-exp --worker-trials 1 ./main.py --lr~'loguniform(1e-5, 1.0)'
+    orion hunt -n parallel-exp --worker-trials 1 python main.py --lr~'loguniform(1e-5, 1.0)'
 
 
 Notes for MongoDB

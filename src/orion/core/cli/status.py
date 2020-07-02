@@ -15,8 +15,7 @@ import logging
 import tabulate
 
 from orion.core.cli import base as cli
-from orion.core.io.evc_builder import EVCBuilder
-from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
 from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
@@ -49,9 +48,8 @@ def add_subparser(parser):
 
 def main(args):
     """Fetch config and status experiments"""
-    builder = ExperimentBuilder()
-    local_config = builder.fetch_full_config(args, use_db=False)
-    builder.setup_storage(local_config)
+    config = experiment_builder.get_cmd_config(args)
+    experiment_builder.setup_storage(config.get('storage'))
 
     args['all_trials'] = args.pop('all', False)
 
@@ -70,7 +68,7 @@ def main(args):
             raise RuntimeError("Cannot fetch specific version of experiments with --collapse "
                                "or --expand-versions.")
 
-    print_evc(filter(lambda e: e.refers.get('parent_id') is None, experiments), **args)
+    print_evc(experiments, **args)
 
 
 # pylint: disable=unused-argument
@@ -85,8 +83,7 @@ def print_evc(experiments, version=None, all_trials=False, collapse=False,
 
     """
     for exp in experiments:
-        cfg = {'name': exp.name, 'version': version}
-        experiment = EVCBuilder().build_view_from(cfg)
+        experiment = experiment_builder.build_view(exp.name, version)
         if version is None:
             expand_experiment = exp
         else:
@@ -107,13 +104,19 @@ def get_experiments(args):
         Commandline arguments.
 
     """
-    projection = {'name': 1, 'version': 1}
+    projection = {'name': 1, 'version': 1, 'refers': 1}
 
     query = {'name': args['name']} if args.get('name') else {}
     experiments = get_storage().fetch_experiments(query, projection)
 
-    return [EVCBuilder().build_view_from({'name': exp['name'], 'version': exp.get('version', 1)})
-            for exp in experiments]
+    if args['name']:
+        root_experiments = experiments
+    else:
+        root_experiments = [exp for exp in experiments
+                            if exp['refers'].get('root_id', exp['_id']) == exp['_id']]
+
+    return [experiment_builder.build_view(name=exp['name'], version=exp.get('version', 1))
+            for exp in root_experiments]
 
 
 def _has_named_children(exp):

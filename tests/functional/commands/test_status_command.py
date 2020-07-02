@@ -34,6 +34,27 @@ empty
     assert captured == expected
 
 
+def test_python_api(clean_db, with_experiment_using_python_api, capsys):
+    """Test status with experiments built using python api."""
+    orion.core.cli.main(['status'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp-v1
+==================
+empty
+
+
+from-python-api-v1
+==================
+empty
+
+
+"""
+    assert captured == expected
+
+
 def test_experiment_without_trials_wout_ac(clean_db, one_experiment, capsys):
     """Test status with only one experiment and no trials."""
     orion.core.cli.main(['status'])
@@ -70,6 +91,35 @@ suspended             1
 
 """
     assert captured == expected
+
+
+def test_experiment_number_same_list_status(clean_db,
+                                            single_without_success, capsys):
+    """Test status and list command output the consistent number of experiments"""
+    orion.core.cli.main(['status'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp-v1
+==================
+status         quantity
+-----------  ----------
+broken                1
+interrupted           1
+new                   1
+reserved              1
+suspended             1
+
+
+"""
+    assert captured == expected
+
+    orion.core.cli.main(['list'])
+
+    captured = capsys.readouterr().out
+
+    assert captured == " test_single_exp-v1\n"
 
 
 def test_experiment_w_trials_wout_ac(clean_db, single_with_trials, capsys):
@@ -972,7 +1022,7 @@ broken                1
 completed             1
 interrupted           1
 new                   2
-reserved              1
+reserved              2
 suspended             1
 
 

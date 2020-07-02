@@ -13,7 +13,7 @@ def test_no_exp(monkeypatch, clean_db, capsys):
 
     captured = capsys.readouterr().out
 
-    assert captured == ""
+    assert captured == "No experiment found\n"
 
 
 def test_single_exp(clean_db, one_experiment, capsys):
@@ -41,6 +41,15 @@ def test_broken_refers(clean_db, broken_refers, capsys):
     captured = capsys.readouterr().out
 
     assert captured == " test_single_exp-v1\n"
+
+
+def test_python_api(clean_db, with_experiment_using_python_api, capsys):
+    """Test list if containing exps from cmdline api and python api"""
+    orion.core.cli.main(['list'])
+
+    captured = capsys.readouterr().out
+
+    assert captured == " test_single_exp-v1\n from-python-api-v1\n"
 
 
 def test_two_exp(capsys, clean_db, two_experiments):
@@ -75,7 +84,7 @@ def test_no_exp_name(clean_db, three_experiments, monkeypatch, capsys):
 
     captured = capsys.readouterr().out
 
-    assert captured == ""
+    assert captured == "No experiment found\n"
 
 
 def test_exp_name(clean_db, three_experiments, monkeypatch, capsys):

@@ -19,8 +19,8 @@ analyzing an EVC tree.
 import logging
 
 from orion.core.evc.tree import TreeNode
-from orion.core.worker.experiment import ExperimentView
 from orion.storage.base import get_storage
+
 
 log = logging.getLogger(__name__)
 
@@ -68,8 +68,10 @@ class ExperimentNode(TreeNode):
         not done already.
         """
         if self._item is None:
-            self._item = ExperimentView(self.name, version=self.version)
-            self._item.connect_to_version_control_tree(self)
+            # TODO: Find another way around the circular import
+            import orion.core.io.experiment_builder as experiment_builder
+            self._item = experiment_builder.build_view(name=self.name, version=self.version)
+            self._item._experiment._node = self
 
         return self._item
 
@@ -85,7 +87,7 @@ class ExperimentNode(TreeNode):
         """
         if self._parent is None and self._no_parent_lookup:
             self._no_parent_lookup = False
-            query = {'_id': self.item.refers['parent_id']}
+            query = {'_id': self.item.refers.get('parent_id')}
             selection = {'name': 1, 'version': 1}
             experiments = get_storage().fetch_experiments(query, selection)
 

@@ -3,6 +3,7 @@
 """Example usage and tests for :mod:`orion.algo.space`."""
 
 from collections import (defaultdict, OrderedDict)
+import sys
 
 import numpy as np
 from numpy.testing import assert_array_equal as assert_eq
@@ -157,6 +158,56 @@ class TestDimension(object):
         assert dim.prior is None
         assert dim._prior_name is 'None'
 
+    @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
+    def test_get_prior_string(self):
+        """Test that prior string can be rebuilt."""
+        dim = Dimension('yolo', 'alpha', 1, 2, 3, some='args', plus='fluff', n=4)
+        assert dim.get_prior_string() == 'alpha(1, 2, 3, some=\'args\', plus=\'fluff\', n=4)'
+
+    def test_get_prior_string_uniform(self):
+        """Test special uniform args are handled properly."""
+        dim = Dimension('yolo', 'uniform', 1, 2)
+        assert dim.get_prior_string() == 'uniform(1, 3)'
+
+    def test_get_prior_string_default_values(self, monkeypatch):
+        """Test that default_value are included."""
+        def contains(self, value):
+            return True
+        monkeypatch.setattr(Dimension, '__contains__', contains)
+        dim = Dimension('yolo', 'alpha', 1, 2, default_value=1)
+        assert dim.get_prior_string() == 'alpha(1, 2, default_value=1)'
+
+    def test_get_prior_string_shape(self):
+        """Test that shape is included."""
+        dim = Dimension('yolo', 'alpha', 1, 2, shape=(2, 3))
+        assert dim.get_prior_string() == 'alpha(1, 2, shape=(2, 3))'
+
+    def test_get_prior_string_loguniform(self):
+        """Test that special loguniform prior name is replaced properly."""
+        dim = Dimension('yolo', 'reciprocal', 1e-10, 1)
+        assert dim.get_prior_string() == 'loguniform(1e-10, 1)'
+
+    def test_prior_name(self):
+        """Test prior name is correct in dimension"""
+        dim = Dimension('yolo', 'reciprocal', 1e-10, 1)
+        assert dim.prior_name == 'reciprocal'
+
+        dim = Dimension('yolo', 'norm', 0.9)
+        assert dim.prior_name == 'norm'
+
+        dim = Real('yolo', 'uniform', 1, 2)
+        assert dim.prior_name == 'uniform'
+
+        dim = Integer('yolo1', 'uniform', -3, 6)
+        assert dim.prior_name == 'int_uniform'
+
+        dim = Integer('yolo1', 'norm', -3, 6)
+        assert dim.prior_name == 'int_norm'
+
+        categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 'lalala': 0.4}
+        dim = Categorical('yolo', categories)
+        assert dim.prior_name == 'choices'
+
 
 class TestReal(object):
     """Test methods of a `Real` object."""
@@ -268,6 +319,11 @@ class TestInteger(object):
         assert dim.type == 'integer'
         assert dim.shape == ()
 
+    def test_inclusive_intervals(self):
+        """Test that discretized bounds are valid"""
+        dim = Integer('yolo', 'uniform', -3, 5.5)
+        assert dim.interval() == (-3, 3)
+
     def test_contains(self):
         """Check for integer test."""
         dim = Integer('yolo', 'uniform', -3, 6)
@@ -322,6 +378,11 @@ class TestInteger(object):
         """Make sure array are cast to int and returned as array of values"""
         dim = Integer('yolo', 'uniform', -3, 4)
         assert np.all(dim.cast(np.array(['1', '2'])) == np.array([1, 2]))
+
+    def test_get_prior_string_discrete(self):
+        """Test that discrete is included."""
+        dim = Integer('yolo', 'uniform', 1, 2)
+        assert dim.get_prior_string() == 'uniform(1, 3, discrete=True)'
 
 
 class TestCategorical(object):
@@ -405,14 +466,12 @@ class TestCategorical(object):
         with pytest.raises(ValueError):
             Categorical('yolo', categories, shape=2)
 
-    def test_interval_is_banned(self):
+    def test_interval(self):
         """Check that calling `Categorical.interval` raises `RuntimeError`."""
         categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 4: 0.4}
         dim = Categorical('yolo', categories, shape=2)
 
-        with pytest.raises(RuntimeError) as exc:
-            dim.interval()
-        assert 'not ordered' in str(exc.value)
+        assert dim.interval() == ('asdfa', 2, 3, 4)
 
     def test_that_objects_types_are_ok(self):
         """Check that output samples are of the correct type.
@@ -533,6 +592,8 @@ class TestFidelity(object):
         assert dim.sample() == [2]
         dim = Fidelity('epoch', 1, 5)
         assert dim.sample() == [5]
+        dim = Fidelity('epoch', 1, 5)
+        assert dim.sample(4) == [5] * 4
 
     def test_default_value(self):
         """Make sure Fidelity simply returns `high`"""
@@ -648,6 +709,28 @@ class TestSpace(object):
 
         assert space.interval() == [categories, (-3, 3), (-np.inf, np.inf)]
 
+    def test_cardinality(self):
+        """Check whether space capacity is correct"""
+        space = Space()
+        probs = (0.1, 0.2, 0.3, 0.4)
+        categories = ('asdfa', 2, 3, 4)
+        dim = Categorical('yolo', OrderedDict(zip(categories, probs)), shape=2)
+        space.register(dim)
+        dim = Integer('yolo2', 'uniform', -3, 6)
+        space.register(dim)
+        dim = Fidelity('epoch', 1, 9, 3)
+        space.register(dim)
+
+        assert (4 * 2) * 6 * 1 == space.cardinality
+
+        dim = Integer('yolo3', 'uniform', -3, 2, shape=(3, 1))
+        space.register(dim)
+        assert (4 * 2) * 6 * 1 * (2 * 3 * 1) == space.cardinality
+
+        dim = Real('yolo4', 'norm', 0.9)
+        space.register(dim)
+        assert np.inf == space.cardinality
+
     def test_bad_setitem(self):
         """Check exceptions in setting items in Space."""
         space = Space()
@@ -725,3 +808,34 @@ class TestSpace(object):
                              "default value=None),\n"\
                              "       Real(name=yolo3, prior={norm: (0.9,), {}}, shape=(), "\
                              "default value=None)])"
+
+    def test_configuration(self):
+        """Test that configuration contains all dimensions."""
+        space = Space()
+        space.register(Integer('yolo1', 'uniform', -3, 6, shape=(2,)))
+        space.register(Integer('yolo2', 'uniform', -3, 6, shape=(2,)))
+        space.register(Real('yolo3', 'norm', 0.9))
+        space.register(Categorical('yolo4', ('asdfa', 2)))
+
+        assert space.configuration == {
+            'yolo1': 'uniform(-3, 3, shape=(2,), discrete=True)',
+            'yolo2': 'uniform(-3, 3, shape=(2,), discrete=True)',
+            'yolo3': 'norm(0.9)',
+            'yolo4': 'choices([\'asdfa\', 2])'}
+
+    def test_precision(self):
+        """Test that precision is correctly handled."""
+        space = Space()
+        space.register(Real('yolo1', 'norm', 0.9, precision=6))
+        space.register(Real('yolo2', 'norm', 0.9, precision=None))
+        space.register(Real('yolo5', 'norm', 0.9))
+
+        assert space['yolo1'].precision == 6
+        assert space['yolo2'].precision is None
+        assert space['yolo5'].precision == 4
+
+        with pytest.raises(TypeError):
+            space.register(Real('yolo3', 'norm', 0.9, precision=-12))
+
+        with pytest.raises(TypeError):
+            space.register(Real('yolo4', 'norm', 0.9, precision=0.6))

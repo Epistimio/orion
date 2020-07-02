@@ -1,6 +1,6 @@
-**************************
-Example with pytorch-cifar
-**************************
+***************
+PyTorch CIFAR10
+***************
 
 .. note ::
 
@@ -13,15 +13,14 @@ Example with pytorch-cifar
     using the option `--debug`, but note that all data gathered during an
     execution will be lost at the end of it.
 
-pip3 install torch torchvision
-
-git clone git@github.com:kuangliu/pytorch-cifar.git
-
-cd pytorch-cifar
+Set up
 
 .. code-block:: bash
 
-    sed -i '1 i\#!/usr/bin/env python' main.py
+    pip3 install torch torchvision
+
+    git clone https://github.com/kuangliu/pytorch-cifar.git
+    cd pytorch-cifar
 
 Add to last line of test()
 
@@ -35,10 +34,7 @@ Last line of the main() function
 
         test_error_rate = test(epoch)
 
-    report_results([dict(
-        name='test_error_rate',
-        type='objective',
-        value=test_error_rate)])
+    report_objective(objective, name='test_error_rate')
 
 .. code-block:: bash
 

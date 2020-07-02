@@ -379,7 +379,7 @@ class TestExperimentNameResolution(object):
 
     def test_repr(self, experiment_name_resolution):
         """Verify resolution representation for user interface"""
-        assert repr(experiment_name_resolution) == '--branch new-exp-name'
+        assert repr(experiment_name_resolution) == '--branch-to new-exp-name'
 
     def test_revert(self, old_config, new_config,
                     experiment_name_conflict, experiment_name_resolution):

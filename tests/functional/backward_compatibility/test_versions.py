@@ -8,18 +8,23 @@ import subprocess
 from pymongo import MongoClient
 import pytest
 
+from orion.client import create_experiment
 from orion.core.io.database import Database, OutdatedDatabaseError
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.io.experiment_builder import ExperimentBuilder
+import orion.core.io.experiment_builder as experiment_builder
 from orion.storage.base import get_storage, Storage
 from orion.storage.legacy import Legacy
 
 
 DIRNAME = os.path.dirname(os.path.abspath(__file__))
 
+PYTHON_SCRIPT_PATH = os.path.join(DIRNAME, 'python_api.py')
 SCRIPT_PATH = os.path.join(DIRNAME, 'black_box.py')
 CONFIG_FILE = os.path.join(DIRNAME, 'random.yaml')
+
+# Ignore pre-0.1.3 because there was no PickleDB backend.
+VERSIONS = ['0.1.3', '0.1.4', '0.1.5', '0.1.6', '0.1.7']
 
 
 def get_package(version):
@@ -33,8 +38,12 @@ def get_package(version):
     return 'orion.core'
 
 
-# Ignore pre-0.1.3 because there was no PickleDB backend.
-VERSIONS = ['0.1.3', '0.1.4', '0.1.5', '0.1.6']
+def get_branch_argument(version):
+    """Get argument to branch.
+
+    Before v0.1.8 it was --branch. From v0.1.8 and forward it is now --branch-to.
+    """
+    return '--branch' if version < '0.1.8' else '--branch-to'
 
 
 def clean_mongodb():
@@ -99,6 +108,35 @@ def get_virtualenv_dir(version):
     return 'version-{}'.format(version)
 
 
+def fill_from_cmdline_api(orion_script, version):
+    """Add experiments and trials using the commandline API"""
+    print(execute(' '.join([
+        orion_script, '-vv', 'init_only', '--name', 'init-cmdline',
+        '--config', CONFIG_FILE,
+        SCRIPT_PATH, '-x~uniform(-50,50)'])))
+
+    print(execute(' '.join([
+        orion_script, '-vv', 'init_only', '--name', 'init-cmdline',
+        get_branch_argument(version), 'init-cmdline-branch-old',
+        '--config', CONFIG_FILE])))
+
+    print(execute(' '.join([
+        orion_script, '-vv', 'hunt', '--name', 'hunt-cmdline',
+        '--config', CONFIG_FILE,
+        SCRIPT_PATH, '-x~uniform(-50,50)'])))
+
+    print(execute(' '.join([
+        orion_script, '-vv', 'hunt', '--name', 'hunt-cmdline',
+        get_branch_argument(version), 'hunt-cmdline-branch-old',
+        '--config', CONFIG_FILE])))
+
+
+def fill_from_python_api(python_script, version):
+    """Add experiments and trials using the python API"""
+    print(execute(' '.join([
+        python_script, PYTHON_SCRIPT_PATH, version])))
+
+
 @pytest.fixture(scope='class', params=VERSIONS)
 def fill_db(request):
     """Add experiments and trials in DB for given version of Oríon."""
@@ -109,29 +147,14 @@ def fill_db(request):
     setup_virtualenv(version)
 
     orion_script = os.path.join(get_virtualenv_dir(version), 'bin', 'orion')
+    python_script = os.path.join(get_virtualenv_dir(version), 'bin', 'python')
 
     orion_version = get_version(orion_script)
     assert orion_version == 'orion {}'.format(version)
 
-    print(execute(' '.join([
-        orion_script, '-vv', 'init_only', '--name', 'init',
-        '--config', CONFIG_FILE,
-        SCRIPT_PATH, '-x~uniform(-50,50)'])))
-
-    print(execute(' '.join([
-        orion_script, '-vv', 'init_only', '--name', 'init',
-        '--branch', 'init-branch-old',
-        '--config', CONFIG_FILE])))
-
-    print(execute(' '.join([
-        orion_script, '-vv', 'hunt', '--name', 'hunt',
-        '--config', CONFIG_FILE,
-        SCRIPT_PATH, '-x~uniform(-50,50)'])))
-
-    print(execute(' '.join([
-        orion_script, '-vv', 'hunt', '--name', 'hunt',
-        '--branch', 'hunt-branch-old',
-        '--config', CONFIG_FILE])))
+    fill_from_cmdline_api(orion_script, version)
+    if version > '0.1.7':
+        fill_from_python_api(python_script, version)
 
     orion_version = get_version('orion')
     assert orion_version != 'orion {}'.format(version)
@@ -142,6 +165,8 @@ def fill_db(request):
             build_storage()
 
     print(execute('orion -vv db upgrade -f'))
+
+    return version
 
 
 def null_db_instances():
@@ -156,9 +181,7 @@ def null_db_instances():
 def build_storage():
     """Build storage from scratch"""
     null_db_instances()
-    experiment_builder = ExperimentBuilder()
-    local_config = experiment_builder.fetch_full_config({}, use_db=False)
-    experiment_builder.setup_storage(local_config)
+    experiment_builder.setup_storage()
 
     return get_storage()
 
@@ -184,37 +207,71 @@ class TestBackwardCompatibility:
         out = execute('orion db test')
         assert 'Failure' not in out
 
-    def test_list(self):
+    def test_list(self, fill_db):
         """Verify list command"""
         out = execute('orion list')
-        assert 'init-v1' in out
-        assert 'init-branch-old-v1' in out
-        assert 'hunt-v1' in out
-        assert 'hunt-branch-old-v1' in out
+        assert 'init-cmdline-v1' in out
+        assert 'init-cmdline-branch-old-v1' in out
+        assert 'hunt-cmdline-v1' in out
+        assert 'hunt-cmdline-branch-old-v1' in out
 
-    def test_status(self):
+        version = fill_db
+        if version > '0.1.7':
+            assert 'hunt-python-v1' in out
+
+    def test_status(self, fill_db):
         """Verify status command"""
         out = execute('orion status')
-        assert 'init-v1' in out
-        assert 'init-branch-old-v1' in out
-        assert 'hunt-v1' in out
-        assert 'hunt-branch-old-v1' in out
+        assert 'init-cmdline-v1' in out
+        assert 'init-cmdline-branch-old-v1' in out
+        assert 'hunt-cmdline-v1' in out
+        assert 'hunt-cmdline-branch-old-v1' in out
 
-    def test_info(self):
-        """Verify info command"""
-        out = execute('orion info --name hunt')
-        assert 'name: hunt' in out
+        version = fill_db
+        if version > '0.1.7':
+            assert 'hunt-python-v1' in out
+
+    def test_info_cmdline_api(self):
+        """Verify info command from commandline api"""
+        out = execute('orion info --name hunt-cmdline')
+        assert 'name: hunt-cmdline' in out
+
+    def test_info_python_api(self, fill_db):
+        """Verify info command from python api"""
+        version = fill_db
+        if version < '0.1.8':
+            pytest.skip("Python API not supported by {}".format(version))
+
+        out = execute('orion info --name hunt-python')
+        assert 'name: hunt-python' in out
 
     def test_init_only(self):
         """Verify init_only command"""
         print(execute(' '.join([
-            'orion', 'init_only', '--name', 'init',
-            '--branch', 'init-branch'])))
+            'orion', 'init_only', '--name', 'init-cmdline',
+            '--branch-to', 'init-cmdline-branch'])))
 
-    def test_hunt(self):
-        """Verify hunt command"""
+    def test_hunt_cmdline_api(self):
+        """Verify hunt command from cmdline api parent"""
         print(execute(' '.join([
-            'orion', 'hunt', '--name', 'hunt',
-            '--branch', 'hunt-branch'])))
+            'orion', 'hunt', '--name', 'hunt-cmdline',
+            '--branch-to', 'hunt-cmdline-branch'])))
+
+    def test_hunt_python_api(self, fill_db):
+        """Verify hunt command from python api parent"""
+        version = fill_db
+        if version < '0.1.8':
+            pytest.skip("Python API not supported by {}".format(version))
+
+        def function(x):
+            """Evaluate partial information of a quadratic."""
+            z = x - 34.56789
+            return [dict(
+                name='example_objective',
+                type='objective',
+                value=4 * z**2 + 23.4)]
+
+        exp = create_experiment('hunt-python', branching={'branch-to': 'hunt-python-branch'})
+        exp.workon(function, max_trials=10)
 
     # orion.core.cli.main('init-only') # TODO: deprecate init_only

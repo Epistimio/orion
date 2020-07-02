@@ -1,6 +1,6 @@
-**************
-Simple example
-**************
+*************
+PyTorch MNIST
+*************
 
 This is a simple tutorial on running hyperparameter search with Oríon on Pytorch's MNIST example
 
@@ -16,7 +16,7 @@ PyTorch `examples repository`_:
 .. code-block:: bash
 
     $ pip3 install torch torchvision
-    $ git clone git@github.com:pytorch/examples.git
+    $ git clone https://github.com/pytorch/examples.git
 
 
 .. _examples repository: https://github.com/pytorch/examples
@@ -25,11 +25,11 @@ PyTorch `examples repository`_:
 Adapting the code for Oríon
 ===========================
 
-To use Oríon with any code we need to do three things
+To use Oríon with any code we need to do two things
 
-1. make the ``main.py`` file a python executable
-2. import the ``orion.client.report_results`` helper function
-3. call `report_results` on the final objective output to be minimized (e.g. final test error rate)
+1. import the ``orion.client.report_objective`` helper function
+2. call `report_objective` on the final objective output to be minimized
+   (e.g. final test error rate)
 
 After cloning pytorch examples repository, cd to mnist folder:
 
@@ -37,39 +37,29 @@ After cloning pytorch examples repository, cd to mnist folder:
 
     $ cd examples/mnist
 
-1. In your favourite editor add a shebang line ``#!/usr/bin/env python`` to
-the ``main.py`` and make it executable, for example:
-
-.. code-block:: bash
-
-    $ sed -i '1s/^/#!/usr/bin/env python/' main.py
-    $ chmod +x main.py
-
-2. At the top of the file, below the imports, add one line of import the helper function
-``orion.client.report_results()``:
+1. At the top of the file, below the imports, add one line of import for the helper function
+``orion.client.report_objective()``:
 
 .. code-block:: python
 
-    from orion.client import report_results
+    from orion.client import report_objective
 
-3. We need the test error rate so we're going to add a line to the function ``test()`` to return it
+2. We need the test error rate so we're going to add a line to the function ``test()`` to return it
 
 .. code-block:: python
 
     return 1 - (correct / len(test_loader.dataset))
 
-Finally, we get back this test error rate and call ``report_results`` to
-return the final objective value to Oríon. Note that ``report_results`` is meant to
+Finally, we get back this test error rate and call ``report_objective`` to
+return the final objective value to Oríon. Note that ``report_objective`` is meant to
 be called only once because Oríon only looks at 1 ``'objective'`` value per run.
 
 .. code-block:: python
 
         test_error_rate = test(args, model, device, test_loader)
 
-    report_results([dict(
-        name='test_error_rate',
-        type='objective',
-        value=test_error_rate)])
+    report_objective(test_error_rate)
+
 
 Execution
 =========
@@ -79,7 +69,7 @@ rather simple. Normally you would call the script the following way.
 
 .. code-block:: bash
 
-    $ ./main.py --lr 0.01
+    $ python main.py --lr 0.01
 
 To use it with Oríon, you simply need to prepend the call with
 ``orion hunt -n <experiment name>`` and specify the hyper-parameter prior
@@ -87,9 +77,9 @@ distributions.
 
 .. code-block:: bash
 
-    $ orion hunt -n orion-tutorial ./main.py --lr~'loguniform(1e-5, 1.0)'
+    $ orion hunt -n orion-tutorial python main.py --lr~'loguniform(1e-5, 1.0)'
 
-This commandline call will sequentially execute ``./main.py --lr=<value>`` with random
+This commandline call will sequentially execute ``python main.py --lr=<value>`` with random
 values sampled from the distribution ``loguniform(1e-5, 1.0)``. We support all
 distributions from scipy.stats_, plus ``choices()`` for categorical
 hyper-parameters (similar to numpy's `choice function`_).
@@ -115,7 +105,7 @@ You can also register experiments without executing them.
 
 .. code-block:: bash
 
-    $ orion init_only -n orion-tutorial ./main.py --lr~'loguniform(1e-5, 1.0)'
+    $ orion init_only -n orion-tutorial python main.py --lr~'loguniform(1e-5, 1.0)'
 
 
 Results
@@ -156,8 +146,12 @@ validation set.
 Oríon will always **minimize** the objective so make sure you never try to
 optimize something like the accuracy of the model unless you are looking for very very bad models.
 
-You can also ``report_results`` of types ``'gradient'`` and ``'constraint'`` for
-algorithms which require those parameters as well.
+You can also report results of types ``'gradient'`` and ``'constraint'`` for
+algorithms which require those parameters as well, or ``'statistic'`` for metrics
+to be saved with the trial. See
+:py:func:`report_results() <orion.client.cli.report_results>`
+for more details.
+
 
 Debugging
 =========
@@ -168,7 +162,7 @@ don't use ``--debug`` you will likely quickly fill your database with broken exp
 
 .. code-block:: bash
 
-    $ orion --debug hunt -n orion-tutorial ./main.py --lr~'loguniform(1e-5, 1.0)'
+    $ orion --debug hunt -n orion-tutorial python main.py --lr~'loguniform(1e-5, 1.0)'
 
 Hunting Options
 ---------------
@@ -242,4 +236,3 @@ useful if many workers are executed in parallel and the algorithm has a strategy
 non-independant trials simultaneously. Otherwise, it is better to leave ``pool_size`` to its default
 value 1. Note that this option is not usefull useless you know the algorithm have a strategy
 to produce multiple trials simultaneously. If you have any doubt, leave it to 1. :)
-

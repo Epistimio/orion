@@ -285,7 +285,9 @@ class TestCommandLineConflict(object):
     def test_repr(self, cli_conflict):
         """Verify the representation of conflict for user interface"""
         assert (
-            repr(cli_conflict) == "Old arguments '' != new arguments 'bool-arg True some-new args'")
+            repr(cli_conflict) == (
+                "Old arguments '_pos_0 abs_path/black_box.py' != "
+                "new arguments '_pos_0 abs_path/black_box.py bool-arg True some-new args'"))
 
 
 class TestScriptConfigConflict(object):
@@ -328,8 +330,8 @@ class TestScriptConfigConflict(object):
         old_config = {'metadata': {'user_args': yaml_config}}
         new_config = {'metadata': {'user_args': yaml_diff_config}}
 
-        backward.populate_priors(old_config['metadata'])
-        backward.populate_priors(new_config['metadata'])
+        backward.populate_space(old_config)
+        backward.populate_space(new_config)
 
         conflicts = list(conflict.ScriptConfigConflict.detect(old_config, new_config))
         assert len(conflicts) == 1
@@ -339,8 +341,8 @@ class TestScriptConfigConflict(object):
         old_config = {'metadata': {'user_args': yaml_config}}
         new_config = {'metadata': {'user_args': yaml_config + ['--other', 'args']}}
 
-        backward.populate_priors(old_config['metadata'])
-        backward.populate_priors(new_config['metadata'])
+        backward.populate_space(old_config)
+        backward.populate_space(new_config)
 
         assert list(conflict.ScriptConfigConflict.detect(old_config, new_config)) == []
 
@@ -418,7 +420,7 @@ class TestExperimentNameConflict(object):
     def test_repr(self, experiment_name_conflict):
         """Verify the representation of conflict for user interface"""
         assert (repr(experiment_name_conflict) ==
-                "Experiment name 'test' already exist for user 'some_user_name'")
+                "Experiment name 'test' already exist with version '1'")
 
 
 class TestConflicts(object):

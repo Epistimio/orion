@@ -76,7 +76,9 @@ def _build_extended_user_args(config):
     """
     user_args = config['metadata']['user_args']
 
-    parser = OrionCmdlineParser(orion.core.config.user_script_config)
+    # No need to pass config_prefix because we have access to everything
+    # required in config[metadata][parser] (parsed data)
+    parser = OrionCmdlineParser()
     parser.set_state_dict(config['metadata']['parser'])
 
     return user_args + [standard_param_name(key) + value
@@ -86,16 +88,17 @@ def _build_extended_user_args(config):
 def _build_space(config):
     """Build an optimization space based on given configuration"""
     space_builder = SpaceBuilder()
-    space = space_builder.build(config['metadata']['priors'])
+    space_config = config['space']
+    space = space_builder.build(space_config)
 
     return space
 
 
-def detect_conflicts(old_config, new_config):
+def detect_conflicts(old_config, new_config, branching=None):
     """Generate a Conflicts object with all conflicts found in pair (old_config, new_config)"""
     conflicts = Conflicts()
     for conflict_class in sorted(Conflict.__subclasses__(), key=lambda cls: cls.__name__):
-        for conflict in conflict_class.detect(old_config, new_config):
+        for conflict in conflict_class.detect(old_config, new_config, branching):
             conflicts.register(conflict)
 
     return conflicts
@@ -306,8 +309,10 @@ class Conflict(object, metaclass=ABCMeta):
     """
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect all conflicts in given pair (old_config, new_config) and return a list of them"""
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect all conflicts in given pair (old_config, new_config) and return a list of them
+        :param branching_config:
+        """
         pass
 
     def __init__(self, old_config, new_config):
@@ -323,7 +328,7 @@ class Conflict(object, metaclass=ABCMeta):
         return self._is_resolved or self.resolution is not None
 
     # pylint:disable=unused-argument,no-self-use
-    def get_marked_arguments(self, conflicts):
+    def get_marked_arguments(self, conflicts, **branching_kwargs):
         """Return arguments from marked resolutions in new configuration
 
         Some conflicts may be passed arguments with their marker to automate conflict resolution.
@@ -527,8 +532,10 @@ class NewDimensionConflict(Conflict):
     """
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect all new dimensions in `new_config` based on `old_config`"""
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect all new dimensions in `new_config` based on `old_config`
+        :param branching_config:
+        """
         old_space = _build_space(old_config)
         new_space = _build_space(new_config)
         for name, dim in new_space.items():
@@ -657,8 +664,10 @@ class ChangedDimensionConflict(Conflict):
     """
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect all changed dimensions in `new_config` based on `old_config`"""
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect all changed dimensions in `new_config` based on `old_config`
+        :param branching_config:
+        """
         old_space = _build_space(old_config)
         new_space = _build_space(new_config)
         for name, dim in new_space.items():
@@ -741,8 +750,10 @@ class MissingDimensionConflict(Conflict):
     """
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect all missing dimensions in `new_config` based on `old_config`"""
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect all missing dimensions in `new_config` based on `old_config`
+        :param branching_config:
+        """
         for conflict in NewDimensionConflict.detect(new_config, old_config):
             yield cls(old_config, new_config, conflict.dimension, conflict.prior)
 
@@ -752,7 +763,7 @@ class MissingDimensionConflict(Conflict):
         self.dimension = dimension
         self.prior = prior
 
-    def get_marked_arguments(self, conflicts):
+    def get_marked_arguments(self, conflicts, **branching_kwargs):
         """Find and return marked arguments for remove or rename resolution
 
         .. seealso::
@@ -1032,8 +1043,10 @@ class AlgorithmConflict(Conflict):
     """
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect if algorithm definition in `new_config` differs from `old_config`"""
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect if algorithm definition in `new_config` differs from `old_config`
+        :param branching_config:
+        """
         if old_config['algorithms'] != new_config['algorithms']:
             yield cls(old_config, new_config)
 
@@ -1090,15 +1103,19 @@ class CodeConflict(Conflict):
     """
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect if commit hash in `new_config` differs from `old_config`"""
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect if commit hash in `new_config` differs from `old_config`
+        :param branching_config:
+        """
         old_hash_commit = old_config['metadata'].get('VCS', None)
         new_hash_commit = new_config['metadata'].get('VCS')
 
-        if new_hash_commit and old_hash_commit != new_hash_commit:
+        ignore_code_changes = branching_config is not None and \
+            branching_config.get('ignore_code_changes', False)
+        if not ignore_code_changes and new_hash_commit and old_hash_commit != new_hash_commit:
             yield cls(old_config, new_config)
 
-    def get_marked_arguments(self, conflicts):
+    def get_marked_arguments(self, conflicts, code_change_type=None, **branching_kwargs):
         """Find and return marked arguments for code change conflict
 
         .. seealso::
@@ -1111,7 +1128,10 @@ class CodeConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return dict(change_type=adapters.CodeChange.BREAK)
+        if code_change_type is None:
+            code_change_type = orion.core.config.evc.code_change_type
+
+        return dict(change_type=code_change_type)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution CodeResolution
@@ -1208,30 +1228,45 @@ class CommandLineConflict(Conflict):
 
     """
 
+    # pylint: disable=unused-argument
     @classmethod
-    def get_nameless_args(cls, config):
+    def get_nameless_args(cls, config, user_script_config=None,
+                          non_monitored_arguments=None, **kwargs):
         """Get user's commandline arguments which are not dimension definitions"""
-        parser = OrionCmdlineParser(orion.core.config.user_script_config)
+        # Used python API
+        if 'parser' not in config['metadata']:
+            return ""
+
+        if user_script_config is None:
+            user_script_config = orion.core.config.worker.user_script_config
+        if non_monitored_arguments is None:
+            non_monitored_arguments = orion.core.config.evc.non_monitored_arguments
+
+        parser = OrionCmdlineParser(user_script_config)
         parser.set_state_dict(config['metadata']['parser'])
         priors = parser.priors_to_normal()
         nameless_keys = set(parser.parser.arguments.keys()) - set(priors.keys())
 
         nameless_args = {key: arg for key, arg in parser.parser.arguments.items()
-                         if key in nameless_keys}
+                         if key in nameless_keys and key not in non_monitored_arguments}
 
         return " ".join(" ".join([key, str(arg)]) for key, arg in
                         sorted(nameless_args.items(), key=lambda a: a[0]))
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect if command line call in `new_config` differs from `old_config`"""
-        old_nameless_args = cls.get_nameless_args(old_config)
-        new_nameless_args = cls.get_nameless_args(new_config)
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect if command line call in `new_config` differs from `old_config`
+        :param branching_config:
+        """
+        if branching_config is None:
+            branching_config = {}
+        old_nameless_args = cls.get_nameless_args(old_config, **branching_config)
+        new_nameless_args = cls.get_nameless_args(new_config, **branching_config)
 
         if old_nameless_args != new_nameless_args:
             yield cls(old_config, new_config)
 
-    def get_marked_arguments(self, conflicts):
+    def get_marked_arguments(self, conflicts, cli_change_type=None, **branching_kwargs):
         """Find and return marked arguments for cli change conflict
 
         .. seealso::
@@ -1244,7 +1279,10 @@ class CommandLineConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return dict(change_type=adapters.CommandLineChange.BREAK)
+        if cli_change_type is None:
+            cli_change_type = orion.core.config.evc.cli_change_type
+
+        return dict(change_type=cli_change_type)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution CommandLineResolution
@@ -1340,10 +1378,18 @@ class ScriptConfigConflict(Conflict):
 
     """
 
+    # pylint:disable=unused-argument
     @classmethod
-    def get_nameless_config(cls, config):
+    def get_nameless_config(cls, config, user_script_config=None, **branching_kwargs):
         """Get configuration dict of user's script without dimension definitions"""
-        parser = OrionCmdlineParser(orion.core.config.user_script_config)
+        # Used python API
+        if 'parser' not in config['metadata']:
+            return ""
+
+        if user_script_config is None:
+            user_script_config = orion.core.config.worker.user_script_config
+
+        parser = OrionCmdlineParser(user_script_config)
         parser.set_state_dict(config['metadata']['parser'])
 
         nameless_config = dict((key, value)
@@ -1353,15 +1399,20 @@ class ScriptConfigConflict(Conflict):
         return nameless_config
 
     @classmethod
-    def detect(cls, old_config, new_config):
-        """Detect if user's script's config file in `new_config` differs from `old_config`"""
-        old_script_config = cls.get_nameless_config(old_config)
-        new_script_config = cls.get_nameless_config(new_config)
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect if user's script's config file in `new_config` differs from `old_config`
+        :param branching_config:
+        """
+        if branching_config is None:
+            branching_config = {}
+
+        old_script_config = cls.get_nameless_config(old_config, **branching_config)
+        new_script_config = cls.get_nameless_config(new_config, **branching_config)
 
         if old_script_config != new_script_config:
             yield cls(old_config, new_config)
 
-    def get_marked_arguments(self, conflicts):
+    def get_marked_arguments(self, conflicts, config_change_type=None, **branching_kwargs):
         """Find and return marked arguments for user's script's config change conflict
 
         .. seealso::
@@ -1374,7 +1425,10 @@ class ScriptConfigConflict(Conflict):
         if change_type:
             return dict(change_type=change_type)
 
-        return dict(change_type=adapters.ScriptConfigChange.BREAK)
+        if config_change_type is None:
+            config_change_type = orion.core.config.evc.config_change_type
+
+        return dict(change_type=config_change_type)
 
     def try_resolve(self, change_type=None):
         """Try to create a resolution ScriptConfigResolution
@@ -1470,14 +1524,15 @@ class ExperimentNameConflict(Conflict):
     """
 
     @classmethod
-    def detect(cls, old_config, new_config):
+    def detect(cls, old_config, new_config, branching_config=None):
         """Return experiment name conflict no matter what
 
         Branching event cannot be triggered experiment name is not the same.
+        :param branching_config:
         """
         yield cls(old_config, new_config)
 
-    def get_marked_arguments(self, conflicts):
+    def get_marked_arguments(self, conflicts, **branching_kwargs):
         """Find and return marked arguments for experiment name conflict
 
         .. seealso::
@@ -1493,9 +1548,9 @@ class ExperimentNameConflict(Conflict):
         return {}
 
     @property
-    def username(self):
-        """Retrieve username for configuration"""
-        return self.new_config['metadata']['user']
+    def version(self):
+        """Retrieve version of configuration"""
+        return self.old_config['version']
 
     def try_resolve(self, new_name=None):
         """Try to create a resolution ExperimentNameResolution
@@ -1509,7 +1564,7 @@ class ExperimentNameConflict(Conflict):
         Raises
         ------
         ValueError
-            If name already exists in database for current user.
+            If name already exists in database for current version.
 
         """
         if self.is_resolved:
@@ -1524,8 +1579,8 @@ class ExperimentNameConflict(Conflict):
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
-        return "Experiment name \'{0}\' already exist for user \'{1}\'".format(
-            self.old_config['name'], self.username)
+        return "Experiment name \'{0}\' already exist with version \'{1}\'".format(
+            self.old_config['name'], self.version)
 
     class ExperimentNameResolution(Resolution):
         """Representation of an experiment name resolution
@@ -1543,7 +1598,7 @@ class ExperimentNameConflict(Conflict):
 
         """
 
-        ARGUMENT = "--branch"
+        ARGUMENT = "--branch-to"
 
         def __init__(self, conflict, new_name):
             """Initialize resolution and mark conflict as resolved
@@ -1559,7 +1614,7 @@ class ExperimentNameConflict(Conflict):
             Raises
             ------
             ValueError
-                If name already exists in database with a direct child for current user.
+                If name already exists in database with a direct child for current version.
 
             """
             super(ExperimentNameConflict.ExperimentNameResolution, self).__init__(conflict)
@@ -1573,7 +1628,7 @@ class ExperimentNameConflict(Conflict):
             self.conflict.new_config['version'] = self.new_version
 
         def _validate(self):
-            """Validate new_name is not in database with a direct child for current user"""
+            """Validate new_name is not in database with a direct child for current version"""
             # TODO: WARNING!!! _name_is_unique could lead to race conditions,
             # The resolution may become invalid before the branching experiment is
             # registered. What should we do in such case?
@@ -1590,16 +1645,16 @@ class ExperimentNameConflict(Conflict):
             # the version of the experiment.
             elif self._check_for_greater_versions():
                 raise ValueError(
-                    "Experiment name \'{0}\' already exist for user \'{1}\' and has children. "
+                    "Experiment name \'{0}\' already exist for version \'{1}\' and has children. "
                     "Version cannot be auto-incremented and a new name is required for branching."
-                    .format(self.new_name, self.conflict.username))
+                    .format(self.new_name, self.conflict.version))
             else:
                 self.new_name = self.old_name
                 self.new_version = self.conflict.old_config.get('version', 1) + 1
 
         def _name_is_unique(self):
-            """Return True if given name is not in database for current user"""
-            query = {'name': self.new_name, 'metadata.user': self.conflict.username}
+            """Return True if given name is not in database for current version"""
+            query = {'name': self.new_name, 'version': self.conflict.version}
 
             named_experiments = len(get_storage().fetch_experiments(query))
             return named_experiments == 0
@@ -1632,7 +1687,7 @@ class ExperimentNameConflict(Conflict):
 
         @property
         def is_marked(self):
-            """Return True every time since the `--branch` argument is not used when incrementing
-            version of an experiment.
+            """Return True every time since the `--branch-from` argument is not used when
+            incrementing version of an experiment.
             """
             return True
