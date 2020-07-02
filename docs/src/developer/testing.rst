@@ -19,6 +19,11 @@ existing tests in the ``tests`` folder.
 We recommend invoking the tests using ``tox`` as this will be the method used by the CI system.
 It will avoid you headaches when trying to run tests and nasty surprises when submitting PRs.
 
+.. warning::
+
+   MongoDB is required to be installed and running as tests depend on it. If MongoDB is not
+   installed, please follow these :ref:`installation instructions <mongodb_install>` first.
+
 Running tests
 =============
 To run the complete test suite, you can use
