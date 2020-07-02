@@ -398,6 +398,9 @@ class TestWorkon:
 
         monkeypatch.setattr('orion.core.io.experiment_builder.build', build_fail)
 
+        # Flush storage singleton
+        update_singletons()
+
         with pytest.raises(RuntimeError) as exc:
             experiment = workon(foo, space={'x': 'uniform(0, 10)'}, max_trials=5, name='voici')
 
