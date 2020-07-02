@@ -9,9 +9,9 @@ to enable fast, seamless, and scalable storage integration.
 
 Out of the box, we support three database backend:
 
+#. :ref:`EphemeralDB Config`, an in-memory database
 #. :ref:`PickledDB Config`, a file-based database (default)
 #. :ref:`MongoDB Config`, a document-oriented database
-#. :ref:`EphemeralDB Config`, an in-memory database
 
 In this document, we'll review the different methods by which you can configure which database Oríon
 will use during its execution. This page also contains the :ref:`installation instructions for
@@ -148,6 +148,51 @@ Supported databases
 
 In this section, we show snippets of configuration for each database backend.
 
+.. _EphemeralDB Config:
+
+EphemeralDB
+-----------
+
+:ref:`EphemeralDB <EphemeralDB>` is the `in-memory` database used when executing Oríon with the
+argument ``--debug``. It is wiped out of memory at end of the execution.
+
+.. code-block:: yaml
+
+   database:
+      type: 'ephemeraldb'
+
+Arguments
+~~~~~~~~~
+
+EphemeralDB has no arguments.
+
+.. _PickledDB Config:
+
+PickledDB
+---------
+
+PickledDB_ is recommended for its simplicity to setup but it is generally not suited
+for parallel optimization with more than 50 workers. This is however just a rule of thumb and
+you may find PickledDB to work properly with more workers if your tasks take a significant
+amount of time to execute.
+
+.. code-block:: yaml
+
+   database:
+      type: 'pickleddb'
+      host: '/path/to/a/save/file.pkl'
+
+.. _PickledDB: https://pythonhosted.org/pickleDB/
+
+Arguments
+~~~~~~~~~
+
+.. list-table::
+
+   * - ``host``
+     - File path where the database is saved. All workers require access to this file for parallel
+       optimization so make sure it is on a shared file system.
+
 .. _MongoDB Config:
 
 MongoDB
@@ -177,51 +222,6 @@ Arguments
      - Can be either the host address  (hostname or IP address) or a mongodb URI. Default is ``localhost``.
    * - ``port``
      - Port that database servers listens to for requests. Default is 27017.
-
-.. _PickledDB Config:
-
-PickledDB
----------
-
-PickledDB_ is recommended for its simplicity to setup but it is generally not suited
-for parallel optimization with more than 50 workers. This is however just a rule of thumb and
-you may find PickledDB to work properly with more workers if your tasks take a significant
-amount of time to execute.
-
-.. code-block:: yaml
-
-   database:
-      type: 'pickleddb'
-      host: '/path/to/a/save/file.pkl'
-
-.. _PickledDB: https://pythonhosted.org/pickleDB/
-
-Arguments
-~~~~~~~~~
-
-.. list-table::
-
-   * - ``host``
-     - File path where the database is saved. All workers require access to this file for parallel
-       optimization so make sure it is on a shared file system.
-
-.. _EphemeralDB Config:
-
-EphemeralDB
------------
-
-:ref:`EphemeralDB <EphemeralDB>` is the `in-memory` database used when executing Oríon with the
-argument ``--debug``. It is wiped out of memory at end of the execution.
-
-.. code-block:: yaml
-
-   database:
-      type: 'ephemeraldb'
-
-Arguments
-~~~~~~~~~
-
-EphemeralDB has no arguments.
 
 .. _mongodb_install:
 
