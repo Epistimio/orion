@@ -2,6 +2,7 @@
 include LICENSE
 include *.rst
 include ROADMAP.md
+include CODE_OF_CONDUCT.md
 include CONTRIBUTING.md
 exclude RESEARCH.md
 
