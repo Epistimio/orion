@@ -39,9 +39,6 @@ jobs:
         dist: bionic
         sudo: true
       - <<: *test
-        env: TOXENV=demo-random
-        python: 3.6
-      - <<: *test
         env: TOXENV=backward-compatibility, ORION_DB_TYPE=mongodb
         python: 3.6
       - <<: *test
