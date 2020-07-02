@@ -61,7 +61,7 @@ representative at an online or offline event.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the community leaders responsible for enforcement by email at
-bouthilx@mila.quebec. Additional point of contacts will be added as the core team grows.
+xavier.bouthillier@umontreal.ca. Additional point of contacts will be added as the core team grows.
 Until then, feel free to contact any member of [Oríon's organization](https://github.com/orgs/Epistimio/people)
 or to open an issue specifying how you want to be contacted.
 
