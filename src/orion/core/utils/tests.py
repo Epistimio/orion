@@ -232,7 +232,8 @@ class BaseOrionState:
 
     def cleanup(self):
         """Cleanup after testing"""
-        os.close(self.tempfile)
+        if self.tempfile is not None:
+            os.close(self.tempfile)
         _remove(self.tempfile_path)
 
     def _set_tables(self):
@@ -375,7 +376,8 @@ class LegacyOrionState(BaseOrionState):
         if self.initialized:
             self.database.remove('experiments', {})
             self.database.remove('trials', {})
-            os.close(self.tempfile)
+            if self.tempfile is not None:
+                os.close(self.tempfile)
             _remove(self.tempfile_path)
         self.initialized = False
 
