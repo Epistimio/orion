@@ -200,6 +200,7 @@ class BaseOrionState:
                 trials = exp_config[1]
 
         self.tempfile = None
+        self.tempfile_path = None
         self.storage_config = _select(storage, _get_default_test_storage())
 
         self._experiments = _select(experiments, [])
@@ -231,7 +232,8 @@ class BaseOrionState:
 
     def cleanup(self):
         """Cleanup after testing"""
-        _remove(self.tempfile)
+        os.close(self.tempfile)
+        _remove(self.tempfile_path)
 
     def _set_tables(self):
         self.trials = []
@@ -273,8 +275,8 @@ class BaseOrionState:
         """Iterate over the database configuration and replace ${file}
         by the name of a temporary file
         """
-        _, self.tempfile = tempfile.mkstemp('_orion_test')
-        _remove(self.tempfile)
+        self.tempfile, self.tempfile_path = tempfile.mkstemp('_orion_test')
+        _remove(self.tempfile_path)
 
         def map_dict(fun, dictionary):
             """Return a dictionary with fun applied to each values"""
@@ -283,7 +285,7 @@ class BaseOrionState:
         def replace_file(v):
             """Replace `${file}` by a generated temporary file"""
             if isinstance(v, str):
-                v = v.replace('${file}', self.tempfile)
+                v = v.replace('${file}', self.tempfile_path)
 
             if isinstance(v, dict):
                 v = map_dict(replace_file, v)
@@ -373,7 +375,8 @@ class LegacyOrionState(BaseOrionState):
         if self.initialized:
             self.database.remove('experiments', {})
             self.database.remove('trials', {})
-            _remove(self.tempfile)
+            os.close(self.tempfile)
+            _remove(self.tempfile_path)
         self.initialized = False
 
 

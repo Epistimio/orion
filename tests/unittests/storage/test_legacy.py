@@ -179,8 +179,9 @@ class TestLegacyStorage:
         )
 
         # Generate fake result
-        with open(results_file.name, 'w') as file:
-            json.dump([generated_result], file)
+        json.dump([generated_result], results_file)
+        results_file.flush()
+
         # --
         with OrionState(experiments=[], trials=[], storage=storage) as cfg:
             storage = cfg.storage()
@@ -192,6 +193,8 @@ class TestLegacyStorage:
 
             assert len(results) == 1
             assert results[0].to_dict() == generated_result
+
+        results_file.close()
 
     def test_retrieve_result(self, storage=None):
         """Test retrieve result"""
@@ -223,5 +226,7 @@ class TestLegacyStorage:
 
             with pytest.raises(MissingResultFile) as exec:
                 storage.retrieve_result(trial, results_file)
+
+        results_file.close()
 
         assert exec.match(r'Cannot parse result file')
