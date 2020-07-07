@@ -16,57 +16,43 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-def default_mutate(self, winner_id, loser_id, multiply_factor, add_factor):
+def default_mutate(multiply_factor, add_factor, volatility, search_space, old_value):
     """Get a default mutate function"""
-    select_genes_key_list = np.random.choice(self.search_space_remove_fidelity,
-                                             self.eves.nums_mutate_gene,
-                                             replace=False)
-    self.copy_winner(winner_id, loser_id)
-    for i, _ in enumerate(select_genes_key_list):
-        lower_bound = -np.inf
-        upper_bound = np.inf
-        if self.space.values()[select_genes_key_list[i]].type == "real":
-            if self.space.values()[select_genes_key_list[i]].prior.name == "uniform" or \
-               self.space.values()[select_genes_key_list[i]].prior.name == "loguniform":
-                lower_bound = self.space.values()[select_genes_key_list[i]].prior.a
-                upper_bound = self.space.values()[select_genes_key_list[i]].prior.b
+    lower_bound = -np.inf
+    upper_bound = np.inf
+    if search_space.type == "real":
+        if search_space.prior.name == "uniform" or \
+           search_space.prior.name == "loguniform":
+            lower_bound = search_space.prior.a
+            upper_bound = search_space.prior.b
 
-            factors = (1.0 / multiply_factor + (multiply_factor - 1.0 / multiply_factor) *
-                       np.random.random())
-            if lower_bound <= \
-                self.eves.population[select_genes_key_list[i]][loser_id] * factors \
-                           <= upper_bound:
-                self.eves.population[select_genes_key_list[i]][loser_id] *= factors
-            elif lower_bound > \
-                    self.eves.population[select_genes_key_list[i]][loser_id] * factors:
-                self.eves.population[select_genes_key_list[i]][loser_id] = \
-                    lower_bound + self.eves.volatility * np.random.random()
-            else:
-                self.eves.population[select_genes_key_list[i]][
-                    loser_id] = upper_bound - self.eves.volatility * np.random.random()
-        elif self.space.values()[select_genes_key_list[i]].type == "integer":
-            if self.space.values()[select_genes_key_list[i]].prior.name == "uniform" or \
-               self.space.values()[select_genes_key_list[i]].prior.name == "loguniform":
-                lower_bound = self.space.values()[select_genes_key_list[i]].prior.a
-                upper_bound = self.space.values()[select_genes_key_list[i]].prior.b
+        factors = (1.0 / multiply_factor + (multiply_factor - 1.0 / multiply_factor) *
+                   np.random.random())
+        if lower_bound <= old_value * factors <= upper_bound:
+            new_value = old_value * factors
+        elif lower_bound > old_value * factors:
+            new_value = lower_bound + volatility * np.random.random()
+        else:
+            new_value = upper_bound - volatility * np.random.random()
+    elif search_space.type == "integer":
+        if search_space.prior.name == "uniform" or \
+           search_space.prior.name == "loguniform":
+            lower_bound = search_space.prior.a
+            upper_bound = search_space.prior.b
 
-            factors = int(add_factor * (2 * np.random.randint(2) - 1))
-            if lower_bound <= \
-                self.eves.population[select_genes_key_list[i]][loser_id] + factors \
-                           <= upper_bound:
-                self.eves.population[select_genes_key_list[i]][loser_id] += factors
-            elif lower_bound > \
-                    self.eves.population[select_genes_key_list[i]][loser_id] + factors:
-                self.eves.population[select_genes_key_list[i]][loser_id] = int(lower_bound)
-            else:
-                self.eves.population[select_genes_key_list[i]][loser_id] = int(upper_bound)
-        elif self.space.values()[select_genes_key_list[i]].type == "categorical":
-            sample_index = \
-                np.where(np.random.multinomial(1,
-                                               list(self.space.values()
-                                                    [select_genes_key_list[
-                                                        i]].get_prior)) == 1)[0][0]
-            self.eves.population[select_genes_key_list[i]][loser_id] = \
-                self.space.values()[select_genes_key_list[i]].categories[sample_index]
+        factors = int(add_factor * (2 * np.random.randint(2) - 1))
+        if lower_bound <= old_value + factors <= upper_bound:
+            new_value = old_value + factors
+        elif lower_bound > old_value + factors:
+            new_value = int(lower_bound)
+        else:
+            new_value = int(upper_bound)
+    elif search_space.type == "categorical":
+        sample_index = \
+            np.where(np.random.multinomial(1,
+                                           list(search_space.get_prior)) == 1)[0][0]
+        new_value = search_space.categories[sample_index]
+    else:
+        new_value = old_value
 
-    self.eves.performance[loser_id] = -1
+    return new_value

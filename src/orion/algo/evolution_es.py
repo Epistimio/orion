@@ -147,14 +147,14 @@ class BracketEVES(Bracket):
 
     """
 
-    def __init__(self, evolutiones, budgets, repetition_id, space):
-        super(BracketEVES, self).__init__(evolutiones, budgets, repetition_id)
+    def __init__(self, evolution_es, budgets, repetition_id, space):
+        super(BracketEVES, self).__init__(evolution_es, budgets, repetition_id)
         self.eves = self.hyperband
         self.space = space
         self.search_space_remove_fidelity = []
 
-        if evolutiones.mutate_attr:
-            self.mutate_attr = evolutiones.mutate_attr
+        if evolution_es.mutate_attr:
+            self.mutate_attr = evolution_es.mutate_attr
         else:
             self.mutate_attr = {"function": "orion.algo.mutate_functions.default_mutate",
                                 "multiply_factor": 3.0, "add_factor": 1}
@@ -243,9 +243,19 @@ class BracketEVES(Bracket):
         return points
 
     def _mutate(self, winner_id, loser_id):
-        self.mutate_func(self, winner_id, loser_id,
-                         self.mutate_attr["multiply_factor"],
-                         self.mutate_attr["add_factor"])
+        select_genes_key_list = np.random.choice(self.search_space_remove_fidelity,
+                                                 self.eves.nums_mutate_gene,
+                                                 replace=False)
+        self.copy_winner(winner_id, loser_id)
+        for i, _ in enumerate(select_genes_key_list):
+            space = self.space.values()[select_genes_key_list[i]]
+            old = self.eves.population[select_genes_key_list[i]][loser_id]
+
+            new = self.mutate_func(self.mutate_attr["multiply_factor"],
+                                   self.mutate_attr["add_factor"],
+                                   self.eves.volatility, space, old)
+            self.eves.population[select_genes_key_list[i]][loser_id] = new
+        self.eves.performance[loser_id] = -1
 
     def copy_winner(self, winner_id, loser_id):
         """Copy winner to loser"""
