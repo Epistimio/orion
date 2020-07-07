@@ -12,23 +12,6 @@ import plotly.graph_objects as go
 
 def regret(experiment, order_by, verbose_hover, **kwargs):
     """Plotly implementation of `orion.plotting.regret`"""
-    def template_trials():
-        template = '<b>ID: %{customdata[0]}</b><br>' \
-            'value: %{y}<br>' \
-            'time: %{customdata[1]|%Y-%m-%d %H:%M:%S}<br>'
-
-        if verbose_hover:
-            template += 'parameters: %{customdata[2]}'
-
-        template += '<extra></extra>'
-
-        return template
-
-    def template_best():
-        return '<b>Best ID: %{customdata[0]}</b><br>' \
-            'value: %{customdata[1]}' \
-            '<extra></extra>'
-
     def build_frame(trials):
         """Builds the dataframe for the plot"""
         data = [(trial.id, trial.status,
@@ -62,12 +45,12 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
                     mode='markers',
                     name='trials',
                     customdata=list(zip(df['id'], df[order_by], df['params'])),
-                    hovertemplate=template_trials())
+                    hovertemplate=_template_trials(verbose_hover))
     fig.add_scatter(y=df['best'],
                     mode='lines',
                     name='best-to-date',
                     customdata=list(zip(df['best_id'], df['best'])),
-                    hovertemplate=template_best())
+                    hovertemplate=_template_best())
 
     y_axis_label = f"{trials[0].objective.type.capitalize()} '{trials[0].objective.name}'"
     fig.update_layout(title=f"Regret for experiment '{experiment.name}'",
@@ -116,3 +99,22 @@ def _format_hyperparameters(hyperparameters):
         result += x
 
     return result
+
+
+def _template_trials(verbose_hover):
+    template = '<b>ID: %{customdata[0]}</b><br>' \
+        'value: %{y}<br>' \
+        'time: %{customdata[1]|%Y-%m-%d %H:%M:%S}<br>'
+
+    if verbose_hover:
+        template += 'parameters: %{customdata[2]}'
+
+    template += '<extra></extra>'
+
+    return template
+
+
+def _template_best():
+    return '<b>Best ID: %{customdata[0]}</b><br>' \
+        'value: %{customdata[1]}' \
+        '<extra></extra>'
