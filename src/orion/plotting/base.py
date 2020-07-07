@@ -10,7 +10,7 @@
 import orion.plotting.backend_plotly as backend
 
 
-def regret(experiment, order_by='suggested', verbose_hover=False, **kwargs):
+def regret(experiment, order_by='suggested', verbose_hover=True, **kwargs):
     """
     Make a plot to visualize the performance of the hyper-optimization process.
 
@@ -30,7 +30,7 @@ def regret(experiment, order_by='suggested', verbose_hover=False, **kwargs):
         * 'completed': Sort by trial completed time.
 
     verbose_hover: bool
-        Indicates whether to display the hyperparameter in hover tooltips. False by default.
+        Indicates whether to display the hyperparameter in hover tooltips. True by default.
 
     kwargs: dict
         All other plotting keyword arguments to be passed to
