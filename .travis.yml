@@ -25,22 +25,22 @@ jobs:
         python: 3.6
         os: osx
         language: generic
-      - <<: *test
-        env: TOXENV=py37
-        python: 3.7
-        dist: bionic
-        sudo: true
-      - <<: *test
-        env: TOXENV=py38
-        python: 3.8
-        dist: bionic
-        sudo: true
-      - <<: *test
-        env: TOXENV=backward-compatibility, ORION_DB_TYPE=mongodb
-        python: 3.6
-      - <<: *test
-        env: TOXENV=backward-compatibility, ORION_DB_TYPE=pickleddb
-        python: 3.6
+        # - <<: *test
+        #   env: TOXENV=py37
+        #   python: 3.7
+        #   dist: bionic
+        #   sudo: true
+        # - <<: *test
+        #   env: TOXENV=py38
+        #   python: 3.8
+        #   dist: bionic
+        #   sudo: true
+        # - <<: *test
+        #   env: TOXENV=backward-compatibility, ORION_DB_TYPE=mongodb
+        #   python: 3.6
+        # - <<: *test
+        #   env: TOXENV=backward-compatibility, ORION_DB_TYPE=pickleddb
+        #   python: 3.6
       - stage: packaging
         env: TOXENV=packaging
         python: 3.6
