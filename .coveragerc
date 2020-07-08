@@ -2,4 +2,4 @@
 omit = tests/*
 
 [tool:pytest]
-addopts = --cov=orion --cov-report html --cov-append
+addopts = --cov=orion --cov-report xml --cov-append
