@@ -20,11 +20,11 @@ jobs:
           - mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
         env: TOXENV=py36
         python: 3.6
-      - <<: *test
-        env: TOXENV=py36, PYTHON=3.6.3
-        python: 3.6
-        os: osx
-        language: generic
+        # - <<: *test
+        #   env: TOXENV=py36, PYTHON=3.6.3
+        #   python: 3.6
+        #   os: osx
+        #   language: generic
         # - <<: *test
         #   env: TOXENV=py37
         #   python: 3.7
