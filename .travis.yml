@@ -49,23 +49,6 @@ jobs:
         install: skip
         script: ./conda/conda_build.sh
 
-before_install: |
-  if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-    brew update
-    brew install readline
-    brew outdated pyenv || brew upgrade pyenv
-    brew install pyenv-virtualenv
-    pyenv install $PYTHON
-    export PYENV_VERSION=$PYTHON
-    export PATH="/Users/travis/.pyenv/shims:${PATH}"
-    pyenv virtualenv venv
-    pyenv activate venv
-    python --version
-    brew tap mongodb/brew
-    brew install mongodb-community
-    brew services start mongodb-community
-  fi
-
 install:
   - pip install tox
 script:
