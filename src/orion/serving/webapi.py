@@ -1,32 +1,42 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.serving` -- Entry point for web api service
-==============================================================
+:mod:`orion.serving.webapi` -- WSGI REST server application
+===========================================================
 
 .. module:: webapi
    :platform: Unix
-   :synopsis: Entry point for web api service
-
+   :synopsis: WSGI REST server application
 """
+
 import falcon
 
 import orion.core.io.experiment_builder as experiment_builder
 from orion.serving.experiments_resource import ExperimentsResource
 
 
-experiment_builder.setup_storage({
-    "type": "legacy",
-    'database': {'type': 'PickledDB', "host": "../database.pkl"}
-})
+class WebApi(falcon.API):
+    """Main entry point into a Falcon-based app.
+    An instance provides a callable WSGI interface and a routing
+    engine.
+    """
 
+    def __init__(self, config=None):
+        super(WebApi, self).__init__()
+        self.config = config
 
-def create():
-    """Create a WSGI compatible app object"""
-    experiments_endpoint = ExperimentsResource()
+        experiment_builder.setup_storage(config.get('storage'))
 
-    app = falcon.API()
-    app.add_route('/experiments', experiments_endpoint)
-    return app
+        # Create our resources
+        experiments_endpoint = ExperimentsResource()
 
+        # Build routes
+        self.add_route('/experiments', experiments_endpoint)
 
-app = create()
+    def start(self):
+        """A hook to when a Gunicorn worker calls run()."""
+        pass
+
+    def stop(self, signal):
+        """A hook to when a Gunicorn worker starts shutting down."""
+        pass

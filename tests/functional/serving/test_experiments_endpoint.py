@@ -3,8 +3,9 @@
 from falcon import testing
 import pytest
 
-from orion.serving.webapi import create
 from orion.core.utils.tests import OrionState
+from orion.serving.webapi import WebApi
+from orion.storage.base import get_storage
 
 current_id = 0
 
@@ -29,21 +30,16 @@ config = dict(
 
 @pytest.fixture()
 def client():
-    """Mock the falcon.API instance returned by create()"""
-    return testing.TestClient(create())
-
-
-@pytest.fixture(scope="module")
-def dummy():
-    """Provides a dummy Oríon for tests"""
+    """Mock the falcon.API instance for testing with an in memory database"""
     storage = {'type': 'legacy', 'database': {'type': 'EphemeralDB'}}
-    with OrionState(storage=storage) as state:
-        yield state
+    with OrionState(storage=storage):
+        yield testing.TestClient(WebApi({'storage': storage}))
 
-def _add_experiment(dummy, **kwargs):
+
+def _add_experiment(**kwargs):
     """Adds experiment to the dummy orion instance"""
     config.update(kwargs)
-    dummy.storage().create_experiment(config)
+    get_storage().create_experiment(config)
 
 
 def test_no_experiments(client):
@@ -54,15 +50,15 @@ def test_no_experiments(client):
     assert result.status == "200 OK"
 
 
-def test_send_name_and_versions(client, dummy):
+def test_send_name_and_versions(client):
     """Tests that the API returns all the experiments with their name and version"""
     expected = [
         {'name': 'a', 'version': 1},
         {'name': 'b', 'version': 1}
     ]
 
-    _add_experiment(dummy, name = 'a', version = 1, _id = 1)
-    _add_experiment(dummy, name = 'b', version = 1, _id = 2)
+    _add_experiment(name='a', version=1, _id=1)
+    _add_experiment(name='b', version=1, _id=2)
 
     result = client.simulate_get('/experiments')
 
@@ -70,16 +66,16 @@ def test_send_name_and_versions(client, dummy):
     assert result.status == "200 OK"
 
 
-def test_latest_versions(client, dummy):
+def test_latest_versions(client):
     """Tests that the API return the latest versions of each experiment"""
     expected = [
         {'name': 'a', 'version': 2},
         {'name': 'b', 'version': 1}
     ]
 
-    _add_experiment(dummy, name = 'a', version = 1, _id = 1)
-    _add_experiment(dummy, name = 'a', version = 2, _id = 2)
-    _add_experiment(dummy, name = 'b', version = 1, _id = 3)
+    _add_experiment(name='a', version=1, _id=1)
+    _add_experiment(name='a', version=2, _id=2)
+    _add_experiment(name='b', version=1, _id=3)
 
     result = client.simulate_get('/experiments')
 
