@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
 """Perform functional tests for the REST endpoint `/experiments`"""
-from falcon import testing
-import pytest
-
-from orion.core.utils.tests import OrionState
-from orion.serving.webapi import WebApi
 from orion.storage.base import get_storage
 
 current_id = 0
@@ -26,14 +21,6 @@ config = dict(
     algorithms={'random': {'seed': 1}},
     producer={'strategy': 'NoParallelStrategy'},
 )
-
-
-@pytest.fixture()
-def client():
-    """Mock the falcon.API instance for testing with an in memory database"""
-    storage = {'type': 'legacy', 'database': {'type': 'EphemeralDB'}}
-    with OrionState(storage=storage):
-        yield testing.TestClient(WebApi({'storage': storage}))
 
 
 def _add_experiment(**kwargs):
