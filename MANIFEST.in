@@ -30,4 +30,4 @@ recursive-include tests *.py *.yaml *.json *.txt *.yml *.in LICENSE
 include tests/requirements.txt
 
 # Include examples
-recursive-include examples *.md *.py */requirements.txt
+recursive-include examples *.md *.py *.pkl *.yaml *.ipynb */requirements.txt

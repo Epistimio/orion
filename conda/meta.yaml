@@ -26,6 +26,8 @@ requirements:
     - filelock
     - tabulate
     - AppDirs
+    - plotly
+    - pandas
 
 test:
   import:

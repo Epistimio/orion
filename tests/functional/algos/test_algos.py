@@ -99,7 +99,7 @@ def test_simple(algorithm):
 
     best_trial = sorted(trials, key=lambda trial: trial.objective.value)[0]
     assert best_trial.objective.name == 'objective'
-    assert abs(best_trial.objective.value - 23.4) < 1e-2
+    assert abs(best_trial.objective.value - 23.4) < 0.1
     assert len(best_trial.params) == 1
     param = best_trial._params[0]
     assert param.name == 'x'

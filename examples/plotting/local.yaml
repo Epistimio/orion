@@ -1,0 +1,6 @@
+# Configuration file to use the example's database in command line. 
+# e.g., `orion status --config local.yaml`
+
+database:
+  type: 'pickleddb'
+  host: './database.pkl'
