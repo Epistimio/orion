@@ -27,6 +27,7 @@ jobs:
         env: TOXENV=py36, PYTHON=3.6.3
         python: 3.6
         os: osx
+        osx_image: xcode9.4
         language: generic
       - <<: *test
         env: TOXENV=py37
@@ -57,11 +58,7 @@ jobs:
 
 before_install: |
   if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-    brew update
-    brew install readline
-    brew outdated pyenv || brew upgrade pyenv
     brew install pyenv-virtualenv
-    pyenv install $PYTHON
     export PYENV_VERSION=$PYTHON
     export PATH="/Users/travis/.pyenv/shims:${PATH}"
     pyenv virtualenv venv
