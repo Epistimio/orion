@@ -13,6 +13,7 @@ import falcon
 
 import orion.core.io.experiment_builder as experiment_builder
 from orion.serving.experiments_resource import ExperimentsResource
+from orion.serving.runtime import RuntimeResource
 
 
 class WebApi(falcon.API):
@@ -29,8 +30,10 @@ class WebApi(falcon.API):
 
         # Create our resources
         experiments_endpoint = ExperimentsResource()
+        root_endpoint = RuntimeResource()
 
         # Build routes
+        self.add_route('/', root_endpoint)
         self.add_route('/experiments', experiments_endpoint)
 
     def start(self):
