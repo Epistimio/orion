@@ -3,15 +3,15 @@ language: python
 
 jobs:
   include:
-      - stage: pretest
-        env: TOXENV=flake8
-        python: 3.6
-      - env: TOXENV=pylint
-        python: 3.6
-      - env: TOXENV=doc8
-        python: 3.6
-      - env: TOXENV=docs
-        python: 3.6
+      # - stage: pretest
+      #   env: TOXENV=flake8
+      #   python: 3.6
+      # - env: TOXENV=pylint
+      #   python: 3.6
+      # - env: TOXENV=doc8
+      #   python: 3.6
+      # - env: TOXENV=docs
+      #   python: 3.6
       - &test
         stage: test
         services: mongodb
