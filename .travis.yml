@@ -67,7 +67,7 @@ before_install: |
   fi
 
 install:
-  - pip install tox codecov
+  - pip install tox
 script:
   - tox
 after_success:
