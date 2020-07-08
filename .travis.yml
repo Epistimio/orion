@@ -18,9 +18,6 @@ jobs:
         before_script:
           - sleep 15
           - mongo orion_test --eval 'db.createUser({user:"user",pwd:"pass",roles:["readWrite"]});'
-        after_success:
-          - tox -e final-coverage
-          - tox -e codecov
         env: TOXENV=py36
         python: 3.6
       - <<: *test
@@ -70,9 +67,11 @@ before_install: |
   fi
 
 install:
-  - pip install tox
+  - pip install tox codecov
 script:
   - tox
+after_success:
+  - codecov
 
 # deploy:
 #   skip_cleanup: true
