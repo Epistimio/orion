@@ -58,6 +58,7 @@ jobs:
 
 before_install: |
   if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    export HOMEBREW_NO_AUTO_UPDATE=1
     brew install pyenv-virtualenv
     pyenv install $PYTHON
     export PYENV_VERSION=$PYTHON
