@@ -16,8 +16,11 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-def default_mutate(multiply_factor, add_factor, volatility, search_space, old_value):
+def default_mutate(search_space, old_value, **kwargs):
     """Get a default mutate function"""
+    multiply_factor = kwargs.pop('multiply_factor', 3.0)
+    add_factor = kwargs.pop('add_factor', 1)
+    volatility = kwargs.pop('volatility', 0.001)
     lower_bound = -np.inf
     upper_bound = np.inf
     if search_space.type == "real":

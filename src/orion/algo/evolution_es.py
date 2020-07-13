@@ -102,7 +102,6 @@ class EvolutionES(Hyperband):
 
         pair = nums_population // 2
         mutate_ratio = 0.3
-        self.volatility = 0.001
         self.nums_population = nums_population
         self.nums_comp_pairs = pair
         self.mutate_ratio = mutate_ratio
@@ -156,8 +155,7 @@ class BracketEVES(Bracket):
         if evolution_es.mutate_attr:
             self.mutate_attr = evolution_es.mutate_attr
         else:
-            self.mutate_attr = {"function": "orion.algo.mutate_functions.default_mutate",
-                                "multiply_factor": 3.0, "add_factor": 1}
+            self.mutate_attr = {"function": "orion.algo.mutate_functions.default_mutate"}
 
         function_string = self.mutate_attr["function"]
         mod_name, func_name = function_string.rsplit('.', 1)
@@ -247,14 +245,18 @@ class BracketEVES(Bracket):
                                                  self.eves.nums_mutate_gene,
                                                  replace=False)
         self.copy_winner(winner_id, loser_id)
+        kwarg = {}
+        if self.mutate_attr.get("multiply_factor") and not kwarg.get("multiply_factor"):
+            kwarg["multiply_factor"] = self.mutate_attr["multiply_factor"]
+        if self.mutate_attr.get("add_factor") and not kwarg.get("add_factor"):
+            kwarg["add_factor"] = self.mutate_attr["add_factor"]
+
         for i, _ in enumerate(select_genes_key_list):
             space = self.space.values()[select_genes_key_list[i]]
             old = self.eves.population[select_genes_key_list[i]][loser_id]
-
-            new = self.mutate_func(self.mutate_attr["multiply_factor"],
-                                   self.mutate_attr["add_factor"],
-                                   self.eves.volatility, space, old)
+            new = self.mutate_func(space, old, **kwarg)
             self.eves.population[select_genes_key_list[i]][loser_id] = new
+
         self.eves.performance[loser_id] = -1
 
     def copy_winner(self, winner_id, loser_id):
