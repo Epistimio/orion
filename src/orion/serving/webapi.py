@@ -11,7 +11,7 @@
 
 import falcon
 
-import orion.core.io.experiment_builder as experiment_builder
+from orion.storage.base import setup_storage
 from orion.serving.experiments_resource import ExperimentsResource
 from orion.serving.runtime import RuntimeResource
 
@@ -26,7 +26,7 @@ class WebApi(falcon.API):
         super(WebApi, self).__init__()
         self.config = config
 
-        experiment_builder.setup_storage(config.get('storage'))
+        setup_storage(config.get('storage'))
 
         # Create our resources
         experiments_endpoint = ExperimentsResource()
