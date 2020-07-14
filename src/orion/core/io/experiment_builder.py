@@ -251,7 +251,7 @@ def build_view(name, version=None):
     if not db_config:
         message = ("No experiment with given name '%s' and version '%s' inside database, "
                    "no view can be created." % (name, version if version else '*'))
-        raise ValueError(message)
+        raise NoConfigurationError(message)
 
     db_config.setdefault('version', 1)
 
