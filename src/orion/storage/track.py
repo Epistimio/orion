@@ -20,7 +20,8 @@ import warnings
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import Trial as OrionTrial, validate_status
-from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
+from orion.storage.base import (
+    BaseStorageProtocol, FailedUpdate, get_experiment_uid, MissingArguments)
 
 log = logging.getLogger(__name__)
 
@@ -392,14 +393,7 @@ class Track(BaseStorageProtocol):   # noqa: F811
 
     def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
-        if uid and experiment:
-            assert experiment._id == uid
-
-        if uid is None:
-            if experiment is None:
-                raise MissingArguments('experiment or uid need to be defined')
-            else:
-                uid = experiment._id
+        uid = get_experiment_uid(experiment, uid)
 
         self.group = self.backend.fetch_and_update_group({
             '_uid': uid
