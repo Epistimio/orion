@@ -156,7 +156,7 @@ class TestDimension(object):
         dim = Dimension('yolo', None)
         print(dim._prior_name)
         assert dim.prior is None
-        assert dim._prior_name is 'None'
+        assert dim._prior_name == 'None'
 
     @pytest.mark.skipif(sys.version_info < (3, 6), reason="requires python3.6 or higher")
     def test_get_prior_string(self):
