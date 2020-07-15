@@ -7,3 +7,7 @@
    :platform: Unix
    :synopsis: Provides agnostic HPO analysis tools
 """
+
+from orion.analysis.regret import regret
+
+__all__ = ['regret']

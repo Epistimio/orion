@@ -24,7 +24,7 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
                                          ORDER_KEYS[1], ORDER_KEYS[2], 'params', 'objective'])
 
         df = df.sort_values(order_by)
-        df = orion.analysis.regret.regret(df)
+        df = orion.analysis.regret(df)
         return df
 
     ORDER_KEYS = ['suggested', 'reserved', 'completed']
