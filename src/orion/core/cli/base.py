@@ -80,7 +80,7 @@ class OrionArgsParser:
         """Execute main function of the subparser"""
         try:
             args, function = self.parse(argv)
-            function(args)
+            returncode = function(args)
         except (NoConfigurationError, NoNameError, DatabaseError, MissingResultFile,
                 BranchingEvent) as e:
             print('Error:', e, file=sys.stderr)
@@ -94,7 +94,7 @@ class OrionArgsParser:
             print('Orion is interrupted.')
             return 130
 
-        return 0
+        return 0 if returncode is None else returncode
 
 
 def get_basic_args_group(

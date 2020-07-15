@@ -189,7 +189,7 @@ def print_summary(trials, offset=0):
 
         if c_trials[0].objective:
             headers.append('min {}'.format(c_trials[0].objective.name))
-            line.append(min(trial.objective.value for trial in c_trials))
+            line.append(min(trial.objective.value for trial in c_trials if trial.objective))
 
         lines.append(line)
 

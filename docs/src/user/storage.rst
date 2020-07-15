@@ -82,7 +82,35 @@ deleting the child experiments.
 ``set`` Change value of data in storage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Coming soon
+Command to update trial attributes.
+
+To change a trial status, simply give the experiment name,
+trial id and status. (use `orion status --all` to get trial ids)
+
+.. code-block:: sh
+
+   orion db set my-exp-name id=3cc91e851e13281ca2152c19d888e937 status=interrupted
+
+To change all trials from a given status to another, simply give the two status
+
+.. code-block:: sh
+
+   orion db set my-exp-name status=broken status=interrupted
+
+Or `*` to apply the change to all trials
+
+.. code-block:: sh
+
+   orion db set my-exp-name '*' status=interrupted
+
+By default, trials of the last version of the experiment are selected.
+Add --version to select a prior version. Note that the modification
+is applied recursively to all child experiment, but not to the parents.
+
+.. code-block:: sh
+
+   orion db set my-exp-name --version 1 status=broken status=interrupted
+
 
 .. _storage_upgrade:
 

@@ -14,6 +14,7 @@ import sys
 
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.pptree import print_tree
+from orion.core.utils.terminal import confirm_name
 from orion.storage.base import get_storage
 
 
@@ -97,34 +98,6 @@ def add_subparser(parser):
         help='Force delete without asking to enter experiment name twice.')
 
     return rm_parser
-
-
-def confirm_name(message, name, force=False):
-    """Ask the user to confirm the name.
-
-    Parameters
-    ----------
-    message: str
-        The message to be printed.
-    name: str
-        The string that the user must enter.
-    force: bool
-        Override confirmation and return True. Default: False.
-
-    Returns
-    -------
-    bool
-        True if confirmed, False otherwise.
-
-    """
-    if force:
-        print(message)
-        print('FORCED')
-        return True
-
-    answer = input(message)
-
-    return answer.strip() == name
 
 
 def process_trial_rm(storage, root, status):

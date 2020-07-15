@@ -15,6 +15,7 @@ import os
 import yaml
 
 import orion.core
+from orion.core.utils.terminal import ask_question
 
 log = logging.getLogger(__name__)
 
@@ -26,33 +27,6 @@ def add_subparser(parser):
     setup_parser.set_defaults(func=main)
 
     return setup_parser
-
-
-def ask_question(question, default=None):
-    """Ask a question to the user and receive an answer.
-
-    Parameters
-    ----------
-    question: str
-        The question to be asked.
-    default: str
-        The default value to use if the user enters nothing.
-
-    Returns
-    -------
-    str
-        The answer provided by the user.
-
-    """
-    if default is not None:
-        question = question + " (default: {}) ".format(default)
-
-    answer = input(question)
-
-    if answer.strip() == "":
-        return default
-
-    return answer
 
 
 # pylint: disable = unused-argument
