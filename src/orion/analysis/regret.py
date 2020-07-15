@@ -43,11 +43,14 @@ def regret(trials, names=('best', 'best_id')):
 def __get_best_ids(dataframe, best_name):
     """Links the cumulative best objectives with their respective ids"""
     best_id = None
+    best_objective = None
     result = []
 
     for i, id in enumerate(dataframe.id):
-        if dataframe.objective[i] == dataframe[best_name][i]:
+        if dataframe.objective[i] == dataframe[best_name][i] \
+                and dataframe.objective[i] != best_objective:
             best_id = id
+            best_objective = dataframe.objective[i]
         result.append(best_id)
 
     return result

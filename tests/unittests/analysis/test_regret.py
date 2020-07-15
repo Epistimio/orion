@@ -140,3 +140,32 @@ def test_regret_sequential():
 
     assert all(result['best'].values == [10])
     assert all(result['best_id'].values == ['a'])
+
+
+def test_regret_equal():
+    """Tests instances where trials share best objectives"""
+    data = pd.DataFrame(data={
+        'id': ['a', 'b', 'c'],
+        'objective': [8, 9, 8],
+    })
+
+    expected_best = [8, 8, 8]
+    expected_ids = ['a', 'a', 'a']
+
+    result = regret(data)
+
+    assert all(result['best'].values == expected_best)
+    assert all(result['best_id'].values == expected_ids)
+
+    data = pd.DataFrame(data={
+        'id': ['a', 'b', 'c'],
+        'objective': [8, 8, 8],
+    })
+
+    expected_best = [8, 8, 8]
+    expected_ids = ['a', 'a', 'a']
+
+    result = regret(data)
+
+    assert all(result['best'].values == expected_best)
+    assert all(result['best_id'].values == expected_ids)
