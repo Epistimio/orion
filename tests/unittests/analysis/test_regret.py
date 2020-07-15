@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests :meth:`orion.analysis.regret()"""
 import pandas as pd
-
+import pytest
 
 from orion.analysis.regret import regret
 
@@ -46,6 +46,22 @@ def test_parameter_not_modified():
 
     assert len(data.columns) == 2
     assert len(result.columns) == 4
+
+
+def test_length_names():
+    """Tests the length of `names` parameter is two"""
+    data = pd.DataFrame(data={
+        'id': ['a', 'b'],
+        'objective': [0.1, 0.2]
+    })
+
+    with pytest.raises(ValueError) as exception:
+        regret(data, names=())
+    assert "`names` requires a tuple with 2 elements. 0 provided." in str(exception.value)
+
+    with pytest.raises(ValueError) as exception:
+        regret(data, names=('a', 'b', 'c'))
+    assert "`names` requires a tuple with 2 elements. 3 provided." in str(exception.value)
 
 
 def test_default_column_names():
