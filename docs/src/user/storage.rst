@@ -338,6 +338,18 @@ In both case, you can access it with
 .. automethod:: orion.storage.base.BaseStorageProtocol.get_trial
    :noindex:
 
+:hidden:`update_trials`
+-----------------------
+
+.. automethod:: orion.storage.base.BaseStorageProtocol.update_trials
+   :noindex:
+
+:hidden:`update_trial`
+-----------------------
+
+.. automethod:: orion.storage.base.BaseStorageProtocol.update_trial
+   :noindex:
+
 :hidden:`fetch_lost_trials`
 ---------------------------
 
