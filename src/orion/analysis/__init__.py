@@ -1,0 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+:mod:`orion.analysis` -- Provides HPO analysis tools
+====================================================
+
+.. module:: analysis
+   :platform: Unix
+   :synopsis: Provides agnostic HPO analysis tools
+"""
