@@ -1,5 +1,4 @@
 """Collection of tests for :mod:`orion.plotting.backend_plotly`."""
-import pandas as pd
 import plotly
 import pytest
 

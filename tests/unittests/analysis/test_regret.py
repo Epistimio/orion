@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """Tests :meth:`orion.analysis.regret()"""
-from orion.analysis.regret import regret
-
 import pandas as pd
+
+
+from orion.analysis.regret import regret
 
 
 def test_accept_dict():

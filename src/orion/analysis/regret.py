@@ -28,7 +28,6 @@ def regret(trials, names=('best', 'best_id')):
     A copy of the original dataframe with two new columns containing respectively the best value
     so far and its trial id.
     """
-
     df = pd.DataFrame(trials, copy=True)
     if df.empty:
         return df

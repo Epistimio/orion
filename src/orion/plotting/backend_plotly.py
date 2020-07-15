@@ -6,10 +6,10 @@
    :platform: Unix
    :synopsis: Plotly backend for plotting methods
 """
-import orion.analysis.regret
-
 import pandas as pd
 import plotly.graph_objects as go
+
+import orion.analysis.regret
 
 
 def regret(experiment, order_by, verbose_hover, **kwargs):
