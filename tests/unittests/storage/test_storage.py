@@ -347,13 +347,15 @@ class TestStorage:
             class _Dummy:
                 pass
 
-            trials = storage.fetch_trials(uid='default_name')
+            experiment = cfg.get_experiment('default_name', version=None)
+            trials = storage.fetch_trials(experiment)
             assert sum(trial.status == 'reserved' for trial in trials) == 2
-            storage.update_trials(
-                uid='default_name',
+            count = storage.update_trials(
+                experiment,
                 where={'status': 'reserved'},
                 status='interrupted')
-            trials = storage.fetch_trials(uid='default_name')
+            assert count == 2
+            trials = storage.fetch_trials(experiment)
             assert sum(trial.status == 'interrupted' for trial in trials) == 2
 
     def test_update_trial(self, storage):
@@ -400,7 +402,7 @@ class TestStorage:
             experiment = cfg.get_experiment('default_name', version=None)
 
             trials1 = storage.fetch_trials(experiment=experiment)
-            trials2 = storage.fetch_trials(uid=experiment._id)
+            trials2 = storage.fetch_trials(uid=experiment.id)
 
             with pytest.raises(MissingArguments):
                 storage.fetch_trials()

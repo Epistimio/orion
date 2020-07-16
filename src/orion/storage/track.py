@@ -20,7 +20,7 @@ import warnings
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import Trial as OrionTrial, validate_status
-from orion.storage.base import BaseStorageProtocol, FailedUpdate, get_uid, MissingArguments
+from orion.storage.base import BaseStorageProtocol, FailedUpdate, get_uid
 
 log = logging.getLogger(__name__)
 
@@ -591,14 +591,7 @@ class Track(BaseStorageProtocol):   # noqa: F811
 
     def get_trial(self, trial=None, uid=None):
         """See :func:`~orion.storage.BaseStorageProtocol.get_trials`"""
-        if trial is not None and uid is not None:
-            assert trial.id == uid
-
-        if uid is None:
-            if trial is None:
-                raise MissingArguments('trial or uid argument should be populated')
-
-            uid = trial.id
+        uid = get_uid(trial, uid)
 
         _hash, _rev = 0, 0
         data = uid.split('_', maxsplit=1)
@@ -674,10 +667,8 @@ class Track(BaseStorageProtocol):   # noqa: F811
         returns 1 if the underlying storage was updated else 0
 
         """
-        uid = get_uid(trial, uid)
-
-        if trial is None:
-            trial = self.get_trial(uid)
+        # Get a TrialAdapter
+        trial = self.get_trial(trial=trial, uid=uid)
 
         try:
             if isinstance(trial, TrialAdapter):
