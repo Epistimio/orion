@@ -19,7 +19,7 @@ import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import MissingResultFile
 from orion.core.worker.trial import Trial, validate_status
 from orion.storage.base import (
-    BaseStorageProtocol, FailedUpdate, get_experiment_uid, MissingArguments)
+    BaseStorageProtocol, FailedUpdate, get_uid, MissingArguments)
 
 log = logging.getLogger(__name__)
 
@@ -118,12 +118,12 @@ class Legacy(BaseStorageProtocol):
 
     def delete_experiment(self, experiment=None, uid=None):
         """See :func:`~orion.storage.BaseStorageProtocol.delete_experiment`"""
-        uid = get_experiment_uid(experiment, uid)
+        uid = get_uid(experiment, uid)
         return self._db.remove('experiments', query={'_id': uid})
 
     def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
-        uid = get_experiment_uid(experiment, uid)
+        uid = get_uid(experiment, uid)
 
         if where is None:
             where = dict()
@@ -138,7 +138,7 @@ class Legacy(BaseStorageProtocol):
 
     def fetch_trials(self, experiment=None, uid=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
-        uid = get_experiment_uid(experiment, uid)
+        uid = get_uid(experiment, uid)
 
         return self._fetch_trials(dict(experiment=uid))
 
@@ -162,7 +162,7 @@ class Legacy(BaseStorageProtocol):
 
     def delete_trials(self, experiment=None, uid=None, where=None):
         """See :func:`~orion.storage.BaseStorageProtocol.delete_trials`"""
-        uid = get_experiment_uid(experiment, uid, force_uid=False)
+        uid = get_uid(experiment, uid)
 
         if where is None:
             where = dict()
@@ -229,12 +229,23 @@ class Legacy(BaseStorageProtocol):
 
         return Trial(**result[0])
 
-    def _update_trial(self, trial, where=None, **kwargs):
-        """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
+    def update_trials(self, experiment=None, uid=None, where=None, **kwargs):
+        """See :func:`~orion.storage.BaseStorageProtocol.update_trials`"""
+        uid = get_uid(experiment, uid)
         if where is None:
             where = dict()
 
-        where['_id'] = trial.id
+        where['experiment'] = uid
+        return self._db.write('trials', data=kwargs, query=where)
+
+    def update_trial(self, trial=None, uid=None, where=None, **kwargs):
+        """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
+        uid = get_uid(trial, uid)
+
+        if where is None:
+            where = dict()
+
+        where['_id'] = uid
         return self._db.write('trials', data=kwargs, query=where)
 
     def fetch_lost_trials(self, experiment):
@@ -252,8 +263,8 @@ class Legacy(BaseStorageProtocol):
 
     def push_trial_results(self, trial):
         """See :func:`~orion.storage.BaseStorageProtocol.push_trial_results`"""
-        rc = self._update_trial(trial, **trial.to_dict(),
-                                where={'_id': trial.id, 'status': 'reserved'})
+        rc = self.update_trial(trial, **trial.to_dict(),
+                               where={'_id': trial.id, 'status': 'reserved'})
         if not rc:
             raise FailedUpdate()
 
@@ -272,7 +283,7 @@ class Legacy(BaseStorageProtocol):
 
         validate_status(status)
 
-        rc = self._update_trial(trial, **update, where={'status': trial.status, '_id': trial.id})
+        rc = self.update_trial(trial, **update, where={'status': trial.status, '_id': trial.id})
 
         if not rc:
             raise FailedUpdate()
@@ -335,7 +346,7 @@ class Legacy(BaseStorageProtocol):
 
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
-        return self._update_trial(trial, heartbeat=datetime.datetime.utcnow(), status='reserved')
+        return self.update_trial(trial, heartbeat=datetime.datetime.utcnow(), status='reserved')
 
     def fetch_trials_by_status(self, experiment, status):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials_by_status`"""

@@ -336,6 +336,39 @@ class TestStorage:
             with pytest.raises(DuplicateKeyError):
                 storage.register_lie(Trial(**cfg.lies[0]))
 
+    def test_update_trials(self, storage):
+        """Test update many trials"""
+        with OrionState(
+                experiments=[base_experiment],
+                trials=generate_trials(status=['completed', 'reserved', 'reserved']),
+                storage=storage) as cfg:
+            storage = cfg.storage()
+
+            class _Dummy:
+                pass
+
+            experiment = cfg.get_experiment('default_name', version=None)
+            trials = storage.fetch_trials(experiment)
+            assert sum(trial.status == 'reserved' for trial in trials) == 2
+            count = storage.update_trials(
+                experiment,
+                where={'status': 'reserved'},
+                status='interrupted')
+            assert count == 2
+            trials = storage.fetch_trials(experiment)
+            assert sum(trial.status == 'interrupted' for trial in trials) == 2
+
+    def test_update_trial(self, storage):
+        """Test update one trial"""
+        with OrionState(experiments=[base_experiment], trials=[base_trial], storage=storage) as cfg:
+            storage = cfg.storage()
+
+            trial = Trial(**cfg.trials[0])
+
+            assert trial.status != 'interrupted'
+            storage.update_trial(trial, status='interrupted')
+            assert storage.get_trial(trial).status == 'interrupted'
+
     def test_reserve_trial_success(self, storage):
         """Test reserve trial"""
         with OrionState(
@@ -369,7 +402,7 @@ class TestStorage:
             experiment = cfg.get_experiment('default_name', version=None)
 
             trials1 = storage.fetch_trials(experiment=experiment)
-            trials2 = storage.fetch_trials(uid=experiment._id)
+            trials2 = storage.fetch_trials(uid=experiment.id)
 
             with pytest.raises(MissingArguments):
                 storage.fetch_trials()

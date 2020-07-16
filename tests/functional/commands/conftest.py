@@ -380,3 +380,32 @@ def three_experiments_same_name(two_experiments_same_name, db_instance):
                          './black_box.py', '--x~uniform(0,1)', '--y~normal(0,1)',
                          '--z~+normal(0,1)'])
     ensure_deterministic_id('test_single_exp', db_instance, version=3)
+
+
+@pytest.fixture
+def three_experiments_same_name_with_trials(two_experiments_same_name, db_instance):
+    """Create three experiments with the same name but different versions."""
+    orion.core.cli.main(['init_only', '-n', 'test_single_exp',
+                         './black_box.py', '--x~uniform(0,1)', '--y~normal(0,1)',
+                         '--z~+normal(0,1)'])
+    ensure_deterministic_id('test_single_exp', db_instance, version=3)
+
+    exp = experiment_builder.build(name='test_single_exp', version=1)
+    exp2 = experiment_builder.build(name='test_single_exp', version=2)
+    exp3 = experiment_builder.build(name='test_single_exp', version=3)
+
+    x = {'name': '/x', 'type': 'real'}
+    y = {'name': '/y', 'type': 'real'}
+    z = {'name': '/z', 'type': 'real'}
+    x_value = 0
+    for status in Trial.allowed_stati:
+        x['value'] = x_value
+        y['value'] = x_value * 10
+        z['value'] = x_value * 100
+        trial = Trial(experiment=exp.id, params=[x], status=status)
+        trial2 = Trial(experiment=exp2.id, params=[x, y], status=status)
+        trial3 = Trial(experiment=exp3.id, params=[x, y, z], status=status)
+        Database().write('trials', trial.to_dict())
+        Database().write('trials', trial2.to_dict())
+        Database().write('trials', trial3.to_dict())
+        x_value += 1

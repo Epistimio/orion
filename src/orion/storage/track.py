@@ -20,8 +20,7 @@ import warnings
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import Trial as OrionTrial, validate_status
-from orion.storage.base import (
-    BaseStorageProtocol, FailedUpdate, get_experiment_uid, MissingArguments)
+from orion.storage.base import BaseStorageProtocol, FailedUpdate, get_uid
 
 log = logging.getLogger(__name__)
 
@@ -393,7 +392,7 @@ class Track(BaseStorageProtocol):   # noqa: F811
 
     def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
-        uid = get_experiment_uid(experiment, uid)
+        uid = get_uid(experiment, uid)
 
         self.group = self.backend.fetch_and_update_group({
             '_uid': uid
@@ -534,44 +533,6 @@ class Track(BaseStorageProtocol):   # noqa: F811
         trials.sort(key=sort_key)
         return trials
 
-    _ignore_updates_for = {'results', 'params', '_id'}
-
-    def _update_trial(self, trial, **kwargs):
-        """Update the fields of a given trials
-
-        Parameters
-        ----------
-        trial: Trial
-            Trial object to update
-
-        where: Optional[dict]
-            constraint trial must respect
-
-        kwargs: dict
-            a dictionary of fields to update
-
-        Returns
-        -------
-        returns true if the underlying storage was updated
-
-        """
-        try:
-            if isinstance(trial, TrialAdapter):
-                trial = trial.storage
-
-            for key, value in kwargs.items():
-                if key == 'status':
-                    self.backend.set_trial_status(trial, get_track_status(value))
-                elif key in self._ignore_updates_for:
-                    continue
-                else:
-                    pair = {key: to_json(value)}
-                    self.backend.log_trial_metadata(trial, **pair)
-
-            return True
-        except ConcurrentWrite:
-            return False
-
     def retrieve_result(self, trial, *args, **kwargs):
         """Fetch the result from a given medium (file, db, socket, etc..) for a given trial and
         insert it into the trial object
@@ -624,27 +585,13 @@ class Track(BaseStorageProtocol):   # noqa: F811
 
     def fetch_trials(self, experiment=None, uid=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
-        if uid and experiment:
-            assert experiment.id == uid
-
-        if uid is None:
-            if experiment is None:
-                raise MissingArguments('experiment or uid need to be defined')
-
-            uid = experiment.id
+        uid = get_uid(experiment, uid)
 
         return self._fetch_trials(dict(group_id=uid))
 
     def get_trial(self, trial=None, uid=None):
         """See :func:`~orion.storage.BaseStorageProtocol.get_trials`"""
-        if trial is not None and uid is not None:
-            assert trial.id == uid
-
-        if uid is None:
-            if trial is None:
-                raise MissingArguments('trial or uid argument should be populated')
-
-            uid = trial.id
+        uid = get_uid(trial, uid)
 
         _hash, _rev = 0, 0
         data = uid.split('_', maxsplit=1)
@@ -683,6 +630,62 @@ class Track(BaseStorageProtocol):   # noqa: F811
             return None
 
         return TrialAdapter(trial, objective=self.objective)
+
+    def update_trials(self, experiment=None, uid=None, where=None, **kwargs):
+        """See :func:`~orion.storage.BaseStorageProtocol.update_trials`"""
+        uid = get_uid(experiment, uid)
+
+        if where is None:
+            where = dict()
+
+        where['group_id'] = uid
+
+        count = 0
+        for trial in self._fetch_trials(where):
+            count += self.update_trial(trial, **kwargs)
+
+        return count
+
+    _ignore_updates_for = {'results', 'params', '_id'}
+
+    def update_trial(self, trial=None, uid=None, **kwargs):
+        """Update the fields of a given trials
+
+        Parameters
+        ----------
+        trial: Trial
+            Trial object to update
+
+        where: Optional[dict]
+            constraint trial must respect
+
+        kwargs: dict
+            a dictionary of fields to update
+
+        Returns
+        -------
+        returns 1 if the underlying storage was updated else 0
+
+        """
+        # Get a TrialAdapter
+        trial = self.get_trial(trial=trial, uid=uid)
+
+        try:
+            if isinstance(trial, TrialAdapter):
+                trial = trial.storage
+
+            for key, value in kwargs.items():
+                if key == 'status':
+                    self.backend.set_trial_status(trial, get_track_status(value))
+                elif key in self._ignore_updates_for:
+                    continue
+                else:
+                    pair = {key: to_json(value)}
+                    self.backend.log_trial_metadata(trial, **pair)
+
+            return 1
+        except ConcurrentWrite:
+            return 0
 
     def fetch_lost_trials(self, experiment):
         """Fetch all trials that have a heartbeat older than
