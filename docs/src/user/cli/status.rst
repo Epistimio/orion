@@ -205,9 +205,10 @@ versions: version `1`, `2` and `3`. Then running status as usual will only outpu
 
 The ``--version`` argument
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-The `--version` argument allows you to specify a version to print instead of getting the latest one.
-Suppose we have the same setup as above with three experiments named `test` but with different
-versions. Then running the following command will output the second version instead of the latest.
+The ``--version`` argument allows you to specify a version to print instead of getting the latest
+one.  Suppose we have the same setup as above with three experiments named ``test`` but with
+different versions. Then running the following command will output the second version instead of the
+latest.
 
 .. code-block:: console
 
@@ -219,13 +220,13 @@ versions. Then running the following command will output the second version inst
     =======
     empty
 
-It should be noted that using `--version` with any of `--collapse` or `--expand-versions` will lead
-to a `RuntimeError`.
+It should be noted that using ``--version`` with any of ``--collapse`` or ``--expand-versions``
+will lead to a ``RuntimeError``.
 
-The `--expand-versions` argument
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The ``--expand-versions`` argument
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 As specified above, if there are no children of a root experiment with a different name then the
-experiment tree will not be printed in its entirety. The `--expand-versions` allows you to get the
+experiment tree will not be printed in its entirety. The ``--expand-versions`` allows you to get the
 full output of the experiment tree, regardless if it only contains different versions. Once again,
 suppose we have the same setup with experiment `test`, then running the following command will print
 the experiment tree.
