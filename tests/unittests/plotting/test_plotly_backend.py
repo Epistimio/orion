@@ -1,11 +1,9 @@
 """Collection of tests for :mod:`orion.plotting.backend_plotly`."""
-import pandas as pd
 import plotly
 import pytest
 
 from orion.core.utils.tests import create_experiment
 from orion.core.worker.experiment import ExperimentView
-from orion.plotting.backend_plotly import _get_best_ids
 from orion.plotting.base import regret
 
 config = dict(
@@ -107,17 +105,3 @@ class TestRegret:
         with create_experiment(config, trial_config) as (_, _, experiment):
             with pytest.raises(ValueError):
                 regret(experiment, order_by='unsupported')
-
-
-def test_get_best_ids():
-    """Tests that cumulative best objectives are linked to their respective ids"""
-    df = pd.DataFrame(data={
-        'id': ['a', 'b', 'c', 'd'],
-        'objective': [10, 12, 8, 9],
-        'best': [10, 10, 8, 8]
-    })
-
-    expected_ids = ['a', 'a', 'c', 'c']
-    predicted_ids = _get_best_ids(df)
-
-    assert predicted_ids == expected_ids

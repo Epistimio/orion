@@ -9,6 +9,8 @@
 import pandas as pd
 import plotly.graph_objects as go
 
+import orion.analysis.regret
+
 
 def regret(experiment, order_by, verbose_hover, **kwargs):
     """Plotly implementation of `orion.plotting.regret`"""
@@ -22,10 +24,7 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
                                          ORDER_KEYS[1], ORDER_KEYS[2], 'params', 'objective'])
 
         df = df.sort_values(order_by)
-
-        df['best'] = df['objective'].cummin()
-        df['best_id'] = _get_best_ids(df)
-
+        df = orion.analysis.regret(df)
         return df
 
     ORDER_KEYS = ['suggested', 'reserved', 'completed']
@@ -58,19 +57,6 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
                       yaxis_title=y_axis_label)
 
     return fig
-
-
-def _get_best_ids(dataframe):
-    """Links the cumulative best objectives with their respective ids"""
-    best_id = None
-    result = []
-
-    for i, id in enumerate(dataframe.id):
-        if dataframe.objective[i] == dataframe.best[i]:
-            best_id = id
-        result.append(best_id)
-
-    return result
 
 
 def _format_value(value):
