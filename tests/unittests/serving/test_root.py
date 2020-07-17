@@ -4,9 +4,9 @@
 
 def test_runtime_summary(client):
     """Tests if the instance's meta-summary is present"""
-    result = client.simulate_get('/')
+    response = client.simulate_get('/')
 
-    assert "v" in result.json['orion']
-    assert result.json['server'] == 'gunicorn'
-    assert result.json['database'] == 'EphemeralDB'
-    assert result.status == "200 OK"
+    assert "v" in response.json['orion']
+    assert response.json['server'] == 'gunicorn'
+    assert response.json['database'] == 'EphemeralDB'
+    assert response.status == "200 OK"

@@ -31,10 +31,10 @@ def _add_experiment(**kwargs):
 
 def test_no_experiments(client):
     """Tests that the API returns a positive response when no experiments are present"""
-    result = client.simulate_get('/experiments')
+    response = client.simulate_get('/experiments')
 
-    assert result.json == []
-    assert result.status == "200 OK"
+    assert response.json == []
+    assert response.status == "200 OK"
 
 
 def test_send_name_and_versions(client):
@@ -47,10 +47,10 @@ def test_send_name_and_versions(client):
     _add_experiment(name='a', version=1, _id=1)
     _add_experiment(name='b', version=1, _id=2)
 
-    result = client.simulate_get('/experiments')
+    response = client.simulate_get('/experiments')
 
-    assert result.json == expected
-    assert result.status == "200 OK"
+    assert response.json == expected
+    assert response.status == "200 OK"
 
 
 def test_latest_versions(client):
@@ -64,7 +64,7 @@ def test_latest_versions(client):
     _add_experiment(name='a', version=2, _id=2)
     _add_experiment(name='b', version=1, _id=3)
 
-    result = client.simulate_get('/experiments')
+    response = client.simulate_get('/experiments')
 
-    assert result.json == expected
-    assert result.status == "200 OK"
+    assert response.json == expected
+    assert response.status == "200 OK"
