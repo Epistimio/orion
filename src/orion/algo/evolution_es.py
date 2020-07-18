@@ -9,6 +9,7 @@ The Evolved Transformer and large-scale evolution of image classifiers
     :synopsis: Implement evolution to exploit configurations with fixed resource efficiently
 
 """
+import copy
 import importlib
 import logging
 
@@ -153,11 +154,12 @@ class BracketEVES(Bracket):
         self.search_space_remove_fidelity = []
 
         if evolution_es.mutate_attr:
-            self.mutate_attr = evolution_es.mutate_attr
+            self.mutate_attr = copy.deepcopy(evolution_es.mutate_attr)
         else:
-            self.mutate_attr = {"function": "orion.algo.mutate_functions.default_mutate"}
+            self.mutate_attr = {}
 
-        function_string = self.mutate_attr["function"]
+        function_string = self.mutate_attr.pop('function',
+                                               "orion.algo.mutate_functions.default_mutate")
         mod_name, func_name = function_string.rsplit('.', 1)
         mod = importlib.import_module(mod_name)
         self.mutate_func = getattr(mod, func_name)
@@ -245,16 +247,12 @@ class BracketEVES(Bracket):
                                                  self.eves.nums_mutate_gene,
                                                  replace=False)
         self.copy_winner(winner_id, loser_id)
-        kwarg = {}
-        if self.mutate_attr.get("multiply_factor") and not kwarg.get("multiply_factor"):
-            kwarg["multiply_factor"] = self.mutate_attr["multiply_factor"]
-        if self.mutate_attr.get("add_factor") and not kwarg.get("add_factor"):
-            kwarg["add_factor"] = self.mutate_attr["add_factor"]
+        kwargs = copy.deepcopy(self.mutate_attr)
 
         for i, _ in enumerate(select_genes_key_list):
             space = self.space.values()[select_genes_key_list[i]]
             old = self.eves.population[select_genes_key_list[i]][loser_id]
-            new = self.mutate_func(space, old, **kwarg)
+            new = self.mutate_func(space, old, **kwargs)
             self.eves.population[select_genes_key_list[i]][loser_id] = new
 
         self.eves.performance[loser_id] = -1
