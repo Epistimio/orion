@@ -1,5 +1,6 @@
 import itertools
 import importlib
+from tabulate import tabulate
 
 
 class Benchmark():
@@ -37,15 +38,27 @@ class Benchmark():
         - get progress/details of each assess-task
         :return:
         """
+        benchmark_status = []
         for assessment in self.assessments:
-            print(assessment.status())
+            for status in assessment.status():
+                column = dict()
+                column['Algorithms'] = status['algorithm']
+                column['Assessments'] = status['assessment']
+                column['Tasks'] = status['task']
+                column['Total Experiments'] = status['experiments']
+                column['Completed Experiments'] = status['completed']
+                column['Submitted Trials'] = status['trials']
+                benchmark_status.append(column)
+        table = tabulate(benchmark_status, headers='keys', tablefmt='grid')
+        print(table)
 
     def analysis(self):
         """
         - display the result of each assess
         :return:
         """
-        pass
+        for assessment in self.assessments:
+            assessment.display()
 
     def register(self):
         """

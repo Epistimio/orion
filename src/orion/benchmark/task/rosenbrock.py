@@ -19,7 +19,7 @@ class RosenBrock(BaseTask):
             'user_args': ['python', 'scripts/rosenbrock.py', '--x~uniform(1,3, shape=(2))'],
             'max_trails': 10,
             'strategy': None,
-        }
+        },
     }
 
     def __init__(self, name, algorithm, assess):
@@ -61,11 +61,29 @@ class RosenBrock(BaseTask):
         :return:
         """
         worker_config = orion.core.config.worker.to_dict()
+        worker_config['silent'] = True
         workon(self.experiment, **worker_config)
 
     def status(self):
         """
         - status of the orion experiment
+        {
+          'algorithm': 'random',
+          'task': 'testbench1',
+          'experiments': [
+            {
+              'experiment': 'testbench11',
+              'is_done': True,
+              'trials': {
+                'completed': [
+                  Trial(experiment=ObjectId('5f11b152008efcfa1015d773'), status='completed', params=/x:[2.615, 1.71]),
+                  Trial(experiment=ObjectId('5f11b152008efcfa1015d773'), status='completed', params=/x:[1.002, 2.004]),
+                  ...
+                ]
+              }
+            }
+          ]
+        }
         """
         task_status = {'task': self.name, 'algorithm': self.algorithm, 'experiments': []}
         exp_status = {'experiment': self.name}
@@ -96,4 +114,8 @@ class RosenBrock(BaseTask):
         - formatted the experiment result for the particular assess
         :return:
         """
-        pass
+        db_config = experiment_builder.fetch_config_from_db(self.name)
+        db_config.setdefault('version', 1)
+
+        experiment = experiment_builder.create_experiment(**db_config)
+        return [experiment]

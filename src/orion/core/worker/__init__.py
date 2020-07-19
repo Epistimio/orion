@@ -75,7 +75,7 @@ orion status --name {experiment.name} --version {experiment.version} --all
 
 
 def workon(experiment, max_trials=None, max_broken=None, max_idle_time=None, heartbeat=None,
-           user_script_config=None, interrupt_signal_code=None):
+           user_script_config=None, interrupt_signal_code=None, silent=False):
     """Try to find solution to the search problem defined in `experiment`."""
     producer = Producer(experiment, max_idle_time)
     consumer = Consumer(experiment, heartbeat, user_script_config, interrupt_signal_code)
@@ -117,8 +117,9 @@ def workon(experiment, max_trials=None, max_broken=None, max_idle_time=None, hea
             print(worker_broken_trials, max_broken)
             break
 
-    print('\n' + format_stats(experiment))
+    if not silent:
+        print('\n' + format_stats(experiment))
 
-    print('\n' + COMPLETION_MESSAGE.format(experiment=experiment))
-    if not experiment.is_done:
-        print(NONCOMPLETED_MESSAGE.format(experiment=experiment))
+        print('\n' + COMPLETION_MESSAGE.format(experiment=experiment))
+        if not experiment.is_done:
+            print(NONCOMPLETED_MESSAGE.format(experiment=experiment))
