@@ -47,115 +47,114 @@ base_trial = {
 }
 
 
-def test_no_experiments(client):
-    """Tests that the API returns a positive response when no experiments are present"""
-    response = client.simulate_get('/experiments')
+class TestCollection:
+    """Tests the server's response on experiments/"""
 
-    assert response.json == []
-    assert response.status == "200 OK"
+    def test_no_experiments(self, client):
+        """Tests that the API returns a positive response when no experiments are present"""
+        response = client.simulate_get('/experiments')
 
+        assert response.json == []
+        assert response.status == "200 OK"
 
-def test_send_name_and_versions(client):
-    """Tests that the API returns all the experiments with their name and version"""
-    expected = [
-        {'name': 'a', 'version': 1},
-        {'name': 'b', 'version': 1}
-    ]
+    def test_send_name_and_versions(self, client):
+        """Tests that the API returns all the experiments with their name and version"""
+        expected = [
+            {'name': 'a', 'version': 1},
+            {'name': 'b', 'version': 1}
+        ]
 
-    _add_experiment(name='a', version=1, _id=1)
-    _add_experiment(name='b', version=1, _id=2)
+        _add_experiment(name='a', version=1, _id=1)
+        _add_experiment(name='b', version=1, _id=2)
 
-    response = client.simulate_get('/experiments')
+        response = client.simulate_get('/experiments')
 
-    assert response.json == expected
-    assert response.status == "200 OK"
+        assert response.json == expected
+        assert response.status == "200 OK"
 
+    def test_latest_versions(self, client):
+        """Tests that the API return the latest versions of each experiment"""
+        expected = [
+            {'name': 'a', 'version': 2},
+            {'name': 'b', 'version': 1}
+        ]
 
-def test_latest_versions(client):
-    """Tests that the API return the latest versions of each experiment"""
-    expected = [
-        {'name': 'a', 'version': 2},
-        {'name': 'b', 'version': 1}
-    ]
+        _add_experiment(name='a', version=1, _id=1)
+        _add_experiment(name='a', version=2, _id=2)
+        _add_experiment(name='b', version=1, _id=3)
 
-    _add_experiment(name='a', version=1, _id=1)
-    _add_experiment(name='a', version=2, _id=2)
-    _add_experiment(name='b', version=1, _id=3)
+        response = client.simulate_get('/experiments')
 
-    response = client.simulate_get('/experiments')
-
-    assert response.json == expected
-    assert response.status == "200 OK"
-
-
-def test_non_existent_experiment(client):
-    """Tests that a 404 response is returned when the experiment doesn't exist in the database"""
-    response = client.simulate_get('/experiments/a')
-
-    assert response.status == "404 Not Found"
-    assert response.json['message']
-    assert response.json['message'] == "Experiment 'a' does not exist"
-
-    _add_experiment(name='a', version=1, _id=1)
-    response = client.simulate_get('/experiments/b')
-
-    assert response.status == "404 Not Found"
-    assert response.json['message'] == "Experiment 'b' does not exist"
+        assert response.json == expected
+        assert response.status == "200 OK"
 
 
-def test_experiment_specification(client):
-    """Tests that the experiment returned is following the specification"""
-    _add_experiment(name='a', version=1, _id=1)
-    _add_trial(experiment=1, id_override="ae8", status='completed')
+class TestItem:
+    """Tests the server's response to experiments/:name"""
+    def test_non_existent_experiment(self, client):
+        """Tests that a 404 response is returned when the experiment doesn't exist in the database"""
+        response = client.simulate_get('/experiments/a')
 
-    response = client.simulate_get('/experiments/a')
+        assert response.status == "404 Not Found"
+        assert response.json['message']
+        assert response.json['message'] == "Experiment 'a' does not exist"
 
-    assert response.status == "200 OK"
+        _add_experiment(name='a', version=1, _id=1)
+        response = client.simulate_get('/experiments/b')
 
-    assert response.json['name'] == "a"
-    assert response.json['version'] == 1
-    assert response.json['status'] == "not done"
-    assert response.json['trialsCompleted'] == 1
-    assert response.json['startTime'] == "0001-01-01 00:00:00"  # TODO
-    assert response.json['endTime'] == "0001-01-02 00:00:00"  # TODO
-    assert len(response.json['user'])
-    assert response.json['orionVersion'] == "x.y.z"
+        assert response.status == "404 Not Found"
+        assert response.json['message'] == "Experiment 'b' does not exist"
 
-    _assert_config(response.json['config'])
-    _assert_best_trial(response.json['bestTrial'])
+    def test_experiment_specification(self, client):
+        """Tests that the experiment returned is following the specification"""
+        _add_experiment(name='a', version=1, _id=1)
+        _add_trial(experiment=1, id_override="ae8", status='completed')
 
+        response = client.simulate_get('/experiments/a')
 
-def test_default_experiment(client):
-    """Tests that the latest experiment is returned when no version parameter exists"""
-    _add_experiment(name='a', version=1, _id=1)
-    _add_experiment(name='a', version=2, _id=2)
+        assert response.status == "200 OK"
 
-    response = client.simulate_get('/experiments/a')
+        assert response.json['name'] == "a"
+        assert response.json['version'] == 1
+        assert response.json['status'] == "not done"
+        assert response.json['trialsCompleted'] == 1
+        assert response.json['startTime'] == "0001-01-01 00:00:00"  # TODO
+        assert response.json['endTime'] == "0001-01-02 00:00:00"  # TODO
+        assert len(response.json['user'])
+        assert response.json['orionVersion'] == "x.y.z"
 
-    assert response.status == "200 OK"
-    assert response.json['version'] == 2
+        _assert_config(response.json['config'])
+        _assert_best_trial(response.json['bestTrial'])
 
+    def test_default_is_latest_version(self, client):
+        """Tests that the latest experiment is returned when no version parameter exists"""
+        _add_experiment(name='a', version=1, _id=1)
+        _add_experiment(name='a', version=2, _id=2)
 
-def test_version_experiment(client):
-    """Tests that the specified version of an experiment is returned"""
-    _add_experiment(name='a', version=1, _id=1)
-    _add_experiment(name='a', version=2, _id=2)
-    _add_experiment(name='a', version=3, _id=3)
+        response = client.simulate_get('/experiments/a')
 
-    response = client.simulate_get('/experiments/a?version=2')
+        assert response.status == "200 OK"
+        assert response.json['version'] == 2
 
-    assert response.status == "200 OK"
-    assert response.json['version'] == 2
+    def test_version_experiment(self, client):
+        """Tests that the specified version of an experiment is returned"""
+        _add_experiment(name='a', version=1, _id=1)
+        _add_experiment(name='a', version=2, _id=2)
+        _add_experiment(name='a', version=3, _id=3)
 
+        response = client.simulate_get('/experiments/a?version=2')
 
-def test_unknown_parameter(client):
-    """Tests that if an unknown parameter is specified in the query string, an error is returned"""
-    _add_experiment(name='a', version=1, _id=1)
+        assert response.status == "200 OK"
+        assert response.json['version'] == 2
 
-    response = client.simulate_get('/experiments/a?unknown=true')
+    def test_unknown_parameter(self, client):
+        """Tests that if an unknown parameter is specified in the query string, an error is returned"""
+        _add_experiment(name='a', version=1, _id=1)
 
-    assert response.status == "400 Bad Request"
-    assert response.json == "Parameter 'unknown' is not supported. Expected parameter 'version'."
+        response = client.simulate_get('/experiments/a?unknown=true')
+
+        assert response.status == "400 Bad Request"
+        assert response.json == "Parameter 'unknown' is not supported. Expected parameter 'version'."
 
 
 def _add_experiment(**kwargs):
