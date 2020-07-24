@@ -33,7 +33,7 @@ class Benchmark():
         for assessment in self.assessments:
             assessment.execute()
 
-    def status(self):
+    def status(self, notebook=False):
         """
         - get progress/details of each assess-task
         :return:
@@ -49,16 +49,21 @@ class Benchmark():
                 column['Completed Experiments'] = status['completed']
                 column['Submitted Trials'] = status['trials']
                 benchmark_status.append(column)
-        table = tabulate(benchmark_status, headers='keys', tablefmt='grid')
-        print(table)
 
-    def analysis(self):
+        if notebook:
+            from IPython.display import HTML, display
+            display(HTML(tabulate(benchmark_status, headers='keys', tablefmt='html', stralign='center', numalign='center')))
+        else:
+            table = tabulate(benchmark_status, headers='keys', tablefmt='grid', stralign='center', numalign='center')
+            print(table)
+
+    def analysis(self, notebook=False):
         """
         - display the result of each assess
         :return:
         """
         for assessment in self.assessments:
-            assessment.display()
+            assessment.display(notebook)
 
     def register(self):
         """

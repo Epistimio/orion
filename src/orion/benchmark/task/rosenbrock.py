@@ -20,6 +20,11 @@ class RosenBrock(BaseTask):
             'max_trails': 10,
             'strategy': None,
         },
+        'AverageResult': {
+            'user_args': ['python', 'scripts/rosenbrock.py', '--x~uniform(1,3, shape=(2))'],
+            'max_trails': 10,
+            'strategy': None,
+        }
     }
 
     def __init__(self, name, algorithm, assess):

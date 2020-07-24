@@ -90,7 +90,7 @@ class TimeToResult(BaseAssess):
         """
         pass
 
-    def display(self):
+    def display(self, notebook=False):
         """
         - define the visual charts of the assess, based on the task performance output
         :return:
@@ -103,6 +103,8 @@ class TimeToResult(BaseAssess):
                 stats = exp.stats
                 trial_id = stats['best_trials_id']
                 best_trial = exp.get_trial(uid=trial_id)
+                exp_column['Algorithm'] = list(exp.configuration['algorithms'].keys())[0]
+                exp_column['Assessment'] = self.__class__.__name__
                 exp_column['Experiment Name'] = exp.name
                 exp_column['Best Trial'] = trial_id  # TODO use sequential id
                 exp_column['Best Evaluation'] = stats['best_evaluation']
@@ -110,8 +112,12 @@ class TimeToResult(BaseAssess):
                     exp_column[param_name] = param_value
                 time_to_result.append(exp_column)
 
-        table = tabulate(time_to_result, headers='keys', tablefmt='grid')
-        print(table)
+        if notebook:
+            from IPython.display import HTML, display
+            display(HTML(tabulate(time_to_result, headers='keys', tablefmt='html', stralign='center', numalign='center')))
+        else:
+            table = tabulate(time_to_result, headers='keys', tablefmt='grid', stralign='center', numalign='center')
+            print(table)
 
     def register(self):
         """
