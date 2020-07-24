@@ -395,11 +395,13 @@ def test_format_config(monkeypatch):
     experiment = DummyExperiment()
     experiment.pool_size = 10
     experiment.max_trials = 100
+    experiment.working_dir = "working_dir"
     assert format_config(experiment) == """\
 Config
 ======
 pool size: 10
 max trials: 100
+working dir: working_dir
 """
 
 
@@ -574,6 +576,7 @@ def test_format_info(algorithm_dict, dummy_trial):
     experiment.metadata = {'user_args': commandline}
     experiment.pool_size = 10
     experiment.max_trials = 100
+    experiment.working_dir = "working_dir"
     experiment.configuration = {'algorithms': algorithm_dict}
 
     space = SpaceBuilder().build(
@@ -636,6 +639,7 @@ Config
 ======
 pool size: 10
 max trials: 100
+working dir: working_dir
 
 
 Algorithm
