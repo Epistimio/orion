@@ -136,7 +136,7 @@ class TestItem:
         assert response.status == "200 OK"
         assert response.json['version'] == 2
 
-    def test_version_experiment(self, client):
+    def test_specific_version(self, client):
         """Tests that the specified version of an experiment is returned"""
         _add_experiment(name='a', version=1, _id=1)
         _add_experiment(name='a', version=2, _id=2)
