@@ -91,8 +91,12 @@ class TestCollection:
 
 class TestItem:
     """Tests the server's response to experiments/:name"""
+
     def test_non_existent_experiment(self, client):
-        """Tests that a 404 response is returned when the experiment doesn't exist in the database"""
+        """
+        Tests that a 404 response is returned when the experiment
+        doesn't exist in the database
+        """
         response = client.simulate_get('/experiments/a')
 
         assert response.status == "404 Not Found"
@@ -148,13 +152,17 @@ class TestItem:
         assert response.json['version'] == 2
 
     def test_unknown_parameter(self, client):
-        """Tests that if an unknown parameter is specified in the query string, an error is returned"""
+        """
+        Tests that if an unknown parameter is specified in
+        the query string, an error is returned
+        """
         _add_experiment(name='a', version=1, _id=1)
 
         response = client.simulate_get('/experiments/a?unknown=true')
 
         assert response.status == "400 Bad Request"
-        assert response.json == "Parameter 'unknown' is not supported. Expected parameter 'version'."
+        assert response.json == \
+               "Parameter 'unknown' is not supported. Expected parameter 'version'."
 
 
 def _add_experiment(**kwargs):
