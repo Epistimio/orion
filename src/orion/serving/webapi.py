@@ -29,13 +29,13 @@ class WebApi(falcon.API):
         setup_storage(config.get('storage'))
 
         # Create our resources
-        experiments_endpoint = ExperimentsResource()
-        root_endpoint = RuntimeResource()
+        root_resource = RuntimeResource()
+        experiments_resource = ExperimentsResource()
 
         # Build routes
-        self.add_route('/', root_endpoint)
-        self.add_route('/experiments', experiments_endpoint)
-        self.add_route('/experiments/{name}', experiments_endpoint, suffix="experiment")
+        self.add_route('/', root_resource)
+        self.add_route('/experiments', experiments_resource)
+        self.add_route('/experiments/{name}', experiments_resource, suffix="experiment")
 
     def start(self):
         """A hook to when a Gunicorn worker calls run()."""
