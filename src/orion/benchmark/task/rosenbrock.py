@@ -92,22 +92,11 @@ class RosenBrock(BaseTask):
         }
         """
         task_status = {'task': self.name, 'algorithm': self.algorithm, 'experiments': []}
-        exp_status = {'experiment': self.name}
 
-        # experiment = experiment_builder.build_view(self.name)
-
-        db_config = experiment_builder.fetch_config_from_db(self.name)
-        db_config.setdefault('version', 1)
-
-        experiment = experiment_builder.create_experiment(**db_config)
-
-        trials = experiment.fetch_trials()
-        status_dict = {}
+        trials = self.experiment.fetch_trials()
+        status_dict = defaultdict(list)
         for trial in trials:
-            if status_dict.get(trial.status, None):
-                status_dict[trial.status].append(trial)
-            else:
-                status_dict[trial.status] = [trial]
+            status_dict[trial.status].append(trial)
         exp_status['trials'] = status_dict
         exp_status['is_done'] = experiment.is_done
 
@@ -120,8 +109,5 @@ class RosenBrock(BaseTask):
         - formatted the experiment result for the particular assess
         :return:
         """
-        db_config = experiment_builder.fetch_config_from_db(self.name)
-        db_config.setdefault('version', 1)
-
-        experiment = experiment_builder.create_experiment(**db_config)
-        return [experiment]
+        # NOTE(Xavier): What is this method for?
+        return [self.experiment]
