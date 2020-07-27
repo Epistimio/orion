@@ -6,7 +6,7 @@
 
 .. module:: webapi
    :platform: Unix
-   :synopsis: WSGI REST server application
+   :synopsis: Exposes a WSGI REST server application instance by subclassing ``falcon.API``
 """
 
 import falcon
@@ -17,9 +17,9 @@ from orion.storage.base import setup_storage
 
 
 class WebApi(falcon.API):
-    """Main entry point into a Falcon-based app.
-    An instance provides a callable WSGI interface and a routing
-    engine.
+    """
+    Main entry point into a Falcon-based app. An instance provides a callable WSGI interface and a
+    routing engine.
     """
 
     def __init__(self, config=None):
