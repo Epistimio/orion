@@ -11,17 +11,32 @@ from orion.core.worker import workon
 from orion.benchmark.base import BaseTask, BaseAssess
 
 
+def rosenbrock(x):
+    """Evaluate a n-D rosenbrock function."""
+    x = numpy.asarray(x)
+    summands = 100 * (x[1:] - x[:-1]**2)**2 + (1 - x[:-1])**2
+    y = numpy.sum(summands)
+    return [dict(
+        name='rosenbrock',
+        type='objective',
+        value=y)]
+
+
 class RosenBrock(BaseTask):
 
     # assessments that the particular task supports
     assessments = {
         'TimeToResult': {
-            'user_args': ['python', 'scripts/rosenbrock.py', '--x~uniform(1,3, shape=(2))'],
-            'max_trails': 10,
+            'space': {
+                'x': 'uniform(1, 3, shape=2)'
+            },
+            'max_trials': 10,
             'strategy': None,
         },
         'AverageResult': {
-            'user_args': ['python', 'scripts/rosenbrock.py', '--x~uniform(1,3, shape=(2))'],
+            'space': {
+                'x': 'uniform(1, 3, shape=2)'
+            },
             'max_trails': 10,
             'strategy': None,
         }
@@ -41,21 +56,9 @@ class RosenBrock(BaseTask):
             assess_key = assess
         assessments = self.assessments[assess_key]
 
-        user_args = assessments['user_args']
-        user_args[1] = os.path.join(os.path.dirname(os.path.abspath(__file__)), user_args[1])
-
-        metadata = resolve_config.fetch_metadata(user_args=user_args)
-        parser = OrionCmdlineParser(orion.core.config.worker.user_script_config,
-                                    allow_non_existing_user_script=True)
-        parser.parse(user_args)
-        metadata["parser"] = parser.get_state_dict()
-        metadata["priors"] = dict(parser.priors)
-
-        space = metadata["priors"]
-
-        self.experiment = experiment_builder.build(
-            name, space=space, algorithms=algorithm, max_trials=assessments['max_trails'],
-            strategy=assessments['strategy'], user_args=user_args, metadata=metadata)
+        self.experiment = create_experiment(
+            name, space=assessments['space'], algorithms=algorithm,
+            max_trials=assessments['max_trials'], strategy=assessments['strategy'])
 
         self.name = name
         self.algorithm = algorithm
@@ -65,9 +68,7 @@ class RosenBrock(BaseTask):
         - run the orion experiment
         :return:
         """
-        worker_config = orion.core.config.worker.to_dict()
-        worker_config['silent'] = True
-        workon(self.experiment, **worker_config)
+        return self.experiment.workon(rosenbrock, self.experiment.max_trials)
 
     def status(self):
         """
