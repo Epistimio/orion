@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Perform functional tests for the REST endpoint `/experiments`"""
-import datetime
 import copy
+import datetime
 
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
