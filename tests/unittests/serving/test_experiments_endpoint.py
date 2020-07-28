@@ -75,13 +75,14 @@ class TestCollection:
     def test_latest_versions(self, client):
         """Tests that the API return the latest versions of each experiment"""
         expected = [
-            {'name': 'a', 'version': 2},
+            {'name': 'a', 'version': 3},
             {'name': 'b', 'version': 1}
         ]
 
         _add_experiment(name='a', version=1, _id=1)
+        _add_experiment(name='a', version=3, _id=3)
         _add_experiment(name='a', version=2, _id=2)
-        _add_experiment(name='b', version=1, _id=3)
+        _add_experiment(name='b', version=1, _id=4)
 
         response = client.simulate_get('/experiments')
 
@@ -133,12 +134,13 @@ class TestItem:
     def test_default_is_latest_version(self, client):
         """Tests that the latest experiment is returned when no version parameter exists"""
         _add_experiment(name='a', version=1, _id=1)
+        _add_experiment(name='a', version=3, _id=3)
         _add_experiment(name='a', version=2, _id=2)
 
         response = client.simulate_get('/experiments/a')
 
         assert response.status == "200 OK"
-        assert response.json['version'] == 2
+        assert response.json['version'] == 3
 
     def test_specific_version(self, client):
         """Tests that the specified version of an experiment is returned"""
