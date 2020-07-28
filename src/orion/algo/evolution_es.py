@@ -100,7 +100,6 @@ class EvolutionES(Hyperband):
 
     def __init__(self, space, seed=None, repetitions=np.inf, nums_population=20, mutate=None):
         super(EvolutionES, self).__init__(space, seed=seed, repetitions=repetitions)
-
         pair = nums_population // 2
         mutate_ratio = 0.3
         self.nums_population = nums_population
@@ -185,21 +184,21 @@ class BracketEVES(Bracket):
             self.eves.performance[i] = list(rung.values())[i][0]
 
         population_index = list(range(self.eves.nums_population))
-        red_team = np.random.choice(population_index, self.eves.nums_comp_pairs, replace=False)
+        red_team = self.eves.rng.choice(population_index, self.eves.nums_comp_pairs,
+                                        replace=False)
         diff_list = list(set(population_index).difference(set(red_team)))
-        blue_team = np.random.choice(diff_list, self.eves.nums_comp_pairs, replace=False)
+        blue_team = self.eves.rng.choice(diff_list, self.eves.nums_comp_pairs,
+                                         replace=False)
 
         winner_list = []
         loser_list = []
 
         hurdles = 0
         for i, _ in enumerate(red_team):
-            winner = (red_team
-                      if self.eves.performance[red_team[i]] < self.eves.performance[blue_team[i]]
-                      else blue_team)
-            loser = (red_team
-                     if self.eves.performance[red_team[i]] >= self.eves.performance[blue_team[i]]
-                     else blue_team)
+            winner, loser = ((red_team, blue_team)
+                             if self.eves.performance[red_team[i]] <
+                             self.eves.performance[blue_team[i]]
+                             else (blue_team, red_team))
 
             winner_list.append(winner[i])
             loser_list.append(loser[i])
@@ -220,21 +219,18 @@ class BracketEVES(Bracket):
                     list(rung.values())[i][1][self.eves.fidelity_index]
 
                 for j in self.search_space_remove_fidelity:
-                    if self.space.values()[j].type == "integer" or \
-                       self.space.values()[j].type == "categorical":
-                        point[j] = int(self.eves.population[j][i])
-                    else:
-                        point[j] = self.eves.population[j][i]
+                    point[j] = self.eves.population[j][i]
 
                 if tuple(point) in points:
                     nums_all_equal += 1
-                    logger.debug("find equal, mutate")
+                    logger.debug("find equal one, continue to mutate.")
                     self._mutate(points.index(tuple(point)), i)
                 else:
                     break
                 if nums_all_equal > 10:
                     logger.warning("Can not Evolve any more, "
-                                   "please stop and use current population.")
+                                   "You can make an early stop.")
+                    break
 
             points.append(tuple(point))
 
@@ -243,9 +239,9 @@ class BracketEVES(Bracket):
         return points
 
     def _mutate(self, winner_id, loser_id):
-        select_genes_key_list = np.random.choice(self.search_space_remove_fidelity,
-                                                 self.eves.nums_mutate_gene,
-                                                 replace=False)
+        select_genes_key_list = self.eves.rng.choice(self.search_space_remove_fidelity,
+                                                     self.eves.nums_mutate_gene,
+                                                     replace=False)
         self.copy_winner(winner_id, loser_id)
         kwargs = copy.deepcopy(self.mutate_attr)
 

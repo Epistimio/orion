@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 :mod:`orion.algo.mutate_functions` --
-Different mutate functions
+Different mutate functions: large-scale evolution of image classifiers
 ===========================================================================================
 
 .. module:: mutate_functions
@@ -45,7 +45,7 @@ def default_mutate(search_space, old_value, **kwargs):
 
         factors = int(add_factor * (2 * np.random.randint(2) - 1))
         if lower_bound <= old_value + factors <= upper_bound:
-            new_value = old_value + factors
+            new_value = int(old_value) + factors
         elif lower_bound > old_value + factors:
             new_value = int(lower_bound)
         else:
@@ -54,8 +54,7 @@ def default_mutate(search_space, old_value, **kwargs):
         sample_index = \
             np.where(np.random.multinomial(1,
                                            list(search_space.get_prior)) == 1)[0][0]
-        new_value = search_space.categories[sample_index]
+        new_value = int(search_space.categories[sample_index])
     else:
         new_value = old_value
-
     return new_value

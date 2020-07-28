@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.transfer` -- Coordination of transfer optimization of learning search space
+:mod:`orion.core.transfer` --
+Learning search spaces for Bayesian optimization:
+Another view of hyperparameter transfer learning
 ======================================================================
 
 .. module:: transfer

@@ -3,6 +3,7 @@
 """Tests for :mod:`orion.algo.evolution_es`."""
 
 import hashlib
+import importlib
 
 import numpy as np
 import pytest
@@ -17,6 +18,15 @@ def space():
     space = Space()
     space.register(Real('lr', 'uniform', 0, 1))
     space.register(Fidelity('epoch', 1, 9, 1))
+    return space
+
+
+@pytest.fixture
+def space1():
+    """Create a Space with a real dimension and a fidelity value."""
+    space = Space()
+    space.register(Real('lr', 'uniform', 0, 1))
+    space.register(Real('weight_decay', 'uniform', 0, 1))
     return space
 
 
@@ -78,8 +88,140 @@ def test_compute_budgets():
     assert compute_budgets(1, 4, 2, 4, 2) == [[(4, 1), (4, 2), (4, 4)]]
 
 
+def test_get_mutated_candidates(space1):
+    """Verify mutated candidates is generated correctly"""
+    org_data = [(1 / 2.0, 2.0), (1 / 8.0, 8.0), (1 / 5.0, 5.0), (1 / 4.0, 4.0)]
+    mutated_data = []
+
+    red_team = [(2.0, (0.5, 2.0)), (8.0, (0.13, 8.0))]
+    blue_team = [(5.0, (0.2, 5.0)), (4.0, (0.25, 4.0))]
+
+    for i, _ in enumerate(red_team):
+        winner, loser = ((red_team, blue_team)
+                         if red_team[i][0] < blue_team[i][0]
+                         else (blue_team, red_team))
+
+        mutated_data.append(winner[i][1])
+        select_genes_key = i
+        old = winner[i][1][select_genes_key]
+        mod = importlib.import_module("orion.algo.mutate_functions")
+        mutate_func = getattr(mod, "default_mutate")
+        search_space = space1.values()[select_genes_key]
+        new = mutate_func(search_space, old)
+        if select_genes_key == 0:
+            mutated_data.append((new, winner[i][1][1]))
+        elif select_genes_key == 1:
+            mutated_data.append((winner[i][1][0], new))
+
+    assert len(mutated_data) == len(org_data)
+    assert mutated_data[0] == org_data[0]
+    assert mutated_data[2] == org_data[3]
+    assert mutated_data[1][0] != org_data[0][0]
+    assert mutated_data[1][1] == org_data[0][1]
+    assert mutated_data[3][0] == org_data[3][0]
+    assert mutated_data[3][1] != org_data[3][1]
+
+
+def customized_mutate_example(search_space, old_value, **kwargs):
+    """Define a customized mutate function example"""
+    if search_space.type == "real":
+        new_value = old_value / 2.0
+    elif search_space.type == "integer":
+        new_value = int(old_value + 1)
+    else:
+        new_value = old_value
+    return new_value
+
+
+def test_customized_mutate_func(space1):
+    """Verify mutated candidates is generated correctly"""
+    org_data = [(1 / 2.0, 2.0), (1 / 8.0, 8.0), (1 / 5.0, 5.0), (1 / 4.0, 4.0)]
+    mutated_data = []
+
+    red_team = [(2.0, (0.5, 2.0)), (8.0, (0.13, 8.0))]
+    blue_team = [(5.0, (0.2, 5.0)), (4.0, (0.25, 4.0))]
+
+    for i, _ in enumerate(red_team):
+        winner, loser = ((red_team, blue_team)
+                         if red_team[i][0] < blue_team[i][0]
+                         else (blue_team, red_team))
+
+        mutated_data.append(winner[i][1])
+        select_genes_key = i
+        old = winner[i][1][select_genes_key]
+        search_space = space1.values()[select_genes_key]
+        new = customized_mutate_example(search_space, old)
+        if select_genes_key == 0:
+            mutated_data.append((new, winner[i][1][1]))
+        elif select_genes_key == 1:
+            mutated_data.append((winner[i][1][0], new))
+
+    assert len(mutated_data) == len(org_data)
+    assert mutated_data[0] == org_data[0]
+    assert mutated_data[2] == org_data[3]
+    assert mutated_data[1][0] == org_data[0][0] / 2.0
+    assert mutated_data[1][1] == org_data[0][1]
+    assert mutated_data[3][0] == org_data[3][0]
+    assert mutated_data[3][1] == org_data[3][1] / 2.0
+
+
+def unchange_mutate(search_space, old_value, **kwargs):
+    """Define an unchanged mutate example"""
+    return old_value
+
+
+def test_unchanged_mutate_cases(space1):
+    """Verify mutated candidates is generated correctly"""
+    org_data = [(1 / 2.0, 2.0), (1 / 8.0, 8.0), (1 / 5.0, 5.0), (1 / 4.0, 4.0)]
+    mutated_data = []
+
+    red_team = [(2.0, (0.5, 2.0)), (8.0, (0.13, 8.0))]
+    blue_team = [(5.0, (0.2, 5.0)), (4.0, (0.25, 4.0))]
+
+    for i, _ in enumerate(red_team):
+        winner, loser = ((red_team, blue_team)
+                         if red_team[i][0] < blue_team[i][0]
+                         else (blue_team, red_team))
+
+        mutated_data.append(winner[i][1])
+        select_genes_key = i
+        old = winner[i][1][select_genes_key]
+        search_space = space1.values()[select_genes_key]
+        new = unchange_mutate(search_space, old)
+        if select_genes_key == 0:
+            mutated_data.append((new, winner[i][1][1]))
+        elif select_genes_key == 1:
+            mutated_data.append((winner[i][1][0], new))
+
+    points = []
+    for i in range(len(org_data)):
+        point = [0] * 2
+        point[0] = mutated_data[i][0]
+        point[1] = mutated_data[i][1]
+        nums_all_equal = 0
+        while True:
+            if tuple(point) in points:
+                nums_all_equal += 1
+                print("find equal one, continue to mutate.")
+                select_genes_key = 0
+                old = point[select_genes_key]
+                search_space = space1.values()[select_genes_key]
+                new = unchange_mutate(search_space, old)
+                point[select_genes_key] = new
+            else:
+                break
+            if nums_all_equal > 10:
+                print("Can not Evolve any more, you can make an early stop.")
+                break
+
+        points.append(tuple(point))
+
+    assert nums_all_equal == 11
+    assert points == mutated_data
+
+
 class TestEvolutionES():
-    """Tests for the algo Hyperband."""
+    """Tests for the algo Evolution."""
 
     def test_register(self, evolution, bracket, rung_0, rung_1):
         """Check that a point is registered inside the bracket."""

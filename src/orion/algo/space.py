@@ -918,7 +918,7 @@ class Space(dict):
         """Return items sorted according to keys"""
         return [(k, self[k]) for k in self.keys()]
 
-    def values(self) -> object:
+    def values(self):
         """Return values sorted according to keys"""
         return [self[k] for k in self.keys()]
 

@@ -234,8 +234,6 @@ class Consumer(object):
         command = cmd_args
 
         signal.signal(signal.SIGTERM, _handler)
-        # print("command:", command)
-        # print("environ:", environ)
         process = subprocess.Popen(command, env=environ)
 
         return_code = process.wait()
