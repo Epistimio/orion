@@ -12,8 +12,9 @@ import pytest
 import orion.core
 from orion.core.io.database import DuplicateKeyError
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils import SingletonAlreadyInstantiatedError, SingletonNotInstantiatedError
-from orion.core.utils.tests import OrionState, update_singletons
+from orion.core.utils import SingletonAlreadyInstantiatedError, SingletonNotInstantiatedError, \
+    update_singletons
+from orion.core.utils.tests import OrionState
 from orion.core.worker.trial import Trial
 from orion.storage.base import FailedUpdate, get_storage, MissingArguments, setup_storage, Storage
 from orion.storage.legacy import Legacy

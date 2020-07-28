@@ -12,11 +12,10 @@ from orion.client.cli import (
     interrupt_trial, report_bad_trial, report_objective, report_results)
 from orion.client.experiment import ExperimentClient
 import orion.core.io.experiment_builder as experiment_builder
+from orion.core.utils import update_singletons
 from orion.core.utils.exceptions import RaceCondition
-from orion.core.utils.tests import update_singletons
 from orion.core.worker.producer import Producer
 from orion.storage.base import setup_storage
-
 
 __all__ = ['interrupt_trial', 'report_bad_trial', 'report_objective', 'report_results',
            'create_experiment', 'workon']

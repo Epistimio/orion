@@ -17,13 +17,14 @@ import os
 
 import pkg_resources
 
-
 log = logging.getLogger(__name__)
 
 
-# Define type of arbitrary nested defaultdicts
 def nesteddict():
-    """Extend defaultdict to arbitrary nested levels."""
+    """
+    Define type of arbitrary nested defaultdicts
+    Extend defaultdict to arbitrary nested levels.
+    """
     return defaultdict(nesteddict)
 
 
@@ -163,3 +164,27 @@ class SingletonFactory(AbstractSingletonType, Factory):
     """Wrapping `Factory` with `SingletonType`. Keep compatibility with `AbstractSingletonType`."""
 
     pass
+
+
+def update_singletons(values=None):
+    """Replace singletons by given values and return previous singleton objects"""
+    if values is None:
+        values = {}
+
+    # Avoiding circular import problems when importing this module.
+    from orion.core.io.database import Database
+    from orion.core.io.database.ephemeraldb import EphemeralDB
+    from orion.core.io.database.mongodb import MongoDB
+    from orion.core.io.database.pickleddb import PickledDB
+    from orion.storage.base import Storage
+    from orion.storage.legacy import Legacy
+    from orion.storage.track import Track
+
+    singletons = (Storage, Legacy, Database, MongoDB, PickledDB, EphemeralDB, Track)
+
+    updated_singletons = {}
+    for singleton in singletons:
+        updated_singletons[singleton] = singleton.instance
+        singleton.instance = values.get(singleton, None)
+
+    return updated_singletons

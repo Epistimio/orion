@@ -17,17 +17,11 @@ import tempfile
 
 import yaml
 
-from orion.core.io.database import Database
-from orion.core.io.database.ephemeraldb import EphemeralDB
-from orion.core.io.database.mongodb import MongoDB
-from orion.core.io.database.pickleddb import PickledDB
 import orion.core.io.experiment_builder as experiment_builder
-from orion.core.utils import SingletonAlreadyInstantiatedError
+from orion.core.utils import SingletonAlreadyInstantiatedError, update_singletons
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage, Storage
-from orion.storage.legacy import Legacy
-from orion.storage.track import Track
 
 
 def _select(lhs, rhs):
@@ -133,22 +127,6 @@ def _remove(file_name):
         os.remove(file_name)
     except FileNotFoundError:
         pass
-
-
-SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB, EphemeralDB, Track)
-
-
-def update_singletons(values=None):
-    """Replace singletons by given values and return previous singleton objects"""
-    if values is None:
-        values = {}
-
-    singletons = {}
-    for singleton in SINGLETONS:
-        singletons[singleton] = singleton.instance
-        singleton.instance = values.get(singleton, None)
-
-    return singletons
 
 
 # pylint: disable=no-self-use,protected-access

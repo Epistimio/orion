@@ -12,9 +12,8 @@ from pymongo import MongoClient
 
 from orion.client import create_experiment
 from orion.core.io.database import DatabaseTimeout
+from orion.core.utils import update_singletons
 from orion.core.utils.exceptions import SampleTimeout
-from orion.core.utils.tests import update_singletons
-
 
 DB_FILE = 'stress.pkl'
 
