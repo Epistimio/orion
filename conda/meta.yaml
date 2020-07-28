@@ -28,6 +28,8 @@ requirements:
     - AppDirs
     - plotly
     - pandas
+    - falcon
+    - gunicorn
 
 test:
   import:
