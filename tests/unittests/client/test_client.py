@@ -12,12 +12,11 @@ import orion.client.cli as cli
 import orion.core
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils import SingletonNotInstantiatedError, update_singletons
 from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
+from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
 from orion.core.utils.tests import OrionState
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
-
 
 create_experiment = orion.client.create_experiment
 workon = orion.client.workon

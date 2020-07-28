@@ -18,7 +18,7 @@ import tempfile
 import yaml
 
 import orion.core.io.experiment_builder as experiment_builder
-from orion.core.utils import SingletonAlreadyInstantiatedError, update_singletons
+from orion.core.utils.singleton import SingletonAlreadyInstantiatedError, update_singletons
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage, Storage

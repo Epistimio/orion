@@ -13,8 +13,7 @@
 import logging
 
 import orion.core
-from orion.core.utils import (AbstractSingletonType, SingletonFactory)
-
+from orion.core.utils.singleton import AbstractSingletonType, SingletonFactory
 
 log = logging.getLogger(__name__)
 

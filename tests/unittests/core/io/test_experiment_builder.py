@@ -12,9 +12,9 @@ from orion.core.evc.adapters import BaseAdapter
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 import orion.core.io.experiment_builder as experiment_builder
-from orion.core.utils import update_singletons
 import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
+from orion.core.utils.singleton import update_singletons
 from orion.core.utils.tests import OrionState
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy

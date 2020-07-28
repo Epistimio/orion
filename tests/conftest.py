@@ -15,8 +15,8 @@ from orion.core.io import resolve_config
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils import update_singletons
 import orion.core.utils.backward as backward
+from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import Storage
 from orion.storage.legacy import Legacy
