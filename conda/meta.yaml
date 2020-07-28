@@ -38,6 +38,7 @@ test:
     - orion.algo
     - orion.client
     - orion.storage
+    - orion.serving
   commands:
     - orion --help
 
