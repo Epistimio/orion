@@ -2,9 +2,9 @@
 import plotly
 import pytest
 
-from orion.core.utils.tests import create_experiment
 from orion.core.worker.experiment import ExperimentView
 from orion.plotting.base import regret
+from orion.testing import create_experiment
 
 config = dict(
     name='experiment-name',

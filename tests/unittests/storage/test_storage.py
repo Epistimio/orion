@@ -14,11 +14,11 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.singleton import SingletonAlreadyInstantiatedError, \
     SingletonNotInstantiatedError, update_singletons
-from orion.core.utils.tests import OrionState
 from orion.core.worker.trial import Trial
 from orion.storage.base import FailedUpdate, get_storage, MissingArguments, setup_storage, Storage
 from orion.storage.legacy import Legacy
 from orion.storage.track import HAS_TRACK, REASON
+from orion.testing import OrionState
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.WARNING)
