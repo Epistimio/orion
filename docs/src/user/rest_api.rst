@@ -5,7 +5,7 @@ The API serves the following endpoints.
 
 * experiments/
 * experiments/:name
-* trails/:exp_name
+* trials/:exp_name
 * trials/:exp_name/:id
 * plots/:kind
 
