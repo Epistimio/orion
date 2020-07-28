@@ -156,15 +156,22 @@ class TestItem:
     def test_unknown_parameter(self, client):
         """
         Tests that if an unknown parameter is specified in
-        the query string, an error is returned
+        the query string, an error is returned even if the experiment doesn't exist.
         """
+        expected_status = "400 Bad Request"
+        expected_body = "Parameter 'unknown' is not supported. Expected parameter 'version'."
+
+        response = client.simulate_get('/experiments/a?unknown=true')
+
+        assert response.status == expected_status
+        assert response.json == expected_body
+
         _add_experiment(name='a', version=1, _id=1)
 
         response = client.simulate_get('/experiments/a?unknown=true')
 
-        assert response.status == "400 Bad Request"
-        assert response.json == \
-               "Parameter 'unknown' is not supported. Expected parameter 'version'."
+        assert response.status == expected_status
+        assert response.json == expected_body
 
 
 def _add_experiment(**kwargs):
