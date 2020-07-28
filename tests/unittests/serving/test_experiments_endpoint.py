@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Perform functional tests for the REST endpoint `/experiments`"""
 import datetime
+import copy
 
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
@@ -176,13 +177,13 @@ class TestItem:
 
 def _add_experiment(**kwargs):
     """Adds experiment to the dummy orion instance"""
-    base_experiment.update(kwargs)
+    base_experiment.update(copy.deepcopy(kwargs))
     get_storage().create_experiment(base_experiment)
 
 
 def _add_trial(**kwargs):
     """Add trials to the dummy orion instance"""
-    base_trial.update(kwargs)
+    base_trial.update(copy.deepcopy(kwargs))
     get_storage().register_trial(Trial(**base_trial))
 
 
