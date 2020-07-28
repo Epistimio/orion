@@ -1,0 +1,762 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.14: http://docutils.sourceforge.net/" />
+<title>Algorithms</title>
+<style type="text/css">
+
+/*
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 7952 2016-07-26 18:15:59Z milde $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+.subscript {
+  vertical-align: sub;
+  font-size: smaller }
+
+.superscript {
+  vertical-align: super;
+  font-size: smaller }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+object[type="image/svg+xml"], object[type="application/x-shockwave-flash"] {
+  overflow: hidden;
+}
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title, .code .error {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin: 0 0 0.5em 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left, .figure.align-left, object.align-left, table.align-left {
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
+
+img.align-right, .figure.align-right, object.align-right, table.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+img.align-center, .figure.align-center, object.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+table.align-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.align-left {
+  text-align: left }
+
+.align-center {
+  clear: both ;
+  text-align: center }
+
+.align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+div.align-right {
+  text-align: inherit }
+
+/* div.align-center * { */
+/*   text-align: left } */
+
+.align-top    {
+  vertical-align: top }
+
+.align-middle {
+  vertical-align: middle }
+
+.align-bottom {
+  vertical-align: bottom }
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font: inherit }
+
+pre.literal-block, pre.doctest-block, pre.math, pre.code {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+pre.code .ln { color: grey; } /* line numbers */
+pre.code, code { background-color: #eeeeee }
+pre.code .comment, code .comment { color: #5C6576 }
+pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
+pre.code .literal.string, code .literal.string { color: #0C5404 }
+pre.code .name.builtin, code .name.builtin { color: #352B84 }
+pre.code .deleted, code .deleted { background-color: #DEB0A1}
+pre.code .inserted, code .inserted { background-color: #A3D289}
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+/* "booktabs" style (no vertical lines) */
+table.docutils.booktabs {
+  border: 0px;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  border-collapse: collapse;
+}
+table.docutils.booktabs * {
+  border: 0px;
+}
+table.docutils.booktabs th {
+  border-bottom: thin solid;
+  text-align: left;
+}
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document" id="algorithms">
+<span id="setup-algorithms"></span>
+<h1 class="title">Algorithms</h1>
+
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#selecting-and-configuring" id="id19">Selecting and Configuring</a></li>
+<li><a class="reference internal" href="#included-algorithms" id="id20">Included Algorithms</a><ul>
+<li><a class="reference internal" href="#id2" id="id21">Random Search</a></li>
+<li><a class="reference internal" href="#hyperband" id="id22">Hyperband</a></li>
+<li><a class="reference internal" href="#id4" id="id23">ASHA</a></li>
+<li><a class="reference internal" href="#tpe" id="id24">TPE</a></li>
+<li><a class="reference internal" href="#evolution-es" id="id25">Evolution-ES</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#algorithm-plugins" id="id26">Algorithm Plugins</a><ul>
+<li><a class="reference internal" href="#bayesian-optimizer" id="id27">Bayesian Optimizer</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id14" id="id28">Parallel Strategies</a><ul>
+<li><a class="reference internal" href="#noparallelstrategy" id="id29">NoParallelStrategy</a></li>
+<li><a class="reference internal" href="#id17" id="id30">StubParallelStrategy</a></li>
+<li><a class="reference internal" href="#id18" id="id31">MaxParallelStrategy</a></li>
+<li><a class="reference internal" href="#meanparallelstrategy" id="id32">MeanParallelStrategy</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<p>Default algorithm is a random search based on the probability
+distribution given to a search parameter's definition.</p>
+<div class="section" id="selecting-and-configuring">
+<h1><a class="toc-backref" href="#id19">Selecting and Configuring</a></h1>
+<p>In a Oríon configuration YAML, define:</p>
+<pre class="code yaml literal-block">
+<span class="name tag">algorithms</span><span class="punctuation">:</span>
+  <span class="name tag">gradient_descent</span><span class="punctuation">:</span>
+    <span class="name tag">learning_rate</span><span class="punctuation">:</span> <span class="literal scalar plain">0.1</span>
+</pre>
+<p>In this particular example, the name of the algorithm extension class to be
+imported and instantiated is <tt class="docutils literal">Gradient_Descent</tt>, so the lower-case identifier
+corresponds to it.</p>
+<p>All algorithms have default arguments that should work reasonably well in general.
+To tune the algorithm for a specific problem, you can set those arguments in the
+yaml file as shown above with <tt class="docutils literal">learning_rate</tt>.</p>
+</div>
+<div class="section" id="included-algorithms">
+<h1><a class="toc-backref" href="#id20">Included Algorithms</a></h1>
+<div class="contents local topic" id="id1">
+<ul class="simple">
+<li><a class="reference internal" href="#id2" id="id33">Random Search</a></li>
+<li><a class="reference internal" href="#hyperband" id="id34">Hyperband</a></li>
+<li><a class="reference internal" href="#id4" id="id35">ASHA</a></li>
+<li><a class="reference internal" href="#tpe" id="id36">TPE</a></li>
+<li><a class="reference internal" href="#evolution-es" id="id37">Evolution-ES</a></li>
+</ul>
+</div>
+<div class="section" id="id2">
+<span id="random-search"></span><h2><a class="toc-backref" href="#id33">Random Search</a></h2>
+<p>Random search is the most simple algorithm. It samples from given priors. That's it.</p>
+<div class="section" id="configuration">
+<h3>Configuration</h3>
+<pre class="code yaml literal-block">
+<span class="name tag">algorithms</span><span class="punctuation">:</span>
+   <span class="name tag">random</span><span class="punctuation">:</span>
+      <span class="name tag">seed</span><span class="punctuation">:</span> <span class="literal scalar plain">null</span>
+</pre>
+<p><tt class="docutils literal">seed</tt></p>
+<p>Seed for the random number generator used to sample new trials. Default is <tt class="docutils literal">None</tt>.</p>
+</div>
+</div>
+<div class="section" id="hyperband">
+<span id="hyperband-algorithm"></span><h2><a class="toc-backref" href="#id34">Hyperband</a></h2>
+<p><a class="reference external" href="https://arxiv.org/abs/1603.06560">Hyperband</a> extends the <a class="reference external" href="https://arxiv.org/abs/1502.07943">SuccessiveHalving</a> algorithm by providing a way to exploit a
+fixed budget with different number of configurations for <tt class="docutils literal">SuccessiveHalving</tt> algorithm to
+evaluate. Each run of <tt class="docutils literal">SuccessiveHalving</tt> will be defined as a <tt class="docutils literal">bracket</tt> in Hyperband.
+Hyperband requires two inputs (1) <tt class="docutils literal">R</tt>, the maximum amount of resource that can be allocated
+to a single configuration, and (2) <tt class="docutils literal">eta</tt>, an input that controls the proportion of
+configurations discarded in each round of SuccessiveHalving.</p>
+<p>To use Hyperband in Oríon, you must specify one parameter with <tt class="docutils literal">fidelity(low, high, base)</tt>
+as the prior, <tt class="docutils literal">low</tt> will be ignored, <tt class="docutils literal">high</tt> will be taken as the maximum resource <tt class="docutils literal">R</tt>
+and <tt class="docutils literal">base</tt> will be taken as the reduction factor <tt class="docutils literal">eta</tt>.</p>
+<p>Number of epochs usually can be used as the resource but the algorithm is generic and can be
+applied to any multi-fidelity setting. That is, you can use training time, specifying the
+fidelity with <tt class="docutils literal"><span class="pre">--epochs~fidelity(low=1,</span> high=81, base=3)</tt>
+(assuming your script takes this argument in commandline),
+but you could also use other fidelity
+such as dataset size <tt class="docutils literal"><span class="pre">--dataset-size~fidelity(low=500,</span> high=50000)</tt>
+(assuming your script takes this argument and adapt dataset size accordingly).</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Current implementation does not support more than one fidelity dimension.</p>
+</div>
+<div class="section" id="id3">
+<h3>Configuration</h3>
+<pre class="code yaml literal-block">
+<span class="name tag">algorithms</span><span class="punctuation">:</span>
+   <span class="name tag">hyperband</span><span class="punctuation">:</span>
+      <span class="name tag">seed</span><span class="punctuation">:</span> <span class="literal scalar plain">null</span>
+      <span class="name tag">repetitions</span><span class="punctuation">:</span> <span class="literal scalar plain">1</span>
+</pre>
+<p><tt class="docutils literal">seed</tt></p>
+<p>Seed for the random number generator used to sample new trials. Default is <tt class="docutils literal">None</tt>.</p>
+<p><tt class="docutils literal">repetitions</tt></p>
+<p>Number of executions for Hyperband. A single execution of Hyperband takes a finite
+budget of <tt class="docutils literal"><span class="pre">(log(R)/log(eta)</span> + 1) * <span class="pre">(log(R)/log(eta)</span> + 1) * R</tt>, and <tt class="docutils literal">repetitions</tt> allows you
+to run multiple executions of Hyperband. Default is <tt class="docutils literal">numpy.inf</tt> which means to run Hyperband
+until no new trials can be suggested.</p>
+</div>
+</div>
+<div class="section" id="id4">
+<span id="asha"></span><h2><a class="toc-backref" href="#id35">ASHA</a></h2>
+<p><a class="reference external" href="https://arxiv.org/abs/1810.05934">Asynchronous Successive Halving Algorithm</a>, the asynchronous version of
+<a class="reference external" href="https://arxiv.org/abs/1603.06560">Hyperband</a>, can be roughly interpreted as a sophisticated random search that leverages
+partial information of the trial execution to concentrate resources on the
+most promising ones.</p>
+<p>The main idea of the algorithm is the following. Given a fidelity dimension, such as
+the number of epochs to train or the size of the dataset, ASHA samples trials
+with low-fidelity and promotes the most promising ones to the next fidelity level.
+This makes it possible to only execute one trial with full fidelity, leading
+to very optimal resource usage.</p>
+<p>The most common way of using ASHA is to reduce the number of epochs,
+but the algorithm is generic and can be applied to any multi-fidelity setting.
+That is, you can use training time, specifying the fidelity with
+<tt class="docutils literal"><span class="pre">--epochs~fidelity(low=1,</span> high=100)</tt>
+(assuming your script takes this argument in commandline),
+but you could also use other fidelity
+such as dataset size <tt class="docutils literal"><span class="pre">--dataset-size~fidelity(low=500,</span> high=50000)</tt>
+(assuming your script takes this argument and
+adapt dataset size accordingly). The placeholder <tt class="docutils literal">fidelity(low, high)</tt> is a special prior for
+multi-fidelity algorithms.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Current implementation does not support more than one fidelity dimension.</p>
+</div>
+<div class="section" id="id6">
+<h3>Configuration</h3>
+<pre class="code yaml literal-block">
+<span class="name tag">algorithms</span><span class="punctuation">:</span>
+   <span class="name tag">asha</span><span class="punctuation">:</span>
+      <span class="name tag">seed</span><span class="punctuation">:</span> <span class="literal scalar plain">null</span>
+      <span class="name tag">num_rungs</span><span class="punctuation">:</span> <span class="literal scalar plain">null</span>
+      <span class="name tag">num_brackets</span><span class="punctuation">:</span> <span class="literal scalar plain">1</span>
+
+<span class="name tag">producer</span><span class="punctuation">:</span>
+  <span class="name tag">strategy</span><span class="punctuation">:</span> <span class="literal scalar plain">StubParallelStrategy</span>
+</pre>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>Notice the additional <tt class="docutils literal">producer.strategy</tt> in configuration which is not mandatory for other
+algorithms. See <a href="#id7"><span class="problematic" id="id8">:ref:`StubParallelStrategy`</span></a> for more information.</p>
+<div class="last system-message" id="id7">
+<p class="system-message-title">System Message: ERROR/3 (<tt class="docutils">/Users/xuechao/aaa/work/gitRepo/orion_ibm/orion/docs/src/user/algorithms.rst</tt>, line 167); <em><a href="#id8">backlink</a></em></p>
+Unknown interpreted text role &quot;ref&quot;.</div>
+</div>
+<p><tt class="docutils literal">seed</tt></p>
+<p>Seed for the random number generator used to sample new trials. Default is <tt class="docutils literal">None</tt>.</p>
+<p><tt class="docutils literal">num_rungs</tt></p>
+<p>Number of rungs for the largest bracket. If not defined, it will be equal to <tt class="docutils literal">(base + 1)</tt> of the
+fidelity dimension. In the original paper,
+<tt class="docutils literal">num_rungs == log(fidelity.high/fidelity.low) / log(fidelity.base) + 1</tt>.</p>
+<p><tt class="docutils literal">num_brackets</tt></p>
+<p>Using a grace period that is too small may bias ASHA too strongly towards fast
+converging trials that do not lead to best results at convergence (stragglers).
+To overcome this, you can increase the number of brackets, which increases the amount of resources
+required for optimisation but decreases the bias towards stragglers. Default is 1.</p>
+</div>
+</div>
+<div class="section" id="tpe">
+<span id="tpe-algorithm"></span><h2><a class="toc-backref" href="#id36">TPE</a></h2>
+<p><a class="reference external" href="https://papers.nips.cc/paper/4443-algorithms-for-hyper-parameter-optimization.pdf">Tree-structured Parzen Estimator</a> (TPE) algorithm is one of Sequential Model-Based
+Global Optimization (SMBO) algorithms, which will build models to propose new points based
+on the historical observed trials.</p>
+<p>Instead of modeling p(y|x) like other SMBO algorithms, TPE models p(x|y) and p(y),
+and p(x|y) is modeled by transforming that generative process, replacing the distributions of
+the configuration prior with non-parametric densities.</p>
+<p>The TPE defines p(x|y) using two such densities l(x) and g(x) where l(x) is distribution of
+good points and g(x) is the distribution of bad points. Good and bad points are split from observed
+points so far with a parameter <cite>gamma</cite> which defines the ratio of good points. New point candidates
+will be sampled with l(x) and Expected Improvement (EI) optimization scheme will be used to find
+the most promising point among the candidates.</p>
+<div class="section" id="id9">
+<h3>Configuration</h3>
+<pre class="code yaml literal-block">
+<span class="name tag">algorithms</span><span class="punctuation">:</span>
+   <span class="name tag">tpe</span><span class="punctuation">:</span>
+      <span class="name tag">seed</span><span class="punctuation">:</span> <span class="literal scalar plain">null</span>
+      <span class="name tag">n_initial_points</span><span class="punctuation">:</span> <span class="literal scalar plain">20</span>
+      <span class="name tag">n_ei_candidates</span><span class="punctuation">:</span> <span class="literal scalar plain">25</span>
+      <span class="name tag">gamma</span><span class="punctuation">:</span> <span class="literal scalar plain">0.25</span>
+      <span class="name tag">equal_weight</span><span class="punctuation">:</span> <span class="literal scalar plain">False</span>
+      <span class="name tag">prior_weight</span><span class="punctuation">:</span> <span class="literal scalar plain">1.0</span>
+      <span class="name tag">full_weight_num</span><span class="punctuation">:</span> <span class="literal scalar plain">25</span>
+</pre>
+<p><tt class="docutils literal">seed</tt></p>
+<p>Seed to sample initial points and candidates points. Default is <tt class="docutils literal">None</tt>.</p>
+<p><tt class="docutils literal">n_initial_points</tt></p>
+<p>Number of initial points randomly sampled. Default is <tt class="docutils literal">20</tt>.</p>
+<p><tt class="docutils literal">n_ei_candidates</tt></p>
+<p>Number of candidates points sampled for ei compute. Default is <tt class="docutils literal">24</tt>.</p>
+<p><tt class="docutils literal">gamma</tt></p>
+<p>Ratio to split the observed trials into good and bad distributions. Default is <tt class="docutils literal">0.25</tt>.</p>
+<p><tt class="docutils literal">equal_weight</tt></p>
+<p>True to set equal weights for observed points. Default is <tt class="docutils literal">False</tt>.</p>
+<p><tt class="docutils literal">prior_weight</tt></p>
+<p>The weight given to the prior point of the input space. Default is <tt class="docutils literal">1.0</tt>.</p>
+<p><tt class="docutils literal">full_weight_num</tt></p>
+<p>The number of the most recent trials which get the full weight where the others will be
+applied with a linear ramp from 0 to 1.0. It will only take effect if <tt class="docutils literal">equal_weight</tt>
+is <tt class="docutils literal">False</tt>. Default is <tt class="docutils literal">25</tt>.</p>
+</div>
+</div>
+<div class="section" id="evolution-es">
+<span id="evolution-es-algorithm"></span><h2><a class="toc-backref" href="#id37">Evolution-ES</a></h2>
+<div class="system-message">
+<p class="system-message-title">System Message: WARNING/2 (<tt class="docutils">/Users/xuechao/aaa/work/gitRepo/orion_ibm/orion/docs/src/user/algorithms.rst</tt>, line 262)</p>
+<p>Title underline too short.</p>
+<pre class="literal-block">
+Evolution-ES
+----
+</pre>
+</div>
+<p><a class="reference external" href="https://arxiv.org/abs/1901.11117">Evolution-ES</a>, the evolution algorithm with early stop version. Here is an implementation of <a class="reference external" href="https://arxiv.org/abs/1901.11117">Evolution-ES</a>.
+In the evolution algorithm, we follow the tournament selection algorithm as <a class="reference external" href="https://arxiv.org/abs/1703.01041">Large-Scale-Evolution</a>.
+Tournament selection evolutionary hyper-parameter search is conducted by first defining a gene encoding
+that describes a hyper-parameter combination, and then creating the initial population by randomly
+sampling from the space of gene encodings to create individuals, which are trained and assigned fitnesses.
+The population is then repeatedly sampled from to produce groups, and the parent is selected by the individual
+with the highest fitness. Selected parents have their gene encodings mutated to produce child models.
+Individual in the group with the lowest fitness is killed, while the newly evaluated child model is added to
+the population, taking the killed individual’s place. This process is repeated and results
+in a population with high fitness individuals can represent the good hyper-parameter combination.
+<a class="reference external" href="https://arxiv.org/abs/1901.11117">Evolution-ES</a> also formulated a method to dynamically allocate resources to more promising individual
+according to their fitness, which is referred to as Progressive Dynamic Hurdles (PDH),
+allows individuals that are consistently performing well to train for more steps. It can be roughly interpreted
+as a sophisticated random search that leverages partial information of the trial execution to concentrate
+resources on the most promising ones.</p>
+<p>The implementation follows the process and use way of Hyperband. Additionally, The fidelity base in Evolution-ES can be
+extended to support <tt class="docutils literal">fidelity(low, high, base=1)</tt>, which is the same as <tt class="docutils literal">linspace(low, high)</tt>.</p>
+<div class="section" id="id11">
+<h3>Configuration</h3>
+<pre class="code yaml literal-block">
+<span class="name tag">algorithms</span><span class="punctuation">:</span>
+   <span class="name tag">EvolutionES</span><span class="punctuation">:</span>
+      <span class="name tag">seed</span><span class="punctuation">:</span> <span class="literal scalar plain">null</span>
+      <span class="name tag">repetitions</span><span class="punctuation">:</span> <span class="literal scalar plain">1</span>
+      <span class="name tag">nums_population</span><span class="punctuation">:</span> <span class="literal scalar plain">20</span>
+      <span class="name tag">mutate</span><span class="punctuation">:</span>
+          <span class="name tag">function</span><span class="punctuation">:</span> <span class="literal scalar plain">orion.algo.mutate_functions.default_mutate</span>
+          <span class="name tag">multiply_factor</span><span class="punctuation">:</span> <span class="literal scalar plain">3.0</span>
+          <span class="name tag">add_factor</span><span class="punctuation">:</span> <span class="literal scalar plain">1</span>
+</pre>
+<p><tt class="docutils literal">seed</tt></p>
+<p>Seed for the random number generator used to sample new trials. Default is <tt class="docutils literal">None</tt>.</p>
+<p><tt class="docutils literal">repetitions</tt></p>
+<p>Number of executions for Hyperband. A single execution of Hyperband takes a finite
+budget of <tt class="docutils literal"><span class="pre">(log(R)/log(eta)</span> + 1) * <span class="pre">(log(R)/log(eta)</span> + 1) * R</tt>, and <tt class="docutils literal">repetitions</tt> allows you
+to run multiple executions of Hyperband. Default is <tt class="docutils literal">numpy.inf</tt> which means to run Hyperband
+until no new trials can be suggested.</p>
+<p><tt class="docutils literal">nums_population</tt></p>
+<p>Number of population for EvolutionES. Larger number of population often gets better performance but causes more computation. So
+there is a trade-off according to the search space and required budget of your problems.</p>
+<p><tt class="docutils literal">mutate</tt></p>
+<p>In the mutate part, one can define the customized mutate function with its mutate factors,
+such as multiply factor (times/divides by a multiply factor) and add factor (add/subtract by a multiply factor). We support the
+default mutate function.</p>
+</div>
+</div>
+</div>
+<div class="section" id="algorithm-plugins">
+<h1><a class="toc-backref" href="#id26">Algorithm Plugins</a></h1>
+<div class="section" id="bayesian-optimizer">
+<span id="scikit-bayesopt"></span><h2><a class="toc-backref" href="#id27">Bayesian Optimizer</a></h2>
+<p><tt class="docutils literal">orion.algo.skopt</tt> provides a wrapper for <a class="reference external" href="https://scikit-optimize.github.io/#skopt.Optimizer">Bayesian optimizer</a> using Gaussian process implemented
+in <a class="reference external" href="https://scikit-optimize.github.io/">scikit optimize</a>.</p>
+<div class="section" id="installation">
+<h3>Installation</h3>
+<pre class="code sh literal-block">
+pip install orion.algo.skopt
+</pre>
+</div>
+<div class="section" id="id13">
+<h3>Configuration</h3>
+<pre class="code yaml literal-block">
+<span class="name tag">algorithms</span><span class="punctuation">:</span>
+   <span class="name tag">BayesianOptimizer</span><span class="punctuation">:</span>
+      <span class="name tag">seed</span><span class="punctuation">:</span> <span class="literal scalar plain">null</span>
+      <span class="name tag">n_initial_points</span><span class="punctuation">:</span> <span class="literal scalar plain">10</span>
+      <span class="name tag">acq_func</span><span class="punctuation">:</span> <span class="literal scalar plain">gp_hedge</span>
+      <span class="name tag">alpha</span><span class="punctuation">:</span> <span class="literal scalar plain">1.0e-10</span>
+      <span class="name tag">n_restarts_optimizer</span><span class="punctuation">:</span> <span class="literal scalar plain">0</span>
+      <span class="name tag">noise</span><span class="punctuation">:</span> <span class="literal string">&quot;gaussian&quot;</span>
+      <span class="name tag">normalize_y</span><span class="punctuation">:</span> <span class="literal scalar plain">False</span>
+</pre>
+<p><tt class="docutils literal">seed</tt></p>
+<p><tt class="docutils literal">n_initial_points</tt></p>
+<p>Number of evaluations of <tt class="docutils literal">func</tt> with initialization points
+before approximating it with <tt class="docutils literal">base_estimator</tt>. Points provided as
+<tt class="docutils literal">x0</tt> count as initialization points. If len(x0) &lt; n_initial_points
+additional points are sampled at random.</p>
+<p><tt class="docutils literal">acq_func</tt></p>
+<p>Function to minimize over the posterior distribution. Can be:
+<tt class="docutils literal">[&quot;LCB&quot;, &quot;EI&quot;, &quot;PI&quot;, &quot;gp_hedge&quot;, &quot;EIps&quot;, &quot;PIps&quot;]</tt>. Check skopt
+docs for details.</p>
+<p><tt class="docutils literal">alpha</tt></p>
+<p>Value added to the diagonal of the kernel matrix during fitting.
+Larger values correspond to increased noise level in the observations
+and reduce potential numerical issues during fitting. If an array is
+passed, it must have the same number of entries as the data used for
+fitting and is used as datapoint-dependent noise level. Note that this
+is equivalent to adding a WhiteKernel with c=alpha. Allowing to specify
+the noise level directly as a parameter is mainly for convenience and
+for consistency with Ridge.</p>
+<p><tt class="docutils literal">n_restarts_optimizer</tt></p>
+<p>The number of restarts of the optimizer for finding the kernel's
+parameters which maximize the log-marginal likelihood. The first run
+of the optimizer is performed from the kernel's initial parameters,
+the remaining ones (if any) from thetas sampled log-uniform randomly
+from the space of allowed theta-values. If greater than 0, all bounds
+must be finite. Note that n_restarts_optimizer == 0 implies that one
+run is performed.</p>
+<p><tt class="docutils literal">noise</tt></p>
+<p>If set to &quot;gaussian&quot;, then it is assumed that y is a noisy estimate of f(x) where the
+noise is gaussian.</p>
+<p><tt class="docutils literal">normalize_y</tt></p>
+<p>Whether the target values y are normalized, i.e., the mean of the
+observed target values become zero. This parameter should be set to
+True if the target values' mean is expected to differ considerable from
+zero. When enabled, the normalization effectively modifies the GP's
+prior based on the data, which contradicts the likelihood principle;
+normalization is thus disabled per default.</p>
+</div>
+</div>
+</div>
+<div class="section" id="id14">
+<span id="parallel-strategies"></span><h1><a class="toc-backref" href="#id28">Parallel Strategies</a></h1>
+<p>A parallel strategy is a method to improve parallel optimization
+for sequential algorithms. Such algorithms can only observe
+trials that are completed and have a corresponding objective.
+To get around this, parallel strategies produces <em>lies</em>,
+noncompleted trials with fake objectives, which are then
+passed to a temporary copy of the algorithm that will suggest
+a new point. The temporary algorithm is then discarded.
+The original algorithm never obverses lies, and
+the temporary copy always observes lies that are based on
+most up-to-date data.
+The strategies will differ in how they assign objectives
+to the <em>lies</em>.</p>
+<p>By default, the strategy used is <a href="#id15"><span class="problematic" id="id16">:ref:`MaxParallelStrategy`</span></a></p>
+<div class="system-message" id="id15">
+<p class="system-message-title">System Message: ERROR/3 (<tt class="docutils">/Users/xuechao/aaa/work/gitRepo/orion_ibm/orion/docs/src/user/algorithms.rst</tt>, line 429); <em><a href="#id16">backlink</a></em></p>
+Unknown interpreted text role &quot;ref&quot;.</div>
+<div class="section" id="noparallelstrategy">
+<h2><a class="toc-backref" href="#id29">NoParallelStrategy</a></h2>
+<p>Does not return any lie. This is useful to benchmark parallel
+strategies and measure how they can help compared to no
+strategy.</p>
+</div>
+<div class="section" id="id17">
+<span id="stubparallelstrategy"></span><h2><a class="toc-backref" href="#id30">StubParallelStrategy</a></h2>
+<p>Assign to <em>lies</em> an objective of <tt class="docutils literal">None</tt> so that
+non-completed trials are observed and identifiable by algorithms
+that can leverage parallel optimization.</p>
+<p>The value of the objective is customizable with <tt class="docutils literal">stub_value</tt>.</p>
+<pre class="code yaml literal-block">
+<span class="name tag">producer</span><span class="punctuation">:</span>
+  <span class="name tag">strategy</span><span class="punctuation">:</span>
+     <span class="name tag">StubParallelStrategy</span><span class="punctuation">:</span>
+        <span class="name tag">stub_value</span><span class="punctuation">:</span> <span class="literal string">'custom</span><span class="name variable"> </span><span class="literal string">value'</span>
+</pre>
+</div>
+<div class="section" id="id18">
+<span id="maxparallelstrategy"></span><h2><a class="toc-backref" href="#id31">MaxParallelStrategy</a></h2>
+<p>Assigns to <em>lies</em> the best objective observed so far.</p>
+<p>The default value assigned to objective when less than 1 trial
+is completed is configurable with <tt class="docutils literal">default_result</tt>. It
+is <tt class="docutils literal"><span class="pre">float('inf')</span></tt> by default.</p>
+<pre class="code yaml literal-block">
+<span class="name tag">producer</span><span class="punctuation">:</span>
+  <span class="name tag">strategy</span><span class="punctuation">:</span>
+     <span class="name tag">MaxParallelStrategy</span><span class="punctuation">:</span>
+        <span class="name tag">default_result</span><span class="punctuation">:</span> <span class="literal scalar plain">10000</span>
+</pre>
+</div>
+<div class="section" id="meanparallelstrategy">
+<h2><a class="toc-backref" href="#id32">MeanParallelStrategy</a></h2>
+<p>Assigns to <em>lies</em> the mean of all objectives observed so far.</p>
+<p>The default value assigned to objective when less than 2 trials
+are completed is configurable with <tt class="docutils literal">default_result</tt>. It
+is <tt class="docutils literal"><span class="pre">float('inf')</span></tt> by default.</p>
+<pre class="code yaml literal-block">
+<span class="name tag">producer</span><span class="punctuation">:</span>
+  <span class="name tag">strategy</span><span class="punctuation">:</span>
+     <span class="name tag">MeanParallelStrategy</span><span class="punctuation">:</span>
+        <span class="name tag">default_result</span><span class="punctuation">:</span> <span class="literal scalar plain">0.5</span>
+</pre>
+</div>
+</div>
+</div>
+</body>
+</html>
