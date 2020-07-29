@@ -49,9 +49,6 @@ class ExperimentsResource(object):
             version = int(req.params['version']) if 'version' in req.params else None
             experiment = experiment_builder.build_view(name, version)
 
-            import pprint
-            pprint.pprint(experiment.stats)
-
             response = {
                 "name": experiment.name,
                 "version": experiment.version,
