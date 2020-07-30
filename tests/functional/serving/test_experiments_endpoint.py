@@ -165,14 +165,14 @@ class TestItem:
         response = client.simulate_get('/experiments/a?unknown=true')
 
         assert response.status == expected_status
-        assert response.json == expected_body
+        assert response.json['message'] == expected_body
 
         _add_experiment(name='a', version=1, _id=1)
 
         response = client.simulate_get('/experiments/a?unknown=true')
 
         assert response.status == expected_status
-        assert response.json == expected_body
+        assert response.json['message'] == expected_body
 
 
 def _add_experiment(**kwargs):

@@ -77,7 +77,11 @@ class ExperimentsResource(object):
             resp.status = falcon.HTTP_404
 
         except ValueError as exception:
-            resp.body = json.dumps(str(exception))
+            response = {
+                "message": str(exception)
+            }
+
+            resp.body = json.dumps(response)
             resp.status = falcon.HTTP_400
 
 
