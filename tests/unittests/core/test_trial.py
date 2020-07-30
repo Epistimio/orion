@@ -208,6 +208,40 @@ class TestTrial(object):
         assert t.gradient.value == [5, 3]
         tmp = exp_config[1][1]['results'].pop()
 
+    def test_constraints_property(self, exp_config):
+        """Tests the property for accessing constraints"""
+        # 0 result of type 'constraints' exist
+        tmp = exp_config[1][1]['results'].pop(1)
+        t = Trial(**exp_config[1][1])
+        assert t.constraints == []
+        exp_config[1][1]['results'].append(tmp)
+
+        # 1 result of type 'constraint' exist
+        expected = [
+            Trial.Result(name='contra', type='constraint', value=1.2)
+        ]
+
+        trial = Trial(**exp_config[1][1])
+
+        assert expected == trial.constraints
+
+        # > 1 results of type 'constraint' exist
+        expected = [
+            Trial.Result(name='contra', type='constraint', value=1.2),
+            Trial.Result(name='a', type='constraint', value=5),
+            Trial.Result(name='b', type='constraint', value=20)
+        ]
+
+        exp_config[1][1]['results'].append(dict(name='a',
+                                                type='constraint',
+                                                value=5))
+        exp_config[1][1]['results'].append(dict(name='b',
+                                                type='constraint',
+                                                value=20))
+        trial = Trial(**exp_config[1][1])
+
+        assert expected == trial.constraints
+
     def test_params_repr_property(self, exp_config):
         """Check property `Trial.params_repr`."""
         t = Trial(**exp_config[1][1])
