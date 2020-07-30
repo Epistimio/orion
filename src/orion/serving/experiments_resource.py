@@ -15,6 +15,7 @@ import falcon.status_codes
 from orion.core.io import experiment_builder
 from orion.core.utils.exceptions import NoConfigurationError
 from orion.core.worker.experiment import Experiment
+from orion.serving.parameters import verify_query_parameters
 from orion.storage.base import get_storage
 
 
@@ -43,7 +44,7 @@ class ExperimentsResource(object):
         Handle GET requests for experiments/:name where `name` is
         the user-defined name of the experiment
         """
-        error_message = _verify_experiment_parameters(req.params)
+        error_message = verify_query_parameters(req.params, {'version': 'int'})
         if error_message:
             response = {
                 "message": error_message
@@ -136,26 +137,3 @@ def _retrieve_best_trial(experiment: Experiment) -> dict:
               }
 
     return result
-
-
-def _verify_experiment_parameters(params: dict):
-    """
-    Verifies that the parameters from the query string are supported.
-
-    Parameters
-    ----------
-    params:
-        A dictionary of (parameter:value)
-
-    Returns
-    -------
-    An error message if one of the parameter is unsupported. 'None' otherwise.
-    """
-    supported_parameter = 'version'
-    error_message = "Parameter '{}' is not supported. Expected parameter '{}'."
-
-    for key in params:
-        if key != supported_parameter:
-            return error_message.format(key, supported_parameter)
-
-    return None
