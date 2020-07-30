@@ -67,14 +67,15 @@ class ExperimentsResource(object):
                 "bestTrial": _retrieve_best_trial(experiment)
             }
 
-            resp.body = json.dumps(response, indent=4)
+            resp.body = json.dumps(response)
 
         except NoConfigurationError:
             response = {
                 "message": f"Experiment '{name}' does not exist"
             }
+
             resp.status = falcon.HTTP_404
-            resp.body = json.dumps(response, indent=4)
+            resp.body = json.dumps(response)
 
         except ValueError as exception:
             response = {
