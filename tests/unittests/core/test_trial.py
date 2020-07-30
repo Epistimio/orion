@@ -242,6 +242,38 @@ class TestTrial(object):
 
         assert expected == trial.constraints
 
+    def test_statistics_property(self, exp_config):
+        """Tests the property for accessing statistics"""
+        # 0 result of type 'statistic' exist
+        t = Trial(**exp_config[1][1])
+        assert t.statistics == []
+
+        # 1 result of type 'statistic' exist
+        expected = [
+            Trial.Result(name='a', type='statistic', value=5),
+        ]
+
+        exp_config[1][1]['results'].append(dict(name='a',
+                                                type='statistic',
+                                                value=5))
+
+        trial = Trial(**exp_config[1][1])
+
+        assert expected == trial.statistics
+
+        # > 1 results of type 'statistic' exist
+        expected = [
+            Trial.Result(name='a', type='statistic', value=5),
+            Trial.Result(name='b', type='statistic', value=20)
+        ]
+
+        exp_config[1][1]['results'].append(dict(name='b',
+                                                type='statistic',
+                                                value=20))
+        trial = Trial(**exp_config[1][1])
+
+        assert expected == trial.statistics
+
     def test_params_repr_property(self, exp_config):
         """Check property `Trial.params_repr`."""
         t = Trial(**exp_config[1][1])

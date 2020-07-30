@@ -310,6 +310,18 @@ class Trial:
         """
         return self._fetch_results('constraint')
 
+
+    @property
+    def statistics(self):
+        """
+        Return this trial's statistics
+
+        Returns
+        -------
+        A list of ``Trial.Result`` de type 'statistic'
+        """
+        return self._fetch_results('statistic')
+
     @property
     def hash_name(self):
         """Generate a unique name with an md5sum hash for this `Trial`.
