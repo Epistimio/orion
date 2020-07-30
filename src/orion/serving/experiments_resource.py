@@ -73,16 +73,16 @@ class ExperimentsResource(object):
             response = {
                 "message": f"Experiment '{name}' does not exist"
             }
-            resp.body = json.dumps(response, indent=4)
             resp.status = falcon.HTTP_404
+            resp.body = json.dumps(response, indent=4)
 
         except ValueError as exception:
             response = {
                 "message": str(exception)
             }
 
-            resp.body = json.dumps(response)
             resp.status = falcon.HTTP_400
+            resp.body = json.dumps(response)
 
 
 def _find_latest_versions(experiments):
