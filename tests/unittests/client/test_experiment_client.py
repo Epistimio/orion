@@ -11,9 +11,9 @@ import pytest
 import orion.core
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import BrokenExperiment, SampleTimeout
-from orion.core.utils.tests import create_experiment
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
+from orion.testing import create_experiment
 
 config = dict(
     name='supernaekei',

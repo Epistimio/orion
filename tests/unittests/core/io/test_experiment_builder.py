@@ -14,9 +14,10 @@ from orion.core.io.database.pickleddb import PickledDB
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
-from orion.core.utils.tests import OrionState, update_singletons
+from orion.core.utils.singleton import update_singletons
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
+from orion.testing import OrionState
 
 
 def count_experiments():

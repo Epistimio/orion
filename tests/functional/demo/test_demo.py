@@ -14,10 +14,10 @@ import yaml
 import orion.core.cli
 from orion.core.io.database.ephemeraldb import EphemeralDB
 import orion.core.io.experiment_builder as experiment_builder
-from orion.core.utils.tests import OrionState
 from orion.core.worker import workon
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
+from orion.testing import OrionState
 
 
 @pytest.mark.usefixtures("clean_db")

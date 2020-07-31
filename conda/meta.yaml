@@ -39,6 +39,7 @@ test:
     - orion.client
     - orion.storage
     - orion.serving
+    - orion.testing
   commands:
     - orion --help
 
