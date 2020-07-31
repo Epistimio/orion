@@ -81,8 +81,8 @@ class TestCollection:
         ]
 
         _add_experiment(name='a', version=1, _id=1)
-        _add_experiment(name='a', version=3, _id=3)
-        _add_experiment(name='a', version=2, _id=2)
+        _add_experiment(name='a', version=3, _id=2)
+        _add_experiment(name='a', version=2, _id=3)
         _add_experiment(name='b', version=1, _id=4)
 
         response = client.simulate_get('/experiments')
@@ -135,8 +135,8 @@ class TestItem:
     def test_default_is_latest_version(self, client):
         """Tests that the latest experiment is returned when no version parameter exists"""
         _add_experiment(name='a', version=1, _id=1)
-        _add_experiment(name='a', version=3, _id=3)
-        _add_experiment(name='a', version=2, _id=2)
+        _add_experiment(name='a', version=3, _id=2)
+        _add_experiment(name='a', version=2, _id=3)
 
         response = client.simulate_get('/experiments/a')
 
