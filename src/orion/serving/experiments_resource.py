@@ -43,9 +43,16 @@ class ExperimentsResource(object):
         Handle GET requests for experiments/:name where `name` is
         the user-defined name of the experiment
         """
-        try:
-            _verify_experiment_parameters(req.params)
+        error_message = _verify_experiment_parameters(req.params)
+        if error_message:
+            response = {
+                "message": error_message
+            }
+            resp.status = falcon.HTTP_400
+            resp.body = json.dumps(response)
+            return
 
+        try:
             version = int(req.params['version']) if 'version' in req.params else None
             experiment = experiment_builder.build_view(name, version)
 
@@ -75,14 +82,6 @@ class ExperimentsResource(object):
             }
 
             resp.status = falcon.HTTP_404
-            resp.body = json.dumps(response)
-
-        except ValueError as exception:
-            response = {
-                "message": str(exception)
-            }
-
-            resp.status = falcon.HTTP_400
             resp.body = json.dumps(response)
 
 
@@ -148,14 +147,15 @@ def _verify_experiment_parameters(params: dict):
     params:
         A dictionary of (parameter:value)
 
-    Raises
-    ------
-    ValueError
-        When an unsupported parameter is found
+    Returns
+    -------
+    An error message if one of the parameter is unsupported. 'None' otherwise.
     """
     supported_parameter = 'version'
     error_message = "Parameter '{}' is not supported. Expected parameter '{}'."
 
     for key in params:
         if key != supported_parameter:
-            raise ValueError(error_message.format(key, supported_parameter))
+            return error_message.format(key, supported_parameter)
+
+    return None
