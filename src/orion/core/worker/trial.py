@@ -310,7 +310,6 @@ class Trial:
         """
         return self._fetch_results('constraint', self.results)
 
-
     @property
     def statistics(self):
         """
