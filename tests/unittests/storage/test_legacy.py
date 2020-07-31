@@ -10,13 +10,13 @@ import pytest
 
 from orion.core.io.database import Database
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils import SingletonAlreadyInstantiatedError, SingletonNotInstantiatedError
 from orion.core.utils.exceptions import MissingResultFile
-from orion.core.utils.tests import OrionState, update_singletons
+from orion.core.utils.singleton import SingletonAlreadyInstantiatedError, \
+    SingletonNotInstantiatedError, update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import FailedUpdate
 from orion.storage.legacy import get_database, setup_database
-
+from orion.testing import OrionState
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.WARNING)

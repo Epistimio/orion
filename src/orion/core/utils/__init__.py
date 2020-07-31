@@ -17,64 +17,15 @@ import os
 
 import pkg_resources
 
-
 log = logging.getLogger(__name__)
 
 
-# Define type of arbitrary nested defaultdicts
 def nesteddict():
-    """Extend defaultdict to arbitrary nested levels."""
+    """
+    Define type of arbitrary nested defaultdicts
+    Extend defaultdict to arbitrary nested levels.
+    """
     return defaultdict(nesteddict)
-
-
-class SingletonAlreadyInstantiatedError(ValueError):
-    """Exception to be raised when someone provides arguments to build
-    an object from a already-instantiated `SingletonType` class.
-    """
-
-    def __init__(self, name):
-        """Pass the same constant message to ValueError underneath."""
-        super().__init__("A singleton instance of (type: {}) has already been instantiated."
-                         .format(name))
-
-
-class SingletonNotInstantiatedError(TypeError):
-    """Exception to be raised when someone try to access an instance
-    of a singleton that has not been instantiated yet
-    """
-
-    def __init__(self, name):
-        """Pass the same constant message to TypeError underneath."""
-        super().__init__('No singleton instance of (type: {}) was created'
-                         .format(name))
-
-
-class SingletonType(type):
-    """Metaclass that implements the singleton pattern for a Python class."""
-
-    def __init__(cls, name, bases, dictionary):
-        """Create a class instance variable and initiate it to None object."""
-        super(SingletonType, cls).__init__(name, bases, dictionary)
-        cls.instance = None
-
-    def __call__(cls, *args, **kwargs):
-        """Create an object if does not already exist, otherwise return what there is."""
-        if cls.instance is None:
-            try:
-                cls.instance = super(SingletonType, cls).__call__(*args, **kwargs)
-            except TypeError as exception:
-                raise SingletonNotInstantiatedError(cls.__name__) from exception
-
-        elif args or kwargs:
-            raise SingletonAlreadyInstantiatedError(cls.__name__)
-
-        return cls.instance
-
-
-class AbstractSingletonType(SingletonType, ABCMeta):
-    """This will create singleton base classes, that need to be subclassed and implemented."""
-
-    pass
 
 
 class Factory(ABCMeta):
@@ -157,9 +108,3 @@ class Factory(ABCMeta):
         error += "\nCurrently, there is an implementation for types:\n"
         error += str(cls.typenames)
         raise NotImplementedError(error)
-
-
-class SingletonFactory(AbstractSingletonType, Factory):
-    """Wrapping `Factory` with `SingletonType`. Keep compatibility with `AbstractSingletonType`."""
-
-    pass

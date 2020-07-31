@@ -1,9 +1,8 @@
 """Collection of tests for :mod:`orion.plotting.orion.plotting.PlotAccessor`."""
 import pytest
 
-from orion.core.utils.tests import create_experiment
 from orion.plotting.base import PlotAccessor
-
+from orion.testing import create_experiment
 
 config = dict(
     name='experiment-name',
