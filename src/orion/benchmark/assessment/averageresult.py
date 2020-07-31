@@ -2,11 +2,13 @@ import importlib
 from orion.benchmark.base import BaseAssess
 from tabulate import tabulate
 from orion.benchmark import Benchmark
+import pandas as pd
+import plotly.express as px
 
 
 class AverageResult(BaseAssess):
 
-    def __init__(self, algorithms, task, benchmark, average_num=10):
+    def __init__(self, algorithms, task, benchmark, average_num=2):
         """
         - build assess object
         - build task object (from db[existing], or from config[new])
@@ -119,6 +121,7 @@ class AverageResult(BaseAssess):
 
         algorithm_tasks = {}
         best_evals = {}
+        algorithm_exp_trials = {}
         for algo_index, algorithm in enumerate(self.algorithms):
 
             if isinstance(algorithm, dict):
@@ -130,6 +133,7 @@ class AverageResult(BaseAssess):
                           'Assessment': self.__class__.__name__, 'Task': self.task_class.__name__}
             algorithm_tasks[algorithm_name] = task_state
             best_evals[algorithm_name] = []
+            algorithm_exp_trials[algorithm_name] = []
 
         for task_info in self.tasks:
 
@@ -139,6 +143,11 @@ class AverageResult(BaseAssess):
             for exp in experiments:
                 stats = exp.stats
                 best_evals[algorithm_name].append(stats['best_evaluation'])
+
+                trials = list(filter(lambda trial: trial.status == 'completed', exp.fetch_trials()))
+                df = self._build_frame(trials, algorithm_name)
+
+                algorithm_exp_trials[algorithm_name].append(df)
 
         for algo, evals in best_evals.items():
             evals.sort()
@@ -154,6 +163,34 @@ class AverageResult(BaseAssess):
         else:
             table = tabulate(list(algorithm_tasks.values()), headers='keys', tablefmt='grid', stralign='center', numalign='center')
             print(table)
+
+        plot_tables = []
+        for algo, trials in algorithm_exp_trials.items():
+            df = pd.concat(trials).groupby(['seq']).mean()
+            df['algorithm'] = algo
+            plot_tables.append(df)
+
+        df = pd.concat(plot_tables)
+        title = 'Assessment {} over Task {}'.format(self.__class__.__name__, self.task_class.__name__)
+        fig = px.line(df, y='objective', color='algorithm', title=title)
+        fig.show()
+
+    def _build_frame(self, trials, algorithm, order_by='suggested'):
+        """Builds the dataframe for the plot"""
+
+        data = [(trial.status,
+                trial.submit_time,
+                trial.objective.value) for trial in trials]
+
+        df = pd.DataFrame(data, columns=['status', 'suggested', 'objective'])
+
+        df = df.sort_values(order_by)
+
+        del df['status']
+        del df['suggested']
+
+        df.index.name = 'seq'
+        return df
 
     def register(self):
         """
