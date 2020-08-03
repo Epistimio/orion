@@ -21,14 +21,8 @@ def default_mutate(search_space, old_value, **kwargs):
     multiply_factor = kwargs.pop('multiply_factor', 3.0)
     add_factor = kwargs.pop('add_factor', 1)
     volatility = kwargs.pop('volatility', 0.001)
-    lower_bound = -np.inf
-    upper_bound = np.inf
     if search_space.type == "real":
-        if search_space.prior.name == "uniform" or \
-           search_space.prior.name == "loguniform":
-            lower_bound = search_space.prior.a
-            upper_bound = search_space.prior.b
-
+        lower_bound, upper_bound = search_space.interval()
         factors = (1.0 / multiply_factor + (multiply_factor - 1.0 / multiply_factor) *
                    np.random.random())
         if lower_bound <= old_value * factors <= upper_bound:
@@ -38,11 +32,7 @@ def default_mutate(search_space, old_value, **kwargs):
         else:
             new_value = upper_bound - volatility * np.random.random()
     elif search_space.type == "integer":
-        if search_space.prior.name == "uniform" or \
-           search_space.prior.name == "loguniform":
-            lower_bound = search_space.prior.a
-            upper_bound = search_space.prior.b
-
+        lower_bound, upper_bound = search_space.interval()
         factors = int(add_factor * (2 * np.random.randint(2) - 1))
         if lower_bound <= old_value + factors <= upper_bound:
             new_value = int(old_value) + factors

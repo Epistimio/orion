@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.evolution_es`."""
 
+import copy
 import hashlib
-import importlib
 
 import numpy as np
 import pytest
@@ -23,7 +23,17 @@ def space():
 
 @pytest.fixture
 def space1():
-    """Create a Space with a real dimension and a fidelity value."""
+    """Create a Space with two real dimensions and a fidelity value."""
+    space = Space()
+    space.register(Real('lr', 'uniform', 0, 1))
+    space.register(Real('weight_decay', 'uniform', 0, 1))
+    space.register(Fidelity('epoch', 1, 8, 2))
+    return space
+
+
+@pytest.fixture
+def space2():
+    """Create a Space with two real dimensions."""
     space = Space()
     space.register(Real('lr', 'uniform', 0, 1))
     space.register(Real('weight_decay', 'uniform', 0, 1))
@@ -37,15 +47,15 @@ def budgets():
 
 
 @pytest.fixture
-def evolution(space):
+def evolution(space1):
     """Return an instance of EvolutionES."""
-    return EvolutionES(space, repetitions=1)
+    return EvolutionES(space1, repetitions=1, nums_population=4)
 
 
 @pytest.fixture
-def bracket(budgets, evolution, space):
+def bracket(budgets, evolution, space1):
     """Return a `Bracket` instance configured with `b_config`."""
-    return BracketEVES(evolution, budgets, 1, space)
+    return BracketEVES(evolution, budgets, 1, space1)
 
 
 @pytest.fixture
@@ -72,7 +82,7 @@ def rung_1(rung_0):
 
 @pytest.fixture
 def rung_2(rung_1):
-    """Create fake points and objectives for rung 1."""
+    """Create fake points and objectives for rung 2."""
     values = map(lambda v: (v[0], (9, v[0])), list(sorted(rung_1['results'].values()))[:1])
     return dict(
         n_trials=1,
@@ -81,45 +91,35 @@ def rung_2(rung_1):
                  for value in values})
 
 
+@pytest.fixture
+def rung_3():
+    """Create fake points and objectives for rung 3."""
+    points = np.linspace(1, 4, 4)
+    return dict(
+        n_trials=4,
+        resources=1,
+        results={hashlib.md5(str([point]).encode('utf-8')).hexdigest():
+                 (point, (np.power(2, (point - 1)), 1.0 / point, 1.0 / (point * point)))
+                 for point in points})
+
+
+@pytest.fixture
+def rung_4():
+    """Create duplicated fake points and objectives for rung 4."""
+    points = np.linspace(1, 4, 4)
+    return dict(
+        n_trials=4,
+        resources=1,
+        results={hashlib.md5(str([point]).encode('utf-8')).hexdigest():
+                 (point, (1, point // 2, point // 2))
+                 for point in points})
+
+
 def test_compute_budgets():
     """Verify proper computation of budgets on a logarithmic scale"""
     # Check typical values
     assert compute_budgets(1, 3, 1, 2, 1) == [[(2, 1), (2, 2), (2, 3)]]
     assert compute_budgets(1, 4, 2, 4, 2) == [[(4, 1), (4, 2), (4, 4)]]
-
-
-def test_get_mutated_candidates(space1):
-    """Verify mutated candidates is generated correctly"""
-    org_data = [(1 / 2.0, 2.0), (1 / 8.0, 8.0), (1 / 5.0, 5.0), (1 / 4.0, 4.0)]
-    mutated_data = []
-
-    red_team = [(2.0, (0.5, 2.0)), (8.0, (0.13, 8.0))]
-    blue_team = [(5.0, (0.2, 5.0)), (4.0, (0.25, 4.0))]
-
-    for i, _ in enumerate(red_team):
-        winner, loser = ((red_team, blue_team)
-                         if red_team[i][0] < blue_team[i][0]
-                         else (blue_team, red_team))
-
-        mutated_data.append(winner[i][1])
-        select_genes_key = i
-        old = winner[i][1][select_genes_key]
-        mod = importlib.import_module("orion.algo.mutate_functions")
-        mutate_func = getattr(mod, "default_mutate")
-        search_space = space1.values()[select_genes_key]
-        new = mutate_func(search_space, old)
-        if select_genes_key == 0:
-            mutated_data.append((new, winner[i][1][1]))
-        elif select_genes_key == 1:
-            mutated_data.append((winner[i][1][0], new))
-
-    assert len(mutated_data) == len(org_data)
-    assert mutated_data[0] == org_data[0]
-    assert mutated_data[2] == org_data[3]
-    assert mutated_data[1][0] != org_data[0][0]
-    assert mutated_data[1][1] == org_data[0][1]
-    assert mutated_data[3][0] == org_data[3][0]
-    assert mutated_data[3][1] != org_data[3][1]
 
 
 def customized_mutate_example(search_space, old_value, **kwargs):
@@ -133,8 +133,8 @@ def customized_mutate_example(search_space, old_value, **kwargs):
     return new_value
 
 
-def test_customized_mutate_func(space1):
-    """Verify mutated candidates is generated correctly"""
+def test_customized_mutate_func(space2):
+    """Verify customized mutate function works correctly"""
     org_data = [(1 / 2.0, 2.0), (1 / 8.0, 8.0), (1 / 5.0, 5.0), (1 / 4.0, 4.0)]
     mutated_data = []
 
@@ -149,7 +149,7 @@ def test_customized_mutate_func(space1):
         mutated_data.append(winner[i][1])
         select_genes_key = i
         old = winner[i][1][select_genes_key]
-        search_space = space1.values()[select_genes_key]
+        search_space = space2.values()[select_genes_key]
         new = customized_mutate_example(search_space, old)
         if select_genes_key == 0:
             mutated_data.append((new, winner[i][1][1]))
@@ -163,61 +163,6 @@ def test_customized_mutate_func(space1):
     assert mutated_data[1][1] == org_data[0][1]
     assert mutated_data[3][0] == org_data[3][0]
     assert mutated_data[3][1] == org_data[3][1] / 2.0
-
-
-def unchange_mutate(search_space, old_value, **kwargs):
-    """Define an unchanged mutate example"""
-    return old_value
-
-
-def test_unchanged_mutate_cases(space1):
-    """Verify mutated candidates is generated correctly"""
-    org_data = [(1 / 2.0, 2.0), (1 / 8.0, 8.0), (1 / 5.0, 5.0), (1 / 4.0, 4.0)]
-    mutated_data = []
-
-    red_team = [(2.0, (0.5, 2.0)), (8.0, (0.13, 8.0))]
-    blue_team = [(5.0, (0.2, 5.0)), (4.0, (0.25, 4.0))]
-
-    for i, _ in enumerate(red_team):
-        winner, loser = ((red_team, blue_team)
-                         if red_team[i][0] < blue_team[i][0]
-                         else (blue_team, red_team))
-
-        mutated_data.append(winner[i][1])
-        select_genes_key = i
-        old = winner[i][1][select_genes_key]
-        search_space = space1.values()[select_genes_key]
-        new = unchange_mutate(search_space, old)
-        if select_genes_key == 0:
-            mutated_data.append((new, winner[i][1][1]))
-        elif select_genes_key == 1:
-            mutated_data.append((winner[i][1][0], new))
-
-    points = []
-    for i in range(len(org_data)):
-        point = [0] * 2
-        point[0] = mutated_data[i][0]
-        point[1] = mutated_data[i][1]
-        nums_all_equal = 0
-        while True:
-            if tuple(point) in points:
-                nums_all_equal += 1
-                print("find equal one, continue to mutate.")
-                select_genes_key = 0
-                old = point[select_genes_key]
-                search_space = space1.values()[select_genes_key]
-                new = unchange_mutate(search_space, old)
-                point[select_genes_key] = new
-            else:
-                break
-            if nums_all_equal > 10:
-                print("Can not Evolve any more, you can make an early stop.")
-                break
-
-        points.append(tuple(point))
-
-    assert nums_all_equal == 11
-    assert points == mutated_data
 
 
 class TestEvolutionES():
@@ -237,3 +182,83 @@ class TestEvolutionES():
         assert len(bracket.rungs[0])
         assert point_hash in bracket.rungs[0]['results']
         assert (0.0, point) == bracket.rungs[0]['results'][point_hash]
+
+
+class TestBracketEVES():
+    """Tests for `BracketEVES` class.."""
+
+    def test_get_teams(self, bracket, rung_3):
+        """Test that correct team is promoted."""
+        bracket.rungs[0] = rung_3
+        rung, population_range, red_team, blue_team = bracket._get_teams(0)
+        assert len(list(rung.values())) == 4
+        assert bracket.search_space_remove_fidelity == [1, 2]
+        assert population_range == 4
+        assert set(red_team).union(set(blue_team)) == {0, 1, 2, 3}
+        assert set(red_team).intersection(set(blue_team)) == set()
+
+    def test_get_mutated_population(self, bracket, rung_3):
+        """Verify mutated candidates is generated correctly."""
+        red_team = [0, 2]
+        blue_team = [1, 3]
+        for i in range(4):
+            for j in [1, 2]:
+                bracket.eves.population[j][i] = list(rung_3["results"].values())[i][1][j]
+            bracket.eves.performance[i] = list(rung_3["results"].values())[i][0]
+
+        org_data = np.stack((list(bracket.eves.population.values())[0],
+                             list(bracket.eves.population.values())[1]), axis=0).T
+
+        org_data = copy.deepcopy(org_data)
+
+        bracket._get_mutated_population(red_team, blue_team)
+
+        mutated_data = np.stack((list(bracket.eves.population.values())[0],
+                                 list(bracket.eves.population.values())[1]), axis=0).T
+
+        assert org_data.shape == mutated_data.shape
+        assert (mutated_data[0] == org_data[0]).all()
+        assert (mutated_data[2] == org_data[2]).all()
+        assert (mutated_data[1] != org_data[1]).any()
+        assert (mutated_data[3] != org_data[3]).any()
+        assert (mutated_data[1] != org_data[0]).any()
+        assert (mutated_data[3] != org_data[2]).any()
+
+        if mutated_data[1][0] != org_data[0][0]:
+            assert mutated_data[1][1] == org_data[0][1]
+        else:
+            assert mutated_data[1][1] != org_data[2][1]
+
+        if mutated_data[3][0] != org_data[2][0]:
+            assert mutated_data[3][1] == org_data[2][1]
+        else:
+            assert mutated_data[3][1] != org_data[2][1]
+
+    def test_duplicated_mutated_population(self, bracket, rung_4):
+        """Verify duplicated candidates can be found and processed correctly."""
+        population_range = 4
+        for i in range(4):
+            for j in [1, 2]:
+                bracket.eves.population[j][i] = list(rung_4["results"].values())[i][1][j]
+        points, nums_all_equal = bracket._get_mutated_points(rung_4["results"], population_range)
+
+        if points[1][1] != points[2][1]:
+            assert points[1][2] == points[2][2]
+        else:
+            assert points[1][2] != points[2][2]
+
+        assert nums_all_equal[0] == 0
+        assert nums_all_equal[1] == 0
+        assert nums_all_equal[2] == 1
+        assert nums_all_equal[3] == 0
+
+    def test_get_mutated_points(self, bracket, rung_3):
+        """Test that correct point is promoted."""
+        population_range = 4
+        for i in range(4):
+            for j in [1, 2]:
+                bracket.eves.population[j][i] = list(rung_3["results"].values())[i][1][j]
+        points, nums_all_equal = bracket._get_mutated_points(rung_3["results"], population_range)
+        assert points[0] == (1.0, 1.0, 1.0)
+        assert points[1] == (2, 1.0 / 2, 1.0 / 4)
+        assert (nums_all_equal == 0).all()

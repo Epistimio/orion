@@ -167,8 +167,8 @@ class BracketEVES(Bracket):
             if not i == self.eves.fidelity_index:
                 self.search_space_remove_fidelity.append(i)
 
-    def get_candidates(self, rung_id):
-        """Get a candidate for promotion"""
+    def _get_teams(self, rung_id):
+        """Get the red team and blue team"""
         if self.has_rung_filled(rung_id + 1):
             return []
 
@@ -190,6 +190,10 @@ class BracketEVES(Bracket):
         blue_team = self.eves.rng.choice(diff_list, self.eves.nums_comp_pairs,
                                          replace=False)
 
+        return rung, population_range, red_team, blue_team
+
+    def _get_mutated_population(self, red_team, blue_team):
+        """Get the mutated population and hurdles"""
         winner_list = []
         loser_list = []
 
@@ -210,10 +214,12 @@ class BracketEVES(Bracket):
 
         logger.debug('Evolution hurdles are: %s', str(self.eves.hurdles))
 
+    def _get_mutated_points(self, rung, population_range):
+        """Get points for promotion"""
         points = []
+        nums_all_equal = [0] * population_range
         for i in range(population_range):
             point = [0] * len(self.space)
-            nums_all_equal = 0
             while True:
                 point[self.eves.fidelity_index] = \
                     list(rung.values())[i][1][self.eves.fidelity_index]
@@ -222,12 +228,12 @@ class BracketEVES(Bracket):
                     point[j] = self.eves.population[j][i]
 
                 if tuple(point) in points:
-                    nums_all_equal += 1
+                    nums_all_equal[i] += 1
                     logger.debug("find equal one, continue to mutate.")
                     self._mutate(points.index(tuple(point)), i)
                 else:
                     break
-                if nums_all_equal > 10:
+                if nums_all_equal[i] > 10:
                     logger.warning("Can not Evolve any more, "
                                    "You can make an early stop.")
                     break
@@ -236,7 +242,14 @@ class BracketEVES(Bracket):
 
         logger.debug('points are: %s', str(points))
         logger.debug('nums points are %d:', len(points))
-        return points
+
+        return points, np.array(nums_all_equal)
+
+    def get_candidates(self, rung_id):
+        """Get a candidate for promotion"""
+        rung, population_range, red_team, blue_team = self._get_teams(rung_id)
+        self._get_mutated_population(red_team, blue_team)
+        return self._get_mutated_points(rung, population_range)[0]
 
     def _mutate(self, winner_id, loser_id):
         select_genes_key_list = self.eves.rng.choice(self.search_space_remove_fidelity,
