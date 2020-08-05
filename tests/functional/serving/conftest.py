@@ -4,8 +4,8 @@
 from falcon import testing
 import pytest
 
-from orion.core.utils.tests import OrionState
 from orion.serving.webapi import WebApi
+from orion.testing import OrionState
 
 
 @pytest.fixture()
