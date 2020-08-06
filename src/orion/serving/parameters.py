@@ -8,6 +8,34 @@
 """
 
 
+def verify_query_parameters(parameters: dict, supported_parameters: dict):
+    """
+    Verifies that the parameters given in the input dictionary are all supported.
+    Returns the parameters in a dict with their values converted into primitives.
+
+    Parameters
+    ----------
+    parameters
+        The dictionary of parameters to verify in the format ``parameter_name:value``.
+
+    supported_parameters
+        The dictionary of parameter names and types that are supported.
+        The format is ``parameter_name:type``
+
+    Returns
+    -------
+    A dictionary with each key a parameter and its value converted to the right primitive.
+    If a parameter is invalid, an error message will be returned under a single 'error' key.
+    """
+    for key in parameters:
+        if key not in supported_parameters:
+            return _compose_error_message(key, list(supported_parameters.keys()))
+
+        expected_type = supported_parameters[key]
+        if not verify_parameter_type(parameters.get(key), expected_type):
+            return f"Incorrect type for parameter '{key}'. Expected type '{expected_type}'."
+
+
 def verify_parameter_type(parameter_value: str, expected_type: str) -> bool:
     """Verifies that the parameter value is interpretable as the given expected type."""
     if expected_type == 'str':
@@ -22,33 +50,6 @@ def verify_parameter_type(parameter_value: str, expected_type: str) -> bool:
         return True
     else:
         return False
-
-
-def verify_query_parameters(parameters: dict, supported_parameters: dict):
-    """
-    Verifies that the parameters given in the input dictionary are all supported.
-
-    Parameters
-    ----------
-    parameters
-        The dictionary of parameters to verify in the format ``parameter_name:value``.
-
-    supported_parameters
-        The dictionary of parameter names and types that are supported.
-        The format is ``parameter_name:type``
-
-    Returns
-    -------
-    An error message if a parameter is invalid; otherwise None.
-    """
-
-    for key in parameters:
-        if key not in supported_parameters:
-            return _compose_error_message(key, list(supported_parameters.keys()))
-
-        expected_type = supported_parameters[key]
-        if not verify_parameter_type(parameters.get(key), expected_type):
-            return f"Incorrect type for parameter '{key}'. Expected type '{expected_type}'."
 
 
 def _compose_error_message(key: str, supported_parameters: list):
