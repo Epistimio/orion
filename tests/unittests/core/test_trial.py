@@ -123,7 +123,7 @@ class TestTrial(object):
     def test_str_trial(self, exp_config):
         """Test representation of `Trial`."""
         t = Trial(**exp_config[1][1])
-        assert str(t) == "Trial(experiment='supernaedo2-dendi', status='completed', "\
+        assert str(t) == "Trial(experiment='supernaedo2-dendi', status='completed', " \
                          "params=/decoding_layer:lstm_with_attention,/encoding_layer:gru)"
 
     def test_str_value(self, exp_config):
@@ -156,121 +156,133 @@ class TestTrial(object):
                          Trial.Result(name='asfdb', type='objective', value=None)]
         assert 'Results must contain' in str(exc.value)
 
-    def test_objective_property(self, exp_config):
+    def test_objective_property(self):
         """Check property `Trial.objective`."""
-        # 1 results in `results` list
-        t = Trial(**exp_config[1][1])
-        assert isinstance(t.objective, Trial.Result)
-        assert t.objective.name == 'yolo'
-        assert t.objective.type == 'objective'
-        assert t.objective.value == 10
+        base_trial = {
+            'results': []
+        }
+        base_trial['results'].append({'name': 'a', 'type': 'gradient', 'value': 0.5})
 
-        # 0 results in `results` list
-        tmp = exp_config[1][1]['results'].pop(0)
-        t = Trial(**exp_config[1][1])
-        assert t.objective is None
-        exp_config[1][1]['results'].append(tmp)
+        # 0 objective in `results` list
+        trial = Trial(**base_trial)
+
+        assert trial.objective is None
+
+        # 1 results in `results` list
+        expected = Trial.Result(name='b', type='objective', value=42)
+
+        base_trial['results'].append({'name': 'b', 'type': 'objective', 'value': 42})
+        trial = Trial(**base_trial)
+
+        assert trial.objective == expected
 
         # >1 results in `results` list
-        exp_config[1][1]['results'].append(dict(name='yolo2',
-                                                type='objective',
-                                                value=12))
-        t = Trial(**exp_config[1][1])
-        assert isinstance(t.objective, Trial.Result)
-        assert t.objective.name == 'yolo'
-        assert t.objective.type == 'objective'
-        assert t.objective.value == 10
-        tmp = exp_config[1][1]['results'].pop()
+        base_trial['results'].append({'name': 'c', 'type': 'objective', 'value': 42})
+        trial = Trial(**base_trial)
 
-    def test_gradient_property(self, exp_config):
+        assert trial.objective == expected
+
+    def test_gradient_property(self):
         """Check property `Trial.gradient`."""
-        # 1 results in `results` list
-        t = Trial(**exp_config[1][1])
-        assert isinstance(t.gradient, Trial.Result)
-        assert t.gradient.name == 'naedw_grad'
-        assert t.gradient.type == 'gradient'
-        assert t.gradient.value == [5, 3]
+        base_trial = {
+            'results': []
+        }
 
-        # 0 results in `results` list
-        tmp = exp_config[1][1]['results'].pop()
-        t = Trial(**exp_config[1][1])
-        assert t.gradient is None
-        exp_config[1][1]['results'].append(tmp)
+        # 0 result exist
+        trial = Trial(**base_trial)
+        assert trial.gradient is None
 
-        # >1 results in `results` list
-        exp_config[1][1]['results'].append(dict(name='yolo2',
-                                                type='gradient',
-                                                value=[12, 15]))
-        t = Trial(**exp_config[1][1])
-        assert isinstance(t.gradient, Trial.Result)
-        assert t.gradient.name == 'naedw_grad'
-        assert t.gradient.type == 'gradient'
-        assert t.gradient.value == [5, 3]
-        tmp = exp_config[1][1]['results'].pop()
+        # 0 result of type 'gradient' exist
+        base_trial['results'].append({'name': 'a', 'type': 'objective', 'value': 10})
+        trial = Trial(**base_trial)
 
-    def test_constraints_property(self, exp_config):
+        assert trial.gradient is None
+
+        # 1 result of type 'gradient' exist
+        expected = Trial.Result(name='b', type='gradient', value=5)
+
+        base_trial['results'].append({'name': 'b', 'type': 'gradient', 'value': 5})
+        trial = Trial(**base_trial)
+
+        assert trial.gradient == expected
+
+        # >1 gradient result
+        base_trial['results'].append({'name': 'c', 'type': 'gradient', 'value': [12, 15]})
+        trial = Trial(**base_trial)
+
+        assert trial.gradient == expected
+
+    def test_constraints_property(self):
         """Tests the property for accessing constraints"""
+        base_trial = {
+            'results': []
+        }
+
+        # 0 result exist
+        trial = Trial(**base_trial)
+        assert trial.constraints == []
+
         # 0 result of type 'constraints' exist
-        tmp = exp_config[1][1]['results'].pop(1)
-        t = Trial(**exp_config[1][1])
-        assert t.constraints == []
-        exp_config[1][1]['results'].append(tmp)
+        base_trial['results'].append({'name': 'a', 'type': 'objective', 'value': 10})
+        trial = Trial(**base_trial)
+
+        assert trial.constraints == []
 
         # 1 result of type 'constraint' exist
         expected = [
-            Trial.Result(name='contra', type='constraint', value=1.2)
+            Trial.Result(name='b', type='constraint', value=5)
         ]
 
-        trial = Trial(**exp_config[1][1])
+        base_trial['results'].append({'name': 'b', 'type': 'constraint', 'value': 5})
+        trial = Trial(**base_trial)
 
         assert expected == trial.constraints
 
         # > 1 results of type 'constraint' exist
         expected = [
-            Trial.Result(name='contra', type='constraint', value=1.2),
-            Trial.Result(name='a', type='constraint', value=5),
-            Trial.Result(name='b', type='constraint', value=20)
+            Trial.Result(name='b', type='constraint', value=5),
+            Trial.Result(name='c', type='constraint', value=20)
         ]
 
-        exp_config[1][1]['results'].append(dict(name='a',
-                                                type='constraint',
-                                                value=5))
-        exp_config[1][1]['results'].append(dict(name='b',
-                                                type='constraint',
-                                                value=20))
-        trial = Trial(**exp_config[1][1])
+        base_trial['results'].append({'name': 'c', 'type': 'constraint', 'value': 20})
+        trial = Trial(**base_trial)
 
         assert expected == trial.constraints
 
-    def test_statistics_property(self, exp_config):
+    def test_statistics_property(self):
         """Tests the property for accessing statistics"""
+        base_trial = {
+            'results': []
+        }
+
+        # 0 result exist
+        trial = Trial(**base_trial)
+        assert trial.statistics == []
+
         # 0 result of type 'statistic' exist
-        t = Trial(**exp_config[1][1])
-        assert t.statistics == []
+        base_trial['results'].append({'name': 'a', 'type': 'objective', 'value': 10})
+        trial = Trial(**base_trial)
+
+        assert trial.statistics == []
 
         # 1 result of type 'statistic' exist
         expected = [
-            Trial.Result(name='a', type='statistic', value=5),
+            Trial.Result(name='b', type='statistic', value=5)
         ]
 
-        exp_config[1][1]['results'].append(dict(name='a',
-                                                type='statistic',
-                                                value=5))
-
-        trial = Trial(**exp_config[1][1])
+        base_trial['results'].append({'name': 'b', 'type': 'statistic', 'value': 5})
+        trial = Trial(**base_trial)
 
         assert expected == trial.statistics
 
         # > 1 results of type 'statistic' exist
         expected = [
-            Trial.Result(name='a', type='statistic', value=5),
-            Trial.Result(name='b', type='statistic', value=20)
+            Trial.Result(name='b', type='statistic', value=5),
+            Trial.Result(name='c', type='statistic', value=20)
         ]
 
-        exp_config[1][1]['results'].append(dict(name='b',
-                                                type='statistic',
-                                                value=20))
-        trial = Trial(**exp_config[1][1])
+        base_trial['results'].append({'name': 'c', 'type': 'statistic', 'value': 20})
+        trial = Trial(**base_trial)
 
         assert expected == trial.statistics
 
@@ -278,9 +290,9 @@ class TestTrial(object):
         """Check property `Trial.params_repr`."""
         t = Trial(**exp_config[1][1])
         assert Trial.format_params(t._params) == \
-            "/decoding_layer:lstm_with_attention,/encoding_layer:gru"
+               "/decoding_layer:lstm_with_attention,/encoding_layer:gru"
         assert Trial.format_params(t._params, sep='\n') == \
-            "/decoding_layer:lstm_with_attention\n/encoding_layer:gru"
+               "/decoding_layer:lstm_with_attention\n/encoding_layer:gru"
 
         t = Trial()
         assert Trial.format_params(t._params) == ""
