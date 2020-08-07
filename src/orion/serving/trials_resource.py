@@ -33,7 +33,7 @@ class TrialsResource(object):
     def __init__(self):
         self.storage = get_storage()
 
-    def on_get_trials_for_experiment(self, req: Request, resp: Response, experiment_name: str):
+    def on_get_trials_in_experiment(self, req: Request, resp: Response, experiment_name: str):
         """
         Handle GET requests for trials/:experiment where ``experiment`` is
         the user-defined name of the experiment.
