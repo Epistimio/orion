@@ -352,6 +352,7 @@ def format_refers(experiment):
 
 STATS_TEMPLATE = """\
 {title}
+completed: {is_done}
 trials completed: {stats[trials_completed]}
 best trial:
   id: {stats[best_trials_id]}
@@ -391,7 +392,8 @@ def format_stats(experiment):
     stats_string = STATS_TEMPLATE.format(
         title=format_title("Stats"),
         stats=stats,
-        best_params=format_dict(best_params, depth=2, width=2))
+        best_params=format_dict(best_params, depth=2, width=2),
+        is_done=experiment.is_done)
 
     return stats_string
 

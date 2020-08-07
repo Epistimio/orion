@@ -549,9 +549,11 @@ def test_format_stats(dummy_trial):
         finish_time='now',
         duration='way too long')
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
+    experiment.is_done = False
     assert format_stats(experiment) == """\
 Stats
 =====
+completed: False
 trials completed: 10
 best trial:
   id: dummy
@@ -621,6 +623,7 @@ def test_format_info(algorithm_dict, dummy_trial):
         finish_time='now',
         duration='way too long')
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
+    experiment.is_done = False
 
     assert format_info(experiment) == """\
 Identification
@@ -682,6 +685,7 @@ adapter:
 
 Stats
 =====
+completed: False
 trials completed: 10
 best trial:
   id: dummy
