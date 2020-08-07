@@ -41,6 +41,10 @@ def add_subparser(parser):
         '--max-trials', type=int, metavar='#',
         help="(DEPRECATED) This argument will be removed in v0.3. Use --exp-max-trials instead")
 
+    orion_group.add_argument(
+        '--init-only', default=False, action='store_true',
+        help="Only create the experiment and register in database, but do not execute any trial.")
+
     worker_args_group = hunt_parser.add_argument_group(
         "Worker arguments (optional)",
         description="Arguments to automatically resolved branching events.")
@@ -65,6 +69,10 @@ def main(args):
     args['leafs'] = []
     # TODO: simplify when parameter parsing is refactored
     experiment = experiment_builder.build_from_args(args)
+
+    if args['init_only']:
+        return
+
     config = experiment_builder.get_cmd_config(args)
     worker_config = orion.core.config.worker.to_dict()
     if config.get('worker'):

@@ -105,7 +105,7 @@ You can also register experiments without executing them.
 
 .. code-block:: bash
 
-    $ orion init_only -n orion-tutorial python main.py --lr~'loguniform(1e-5, 1.0)'
+    $ orion hunt --init-only -n orion-tutorial python main.py --lr~'loguniform(1e-5, 1.0)'
 
 
 Results

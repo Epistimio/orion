@@ -401,7 +401,7 @@ def test_working_dir_argument_config(database, monkeypatch):
 def test_run_with_name_only(database, monkeypatch):
     """Test hunt can be executed with experiment name only"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(["init_only", "--config", "./orion_config_random.yaml",
+    orion.core.cli.main(["hunt", "--init-only", "--config", "./orion_config_random.yaml",
                          "./black_box.py", "-x~uniform(-50, 50)"])
 
     orion.core.cli.main(["hunt", "--max-trials", "20", "--config", "./orion_config_random.yaml"])
@@ -420,7 +420,7 @@ def test_run_with_name_only(database, monkeypatch):
 def test_run_with_name_only_with_trailing_whitespace(database, monkeypatch):
     """Test hunt can be executed with experiment name and trailing whitespace"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(["init_only", "--config", "./orion_config_random.yaml",
+    orion.core.cli.main(["hunt", "--init-only", "--config", "./orion_config_random.yaml",
                          "./black_box.py", "-x~uniform(-50, 50)"])
 
     orion.core.cli.main(["hunt", "--max-trials", "20",

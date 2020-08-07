@@ -99,11 +99,13 @@ def get_virtualenv_dir(version):
 
 def fill_from_cmdline_api(orion_script, version):
     """Add experiments and trials using the commandline API"""
+    # TODO: Adapt when removing init_only after deprecation phase
     print(execute(' '.join([
         orion_script, '-vv', 'init_only', '--name', 'init-cmdline',
         '--config', CONFIG_FILE,
         SCRIPT_PATH, '-x~uniform(-50,50)'])))
 
+    # TODO: Adapt when removing init_only after deprecation phase
     print(execute(' '.join([
         orion_script, '-vv', 'init_only', '--name', 'init-cmdline',
         get_branch_argument(version), 'init-cmdline-branch-old',
@@ -229,6 +231,7 @@ class TestBackwardCompatibility:
         out = execute('orion info --name hunt-python')
         assert 'name: hunt-python' in out
 
+    # TODO: Adapt when removing init_only after deprecation phase
     def test_init_only(self):
         """Verify init_only command"""
         print(execute(' '.join([
@@ -257,5 +260,3 @@ class TestBackwardCompatibility:
 
         exp = create_experiment('hunt-python', branching={'branch-to': 'hunt-python-branch'})
         exp.workon(function, max_trials=10)
-
-    # orion.core.cli.main('init-only') # TODO: deprecate init_only

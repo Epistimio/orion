@@ -154,9 +154,9 @@ def test_insert_two_hyperparameters(database, monkeypatch):
 def test_insert_with_version(create_db_instance, monkeypatch, script_path):
     """Try to insert a single trial inside a specific version"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(["init_only", "-n", "experiment",
+    orion.core.cli.main(["hunt", "--init-only", "-n", "experiment",
                          "-c", "./orion_config_random.yaml", script_path, "-x~normal(0,1)"])
-    orion.core.cli.main(["init_only", "-n", "experiment",
+    orion.core.cli.main(["hunt", "--init-only", "-n", "experiment",
                          "-c", "./orion_config_random.yaml", script_path, "-x~normal(0,1)",
                          "-y~+normal(0,1)"])
 

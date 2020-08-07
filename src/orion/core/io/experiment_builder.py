@@ -69,7 +69,7 @@ hierarchy. From the more global to the more specific, there is:
       .. code-block:: bash
 
           # Initialize root experiment
-          orion init_only --config previous_exeriment.yaml ./userscript -x~'uniform(0, 10)'
+          orion hunt --init-only --config previous_exeriment.yaml ./userscript -x~'uniform(0, 10)'
           # Branch a new experiment
           orion hunt -n previous_experiment ./userscript -x~'uniform(0, 100)'
 
