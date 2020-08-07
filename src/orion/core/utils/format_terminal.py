@@ -258,6 +258,7 @@ CONFIG_TEMPLATE = """\
 {title}
 pool size: {experiment.pool_size}
 max trials: {experiment.max_trials}
+working dir: {experiment.working_dir}
 """
 
 
