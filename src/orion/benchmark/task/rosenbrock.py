@@ -24,6 +24,11 @@ class RosenBrock(BaseTask):
             'user_args': ['python', 'scripts/rosenbrock.py', '--x~uniform(1,3, shape=(2))'],
             'max_trails': 10,
             'strategy': None,
+        },
+        'AverageRank': {
+            'user_args': ['python', 'scripts/rosenbrock.py', '--x~uniform(1,3, shape=(2))'],
+            'max_trails': 10,
+            'strategy': None,
         }
     }
 

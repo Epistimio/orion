@@ -9,9 +9,9 @@ import plotly.express as px
 import numpy as np
 
 
-class AverageResult(BaseAssess):
+class AverageRank(BaseAssess):
     """
-    For each algorithm, run fixed number of Experiment, average the performance of trials for the same algorithm
+    For each algorithm, run fixed number of Experiment, average the rank of trials for the same algorithm
     at the same trial sequence order.
     For the performance of trials in an Experiment, instead using the actual trial objective value, here we use the
     best objective value in the same Experiment until the particular trial.
@@ -128,7 +128,7 @@ class AverageResult(BaseAssess):
         :return:
         """
         best_evals = defaultdict(list)
-        algorithm_exp_trials = defaultdict(list)
+        task_algorithm_exp = defaultdict(list)
         for task_info in self.tasks:
 
             algorithm_name, task_index, task = task_info
@@ -139,27 +139,12 @@ class AverageResult(BaseAssess):
                 best_evals[algorithm_name].append(stats['best_evaluation'])
 
                 trials = list(filter(lambda trial: trial.status == 'completed', exp.fetch_trials()))
+
                 exp_trails = self._build_exp_trails(trials)
-                algorithm_exp_trials[algorithm_name].append(exp_trails)
+                task_algorithm_exp[task_index].append((algorithm_name, exp_trails))
 
         self._display_table(best_evals, notebook)
-        self._display_plot(algorithm_exp_trials)
-
-    def _display_plot(self, algorithm_exp_trials):
-
-        algorithm_averaged_trials = {}
-        plot_tables = []
-        for algo, sorted_trails in algorithm_exp_trials.items():
-            data = np.array(sorted_trails).transpose().mean(axis=-1)
-            algorithm_averaged_trials[algo] = data
-            df = pd.DataFrame(data, columns=['objective'])
-            df['algorithm'] = algo
-            plot_tables.append(df)
-
-        df = pd.concat(plot_tables)
-        title = 'Assessment {} over Task {}'.format(self.__class__.__name__, self.task_class.__name__)
-        fig = px.line(df, y='objective', color='algorithm', title=title)
-        fig.show()
+        self._display_plot(task_algorithm_exp)
 
     def _display_table(self, best_evals, notebook):
 
@@ -184,7 +169,51 @@ class AverageResult(BaseAssess):
                              numalign='center')
             print(table)
 
+    def _display_plot(self, task_algorithm_exp):
+
+        algorithm_trials_ranks = defaultdict(list)
+        for index, algo_exp_trials in task_algorithm_exp.items():
+
+            index_trials = []
+            index_algo = []
+            for algo, exp_trials in algo_exp_trials:
+                index_algo.append(algo)
+                index_trials.append(exp_trials)
+
+            # [n_algo, n_trial] => [n_trial, n_algo],
+            # then argsort the trial objective at different timestamp
+            algo_sorted_trials = np.array(index_trials).transpose().argsort()
+
+            # replace the sort index for each trail among different algorithms
+            algo_ranks = np.zeros(algo_sorted_trials.shape, dtype=int)
+            for trail_index, argsorts in enumerate(algo_sorted_trials):
+                for argsort_index, algo_index in enumerate(argsorts):
+                    algo_ranks[trail_index][algo_index] = argsort_index + 1
+            # [n_trial, n_algo] => [n_algo, n_trial]
+            algo_ranks = algo_ranks.transpose()
+
+            for algo_index, ranks in enumerate(algo_ranks):
+                algorithm_trials_ranks[index_algo[algo_index]].append(ranks)
+
+        plot_tables = []
+        for algo, ranks in algorithm_trials_ranks.items():
+            data = np.array(ranks).transpose().mean(axis=-1)
+            df = pd.DataFrame(data, columns=['rank'])
+            df['algorithm'] = algo
+            plot_tables.append(df)
+
+        df = pd.concat(plot_tables)
+        title = 'Assessment {} over Task {}'.format(self.__class__.__name__, self.task_class.__name__)
+        fig = px.line(df, y='rank', color='algorithm', title=title)
+        fig.show()
+
     def _build_exp_trails(self, trials):
+        """
+        1. sort the trials wrt. submit time
+        2. reset the objective value of each trail with the best until it
+        :param trials:
+        :return:
+        """
         data = [[trial.submit_time,
                  trial.objective.value] for trial in trials]
         sorted(data, key=lambda x: x[0])
