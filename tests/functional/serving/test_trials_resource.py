@@ -76,15 +76,16 @@ def add_trial(experiment: int, status: str = None, **kwargs):
     get_storage().register_trial(Trial(**base_trial))
 
 
+def test_root_endpoint_not_supported(client):
+    """Tests that the server return a 404 when accessing trials/ with no experiment"""
+    response = client.simulate_get('/trials')
+
+    assert response.status == "404 Not Found"
+    assert not response.json
+
+
 class TestTrialCollection:
     """Tests trials/:experiment_name"""
-
-    def test_root_endpoint_not_supported(self, client):
-        """Tests that the server return a 404 when accessing trials/ with no experiment"""
-        response = client.simulate_get('/trials')
-
-        assert response.status == "404 Not Found"
-        assert not response.json
 
     def test_trials_for_unknown_experiment(self, client):
         """Tests that an unknown experiment returns a bad request"""
