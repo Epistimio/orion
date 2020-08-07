@@ -1,14 +1,22 @@
+from collections import defaultdict
 import os
+
+import numpy
 
 import orion.core
 import orion.core.io.experiment_builder as experiment_builder
 from orion.storage.base import setup_storage
 
+from orion.benchmark.base import BaseTask, BaseAssess
+
+from orion.client import create_experiment
+
 from orion.core.io import resolve_config
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.worker import workon
 
-from orion.benchmark.base import BaseTask, BaseAssess
+
+
 
 
 def rosenbrock(x):
@@ -92,13 +100,14 @@ class RosenBrock(BaseTask):
         }
         """
         task_status = {'task': self.name, 'algorithm': self.algorithm, 'experiments': []}
+        exp_status = {'experiment': self.name}
 
         trials = self.experiment.fetch_trials()
         status_dict = defaultdict(list)
         for trial in trials:
             status_dict[trial.status].append(trial)
         exp_status['trials'] = status_dict
-        exp_status['is_done'] = experiment.is_done
+        exp_status['is_done'] = self.experiment.is_done
 
         task_status['experiments'].append(exp_status)
 
