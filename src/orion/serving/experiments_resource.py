@@ -13,6 +13,7 @@ from falcon import Request, Response
 
 from orion.core.worker.experiment import Experiment
 from orion.serving.parameters import retrieve_experiment, verify_query_parameters
+from orion.serving.responses import build_trial_response
 from orion.storage.base import get_storage
 
 
@@ -107,13 +108,5 @@ def _retrieve_best_trial(experiment: Experiment) -> dict:
 
     trial = experiment.get_trial(uid=experiment.stats['best_trials_id'])
 
-    result = {'id': trial.id,
-              'submitTime': str(trial.submit_time),
-              'startTime': str(trial.start_time),
-              'endTime': str(trial.end_time),
-              'parameters': trial.params,
-              'objective': trial.objective.value,
-              'statistics': {statistic.name: statistic.value for statistic in trial.statistics}
-              }
+    return build_trial_response(trial)
 
-    return result

@@ -88,7 +88,7 @@ class TestTrialCollection:
     """Tests trials/:experiment_name"""
 
     def test_trials_for_unknown_experiment(self, client):
-        """Tests that an unknown experiment returns a bad request"""
+        """Tests that an unknown experiment returns a not found error"""
         response = client.simulate_get('/trials/unknown-experiment')
 
         assert response.status == "404 Not Found"
@@ -242,3 +242,43 @@ class TestTrialCollection:
 
         assert response.status == "200 OK"
         assert response.json == [{'id': '00'}, {'id': '02'}]
+
+class TestTrialItem:
+    """Tests trials/:experiment_name/:trial_id"""
+
+    def test_unknown_experiment(self, client):
+        """Tests that an unknown experiment returns a not found error"""
+        response = client.simulate_get('/trials/unknown-experiment/a-trial')
+
+        assert response.status == "404 Not Found"
+        assert response.json == {'title': 'Experiment not found',
+                                 'description': 'Experiment "unknown-experiment" does not exist'}
+
+    def test_unknown_trial(self, client):
+        """Tests that an unknown experiment returns a not found error"""
+        add_experiment(name='a', version=1, _id=1)
+
+        response = client.simulate_get('/trials/a/unknown-trial')
+
+        assert response.status == "404 Not Found"
+        assert response.json == {'title': 'Trial not found',
+                                 'description': 'Trial "unknown-trial" does not exist'}
+
+    def test_get_trial(self, client):
+        add_experiment(name='a', version=1, _id=1)
+        add_trial(experiment=1, id_override="00", status='completed')
+        add_trial(experiment=1, id_override="01", status='completed')
+
+        response = client.simulate_get('/trials/a/01')
+
+        assert response.status == "200 OK"
+        assert response.json == {
+            'id': '01',
+            'submitTime': '0001-01-01 00:00:00',
+            'startTime': '0001-01-01 00:00:10',
+            'endTime': '0001-01-02 00:00:00',
+            'parameters': {'x': 10.0},
+            'objective': 0.05,
+            'statistics': {'a': 10,
+                           'b': 5},
+        }
