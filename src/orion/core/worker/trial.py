@@ -300,6 +300,28 @@ class Trial:
         return self._fetch_one_result_of_type('gradient')
 
     @property
+    def constraints(self):
+        """
+        Return this trial's constraints
+
+        Returns
+        -------
+        A list of ``Trial.Result`` of type 'constraint'
+        """
+        return self._fetch_results('constraint', self.results)
+
+    @property
+    def statistics(self):
+        """
+        Return this trial's statistics
+
+        Returns
+        -------
+        A list of ``Trial.Result`` de type 'statistic'
+        """
+        return self._fetch_results('statistic', self.results)
+
+    @property
     def hash_name(self):
         """Generate a unique name with an md5sum hash for this `Trial`.
 
@@ -327,11 +349,15 @@ class Trial:
                              "have not been set.")
         return self.format_values(self._params, sep='-').replace('/', '.')
 
+    def _fetch_results(self, type, results):
+        """Fetch results for the given type"""
+        return [result for result in results if result.type == type]
+
     def _fetch_one_result_of_type(self, result_type, results=None):
         if results is None:
             results = self.results
 
-        value = [result for result in results if result.type == result_type]
+        value = self._fetch_results(result_type, results)
 
         if not value:
             return None
