@@ -10,12 +10,9 @@
 import json
 
 from falcon import Request, Response
-import falcon.status_codes
 
-from orion.core.io import experiment_builder
-from orion.core.utils.exceptions import NoConfigurationError
 from orion.core.worker.experiment import Experiment
-from orion.serving.parameters import verify_query_parameters
+from orion.serving.parameters import retrieve_experiment, verify_query_parameters
 from orion.storage.base import get_storage
 
 
@@ -37,50 +34,36 @@ class ExperimentsResource(object):
                 'version': version
             })
 
-        resp.body = json.dumps(result, indent=4)
+        resp.body = json.dumps(result)
 
     def on_get_experiment(self, req: Request, resp: Response, name: str):
         """
         Handle GET requests for experiments/:name where `name` is
         the user-defined name of the experiment
         """
-        error_message = verify_query_parameters(req.params, {'version': 'int'})
-        if error_message:
-            resp.status = falcon.HTTP_400
-            resp.body = json.dumps({"message": error_message})
-            return
+        verify_query_parameters(req.params, ['version'])
+        version = req.get_param_as_int('version')
 
-        try:
-            version = int(req.params['version']) if 'version' in req.params else None
-            experiment = experiment_builder.build_view(name, version)
+        experiment = retrieve_experiment(name, version)
+        response = {
+            "name": experiment.name,
+            "version": experiment.version,
+            "status": _retrieve_status(experiment),
+            "trialsCompleted": experiment.stats['trials_completed'] if experiment.stats else 0,
+            "startTime": str(experiment.stats['start_time']) if experiment.stats else None,
+            "endTime": str(experiment.stats['finish_time']) if experiment.stats else None,
+            "user": experiment.metadata['user'],
+            "orionVersion": experiment.metadata['orion_version'],
+            "config": {
+                "maxTrials": experiment.max_trials,
+                "poolSize": experiment.pool_size,
+                "algorithm": _retrieve_algorithm(experiment),
+                "space": experiment.configuration['space']
+            },
+            "bestTrial": _retrieve_best_trial(experiment)
+        }
 
-            response = {
-                "name": experiment.name,
-                "version": experiment.version,
-                "status": _retrieve_status(experiment),
-                "trialsCompleted": experiment.stats['trials_completed'] if experiment.stats else 0,
-                "startTime": str(experiment.stats['start_time']) if experiment.stats else None,
-                "endTime": str(experiment.stats['finish_time']) if experiment.stats else None,
-                "user": experiment.metadata['user'],
-                "orionVersion": experiment.metadata['orion_version'],
-                "config": {
-                    "maxTrials": experiment.max_trials,
-                    "poolSize": experiment.pool_size,
-                    "algorithm": _retrieve_algorithm(experiment),
-                    "space": experiment.configuration['space']
-                },
-                "bestTrial": _retrieve_best_trial(experiment)
-            }
-
-            resp.body = json.dumps(response)
-
-        except NoConfigurationError:
-            response = {
-                "message": f"Experiment '{name}' does not exist"
-            }
-
-            resp.status = falcon.HTTP_404
-            resp.body = json.dumps(response)
+        resp.body = json.dumps(response)
 
 
 def _find_latest_versions(experiments):

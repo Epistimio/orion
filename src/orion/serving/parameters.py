@@ -6,12 +6,19 @@
    :platform: Unix
    :synopsis: Common code related to query parameters verification
 """
+from typing import Optional
+
+import falcon
+
+from orion.core.io import experiment_builder
+from orion.core.utils.exceptions import NoConfigurationError
+from orion.core.worker.experiment import Experiment
+from orion.core.worker.trial import Trial
 
 
-def verify_query_parameters(parameters: dict, supported_parameters: dict):
+def verify_query_parameters(parameters: dict, supported_parameters: list):
     """
     Verifies that the parameters given in the input dictionary are all supported.
-    Returns the parameters in a dict with their values converted into primitives.
 
     Parameters
     ----------
@@ -19,47 +26,58 @@ def verify_query_parameters(parameters: dict, supported_parameters: dict):
         The dictionary of parameters to verify in the format ``parameter_name:value``.
 
     supported_parameters
-        The dictionary of parameter names and types that are supported.
-        The format is ``parameter_name:type``
+        The list of parameters that are supported.
 
-    Returns
+    Raises
     -------
-    A dictionary with each key a parameter and its value converted to the right primitive.
-    If a parameter is invalid, an error message will be returned under a single 'error' key.
+    falcon.HTTPBadRequest
+        When a parameter is not listed in the supported parameters.
     """
-    for key in parameters:
-        if key not in supported_parameters:
-            return _compose_error_message(key, list(supported_parameters.keys()))
-
-        expected_type = supported_parameters[key]
-        if not verify_parameter_type(parameters.get(key), expected_type):
-            return f"Incorrect type for parameter '{key}'. Expected type '{expected_type}'."
+    for parameter in parameters:
+        if parameter not in supported_parameters:
+            description = _compose_error_message(parameter, supported_parameters)
+            raise falcon.HTTPBadRequest('Invalid parameter', description)
 
 
-def verify_parameter_type(parameter_value: str, expected_type: str) -> bool:
-    """Verifies that the parameter value is interpretable as the given expected type."""
-    if expected_type == 'str':
-        return True
-    elif expected_type == 'bool':
-        return parameter_value.lower() == 'false' or parameter_value.lower() == 'true'
-    elif expected_type == 'int':
-        try:
-            int(parameter_value)
-        except ValueError:
-            return False
-        return True
-    else:
-        return False
+def verify_status(status):
+    """Verifies that the given trial status is supported. Raises falcon.HTTPBadRequest otherwise"""
+    if status and status not in Trial.allowed_stati:
+        description = 'The "status" parameter is invalid. '
+        description += 'The value of the parameter must be one of {}'.format(
+            list(Trial.allowed_stati))
+
+        raise falcon.HTTPBadRequest('Invalid parameter', description)
 
 
 def _compose_error_message(key: str, supported_parameters: list):
     """Creates the error message depending on the number of supported parameters available."""
-    error_message = f"Parameter '{key}' is not supported. Expected "
+    error_message = f'Parameter "{key}" is not supported. Expected '
 
     if len(supported_parameters) > 1:
         supported_parameters.sort()
-        error_message += f"one of {supported_parameters}."
+        error_message += f'one of {supported_parameters}.'
     else:
-        error_message += f"parameter '{supported_parameters[0]}'."
+        error_message += f'parameter "{supported_parameters[0]}".'
 
     return error_message
+
+
+def retrieve_experiment(experiment_name: str, version: int) -> Optional[Experiment]:
+    """
+    Retrieve an experiment from the database with the given name and version.
+
+    Raises
+    ------
+    falcon.HTTPNotFound
+        When the experiment doesn't exist
+    """
+    try:
+        experiment = experiment_builder.build_view(experiment_name, version)
+        if version and experiment.version != version:
+            raise falcon.HTTPNotFound(
+                title='Experiment Not Found',
+                description=f'Experiment "{experiment_name}" has no version "{version}"')
+        return experiment
+    except NoConfigurationError:
+        raise falcon.HTTPNotFound(title='Experiment not found',
+                                  description=f'Experiment "{experiment_name}" does not exist')

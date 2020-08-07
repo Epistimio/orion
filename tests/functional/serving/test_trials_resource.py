@@ -76,159 +76,168 @@ def add_trial(experiment: int, status: str = None, **kwargs):
     get_storage().register_trial(Trial(**base_trial))
 
 
-def test_root_endpoint_not_supported(client):
-    """Tests that the server return a 404 when accessing trials/ with no experiment"""
-    response = client.simulate_get('/trials')
+class TestTrialCollection:
+    """Tests trials/:experiment_name"""
 
-    assert response.status == "404 Not Found"
-    assert not response.json
+    def test_root_endpoint_not_supported(self, client):
+        """Tests that the server return a 404 when accessing trials/ with no experiment"""
+        response = client.simulate_get('/trials')
 
+        assert response.status == "404 Not Found"
+        assert not response.json
 
-def test_trials_for_unknown_experiment(client):
-    """Tests that an unknown experiment returns a bad request"""
-    response = client.simulate_get('/trials/unknown-experiment')
+    def test_trials_for_unknown_experiment(self, client):
+        """Tests that an unknown experiment returns a bad request"""
+        response = client.simulate_get('/trials/unknown-experiment')
 
-    assert response.status == "404 Not Found"
-    assert response.json['message'] == "Experiment 'unknown-experiment' does not exist"
+        assert response.status == "404 Not Found"
+        assert response.json == {'title': 'Experiment not found',
+                                 'description': 'Experiment "unknown-experiment" does not exist'}
 
+    def test_unknown_parameter(self, client):
+        """
+        Tests that if an unknown parameter is specified in
+        the query string, an error is returned even if the experiment doesn't exist.
+        """
+        expected_error_message = 'Parameter "unknown" is not supported. ' \
+                                 'Expected one of [\'ancestors\', \'status\', \'version\'].'
 
-def test_unknown_parameter(client):
-    """
-    Tests that if an unknown parameter is specified in
-    the query string, an error is returned even if the experiment doesn't exist.
-    """
-    expected_body = "Parameter 'unknown' is not supported. " \
-                    "Expected one of ['ancestors', 'status', 'version']."
+        response = client.simulate_get('/trials/a?unknown=true')
 
-    response = client.simulate_get('/trials/a?unknown=true')
+        assert response.status == "400 Bad Request"
+        assert response.json == {'title': 'Invalid parameter',
+                                 'description': expected_error_message}
 
-    assert response.status == "400 Bad Request"
-    assert response.json['message'] == expected_body
+        add_experiment(name='a', version=1, _id=1)
 
-    add_experiment(name='a', version=1, _id=1)
+        response = client.simulate_get('/trials/a?unknown=true')
 
-    response = client.simulate_get('/trials/a?unknown=true')
+        assert response.status == "400 Bad Request"
+        assert response.json == {'title': 'Invalid parameter',
+                                 'description': expected_error_message}
 
-    assert response.status == "400 Bad Request"
-    assert response.json['message'] == expected_body
+    def test_trials_for_latest_version(self, client):
+        """Tests that it returns the trials of the latest version of the experiment"""
+        add_experiment(name='a', version=1, _id=1)
+        add_experiment(name='a', version=2, _id=2)
 
+        add_trial(experiment=1, id_override="00")
+        add_trial(experiment=2, id_override="01")
+        add_trial(experiment=1, id_override="02")
+        add_trial(experiment=2, id_override="03")
 
-def test_trials_for_latest_version(client):
-    """Tests that it returns the trials of the latest version of the experiment"""
-    add_experiment(name='a', version=1, _id=1)
-    add_experiment(name='a', version=2, _id=2)
+        response = client.simulate_get('/trials/a')
 
-    add_trial(experiment=1, id_override="00")
-    add_trial(experiment=2, id_override="01")
-    add_trial(experiment=1, id_override="02")
-    add_trial(experiment=2, id_override="03")
+        assert response.status == "200 OK"
+        assert response.json == [{'id': '01'}, {'id': '03'}]
 
-    response = client.simulate_get('/trials/a')
+    def test_trials_for_specific_version(self, client):
+        """Tests specific version of experiment"""
+        add_experiment(name='a', version=1, _id=1)
+        add_experiment(name='a', version=2, _id=2)
+        add_experiment(name='a', version=3, _id=3)
 
-    assert response.status == "200 OK"
-    assert response.json == [{'id': '01'}, {'id': '03'}]
+        add_trial(experiment=1, id_override="00")
+        add_trial(experiment=2, id_override="01")
+        add_trial(experiment=3, id_override="02")
 
+        # Happy case
+        response = client.simulate_get('/trials/a?version=2')
 
-def test_trials_for_specific_version(client):
-    """Tests specific version of experiment"""
-    add_experiment(name='a', version=1, _id=1)
-    add_experiment(name='a', version=2, _id=2)
-    add_experiment(name='a', version=3, _id=3)
+        assert response.status == "200 OK"
+        assert response.json == [{'id': '01'}]
 
-    add_trial(experiment=1, id_override="00")
-    add_trial(experiment=2, id_override="01")
-    add_trial(experiment=3, id_override="02")
+        # Version doesn't exist
+        response = client.simulate_get('/trials/a?version=4')
 
-    # Happy case
-    response = client.simulate_get('/trials/a?version=2')
+        assert response.status == "404 Not Found"
+        assert response.json == {
+            'title': 'Experiment Not Found',
+            'description': 'Experiment "a" has no version "4"'
+        }
 
-    assert response.status == "200 OK"
-    assert response.json == [{'id': '01'}]
+    def test_trials_for_all_versions(self, client):
+        """Tests that trials from all ancestors are shown"""
+        add_experiment(name='a', version=1, _id=1)
+        add_experiment(name='a', version=2, _id=2)
+        add_experiment(name='a', version=3, _id=3)
 
-    # Version doesn't exist
-    response = client.simulate_get('/trials/a?version=4')
+        add_trial(experiment=1, id_override="00")
+        add_trial(experiment=2, id_override="01")
+        add_trial(experiment=3, id_override="02")
 
-    assert response.status == "404 Not Found"
-    assert response.json['message'] == "Experiment 'a' has no version '4'"
+        # Happy case default
+        response = client.simulate_get('/trials/a?ancestors=true')
 
+        assert response.status == "200 OK"
+        assert response.json == [{'id': '00'}, {'id': '01'}, {'id': '02'}]
 
-def test_trials_for_all_versions(client):
-    """Tests that trials from all ancestors are shown"""
-    add_experiment(name='a', version=1, _id=1)
-    add_experiment(name='a', version=2, _id=2)
-    add_experiment(name='a', version=3, _id=3)
+        # Happy case explicitly false (call latest version test)
+        response = client.simulate_get('/trials/a?ancestors=false')
 
-    add_trial(experiment=1, id_override="00")
-    add_trial(experiment=2, id_override="01")
-    add_trial(experiment=3, id_override="02")
+        assert response.status == "200 OK"
+        assert response.json == [{'id': '02'}]
 
-    # Happy case default
-    response = client.simulate_get('/trials/a?ancestors=true')
+        # Not a boolean parameter
+        response = client.simulate_get('/trials/a?ancestors=42')
 
-    assert response.status == "200 OK"
-    assert response.json == [{'id': '00'}, {'id': '01'}, {'id': '02'}]
+        assert response.status == "400 Bad Request"
+        assert response.json == {
+            'title': 'Invalid parameter',
+            'description': 'The "ancestors" parameter is invalid. '
+                           'The value of the parameter must be "true" or "false".'
+        }
 
-    # Happy case explicitly false (call latest version test)
-    response = client.simulate_get('/trials/a?ancestors=false')
+    def test_trials_by_status(self, client):
+        add_experiment(name='a', version=1, _id=1)
 
-    assert response.status == "200 OK"
-    assert response.json == [{'id': '02'}]
+        # There exist no trial of the given status in an empty experiment
+        response = client.simulate_get('/trials/a?status=completed')
 
-    # Not a boolean parameter
-    response = client.simulate_get('/trials/a?ancestors=42')
+        assert response.status == "200 OK"
+        assert response.json == []
 
-    expected = "Incorrect type for parameter 'ancestors'. Expected type 'bool'."
-    assert response.status == "400 Bad Request"
-    assert response.json['message'] == expected
+        # There exist no trial of the given status while other status are present
+        add_trial(experiment=1, id_override="00", status="broken")
 
+        response = client.simulate_get('/trials/a?status=completed')
+        assert response.status == "200 OK"
+        assert response.json == []
 
-def test_trials_by_status(client):
-    add_experiment(name='a', version=1, _id=1)
+        # There exist at least one trial of the given status
+        add_trial(experiment=1, id_override="01", status="completed")
 
-    # There exist no trial of the given status in an empty experiment
-    response = client.simulate_get('/trials/a?status=completed')
+        response = client.simulate_get('/trials/a?status=completed')
 
-    assert response.status == "200 OK"
-    assert response.json == []
+        assert response.status == "200 OK"
+        assert response.json == [{'id': '01'}]
 
-    # There exist no trial of the given status while other status are present
-    add_trial(experiment=1, id_override="00", status="broken")
+        # Status doesn't exist
+        response = client.simulate_get('/trials/a?status=invalid')
 
-    response = client.simulate_get('/trials/a?status=completed')
-    assert response.status == "200 OK"
-    assert response.json == []
+        assert response.status == "400 Bad Request"
+        error_message = "Invalid status value. " \
+                        "Expected one of " \
+                        "['new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken']"
+        assert response.json == {'title': 'Invalid parameter',
+                                 'description': "The \"status\" parameter is invalid. "
+                                                "The value of the parameter must be one of "
+                                                "['new', 'reserved', 'suspended', 'completed', "
+                                                "'interrupted', 'broken']"}
 
-    # There exist at least one trial of the given status
-    add_trial(experiment=1, id_override="01", status="completed")
+    def test_trials_by_from_specific_version_by_status_with_ancestors(self, client):
+        # Mixed parameters
+        add_experiment(name='a', version=1, _id=1)
+        add_experiment(name='b', version=1, _id=2)
+        add_experiment(name='a', version=2, _id=3)
+        add_experiment(name='a', version=3, _id=4)
 
-    response = client.simulate_get('/trials/a?status=completed')
+        add_trial(experiment=1, id_override="00", status='completed')
+        add_trial(experiment=3, id_override="01", status='broken')
+        add_trial(experiment=3, id_override="02", status='completed')
+        add_trial(experiment=2, id_override="03", status='completed')
 
-    assert response.status == "200 OK"
-    assert response.json == [{'id': '01'}]
+        response = client.simulate_get('/trials/a?ancestors=true&version=2&status=completed')
 
-    # Status doesn't exist
-    response = client.simulate_get('/trials/a?status=invalid')
-
-    assert response.status == "400 Bad Request"
-    error_message = "Invalid status value. " \
-                    "Expected one of " \
-                    "['new', 'reserved', 'suspended', 'completed', 'interrupted', 'broken']"
-    assert response.json == {'message': error_message}
-
-
-def test_trials_by_from_specific_version_by_status_with_ancestors(client):
-    # Mixed parameters
-    add_experiment(name='a', version=1, _id=1)
-    add_experiment(name='b', version=1, _id=2)
-    add_experiment(name='a', version=2, _id=3)
-    add_experiment(name='a', version=3, _id=4)
-
-    add_trial(experiment=1, id_override="00", status='completed')
-    add_trial(experiment=3, id_override="01", status='broken')
-    add_trial(experiment=3, id_override="02", status='completed')
-    add_trial(experiment=2, id_override="03", status='completed')
-
-    response = client.simulate_get('/trials/a?ancestors=true&version=2&status=completed')
-
-    assert response.status == "200 OK"
-    assert response.json == [{'id': '00'}, {'id': '02'}]
+        assert response.status == "200 OK"
+        assert response.json == [{'id': '00'}, {'id': '02'}]
