@@ -46,11 +46,8 @@ class ExperimentsResource(object):
         """
         error_message = verify_query_parameters(req.params, {'version': 'int'})
         if error_message:
-            response = {
-                "message": error_message
-            }
             resp.status = falcon.HTTP_400
-            resp.body = json.dumps(response)
+            resp.body = json.dumps({"message": error_message})
             return
 
         try:
