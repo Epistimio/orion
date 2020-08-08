@@ -284,11 +284,6 @@ class Trial:
         return self._fetch_one_result_of_type('objective')
 
     @property
-    def statistics(self):
-        """Return every `Trial.Result` of type 'statistic' for this trial."""
-        return [result for result in self.results if result.type == 'statistic']
-
-    @property
     def lie(self):
         """Return this trial's fake objective value if it was set, else None.
 

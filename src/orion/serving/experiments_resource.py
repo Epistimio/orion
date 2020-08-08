@@ -109,4 +109,3 @@ def _retrieve_best_trial(experiment: Experiment) -> dict:
     trial = experiment.get_trial(uid=experiment.stats['best_trials_id'])
 
     return build_trial_response(trial)
-

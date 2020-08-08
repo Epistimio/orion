@@ -10,7 +10,7 @@
 from orion.core.worker.trial import Trial
 
 
-def build_trial_response(trial:Trial) -> dict:
+def build_trial_response(trial: Trial) -> dict:
     """
     Build the response representing a trial according to the API specification.
 

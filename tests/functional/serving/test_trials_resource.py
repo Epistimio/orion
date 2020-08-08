@@ -190,6 +190,7 @@ class TestTrialCollection:
         }
 
     def test_trials_by_status(self, client):
+        """Tests that trials are returned"""
         add_experiment(name='a', version=1, _id=1)
 
         # There exist no trial of the given status in an empty experiment
@@ -227,7 +228,7 @@ class TestTrialCollection:
                                                 "'interrupted', 'broken']"}
 
     def test_trials_by_from_specific_version_by_status_with_ancestors(self, client):
-        # Mixed parameters
+        """Tests that mixing parameters work as intended"""
         add_experiment(name='a', version=1, _id=1)
         add_experiment(name='b', version=1, _id=2)
         add_experiment(name='a', version=2, _id=3)
@@ -242,6 +243,7 @@ class TestTrialCollection:
 
         assert response.status == "200 OK"
         assert response.json == [{'id': '00'}, {'id': '02'}]
+
 
 class TestTrialItem:
     """Tests trials/:experiment_name/:trial_id"""
@@ -265,6 +267,7 @@ class TestTrialItem:
                                  'description': 'Trial "unknown-trial" does not exist'}
 
     def test_get_trial(self, client):
+        """Tests that an existing trial is returned according to the API specification"""
         add_experiment(name='a', version=1, _id=1)
         add_trial(experiment=1, id_override="00", status='completed')
         add_trial(experiment=1, id_override="01", status='completed')

@@ -20,16 +20,15 @@ def verify_query_parameters(parameters: dict, supported_parameters: list):
     """
     Verifies that the parameters given in the input dictionary are all supported.
 
-    Parameters
-    ----------
+    Parameter
+    ---------
     parameters
         The dictionary of parameters to verify in the format ``parameter_name:value``.
-
     supported_parameters
         The list of parameters that are supported.
 
     Raises
-    -------
+    ------
     falcon.HTTPBadRequest
         When a parameter is not listed in the supported parameters.
     """
@@ -84,6 +83,23 @@ def retrieve_experiment(experiment_name: str, version: int = None) -> Optional[E
 
 
 def retrieve_trial(experiment, trial_id):
+    """
+    Retrieves the trial for the given id in the experiment
+
+    Parameters
+    ----------
+    experiment: Experiment
+        The experiment containing the trial.
+
+    trial_id: int
+        The id of the trial
+
+    Raises
+    ------
+    falcon.HTTPNotFound
+        When the trial doesn't exist in the experiment.
+
+    """
     trial = experiment.get_trial(uid=trial_id)
     if not trial:
         raise falcon.HTTPNotFound(title='Trial not found',

@@ -51,9 +51,12 @@ class TrialsResource(object):
 
         resp.body = json.dumps(response)
 
-    def on_get_trial_in_experiment(self, req: Request, resp: Response,
-                                 experiment_name: str, trial_id:str):
-
+    def on_get_trial_in_experiment(self, req: Request, resp: Response, experiment_name: str,
+                                   trial_id: str):
+        """
+        Handle GET requests for trials/:experiment/:trial_id where ``experiment`` is
+        the user-defined name of the experiment and ``trial_id`` the id of the trial.
+        """
         experiment = retrieve_experiment(experiment_name)
         trial = retrieve_trial(experiment, trial_id)
 
