@@ -319,3 +319,14 @@ def OrionState(*args, **kwargs):
         return LegacyOrionState(*args, **kwargs)
 
     return BaseOrionState(*args, **kwargs)
+
+
+def customized_mutate_example(search_space, old_value):
+    """Define a customized mutate function example"""
+    if search_space.type == "real":
+        new_value = old_value / 2.0
+    elif search_space.type == "integer":
+        new_value = int(old_value + 1)
+    else:
+        new_value = old_value
+    return new_value

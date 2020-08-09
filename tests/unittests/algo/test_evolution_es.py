@@ -4,6 +4,7 @@
 
 import copy
 import hashlib
+import importlib
 
 import numpy as np
 import pytest
@@ -122,17 +123,6 @@ def test_compute_budgets():
     assert compute_budgets(1, 4, 2, 4, 2) == [[(4, 1), (4, 2), (4, 4)]]
 
 
-def customized_mutate_example(search_space, old_value, **kwargs):
-    """Define a customized mutate function example"""
-    if search_space.type == "real":
-        new_value = old_value / 2.0
-    elif search_space.type == "integer":
-        new_value = int(old_value + 1)
-    else:
-        new_value = old_value
-    return new_value
-
-
 def test_customized_mutate_func(space2):
     """Verify customized mutate function works correctly"""
     org_data = [(1 / 2.0, 2.0), (1 / 8.0, 8.0), (1 / 5.0, 5.0), (1 / 4.0, 4.0)]
@@ -150,7 +140,15 @@ def test_customized_mutate_func(space2):
         select_genes_key = i
         old = winner[i][1][select_genes_key]
         search_space = space2.values()[select_genes_key]
-        new = customized_mutate_example(search_space, old)
+
+        mutate_attr = {}
+        function_string = mutate_attr.pop('function',
+                                          "orion.core.utils.tests.customized_mutate_example")
+        mod_name, func_name = function_string.rsplit('.', 1)
+        mod = importlib.import_module(mod_name)
+        mutate_func = getattr(mod, func_name)
+
+        new = mutate_func(search_space, old)
         if select_genes_key == 0:
             mutated_data.append((new, winner[i][1][1]))
         elif select_genes_key == 1:
@@ -197,10 +195,11 @@ class TestBracketEVES():
         assert set(red_team).union(set(blue_team)) == {0, 1, 2, 3}
         assert set(red_team).intersection(set(blue_team)) == set()
 
-    def test_get_mutated_population(self, bracket, rung_3):
+    def test_mutate_population(self, bracket, rung_3):
         """Verify mutated candidates is generated correctly."""
         red_team = [0, 2]
         blue_team = [1, 3]
+        population_range = 4
         for i in range(4):
             for j in [1, 2]:
                 bracket.eves.population[j][i] = list(rung_3["results"].values())[i][1][j]
@@ -211,11 +210,13 @@ class TestBracketEVES():
 
         org_data = copy.deepcopy(org_data)
 
-        bracket._get_mutated_population(red_team, blue_team)
+        bracket._mutate_population(red_team, blue_team,
+                                   rung_3["results"], population_range)
 
         mutated_data = np.stack((list(bracket.eves.population.values())[0],
                                  list(bracket.eves.population.values())[1]), axis=0).T
 
+        # Winner team will be [0, 2], so [0, 2] will be remained, [1, 3] will be mutated.
         assert org_data.shape == mutated_data.shape
         assert (mutated_data[0] == org_data[0]).all()
         assert (mutated_data[2] == org_data[2]).all()
@@ -224,6 +225,7 @@ class TestBracketEVES():
         assert (mutated_data[1] != org_data[0]).any()
         assert (mutated_data[3] != org_data[2]).any()
 
+        # For each individual, mutation occurs in only one dimension chosen from two.
         if mutated_data[1][0] != org_data[0][0]:
             assert mutated_data[1][1] == org_data[0][1]
         else:
@@ -236,12 +238,17 @@ class TestBracketEVES():
 
     def test_duplicated_mutated_population(self, bracket, rung_4):
         """Verify duplicated candidates can be found and processed correctly."""
+        red_team = [0, 2]
+        blue_team = [0, 2]  # no mutate occur at first.
         population_range = 4
         for i in range(4):
             for j in [1, 2]:
                 bracket.eves.population[j][i] = list(rung_4["results"].values())[i][1][j]
-        points, nums_all_equal = bracket._get_mutated_points(rung_4["results"], population_range)
+        points, nums_all_equal = bracket._mutate_population(red_team, blue_team,
+                                                            rung_4["results"], population_range)
 
+        # In this case, duplication will occur, and we can make it mutate one more time.
+        # The points 1 and 2 should be different, while one of nums_all_equal should be 1.
         if points[1][1] != points[2][1]:
             assert points[1][2] == points[2][2]
         else:
@@ -252,13 +259,16 @@ class TestBracketEVES():
         assert nums_all_equal[2] == 1
         assert nums_all_equal[3] == 0
 
-    def test_get_mutated_points(self, bracket, rung_3):
+    def test_mutate_points(self, bracket, rung_3):
         """Test that correct point is promoted."""
+        red_team = [0, 2]
+        blue_team = [0, 2]
         population_range = 4
         for i in range(4):
             for j in [1, 2]:
                 bracket.eves.population[j][i] = list(rung_3["results"].values())[i][1][j]
-        points, nums_all_equal = bracket._get_mutated_points(rung_3["results"], population_range)
+        points, nums_all_equal = bracket._mutate_population(red_team, blue_team,
+                                                            rung_3["results"], population_range)
         assert points[0] == (1.0, 1.0, 1.0)
         assert points[1] == (2, 1.0 / 2, 1.0 / 4)
         assert (nums_all_equal == 0).all()

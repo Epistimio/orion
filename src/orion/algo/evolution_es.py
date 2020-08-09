@@ -192,30 +192,29 @@ class BracketEVES(Bracket):
 
         return rung, population_range, red_team, blue_team
 
-    def _get_mutated_population(self, red_team, blue_team):
+    def _mutate_population(self, red_team, blue_team, rung, population_range):
         """Get the mutated population and hurdles"""
         winner_list = []
         loser_list = []
 
-        hurdles = 0
-        for i, _ in enumerate(red_team):
-            winner, loser = ((red_team, blue_team)
-                             if self.eves.performance[red_team[i]] <
-                             self.eves.performance[blue_team[i]]
-                             else (blue_team, red_team))
+        if set(red_team) != set(blue_team):
+            hurdles = 0
+            for i, _ in enumerate(red_team):
+                winner, loser = ((red_team, blue_team)
+                                 if self.eves.performance[red_team[i]] <
+                                 self.eves.performance[blue_team[i]]
+                                 else (blue_team, red_team))
 
-            winner_list.append(winner[i])
-            loser_list.append(loser[i])
-            hurdles += self.eves.performance[winner[i]]
-            self._mutate(winner[i], loser[i])
+                winner_list.append(winner[i])
+                loser_list.append(loser[i])
+                hurdles += self.eves.performance[winner[i]]
+                self._mutate(winner[i], loser[i])
 
-        hurdles /= len(red_team)
-        self.eves.hurdles.append(hurdles)
+            hurdles /= len(red_team)
+            self.eves.hurdles.append(hurdles)
 
-        logger.debug('Evolution hurdles are: %s', str(self.eves.hurdles))
+            logger.debug('Evolution hurdles are: %s', str(self.eves.hurdles))
 
-    def _get_mutated_points(self, rung, population_range):
-        """Get points for promotion"""
         points = []
         nums_all_equal = [0] * population_range
         for i in range(population_range):
@@ -240,16 +239,12 @@ class BracketEVES(Bracket):
 
             points.append(tuple(point))
 
-        logger.debug('points are: %s', str(points))
-        logger.debug('nums points are %d:', len(points))
-
         return points, np.array(nums_all_equal)
 
     def get_candidates(self, rung_id):
         """Get a candidate for promotion"""
         rung, population_range, red_team, blue_team = self._get_teams(rung_id)
-        self._get_mutated_population(red_team, blue_team)
-        return self._get_mutated_points(rung, population_range)[0]
+        return self._mutate_population(red_team, blue_team, rung, population_range)[0]
 
     def _mutate(self, winner_id, loser_id):
         select_genes_key_list = self.eves.rng.choice(self.search_space_remove_fidelity,
