@@ -1,22 +1,10 @@
 from collections import defaultdict
-import os
 
 import numpy
 
-import orion.core
-import orion.core.io.experiment_builder as experiment_builder
 from orion.storage.base import setup_storage
-
 from orion.benchmark.base import BaseTask, BaseAssess
-
 from orion.client import create_experiment
-
-from orion.core.io import resolve_config
-from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
-from orion.core.worker import workon
-
-
-
 
 
 def rosenbrock(x):
@@ -45,14 +33,16 @@ class RosenBrock(BaseTask):
             'space': {
                 'x': 'uniform(1, 3, shape=2)'
             },
-            'max_trails': 10,
+            'max_trials': 10,
             'strategy': None,
         },
         'AverageRank': {
-            'user_args': ['python', 'scripts/rosenbrock.py', '--x~uniform(1,3, shape=(2))'],
-            'max_trails': 10,
+            'space': {
+                'x': 'uniform(1, 3, shape=2)'
+            },
+            'max_trials': 10,
             'strategy': None,
-        }
+        },
     }
 
     def __init__(self, name, algorithm, assess):
@@ -124,4 +114,5 @@ class RosenBrock(BaseTask):
         :return:
         """
         # NOTE(Xavier): What is this method for?
+        # NOTE(Lin): It will be used by the assessment to show the task result on one algorithm
         return [self.experiment]
