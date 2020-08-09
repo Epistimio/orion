@@ -1,14 +1,33 @@
+from collections import defaultdict
 import os
+
+import numpy
 
 import orion.core
 import orion.core.io.experiment_builder as experiment_builder
 from orion.storage.base import setup_storage
 
+from orion.benchmark.base import BaseTask, BaseAssess
+
+from orion.client import create_experiment
+
 from orion.core.io import resolve_config
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.worker import workon
 
-from orion.benchmark.base import BaseTask, BaseAssess
+
+
+
+
+def rosenbrock(x):
+    """Evaluate a n-D rosenbrock function."""
+    x = numpy.asarray(x)
+    summands = 100 * (x[1:] - x[:-1]**2)**2 + (1 - x[:-1])**2
+    y = numpy.sum(summands)
+    return [dict(
+        name='rosenbrock',
+        type='objective',
+        value=y)]
 
 
 class RosenBrock(BaseTask):
@@ -16,12 +35,16 @@ class RosenBrock(BaseTask):
     # assessments that the particular task supports
     assessments = {
         'TimeToResult': {
-            'user_args': ['python', 'scripts/rosenbrock.py', '--x~uniform(1,3, shape=(2))'],
-            'max_trails': 10,
+            'space': {
+                'x': 'uniform(1, 3, shape=2)'
+            },
+            'max_trials': 10,
             'strategy': None,
         },
         'AverageResult': {
-            'user_args': ['python', 'scripts/rosenbrock.py', '--x~uniform(1,3, shape=(2))'],
+            'space': {
+                'x': 'uniform(1, 3, shape=2)'
+            },
             'max_trails': 10,
             'strategy': None,
         },
@@ -46,21 +69,9 @@ class RosenBrock(BaseTask):
             assess_key = assess
         assessments = self.assessments[assess_key]
 
-        user_args = assessments['user_args']
-        user_args[1] = os.path.join(os.path.dirname(os.path.abspath(__file__)), user_args[1])
-
-        metadata = resolve_config.fetch_metadata(user_args=user_args)
-        parser = OrionCmdlineParser(orion.core.config.worker.user_script_config,
-                                    allow_non_existing_user_script=True)
-        parser.parse(user_args)
-        metadata["parser"] = parser.get_state_dict()
-        metadata["priors"] = dict(parser.priors)
-
-        space = metadata["priors"]
-
-        self.experiment = experiment_builder.build(
-            name, space=space, algorithms=algorithm, max_trials=assessments['max_trails'],
-            strategy=assessments['strategy'], user_args=user_args, metadata=metadata)
+        self.experiment = create_experiment(
+            name, space=assessments['space'], algorithms=algorithm,
+            max_trials=assessments['max_trials'], strategy=assessments['strategy'])
 
         self.name = name
         self.algorithm = algorithm
@@ -70,9 +81,7 @@ class RosenBrock(BaseTask):
         - run the orion experiment
         :return:
         """
-        worker_config = orion.core.config.worker.to_dict()
-        worker_config['silent'] = True
-        workon(self.experiment, **worker_config)
+        return self.experiment.workon(rosenbrock, self.experiment.max_trials)
 
     def status(self):
         """
@@ -98,22 +107,12 @@ class RosenBrock(BaseTask):
         task_status = {'task': self.name, 'algorithm': self.algorithm, 'experiments': []}
         exp_status = {'experiment': self.name}
 
-        # experiment = experiment_builder.build_view(self.name)
-
-        db_config = experiment_builder.fetch_config_from_db(self.name)
-        db_config.setdefault('version', 1)
-
-        experiment = experiment_builder.create_experiment(**db_config)
-
-        trials = experiment.fetch_trials()
-        status_dict = {}
+        trials = self.experiment.fetch_trials()
+        status_dict = defaultdict(list)
         for trial in trials:
-            if status_dict.get(trial.status, None):
-                status_dict[trial.status].append(trial)
-            else:
-                status_dict[trial.status] = [trial]
+            status_dict[trial.status].append(trial)
         exp_status['trials'] = status_dict
-        exp_status['is_done'] = experiment.is_done
+        exp_status['is_done'] = self.experiment.is_done
 
         task_status['experiments'].append(exp_status)
 
@@ -124,8 +123,5 @@ class RosenBrock(BaseTask):
         - formatted the experiment result for the particular assess
         :return:
         """
-        db_config = experiment_builder.fetch_config_from_db(self.name)
-        db_config.setdefault('version', 1)
-
-        experiment = experiment_builder.create_experiment(**db_config)
-        return [experiment]
+        # NOTE(Xavier): What is this method for?
+        return [self.experiment]
