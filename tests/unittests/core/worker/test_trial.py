@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.trial`."""
-import copy
 
 import bson
 import numpy
@@ -287,39 +286,6 @@ class TestTrial(object):
         trial = Trial(**base_trial)
 
         assert expected == trial.statistics
-
-    def test_statistics_property(self, exp_config):
-        """Tests property `Trial.statistics`"""
-        trial_config = copy.deepcopy(exp_config[1][1])
-
-        # 0 results in `results` list
-        trial = Trial(**trial_config)
-        assert trial.statistics == []
-
-        # >1 results in `results` list
-        trial_config['results'].append(dict(name='a',
-                                            type='statistic',
-                                            value=15))
-        trial_config['results'].append(dict(name='b',
-                                            type='statistic',
-                                            value=5))
-        trial = Trial(**trial_config)
-        assert len(trial.statistics) == 2
-        assert isinstance(trial.statistics[0], Trial.Result)
-        assert isinstance(trial.statistics[1], Trial.Result)
-
-        assert trial.statistics[0].name == 'a'
-        assert trial.statistics[0].type == 'statistic'
-        assert trial.statistics[0].value == 15
-
-        assert trial.statistics[1].name == 'b'
-        assert trial.statistics[1].type == 'statistic'
-        assert trial.statistics[1].value == 5
-        assert isinstance(trial.gradient, Trial.Result)
-
-        # Property is read-only
-        with pytest.raises(AttributeError):
-            trial.statistics = [{'name': 'a', 'type': 'statistic', 'value': 15}]
 
     def test_params_repr_property(self, exp_config):
         """Check property `Trial.params_repr`."""

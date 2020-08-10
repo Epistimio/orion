@@ -102,14 +102,19 @@ class TestItem:
         response = client.simulate_get('/experiments/a')
 
         assert response.status == "404 Not Found"
-        assert response.json['message']
-        assert response.json['message'] == "Experiment 'a' does not exist"
+        assert response.json == {
+            'title': 'Experiment not found',
+            'description': 'Experiment "a" does not exist'
+        }
 
         _add_experiment(name='a', version=1, _id=1)
         response = client.simulate_get('/experiments/b')
 
         assert response.status == "404 Not Found"
-        assert response.json['message'] == "Experiment 'b' does not exist"
+        assert response.json == {
+            'title': 'Experiment not found',
+            'description': 'Experiment "b" does not exist'
+        }
 
     def test_experiment_specification(self, client):
         """Tests that the experiment returned is following the specification"""
@@ -159,20 +164,23 @@ class TestItem:
         Tests that if an unknown parameter is specified in
         the query string, an error is returned even if the experiment doesn't exist.
         """
-        expected_status = "400 Bad Request"
-        expected_body = "Parameter 'unknown' is not supported. Expected parameter 'version'."
-
         response = client.simulate_get('/experiments/a?unknown=true')
 
-        assert response.status == expected_status
-        assert response.json['message'] == expected_body
+        assert response.status == "400 Bad Request"
+        assert response.json == {
+            'title': 'Invalid parameter',
+            'description': 'Parameter "unknown" is not supported. Expected parameter "version".'
+        }
 
         _add_experiment(name='a', version=1, _id=1)
 
         response = client.simulate_get('/experiments/a?unknown=true')
 
-        assert response.status == expected_status
-        assert response.json['message'] == expected_body
+        assert response.status == "400 Bad Request"
+        assert response.json == {
+            'title': 'Invalid parameter',
+            'description': 'Parameter "unknown" is not supported. Expected parameter "version".'
+        }
 
 
 def _add_experiment(**kwargs):
