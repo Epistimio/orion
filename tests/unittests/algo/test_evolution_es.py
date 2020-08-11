@@ -123,46 +123,6 @@ def test_compute_budgets():
     assert compute_budgets(1, 4, 2, 4, 2) == [[(4, 1), (4, 2), (4, 4)]]
 
 
-def test_customized_mutate_func(space2):
-    """Verify customized mutate function works correctly"""
-    org_data = [(1 / 2.0, 2.0), (1 / 8.0, 8.0), (1 / 5.0, 5.0), (1 / 4.0, 4.0)]
-    mutated_data = []
-
-    red_team = [(2.0, (0.5, 2.0)), (8.0, (0.13, 8.0))]
-    blue_team = [(5.0, (0.2, 5.0)), (4.0, (0.25, 4.0))]
-
-    for i, _ in enumerate(red_team):
-        winner, loser = ((red_team, blue_team)
-                         if red_team[i][0] < blue_team[i][0]
-                         else (blue_team, red_team))
-
-        mutated_data.append(winner[i][1])
-        select_genes_key = i
-        old = winner[i][1][select_genes_key]
-        search_space = space2.values()[select_genes_key]
-
-        mutate_attr = {}
-        function_string = mutate_attr.pop('function',
-                                          "orion.core.utils.tests.customized_mutate_example")
-        mod_name, func_name = function_string.rsplit('.', 1)
-        mod = importlib.import_module(mod_name)
-        mutate_func = getattr(mod, func_name)
-
-        new = mutate_func(search_space, old)
-        if select_genes_key == 0:
-            mutated_data.append((new, winner[i][1][1]))
-        elif select_genes_key == 1:
-            mutated_data.append((winner[i][1][0], new))
-
-    assert len(mutated_data) == len(org_data)
-    assert mutated_data[0] == org_data[0]
-    assert mutated_data[2] == org_data[3]
-    assert mutated_data[1][0] == org_data[0][0] / 2.0
-    assert mutated_data[1][1] == org_data[0][1]
-    assert mutated_data[3][0] == org_data[3][0]
-    assert mutated_data[3][1] == org_data[3][1] / 2.0
-
-
 class TestEvolutionES():
     """Tests for the algo Evolution."""
 
@@ -229,7 +189,7 @@ class TestBracketEVES():
         if mutated_data[1][0] != org_data[0][0]:
             assert mutated_data[1][1] == org_data[0][1]
         else:
-            assert mutated_data[1][1] != org_data[2][1]
+            assert mutated_data[1][1] != org_data[0][1]
 
         if mutated_data[3][0] != org_data[2][0]:
             assert mutated_data[3][1] == org_data[2][1]
@@ -272,3 +232,53 @@ class TestBracketEVES():
         assert points[0] == (1.0, 1.0, 1.0)
         assert points[1] == (2, 1.0 / 2, 1.0 / 4)
         assert (nums_all_equal == 0).all()
+
+    def test_customized_mutate_population(self, bracket, rung_3):
+        """Verify mutated candidates is generated correctly."""
+        red_team = [0, 2]
+        blue_team = [1, 3]
+        population_range = 4
+
+        mutate_attr = {}
+        function_string = mutate_attr.pop('function',
+                                          "orion.core.utils.tests.customized_mutate_example")
+        mod_name, func_name = function_string.rsplit('.', 1)
+        mod = importlib.import_module(mod_name)
+        bracket.mutate_func = getattr(mod, func_name)
+
+        for i in range(4):
+            for j in [1, 2]:
+                bracket.eves.population[j][i] = list(rung_3["results"].values())[i][1][j]
+            bracket.eves.performance[i] = list(rung_3["results"].values())[i][0]
+
+        org_data = np.stack((list(bracket.eves.population.values())[0],
+                             list(bracket.eves.population.values())[1]), axis=0).T
+
+        org_data = copy.deepcopy(org_data)
+
+        bracket._mutate_population(red_team, blue_team,
+                                   rung_3["results"], population_range)
+
+        mutated_data = np.stack((list(bracket.eves.population.values())[0],
+                                 list(bracket.eves.population.values())[1]), axis=0).T
+
+        # Winner team will be [0, 2], so [0, 2] will be remained, [1, 3] will be mutated.
+        assert org_data.shape == mutated_data.shape
+        assert (mutated_data[0] == org_data[0]).all()
+        assert (mutated_data[2] == org_data[2]).all()
+        assert (mutated_data[1] != org_data[1]).any()
+        assert (mutated_data[3] != org_data[3]).any()
+        assert (mutated_data[1] != org_data[0]).any()
+        assert (mutated_data[3] != org_data[2]).any()
+
+        # For each individual, mutation occurs in only one dimension chosen from two.
+        # Customized test mutation function is divided by 2 for real type.
+        if mutated_data[1][0] == org_data[0][0] / 2.0:
+            assert mutated_data[1][1] == org_data[0][1]
+        else:
+            assert mutated_data[1][1] == org_data[0][1] / 2.0
+
+        if mutated_data[3][0] == org_data[2][0] / 2.0:
+            assert mutated_data[3][1] == org_data[2][1]
+        else:
+            assert mutated_data[3][1] == org_data[2][1] / 2.0
