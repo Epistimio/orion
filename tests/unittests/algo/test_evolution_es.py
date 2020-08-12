@@ -4,7 +4,6 @@
 
 import copy
 import hashlib
-import importlib
 
 import numpy as np
 import pytest
@@ -57,6 +56,13 @@ def evolution(space1):
 def bracket(budgets, evolution, space1):
     """Return a `Bracket` instance configured with `b_config`."""
     return BracketEVES(evolution, budgets, 1, space1)
+
+
+@pytest.fixture
+def evolution_customer_mutate(space1):
+    """Return an instance of EvolutionES."""
+    return EvolutionES(space1, repetitions=1, nums_population=4,
+                       mutate="orion.core.utils.tests.customized_mutate_example")
 
 
 @pytest.fixture
@@ -121,6 +127,55 @@ def test_compute_budgets():
     # Check typical values
     assert compute_budgets(1, 3, 1, 2, 1) == [[(2, 1), (2, 2), (2, 3)]]
     assert compute_budgets(1, 4, 2, 4, 2) == [[(4, 1), (4, 2), (4, 4)]]
+
+
+def test_customized_mutate_population(space1, rung_3, budgets):
+    """Verify customized mutated candidates is generated correctly."""
+    customerized_dict = {'function': 'orion.core.utils.tests.customized_mutate_example',
+                         'multiply_factor': 2.0, 'add_factor': 1}
+    algo = EvolutionES(space1, repetitions=1, nums_population=4,
+                       mutate=customerized_dict)
+    algo.brackets[0] = BracketEVES(algo, budgets, 1, space1)
+
+    red_team = [0, 2]
+    blue_team = [1, 3]
+    population_range = 4
+    for i in range(4):
+        for j in [1, 2]:
+            algo.brackets[0].eves.population[j][i] = list(rung_3["results"].values())[i][1][j]
+        algo.brackets[0].eves.performance[i] = list(rung_3["results"].values())[i][0]
+
+    org_data = np.stack((list(algo.brackets[0].eves.population.values())[0],
+                         list(algo.brackets[0].eves.population.values())[1]), axis=0).T
+
+    org_data = copy.deepcopy(org_data)
+
+    algo.brackets[0]._mutate_population(red_team, blue_team,
+                                        rung_3["results"], population_range)
+
+    mutated_data = np.stack((list(algo.brackets[0].eves.population.values())[0],
+                             list(algo.brackets[0].eves.population.values())[1]), axis=0).T
+
+    # Winner team will be [0, 2], so [0, 2] will be remained, [1, 3] will be mutated.
+    assert org_data.shape == mutated_data.shape
+    assert (mutated_data[0] == org_data[0]).all()
+    assert (mutated_data[2] == org_data[2]).all()
+    assert (mutated_data[1] != org_data[1]).any()
+    assert (mutated_data[3] != org_data[3]).any()
+    assert (mutated_data[1] != org_data[0]).any()
+    assert (mutated_data[3] != org_data[2]).any()
+
+    # For each individual, mutation occurs in only one dimension chosen from two.
+    # Customized test mutation function is divided by 2 for real type.
+    if mutated_data[1][0] == org_data[0][0] / customerized_dict['multiply_factor']:
+        assert mutated_data[1][1] == org_data[0][1]
+    else:
+        assert mutated_data[1][1] == org_data[0][1] / customerized_dict['multiply_factor']
+
+    if mutated_data[3][0] == org_data[2][0] / customerized_dict['multiply_factor']:
+        assert mutated_data[3][1] == org_data[2][1]
+    else:
+        assert mutated_data[3][1] == org_data[2][1] / customerized_dict['multiply_factor']
 
 
 class TestEvolutionES():
@@ -232,53 +287,3 @@ class TestBracketEVES():
         assert points[0] == (1.0, 1.0, 1.0)
         assert points[1] == (2, 1.0 / 2, 1.0 / 4)
         assert (nums_all_equal == 0).all()
-
-    def test_customized_mutate_population(self, bracket, rung_3):
-        """Verify mutated candidates is generated correctly."""
-        red_team = [0, 2]
-        blue_team = [1, 3]
-        population_range = 4
-
-        mutate_attr = {}
-        function_string = mutate_attr.pop('function',
-                                          "orion.core.utils.tests.customized_mutate_example")
-        mod_name, func_name = function_string.rsplit('.', 1)
-        mod = importlib.import_module(mod_name)
-        bracket.mutate_func = getattr(mod, func_name)
-
-        for i in range(4):
-            for j in [1, 2]:
-                bracket.eves.population[j][i] = list(rung_3["results"].values())[i][1][j]
-            bracket.eves.performance[i] = list(rung_3["results"].values())[i][0]
-
-        org_data = np.stack((list(bracket.eves.population.values())[0],
-                             list(bracket.eves.population.values())[1]), axis=0).T
-
-        org_data = copy.deepcopy(org_data)
-
-        bracket._mutate_population(red_team, blue_team,
-                                   rung_3["results"], population_range)
-
-        mutated_data = np.stack((list(bracket.eves.population.values())[0],
-                                 list(bracket.eves.population.values())[1]), axis=0).T
-
-        # Winner team will be [0, 2], so [0, 2] will be remained, [1, 3] will be mutated.
-        assert org_data.shape == mutated_data.shape
-        assert (mutated_data[0] == org_data[0]).all()
-        assert (mutated_data[2] == org_data[2]).all()
-        assert (mutated_data[1] != org_data[1]).any()
-        assert (mutated_data[3] != org_data[3]).any()
-        assert (mutated_data[1] != org_data[0]).any()
-        assert (mutated_data[3] != org_data[2]).any()
-
-        # For each individual, mutation occurs in only one dimension chosen from two.
-        # Customized test mutation function is divided by 2 for real type.
-        if mutated_data[1][0] == org_data[0][0] / 2.0:
-            assert mutated_data[1][1] == org_data[0][1]
-        else:
-            assert mutated_data[1][1] == org_data[0][1] / 2.0
-
-        if mutated_data[3][0] == org_data[2][0] / 2.0:
-            assert mutated_data[3][1] == org_data[2][1]
-        else:
-            assert mutated_data[3][1] == org_data[2][1] / 2.0
