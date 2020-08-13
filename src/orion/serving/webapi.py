@@ -12,6 +12,7 @@
 import falcon
 
 from orion.serving.experiments_resource import ExperimentsResource
+from orion.serving.plots_resources import PlotsResource
 from orion.serving.runtime import RuntimeResource
 from orion.serving.trials_resource import TrialsResource
 from orion.storage.base import setup_storage
@@ -33,6 +34,7 @@ class WebApi(falcon.API):
         root_resource = RuntimeResource()
         experiments_resource = ExperimentsResource()
         trials_resource = TrialsResource()
+        plots_resource = PlotsResource()
 
         # Build routes
         self.add_route('/', root_resource)
@@ -41,6 +43,7 @@ class WebApi(falcon.API):
         self.add_route('/trials/{experiment_name}', trials_resource, suffix='trials_in_experiment')
         self.add_route('/trials/{experiment_name}/{trial_id}',
                        trials_resource, suffix='trial_in_experiment')
+        self.add_route('/plots/regret/{experiment_name}', plots_resource, suffix='regret')
 
     def start(self):
         """A hook to when a Gunicorn worker calls run()."""
