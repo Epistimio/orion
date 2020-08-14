@@ -69,7 +69,7 @@ def add_subparser(parser):
     rm_parser = parser.add_parser(
         'rm',
         description=DESCRIPTION,
-        help='rm help',
+        help='Deletes experiments and trials',
         formatter_class=argparse.RawTextHelpFormatter)
 
     rm_parser.set_defaults(func=main)

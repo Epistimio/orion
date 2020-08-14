@@ -18,11 +18,16 @@ import orion.core
 from orion.core.utils.terminal import ask_question
 
 log = logging.getLogger(__name__)
+SHORT_DESCRIPTION = 'Starts the database configuration wizard'
+DESCRIPTION = """
+This command starts the database configuration wizard and creates a configuration file for the
+database.
+"""
 
 
 def add_subparser(parser):
     """Return the parser that needs to be used for this command"""
-    setup_parser = parser.add_parser('setup', help='setup help')
+    setup_parser = parser.add_parser('setup', help=SHORT_DESCRIPTION, description=DESCRIPTION)
 
     setup_parser.set_defaults(func=main)
 

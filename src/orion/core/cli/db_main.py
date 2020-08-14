@@ -14,6 +14,10 @@ import logging
 from orion.core.utils import module_import
 
 log = logging.getLogger(__name__)
+SHORT_DESCRIPTION = 'Database initialization, upgrade, verification, and edition'
+DESCRIPTION = """
+Root command for database operations.
+"""
 
 
 def add_subparser(parser):
@@ -21,7 +25,7 @@ def add_subparser(parser):
     # Fetch experiment name, user's script path and command line arguments
     # Use `-h` option to show help
 
-    db_parser = parser.add_parser('db', help='test_db help')
+    db_parser = parser.add_parser('db', help=SHORT_DESCRIPTION, description=DESCRIPTION)
     subparsers = db_parser.add_subparsers(help='sub-command help')
 
     load_modules_parser(subparsers)

@@ -19,11 +19,15 @@ import orion.core.io.experiment_builder as experiment_builder
 from orion.core.worker import workon
 
 log = logging.getLogger(__name__)
-
+SHORT_DESCRIPTION = 'Conducts hyperparameter optimization'
+DESCRIPTION = """
+This command starts hyperparameter optimization process for the user-provided model using the
+configured optimization algorithm and search space. 
+"""
 
 def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
-    hunt_parser = parser.add_parser('hunt', help='hunt help')
+    hunt_parser = parser.add_parser('hunt', help=SHORT_DESCRIPTION, description=DESCRIPTION)
 
     orion_group = cli.get_basic_args_group(
         hunt_parser, group_name='Hunt arguments', group_help='')
