@@ -19,11 +19,7 @@ from orion.core.utils.exceptions import (
     BranchingEvent, MissingResultFile, NoConfigurationError, NoNameError)
 
 
-CLI_DOC_HEADER = """
-orion:
-  Orion cli script for asynchronous distributed optimization
-
-"""
+CLI_DOC_HEADER = "Oríon CLI for asynchronous distributed optimization"
 
 
 class OrionArgsParser:
