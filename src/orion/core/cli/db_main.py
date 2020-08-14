@@ -26,7 +26,7 @@ def add_subparser(parser):
     # Use `-h` option to show help
 
     db_parser = parser.add_parser('db', help=SHORT_DESCRIPTION, description=DESCRIPTION)
-    subparsers = db_parser.add_subparsers(help='sub-command help')
+    subparsers = db_parser.add_subparsers()
 
     load_modules_parser(subparsers)
 
