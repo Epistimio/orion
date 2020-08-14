@@ -14,11 +14,12 @@ from orion.client.experiment import ExperimentClient
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.exceptions import RaceCondition
 from orion.core.utils.singleton import update_singletons
+from orion.core.worker.experiment import ExperimentView
 from orion.core.worker.producer import Producer
 from orion.storage.base import setup_storage
 
 __all__ = ['interrupt_trial', 'report_bad_trial', 'report_objective', 'report_results',
-           'create_experiment', 'workon']
+           'create_experiment', 'get_experiment', 'workon']
 
 
 # pylint: disable=too-many-arguments
@@ -185,6 +186,29 @@ def create_experiment(
     producer = Producer(experiment, max_idle_time)
 
     return ExperimentClient(experiment, producer, heartbeat)
+
+
+def get_experiment(name: str, version: int = None) -> ExperimentView:
+    """
+    Retrieve an existing experiment as :class:`orion.core.worker.experiment.ExperimentView`.
+
+    Parameters
+    ----------
+    name: str
+        The name of the experiment.
+    version: int, optional
+        Version to select. If None, last version will be selected. If version given is larger than
+        largest version available, the largest version will be selected.
+
+    Returns
+    -------
+    An instance of :class:`orion.core.worker.experiment.ExperimentView` representing the experiment.
+
+    Raises
+    ------
+    :class:`orion.core.utils.exceptions.NoConfigurationError` when no experiment is found.
+    """
+    return experiment_builder.build_view(name, version)
 
 
 def workon(function, space, name='loop', algorithms=None, max_trials=None):
