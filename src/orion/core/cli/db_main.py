@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.test_db` -- Module to check if the DB worrks
-=================================================================
+:mod:`orion.core.cli.db_main` -- Module containing database related operations
+==============================================================================
 
-.. module:: test_db
+.. module:: db_main
    :platform: Unix
-   :synopsis: Runs multiple checks to see if the database was correctly setup.
+   :synopsis: Root command for database operations
 
 """
 import logging
