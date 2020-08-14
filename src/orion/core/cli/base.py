@@ -46,7 +46,7 @@ class OrionArgsParser:
             '-d', '--debug', action='store_true',
             help="Use debugging mode with EphemeralDB.")
 
-        self.subparsers = self.parser.add_subparsers(dest='command', help='sub-command help')
+        self.subparsers = self.parser.add_subparsers(dest='command')
 
     def get_subparsers(self):
         """Return the subparser object for this parser."""
