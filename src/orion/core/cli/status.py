@@ -21,11 +21,12 @@ from orion.storage.base import get_storage
 log = logging.getLogger(__name__)
 SHORT_DESCRIPTION = "Gives an overview of experiments' trials"
 DESCRIPTION = """
-This command outputs the status of the different trials inside every experiment or a 
-specific EVC tree. It can either give you an overview of the different trials status, i.e., 
-the number of currently completed trials and so on, or, it can give you a deeper view of the 
+This command outputs the status of the different trials inside every experiment or a
+specific EVC tree. It can either give you an overview of the different trials status, i.e.,
+the number of currently completed trials and so on, or, it can give you a deeper view of the
 experiments by outlining every single trial, its status and its objective.
 """
+
 
 def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""

@@ -22,8 +22,9 @@ log = logging.getLogger(__name__)
 SHORT_DESCRIPTION = 'Conducts hyperparameter optimization'
 DESCRIPTION = """
 This command starts hyperparameter optimization process for the user-provided model using the
-configured optimization algorithm and search space. 
+configured optimization algorithm and search space.
 """
+
 
 def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
