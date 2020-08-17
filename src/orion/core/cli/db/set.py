@@ -56,7 +56,7 @@ def add_subparser(parser):
     set_parser = parser.add_parser(
         'set',
         description=DESCRIPTION,
-        help='set help',
+        help="Update trials' attributes",
         formatter_class=argparse.RawTextHelpFormatter)
 
     set_parser.set_defaults(func=main)

@@ -19,13 +19,12 @@ from orion.serving.webapi import WebApi
 
 
 log = logging.getLogger(__name__)
-
-DESCRIPTION = "Starts HTTP endpoints"
+DESCRIPTION = "Starts Oríon's REST API server"
 
 
 def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
-    serve_parser = parser.add_parser('serve', help='serve help', description=DESCRIPTION)
+    serve_parser = parser.add_parser('serve', help=DESCRIPTION, description=DESCRIPTION)
 
     serve_parser.add_argument('-c', '--config', type=argparse.FileType('r'),
                               metavar='path-to-config', help="user provided "
