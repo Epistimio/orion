@@ -74,7 +74,7 @@ def retrieve_experiment(experiment_name: str, version: int = None) -> Optional[E
         experiment = experiment_builder.build_view(experiment_name, version)
         if version and experiment.version != version:
             raise falcon.HTTPNotFound(
-                title='Experiment Not Found',
+                title='Experiment not found',
                 description=f'Experiment "{experiment_name}" has no version "{version}"')
         return experiment
     except NoConfigurationError:
