@@ -28,6 +28,10 @@ specified under the top-level node ``gunicorn``. An example is included below:
       workers: 4
       threads: 2
 
+Authentication
+---------------
+No authentication is necessary at the moment.
+
 Errors
 ------
 Oríon uses `conventional HTTP response codes <https://en.wikipedia.org/wiki/List_of_HTTP_status_codes>`_
