@@ -55,6 +55,7 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx.ext.autosummary',
     'numpydoc',
+    'sphinxcontrib.httpdomain'
 ]
 
 # General information about the project.
