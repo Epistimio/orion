@@ -12,12 +12,13 @@ import pytest
 import orion.core
 from orion.core.io.database import DuplicateKeyError
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils import SingletonAlreadyInstantiatedError, SingletonNotInstantiatedError
-from orion.core.utils.tests import OrionState, update_singletons
+from orion.core.utils.singleton import SingletonAlreadyInstantiatedError, \
+    SingletonNotInstantiatedError, update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import FailedUpdate, get_storage, MissingArguments, setup_storage, Storage
 from orion.storage.legacy import Legacy
 from orion.storage.track import HAS_TRACK, REASON
+from orion.testing import OrionState
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.WARNING)
@@ -269,7 +270,7 @@ class TestStorage:
 
             experiment = cfg.experiments[0]
             mocked_experiment = _Dummy()
-            mocked_experiment._id = experiment['_id']
+            mocked_experiment.id = experiment['_id']
 
             storage.update_experiment(mocked_experiment, test=True)
             experiments = storage.fetch_experiments({'_id': experiment['_id']})
@@ -289,6 +290,20 @@ class TestStorage:
 
             with pytest.raises(AssertionError):
                 storage.update_experiment(experiment=mocked_experiment, uid='123')
+
+    def test_delete_experiment(self, storage):
+        """Test delete one experiment"""
+        if storage and storage['type'] == 'track':
+            pytest.xfail("Track does not support deletion yet.")
+
+        with OrionState(experiments=generate_experiments(), storage=storage) as cfg:
+            storage = cfg.storage()
+
+            n_experiments = len(storage.fetch_experiments({}))
+            storage.delete_experiment(uid=cfg.experiments[0]['_id'])
+            experiments = storage.fetch_experiments({})
+            assert len(experiments) == n_experiments - 1
+            assert cfg.experiments[0]['_id'] not in [exp['_id'] for exp in experiments]
 
     def test_register_trial(self, storage):
         """Test register trial"""
@@ -321,6 +336,39 @@ class TestStorage:
 
             with pytest.raises(DuplicateKeyError):
                 storage.register_lie(Trial(**cfg.lies[0]))
+
+    def test_update_trials(self, storage):
+        """Test update many trials"""
+        with OrionState(
+                experiments=[base_experiment],
+                trials=generate_trials(status=['completed', 'reserved', 'reserved']),
+                storage=storage) as cfg:
+            storage = cfg.storage()
+
+            class _Dummy:
+                pass
+
+            experiment = cfg.get_experiment('default_name', version=None)
+            trials = storage.fetch_trials(experiment)
+            assert sum(trial.status == 'reserved' for trial in trials) == 2
+            count = storage.update_trials(
+                experiment,
+                where={'status': 'reserved'},
+                status='interrupted')
+            assert count == 2
+            trials = storage.fetch_trials(experiment)
+            assert sum(trial.status == 'interrupted' for trial in trials) == 2
+
+    def test_update_trial(self, storage):
+        """Test update one trial"""
+        with OrionState(experiments=[base_experiment], trials=[base_trial], storage=storage) as cfg:
+            storage = cfg.storage()
+
+            trial = Trial(**cfg.trials[0])
+
+            assert trial.status != 'interrupted'
+            storage.update_trial(trial, status='interrupted')
+            assert storage.get_trial(trial).status == 'interrupted'
 
     def test_reserve_trial_success(self, storage):
         """Test reserve trial"""
@@ -355,7 +403,7 @@ class TestStorage:
             experiment = cfg.get_experiment('default_name', version=None)
 
             trials1 = storage.fetch_trials(experiment=experiment)
-            trials2 = storage.fetch_trials(uid=experiment._id)
+            trials2 = storage.fetch_trials(uid=experiment.id)
 
             with pytest.raises(MissingArguments):
                 storage.fetch_trials()
@@ -365,6 +413,60 @@ class TestStorage:
 
             assert len(trials1) == len(cfg.trials), 'trial count should match'
             assert len(trials2) == len(cfg.trials), 'trial count should match'
+
+    def test_delete_all_trials(self, storage):
+        """Test delete all trials of an experiment"""
+        if storage and storage['type'] == 'track':
+            pytest.xfail("Track does not support deletion yet.")
+
+        trials = generate_trials()
+        trial_from_other_exp = copy.deepcopy(trials[0])
+        trial_from_other_exp['experiment'] = 'other'
+        trials.append(trial_from_other_exp)
+        with OrionState(
+                experiments=[base_experiment], trials=trials, storage=storage) as cfg:
+            storage = cfg.storage()
+
+            # Make sure we have sufficient trials to test deletion
+            trials = storage.fetch_trials(uid='default_name')
+            assert len(trials) > 2
+
+            count = storage.delete_trials(uid='default_name')
+            assert count == len(trials)
+            assert storage.fetch_trials(uid='default_name') == []
+
+            # Make sure trials from other experiments were not deleted
+            assert len(storage.fetch_trials(uid='other')) == 1
+
+    def test_delete_trials_with_query(self, storage):
+        """Test delete experiment trials matching a query"""
+        if storage and storage['type'] == 'track':
+            pytest.xfail("Track does not support deletion yet.")
+
+        trials = generate_trials()
+        trial_from_other_exp = copy.deepcopy(trials[0])
+        trial_from_other_exp['experiment'] = 'other'
+        trials.append(trial_from_other_exp)
+        with OrionState(
+                experiments=[base_experiment], trials=trials, storage=storage) as cfg:
+            storage = cfg.storage()
+            experiment = cfg.get_experiment('default_name')
+
+            # Make sure we have sufficient trials to test deletion
+            status = trials[0]['status']
+            trials = storage.fetch_trials(experiment)
+            trials_with_status = storage.fetch_trials_by_status(experiment, status)
+            assert len(trials_with_status) > 0
+            assert len(trials) > len(trials_with_status)
+
+            # Test deletion
+            count = storage.delete_trials(uid='default_name', where={'status': status})
+            assert count == len(trials_with_status)
+            assert storage.fetch_trials_by_status(experiment, status) == []
+            assert len(storage.fetch_trials(experiment)) == len(trials) - len(trials_with_status)
+
+            # Make sure trials from other experiments were not deleted
+            assert len(storage.fetch_trials(uid='other')) == 1
 
     def test_get_trial(self, storage):
         """Test get trial"""

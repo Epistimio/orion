@@ -13,10 +13,43 @@
 import logging
 
 import orion.core
-from orion.core.utils import (AbstractSingletonType, SingletonFactory)
-
+from orion.core.utils.singleton import AbstractSingletonType, SingletonFactory
 
 log = logging.getLogger(__name__)
+
+
+def get_uid(item=None, uid=None, force_uid=True):
+    """Return uid either from `item` or directly uid.
+
+    Parameters
+    ----------
+    item: Experiment or Trial, optional
+       Object with .id attribute
+
+    uid: str, optional
+        str id representation
+
+    force_uid: bool, optional
+        If True, at least one of item or uid must be passed.
+
+    Raises
+    ------
+    UndefinedCall
+        if both item and uid are not set and force_uid is True
+
+    AssertionError
+        if both item and uid are provided and they do not match
+    """
+    if item is not None and uid is not None:
+        assert item.id == uid
+
+    if uid is None:
+        if item is None and force_uid:
+            raise MissingArguments('Either `item` or `uid` should be set')
+        elif item is not None:
+            uid = item.id
+
+    return uid
 
 
 class FailedUpdate(Exception):
@@ -41,8 +74,33 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """Insert a new experiment inside the database"""
         raise NotImplementedError()
 
+    def delete_experiment(self, experiment=None, uid=None):
+        """Delete matching experiments from the database
+
+        Parameters
+        ----------
+        experiment: Experiment, optional
+           experiment object to retrieve from the database
+
+        uid: str, optional
+            experiment id used to retrieve the trial object
+
+        Returns
+        -------
+        Number of experiments deleted.
+
+        Raises
+        ------
+        UndefinedCall
+            if both experiment and uid are not set
+
+        AssertionError
+            if both experiment and uid are provided and they do not match
+        """
+        raise NotImplementedError()
+
     def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
-        """Update a the fields of a given trials
+        """Update the fields of a given experiment
 
         Parameters
         ----------
@@ -98,6 +156,34 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """
         raise NotImplementedError()
 
+    def delete_trials(self, experiment=None, uid=None, where=None):
+        """Delete matching trials from the database
+
+        Parameters
+        ----------
+        experiment: Experiment, optional
+           experiment object to retrieve from the database
+
+        uid: str, optional
+            experiment id used to retrieve the trial object
+
+        where: Optional[dict]
+            constraint trials must respect
+
+        Returns
+        -------
+        Number of trials deleted.
+
+        Raises
+        ------
+        UndefinedCall
+            if both experiment and uid are not set
+
+        AssertionError
+            if both experiment and uid are provided and they do not match
+        """
+        raise NotImplementedError()
+
     def reserve_trial(self, experiment):
         """Select a pending trial and reserve it for the worker
 
@@ -130,6 +216,62 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
 
         AssertionError
             if both experiment and uid are provided and they do not match
+
+        """
+        raise NotImplementedError()
+
+    def update_trials(self, experiment=None, uid=None, where=None, **kwargs):
+        """Update trials of a given experiment matching a query
+
+        Parameters
+        ----------
+        experiment: Experiment, optional
+           experiment object to retrieve from the database
+
+        uid: str, optional
+            experiment id used to retrieve the trial object
+
+        where: Optional[dict]
+            constraint trials must respect
+
+        **kwargs: dict
+            a dictionary of fields to update
+
+        Raises
+        ------
+        UndefinedCall
+            if both experiment and uid are not set
+
+        AssertionError
+            if both experiment and uid are provided and they do not match
+
+        """
+        raise NotImplementedError()
+
+    def update_trial(self, trial=None, uid=None, where=None, **kwargs):
+        """Update fields of a given trial
+
+        Parameters
+        ----------
+        trial: Trial, optional
+           trial object to update in the database
+
+        uid: str, optional
+            id of the trial to update in the database
+
+        where: Optional[dict]
+            constraint trials must respect. Note: useful to handle race conditions.
+
+        **kwargs: dict
+            a dictionary of fields to update
+
+        Raises
+        ------
+        UndefinedCall
+            if both trial and uid are not set
+
+        AssertionError
+            if both trial and uid are provided and they do not match
 
         """
         raise NotImplementedError()

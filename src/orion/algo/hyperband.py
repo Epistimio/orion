@@ -190,7 +190,7 @@ class Hyperband(BaseAlgorithm):
         """
         self.seed = seed
         for i, bracket in enumerate(self.brackets):
-            bracket.seed_rng(seed + i if seed is not None else None)
+            bracket.seed_rng(self.executed_times + seed + i if seed is not None else None)
         self.rng = numpy.random.RandomState(seed)
 
     @property
@@ -280,8 +280,6 @@ class Hyperband(BaseAlgorithm):
                     Bracket(self, bracket_budgets, self.executed_times + 1)
                     for bracket_budgets in self.budgets
                 ]
-                if self.seed is not None:
-                    self.seed += 1
 
     def _get_bracket(self, point):
         """Get the bracket of a point during observe"""

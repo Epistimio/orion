@@ -23,6 +23,7 @@ from orion.storage.legacy import Legacy
 
 
 log = logging.getLogger(__name__)
+SHORT_DESCRIPTION = 'Upgrade the database scheme'
 
 
 # TODO: Move somewhere else to share with `db setup`.
@@ -55,7 +56,8 @@ def ask_question(question, default=None):
 
 def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
-    upgrade_db_parser = parser.add_parser('upgrade', help='Upgrade the database scheme')
+    upgrade_db_parser = parser.add_parser('upgrade', help=SHORT_DESCRIPTION,
+                                          description=SHORT_DESCRIPTION)
 
     upgrade_db_parser.add_argument('-c', '--config', type=argparse.FileType('r'),
                                    metavar='path-to-config', help="user provided "

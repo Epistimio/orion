@@ -13,12 +13,12 @@ import pytest
 import orion.core
 from orion.core.io.space_builder import SpaceBuilder
 import orion.core.utils.backward as backward
-from orion.core.utils.tests import OrionState
 import orion.core.worker.experiment
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
+from orion.testing import OrionState
 
 
 @pytest.fixture()
@@ -583,3 +583,16 @@ def test_experiment_view_protocol_read_only():
 
         with pytest.raises(AttributeError):
             exp_view._experiment._storage.set_trial_status
+
+
+def test_view_is_broken():
+    """Tests that property ``is_broken`` is accessible in an experiment's view"""
+    broken = ['broken'] * 5
+    with OrionState(trials=generate_trials(broken)) as cfg:
+        exp = Experiment('test-experiment')
+        exp._id = cfg.trials[0]['experiment']
+
+        assert exp.is_broken
+
+        exp_view = ExperimentView(exp)
+        assert exp_view.is_broken

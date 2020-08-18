@@ -21,7 +21,11 @@ packages = [
     'orion.core',
     'orion.client',
     'orion.algo',
-    'orion.storage'
+    'orion.storage',
+    'orion.plotting',
+    'orion.analysis',
+    'orion.serving',
+    'orion.testing'
     ]
 
 setup_args = dict(
@@ -54,7 +58,7 @@ setup_args = dict(
             ]
         },
     install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython', 'filelock',
-                      'tabulate', 'AppDirs'],
+                      'tabulate', 'AppDirs', 'plotly', 'pandas', 'gunicorn', 'falcon'],
     tests_require=tests_require,
     setup_requires=['setuptools', 'appdirs', 'pytest-runner'],
     extras_require=dict(test=tests_require),

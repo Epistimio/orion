@@ -10,13 +10,13 @@ import pytest
 
 from orion.core.io.database import Database
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils import SingletonAlreadyInstantiatedError, SingletonNotInstantiatedError
 from orion.core.utils.exceptions import MissingResultFile
-from orion.core.utils.tests import OrionState, update_singletons
+from orion.core.utils.singleton import SingletonAlreadyInstantiatedError, \
+    SingletonNotInstantiatedError, update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import FailedUpdate
 from orion.storage.legacy import get_database, setup_database
-
+from orion.testing import OrionState
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.WARNING)
@@ -179,8 +179,9 @@ class TestLegacyStorage:
         )
 
         # Generate fake result
-        with open(results_file.name, 'w') as file:
-            json.dump([generated_result], file)
+        json.dump([generated_result], results_file)
+        results_file.flush()
+
         # --
         with OrionState(experiments=[], trials=[], storage=storage) as cfg:
             storage = cfg.storage()
@@ -192,6 +193,8 @@ class TestLegacyStorage:
 
             assert len(results) == 1
             assert results[0].to_dict() == generated_result
+
+        results_file.close()
 
     def test_retrieve_result(self, storage=None):
         """Test retrieve result"""
@@ -223,5 +226,7 @@ class TestLegacyStorage:
 
             with pytest.raises(MissingResultFile) as exec:
                 storage.retrieve_result(trial, results_file)
+
+        results_file.close()
 
         assert exec.match(r'Cannot parse result file')

@@ -15,11 +15,12 @@ from orion.core.cli.db.setup import main
 
 
 log = logging.getLogger(__name__)
+DESCRIPTION = '(DEPRECATED) Use command `orion db setup` instead'
 
 
 def add_subparser(parser):
     """Return the parser that needs to be used for this command"""
-    setup_parser = parser.add_parser('setup', help='setup help')
+    setup_parser = parser.add_parser('setup', help=DESCRIPTION, description=DESCRIPTION)
 
     setup_parser.set_defaults(func=main)
 

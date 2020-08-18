@@ -13,10 +13,9 @@ from orion.client.cli import (
 from orion.client.experiment import ExperimentClient
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.exceptions import RaceCondition
-from orion.core.utils.tests import update_singletons
+from orion.core.utils.singleton import update_singletons
 from orion.core.worker.producer import Producer
 from orion.storage.base import setup_storage
-
 
 __all__ = ['interrupt_trial', 'report_bad_trial', 'report_objective', 'report_results',
            'create_experiment', 'workon']
@@ -225,18 +224,19 @@ def workon(function, space, name='loop', algorithms=None, max_trials=None):
     # Clear singletons and keep pointers to restore them.
     singletons = update_singletons()
 
-    setup_storage(storage={'type': 'legacy', 'database': {'type': 'EphemeralDB'}})
+    try:
+        setup_storage(storage={'type': 'legacy', 'database': {'type': 'EphemeralDB'}})
 
-    experiment = experiment_builder.build(
-        name, version=1, space=space, algorithms=algorithms,
-        strategy='NoParallelStrategy', max_trials=max_trials)
+        experiment = experiment_builder.build(
+            name, version=1, space=space, algorithms=algorithms,
+            strategy='NoParallelStrategy', max_trials=max_trials)
 
-    producer = Producer(experiment)
+        producer = Producer(experiment)
 
-    experiment_client = ExperimentClient(experiment, producer)
-    experiment_client.workon(function, max_trials=max_trials)
-
-    # Restore singletons
-    update_singletons(singletons)
+        experiment_client = ExperimentClient(experiment, producer)
+        experiment_client.workon(function, max_trials=max_trials)
+    finally:
+        # Restore singletons
+        update_singletons(singletons)
 
     return experiment_client

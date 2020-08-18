@@ -9,7 +9,7 @@ from pymongo import MongoClient
 import pytest
 
 from orion.client import create_experiment
-from orion.core.io.database import Database, OutdatedDatabaseError
+from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
 import orion.core.io.experiment_builder as experiment_builder
@@ -23,19 +23,8 @@ PYTHON_SCRIPT_PATH = os.path.join(DIRNAME, 'python_api.py')
 SCRIPT_PATH = os.path.join(DIRNAME, 'black_box.py')
 CONFIG_FILE = os.path.join(DIRNAME, 'random.yaml')
 
-# Ignore pre-0.1.3 because there was no PickleDB backend.
-VERSIONS = ['0.1.3', '0.1.4', '0.1.5', '0.1.6', '0.1.7']
-
-
-def get_package(version):
-    """Get package name based on version.
-
-    Package changed to orion instead of orion.core at 0.1.6
-    """
-    if version >= '0.1.6':
-        return 'orion'
-
-    return 'orion.core'
+# Ignore pre-0.1.6 because was on orion.core and pypi project was deleted.
+VERSIONS = ['0.1.6', '0.1.7', '0.1.8']
 
 
 def get_branch_argument(version):
@@ -90,8 +79,8 @@ def setup_virtualenv(version):
     if os.path.exists(virtualenv_dir):
         shutil.rmtree(virtualenv_dir)
     execute('virtualenv {}'.format(virtualenv_dir))
-    command = '{}/bin/pip install --ignore-installed {}=={}'.format(
-        virtualenv_dir, get_package(version), version)
+    command = '{}/bin/pip install --ignore-installed orion=={}'.format(
+        virtualenv_dir, version)
     execute(command)
 
 
@@ -158,11 +147,6 @@ def fill_db(request):
 
     orion_version = get_version('orion')
     assert orion_version != 'orion {}'.format(version)
-
-    # Should fail before upgrade
-    if version < '0.1.6':
-        with pytest.raises(OutdatedDatabaseError):
-            build_storage()
 
     print(execute('orion -vv db upgrade -f'))
 

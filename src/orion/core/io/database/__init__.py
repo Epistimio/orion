@@ -16,7 +16,7 @@ Currently, implemented wrappers:
 from abc import abstractmethod, abstractproperty
 import logging
 
-from orion.core.utils import (AbstractSingletonType, SingletonFactory)
+from orion.core.utils.singleton import AbstractSingletonType, SingletonFactory
 
 
 # pylint: disable=too-many-public-methods

@@ -1,22 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Perform a functional test of the info command."""
-import pytest
-
 import orion.core.cli
 import orion.core.io.resolve_config
 
 
 def test_info_no_hit(clean_db, one_experiment, capsys):
     """Test info if no experiment with given name."""
-    with pytest.raises(SystemExit) as exc:
-        orion.core.cli.main(['info', '--name', 'i do not exist'])
+    returncode = orion.core.cli.main(['info', '--name', 'i do not exist'])
 
-    assert str(exc.value) == '1'
+    assert returncode == 1
 
-    captured = capsys.readouterr().out
+    captured = capsys.readouterr().err
 
-    assert captured == 'Experiment i do not exist not found in db.\n'
+    assert captured.startswith('Error: No experiment with given name \'i do not exist\'')
 
 
 def test_info_hit(clean_db, one_experiment, capsys):

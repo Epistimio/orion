@@ -39,6 +39,7 @@ time to create the release artifacts and publish the release.
    release candidate pull request's for the description. See the `0.1.6
    <https://github.com/Epistimio/orion/releases/tag/v0.1.6>`_ version example.
 #. Merge the master branch back to develop.
+#. Update the backward compability tests by adding the new version.
 #. Delete the release candidate branch.
 
 Publishing the release

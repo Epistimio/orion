@@ -12,12 +12,11 @@ import orion.client.cli as cli
 import orion.core
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils import SingletonNotInstantiatedError
 from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
-from orion.core.utils.tests import OrionState, update_singletons
+from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
-
+from orion.testing import OrionState
 
 create_experiment = orion.client.create_experiment
 workon = orion.client.workon
@@ -387,6 +386,39 @@ class TestWorkon:
         experiment = workon(foo, space={'x': 'uniform(0, 10)'}, max_trials=5, name='voici')
 
         assert experiment.name == 'voici'
+
+    def test_workon_fail(self, monkeypatch):
+        """Verify that storage is reverted if workon fails"""
+        def foo(x):
+            return [dict(name='result', type='objective', value=x * 2)]
+
+        def build_fail(*args, **kwargs):
+            raise RuntimeError('You shall not build!')
+
+        monkeypatch.setattr('orion.core.io.experiment_builder.build', build_fail)
+
+        # Flush storage singleton
+        update_singletons()
+
+        with pytest.raises(RuntimeError) as exc:
+            experiment = workon(foo, space={'x': 'uniform(0, 10)'}, max_trials=5, name='voici')
+
+        assert exc.match('You shall not build!')
+
+        # Verify that tmp storage was cleared
+        with pytest.raises(SingletonNotInstantiatedError):
+            get_storage()
+
+        # Now test with a prior storage
+        with OrionState(storage={'type': 'legacy', 'database': {'type': 'EphemeralDB'}}):
+            storage = get_storage()
+
+            with pytest.raises(RuntimeError) as exc:
+                workon(foo, space={'x': 'uniform(0, 10)'}, max_trials=5, name='voici')
+
+            assert exc.match('You shall not build!')
+
+            assert get_storage() is storage
 
     def test_workon_twice(self):
         """Verify setting the each experiment has its own storage"""

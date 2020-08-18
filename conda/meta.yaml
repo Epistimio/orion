@@ -26,6 +26,10 @@ requirements:
     - filelock
     - tabulate
     - AppDirs
+    - plotly
+    - pandas
+    - falcon
+    - gunicorn
 
 test:
   import:
@@ -34,6 +38,8 @@ test:
     - orion.algo
     - orion.client
     - orion.storage
+    - orion.serving
+    - orion.testing
   commands:
     - orion --help
 

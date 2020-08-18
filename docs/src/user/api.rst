@@ -7,14 +7,14 @@ Optimize
    :local:
 
 
-There are two ways of using Oríon for optimization. One is using the commandline interface which
+There are two ways of using Oríon for optimization. One is using the command line interface which
 conveniently turn a simple script into a hyper-parameter optimization process at the level of the
 command line.
 The other is using the python interface which gives total control
 over the pipeline of optimization.
 
-Commandline API
-===============
+Command line API
+================
 
 Suppose you normally execute your script with the following command
 
@@ -47,21 +47,19 @@ Python APIs
 
 The python API is declined in two versions
 
-:ref:`sequential_api`:
-   A simple method for local sequential optimision.
 :ref:`service_api`:
    A simple method to get new parameters to try and report results in a distributed manner.
 :ref:`framework_api`:
    Total control over the hyper-parameter optimization pipeline.
 
+.. _service_api:
 
-.. _sequential_api:
+Service API
+-----------
 
-Sequential API
---------------
-
-Using the helper :py:func:`orion.client.workon`,
-you can optimize a function with a single line of code.
+Using the helper :py:func:`orion.client.workon`, you can quickly optimize a function with a single
+line of code. The experiment object returned can be used to fetch the database of trials and analyze
+the optimization process. However, it is not persistent as it only exists in memory.
 
 .. code-block:: python
 
@@ -77,25 +75,16 @@ you can optimize a function with a single line of code.
 
    experiment = workon(foo, space=dict(x='uniform(-50,50)'))
 
-
-The experiment object returned can be used to fetch the database of trials
-and analyze the optimization process. Note that the storage for `workon` is
-in-memory and requires no setup. This means however that :py:func:`orion.client.workon`
-cannot be used for parallel optimisation.
-
-.. _service_api:
-
-Service API
------------
-
-Experiments are created using the helper function
-:py:func:`orion.client.create_experiment`.
-You can then sample new trials with
+Thus, in most cases, you will want to use
+the helper function :py:func:`orion.client.create_experiment` to interact with a persistent
+database. You can then sample new trials with
 :py:meth:`experiment.suggest() <orion.client.experiment.ExperimentClient.suggest>`.
-The parameters of the trials are provided as a dictionary with
-:py:meth:`trial.params <orion.core.worker.trial.Trial.params>`.
-Once the trial is completed, results can be reported to the experiment with
-:py:meth:`experiment.observe() <orion.client.experiment.ExperimentClient.observe>`.
+The parameters of the trials are provided as a
+dictionary with :py:meth:`trial.params <orion.core.worker.trial.Trial.params>`.
+
+Once the trial is completed, results can be reported to the
+experiment with :py:meth:`experiment.observe() <orion.client.experiment.ExperimentClient.observe>`.
+
 Note that this should be the final result of the trial. When observe is called, the trial
 reservation is released and its status is set to completed. Observing twice the same trial will
 raise a RuntimeError because the trial is not reserved anymore.
@@ -124,7 +113,7 @@ The storage used by the experiment can be specified as an argument to
 :py:func:`create_experiment(storage={}) <orion.client.create_experiment>`
 or in a global configuration file as described in :ref:`install_database`.
 
-To distribute the hyper-parameter optimisation in many workers, simply execute your script in
+To distribute the hyper-parameter optimization in many workers, simply execute your script in
 parallel where you want to execute your trials. The method
 :py:meth:`experiment.suggest() <orion.client.experiment.ExperimentClient.suggest>`
 will take care of synchronizing the local algorithm with all remote instances, making it possible
@@ -139,9 +128,7 @@ for more information on the experiment client object.
    different code version will not lead to version increment like it would do with the commandline
    API.
 
-
 .. _framework_api:
-
 
 Framework API
 -------------
