@@ -384,6 +384,16 @@ class TestRelease:
             assert trial.id not in client._pacemakers
             assert not pacemaker.is_alive()
 
+    def test_release_invalid_status(self):
+        """Test releasing with a specific status"""
+        with create_experiment() as (cfg, experiment, client):
+            trial = experiment.get_trial(uid=cfg.trials[1]['_id'])
+            client.reserve(trial)
+            with pytest.raises(ValueError) as exc:
+                client.release(trial, 'mouf mouf')
+
+            assert exc.match('Given status `mouf mouf` not one of')
+
     def test_release_dont_exist(self, monkeypatch):
         """Verify that unregistered trials cannot be released"""
         with create_experiment() as (cfg, experiment, client):
@@ -538,6 +548,20 @@ class TestBroken:
                 assert client2._pacemakers == {}
                 assert client1.get_trial(trial1).status == 'broken'
                 assert client2.get_trial(trial2).status == 'interrupted'
+
+    def test_interrupted_trial(self):
+        """Test that interrupted trials are not set to broken"""
+        with create_experiment() as (cfg, experiment, client):
+            trial = client.suggest()
+            assert trial.status == 'reserved'
+
+            try:
+                raise KeyboardInterrupt
+            except KeyboardInterrupt as e:
+                atexit._run_exitfuncs()
+
+            assert client._pacemakers == {}
+            assert client.get_trial(trial).status == 'interrupted'
 
 
 class TestSuggest:

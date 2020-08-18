@@ -466,14 +466,12 @@ class TestCategorical(object):
         with pytest.raises(ValueError):
             Categorical('yolo', categories, shape=2)
 
-    def test_interval_is_banned(self):
+    def test_interval(self):
         """Check that calling `Categorical.interval` raises `RuntimeError`."""
         categories = {'asdfa': 0.1, 2: 0.2, 3: 0.3, 4: 0.4}
         dim = Categorical('yolo', categories, shape=2)
 
-        with pytest.raises(RuntimeError) as exc:
-            dim.interval()
-        assert 'not ordered' in str(exc.value)
+        assert dim.interval() == ('asdfa', 2, 3, 4)
 
     def test_that_objects_types_are_ok(self):
         """Check that output samples are of the correct type.

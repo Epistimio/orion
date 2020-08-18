@@ -440,6 +440,19 @@ class TestStorage:
         check_status_change('suspended')
         check_status_change('new')
 
+    def test_change_status_invalid(self, storage):
+        """Attempt to change the status of a Trial with an invalid one"""
+        with OrionState(
+                experiments=[base_experiment],
+                trials=generate_trials(), storage=storage) as cfg:
+            trial = get_storage().get_trial(cfg.get_trial(0))
+            assert trial is not None, 'Was not able to retrieve trial for test'
+
+            with pytest.raises(ValueError) as exc:
+                get_storage().set_trial_status(trial, status='moo')
+
+            assert exc.match('Given status `moo` not one of')
+
     def test_change_status_failed_update(self, storage):
         """Change the status of a Trial"""
         def check_status_change(new_status):

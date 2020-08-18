@@ -101,7 +101,8 @@ from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
 import orion.core.utils.backward as backward
-from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
+from orion.core.utils.exceptions import (
+    BranchingEvent, NoConfigurationError, NoNameError, RaceCondition)
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import Strategy
@@ -202,6 +203,9 @@ def build(name, version=None, branching=None, **config):
     if 'space' not in config:
         raise NoConfigurationError(
             'Experiment {} does not exist in DB and space was not defined.'.format(name))
+
+    if len(config['space']) == 0:
+        raise NoConfigurationError("No prior found. Please include at least one.")
 
     experiment = create_experiment(**copy.deepcopy(config))
     if experiment.id is None:
@@ -527,6 +531,9 @@ def build_from_args(cmdargs):
     """
     cmd_config = get_cmd_config(cmdargs)
 
+    if 'name' not in cmd_config:
+        raise NoNameError()
+
     setup_storage(cmd_config['storage'], debug=cmd_config.get('debug'))
 
     return build(**cmd_config)
@@ -542,6 +549,9 @@ def build_view_from_args(cmdargs):
 
     """
     cmd_config = get_cmd_config(cmdargs)
+
+    if 'name' not in cmd_config:
+        raise NoNameError()
 
     setup_storage(cmd_config['storage'], debug=cmd_config.get('debug'))
 

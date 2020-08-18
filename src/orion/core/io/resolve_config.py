@@ -196,7 +196,7 @@ def fetch_config(args):
         max_trials = tmp_config.pop('max_trials', None)
         if max_trials is not None:
             log.warning(
-                '(DEPRECATED) Option `max_trials` is deprecated'
+                '(DEPRECATED) Option `max_trials` is deprecated '
                 'and will be removed in v0.3. Use instead the option'
                 '\nexperiment:\n  max_trials: %s', max_trials)
             local_config['experiment.max_trials'] = max_trials
@@ -204,7 +204,7 @@ def fetch_config(args):
         worker_trials = tmp_config.get('experiment', {}).pop('worker_trials', None)
         if worker_trials is not None:
             log.warning(
-                '(DEPRECATED) Option `experiment.worker_trials` is deprecated'
+                '(DEPRECATED) Option `experiment.worker_trials` is deprecated '
                 'and will be removed in v0.3. Use instead the option'
                 '\nworker:\n  max_trials: %s', worker_trials)
             local_config['worker.max_trials'] = worker_trials
@@ -212,7 +212,7 @@ def fetch_config(args):
         worker_trials = tmp_config.pop('worker_trials', None)
         if worker_trials is not None:
             log.warning(
-                '(DEPRECATED) Option `worker_trials` is deprecated'
+                '(DEPRECATED) Option `worker_trials` is deprecated '
                 'and will be removed in v0.3. Use instead the option'
                 '\nworker:\n  max_trials: %s', worker_trials)
             local_config['worker.max_trials'] = worker_trials
@@ -220,7 +220,15 @@ def fetch_config(args):
         producer = tmp_config.pop('producer', None)
         if producer is not None:
             log.warning(
-                '(DEPRECATED) Option `producer` is deprecated'
+                '(DEPRECATED) Option `producer` is deprecated '
+                'and will be removed in v0.3. Use instead the option'
+                '\nexperiment:\n  strategy: %s', producer['strategy'])
+            local_config['experiment.strategy'] = producer['strategy']
+
+        producer = tmp_config.get('experiment', {}).pop('producer', None)
+        if producer is not None:
+            log.warning(
+                '(DEPRECATED) Option `experiment.producer` is deprecated '
                 'and will be removed in v0.3. Use instead the option'
                 '\nexperiment:\n  strategy: %s', producer['strategy'])
             local_config['experiment.strategy'] = producer['strategy']
@@ -243,8 +251,8 @@ def fetch_config(args):
                 if backward_value is not None:
                     log.warning(
                         '(DEPRECATED) Option `%s` and will be removed in v0.3. '
-                        'Use instead the option' '\n%s:\n  %s: %s',
-                        subkey, key, subkey, repr(backward_value))
+                        'Use instead the option' '\n%s:\n  %s:\n    %s',
+                        subkey, key, subkey, yaml.dump(backward_value, indent=6))
                 value = tmp_config.get(key, {}).pop(subkey, backward_value)
                 if value is not None:
                     local_config.setdefault(key, {})

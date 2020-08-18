@@ -21,8 +21,8 @@ Oríon
    :target: https://zenodo.org/badge/latestdoi/102697867
    :alt: DOI
 
-.. |rtfd| image:: https://readthedocs.org/projects/orion/badge/?version=latest
-    :target: https://orion.readthedocs.io/en/latest/?badge=latest
+.. |rtfd| image:: https://readthedocs.org/projects/orion/badge/?version=stable
+    :target: https://orion.readthedocs.io/en/stable/?badge=stable
     :alt: Documentation Status
 
 .. |codecov| image:: https://codecov.io/gh/Epistimio/orion/branch/master/graph/badge.svg
@@ -53,9 +53,9 @@ Check out our `getting started guide`_ or `this presentation
 for an overview, or our `scikit-learn example`_ for a more hands-on experience. Finally we encourage you
 to browse our `documentation`_.
 
-.. _getting started guide: https://orion.readthedocs.io/en/latest/install/gettingstarted.html
+.. _getting started guide: https://orion.readthedocs.io/en/stable/install/gettingstarted.html
 .. _documentation: https://orion.readthedocs.io/
-.. _scikit-learn example: https://orion.readthedocs.io/en/latest/tutorials/scikit-learn.html
+.. _scikit-learn example: https://orion.readthedocs.io/en/stable/tutorials/scikit-learn.html
 
 Why Oríon?
 ==========
@@ -65,10 +65,12 @@ Why Oríon?
 - `Natively asynchronous <https://orion.readthedocs.io/en/stable/code/core.html>`_, thus resilient and easy to parallelize
 - Offers the latest established hyperparameter `algorithms <https://orion.readthedocs.io/en/stable/user/algorithms.html>`_
 - Elegant and rich `search-space definitions <https://orion.readthedocs.io/en/stable/user/searchspace.html>`_
-- Comprehensive `configuration <https://orion.readthedocs.io/en/latest/user/config.html>`_ system with smart defaults
+- Comprehensive `configuration <https://orion.readthedocs.io/en/stable/user/config.html>`_ system with smart defaults
 - Transparent persistence in local or remote `database <https://orion.readthedocs.io/en/stable/install/database.html>`_
 - `Integrate seamlessly <https://orion.readthedocs.io/en/stable/plugins/base.html>`_ your own
   hyper-optimization algorithms
+- `Language <https://orion.readthedocs.io/en/stable/user/script.html#language-compatibility>`_
+  and `configuration file <https://orion.readthedocs.io/en/stable/user/searchspace.html#configuration-file>`_ agnostic
 
 Installation
 ============
@@ -117,7 +119,7 @@ If you use Oríon for published work, please cite our work using the following b
      month        = oct,
      year         = 2019,
      publisher    = {Zenodo},
-     version      = {v0.1.7},
+     version      = {v0.1.8},
      doi          = {10.5281/zenodo.3478592},
      url          = {https://doi.org/10.5281/zenodo.3478592}
    }
