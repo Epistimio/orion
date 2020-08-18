@@ -131,7 +131,7 @@ def test_compute_budgets():
 
 def test_customized_mutate_population(space1, rung_3, budgets):
     """Verify customized mutated candidates is generated correctly."""
-    customerized_dict = {'function': 'orion.core.utils.tests.customized_mutate_example',
+    customerized_dict = {'function': 'orion.testing.state.customized_mutate_example',
                          'multiply_factor': 2.0, 'add_factor': 1}
     algo = EvolutionES(space1, repetitions=1, nums_population=4,
                        mutate=customerized_dict)
