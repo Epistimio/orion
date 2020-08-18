@@ -32,6 +32,31 @@ Authentication
 ---------------
 No authentication is necessary at the moment.
 
+Runtime
+-------
+The runtime resource represents the runtime information for the API server.
+
+.. http:get:: /
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+
+   .. code-block:: json
+
+      {
+        "orion": "v0.1.7",
+        "server": "gunicorn",
+        "database": "pickleddb"
+      }
+
+   :>json string orion: The version of Oríon running the API server.
+   :>json string server: The WSGI HTTP Server hosting the API server.
+   :>json string database: The type of database where the HPO data is stored.
 Errors
 ------
 Oríon uses `conventional HTTP response codes <https://en.wikipedia.org/wiki/List_of_HTTP_status_codes>`_
