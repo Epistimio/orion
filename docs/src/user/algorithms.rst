@@ -276,26 +276,41 @@ is ``False``. Default is ``25``.
 .. _evolution-es algorithm:
 
 Evolution-ES
-----
+-------------
 
-`Evolution-ES`_, the evolution algorithm with early stop version. Here is an implementation of `Evolution-ES`_.
-In the evolution algorithm, we follow the tournament selection algorithm as `Large-Scale-Evolution`_.
-Tournament selection evolutionary hyper-parameter search is conducted by first defining a gene encoding
-that describes a hyper-parameter combination, and then creating the initial population by randomly
-sampling from the space of gene encodings to create individuals, which are trained and assigned fitnesses.
-The population is then repeatedly sampled from to produce groups, and the parent is selected by the individual
-with the highest fitness. Selected parents have their gene encodings mutated to produce child models.
-Individual in the group with the lowest fitness is killed, while the newly evaluated child model is added to
-the population, taking the killed individual’s place. This process is repeated and results
-in a population with high fitness individuals can represent the good hyper-parameter combination.
-`Evolution-ES`_ also formulated a method to dynamically allocate resources to more promising individual
-according to their fitness, which is referred to as Progressive Dynamic Hurdles (PDH),
-allows individuals that are consistently performing well to train for more steps. It can be roughly interpreted
-as a sophisticated random search that leverages partial information of the trial execution to concentrate
-resources on the most promising ones.
+`Evolution-ES`_, the evolution algorithm with early stop version.
+Here is an implementation of `Evolution-ES`_.
+In the evolution algorithm, we follow the tournament selection algorithm
+as `Large-Scale-Evolution`_.
+Tournament selection evolutionary hyper-parameter search is conducted
+by first defining a gene encoding
+that describes a hyper-parameter combination,
+and then creating the initial population by randomly
+sampling from the space of gene encodings to create individuals,
+which are trained and assigned fitnesses.
+The population is then repeatedly sampled from to produce groups,
+and the parent is selected by the individual
+with the highest fitness. Selected parents have their gene encodings
+mutated to produce child models.
+Individual in the group with the lowest fitness is killed,
+while the newly evaluated child model is added to
+the population, taking the killed individual’s place.
+This process is repeated and results
+in a population with high fitness individuals can
+represent the good hyper-parameter combination.
+`Evolution-ES`_ also formulated a method to dynamically allocate
+resources to more promising individual
+according to their fitness, which is referred to as
+Progressive Dynamic Hurdles (PDH),
+allows individuals that are consistently performing well to train for more steps.
+It can be roughly interpreted as a sophisticated random search
+that leverages partial information of the trial execution to concentrate resources
+on the most promising ones.
 
-The implementation follows the process and use way of Hyperband. Additionally, The fidelity base in Evolution-ES can be
-extended to support ``fidelity(low, high, base=1)``, which is the same as ``linspace(low, high)``.
+The implementation follows the process and use way of Hyperband.
+Additionally, The fidelity base in Evolution-ES can be
+extended to support ``fidelity(low, high, base=1)``,
+which is the same as ``linspace(low, high)``.
 
 .. _Evolution-ES: https://arxiv.org/abs/1901.11117
 .. _Large-Scale-Evolution: https://arxiv.org/abs/1703.01041
@@ -329,14 +344,15 @@ until no new trials can be suggested.
 
 ``nums_population``
 
-Number of population for EvolutionES. Larger number of population often gets better performance but causes more computation. So
-there is a trade-off according to the search space and required budget of your problems.
+Number of population for EvolutionES. Larger number of population often gets better performance
+but causes more computation. So there is a trade-off according to
+the search space and required budget of your problems.
 
 ``mutate``
 
 In the mutate part, one can define the customized mutate function with its mutate factors,
-such as multiply factor (times/divides by a multiply factor) and add factor (add/subtract by a multiply factor). We support the
-default mutate function.
+such as multiply factor (times/divides by a multiply factor) and add factor
+(add/subtract by a multiply factor). We support the default mutate function.
 
 
 Algorithm Plugins
