@@ -300,4 +300,3 @@ def _select(lhs, rhs):
     if lhs:
         return lhs
     return rhs
-
