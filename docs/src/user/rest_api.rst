@@ -45,7 +45,6 @@ The runtime resource represents the runtime information for the API server.
       HTTP/1.1 200 OK
       Content-Type: text/javascript
 
-
    .. code-block:: json
 
       {
@@ -57,6 +56,110 @@ The runtime resource represents the runtime information for the API server.
    :>json string orion: The version of Oríon running the API server.
    :>json string server: The WSGI HTTP Server hosting the API server.
    :>json string database: The type of database where the HPO data is stored.
+
+Experiments
+-----------
+The experiment resource permits the retrieval of in-progress and completed experiments. You can
+retrieve individual experiments as well as a list of all your experiments.
+
+.. http:get:: /experiments
+
+   Return an unordered list of your experiments. Only the latest version of your experiments are
+   returned.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      [
+        {
+         "name":"JCZY5",
+         "version":2
+        },
+        {
+         "name":"UGH3",
+         "version":1
+        }
+      ]
+
+   :>jsonarr boolean name: Name of the experiment.
+   :>jsonarr string version: Latest version of the experiment.
+
+.. http:get:: /experiments/:name
+
+   Retrieve the details of the existing experiment named `name`.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      {
+         "name": "JCZY5",
+         "version": 2,
+         "status": "done",
+         "trialsCompleted": 8,
+         "startTime": "2020-01-21T16:29:33.73701",
+         "endTime": "2020-01-22 14:43:42.02448",
+         "user": "your username",
+         "orionVersion": "0.1.7",
+         "config": {
+            "maxTrials": 10,
+            "algorithm": {
+               "name": "hyperband",
+               "seed": 42,
+               "repetitions": 1
+            },
+            "space": {
+               "epsilon":"~uniform(1,5)",
+               "lr":"~uniform(0.1,1)"
+            }
+         },
+         "bestTrial": {
+            "id": "f70277",
+            "submitTime": "2020-01-22 14:19:42.02448",
+            "startTime": "2020-01-22 14:20:42.02448",
+            "endTime": "2020-01-22 14:20:42.0248",
+            "parameters": {
+               "epsilon": 1,
+               "lr": 0.1
+            },
+           "objective": -0.7865584361152724,
+           "statistics": {
+               "low": 1,
+               "high": 42
+           }
+         }
+      }
+
+   :query int version: Optional version of the experiment to retrieve. If unspecified, the latest
+      version of the experiment is retrieved.
+
+   :>json string name: The name of the experiment.
+   :>json int version: The version fo the experiment.
+   :>json string status: The status of the experiment. Can be one of 'done' or 'not done' if there
+      is trials remaining.
+   :>json int trialsCompleted: The number of trials completed.
+   :>json date startTime: The timestamp when the experiment started.
+   :>json date endTime: The timestamp when the experiment finished.
+   :>json string user: The name of the user that registered the experiment.
+   :>json string orionVersion: The version of Oríon that carried out the experiment.
+   :>json dict config: The configuration of the experiment.
+   :>json int config.maxTrials: The trial budget for the experiment.
+   :>json dict config.algorithm: The algorithm settings for the experiment.
+   :>json dict config.space: The dictionary of priors in format ``"prior-name":"prior"``.
+   :>json dict bestTrial: The result of the optimization process in the form of the best trial.
+      See the specification of :http:get:`/trials/:experiment/:id`.
+
 Errors
 ------
 Oríon uses `conventional HTTP response codes <https://en.wikipedia.org/wiki/List_of_HTTP_status_codes>`_
