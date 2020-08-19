@@ -150,16 +150,98 @@ retrieve individual experiments as well as a list of all your experiments.
    :>json string status: The status of the experiment. Can be one of 'done' or 'not done' if there
       is trials remaining.
    :>json int trialsCompleted: The number of trials completed.
-   :>json date startTime: The timestamp when the experiment started.
-   :>json date endTime: The timestamp when the experiment finished.
+   :>json timestamp startTime: The timestamp when the experiment started.
+   :>json timestamp endTime: The timestamp when the experiment finished.
    :>json string user: The name of the user that registered the experiment.
    :>json string orionVersion: The version of Oríon that carried out the experiment.
    :>json dict config: The configuration of the experiment.
    :>json int config.maxTrials: The trial budget for the experiment.
    :>json dict config.algorithm: The algorithm settings for the experiment.
-   :>json dict config.space: The dictionary of priors in format ``"prior-name":"prior"``.
+   :>json dict config.space: The dictionary of priors as ``"prior-name":"prior-value"``.
    :>json dict bestTrial: The result of the optimization process in the form of the best trial.
       See the specification of :http:get:`/trials/:experiment/:id`.
+
+   :statuscode 400: When an invalid query parameter is passed in the request.
+   :statuscode 404: When the specified experiment doesn't exist in the database.
+
+Trials
+------
+
+The trials resource permits the retrieval of your trials regardless of their status. You can
+retrieve individual trials as well as a list of all your trials per experiment.
+
+.. http:get:: /trials/:experiment
+
+   Return an unordered list of the trials for the experiment '`experiment`'.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      [
+         {"id": "f70277"},
+         {"id": "a5f7e1b"}
+      ]
+
+   :query boolean ancestors: Optionally include the trials from all the experiment's parents.
+      If unspecified, only the trials for this experiment version are retrieved.
+   :query string status: Optionally filter the trials by their status.
+      See the available statuses in :py:func:`orion.core.worker.trial.validate_status`.
+   :query int version: Optional version of the experiment to retrieve. If unspecified, the latest
+      version of the experiment is retrieved.
+
+   :>jsonarr string id: The ID of one trial for this experiment's version.
+
+   :statuscode 400: When an invalid query parameter is passed in the request.
+   :statuscode 404: When the specified experiment doesn't exist in the database.
+
+.. http:get:: /trials/:experiment/:id
+
+   Return the details of an existing trial with id '`id`' from the experiment '`experiment`'.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   .. code-block:: json
+
+      {
+         "id": "f70277",
+         "submitTime": "2020-01-22 14:19:42.02448"
+         "startTime": "2020-01-22 14:20:42.02448",
+         "endTime": "2020-01-22 14:20:42.0248",
+         "parameters": {
+            "epsilon": 1,
+            "lr": 0.1
+         },
+         "objective": -0.7865584361152724,
+         "statistics": {
+            "low": 1,
+            "high": 42
+         }
+      }
+
+   :>json string id: The ID of the trial.
+   :>json timestamp submitTime: The timestamp when the trial was created
+   :>json timestamp startTime: The timestamp when the trial started to be executed.
+   :>json timestamp endTime: The timestamp when the trial finished its execution.
+   :>json dict parameters: The dictionary of hyper-parameters as
+      ``"parameter-name":"parameter-value"`` for this trial.
+   :>json real objective: The objective found for this trial with the given hyper-parameters.
+   :>json dict statistics: The dictionary of statistics recorded during the trial
+      as ``"statistic-name":"statistic-value"``.
+
+   :statuscode 400: When an invalid query parameter is passed in the request.
+   :statuscode 404: When the specified experiment doesn't exist in the database.
+   :statuscode 404: When the specified trial doesn't exist for the specified experiment.
 
 Plots
 -----
