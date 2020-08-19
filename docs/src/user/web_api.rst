@@ -2,18 +2,14 @@
    The REST API is documented using the sphinx extension sphinxcontrib.httpdomain
    https://sphinxcontrib-httpdomain.readthedocs.io/
 
-The API serves the following endpoints.
+The Oríon Web API is a `RESTful service <https://en.wikipedia.org/wiki/Representational_state_transfer>`_
+that provides a way to retrieve and visualize information about your experiments and trials.
 
-* experiments/
-* experiments/:name
-* trials/:exp_name
-* trials/:exp_name/:id
-* plots/:kind
-
-
-The REST server is started by the command line ``$ orion serve``. The service is hosted through
-`gunicorn <https://gunicorn.org/>`_. The database and host details are configured through the option
-``--config <file>``. Storage options are expressed in the configuration file in the same fashion as
+The API requests are handled by the Oríon itself.
+The REST server is started by the command line ``$ orion serve``. The service is hosted through a
+`gunicorn <https://gunicorn.org/>`_ container.
+The database and host details are configured through the option ``--config <file>``.
+Storage options are expressed in the configuration file in the same fashion as
 for other commands. `Gunicorn options <https://docs.gunicorn.org/en/stable/settings.html>`_ are
 specified under the top-level node ``gunicorn``. An example is included below:
 
@@ -31,7 +27,7 @@ specified under the top-level node ``gunicorn``. An example is included below:
 
 Authentication
 ---------------
-No authentication is necessary at the moment.
+No authentication is necessary at the moment to use the API.
 
 Runtime
 -------
