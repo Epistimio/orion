@@ -277,5 +277,6 @@ or invalid parameters. 5xx codes indicate a server side error.
 
 :Response JSON Object:
 
-   * **title** (string) - The type of error. Can be one of ``Experiment not found``, ``Invalid parameter``, and ``Trial not found``.
+   * **title** (string) - The type of error. Can be one of ``Experiment not found``,
+     ``Invalid parameter``, and ``Trial not found``.
    * **description** (string) - The human-readable description of the error.
