@@ -55,7 +55,7 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx.ext.autosummary',
     'numpydoc',
-    'sphinxcontrib.httpdomain'
+    'sphinxcontrib.httpdomain'  # Documentation directives for the REST API.
 ]
 
 # General information about the project.

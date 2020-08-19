@@ -1,5 +1,6 @@
-The REST API provides another way to retrieve information about the experiments. The REST server
-serves requests to obtain information about trials and experiments.
+..
+   The REST API is documented using the sphinx extension sphinxcontrib.httpdomain
+   https://sphinxcontrib-httpdomain.readthedocs.io/
 
 The API serves the following endpoints.
 
