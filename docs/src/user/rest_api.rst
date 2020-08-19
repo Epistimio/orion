@@ -177,11 +177,7 @@ or invalid parameters. 5xx codes indicate a server side error.
    500 Server Error Internal server error
    ================ ====================================
 
-Attributes
-~~~~~~~~~~
+:Response JSON Object:
 
-:title:
-    The type of error. Can be one of ``Experiment not found``, ``Invalid parameter``,
-    and ``Trial not found``.
-:description:
-    The human-readable description of the error.
+   * **title** (string) - The type of error. Can be one of ``Experiment not found``, ``Invalid parameter``, and ``Trial not found``.
+   * **description** (string) - The human-readable description of the error.
