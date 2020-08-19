@@ -161,6 +161,26 @@ retrieve individual experiments as well as a list of all your experiments.
    :>json dict bestTrial: The result of the optimization process in the form of the best trial.
       See the specification of :http:get:`/trials/:experiment/:id`.
 
+Plots
+-----
+The plot resource permits the generation and retrieval of `Plotly <https://plotly.com/>`_ plots to
+visualize your experiments and their results.
+
+.. http:get:: /plots/regret/:experiment
+
+   Return a regret plot for the specified experiment.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   The JSON output is generated automatically according to the `Plotly.js schema reference <https://plotly.com/python/reference/index/>`_.
+
+   :statuscode 404: When the specified experiment doesn't exist in the database.
+
 Errors
 ------
 Oríon uses `conventional HTTP response codes <https://en.wikipedia.org/wiki/List_of_HTTP_status_codes>`_
