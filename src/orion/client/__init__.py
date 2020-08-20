@@ -206,7 +206,8 @@ def get_experiment(name, version=None):
 
     Raises
     ------
-    :class:`orion.core.utils.exceptions.NoConfigurationError` when no experiment is found.
+    `orion.core.utils.exceptions.NoConfigurationError`
+        The experiment is not in the database provided by the user.
     """
     return experiment_builder.build_view(name, version)
 
