@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.serving.responses` -- Build JSON-compatible responses for Orion objects
-===================================================================================
+:mod:`orion.serving.responses` -- Helpers for building responses according to the specification
+===============================================================================================
 
 .. module:: responses
    :platform: Unix
-   :synopsis: Build JSON-compatible responses for Orion objects
+   :synopsis: Offers functions and attributes to generate response objects according
+      to the API specification
 """
 from orion.core.worker.trial import Trial
+
+ERROR_EXPERIMENT_NOT_FOUND = 'Experiment not found'
+ERROR_INVALID_PARAMETER = 'Invalid parameter'
+ERROR_TRIAL_NOT_FOUND = 'Trial not found'
 
 
 def build_trial_response(trial: Trial) -> dict:

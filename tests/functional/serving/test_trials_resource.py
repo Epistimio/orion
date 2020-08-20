@@ -153,7 +153,7 @@ class TestTrialCollection:
 
         assert response.status == "404 Not Found"
         assert response.json == {
-            'title': 'Experiment Not Found',
+            'title': 'Experiment not found',
             'description': 'Experiment "a" has no version "4"'
         }
 
