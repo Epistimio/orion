@@ -188,7 +188,7 @@ def create_experiment(
     return ExperimentClient(experiment, producer, heartbeat)
 
 
-def get_experiment(name: str, version: int = None) -> ExperimentView:
+def get_experiment(name, version=None):
     """
     Retrieve an existing experiment as :class:`orion.core.worker.experiment.ExperimentView`.
 
