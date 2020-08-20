@@ -131,9 +131,6 @@ def build(name, version=None, branching=None, **config):
     version: int, optional
         Version to select. If None, last version will be selected. If version given is larger than
         largest version available, the largest version will be selected.
-    branch_from: str, optional
-        Name of the experiment to branch from. The new experiment will have access to all trials
-        from the parent experiment it has been branched from.
     space: dict, optional
         Optimization space of the algorithm. Should have the form `dict(name='<prior>(args)')`.
     algorithms: str or dict, optional
