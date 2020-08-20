@@ -33,12 +33,12 @@ requirements:
 
 test:
   import:
-    - orion.core
-    - orion.core.cli
     - orion.algo
     - orion.client
-    - orion.storage
+    - orion.core
+    - orion.core.cli
     - orion.serving
+    - orion.storage
     - orion.testing
   commands:
     - orion --help

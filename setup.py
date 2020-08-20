@@ -17,14 +17,14 @@ tests_require = [
     ]
 
 
-packages = [
-    'orion.core',
-    'orion.client',
+packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
     'orion.algo',
-    'orion.storage',
-    'orion.plotting',
     'orion.analysis',
+    'orion.client',
+    'orion.core',
+    'orion.plotting',
     'orion.serving',
+    'orion.storage',
     'orion.testing'
     ]
 
