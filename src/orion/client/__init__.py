@@ -188,7 +188,7 @@ def create_experiment(
     return ExperimentClient(experiment, producer, heartbeat)
 
 
-def get_experiment(name, version=None):
+def get_experiment(name, version=None, storage=None):
     """
     Retrieve an existing experiment as :class:`orion.core.worker.experiment.ExperimentView`.
 
@@ -199,6 +199,8 @@ def get_experiment(name, version=None):
     version: int, optional
         Version to select. If None, last version will be selected. If version given is larger than
         largest version available, the largest version will be selected.
+    storage: dict, optional
+        Configuration of the storage backend.
 
     Returns
     -------
@@ -209,6 +211,7 @@ def get_experiment(name, version=None):
     `orion.core.utils.exceptions.NoConfigurationError`
         The experiment is not in the database provided by the user.
     """
+    setup_storage(storage)
     return experiment_builder.build_view(name, version)
 
 
