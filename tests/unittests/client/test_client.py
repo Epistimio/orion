@@ -8,12 +8,14 @@ import json
 import pytest
 
 import orion.client
+from orion.client import get_experiment
 import orion.client.cli as cli
 import orion.core
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
 from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
+from orion.core.worker.experiment import ExperimentView
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
@@ -434,3 +436,38 @@ class TestWorkon:
 
         assert experiment2.name == 'voici'
         assert len(experiment2.fetch_trials()) == 1
+
+
+class TestGetExperiment:
+    """Test :meth:`orion.client.get_experiment`"""
+
+    @pytest.mark.usefixtures('mock_database')
+    def test_experiment_do_not_exist(self):
+        """Tests that an error is returned when the experiment doesn't exist"""
+        with pytest.raises(NoConfigurationError) as exception:
+            get_experiment('a')
+        assert "No experiment with given name 'a' and version '*' inside database, " \
+               "no view can be created." == str(exception.value)
+
+    @pytest.mark.usefixtures('mock_database')
+    def test_experiment_exist(self):
+        """
+        Tests that an instance of :class:`orion.core.worker.experiment.ExperimentView` is
+        returned representing the latest version when none is given.
+        """
+        experiment = create_experiment('a', space={'x': 'uniform(0, 10)'})
+
+        experiment = get_experiment('a')
+
+        assert experiment
+        assert isinstance(experiment, ExperimentView)
+
+    @pytest.mark.usefixtures('mock_database')
+    def test_version_do_not_exist(self, caplog):
+        """Tests that a warning is printed when the experiment exist but the version doesn't"""
+        create_experiment('a', space={'x': 'uniform(0, 10)'})
+
+        experiment = get_experiment('a', 2)
+
+        assert experiment.version == 1
+        assert "Version 2 was specified but most recent version is only 1. Using 1." in caplog.text
