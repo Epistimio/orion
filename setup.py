@@ -50,6 +50,7 @@ setup_args = dict(
             'asha = orion.algo.asha:ASHA',
             'hyperband = orion.algo.hyperband:Hyperband',
             'tpe = orion.algo.tpe:TPE',
+            'EvolutionES = orion.algo.evolution_es:EvolutionES',
             ],
         'Storage': [
             'track = orion.storage.track:Track',

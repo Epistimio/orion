@@ -129,23 +129,29 @@ class Hyperband(BaseAlgorithm):
 
         fidelity_dim = space.values()[fidelity_index]
 
+        self.min_resources = fidelity_dim.low
         self.max_resources = fidelity_dim.high
         self.reduction_factor = fidelity_dim.base
 
-        if self.reduction_factor < 2:
-            raise AttributeError("Reduction factor for Hyperband needs to be at least 2.")
+        # if self.reduction_factor < 2:
+        #     raise AttributeError("Reduction factor for Hyperband needs to be at least 2.")
 
         self.repetitions = repetitions
 
         # Counter for how many times Hyperband been executed
         self.executed_times = 0
 
-        self.budgets = compute_budgets(self.max_resources, self.reduction_factor)
-
-        self.brackets = [
-            Bracket(self, bracket_budgets, 1)
-            for bracket_budgets in self.budgets
-        ]
+        if self.reduction_factor >= 2:
+            self.budgets = compute_budgets(self.max_resources, self.reduction_factor)
+            self.brackets = [
+                Bracket(self, bracket_budgets, 1)
+                for bracket_budgets in self.budgets
+            ]
+            self.seed_rng(seed)
+        else:
+            self.budgets = None
+            self.brackets = None
+            logger.warning("Reduction factor for Hyperband needs to be at least 2")
 
     def sample(self, num, bracket, buffer=10):
         """Sample new points from bracket"""
