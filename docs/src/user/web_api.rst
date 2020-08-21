@@ -89,7 +89,7 @@ retrieve individual experiments as well as a list of all your experiments.
 
 .. http:get:: /experiments/:name
 
-   Retrieve the details of the existing experiment named `name`.
+   Retrieve the details of the existing experiment named ``name``.
 
    **Example response**
 
@@ -168,7 +168,7 @@ retrieve individual trials as well as a list of all your trials per experiment.
 
 .. http:get:: /trials/:experiment
 
-   Return an unordered list of the trials for the experiment '`experiment`'.
+   Return an unordered list of the trials for the experiment ``experiment``.
 
    **Example response**
 
@@ -198,7 +198,7 @@ retrieve individual trials as well as a list of all your trials per experiment.
 
 .. http:get:: /trials/:experiment/:id
 
-   Return the details of an existing trial with id '`id`' from the experiment '`experiment`'.
+   Return the details of an existing trial with id ``id`` from the experiment ``experiment``.
 
    **Example response**
 
