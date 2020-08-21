@@ -16,7 +16,7 @@ import textwrap
 import orion
 from orion.core.io.database import DatabaseError
 from orion.core.utils.exceptions import (
-    BranchingEvent, MissingResultFile, NoConfigurationError, NoNameError)
+    BranchingEvent, InexecutableUserScript, MissingResultFile, NoConfigurationError, NoNameError)
 
 
 CLI_DOC_HEADER = "Oríon CLI for asynchronous distributed optimization"
@@ -78,7 +78,7 @@ class OrionArgsParser:
             args, function = self.parse(argv)
             returncode = function(args)
         except (NoConfigurationError, NoNameError, DatabaseError, MissingResultFile,
-                BranchingEvent) as e:
+                BranchingEvent, InexecutableUserScript) as e:
             print('Error:', e, file=sys.stderr)
 
             if args.get('verbose', 0) >= 2:
