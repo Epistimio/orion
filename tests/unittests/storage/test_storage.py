@@ -202,6 +202,15 @@ def test_setup_storage_bad_config_override():
         setup_storage({'database': {'type': 'mongodb'}})
 
 
+def test_setup_storage_stateless():
+    """Test that passed configuration dictionary is not modified by the fonction"""
+    update_singletons()
+    config = {'database': {'type': 'pickleddb', 'host': 'test.pkl'}}
+    passed_config = copy.deepcopy(config)
+    setup_storage(passed_config)
+    assert config == passed_config
+
+
 def test_get_storage_uninitiated():
     """Test that get storage fails if no storage singleton exist"""
     update_singletons()

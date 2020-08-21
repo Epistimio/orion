@@ -9,7 +9,7 @@
               different storage backend
 
 """
-
+import copy
 import logging
 
 import orion.core
@@ -413,6 +413,8 @@ def setup_storage(storage=None, debug=False):
     """
     if storage is None:
         storage = orion.core.config.storage.to_dict()
+
+    storage = copy.deepcopy(storage)
 
     if storage.get('type') == 'legacy' and 'database' not in storage:
         storage['database'] = orion.core.config.storage.database.to_dict()
