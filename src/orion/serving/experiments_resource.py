@@ -15,7 +15,7 @@ from falcon import Request, Response
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
 from orion.serving.parameters import retrieve_experiment, verify_query_parameters
-from orion.serving.responses import build_experiment_response
+from orion.serving.responses import build_experiment_response, build_experiments_response
 from orion.storage.base import get_storage
 
 
@@ -30,14 +30,8 @@ class ExperimentsResource(object):
         experiments = self.storage.fetch_experiments({})
         leaf_experiments = _find_latest_versions(experiments)
 
-        result = []
-        for name, version in leaf_experiments.items():
-            result.append({
-                'name': name,
-                'version': version
-            })
-
-        resp.body = json.dumps(result)
+        response = build_experiments_response(leaf_experiments)
+        resp.body = json.dumps(response)
 
     def on_get_experiment(self, req: Request, resp: Response, name: str):
         """

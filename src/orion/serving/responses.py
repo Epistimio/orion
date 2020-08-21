@@ -79,3 +79,46 @@ def build_experiment_response(experiment: Experiment,
         },
         "bestTrial": build_trial_response(best_trial) if best_trial else {}
     }
+
+
+def build_experiments_response(experiments: dict):
+    """
+    Build the response representing a list of experiments according to the API specification.
+
+    Parameters
+    ----------
+    experiments: dict
+        A dict containing pairs of ``experiment-name:experiment-version``.
+
+    Returns
+    -------
+    A JSON-serializable list of experiments as defined in the API specification.
+    """
+    result = []
+    for name, version in experiments.items():
+        result.append({
+            'name': name,
+            'version': version
+        })
+    return result
+
+
+def build_trials_response(trials: list):
+    """
+    Build the response representing a list of trials according to the API specification.
+
+    Parameters
+    ----------
+    trials: list
+        A list of :class:`orion.core.worker.trial.Trial`.
+
+    Returns
+    -------
+    A JSON-serializable list of trials as defined in the API specification.
+    """
+    response = []
+    for trial in trials:
+        response.append({
+            'id': trial.id
+        })
+    return response
