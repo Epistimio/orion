@@ -69,7 +69,7 @@ hierarchy. From the more global to the more specific, there is:
       .. code-block:: bash
 
           # Initialize root experiment
-          orion init_only --config previous_exeriment.yaml ./userscript -x~'uniform(0, 10)'
+          orion hunt --init-only --config previous_exeriment.yaml ./userscript -x~'uniform(0, 10)'
           # Branch a new experiment
           orion hunt -n previous_experiment ./userscript -x~'uniform(0, 100)'
 
@@ -131,9 +131,6 @@ def build(name, version=None, branching=None, **config):
     version: int, optional
         Version to select. If None, last version will be selected. If version given is larger than
         largest version available, the largest version will be selected.
-    branch_from: str, optional
-        Name of the experiment to branch from. The new experiment will have access to all trials
-        from the parent experiment it has been branched from.
     space: dict, optional
         Optimization space of the algorithm. Should have the form `dict(name='<prior>(args)')`.
     algorithms: str or dict, optional
