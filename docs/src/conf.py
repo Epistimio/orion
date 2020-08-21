@@ -44,7 +44,7 @@ import orion.core as orion  # noqa
 
 extensions = [  # Extensions must be sorted alphabetically to ease maintenance and merges.
     'numpydoc',
-    'sphinxcontrib.httpdomain',  # Documentation directives for the REST API.  
+    'sphinxcontrib.httpdomain',  # Documentation directives for the REST API.
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.coverage',
