@@ -84,7 +84,7 @@ def retrieve_experiment(experiment_name: str, version: int = None) -> Optional[E
                                   description=f'Experiment "{experiment_name}" does not exist')
 
 
-def retrieve_trial(experiment, trial_id):
+def retrieve_trial(experiment: Experiment, trial_id: str):
     """
     Retrieves the trial for the given id in the experiment
 
@@ -93,7 +93,7 @@ def retrieve_trial(experiment, trial_id):
     experiment: Experiment
         The experiment containing the trial.
 
-    trial_id: int
+    trial_id: str
         The id of the trial
 
     Raises
