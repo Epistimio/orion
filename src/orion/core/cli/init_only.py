@@ -48,4 +48,6 @@ def add_subparser(parser):
 def main(args):
     """Build and initialize experiment"""
     # By building the experiment, we create a new experiment document in database
+    log.warning('Command init_only is deprecated and will be removed in v0.3. '
+                'Use orion hunt --init-only instead.')
     experiment_builder.build_from_args(args)
