@@ -1,35 +1,21 @@
+from abc import abstractmethod
+
+
 class BaseAssess():
 
-    def __init__(self, task):
+    def __init__(self, task_num, **kwargs):
         """
-        - build assess object
-        - build task object (from db[existing], or from config[new])
+        :param task_num: number of tasks that need to run for the assessment
+        :param kwargs:
         """
-        pass
+        self.task_number = task_num
 
-    def execute(self):
-        """
-        - run the tasks
-        - there may be needs to run the task multiple times (such as when assess average performance)
-        :return:
-        """
-        pass
+    @property
+    def task_num(self):
+        return self.task_number
 
-    def status(self):
-        """
-        - get the overall status of the assess, like how many tasks to run and the status of each task(experiment)
-        :return:
-        """
-        pass
-
-    def result(self):
-        """
-        -  json format of the result
-        :return:
-        """
-        pass
-
-    def display(self):
+    @abstractmethod
+    def display(self, task, experiments, notebook):
         """
         - define the visual charts of the assess, based on the task performance output
         :return:
@@ -46,31 +32,33 @@ class BaseAssess():
 
 class BaseTask():
 
-    # assessments that the particular task supports
-    assessments = []
-
-    def __init__(self, algorithm):
+    def __init__(self, **kwargs):
         """
         - build orion experiment
         """
         pass
 
-    def run(self):
+    @abstractmethod
+    def get_task_function(self):
         """
-        - run the orion experiment
+        The black box function to optimize, the function will expect hyper-parameters to search and return
+        objective values of trial with the hyper-parameters.
         :return:
         """
         pass
 
-    def status(self):
+    @abstractmethod
+    def get_task_max_trials(self):
         """
-        - status of the orion experiment
+        The max number of trials to run for the task during search
+        :return:
         """
         pass
 
-    def performance(self):
+    @abstractmethod
+    def get_task_space(self):
         """
-        - formatted the experiment result for the particular assess
+        The search space for the hyper-parameters of the black box function
         :return:
         """
         pass
