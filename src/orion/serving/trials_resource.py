@@ -13,7 +13,7 @@ from falcon import Request, Response
 
 from orion.serving.parameters import retrieve_experiment, retrieve_trial, verify_query_parameters, \
     verify_status
-from orion.serving.responses import build_trial_response
+from orion.serving.responses import build_trial_response, build_trials_response
 from orion.storage.base import get_storage
 
 SUPPORTED_PARAMETERS = ['ancestors', 'status', 'version']
@@ -43,12 +43,7 @@ class TrialsResource(object):
         else:
             trials = experiment.fetch_trials(with_ancestors)
 
-        response = []
-        for trial in trials:
-            response.append({
-                'id': trial.id
-            })
-
+        response = build_trials_response(trials)
         resp.body = json.dumps(response)
 
     def on_get_trial_in_experiment(self, req: Request, resp: Response, experiment_name: str,
@@ -60,4 +55,5 @@ class TrialsResource(object):
         experiment = retrieve_experiment(experiment_name)
         trial = retrieve_trial(experiment, trial_id)
 
-        resp.body = json.dumps(build_trial_response(trial))
+        response = build_trial_response(trial)
+        resp.body = json.dumps(response)
