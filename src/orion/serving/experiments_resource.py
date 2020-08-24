@@ -8,12 +8,14 @@
    :synopsis: Serves all the requests made to experiments/ REST endpoint
 """
 import json
+from typing import Optional
 
 from falcon import Request, Response
 
 from orion.core.worker.experiment import Experiment
+from orion.core.worker.trial import Trial
 from orion.serving.parameters import retrieve_experiment, verify_query_parameters
-from orion.serving.responses import build_trial_response
+from orion.serving.responses import build_experiment_response, build_experiments_response
 from orion.storage.base import get_storage
 
 
@@ -28,14 +30,8 @@ class ExperimentsResource(object):
         experiments = self.storage.fetch_experiments({})
         leaf_experiments = _find_latest_versions(experiments)
 
-        result = []
-        for name, version in leaf_experiments.items():
-            result.append({
-                'name': name,
-                'version': version
-            })
-
-        resp.body = json.dumps(result)
+        response = build_experiments_response(leaf_experiments)
+        resp.body = json.dumps(response)
 
     def on_get_experiment(self, req: Request, resp: Response, name: str):
         """
@@ -44,26 +40,13 @@ class ExperimentsResource(object):
         """
         verify_query_parameters(req.params, ['version'])
         version = req.get_param_as_int('version')
-
         experiment = retrieve_experiment(name, version)
-        response = {
-            "name": experiment.name,
-            "version": experiment.version,
-            "status": _retrieve_status(experiment),
-            "trialsCompleted": experiment.stats['trials_completed'] if experiment.stats else 0,
-            "startTime": str(experiment.stats['start_time']) if experiment.stats else None,
-            "endTime": str(experiment.stats['finish_time']) if experiment.stats else None,
-            "user": experiment.metadata['user'],
-            "orionVersion": experiment.metadata['orion_version'],
-            "config": {
-                "maxTrials": experiment.max_trials,
-                "poolSize": experiment.pool_size,
-                "algorithm": _retrieve_algorithm(experiment),
-                "space": experiment.configuration['space']
-            },
-            "bestTrial": _retrieve_best_trial(experiment)
-        }
 
+        status = _retrieve_status(experiment)
+        algorithm = _retrieve_algorithm(experiment)
+        best_trial = _retrieve_best_trial(experiment)
+
+        response = build_experiment_response(experiment, status, algorithm, best_trial)
         resp.body = json.dumps(response)
 
 
@@ -101,11 +84,9 @@ def _retrieve_algorithm(experiment: Experiment) -> dict:
     return result
 
 
-def _retrieve_best_trial(experiment: Experiment) -> dict:
+def _retrieve_best_trial(experiment: Experiment) -> Optional[Trial]:
     """Constructs the view of the best trial if there is one"""
     if not experiment.stats:
-        return {}
+        return None
 
-    trial = experiment.get_trial(uid=experiment.stats['best_trials_id'])
-
-    return build_trial_response(trial)
+    return experiment.get_trial(uid=experiment.stats['best_trials_id'])

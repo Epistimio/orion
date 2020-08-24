@@ -14,6 +14,8 @@ from orion.core.io import experiment_builder
 from orion.core.utils.exceptions import NoConfigurationError
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
+from orion.serving.responses import ERROR_EXPERIMENT_NOT_FOUND, ERROR_INVALID_PARAMETER, \
+    ERROR_TRIAL_NOT_FOUND
 
 
 def verify_query_parameters(parameters: dict, supported_parameters: list):
@@ -35,7 +37,7 @@ def verify_query_parameters(parameters: dict, supported_parameters: list):
     for parameter in parameters:
         if parameter not in supported_parameters:
             description = _compose_error_message(parameter, supported_parameters)
-            raise falcon.HTTPBadRequest('Invalid parameter', description)
+            raise falcon.HTTPBadRequest(ERROR_INVALID_PARAMETER, description)
 
 
 def verify_status(status):
@@ -45,7 +47,7 @@ def verify_status(status):
         description += 'The value of the parameter must be one of {}'.format(
             list(Trial.allowed_stati))
 
-        raise falcon.HTTPBadRequest('Invalid parameter', description)
+        raise falcon.HTTPBadRequest(ERROR_INVALID_PARAMETER, description)
 
 
 def _compose_error_message(key: str, supported_parameters: list):
@@ -74,15 +76,15 @@ def retrieve_experiment(experiment_name: str, version: int = None) -> Optional[E
         experiment = experiment_builder.build_view(experiment_name, version)
         if version and experiment.version != version:
             raise falcon.HTTPNotFound(
-                title='Experiment not found',
+                title=ERROR_EXPERIMENT_NOT_FOUND,
                 description=f'Experiment "{experiment_name}" has no version "{version}"')
         return experiment
     except NoConfigurationError:
-        raise falcon.HTTPNotFound(title='Experiment not found',
+        raise falcon.HTTPNotFound(title=ERROR_EXPERIMENT_NOT_FOUND,
                                   description=f'Experiment "{experiment_name}" does not exist')
 
 
-def retrieve_trial(experiment, trial_id):
+def retrieve_trial(experiment: Experiment, trial_id: str):
     """
     Retrieves the trial for the given id in the experiment
 
@@ -91,7 +93,7 @@ def retrieve_trial(experiment, trial_id):
     experiment: Experiment
         The experiment containing the trial.
 
-    trial_id: int
+    trial_id: str
         The id of the trial
 
     Raises
@@ -102,6 +104,6 @@ def retrieve_trial(experiment, trial_id):
     """
     trial = experiment.get_trial(uid=trial_id)
     if not trial:
-        raise falcon.HTTPNotFound(title='Trial not found',
+        raise falcon.HTTPNotFound(title=ERROR_TRIAL_NOT_FOUND,
                                   description=f'Trial "{trial_id}" does not exist')
     return trial

@@ -668,6 +668,7 @@ class TestStorage:
             storage = cfg.storage()
 
             experiment = cfg.get_experiment('default_name', version=None)
+
             trials = storage.count_broken_trials(experiment)
 
             assert trials == count

@@ -18,7 +18,7 @@ import tempfile
 import orion.core
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.io.resolve_config import infer_versioning_metadata
-from orion.core.utils.exceptions import BranchingEvent
+from orion.core.utils.exceptions import BranchingEvent, InexecutableUserScript
 from orion.core.utils.working_dir import WorkingDir
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 
@@ -251,7 +251,12 @@ class Consumer(object):
         command = cmd_args
 
         signal.signal(signal.SIGTERM, _handler)
-        process = subprocess.Popen(command, env=environ)
+
+        try:
+            process = subprocess.Popen(command, env=environ)
+        except PermissionError:
+            log.debug("### Script is not executable")
+            raise InexecutableUserScript(' '.join(cmd_args))
 
         return_code = process.wait()
 
