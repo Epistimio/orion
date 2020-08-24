@@ -115,3 +115,21 @@ class BrokenExperiment(Exception):
     """Raised when too many trials failed in an experiment and it is now considered broken"""
 
     pass
+
+
+INEXECUTABLE_USER_SCRIPT_ERROR_MESSAGE = """\
+User script is not executable:
+{}
+
+Use chmod +x <your script> to make it executable.
+If your script is written in python, you can otherwise
+use `python <your script>` instead of `./<your script>`.
+
+"""
+
+
+class InexecutableUserScript(PermissionError):
+    """Raised during consumption when user script is not executable"""
+
+    def __init__(self, cmdline, message=INEXECUTABLE_USER_SCRIPT_ERROR_MESSAGE):
+        super().__init__(message.format(cmdline))

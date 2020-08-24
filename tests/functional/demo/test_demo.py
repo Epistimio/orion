@@ -192,6 +192,18 @@ def test_demo_with_python_and_script(database, monkeypatch):
 
 
 @pytest.mark.usefixtures("clean_db")
+def test_demo_inexecutable_script(database, monkeypatch, capsys):
+    """Test error message when user script is not executable."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    script = tempfile.NamedTemporaryFile()
+    orion.core.cli.main(["hunt", "--config", "./orion_config.yaml",
+                         script.name, "--config", "script_config.yaml"])
+
+    captured = capsys.readouterr().err
+    assert 'User script is not executable' in captured
+
+
+@pytest.mark.usefixtures("clean_db")
 def test_demo_two_workers(database, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
