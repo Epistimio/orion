@@ -19,7 +19,10 @@ log = logging.getLogger(__name__)
 
 
 def validate_status(status):
-    """Verify if given status is valid."""
+    """
+    Verify if given status is valid. Can be one of ``new``, ``reserved``, ``suspended``,
+    ``completed``, ``interrupted``, or ``broken``.
+    """
     if status is not None and status not in Trial.allowed_stati:
         raise ValueError("Given status `{0}` not one of: {1}".format(
             status, Trial.allowed_stati))
