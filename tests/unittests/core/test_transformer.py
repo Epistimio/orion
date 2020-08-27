@@ -430,6 +430,13 @@ class TestOneHotEncode(object):
         assert numpy.all(t.reverse([[0.5, 0], [1.0, 55]]) == numpy.array([[0, 0], [0, 0]],
                                                                          dtype=int))
 
+    def test_interval(self):
+        """Test that the onehot interval has the proper dimensions"""
+        t = OneHotEncode(3)
+        low, high = t.interval()
+        assert (low == numpy.zeros(3)).all()
+        assert (high == numpy.ones(3)).all()
+
     def test_infer_target_shape(self):
         """Check if it infers the shape of a transformed `Dimension`."""
         t = OneHotEncode(3)
@@ -531,7 +538,9 @@ class TestTransformedDimension(object):
 
     def test_interval_from_categorical(self, tdim2):
         """Check how we should treat interval when original dimension is categorical."""
-        assert tdim2.interval() == ('asdfa', '2', '3', '4')
+        low, high = tdim2.interval()
+        assert (low == numpy.zeros(4)).all()
+        assert (high == numpy.ones(4)).all()
 
     def test_contains(self, tdim):
         """Check method `__contains__`."""
