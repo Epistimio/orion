@@ -9,7 +9,7 @@ class RosenBrock(BaseTask):
         self.max_trials = max_trials
         super(RosenBrock, self).__init__()
 
-    def get_task_function(self):
+    def get_blackbox_function(self):
         def rosenbrock(x):
             """Evaluate a n-D rosenbrock function."""
             x = numpy.asarray(x)
@@ -22,11 +22,11 @@ class RosenBrock(BaseTask):
 
         return rosenbrock
 
-    def get_task_max_trials(self):
+    def get_max_trials(self):
         return self.max_trials
 
-    def get_task_space(self):
+    def get_search_space(self):
 
-        rspace = {'x': 'uniform(1, 3, shape=2)'}
+        rspace = {'x': 'uniform(-5, 10, shape=2)'}
 
         return rspace

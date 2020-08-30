@@ -39,7 +39,7 @@ class BaseTask():
         pass
 
     @abstractmethod
-    def get_task_function(self):
+    def get_blackbox_function(self):
         """
         The black box function to optimize, the function will expect hyper-parameters to search and return
         objective values of trial with the hyper-parameters.
@@ -48,7 +48,7 @@ class BaseTask():
         pass
 
     @abstractmethod
-    def get_task_max_trials(self):
+    def get_max_trials(self):
         """
         The max number of trials to run for the task during search
         :return:
@@ -56,7 +56,7 @@ class BaseTask():
         pass
 
     @abstractmethod
-    def get_task_space(self):
+    def get_search_space(self):
         """
         The search space for the hyper-parameters of the black box function
         :return:

@@ -106,9 +106,9 @@ class Study():
     def execute(self):
 
         task_num = self.assessment.task_num
-        blackbox_fun = self.task.get_task_function()
-        max_trials = self.task.get_task_max_trials()
-        space = self.task.get_task_space()
+        blackbox_fun = self.task.get_blackbox_function()
+        max_trials = self.task.get_max_trials()
+        space = self.task.get_search_space()
 
         for task_index in range(task_num):
 
