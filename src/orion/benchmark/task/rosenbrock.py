@@ -5,8 +5,9 @@ from orion.benchmark.base import BaseTask
 
 class RosenBrock(BaseTask):
 
-    def __init__(self, max_trials=20):
+    def __init__(self, max_trials=20, dim=2):
         self.max_trials = max_trials
+        self.dim = dim
         super(RosenBrock, self).__init__()
 
     def get_blackbox_function(self):
@@ -27,6 +28,6 @@ class RosenBrock(BaseTask):
 
     def get_search_space(self):
 
-        rspace = {'x': 'uniform(-5, 10, shape=2)'}
+        rspace = {'x': 'uniform(-5, 10, shape={})'.format(self.dim)}
 
         return rspace

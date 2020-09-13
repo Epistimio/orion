@@ -120,6 +120,7 @@ class Study():
                 experiment = create_experiment(
                     experiment_name, space=space, algorithms=algorithm,
                     max_trials=max_trials)
+                # TODO: it is a blocking call
                 experiment.workon(blackbox_fun, max_trials)
                 self.experiments_info.append((task_index, experiment))
 
@@ -156,3 +157,16 @@ class Study():
         for _, experiment in self.experiments_info:
             exps.append(experiment)
         return exps
+
+    def __repr__(self):
+        """Represent the object as a string."""
+        algorithms_list = list()
+        for algorithm in self.algorithms:
+            if isinstance(algorithm, dict):
+                algorithm_name = algorithm.keys()[0]
+            else:
+                algorithm_name = algorithm
+            algorithms_list.append(algorithm_name)
+
+        return "Study(assessment=%s, task=%s, algorithms=[%s])" % \
+            (self.assess_name, self.task_name, ','.join(algorithms_list))
