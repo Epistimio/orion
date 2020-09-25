@@ -149,7 +149,7 @@ We list them below.
 
    Current trial id that is currently being executed in this process.
 
-.. envvar:: ORION_WORKING_DIRECTORY
+.. envvar:: ORION_WORKING_DIR
 
    Trial's current working directory.
 
