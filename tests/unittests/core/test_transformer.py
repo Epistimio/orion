@@ -437,6 +437,11 @@ class TestOneHotEncode(object):
         assert (low == numpy.zeros(3)).all()
         assert (high == numpy.ones(3)).all()
 
+        t = OneHotEncode(2)
+        low, high = t.interval()
+        assert (low == numpy.zeros(1)).all()
+        assert (high == numpy.ones(1)).all()
+
     def test_infer_target_shape(self):
         """Check if it infers the shape of a transformed `Dimension`."""
         t = OneHotEncode(3)
