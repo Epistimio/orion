@@ -380,10 +380,13 @@ class OneHotEncode(Transformer):
     # pylint:disable=unused-argument
     def interval(self, alpha=1.0):
         """Return the interval for the one-hot encoding in proper shape."""
-        low = numpy.zeros(self.num_cats)
-        high = numpy.ones(self.num_cats)
+        if self.num_cats == 2:
+            return 0, 1
+        else:
+            low = numpy.zeros(self.num_cats)
+            high = numpy.ones(self.num_cats)
 
-        return low, high
+            return low, high
 
     def infer_target_shape(self, shape):
         """Infer that transformed points will have one more tensor dimension,
