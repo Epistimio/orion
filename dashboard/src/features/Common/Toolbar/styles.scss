@@ -1,0 +1,251 @@
+
+@import '~utils/vars';
+
+// Main toolbar styles
+.bx--toolbar {
+  flex-wrap: wrap;
+  height: rem(65px);
+  background-color: $ui-02;
+  padding-left: rem(23px);
+  padding-right: rem(30px);
+  margin: 0;
+  box-shadow: 0 2px 6px 0 $vision__grey--light;
+
+  &.secondary-toolbar {
+    background-color: $ui-03;
+    box-shadow: 0 2px 6px 0 $vision__grey--light;
+  }
+}
+
+.bx--toolbar .select-container {
+  align-items: center;
+  margin: 0;
+  display: flex;
+
+  .bx--list-box {
+    background-color: transparent;
+    border-bottom: none;
+
+    .bx--list-box__menu {
+      min-width: 7.3rem;
+    }
+    .bx--list-box__field {
+    padding: 0.5rem 2.5rem 0.5rem 0.3rem;
+      &:focus {
+        outline: none;
+      }
+    }
+  }
+}
+
+.bx--toolbar .sort-container {
+  margin-left: auto;
+}
+
+.bx--toolbar .action-container {
+  display: flex;
+  margin-right: rem(15px);
+
+  .bx--btn span {
+    padding-right: rem(5px);
+  }
+
+  button {
+    svg {
+    margin-left: 0;
+    }
+  }
+}
+
+// View switcher styles
+.bx--toolbar .view-container {
+  display: flex;
+  margin-left: auto;
+  margin-right: rem(10px);
+
+  .toolbar__action-container {
+    display: flex;
+  }
+}
+
+.toolbar__view-text,
+.toolbar__advanced-view-text {
+  font-size: 0.875rem;
+  padding-right: 10px;
+}
+
+.toolbar__advanced-view-text {
+  font-weight: bold;
+}
+
+.toolbar__view-icon {
+  padding: rem(6px);
+  height: rem(28px);
+  width: rem(28px);
+  margin-left: rem(5px);
+  cursor: pointer;
+}
+
+.toolbar__view-icon--unselected {
+  fill: #5a6872;
+}
+
+.toolbar__view-icon--selected {
+  background-color: $vision__blue;
+  fill: $vision__white;
+}
+
+// Search styles
+.bx--toolbar .search-container {
+  display: flex;
+
+  button {
+    background: transparent;
+    border: none;
+    padding: 0rem;
+
+    svg {
+      margin-left: 0;
+    }
+  }
+}
+
+// Sort styles
+.bx--toolbar .sort-container,
+.bx--toolbar .advanced-view-container {
+  align-items: center;
+  display: flex;
+  margin-left: auto;
+}
+
+// Button styles
+.toolbar__action-container {
+  align-items: center;
+  justify-content: flex-start;
+
+  &.bx--btn span {
+    font-weight: 600;
+    margin-left: 6px;
+    font-size: .875rem;
+    white-space: nowrap;
+  }
+}
+
+.toolbar__action-icon--blue {
+  fill: $vision__blue;
+  fill-rule: evenodd;
+}
+
+.toolbar__action-icon--augment,
+.toolbar__action-icon--autoLabel {
+  height: rem(20px);
+  max-width: rem(20px);
+  margin-left: rem(5px);
+}
+
+.toolbar__action-icon--search {
+  height: rem(22px);
+  max-width: rem(22px);
+}
+
+.toolbar__action-icon--keyboard {
+  height: rem(60px);
+  width: rem(30px);
+  max-width: rem(30px);
+}
+
+.bx--toolbar-action {
+  color: $vision__blue--toolbar;
+
+  &:hover {
+    color: $vision__blue;
+  }
+
+  &:focus {
+    outline: none;
+    border: 1px solid #649AE4;
+    box-shadow: 0px 0px 5px  #649AE4;
+  }
+}
+ 
+.bx--toolbar-action.toolbar__action-container:last-of-type {
+  padding-right: 0.75rem;
+}
+
+.bx--toolbar-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+
+  .toolbar__action-label {
+    cursor: not-allowed;
+  }
+
+  &:hover {
+    color: $vision__blue--toolbar;
+  }
+}
+
+.toolbar__btn-spacing {
+  align-self: center;
+  margin-right: rem(15px);
+}
+
+
+.toolbar__sort-dropdown {
+  width: rem(200px);
+  background-color: $field-02;
+  border-bottom: none;
+
+  .bx--list-box__menu {
+    top: 2.1rem;
+    max-height: 10rem;
+
+    .bx--list-box__menu-item:hover, .bx--list-box__menu-item--highlighted {
+      background-color: $vision__white;
+    }
+  }
+}
+
+.toolbar__advanced-view-toggle {
+  .bx--toggle + .bx--toggle__label {
+    .bx--toggle__text--right {
+      color: $sidebar__black--opaque;
+      font-weight: normal;
+    }
+    .bx--toggle__text--left {
+      color: $vision__black;
+      font-weight: bold;
+    }
+  }
+
+  .bx--toggle:checked + .bx--toggle__label {
+    .bx--toggle__text--right {
+      color: $vision__black;
+      font-weight: bold;
+    }
+    .bx--toggle__text--left {
+      color: $sidebar__black--opaque;
+      font-weight: normal;
+    }
+  }
+}
+
+@media (max-width: 1140px) {
+  .bx--toolbar {
+    display: flex;
+    flex-wrap: nowrap;
+  }
+  .bx--toolbar-search-container {
+    flex-basis: 100%;
+    margin-bottom: 10px;
+  }
+  .bx--toolbar .view-container {
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 650px) {
+  .bx--toolbar {
+    overflow: auto;
+  }
+}

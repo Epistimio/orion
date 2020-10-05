@@ -1,0 +1,463 @@
+/* IBM_SOURCE_PROLOG_BEGIN_TAG                                            */
+/* *****************************************************************      */
+/*                                                                        */
+/* IBM Confidential                                                       */
+/* OCO Source Materials                                                   */
+/*                                                                        */
+/* (C) Copyright IBM Corp. 2020                                           */
+/*                                                                        */
+/* The source code for this program is not published or otherwise         */
+/* divested of its trade secrets, irrespective of what has been           */
+/* deposited with the U.S. Copyright Office.                              */
+/*                                                                        */
+/* *****************************************************************      */
+/* IBM_SOURCE_PROLOG_END_TAG                                              */
+@import '~utils/vars';
+
+$createCard__borderColor: #657F90;
+$createCard__fontColor: #26465B;
+$divContainer__width: rem(675px);
+
+.application-details {
+  height: 100%;
+
+  .body-container > .bx--loading-overlay {
+    position: absolute;
+  }
+}
+
+.application-details__main {
+  height: 100%;
+  overflow-y: auto;
+
+  .body-container {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: rem(1250px);
+  }
+
+  .panelTitle {
+    padding: 0 0px;
+    margin-top: 1px;
+  }
+
+}
+
+.application-details__subtitle_label1 {
+  margin-right: 5px;
+  font-weight: bold;
+}
+
+.application-details__subtitle_label {
+  padding-left: 20px;
+  margin-left: 20px;
+  margin-right: 5px;
+  font-weight: bold;
+}
+
+.application-details__main .bx--gauge-line {
+  fill: #3c6df0!important;
+}
+
+.application-details__subtitle {
+  margin-top: rem(15px);
+  font-size: small;
+}
+
+.application-details__overview-container {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: rem(20px);
+  margin-left: rem(-17px);
+
+  @media screen and (min-width: 320px) and (max-width: 1250px) {
+    .application-details__overview--info {
+      flex-basis: 13rem;
+    }
+    .application-details__overview--params {
+      flex-basis: 17rem;
+      .application-details__overview--params-body {
+        margin-top: 0rem;
+        grid-template-columns: repeat(auto-fill, 7rem);
+      }
+    }
+    .application-details__overview--accuracy {
+      width: 12rem;
+      padding-left: 0;
+      margin-right: 0;
+    }
+  }
+}
+
+.application-details__status {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: rem(7px);
+}
+
+.application-details-icon--loading,
+.application-details-icon--ready,
+.application-details-icon--unknown,
+.application-details-icon--failed {
+  height: rem(16px);
+  width: rem(16px);
+  margin-right: rem(5px);
+}
+
+.application-details-icon--ready {
+  fill: #5aa700;
+}
+
+.application-details-icon--unknown {
+  fill: #efc100;
+}
+
+.application-details-icon--failed {
+  fill: #e0182d;
+}
+
+.application-details__cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+  align-content: flex-start;
+  margin: auto;
+  width: calc(100% + 20px);
+  margin-top: rem(15px);
+}
+
+.application-details__dropdown-item {
+  margin-bottom: 1rem;
+}
+
+.application-details .bx--data-table-container {
+  overflow-y: hidden;
+  margin-bottom: rem(15px);
+}
+
+.application-details .bx--data-table {
+  th:first-child, td:first-child {
+    padding: 0;
+    width: $image-card__card-width--small + rem(10px);
+  }
+
+
+  .application-details__table-icon--ready,
+  .application-details__table-icon--unknown,
+  .application-details__table-icon--failed {
+    height: rem(16px);
+    width: rem(16px);
+    margin-right: rem(5px);
+  }
+
+  .application-details__table-icon--ready {
+    fill: #5aa700;
+  }
+
+  .application-details__table-icon--unknown {
+    fill: #efc100;
+  }
+
+  .application-details__table-icon--failed {
+    fill: #e0182d;
+  }
+
+  .application-details__table-icon--loading {
+    height: rem(24px);
+    width: rem(24px);
+    margin-left: rem(-5px);
+  }
+
+  tbody {
+    cursor: pointer;
+  }
+}
+
+.application-details__items-container {
+  display: flex;
+  flex-direction: column;
+  height: rem(345px);
+  width: 16.5rem;
+  margin: 1.875rem 0;
+  padding: rem(20px) 0 0 0;
+  background-color: $vision__white;
+  border: rem(1px) solid $vision__grey--light;
+
+  @media screen and (min-width: 320px) and (max-width: 768px)  {
+    width: 13rem;
+  }
+}
+
+// Deployed model info, model hyperparameters, and accuracy gauge styles
+.application-details__overview--info,
+.application-details__overview--params {
+  display: flex;
+  flex-direction: column;
+  height: 15rem;
+  margin: rem(15px) rem(15px) 0 0;
+  background-color: $vision__white;
+  padding: rem(12px);
+  border: rem(1px) solid $vision__grey--light;
+}
+
+.application-details__overview--info {
+  justify-content: space-between;
+  width: 18rem;
+}
+
+.application-details__overview--header {
+  display: block;
+  font-size: 1.0rem;
+  margin-bottom: rem(10px);
+  font-weight: bold;
+}
+
+.application-details__overview--item {
+  margin-bottom: rem(8px);
+  font-size: 0.9rem;
+  color: #3c6df0;
+  display: block;
+
+  &.settings--item__created {
+    font-weight: bold;
+  }
+}
+
+.application-details__overview--item-status {
+  margin-bottom: rem(1px);
+  font-size: 0.9rem;
+  color: #3c6df0;
+  display: block;
+}
+
+.application-details__light—label {
+  margin-bottom: rem(8px);
+  margin-left: rem(3px);
+  font-size: 0.9rem;
+  color: #555555;
+  font-weight: 300;
+}
+
+.application-details__taskview {
+  margin-bottom: rem(0px);
+  padding-bottom: rem(0.1px);
+}
+
+.application-details__overview--log-container {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: rem(30px);
+  margin-left: rem(-17px);
+  margin-right: rem(38px);
+}
+
+.application-details__taskview--log-container {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: rem(5px);
+  margin-left: rem(0px);
+
+  .application-details__log-box-logtext {
+    width: 100%;
+    height: 7rem;
+  }
+
+}
+
+.application-details__log-box {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.application-details__log-box-header {
+  display: block;
+  font-size: 1.0rem;
+  margin-bottom: rem(5px);
+  font-weight: bold;
+}
+
+.application-details__log-box-title {
+  display: inline-flex;
+  padding: 0rem 1rem;
+  margin-left: rem(-15.6px);
+}
+
+.application-details__log-box-title-text {
+  color: #000000;
+  font-size: 1.5rem;
+  font-weight: 600;
+  padding-top: 0.7rem;
+}
+
+.application-details__log-box-title-entries {
+  font-size: rem(14px);
+  color: #26465b;
+  font-weight: 300;
+  margin: 0 1rem;
+  padding-top: 0.0rem;
+  width: 10rem;
+}
+
+.application-details__log-box-title-detail {
+  font-size: rem(14px);
+  color: #26465b;
+  font-weight: 300;
+  margin: 0 0.2rem;
+  padding-top: 1.3rem;
+}
+
+.application-details__log-box-title-download-container {
+  display: inline-flex;
+  width: 5.3rem;
+  justify-content: space-between;
+  margin: 0 1rem;
+  padding-top: 1.2rem;
+  font-size: rem(14px);
+  line-height: rem(16px);
+
+
+  a:link,
+  a:visited {
+    color: $vision__blue;
+  }
+  
+  svg {
+    width: rem(13px);
+    fill: $vision__blue;
+  }
+}
+
+.application-details__log-box-logtext {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 18rem;
+  overflow: auto;
+  
+  background-color: $vision__white;
+  padding: rem(12px);
+  border: rem(1px) solid $vision__grey--light;
+}
+
+.application-details__log-box-logtext-line {
+  font-size: 0.9rem;
+  line-height: 25px;
+}
+
+
+.application-details__overview--params {
+  justify-content: space-between;
+  width: 25.4rem;
+}
+
+.application-details__overview--params-body {
+  display: grid;
+  margin-top: rem(8px);
+  justify-content: space-between;
+  grid-gap: rem(20px) rem(10px);
+  grid-template-columns: repeat(auto-fill, rem(135px));
+
+  .bx--tooltip__trigger {
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-bottom: rem(5px);
+  }
+
+  .settings--params-body__data {
+    font-size: 0.9rem;
+  }
+}
+
+.application-details-toolbar__mark-btn {
+  display: flex;
+
+  .mark-icon--blue {
+    margin-top: 0.8rem;
+    margin-left: 0.5rem;
+  }
+
+  .mark-icon--blue.disabled {
+    opacity: 0.1;
+    cursor: not-allowed;
+  }
+  
+  .bx--list-box--disabled .bx--list-box__label {
+    opacity: 0.5;
+    color: #c6c6c6;
+  }
+
+  .mark-dropdown {
+    width: rem(105px);
+    background-color: transparent;
+    border-bottom: none;
+
+    .bx--list-box__menu {
+      width: 10rem;
+    }
+    .bx--list-box__field {
+      padding: 0 0.3rem;
+    }
+  }
+}
+
+.bx--table-expand__svg {
+  transition: all 250ms ease;
+}
+
+.application-details__table--expand-btn--active {
+  transform: rotate(90deg);
+}
+
+.application-details__table--header {
+  font-weight: bold;
+}
+
+.application-details__table--subtitle {
+  font-size: 0.75rem;
+  margin-top: rem(5px);
+}
+
+.application-details__table--expandable-row {
+  td:nth-child(3) {
+    padding-left: rem(32px);
+    font-weight: 500;
+  }
+}
+
+
+.application-details__log-mo {
+  td:nth-child(3) {
+    padding-left: rem(32px);
+    font-weight: 500;
+  }
+}
+
+.application-details__log-modal .bx--modal-container {
+  width: 60rem;
+  height: 40rem;
+
+  .bx--modal-content {
+    line-height: 1.4;
+    padding-right: 1rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .bx--btn--primary {
+    display: none;
+  }
+
+  .bx--modal-content > :last-child {
+    padding-bottom: 0.1rem;
+  }
+
+}
+
+// For screens that are 1043px wide or less
+@media (max-width: 1043px) {
+  .application-details__main {
+    margin-left: rem(40px);
+  }
+}

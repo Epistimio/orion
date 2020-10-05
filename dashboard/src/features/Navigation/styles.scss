@@ -1,0 +1,87 @@
+
+@import '~utils/vars';
+
+$vision-navigation__inactiveWhite: #DFE3E6;
+$vision-navigation__white: #FFF;
+$vision-navigation__background: #000;
+$vision-navigation__boldWeight: 600;
+$vision-navigation__normalWeight: 300;
+$vision-navigation__iconColor: #69A6FF;
+$vision-navigation__hoverColor: #69A6FF;
+$vision-navigation__lightBlack: #192E3D;
+
+.app-header {
+  // style the currently selected link
+  .bx--header__menu-item[aria-current="page"] {
+    font-weight: 600;
+    color: $text-04;
+  }
+}
+
+.vision-navigation__user-dropdown {
+  display: flex;
+
+  .vision-navigation__user-icon {
+    fill: $ui-01;
+    margin-right: rem(10px);
+    height: rem(22px);
+    width: rem(22px);
+  }
+
+  .vision-navigation__user-name {
+    vertical-align: super;
+  }
+}
+
+// Force style the last item of the user dropdown
+.bx--header__menu-title[aria-expanded='true'] + .bx--header__menu {
+  li + .dropdownDisabled-container {
+    margin: 0 0.6rem;
+    border-top: 1px solid $text-05;
+    pointer-events: none;
+    .bx--header__menu-item:hover {
+      background-color: #262626;
+    }
+  }
+}
+
+.dropdownDisabledItem {
+  color: $text-05;
+  font-weight: bold;
+  font-size: 0.8rem;
+  border: none;
+}
+
+.vision-navigation__calendar-icon {
+  margin-right: rem(10px);
+  margin-left: rem(5px);
+  margin-top: rem(4px);
+  width: 2rem;
+}
+
+.notification--button--active {
+  background-color: #393939;
+  border-color: #ffffff;
+  outline: none;
+}
+
+@media (max-width: 650px) {
+  .bx--header__name {
+    padding: 0.2rem;
+  }
+  .notification-bar .notification-bar__recent-title {
+    margin-top: 3.5rem;
+  }
+  .notification-bar .bx--toast-notification {
+    width: auto;
+  }
+  .vision-navigation__user-dropdown {
+    .vision-navigation__user-icon {
+      margin-right: 0;
+    }
+    .vision-navigation__user-name,
+    .bx--header__menu-arrow {
+      display: none;
+    }
+  }
+}

@@ -1,0 +1,46 @@
+
+@import '~utils/vars';
+
+.dashboard {
+  .page-header {
+    border-bottom: 1px solid $vision__grey--light;
+    background-color: $inverse-01;
+    color: $inverse-02;
+
+    @media (max-width: $bp-sm) {
+      .page-header__page-title.header-container__flexbox {
+        font-size: 1.2rem;
+      }
+    }
+  }
+
+  &__btn--get-started {
+    display: block;
+    margin: 2rem auto;
+  }
+
+  &__images-container {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(15rem, 30rem));
+    justify-content: center;
+    grid-gap: 1.875rem;
+    margin: 2rem 2rem 5rem 2rem;
+
+    @media (max-width: $bp-xlg) {
+      grid-template-columns: repeat(2, minmax(15.5rem, 15.5rem));
+    }
+  
+    @media (max-width: $bp-sm) {
+      grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+      grid-gap: 1.3rem;
+    }
+  }
+
+  &__image-text {
+    @include carbon--type-style('body-long-01');
+    font-size: 1rem;
+    margin: auto;
+    text-align: center;
+    padding: 0 1rem;
+  }
+}

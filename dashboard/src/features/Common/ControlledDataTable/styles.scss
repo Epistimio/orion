@@ -1,0 +1,38 @@
+
+@import '~utils/vars';
+
+// some table headers have tooltips, keep carbon
+// from overriding the header styles to be tooltip styles
+.table__header--tooltip {
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.controlled-data-table__container .bx--data-table {
+  table-layout: fixed;
+  width: 100%;
+
+  th, td {
+    overflow-wrap: break-word;
+  }
+
+  tbody {
+    cursor: pointer;
+  }
+
+  th:first-child, td:first-child {
+    padding: 0.8rem 0;
+    width: $image-card__checkbox-width + rem(10px);
+
+    & > .bx--form-item.bx--checkbox-wrapper {
+      margin: auto;
+      margin-left: $image-card__checkbox-width/2;
+    }
+  }
+
+  a:link,
+  a:visited {
+    color: $vision__blue;
+  }
+}

@@ -1,0 +1,78 @@
+<!-- IBM_SOURCE_PROLOG_BEGIN_TAG                                            -->
+<!-- *****************************************************************      -->
+<!--                                                                        -->
+<!-- IBM Confidential                                                       -->
+<!-- OCO Source Materials                                                   -->
+<!--                                                                        -->
+<!-- (C) Copyright IBM Corp. 2019                                           -->
+<!--                                                                        -->
+<!-- The source code for this program is not published or otherwise         -->
+<!-- divested of its trade secrets, irrespective of what has been           -->
+<!-- deposited with the U.S. Copyright Office.                              -->
+<!--                                                                        -->
+<!-- *****************************************************************      -->
+<!-- IBM_SOURCE_PROLOG_END_TAG                                              -->
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="360px" height="288px" viewBox="0 0 360 288" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 53 (72520) - https://sketchapp.com -->
+    <title>Group 3</title>
+    <desc>Created with Sketch.</desc>
+    <g id="HF---Advanced-Metrics" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.503813244">
+        <g id="Advanced-Metrics---Confusion-Matrix-too-large" transform="translate(-882.000000, -202.000000)" fill-rule="nonzero" stroke="#20214F">
+            <g id="Group-3" transform="translate(883.000000, 203.000000)">
+                <rect id="Rectangle-3" fill="#2E3F8F" x="-0.5" y="-0.5" width="49" height="48"></rect>
+                <path d="M48.5,-0.5 L97.5,-0.5 L97.5,47.5 L48.5,47.5 L48.5,-0.5 Z" id="Rectangle-3-Copy-6" fill="#7BA7F6"></path>
+                <path d="M97.5,-0.5 L146.5,-0.5 L146.5,47.5 L97.5,47.5 L97.5,-0.5 Z" id="Rectangle-3-Copy-12" fill="#E1EBF7"></path>
+                <path d="M146.5,-0.5 L195.5,-0.5 L195.5,47.5 L146.5,47.5 L146.5,-0.5 Z" id="Rectangle-3-Copy-18" fill="#E1EBF7"></path>
+                <path d="M195.5,-0.5 L244.5,-0.5 L244.5,47.5 L195.5,47.5 L195.5,-0.5 Z" id="Rectangle-3-Copy-24" fill="#E1EBF7"></path>
+                <rect id="Rectangle-3-Copy-30" fill="#E1EBF7" x="244.5" y="-0.5" width="49" height="48"></rect>
+                <rect id="Rectangle-3-Copy" fill="#A8C0F3" x="-0.5" y="46.5" width="49" height="48"></rect>
+                <path d="M48.5,46.5 L97.5,46.5 L97.5,94.5 L48.5,94.5 L48.5,46.5 Z" id="Rectangle-3-Copy-7" fill="#2E3F8F"></path>
+                <path d="M97.5,46.5 L146.5,46.5 L146.5,94.5 L97.5,94.5 L97.5,46.5 Z" id="Rectangle-3-Copy-13" fill="#E1EBF7"></path>
+                <path d="M146.5,46.5 L195.5,46.5 L195.5,94.5 L146.5,94.5 L146.5,46.5 Z" id="Rectangle-3-Copy-19" fill="#C8DAF4"></path>
+                <path d="M195.5,46.5 L244.5,46.5 L244.5,94.5 L195.5,94.5 L195.5,46.5 Z" id="Rectangle-3-Copy-25" fill="#E1EBF7"></path>
+                <rect id="Rectangle-3-Copy-31" fill="#E1EBF7" x="244.5" y="46.5" width="49" height="48"></rect>
+                <rect id="Rectangle-3-Copy-2" fill="#A8C0F3" x="-0.5" y="94.5" width="49" height="48"></rect>
+                <path d="M48.5,94.5 L97.5,94.5 L97.5,142.5 L48.5,142.5 L48.5,94.5 Z" id="Rectangle-3-Copy-8" fill="#7BA7F6"></path>
+                <path d="M97.5,94.5 L146.5,94.5 L146.5,142.5 L97.5,142.5 L97.5,94.5 Z" id="Rectangle-3-Copy-14" fill="#3C6DF0"></path>
+                <path d="M146.5,94.5 L195.5,94.5 L195.5,142.5 L146.5,142.5 L146.5,94.5 Z" id="Rectangle-3-Copy-20" fill="#E1EBF7"></path>
+                <path d="M195.5,94.5 L244.5,94.5 L244.5,142.5 L195.5,142.5 L195.5,94.5 Z" id="Rectangle-3-Copy-26" fill="#7BA7F6"></path>
+                <rect id="Rectangle-3-Copy-32" fill="#C8DAF4" x="244.5" y="94.5" width="49" height="48"></rect>
+                <rect id="Rectangle-3-Copy-3" fill="#E1EBF7" x="-0.5" y="142.5" width="49" height="48"></rect>
+                <path d="M48.5,142.5 L97.5,142.5 L97.5,190.5 L48.5,190.5 L48.5,142.5 Z" id="Rectangle-3-Copy-9" fill="#A8C0F3"></path>
+                <path d="M97.5,142.5 L146.5,142.5 L146.5,190.5 L97.5,190.5 L97.5,142.5 Z" id="Rectangle-3-Copy-15" fill="#E1EBF7"></path>
+                <path d="M146.5,142.5 L195.5,142.5 L195.5,190.5 L146.5,190.5 L146.5,142.5 Z" id="Rectangle-3-Copy-21" fill="#3C6DF0"></path>
+                <path d="M195.5,142.5 L244.5,142.5 L244.5,190.5 L195.5,190.5 L195.5,142.5 Z" id="Rectangle-3-Copy-27" fill="#7BA7F6"></path>
+                <rect id="Rectangle-3-Copy-33" fill="#7BA7F6" x="244.5" y="142.5" width="49" height="48"></rect>
+                <rect id="Rectangle-3-Copy-4" fill="#E1EBF7" x="-0.5" y="190.5" width="49" height="48"></rect>
+                <path d="M48.5,190.5 L97.5,190.5 L97.5,238.5 L48.5,238.5 L48.5,190.5 Z" id="Rectangle-3-Copy-10" fill="#C8DAF4"></path>
+                <path d="M97.5,190.5 L146.5,190.5 L146.5,238.5 L97.5,238.5 L97.5,190.5 Z" id="Rectangle-3-Copy-16" fill="#E1EBF7"></path>
+                <path d="M146.5,190.5 L195.5,190.5 L195.5,238.5 L146.5,238.5 L146.5,190.5 Z" id="Rectangle-3-Copy-22" fill="#A8C0F3"></path>
+                <path d="M195.5,190.5 L244.5,190.5 L244.5,238.5 L195.5,238.5 L195.5,190.5 Z" id="Rectangle-3-Copy-28" fill="#2E3F8F"></path>
+                <rect id="Rectangle-3-Copy-34" fill="#3C6DF0" x="244.5" y="190.5" width="49" height="48"></rect>
+                <rect id="Rectangle-3-Copy-5" fill="#E1EBF7" x="-0.5" y="237.5" width="49" height="48"></rect>
+                <path d="M48.5,237.5 L97.5,237.5 L97.5,285.5 L48.5,285.5 L48.5,237.5 Z" id="Rectangle-3-Copy-11" fill="#C8DAF4"></path>
+                <path d="M97.5,237.5 L146.5,237.5 L146.5,285.5 L97.5,285.5 L97.5,237.5 Z" id="Rectangle-3-Copy-17" fill="#E1EBF7"></path>
+                <path d="M146.5,237.5 L195.5,237.5 L195.5,285.5 L146.5,285.5 L146.5,237.5 Z" id="Rectangle-3-Copy-23" fill="#C8DAF4"></path>
+                <path d="M195.5,237.5 L244.5,237.5 L244.5,285.5 L195.5,285.5 L195.5,237.5 Z" id="Rectangle-3-Copy-29" fill="#C8DAF4"></path>
+                <rect id="Rectangle-3-Copy-35" fill="#2E3F8F" x="244.5" y="237.5" width="49" height="48"></rect>
+            </g>
+        </g>
+    </g>
+    <defs>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-1">
+            <stop stop-color="#20214F" offset="0%"></stop>
+            <stop stop-color="#2E3F8F" offset="27.5087247%"></stop>
+            <stop stop-color="#3C6DF0" offset="48.485461%"></stop>
+            <stop stop-color="#79A6F6" offset="67.0078142%"></stop>
+            <stop stop-color="#A8C0F3" offset="85.3799585%"></stop>
+            <stop stop-color="#C8DAF4" offset="95.8313821%"></stop>
+            <stop stop-color="#E1EBF7" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="HF---Advanced-Metrics" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.499418713">
+        <g id="Advanced-Metrics---Confusion-Matrix-too-large" transform="translate(-1206.000000, -224.000000)" fill="url(#linearGradient-1)" fill-rule="nonzero" stroke="#20214F">
+            <rect id="Rectangle-4" x="1536.5" y="226.5" width="20" height="282"></rect>
+        </g>
+    </g>
+</svg>

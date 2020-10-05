@@ -1,0 +1,1541 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`renders the Dashboard correctly 1`] = `
+ShallowWrapper {
+  "length": 1,
+  Symbol(enzyme.__root__): [Circular],
+  Symbol(enzyme.__unrendered__): <Dashboard />,
+  Symbol(enzyme.__renderer__): Object {
+    "batchedUpdates": [Function],
+    "getNode": [Function],
+    "render": [Function],
+    "simulateEvent": [Function],
+    "unmount": [Function],
+  },
+  Symbol(enzyme.__node__): Object {
+    "instance": null,
+    "key": undefined,
+    "nodeType": "host",
+    "props": Object {
+      "children": Array [
+        <InjectIntl(Connect(PageHeader))
+          className="dashboard-header__title"
+          title={
+            <FormattedMessage
+              id="dashboard.welcomeMessage"
+              values={Object {}}
+            />
+          }
+        />,
+        <div
+          className="dashboard body-container"
+        >
+          <div
+            className="dashboard-container"
+          >
+            <div
+              className="dashboard__image-container"
+            >
+              <svg
+                className="dashboard__image"
+                fillRule="evenodd"
+              >
+                <use
+                  xlinkHref="#undefined"
+                />
+              </svg>
+              <div
+                className="dashboard__image-text"
+              >
+                <FormattedMessage
+                  id="dashboard.uploadInstruction"
+                  values={Object {}}
+                />
+              </div>
+            </div>
+            <div
+              className="dashboard__image-container"
+            >
+              <svg
+                className="dashboard__image"
+                fillRule="evenodd"
+              >
+                <use
+                  xlinkHref="#undefined"
+                />
+              </svg>
+              <div
+                className="dashboard__image-text"
+              >
+                <FormattedMessage
+                  id="dashboard.categorizeInstruction"
+                  values={Object {}}
+                />
+              </div>
+            </div>
+            <div
+              className="dashboard__image-container"
+            >
+              <svg
+                className="dashboard__image"
+                fillRule="evenodd"
+              >
+                <use
+                  xlinkHref="#undefined"
+                />
+              </svg>
+              <div
+                className="dashboard__image-text"
+              >
+                <FormattedMessage
+                  id="dashboard.trainInstruction"
+                  values={Object {}}
+                />
+              </div>
+            </div>
+            <div
+              className="dashboard__image-container"
+            >
+              <svg
+                className="dashboard__image"
+                fillRule="evenodd"
+              >
+                <use
+                  xlinkHref="#undefined"
+                />
+              </svg>
+              <div
+                className="dashboard__image-text"
+              >
+                <FormattedMessage
+                  id="dashboard.deployInstruction"
+                  values={Object {}}
+                />
+              </div>
+            </div>
+          </div>
+          <div
+            className="dashboard--gettingStartedBtn_container"
+          >
+            <button
+              className="dashboard__get-startedBtn bx--btn bx--btn--primary"
+              id="gettingStarted"
+              onClick={[Function]}
+              role="button"
+            >
+              <label
+                htmlFor="gettingStarted"
+              >
+                <FormattedMessage
+                  id="btn.getStarted"
+                  values={Object {}}
+                />
+              </label>
+            </button>
+          </div>
+        </div>,
+        undefined,
+      ],
+      "className": "dashboard__body",
+    },
+    "ref": null,
+    "rendered": Array [
+      Object {
+        "instance": null,
+        "key": undefined,
+        "nodeType": "class",
+        "props": Object {
+          "className": "dashboard-header__title",
+          "title": <FormattedMessage
+            id="dashboard.welcomeMessage"
+            values={Object {}}
+          />,
+        },
+        "ref": null,
+        "rendered": null,
+        "type": [Function],
+      },
+      Object {
+        "instance": null,
+        "key": undefined,
+        "nodeType": "host",
+        "props": Object {
+          "children": Array [
+            <div
+              className="dashboard-container"
+            >
+              <div
+                className="dashboard__image-container"
+              >
+                <svg
+                  className="dashboard__image"
+                  fillRule="evenodd"
+                >
+                  <use
+                    xlinkHref="#undefined"
+                  />
+                </svg>
+                <div
+                  className="dashboard__image-text"
+                >
+                  <FormattedMessage
+                    id="dashboard.uploadInstruction"
+                    values={Object {}}
+                  />
+                </div>
+              </div>
+              <div
+                className="dashboard__image-container"
+              >
+                <svg
+                  className="dashboard__image"
+                  fillRule="evenodd"
+                >
+                  <use
+                    xlinkHref="#undefined"
+                  />
+                </svg>
+                <div
+                  className="dashboard__image-text"
+                >
+                  <FormattedMessage
+                    id="dashboard.categorizeInstruction"
+                    values={Object {}}
+                  />
+                </div>
+              </div>
+              <div
+                className="dashboard__image-container"
+              >
+                <svg
+                  className="dashboard__image"
+                  fillRule="evenodd"
+                >
+                  <use
+                    xlinkHref="#undefined"
+                  />
+                </svg>
+                <div
+                  className="dashboard__image-text"
+                >
+                  <FormattedMessage
+                    id="dashboard.trainInstruction"
+                    values={Object {}}
+                  />
+                </div>
+              </div>
+              <div
+                className="dashboard__image-container"
+              >
+                <svg
+                  className="dashboard__image"
+                  fillRule="evenodd"
+                >
+                  <use
+                    xlinkHref="#undefined"
+                  />
+                </svg>
+                <div
+                  className="dashboard__image-text"
+                >
+                  <FormattedMessage
+                    id="dashboard.deployInstruction"
+                    values={Object {}}
+                  />
+                </div>
+              </div>
+            </div>,
+            <div
+              className="dashboard--gettingStartedBtn_container"
+            >
+              <button
+                className="dashboard__get-startedBtn bx--btn bx--btn--primary"
+                id="gettingStarted"
+                onClick={[Function]}
+                role="button"
+              >
+                <label
+                  htmlFor="gettingStarted"
+                >
+                  <FormattedMessage
+                    id="btn.getStarted"
+                    values={Object {}}
+                  />
+                </label>
+              </button>
+            </div>,
+          ],
+          "className": "dashboard body-container",
+        },
+        "ref": null,
+        "rendered": Array [
+          Object {
+            "instance": null,
+            "key": undefined,
+            "nodeType": "host",
+            "props": Object {
+              "children": Array [
+                <div
+                  className="dashboard__image-container"
+                >
+                  <svg
+                    className="dashboard__image"
+                    fillRule="evenodd"
+                  >
+                    <use
+                      xlinkHref="#undefined"
+                    />
+                  </svg>
+                  <div
+                    className="dashboard__image-text"
+                  >
+                    <FormattedMessage
+                      id="dashboard.uploadInstruction"
+                      values={Object {}}
+                    />
+                  </div>
+                </div>,
+                <div
+                  className="dashboard__image-container"
+                >
+                  <svg
+                    className="dashboard__image"
+                    fillRule="evenodd"
+                  >
+                    <use
+                      xlinkHref="#undefined"
+                    />
+                  </svg>
+                  <div
+                    className="dashboard__image-text"
+                  >
+                    <FormattedMessage
+                      id="dashboard.categorizeInstruction"
+                      values={Object {}}
+                    />
+                  </div>
+                </div>,
+                <div
+                  className="dashboard__image-container"
+                >
+                  <svg
+                    className="dashboard__image"
+                    fillRule="evenodd"
+                  >
+                    <use
+                      xlinkHref="#undefined"
+                    />
+                  </svg>
+                  <div
+                    className="dashboard__image-text"
+                  >
+                    <FormattedMessage
+                      id="dashboard.trainInstruction"
+                      values={Object {}}
+                    />
+                  </div>
+                </div>,
+                <div
+                  className="dashboard__image-container"
+                >
+                  <svg
+                    className="dashboard__image"
+                    fillRule="evenodd"
+                  >
+                    <use
+                      xlinkHref="#undefined"
+                    />
+                  </svg>
+                  <div
+                    className="dashboard__image-text"
+                  >
+                    <FormattedMessage
+                      id="dashboard.deployInstruction"
+                      values={Object {}}
+                    />
+                  </div>
+                </div>,
+              ],
+              "className": "dashboard-container",
+            },
+            "ref": null,
+            "rendered": Array [
+              Object {
+                "instance": null,
+                "key": undefined,
+                "nodeType": "host",
+                "props": Object {
+                  "children": Array [
+                    <svg
+                      className="dashboard__image"
+                      fillRule="evenodd"
+                    >
+                      <use
+                        xlinkHref="#undefined"
+                      />
+                    </svg>,
+                    <div
+                      className="dashboard__image-text"
+                    >
+                      <FormattedMessage
+                        id="dashboard.uploadInstruction"
+                        values={Object {}}
+                      />
+                    </div>,
+                  ],
+                  "className": "dashboard__image-container",
+                },
+                "ref": null,
+                "rendered": Array [
+                  Object {
+                    "instance": null,
+                    "key": undefined,
+                    "nodeType": "host",
+                    "props": Object {
+                      "children": <use
+                        xlinkHref="#undefined"
+                      />,
+                      "className": "dashboard__image",
+                      "fillRule": "evenodd",
+                      "viewBox": undefined,
+                    },
+                    "ref": null,
+                    "rendered": Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "host",
+                      "props": Object {
+                        "xlinkHref": "#undefined",
+                      },
+                      "ref": null,
+                      "rendered": null,
+                      "type": "use",
+                    },
+                    "type": "svg",
+                  },
+                  Object {
+                    "instance": null,
+                    "key": undefined,
+                    "nodeType": "host",
+                    "props": Object {
+                      "children": <FormattedMessage
+                        id="dashboard.uploadInstruction"
+                        values={Object {}}
+                      />,
+                      "className": "dashboard__image-text",
+                    },
+                    "ref": null,
+                    "rendered": Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "class",
+                      "props": Object {
+                        "id": "dashboard.uploadInstruction",
+                        "values": Object {},
+                      },
+                      "ref": null,
+                      "rendered": null,
+                      "type": [Function],
+                    },
+                    "type": "div",
+                  },
+                ],
+                "type": "div",
+              },
+              Object {
+                "instance": null,
+                "key": undefined,
+                "nodeType": "host",
+                "props": Object {
+                  "children": Array [
+                    <svg
+                      className="dashboard__image"
+                      fillRule="evenodd"
+                    >
+                      <use
+                        xlinkHref="#undefined"
+                      />
+                    </svg>,
+                    <div
+                      className="dashboard__image-text"
+                    >
+                      <FormattedMessage
+                        id="dashboard.categorizeInstruction"
+                        values={Object {}}
+                      />
+                    </div>,
+                  ],
+                  "className": "dashboard__image-container",
+                },
+                "ref": null,
+                "rendered": Array [
+                  Object {
+                    "instance": null,
+                    "key": undefined,
+                    "nodeType": "host",
+                    "props": Object {
+                      "children": <use
+                        xlinkHref="#undefined"
+                      />,
+                      "className": "dashboard__image",
+                      "fillRule": "evenodd",
+                      "viewBox": undefined,
+                    },
+                    "ref": null,
+                    "rendered": Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "host",
+                      "props": Object {
+                        "xlinkHref": "#undefined",
+                      },
+                      "ref": null,
+                      "rendered": null,
+                      "type": "use",
+                    },
+                    "type": "svg",
+                  },
+                  Object {
+                    "instance": null,
+                    "key": undefined,
+                    "nodeType": "host",
+                    "props": Object {
+                      "children": <FormattedMessage
+                        id="dashboard.categorizeInstruction"
+                        values={Object {}}
+                      />,
+                      "className": "dashboard__image-text",
+                    },
+                    "ref": null,
+                    "rendered": Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "class",
+                      "props": Object {
+                        "id": "dashboard.categorizeInstruction",
+                        "values": Object {},
+                      },
+                      "ref": null,
+                      "rendered": null,
+                      "type": [Function],
+                    },
+                    "type": "div",
+                  },
+                ],
+                "type": "div",
+              },
+              Object {
+                "instance": null,
+                "key": undefined,
+                "nodeType": "host",
+                "props": Object {
+                  "children": Array [
+                    <svg
+                      className="dashboard__image"
+                      fillRule="evenodd"
+                    >
+                      <use
+                        xlinkHref="#undefined"
+                      />
+                    </svg>,
+                    <div
+                      className="dashboard__image-text"
+                    >
+                      <FormattedMessage
+                        id="dashboard.trainInstruction"
+                        values={Object {}}
+                      />
+                    </div>,
+                  ],
+                  "className": "dashboard__image-container",
+                },
+                "ref": null,
+                "rendered": Array [
+                  Object {
+                    "instance": null,
+                    "key": undefined,
+                    "nodeType": "host",
+                    "props": Object {
+                      "children": <use
+                        xlinkHref="#undefined"
+                      />,
+                      "className": "dashboard__image",
+                      "fillRule": "evenodd",
+                      "viewBox": undefined,
+                    },
+                    "ref": null,
+                    "rendered": Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "host",
+                      "props": Object {
+                        "xlinkHref": "#undefined",
+                      },
+                      "ref": null,
+                      "rendered": null,
+                      "type": "use",
+                    },
+                    "type": "svg",
+                  },
+                  Object {
+                    "instance": null,
+                    "key": undefined,
+                    "nodeType": "host",
+                    "props": Object {
+                      "children": <FormattedMessage
+                        id="dashboard.trainInstruction"
+                        values={Object {}}
+                      />,
+                      "className": "dashboard__image-text",
+                    },
+                    "ref": null,
+                    "rendered": Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "class",
+                      "props": Object {
+                        "id": "dashboard.trainInstruction",
+                        "values": Object {},
+                      },
+                      "ref": null,
+                      "rendered": null,
+                      "type": [Function],
+                    },
+                    "type": "div",
+                  },
+                ],
+                "type": "div",
+              },
+              Object {
+                "instance": null,
+                "key": undefined,
+                "nodeType": "host",
+                "props": Object {
+                  "children": Array [
+                    <svg
+                      className="dashboard__image"
+                      fillRule="evenodd"
+                    >
+                      <use
+                        xlinkHref="#undefined"
+                      />
+                    </svg>,
+                    <div
+                      className="dashboard__image-text"
+                    >
+                      <FormattedMessage
+                        id="dashboard.deployInstruction"
+                        values={Object {}}
+                      />
+                    </div>,
+                  ],
+                  "className": "dashboard__image-container",
+                },
+                "ref": null,
+                "rendered": Array [
+                  Object {
+                    "instance": null,
+                    "key": undefined,
+                    "nodeType": "host",
+                    "props": Object {
+                      "children": <use
+                        xlinkHref="#undefined"
+                      />,
+                      "className": "dashboard__image",
+                      "fillRule": "evenodd",
+                      "viewBox": undefined,
+                    },
+                    "ref": null,
+                    "rendered": Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "host",
+                      "props": Object {
+                        "xlinkHref": "#undefined",
+                      },
+                      "ref": null,
+                      "rendered": null,
+                      "type": "use",
+                    },
+                    "type": "svg",
+                  },
+                  Object {
+                    "instance": null,
+                    "key": undefined,
+                    "nodeType": "host",
+                    "props": Object {
+                      "children": <FormattedMessage
+                        id="dashboard.deployInstruction"
+                        values={Object {}}
+                      />,
+                      "className": "dashboard__image-text",
+                    },
+                    "ref": null,
+                    "rendered": Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "class",
+                      "props": Object {
+                        "id": "dashboard.deployInstruction",
+                        "values": Object {},
+                      },
+                      "ref": null,
+                      "rendered": null,
+                      "type": [Function],
+                    },
+                    "type": "div",
+                  },
+                ],
+                "type": "div",
+              },
+            ],
+            "type": "div",
+          },
+          Object {
+            "instance": null,
+            "key": undefined,
+            "nodeType": "host",
+            "props": Object {
+              "children": <button
+                className="dashboard__get-startedBtn bx--btn bx--btn--primary"
+                id="gettingStarted"
+                onClick={[Function]}
+                role="button"
+              >
+                <label
+                  htmlFor="gettingStarted"
+                >
+                  <FormattedMessage
+                    id="btn.getStarted"
+                    values={Object {}}
+                  />
+                </label>
+              </button>,
+              "className": "dashboard--gettingStartedBtn_container",
+            },
+            "ref": null,
+            "rendered": Object {
+              "instance": null,
+              "key": undefined,
+              "nodeType": "host",
+              "props": Object {
+                "children": <label
+                  htmlFor="gettingStarted"
+                >
+                  <FormattedMessage
+                    id="btn.getStarted"
+                    values={Object {}}
+                  />
+                </label>,
+                "className": "dashboard__get-startedBtn bx--btn bx--btn--primary",
+                "id": "gettingStarted",
+                "onClick": [Function],
+                "role": "button",
+              },
+              "ref": null,
+              "rendered": Object {
+                "instance": null,
+                "key": undefined,
+                "nodeType": "host",
+                "props": Object {
+                  "children": <FormattedMessage
+                    id="btn.getStarted"
+                    values={Object {}}
+                  />,
+                  "htmlFor": "gettingStarted",
+                },
+                "ref": null,
+                "rendered": Object {
+                  "instance": null,
+                  "key": undefined,
+                  "nodeType": "class",
+                  "props": Object {
+                    "id": "btn.getStarted",
+                    "values": Object {},
+                  },
+                  "ref": null,
+                  "rendered": null,
+                  "type": [Function],
+                },
+                "type": "label",
+              },
+              "type": "button",
+            },
+            "type": "div",
+          },
+        ],
+        "type": "div",
+      },
+      undefined,
+    ],
+    "type": "div",
+  },
+  Symbol(enzyme.__nodes__): Array [
+    Object {
+      "instance": null,
+      "key": undefined,
+      "nodeType": "host",
+      "props": Object {
+        "children": Array [
+          <InjectIntl(Connect(PageHeader))
+            className="dashboard-header__title"
+            title={
+              <FormattedMessage
+                id="dashboard.welcomeMessage"
+                values={Object {}}
+              />
+            }
+          />,
+          <div
+            className="dashboard body-container"
+          >
+            <div
+              className="dashboard-container"
+            >
+              <div
+                className="dashboard__image-container"
+              >
+                <svg
+                  className="dashboard__image"
+                  fillRule="evenodd"
+                >
+                  <use
+                    xlinkHref="#undefined"
+                  />
+                </svg>
+                <div
+                  className="dashboard__image-text"
+                >
+                  <FormattedMessage
+                    id="dashboard.uploadInstruction"
+                    values={Object {}}
+                  />
+                </div>
+              </div>
+              <div
+                className="dashboard__image-container"
+              >
+                <svg
+                  className="dashboard__image"
+                  fillRule="evenodd"
+                >
+                  <use
+                    xlinkHref="#undefined"
+                  />
+                </svg>
+                <div
+                  className="dashboard__image-text"
+                >
+                  <FormattedMessage
+                    id="dashboard.categorizeInstruction"
+                    values={Object {}}
+                  />
+                </div>
+              </div>
+              <div
+                className="dashboard__image-container"
+              >
+                <svg
+                  className="dashboard__image"
+                  fillRule="evenodd"
+                >
+                  <use
+                    xlinkHref="#undefined"
+                  />
+                </svg>
+                <div
+                  className="dashboard__image-text"
+                >
+                  <FormattedMessage
+                    id="dashboard.trainInstruction"
+                    values={Object {}}
+                  />
+                </div>
+              </div>
+              <div
+                className="dashboard__image-container"
+              >
+                <svg
+                  className="dashboard__image"
+                  fillRule="evenodd"
+                >
+                  <use
+                    xlinkHref="#undefined"
+                  />
+                </svg>
+                <div
+                  className="dashboard__image-text"
+                >
+                  <FormattedMessage
+                    id="dashboard.deployInstruction"
+                    values={Object {}}
+                  />
+                </div>
+              </div>
+            </div>
+            <div
+              className="dashboard--gettingStartedBtn_container"
+            >
+              <button
+                className="dashboard__get-startedBtn bx--btn bx--btn--primary"
+                id="gettingStarted"
+                onClick={[Function]}
+                role="button"
+              >
+                <label
+                  htmlFor="gettingStarted"
+                >
+                  <FormattedMessage
+                    id="btn.getStarted"
+                    values={Object {}}
+                  />
+                </label>
+              </button>
+            </div>
+          </div>,
+          undefined,
+        ],
+        "className": "dashboard__body",
+      },
+      "ref": null,
+      "rendered": Array [
+        Object {
+          "instance": null,
+          "key": undefined,
+          "nodeType": "class",
+          "props": Object {
+            "className": "dashboard-header__title",
+            "title": <FormattedMessage
+              id="dashboard.welcomeMessage"
+              values={Object {}}
+            />,
+          },
+          "ref": null,
+          "rendered": null,
+          "type": [Function],
+        },
+        Object {
+          "instance": null,
+          "key": undefined,
+          "nodeType": "host",
+          "props": Object {
+            "children": Array [
+              <div
+                className="dashboard-container"
+              >
+                <div
+                  className="dashboard__image-container"
+                >
+                  <svg
+                    className="dashboard__image"
+                    fillRule="evenodd"
+                  >
+                    <use
+                      xlinkHref="#undefined"
+                    />
+                  </svg>
+                  <div
+                    className="dashboard__image-text"
+                  >
+                    <FormattedMessage
+                      id="dashboard.uploadInstruction"
+                      values={Object {}}
+                    />
+                  </div>
+                </div>
+                <div
+                  className="dashboard__image-container"
+                >
+                  <svg
+                    className="dashboard__image"
+                    fillRule="evenodd"
+                  >
+                    <use
+                      xlinkHref="#undefined"
+                    />
+                  </svg>
+                  <div
+                    className="dashboard__image-text"
+                  >
+                    <FormattedMessage
+                      id="dashboard.categorizeInstruction"
+                      values={Object {}}
+                    />
+                  </div>
+                </div>
+                <div
+                  className="dashboard__image-container"
+                >
+                  <svg
+                    className="dashboard__image"
+                    fillRule="evenodd"
+                  >
+                    <use
+                      xlinkHref="#undefined"
+                    />
+                  </svg>
+                  <div
+                    className="dashboard__image-text"
+                  >
+                    <FormattedMessage
+                      id="dashboard.trainInstruction"
+                      values={Object {}}
+                    />
+                  </div>
+                </div>
+                <div
+                  className="dashboard__image-container"
+                >
+                  <svg
+                    className="dashboard__image"
+                    fillRule="evenodd"
+                  >
+                    <use
+                      xlinkHref="#undefined"
+                    />
+                  </svg>
+                  <div
+                    className="dashboard__image-text"
+                  >
+                    <FormattedMessage
+                      id="dashboard.deployInstruction"
+                      values={Object {}}
+                    />
+                  </div>
+                </div>
+              </div>,
+              <div
+                className="dashboard--gettingStartedBtn_container"
+              >
+                <button
+                  className="dashboard__get-startedBtn bx--btn bx--btn--primary"
+                  id="gettingStarted"
+                  onClick={[Function]}
+                  role="button"
+                >
+                  <label
+                    htmlFor="gettingStarted"
+                  >
+                    <FormattedMessage
+                      id="btn.getStarted"
+                      values={Object {}}
+                    />
+                  </label>
+                </button>
+              </div>,
+            ],
+            "className": "dashboard body-container",
+          },
+          "ref": null,
+          "rendered": Array [
+            Object {
+              "instance": null,
+              "key": undefined,
+              "nodeType": "host",
+              "props": Object {
+                "children": Array [
+                  <div
+                    className="dashboard__image-container"
+                  >
+                    <svg
+                      className="dashboard__image"
+                      fillRule="evenodd"
+                    >
+                      <use
+                        xlinkHref="#undefined"
+                      />
+                    </svg>
+                    <div
+                      className="dashboard__image-text"
+                    >
+                      <FormattedMessage
+                        id="dashboard.uploadInstruction"
+                        values={Object {}}
+                      />
+                    </div>
+                  </div>,
+                  <div
+                    className="dashboard__image-container"
+                  >
+                    <svg
+                      className="dashboard__image"
+                      fillRule="evenodd"
+                    >
+                      <use
+                        xlinkHref="#undefined"
+                      />
+                    </svg>
+                    <div
+                      className="dashboard__image-text"
+                    >
+                      <FormattedMessage
+                        id="dashboard.categorizeInstruction"
+                        values={Object {}}
+                      />
+                    </div>
+                  </div>,
+                  <div
+                    className="dashboard__image-container"
+                  >
+                    <svg
+                      className="dashboard__image"
+                      fillRule="evenodd"
+                    >
+                      <use
+                        xlinkHref="#undefined"
+                      />
+                    </svg>
+                    <div
+                      className="dashboard__image-text"
+                    >
+                      <FormattedMessage
+                        id="dashboard.trainInstruction"
+                        values={Object {}}
+                      />
+                    </div>
+                  </div>,
+                  <div
+                    className="dashboard__image-container"
+                  >
+                    <svg
+                      className="dashboard__image"
+                      fillRule="evenodd"
+                    >
+                      <use
+                        xlinkHref="#undefined"
+                      />
+                    </svg>
+                    <div
+                      className="dashboard__image-text"
+                    >
+                      <FormattedMessage
+                        id="dashboard.deployInstruction"
+                        values={Object {}}
+                      />
+                    </div>
+                  </div>,
+                ],
+                "className": "dashboard-container",
+              },
+              "ref": null,
+              "rendered": Array [
+                Object {
+                  "instance": null,
+                  "key": undefined,
+                  "nodeType": "host",
+                  "props": Object {
+                    "children": Array [
+                      <svg
+                        className="dashboard__image"
+                        fillRule="evenodd"
+                      >
+                        <use
+                          xlinkHref="#undefined"
+                        />
+                      </svg>,
+                      <div
+                        className="dashboard__image-text"
+                      >
+                        <FormattedMessage
+                          id="dashboard.uploadInstruction"
+                          values={Object {}}
+                        />
+                      </div>,
+                    ],
+                    "className": "dashboard__image-container",
+                  },
+                  "ref": null,
+                  "rendered": Array [
+                    Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "host",
+                      "props": Object {
+                        "children": <use
+                          xlinkHref="#undefined"
+                        />,
+                        "className": "dashboard__image",
+                        "fillRule": "evenodd",
+                        "viewBox": undefined,
+                      },
+                      "ref": null,
+                      "rendered": Object {
+                        "instance": null,
+                        "key": undefined,
+                        "nodeType": "host",
+                        "props": Object {
+                          "xlinkHref": "#undefined",
+                        },
+                        "ref": null,
+                        "rendered": null,
+                        "type": "use",
+                      },
+                      "type": "svg",
+                    },
+                    Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "host",
+                      "props": Object {
+                        "children": <FormattedMessage
+                          id="dashboard.uploadInstruction"
+                          values={Object {}}
+                        />,
+                        "className": "dashboard__image-text",
+                      },
+                      "ref": null,
+                      "rendered": Object {
+                        "instance": null,
+                        "key": undefined,
+                        "nodeType": "class",
+                        "props": Object {
+                          "id": "dashboard.uploadInstruction",
+                          "values": Object {},
+                        },
+                        "ref": null,
+                        "rendered": null,
+                        "type": [Function],
+                      },
+                      "type": "div",
+                    },
+                  ],
+                  "type": "div",
+                },
+                Object {
+                  "instance": null,
+                  "key": undefined,
+                  "nodeType": "host",
+                  "props": Object {
+                    "children": Array [
+                      <svg
+                        className="dashboard__image"
+                        fillRule="evenodd"
+                      >
+                        <use
+                          xlinkHref="#undefined"
+                        />
+                      </svg>,
+                      <div
+                        className="dashboard__image-text"
+                      >
+                        <FormattedMessage
+                          id="dashboard.categorizeInstruction"
+                          values={Object {}}
+                        />
+                      </div>,
+                    ],
+                    "className": "dashboard__image-container",
+                  },
+                  "ref": null,
+                  "rendered": Array [
+                    Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "host",
+                      "props": Object {
+                        "children": <use
+                          xlinkHref="#undefined"
+                        />,
+                        "className": "dashboard__image",
+                        "fillRule": "evenodd",
+                        "viewBox": undefined,
+                      },
+                      "ref": null,
+                      "rendered": Object {
+                        "instance": null,
+                        "key": undefined,
+                        "nodeType": "host",
+                        "props": Object {
+                          "xlinkHref": "#undefined",
+                        },
+                        "ref": null,
+                        "rendered": null,
+                        "type": "use",
+                      },
+                      "type": "svg",
+                    },
+                    Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "host",
+                      "props": Object {
+                        "children": <FormattedMessage
+                          id="dashboard.categorizeInstruction"
+                          values={Object {}}
+                        />,
+                        "className": "dashboard__image-text",
+                      },
+                      "ref": null,
+                      "rendered": Object {
+                        "instance": null,
+                        "key": undefined,
+                        "nodeType": "class",
+                        "props": Object {
+                          "id": "dashboard.categorizeInstruction",
+                          "values": Object {},
+                        },
+                        "ref": null,
+                        "rendered": null,
+                        "type": [Function],
+                      },
+                      "type": "div",
+                    },
+                  ],
+                  "type": "div",
+                },
+                Object {
+                  "instance": null,
+                  "key": undefined,
+                  "nodeType": "host",
+                  "props": Object {
+                    "children": Array [
+                      <svg
+                        className="dashboard__image"
+                        fillRule="evenodd"
+                      >
+                        <use
+                          xlinkHref="#undefined"
+                        />
+                      </svg>,
+                      <div
+                        className="dashboard__image-text"
+                      >
+                        <FormattedMessage
+                          id="dashboard.trainInstruction"
+                          values={Object {}}
+                        />
+                      </div>,
+                    ],
+                    "className": "dashboard__image-container",
+                  },
+                  "ref": null,
+                  "rendered": Array [
+                    Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "host",
+                      "props": Object {
+                        "children": <use
+                          xlinkHref="#undefined"
+                        />,
+                        "className": "dashboard__image",
+                        "fillRule": "evenodd",
+                        "viewBox": undefined,
+                      },
+                      "ref": null,
+                      "rendered": Object {
+                        "instance": null,
+                        "key": undefined,
+                        "nodeType": "host",
+                        "props": Object {
+                          "xlinkHref": "#undefined",
+                        },
+                        "ref": null,
+                        "rendered": null,
+                        "type": "use",
+                      },
+                      "type": "svg",
+                    },
+                    Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "host",
+                      "props": Object {
+                        "children": <FormattedMessage
+                          id="dashboard.trainInstruction"
+                          values={Object {}}
+                        />,
+                        "className": "dashboard__image-text",
+                      },
+                      "ref": null,
+                      "rendered": Object {
+                        "instance": null,
+                        "key": undefined,
+                        "nodeType": "class",
+                        "props": Object {
+                          "id": "dashboard.trainInstruction",
+                          "values": Object {},
+                        },
+                        "ref": null,
+                        "rendered": null,
+                        "type": [Function],
+                      },
+                      "type": "div",
+                    },
+                  ],
+                  "type": "div",
+                },
+                Object {
+                  "instance": null,
+                  "key": undefined,
+                  "nodeType": "host",
+                  "props": Object {
+                    "children": Array [
+                      <svg
+                        className="dashboard__image"
+                        fillRule="evenodd"
+                      >
+                        <use
+                          xlinkHref="#undefined"
+                        />
+                      </svg>,
+                      <div
+                        className="dashboard__image-text"
+                      >
+                        <FormattedMessage
+                          id="dashboard.deployInstruction"
+                          values={Object {}}
+                        />
+                      </div>,
+                    ],
+                    "className": "dashboard__image-container",
+                  },
+                  "ref": null,
+                  "rendered": Array [
+                    Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "host",
+                      "props": Object {
+                        "children": <use
+                          xlinkHref="#undefined"
+                        />,
+                        "className": "dashboard__image",
+                        "fillRule": "evenodd",
+                        "viewBox": undefined,
+                      },
+                      "ref": null,
+                      "rendered": Object {
+                        "instance": null,
+                        "key": undefined,
+                        "nodeType": "host",
+                        "props": Object {
+                          "xlinkHref": "#undefined",
+                        },
+                        "ref": null,
+                        "rendered": null,
+                        "type": "use",
+                      },
+                      "type": "svg",
+                    },
+                    Object {
+                      "instance": null,
+                      "key": undefined,
+                      "nodeType": "host",
+                      "props": Object {
+                        "children": <FormattedMessage
+                          id="dashboard.deployInstruction"
+                          values={Object {}}
+                        />,
+                        "className": "dashboard__image-text",
+                      },
+                      "ref": null,
+                      "rendered": Object {
+                        "instance": null,
+                        "key": undefined,
+                        "nodeType": "class",
+                        "props": Object {
+                          "id": "dashboard.deployInstruction",
+                          "values": Object {},
+                        },
+                        "ref": null,
+                        "rendered": null,
+                        "type": [Function],
+                      },
+                      "type": "div",
+                    },
+                  ],
+                  "type": "div",
+                },
+              ],
+              "type": "div",
+            },
+            Object {
+              "instance": null,
+              "key": undefined,
+              "nodeType": "host",
+              "props": Object {
+                "children": <button
+                  className="dashboard__get-startedBtn bx--btn bx--btn--primary"
+                  id="gettingStarted"
+                  onClick={[Function]}
+                  role="button"
+                >
+                  <label
+                    htmlFor="gettingStarted"
+                  >
+                    <FormattedMessage
+                      id="btn.getStarted"
+                      values={Object {}}
+                    />
+                  </label>
+                </button>,
+                "className": "dashboard--gettingStartedBtn_container",
+              },
+              "ref": null,
+              "rendered": Object {
+                "instance": null,
+                "key": undefined,
+                "nodeType": "host",
+                "props": Object {
+                  "children": <label
+                    htmlFor="gettingStarted"
+                  >
+                    <FormattedMessage
+                      id="btn.getStarted"
+                      values={Object {}}
+                    />
+                  </label>,
+                  "className": "dashboard__get-startedBtn bx--btn bx--btn--primary",
+                  "id": "gettingStarted",
+                  "onClick": [Function],
+                  "role": "button",
+                },
+                "ref": null,
+                "rendered": Object {
+                  "instance": null,
+                  "key": undefined,
+                  "nodeType": "host",
+                  "props": Object {
+                    "children": <FormattedMessage
+                      id="btn.getStarted"
+                      values={Object {}}
+                    />,
+                    "htmlFor": "gettingStarted",
+                  },
+                  "ref": null,
+                  "rendered": Object {
+                    "instance": null,
+                    "key": undefined,
+                    "nodeType": "class",
+                    "props": Object {
+                      "id": "btn.getStarted",
+                      "values": Object {},
+                    },
+                    "ref": null,
+                    "rendered": null,
+                    "type": [Function],
+                  },
+                  "type": "label",
+                },
+                "type": "button",
+              },
+              "type": "div",
+            },
+          ],
+          "type": "div",
+        },
+        undefined,
+      ],
+      "type": "div",
+    },
+  ],
+  Symbol(enzyme.__options__): Object {
+    "adapter": ReactSixteenAdapter {
+      "options": Object {
+        "enableComponentDidUpdateOnSetState": true,
+      },
+    },
+  },
+}
+`;

@@ -1,0 +1,53 @@
+server {
+    listen 8080;
+
+    # Websphere liberty requires the $WSSC (websphere scheme) header to be set,
+    # otherwise it tries to match that of the proxying server including the port
+    # number etc. So let the proxying server handle that instead.
+    proxy_set_header "$WSSC" http;
+
+    # Prevent limitation on file upload size
+    client_max_body_size 0;
+
+    # Prevent the internal nginx from returning ports on redirects
+    # If this nginx instance is hosted on a particular non-standard port like
+    # 8080, then when it issues redirects, it will insert the port into 
+    # absolute redirects when it issues them. These typically happen when 
+    # the app is accessed via http://server/app intending to redirect to 
+    # http://server/app/ . Without this setting, we will instead redirect to
+    # http://server:8080/app which will not necessarily be translated by the
+    # outside ingress controller / load balancer. To avoid this - we don't
+    # mangle or tamper with the port that the request was handled on. See
+    # http://nginx.org/en/docs/http/ngx_http_core_module.html#port_in_redirect
+    # for more info.
+    port_in_redirect off;
+
+    # Prevent click-jacking attacks
+    # More info: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
+    add_header X-Frame-Options SAMEORIGIN always;
+
+    # Protects against MIME sniffing vulnerabilities
+    # More info: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
+    add_header X-Content-Type-Options "nosniff" always;
+
+    # Ensure that the browser's XSS Protection filter is turned on
+    # More info: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    location ${CONTEXT_ROOT} {
+        alias /usr/share/nginx/html;
+        index index.html;
+    }
+
+    location ${CONTEXT_ROOT}/api {
+        proxy_pass http://${DLAAS_API_SERVER}/api;
+        proxy_read_timeout 1200s;
+    }
+
+    # Serve /uploads as static content rather than passing on to
+    # the liberty webserver.  This enables proper video handling.
+    location ${CONTEXT_ROOT}/uploads {
+        alias /opt/powerai-vision/data;
+    }
+
+}

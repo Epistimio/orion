@@ -1,0 +1,356 @@
+
+@import '~utils/vars';
+
+$notifications__backgroundColor: #E7EBF1;
+$notifications__greyText: #A6B2BE;
+$notifications__titleBackground: #5a6872;
+
+
+.task__subtitle {
+  font-size: rem(14px);
+  margin-bottom: 0;
+  color: black;
+
+  .task__subtitle--counter {
+    font-weight: bold;
+    color: $vision__blue;
+  }
+  .task__subtitle--name {
+    font-style: italic;
+  }
+}
+
+.task__error {
+  font-size: rem(14px);
+}
+
+.task__time-stamp {
+  color: $notifications__greyText;
+}
+
+.task__text-container {
+  margin: rem(10px) 0;
+}
+
+.task__progress-text {
+  color: $vision__blue--secondary;
+  font-size: rem(12px);
+  line-height: 1.5;
+}
+
+.task__msg-text {
+  font-size: rem(12px);
+  margin: rem(5px) 0 rem(10px);
+  color: $notifications__titleBackground;
+}
+
+.task__progress-container {
+  position: relative;
+  height: rem(10px);
+  margin-bottom: rem(10px);
+  background-color: $vision__grey--light;
+  overflow-x: hidden;
+
+  .task__progress-bar {
+    width: 0%;
+    height: 100%;
+    background-color: $vision__blue;
+    transition: 0.3s linear;
+    transition-property: width;
+  }
+
+  .task__progress-bar--indeterminate {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: rem(60px);
+    height: 100%;
+    background-color: $vision__blue;
+    animation: indeterminateProgress;
+    animation-duration: 1.5s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+}
+
+@keyframes indeterminateProgress {
+  0% {
+    left: rem(-60px);
+  }
+
+  100% {
+    left: rem(280px);
+  }
+}
+
+.app-notice__container, .notification-bar {
+  .bx--toast-notification__details {
+    width: 16rem;
+  }
+  .bx--toast-notification__title {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+}
+
+/* used for toast notifications (not in the notication center) */
+.app-notice__container {
+  position: fixed;
+  z-index: 498;
+  top: calc(#{$vision-navigation--height} + .5rem);
+  right: 0;
+
+  .app-notice__notification {
+    border-radius: rem(3px);
+    background: #fff;
+    display: block;
+    width: auto;
+    line-height: 1.5;
+    position: relative;
+    margin: 10px 0;
+
+    .app-notice__fade-enter {
+      opacity: 0;
+    }
+
+    .app-notice__fade-enter,
+    .app-notice__fade-leave {
+      animation-duration: 0.3s;
+      animation-fill-mode: both;
+      animation-timing-function: cubic-bezier(0.55, 0, 0.55, 0.2);
+      animation-play-state: paused;
+    }
+
+    .app-notice__fade-enter.app-notice__fade-enter-active {
+      animation-name: notificationFadeIn;
+      animation-play-state: running;
+    }
+    .app-notice__fade-leave.app-notice__fade-leave-active {
+      animation-name: notificationFadeOut;
+      animation-play-state: running;
+    }
+
+    @keyframes notificationFadeIn {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes notificationFadeOut {
+      0% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+      }
+    }
+  }
+
+  .bx--toast-notification {
+    position: relative;
+    width: 22rem;
+    margin-right: .2rem;
+  }
+
+  .task__close-button {
+    position: absolute;
+    right: 16px;
+    outline: none;
+
+    &.bx--btn--ghost:hover {
+      background-color: transparent;
+    }
+  }
+
+  .task__progress-container {
+    width: 100%;
+  }
+}
+
+.notification-bar {
+  background-color: $notifications__backgroundColor;
+  position: absolute;
+  top: $vision-navigation--height;
+  right: 0;
+  width: rem(300px);
+  height: calc(100vh - #{$vision-navigation--height});
+  z-index: 500;
+  overflow-y: auto;
+
+  .notification-bar__recent-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 2.5rem;
+    margin: .3rem 0;
+    padding: 0 rem(15px);
+    color: $vision__white;
+    background-color: #3d70b2;
+    font-size: .9rem;
+    font-weight: 500;
+
+    .notification-bar__recent-active-section {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+
+      .notification-bar__recent-active-separator {
+        margin: 0 .5rem;
+      }
+
+      .notification-bar__active-count {
+        font-size: .75rem;
+        font-weight: 300;
+      }
+    }
+  }
+
+  .notification-bar__content {
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+
+    // loading icon when fetching bg-tasks
+    & > .bx--inline-loading .bx--inline-loading__animation {
+      margin: 2rem auto;
+    }
+  }
+
+  .bx--toast-notification {
+    width: 18.8rem;
+  }
+
+  .task__close-button {
+    position: absolute;
+    left: 260px;
+  }
+
+  .task__progress-container {
+    width: rem(251px);
+  }
+
+  .notification-bar__clear-all {
+    cursor: pointer;
+  }
+}
+
+.notification-overlay {
+  background-color: $notifications__backgroundColor;
+  position: absolute;
+  top: $vision-navigation--height;
+  right: 0;
+  width: rem(300px);
+  height: calc(100vh - #{$vision-navigation--height});
+  z-index: 300;
+
+  .notification-bar {
+    top: 0;
+    background-color: rgb(66, 73, 96);
+  }
+
+  .notification-bar__recent-title {
+    opacity: 0.4;
+  }
+  .notification-bar__content {
+    opacity: 0.4;
+  }
+}
+
+.notification-bar__clear-all--disable {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+.notifications-bar__delete-modal {
+  position: absolute;
+  max-width: 18.75rem;
+
+  &:focus {
+    outline: none;
+  }
+
+  .notifications-bar__delete-modal--checkbox {
+    display: flex;
+    padding-bottom: 1rem;
+  }
+
+  .bx--modal-container {
+    padding-top: 0.5rem;
+  
+    @media (min-width: 42rem) {
+      width: 90%;
+      top: -16.65rem;
+    }
+  }
+
+  .bx--modal-header {
+    margin-bottom: 1rem;
+  }
+
+  .bx--modal-close {
+    display: none;
+  }
+
+  .bx--modal-header__heading {
+    color: $vision__black;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .bx--modal-content {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    .bx--form-item {
+      flex: unset;
+    }
+    .bx--form-item.bx--checkbox-wrapper:first-of-type {
+      margin-top: 1.25rem;
+    }
+    .bx--tooltip__trigger {
+      padding-top: 0.75rem;
+    }
+      
+    @media (min-width: 42rem) {
+      padding-right: 1rem;
+    }
+  }
+
+  .bx--modal-footer {
+    background-color: white;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 575px) {
+  .vision-navigation__notifications-title {
+    display: none;
+  }
+}
+
+@media (max-width: 522px) {
+  .notification-bar {
+    position: relative;
+    top: 0;
+    width: 100%;
+
+    .bx--toast-notification {
+      width: calc(100% - rem(15px));
+    }
+
+    .task__close-button {
+      position: absolute;
+      left: calc(100% - rem(40px))
+    }
+
+    .task__progress-container {
+      width: calc(100% - rem(50px));
+    }
+  }
+}

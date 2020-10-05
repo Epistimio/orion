@@ -1,0 +1,180 @@
+[
+  {
+    "id" : "xpKCY",
+    "status" : "SUCCEEDED",
+    "hyperParameters" : [
+      "{\"parameter_id\":0,\"parameter_source\":\"algorithm\",\"parameters\":{\"dropout_rate\":0.7653693198794318,\"conv_size\":3,\"hidden_size\":1024,\"batch_size\":8,\"learning_rate\":0.1},\"parameter_index\":0}"
+    ],
+    "logPath" : "file://localhost:/Users/jfliu@ca.ibm.com/nni/experiments/tLgYBmeu/trials/xpKCY",
+    "startTime" : 1593185749434,
+    "sequenceId" : 0,
+    "endTime" : 1593185822999,
+    "finalMetricData" : [
+      {
+        "timestamp" : 1593185821899,
+        "trialJobId" : "xpKCY",
+        "parameterId" : "0",
+        "type" : "FINAL",
+        "sequence" : 0,
+        "data" : "\"0.11349999904632568\""
+      }
+    ]
+  },
+  {
+    "id" : "LOpUt",
+    "status" : "SUCCEEDED",
+    "hyperParameters" : [
+      "{\"parameter_id\":1,\"parameter_source\":\"algorithm\",\"parameters\":{\"dropout_rate\":0.6847959047140506,\"conv_size\":3,\"hidden_size\":124,\"batch_size\":32,\"learning_rate\":0.01},\"parameter_index\":0}"
+    ],
+    "logPath" : "file://localhost:/Users/jfliu@ca.ibm.com/nni/experiments/tLgYBmeu/trials/LOpUt",
+    "startTime" : 1593185834502,
+    "sequenceId" : 1,
+    "endTime" : 1593185895999,
+    "finalMetricData" : [
+      {
+        "timestamp" : 1593185895108,
+        "trialJobId" : "LOpUt",
+        "parameterId" : "1",
+        "type" : "FINAL",
+        "sequence" : 0,
+        "data" : "\"0.960099995136261\""
+      }
+    ]
+  },
+  {
+    "id" : "JCZY5",
+    "status" : "SUCCEEDED",
+    "hyperParameters" : [
+      "{\"parameter_id\":2,\"parameter_source\":\"algorithm\",\"parameters\":{\"dropout_rate\":0.8191690905410558,\"conv_size\":3,\"hidden_size\":124,\"batch_size\":1,\"learning_rate\":0.0001},\"parameter_index\":0}"
+    ],
+    "logPath" : "file://localhost:/Users/jfliu@ca.ibm.com/nni/experiments/tLgYBmeu/trials/JCZY5",
+    "startTime" : 1593185909557,
+    "sequenceId" : 2,
+    "endTime" : 1593185941999,
+    "finalMetricData" : [
+      {
+        "timestamp" : 1593185940858,
+        "trialJobId" : "JCZY5",
+        "parameterId" : "2",
+        "type" : "FINAL",
+        "sequence" : 0,
+        "data" : "\"0.46470001339912415\""
+      }
+    ]
+  },
+  {
+    "id" : "wO9dP",
+    "status" : "SUCCEEDED",
+    "hyperParameters" : [
+      "{\"parameter_id\":3,\"parameter_source\":\"algorithm\",\"parameters\":{\"dropout_rate\":0.7925916137732258,\"conv_size\":3,\"hidden_size\":512,\"batch_size\":32,\"learning_rate\":0.0001},\"parameter_index\":0}"
+    ],
+    "logPath" : "file://localhost:/Users/jfliu@ca.ibm.com/nni/experiments/tLgYBmeu/trials/wO9dP",
+    "startTime" : 1593185954605,
+    "sequenceId" : 3,
+    "endTime" : 1593186031999,
+    "finalMetricData" : [
+      {
+        "timestamp" : 1593186030876,
+        "trialJobId" : "wO9dP",
+        "parameterId" : "3",
+        "type" : "FINAL",
+        "sequence" : 0,
+        "data" : "\"0.9409000277519226\""
+      }
+    ]
+  },
+  {
+    "id" : "v4SVZ",
+    "status" : "SUCCEEDED",
+    "hyperParameters" : [
+      "{\"parameter_id\":4,\"parameter_source\":\"algorithm\",\"parameters\":{\"dropout_rate\":0.6522665848928506,\"conv_size\":3,\"hidden_size\":124,\"batch_size\":4,\"learning_rate\":0.01},\"parameter_index\":0}"
+    ],
+    "logPath" : "file://localhost:/Users/jfliu@ca.ibm.com/nni/experiments/tLgYBmeu/trials/v4SVZ",
+    "startTime" : 1593186044640,
+    "sequenceId" : 4,
+    "endTime" : 1593186081999,
+    "finalMetricData" : [
+      {
+        "timestamp" : 1593186081026,
+        "trialJobId" : "v4SVZ",
+        "parameterId" : "4",
+        "type" : "FINAL",
+        "sequence" : 0,
+        "data" : "\"0.11349999904632568\""
+      }
+    ]
+  },
+  {
+    "id" : "bf50Y",
+    "status" : "SUCCEEDED",
+    "hyperParameters" : [
+      "{\"parameter_id\":5,\"parameter_source\":\"algorithm\",\"parameters\":{\"dropout_rate\":0.5315282041183709,\"conv_size\":3,\"hidden_size\":512,\"batch_size\":32,\"learning_rate\":0.001},\"parameter_index\":0}"
+    ],
+    "logPath" : "file://localhost:/Users/jfliu@ca.ibm.com/nni/experiments/tLgYBmeu/trials/bf50Y",
+    "startTime" : 1593186094677,
+    "sequenceId" : 5,
+    "endTime" : 1593186169999,
+    "finalMetricData" : [
+      {
+        "timestamp" : 1593186168848,
+        "trialJobId" : "bf50Y",
+        "parameterId" : "5",
+        "type" : "FINAL",
+        "sequence" : 0,
+        "data" : "\"0.9847000241279602\""
+      }
+    ]
+  },
+  {
+    "id" : "LhZbt",
+    "status" : "SUCCEEDED",
+    "hyperParameters" : [
+      "{\"parameter_id\":6,\"parameter_source\":\"algorithm\",\"parameters\":{\"dropout_rate\":0.8710299614287955,\"conv_size\":3,\"hidden_size\":1024,\"batch_size\":4,\"learning_rate\":0.001},\"parameter_index\":0}"
+    ],
+    "logPath" : "file://localhost:/Users/jfliu@ca.ibm.com/nni/experiments/tLgYBmeu/trials/LhZbt",
+    "startTime" : 1593186179746,
+    "sequenceId" : 6,
+    "endTime" : 1593186248999,
+    "finalMetricData" : [
+      {
+        "timestamp" : 1593186247588,
+        "trialJobId" : "LhZbt",
+        "parameterId" : "6",
+        "type" : "FINAL",
+        "sequence" : 0,
+        "data" : "\"0.9487000107765198\""
+      }
+    ]
+  },
+  {
+    "id" : "NFGdH",
+    "status" : "SUCCEEDED",
+    "hyperParameters" : [
+      "{\"parameter_id\":7,\"parameter_source\":\"algorithm\",\"parameters\":{\"dropout_rate\":0.8416186465977387,\"conv_size\":2,\"hidden_size\":124,\"batch_size\":32,\"learning_rate\":0.0001},\"parameter_index\":0}"
+    ],
+    "logPath" : "file://localhost:/Users/jfliu@ca.ibm.com/nni/experiments/tLgYBmeu/trials/NFGdH",
+    "startTime" : 1593186259815,
+    "sequenceId" : 7,
+    "endTime" : 1593186311999,
+    "finalMetricData" : [
+      {
+        "timestamp" : 1593186310906,
+        "trialJobId" : "NFGdH",
+        "parameterId" : "7",
+        "type" : "FINAL",
+        "sequence" : 0,
+        "data" : "\"0.8723999857902527\""
+      }
+    ]
+  },
+  {
+    "id" : "jXzCN",
+    "status" : "RUNNING",
+    "hyperParameters" : [
+      "{\"parameter_id\":8,\"parameter_source\":\"algorithm\",\"parameters\":{\"dropout_rate\":0.6233942900116547,\"conv_size\":7,\"hidden_size\":124,\"batch_size\":1,\"learning_rate\":0.0001},\"parameter_index\":0}"
+    ],
+    "logPath" : "file://localhost:/Users/jfliu@ca.ibm.com/nni/experiments/tLgYBmeu/trials/jXzCN",
+    "startTime" : 1593186324869,
+    "sequenceId" : 8
+  }
+]

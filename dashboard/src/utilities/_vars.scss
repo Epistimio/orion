@@ -1,0 +1,88 @@
+/* IBM_SOURCE_PROLOG_BEGIN_TAG                                            */
+/* *****************************************************************      */
+/*                                                                        */
+/* IBM Confidential                                                       */
+/* OCO Source Materials                                                   */
+/*                                                                        */
+/* (C) Copyright IBM Corp. 2020                                           */
+/*                                                                        */
+/* The source code for this program is not published or otherwise         */
+/* divested of its trade secrets, irrespective of what has been           */
+/* deposited with the U.S. Copyright Office.                              */
+/*                                                                        */
+/* *****************************************************************      */
+/* IBM_SOURCE_PROLOG_END_TAG                                              */
+
+@import '~@carbon/themes/scss/themes';
+
+// Use the gray 10 theme
+$carbon--theme: $carbon--theme--g10;
+@include carbon--theme();
+
+$css--font-face: true;
+$css--helpers: true;
+$css--body: true;
+$css--use-layer: true;
+$css--reset: true;
+$css--default-type: true;
+$css--plex: true;
+
+// Include defaults typically provided through the 'styles.scss' entrypoint
+@import 'carbon-components/scss/globals/scss/_vars.scss';
+@import 'carbon-components/scss/globals/scss/_typography.scss';
+@import '~carbon-components/scss/globals/scss/_css--reset.scss';
+@import '~carbon-components/scss/globals/scss/_css--font-face.scss';
+@import '~carbon-components/scss/globals/scss/_css--helpers.scss';
+@import '~carbon-components/scss/globals/scss/_css--body.scss';
+
+//---------------------------
+// Media Query Breakpoints
+//---------------------------
+$bp-xlg: 75em; // 1200px
+$bp-lg: 68.75em; // 1100px
+$bp-md: 56.25em; // 900px
+$bp-sm: 37.5em; // 600px
+$bp-xsm: 31.25em; // 500px
+
+//---------------------------
+// Global App Colors
+//---------------------------
+$vision__white: #FFF; // use $ui-01 or $text-04
+$vision__blue: #3c6df0;
+$vision__blue--secondary: #3a56a6;
+$vision__blue--dark: #26465B;
+$vision__blue--toolbar: #3a56a6;
+$vision__white--light: #EEE; //use $ui-02
+$vision__black: #000;
+$vision__blackOverlay: #1B2834;
+$vision__grey--light: rgba(0,0,0,0.3); //#dfe3e6;
+$vision__grey--toolbar: $ui-02;
+$vision__grey--tooltip: #a6b2be;
+$vision__black--tag-text: #394b54;
+$vision__green--video: #41d6c3;
+$vision__grey--form-field: #e5eaf3;
+$vision__placeholder-text: #cdd1d4;
+$vision__error-text: #e0182d;
+$vision__white--items: #f0f4f9;
+$vision__auto-label: #fd8285;
+
+$vision-navigation--height: 3rem;
+
+$image-card__card-height: rem(200px);
+$image-card__card-width: rem(200px);
+$image-card__card-height--small: rem(60px);
+$image-card__card-width--small: rem(60px);
+$image-card__card-margin--right: 1.125rem;
+$image-card__card-margin--topBtm: 0.625rem;
+$image-card__drag-drop-height: rem(150px);
+
+$image-card__checkbox-height: rem(30px);
+$image-card__checkbox-width: rem(30px);
+$image-card__checkbox-height--small: rem(25px);
+$image-card__checkbox-width--small: rem(25px);
+
+$sidebar__width: 15.2rem;
+$sidebar__width--closed: 2.5rem;
+$sidebar__padding: 1rem;
+$sidebar__btnDivHeight: 14.5rem;
+$sidebar__black--opaque: rgba(#26465b, .9);

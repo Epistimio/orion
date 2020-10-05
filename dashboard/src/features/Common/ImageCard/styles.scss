@@ -1,0 +1,363 @@
+
+@import '~utils/vars';
+
+@mixin flex-list {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+  flex-direction: column;
+  width: 100%;
+  background-color: $ui-01;
+  color: $text-01;
+  font-weight: 400;
+  font-size: .7rem;
+  text-align: left;
+}
+
+.image-card {
+  height: $image-card__card-height;
+  width: $image-card__card-width;
+  min-height: $image-card__card-height--small;
+  min-width: $image-card__card-width--small;
+  color: $vision__white;
+  position: relative;
+  background-color: $ui-01;
+  margin: $image-card__card-margin--topBtm $image-card__card-margin--right $image-card__card-margin--topBtm 0;
+
+  box-shadow: 0 1px 2px 0 rgba($gray-100, .1);
+
+  //outline: 2px solid transparent;
+  //outline-offset: -2px;
+}
+
+.image-card--clickable {
+  cursor: pointer;
+  transition: 150ms cubic-bezier(0.2, 0, 0.38, 0.9);
+}
+
+.image-card--selected {
+  border: 1px solid $interactive-01;
+  outline: none;
+}
+
+.image-card__no-image {
+  height: rem(64px);
+  width: rem(64px);
+  position: absolute;
+  top: 65%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.image-card__image {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-size: 100% 100%;
+}
+
+.card-overlay__container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  width: 100%;
+  height: 100%;
+
+  .card-overlay__top-container {
+    width: 100%;
+    z-index: 7;
+    height: auto;
+  }
+
+  .card-overlay__main-container {
+    width: 100%;
+    height: $image-card__checkbox-height--small;
+    display: flex;
+
+    .card-overlay__title {
+      @include carbon--type-style('productive-heading-01');
+      flex-grow: 1;
+      color: $text-01;
+      line-height: $image-card__checkbox-height; // needed to center text vertically
+      background-color: $ui-01;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      padding: 0 5px;
+    }
+  }
+
+  .card-overlay__secondary-container {
+    @include flex-list;
+  }
+
+  .card-overlay__tertiary-container {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    z-index: 6;
+  }
+}
+
+.card-overlay__checkbox--container {
+  height: 100%; // uses the height value from its container
+  width: $image-card__checkbox-width;
+  background-color: $ui-01;
+  z-index: 9;
+
+  .bx--checkbox-label {
+    margin-left: rem(5.5px);
+    margin-top: rem(-1px);
+
+    &::before {
+      border: rem(1px) solid $ui-05;
+      background-color: $ui-01;
+    }
+  }
+}
+
+
+/*
+ * Styles for Image Cards on the Datasets page
+ */
+.card-overlay__datasets--name {
+  font-size: .8rem;
+}
+
+.card-overlay__datasets--info {
+  line-height: 1rem;
+  padding: 0.25rem 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, .1);
+
+  .card-overlay__datasets--total-items {
+    color: $text-02;
+    @include carbon--type-style('caption-01');
+    font-weight: 500;
+  }
+}
+
+.card-overlay__datasets--img-click-area {
+  // this div covers the click area for the image so that
+  // automation has a class name they can search for
+  flex-grow: 1;
+}
+
+/*
+ * Styles for Image Cards on the Dataset Details page
+ * File types include images and video frames (which can also be augmented) and videos
+ */
+.image-card--video:focus,
+.image-card--video-frame:focus {
+  outline: 1px solid $interactive-01;
+  border: none;
+}
+
+.image-card--video,
+.image-card--video-frame {
+  .card-overlay__checkbox--container {
+    .bx--checkbox:checked + .bx--checkbox-label::before {
+      background-color: $interactive-01;
+      border-color: $interactive-01;
+    }
+  }
+}
+
+.image-card--video {
+  .image-card__image {
+    opacity: 0.5;
+  }
+  .video-card__expand-btn {
+    display: flex;
+    align-items: center;
+    z-index: 8;
+  }
+}
+
+.expanded-video__container {
+  position: relative;
+
+  .expanded-video__background {
+    position: absolute;
+    height: 70%;
+    width: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: -1;
+    background-color: rgba($interactive-01, .5);
+  }
+}
+
+.card-overlay__files--file-data {
+  min-height: 1.6rem;
+  padding: .35rem .4rem .1rem;
+
+  .card-overlay__files--objects {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+
+    .card-overlay__files--object-name {
+      background-color: $ui-03;
+      font-size: rem(10px);
+      padding: rem(4px);
+      margin-right: rem(4px);
+      word-break: break-word;
+      margin-bottom: .15rem;
+    }
+  }
+
+  .card-overlay__files--no-objects {
+    font-style: italic;
+    margin-bottom: .15rem;
+  }
+}
+
+.card-overlay__files--video-data {
+  display: flex;
+  justify-content: space-between;
+
+  .video-card__frame-data {
+    font-size: .7rem;
+    font-weight: 600;
+    align-self: flex-end;
+    margin-left: .3rem;
+    margin-bottom: .25rem;
+    color: $vision__black;
+  }
+
+  .video-card__expand-btn {
+    height: 1.5rem;
+    width: 1.5rem;
+    padding: .4rem;
+    margin-left: rem(3px);
+    background-color: $interactive-01;
+    fill: $vision__white;
+  }
+
+  .video-card__icon-group {
+    display: flex;
+  }
+}
+
+.card-overlay__files--play-button {
+  svg {
+    height: rem(66px);
+    width: rem(66px);
+    fill: $interactive-01;
+    background-color: $vision__white--light;
+    border-radius: rem(50px);
+    box-shadow: 0 0 rem(6px) $interactive-01;
+    position: absolute;
+    top: 60%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+  }
+}
+
+.card-overlay__files--video-frame {
+  justify-content: space-between;
+
+  .card-overlay__files--frame-data {
+    font-size: .7rem;
+    font-weight: 600;
+    align-self: flex-end;
+    margin-left: .3rem;
+    margin-bottom: .25rem;
+    color: $vision__black;
+  }
+}
+
+.card-overlay__files--icon-container {
+  align-self: flex-end;
+  display: flex;
+
+  svg {
+    display: block; //removes spacing under svg icon
+    margin-left: .18rem;
+  }
+}
+
+.card-overlay__files--augment-file,
+.card-overlay__files--action-file,
+.card-overlay__files--auto-label-file {
+  display: flex;
+  justify-content: flex-end;
+
+  svg {
+    height: 1.5rem;
+    align-self: flex-end;
+    background-color: $vision__black;
+    fill: $vision__white;
+  }
+}
+
+
+/*
+ * Styles for Image Cards on the Models page
+ */
+.card-overlay__models--info {
+  box-shadow: 0 -1px 2px 0 rgba(0,0,0,.1);
+}
+
+.card-overlay__models--model-data {
+  @include flex-list;
+  font-weight: 300;
+  padding: .2rem .5rem;
+  line-height: 1rem;
+
+  .card-overlay__models--data-line {
+    width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+
+    .card-overlay__models--data-item {
+      font-weight: 500;
+      color: $text-01;
+    }
+  }
+}
+
+
+/*
+ * Styles for Image Cards used in data tables throughout the UI
+ */
+.image-card--small {
+  height: $image-card__card-height--small;
+  width: $image-card__card-width--small;
+  margin: 0;
+
+  .card-overlay__checkbox--container {
+    height: $image-card__checkbox-height--small;
+    width: $image-card__checkbox-width--small;
+
+    .bx--checkbox-label {
+      margin-left: rem(3px);
+      margin-top: rem(-2px);
+
+      &::before {
+        height: rem(15px);
+        width: rem(15px);
+      }
+      &::after {
+        top: 0.45rem;
+        left: 0.3rem;
+      }
+    }
+  }
+
+  .image-card__no-image {
+    height: rem(35px);
+    width: rem(35px);
+    top: 65%;
+  }
+
+  .image-card__image {
+    opacity: 1;
+  }
+}

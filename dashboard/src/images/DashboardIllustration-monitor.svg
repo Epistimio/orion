@@ -1,0 +1,43 @@
+<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">
+ <!-- Created with Method Draw - http://github.com/duopixel/Method-Draw/ -->
+
+ <g>
+  <title>background</title>
+  <rect fill="none" id="canvas_background" height="482" width="642" y="-1" x="-1"/>
+ </g>
+ <g>
+  <title>Layer 1</title>
+  <text fill="#000000" stroke="#000" stroke-width="0" x="499.5" y="349.5" id="svg_2" font-size="24" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve" transform="matrix(32.1108, 0, 0, 1, -15957, 0)"/>
+  <text fill="#000000" stroke="#000" stroke-width="0" stroke-opacity="null" fill-opacity="null" x="524.5" y="359.5" id="svg_4" font-size="24" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve" transform="matrix(33.076, 0, 0, 2.91189, -17254, -697.877)"/>
+  <text transform="matrix(1.59911, 0, 0, 1.58064, -545.464, -361.73)" fill="#000000" stroke="#000" stroke-width="0" stroke-opacity="null" fill-opacity="null" x="480.752352" y="515.361198" id="svg_5" font-size="24" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve">Monitoring</text>
+  <line stroke-width="3" stroke-linecap="null" stroke-linejoin="null" id="svg_54" y2="358.5" x2="464.5" y1="357.5" x1="179.5" fill-opacity="null" stroke-opacity="null" stroke="#000" fill="none"/>
+  <line stroke-linecap="null" stroke-linejoin="null" id="svg_56" y2="126.5" x2="183.5" y1="356.5" x1="180.5" fill-opacity="null" stroke-opacity="null" stroke-width="3" stroke="#000" fill="none"/>
+  <line stroke-linecap="null" stroke-linejoin="null" id="svg_58" y2="281.5" x2="249.5" y1="310.5" x1="183.5" fill-opacity="null" stroke-opacity="null" stroke-width="3" stroke="#000" fill="none"/>
+  <line stroke-linecap="null" stroke-linejoin="null" id="svg_60" y2="296.5" x2="376.5" y1="281.5" x1="248.5" fill-opacity="null" stroke-opacity="null" stroke-width="3" stroke="#000" fill="none"/>
+  <rect id="svg_62" height="0" width="1" y="283.5" x="259.5" fill-opacity="null" stroke-opacity="null" stroke-width="3" stroke="#000" fill="#000000"/>
+  <line stroke-linecap="null" stroke-linejoin="null" id="svg_63" y2="278.5" x2="452.5" y1="296.5" x1="376.5" fill-opacity="null" stroke-opacity="null" stroke-width="3" stroke="#000" fill="none"/>
+  <line stroke-linecap="null" stroke-linejoin="null" id="svg_67" y2="221.5" x2="249.5" y1="250.5" x1="183.5" fill-opacity="null" stroke-opacity="null" stroke-width="3" stroke="#000" fill="none"/>
+  <path d="m248.5,223.5l128,13"/>
+  <path d="m248.5,223.5l128,13"/>
+  <path d="m237.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m237.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m237.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m237.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m237.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m237.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m237.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m237.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m237.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m237.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m199.910675,192.853668l151.17865,-31.707382"/>
+  <path d="m238.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m252.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m252.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m252.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m252.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m239.910675,195.853668l151.17865,-31.707382"/>
+  <path d="m238.910675,196.853668l151.17865,-31.707382"/>
+  <line transform="rotate(-20.5618, 313.5, 181)" stroke-linecap="null" stroke-linejoin="null" id="svg_68" y2="165.146286" x2="389.089333" y1="196.853663" x1="237.910668" fill-opacity="null" stroke-opacity="null" stroke-width="3" stroke="#000" fill="none"/>
+  <line stroke-linecap="null" stroke-linejoin="null" id="svg_69" y2="158.500007" x2="450.500006" y1="139.500007" x1="378.500001" fill-opacity="null" stroke-opacity="null" stroke-width="3" stroke="#000" fill="none"/>
+ </g>
+</svg>

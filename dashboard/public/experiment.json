@@ -1,0 +1,35 @@
+{
+  "id" : "lateral-view-multitask3-v1",
+  "revision" : 77,
+  "execDuration" : 655,
+  "logDir" : "/Users/jfliu@ca.ibm.com/Downloads/dataset-hadrien.pkl",
+  "nextSequenceId" : 10,
+  "params" : {
+    "authorName" : "hrb",
+    "experimentName" : "lateral-view-multitask3",
+    "trialConcurrency" : 1,
+    "maxExecDuration" : 3600,
+    "maxTrialNum" : 40,
+    "searchSpace" : "{\"dropout\": {\"_type\": \"uniform\", \"_value\": [0.0, 5.0]}, \"batch_size\": {\"_type\": \"choice\", \"_value\": [1, 4, 8, 16, 32]}, \"learning_rate\": {\"_type\": \"choice\", \"_value\": [0.0001, 0.001, 0.01, 0.1]}}\n",
+    "trainingServicePlatform" : "local",
+    "tuner" : {
+      "builtinTunerName" : "TPE",
+      "classArgs" : {
+        "optimize_mode" : "maximize"
+      },
+      "checkpointDir" : "/Users/jfliu@ca.ibm.com/nni/experiments/tLgYBmeu/checkpoint"
+    },
+    "versionCheck" : true,
+    "clusterMetaData" : [
+      {
+        "key" : "codeDir",
+        "value" : "/home/hrb/dev/lateral-view-analysis/."
+      },
+      {
+        "key" : "command",
+        "value" : "/home/hrb/dev/lateral-view-analysis/hyperparam_search.py --data_dir CLUSTER --csv_path /home/hrb/projects/rpp-bengioy/jpcohen/PADCHEST_SJ/labels_csv/joint_PA_L.csv --splits_path /home/hrb/projects/rpp-bengioy/jpcohen/PADCHEST_SJ/labels_csv/splits_PA_L_666.pkl --output_dir /lustre04/scratch/cohenjos/PC-output/hadrien --exp_name {trial.id} --seed 666 --epochs 40 --model-type multitask --target joint --batch_size 8 --learning_rate orion~loguniform(1e-5, 1e-3, shape=3) --dropout orion~uniform(0, 5, discrete=True) --optim adam --mt-task-prob 0.0 --mt-join orion~choices(['concat', 'max', 'mean']) --log {exp.working_dir}/{exp.name}_{trial.id}/exp.log"
+      }
+    ]
+  },
+  "startTime" : 1593185739386
+}

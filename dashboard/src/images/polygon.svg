@@ -1,0 +1,36 @@
+<!-- IBM_SOURCE_PROLOG_BEGIN_TAG                                            -->
+<!-- *****************************************************************      -->
+<!--                                                                        -->
+<!-- IBM Confidential                                                       -->
+<!-- OCO Source Materials                                                   -->
+<!--                                                                        -->
+<!-- (C) Copyright IBM Corp. 2019                                           -->
+<!--                                                                        -->
+<!-- The source code for this program is not published or otherwise         -->
+<!-- divested of its trade secrets, irrespective of what has been           -->
+<!-- deposited with the U.S. Copyright Office.                              -->
+<!--                                                                        -->
+<!-- *****************************************************************      -->
+<!-- IBM_SOURCE_PROLOG_END_TAG                                              -->
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="15px" height="15px" viewBox="0 0 15 15" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 52.5 (67469) - http://www.bohemiancoding.com/sketch -->
+    <title>Group 20</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Symbols" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="labeling-tools---polygon" transform="translate(-76.000000, -9.000000)">
+            <g id="Group-23" transform="translate(62.000000, 9.000000)">
+                <g id="Group-20" transform="translate(14.000000, 0.000000)">
+                    <rect id="Rectangle" fill="#FFFFFF" x="0" y="2.14285714" width="3.57142857" height="3.57142857"></rect>
+                    <rect id="Rectangle-Copy-2" fill="#FFFFFF" x="0" y="10" width="3.57142857" height="3.57142857"></rect>
+                    <rect id="Rectangle-Copy-3" fill="#FFFFFF" x="11.4285714" y="11.4285714" width="3.57142857" height="3.57142857"></rect>
+                    <rect id="Rectangle-Copy-4" fill="#FFFFFF" x="9.28571429" y="0" width="3.57142857" height="3.57142857"></rect>
+                    <path d="M1.78571429,3.92857143 L1.78571429,11.7857143" id="Line-2" stroke="#FFFFFF" stroke-linecap="square"></path>
+                    <path d="M11.4285714,1.90934066 L13.2142857,13.2142857" id="Line-3" stroke="#FFFFFF" stroke-linecap="square"></path>
+                    <path d="M11.0714286,1.78571429 L1.78571429,4.28571429" id="Line-4" stroke="#FFFFFF" stroke-linecap="square"></path>
+                    <path d="M1.78571429,11.7857143 L13.2142857,13.5714286" id="Line-5" stroke="#FFFFFF" stroke-linecap="square"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
