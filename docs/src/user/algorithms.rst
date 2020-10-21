@@ -321,15 +321,18 @@ Configuration
 
 .. code-block:: yaml
 
-    algorithms:
-       EvolutionES:
-          seed: null
-          repetitions: 1
-          nums_population: 20
-          mutate:
-              function: orion.algo.mutate_functions.default_mutate
-              multiply_factor: 3.0
-              add_factor: 1
+    experiment:
+        algorithms:
+            EvolutionES:
+                seed: null
+                repetitions: 1
+                nums_population: 20
+                mutate:
+                    function: orion.algo.mutate_functions.default_mutate
+                    multiply_factor: 3.0
+                    add_factor: 1
+
+        strategy: StubParallelStrategy
 
 ``seed``
 
