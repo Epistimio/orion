@@ -19,12 +19,16 @@ utility functions to build it again as a list or an already formatted string.
 from collections import defaultdict, OrderedDict
 import copy
 import errno
+import logging
 import os
 import re
 import shutil
 
 from orion.core.io.cmdline_parser import CmdlineParser
 from orion.core.io.convert import infer_converter_from_file_type
+
+
+log = logging.getLogger(__name__)
 
 
 def _is_nonprior_wave(arg):
@@ -43,6 +47,9 @@ class OrionCmdlineParser():
     ----------
     config_prefix : str, optional
         Prefix for the configuration file used by the parser to identify it.
+    allow_non_existing_files : bool, optional
+        If True, will parse all commandline but ignore non existing user script or configuration
+        files if non existant. Default is False
 
     Attributes
     ----------
@@ -72,7 +79,7 @@ class OrionCmdlineParser():
 
     """
 
-    def __init__(self, config_prefix='config', allow_non_existing_user_script=False):
+    def __init__(self, config_prefix='config', allow_non_existing_files=False):
         """Create an `OrionCmdlineParser`."""
         self.parser = CmdlineParser()
         self.cmd_priors = OrderedDict()
@@ -83,7 +90,7 @@ class OrionCmdlineParser():
         self.file_config_path = None
         self.converter = None
 
-        self.allow_non_existing_user_script = allow_non_existing_user_script
+        self.allow_non_existing_files = allow_non_existing_files
         self.user_script = None
 
         # Extraction methods for the file parsing part.
@@ -156,7 +163,7 @@ class OrionCmdlineParser():
             user_script = user_args[0]
 
         if (not os.path.exists(user_script) and not shutil.which(user_script) and
-                not self.allow_non_existing_user_script):
+                not self.allow_non_existing_files):
             raise OSError(errno.ENOENT, "The path specified for the script does not exist",
                           user_script)
 
@@ -247,6 +254,16 @@ class OrionCmdlineParser():
             Path to the configuration file.
 
         """
+        if not os.path.exists(path):
+            if self.allow_non_existing_files:
+                log.info("The path specified for the script config does not exist: %s", path)
+                return
+            else:
+                raise OSError(
+                    errno.ENOENT,
+                    "The path specified for the script config does not exist",
+                    path)
+
         self.converter = infer_converter_from_file_type(path)
         self.config_file_data = self.converter.parse(path)
         self._extraction_method[type(self.config_file_data)]("", self.config_file_data)

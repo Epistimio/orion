@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.orion_cmdliner_parser`."""
+import os
+
 import pytest
 
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
@@ -8,15 +10,20 @@ from orion.core.worker.trial import Trial
 
 
 @pytest.fixture
+def script_path():
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+@pytest.fixture
 def parser():
     """Return an instance of `OrionCmdlineParser`."""
-    return OrionCmdlineParser(allow_non_existing_user_script=True)
+    return OrionCmdlineParser(allow_non_existing_files=True)
 
 
 @pytest.fixture
 def parser_diff_prefix():
     """Return an instance of `OrionCmdlineParser` with a different config prefix."""
-    return OrionCmdlineParser(config_prefix='config2', allow_non_existing_user_script=True)
+    return OrionCmdlineParser(config_prefix='config2', allow_non_existing_files=True)
 
 
 @pytest.fixture
@@ -91,11 +98,11 @@ def test_parse_from_unknown_config(parser, some_sample_config):
 
 def test_parse_equivalency(yaml_config, json_config):
     """Templates found from json and yaml are the same."""
-    parser_yaml = OrionCmdlineParser(allow_non_existing_user_script=True)
+    parser_yaml = OrionCmdlineParser(allow_non_existing_files=True)
     parser_yaml.parse(yaml_config)
     dict_from_yaml = parser_yaml.config_file_data
 
-    parser_json = OrionCmdlineParser(allow_non_existing_user_script=True)
+    parser_json = OrionCmdlineParser(allow_non_existing_files=True)
     parser_json.parse(json_config)
     dict_from_json = parser_json.config_file_data
     assert dict_from_json == dict_from_yaml
@@ -249,6 +256,45 @@ def test_configurable_config_arg(parser_diff_prefix, yaml_sample_path):
     assert '/something-same' in config
 
 
+def test_infer_user_script(script_path):
+    """Test that user script is infered correctly"""
+    parser = OrionCmdlineParser()
+    parser.parse(f'{script_path} and some args'.split(' '))
+    assert parser.user_script == script_path
+
+
+def test_infer_user_script_python(script_path):
+    """Test that user script is infered correctly when using python"""
+    parser = OrionCmdlineParser()
+    parser.parse(f'python {script_path} and some args'.split(' '))
+    assert parser.user_script == script_path
+
+
+def test_infer_user_script_when_missing():
+    """Test that user script is infered correctly even if missing"""
+    parser = OrionCmdlineParser()
+
+    with pytest.raises(FileNotFoundError) as exc:
+        parser.parse('python script.py and some args'.split(' '))
+    assert exc.match('The path specified for the script does not exist')
+
+    parser = OrionCmdlineParser(allow_non_existing_files=True)
+    parser.parse('python script.py and some args'.split(' '))
+    assert parser.user_script == 'script.py'
+
+
+def test_configurable_config_arg_do_not_exist(script_path):
+    """Test that parser can handle command if config file does not exist"""
+    parser = OrionCmdlineParser()
+    command = f'python {script_path} --config idontexist.yaml'.split(' ')
+    with pytest.raises(OSError) as exc:
+        parser.parse(command)
+    assert exc.match("The path specified for the script config does not exist")
+
+    parser = OrionCmdlineParser(allow_non_existing_files=True)
+    parser.parse(command)
+
+
 def test_get_state_dict_before_parse(parser, commandline):
     """Test getting state dict."""
     assert parser.get_state_dict() == {
@@ -305,7 +351,7 @@ def test_set_state_dict(parser, commandline, json_config, tmpdir, json_converter
     state = parser.get_state_dict()
     parser = None
 
-    blank_parser = OrionCmdlineParser(allow_non_existing_user_script=True)
+    blank_parser = OrionCmdlineParser(allow_non_existing_files=True)
 
     blank_parser.set_state_dict(state)
 
