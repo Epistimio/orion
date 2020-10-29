@@ -34,8 +34,11 @@ def populate_priors(metadata):
     metadata["priors"] = dict(parser.priors)
 
 
-def populate_space(config):
+def populate_space(config, force_update=True):
     """Add the space definition at the root of config."""
+    if 'space' in config and not force_update:
+        return
+
     populate_priors(config['metadata'])
     # Overwrite space to make sure to include changes from user_args
     if 'priors' in config['metadata']:

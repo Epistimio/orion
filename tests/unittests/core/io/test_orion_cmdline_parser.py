@@ -11,6 +11,7 @@ from orion.core.worker.trial import Trial
 
 @pytest.fixture
 def script_path():
+    """Return existing script path for the command lines"""
     return os.path.dirname(os.path.abspath(__file__))
 
 
