@@ -55,6 +55,22 @@ empty
     assert captured == expected
 
 
+def test_missing_conf_file(clean_db, with_experiment_missing_conf_file, capsys):
+    """Test status can handle experiments when the user script config file is missing"""
+    orion.core.cli.main(['status'])
+
+    captured = capsys.readouterr().out
+
+    expected = """\
+test_single_exp-v1
+==================
+empty
+
+
+"""
+    assert captured == expected
+
+
 def test_experiment_without_trials_wout_ac(clean_db, one_experiment, capsys):
     """Test status with only one experiment and no trials."""
     orion.core.cli.main(['status'])

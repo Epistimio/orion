@@ -28,14 +28,17 @@ def populate_priors(metadata):
     update_user_args(metadata)
 
     parser = OrionCmdlineParser(orion.core.config.worker.user_script_config,
-                                allow_non_existing_user_script=True)
+                                allow_non_existing_files=True)
     parser.parse(metadata["user_args"])
     metadata["parser"] = parser.get_state_dict()
     metadata["priors"] = dict(parser.priors)
 
 
-def populate_space(config):
+def populate_space(config, force_update=True):
     """Add the space definition at the root of config."""
+    if 'space' in config and not force_update:
+        return
+
     populate_priors(config['metadata'])
     # Overwrite space to make sure to include changes from user_args
     if 'priors' in config['metadata']:

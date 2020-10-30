@@ -52,6 +52,15 @@ def test_python_api(clean_db, with_experiment_using_python_api, capsys):
     assert captured == " test_single_exp-v1\n from-python-api-v1\n"
 
 
+def test_missing_conf_file(clean_db, with_experiment_missing_conf_file, capsys):
+    """Test list can handle experiments when the user script config file is missing"""
+    orion.core.cli.main(['list'])
+
+    captured = capsys.readouterr().out
+
+    assert captured == " test_single_exp-v1\n"
+
+
 def test_two_exp(capsys, clean_db, two_experiments):
     """Test that experiment and child are printed."""
     orion.core.cli.main(['list'])

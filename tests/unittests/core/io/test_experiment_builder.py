@@ -76,7 +76,9 @@ def new_config(random_dt, script_path):
                   'orion_version': 'XYZ',
                   'user_script': script_path,
                   'user_config': 'abs_path/hereitis.yaml',
-                  'user_args': [script_path, '--mini-batch~uniform(32, 256, discrete=True)'],
+                  'user_args': [
+                      script_path,
+                      '--mini-batch~uniform(32, 256, discrete=True)'],
                   'VCS': {"type": "git",
                           "is_dirty": False,
                           "HEAD_sha": "test",
@@ -222,6 +224,26 @@ def test_build_view_from_args_hit(config_file, random_dt, new_config):
     cmdargs = {'name': 'supernaekei', 'config': config_file}
 
     with OrionState(experiments=[new_config], trials=[]):
+        exp_view = experiment_builder.build_view_from_args(cmdargs)
+
+    assert exp_view._id == new_config['_id']
+    assert exp_view.name == new_config['name']
+    assert exp_view.configuration['refers'] == new_config['refers']
+    assert exp_view.metadata == new_config['metadata']
+    assert exp_view.pool_size == new_config['pool_size']
+    assert exp_view.max_trials == new_config['max_trials']
+    assert exp_view.algorithms.configuration == new_config['algorithms']
+
+
+@pytest.mark.usefixtures("with_user_tsirif")
+def test_build_view_from_args_hit_no_conf_file(config_file, random_dt, new_config):
+    """Try building experiment view when in db, and local config file of user script does
+    not exist
+    """
+    cmdargs = {'name': 'supernaekei', 'config': config_file}
+    new_config['metadata']['user_args'] += ['--config', new_config['metadata']['user_config']]
+
+    with OrionState(experiments=[new_config], trials=[]) as cfg:
         exp_view = experiment_builder.build_view_from_args(cmdargs)
 
     assert exp_view._id == new_config['_id']

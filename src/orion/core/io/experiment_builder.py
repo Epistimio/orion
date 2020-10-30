@@ -323,7 +323,7 @@ def fetch_config_from_db(name, version=None):
         log.info("Many versions for experiment %s have been found. Using latest "
                  "version %s.", name, config['version'])
 
-    backward.populate_space(config)
+    backward.populate_space(config, force_update=False)
 
     return config
 

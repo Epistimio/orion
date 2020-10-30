@@ -56,6 +56,15 @@ def test_info_python_api(clean_db, with_experiment_using_python_api, capsys):
     assert 'Commandline' not in captured
 
 
+def test_missing_conf_file(clean_db, with_experiment_missing_conf_file, capsys):
+    """Test info can handle experiments when the user script config file is missing"""
+    orion.core.cli.main(['info', '--name', 'test_single_exp'])
+
+    captured = capsys.readouterr().out
+
+    assert '--x~uniform(0,1)' in captured
+
+
 def test_info_cmdline_api(clean_db, with_experiment_using_python_api, capsys):
     """Test info if config built using cmdline api"""
     orion.core.cli.main(['info', '--name', 'test_single_exp'])

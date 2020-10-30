@@ -199,6 +199,18 @@ def with_experiment_using_python_api(monkeypatch, one_experiment):
 
 
 @pytest.fixture
+def with_experiment_missing_conf_file(monkeypatch, one_experiment):
+    """Create an experiment without trials."""
+    exp = experiment_builder.build(name='test_single_exp', version=1)
+    conf_file = 'idontexist.yaml'
+    exp.metadata['user_config'] = conf_file
+    exp.metadata['user_args'] += ['--config', conf_file]
+    Database().write('experiments', exp.configuration, query={'_id': exp.id})
+
+    return exp
+
+
+@pytest.fixture
 def broken_refers(one_experiment, db_instance):
     """Create an experiment with broken refers."""
     ensure_deterministic_id('test_single_exp', db_instance, update=dict(refers={'oups': 'broken'}))
