@@ -24,6 +24,31 @@ def yaml_path():
     os.remove(file_path)
 
 
+@pytest.fixture
+def broken_yaml_path():
+    """Create a temporary yaml file and return the path"""
+    file_path = './my.yaml'
+    with open(file_path, 'w') as f:
+        f.write(yaml.dump({'coucou': 'from my yaml!'}))
+
+    yield file_path
+
+    os.remove(file_path)
+
+
+@pytest.fixture
+def subdict_yaml_path():
+    """Create a temporary yaml file with subdicts and return the path"""
+    file_path = './my.yaml'
+    with open(file_path, 'w') as f:
+        f.write(yaml.dump({'test': {'i am': 'a sub-dict'},
+                           'test2': {'test': {'me is': 'sub-conf sub-dict'}}}))
+
+    yield file_path
+
+    os.remove(file_path)
+
+
 def test_fetch_non_existing_option():
     """Test that access to a non existing key raises ConfigurationError"""
     config = Configuration()
@@ -254,6 +279,32 @@ def test_overwrite_subconfig():
     with pytest.raises(ValueError) as exc:
         config.nested = Configuration()
     assert "Configuration already contains subconfiguration nested" == str(exc.value)
+
+
+def test_load_yaml_with_dict_items(subdict_yaml_path):
+    """Test that yaml config with items assigned with dicts is supported"""
+    config = Configuration()
+    default = {'default': 'sub-dict'}
+    config.add_option('test', option_type=dict, default=default)
+    assert config.test == default
+    config.test2 = Configuration()
+    config.test2.add_option('test', option_type=dict, default=default)
+    assert config.test2.test == default
+
+    config.load_yaml(subdict_yaml_path)
+    assert config.test == {'i am': 'a sub-dict'}
+    assert config.test2.test == {'me is': 'sub-conf sub-dict'}
+
+
+def test_load_yaml_unknown_option(broken_yaml_path):
+    """Test error message when yaml config contains unknown options"""
+    config = Configuration()
+    config.add_option('test', option_type=str, default='hello')
+    assert config.test == 'hello'
+
+    with pytest.raises(ConfigurationError) as exc:
+        config.load_yaml(broken_yaml_path)
+    assert exc.match('Configuration does not have an attribute \'coucou\'')
 
 
 def test_to_dict():

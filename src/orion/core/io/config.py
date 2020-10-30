@@ -18,8 +18,6 @@ import os
 
 import yaml
 
-from orion.core.utils.flatten import flatten
-
 
 logger = logging.getLogger(__name__)
 
@@ -97,15 +95,31 @@ class Configuration:
             cfg = yaml.safe_load(f)
             if cfg is None:
                 return
-            # implies that yaml must be in dict form
-            for key, value in flatten(cfg).items():
-                default = self[key + '._default']
-                deprecated = self[key + '._deprecated']
+            self._load_yaml_dict(cfg)
+
+    def _load_yaml_dict(self, config):
+        for key in self._config:
+            if key not in config:
+                continue
+            value = config.pop(key)
+            default = self[key + '._default']
+            deprecated = self[key + '._deprecated']
+            logger.debug('Overwritting "%s" default %s with %s', key, default, value)
+            self[key + '._yaml'] = value
+            if deprecated and deprecated.get('alternative'):
                 logger.debug('Overwritting "%s" default %s with %s', key, default, value)
-                self[key + '._yaml'] = value
-                if deprecated and deprecated.get('alternative'):
-                    logger.debug('Overwritting "%s" default %s with %s', key, default, value)
-                    self[deprecated.get('alternative') + '._yaml'] = value
+                self[deprecated.get('alternative') + '._yaml'] = value
+
+        for key in self._subconfigs:
+            if key not in config:
+                continue
+
+            # pylint: disable=protected-access
+            self._subconfigs[key]._load_yaml_dict(config.pop(key))
+
+        if config:
+            # Make it fail
+            self[next(iter(config.keys()))]
 
     def __getattr__(self, key):
         """Get the value of the option
