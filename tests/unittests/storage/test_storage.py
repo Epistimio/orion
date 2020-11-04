@@ -505,6 +505,7 @@ class TestStorage:
         """Test update heartbeat"""
         lost_trials = [make_lost_trial(2),  # Is not lost for long enough to be catched
                        make_lost_trial(10)]  # Is lost for long enough to be catched
+        # Force recent heartbeat to avoid mixing up with lost trials.
         trials = lost_trials + generate_trials(heartbeat=datetime.datetime.utcnow())
         with OrionState(experiments=[base_experiment], trials=trials, storage=storage) as cfg:
             storage = cfg.storage()
