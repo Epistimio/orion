@@ -251,7 +251,7 @@ class Legacy(BaseStorageProtocol):
     def fetch_lost_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_lost_trials`"""
         heartbeat = orion.core.config.worker.heartbeat
-        threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=heartbeat)
+        threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=heartbeat * 5)
         lte_comparison = {'$lte': threshold}
         query = {
             'experiment': experiment._id,

@@ -214,7 +214,7 @@ class TestReserveTrial(object):
         """Test that a running trial with an old heartbeat is set to interrupted."""
         trial = copy.deepcopy(base_trial)
         trial['status'] = 'reserved'
-        trial['heartbeat'] = datetime.datetime.utcnow() - datetime.timedelta(seconds=360)
+        trial['heartbeat'] = datetime.datetime.utcnow() - datetime.timedelta(seconds=60 * 10)
         with OrionState(trials=[trial]) as cfg:
             exp = Experiment('supernaekei')
             exp._id = cfg.trials[0]['experiment']
@@ -226,7 +226,7 @@ class TestReserveTrial(object):
     def test_fix_only_lost_trials(self):
         """Test that an old trial is set to interrupted but not a recent one."""
         lost_trial, running_trial = generate_trials(['reserved'] * 2)
-        lost_trial['heartbeat'] = datetime.datetime.utcnow() - datetime.timedelta(seconds=360)
+        lost_trial['heartbeat'] = datetime.datetime.utcnow() - datetime.timedelta(seconds=60 * 10)
         running_trial['heartbeat'] = datetime.datetime.utcnow()
 
         with OrionState(trials=[lost_trial, running_trial]) as cfg:
@@ -249,7 +249,7 @@ class TestReserveTrial(object):
         """Test that a lost trial fixed by a concurrent process does not cause error."""
         trial = copy.deepcopy(base_trial)
         trial['status'] = 'interrupted'
-        trial['heartbeat'] = datetime.datetime.utcnow() - datetime.timedelta(seconds=360)
+        trial['heartbeat'] = datetime.datetime.utcnow() - datetime.timedelta(seconds=60 * 10)
         with OrionState(trials=[trial]) as cfg:
             exp = Experiment('supernaekei')
             exp._id = cfg.trials[0]['experiment']
@@ -282,20 +282,20 @@ class TestReserveTrial(object):
         """Test that heartbeat is correctly being configured."""
         trial = copy.deepcopy(base_trial)
         trial['status'] = 'reserved'
-        trial['heartbeat'] = datetime.datetime.utcnow() - datetime.timedelta(seconds=180)
+        trial['heartbeat'] = datetime.datetime.utcnow() - datetime.timedelta(seconds=60 * 2)
         with OrionState(trials=[trial]) as cfg:
             exp = Experiment('supernaekei')
             exp._id = cfg.trials[0]['experiment']
 
             assert len(exp.fetch_trials_by_status('reserved')) == 1
 
-            orion.core.config.worker.heartbeat = 360
+            orion.core.config.worker.heartbeat = 60 * 2
 
             exp.fix_lost_trials()
 
             assert len(exp.fetch_trials_by_status('reserved')) == 1
 
-            orion.core.config.worker.heartbeat = 180
+            orion.core.config.worker.heartbeat = 60 * 2 / 10.
 
             exp.fix_lost_trials()
 

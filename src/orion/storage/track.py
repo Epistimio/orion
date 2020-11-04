@@ -17,6 +17,7 @@ import logging
 import sys
 import warnings
 
+import orion.core
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import Trial as OrionTrial, validate_status
@@ -689,10 +690,10 @@ class Track(BaseStorageProtocol):   # noqa: F811
 
     def fetch_lost_trials(self, experiment):
         """Fetch all trials that have a heartbeat older than
-        some given time delta (2 minutes by default)
+        some given time delta (5 minutes by default)
         """
-        # TODO: Configure this
-        threshold = to_epoch(datetime.datetime.utcnow() - datetime.timedelta(seconds=60 * 2))
+        heartbeat = orion.core.config.worker.heartbeat
+        threshold = to_epoch(datetime.datetime.utcnow() - datetime.timedelta(seconds=heartbeat * 5))
         lte_comparison = {'$lte': threshold}
         query = {
             'experiment': experiment.id,

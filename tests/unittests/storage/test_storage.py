@@ -85,16 +85,16 @@ def _generate(obj, *args, value):
     return obj
 
 
-def make_lost_trial():
+def make_lost_trial(delay=2):
     """Make a lost trial"""
     obj = copy.deepcopy(base_trial)
     obj['status'] = 'reserved'
     obj['heartbeat'] = (datetime.datetime.utcnow() -
-                        datetime.timedelta(seconds=orion.core.config.worker.heartbeat * 2))
+                        datetime.timedelta(seconds=orion.core.config.worker.heartbeat * delay))
     obj['params'].append({
         'name': '/index',
         'type': 'categorical',
-        'value': 'lost_trial'
+        'value': f'lost_trial_{delay}'
     })
     return obj
 
@@ -102,12 +102,16 @@ def make_lost_trial():
 all_status = ['completed', 'broken', 'reserved', 'interrupted', 'suspended', 'new']
 
 
-def generate_trials(status=None):
+def generate_trials(status=None, heartbeat=None):
     """Generate Trials with different configurations"""
     if status is None:
         status = all_status
 
     new_trials = [_generate(base_trial, 'status', value=s) for s in status]
+
+    if heartbeat:
+        for trial in new_trials:
+            trial['heartbeat'] = heartbeat
 
     # make each trial unique
     for i, trial in enumerate(new_trials):
@@ -499,33 +503,17 @@ class TestStorage:
 
     def test_fetch_lost_trials(self, storage):
         """Test update heartbeat"""
-        with OrionState(experiments=[base_experiment],
-                        trials=generate_trials() + [make_lost_trial()], storage=storage) as cfg:
+        lost_trials = [make_lost_trial(2),  # Is not lost for long enough to be catched
+                       make_lost_trial(10)]  # Is lost for long enough to be catched
+        # Force recent heartbeat to avoid mixing up with lost trials.
+        trials = lost_trials + generate_trials(heartbeat=datetime.datetime.utcnow())
+        with OrionState(experiments=[base_experiment], trials=trials, storage=storage) as cfg:
             storage = cfg.storage()
 
             experiment = cfg.get_experiment('default_name', version=None)
             trials = storage.fetch_lost_trials(experiment)
 
-            count = 0
-            now_datetime = datetime.datetime.utcnow()
-            now_seconds = (now_datetime - datetime.datetime(1970, 1, 1)).total_seconds()
-            for t in cfg.trials:
-                status = t.get('status')
-                if status == 'reserved':
-                    heartbeat = t.get('heartbeat')
-                    if heartbeat is None:
-                        continue
-
-                    diff = 0
-                    if isinstance(heartbeat, datetime.datetime):
-                        diff = (now_datetime - heartbeat).total_seconds()
-                    else:
-                        diff = now_seconds - heartbeat
-
-                    if diff > 60 * 2:
-                        count += 1
-
-            assert len(trials) == count
+            assert len(trials) == 1
 
     def test_change_status_success(self, storage):
         """Change the status of a Trial"""
