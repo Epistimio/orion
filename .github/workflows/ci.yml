@@ -9,7 +9,7 @@ jobs:
       max-parallel: 4
       matrix:
         platform: [ubuntu-latest]
-        python-version: [3.6]
+        python-version: [3.6, 3.7]
 
     steps:
     - uses: actions/checkout@v1
@@ -29,6 +29,6 @@ jobs:
           pip install tox tox-gh-actions
 
     - name: Test with tox
-      run: tox
+      run: tox -e py
       env:
           PLATFORM: ${{ matrix.platform }}
