@@ -1,4 +1,4 @@
-name: Orion package
+name: ci
 
 on: [push]
 
@@ -49,7 +49,10 @@ jobs:
           pip install tox tox-gh-actions
 
     - name: Test with tox
-      run: tox -e py
+      run: |
+          tox -e py
+          tox -e final-coverage
+          tox -e codecov
       env:
           PLATFORM: ${{ matrix.platform }}
   backward-compatibility:
@@ -76,7 +79,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
     - name: Test with tox
-      run: tox -e backward-compatibility
+      run: |
+          tox -e backward-compatibility
+          tox -e final-coverage
+          tox -e codecov
       env:
         ORION_DB_TYPE: ${{ matrix.orion_db_type }}
   pypi:
@@ -104,4 +110,4 @@ jobs:
       with:
         python-version: 3.7
     - name: Conda build
-      run: ./conda/conda_build.sh
+      run: ./conda/conda_test.sh
