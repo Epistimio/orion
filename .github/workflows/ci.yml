@@ -30,7 +30,8 @@ jobs:
       matrix:
         platform: [ubuntu-latest]
         python-version: [3.6, 3.7, 3.8]
-
+    env:
+      PLATFORM: ${{ matrix.platform }}
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python ${{ matrix.python-version }}
@@ -48,12 +49,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
     - name: Test with tox
-      run: |
-          tox -e py
-          tox -e final-coverage
-          tox -e codecov
-      env:
-          PLATFORM: ${{ matrix.platform }}
+      run: tox -e py
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        env_vars: PLATFORM,PYTHON
+        name: codecov-umbrella
+        fail_ci_if_error: false
+        verbose: true
   backward-compatibility:
     needs: pretest
     runs-on: ubuntu-latest
@@ -61,6 +66,8 @@ jobs:
       max-parallel: 2
       matrix:
         orion_db_type: [mongodb, pickleddb]
+    env:
+      ORION_DB_TYPE: ${{ matrix.orion_db_type }}
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python 3.7
@@ -78,12 +85,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
     - name: Test with tox
-      run: |
-          tox -e backward-compatibility
-          tox -e final-coverage
-          tox -e codecov
-      env:
-        ORION_DB_TYPE: ${{ matrix.orion_db_type }}
+      run: tox -e backward-compatibility
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        env_vars: PLATFORM,PYTHON
+        name: codecov-umbrella
+        fail_ci_if_error: false
+        verbose: true
   pypi:
     needs: [test, backward-compatibility]
     runs-on: ubuntu-latest
