@@ -29,9 +29,9 @@ Oríon
     :target: https://codecov.io/gh/Epistimio/orion
     :alt: Codecov Report
 
-.. |travis| image:: https://travis-ci.org/Epistimio/orion.svg?branch=master
-    :target: https://travis-ci.org/Epistimio/orion
-    :alt: Travis tests
+.. |travis| image:: https://github.com/Epistimio/orion/workflows/build/badge.svg
+    :target: https://github.com/Epistimio/orion/actions?query=workflow:"build"
+    :alt: Github actions tests
 
 Oríon is an asynchronous framework for black-box function optimization.
 
