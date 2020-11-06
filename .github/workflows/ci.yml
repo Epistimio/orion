@@ -68,6 +68,8 @@ jobs:
       max-parallel: 2
       matrix:
         orion_db_type: [mongodb, pickleddb]
+    env:
+      ORION_DB_TYPE: ${{ matrix.orion_db_type }}
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python 3.7
@@ -85,12 +87,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
     - name: Test with tox
-      run: |
-          tox -e backward-compatibility
-          tox -e final-coverage
-          tox -e codecov
-      env:
-        ORION_DB_TYPE: ${{ matrix.orion_db_type }}
+      run: tox -e backward-compatibility
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml
+        directory: ./coverage/reports/
+        flags: unittests
+        env_vars: PLATFORM,PYTHON
+        name: codecov-umbrella
+        fail_ci_if_error: false
+        path_to_write_report: ./coverage/codecov_report.gz
+        verbose: true
   pypi:
     needs: [test, backward-compatibility]
     runs-on: ubuntu-latest
