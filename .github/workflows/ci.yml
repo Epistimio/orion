@@ -54,12 +54,10 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
-        directory: ./coverage/reports/
         flags: unittests
         env_vars: PLATFORM,PYTHON
         name: codecov-umbrella
         fail_ci_if_error: false
-        path_to_write_report: ./coverage/codecov_report.gz
         verbose: true
   backward-compatibility:
     needs: pretest
@@ -92,12 +90,10 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
-        directory: ./coverage/reports/
         flags: unittests
         env_vars: PLATFORM,PYTHON
         name: codecov-umbrella
         fail_ci_if_error: false
-        path_to_write_report: ./coverage/codecov_report.gz
         verbose: true
   pypi:
     needs: [test, backward-compatibility]
