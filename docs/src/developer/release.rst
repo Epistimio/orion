@@ -39,29 +39,23 @@ time to create the release artifacts and publish the release.
    release candidate pull request's for the description. See the `0.1.6
    <https://github.com/Epistimio/orion/releases/tag/v0.1.6>`_ version example.
 #. Merge the master branch back to develop.
-#. Update the backward compability tests by adding the new version.
 #. Delete the release candidate branch.
+#. Update the backward compability tests by adding the new version in develop branch
+   and make a pull request on develop.
 
-Publishing the release
-======================
-Once the release is correctly documented and integrated to the VCS workflow, we can publish it to
-the public.
-
-* Publish the GitHub release. The source code archives will be added automatically by GitHub to the
-  release.
-* Publish the new version to PyPI_ by executing ``$ tox -e release`` from the tagged commit on the
-  master branch.
+Once the release is made, the :ref:`ci` will be automatically started by Github. The code will be
+then be published on PyPI_ and Anaconda_ automatically if the tests passes.
 
 After the release
 =================
-Once published, it's important to notify our user base and community that a new version exists so
-they can update their version or learn about Oríon.
+Once published, it's important to notify our user base and community that a new
+version exists so they can update their version or learn about Oríon.
 
 * Verify Oríon's Zenodo_ page has been updated to reflect the new release on GitHub_. Zenodo is
   configured to automatically create a new version whenever a new release is published on GitHub.
-* Verify Oríon's Anaconda_ page contains the new version. Binaries for the new version are uploaded
-  automatically by TravisCI when the tests pass for the merge commit tagged with the new version on
-  the master branch .
+* Verify Oríon's PyPI_ and Anaconda_ page contains the new version. Binaries for the new version are
+  uploaded automatically by Github's workflow when the tests pass for the merge commit tagged with
+  the new version on the master branch .
 * Announce the new release on your #orion's slack channel.
 * Announce the new release on relevant communication channels (e.g., email, forums, google groups)
 * Congratulations, you published a new version of Oríon!
