@@ -17,11 +17,15 @@ tests_require = [
     ]
 
 
-packages = [
-    'orion.core',
-    'orion.client',
+packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
     'orion.algo',
-    'orion.storage'
+    'orion.analysis',
+    'orion.client',
+    'orion.core',
+    'orion.plotting',
+    'orion.serving',
+    'orion.storage',
+    'orion.testing'
     ]
 
 setup_args = dict(
@@ -46,6 +50,7 @@ setup_args = dict(
             'asha = orion.algo.asha:ASHA',
             'hyperband = orion.algo.hyperband:Hyperband',
             'tpe = orion.algo.tpe:TPE',
+            'EvolutionES = orion.algo.evolution_es:EvolutionES',
             ],
         'Storage': [
             'track = orion.storage.track:Track',
@@ -53,7 +58,7 @@ setup_args = dict(
             ]
         },
     install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython', 'filelock',
-                      'tabulate', 'AppDirs'],
+                      'tabulate', 'AppDirs', 'plotly', 'pandas', 'gunicorn', 'falcon'],
     tests_require=tests_require,
     setup_requires=['setuptools', 'appdirs', 'pytest-runner'],
     extras_require=dict(test=tests_require),

@@ -14,9 +14,10 @@ from orion.core.io.database.pickleddb import PickledDB
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
-from orion.core.utils.tests import OrionState, update_singletons
+from orion.core.utils.singleton import update_singletons
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
+from orion.testing import OrionState
 
 
 def count_experiments():
@@ -75,7 +76,9 @@ def new_config(random_dt, script_path):
                   'orion_version': 'XYZ',
                   'user_script': script_path,
                   'user_config': 'abs_path/hereitis.yaml',
-                  'user_args': [script_path, '--mini-batch~uniform(32, 256, discrete=True)'],
+                  'user_args': [
+                      script_path,
+                      '--mini-batch~uniform(32, 256, discrete=True)'],
                   'VCS': {"type": "git",
                           "is_dirty": False,
                           "HEAD_sha": "test",
@@ -210,7 +213,7 @@ def test_build_view_from_args_no_hit(config_file):
     cmdargs = {'name': 'supernaekei', 'config': config_file}
 
     with OrionState(experiments=[], trials=[]):
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(NoConfigurationError) as exc_info:
             experiment_builder.build_view_from_args(cmdargs)
         assert "No experiment with given name 'supernaekei' and version '*'" in str(exc_info.value)
 
@@ -232,6 +235,26 @@ def test_build_view_from_args_hit(config_file, random_dt, new_config):
     assert exp_view.algorithms.configuration == new_config['algorithms']
 
 
+@pytest.mark.usefixtures("with_user_tsirif")
+def test_build_view_from_args_hit_no_conf_file(config_file, random_dt, new_config):
+    """Try building experiment view when in db, and local config file of user script does
+    not exist
+    """
+    cmdargs = {'name': 'supernaekei', 'config': config_file}
+    new_config['metadata']['user_args'] += ['--config', new_config['metadata']['user_config']]
+
+    with OrionState(experiments=[new_config], trials=[]) as cfg:
+        exp_view = experiment_builder.build_view_from_args(cmdargs)
+
+    assert exp_view._id == new_config['_id']
+    assert exp_view.name == new_config['name']
+    assert exp_view.configuration['refers'] == new_config['refers']
+    assert exp_view.metadata == new_config['metadata']
+    assert exp_view.pool_size == new_config['pool_size']
+    assert exp_view.max_trials == new_config['max_trials']
+    assert exp_view.algorithms.configuration == new_config['algorithms']
+
+
 @pytest.mark.usefixtures("with_user_dendi")
 def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config):
     """Try building experiment when not in db"""
@@ -240,7 +263,7 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
                              'x~uniform(0,10)']}
 
     with OrionState(experiments=[], trials=[]):
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(NoConfigurationError) as exc_info:
             experiment_builder.build_view_from_args(cmdargs)
         assert "No experiment with given name 'supernaekei' and version '*'" in str(exc_info.value)
 
@@ -322,7 +345,7 @@ def test_build_view_from_args_debug_mode(script_path):
     update_singletons()
 
     # Can't build view if none exist. It's fine we only want to test the storage creation.
-    with pytest.raises(ValueError):
+    with pytest.raises(NoConfigurationError):
         experiment_builder.build_view_from_args({'name': 'whatever'})
 
     storage = get_storage()
@@ -333,7 +356,7 @@ def test_build_view_from_args_debug_mode(script_path):
     update_singletons()
 
     # Can't build view if none exist. It's fine we only want to test the storage creation.
-    with pytest.raises(ValueError):
+    with pytest.raises(NoConfigurationError):
         experiment_builder.build_view_from_args({'name': 'whatever', 'debug': True})
 
     storage = get_storage()
@@ -351,7 +374,7 @@ def test_build_no_hit(config_file, random_dt, script_path):
 
     with OrionState(experiments=[], trials=[]):
 
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(NoConfigurationError) as exc_info:
             experiment_builder.build_view(name)
         assert "No experiment with given name 'supernaekei' and version '*'" in str(exc_info.value)
 
@@ -890,7 +913,7 @@ class TestInitExperimentView(object):
     def test_empty_experiment_view(self):
         """Hit user name, but exp_name does not hit the db."""
         with OrionState(experiments=[], trials=[]):
-            with pytest.raises(ValueError) as exc_info:
+            with pytest.raises(NoConfigurationError) as exc_info:
                 experiment_builder.build_view('supernaekei')
             assert ("No experiment with given name 'supernaekei' and version '*'"
                     in str(exc_info.value))

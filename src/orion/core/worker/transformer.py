@@ -183,6 +183,13 @@ class Compose(Transformer):
         transformed_point = self.apply.reverse(transformed_point)
         return self.composition.reverse(transformed_point)
 
+    def interval(self, alpha=1.0):
+        """Return interval of composed transformation."""
+        if hasattr(self.apply, 'interval'):
+            return self.apply.interval(alpha)
+
+        return None
+
     def infer_target_shape(self, shape):
         """Return the shape of the dimension after transformation."""
         shape = self.composition.infer_target_shape(shape)
@@ -370,6 +377,17 @@ class OneHotEncode(Transformer):
         assert point_.shape[-1] == self.num_cats
         return point_.argmax(axis=-1)
 
+    # pylint:disable=unused-argument
+    def interval(self, alpha=1.0):
+        """Return the interval for the one-hot encoding in proper shape."""
+        if self.num_cats == 2:
+            return 0, 1
+        else:
+            low = numpy.zeros(self.num_cats)
+            high = numpy.ones(self.num_cats)
+
+            return low, high
+
     def infer_target_shape(self, shape):
         """Infer that transformed points will have one more tensor dimension,
         if the number of supported integers to transform is larger than 2.
@@ -411,7 +429,11 @@ class TransformedDimension(object):
 
     def interval(self, alpha=1.0):
         """Map the interval bounds to the transformed ones."""
-        if self.original_dimension.prior_name == 'choices':
+        if hasattr(self.transformer, 'interval'):
+            interval = self.transformer.interval()
+            if interval:
+                return interval
+        elif self.original_dimension.prior_name == 'choices':
             return self.original_dimension.categories
 
         low, high = self.original_dimension.interval(alpha)

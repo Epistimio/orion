@@ -16,10 +16,11 @@ from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
 import orion.core.utils.backward as backward
-from orion.core.utils.tests import update_singletons
+from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import Storage
 from orion.storage.legacy import Legacy
+from orion.testing import OrionState
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -205,6 +206,17 @@ def database():
     database = client.orion_test
     yield database
     client.close()
+
+
+@pytest.fixture()
+def mock_database():
+    """
+    Lightweight fixture for an empty, in-memory database using :class:`OrionState`.
+    The database is automatically discarded after each test method.
+    """
+    storage = {'type': 'legacy', 'database': {'type': 'EphemeralDB'}}
+    with OrionState(storage=storage) as state:
+        yield state
 
 
 @pytest.fixture()

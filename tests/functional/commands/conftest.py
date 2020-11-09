@@ -155,7 +155,7 @@ def one_experiment(monkeypatch, db_instance):
     """Create an experiment without trials."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     name = 'test_single_exp'
-    orion.core.cli.main(['init_only', '-n', name,
+    orion.core.cli.main(['hunt', '--init-only', '-n', name,
                          './black_box.py', '--x~uniform(0,1)'])
     ensure_deterministic_id(name, db_instance)
     return get_storage().fetch_experiments({'name': name})[0]
@@ -199,6 +199,18 @@ def with_experiment_using_python_api(monkeypatch, one_experiment):
 
 
 @pytest.fixture
+def with_experiment_missing_conf_file(monkeypatch, one_experiment):
+    """Create an experiment without trials."""
+    exp = experiment_builder.build(name='test_single_exp', version=1)
+    conf_file = 'idontexist.yaml'
+    exp.metadata['user_config'] = conf_file
+    exp.metadata['user_args'] += ['--config', conf_file]
+    Database().write('experiments', exp.configuration, query={'_id': exp.id})
+
+    return exp
+
+
+@pytest.fixture
 def broken_refers(one_experiment, db_instance):
     """Create an experiment with broken refers."""
     ensure_deterministic_id('test_single_exp', db_instance, update=dict(refers={'oups': 'broken'}))
@@ -236,11 +248,11 @@ def single_with_trials(single_without_success):
 def two_experiments(monkeypatch, db_instance):
     """Create an experiment and its child."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(['init_only', '-n', 'test_double_exp',
+    orion.core.cli.main(['hunt', '--init-only', '-n', 'test_double_exp',
                          './black_box.py', '--x~uniform(0,1)'])
     ensure_deterministic_id('test_double_exp', db_instance)
 
-    orion.core.cli.main(['init_only', '-n', 'test_double_exp',
+    orion.core.cli.main(['hunt', '--init-only', '-n', 'test_double_exp',
                          '--branch-to', 'test_double_exp_child', './black_box.py',
                          '--x~+uniform(0,1,default_value=0)', '--y~+uniform(0,1,default_value=0)'])
     ensure_deterministic_id('test_double_exp_child', db_instance)
@@ -290,7 +302,7 @@ def three_experiments_with_trials(family_with_trials, single_with_trials):
 @pytest.fixture
 def three_experiments_family(two_experiments, db_instance):
     """Create three experiments, one of which is the parent of the other two."""
-    orion.core.cli.main(['init_only', '-n', 'test_double_exp',
+    orion.core.cli.main(['hunt', '--init-only', '-n', 'test_double_exp',
                          '--branch-to', 'test_double_exp_child2', './black_box.py',
                          '--x~+uniform(0,1,default_value=0)', '--z~+uniform(0,1,default_value=0)'])
     ensure_deterministic_id('test_double_exp_child2', db_instance)
@@ -315,7 +327,7 @@ def three_family_with_trials(three_experiments_family, family_with_trials):
 @pytest.fixture
 def three_experiments_family_branch(two_experiments, db_instance):
     """Create three experiments, each parent of the following one."""
-    orion.core.cli.main(['init_only', '-n', 'test_double_exp_child',
+    orion.core.cli.main(['hunt', '--init-only', '-n', 'test_double_exp_child',
                          '--branch-to', 'test_double_exp_grand_child', './black_box.py',
                          '--x~+uniform(0,1,default_value=0)', '--y~uniform(0,1,default_value=0)',
                          '--z~+uniform(0,1,default_value=0)'])
@@ -346,7 +358,7 @@ def three_family_branch_with_trials(three_experiments_family_branch, family_with
 @pytest.fixture
 def two_experiments_same_name(one_experiment, db_instance):
     """Create two experiments with the same name but different versions."""
-    orion.core.cli.main(['init_only', '-n', 'test_single_exp',
+    orion.core.cli.main(['hunt', '--init-only', '-n', 'test_single_exp',
                          './black_box.py', '--x~uniform(0,1)', '--y~+normal(0,1)'])
     ensure_deterministic_id('test_single_exp', db_instance, version=2)
 
@@ -356,7 +368,7 @@ def three_experiments_family_same_name(two_experiments_same_name, db_instance):
     """Create three experiments, two of them with the same name but different versions and one
     with a child.
     """
-    orion.core.cli.main(['init_only', '-n', 'test_single_exp', '-v', '1', '-b',
+    orion.core.cli.main(['hunt', '--init-only', '-n', 'test_single_exp', '-v', '1', '-b',
                          'test_single_exp_child', './black_box.py', '--x~uniform(0,1)',
                          '--y~+normal(0,1)'])
     ensure_deterministic_id('test_single_exp_child', db_instance)
@@ -367,7 +379,7 @@ def three_experiments_branch_same_name(two_experiments_same_name, db_instance):
     """Create three experiments, two of them with the same name but different versions and last one
     with a child.
     """
-    orion.core.cli.main(['init_only', '-n', 'test_single_exp', '-b',
+    orion.core.cli.main(['hunt', '--init-only', '-n', 'test_single_exp', '-b',
                          'test_single_exp_child', './black_box.py', '--x~uniform(0,1)',
                          '--y~normal(0,1)', '--z~+normal(0,1)'])
     ensure_deterministic_id('test_single_exp_child', db_instance)
@@ -376,7 +388,36 @@ def three_experiments_branch_same_name(two_experiments_same_name, db_instance):
 @pytest.fixture
 def three_experiments_same_name(two_experiments_same_name, db_instance):
     """Create three experiments with the same name but different versions."""
-    orion.core.cli.main(['init_only', '-n', 'test_single_exp',
+    orion.core.cli.main(['hunt', '--init-only', '-n', 'test_single_exp',
                          './black_box.py', '--x~uniform(0,1)', '--y~normal(0,1)',
                          '--z~+normal(0,1)'])
     ensure_deterministic_id('test_single_exp', db_instance, version=3)
+
+
+@pytest.fixture
+def three_experiments_same_name_with_trials(two_experiments_same_name, db_instance):
+    """Create three experiments with the same name but different versions."""
+    orion.core.cli.main(['hunt', '--init-only', '-n', 'test_single_exp',
+                         './black_box.py', '--x~uniform(0,1)', '--y~normal(0,1)',
+                         '--z~+normal(0,1)'])
+    ensure_deterministic_id('test_single_exp', db_instance, version=3)
+
+    exp = experiment_builder.build(name='test_single_exp', version=1)
+    exp2 = experiment_builder.build(name='test_single_exp', version=2)
+    exp3 = experiment_builder.build(name='test_single_exp', version=3)
+
+    x = {'name': '/x', 'type': 'real'}
+    y = {'name': '/y', 'type': 'real'}
+    z = {'name': '/z', 'type': 'real'}
+    x_value = 0
+    for status in Trial.allowed_stati:
+        x['value'] = x_value
+        y['value'] = x_value * 10
+        z['value'] = x_value * 100
+        trial = Trial(experiment=exp.id, params=[x], status=status)
+        trial2 = Trial(experiment=exp2.id, params=[x, y], status=status)
+        trial3 = Trial(experiment=exp3.id, params=[x, y, z], status=status)
+        Database().write('trials', trial.to_dict())
+        Database().write('trials', trial2.to_dict())
+        Database().write('trials', trial3.to_dict())
+        x_value += 1

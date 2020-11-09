@@ -395,11 +395,13 @@ def test_format_config(monkeypatch):
     experiment = DummyExperiment()
     experiment.pool_size = 10
     experiment.max_trials = 100
+    experiment.working_dir = "working_dir"
     assert format_config(experiment) == """\
 Config
 ======
 pool size: 10
 max trials: 100
+working dir: working_dir
 """
 
 
@@ -547,9 +549,11 @@ def test_format_stats(dummy_trial):
         finish_time='now',
         duration='way too long')
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
+    experiment.is_done = False
     assert format_stats(experiment) == """\
 Stats
 =====
+completed: False
 trials completed: 10
 best trial:
   id: dummy
@@ -574,6 +578,7 @@ def test_format_info(algorithm_dict, dummy_trial):
     experiment.metadata = {'user_args': commandline}
     experiment.pool_size = 10
     experiment.max_trials = 100
+    experiment.working_dir = "working_dir"
     experiment.configuration = {'algorithms': algorithm_dict}
 
     space = SpaceBuilder().build(
@@ -618,6 +623,7 @@ def test_format_info(algorithm_dict, dummy_trial):
         finish_time='now',
         duration='way too long')
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
+    experiment.is_done = False
 
     assert format_info(experiment) == """\
 Identification
@@ -636,6 +642,7 @@ Config
 ======
 pool size: 10
 max trials: 100
+working dir: working_dir
 
 
 Algorithm
@@ -678,6 +685,7 @@ adapter:
 
 Stats
 =====
+completed: False
 trials completed: 10
 best trial:
   id: dummy

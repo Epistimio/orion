@@ -13,13 +13,12 @@ from orion.client.cli import (
 from orion.client.experiment import ExperimentClient
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.exceptions import RaceCondition
-from orion.core.utils.tests import update_singletons
+from orion.core.utils.singleton import update_singletons
 from orion.core.worker.producer import Producer
 from orion.storage.base import setup_storage
 
-
 __all__ = ['interrupt_trial', 'report_bad_trial', 'report_objective', 'report_results',
-           'create_experiment', 'workon']
+           'create_experiment', 'get_experiment', 'workon']
 
 
 # pylint: disable=too-many-arguments
@@ -188,6 +187,33 @@ def create_experiment(
     return ExperimentClient(experiment, producer, heartbeat)
 
 
+def get_experiment(name, version=None, storage=None):
+    """
+    Retrieve an existing experiment as :class:`orion.core.worker.experiment.ExperimentView`.
+
+    Parameters
+    ----------
+    name: str
+        The name of the experiment.
+    version: int, optional
+        Version to select. If None, last version will be selected. If version given is larger than
+        largest version available, the largest version will be selected.
+    storage: dict, optional
+        Configuration of the storage backend.
+
+    Returns
+    -------
+    An instance of :class:`orion.core.worker.experiment.ExperimentView` representing the experiment.
+
+    Raises
+    ------
+    `orion.core.utils.exceptions.NoConfigurationError`
+        The experiment is not in the database provided by the user.
+    """
+    setup_storage(storage)
+    return experiment_builder.build_view(name, version)
+
+
 def workon(function, space, name='loop', algorithms=None, max_trials=None):
     """Optimize a function over a given search space
 
@@ -225,18 +251,19 @@ def workon(function, space, name='loop', algorithms=None, max_trials=None):
     # Clear singletons and keep pointers to restore them.
     singletons = update_singletons()
 
-    setup_storage(storage={'type': 'legacy', 'database': {'type': 'EphemeralDB'}})
+    try:
+        setup_storage(storage={'type': 'legacy', 'database': {'type': 'EphemeralDB'}})
 
-    experiment = experiment_builder.build(
-        name, version=1, space=space, algorithms=algorithms,
-        strategy='NoParallelStrategy', max_trials=max_trials)
+        experiment = experiment_builder.build(
+            name, version=1, space=space, algorithms=algorithms,
+            strategy='NoParallelStrategy', max_trials=max_trials)
 
-    producer = Producer(experiment)
+        producer = Producer(experiment)
 
-    experiment_client = ExperimentClient(experiment, producer)
-    experiment_client.workon(function, max_trials=max_trials)
-
-    # Restore singletons
-    update_singletons(singletons)
+        experiment_client = ExperimentClient(experiment, producer)
+        experiment_client.workon(function, max_trials=max_trials)
+    finally:
+        # Restore singletons
+        update_singletons(singletons)
 
     return experiment_client

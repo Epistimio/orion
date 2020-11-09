@@ -16,14 +16,10 @@ import textwrap
 import orion
 from orion.core.io.database import DatabaseError
 from orion.core.utils.exceptions import (
-    BranchingEvent, MissingResultFile, NoConfigurationError, NoNameError)
+    BranchingEvent, InexecutableUserScript, MissingResultFile, NoConfigurationError, NoNameError)
 
 
-CLI_DOC_HEADER = """
-orion:
-  Orion cli script for asynchronous distributed optimization
-
-"""
+CLI_DOC_HEADER = "Oríon CLI for asynchronous distributed optimization"
 
 
 class OrionArgsParser:
@@ -50,7 +46,7 @@ class OrionArgsParser:
             '-d', '--debug', action='store_true',
             help="Use debugging mode with EphemeralDB.")
 
-        self.subparsers = self.parser.add_subparsers(dest='command', help='sub-command help')
+        self.subparsers = self.parser.add_subparsers(dest='command')
 
     def get_subparsers(self):
         """Return the subparser object for this parser."""
@@ -80,9 +76,9 @@ class OrionArgsParser:
         """Execute main function of the subparser"""
         try:
             args, function = self.parse(argv)
-            function(args)
+            returncode = function(args)
         except (NoConfigurationError, NoNameError, DatabaseError, MissingResultFile,
-                BranchingEvent) as e:
+                BranchingEvent, InexecutableUserScript) as e:
             print('Error:', e, file=sys.stderr)
 
             if args.get('verbose', 0) >= 2:
@@ -94,7 +90,7 @@ class OrionArgsParser:
             print('Orion is interrupted.')
             return 130
 
-        return 0
+        return 0 if returncode is None else returncode
 
 
 def get_basic_args_group(

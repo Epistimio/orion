@@ -15,11 +15,15 @@ from orion.core.utils.pptree import print_tree
 from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
+SHORT_DESCRIPTION = 'Gives a list of experiments'
+DESCRIPTION = """
+This command gives a list of your experiments in a easy-to-read tree-like structure.
+"""
 
 
 def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
-    list_parser = parser.add_parser('list', help='list help')
+    list_parser = parser.add_parser('list', help=SHORT_DESCRIPTION, description=DESCRIPTION)
 
     cli.get_basic_args_group(list_parser)
 

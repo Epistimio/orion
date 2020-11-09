@@ -8,16 +8,17 @@ import json
 import pytest
 
 import orion.client
+from orion.client import get_experiment
 import orion.client.cli as cli
 import orion.core
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
-from orion.core.utils import SingletonNotInstantiatedError
 from orion.core.utils.exceptions import BranchingEvent, NoConfigurationError, RaceCondition
-from orion.core.utils.tests import OrionState, update_singletons
+from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
+from orion.core.worker.experiment import ExperimentView
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
-
+from orion.testing import OrionState
 
 create_experiment = orion.client.create_experiment
 workon = orion.client.workon
@@ -388,6 +389,39 @@ class TestWorkon:
 
         assert experiment.name == 'voici'
 
+    def test_workon_fail(self, monkeypatch):
+        """Verify that storage is reverted if workon fails"""
+        def foo(x):
+            return [dict(name='result', type='objective', value=x * 2)]
+
+        def build_fail(*args, **kwargs):
+            raise RuntimeError('You shall not build!')
+
+        monkeypatch.setattr('orion.core.io.experiment_builder.build', build_fail)
+
+        # Flush storage singleton
+        update_singletons()
+
+        with pytest.raises(RuntimeError) as exc:
+            experiment = workon(foo, space={'x': 'uniform(0, 10)'}, max_trials=5, name='voici')
+
+        assert exc.match('You shall not build!')
+
+        # Verify that tmp storage was cleared
+        with pytest.raises(SingletonNotInstantiatedError):
+            get_storage()
+
+        # Now test with a prior storage
+        with OrionState(storage={'type': 'legacy', 'database': {'type': 'EphemeralDB'}}):
+            storage = get_storage()
+
+            with pytest.raises(RuntimeError) as exc:
+                workon(foo, space={'x': 'uniform(0, 10)'}, max_trials=5, name='voici')
+
+            assert exc.match('You shall not build!')
+
+            assert get_storage() is storage
+
     def test_workon_twice(self):
         """Verify setting the each experiment has its own storage"""
         def foo(x):
@@ -402,3 +436,38 @@ class TestWorkon:
 
         assert experiment2.name == 'voici'
         assert len(experiment2.fetch_trials()) == 1
+
+
+class TestGetExperiment:
+    """Test :meth:`orion.client.get_experiment`"""
+
+    @pytest.mark.usefixtures('mock_database')
+    def test_experiment_do_not_exist(self):
+        """Tests that an error is returned when the experiment doesn't exist"""
+        with pytest.raises(NoConfigurationError) as exception:
+            get_experiment('a')
+        assert "No experiment with given name 'a' and version '*' inside database, " \
+               "no view can be created." == str(exception.value)
+
+    @pytest.mark.usefixtures('mock_database')
+    def test_experiment_exist(self):
+        """
+        Tests that an instance of :class:`orion.core.worker.experiment.ExperimentView` is
+        returned representing the latest version when none is given.
+        """
+        experiment = create_experiment('a', space={'x': 'uniform(0, 10)'})
+
+        experiment = get_experiment('a')
+
+        assert experiment
+        assert isinstance(experiment, ExperimentView)
+
+    @pytest.mark.usefixtures('mock_database')
+    def test_version_do_not_exist(self, caplog):
+        """Tests that a warning is printed when the experiment exist but the version doesn't"""
+        create_experiment('a', space={'x': 'uniform(0, 10)'})
+
+        experiment = get_experiment('a', 2)
+
+        assert experiment.version == 1
+        assert "Version 2 was specified but most recent version is only 1. Using 1." in caplog.text

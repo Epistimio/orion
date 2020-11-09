@@ -15,44 +15,23 @@ import os
 import yaml
 
 import orion.core
+from orion.core.utils.terminal import ask_question
 
 log = logging.getLogger(__name__)
+SHORT_DESCRIPTION = 'Starts the database configuration wizard'
+DESCRIPTION = """
+This command starts the database configuration wizard and creates a configuration file for the
+database.
+"""
 
 
 def add_subparser(parser):
     """Return the parser that needs to be used for this command"""
-    setup_parser = parser.add_parser('setup', help='setup help')
+    setup_parser = parser.add_parser('setup', help=SHORT_DESCRIPTION, description=DESCRIPTION)
 
     setup_parser.set_defaults(func=main)
 
     return setup_parser
-
-
-def ask_question(question, default=None):
-    """Ask a question to the user and receive an answer.
-
-    Parameters
-    ----------
-    question: str
-        The question to be asked.
-    default: str
-        The default value to use if the user enters nothing.
-
-    Returns
-    -------
-    str
-        The answer provided by the user.
-
-    """
-    if default is not None:
-        question = question + " (default: {}) ".format(default)
-
-    answer = input(question)
-
-    if answer.strip() == "":
-        return default
-
-    return answer
 
 
 # pylint: disable = unused-argument

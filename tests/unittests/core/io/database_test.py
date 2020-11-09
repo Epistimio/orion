@@ -6,7 +6,8 @@ import pytest
 
 from orion.core.io.database import Database, ReadOnlyDB
 from orion.core.io.database.mongodb import MongoDB
-from orion.core.utils import SingletonAlreadyInstantiatedError, SingletonNotInstantiatedError
+from orion.core.utils.singleton import SingletonAlreadyInstantiatedError, \
+    SingletonNotInstantiatedError
 
 
 @pytest.mark.usefixtures("null_db_instances")

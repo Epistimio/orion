@@ -17,11 +17,12 @@ from orion.core.cli import evc as evc_cli
 import orion.core.io.experiment_builder as experiment_builder
 
 log = logging.getLogger(__name__)
+DESCRIPTION = '(DEPRECATED) Use command `orion hunt --init_only` instead'
 
 
 def add_subparser(parser):
     """Return the parser that needs to be used for this command"""
-    init_only_parser = parser.add_parser('init_only', help='init_only help')
+    init_only_parser = parser.add_parser('init_only', help=DESCRIPTION, description=DESCRIPTION)
 
     orion_group = cli.get_basic_args_group(
         init_only_parser, group_name='init_only arguments', group_help='')
@@ -47,4 +48,6 @@ def add_subparser(parser):
 def main(args):
     """Build and initialize experiment"""
     # By building the experiment, we create a new experiment document in database
+    log.warning('Command init_only is deprecated and will be removed in v0.3. '
+                'Use orion hunt --init-only instead.')
     experiment_builder.build_from_args(args)

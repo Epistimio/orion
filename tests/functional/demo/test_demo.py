@@ -14,10 +14,10 @@ import yaml
 import orion.core.cli
 from orion.core.io.database.ephemeraldb import EphemeralDB
 import orion.core.io.experiment_builder as experiment_builder
-from orion.core.utils.tests import OrionState
 from orion.core.worker import workon
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
+from orion.testing import OrionState
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -189,6 +189,18 @@ def test_demo_with_python_and_script(database, monkeypatch):
     assert params[0]['name'] == '/x'
     assert params[0]['type'] == 'real'
     assert (params[0]['value'] - 34.56789) < 1e-5
+
+
+@pytest.mark.usefixtures("clean_db")
+def test_demo_inexecutable_script(database, monkeypatch, capsys):
+    """Test error message when user script is not executable."""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    script = tempfile.NamedTemporaryFile()
+    orion.core.cli.main(["hunt", "--config", "./orion_config.yaml",
+                         script.name, "--config", "script_config.yaml"])
+
+    captured = capsys.readouterr().err
+    assert 'User script is not executable' in captured
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -378,7 +390,7 @@ def test_tmpdir_is_deleted(database, monkeypatch, tmp_path):
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
 def test_working_dir_argument_config(database, monkeypatch):
-    """Check that a permanent directory is used instead of tmpdir"""
+    """Check that workning dir argument is handled properly"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     dir_path = os.path.join('orion', 'test')
     if os.path.exists(dir_path):
@@ -401,7 +413,7 @@ def test_working_dir_argument_config(database, monkeypatch):
 def test_run_with_name_only(database, monkeypatch):
     """Test hunt can be executed with experiment name only"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(["init_only", "--config", "./orion_config_random.yaml",
+    orion.core.cli.main(["hunt", "--init-only", "--config", "./orion_config_random.yaml",
                          "./black_box.py", "-x~uniform(-50, 50)"])
 
     orion.core.cli.main(["hunt", "--max-trials", "20", "--config", "./orion_config_random.yaml"])
@@ -420,7 +432,7 @@ def test_run_with_name_only(database, monkeypatch):
 def test_run_with_name_only_with_trailing_whitespace(database, monkeypatch):
     """Test hunt can be executed with experiment name and trailing whitespace"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(["init_only", "--config", "./orion_config_random.yaml",
+    orion.core.cli.main(["hunt", "--init-only", "--config", "./orion_config_random.yaml",
                          "./black_box.py", "-x~uniform(-50, 50)"])
 
     orion.core.cli.main(["hunt", "--max-trials", "20",

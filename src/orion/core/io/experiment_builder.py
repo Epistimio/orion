@@ -69,7 +69,7 @@ hierarchy. From the more global to the more specific, there is:
       .. code-block:: bash
 
           # Initialize root experiment
-          orion init_only --config previous_exeriment.yaml ./userscript -x~'uniform(0, 10)'
+          orion hunt --init-only --config previous_exeriment.yaml ./userscript -x~'uniform(0, 10)'
           # Branch a new experiment
           orion hunt -n previous_experiment ./userscript -x~'uniform(0, 100)'
 
@@ -131,9 +131,6 @@ def build(name, version=None, branching=None, **config):
     version: int, optional
         Version to select. If None, last version will be selected. If version given is larger than
         largest version available, the largest version will be selected.
-    branch_from: str, optional
-        Name of the experiment to branch from. The new experiment will have access to all trials
-        from the parent experiment it has been branched from.
     space: dict, optional
         Optimization space of the algorithm. Should have the form `dict(name='<prior>(args)')`.
     algorithms: str or dict, optional
@@ -251,7 +248,7 @@ def build_view(name, version=None):
     if not db_config:
         message = ("No experiment with given name '%s' and version '%s' inside database, "
                    "no view can be created." % (name, version if version else '*'))
-        raise ValueError(message)
+        raise NoConfigurationError(message)
 
     db_config.setdefault('version', 1)
 
@@ -326,7 +323,7 @@ def fetch_config_from_db(name, version=None):
         log.info("Many versions for experiment %s have been found. Using latest "
                  "version %s.", name, config['version'])
 
-    backward.populate_space(config)
+    backward.populate_space(config, force_update=False)
 
     return config
 
@@ -573,6 +570,7 @@ def get_cmd_config(cmdargs):
     cmd_config.update(cmd_config.pop('experiment', {}))
     cmd_config['branching'] = cmd_config.pop('evc', {})
 
+    # TODO: user_args won't be defined if reading from DB only (`orion hunt -n <exp> ` alone)
     metadata = resolve_config.fetch_metadata(cmd_config.get('user'), cmd_config.get('user_args'))
     cmd_config['metadata'] = metadata
     cmd_config.pop('config', None)

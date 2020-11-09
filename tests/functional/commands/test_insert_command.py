@@ -16,17 +16,20 @@ def get_user_corneau():
 
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.usefixtures("null_db_instances")
-def test_insert_invalid_experiment(database, monkeypatch):
+def test_insert_invalid_experiment(database, monkeypatch, capsys):
     """Test the insertion of an invalid experiment"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     monkeypatch.setattr("getpass.getuser", get_user_corneau)
 
-    with pytest.raises(ValueError) as exc_info:
-        orion.core.cli.main(["insert", "-n", "dumb_experiment",
-                             "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1"])
+    returncode = orion.core.cli.main(
+        ["insert", "-n", "dumb_experiment",
+         "-c", "./orion_config_random.yaml", "./black_box.py", "-x=1"])
 
-    assert ("No experiment with given name 'dumb_experiment' and version '*'"
-            in str(exc_info.value))
+    assert returncode == 1
+
+    captured = capsys.readouterr().err
+
+    assert ("Error: No experiment with given name 'dumb_experiment'")
 
 
 @pytest.mark.usefixtures("only_experiments_db")
@@ -151,9 +154,9 @@ def test_insert_two_hyperparameters(database, monkeypatch):
 def test_insert_with_version(create_db_instance, monkeypatch, script_path):
     """Try to insert a single trial inside a specific version"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(["init_only", "-n", "experiment",
+    orion.core.cli.main(["hunt", "--init-only", "-n", "experiment",
                          "-c", "./orion_config_random.yaml", script_path, "-x~normal(0,1)"])
-    orion.core.cli.main(["init_only", "-n", "experiment",
+    orion.core.cli.main(["hunt", "--init-only", "-n", "experiment",
                          "-c", "./orion_config_random.yaml", script_path, "-x~normal(0,1)",
                          "-y~+normal(0,1)"])
 

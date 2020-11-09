@@ -18,7 +18,8 @@ from orion.core.io.database import Database, OutdatedDatabaseError
 import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import MissingResultFile
 from orion.core.worker.trial import Trial, validate_status
-from orion.storage.base import BaseStorageProtocol, FailedUpdate, MissingArguments
+from orion.storage.base import (
+    BaseStorageProtocol, FailedUpdate, get_uid, MissingArguments)
 
 log = logging.getLogger(__name__)
 
@@ -115,21 +116,20 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.create_experiment`"""
         return self._db.write('experiments', data=config, query=None)
 
+    def delete_experiment(self, experiment=None, uid=None):
+        """See :func:`~orion.storage.BaseStorageProtocol.delete_experiment`"""
+        uid = get_uid(experiment, uid)
+        return self._db.remove('experiments', query={'_id': uid})
+
     def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
-        if experiment is not None and uid is not None:
-            assert experiment._id == uid
-
-        if uid is None:
-            if experiment is None:
-                raise MissingArguments('Either `experiment` or `uid` should be set')
-
-            uid = experiment._id
+        uid = get_uid(experiment, uid)
 
         if where is None:
             where = dict()
 
-        where['_id'] = uid
+        if uid is not None:
+            where['_id'] = uid
         return self._db.write('experiments', data=kwargs, query=where)
 
     def fetch_experiments(self, query, selection=None):
@@ -138,14 +138,7 @@ class Legacy(BaseStorageProtocol):
 
     def fetch_trials(self, experiment=None, uid=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
-        if experiment is not None and uid is not None:
-            assert experiment._id == uid
-
-        if uid is None:
-            if experiment is None:
-                raise MissingArguments('Either `experiment` or `uid` should be set')
-
-            uid = experiment._id
+        uid = get_uid(experiment, uid)
 
         return self._fetch_trials(dict(experiment=uid))
 
@@ -166,6 +159,17 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.register_trial`"""
         self._db.write('trials', trial.to_dict())
         return trial
+
+    def delete_trials(self, experiment=None, uid=None, where=None):
+        """See :func:`~orion.storage.BaseStorageProtocol.delete_trials`"""
+        uid = get_uid(experiment, uid)
+
+        if where is None:
+            where = dict()
+
+        if uid is not None:
+            where['experiment'] = uid
+        return self._db.remove('trials', query=where)
 
     def register_lie(self, trial):
         """See :func:`~orion.storage.BaseStorageProtocol.register_lie`"""
@@ -225,18 +229,29 @@ class Legacy(BaseStorageProtocol):
 
         return Trial(**result[0])
 
-    def _update_trial(self, trial, where=None, **kwargs):
-        """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
+    def update_trials(self, experiment=None, uid=None, where=None, **kwargs):
+        """See :func:`~orion.storage.BaseStorageProtocol.update_trials`"""
+        uid = get_uid(experiment, uid)
         if where is None:
             where = dict()
 
-        where['_id'] = trial.id
+        where['experiment'] = uid
+        return self._db.write('trials', data=kwargs, query=where)
+
+    def update_trial(self, trial=None, uid=None, where=None, **kwargs):
+        """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
+        uid = get_uid(trial, uid)
+
+        if where is None:
+            where = dict()
+
+        where['_id'] = uid
         return self._db.write('trials', data=kwargs, query=where)
 
     def fetch_lost_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_lost_trials`"""
         heartbeat = orion.core.config.worker.heartbeat
-        threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=heartbeat)
+        threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=heartbeat * 5)
         lte_comparison = {'$lte': threshold}
         query = {
             'experiment': experiment._id,
@@ -248,8 +263,8 @@ class Legacy(BaseStorageProtocol):
 
     def push_trial_results(self, trial):
         """See :func:`~orion.storage.BaseStorageProtocol.push_trial_results`"""
-        rc = self._update_trial(trial, **trial.to_dict(),
-                                where={'_id': trial.id, 'status': 'reserved'})
+        rc = self.update_trial(trial, **trial.to_dict(),
+                               where={'_id': trial.id, 'status': 'reserved'})
         if not rc:
             raise FailedUpdate()
 
@@ -268,7 +283,7 @@ class Legacy(BaseStorageProtocol):
 
         validate_status(status)
 
-        rc = self._update_trial(trial, **update, where={'status': trial.status, '_id': trial.id})
+        rc = self.update_trial(trial, **update, where={'status': trial.status, '_id': trial.id})
 
         if not rc:
             raise FailedUpdate()
@@ -331,7 +346,7 @@ class Legacy(BaseStorageProtocol):
 
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
-        return self._update_trial(trial, heartbeat=datetime.datetime.utcnow(), status='reserved')
+        return self.update_trial(trial, heartbeat=datetime.datetime.utcnow(), status='reserved')
 
     def fetch_trials_by_status(self, experiment, status):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials_by_status`"""

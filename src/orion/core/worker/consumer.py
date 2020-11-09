@@ -8,6 +8,7 @@
    :synopsis: Call user's script as a black box process to evaluate a trial.
 
 """
+import copy
 import logging
 import os
 import signal
@@ -16,6 +17,8 @@ import tempfile
 
 import orion.core
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
+from orion.core.io.resolve_config import infer_versioning_metadata
+from orion.core.utils.exceptions import BranchingEvent, InexecutableUserScript
 from orion.core.utils.working_dir import WorkingDir
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 
@@ -218,6 +221,8 @@ class Consumer(object):
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
+        self._validate_code_version()
+
         self.pacemaker = TrialPacemaker(trial, self.heartbeat)
         self.pacemaker.start()
         try:
@@ -228,13 +233,30 @@ class Consumer(object):
 
         return results_file
 
+    def _validate_code_version(self):
+        old_config = self.experiment.configuration
+        new_config = copy.deepcopy(old_config)
+        new_config['metadata']['VCS'] = infer_versioning_metadata(
+            old_config['metadata']['user_script'])
+
+        # Circular import
+        from orion.core.evc.conflicts import CodeConflict
+        conflicts = list(CodeConflict.detect(old_config, new_config))
+        if conflicts:
+            raise BranchingEvent(f'Code changed between execution of 2 trials:\n{conflicts[0]}')
+
     # pylint: disable = no-self-use
     def execute_process(self, cmd_args, environ):
         """Facilitate launching a black-box trial."""
         command = cmd_args
 
         signal.signal(signal.SIGTERM, _handler)
-        process = subprocess.Popen(command, env=environ)
+
+        try:
+            process = subprocess.Popen(command, env=environ)
+        except PermissionError:
+            log.debug("### Script is not executable")
+            raise InexecutableUserScript(' '.join(cmd_args))
 
         return_code = process.wait()
 

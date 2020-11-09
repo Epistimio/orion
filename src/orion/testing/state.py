@@ -1,86 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.tests` -- Utils for tests
-================================================
-.. module:: state
+:mod:`orion.testing.state` -- Mocks Oríon's runtime.
+====================================================
+.. module:: testing
    :platform: Unix
-   :synopsis: Helper functions for tests
-
+   :synopsis: Boilerplate to simulate Oríon's runtime and data sources
 """
+# pylint: disable=protected-access
 
-import datetime
 import os
 import tempfile
 
 import yaml
 
-from orion.core.io.database import Database
-from orion.core.io.database.ephemeraldb import EphemeralDB
-from orion.core.io.database.mongodb import MongoDB
-from orion.core.io.database.pickleddb import PickledDB
-import orion.core.io.experiment_builder as experiment_builder
-from orion.core.utils import SingletonAlreadyInstantiatedError
+from orion.core.io import experiment_builder as experiment_builder
+from orion.core.utils.singleton import SingletonAlreadyInstantiatedError, update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage, Storage
-from orion.storage.legacy import Legacy
-from orion.storage.track import Track
-
-
-def _select(lhs, rhs):
-    if lhs:
-        return lhs
-    return rhs
-
-
-def default_datetime():
-    """Return default datetime"""
-    return datetime.datetime(1903, 4, 25, 0, 0, 0)
-
-
-class MockDatetime(datetime.datetime):
-    """Fake Datetime"""
-
-    @classmethod
-    def utcnow(cls):
-        """Return our random/fixed datetime"""
-        return default_datetime()
-
-
-def _get_default_test_storage():
-    """Return default configuration for the test storage"""
-    return {
-        'type': 'legacy',
-        'database': {
-            'type': 'PickledDB',
-            'host': '${file}'
-        }
-    }
-
-
-def _remove(file_name):
-    if file_name is None:
-        return
-
-    try:
-        os.remove(file_name)
-    except FileNotFoundError:
-        pass
-
-
-SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB, EphemeralDB, Track)
-
-
-def update_singletons(values=None):
-    """Replace singletons by given values and return previous singleton objects"""
-    if values is None:
-        values = {}
-
-    singletons = {}
-    for singleton in SINGLETONS:
-        singletons[singleton] = singleton.instance
-        singleton.instance = values.get(singleton, None)
-
-    return singletons
 
 
 # pylint: disable=no-self-use,protected-access
@@ -110,8 +46,8 @@ class BaseOrionState:
 
     Examples
     --------
-    >>> myconfig = {...}
-    >>> with OrionState(myconfig):
+    >>> my_config = {...}
+    >>> with OrionState(my_config):
         ...
 
     """
@@ -132,6 +68,7 @@ class BaseOrionState:
                 trials = exp_config[1]
 
         self.tempfile = None
+        self.tempfile_path = None
         self.storage_config = _select(storage, _get_default_test_storage())
 
         self._experiments = _select(experiments, [])
@@ -163,7 +100,9 @@ class BaseOrionState:
 
     def cleanup(self):
         """Cleanup after testing"""
-        _remove(self.tempfile)
+        if self.tempfile is not None:
+            os.close(self.tempfile)
+        _remove(self.tempfile_path)
 
     def _set_tables(self):
         self.trials = []
@@ -205,8 +144,8 @@ class BaseOrionState:
         """Iterate over the database configuration and replace ${file}
         by the name of a temporary file
         """
-        _, self.tempfile = tempfile.mkstemp('_orion_test')
-        _remove(self.tempfile)
+        self.tempfile, self.tempfile_path = tempfile.mkstemp('_orion_test')
+        _remove(self.tempfile_path)
 
         def map_dict(fun, dictionary):
             """Return a dictionary with fun applied to each values"""
@@ -215,7 +154,7 @@ class BaseOrionState:
         def replace_file(v):
             """Replace `${file}` by a generated temporary file"""
             if isinstance(v, str):
-                v = v.replace('${file}', self.tempfile)
+                v = v.replace('${file}', self.tempfile_path)
 
             if isinstance(v, dict):
                 v = map_dict(replace_file, v)
@@ -305,7 +244,9 @@ class LegacyOrionState(BaseOrionState):
         if self.initialized:
             self.database.remove('experiments', {})
             self.database.remove('trials', {})
-            _remove(self.tempfile)
+            if self.tempfile is not None:
+                os.close(self.tempfile)
+            _remove(self.tempfile_path)
         self.initialized = False
 
 
@@ -319,3 +260,43 @@ def OrionState(*args, **kwargs):
         return LegacyOrionState(*args, **kwargs)
 
     return BaseOrionState(*args, **kwargs)
+
+
+def customized_mutate_example(search_space, old_value, **kwargs):
+    """Define a customized mutate function example"""
+    multiply_factor = kwargs.pop('multiply_factor', 3.0)
+    add_factor = kwargs.pop('add_factor', 1)
+    if search_space.type == "real":
+        new_value = old_value / multiply_factor
+    elif search_space.type == "integer":
+        new_value = int(old_value + add_factor)
+    else:
+        new_value = old_value
+    return new_value
+
+
+def _get_default_test_storage():
+    """Return default configuration for the test storage"""
+    return {
+        'type': 'legacy',
+        'database': {
+            'type': 'PickledDB',
+            'host': '${file}'
+        }
+    }
+
+
+def _remove(file_name):
+    if file_name is None:
+        return
+
+    try:
+        os.remove(file_name)
+    except FileNotFoundError:
+        pass
+
+
+def _select(lhs, rhs):
+    if lhs:
+        return lhs
+    return rhs

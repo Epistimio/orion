@@ -3,7 +3,7 @@ Oríon
 *****
 
 |pypi| |py_versions| |license| |doi|
-|rtfd| |codecov| |travis|
+|rtfd| |codecov| |github-actions|
 
 .. |pypi| image:: https://img.shields.io/pypi/v/orion.svg
     :target: https://pypi.python.org/pypi/orion
@@ -29,9 +29,9 @@ Oríon
     :target: https://codecov.io/gh/Epistimio/orion
     :alt: Codecov Report
 
-.. |travis| image:: https://travis-ci.org/Epistimio/orion.svg?branch=master
-    :target: https://travis-ci.org/Epistimio/orion
-    :alt: Travis tests
+.. |github-actions| image:: https://github.com/Epistimio/orion/workflows/build/badge.svg?branch=master&event=pull_request
+    :target: https://github.com/Epistimio/orion/actions?query=workflow:build+branch:master+event:schedule
+    :alt: Github actions tests
 
 Oríon is an asynchronous framework for black-box function optimization.
 
@@ -59,6 +59,7 @@ to browse our `documentation`_.
 
 Why Oríon?
 ==========
+
 *Effortless to adopt, deeply customizable*
 
 - `Adopt it <https://orion.readthedocs.io/en/stable/user/script.html>`_ with a single line of code

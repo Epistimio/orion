@@ -669,6 +669,11 @@ class Categorical(Dimension):
         return 'choices({args})'.format(args=', '.join(args))
 
     @property
+    def get_prior(self):
+        """Return the priors"""
+        return self._probs
+
+    @property
     def prior_name(self):
         """Return the name of the prior"""
         return "choices"
@@ -738,8 +743,8 @@ class Fidelity(Dimension):
             raise AttributeError("Minimum resources must be a positive number.")
         elif low > high:
             raise AttributeError("Minimum resources must be smaller than maximum resources.")
-        if base <= 1:
-            raise AttributeError("Base should be greater than 1")
+        if base < 1:
+            raise AttributeError("Base should be greater than or equal to 1")
         self.name = name
         self.low = int(low)
         self.high = int(high)
