@@ -13,6 +13,7 @@ on:
 
 jobs:
   pretest:
+    if: false
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -31,6 +32,7 @@ jobs:
     - name: Test with tox
       run: tox -e ${{ matrix.toxenv }}
   test:
+    if: false
     needs: pretest
     runs-on: ${{ matrix.platform }}
     strategy:
@@ -67,6 +69,7 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
   backward-compatibility:
+    if: false
     needs: pretest
     runs-on: ubuntu-latest
     strategy:
@@ -121,6 +124,7 @@ jobs:
     - name: Publish distribution 📦 to Test PyPI
       uses: pypa/gh-action-pypi-publish@master
       with:
+        user: __token__
         password: ${{ secrets.test_pypi_password }}
         repository_url: https://test.pypi.org/legacy/
     - name: Publish distribution 📦 to PyPI
@@ -129,7 +133,7 @@ jobs:
       with:
         password: ${{ secrets.pypi_password }}
   conda:
-    needs: [test, backward-compatibility]
+    # needs: [test, backward-compatibility]
     runs-on: ubuntu-latest
     env:
         ANACONDA_TOKEN: ${{ secrets.anaconda_token }}
