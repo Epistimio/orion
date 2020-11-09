@@ -1,12 +1,18 @@
-name: ci
+name: build
 
-on: [pull_request]
+on:
+  schedule:
+      - cron: '44 4 * * *'
+  pull_request:
+    branches:
+      - main
+      - develop
+  release:
 
 jobs:
   pretest:
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 4
       matrix:
         toxenv: [flake8, pylint, doc8, docs]
 
@@ -58,7 +64,6 @@ jobs:
         env_vars: PLATFORM,PYTHON
         name: codecov-umbrella
         fail_ci_if_error: false
-        verbose: true
   backward-compatibility:
     needs: pretest
     runs-on: ubuntu-latest
@@ -90,11 +95,10 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
-        flags: unittests
+        flags: backward
         env_vars: PLATFORM,PYTHON
         name: codecov-umbrella
         fail_ci_if_error: false
-        verbose: true
   pypi:
     needs: [test, backward-compatibility]
     runs-on: ubuntu-latest
@@ -108,16 +112,35 @@ jobs:
       run: |
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
-    - name: Test with tox
+    - name: Test packaging
       run: tox -e packaging
+    - name: Build
+      run: tox -e build
+    - name: Publish distribution 📦 to Test PyPI
+      if: startsWith(github.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        user: __token__
+        password: ${{ secrets.test_pypi_password }}
+        repository_url: https://test.pypi.org/legacy/
+    - name: Publish distribution 📦 to PyPI
+      if: startsWith(github.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        password: ${{ secrets.pypi_password }}
   conda:
     needs: [test, backward-compatibility]
     runs-on: ubuntu-latest
+    env:
+        ANACONDA_TOKEN: ${{ secrets.anaconda_token }}
     steps:
     - uses: actions/checkout@v1
     - name: Set up Python 3.7
       uses: actions/setup-python@v2
       with:
         python-version: 3.7
-    - name: Conda build
-      run: ./conda/conda_test.sh
+    - name: Build conda
+      run: ./conda/ci_build.sh
+    - name: Publish distribution 📦 to Conda
+      if: startsWith(github.ref, 'refs/tags')
+      run: ./conda/upload.sh

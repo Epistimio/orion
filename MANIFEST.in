@@ -11,7 +11,6 @@ include src/orion/core/_version.py
 include versioneer.py
 
 # Exclude development helpers
-exclude .travis.yml
 exclude tox.ini
 exclude *-requirements.txt
 exclude .pylintrc
@@ -19,6 +18,7 @@ exclude .flake8
 exclude codecov.yml
 exclude .mailmap
 prune conda/
+prune .github/
 
 # Include src, tests, docs
 recursive-include docs *.rst *.py *.gitkeep *.png
