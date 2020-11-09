@@ -15,7 +15,6 @@ jobs:
   pretest:
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 4
       matrix:
         toxenv: [flake8, pylint, doc8, docs]
 
@@ -67,7 +66,6 @@ jobs:
         env_vars: PLATFORM,PYTHON
         name: codecov-umbrella
         fail_ci_if_error: false
-        verbose: true
   backward-compatibility:
     needs: pretest
     runs-on: ubuntu-latest
@@ -103,9 +101,8 @@ jobs:
         env_vars: PLATFORM,PYTHON
         name: codecov-umbrella
         fail_ci_if_error: false
-        verbose: true
   pypi:
-    needs: [test, backward-compatibility]
+    # needs: [test, backward-compatibility]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -117,8 +114,10 @@ jobs:
       run: |
           python -m pip install --upgrade pip
           pip install tox tox-gh-actions
-    - name: Test with tox
+    - name: Test packaging
       run: tox -e packaging
+    - name: Build
+      run: tox -e build
     - name: Publish distribution 📦 to Test PyPI
       uses: pypa/gh-action-pypi-publish@master
       with:
