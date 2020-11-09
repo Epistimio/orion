@@ -13,7 +13,7 @@ Continuous Integration
 We use github-actions_ and codecov_ for continuous integration and tox_ to automate the process at
 the repository level.
 
-When a commit is pushed in a pull request, a github workflow is spawned which 
+When a commit is pushed in a pull request, a github workflow is spawned which
 triggers the following chain of events:
 
 #. Code styles verifications, and quality checks are run (``flake8``, ``pylint``, ``doc8``). The
@@ -33,7 +33,7 @@ failed and reported to the pull request and repository. In such case, the mainta
 relevant contributors will be alerted.
 
 The workflow described above is also executed daily to detect any break due to change in
-dependencies. When releases are made, the workflow is also executed and additionally 
+dependencies. When releases are made, the workflow is also executed and additionally
 publish the release to PyPi_ and Conda_.
 
 .. _codecov: https://codecov.io/
