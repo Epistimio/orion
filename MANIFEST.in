@@ -19,6 +19,7 @@ exclude .flake8
 exclude codecov.yml
 exclude .mailmap
 prune conda/
+prune .github/
 
 # Include src, tests, docs
 recursive-include docs *.rst *.py *.gitkeep *.png
