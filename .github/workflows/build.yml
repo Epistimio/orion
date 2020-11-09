@@ -1,6 +1,7 @@
 name: build
 
-on: 
+on:
+  create:
   schedule:
       - cron: '44 4 * * *'
   pull_request:
@@ -8,8 +9,6 @@ on:
       - main
       - develop
   release:
-    type:
-      -created
 
 jobs:
   pretest:
