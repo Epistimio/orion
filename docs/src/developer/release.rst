@@ -43,7 +43,7 @@ time to create the release artifacts and publish the release.
 #. Update the backward compability tests by adding the new version in develop branch
    and make a pull request on develop.
 
-Once the release is made, the :ref:`ci` will be automatically started by Github. The code will be
+Once the release is made, the :ref:`ci` will be automatically started by Github. The code will
 then be published on PyPI_ and Anaconda_ automatically if the tests passes.
 
 After the release

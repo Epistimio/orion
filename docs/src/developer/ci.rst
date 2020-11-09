@@ -18,7 +18,7 @@ triggers the following chain of events:
 
 #. Code styles verifications, and quality checks are run (``flake8``, ``pylint``, ``doc8``). The
    documentation is also built at this time (``docs``).
-#. When code style verifications and documentation built passes, A test environment is spun up for
+#. When code style verifications and documentation built passes, a test environment is spun up for
    each version of python tested (defined in ``.github/workflows/build.yml``).
 #. The test suite is run completely with coverage, including the dedicated backward
    compatibility tests.
@@ -33,7 +33,7 @@ failed and reported to the pull request and repository. In such case, the mainta
 relevant contributors will be alerted.
 
 The workflow described above is also executed daily to detect any break due to change in
-dependencies. When releases are made, the workflow is also executed and additionaly 
+dependencies. When releases are made, the workflow is also executed and additionally 
 publish the release to PyPi_ and Conda_.
 
 .. _codecov: https://codecov.io/
