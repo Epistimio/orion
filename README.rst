@@ -59,6 +59,7 @@ to browse our `documentation`_.
 
 Why Oríon?
 ==========
+
 *Effortless to adopt, deeply customizable*
 
 - `Adopt it <https://orion.readthedocs.io/en/stable/user/script.html>`_ with a single line of code
