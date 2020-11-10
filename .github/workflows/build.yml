@@ -8,6 +8,9 @@ on:
       - master
       - develop
   release:
+    types:
+      [published]
+  workflow_dispatch:
 
 jobs:
   pretest:
