@@ -102,25 +102,29 @@ If you use Oríon for published work, please cite our work using the following b
 
 .. code-block:: bibtex
 
-   @software{xavier_bouthillier_2019_3478593,
+   @software{xavier_bouthillier_2020_4265424,
      author       = {Xavier Bouthillier and
                      Christos Tsirigotis and
                      François Corneau-Tremblay and
+                     Thomas Schweizer and
                      Pierre Delaunay and
+                     Mirko Bronzi and
+                     Lin Dong and
                      Reyhane Askari and
                      Dendi Suhubdy and
+                     Hadrien Bertrand and
                      Michael Noukhovitch and
-                     Dmitriy Serdyuk and
                      Arnaud Bergeron and
+                     Dmitriy Serdyuk and
                      Peter Henderson and
                      Pascal Lamblin and
-                     Mirko Bronzi and
                      Christopher Beckham},
-     title        = {Oríon - Asynchronous Distributed Hyperparameter Optimization},
-     month        = oct,
-     year         = 2019,
+     title        = {{Epistimio/orion: Plotting API and Database
+                      commands}},
+     month        = nov,
+     year         = 2020,
      publisher    = {Zenodo},
-     version      = {v0.1.8},
+     version      = {v0.1.9},
      doi          = {10.5281/zenodo.3478592},
      url          = {https://doi.org/10.5281/zenodo.3478592}
    }
