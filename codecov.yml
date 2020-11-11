@@ -1,6 +1,3 @@
-codecov:
-  branch: master
-
 coverage:
   precision: 2
   round: down
@@ -18,19 +15,14 @@ coverage:
         target: auto
         branches: null
         paths:
-          - "src/orion/*"
+          - "src"
 
     patch:
       default:
-        target: auto
         branches: null
-        paths: 
-          - "src/orion/*"
 
     changes:
       default:
         branches: null
-        paths:
-          - "src/orion/*"
 
 comment: false
