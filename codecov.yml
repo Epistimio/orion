@@ -5,17 +5,7 @@ codecov:
 coverage:
   precision: 2
   round: down
-  range: "60...100"
-
-  notify:
-    slack:
-      default:
-        url: "https://hooks.slack.com/services/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"
-        threshold: null
-        only_pulls: false
-        branches: master
-        flags: null
-        paths: null
+  range: "70...100"
 
   status:
     project:
@@ -35,15 +25,15 @@ coverage:
       default:
         target: auto
         branches: null
+        paths: src/orion
 
     changes:
       default:
         branches: null
+        paths: src/orion
 
   ignore:
-    - tests/*
-  fixes:
-    - .tox
+    - "tests/*"
 
 comment:
   layout: "header, diff, changes, sunburst, uncovered, tree"
