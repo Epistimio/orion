@@ -1,6 +1,5 @@
 codecov:
   branch: master
-  bot: null
 
 coverage:
   precision: 2
@@ -17,20 +16,22 @@ coverage:
       core:
         # change this to more strict number and some allowance threshold later
         target: auto
-        threshold: null
         branches: null
-        paths: src/orion
+        paths:
+          - "src/orion"
 
     patch:
       default:
         target: auto
         branches: null
-        paths: src/orion
+        paths: 
+          - "src/orion"
 
     changes:
       default:
         branches: null
-        paths: src/orion
+        paths:
+          - "src/orion"
 
   ignore:
     - "tests/*"
