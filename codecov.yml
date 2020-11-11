@@ -18,25 +18,19 @@ coverage:
         target: auto
         branches: null
         paths:
-          - "src/orion"
+          - "src/orion/*"
 
     patch:
       default:
         target: auto
         branches: null
         paths: 
-          - "src/orion"
+          - "src/orion/*"
 
     changes:
       default:
         branches: null
         paths:
-          - "src/orion"
+          - "src/orion/*"
 
-  ignore:
-    - "tests/*"
-
-comment:
-  layout: "header, diff, changes, sunburst, uncovered, tree"
-  branches: null
-  behavior: default
+comment: false
