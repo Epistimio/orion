@@ -94,14 +94,6 @@ jobs:
           pip install tox tox-gh-actions
     - name: Test with tox
       run: tox -e backward-compatibility
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
-      with:
-        file: ./coverage.xml
-        flags: backward
-        env_vars: PLATFORM,PYTHON
-        name: codecov-umbrella
-        fail_ci_if_error: false
   pypi:
     needs: [test, backward-compatibility]
     runs-on: ubuntu-latest
