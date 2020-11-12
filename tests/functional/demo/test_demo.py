@@ -39,6 +39,7 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     assert exp['name'] == 'default_algo'
     assert exp['pool_size'] == 1
     assert exp['max_trials'] == 30
+    assert exp['max_broken'] == 3
     assert exp['algorithms'] == {'random': {'seed': None}}
     assert 'user' in exp['metadata']
     assert 'datetime' in exp['metadata']
@@ -74,6 +75,7 @@ def test_demo(database, monkeypatch):
     assert exp['name'] == 'voila_voici'
     assert exp['pool_size'] == 1
     assert exp['max_trials'] == 100
+    assert exp['max_broken'] == 5
     assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
                                                       'dx_tolerance': 1e-7}}
     assert 'user' in exp['metadata']
@@ -117,6 +119,7 @@ def test_demo_with_script_config(database, monkeypatch):
     assert exp['name'] == 'voila_voici'
     assert exp['pool_size'] == 1
     assert exp['max_trials'] == 100
+    assert exp['max_broken'] == 5
     assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
                                                       'dx_tolerance': 1e-7}}
     assert 'user' in exp['metadata']
@@ -162,6 +165,7 @@ def test_demo_with_python_and_script(database, monkeypatch):
     assert exp['name'] == 'voila_voici'
     assert exp['pool_size'] == 1
     assert exp['max_trials'] == 100
+    assert exp['max_broken'] == 5
     assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
                                                       'dx_tolerance': 1e-7}}
     assert 'user' in exp['metadata']
@@ -227,6 +231,7 @@ def test_demo_two_workers(database, monkeypatch):
     assert exp['name'] == 'two_workers_demo'
     assert exp['pool_size'] == 2
     assert exp['max_trials'] == 100
+    assert exp['max_broken'] == 5
     assert exp['algorithms'] == {'random': {'seed': None}}
     assert 'user' in exp['metadata']
     assert 'datetime' in exp['metadata']
@@ -257,6 +262,7 @@ def test_workon():
         }
     config['pool_size'] = 1
     config['max_trials'] = 100
+    config['exp_max_broken'] = 5
     config['user_args'] = [
         os.path.abspath(os.path.join(os.path.dirname(__file__), "black_box.py")),
         "-x~uniform(-50, 50, precision=None)"]
@@ -275,6 +281,7 @@ def test_workon():
         assert exp['name'] == name
         assert exp['pool_size'] == 1
         assert exp['max_trials'] == 100
+        assert exp['max_broken'] == 5
         assert exp['algorithms'] == {'gradient_descent': {'learning_rate': 0.1,
                                                           'dx_tolerance': 1e-7}}
         assert 'user' in exp['metadata']
@@ -473,7 +480,6 @@ def test_run_with_parallel_strategy(database, monkeypatch, strategy):
     assert len(exp) == 1
     exp = exp[0]
     assert exp['producer']['strategy'] == strategy
-    print(exp['max_trials'])
     assert '_id' in exp
     exp_id = exp['_id']
     trials = list(database.trials.find({'experiment': exp_id}))

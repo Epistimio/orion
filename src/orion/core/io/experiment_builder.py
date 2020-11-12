@@ -138,7 +138,9 @@ def build(name, version=None, branching=None, **config):
     strategy: str or dict, optional
         Parallel strategy to use to parallelize the algorithm.
     max_trials: int, optional
-        Maximum number or trials before the experiment is considered done.
+        Maximum number of trials before the experiment is considered done.
+    max_broken: int, optional
+        Number of broken trials for the experiment to be considered broken.
     storage: dict, optional
         Configuration of the storage backend.
     branching: dict, optional
@@ -277,6 +279,8 @@ def create_experiment(name, version, space, **kwargs):
         Parallel strategy to use to parallelize the algorithm.
     max_trials: int, optional
         Maximum number or trials before the experiment is considered done.
+    max_broken: int, optional
+        Number of broken trials for the experiment to be considered broken.
     storage: dict, optional
         Configuration of the storage backend.
 
@@ -288,6 +292,7 @@ def create_experiment(name, version, space, **kwargs):
         experiment.pool_size = orion.core.config.experiment.get(
             'pool_size', deprecated='ignore')
     experiment.max_trials = kwargs.get('max_trials', orion.core.config.experiment.max_trials)
+    experiment.max_broken = kwargs.get('max_broken', orion.core.config.experiment.max_broken)
     experiment.space = _instantiate_space(space)
     experiment.algorithms = _instantiate_algo(experiment.space, kwargs.get('algorithms'))
     experiment.producer = kwargs.get('producer', {})
@@ -324,6 +329,7 @@ def fetch_config_from_db(name, version=None):
                  "version %s.", name, config['version'])
 
     backward.populate_space(config, force_update=False)
+    backward.update_max_broken(config)
 
     return config
 

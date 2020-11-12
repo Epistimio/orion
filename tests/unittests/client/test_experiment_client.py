@@ -28,6 +28,7 @@ config = dict(
     version=1,
     pool_size=1,
     max_trials=10,
+    max_broken=5,
     working_dir='',
     algorithms={'random': {'seed': 1}},
     producer={'strategy': 'NoParallelStrategy'},

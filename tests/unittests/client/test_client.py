@@ -37,6 +37,7 @@ config = dict(
     version=1,
     pool_size=1,
     max_trials=10,
+    max_broken=5,
     working_dir='',
     algorithms={'random': {'seed': 1}},
     producer={'strategy': 'NoParallelStrategy'},
@@ -195,6 +196,7 @@ class TestCreateExperiment:
             assert experiment.space.configuration == space
 
             assert experiment.max_trials == orion.core.config.experiment.max_trials
+            assert experiment.max_broken == orion.core.config.experiment.max_broken
             assert experiment.working_dir == orion.core.config.experiment.working_dir
             assert experiment.algorithms.configuration == {'random': {'seed': None}}
             assert experiment.configuration['producer'] == {'strategy': 'MaxParallelStrategy'}
@@ -208,6 +210,7 @@ class TestCreateExperiment:
 
             assert exp_config['space'] == config['space']
             assert exp_config['max_trials'] == config['max_trials']
+            assert exp_config['max_broken'] == config['max_broken']
             assert exp_config['working_dir'] == config['working_dir']
             assert exp_config['algorithms'] == config['algorithms']
             assert exp_config['producer'] == config['producer']
@@ -223,6 +226,7 @@ class TestCreateExperiment:
             assert experiment.version == 1
             assert exp_config['space'] == config['space']
             assert exp_config['max_trials'] == config['max_trials']
+            assert exp_config['max_broken'] == config['max_broken']
             assert exp_config['working_dir'] == config['working_dir']
             assert exp_config['algorithms'] == config['algorithms']
             assert exp_config['producer'] == config['producer']
@@ -237,6 +241,7 @@ class TestCreateExperiment:
             assert experiment.space.configuration == config['space']
             assert experiment.algorithms.configuration == config['algorithms']
             assert experiment.max_trials == config['max_trials']
+            assert experiment.max_broken == config['max_broken']
             assert experiment.working_dir == config['working_dir']
             assert experiment.producer['strategy'].configuration == config['producer']['strategy']
 
@@ -250,6 +255,7 @@ class TestCreateExperiment:
 
             assert experiment.algorithms.configuration == config['algorithms']
             assert experiment.max_trials == config['max_trials']
+            assert experiment.max_broken == config['max_broken']
             assert experiment.working_dir == config['working_dir']
             assert experiment.producer['strategy'].configuration == config['producer']['strategy']
 

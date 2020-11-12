@@ -34,6 +34,12 @@ def populate_priors(metadata):
     metadata["priors"] = dict(parser.priors)
 
 
+def update_max_broken(config):
+    """Set default max_broken if None (in v <= v0.1.9)"""
+    if not config.get('max_broken', None):
+        config['max_broken'] = orion.core.config.experiment.max_broken
+
+
 def populate_space(config, force_update=True):
     """Add the space definition at the root of config."""
     if 'space' in config and not force_update:

@@ -73,6 +73,7 @@ def build_experiment_response(experiment: Experiment,
         "orionVersion": experiment.metadata['orion_version'],
         "config": {
             "maxTrials": experiment.max_trials,
+            "maxBroken": experiment.max_broken,
             "poolSize": experiment.pool_size,
             "algorithm": algorithm,
             "space": experiment.configuration['space']
