@@ -154,6 +154,8 @@ class Configuration:
         elif ('env_var' in config_setting and
               config_setting['env_var'] in os.environ):
             value = os.environ[config_setting['env_var']]
+            if config_setting['type'] in (list, tuple):
+                value = value.split(':')
         elif 'yaml' in config_setting:
             value = config_setting['yaml']
         elif 'default' in config_setting:

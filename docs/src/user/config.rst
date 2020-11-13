@@ -532,7 +532,8 @@ non_monitored_arguments
 :Description:
     Ignore these commandline arguments when looking for differences in user's commandline call.
     Environment variable and commandline only supports one argument. Use global config or local
-    config to pass a list of arguments to ignore.
+    config to pass a list of arguments to ignore. When defined with environment variables,
+    use ':' to delimit multiple arguments (ex: 'three:different:arguments').
 
 
 
