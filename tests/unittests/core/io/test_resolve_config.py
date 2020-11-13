@@ -243,6 +243,7 @@ def test_fetch_config(config_file):
 
     assert config.pop('experiment') == {
         'max_trials': 100,
+        'max_broken': 5,
         'name': 'voila_voici',
         'pool_size': 1,
         'algorithms': 'random',

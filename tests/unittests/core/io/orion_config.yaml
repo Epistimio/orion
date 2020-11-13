@@ -2,6 +2,7 @@ experiment:
     name: voila_voici
     pool_size: 1
     max_trials: 100
+    max_broken: 5
 
     algorithms: 'random'
 

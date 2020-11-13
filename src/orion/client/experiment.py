@@ -97,6 +97,11 @@ class ExperimentClient:
         return self._experiment.max_trials
 
     @property
+    def max_broken(self):
+        """Minimum number of broken trials before the experiment is considered broken."""
+        return self._experiment.max_broken
+
+    @property
     def metadata(self):
         """Metadata of the experiment."""
         return self._experiment.metadata

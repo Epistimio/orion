@@ -40,6 +40,7 @@ def new_config(random_dt):
         version=1,
         pool_size=10,
         max_trials=1000,
+        max_broken=5,
         working_dir=None,
         algorithms={'dumbalgo': {}},
         producer={'strategy': 'NoParallelStrategy'},
@@ -433,13 +434,14 @@ def test_is_done_property_no_pending(algorithm):
 
 def test_broken_property():
     """Check experiment stopping conditions for maximum number of broken."""
-    MAX_BROKEN = 3
-    orion.core.config.worker.max_broken = MAX_BROKEN
+    MAX_BROKEN = 5
 
     stati = (['reserved'] * 10) + (['broken'] * (MAX_BROKEN - 1))
     with OrionState(trials=generate_trials(stati)) as cfg:
         exp = Experiment('supernaekei')
         exp._id = cfg.trials[0]['experiment']
+
+        exp.max_broken = MAX_BROKEN
 
         assert not exp.is_broken
 
@@ -448,22 +450,25 @@ def test_broken_property():
         exp = Experiment('supernaekei')
         exp._id = cfg.trials[0]['experiment']
 
+        exp.max_broken = MAX_BROKEN
+
         assert exp.is_broken
 
 
 def test_configurable_broken_property():
     """Check if max_broken changes after configuration."""
-    MAX_BROKEN = 3
-    orion.core.config.worker.max_broken = MAX_BROKEN
+    MAX_BROKEN = 5
 
     stati = (['reserved'] * 10) + (['broken'] * (MAX_BROKEN))
     with OrionState(trials=generate_trials(stati)) as cfg:
         exp = Experiment('supernaekei')
         exp._id = cfg.trials[0]['experiment']
 
+        exp.max_broken = MAX_BROKEN
+
         assert exp.is_broken
 
-        orion.core.config.worker.max_broken += 1
+        exp.max_broken += 1
 
         assert not exp.is_broken
 
@@ -591,6 +596,8 @@ def test_view_is_broken():
     with OrionState(trials=generate_trials(broken)) as cfg:
         exp = Experiment('test-experiment')
         exp._id = cfg.trials[0]['experiment']
+
+        exp.max_broken = 5
 
         assert exp.is_broken
 

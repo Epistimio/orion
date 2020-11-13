@@ -22,6 +22,7 @@ base_experiment = dict(
     version=1,
     pool_size=1,
     max_trials=10,
+    max_broken=7,
     working_dir='',
     algorithms={'random': {'seed': 1}},
     producer={'strategy': 'NoParallelStrategy'},
@@ -199,6 +200,7 @@ def _assert_config(config):
     """Asserts properties of the ``config`` dictionary"""
     assert config['poolSize'] == 1
     assert config['maxTrials'] == 10
+    assert config['maxBroken'] == 7
 
     algorithm = config['algorithm']
     assert algorithm['name'] == 'random'
