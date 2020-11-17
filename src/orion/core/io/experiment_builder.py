@@ -143,6 +143,7 @@ def build(name, version=None, branching=None, **config):
         Number of broken trials for the experiment to be considered broken.
     storage: dict, optional
         Configuration of the storage backend.
+
     branching: dict, optional
         Arguments to control the branching.
 
@@ -188,13 +189,19 @@ def build(name, version=None, branching=None, **config):
     new_config = config
     config = resolve_config.merge_configs(db_config, config)
 
-    metadata = resolve_config.fetch_metadata(config.get('user'), config.get('user_args'))
+    metadata = resolve_config.fetch_metadata(
+        config.get('user'), config.get('user_args'), config.get('user_script_config'))
 
-    config = resolve_config.merge_configs(db_config, config, {'metadata': metadata})
+    config = resolve_config.merge_configs(config, {'metadata': metadata})
 
     # TODO: Find a better solution
     if isinstance(config.get('algorithms'), dict) and len(config['algorithms']) > 1:
         config['algorithms'] = new_config['algorithms']
+
+    # TODO: Find a better solution
+    if (isinstance(config.get('producer', {}).get('strategy'), dict) and
+            len(config['producer']['strategy']) > 1):
+        config['producer']['strategy'] = new_config['producer']['strategy']
 
     config.setdefault('name', name)
     config.setdefault('version', version)
@@ -400,6 +407,7 @@ def _instantiate_strategy(config=None):
         strategy_type = config
         config = {}
     else:
+        config = copy.deepcopy(config)
         strategy_type, config = next(iter(config.items()))
 
     return Strategy(of_type=strategy_type, **config)
@@ -574,14 +582,27 @@ def get_cmd_config(cmdargs):
     cmd_config = resolve_config.merge_configs(cmd_config, cmdargs)
 
     cmd_config.update(cmd_config.pop('experiment', {}))
+    cmd_config['user_script_config'] = cmd_config.get('worker', {}).get('user_script_config', None)
+
     cmd_config['branching'] = cmd_config.pop('evc', {})
 
+    # TODO: We should move branching specific stuff below in a centralized place for EVC stuff.
+    if (cmd_config['branching'].get('auto_resolution', False) and
+            cmdargs.get('manual_resolution', None) is None):
+        cmd_config['branching']['manual_resolution'] = False
+
+    non_monitored_arguments = cmdargs.get('non_monitored_arguments')
+    if non_monitored_arguments:
+        cmd_config['branching']['non_monitored_arguments'] = non_monitored_arguments.split(':')
+
     # TODO: user_args won't be defined if reading from DB only (`orion hunt -n <exp> ` alone)
-    metadata = resolve_config.fetch_metadata(cmd_config.get('user'), cmd_config.get('user_args'))
+    metadata = resolve_config.fetch_metadata(
+        cmd_config.get('user'), cmd_config.get('user_args'), cmd_config.get('user_script_config'))
     cmd_config['metadata'] = metadata
     cmd_config.pop('config', None)
 
-    backward.populate_space(cmd_config)
+    cmd_config['space'] = cmd_config['metadata'].get('priors', None)
+
     backward.update_db_config(cmd_config)
 
     return cmd_config

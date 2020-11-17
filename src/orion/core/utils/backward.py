@@ -29,6 +29,9 @@ def populate_priors(metadata):
 
     parser = OrionCmdlineParser(orion.core.config.worker.user_script_config,
                                 allow_non_existing_files=True)
+    if 'parser' in metadata:
+        # To keep configs like config user_script_config
+        parser.config_prefix = metadata['parser']['config_prefix']
     parser.parse(metadata["user_args"])
     metadata["parser"] = parser.get_state_dict()
     metadata["priors"] = dict(parser.priors)

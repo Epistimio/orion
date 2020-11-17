@@ -25,33 +25,15 @@ def force_is_exe(monkeypatch):
 
 
 @pytest.mark.usefixtures("empty_config")
-def test_fetch_default_options():
-    """Verify default options"""
-    default_config = resolve_config.fetch_default_options()
-
-    assert default_config['algorithms'] == 'random'
-    assert default_config['database']['host'] == socket.gethostbyname(socket.gethostname())
-    assert default_config['database']['name'] == 'orion'
-    assert default_config['database']['type'] == 'MongoDB'
-    assert default_config['database']['port'] == 27017
-
-    assert default_config['max_trials'] == float('inf')
-    assert default_config['name'] is None
-    assert default_config['pool_size'] == 1
-
-
-@pytest.mark.usefixtures("empty_config")
 def test_socket_on_osx(monkeypatch):
     """Verify that default hostname is set properly on OSX"""
-    default_config = resolve_config.fetch_default_options()
-    assert default_config['database']['host'] == socket.gethostbyname(socket.gethostname())
+    config = orion.core.build_config()
+    assert config.storage.database.host == socket.gethostbyname(socket.gethostname())
     assert socket.gethostbyname(socket.gethostname()) != 'localhost'
 
     monkeypatch.setattr(socket, 'gethostname', lambda: 'wrong_name_on_osx')
     config = orion.core.build_config()
-    resolve_config.config = config
-    default_config = resolve_config.fetch_default_options()
-    assert default_config['database']['host'] == 'localhost'
+    assert config.storage.database.host == 'localhost'
 
 
 def test_fetch_env_vars():

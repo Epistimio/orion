@@ -43,7 +43,6 @@ import yaml
 
 import orion
 import orion.core
-from orion.core import config
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.utils.flatten import unflatten
 
@@ -141,7 +140,7 @@ def fetch_config_from_cmdargs(cmdargs):
             max_broken='worker_max_broken',
             max_trials='worker_max_trials'))
 
-    global_config = config.to_dict()
+    global_config = orion.core.config.to_dict()
 
     for key in ['config', 'user_args']:
         if cmdargs.get(key) not in [False, None]:
@@ -188,7 +187,7 @@ def fetch_config(args):
         orion_file.seek(0)
         tmp_config = yaml.safe_load(orion_file)
 
-        global_config = config.to_dict()
+        global_config = orion.core.config.to_dict()
 
         tmp_config = _convert_dashes(tmp_config, global_config)
 
@@ -261,56 +260,6 @@ def fetch_config(args):
     return local_config
 
 
-def fetch_default_options():
-    """Create a dict with options from the default configuration files.
-
-    Respect precedence from application's default, to system's and
-    user's.
-
-    .. seealso:: :const:`orion.core.DEF_CONFIG_FILES_PATHS`
-
-    """
-    default_config = dict()
-
-    # get some defaults
-    default_config['name'] = None
-    default_config['user'] = getpass.getuser()
-    default_config['max_trials'] = DEF_CMD_MAX_TRIALS[0]
-    default_config['worker_trials'] = DEF_CMD_WORKER_TRIALS[0]
-    default_config['pool_size'] = DEF_CMD_POOL_SIZE[0]
-    default_config['algorithms'] = 'random'
-
-    # get default options for some managerial variables (see :const:`ENV_VARS`)
-    for signifier, env_vars in ENV_VARS.items():
-        default_config[signifier] = {}
-        for _, key in env_vars:
-            default_config[signifier][key] = config[signifier][key]
-
-    # fetch options from default configuration files
-    for configpath in orion.core.DEF_CONFIG_FILES_PATHS:
-        try:
-            with open(configpath) as f:
-                cfg = yaml.safe_load(f)
-                if cfg is None:
-                    continue
-                # implies that yaml must be in dict form
-                for k, v in cfg.items():
-                    if k in ENV_VARS:
-                        default_config[k] = {}
-                        for vk, vv in v.items():
-                            default_config[k][vk] = vv
-                    else:
-                        if k != 'name':
-                            default_config[k] = v
-        except IOError as e:  # default file could not be found
-            log.debug(e)
-        except AttributeError as e:
-            log.warning("Problem parsing file: %s", configpath)
-            log.warning(e)
-
-    return default_config
-
-
 def fetch_env_vars():
     """Fetch environmental variables related to orion's managerial data."""
     env_vars = {}
@@ -327,7 +276,7 @@ def fetch_env_vars():
     return env_vars
 
 
-def fetch_metadata(user=None, user_args=None):
+def fetch_metadata(user=None, user_args=None, user_script_config=None):
     """Infer rest information about the process + versioning"""
     metadata = {'user': user if user else getpass.getuser()}
 
@@ -340,7 +289,10 @@ def fetch_metadata(user=None, user_args=None):
     if len(user_args) == 1 and user_args[0] == '':
         user_args = []
 
-    cmdline_parser = OrionCmdlineParser(config.worker.user_script_config)
+    if user_script_config is None:
+        user_script_config = orion.core.config.worker.user_script_config
+
+    cmdline_parser = OrionCmdlineParser(user_script_config)
     cmdline_parser.parse(user_args)
 
     if cmdline_parser.user_script:
@@ -349,8 +301,9 @@ def fetch_metadata(user=None, user_args=None):
         metadata['VCS'] = infer_versioning_metadata(cmdline_parser.user_script)
 
     if user_args:
-        # TODO: Remove this, it is all in cmdline_parser now
-        metadata['user_args'] = user_args
+        metadata["user_args"] = user_args
+        metadata["parser"] = cmdline_parser.get_state_dict()
+        metadata["priors"] = dict(cmdline_parser.priors)
 
     return metadata
 
