@@ -573,7 +573,7 @@ code_change_type
 :Default: break
 :Env var: ORION_EVC_CODE_CHANGE
 :Description:
-    One of ``break``, ``unsure`` or ``noeffet``. Defines how trials should be filtered in Experiment
+    One of ``break``, ``unsure`` or ``noeffect``. Defines how trials should be filtered in Experiment
     Version Control tree if there is a change in the user's code repository. If the effect of the
     change is ``unsure``, the child experiment will access the trials of the parent but not the
     other way around. This is to ensure parent experiment does not get corrupted with possibly
@@ -592,7 +592,7 @@ cli_change_type
 :Default: break
 :Env var: ORION_EVC_CMDLINE_CHANGE
 :Description:
-    One of ``break``, ``unsure`` or ``noeffet``. Defines how trials should be filtered in Experiment
+    One of ``break``, ``unsure`` or ``noeffect``. Defines how trials should be filtered in Experiment
     Version Control tree if there is a change in the user's commandline call. If the effect of the
     change is ``unsure``, the child experiment will access the trials of the parent but not the
     other way around. This is to ensure parent experiment does not get corrupted with possibly
@@ -611,7 +611,7 @@ config_change_type
 :Default: break
 :Env var: ORION_EVC_CONFIG_CHANGE
 :Description:
-    One of ``break``, ``unsure`` or ``noeffet``. Defines how trials should be filtered in Experiment
+    One of ``break``, ``unsure`` or ``noeffect``. Defines how trials should be filtered in Experiment
     Version Control tree if there is a change in the user's script. If the effect of the change is
     ``unsure``, the child experiment will access the trials of the parent but not the other way
     around. This is to ensure parent experiment does not get corrupted with possibly incompatible
