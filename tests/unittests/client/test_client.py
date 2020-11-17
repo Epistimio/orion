@@ -199,7 +199,8 @@ class TestCreateExperiment:
             assert experiment.max_broken == orion.core.config.experiment.max_broken
             assert experiment.working_dir == orion.core.config.experiment.working_dir
             assert experiment.algorithms.configuration == {'random': {'seed': None}}
-            assert experiment.configuration['producer'] == {'strategy': 'MaxParallelStrategy'}
+            assert (experiment.configuration['producer'] ==
+                    {'strategy': {'MaxParallelStrategy': {'default_result': float('inf')}}})
 
     def test_create_experiment_new_full_config(self, user_config):
         """Test creating a new experiment by specifying all attributes."""

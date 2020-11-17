@@ -515,6 +515,53 @@ def test_merge_sub_configs_update_three():
     assert m == {'a': 1, 'b': {'c': {'e': 5}, 'd': 3}}
 
 
+def test_merge_matching_type_configs():
+    """Test that configs with matching type are merged properly"""
+    a = {'a': 1, 'b': {'c': 2, 't': 'match'}}
+    b = {'b': {'c': 3, 'd': 4, 't': 'match'}}
+    c = {'b': {'c': {'d': 4}, 'e': 5, 't': 'match'}}
+
+    m = resolve_config.merge_configs(a, b, c, differentiators=['t'])
+
+    assert m == {'a': 1, 'b': {'c': {'d': 4}, 'd': 4, 'e': 5, 't': 'match'}}
+
+
+def test_merge_diff_type_configs():
+    """Test that configs with diff type are not merged"""
+    a = {'a': 1, 'b': {'c': 2, 't': 1}}
+    b = {'a': 1, 'b': {'c': 3, 'd': 4, 't': 2}}
+    c = {'b': {'c': {'d': 4}, 'e': 5, 't': 3}}
+
+    m = resolve_config.merge_configs(a, b, differentiators=['t'])
+
+    assert m == {'a': 1, 'b': {'c': 3, 'd': 4, 't': 2}}
+
+    m = resolve_config.merge_configs(b, c, differentiators=['t'])
+    assert m == {'a': 1, 'b': {'c': {'d': 4}, 'e': 5, 't': 3}}
+
+    assert (resolve_config.merge_configs(b, c, differentiators=['t']) ==
+            resolve_config.merge_configs(a, b, c, differentiators=['t']))
+
+
+def test_merge_diff_type_sub_configs():
+    """Test that configs with nested diff type are not merged"""
+    a = {'a': 1, 'b': {'c': 2, 't': 1, 'd': {'t': 2, 'e': 3}}}
+    b = {'b': {'a': 3, 't': 1, 'd': {'t': 2, 'f': 4}}}
+
+    m = resolve_config.merge_configs(a, b, differentiators=['t'])
+    assert m == {'a': 1, 'b': {'a': 3, 'c': 2, 't': 1, 'd': {'t': 2, 'e': 3, 'f': 4}}}
+
+    c = {'b': {'a': 3, 't': 1, 'd': {'t': 3, 'f': 4}}}
+
+    m = resolve_config.merge_configs(a, c, differentiators=['t'])
+    assert m == {'a': 1, 'b': {'a': 3, 'c': 2, 't': 1, 'd': {'t': 3, 'f': 4}}}
+
+    d = {'b': {'a': 3, 't': 2, 'd': {'t': 2, 'f': 4}}}
+
+    m = resolve_config.merge_configs(a, d, differentiators=['t'])
+    assert m == {'a': 1, 'b': {'a': 3, 't': 2, 'd': {'t': 2, 'f': 4}}}
+
+
 @pytest.fixture
 def repo():
     """Create a dummy repo for the tests."""

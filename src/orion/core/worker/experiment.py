@@ -414,7 +414,7 @@ class ExperimentView(object):
 
     #                     Attributes
     valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials",
-                         "max_broken", "version", "space", "working_dir"] +
+                         "max_broken", "version", "space", "working_dir", "producer"] +
                         # Properties
                         ["id", "node", "is_done", "is_broken", "algorithms", "stats",
                          "configuration"] +

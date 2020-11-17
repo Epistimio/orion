@@ -50,6 +50,9 @@ def get_objective(trial):
 class BaseParallelStrategy(object, metaclass=ABCMeta):
     """Strategy to give intermediate results for incomplete trials"""
 
+    def __init__(self, *args, **kwargs):
+        pass
+
     @abstractmethod
     def observe(self, points, results):
         """Observe completed trials
@@ -99,7 +102,6 @@ class BaseParallelStrategy(object, metaclass=ABCMeta):
     @property
     def configuration(self):
         """Provide the configuration of the strategy as a dictionary."""
-        # TODO(mnoukhov): change to dict {of_type: __name__} ?
         return self.__class__.__name__
 
 
@@ -124,7 +126,14 @@ class MaxParallelStrategy(BaseParallelStrategy):
 
     def __init__(self, default_result=float('inf')):
         """Initialize the maximum result used to lie"""
+        super(MaxParallelStrategy, self).__init__()
+        self.default_result = default_result
         self.max_result = default_result
+
+    @property
+    def configuration(self):
+        """Provide the configuration of the strategy as a dictionary."""
+        return {self.__class__.__name__: {'default_result': self.default_result}}
 
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
@@ -146,7 +155,14 @@ class MeanParallelStrategy(BaseParallelStrategy):
 
     def __init__(self, default_result=float('inf')):
         """Initialize the mean result used to lie"""
+        super(MeanParallelStrategy, self).__init__()
+        self.default_result = default_result
         self.mean_result = default_result
+
+    @property
+    def configuration(self):
+        """Provide the configuration of the strategy as a dictionary."""
+        return {self.__class__.__name__: {'default_result': self.default_result}}
 
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
@@ -169,7 +185,13 @@ class StubParallelStrategy(BaseParallelStrategy):
 
     def __init__(self, stub_value=None):
         """Initialize the stub value"""
+        super(StubParallelStrategy, self).__init__()
         self.stub_value = stub_value
+
+    @property
+    def configuration(self):
+        """Provide the configuration of the strategy as a dictionary."""
+        return {self.__class__.__name__: {'stub_value': self.stub_value}}
 
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""

@@ -308,7 +308,7 @@ def fetch_metadata(user=None, user_args=None, user_script_config=None):
     return metadata
 
 
-def merge_configs(*configs):
+def merge_configs(*configs, differentiators=('type', )):
     """Merge configuration dictionaries following the given hierarchy
 
     Suppose function is called as merge_configs(A, B, C). Then any pair (key, value) in C would
@@ -352,10 +352,22 @@ def merge_configs(*configs):
     """
     merged_config = configs[0]
 
+    def _can_be_merged(dict_a, dict_b):
+
+        for differentiator in differentiators:
+            if (dict_a.get(differentiator, None) and
+                    dict_a[differentiator] != dict_b.get(differentiator, None)):
+                return False
+
+        return True
+
     for config_i in configs[1:]:
         for key, value in config_i.items():
-            if isinstance(value, dict) and isinstance(merged_config.get(key), dict):
-                merged_config[key] = merge_configs(merged_config[key], value)
+            if (isinstance(value, dict) and
+                    isinstance(merged_config.get(key), dict) and
+                    _can_be_merged(merged_config[key], value)):
+                merged_config[key] = merge_configs(merged_config[key], value,
+                                                   differentiators=differentiators)
             elif value is not None:
                 merged_config[key] = value
 
