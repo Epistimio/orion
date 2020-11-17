@@ -316,3 +316,9 @@ def setup_pickleddb_database():
     temporary_file.close()
     del os.environ['ORION_DB_TYPE']
     del os.environ['ORION_DB_ADDRESS']
+
+
+@pytest.fixture()
+def with_user_userxyz(monkeypatch):
+    """Make ``getpass.getuser()`` return ``'userxyz'``."""
+    monkeypatch.setattr(getpass, 'getuser', lambda: 'userxyz')
