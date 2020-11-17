@@ -337,13 +337,15 @@ class TestCreateExperiment:
 
             assert "Configuration is different and generates" in str(exc.value)
 
-    def test_create_experiment_debug_mode(self):
+    def test_create_experiment_debug_mode(self, tmp_path):
         """Test that EphemeralDB is used in debug mode whatever the storage config given"""
         update_singletons()
 
+        conf_file = str(tmp_path / 'db.pkl')
+
         create_experiment(
             config['name'], space={'x': 'uniform(0, 10)'},
-            storage={'type': 'legacy', 'database': {'type': 'pickleddb'}})
+            storage={'type': 'legacy', 'database': {'type': 'pickleddb', 'host': conf_file}})
 
         storage = get_storage()
 
