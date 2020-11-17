@@ -15,6 +15,8 @@ from orion.core.evc.conflicts import Resolution
 def _add_auto_resolution_argument(parser):
     parser.add_argument(
         "--auto-resolution",
+        action="store_true",
+        default=None,
         help="Deprecated. Conflicts are now resolved automatically by default."
              "See --manual-resolution to avoid auto-resolution.")
 
@@ -23,12 +25,13 @@ def _add_manual_resolution_argument(parser):
     parser.add_argument(
         "--manual-resolution",
         action="store_true",
+        default=None,
         help="Manually resolve conflicts")
 
 
 def _add_non_monitored_arguments_argument(parser):
     parser.add_argument(
-        "--non-monitored-arguments", type=str, nargs='*',
+        "--non-monitored-arguments", type=str,
         help="Ignore these arguments when looking for differences")
 
 
@@ -36,6 +39,7 @@ def _add_ignore_code_changes_argument(parser):
     parser.add_argument(
         "--ignore-code-changes",
         action="store_true",
+        default=None,
         help="Ignore code changes when looking for differences")
 
 
@@ -49,6 +53,7 @@ def _add_algorithm_argument(parser, resolution_class):
     parser.add_argument(
         resolution_class.ARGUMENT,
         action="store_true",
+        default=None,
         help="Set algorithm change as resolved if a branching event occur")
 
 
