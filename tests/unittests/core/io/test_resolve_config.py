@@ -25,33 +25,15 @@ def force_is_exe(monkeypatch):
 
 
 @pytest.mark.usefixtures("empty_config")
-def test_fetch_default_options():
-    """Verify default options"""
-    default_config = resolve_config.fetch_default_options()
-
-    assert default_config['algorithms'] == 'random'
-    assert default_config['database']['host'] == socket.gethostbyname(socket.gethostname())
-    assert default_config['database']['name'] == 'orion'
-    assert default_config['database']['type'] == 'MongoDB'
-    assert default_config['database']['port'] == 27017
-
-    assert default_config['max_trials'] == float('inf')
-    assert default_config['name'] is None
-    assert default_config['pool_size'] == 1
-
-
-@pytest.mark.usefixtures("empty_config")
 def test_socket_on_osx(monkeypatch):
     """Verify that default hostname is set properly on OSX"""
-    default_config = resolve_config.fetch_default_options()
-    assert default_config['database']['host'] == socket.gethostbyname(socket.gethostname())
+    config = orion.core.build_config()
+    assert config.storage.database.host == socket.gethostbyname(socket.gethostname())
     assert socket.gethostbyname(socket.gethostname()) != 'localhost'
 
     monkeypatch.setattr(socket, 'gethostname', lambda: 'wrong_name_on_osx')
     config = orion.core.build_config()
-    resolve_config.config = config
-    default_config = resolve_config.fetch_default_options()
-    assert default_config['database']['host'] == 'localhost'
+    assert config.storage.database.host == 'localhost'
 
 
 def test_fetch_env_vars():
@@ -531,6 +513,53 @@ def test_merge_sub_configs_update_three():
     m = resolve_config.merge_configs(a, b, c)
 
     assert m == {'a': 1, 'b': {'c': {'e': 5}, 'd': 3}}
+
+
+def test_merge_matching_type_configs():
+    """Test that configs with matching type are merged properly"""
+    a = {'a': 1, 'b': {'c': 2, 't': 'match'}}
+    b = {'b': {'c': 3, 'd': 4, 't': 'match'}}
+    c = {'b': {'c': {'d': 4}, 'e': 5, 't': 'match'}}
+
+    m = resolve_config.merge_configs(a, b, c, differentiators=['t'])
+
+    assert m == {'a': 1, 'b': {'c': {'d': 4}, 'd': 4, 'e': 5, 't': 'match'}}
+
+
+def test_merge_diff_type_configs():
+    """Test that configs with diff type are not merged"""
+    a = {'a': 1, 'b': {'c': 2, 't': 1}}
+    b = {'a': 1, 'b': {'c': 3, 'd': 4, 't': 2}}
+    c = {'b': {'c': {'d': 4}, 'e': 5, 't': 3}}
+
+    m = resolve_config.merge_configs(a, b, differentiators=['t'])
+
+    assert m == {'a': 1, 'b': {'c': 3, 'd': 4, 't': 2}}
+
+    m = resolve_config.merge_configs(b, c, differentiators=['t'])
+    assert m == {'a': 1, 'b': {'c': {'d': 4}, 'e': 5, 't': 3}}
+
+    assert (resolve_config.merge_configs(b, c, differentiators=['t']) ==
+            resolve_config.merge_configs(a, b, c, differentiators=['t']))
+
+
+def test_merge_diff_type_sub_configs():
+    """Test that configs with nested diff type are not merged"""
+    a = {'a': 1, 'b': {'c': 2, 't': 1, 'd': {'t': 2, 'e': 3}}}
+    b = {'b': {'a': 3, 't': 1, 'd': {'t': 2, 'f': 4}}}
+
+    m = resolve_config.merge_configs(a, b, differentiators=['t'])
+    assert m == {'a': 1, 'b': {'a': 3, 'c': 2, 't': 1, 'd': {'t': 2, 'e': 3, 'f': 4}}}
+
+    c = {'b': {'a': 3, 't': 1, 'd': {'t': 3, 'f': 4}}}
+
+    m = resolve_config.merge_configs(a, c, differentiators=['t'])
+    assert m == {'a': 1, 'b': {'a': 3, 'c': 2, 't': 1, 'd': {'t': 3, 'f': 4}}}
+
+    d = {'b': {'a': 3, 't': 2, 'd': {'t': 2, 'f': 4}}}
+
+    m = resolve_config.merge_configs(a, d, differentiators=['t'])
+    assert m == {'a': 1, 'b': {'a': 3, 't': 2, 'd': {'t': 2, 'f': 4}}}
 
 
 @pytest.fixture

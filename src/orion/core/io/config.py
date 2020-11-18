@@ -95,9 +95,9 @@ class Configuration:
             cfg = yaml.safe_load(f)
             if cfg is None:
                 return
-            self._load_yaml_dict(cfg)
+            self._load_yaml_dict(self, cfg)
 
-    def _load_yaml_dict(self, config):
+    def _load_yaml_dict(self, root, config):
         for key in self._config:
             if key not in config:
                 continue
@@ -108,14 +108,14 @@ class Configuration:
             self[key + '._yaml'] = value
             if deprecated and deprecated.get('alternative'):
                 logger.debug('Overwritting "%s" default %s with %s', key, default, value)
-                self[deprecated.get('alternative') + '._yaml'] = value
+                root[deprecated.get('alternative') + '._yaml'] = value
 
         for key in self._subconfigs:
             if key not in config:
                 continue
 
             # pylint: disable=protected-access
-            self._subconfigs[key]._load_yaml_dict(config.pop(key))
+            self._subconfigs[key]._load_yaml_dict(root, config.pop(key))
 
         if config:
             # Make it fail
@@ -154,6 +154,8 @@ class Configuration:
         elif ('env_var' in config_setting and
               config_setting['env_var'] in os.environ):
             value = os.environ[config_setting['env_var']]
+            if config_setting['type'] in (list, tuple):
+                value = value.split(':')
         elif 'yaml' in config_setting:
             value = config_setting['yaml']
         elif 'default' in config_setting:

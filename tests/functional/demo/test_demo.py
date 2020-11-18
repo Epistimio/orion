@@ -479,7 +479,7 @@ def test_run_with_parallel_strategy(database, monkeypatch, strategy):
     exp = list(database.experiments.find({'name': 'strategy_demo'}))
     assert len(exp) == 1
     exp = exp[0]
-    assert exp['producer']['strategy'] == strategy
+    assert exp['producer']['strategy'] == {strategy: {'default_result': float('inf')}}
     assert '_id' in exp
     exp_id = exp['_id']
     trials = list(database.trials.find({'experiment': exp_id}))

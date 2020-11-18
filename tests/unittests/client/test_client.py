@@ -199,7 +199,8 @@ class TestCreateExperiment:
             assert experiment.max_broken == orion.core.config.experiment.max_broken
             assert experiment.working_dir == orion.core.config.experiment.working_dir
             assert experiment.algorithms.configuration == {'random': {'seed': None}}
-            assert experiment.configuration['producer'] == {'strategy': 'MaxParallelStrategy'}
+            assert (experiment.configuration['producer'] ==
+                    {'strategy': {'MaxParallelStrategy': {'default_result': float('inf')}}})
 
     def test_create_experiment_new_full_config(self, user_config):
         """Test creating a new experiment by specifying all attributes."""
@@ -336,13 +337,15 @@ class TestCreateExperiment:
 
             assert "Configuration is different and generates" in str(exc.value)
 
-    def test_create_experiment_debug_mode(self):
+    def test_create_experiment_debug_mode(self, tmp_path):
         """Test that EphemeralDB is used in debug mode whatever the storage config given"""
         update_singletons()
 
+        conf_file = str(tmp_path / 'db.pkl')
+
         create_experiment(
             config['name'], space={'x': 'uniform(0, 10)'},
-            storage={'type': 'legacy', 'database': {'type': 'pickleddb'}})
+            storage={'type': 'legacy', 'database': {'type': 'pickleddb', 'host': conf_file}})
 
         storage = get_storage()
 
