@@ -8,7 +8,7 @@ class RosenBrock(BaseTask):
     def __init__(self, max_trials=20, dim=2):
         self.max_trials = max_trials
         self.dim = dim
-        super(RosenBrock, self).__init__()
+        super(RosenBrock, self).__init__(max_trials=max_trials, dim=dim)
 
     def get_blackbox_function(self):
         def rosenbrock(x):

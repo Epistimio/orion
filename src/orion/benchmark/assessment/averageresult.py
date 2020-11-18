@@ -16,7 +16,7 @@ class AverageResult(BaseAssess):
     """
 
     def __init__(self, task_num=1):
-        super(AverageResult, self).__init__(task_num)
+        super(AverageResult, self).__init__(task_num=task_num)
 
     def display(self, task, experiments, notebook=True):
         """
@@ -92,10 +92,3 @@ class AverageResult(BaseAssess):
             else:
                 result.append(smallest)
         return result
-
-    def register(self):
-        """
-        register assess object into db
-        :return:
-        """
-        pass

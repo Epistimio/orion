@@ -7,7 +7,7 @@ class CarromTable(BaseTask):
 
     def __init__(self, max_trials=20):
         self.max_trials = max_trials
-        super(CarromTable, self).__init__()
+        super(CarromTable, self).__init__(max_trials=max_trials)
 
     def get_blackbox_function(self):
         def carromtable(x):

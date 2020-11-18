@@ -9,6 +9,7 @@ class BaseAssess():
         :param kwargs:
         """
         self.task_number = task_num
+        self._param_names = list(kwargs.keys())
 
     @property
     def task_num(self):
@@ -22,12 +23,24 @@ class BaseAssess():
         """
         pass
 
-    def register(self):
+    @property
+    def configuration(self):
+        """Return tunable elements of this algorithm in a dictionary form
+        appropriate for saving.
+
         """
-        register assess object into db
-        :return:
-        """
-        pass
+        dict_form = dict()
+        for attrname in self._param_names:
+            if attrname.startswith('_'):  # Do not log _space or others in conf
+                continue
+            attr = getattr(self, attrname)
+            dict_form[attrname] = attr
+        dict_form['task_num'] = self.task_num
+
+        mod = self.__class__.__module__
+        fullname = mod + '.' + self.__class__.__qualname__
+        fullname = fullname.replace('.', '-')
+        return {fullname: dict_form}
 
 
 class BaseTask():
@@ -36,7 +49,7 @@ class BaseTask():
         """
         - build orion experiment
         """
-        pass
+        self._param_names = list(kwargs.keys())
 
     @abstractmethod
     def get_blackbox_function(self):
@@ -62,3 +75,21 @@ class BaseTask():
         :return:
         """
         pass
+
+    @property
+    def configuration(self):
+        """Return tunable elements of this algorithm in a dictionary form
+        appropriate for saving.
+
+        """
+        dict_form = dict()
+        for attrname in self._param_names:
+            if attrname.startswith('_'):  # Do not log _space or others in conf
+                continue
+            attr = getattr(self, attrname)
+            dict_form[attrname] = attr
+
+        mod = self.__class__.__module__
+        fullname = mod + '.' + self.__class__.__qualname__
+        fullname = fullname.replace('.', '-')
+        return {fullname: dict_form}

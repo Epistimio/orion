@@ -112,6 +112,14 @@ class Legacy(BaseStorageProtocol):
         self._db.ensure_index('trials', 'start_time')
         self._db.ensure_index('trials', [('end_time', Database.DESCENDING)])
 
+    def create_benchmark(self, config):
+        """Insert a new experiment inside the database"""
+        return self._db.write('benchmarks', data=config, query=None)
+
+    def fetch_benchmark(self, query, selection=None):
+        """Fetch all benchmarks that match the query"""
+        return self._db.read('benchmarks', query, selection)
+
     def create_experiment(self, config):
         """See :func:`~orion.storage.BaseStorageProtocol.create_experiment`"""
         return self._db.write('experiments', data=config, query=None)
