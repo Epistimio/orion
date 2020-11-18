@@ -169,42 +169,9 @@ def build(name, version=None, branching=None, **config):
             'break'.  Defaults to 'break'.
 
     """
-    config = copy.deepcopy(config)
-    for key, value in list(config.items()):
-        if key.startswith('_') or value is None:
-            config.pop(key)
+    name, config, branching = clean_config(name, config, branching)
 
-    if 'strategy' in config:
-        config['producer'] = {'strategy': config.pop('strategy')}
-
-    if branching is None:
-        branching = {}
-
-    if branching.get('branch_from'):
-        branching.setdefault('branch_to', name)
-        name = branching['branch_from']
-
-    db_config = fetch_config_from_db(name, version)
-
-    new_config = config
-    config = resolve_config.merge_configs(db_config, config)
-
-    metadata = resolve_config.fetch_metadata(
-        config.get('user'), config.get('user_args'), config.get('user_script_config'))
-
-    config = resolve_config.merge_configs(config, {'metadata': metadata})
-
-    # TODO: Find a better solution
-    if isinstance(config.get('algorithms'), dict) and len(config['algorithms']) > 1:
-        config['algorithms'] = new_config['algorithms']
-
-    # TODO: Find a better solution
-    if (isinstance(config.get('producer', {}).get('strategy'), dict) and
-            len(config['producer']['strategy']) > 1):
-        config['producer']['strategy'] = new_config['producer']['strategy']
-
-    config.setdefault('name', name)
-    config.setdefault('version', version)
+    config = consolidate_config(name, version, config)
 
     if 'space' not in config:
         raise NoConfigurationError(
@@ -235,6 +202,63 @@ def build(name, version=None, branching=None, **config):
 
     _update_experiment(experiment)
     return experiment
+
+
+def clean_config(name, config, branching):
+    """Clean configuration from hidden fields (ex: `_id`) and update branching if necessary"""
+    config = copy.deepcopy(config)
+    for key, value in list(config.items()):
+        if key.startswith('_') or value is None:
+            config.pop(key)
+
+    if 'strategy' in config:
+        config['producer'] = {'strategy': config.pop('strategy')}
+
+    if branching is None:
+        branching = {}
+
+    if branching.get('branch_from'):
+        branching.setdefault('branch_to', name)
+        name = branching['branch_from']
+
+    return name, config, branching
+
+
+def consolidate_config(name, version, config):
+    """Merge together given configuration with db configuration matching
+    for experiment (`name`, `version`)
+    """
+    db_config = fetch_config_from_db(name, version)
+
+    new_config = config
+    config = resolve_config.merge_configs(db_config, config)
+
+    metadata = resolve_config.fetch_metadata(
+        config.get('user'), config.get('user_args'), config.get('user_script_config'))
+
+    config = resolve_config.merge_configs(config, {'metadata': metadata})
+
+    merge_algorithm_config(config, new_config)
+    merge_producer_config(config, new_config)
+
+    config.setdefault('name', name)
+    config.setdefault('version', version)
+    return config
+
+
+def merge_algorithm_config(config, new_config):
+    """Merge given algorithm configuration with db config"""
+    # TODO: Find a better solution
+    if isinstance(config.get('algorithms'), dict) and len(config['algorithms']) > 1:
+        config['algorithms'] = new_config['algorithms']
+
+
+def merge_producer_config(config, new_config):
+    """Merge given producer configuration with db config"""
+    # TODO: Find a better solution
+    if (isinstance(config.get('producer', {}).get('strategy'), dict) and
+            len(config['producer']['strategy']) > 1):
+        config['producer']['strategy'] = new_config['producer']['strategy']
 
 
 def build_view(name, version=None):
