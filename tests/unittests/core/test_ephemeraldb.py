@@ -204,6 +204,20 @@ class TestWrite(object):
         assert value[2]['pool_size'] == 2
         assert value[3]['pool_size'] == 2
 
+    def test_update_with_set(self, database, orion_db):
+        """Should override matching subdict, not update it"""
+        filt = {'metadata.user': 'dendi'}
+        count_before = database['experiments'].count()
+        count_query = database['experiments'].count(filt)
+        # call interface
+        new_algo = {'random': {'seed': 1}}
+        assert orion_db.write('experiments', {'algorithms': new_algo}, filt) == count_query
+
+        assert database['experiments'].count() == count_before
+        value = list(database['experiments'].find(filt))
+        assert len(value) == 1
+        assert value[0]['algorithms'] == new_algo
+
     def test_update_with_id(self, exp_config, database, orion_db):
         """Query using ``_id`` key."""
         filt = {'_id': exp_config[0][1]['_id']}

@@ -469,8 +469,15 @@ class EphemeralDocument(object):
             the data, the corresponding `data[$set]` will be used instead.
 
         """
-        data = flatten(data.get("$set", data))
-        self._data.update(data)
+        if '$set' in data:
+            unflattened_data = unflatten(self._data)
+            for key, value in data['$set'].items():
+                if isinstance(value, dict):
+                    value = flatten(value)
+                unflattened_data[key] = value
+            self._data = flatten(unflattened_data)
+        else:
+            self._data.update(flatten(data))
 
     def to_dict(self):
         """Convert the ephemeral document to a python dictionary"""
