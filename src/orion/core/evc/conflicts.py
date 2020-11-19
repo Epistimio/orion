@@ -74,6 +74,9 @@ def _build_extended_user_args(config):
     """Return a list of user arguments augmented with key-value pairs found in
     user's script's configuration file.
     """
+    if 'user_args' not in config['metadata']:
+        return []
+
     user_args = config['metadata']['user_args']
 
     # No need to pass config_prefix because we have access to everything
