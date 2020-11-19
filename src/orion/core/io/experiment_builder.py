@@ -230,6 +230,10 @@ def consolidate_config(name, version, config):
     """
     db_config = fetch_config_from_db(name, version)
 
+    # Do not merge spaces, the new definition overrides it.
+    if 'space' in config:
+        db_config.pop('space', None)
+
     new_config = config
     config = resolve_config.merge_configs(db_config, config)
 
