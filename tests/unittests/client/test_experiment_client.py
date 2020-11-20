@@ -6,6 +6,7 @@ import copy
 import datetime
 import logging
 
+import pandas.testing
 import pytest
 
 import orion.core
@@ -98,6 +99,12 @@ def test_experiment_fetch_non_completed_trials():
     """Test compliance of client and experiment `fetch_noncompleted_trials()`"""
     with create_experiment(config, base_trial) as (cfg, experiment, client):
         compare_trials(experiment.fetch_noncompleted_trials(), client.fetch_noncompleted_trials())
+
+
+def test_experiment_to_pandas():
+    """Test compliance of client and experiment `to_pandas()`"""
+    with create_experiment(config, base_trial) as (cfg, experiment, client):
+        pandas.testing.assert_frame_equal(experiment.to_pandas(), client.to_pandas())
 
 
 class TestInsert:
