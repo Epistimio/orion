@@ -6,9 +6,13 @@
    :platform: Unix
    :synopsis: Plotly backend for plotting methods
 """
+import functools
+
+import numpy
 import pandas as pd
 import plotly.graph_objects as go
 
+from orion.algo.space import Categorical, Fidelity
 import orion.analysis.regret
 
 
@@ -60,6 +64,91 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
     return fig
 
 
+def parallel_coordinates(experiment, order=None, colorscale='YlOrRd', **kwargs):
+    """Plotly implementation of `orion.plotting.parallel_coordinates`"""
+    def build_frame():
+        """Builds the dataframe for the plot"""
+        names = list(experiment.space.keys())
+
+        df = experiment.to_pandas()
+        df = df.loc[df['status'] == 'completed']
+
+        df[names] = df[names].transform(functools.partial(_curate_params, space=experiment.space))
+
+        df = _flatten_dims(df, experiment.space)
+
+        return df
+
+    def infer_order(order):
+        """Create order if not passed, otherwised verify it"""
+        if order is None:
+            order = list(experiment.space.keys())
+            fidelity_dims = [dim for dim in experiment.space.values() if isinstance(dim, Fidelity)]
+            if fidelity_dims:
+                del order[order.index(fidelity_dims[0].name)]
+                order.insert(0, fidelity_dims[0].name)
+        else:
+            names = set(experiment.space.keys())
+            any_invalid = set(order) - names
+            if any_invalid:
+                raise ValueError(f'Some names are invalid: {any_invalid} not in {names}')
+
+        return order
+
+    def get_dimension(data, name, dim):
+        dim_data = dict(label=name, values=data[name])
+        if isinstance(dim, Categorical):
+            dim_data['tickvals'] = list(range(len(dim.categories)))
+            dim_data['ticktext'] = dim.categories
+        elif isinstance(dim, Fidelity):
+            dim_data['range'] = (dim.low, dim.high)
+        else:
+            dim_data['range'] = dim.interval()
+        return dim_data
+
+    if not experiment:
+        raise ValueError("Parameter 'experiment' is None")
+
+    trial = experiment.fetch_trials_by_status('completed')[0]
+    df = build_frame()
+
+    dimensions = []
+    for name in infer_order(order):
+        dim = experiment.space[name]
+        shape = dim.shape
+        if shape:
+            assert len(shape) == 1
+            for i in range(shape[0]):
+                name_i = f'{name}[{i}]'
+                dimensions.append(get_dimension(df, name_i, dim))
+        else:
+            dimensions.append(get_dimension(df, name, dim))
+
+    objective_name = trial.objective.name
+
+    objectives = df['objective']
+    omin = min(df['objective'])
+    omax = max(df['objective'])
+
+    dimensions.append(
+        dict(label=objective_name, range=(omin, omax), values=objectives))
+
+    fig = go.Figure(
+        data=go.Parcoords(
+            line=dict(
+                color=objectives,
+                colorscale=colorscale,
+                showscale=True,
+                cmin=omin,
+                cmax=omax,
+                colorbar=dict(title=objective_name)),
+            dimensions=dimensions))
+
+    fig.update_layout(title=f"Parallel Coordinates Plot for experiment '{experiment.name}'")
+
+    return fig
+
+
 def _format_value(value):
     """
     Hyperparameter can have many types, sometimes they can even be lists.
@@ -105,3 +194,33 @@ def _template_best():
     return '<b>Best ID: %{customdata[0]}</b><br>' \
         'value: %{customdata[1]}' \
         '<extra></extra>'
+
+
+def _curate_params(data, space):
+    dim = space[data.name]
+    if isinstance(dim, Categorical):
+        data = numpy.array(data.tolist())  # To unpack lists if dim shape > 1
+        shape = data.shape
+        assert len(shape) <= 2
+        idx = numpy.argmax(data.reshape(-1, 1) == numpy.array(dim.categories), axis=1)
+        idx = idx.reshape(shape)
+        if len(shape) > 1:
+            return [list(idx[i]) for i in range(shape[0])]
+        return idx
+    return data
+
+
+def _flatten_dims(data, space):
+    for key, dim in space.items():
+        if dim.shape:
+            assert len(dim.shape) == 1
+
+            # expand df.tags into its own dataframe
+            values = data[key].apply(pd.Series)
+
+            # rename each hp
+            values = values.rename(columns=lambda x: f'{key}[{x}]')
+
+            data = pd.concat([data[:], values[:]], axis=1)
+
+    return data
