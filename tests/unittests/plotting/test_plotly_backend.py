@@ -80,7 +80,7 @@ class TestRegret:
         assert_regret_plot(plot)
 
     def test_experiment_worker_as_parameter(self):
-        """Tests that ``Experiment`` is a valide parameter"""
+        """Tests that ``Experiment`` is a valid parameter"""
         with create_experiment(config, trial_config, ['completed']) as (_, experiment, _):
             plot = regret(experiment)
 

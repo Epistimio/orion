@@ -14,15 +14,16 @@ import orion.analysis.regret
 
 def regret(experiment, order_by, verbose_hover, **kwargs):
     """Plotly implementation of `orion.plotting.regret`"""
-    def build_frame(trials):
+    def build_frame():
         """Builds the dataframe for the plot"""
-        data = [(trial.id, trial.status,
-                trial.submit_time, trial.start_time, trial.end_time,
-                _format_hyperparameters(trial.params), trial.objective.value) for trial in trials]
+        df = experiment.to_pandas()
 
-        df = pd.DataFrame(data, columns=['id', 'status', ORDER_KEYS[0],
-                                         ORDER_KEYS[1], ORDER_KEYS[2], 'params', 'objective'])
+        names = list(experiment.space.keys())
+        df['params'] = df[names].apply(
+            _format_hyperparameters,
+            args=(names, ), axis=1)
 
+        df = df.loc[df['status'] == 'completed']
         df = df.sort_values(order_by)
         df = orion.analysis.regret(df)
         return df
@@ -35,8 +36,8 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
     if order_by not in ORDER_KEYS:
         raise ValueError(f"Parameter 'order_by' is not one of {ORDER_KEYS}")
 
-    trials = list(filter(lambda trial: trial.status == 'completed', experiment.fetch_trials()))
-    df = build_frame(trials)
+    trial = experiment.fetch_trials_by_status('completed')[0]
+    df = build_frame()
 
     fig = go.Figure()
 
@@ -51,7 +52,7 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
                     customdata=list(zip(df['best_id'], df['best'])),
                     hovertemplate=_template_best())
 
-    y_axis_label = f"{trials[0].objective.type.capitalize()} '{trials[0].objective.name}'"
+    y_axis_label = f"{trial.objective.type.capitalize()} '{trial.objective.name}'"
     fig.update_layout(title=f"Regret for experiment '{experiment.name}'",
                       xaxis_title=f"Trials ordered by {order_by} time",
                       yaxis_title=y_axis_label)
@@ -77,10 +78,10 @@ def _format_value(value):
             return value
 
 
-def _format_hyperparameters(hyperparameters):
+def _format_hyperparameters(hyperparameters, names):
     result = ''
 
-    for name, value in hyperparameters.items():
+    for name, value in zip(names, hyperparameters):
         x = f'<br>  {name[1:]}: {_format_value(value)}'
         result += x
 
