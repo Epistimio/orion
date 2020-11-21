@@ -28,3 +28,12 @@ class PlotsResource(object):
         """
         experiment = ExperimentClient(retrieve_experiment(experiment_name), None)
         resp.body = experiment.plot.regret().to_json()
+
+    def on_get_parallel_coordinates(self, req: Request, resp: Response, experiment_name: str):
+        """
+        Handle GET requests for plotting parallel coordinates plots on
+        plots/parallel_coordinates/:experiment where ``experiment`` is the user-defined name of the
+        experiment.
+        """
+        experiment = ExperimentClient(retrieve_experiment(experiment_name), None)
+        resp.body = experiment.plot.parallel_coordinates().to_json()
