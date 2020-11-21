@@ -13,8 +13,11 @@ import copy
 import datetime
 import logging
 
+import pandas
+
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
+from orion.core.utils.flatten import flatten
 from orion.storage.base import FailedUpdate, get_storage, ReadOnlyStorageProtocol
 
 log = logging.getLogger(__name__)
@@ -104,6 +107,38 @@ class Experiment:
         self._storage = get_storage()
 
         self._node = ExperimentNode(self.name, self.version, experiment=self)
+
+    def to_pandas(self, with_evc_tree=False):
+        """Builds a dataframe with the trials of the experiment
+
+        Parameters
+        ----------
+        with_evc_tree: bool, optional
+            Fetch all trials from the EVC tree.
+            Default: False
+
+        """
+        columns = [
+            'id', 'experiment_id', 'status', 'suggested', 'reserved', 'completed', 'objective']
+
+        data = []
+        for trial in self.fetch_trials(with_evc_tree=with_evc_tree):
+            row = [
+                trial.id, trial.experiment, trial.status,
+                trial.submit_time, trial.start_time, trial.end_time]
+            row.append(trial.objective.value if trial.objective else None)
+            params = flatten(trial.params)
+            for name in self.space.keys():
+                row.append(params[name])
+
+            data.append(row)
+
+        columns += list(self.space.keys())
+
+        if not data:
+            return pandas.DataFrame([], columns=columns)
+
+        return pandas.DataFrame(data, columns=columns)
 
     def fetch_trials(self, with_evc_tree=False):
         """Fetch all trials of the experiment"""
@@ -419,7 +454,7 @@ class ExperimentView(object):
                         ["id", "node", "is_done", "is_broken", "algorithms", "stats",
                          "configuration"] +
                         # Methods
-                        ["fetch_trials", "fetch_trials_by_status", "get_trial"])
+                        ["to_pandas", "fetch_trials", "fetch_trials_by_status", "get_trial"])
 
     def __init__(self, experiment):
         self._experiment = experiment

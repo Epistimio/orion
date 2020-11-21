@@ -6,6 +6,7 @@ import copy
 import datetime
 import logging
 
+import pandas.testing
 import pytest
 
 import orion.core
@@ -13,7 +14,7 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import BrokenExperiment, SampleTimeout
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
-from orion.testing import create_experiment
+from orion.testing import create_experiment, mock_space_iterate
 
 config = dict(
     name='supernaekei',
@@ -100,6 +101,12 @@ def test_experiment_fetch_non_completed_trials():
         compare_trials(experiment.fetch_noncompleted_trials(), client.fetch_noncompleted_trials())
 
 
+def test_experiment_to_pandas():
+    """Test compliance of client and experiment `to_pandas()`"""
+    with create_experiment(config, base_trial) as (cfg, experiment, client):
+        pandas.testing.assert_frame_equal(experiment.to_pandas(), client.to_pandas())
+
+
 class TestInsert:
     """Tests for ExperimentClient.insert"""
 
@@ -141,8 +148,9 @@ class TestInsert:
 
             assert 'Cannot observe a trial and reserve it' in str(exc.value)
 
-    def test_insert_existing_params(self):
+    def test_insert_existing_params(self, monkeypatch):
         """Test that duplicated trials cannot be saved in storage"""
+        mock_space_iterate(monkeypatch)
         with create_experiment(config, base_trial) as (cfg, experiment, client):
             with pytest.raises(DuplicateKeyError) as exc:
                 client.insert(dict(x=1))
@@ -190,10 +198,11 @@ class TestInsert:
             assert client._pacemakers[trial.id].is_alive()
             client._pacemakers.pop(trial.id).stop()
 
-    def test_insert_params_fails_not_reserved(self):
+    def test_insert_params_fails_not_reserved(self, monkeypatch):
         """Test that failed insertion because of duplicated trials will not reserve the original
         trial
         """
+        mock_space_iterate(monkeypatch)
         with create_experiment(config, base_trial) as (cfg, experiment, client):
             with pytest.raises(DuplicateKeyError):
                 client.insert(dict(x=1), reserve=True)
@@ -505,8 +514,9 @@ class TestBroken:
 class TestSuggest:
     """Tests for ExperimentClient.suggest"""
 
-    def test_suggest(self):
+    def test_suggest(self, monkeypatch):
         """Verify that suggest reserved availabe trials."""
+        mock_space_iterate(monkeypatch)
         with create_experiment(config, base_trial) as (cfg, experiment, client):
             trial = client.suggest()
             assert trial.status == 'reserved'
@@ -537,6 +547,7 @@ class TestSuggest:
 
     def test_suggest_race_condition(self, monkeypatch):
         """Verify that race conditions to register new trials is handled"""
+        mock_space_iterate(monkeypatch)
         new_value = 50.
 
         # algo will suggest once an already existing trial

@@ -8,6 +8,7 @@ import json
 import logging
 import tempfile
 
+import pandas
 import pytest
 
 import orion.core
@@ -164,7 +165,7 @@ def get_db_from_view(exp):
 @pytest.fixture()
 def space():
     """Build a space object"""
-    return SpaceBuilder().build({'x': 'uniform(0, 10)'})
+    return SpaceBuilder().build({'/index': 'uniform(0, 10)'})
 
 
 @pytest.fixture()
@@ -359,6 +360,41 @@ def test_register_trials(random_dt):
         assert yo[1]['status'] == 'new'
         assert yo[0]['submit_time'] == random_dt
         assert yo[1]['submit_time'] == random_dt
+
+
+class TestToPandas():
+    """Test suite for ``Experiment.to_pandas``"""
+
+    def test_empty(self, space):
+        """Test panda frame creation when there is no trials"""
+        with OrionState():
+            exp = Experiment('supernaekei')
+            exp.space = space
+            assert exp.to_pandas().shape == (0, 8)
+            assert list(exp.to_pandas().columns) == [
+                'id', 'experiment_id', 'status', 'suggested', 'reserved', 'completed',
+                'objective', '/index']
+
+    def test_data(self, space):
+        """Verify the data in the panda frame is coherent with database"""
+        with OrionState(trials=generate_trials(['new', 'reserved', 'completed'])) as cfg:
+            exp = Experiment('supernaekei')
+            exp._id = cfg.trials[0]['experiment']
+            exp.space = space
+            df = exp.to_pandas()
+            assert df.shape == (3, 8)
+            assert list(df['id']) == [trial['_id'] for trial in cfg.trials]
+            assert all(df['experiment_id'] == exp._id)
+            assert list(df['status']) == ['completed', 'reserved', 'new']
+            assert list(df['suggested']) == [trial['submit_time'] for trial in cfg.trials]
+            assert df['reserved'][0] == cfg.trials[0]['start_time']
+            assert df['reserved'][1] == cfg.trials[1]['start_time']
+            assert df['reserved'][2] is pandas.NaT
+            assert df['completed'][0] == cfg.trials[0]['end_time']
+            assert df['completed'][1] is pandas.NaT
+            assert df['completed'][2] is pandas.NaT
+            assert list(df['objective']) == [2, 1, 0]
+            assert list(df['/index']) == [2, 1, 0]
 
 
 def test_fetch_all_trials():

@@ -259,6 +259,22 @@ visualize your experiments and their results.
 
    :statuscode 404: When the specified experiment doesn't exist in the database.
 
+.. http:get:: /plots/parallel_coordinates/:experiment
+
+   Return a parallel coordinates plot for the specified experiment.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   The JSON output is generated automatically according to the `Plotly.js schema reference <https://plotly.com/python/reference/index/>`_.
+
+   :statuscode 404: When the specified experiment doesn't exist in the database.
+
+
 Errors
 ------
 Oríon uses `conventional HTTP response codes <https://en.wikipedia.org/wiki/List_of_HTTP_status_codes>`_

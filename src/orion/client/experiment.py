@@ -185,6 +185,18 @@ class ExperimentClient:
     # Queries
     ###
 
+    def to_pandas(self, with_evc_tree=False):
+        """Builds a dataframe with the trials of the experiment
+
+        Parameters
+        ----------
+        with_evc_tree: bool, optional
+            Fetch all trials from the EVC tree.
+            Default: False
+
+        """
+        return self._experiment.to_pandas(with_evc_tree=with_evc_tree)
+
     def fetch_trials(self, with_evc_tree=False):
         """Fetch all trials of the experiment
 

@@ -44,6 +44,8 @@ class WebApi(falcon.API):
         self.add_route('/trials/{experiment_name}/{trial_id}',
                        trials_resource, suffix='trial_in_experiment')
         self.add_route('/plots/regret/{experiment_name}', plots_resource, suffix='regret')
+        self.add_route('/plots/parallel_coordinates/{experiment_name}',
+                       plots_resource, suffix='parallel_coordinates')
 
     def start(self):
         """A hook to when a Gunicorn worker calls run()."""
