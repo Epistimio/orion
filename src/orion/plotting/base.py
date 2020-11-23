@@ -10,6 +10,38 @@
 import orion.plotting.backend_plotly as backend
 
 
+def parallel_coordinates(experiment, order=None, **kwargs):
+    """
+    Make a Parallel Coordinates Plot to visualize the effect of the hyperparameters
+    on the objective.
+
+    Parameters
+    ----------
+    experiment: ExperimentClient, Experiment or ExperimentView
+        The orion object containing the experiment data
+
+    order: list of str or None
+        Indicates the order of columns in the parallel coordinate plot. By default
+        the columns are sorted alphabetically with the exception of the first column
+        which is reserved for a fidelity dimension is there is one in the search space.
+
+    kwargs: dict
+        All other plotting keyword arguments to be passed to
+        :meth:`plotly.express.line`.
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+
+    Raises
+    ------
+    ValueError
+        If no experiment is provided.
+
+    """
+    return backend.parallel_coordinates(experiment, order=order, **kwargs)
+
+
 def regret(experiment, order_by='suggested', verbose_hover=True, **kwargs):
     """
     Make a plot to visualize the performance of the hyper-optimization process.
@@ -49,41 +81,12 @@ def regret(experiment, order_by='suggested', verbose_hover=True, **kwargs):
     return backend.regret(experiment, order_by, verbose_hover, **kwargs)
 
 
-def parallel_coordinates(experiment, order=None, **kwargs):
-    """
-    Make a Parallel Coordinates Plot to visualize the effect of the hyperparameters
-    on the objective.
 
-    Parameters
-    ----------
-    experiment: ExperimentClient, Experiment or ExperimentView
-        The orion object containing the experiment data
-
-    order: list of str or None
-        Indicates the order of columns in the parallel coordinate plot. By default
-        the columns are sorted alphabetically with the exception of the first column
-        which is reserved for a fidelity dimension is there is one in the search space.
-
-    kwargs: dict
-        All other plotting keyword arguments to be passed to
-        :meth:`plotly.express.line`.
-
-    Returns
-    -------
-    plotly.graph_objects.Figure
-
-    Raises
-    ------
-    ValueError
-        If no experiment is provided.
-
-    """
-    return backend.parallel_coordinates(experiment, order=order, **kwargs)
 
 
 PLOT_METHODS = {
-    'regret': regret,
-    'parallel_coordinates': parallel_coordinates}
+    'parallel_coordinates': parallel_coordinates,
+    'regret': regret}
 
 
 class PlotAccessor:
@@ -124,14 +127,14 @@ class PlotAccessor:
 
         return PLOT_METHODS[kind](self._experiment, **kwargs)
 
-    def regret(self, **kwargs):
-        """Make a plot to visualize the performance of the hyper-optimization process."""
-        __doc__ = regret.__doc__
-        return self(kind="regret", **kwargs)
-
     def parallel_coordinates(self, **kwargs):
         """Make a parallel coordinates plot to visualize the performance of the
         hyper-optimization process.
         """
         __doc__ = parallel_coordinates.__doc__
         return self(kind="parallel_coordinates", **kwargs)
+
+    def regret(self, **kwargs):
+        """Make a plot to visualize the performance of the hyper-optimization process."""
+        __doc__ = regret.__doc__
+        return self(kind="regret", **kwargs)

@@ -244,9 +244,9 @@ Plots
 The plot resource permits the generation and retrieval of `Plotly <https://plotly.com/>`_ plots to
 visualize your experiments and their results.
 
-.. http:get:: /plots/regret/:experiment
+.. http:get:: /plots/parallel_coordinates/:experiment
 
-   Return a regret plot for the specified experiment.
+   Return a parallel coordinates plot for the specified experiment.
 
    **Example response**
 
@@ -259,9 +259,9 @@ visualize your experiments and their results.
 
    :statuscode 404: When the specified experiment doesn't exist in the database.
 
-.. http:get:: /plots/parallel_coordinates/:experiment
+.. http:get:: /plots/regret/:experiment
 
-   Return a parallel coordinates plot for the specified experiment.
+   Return a regret plot for the specified experiment.
 
    **Example response**
 

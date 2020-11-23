@@ -21,14 +21,6 @@ class PlotsResource(object):
     def __init__(self):
         self.storage = get_storage()
 
-    def on_get_regret(self, req: Request, resp: Response, experiment_name: str):
-        """
-        Handle GET requests for plotting regret plots on plots/regret/:experiment
-        where ``experiment`` is the user-defined name of the experiment.
-        """
-        experiment = ExperimentClient(retrieve_experiment(experiment_name), None)
-        resp.body = experiment.plot.regret().to_json()
-
     def on_get_parallel_coordinates(self, req: Request, resp: Response, experiment_name: str):
         """
         Handle GET requests for plotting parallel coordinates plots on
@@ -37,3 +29,11 @@ class PlotsResource(object):
         """
         experiment = ExperimentClient(retrieve_experiment(experiment_name), None)
         resp.body = experiment.plot.parallel_coordinates().to_json()
+
+    def on_get_regret(self, req: Request, resp: Response, experiment_name: str):
+        """
+        Handle GET requests for plotting regret plots on plots/regret/:experiment
+        where ``experiment`` is the user-defined name of the experiment.
+        """
+        experiment = ExperimentClient(retrieve_experiment(experiment_name), None)
+        resp.body = experiment.plot.regret().to_json()
