@@ -21,6 +21,14 @@ class PlotsResource(object):
     def __init__(self):
         self.storage = get_storage()
 
+    def on_get_lpi(self, req: Request, resp: Response, experiment_name: str):
+        """
+        Handle GET requests for plotting lpi plots on plots/lpi/:experiment
+        where ``experiment`` is the user-defined name of the experiment.
+        """
+        experiment = ExperimentClient(retrieve_experiment(experiment_name), None)
+        resp.body = experiment.plot.lpi().to_json()
+
     def on_get_parallel_coordinates(self, req: Request, resp: Response, experiment_name: str):
         """
         Handle GET requests for plotting parallel coordinates plots on

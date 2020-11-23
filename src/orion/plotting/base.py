@@ -10,6 +10,51 @@
 import orion.plotting.backend_plotly as backend
 
 
+def lpi(experiment, model='RandomForestRegressor', model_kwargs=None, n=20, **kwargs):
+    """
+    Make a bar plot to visualize the local parameter importance metric.
+
+    For more information on the metric, see original paper at
+    https://ml.informatik.uni-freiburg.de/papers/18-LION12-CAVE.pdf.
+
+    Biedenkapp, André, et al. "Cave: Configuration assessment, visualization and evaluation."
+    International Conference on Learning and Intelligent Optimization. Springer, Cham, 2018.
+
+    Parameters
+    ----------
+    experiment: ExperimentClient, Experiment or ExperimentView
+        The orion object containing the experiment data
+
+    model: str
+        Name of the regression model to use. Can be one of
+        - AdaBoostRegressor
+        - BaggingRegressor
+        - ExtraTreesRegressor
+        - GradientBoostingRegressor
+        - RandomForestRegressor (Default)
+
+        Arguments for the regressor model.
+    model_kwargs: dict
+        Arguments for the regressor model.
+    n: int
+        Number of points to compute the variances. Default is 20.
+    kwargs: dict
+        All other plotting keyword arguments to be passed to
+        :meth:`plotly.express.line`.
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+
+    Raises
+    ------
+    ValueError
+        If no experiment is provided or if regressor name is invalid.
+
+    """
+    return backend.lpi(experiment, model=model, model_kwargs=model_kwargs, n=n, **kwargs)
+
+
 def parallel_coordinates(experiment, order=None, **kwargs):
     """
     Make a Parallel Coordinates Plot to visualize the effect of the hyperparameters
@@ -81,10 +126,8 @@ def regret(experiment, order_by='suggested', verbose_hover=True, **kwargs):
     return backend.regret(experiment, order_by, verbose_hover, **kwargs)
 
 
-
-
-
 PLOT_METHODS = {
+    'lpi': lpi,
     'parallel_coordinates': parallel_coordinates,
     'regret': regret}
 
@@ -126,6 +169,11 @@ class PlotAccessor:
             raise ValueError(f"Plot of kind '{kind}' is not one of {list(PLOT_METHODS.keys())}")
 
         return PLOT_METHODS[kind](self._experiment, **kwargs)
+
+    def lpi(self, **kwargs):
+        """Make a bar plot of the local parameter importance metrics."""
+        __doc__ = lpi.__doc__
+        return self(kind="lpi", **kwargs)
 
     def parallel_coordinates(self, **kwargs):
         """Make a parallel coordinates plot to visualize the performance of the

@@ -120,8 +120,8 @@ def lpi(trials, space, mode='best', model='RandomForestRegressor', n=20, **kwarg
     """
     Calculates the Local Parameter Importance for a collection of :class:`Trial`.
 
-    For more information on the algorithm,
-    see original paper at https://ml.informatik.uni-freiburg.de/papers/18-LION12-CAVE.pdf.
+    For more information on the metric, see original paper at
+    https://ml.informatik.uni-freiburg.de/papers/18-LION12-CAVE.pdf.
 
     Biedenkapp, André, et al. "Cave: Configuration assessment, visualization and evaluation."
     International Conference on Learning and Intelligent Optimization. Springer, Cham, 2018.

@@ -16,6 +16,27 @@ from orion.algo.space import Categorical, Fidelity
 import orion.analysis.regret
 
 
+def lpi(experiment, model='RandomForestRegressor', model_kwargs=None, n=20, **kwargs):
+    """Plotly implementation of `orion.plotting.lpi`"""
+    if not experiment:
+        raise ValueError("Parameter 'experiment' is None")
+
+    if model_kwargs is None:
+        model_kwargs = {}
+
+    df = experiment.to_pandas()
+    df = orion.analysis.lpi(df, experiment.space, model=model, n=n, **model_kwargs)
+
+    fig = go.Figure(data=[go.Bar(x=df.index.tolist(), y=df['LPI'].tolist())])
+
+    y_axis_label = "Local Parameter Importance (LPI)"
+    fig.update_layout(title=f"LPI for experiment '{experiment.name}'",
+                      xaxis_title="Hyperparameters",
+                      yaxis_title=y_axis_label)
+
+    return fig
+
+
 def parallel_coordinates(experiment, order=None, colorscale='YlOrRd', **kwargs):
     """Plotly implementation of `orion.plotting.parallel_coordinates`"""
     def build_frame():
@@ -147,7 +168,6 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
                       yaxis_title=y_axis_label)
 
     return fig
-
 
 
 def _format_value(value):
