@@ -326,6 +326,9 @@ class Enumerate(Transformer):
         """
         return self._imap(transformed_point)
 
+    def interval(self, alpha):
+        return (0, len(self.categories) - 1)
+
 
 class OneHotEncode(Transformer):
     """Encode categories to a 1-hot integer space representation."""
