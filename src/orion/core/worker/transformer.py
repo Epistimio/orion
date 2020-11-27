@@ -15,7 +15,7 @@ from abc import (ABCMeta, abstractmethod)
 
 import numpy
 
-from orion.algo.space import (Dimension, Space)
+from orion.algo.space import (Categorical, Dimension, Fidelity, Integer, Real, Space)
 
 
 # pylint: disable=too-many-branches
@@ -326,6 +326,11 @@ class Enumerate(Transformer):
         """
         return self._imap(transformed_point)
 
+    # pylint:disable=unused-argument
+    def interval(self, alpha=1.0):
+        """Return the interval for the enumerated choices."""
+        return (0, len(self.categories) - 1)
+
 
 class OneHotEncode(Transformer):
     """Encode categories to a 1-hot integer space representation."""
@@ -433,7 +438,7 @@ class TransformedDimension(object):
             interval = self.transformer.interval()
             if interval:
                 return interval
-        elif self.original_dimension.prior_name == 'choices':
+        if self.original_dimension.type == 'categorical':
             return self.original_dimension.categories
 
         low, high = self.original_dimension.interval(alpha)
@@ -521,7 +526,16 @@ class TransformedDimension(object):
     @property
     def cardinality(self):
         """Wrap original `Dimension` capacity"""
-        return self.original_dimension.cardinality
+        if self.type == 'real':
+            return Real.get_cardinality(self.shape, self.interval())
+        elif self.type == 'integer':
+            return Integer.get_cardinality(self.shape, self.interval())
+        elif self.type == 'categorical':
+            return Categorical.get_cardinality(self.shape, self.interval())
+        elif self.type == 'fidelity':
+            return Fidelity.get_cardinality(self.shape, self.interval())
+        else:
+            raise RuntimeError(f'No cardinality can be computed for type `{self.type}`')
 
 
 class TransformedSpace(Space):

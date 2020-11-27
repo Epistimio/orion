@@ -399,7 +399,7 @@ class TestASHA():
     def test_suggest_in_finite_cardinality(self):
         """Test that suggest None when search space is empty"""
         space = Space()
-        space.register(Integer('yolo1', 'uniform', 0, 6))
+        space.register(Integer('yolo1', 'uniform', 0, 5))
         space.register(Fidelity('epoch', 1, 9, 3))
 
         asha = ASHA(space)
