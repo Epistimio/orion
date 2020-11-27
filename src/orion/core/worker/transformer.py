@@ -144,7 +144,7 @@ def build_required_space(
 
     It uses appropriate cascade of `Transformer` objects per `Dimension`
     contained in `original_space`. `ReshapedTransformer` objects are used above
-    the `Transformer`s if the optimizatios algorithm requires flattened dimensions.
+    the `Transformer` if the optimizatios algorithm requires flattened dimensions.
 
     Parameters
     ----------
