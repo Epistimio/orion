@@ -300,7 +300,14 @@ class Quantize(Transformer):
 
     def transform(self, point):
         """Cast `point` to the floor and then to integers, as numpy arrays."""
-        return numpy.floor(numpy.asarray(point)).astype(int)
+        quantized = numpy.floor(numpy.asarray(point)).astype(int)
+
+        if numpy.any(numpy.isinf(point)):
+            isinf = int(numpy.isinf(point))
+            quantized = (isinf * (quantized - 1) * int(numpy.sign(point)) +
+                         (1 - isinf) * (quantized - 1)).astype(int)
+
+        return quantized
 
     def reverse(self, transformed_point):
         """Cast `transformed_point` to floats, as numpy arrays."""
