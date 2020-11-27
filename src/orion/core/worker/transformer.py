@@ -328,6 +328,7 @@ class Enumerate(Transformer):
 
     # pylint:disable=unused-argument
     def interval(self, alpha=1.0):
+        """Return the interval for the enumerated choices."""
         return (0, len(self.categories) - 1)
 
 
