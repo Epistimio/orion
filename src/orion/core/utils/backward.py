@@ -9,9 +9,14 @@
    :synopsis: Helper functions to support backward compatibility
 
 """
+import copy
+import logging
 
 import orion.core
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
+
+
+log = logging.getLogger(__name__)
 
 
 def update_user_args(metadata):
@@ -69,3 +74,41 @@ def update_db_config(config):
     if 'database' in config:
         config['storage'] = {'type': 'legacy'}
         config['storage']['database'] = config.pop('database')
+
+
+def get_algo_requirements(algorithm):
+    """Return a dict() of requirements of the algorithm based on interface < v0.1.10"""
+    if hasattr(algorithm, 'requires'):
+        log.warning('Algorithm.requires is deprecated and will stop being supporting in v0.3.')
+        requirements = algorithm.requires
+        requirements = requirements if isinstance(requirements, list) else [requirements]
+
+        requirements = copy.deepcopy(requirements)
+
+        if 'linear' in requirements:
+            dist_requirement = 'linear'
+            del requirements[requirements.index('linear')]
+        else:
+            dist_requirement = None
+
+        if 'flattened' in requirements:
+            shape_requirement = 'flattened'
+            del requirements[requirements.index('flattened')]
+        else:
+            shape_requirement = None
+
+        if requirements:
+            assert len(requirements) == 1
+            type_requirement = requirements[0]
+        else:
+            type_requirement = None
+
+        return dict(
+            type_requirement=type_requirement,
+            shape_requirement=shape_requirement,
+            dist_requirement=dist_requirement)
+
+    return dict(
+        type_requirement=algorithm.requires_type,
+        shape_requirement=algorithm.requires_flat,
+        dist_requirement=algorithm.requires_dist)
