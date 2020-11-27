@@ -326,7 +326,8 @@ class Enumerate(Transformer):
         """
         return self._imap(transformed_point)
 
-    def interval(self, alpha):
+    # pylint:disable=unused-argument
+    def interval(self, alpha=1.0):
         return (0, len(self.categories) - 1)
 
 
