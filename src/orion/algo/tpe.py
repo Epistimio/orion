@@ -259,7 +259,7 @@ class TPE(BaseAlgorithm):
             above_points = list(map(list, zip(*above_points)))
 
             idx = 0
-            for dimension in self.space.values():
+            for i, dimension in enumerate(self.space.values()):
 
                 shape = dimension.shape
                 if not shape:
@@ -281,7 +281,7 @@ class TPE(BaseAlgorithm):
                                                        self._sample_categorical_point)
                 elif dimension.type == 'fidelity':
                     # fidelity dimension
-                    points = dimension.sample(num)
+                    points = [point[i] for point in self.space.sample(num)]
                 else:
                     raise NotImplementedError()
 

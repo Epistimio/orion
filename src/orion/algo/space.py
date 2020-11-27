@@ -916,8 +916,11 @@ class Space(dict):
         """Check whether `value` is within the bounds of the space.
         Or check if a name for a dimension is registered in this space.
 
-        :param value: list of values associated with the dimensions contained
-           or a string indicating a dimension's name.
+        Parameters
+        ----------
+        value: list
+            List of values associated with the dimensions contained or a string indicating a
+            dimension's name.
 
         """
         if isinstance(value, str):
@@ -985,7 +988,7 @@ def pack_point(point, space):
 
 
 def unpack_point(point, space):
-    """Flatten `point` in `space` and convert it to a 1D `numpy.ndarray`.
+    """Flatten `point` in `space` and convert it to a 1D list.
 
     This function is deprecated and will be removed in v0.2.0. Use
     `orion.core.utils.points.flatten_dims` instead.

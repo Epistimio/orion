@@ -9,6 +9,7 @@
 
 """
 from orion.algo.base import BaseAlgorithm
+import orion.core.utils.backward as backward
 from orion.core.worker.transformer import build_required_space
 
 
@@ -37,8 +38,8 @@ class PrimaryAlgo(BaseAlgorithm):
         """
         self.algorithm = None
         super(PrimaryAlgo, self).__init__(space, algorithm=algorithm_config)
-        requirements = self.algorithm.requires
-        self.transformed_space = build_required_space(requirements, self.space)
+        requirements = backward.get_algo_requirements(self.algorithm)
+        self.transformed_space = build_required_space(self.space, **requirements)
         self.algorithm.space = self.transformed_space
 
     def seed_rng(self, seed):
