@@ -439,7 +439,6 @@ class Linearize(Transformer):
         return numpy.exp(numpy.asarray(transformed_point))
 
 
-# pylint:disable=too-many-public-methods
 class TransformedDimension(object):
     """Duck-type `Dimension` to mimic its functionality,
     while transform automatically and appropriately an underlying `Dimension` object
@@ -523,18 +522,9 @@ class TransformedDimension(object):
         return type_ if type_ != 'invariant' else self.original_dimension.type
 
     @property
-    def prior_name(self):
-        """Do not change the prior name of the original dimension."""
-        return self.original_dimension.prior_name
-
-    @property
     def shape(self):
         """Wrap original shape with transformer, because it may have changed."""
         return self.transformer.infer_target_shape(self.original_dimension.shape)
-
-    def cast(self, point):
-        """Cast a point according to original_dimension and then transform it"""
-        return self.transform(self.original_dimension.cast(point))
 
     @property
     def cardinality(self):
