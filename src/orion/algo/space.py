@@ -916,8 +916,11 @@ class Space(dict):
         """Check whether `value` is within the bounds of the space.
         Or check if a name for a dimension is registered in this space.
 
-        :param value: list of values associated with the dimensions contained
-           or a string indicating a dimension's name.
+        Parameters
+        ----------
+        value: list
+            List of values associated with the dimensions contained or a string indicating a
+            dimension's name.
 
         """
         if isinstance(value, str):
