@@ -369,14 +369,20 @@ class TestInteger(object):
         dim = Integer('yolo', 'uniform', -3, 4)
         assert dim.default_value is None
 
+    def test_cast_borders(self):
+        """Make sure cast to int returns correct borders"""
+        dim = Integer('yolo', 'uniform', -3, 5)
+        assert dim.cast(-3.0) == -3
+        assert dim.cast(2.0) == 2
+
     def test_cast_list(self):
         """Make sure list are cast to int and returned as list of values"""
-        dim = Integer('yolo', 'uniform', -3, 4)
+        dim = Integer('yolo', 'uniform', -3, 5)
         assert dim.cast(['1', '2']) == [1, 2]
 
     def test_cast_array(self):
         """Make sure array are cast to int and returned as array of values"""
-        dim = Integer('yolo', 'uniform', -3, 4)
+        dim = Integer('yolo', 'uniform', -3, 5)
         assert np.all(dim.cast(np.array(['1', '2'])) == np.array([1, 2]))
 
     def test_get_prior_string_discrete(self):

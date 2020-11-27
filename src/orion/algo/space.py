@@ -529,14 +529,25 @@ class Integer(Real, _Discrete):
 
         return super(Integer, self).__contains__(point)
 
-    # pylint:disable=no-self-use
     def cast(self, point):
         """Cast a point to int
 
         If casted point will stay a list or a numpy array depending on the
         given point's type.
         """
-        casted_point = numpy.asarray(point).astype(int)
+        casted_point = numpy.asarray(point).astype(float)
+
+        # Rescale point to make high bound inclusive.
+        low, high = self.interval()
+        if not numpy.any(numpy.isinf([low, high])):
+            high = (high - low)
+            casted_point -= low
+            casted_point = casted_point / high
+            casted_point = casted_point * (high + (1 - 1e-10))
+            casted_point += low
+            casted_point = numpy.floor(casted_point).astype(int)
+        else:
+            casted_point = numpy.floor(casted_point).astype(int)
 
         if not isinstance(point, numpy.ndarray):
             return casted_point.tolist()
