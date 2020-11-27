@@ -441,7 +441,7 @@ class TransformedDimension(object):
 
     NO_DEFAULT_VALUE = Dimension.NO_DEFAULT_VALUE
 
-    def __init__(self, transformer: Transformer, original_dimension: Dimension):
+    def __init__(self, transformer, original_dimension):
         """Initialize a `TransformedDimension` with an `original_dimension` object
         and the `transformer` that will be used.
         """
@@ -455,11 +455,6 @@ class TransformedDimension(object):
     def reverse(self, transformed_point):
         """Expose `Transformer.reverse` interface from underlying instance."""
         return self.transformer.reverse(transformed_point)
-
-    def sample(self, n_samples=1, seed=None):
-        """Sample from the original dimension and forward transform them."""
-        samples = self.original_dimension.sample(n_samples, seed)
-        return [self.transform(sample) for sample in samples]
 
     def interval(self, alpha=1.0):
         """Map the interval bounds to the transformed ones."""
@@ -502,24 +497,12 @@ class TransformedDimension(object):
 
     # pylint:disable=protected-access
     def _get_hashable_members(self):
-        print(self.transformer._get_hashable_members())
-        print(self.original_dimension._get_hashable_members())
         return (self.transformer._get_hashable_members() +
                 self.original_dimension._get_hashable_members())
 
     def validate(self):
         """Validate original_dimension"""
         self.original_dimension.validate()
-
-    def get_prior_string(self):
-        """Do not change the prior string of original dimension."""
-        return self.transformer.repr_format(self.original_dimension.get_prior_string())
-
-    def get_string(self):
-        """Do not change the string of original dimension."""
-        original_prior = self.original_dimension.get_prior_string()
-        original_string = self.original_dimension.get_string()
-        return original_string.replace(original_prior, self.get_prior_string())
 
     @property
     def name(self):
@@ -541,12 +524,6 @@ class TransformedDimension(object):
     def shape(self):
         """Wrap original shape with transformer, because it may have changed."""
         return self.transformer.infer_target_shape(self.original_dimension.shape)
-
-    @property
-    def default_value(self):
-        """Wrap original default value."""
-        defval = self.original_dimension.default_value
-        return self.transform(defval) if defval is not None else None
 
     def cast(self, point):
         """Cast a point according to original_dimension and then transform it"""
