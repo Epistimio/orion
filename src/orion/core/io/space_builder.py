@@ -151,7 +151,7 @@ class DimensionBuilder(object):
 
         .. note:: Changes scipy convention for uniform's arguments. In scipy,
            ``uniform(a, b)`` means uniform in the interval [a, a+b). Here, it
-           means uniform in the interval [a, b).
+           means uniform in the interval [a, b].
 
         """
         name = self.name
@@ -159,6 +159,16 @@ class DimensionBuilder(object):
         if len(args) == 2:
             return klass(name, 'uniform', args[0], args[1] - args[0], **kwargs)
         return klass(name, 'uniform', *args, **kwargs)
+
+    def randint(self, *args, **kwargs):
+        """Create an `Integer` or `Real` uniformly distributed dimension.
+
+        .. note:: Changes scipy convention for uniform's arguments. In scipy,
+           ``uniform(a, b)`` means uniform in the interval [a, a+b). Here, it
+           means uniform in the interval [a, b].
+
+        """
+        raise NotImplementedError('`randint` is not supported. Use uniform(discrete=True) instead.')
 
     def gaussian(self, *args, **kwargs):
         """Synonym for `scipy.stats.distributions.norm`."""
