@@ -436,7 +436,7 @@ class TransformedDimension(object):
             interval = self.transformer.interval()
             if interval:
                 return interval
-        elif self.original_dimension.prior_name == 'choices':
+        if self.original_dimension.type == 'categorical':
             return self.original_dimension.categories
 
         low, high = self.original_dimension.interval(alpha)
