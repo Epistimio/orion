@@ -66,7 +66,7 @@ def _(dim, type_requirement, dist_requirement):
 @build_transform.register(Integer)
 def _(dim, type_requirement, dist_requirement):
     transformers = []
-    if dist_requirement == 'linear' and dim.prior_name in NON_LINEAR:
+    if dist_requirement == 'linear' and dim.prior_name[4:] in NON_LINEAR:
         transformers.extend([Reverse(Quantize()), Linearize()])
         # Turn back to integer because Linearize outputs real
         if type_requirement != 'real':
