@@ -15,7 +15,7 @@ from abc import (ABCMeta, abstractmethod)
 
 import numpy
 
-from orion.algo.space import (Dimension, Space)
+from orion.algo.space import (Categorical, Dimension, Fidelity, Integer, Real, Space)
 
 
 # pylint: disable=too-many-branches
@@ -521,7 +521,16 @@ class TransformedDimension(object):
     @property
     def cardinality(self):
         """Wrap original `Dimension` capacity"""
-        return self.original_dimension.cardinality
+        if self.type == 'real':
+            return Real.get_cardinality(self.shape, self.interval())
+        elif self.type == 'integer':
+            return Integer.get_cardinality(self.shape, self.interval())
+        elif self.type == 'categorical':
+            return Categorical.get_cardinality(self.shape, self.interval())
+        elif self.type == 'fidelity':
+            return Fidelity.get_cardinality(self.shape, self.interval())
+        else:
+            raise RuntimeError(f'No cardinality can be computed for type `{self.type}`')
 
 
 class TransformedSpace(Space):

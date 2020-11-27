@@ -721,11 +721,11 @@ class TestSpace(object):
         dim = Fidelity('epoch', 1, 9, 3)
         space.register(dim)
 
-        assert (4 * 2) * 6 * 1 == space.cardinality
+        assert space.cardinality == (4 ** 2) * (6 + 1) * 1
 
-        dim = Integer('yolo3', 'uniform', -3, 2, shape=(3, 1))
+        dim = Integer('yolo3', 'uniform', -3, 2, shape=(3, 2))
         space.register(dim)
-        assert (4 * 2) * 6 * 1 * (2 * 3 * 1) == space.cardinality
+        assert space.cardinality == (4 ** 2) * (6 + 1) * 1 * ((2 + 1) ** (3 * 2))
 
         dim = Real('yolo4', 'norm', 0.9)
         space.register(dim)

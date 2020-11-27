@@ -771,17 +771,17 @@ class TestRequiredSpaceBuilder(object):
         space = Space()
         probs = (0.1, 0.2, 0.3, 0.4)
         categories = ('asdfa', 2, 3, 4)
-        dim = Categorical('yolo', OrderedDict(zip(categories, probs)), shape=2)
+        dim = Categorical('yolo0', OrderedDict(zip(categories, probs)), shape=2)
         space.register(dim)
         dim = Integer('yolo2', 'uniform', -3, 6)
         space.register(dim)
         tspace = build_required_space('integer', space)
-        assert tspace.cardinality == (4 * 2) * 6
+        assert tspace.cardinality == (4 ** 2) * (6 + 1)
 
         dim = Integer('yolo3', 'uniform', -3, 6, shape=(2, 1))
         space.register(dim)
         tspace = build_required_space('integer', space)
-        assert tspace.cardinality == (4 * 2) * 6 * 6 * (2 * 1)
+        assert tspace.cardinality == (4 ** 2) * (6 + 1) * ((6 + 1) ** (2 * 1))
 
 
 def test_quantization_does_not_violate_bounds():

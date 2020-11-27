@@ -430,6 +430,16 @@ class Real(Dimension):
 
         return casted_point
 
+    @staticmethod
+    def get_cardinality(shape, interval):
+        """Return the number of all the possible points based and shape and interval"""
+        return numpy.inf
+
+    @property
+    def cardinality(self):
+        """Return the number of all the possible points from Integer `Dimension`"""
+        return Real.get_cardinality(self.shape, self.interval())
+
 
 class _Discrete(Dimension):
 
@@ -446,7 +456,7 @@ class _Discrete(Dimension):
         """
         samples = super(_Discrete, self).sample(n_samples, seed)
         # Making discrete by ourselves because scipy does not use **floor**
-        return list(map(lambda x: numpy.floor(x).astype(int), samples))
+        return list(map(self.cast, samples))
 
     def interval(self, alpha=1.0):
         """Return a tuple containing lower and upper bound for parameters.
@@ -543,11 +553,15 @@ class Integer(Real, _Discrete):
         """Return the name of the prior"""
         return 'int_{}'.format(super(Integer, self).prior_name)
 
+    @staticmethod
+    def get_cardinality(shape, interval):
+        """Return the number of all the possible points based and shape and interval"""
+        return int(interval[1] - interval[0] + 1) ** _get_shape_cardinality(shape)
+
     @property
     def cardinality(self):
         """Return the number of all the possible points from Integer `Dimension`"""
-        low, high = self.interval()
-        return _get_shape_cardinality(self.shape) * int(high - low)
+        return Integer.get_cardinality(self.shape, self.interval())
 
 
 def _get_shape_cardinality(shape):
@@ -593,10 +607,15 @@ class Categorical(Dimension):
                                                   self._probs))
         super(Categorical, self).__init__(name, prior, **kwargs)
 
+    @staticmethod
+    def get_cardinality(shape, categories):
+        """Return the number of all the possible points based and shape and categories"""
+        return len(categories) ** _get_shape_cardinality(shape)
+
     @property
     def cardinality(self):
         """Return the number of all the possible values from Categorical `Dimension`"""
-        return len(self.categories) * _get_shape_cardinality(self._shape)
+        return Categorical.get_cardinality(self.shape, self.interval())
 
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
@@ -757,13 +776,19 @@ class Fidelity(Dimension):
         """Return `high`"""
         return self.high
 
-    # pylint:disable=no-self-use
+    @staticmethod
+    def get_cardinality(shape, interval):
+        """Return cardinality of Fidelity dimension, leave it to 1 as Fidelity dimension
+        does not contribute to cardinality in a fixed way now.
+        """
+        return 1
+
     @property
     def cardinality(self):
         """Return cardinality of Fidelity dimension, leave it to 1 as Fidelity dimension
         does not contribute to cardinality in a fixed way now.
         """
-        return 1
+        return Fidelity.get_cardinality(self.shape, self.interval())
 
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
