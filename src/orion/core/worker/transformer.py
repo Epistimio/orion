@@ -177,11 +177,11 @@ class Compose(Transformer):
 
     def __init__(self, transformers, base_domain_type=None):
         try:
-            self.apply = transformers.pop()
+            self.apply = transformers[-1]
         except IndexError:
             self.apply = Identity()
-        if transformers:
-            self.composition = Compose(transformers, base_domain_type)
+        if len(transformers) > 1:
+            self.composition = Compose(transformers[:-1], base_domain_type)
         else:
             self.composition = Identity(base_domain_type)
         assert self.apply.domain_type is None or \
