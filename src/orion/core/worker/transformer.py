@@ -116,11 +116,12 @@ def reshape(space, shape_requirement):
     reshaped_space = ReshapedSpace(space)
 
     for dim_index, dim in enumerate(space.values()):
-        if numpy.prod(dim.shape) == 1:
+        if not dim.shape or numpy.prod(dim.shape) == 1:
             reshaped_space.register(
                 ReshapedDimension(
                     transformer=Identity(dim.type),
-                    original_dimension=dim
+                    original_dimension=dim,
+                    index=dim_index
                 )
             )
         else:
@@ -128,9 +129,10 @@ def reshape(space, shape_requirement):
                 key = f'{dim.name}[{",".join(map(str, index))}]'
                 reshaped_space.register(
                     ReshapedDimension(
-                        transformer=View(dim.shape, index, dim_index, dim.type),
+                        transformer=View(dim.shape, index, dim.type),
                         original_dimension=dim,
-                        name=key
+                        name=key,
+                        index=dim_index
                     )
                 )
 
@@ -233,6 +235,8 @@ class Identity(Transformer):
     # pylint:disable=unused-argument
     def reverse(self, transformed_point, index=None):
         """Return `transformed_point` as it is."""
+        if index is not None:
+            return transformed_point[index]
         return transformed_point
 
     def repr_format(self, what):
@@ -529,10 +533,9 @@ class Linearize(Transformer):
 class View(Transformer):
     """Look-up single index in a dimensions with shape > 1"""
 
-    def __init__(self, shape, index, dim_index, domain_type=None):
+    def __init__(self, shape, index, domain_type=None):
         self.shape = shape
         self.index = index
-        self.dim_index = dim_index
         self._domain_type = domain_type
 
     @property
@@ -542,7 +545,7 @@ class View(Transformer):
 
     def transform(self, point):
         """Only return one element of the group"""
-        return point[self.dim_index][self.index]
+        return point[self.index]
 
     def reverse(self, transformed_point, index=None):
         """Only return packend point if view of first element, otherwise drop."""
@@ -679,11 +682,12 @@ class TransformedDimension(object):
 class ReshapedDimension(TransformedDimension):
     """Duck-type `Dimension` to mimic its functionality."""
 
-    def __init__(self, transformer, original_dimension, name=None):
+    def __init__(self, transformer, original_dimension, index, name=None):
         super(ReshapedDimension, self).__init__(transformer, original_dimension)
         if name is None:
             name = original_dimension.name
         self._name = name
+        self.index = index
 
     @property
     def first(self):
@@ -692,7 +696,7 @@ class ReshapedDimension(TransformedDimension):
 
     def transform(self, point):
         """Expose `Transformer.transform` interface from underlying instance."""
-        return self.transformer.transform(point)
+        return self.transformer.transform(point[self.index])
 
     def reverse(self, transformed_point, index=None):
         """Expose `Transformer.reverse` interface from underlying instance."""
