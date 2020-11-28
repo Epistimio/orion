@@ -58,7 +58,8 @@ setup_args = dict(
             ]
         },
     install_requires=['PyYAML', 'pymongo>=3', 'numpy', 'scipy', 'gitpython', 'filelock',
-                      'tabulate', 'AppDirs', 'plotly', 'pandas', 'gunicorn', 'falcon'],
+                      'tabulate', 'AppDirs', 'plotly', 'pandas', 'gunicorn', 'falcon',
+                      'scikit-learn'],
     tests_require=tests_require,
     setup_requires=['setuptools', 'appdirs', 'pytest-runner'],
     extras_require=dict(test=tests_require),

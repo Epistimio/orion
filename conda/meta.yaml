@@ -30,6 +30,7 @@ requirements:
     - pandas
     - falcon
     - gunicorn
+    - scikit-learn
 
 test:
   import:

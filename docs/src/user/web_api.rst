@@ -244,9 +244,9 @@ Plots
 The plot resource permits the generation and retrieval of `Plotly <https://plotly.com/>`_ plots to
 visualize your experiments and their results.
 
-.. http:get:: /plots/regret/:experiment
+.. http:get:: /plots/lpi/:experiment
 
-   Return a regret plot for the specified experiment.
+   Return a lpi plot for the specified experiment.
 
    **Example response**
 
@@ -262,6 +262,21 @@ visualize your experiments and their results.
 .. http:get:: /plots/parallel_coordinates/:experiment
 
    Return a parallel coordinates plot for the specified experiment.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   The JSON output is generated automatically according to the `Plotly.js schema reference <https://plotly.com/python/reference/index/>`_.
+
+   :statuscode 404: When the specified experiment doesn't exist in the database.
+
+.. http:get:: /plots/regret/:experiment
+
+   Return a regret plot for the specified experiment.
 
    **Example response**
 
