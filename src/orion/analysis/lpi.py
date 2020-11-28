@@ -12,6 +12,8 @@ import pandas as pd
 from sklearn.ensemble import AdaBoostRegressor, BaggingRegressor,\
     ExtraTreesRegressor, GradientBoostingRegressor, RandomForestRegressor
 
+from orion.core.worker.transformer import build_required_space
+
 
 _regressors_ = {
     'AdaBoostRegressor': AdaBoostRegressor,
@@ -54,6 +56,14 @@ def train_regressor(regressor_name, data, **kwargs):
 def to_numpy(trials, space):
     """Convert trials in DataFrame to Numpy array of (params + objective)"""
     return trials[list(space.keys()) + ['objective']].to_numpy()
+
+
+def flatten(trials_array, flattened_space):
+    """Flatten dimensions"""
+    flattened_points = numpy.array(
+        [flattened_space.transform(point[:-1]) for point in trials_array])
+
+    return numpy.concatenate((flattened_points, trials_array[:, -1:]), axis=1)
 
 
 def make_grid(point, space, model, n):
@@ -160,14 +170,17 @@ def lpi(trials, space, mode='best', model='RandomForestRegressor', n=20, **kwarg
         LPI value for each parameter. If ``mode`` is `linear`, then a list of
         param values and LPI metrics are returned in a DataFrame format.
     """
+    flattened_space = build_required_space(
+        space, type_requirement='numerical', shape_requirement='flattened')
     if trials.empty or trials.shape[0] == 0:
-        return pd.DataFrame(data=[0] * len(space), index=space.keys(), columns=['LPI'])
+        return pd.DataFrame(
+            data=[0] * len(flattened_space),
+            index=flattened_space.keys(),
+            columns=['LPI'])
 
     data = to_numpy(trials, space)
-    # TODO: Transform data using an `ordinal method`
-    #       transformed_space = build_required_space('ordinal', space)
-    #       transformed_data = transformed_space.transform(data)
+    data = flatten(data, flattened_space)
     model = train_regressor(model, data, **kwargs)
     best_point = data[numpy.argmin(data[:, -1])]
-    results = modes[mode](best_point, space, model, n)
+    results = modes[mode](best_point, flattened_space, model, n)
     return results

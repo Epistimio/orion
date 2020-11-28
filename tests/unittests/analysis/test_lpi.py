@@ -143,14 +143,13 @@ def test_compute_variance():
 
 def test_lpi_results():
     """Verify LPI results in DataFrame"""
-    results = lpi(data, space)
+    results = lpi(data, space, random_state=1)
     assert results.columns.tolist() == ['LPI']
     assert results.index.tolist() == list(space.keys())
     # The data is made such that x correlates more strongly with objective than y
     assert results['LPI'].loc['x'] > results['LPI'].loc['y']
 
 
-@pytest.mark.xfail(reason='Needs implementation of ordinal space transformation')
 def test_lpi_with_categorical_data():
     """Verify LPI can be computed on categorical dimensions"""
     data = pd.DataFrame(data={
@@ -164,8 +163,31 @@ def test_lpi_with_categorical_data():
         {'x': 'uniform(0, 6)',
          'y': 'choices(["a", "b", "c", "d"])'})
 
-    results = lpi(data, space)
+    results = lpi(data, space, random_state=1)
     assert results.columns.tolist() == ['LPI']
-    assert results.index.tolist() == list(space.keys())
+    assert results.index.tolist() == ['x', 'y']
     # The data is made such that x correlates more strongly with objective than y
     assert results['LPI'].loc['x'] > results['LPI'].loc['y']
+
+
+def test_lpi_with_multidim_data():
+    """Verify LPI can be computed on categorical dimensions"""
+    data = pd.DataFrame(data={
+        'id': ['a', 'b', 'c', 'd'],
+        'x': [[0, 2, 4], [1, 1, 3], [2, 2, 2], [3, 0, 3]],
+        'y': [['b', 'b'], ['c', 'b'], ['a', 'a'], ['d', 'c']],
+        'objective': [0.1, 0.2, 0.3, 0.5]
+    })
+
+    space = SpaceBuilder().build(
+        {'x': 'uniform(0, 6, shape=3)',
+         'y': 'choices(["a", "b", "c", "d"], shape=2)'})
+
+    results = lpi(data, space, random_state=1)
+    assert results.columns.tolist() == ['LPI']
+    assert results.index.tolist() == ['x[0]', 'x[1]', 'x[2]', 'y[0]', 'y[1]']
+    # The data is made such some x correlates more strongly with objective than other x and most y
+    assert results['LPI'].loc['x[0]'] > results['LPI'].loc['x[1]']
+    assert results['LPI'].loc['x[1]'] > results['LPI'].loc['x[2]']
+    assert results['LPI'].loc['x[0]'] > results['LPI'].loc['y[0]']
+    assert results['LPI'].loc['x[0]'] > results['LPI'].loc['y[1]']
