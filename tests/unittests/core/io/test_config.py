@@ -250,6 +250,16 @@ def test_env_var_precedence(yaml_path):
     assert config.test == "from my yaml!"
 
 
+def test_env_var_list(yaml_path):
+    """Test that env_var lists are correctly handled"""
+    config = Configuration()
+    config.add_option('test', option_type=list, default=["voici"], env_var="TOP_SECRET_LIST")
+    assert config.test == ["voici"]
+
+    os.environ['TOP_SECRET_LIST'] = 'voila:voici:voila'
+    assert config.test == ['voila', 'voici', 'voila']
+
+
 def test_local_precedence(yaml_path):
     """Test local setting has precedence over env var values"""
     config = Configuration()

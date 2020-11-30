@@ -138,9 +138,12 @@ def build(name, version=None, branching=None, **config):
     strategy: str or dict, optional
         Parallel strategy to use to parallelize the algorithm.
     max_trials: int, optional
-        Maximum number or trials before the experiment is considered done.
+        Maximum number of trials before the experiment is considered done.
+    max_broken: int, optional
+        Number of broken trials for the experiment to be considered broken.
     storage: dict, optional
         Configuration of the storage backend.
+
     branching: dict, optional
         Arguments to control the branching.
 
@@ -166,36 +169,9 @@ def build(name, version=None, branching=None, **config):
             'break'.  Defaults to 'break'.
 
     """
-    config = copy.deepcopy(config)
-    for key, value in list(config.items()):
-        if key.startswith('_') or value is None:
-            config.pop(key)
+    name, config, branching = clean_config(name, config, branching)
 
-    if 'strategy' in config:
-        config['producer'] = {'strategy': config.pop('strategy')}
-
-    if branching is None:
-        branching = {}
-
-    if branching.get('branch_from'):
-        branching.setdefault('branch_to', name)
-        name = branching['branch_from']
-
-    db_config = fetch_config_from_db(name, version)
-
-    new_config = config
-    config = resolve_config.merge_configs(db_config, config)
-
-    metadata = resolve_config.fetch_metadata(config.get('user'), config.get('user_args'))
-
-    config = resolve_config.merge_configs(db_config, config, {'metadata': metadata})
-
-    # TODO: Find a better solution
-    if isinstance(config.get('algorithms'), dict) and len(config['algorithms']) > 1:
-        config['algorithms'] = new_config['algorithms']
-
-    config.setdefault('name', name)
-    config.setdefault('version', version)
+    config = consolidate_config(name, version, config)
 
     if 'space' not in config:
         raise NoConfigurationError(
@@ -226,6 +202,67 @@ def build(name, version=None, branching=None, **config):
 
     _update_experiment(experiment)
     return experiment
+
+
+def clean_config(name, config, branching):
+    """Clean configuration from hidden fields (ex: `_id`) and update branching if necessary"""
+    config = copy.deepcopy(config)
+    for key, value in list(config.items()):
+        if key.startswith('_') or value is None:
+            config.pop(key)
+
+    if 'strategy' in config:
+        config['producer'] = {'strategy': config.pop('strategy')}
+
+    if branching is None:
+        branching = {}
+
+    if branching.get('branch_from'):
+        branching.setdefault('branch_to', name)
+        name = branching['branch_from']
+
+    return name, config, branching
+
+
+def consolidate_config(name, version, config):
+    """Merge together given configuration with db configuration matching
+    for experiment (`name`, `version`)
+    """
+    db_config = fetch_config_from_db(name, version)
+
+    # Do not merge spaces, the new definition overrides it.
+    if 'space' in config:
+        db_config.pop('space', None)
+
+    new_config = config
+    config = resolve_config.merge_configs(db_config, config)
+
+    metadata = resolve_config.fetch_metadata(
+        config.get('user'), config.get('user_args'), config.get('user_script_config'))
+
+    config = resolve_config.merge_configs(config, {'metadata': metadata})
+
+    merge_algorithm_config(config, new_config)
+    merge_producer_config(config, new_config)
+
+    config.setdefault('name', name)
+    config.setdefault('version', version)
+    return config
+
+
+def merge_algorithm_config(config, new_config):
+    """Merge given algorithm configuration with db config"""
+    # TODO: Find a better solution
+    if isinstance(config.get('algorithms'), dict) and len(config['algorithms']) > 1:
+        config['algorithms'] = new_config['algorithms']
+
+
+def merge_producer_config(config, new_config):
+    """Merge given producer configuration with db config"""
+    # TODO: Find a better solution
+    if (isinstance(config.get('producer', {}).get('strategy'), dict) and
+            len(config['producer']['strategy']) > 1):
+        config['producer']['strategy'] = new_config['producer']['strategy']
 
 
 def build_view(name, version=None):
@@ -277,6 +314,8 @@ def create_experiment(name, version, space, **kwargs):
         Parallel strategy to use to parallelize the algorithm.
     max_trials: int, optional
         Maximum number or trials before the experiment is considered done.
+    max_broken: int, optional
+        Number of broken trials for the experiment to be considered broken.
     storage: dict, optional
         Configuration of the storage backend.
 
@@ -288,6 +327,7 @@ def create_experiment(name, version, space, **kwargs):
         experiment.pool_size = orion.core.config.experiment.get(
             'pool_size', deprecated='ignore')
     experiment.max_trials = kwargs.get('max_trials', orion.core.config.experiment.max_trials)
+    experiment.max_broken = kwargs.get('max_broken', orion.core.config.experiment.max_broken)
     experiment.space = _instantiate_space(space)
     experiment.algorithms = _instantiate_algo(experiment.space, kwargs.get('algorithms'))
     experiment.producer = kwargs.get('producer', {})
@@ -324,6 +364,7 @@ def fetch_config_from_db(name, version=None):
                  "version %s.", name, config['version'])
 
     backward.populate_space(config, force_update=False)
+    backward.update_max_broken(config)
 
     return config
 
@@ -394,6 +435,7 @@ def _instantiate_strategy(config=None):
         strategy_type = config
         config = {}
     else:
+        config = copy.deepcopy(config)
         strategy_type, config = next(iter(config.items()))
 
     return Strategy(of_type=strategy_type, **config)
@@ -568,14 +610,27 @@ def get_cmd_config(cmdargs):
     cmd_config = resolve_config.merge_configs(cmd_config, cmdargs)
 
     cmd_config.update(cmd_config.pop('experiment', {}))
+    cmd_config['user_script_config'] = cmd_config.get('worker', {}).get('user_script_config', None)
+
     cmd_config['branching'] = cmd_config.pop('evc', {})
 
+    # TODO: We should move branching specific stuff below in a centralized place for EVC stuff.
+    if (cmd_config['branching'].get('auto_resolution', False) and
+            cmdargs.get('manual_resolution', None) is None):
+        cmd_config['branching']['manual_resolution'] = False
+
+    non_monitored_arguments = cmdargs.get('non_monitored_arguments')
+    if non_monitored_arguments:
+        cmd_config['branching']['non_monitored_arguments'] = non_monitored_arguments.split(':')
+
     # TODO: user_args won't be defined if reading from DB only (`orion hunt -n <exp> ` alone)
-    metadata = resolve_config.fetch_metadata(cmd_config.get('user'), cmd_config.get('user_args'))
+    metadata = resolve_config.fetch_metadata(
+        cmd_config.get('user'), cmd_config.get('user_args'), cmd_config.get('user_script_config'))
     cmd_config['metadata'] = metadata
     cmd_config.pop('config', None)
 
-    backward.populate_space(cmd_config)
+    cmd_config['space'] = cmd_config['metadata'].get('priors', None)
+
     backward.update_db_config(cmd_config)
 
     return cmd_config

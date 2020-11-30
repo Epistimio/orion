@@ -24,7 +24,7 @@ __all__ = ['interrupt_trial', 'report_bad_trial', 'report_objective', 'report_re
 # pylint: disable=too-many-arguments
 def create_experiment(
         name, version=None, space=None, algorithms=None,
-        strategy=None, max_trials=None, storage=None, branching=None,
+        strategy=None, max_trials=None, max_broken=None, storage=None, branching=None,
         max_idle_time=None, heartbeat=None, working_dir=None, debug=False):
     """Create an experiment
 
@@ -53,12 +53,12 @@ def create_experiment(
     2.2) Some other arguments than the name are given.
 
     The configuration will be fetched from database and given arguments will override them.
-    ``max_trials`` may be overwritten in DB, but any other changes will lead to a branching. Instead
-    of creating the experiment ``(name, version)``, it will create a new experiment
-    ``(name, version+1)`` which will have the same configuration than ``(name, version)`` except for
-    the differing arguments given by user. This new experiment will have access to trials of
-    ``(name, version)``, adapted according to the differences between ``version`` and ``version+1``.
-    A previous version can be accessed by specifying the ``version`` argument.
+    ``max_trials`` and ``max_broken`` may be overwritten in DB, but any other changes will lead to a
+    branching. Instead of creating the experiment ``(name, version)``, it will create a new
+    experiment ``(name, version+1)`` which will have the same configuration than ``(name, version)``
+    except for the differing arguments given by user. This new experiment will have access to trials
+    of ``(name, version)``, adapted according to the differences between ``version`` and
+    ``version+1``.  A previous version can be accessed by specifying the ``version`` argument.
 
     Causes of experiment branching are:
 
@@ -91,6 +91,8 @@ def create_experiment(
         Parallel strategy to use to parallelize the algorithm.
     max_trials: int, optional
         Maximum number or trials before the experiment is considered done.
+    max_broken: int, optional
+        Number of broken trials for the experiment to be considered broken.
     storage: dict, optional
         Configuration of the storage backend.
     working_dir: str, optional
@@ -163,7 +165,7 @@ def create_experiment(
     try:
         experiment = experiment_builder.build(
             name, version=version, space=space, algorithms=algorithms,
-            strategy=strategy, max_trials=max_trials, branching=branching,
+            strategy=strategy, max_trials=max_trials, max_broken=max_broken, branching=branching,
             working_dir=working_dir)
     except RaceCondition:
         # Try again, but if it fails again, raise. Race conditions due to version increment should
@@ -171,8 +173,8 @@ def create_experiment(
         try:
             experiment = experiment_builder.build(
                 name, version=version, space=space, algorithms=algorithms,
-                strategy=strategy, max_trials=max_trials, branching=branching,
-                working_dir=working_dir)
+                strategy=strategy, max_trials=max_trials, max_broken=max_broken,
+                branching=branching, working_dir=working_dir)
         except RaceCondition as e:
             raise RaceCondition(
                 "There was a race condition during branching and new version cannot be infered "
@@ -214,7 +216,7 @@ def get_experiment(name, version=None, storage=None):
     return experiment_builder.build_view(name, version)
 
 
-def workon(function, space, name='loop', algorithms=None, max_trials=None):
+def workon(function, space, name='loop', algorithms=None, max_trials=None, max_broken=None):
     """Optimize a function over a given search space
 
     This will create a new experiment with an in-memory storage and optimize the given function
@@ -241,6 +243,8 @@ def workon(function, space, name='loop', algorithms=None, max_trials=None):
         Algorithm used for optimization.
     max_trials: int, optional
         Maximum number or trials before the experiment is considered done.
+    max_broken: int, optional
+        Number of broken trials for the experiment to be considered broken.
 
     Raises
     ------
@@ -256,7 +260,7 @@ def workon(function, space, name='loop', algorithms=None, max_trials=None):
 
         experiment = experiment_builder.build(
             name, version=1, space=space, algorithms=algorithms,
-            strategy='NoParallelStrategy', max_trials=max_trials)
+            strategy='NoParallelStrategy', max_trials=max_trials, max_broken=max_broken)
 
         producer = Producer(experiment)
 

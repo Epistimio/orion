@@ -92,7 +92,7 @@ def _validate_input_value(value, exp_space, namespace):
     try:
         value = eval(value)
         is_valid = value in exp_space[namespace]
-    except NameError:
+    except (NameError, SyntaxError):
         is_valid = value in exp_space[namespace]
 
     return is_valid, value

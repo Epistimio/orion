@@ -233,7 +233,7 @@ def define_evc_config(config):
     evc_config.add_option(
         'code_change_type', option_type=str, default='break',
         env_var='ORION_EVC_CODE_CHANGE',
-        help=("One of ``break``, ``unsure`` or ``noeffet``. "
+        help=("One of ``break``, ``unsure`` or ``noeffect``. "
               "Defines how trials should be filtered in Experiment Version Control tree "
               "if there is a change in the user's code repository. "
               "If the effect of the change is ``unsure``, "
@@ -248,7 +248,7 @@ def define_evc_config(config):
     evc_config.add_option(
         'cli_change_type', option_type=str, default='break',
         env_var='ORION_EVC_CMDLINE_CHANGE',
-        help=("One of ``break``, ``unsure`` or ``noeffet``. "
+        help=("One of ``break``, ``unsure`` or ``noeffect``. "
               "Defines how trials should be filtered in Experiment Version Control tree "
               "if there is a change in the user's commandline call. "
               "If the effect of the change is ``unsure``, "
@@ -263,7 +263,7 @@ def define_evc_config(config):
     evc_config.add_option(
         'config_change_type', option_type=str, default='break',
         env_var='ORION_EVC_CONFIG_CHANGE',
-        help=("One of ``break``, ``unsure`` or ``noeffet``. "
+        help=("One of ``break``, ``unsure`` or ``noeffect``. "
               "Defines how trials should be filtered in Experiment Version Control tree "
               "if there is a change in the user's script. "
               "If the effect of the change is ``unsure``, "

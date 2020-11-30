@@ -127,6 +127,19 @@ def init_full_x_remove_y(init_full_x_full_y):
 
 
 @pytest.fixture
+def init_full_x_full_y_add_z_remove_y(init_full_x_full_y):
+    """Remove y from full x full y and add z"""
+    name = "full_x_full_y"
+    branch = "full_x_full_z_remove_y"
+    orion.core.cli.main(
+        ("hunt --init-only -n {branch} --branch-from {name} --cli-change-type noeffect "
+         "./black_box.py -x~uniform(-10,10) "
+         "-z~uniform(-20,10,default_value=0)").format(name=name, branch=branch).split(" "))
+    orion.core.cli.main("insert -n {branch} script -x=7 -z=2".format(branch=branch).split(" "))
+    orion.core.cli.main("insert -n {branch} script -x=-7 -z=2".format(branch=branch).split(" "))
+
+
+@pytest.fixture
 def init_full_x_remove_z(init_full_x_rename_y_z):
     """Remove z from full x full z"""
     name = "full_x_rename_y_z"
@@ -221,6 +234,9 @@ def get_name_value_pairs(trials):
 def test_init(init_full_x, create_db_instance):
     """Test if original experiment contains trial 0"""
     experiment = experiment_builder.build_view(name='full_x')
+
+    assert (experiment.refers['adapter'].configuration == [])
+
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 0), ), )
 
@@ -228,6 +244,12 @@ def test_init(init_full_x, create_db_instance):
 def test_full_x_full_y(init_full_x_full_y, create_db_instance):
     """Test if full x full y is properly initialized and can fetch original trial"""
     experiment = experiment_builder.build_view(name='full_x_full_y')
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'change_type': 'noeffect', 'of_type': 'commandlinechange'},
+             {'of_type': 'dimensionaddition',
+              'param': {'name': '/y', 'type': 'real', 'value': 1}}])
+
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 1), ('/y', 1)),
                      (('/x', -1), ('/y', 1)),
@@ -245,6 +267,13 @@ def test_full_x_full_y(init_full_x_full_y, create_db_instance):
 def test_half_x_full_y(init_half_x_full_y, create_db_instance):
     """Test if half x full y is properly initialized and can fetch from its 2 parents"""
     experiment = experiment_builder.build_view(name='half_x_full_y')
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'of_type': 'dimensionpriorchange',
+              'name': '/x',
+              'old_prior': 'uniform(-10, 10)',
+              'new_prior': 'uniform(0, 10)'}])
+
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 2), ('/y', 2)),
                      (('/x', 2), ('/y', -2)))
@@ -260,6 +289,13 @@ def test_half_x_full_y(init_half_x_full_y, create_db_instance):
 def test_full_x_half_y(init_full_x_half_y, create_db_instance):
     """Test if full x half y is properly initialized and can fetch from its 2 parents"""
     experiment = experiment_builder.build_view(name='full_x_half_y')
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'of_type': 'dimensionpriorchange',
+              'name': '/y',
+              'old_prior': 'uniform(-10, 10, default_value=1)',
+              'new_prior': 'uniform(0, 10, default_value=1)'}])
+
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 3), ('/y', 3)),
                      (('/x', -3), ('/y', 3)))
@@ -275,6 +311,11 @@ def test_full_x_half_y(init_full_x_half_y, create_db_instance):
 def test_full_x_rename_y_z(init_full_x_rename_y_z, create_db_instance):
     """Test if full x full z is properly initialized and can fetch from its 2 parents"""
     experiment = experiment_builder.build_view(name='full_x_rename_y_z')
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'of_type': 'commandlinechange', 'change_type': 'noeffect'},
+             {'of_type': 'dimensionrenaming', 'old_name': '/y', 'new_name': '/z'}])
+
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 4), ('/z', 4)),
                      (('/x', -4), ('/z', 4)),
@@ -296,6 +337,11 @@ def test_full_x_rename_y_z(init_full_x_rename_y_z, create_db_instance):
 def test_full_x_rename_half_y_half_z(init_full_x_rename_half_y_half_z, create_db_instance):
     """Test if full x half z is properly initialized and can fetch from its 3 parents"""
     experiment = experiment_builder.build_view(name='full_x_rename_half_y_half_z')
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'of_type': 'commandlinechange', 'change_type': 'noeffect'},
+             {'of_type': 'dimensionrenaming', 'old_name': '/y', 'new_name': '/z'}])
+
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 5), ('/z', 5)),
                      (('/x', -5), ('/z', 5)))
@@ -313,6 +359,15 @@ def test_full_x_rename_half_y_half_z(init_full_x_rename_half_y_half_z, create_db
 def test_full_x_rename_half_y_full_z(init_full_x_rename_half_y_full_z, create_db_instance):
     """Test if full x half->full z is properly initialized and can fetch from its 3 parents"""
     experiment = experiment_builder.build_view(name='full_x_rename_half_y_full_z')
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'of_type': 'commandlinechange', 'change_type': 'noeffect'},
+             {'of_type': 'dimensionrenaming', 'old_name': '/y', 'new_name': '/z'},
+             {'of_type': 'dimensionpriorchange',
+              'name': '/z',
+              'old_prior': 'uniform(0, 10, default_value=1)',
+              'new_prior': 'uniform(-10, 10, default_value=1)'}])
+
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 6), ('/z', 6)),
                      (('/x', -6), ('/z', 6)),
@@ -334,6 +389,12 @@ def test_full_x_rename_half_y_full_z(init_full_x_rename_half_y_full_z, create_db
 def test_full_x_remove_y(init_full_x_remove_y, create_db_instance):
     """Test if full x removed y is properly initialized and can fetch from its 2 parents"""
     experiment = experiment_builder.build_view(name='full_x_remove_y')
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'of_type': 'commandlinechange', 'change_type': 'noeffect'},
+             {'of_type': 'dimensiondeletion',
+              'param': {'name': '/y', 'type': 'real', 'value': 1}}])
+
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 7), ), (('/x', -7), ))
 
@@ -341,9 +402,35 @@ def test_full_x_remove_y(init_full_x_remove_y, create_db_instance):
     assert pairs == ((('/x', 0), ), (('/x', 1), ), (('/x', -1), ), (('/x', 7), ), (('/x', -7), ))
 
 
+def test_full_x_full_y_add_z_remove_y(init_full_x_full_y_add_z_remove_y, create_db_instance):
+    """Test that if z is added and y removed at the same time, both are correctly detected"""
+    experiment = experiment_builder.build_view(name='full_x_full_z_remove_y')
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'of_type': 'commandlinechange', 'change_type': 'noeffect'},
+             {'of_type': 'dimensiondeletion',
+              'param': {'name': '/y', 'type': 'real', 'value': 1}},
+             {'of_type': 'dimensionaddition',
+              'param': {'name': '/z', 'type': 'real', 'value': 0}}])
+
+    pairs = get_name_value_pairs(experiment.fetch_trials())
+    assert pairs == ((('/x', 7), ('/z', 2)), (('/x', -7), ('/z', 2)))
+
+    pairs = get_name_value_pairs(experiment.fetch_trials(with_evc_tree=True))
+    assert pairs == ((('/x', 0), ('/z', 0)), (('/x', 1), ('/z', 0)),
+                     (('/x', -1), ('/z', 0)), (('/x', 7), ('/z', 2)),
+                     (('/x', -7), ('/z', 2)))
+
+
 def test_full_x_remove_z(init_full_x_remove_z, create_db_instance):
     """Test if full x removed z is properly initialized and can fetch from 2 of its 3 parents"""
     experiment = experiment_builder.build_view(name='full_x_remove_z')
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'change_type': 'noeffect', 'of_type': 'commandlinechange'},
+             {'of_type': 'dimensiondeletion',
+              'param': {'name': '/z', 'type': 'real', 'value': 1}}])
+
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 8), ), (('/x', -8), ))
 
@@ -357,6 +444,12 @@ def test_full_x_remove_z_default_4(init_full_x_remove_z_default_4, create_db_ins
     from 1 of its 3 parents
     """
     experiment = experiment_builder.build_view(name='full_x_remove_z_default_4')
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'change_type': 'noeffect', 'of_type': 'commandlinechange'},
+             {'of_type': 'dimensiondeletion',
+              'param': {'name': '/z', 'type': 'real', 'value': 4.0}}])
+
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 9), ), (('/x', -9), ))
 
@@ -368,6 +461,12 @@ def test_full_x_remove_z_default_4(init_full_x_remove_z_default_4, create_db_ins
 def test_entire_full_x_full_y(init_entire, create_db_instance):
     """Test if full x full y can fetch from its parent and all children"""
     experiment = experiment_builder.build_view(name='full_x_full_y')
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'change_type': 'noeffect', 'of_type': 'commandlinechange'},
+             {'of_type': 'dimensionaddition',
+              'param': {'name': '/y', 'type': 'real', 'value': 1}}])
+
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((('/x', 1), ('/y', 1)),
                      (('/x', -1), ('/y', 1)),
@@ -412,6 +511,12 @@ def test_entire_full_x_full_y(init_entire, create_db_instance):
 def test_run_entire_full_x_full_y(init_entire, create_db_instance):
     """Test if branched experiment can be executed without triggering a branching event again"""
     experiment = experiment_builder.build_view(name='full_x_full_y')
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'change_type': 'noeffect', 'of_type': 'commandlinechange'},
+             {'of_type': 'dimensionaddition',
+              'param': {'name': '/y', 'type': 'real', 'value': 1}}])
+
     assert len(experiment.fetch_trials(with_evc_tree=True)) == 23
     assert len(experiment.fetch_trials()) == 4
 
@@ -427,6 +532,7 @@ def test_run_entire_full_x_full_y(init_entire, create_db_instance):
 def test_run_entire_full_x_full_y_no_args(init_entire, create_db_instance):
     """Test if branched experiment can be executed without script arguments"""
     experiment = experiment_builder.build_view(name='full_x_full_y')
+
     assert len(experiment.fetch_trials(with_evc_tree=True)) == 23
     assert len(experiment.fetch_trials()) == 4
 
@@ -439,6 +545,9 @@ def test_run_entire_full_x_full_y_no_args(init_entire, create_db_instance):
 def test_new_algo(init_full_x_new_algo):
     """Test that new algo conflict is automatically resolved"""
     experiment = experiment_builder.build_view(name='full_x_new_algo')
+
+    assert (experiment.refers['adapter'].configuration == [{'of_type': 'algorithmchange'}])
+
     assert len(experiment.fetch_trials(with_evc_tree=True)) == 3
     assert len(experiment.fetch_trials()) == 2
 
@@ -502,6 +611,10 @@ def test_new_code_ignores_code_conflict():
 def test_new_cli(init_full_x_new_cli):
     """Test that new cli conflict is automatically resolved"""
     experiment = experiment_builder.build_view(name='full_x_new_cli')
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'change_type': 'noeffect', 'of_type': 'commandlinechange'}])
+
     assert len(experiment.fetch_trials(with_evc_tree=True)) == 3
     assert len(experiment.fetch_trials()) == 2
 
@@ -525,6 +638,18 @@ def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
          "-x~uniform(0,10) "
          "-w~choices(['a','b'])").format(name=name, branch=branch).split(" "))
 
+    experiment = experiment_builder.build_view(name=branch)
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'of_type': 'dimensionpriorchange',
+              'name': '/x',
+              'new_prior': 'uniform(0, 10)',
+              'old_prior': 'uniform(-10, 10)'},
+             {'of_type': 'dimensiondeletion',
+              'param': {'name': '/y', 'type': 'real', 'value': 1}},
+             {'of_type': 'dimensionaddition',
+              'param': {'name': '/w', 'type': 'categorical', 'value': None}}])
+
 
 def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
     """Test that auto-resolution does resolve all conflicts including new fidelity"""
@@ -537,8 +662,20 @@ def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
     # experiment
     orion.core.cli.main(
         ("hunt --init-only -n {branch} --branch-from {name} ./black_box_with_y.py "
-         "-x~uniform(0,10, precision=None) "
+         "-x~uniform(0,10) "
          "-w~fidelity(1,10)").format(name=name, branch=branch).split(" "))
+
+    experiment = experiment_builder.build_view(name=branch)
+
+    assert (experiment.refers['adapter'].configuration ==
+            [{'of_type': 'dimensionpriorchange',
+              'name': '/x',
+              'new_prior': 'uniform(0, 10)',
+              'old_prior': 'uniform(-10, 10)'},
+             {'of_type': 'dimensiondeletion',
+              'param': {'name': '/y', 'type': 'real', 'value': 1}},
+             {'of_type': 'dimensionaddition',
+              'param': {'name': '/w', 'type': 'fidelity', 'value': 10}}])
 
 
 def test_init_w_version_from_parent_w_children(clean_db, monkeypatch, capsys):

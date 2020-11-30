@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tests :meth:`orion.analysis.regret()"""
+"""Tests :func:`orion.analysis.regret`"""
 import pandas as pd
 import pytest
 

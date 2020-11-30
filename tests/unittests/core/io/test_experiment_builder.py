@@ -46,6 +46,7 @@ def python_api_config():
                           "active_branch": None,
                           "diff_sha": "diff"}},
         max_trials=1000,
+        max_broken=5,
         working_dir='',
         algorithms={
             'dumbalgo': {
@@ -87,6 +88,7 @@ def new_config(random_dt, script_path):
         version=1,
         pool_size=10,
         max_trials=1000,
+        max_broken=5,
         working_dir='',
         algorithms={
             'dumbalgo': {
@@ -150,6 +152,7 @@ def test_get_cmd_config(config_file):
     assert local_config['algorithms'] == 'random'
     assert local_config['strategy'] == 'NoParallelStrategy'
     assert local_config['max_trials'] == 100
+    assert local_config['max_broken'] == 5
     assert local_config['name'] == 'voila_voici'
     assert local_config['pool_size'] == 1
     assert local_config['storage'] == {
@@ -174,6 +177,7 @@ def test_get_cmd_config_from_incomplete_config(incomplete_config_file):
 
     assert 'algorithms' not in local_config
     assert 'max_trials' not in local_config
+    assert 'max_broken' not in local_config
     assert 'pool_size' not in local_config
     assert 'name' not in local_config['storage']['database']
     assert local_config['storage']['database']['host'] == 'mongodb://user:pass@localhost'
@@ -203,6 +207,7 @@ def test_fetch_config_from_db_hit(new_config):
     assert db_config['metadata'] == new_config['metadata']
     assert db_config['pool_size'] == new_config['pool_size']
     assert db_config['max_trials'] == new_config['max_trials']
+    assert db_config['max_broken'] == new_config['max_broken']
     assert db_config['algorithms'] == new_config['algorithms']
     assert db_config['metadata'] == new_config['metadata']
 
@@ -232,6 +237,7 @@ def test_build_view_from_args_hit(config_file, random_dt, new_config):
     assert exp_view.metadata == new_config['metadata']
     assert exp_view.pool_size == new_config['pool_size']
     assert exp_view.max_trials == new_config['max_trials']
+    assert exp_view.max_broken == new_config['max_broken']
     assert exp_view.algorithms.configuration == new_config['algorithms']
 
 
@@ -252,6 +258,7 @@ def test_build_view_from_args_hit_no_conf_file(config_file, random_dt, new_confi
     assert exp_view.metadata == new_config['metadata']
     assert exp_view.pool_size == new_config['pool_size']
     assert exp_view.max_trials == new_config['max_trials']
+    assert exp_view.max_broken == new_config['max_broken']
     assert exp_view.algorithms.configuration == new_config['algorithms']
 
 
@@ -277,6 +284,7 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
     assert exp.metadata['user_args'] == cmdargs['user_args']
     assert exp.pool_size == 1
     assert exp.max_trials == 100
+    assert exp.max_broken == 5
     assert exp.algorithms.configuration == {'random': {'seed': None}}
 
 
@@ -300,6 +308,7 @@ def test_build_from_args_hit(old_config_file, script_path, new_config):
     assert exp.configuration['refers'] == new_config['refers']
     assert exp.metadata == new_config['metadata']
     assert exp.max_trials == new_config['max_trials']
+    assert exp.max_broken == new_config['max_broken']
     assert exp.algorithms.configuration == new_config['algorithms']
 
 
@@ -371,6 +380,7 @@ def test_build_no_hit(config_file, random_dt, script_path):
     name = 'supernaekei'
     space = {'x': 'uniform(0, 10)'}
     max_trials = 100
+    max_broken = 5
 
     with OrionState(experiments=[], trials=[]):
 
@@ -378,7 +388,8 @@ def test_build_no_hit(config_file, random_dt, script_path):
             experiment_builder.build_view(name)
         assert "No experiment with given name 'supernaekei' and version '*'" in str(exc_info.value)
 
-        exp = experiment_builder.build(name, space=space, max_trials=max_trials)
+        exp = experiment_builder.build(
+            name, space=space, max_trials=max_trials, max_broken=max_broken)
 
     assert exp.name == name
     assert exp.configuration['refers'] == {'adapter': [], 'parent_id': None, 'root_id': exp._id}
@@ -388,6 +399,7 @@ def test_build_no_hit(config_file, random_dt, script_path):
         'orion_version': 'XYZ'}
     assert exp.configuration['space'] == space
     assert exp.max_trials == max_trials
+    assert exp.max_broken == max_broken
     assert not exp.is_done
     assert exp.algorithms.configuration == {'random': {'seed': None}}
 
@@ -417,6 +429,7 @@ def test_build_hit(python_api_config):
     python_api_config['metadata']['user'] = 'dendi'
     assert exp.metadata == python_api_config['metadata']
     assert exp.max_trials == python_api_config['max_trials']
+    assert exp.max_broken == python_api_config['max_broken']
     assert exp.algorithms.configuration == python_api_config['algorithms']
 
 
@@ -437,6 +450,7 @@ def test_build_without_config_hit(python_api_config):
     assert exp.configuration['refers'] == python_api_config['refers']
     assert exp.metadata == python_api_config['metadata']
     assert exp.max_trials == python_api_config['max_trials']
+    assert exp.max_broken == python_api_config['max_broken']
     assert exp.algorithms.configuration == python_api_config['algorithms']
 
 
@@ -459,6 +473,7 @@ def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
     assert exp.configuration['refers'] == new_config['refers']
     assert exp.metadata == new_config['metadata']
     assert exp.max_trials == new_config['max_trials']
+    assert exp.max_broken == new_config['max_broken']
     assert exp.algorithms.configuration == new_config['algorithms']
 
 
@@ -576,6 +591,7 @@ class TestBuild(object):
         assert exp.metadata == new_config['metadata']
         assert exp.pool_size == new_config['pool_size']
         assert exp.max_trials == new_config['max_trials']
+        assert exp.max_broken == new_config['max_broken']
         assert exp.working_dir == new_config['working_dir']
         assert exp.version == new_config['version']
         assert exp.algorithms.configuration == new_config['algorithms']
@@ -929,6 +945,7 @@ class TestInitExperimentView(object):
         assert exp.metadata == new_config['metadata']
         assert exp.pool_size == new_config['pool_size']
         assert exp.max_trials == new_config['max_trials']
+        assert exp.max_broken == new_config['max_broken']
         assert exp.version == new_config['version']
         assert isinstance(exp.refers['adapter'], BaseAdapter)
         assert exp.algorithms.configuration == new_config['algorithms']

@@ -97,6 +97,11 @@ class ExperimentClient:
         return self._experiment.max_trials
 
     @property
+    def max_broken(self):
+        """Minimum number of broken trials before the experiment is considered broken."""
+        return self._experiment.max_broken
+
+    @property
     def metadata(self):
         """Metadata of the experiment."""
         return self._experiment.metadata
@@ -179,6 +184,18 @@ class ExperimentClient:
     ###
     # Queries
     ###
+
+    def to_pandas(self, with_evc_tree=False):
+        """Builds a dataframe with the trials of the experiment
+
+        Parameters
+        ----------
+        with_evc_tree: bool, optional
+            Fetch all trials from the EVC tree.
+            Default: False
+
+        """
+        return self._experiment.to_pandas(with_evc_tree=with_evc_tree)
 
     def fetch_trials(self, with_evc_tree=False):
         """Fetch all trials of the experiment

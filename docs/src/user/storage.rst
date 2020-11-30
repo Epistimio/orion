@@ -180,11 +180,20 @@ Here is a short example to fetch trials or insert a new one.
    # To fetch all trials from an experiment
    trials = experiment.fetch_trials()
 
+   # To fetch trials in a form on panda dataframe
+   df = experiment.to_pandas()
+
    # Insert a new trial in storage
    experiment.insert(dict(x=0.5))
 
    # Insert a new trial and reserve to execute
    trial = experiment.insert(dict(x=0.6), reserve=True)
+
+:hidden:`to_pandas`
+----------------------
+
+.. automethod:: orion.client.experiment.ExperimentClient.to_pandas
+   :noindex:
 
 :hidden:`fetch_trials`
 ----------------------

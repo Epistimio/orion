@@ -15,8 +15,8 @@ def test_defined_parser():
     get_branching_args_group(parser)
 
     options = parser.parse_args([])
-    assert options.manual_resolution is False
-    assert options.algorithm_change is False
+    assert options.manual_resolution is None
+    assert options.algorithm_change is None
     assert options.branch_to is None
     assert options.branch_from is None
     assert options.cli_change_type is None

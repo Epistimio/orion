@@ -13,9 +13,11 @@ import copy
 import datetime
 import logging
 
-import orion.core
+import pandas
+
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
+from orion.core.utils.flatten import flatten
 from orion.storage.base import FailedUpdate, get_storage, ReadOnlyStorageProtocol
 
 log = logging.getLogger(__name__)
@@ -48,6 +50,11 @@ class Experiment:
        This attribute can be updated if the rest of the experiment configuration
        is the same. In that case, if trying to set to an already set experiment,
        it will overwrite the previous one.
+    max_broken: int
+       How many trials must be broken, before considering this `Experiment` broken.
+       This attribute can be updated if the rest of the experiment configuration
+       is the same. In that case, if trying to set to an already set experiment,
+       it will overwrite the previous one.
     space: Space
        Object representing the optimization space.
     algorithms : `PrimaryAlgo` object.
@@ -77,10 +84,10 @@ class Experiment:
 
     """
 
-    __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials', 'version',
+    __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials', 'max_broken', 'version',
                  'space', 'algorithms', 'producer', 'working_dir', '_id',
                  '_node', '_storage')
-    non_branching_attrs = ('pool_size', 'max_trials')
+    non_branching_attrs = ('pool_size', 'max_trials', 'max_broken')
 
     def __init__(self, name, version=None):
         self._id = None
@@ -91,6 +98,7 @@ class Experiment:
         self.metadata = {}
         self.pool_size = None
         self.max_trials = None
+        self.max_broken = None
         self.space = None
         self.algorithms = None
         self.working_dir = None
@@ -99,6 +107,38 @@ class Experiment:
         self._storage = get_storage()
 
         self._node = ExperimentNode(self.name, self.version, experiment=self)
+
+    def to_pandas(self, with_evc_tree=False):
+        """Builds a dataframe with the trials of the experiment
+
+        Parameters
+        ----------
+        with_evc_tree: bool, optional
+            Fetch all trials from the EVC tree.
+            Default: False
+
+        """
+        columns = [
+            'id', 'experiment_id', 'status', 'suggested', 'reserved', 'completed', 'objective']
+
+        data = []
+        for trial in self.fetch_trials(with_evc_tree=with_evc_tree):
+            row = [
+                trial.id, trial.experiment, trial.status,
+                trial.submit_time, trial.start_time, trial.end_time]
+            row.append(trial.objective.value if trial.objective else None)
+            params = flatten(trial.params)
+            for name in self.space.keys():
+                row.append(params[name])
+
+            data.append(row)
+
+        columns += list(self.space.keys())
+
+        if not data:
+            return pandas.DataFrame([], columns=columns)
+
+        return pandas.DataFrame(data, columns=columns)
 
     def fetch_trials(self, with_evc_tree=False):
         """Fetch all trials of the experiment"""
@@ -316,7 +356,7 @@ class Experiment:
 
         """
         num_broken_trials = self._storage.count_broken_trials(self)
-        return num_broken_trials >= orion.core.config.worker.max_broken
+        return num_broken_trials >= self.max_broken
 
     @property
     def configuration(self):
@@ -409,12 +449,12 @@ class ExperimentView(object):
 
     #                     Attributes
     valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials",
-                         "version", "space", "working_dir"] +
+                         "max_broken", "version", "space", "working_dir", "producer"] +
                         # Properties
                         ["id", "node", "is_done", "is_broken", "algorithms", "stats",
                          "configuration"] +
                         # Methods
-                        ["fetch_trials", "fetch_trials_by_status", "get_trial"])
+                        ["to_pandas", "fetch_trials", "fetch_trials_by_status", "get_trial"])
 
     def __init__(self, experiment):
         self._experiment = experiment

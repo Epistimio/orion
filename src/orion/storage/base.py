@@ -13,6 +13,7 @@ import copy
 import logging
 
 import orion.core
+from orion.core.io import resolve_config
 from orion.core.utils.singleton import AbstractSingletonType, SingletonFactory
 
 log = logging.getLogger(__name__)
@@ -420,6 +421,10 @@ def setup_storage(storage=None, debug=False):
         storage['database'] = orion.core.config.storage.database.to_dict()
     elif storage.get('type') is None and 'database' in storage:
         storage['type'] = 'legacy'
+
+    # If using same storage type
+    if storage['type'] == orion.core.config.storage.type:
+        storage = resolve_config.merge_configs(orion.core.config.storage.to_dict(), storage)
 
     if debug:
         storage = {'type': 'legacy', 'database': {'type': 'EphemeralDB'}}

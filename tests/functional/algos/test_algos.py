@@ -117,7 +117,7 @@ def test_cardinality_stop(algorithm):
     exp = workon(rosenbrock, discrete_space, algorithms=algorithm, max_trials=100)
 
     trials = exp.fetch_trials()
-    assert len(trials) == 15
+    assert len(trials) == 16
     assert trials[-1].status == 'completed'
 
 
@@ -136,8 +136,6 @@ def test_with_fidelity(algorithm):
     assert trials[-1].status == 'completed'
 
     results = [trial.objective.value for trial in trials]
-    print(min(results))
-    print(max(results))
     best_trial = next(iter(sorted(trials, key=lambda trial: trial.objective.value)))
 
     assert best_trial.objective.name == 'objective'

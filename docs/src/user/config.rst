@@ -532,7 +532,8 @@ non_monitored_arguments
 :Description:
     Ignore these commandline arguments when looking for differences in user's commandline call.
     Environment variable and commandline only supports one argument. Use global config or local
-    config to pass a list of arguments to ignore.
+    config to pass a list of arguments to ignore. When defined with environment variables,
+    use ':' to delimit multiple arguments (ex: 'three:different:arguments').
 
 
 
@@ -572,13 +573,13 @@ code_change_type
 :Default: break
 :Env var: ORION_EVC_CODE_CHANGE
 :Description:
-    One of ``break``, ``unsure`` or ``noeffet``. Defines how trials should be filtered in Experiment
-    Version Control tree if there is a change in the user's code repository. If the effect of the
-    change is ``unsure``, the child experiment will access the trials of the parent but not the
-    other way around. This is to ensure parent experiment does not get corrupted with possibly
-    incompatible results. The child cannot access the trials from parent if ``code_change_type`` is
-    ``break``. The parent cannot access trials from child if ``code_change_type`` is ``unsure`` or
-    ``break``.
+    One of ``break``, ``unsure`` or ``noeffect``. Defines how trials should be filtered in
+    Experiment Version Control tree if there is a change in the user's code repository. If the
+    effect of the change is ``unsure``, the child experiment will access the trials of the parent
+    but not the other way around. This is to ensure parent experiment does not get corrupted with
+    possibly incompatible results. The child cannot access the trials from parent if
+    ``code_change_type`` is ``break``. The parent cannot access trials from child if
+    ``code_change_type`` is ``unsure`` or ``break``.
 
 
 
@@ -591,13 +592,13 @@ cli_change_type
 :Default: break
 :Env var: ORION_EVC_CMDLINE_CHANGE
 :Description:
-    One of ``break``, ``unsure`` or ``noeffet``. Defines how trials should be filtered in Experiment
-    Version Control tree if there is a change in the user's commandline call. If the effect of the
-    change is ``unsure``, the child experiment will access the trials of the parent but not the
-    other way around. This is to ensure parent experiment does not get corrupted with possibly
-    incompatible results. The child cannot access the trials from parent if ``cli_change_type`` is
-    ``break``. The parent cannot access trials from child if ``cli_change_type`` is ``unsure`` or
-    ``break``.
+    One of ``break``, ``unsure`` or ``noeffect``. Defines how trials should be filtered in
+    Experiment Version Control tree if there is a change in the user's commandline call. If the
+    effect of the change is ``unsure``, the child experiment will access the trials of the parent
+    but not the other way around. This is to ensure parent experiment does not get corrupted with
+    possibly incompatible results. The child cannot access the trials from parent if
+    ``cli_change_type`` is ``break``. The parent cannot access trials from child if
+    ``cli_change_type`` is ``unsure`` or ``break``.
 
 
 
@@ -610,9 +611,10 @@ config_change_type
 :Default: break
 :Env var: ORION_EVC_CONFIG_CHANGE
 :Description:
-    One of ``break``, ``unsure`` or ``noeffet``. Defines how trials should be filtered in Experiment
-    Version Control tree if there is a change in the user's script. If the effect of the change is
-    ``unsure``, the child experiment will access the trials of the parent but not the other way
-    around. This is to ensure parent experiment does not get corrupted with possibly incompatible
-    results. The child cannot access the trials from parent if ``config_change_type`` is ``break``.
-    The parent cannot access trials from child if ``config_change_type`` is ``unsure`` or ``break``.
+    One of ``break``, ``unsure`` or ``noeffect``. Defines how trials should be filtered in
+    Experiment Version Control tree if there is a change in the user's script. If the effect of the
+    change is ``unsure``, the child experiment will access the trials of the parent but not the
+    other way around. This is to ensure parent experiment does not get corrupted with possibly
+    incompatible results. The child cannot access the trials from parent if ``config_change_type``
+    is ``break``.  The parent cannot access trials from child if ``config_change_type`` is
+    ``unsure`` or ``break``.

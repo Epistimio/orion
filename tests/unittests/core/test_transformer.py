@@ -3,15 +3,16 @@
 """Collection of tests for :mod:`orion.core.worker.transformer`."""
 from collections import OrderedDict
 import copy
+import itertools
 
 import numpy
 import pytest
 
 from orion.algo.space import (Categorical, Dimension, Integer, Real, Space,)
-from orion.core.worker.transformer import (build_required_space,
-                                           Compose, Enumerate, Identity,
-                                           OneHotEncode, Precision, Quantize, Reverse,
-                                           TransformedDimension, TransformedSpace,)
+from orion.core.worker.transformer import (
+    build_required_space, Compose, Enumerate, Identity, Linearize, OneHotEncode,
+    Precision, Quantize, ReshapedDimension, ReshapedSpace, Reverse,
+    TransformedDimension, TransformedSpace, View)
 
 
 class TestIdentity(object):
@@ -459,10 +460,95 @@ class TestOneHotEncode(object):
         assert t.repr_format('asfa') == 'OneHotEncode(asfa)'
 
 
+class TestLinearize(object):
+    """Test subclasses of `Linearize` transformation."""
+
+    def test_domain_and_target_type(self):
+        """Check if attribute-like `domain_type` and `target_type` do
+        what's expected.
+        """
+        t = Linearize()
+        assert t.domain_type == 'real'
+        assert t.target_type == 'real'
+
+    def test_transform(self):
+        """Check if it transforms properly."""
+        t = Linearize()
+        assert t.transform(numpy.e) == 1
+        t.transform(0)
+
+    def test_reverse(self):
+        """Check if it reverses `transform` properly."""
+        t = Linearize()
+        assert t.reverse(1) == numpy.e
+
+    def test_repr_format(self):
+        """Check representation of a transformed dimension."""
+        t = Linearize()
+        assert t.repr_format(1.0) == 'Linearize(1.0)'
+
+
+class TestView(object):
+    """Test subclasses of `View` transformation."""
+
+    def test_domain_and_target_type(self):
+        """Check if attribute-like `domain_type` and `target_type` do what's expected."""
+        t = View(shape=None, index=None, domain_type='some fancy type')
+        assert t.domain_type == 'some fancy type'
+        assert t.target_type == 'some fancy type'
+
+    def test_transform(self):
+        """Check if it transforms properly."""
+        shape = (3, 4, 5)
+        index = (0, 2, 1)
+        t = View(shape=shape, index=index)
+        a = numpy.zeros(shape)
+        a[index] = 2
+        assert t.transform(a) == 2
+
+    def test_reverse(self):
+        """Check if it reverses `transform` properly."""
+        shape = (3, 4, 5)
+        index = (0, 2, 1)
+        a = numpy.zeros(shape)
+        a[index] = 2
+        flattened = a.reshape(-1).tolist()
+        point = [None] + flattened + [None]
+        t = View(shape=shape, index=(0, 0, 0))
+        numpy.testing.assert_equal(t.reverse(point, 1), a)
+
+    def test_first(self):
+        """Test that views are correctly identified as first"""
+        shape = (3, 4, 5)
+        assert View(shape=shape, index=(0, 0, 0)).first
+        assert not View(shape=shape, index=(0, 1, 0)).first
+
+    def test_repr_format(self):
+        """Check representation of a transformed dimension."""
+        shape = (3, 4, 5)
+        index = (0, 2, 1)
+        t = View(shape=shape, index=index)
+        assert t.repr_format(1.0) == 'View(shape=(3, 4, 5), index=(0, 2, 1), 1.0)'
+
+
 @pytest.fixture(scope='module')
 def dim():
     """Create an example of `Dimension`."""
-    dim = Real('yolo', 'norm', 0.9, shape=(3, 2))
+    dim = Real('yolo0', 'norm', 0.9, shape=(3, 2))
+    return dim
+
+
+@pytest.fixture(scope='module')
+def logdim():
+    """Create an log example of `Dimension`."""
+    dim = Real('yolo4', 'reciprocal', 1.0, 10.0, shape=(3, 2))
+    return dim
+
+
+@pytest.fixture(scope='module')
+def logintdim():
+    """Create an log integer example of `Dimension`."""
+    dim = Integer('yolo5', 'reciprocal', 1, 10, shape=(3, 2))
     return dim
 
 
@@ -470,9 +556,30 @@ def dim():
 def tdim(dim):
     """Create an example of `TransformedDimension`."""
     transformers = [Quantize()]
-    tdim = TransformedDimension(Compose(transformers, dim.type),
-                                dim)
+    tdim = TransformedDimension(Compose(transformers, dim.type), dim)
     return tdim
+
+
+@pytest.fixture(scope='module')
+def rdims(tdim):
+    """Create an example of `ReshapedDimension`."""
+    transformations = {}
+    for index in itertools.product(*map(range, tdim.shape)):
+        key = f'{tdim.name}[{",".join(map(str, index))}]'
+        transformations[key] = ReshapedDimension(
+            transformer=View(tdim.shape, index, tdim.type),
+            original_dimension=tdim,
+            name=key,
+            index=0,
+        )
+
+    return transformations
+
+
+@pytest.fixture(scope='module')
+def rdim(dim, rdims):
+    """Single ReshapedDimension"""
+    return rdims[f'{dim.name}[0,1]']
 
 
 @pytest.fixture(scope='module')
@@ -494,6 +601,52 @@ def tdim2(dim2):
     return tdim2
 
 
+@pytest.fixture(scope='module')
+def rdims2(tdim2):
+    """Create a categorical example of `ReshapedDimension`."""
+    transformations = {}
+    for index in itertools.product(*map(range, tdim2.shape)):
+        key = f'{tdim2.name}[{",".join(map(str, index))}]'
+        transformations[key] = ReshapedDimension(
+            transformer=View(tdim2.shape, index, tdim2.type),
+            original_dimension=tdim2,
+            name=key,
+            index=1
+        )
+
+    return transformations
+
+
+@pytest.fixture(scope='module')
+def rdim2(dim2, rdims2):
+    """Single ReshapedDimension"""
+    return rdims2[f'{dim2.name}[1]']
+
+
+@pytest.fixture(scope='module')
+def dim3():
+    """Create an example of integer `Dimension`."""
+    return Integer('yolo3', 'uniform', 3, 7)
+
+
+@pytest.fixture(scope='module')
+def tdim3(dim3):
+    """Create an example of integer `Dimension`."""
+    return TransformedDimension(Compose([], dim3.type), dim3)
+
+
+@pytest.fixture(scope='module')
+def rdims3(tdim3):
+    """Create an example of integer `Dimension`."""
+    rdim3 = ReshapedDimension(
+        transformer=Identity(tdim3.type),
+        original_dimension=tdim3,
+        index=2
+    )
+
+    return {tdim3.name: rdim3}
+
+
 class TestTransformedDimension(object):
     """Check functionality of class `TransformedDimension`."""
 
@@ -508,26 +661,6 @@ class TestTransformedDimension(object):
         assert tdim.reverse(9) == 9.
         assert tdim.reverse(5) == 5.
         assert numpy.all(tdim.reverse([9, 5]) == numpy.array([9., 5.], dtype=float))
-
-    def test_mimics_Dimension(self, tdim):
-        """Mimic `Dimension`.
-        Set of `Dimension`'s methods are subset of `TransformedDimension`.
-        """
-        transformed_dimension_keys = set(TransformedDimension.__dict__.keys())
-        # For some reason running all tests have the side-effect of adding an attribute
-        # __slotnames__ to TransformedDimension. This attribute is not present when running
-        # tests found in test_transformer.py only.
-        transformed_dimension_keys.discard('__slotnames__')
-        assert ((transformed_dimension_keys ^ set(Dimension.__dict__.keys())) ==
-                set(['transform', 'reverse']))
-
-    def test_sample(self, tdim, seed):
-        """Check method `sample`."""
-        assert numpy.all(tdim.sample(seed=seed) == numpy.array([[1, 0], [3, 0], [1, 2]]))
-        samples = tdim.sample(2, seed=seed)
-        assert len(samples) == 2
-        assert numpy.all(samples[0] == numpy.array([[-1, 0], [1, 0], [-1, 0]]))
-        assert numpy.all(samples[1] == numpy.array([[0, 1], [-1, 0], [2, 2]]))
 
     def test_interval(self, tdim):
         """Check method `interval`."""
@@ -583,7 +716,7 @@ class TestTransformedDimension(object):
         """
         assert (tdim._get_hashable_members() ==
                 ('Compose', 'Quantize', 'real', 'integer', 'Identity', 'real', 'real',
-                 'yolo', (3, 2), 'real', (0.9,), (), None, 'norm'))
+                 'yolo0', (3, 2), 'real', (0.9,), (), None, 'norm'))
         assert (tdim2._get_hashable_members() ==
                 ('Compose', 'OneHotEncode', 'integer', 'real', 4, 'Compose', 'Enumerate',
                  'categorical', 'integer', 'Identity', 'categorical', 'categorical', 'yolo2', (),
@@ -611,23 +744,13 @@ class TestTransformedDimension(object):
         tdim.original_dimension._kwargs.pop('size')
         tdim2.original_dimension._default_value = Dimension.NO_DEFAULT_VALUE
 
-    def test_get_prior_string(self, tdim, tdim2):
-        """Apply the transformation on top of the prior string of original dimension."""
-        assert tdim.get_prior_string() == "Quantize(norm(0.9, shape=(3, 2)))"
-        assert tdim2.get_prior_string() == "OneHotEncode(Enumerate(choices({'asdfa': 0.10, '2': 0.20, '3': 0.30, '4': 0.40})))"  # noqa
-
-    def test_get_string(self, tdim, tdim2):
-        """Apply the transformation only on top of the prior string of original dimension."""
-        assert tdim.get_string() == "yolo~Quantize(norm(0.9, shape=(3, 2)))"
-        assert tdim2.get_string() == "yolo2~OneHotEncode(Enumerate(choices({'asdfa': 0.10, '2': 0.20, '3': 0.30, '4': 0.40})))"  # noqa
-
     def test_repr(self, tdim):
         """Check method `__repr__`."""
-        assert str(tdim) == "Quantize(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None))"  # noqa
+        assert str(tdim) == "Quantize(Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None))"  # noqa
 
     def test_name_property(self, tdim):
         """Check property `name`."""
-        assert tdim.name == 'yolo'
+        assert tdim.name == 'yolo0'
 
     def test_type_property(self, tdim, tdim2):
         """Check property `type`."""
@@ -646,36 +769,109 @@ class TestTransformedDimension(object):
         assert tdim2.original_dimension.shape == ()
         assert tdim2.shape == (4,)
 
-    def test_default_value_property(self, tdim, tdim2):
-        """Check property `default_value`."""
-        assert tdim.default_value is None
-        tdim2.original_dimension._default_value = '3'
-        assert numpy.all(tdim2.default_value == (0., 0., 1., 0.))
-        tdim2.original_dimension._default_value = None
 
-    def test_cast(self, tdim, tdim2):
-        """Check casting through transformers"""
-        assert tdim.cast(['10.1']) == [10.0]
-        assert numpy.all(tdim2.cast(['asdfa']) == numpy.array([[1, 0, 0, 0]]))
-        assert numpy.all(tdim2.cast(['3']) == numpy.array([[0, 0, 1, 0]]))
+class TestReshapedDimension(object):
+    """Check functionality of class `ReshapedDimension`."""
+
+    def test_transform(self, rdim):
+        """Check method `transform`."""
+        a = numpy.zeros((3, 2))
+        a[0, 1] = 2
+        assert rdim.transform([a, None]) == 2
+
+    def test_reverse(self, rdim):
+        """Check method `reverse`."""
+        a = numpy.zeros((3, 2))
+        a[0, 1] = 2
+        p = a.reshape(-1).tolist() + [None]
+        numpy.testing.assert_equal(rdim.reverse(p, 0), a)
+
+    def test_interval(self, rdim):
+        """Check method `interval`."""
+        assert (rdim.interval() == (
+            -numpy.array(numpy.inf).astype(int) + 1,
+            numpy.array(numpy.inf).astype(int) - 1))
+
+    def test_interval_from_categorical(self, rdim2):
+        """Check how we should treat interval when original dimension is categorical."""
+        assert rdim2.interval() == (0, 1)
+
+    def test_eq(self, rdim, rdim2):
+        """Return True if other is the same transformed dimension as self"""
+        assert rdim != rdim2
+        assert rdim == copy.deepcopy(rdim)
+
+    def test_hash(self, rdim, rdim2):
+        """Test that hash is consistent for identical and different transformed dimensions"""
+        assert hash(rdim) != hash(rdim2)
+        assert hash(rdim) == hash(copy.deepcopy(rdim))
+
+    def test_get_hashable_members(self, rdim, rdim2):
+        """Test that hashable members of the transformed dimensions are the aggregation of
+        transformer's and original dimension's hashable members.
+        """
+        assert (rdim._get_hashable_members() ==
+                ('View', 'integer', 'integer', 'Compose', 'Quantize', 'real', 'integer', 'Identity',
+                 'real', 'real', 'yolo0', (3, 2), 'real', (0.9,), (), None, 'norm'))
+        assert (rdim2._get_hashable_members() ==
+                ('View', 'real', 'real', 'Compose', 'OneHotEncode', 'integer', 'real', 4, 'Compose',
+                 'Enumerate', 'categorical', 'integer', 'Identity', 'categorical', 'categorical',
+                 'yolo2', (), 'categorical', (), (), None, 'Distribution'))
+
+    def test_repr(self, rdim):
+        """Check method `__repr__`."""
+        assert str(rdim) == "View(shape=(3, 2), index=(0, 1), Quantize(Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)))"  # noqa
+
+    def test_name_property(self, rdim):
+        """Check property `name`."""
+        assert rdim.name == 'yolo0[0,1]'
+
+    def test_type_property(self, rdim, rdim2):
+        """Check property `type`."""
+        assert rdim.type == 'integer'
+        assert rdim2.type == 'real'
+
+    def test_prior_name_property(self, rdim, rdim2):
+        """Check property `prior_name`."""
+        assert rdim.prior_name == 'norm'
+        assert rdim2.prior_name == 'choices'
+
+    def test_shape_property(self, rdim, rdim2):
+        """Check property `shape`."""
+        assert rdim.original_dimension.shape == (3, 2)
+        assert rdim.shape == ()
+        assert rdim2.original_dimension.shape == (4, )
+        assert rdim2.shape == ()
 
 
 @pytest.fixture(scope='module')
-def space(dim, dim2):
+def space(dim, dim2, dim3):
     """Create an example `Space`."""
     space = Space()
     space.register(dim)
     space.register(dim2)
+    space.register(dim3)
     return space
 
 
 @pytest.fixture(scope='module')
-def tspace(tdim, tdim2):
+def tspace(space, tdim, tdim2, tdim3):
     """Create an example `TransformedSpace`."""
-    tspace = TransformedSpace()
+    tspace = TransformedSpace(space)
     tspace.register(tdim)
     tspace.register(tdim2)
+    tspace.register(tdim3)
     return tspace
+
+
+@pytest.fixture(scope='module')
+def rspace(tspace, rdims, rdims2, rdims3):
+    """Create an example `ReshapedSpace`."""
+    rspace = ReshapedSpace(tspace)
+    for dim in itertools.chain(rdims.values(), rdims2.values(), rdims3.values()):
+        rspace.register(dim)
+
+    return rspace
 
 
 class TestTransformedSpace(object):
@@ -697,91 +893,261 @@ class TestTransformedSpace(object):
         yo = tspace.reverse(tyo)
         assert yo in space
 
+    def test_sample(self, space, tspace, seed):
+        """Check method `sample`."""
+        points = tspace.sample(n_samples=2, seed=seed)
+        # pytest.set_trace()
+        assert len(points) == 2
+        assert points[0] in tspace
+        assert points[1] in tspace
+        assert tspace.reverse(points[0]) in space
+        assert tspace.reverse(points[1]) in space
+
+
+class TestReshapedSpace(object):
+    """Check functionality of class `ReshapeSpace`."""
+
+    def test_reverse(self, space, tspace, rspace, seed):
+        """Check method `reverse`."""
+        ryo = (numpy.zeros(tspace['yolo0'].shape).reshape(-1).tolist() +
+               numpy.zeros(tspace['yolo2'].shape).reshape(-1).tolist() +
+               [10])
+        yo = rspace.reverse(ryo)
+        assert yo in space
+
+    def test_contains(self, tspace, rspace, seed):
+        """Check method `transform`."""
+        ryo = (numpy.zeros(tspace['yolo0'].shape).reshape(-1).tolist() +
+               numpy.zeros(tspace['yolo2'].shape).reshape(-1).tolist() +
+               [10])
+
+        assert ryo in rspace
+
+    def test_transform(self, space, rspace, seed):
+        """Check method `transform`."""
+        yo = space.sample(seed=seed)[0]
+        tyo = rspace.transform(yo)
+        assert tyo in rspace
+
+    def test_sample(self, space, rspace, seed):
+        """Check method `sample`."""
+        points = rspace.sample(n_samples=2, seed=seed)
+        assert len(points) == 2
+        assert points[0] in rspace
+        assert points[1] in rspace
+        assert rspace.reverse(points[0]) in space
+        assert rspace.reverse(points[1]) in space
+
+    def test_interval(self, rspace):
+        """Check method `interval`."""
+        interval = rspace.interval()
+        assert len(interval) == 3 * 2 + 4 + 1
+        for i in range(3 * 2):
+            # assert interval[i] == (-float('inf'), float('inf'))
+            assert interval[i] == (-numpy.array(numpy.inf).astype(int) + 1,
+                                   numpy.array(numpy.inf).astype(int) - 1)
+        for i in range(3 * 2, 3 * 2 + 4):
+            assert interval[i] == (0, 1)
+        assert interval[-1] == (3, 10)
+
+    def test_reshape(self, rspace):
+        """Verify that the dimension are reshaped properly, forward and backward"""
+        point = [numpy.arange(6).reshape(3, 2), '3', 10]
+        rpoint = point[0].reshape(-1).tolist() + [0.0, 0.0, 1.0, 0.0] + [10]
+        assert rspace.transform(point) == tuple(rpoint)
+        numpy.testing.assert_equal(rspace.reverse(rpoint)[0], point[0])
+        assert rspace.reverse(rpoint)[1] == point[1]
+        assert rspace.reverse(rpoint)[2] == point[2]
+
+    def test_cardinality(self, dim2):
+        """Check cardinality of reshaped space"""
+        space = Space()
+        space.register(Real('yolo0', 'uniform', 0, 2, shape=(2, 2)))
+        space.register(dim2)
+
+        rspace = build_required_space(
+            space,
+            shape_requirement='flattened')
+        assert rspace.cardinality == numpy.inf
+
+        rspace = build_required_space(
+            space, type_requirement='integer',
+            shape_requirement='flattened')
+        assert rspace.cardinality == (3 ** (2 * 2)) * 4
+
 
 @pytest.fixture(scope='module')
-def space_each_type(dim, dim2):
+def space_each_type(dim, dim2, dim3, logdim, logintdim):
     """Create an example `Space`."""
     space = Space()
     space.register(dim)
     space.register(dim2)
-    space.register(Integer('yolo3', 'randint', 3, 10))
+    space.register(dim3)
+    space.register(logdim)
+    space.register(logintdim)
     return space
 
 
 class TestRequiredSpaceBuilder(object):
     """Check functionality of builder function `build_required_space`."""
 
+    @pytest.mark.xfail(reason='Bring it back when testing new builder and extend to shape and dist')
     def test_not_supported_requirement(self, space_each_type):
         """Require something which is not supported."""
         with pytest.raises(TypeError) as exc:
-            build_required_space('fasdfasf', space_each_type)
+            build_required_space(space_each_type, type_requirement='fasdfasf')
         assert 'Unsupported' in str(exc.value)
 
     def test_no_requirement(self, space_each_type):
         """Check what is built using 'None' requirement."""
-        tspace = build_required_space(None, space_each_type)
-        assert len(tspace) == 3
+        tspace = build_required_space(space_each_type)
+        assert len(tspace) == 5
         assert tspace[0].type == 'real'
         assert tspace[1].type == 'categorical'
+        # NOTE:HEAD
         assert tspace[2].type == 'integer'
-        assert (str(tspace) ==
-                "Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
-                "       Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None),\n"  # noqa
-                "       Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None)])")  # noqa
-
-        tspace = build_required_space([], space_each_type)
-        assert len(tspace) == 3
-        assert tspace[0].type == 'real'
-        assert tspace[1].type == 'categorical'
-        assert tspace[2].type == 'integer'
-        assert (str(tspace) ==
-                "Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
-                "       Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None),\n"  # noqa
-                "       Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None)])")  # noqa
+        assert tspace[3].type == 'real'
+        assert tspace[4].type == 'integer'
+        assert (str(tspace) == """\
+Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
+       Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None),
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None),
+       Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None)),
+       Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)])\
+""")  # noqa
 
     def test_integer_requirement(self, space_each_type):
         """Check what is built using 'integer' requirement."""
-        tspace = build_required_space('integer', space_each_type)
-        assert len(tspace) == 3
+        tspace = build_required_space(space_each_type, type_requirement='integer')
+        assert len(tspace) == 5
         assert tspace[0].type == 'integer'
         assert tspace[1].type == 'integer'
         assert tspace[2].type == 'integer'
-        assert(str(tspace) ==
-               "Space([Quantize(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
-               "       Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None)),\n"  # noqa
-               "       Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None)])")  # noqa
+        assert tspace[3].type == 'integer'
+        assert tspace[4].type == 'integer'
+        assert(str(tspace) == """\
+Space([Quantize(Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None))),
+       Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None)),
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None),
+       Quantize(Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None))),
+       Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)])\
+""")  # noqa
 
     def test_real_requirement(self, space_each_type):
         """Check what is built using 'real' requirement."""
-        tspace = build_required_space('real', space_each_type)
-        assert len(tspace) == 3
+        tspace = build_required_space(space_each_type, type_requirement='real')
+        assert len(tspace) == 5
         assert tspace[0].type == 'real'
         assert tspace[1].type == 'real'
         assert tspace[2].type == 'real'
-        assert(str(tspace) ==
-               "Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),\n"  # noqa
-               "       OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None))),\n"  # noqa
-               "       ReverseQuantize(Integer(name=yolo3, prior={randint: (3, 10), {}}, shape=(), default value=None))])")  # noqa
+        assert tspace[3].type == 'real'
+        assert tspace[4].type == 'real'
+        assert(str(tspace) == """\
+Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
+       OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None))),
+       ReverseQuantize(Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None)),
+       Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None)),
+       ReverseQuantize(Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None))])\
+""")  # noqa
+
+    def test_numerical_requirement(self, space_each_type):
+        """Check what is built using 'integer' requirement."""
+        tspace = build_required_space(space_each_type, type_requirement='numerical')
+        assert len(tspace) == 5
+        assert tspace[0].type == 'real'
+        assert tspace[1].type == 'integer'
+        assert tspace[2].type == 'integer'
+        assert tspace[3].type == 'real'
+        assert tspace[4].type == 'integer'
+        assert(str(tspace) == """\
+Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
+       Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None)),
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None),
+       Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None)),
+       Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)])\
+""")  # noqa
+
+    def test_linear_requirement(self, space_each_type):
+        """Check what is built using 'linear' requirement."""
+        tspace = build_required_space(space_each_type, dist_requirement='linear')
+        assert len(tspace) == 5
+        assert tspace[0].type == 'real'
+        assert tspace[1].type == 'categorical'
+        assert tspace[2].type == 'integer'
+        assert tspace[3].type == 'real'
+        assert tspace[4].type == 'integer'
+        assert(str(tspace) == """\
+Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
+       Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None),
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None),
+       Linearize(Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None))),
+       Quantize(Linearize(ReverseQuantize(Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None))))])\
+""")  # noqa
+
+    def test_flatten_requirement(self, space_each_type):
+        """Check what is built using 'flatten' requirement."""
+        tspace = build_required_space(
+            space_each_type, shape_requirement='flattened')
+
+        # 1 integer + 1 categorical + 1 * (3, 2) shapes
+        assert len(tspace) == 1 + 1 + 3 * (3 * 2)
+        assert str(tspace).count('View') == 3 * (3 * 2)
+
+        i = 0
+        for _ in range(3 * 2):
+            assert tspace[i].type == 'real'
+            i += 1
+
+        assert tspace[i].type == 'categorical'
+        i += 1
+
+        assert tspace[i].type == 'integer'
+        i += 1
+
+        for _ in range(3 * 2):
+            assert tspace[i].type == 'real'
+            i += 1
+
+        for _ in range(3 * 2):
+            assert tspace[i].type == 'integer'
+            i += 1
+
+        tspace = build_required_space(
+            space_each_type, shape_requirement='flattened', type_requirement='real')
+
+        # 1 integer + 4 categorical + 1 * (3, 2) shapes
+        assert len(tspace) == 1 + 4 + 3 * (3 * 2)
+        assert str(tspace).count('View') == 4 + 3 * (3 * 2)
 
     def test_capacity(self, space_each_type):
         """Check transformer space capacity"""
-        tspace = build_required_space('real', space_each_type)
+        tspace = build_required_space(space_each_type, type_requirement='real')
         assert tspace.cardinality == numpy.inf
 
         space = Space()
         probs = (0.1, 0.2, 0.3, 0.4)
         categories = ('asdfa', 2, 3, 4)
-        dim = Categorical('yolo', OrderedDict(zip(categories, probs)), shape=2)
+        dim = Categorical('yolo0', OrderedDict(zip(categories, probs)), shape=2)
         space.register(dim)
         dim = Integer('yolo2', 'uniform', -3, 6)
         space.register(dim)
-        tspace = build_required_space('integer', space)
-        assert tspace.cardinality == (4 * 2) * 6
+        tspace = build_required_space(space, type_requirement='integer')
+        assert tspace.cardinality == (4 ** 2) * (6 + 1)
 
         dim = Integer('yolo3', 'uniform', -3, 6, shape=(2, 1))
         space.register(dim)
-        tspace = build_required_space('integer', space)
-        assert tspace.cardinality == (4 * 2) * 6 * 6 * (2 * 1)
+        tspace = build_required_space(space, type_requirement='integer')
+        assert tspace.cardinality == (4 ** 2) * (6 + 1) * ((6 + 1) ** (2 * 1))
+
+        tspace = build_required_space(
+            space, type_requirement='integer',
+            shape_requirement='flattened')
+        assert tspace.cardinality == (4 ** 2) * (6 + 1) * ((6 + 1) ** (2 * 1))
+
+        tspace = build_required_space(
+            space, type_requirement='integer',
+            dist_requirement='linear')
+        assert tspace.cardinality == (4 ** 2) * (6 + 1) * ((6 + 1) ** (2 * 1))
 
 
 def test_quantization_does_not_violate_bounds():
