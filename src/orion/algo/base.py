@@ -96,7 +96,9 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
     """
 
-    requires = []
+    requires_type = None
+    requires_shape = None
+    requires_dist = None
 
     def __init__(self, space, **kwargs):
         log.debug("Creating Algorithm object of %s type with parameters:\n%s",
