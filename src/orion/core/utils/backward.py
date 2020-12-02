@@ -110,5 +110,5 @@ def get_algo_requirements(algorithm):
 
     return dict(
         type_requirement=algorithm.requires_type,
-        shape_requirement=algorithm.requires_flat,
+        shape_requirement=algorithm.requires_shape,
         dist_requirement=algorithm.requires_dist)
