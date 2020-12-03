@@ -1,10 +1,12 @@
 me: Release Drafter
 
 on:
-  push:
-    # branches to consider in the event; optional, defaults to all
+  pull_request:
     branches:
-      - master
+      - develop
+  push:
+    branches:
+      - develop
 
 jobs:
   update_release_draft:
