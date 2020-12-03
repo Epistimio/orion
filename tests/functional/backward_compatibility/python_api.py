@@ -5,12 +5,12 @@ from orion.client import create_experiment
 
 
 create_experiment(
-    'hunt-python',
-    space={'x': 'uniform(-50,50)'},
-    algorithms={'random': {'seed': 1}})
+    "hunt-python", space={"x": "uniform(-50,50)"}, algorithms={"random": {"seed": 1}}
+)
 
 create_experiment(
-    'hunt-python-branch-old',
-    space={'x': 'uniform(-50,50)'},
-    algorithms={'random': {'seed': 1}},
-    branching={'branch_from': 'hunt-python'})
+    "hunt-python-branch-old",
+    space={"x": "uniform(-50,50)"},
+    algorithms={"random": {"seed": 1}},
+    branching={"branch_from": "hunt-python"},
+)

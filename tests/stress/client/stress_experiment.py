@@ -15,14 +15,14 @@ from orion.core.io.database import DatabaseTimeout
 from orion.core.utils.exceptions import SampleTimeout
 from orion.core.utils.singleton import update_singletons
 
-DB_FILE = 'stress.pkl'
+DB_FILE = "stress.pkl"
 
 
 def f(x, worker):
     """Sleep and return objective equal to param"""
-    print(f'{worker: 6d}   {x: 5f}')
+    print(f"{worker: 6d}   {x: 5f}")
     time.sleep(max(0, random.gauss(1, 0.2)))
-    return [dict(name='objective', value=x, type='objective')]
+    return [dict(name="objective", value=x, type="objective")]
 
 
 def get_experiment(storage, space_type, size):
@@ -42,35 +42,26 @@ def get_experiment(storage, space_type, size):
         This defines `max_trials`, and the size of the search space (`uniform(0, size)`).
 
     """
-    if storage == 'pickleddb':
+    if storage == "pickleddb":
+        storage_config = {"type": "pickleddb", "host": DB_FILE}
+    elif storage == "mongodb":
         storage_config = {
-            'type': 'pickleddb',
-            'host': DB_FILE
-        }
-    elif storage == 'mongodb':
-        storage_config = {
-            'type': 'mongodb',
-            'name': 'stress',
-            'host': 'mongodb://user:pass@localhost'
+            "type": "mongodb",
+            "name": "stress",
+            "host": "mongodb://user:pass@localhost",
         }
 
-    discrete = space_type == 'discrete'
+    discrete = space_type == "discrete"
     high = size  # * 2
 
     return create_experiment(
-        'stress-test',
-        space={'x': f'uniform(0, {high}, discrete={discrete})'},
+        "stress-test",
+        space={"x": f"uniform(0, {high}, discrete={discrete})"},
         max_trials=size,
         max_idle_time=60 * 5,
-        algorithms={
-            'random': {
-                'seed': None if space_type == 'real' else 1
-            }
-        },
-        storage={
-            'type': 'legacy',
-            'database': storage_config
-        })
+        algorithms={"random": {"seed": None if space_type == "real" else 1}},
+        storage={"type": "legacy", "database": storage_config},
+    )
 
 
 def worker(worker_id, storage, space_type, size):
@@ -93,7 +84,7 @@ def worker(worker_id, storage, space_type, size):
 
         assert experiment.version == 1, experiment.version
 
-        print(f'{worker_id: 6d} enters')
+        print(f"{worker_id: 6d} enters")
 
         num_trials = 0
         while not experiment.is_done:
@@ -105,16 +96,16 @@ def worker(worker_id, storage, space_type, size):
             if trial is None:
                 break
 
-            results = f(trial.params['x'], worker_id)
+            results = f(trial.params["x"], worker_id)
             num_trials += 1
             experiment.observe(trial, results=results)
 
-        print(f'{worker_id: 6d} leaves | is done? {experiment.is_done}')
+        print(f"{worker_id: 6d} leaves | is done? {experiment.is_done}")
     except DatabaseTimeout as e:
-        print(f'{worker_id: 6d} timeouts and leaves')
+        print(f"{worker_id: 6d} timeouts and leaves")
         return num_trials
     except Exception as e:
-        print(f'{worker_id: 6d} crashes')
+        print(f"{worker_id: 6d} crashes")
         traceback.print_exc()
         return None
 
@@ -141,11 +132,11 @@ def stress_test(storage, space_type, workers, size):
         List of all trials at the end of the stress test
 
     """
-    if storage == 'pickleddb':
+    if storage == "pickleddb":
         if os.path.exists(DB_FILE):
             os.remove(DB_FILE)
-    elif storage == 'mongodb':
-        client = MongoClient(username='user', password='pass', authSource='stress')
+    elif storage == "mongodb":
+        client = MongoClient(username="user", password="pass", authSource="stress")
         database = client.stress
         database.experiments.drop()
         database.lying_trials.drop()
@@ -155,20 +146,25 @@ def stress_test(storage, space_type, workers, size):
         client.close()
     update_singletons()
 
-    print('Worker  |  Point')
+    print("Worker  |  Point")
 
     with Pool(workers) as p:
         results = p.starmap(
             worker,
-            zip(range(workers),
+            zip(
+                range(workers),
                 [storage] * workers,
                 [space_type] * workers,
-                [size] * workers))
+                [size] * workers,
+            ),
+        )
 
-    assert None not in results, 'A worker crashed unexpectedly. See logs for the error messages.'
-    assert all(n > 0 for n in results), 'A worker could not execute any trial.'
+    assert (
+        None not in results
+    ), "A worker crashed unexpectedly. See logs for the error messages."
+    assert all(n > 0 for n in results), "A worker could not execute any trial."
 
-    if space_type in ['discrete', 'real-seeded']:
+    if space_type in ["discrete", "real-seeded"]:
         assert sum(results) == size, results
     else:
         assert sum(results) >= size, results
@@ -177,10 +173,10 @@ def stress_test(storage, space_type, workers, size):
 
     trials = experiment.fetch_trials()
 
-    if storage == 'pickleddb':
+    if storage == "pickleddb":
         os.remove(DB_FILE)
-    elif storage == 'mongodb':
-        client = MongoClient(username='user', password='pass', authSource='stress')
+    elif storage == "mongodb":
+        client = MongoClient(username="user", password="pass", authSource="stress")
         database = client.stress
         database.experiments.drop()
         database.lying_trials.drop()
@@ -218,14 +214,14 @@ def get_timestamps(trials, size, space_type):
 
     start_time = None
     for i, trial in enumerate(trials):
-        hparams.add(trial.params['x'])
-        assert trial.objective.value == trial.params['x']
+        hparams.add(trial.params["x"])
+        assert trial.objective.value == trial.params["x"]
         if start_time is None:
             start_time = trial.submit_time
         x.append((trial.submit_time - start_time).total_seconds())
         y.append(i)
 
-    if space_type in ['discrete', 'real-seeded']:
+    if space_type in ["discrete", "real-seeded"]:
         assert len(hparams) == size
     else:
         assert len(hparams) >= size
@@ -254,8 +250,8 @@ def benchmark(workers, size):
 
     """
     results = {}
-    for backend in ['mongodb', 'pickleddb']:
-        for space_type in ['discrete', 'real', 'real-seeded']:
+    for backend in ["mongodb", "pickleddb"]:
+        for space_type in ["discrete", "real", "real-seeded"]:
             trials = stress_test(backend, space_type, workers, size)
             results[(backend, space_type)] = get_timestamps(trials, size, space_type)
 
@@ -269,9 +265,12 @@ def main():
     num_workers = [1, 4, 16, 32, 64, 128]
 
     fig, axis = plt.subplots(
-        len(num_workers), 1, figsize=(5, 1.8 * len(num_workers)),
-        gridspec_kw={'hspace': 0.01, 'wspace': 0},
-        sharex='col')
+        len(num_workers),
+        1,
+        figsize=(5, 1.8 * len(num_workers)),
+        gridspec_kw={"hspace": 0.01, "wspace": 0},
+        sharex="col",
+    )
 
     results = {}
 
@@ -279,36 +278,40 @@ def main():
 
         results[workers] = benchmark(workers, size)
 
-        for backend in ['mongodb', 'pickleddb']:
-            for space_type in ['discrete', 'real', 'real-seeded']:
+        for backend in ["mongodb", "pickleddb"]:
+            for space_type in ["discrete", "real", "real-seeded"]:
                 x, y = results[workers][(backend, space_type)]
-                axis[i].plot(x, y, label=f'{backend}-{space_type}')
+                axis[i].plot(x, y, label=f"{backend}-{space_type}")
 
     for i, workers in enumerate(num_workers):
         # We pick 'pickleddb' and discrete=True as the reference for the slowest ones
-        x, y = results[min(num_workers)][('pickleddb', 'discrete')]
+        x, y = results[min(num_workers)][("pickleddb", "discrete")]
         d_x = max(x) - min(x)
         d_y = max(y) - min(y)
         if i < len(num_workers) - 1:
-            axis[i].text(min(x) + d_x * 0.6, min(y) + d_y * 0.1, f'{workers: 3d} workers')
+            axis[i].text(
+                min(x) + d_x * 0.6, min(y) + d_y * 0.1, f"{workers: 3d} workers"
+            )
         else:
-            axis[i].text(min(x) + d_x * 0.6, min(y) + d_y * 0.7, f'{workers: 3d} workers')
+            axis[i].text(
+                min(x) + d_x * 0.6, min(y) + d_y * 0.7, f"{workers: 3d} workers"
+            )
 
     for i in range(len(num_workers) - 1):
-        axis[i].spines['top'].set_visible(False)
-        axis[i].spines['right'].set_visible(False)
+        axis[i].spines["top"].set_visible(False)
+        axis[i].spines["right"].set_visible(False)
 
-    axis[-1].spines['right'].set_visible(False)
-    axis[-1].spines['top'].set_visible(False)
+    axis[-1].spines["right"].set_visible(False)
+    axis[-1].spines["top"].set_visible(False)
 
-    axis[-1].set_xlabel('Time (s)')
-    axis[-1].set_ylabel('Number of trials')
+    axis[-1].set_xlabel("Time (s)")
+    axis[-1].set_ylabel("Number of trials")
     axis[-1].legend()
 
     plt.subplots_adjust(left=0.15, bottom=0.05, top=1, right=1)
 
-    plt.savefig('test.png')
+    plt.savefig("test.png")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

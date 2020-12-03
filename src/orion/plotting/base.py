@@ -10,7 +10,7 @@
 import orion.plotting.backend_plotly as backend
 
 
-def lpi(experiment, model='RandomForestRegressor', model_kwargs=None, n=20, **kwargs):
+def lpi(experiment, model="RandomForestRegressor", model_kwargs=None, n=20, **kwargs):
     """
     Make a bar plot to visualize the local parameter importance metric.
 
@@ -52,7 +52,9 @@ def lpi(experiment, model='RandomForestRegressor', model_kwargs=None, n=20, **kw
         If no experiment is provided or if regressor name is invalid.
 
     """
-    return backend.lpi(experiment, model=model, model_kwargs=model_kwargs, n=n, **kwargs)
+    return backend.lpi(
+        experiment, model=model, model_kwargs=model_kwargs, n=n, **kwargs
+    )
 
 
 def parallel_coordinates(experiment, order=None, **kwargs):
@@ -87,7 +89,7 @@ def parallel_coordinates(experiment, order=None, **kwargs):
     return backend.parallel_coordinates(experiment, order=order, **kwargs)
 
 
-def regret(experiment, order_by='suggested', verbose_hover=True, **kwargs):
+def regret(experiment, order_by="suggested", verbose_hover=True, **kwargs):
     """
     Make a plot to visualize the performance of the hyper-optimization process.
 
@@ -127,9 +129,10 @@ def regret(experiment, order_by='suggested', verbose_hover=True, **kwargs):
 
 
 PLOT_METHODS = {
-    'lpi': lpi,
-    'parallel_coordinates': parallel_coordinates,
-    'regret': regret}
+    "lpi": lpi,
+    "parallel_coordinates": parallel_coordinates,
+    "regret": regret,
+}
 
 
 class PlotAccessor:
@@ -163,10 +166,12 @@ class PlotAccessor:
 
             - 'regret' : Regret plot (default)
         """
-        kind = kwargs.pop('kind', 'regret')
+        kind = kwargs.pop("kind", "regret")
 
         if kind not in PLOT_METHODS.keys():
-            raise ValueError(f"Plot of kind '{kind}' is not one of {list(PLOT_METHODS.keys())}")
+            raise ValueError(
+                f"Plot of kind '{kind}' is not one of {list(PLOT_METHODS.keys())}"
+            )
 
         return PLOT_METHODS[kind](self._experiment, **kwargs)
 

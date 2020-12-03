@@ -67,35 +67,47 @@ $ orion db rm my-exp-name --version 1
 def add_subparser(parser):
     """Return the parser that needs to be used for this command"""
     rm_parser = parser.add_parser(
-        'rm',
+        "rm",
         description=DESCRIPTION,
-        help='Deletes experiments and trials',
-        formatter_class=argparse.RawTextHelpFormatter)
+        help="Deletes experiments and trials",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
 
     rm_parser.set_defaults(func=main)
 
-    rm_parser.add_argument(
-        'name',
-        help='Name of the experiment to delete.')
-
-    rm_parser.add_argument('-c', '--config', type=argparse.FileType('r'),
-                           metavar='path-to-config', help="user provided "
-                           "orion configuration file")
+    rm_parser.add_argument("name", help="Name of the experiment to delete.")
 
     rm_parser.add_argument(
-        '-v', '--version', type=int, default=None,
+        "-c",
+        "--config",
+        type=argparse.FileType("r"),
+        metavar="path-to-config",
+        help="user provided " "orion configuration file",
+    )
+
+    rm_parser.add_argument(
+        "-v",
+        "--version",
+        type=int,
+        default=None,
         help="specific version of experiment to fetch; "
-             "(default: last version matching.)")
+        "(default: last version matching.)",
+    )
 
     rm_parser.add_argument(
-        '-s', '--status',
-        help='Remove all trials of the experiment with the given status '
-             '(Will not delete the experiment). '
-             'Also supports --status=* to delete all trials of a given experiment.')
+        "-s",
+        "--status",
+        help="Remove all trials of the experiment with the given status "
+        "(Will not delete the experiment). "
+        "Also supports --status=* to delete all trials of a given experiment.",
+    )
 
     rm_parser.add_argument(
-        '-f', '--force', action='store_true',
-        help='Force delete without asking to enter experiment name twice.')
+        "-f",
+        "--force",
+        action="store_true",
+        help="Force delete without asking to enter experiment name twice.",
+    )
 
     return rm_parser
 
@@ -104,17 +116,21 @@ def process_trial_rm(storage, root, status):
     """Delete the matching trials of the given experiment."""
     trials_total = 0
     for node in root:
-        if status == '*':
+        if status == "*":
             query = {}
         else:
-            query = {'status': status}
+            query = {"status": status}
 
         count = storage.delete_trials(uid=node.item.id, where=query)
-        logger.debug('%d trials deleted in experiment %s-v%d',
-                     count, node.item.name, node.item.version)
+        logger.debug(
+            "%d trials deleted in experiment %s-v%d",
+            count,
+            node.item.name,
+            node.item.version,
+        )
         trials_total += count
 
-    print(f'{trials_total} trials deleted')
+    print(f"{trials_total} trials deleted")
 
 
 def process_exp_rm(storage, root):
@@ -124,15 +140,20 @@ def process_exp_rm(storage, root):
     for node in root:
         count = storage.delete_trials(uid=node.item.id)
         trials_total += count
-        logger.debug('%d trials deleted in experiment %s-v%d',
-                     count, node.item.name, node.item.version)
+        logger.debug(
+            "%d trials deleted in experiment %s-v%d",
+            count,
+            node.item.name,
+            node.item.version,
+        )
         count = storage.delete_experiment(uid=node.item.id)
-        logger.debug('%s experiment %s-v%d deleted',
-                     count, node.item.name, node.item.version)
+        logger.debug(
+            "%s experiment %s-v%d deleted", count, node.item.name, node.item.version
+        )
         exp_total += count
 
-    print(f'{trials_total} trials deleted')
-    print(f'{exp_total} experiments deleted')
+    print(f"{trials_total} trials deleted")
+    print(f"{exp_total} experiments deleted")
 
 
 def delete_experiments(storage, root, name, force):
@@ -140,7 +161,7 @@ def delete_experiments(storage, root, name, force):
     confirmed = confirm_name(EXP_RM_MESSAGE, name, force)
 
     if not confirmed:
-        print('Confirmation failed, aborting operation.')
+        print("Confirmation failed, aborting operation.")
         sys.exit(1)
 
     process_exp_rm(storage, root)
@@ -151,7 +172,7 @@ def delete_trials(storage, root, name, status, force):
     confirmed = confirm_name(TRIALS_RM_MESSAGE, name, force)
 
     if not confirmed:
-        print('Confirmation failed, aborting operation.')
+        print("Confirmation failed, aborting operation.")
         sys.exit(1)
 
     process_trial_rm(storage, root, status)
@@ -160,18 +181,19 @@ def delete_trials(storage, root, name, status, force):
 def main(args):
     """Remove the experiment(s) or trial(s)."""
     config = experiment_builder.get_cmd_config(args)
-    experiment_builder.setup_storage(config.get('storage'))
+    experiment_builder.setup_storage(config.get("storage"))
 
     # Find root experiment
-    root = experiment_builder.build_view(name=args['name'],
-                                         version=args.get('version', None)).node
+    root = experiment_builder.build_view(
+        name=args["name"], version=args.get("version", None)
+    ).node
 
     # List all experiments with children
-    print_tree(root, nameattr='tree_name')
+    print_tree(root, nameattr="tree_name")
 
     storage = get_storage()
 
-    if args['status']:
-        delete_trials(storage, root, args['name'], args['status'], args['force'])
+    if args["status"]:
+        delete_trials(storage, root, args["name"], args["status"], args["force"])
     else:
-        delete_experiments(storage, root, args['name'], args['force'])
+        delete_experiments(storage, root, args["name"], args["force"])

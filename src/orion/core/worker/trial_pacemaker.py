@@ -11,7 +11,7 @@ import threading
 
 from orion.storage.base import get_storage
 
-STOPPED_STATUS = {'completed', 'interrupted', 'suspended'}
+STOPPED_STATUS = {"completed", "interrupted", "suspended"}
 
 
 class TrialPacemaker(threading.Thread):

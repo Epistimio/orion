@@ -23,7 +23,7 @@ from orion.core.io.database.ephemeraldb import EphemeralDB
 
 log = logging.getLogger(__name__)
 
-DEFAULT_HOST = os.path.join(orion.core.DIRS.user_data_dir, 'orion', 'orion_db.pkl')
+DEFAULT_HOST = os.path.join(orion.core.DIRS.user_data_dir, "orion", "orion_db.pkl")
 
 TIMEOUT_ERROR_MESSAGE = """\
 Could not acquire lock for PickledDB after {} seconds.
@@ -165,8 +165,9 @@ class PickledDB(AbstractDB):
 
         """
         with self.locked_database() as database:
-            return database.read_and_write(collection_name, query=query, data=data,
-                                           selection=selection)
+            return database.read_and_write(
+                collection_name, query=query, data=data, selection=selection
+            )
 
     def count(self, collection_name, query=None):
         """Count the number of documents in a collection which match the `query`.
@@ -191,7 +192,7 @@ class PickledDB(AbstractDB):
         if not os.path.exists(self.host):
             return EphemeralDB()
 
-        with open(self.host, 'rb') as f:
+        with open(self.host, "rb") as f:
             data = f.read()
             if not data:
                 database = EphemeralDB()
@@ -202,20 +203,23 @@ class PickledDB(AbstractDB):
 
     def _dump_database(self, database):
         """Write pickled DB on disk"""
-        tmp_file = self.host + '.tmp'
+        tmp_file = self.host + ".tmp"
 
         try:
-            with open(tmp_file, 'wb') as f:
+            with open(tmp_file, "wb") as f:
                 pickle.dump(database, f)
 
         except (PicklingError, AttributeError):
-            collection, doc = find_unpickable_doc(database._db)  # pylint: disable=protected-access
-            log.error('Document in (collection: %s) is not pickable\ndoc: %s',
-                      collection, doc.to_dict())
+            # pylint: disable=protected-access
+            collection, doc = find_unpickable_doc(database._db)
+            log.error(
+                "Document in (collection: %s) is not pickable\ndoc: %s",
+                collection,
+                doc.to_dict(),
+            )
 
             key, value = find_unpickable_field(doc)
-            log.error('because (value %s) in (field: %s) is not pickable',
-                      value, key)
+            log.error("because (value %s) in (field: %s) is not pickable", value, key)
             raise
 
         os.rename(tmp_file, self.host)
@@ -223,7 +227,7 @@ class PickledDB(AbstractDB):
     @contextmanager
     def locked_database(self, write=True):
         """Lock database file during wrapped operation call."""
-        lock = FileLock(self.host + '.lock')
+        lock = FileLock(self.host + ".lock")
 
         try:
             with lock.acquire(timeout=self.timeout):

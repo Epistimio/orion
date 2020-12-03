@@ -28,8 +28,10 @@ def reserve_trial(experiment, producer, _depth=1):
     if trial is None and not experiment.is_done:
 
         if _depth > 10:
-            raise WaitingForTrials('No trials are available at the moment '
-                                   'wait for current trials to finish')
+            raise WaitingForTrials(
+                "No trials are available at the moment "
+                "wait for current trials to finish"
+            )
 
         log.debug("#### Failed to pull a new trial from database.")
 
@@ -74,11 +76,20 @@ orion status --name {experiment.name} --version {experiment.version} --all
 """
 
 
-def workon(experiment, max_trials=None, max_broken=None, max_idle_time=None, heartbeat=None,
-           user_script_config=None, interrupt_signal_code=None):
+def workon(
+    experiment,
+    max_trials=None,
+    max_broken=None,
+    max_idle_time=None,
+    heartbeat=None,
+    user_script_config=None,
+    interrupt_signal_code=None,
+):
     """Try to find solution to the search problem defined in `experiment`."""
     producer = Producer(experiment, max_idle_time)
-    consumer = Consumer(experiment, heartbeat, user_script_config, interrupt_signal_code)
+    consumer = Consumer(
+        experiment, heartbeat, user_script_config, interrupt_signal_code
+    )
 
     log.debug("#####  Init Experiment  #####")
     try:
@@ -102,8 +113,11 @@ def workon(experiment, max_trials=None, max_broken=None, max_idle_time=None, hea
         try:
             trial = reserve_trial(experiment, producer)
         except WaitingForTrials as ex:
-            print("### Experiment failed to reserve new trials: {reason}, terminating. "
-                  .format(reason=str(ex)))
+            print(
+                "### Experiment failed to reserve new trials: {reason}, terminating. ".format(
+                    reason=str(ex)
+                )
+            )
             break
 
         if trial is not None:
@@ -117,8 +131,8 @@ def workon(experiment, max_trials=None, max_broken=None, max_idle_time=None, hea
             print(worker_broken_trials, max_broken)
             break
 
-    print('\n' + format_stats(experiment))
+    print("\n" + format_stats(experiment))
 
-    print('\n' + COMPLETION_MESSAGE.format(experiment=experiment))
+    print("\n" + COMPLETION_MESSAGE.format(experiment=experiment))
     if not experiment.is_done:
         print(NONCOMPLETED_MESSAGE.format(experiment=experiment))

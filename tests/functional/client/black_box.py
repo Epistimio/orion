@@ -3,7 +3,11 @@
 """Script that will always interrupt trials."""
 import argparse
 
-from orion.client import interrupt_trial, report_bad_trial, report_objective  # noqa: F401
+from orion.client import (
+    interrupt_trial,
+    report_bad_trial,
+    report_objective,
+)  # noqa: F401
 
 
 def no_report():
@@ -14,11 +18,11 @@ def no_report():
 def execute():
     """Execute a simple pipeline as an example."""
     parser = argparse.ArgumentParser()
-    parser.add_argument('fct', type=str)
-    parser.add_argument('--name', type=str)
-    parser.add_argument('--objective', type=str)
-    parser.add_argument('--data', type=str)
-    parser.add_argument('-x', type=float)
+    parser.add_argument("fct", type=str)
+    parser.add_argument("--name", type=str)
+    parser.add_argument("--objective", type=str)
+    parser.add_argument("--data", type=str)
+    parser.add_argument("-x", type=float)
 
     inputs = parser.parse_args()
 
@@ -34,11 +38,11 @@ def execute():
         if value is not None:
             kwargs[key] = value
 
-    kwargs.pop('fct')
-    kwargs.pop('x')
+    kwargs.pop("fct")
+    kwargs.pop("x")
 
-    if 'data' in kwargs:
-        kwargs['data'] = [dict(name=kwargs['data'], type='constraint', value=1.0)]
+    if "data" in kwargs:
+        kwargs["data"] = [dict(name=kwargs["data"], type="constraint", value=1.0)]
 
     globals()[inputs.fct](**kwargs)
 

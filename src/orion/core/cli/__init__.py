@@ -19,10 +19,11 @@ log = logging.getLogger(__name__)
 
 def load_modules_parser(orion_parser):
     """Search through the `cli` folder for any module containing a `get_parser` function"""
-    modules = module_import.load_modules_in_path('orion.core.cli',
-                                                 lambda m: hasattr(m, 'add_subparser'))
+    modules = module_import.load_modules_in_path(
+        "orion.core.cli", lambda m: hasattr(m, "add_subparser")
+    )
     for module in modules:
-        get_parser = getattr(module, 'add_subparser')
+        get_parser = getattr(module, "add_subparser")
         get_parser(orion_parser.get_subparsers())
 
 

@@ -43,7 +43,9 @@ def compute_budgets(min_resources, max_resources, reduction_factor, num_rungs):
     budgets = numpy.logspace(
         numpy.log(min_resources) / numpy.log(reduction_factor),
         numpy.log(max_resources) / numpy.log(reduction_factor),
-        num_rungs, base=reduction_factor)
+        num_rungs,
+        base=reduction_factor,
+    )
     budgets = (budgets + 0.5).astype(int)
 
     for i in range(num_rungs - 1):
@@ -97,11 +99,25 @@ class ASHA(BaseAlgorithm):
 
     """
 
-    def __init__(self, space, seed=None, grace_period=None, max_resources=None,
-                 reduction_factor=None, num_rungs=None, num_brackets=1):
+    def __init__(
+        self,
+        space,
+        seed=None,
+        grace_period=None,
+        max_resources=None,
+        reduction_factor=None,
+        num_rungs=None,
+        num_brackets=1,
+    ):
         super(ASHA, self).__init__(
-            space, seed=seed, max_resources=max_resources, grace_period=grace_period,
-            reduction_factor=reduction_factor, num_rungs=num_rungs, num_brackets=num_brackets)
+            space,
+            seed=seed,
+            max_resources=max_resources,
+            grace_period=grace_period,
+            reduction_factor=reduction_factor,
+            num_rungs=num_rungs,
+            num_brackets=num_brackets,
+        )
 
         self.trial_info = {}  # Stores Trial -> Bracket
 
@@ -114,24 +130,29 @@ class ASHA(BaseAlgorithm):
 
         if grace_period is not None:
             logger.warning(
-                'The argument `grace_period` is deprecated and will be removed in v0.2.0. To set '
-                'min resources, you must define ' 'it in the prior `fidelity(low, high, base)`.')
+                "The argument `grace_period` is deprecated and will be removed in v0.2.0. To set "
+                "min resources, you must define "
+                "it in the prior `fidelity(low, high, base)`."
+            )
             min_resources = grace_period
         else:
             min_resources = fidelity_dim.low
 
         if max_resources is not None:
             logger.warning(
-                'The argument `max_resources` is deprecated and will be removed in v0.2.0. To set '
-                'max resources, you must define ' 'it in the prior `fidelity(low, high, base)`')
+                "The argument `max_resources` is deprecated and will be removed in v0.2.0. To set "
+                "max resources, you must define "
+                "it in the prior `fidelity(low, high, base)`"
+            )
             max_resources = max_resources
         else:
             max_resources = fidelity_dim.high
 
         if reduction_factor is not None:
             logger.warning(
-                'The argument `reduction_factor` is deprecated and will be removed in v0.2.0. To '
-                'set the reduction factor, you must define the base of `fidelity(low, high, base)`')
+                "The argument `reduction_factor` is deprecated and will be removed in v0.2.0. To "
+                "set the reduction factor, you must define the base of `fidelity(low, high, base)`"
+            )
             reduction_factor = reduction_factor
         else:
             reduction_factor = fidelity_dim.base
@@ -140,17 +161,26 @@ class ASHA(BaseAlgorithm):
             raise AttributeError("Reduction factor for ASHA needs to be at least 2.")
 
         if num_rungs is None:
-            num_rungs = int(numpy.log(max_resources / min_resources) /
-                            numpy.log(reduction_factor) + 1)
+            num_rungs = int(
+                numpy.log(max_resources / min_resources) / numpy.log(reduction_factor)
+                + 1
+            )
 
         self.num_rungs = num_rungs
 
-        budgets = compute_budgets(min_resources, max_resources, reduction_factor, num_rungs)
+        budgets = compute_budgets(
+            min_resources, max_resources, reduction_factor, num_rungs
+        )
 
         # Tracks state for new trial add
         if num_brackets > num_rungs:
-            logger.warning("The input num_brackets %i is larger than the number of rungs %i, "
-                           "set num_brackets as %i", num_brackets, num_rungs, num_rungs)
+            logger.warning(
+                "The input num_brackets %i is larger than the number of rungs %i, "
+                "set num_brackets as %i",
+                num_brackets,
+                num_rungs,
+                num_rungs,
+            )
             num_brackets = num_rungs
 
         self.brackets = [
@@ -168,7 +198,7 @@ class ASHA(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {'rng_state': self.rng.get_state()}
+        return {"rng_state": self.rng.get_state()}
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
@@ -176,7 +206,7 @@ class ASHA(BaseAlgorithm):
         :param state_dict: Dictionary representing state of an algorithm
         """
         self.seed_rng(0)
-        self.rng.set_state(state_dict['rng_state'])
+        self.rng.set_state(state_dict["rng_state"])
 
     def suggest(self, num=1):
         """Suggest a `num` of new sets of parameters.
@@ -196,7 +226,7 @@ class ASHA(BaseAlgorithm):
             candidate = bracket.update_rungs()
 
             if candidate:
-                logger.debug('Promoting')
+                logger.debug("Promoting")
                 return [candidate]
 
         point = self._grow_point_for_bottom_rung()
@@ -204,26 +234,34 @@ class ASHA(BaseAlgorithm):
             return None
 
         sizes = numpy.array([len(b.rungs) for b in self.brackets])
-        probs = numpy.e**(sizes - sizes.max())
-        probs = numpy.array([prob * int(not bracket.is_filled)
-                             for prob, bracket in zip(probs, self.brackets)])
+        probs = numpy.e ** (sizes - sizes.max())
+        probs = numpy.array(
+            [
+                prob * int(not bracket.is_filled)
+                for prob, bracket in zip(probs, self.brackets)
+            ]
+        )
         normalized = probs / probs.sum()
         idx = self.rng.choice(len(self.brackets), p=normalized)
 
         point[self.fidelity_index] = self.brackets[idx].rungs[0][0]
 
-        logger.debug('Sampling for bracket %s %s', idx, self.brackets[idx])
+        logger.debug("Sampling for bracket %s %s", idx, self.brackets[idx])
 
         return [tuple(point)]
 
     def _grow_point_for_bottom_rung(self):
         """Sample point for the bottom rung"""
         if all(bracket.is_filled for bracket in self.brackets):
-            logger.warning('All brackets are filled.')
+            logger.warning("All brackets are filled.")
             return None
 
         for _attempt in range(100):
-            point = list(self.space.sample(1, seed=tuple(self.rng.randint(0, 1000000, size=3)))[0])
+            point = list(
+                self.space.sample(1, seed=tuple(self.rng.randint(0, 1000000, size=3)))[
+                    0
+                ]
+            )
             if self.get_id(point) not in self.trial_info:
                 break
 
@@ -233,24 +271,27 @@ class ASHA(BaseAlgorithm):
                 num_sample_trials += len(bracket.rungs[0][1])
 
             if num_sample_trials >= self.space.cardinality:
-                logger.warning('The number of unique trials of bottom rungs exceeds the search '
-                               'space cardinality %i, ASHA algorithm exits.',
-                               self.space.cardinality)
+                logger.warning(
+                    "The number of unique trials of bottom rungs exceeds the search "
+                    "space cardinality %i, ASHA algorithm exits.",
+                    self.space.cardinality,
+                )
                 return None
             else:
                 raise RuntimeError(
-                    'ASHA keeps sampling already existing points. This should not happen, '
-                    'please report this error to https://github.com/Epistimio/orion/issues')
+                    "ASHA keeps sampling already existing points. This should not happen, "
+                    "please report this error to https://github.com/Epistimio/orion/issues"
+                )
 
         return point
 
     def get_id(self, point):
         """Compute a unique hash for a point based on params, but not fidelity level."""
         _point = list(point)
-        non_fidelity_dims = _point[0:self.fidelity_index]
-        non_fidelity_dims.extend(_point[self.fidelity_index + 1:])
+        non_fidelity_dims = _point[0 : self.fidelity_index]
+        non_fidelity_dims.extend(_point[self.fidelity_index + 1 :])
 
-        return hashlib.md5(str(non_fidelity_dims).encode('utf-8')).hexdigest()
+        return hashlib.md5(str(non_fidelity_dims).encode("utf-8")).hexdigest()
 
     def observe(self, points, results):
         """Observe evaluation `results` corresponding to list of `points` in
@@ -265,19 +306,27 @@ class ASHA(BaseAlgorithm):
 
             if not bracket:
                 fidelity = point[self.fidelity_index]
-                brackets = [bracket for bracket in self.brackets
-                            if bracket.rungs[0][0] == fidelity]
+                brackets = [
+                    bracket
+                    for bracket in self.brackets
+                    if bracket.rungs[0][0] == fidelity
+                ]
                 if not brackets:
                     raise ValueError(
-                        "No bracket found for point {0} with fidelity {1}".format(_id, fidelity))
+                        "No bracket found for point {0} with fidelity {1}".format(
+                            _id, fidelity
+                        )
+                    )
                 bracket = brackets[0]
 
             try:
-                bracket.register(point, result['objective'])
+                bracket.register(point, result["objective"])
             except IndexError:
-                logger.warning('Point registered to wrong bracket. This is likely due '
-                               'to a corrupted database, where trials of different fidelity '
-                               'have a wrong timestamps.')
+                logger.warning(
+                    "Point registered to wrong bracket. This is likely due "
+                    "to a corrupted database, where trials of different fidelity "
+                    "have a wrong timestamps."
+                )
                 continue
 
             if _id not in self.trial_info:
@@ -291,15 +340,17 @@ class ASHA(BaseAlgorithm):
     @property
     def fidelity_index(self):
         """Compute the index of the point when fidelity is."""
+
         def _is_fidelity(dim):
-            return (isinstance(dim, Fidelity) or
-                    (hasattr(dim, 'original_dimension') and
-                     isinstance(dim.original_dimension, Fidelity)))
+            return isinstance(dim, Fidelity) or (
+                hasattr(dim, "original_dimension")
+                and isinstance(dim.original_dimension, Fidelity)
+            )
 
         return [i for i, dim in enumerate(self.space.values()) if _is_fidelity(dim)][0]
 
 
-class Bracket():
+class Bracket:
     """Bracket of rungs for the algorithm ASHA.
 
     Parameters
@@ -320,7 +371,7 @@ class Bracket():
         self.reduction_factor = reduction_factor
         self.rungs = [(budget, dict()) for budget in budgets]
 
-        logger.debug('Bracket budgets: %s', str([rung[0] for rung in self.rungs]))
+        logger.debug("Bracket budgets: %s", str([rung[0] for rung in self.rungs]))
 
     def register(self, point, objective):
         """Register a point in the corresponding rung"""
@@ -328,8 +379,11 @@ class Bracket():
         rungs = [rung for budget, rung in self.rungs if budget == fidelity]
         if not rungs:
             budgets = [budget for budget, rung in self.rungs]
-            raise IndexError(REGISTRATION_ERROR.format(fidelity=fidelity, budgets=budgets,
-                                                       params=point))
+            raise IndexError(
+                REGISTRATION_ERROR.format(
+                    fidelity=fidelity, budgets=budgets, params=point
+                )
+            )
 
         rungs[0][self.asha.get_id(point)] = (objective, point)
 
@@ -338,8 +392,13 @@ class Bracket():
         _, rung = self.rungs[rung_id]
         next_rung = self.rungs[rung_id + 1][1]
 
-        rung = list(sorted((objective, point) for objective, point in rung.values()
-                           if objective is not None))
+        rung = list(
+            sorted(
+                (objective, point)
+                for objective, point in rung.values()
+                if objective is not None
+            )
+        )
         k = len(rung) // self.reduction_factor
         k = min(k, len(rung))
 
@@ -390,11 +449,15 @@ class Bracket():
 
                 # pylint: disable=logging-format-interpolation
                 logger.debug(
-                    'Promoting {point} from rung {past_rung} with fidelity {past_fidelity} to '
-                    'rung {new_rung} with fidelity {new_fidelity}'.format(
-                        point=candidate, past_rung=rung_id,
+                    "Promoting {point} from rung {past_rung} with fidelity {past_fidelity} to "
+                    "rung {new_rung} with fidelity {new_fidelity}".format(
+                        point=candidate,
+                        past_rung=rung_id,
                         past_fidelity=candidate[self.asha.fidelity_index],
-                        new_rung=rung_id + 1, new_fidelity=self.rungs[rung_id + 1][0]))
+                        new_rung=rung_id + 1,
+                        new_fidelity=self.rungs[rung_id + 1][0],
+                    )
+                )
 
                 candidate = list(copy.deepcopy(candidate))
                 candidate[self.asha.fidelity_index] = self.rungs[rung_id + 1][0]
@@ -405,4 +468,4 @@ class Bracket():
 
     def __repr__(self):
         """Return representation of bracket with fidelity levels"""
-        return 'Bracket({})'.format([rung[0] for rung in self.rungs])
+        return "Bracket({})".format([rung[0] for rung in self.rungs])

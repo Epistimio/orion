@@ -11,4 +11,4 @@
 from orion.analysis.lpi import lpi
 from orion.analysis.regret import regret
 
-__all__ = ['lpi', 'regret']
+__all__ = ["lpi", "regret"]

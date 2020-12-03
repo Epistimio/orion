@@ -34,11 +34,11 @@ class PresenceStage:
 
         backward.update_db_config(config)
 
-        if 'database' not in config.get('storage', {}):
+        if "database" not in config.get("storage", {}):
             return "Skipping", "No default configuration found for database."
 
-        self.db_config = config['storage']['database']
-        print('\n   ', self.db_config)
+        self.db_config = config["storage"]["database"]
+        print("\n   ", self.db_config)
 
         return "Success", ""
 
@@ -49,18 +49,18 @@ class PresenceStage:
         if not len(config):
             return "Skipping", "Missing configuration file."
 
-        if 'database' not in config.get('storage', {}):
+        if "database" not in config.get("storage", {}):
             return "Skipping", "No database found in configuration file."
 
-        config = config['storage']['database']
-        names = ['type', 'name', 'host', 'port']
+        config = config["storage"]["database"]
+        names = ["type", "name", "host", "port"]
 
         if not any(name in config for name in names):
             return "Skipping", "No configuration value found inside `database`."
 
         self.db_config.update(config)
 
-        print('\n   ', config)
+        print("\n   ", config)
 
         return "Success", ""
 

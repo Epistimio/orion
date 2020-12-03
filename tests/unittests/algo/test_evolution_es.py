@@ -16,8 +16,8 @@ from orion.algo.space import Fidelity, Real, Space
 def space():
     """Create a Space with a real dimension and a fidelity value."""
     space = Space()
-    space.register(Real('lr', 'uniform', 0, 1))
-    space.register(Fidelity('epoch', 1, 9, 1))
+    space.register(Real("lr", "uniform", 0, 1))
+    space.register(Fidelity("epoch", 1, 9, 1))
     return space
 
 
@@ -25,9 +25,9 @@ def space():
 def space1():
     """Create a Space with two real dimensions and a fidelity value."""
     space = Space()
-    space.register(Real('lr', 'uniform', 0, 1))
-    space.register(Real('weight_decay', 'uniform', 0, 1))
-    space.register(Fidelity('epoch', 1, 8, 2))
+    space.register(Real("lr", "uniform", 0, 1))
+    space.register(Real("weight_decay", "uniform", 0, 1))
+    space.register(Fidelity("epoch", 1, 8, 2))
     return space
 
 
@@ -35,8 +35,8 @@ def space1():
 def space2():
     """Create a Space with two real dimensions."""
     space = Space()
-    space.register(Real('lr', 'uniform', 0, 1))
-    space.register(Real('weight_decay', 'uniform', 0, 1))
+    space.register(Real("lr", "uniform", 0, 1))
+    space.register(Real("weight_decay", "uniform", 0, 1))
     return space
 
 
@@ -61,8 +61,12 @@ def bracket(budgets, evolution, space1):
 @pytest.fixture
 def evolution_customer_mutate(space1):
     """Return an instance of EvolutionES."""
-    return EvolutionES(space1, repetitions=1, nums_population=4,
-                       mutate="orion.core.utils.tests.customized_mutate_example")
+    return EvolutionES(
+        space1,
+        repetitions=1,
+        nums_population=4,
+        mutate="orion.core.utils.tests.customized_mutate_example",
+    )
 
 
 @pytest.fixture
@@ -72,30 +76,43 @@ def rung_0():
     return dict(
         n_trials=9,
         resources=1,
-        results={hashlib.md5(str([point]).encode('utf-8')).hexdigest(): (point, (1, point))
-                 for point in points})
+        results={
+            hashlib.md5(str([point]).encode("utf-8")).hexdigest(): (point, (1, point))
+            for point in points
+        },
+    )
 
 
 @pytest.fixture
 def rung_1(rung_0):
     """Create fake points and objectives for rung 1."""
-    values = map(lambda v: (v[0], (3, v[0])), list(sorted(rung_0['results'].values()))[:3])
+    values = map(
+        lambda v: (v[0], (3, v[0])), list(sorted(rung_0["results"].values()))[:3]
+    )
     return dict(
         n_trials=3,
         resources=3,
-        results={hashlib.md5(str([value[0]]).encode('utf-8')).hexdigest(): value
-                 for value in values})
+        results={
+            hashlib.md5(str([value[0]]).encode("utf-8")).hexdigest(): value
+            for value in values
+        },
+    )
 
 
 @pytest.fixture
 def rung_2(rung_1):
     """Create fake points and objectives for rung 2."""
-    values = map(lambda v: (v[0], (9, v[0])), list(sorted(rung_1['results'].values()))[:1])
+    values = map(
+        lambda v: (v[0], (9, v[0])), list(sorted(rung_1["results"].values()))[:1]
+    )
     return dict(
         n_trials=1,
         resources=9,
-        results={hashlib.md5(str([value[0]]).encode('utf-8')).hexdigest(): value
-                 for value in values})
+        results={
+            hashlib.md5(str([value[0]]).encode("utf-8")).hexdigest(): value
+            for value in values
+        },
+    )
 
 
 @pytest.fixture
@@ -105,9 +122,14 @@ def rung_3():
     return dict(
         n_trials=4,
         resources=1,
-        results={hashlib.md5(str([point]).encode('utf-8')).hexdigest():
-                 (point, (np.power(2, (point - 1)), 1.0 / point, 1.0 / (point * point)))
-                 for point in points})
+        results={
+            hashlib.md5(str([point]).encode("utf-8")).hexdigest(): (
+                point,
+                (np.power(2, (point - 1)), 1.0 / point, 1.0 / (point * point)),
+            )
+            for point in points
+        },
+    )
 
 
 @pytest.fixture
@@ -117,9 +139,14 @@ def rung_4():
     return dict(
         n_trials=4,
         resources=1,
-        results={hashlib.md5(str([point]).encode('utf-8')).hexdigest():
-                 (point, (1, point // 2, point // 2))
-                 for point in points})
+        results={
+            hashlib.md5(str([point]).encode("utf-8")).hexdigest(): (
+                point,
+                (1, point // 2, point // 2),
+            )
+            for point in points
+        },
+    )
 
 
 def test_compute_budgets():
@@ -131,10 +158,14 @@ def test_compute_budgets():
 
 def test_customized_mutate_population(space1, rung_3, budgets):
     """Verify customized mutated candidates is generated correctly."""
-    customerized_dict = {'function': 'orion.testing.state.customized_mutate_example',
-                         'multiply_factor': 2.0, 'add_factor': 1}
-    algo = EvolutionES(space1, repetitions=1, nums_population=4,
-                       mutate=customerized_dict)
+    customerized_dict = {
+        "function": "orion.testing.state.customized_mutate_example",
+        "multiply_factor": 2.0,
+        "add_factor": 1,
+    }
+    algo = EvolutionES(
+        space1, repetitions=1, nums_population=4, mutate=customerized_dict
+    )
     algo.brackets[0] = BracketEVES(algo, budgets, 1, space1)
 
     red_team = [0, 2]
@@ -142,19 +173,32 @@ def test_customized_mutate_population(space1, rung_3, budgets):
     population_range = 4
     for i in range(4):
         for j in [1, 2]:
-            algo.brackets[0].eves.population[j][i] = list(rung_3["results"].values())[i][1][j]
+            algo.brackets[0].eves.population[j][i] = list(rung_3["results"].values())[
+                i
+            ][1][j]
         algo.brackets[0].eves.performance[i] = list(rung_3["results"].values())[i][0]
 
-    org_data = np.stack((list(algo.brackets[0].eves.population.values())[0],
-                         list(algo.brackets[0].eves.population.values())[1]), axis=0).T
+    org_data = np.stack(
+        (
+            list(algo.brackets[0].eves.population.values())[0],
+            list(algo.brackets[0].eves.population.values())[1],
+        ),
+        axis=0,
+    ).T
 
     org_data = copy.deepcopy(org_data)
 
-    algo.brackets[0]._mutate_population(red_team, blue_team,
-                                        rung_3["results"], population_range)
+    algo.brackets[0]._mutate_population(
+        red_team, blue_team, rung_3["results"], population_range
+    )
 
-    mutated_data = np.stack((list(algo.brackets[0].eves.population.values())[0],
-                             list(algo.brackets[0].eves.population.values())[1]), axis=0).T
+    mutated_data = np.stack(
+        (
+            list(algo.brackets[0].eves.population.values())[0],
+            list(algo.brackets[0].eves.population.values())[1],
+        ),
+        axis=0,
+    ).T
 
     # Winner team will be [0, 2], so [0, 2] will be remained, [1, 3] will be mutated.
     assert org_data.shape == mutated_data.shape
@@ -167,18 +211,22 @@ def test_customized_mutate_population(space1, rung_3, budgets):
 
     # For each individual, mutation occurs in only one dimension chosen from two.
     # Customized test mutation function is divided by 2 for real type.
-    if mutated_data[1][0] == org_data[0][0] / customerized_dict['multiply_factor']:
+    if mutated_data[1][0] == org_data[0][0] / customerized_dict["multiply_factor"]:
         assert mutated_data[1][1] == org_data[0][1]
     else:
-        assert mutated_data[1][1] == org_data[0][1] / customerized_dict['multiply_factor']
+        assert (
+            mutated_data[1][1] == org_data[0][1] / customerized_dict["multiply_factor"]
+        )
 
-    if mutated_data[3][0] == org_data[2][0] / customerized_dict['multiply_factor']:
+    if mutated_data[3][0] == org_data[2][0] / customerized_dict["multiply_factor"]:
         assert mutated_data[3][1] == org_data[2][1]
     else:
-        assert mutated_data[3][1] == org_data[2][1] / customerized_dict['multiply_factor']
+        assert (
+            mutated_data[3][1] == org_data[2][1] / customerized_dict["multiply_factor"]
+        )
 
 
-class TestEvolutionES():
+class TestEvolutionES:
     """Tests for the algo Evolution."""
 
     def test_register(self, evolution, bracket, rung_0, rung_1):
@@ -188,16 +236,16 @@ class TestEvolutionES():
         bracket.eves = evolution
         bracket.rungs = [rung_0, rung_1]
         point = (1, 0.0)
-        point_hash = hashlib.md5(str([0.0]).encode('utf-8')).hexdigest()
+        point_hash = hashlib.md5(str([0.0]).encode("utf-8")).hexdigest()
 
-        evolution.observe([point], [{'objective': 0.0}])
+        evolution.observe([point], [{"objective": 0.0}])
 
         assert len(bracket.rungs[0])
-        assert point_hash in bracket.rungs[0]['results']
-        assert (0.0, point) == bracket.rungs[0]['results'][point_hash]
+        assert point_hash in bracket.rungs[0]["results"]
+        assert (0.0, point) == bracket.rungs[0]["results"][point_hash]
 
 
-class TestBracketEVES():
+class TestBracketEVES:
     """Tests for `BracketEVES` class.."""
 
     def test_get_teams(self, bracket, rung_3):
@@ -217,19 +265,32 @@ class TestBracketEVES():
         population_range = 4
         for i in range(4):
             for j in [1, 2]:
-                bracket.eves.population[j][i] = list(rung_3["results"].values())[i][1][j]
+                bracket.eves.population[j][i] = list(rung_3["results"].values())[i][1][
+                    j
+                ]
             bracket.eves.performance[i] = list(rung_3["results"].values())[i][0]
 
-        org_data = np.stack((list(bracket.eves.population.values())[0],
-                             list(bracket.eves.population.values())[1]), axis=0).T
+        org_data = np.stack(
+            (
+                list(bracket.eves.population.values())[0],
+                list(bracket.eves.population.values())[1],
+            ),
+            axis=0,
+        ).T
 
         org_data = copy.deepcopy(org_data)
 
-        bracket._mutate_population(red_team, blue_team,
-                                   rung_3["results"], population_range)
+        bracket._mutate_population(
+            red_team, blue_team, rung_3["results"], population_range
+        )
 
-        mutated_data = np.stack((list(bracket.eves.population.values())[0],
-                                 list(bracket.eves.population.values())[1]), axis=0).T
+        mutated_data = np.stack(
+            (
+                list(bracket.eves.population.values())[0],
+                list(bracket.eves.population.values())[1],
+            ),
+            axis=0,
+        ).T
 
         # Winner team will be [0, 2], so [0, 2] will be remained, [1, 3] will be mutated.
         assert org_data.shape == mutated_data.shape
@@ -258,9 +319,12 @@ class TestBracketEVES():
         population_range = 4
         for i in range(4):
             for j in [1, 2]:
-                bracket.eves.population[j][i] = list(rung_4["results"].values())[i][1][j]
-        points, nums_all_equal = bracket._mutate_population(red_team, blue_team,
-                                                            rung_4["results"], population_range)
+                bracket.eves.population[j][i] = list(rung_4["results"].values())[i][1][
+                    j
+                ]
+        points, nums_all_equal = bracket._mutate_population(
+            red_team, blue_team, rung_4["results"], population_range
+        )
 
         # In this case, duplication will occur, and we can make it mutate one more time.
         # The points 1 and 2 should be different, while one of nums_all_equal should be 1.
@@ -281,9 +345,12 @@ class TestBracketEVES():
         population_range = 4
         for i in range(4):
             for j in [1, 2]:
-                bracket.eves.population[j][i] = list(rung_3["results"].values())[i][1][j]
-        points, nums_all_equal = bracket._mutate_population(red_team, blue_team,
-                                                            rung_3["results"], population_range)
+                bracket.eves.population[j][i] = list(rung_3["results"].values())[i][1][
+                    j
+                ]
+        points, nums_all_equal = bracket._mutate_population(
+            red_team, blue_team, rung_3["results"], population_range
+        )
         assert points[0] == (1.0, 1.0, 1.0)
         assert points[1] == (2, 1.0 / 2, 1.0 / 4)
         assert (nums_all_equal == 0).all()

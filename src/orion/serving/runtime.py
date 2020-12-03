@@ -31,9 +31,9 @@ class RuntimeResource(object):
         """
         database = get_storage()._db.__class__.__name__
         response = {
-            'orion': orion.core.__version__,
-            'server': 'gunicorn',
-            'database': database
+            "orion": orion.core.__version__,
+            "server": "gunicorn",
+            "database": database,
         }
 
         resp.body = json.dumps(response, indent=4)

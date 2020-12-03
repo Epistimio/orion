@@ -41,7 +41,9 @@ def regroup_dims(point, space):
             idx += 1
 
     if regrouped not in space:
-        raise AttributeError("The point {} is not a valid point of space {}".format(point, space))
+        raise AttributeError(
+            "The point {} is not a valid point of space {}".format(point, space)
+        )
 
     return regrouped
 

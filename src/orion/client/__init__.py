@@ -9,7 +9,11 @@
 
 """
 from orion.client.cli import (
-    interrupt_trial, report_bad_trial, report_objective, report_results)
+    interrupt_trial,
+    report_bad_trial,
+    report_objective,
+    report_results,
+)
 from orion.client.experiment import ExperimentClient
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.exceptions import RaceCondition
@@ -17,15 +21,33 @@ from orion.core.utils.singleton import update_singletons
 from orion.core.worker.producer import Producer
 from orion.storage.base import setup_storage
 
-__all__ = ['interrupt_trial', 'report_bad_trial', 'report_objective', 'report_results',
-           'create_experiment', 'get_experiment', 'workon']
+__all__ = [
+    "interrupt_trial",
+    "report_bad_trial",
+    "report_objective",
+    "report_results",
+    "create_experiment",
+    "get_experiment",
+    "workon",
+]
 
 
 # pylint: disable=too-many-arguments
 def create_experiment(
-        name, version=None, space=None, algorithms=None,
-        strategy=None, max_trials=None, max_broken=None, storage=None, branching=None,
-        max_idle_time=None, heartbeat=None, working_dir=None, debug=False):
+    name,
+    version=None,
+    space=None,
+    algorithms=None,
+    strategy=None,
+    max_trials=None,
+    max_broken=None,
+    storage=None,
+    branching=None,
+    max_idle_time=None,
+    heartbeat=None,
+    working_dir=None,
+    debug=False,
+):
     """Create an experiment
 
     There is 2 main scenarios
@@ -164,17 +186,31 @@ def create_experiment(
 
     try:
         experiment = experiment_builder.build(
-            name, version=version, space=space, algorithms=algorithms,
-            strategy=strategy, max_trials=max_trials, max_broken=max_broken, branching=branching,
-            working_dir=working_dir)
+            name,
+            version=version,
+            space=space,
+            algorithms=algorithms,
+            strategy=strategy,
+            max_trials=max_trials,
+            max_broken=max_broken,
+            branching=branching,
+            working_dir=working_dir,
+        )
     except RaceCondition:
         # Try again, but if it fails again, raise. Race conditions due to version increment should
         # only occur once in a short window of time unless code version is changing at a crazy pace.
         try:
             experiment = experiment_builder.build(
-                name, version=version, space=space, algorithms=algorithms,
-                strategy=strategy, max_trials=max_trials, max_broken=max_broken,
-                branching=branching, working_dir=working_dir)
+                name,
+                version=version,
+                space=space,
+                algorithms=algorithms,
+                strategy=strategy,
+                max_trials=max_trials,
+                max_broken=max_broken,
+                branching=branching,
+                working_dir=working_dir,
+            )
         except RaceCondition as e:
             raise RaceCondition(
                 "There was a race condition during branching and new version cannot be infered "
@@ -182,7 +218,8 @@ def create_experiment(
                 "error gets raised, it means that different modifications occured during each race "
                 "condition resolution. This is likely due to quick code change during experiment "
                 "creation. Make sure your script is not generating files within your code "
-                "repository.") from e
+                "repository."
+            ) from e
 
     producer = Producer(experiment, max_idle_time)
 
@@ -216,7 +253,9 @@ def get_experiment(name, version=None, storage=None):
     return experiment_builder.build_view(name, version)
 
 
-def workon(function, space, name='loop', algorithms=None, max_trials=None, max_broken=None):
+def workon(
+    function, space, name="loop", algorithms=None, max_trials=None, max_broken=None
+):
     """Optimize a function over a given search space
 
     This will create a new experiment with an in-memory storage and optimize the given function
@@ -256,11 +295,17 @@ def workon(function, space, name='loop', algorithms=None, max_trials=None, max_b
     singletons = update_singletons()
 
     try:
-        setup_storage(storage={'type': 'legacy', 'database': {'type': 'EphemeralDB'}})
+        setup_storage(storage={"type": "legacy", "database": {"type": "EphemeralDB"}})
 
         experiment = experiment_builder.build(
-            name, version=1, space=space, algorithms=algorithms,
-            strategy='NoParallelStrategy', max_trials=max_trials, max_broken=max_broken)
+            name,
+            version=1,
+            space=space,
+            algorithms=algorithms,
+            strategy="NoParallelStrategy",
+            max_trials=max_trials,
+            max_broken=max_broken,
+        )
 
         producer = Producer(experiment)
 

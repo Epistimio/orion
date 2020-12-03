@@ -38,32 +38,35 @@ def generate_trials(trial_config, statuses, exp_config=None):
         data[args[-1]] = value
         return obj
 
-    new_trials = [_generate(trial_config, 'status', value=s) for s in statuses]
+    new_trials = [_generate(trial_config, "status", value=s) for s in statuses]
 
     for i, trial in enumerate(new_trials):
-        trial['submit_time'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=i)
-        if trial['status'] != 'new':
-            trial['start_time'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=i)
+        trial["submit_time"] = datetime.datetime.utcnow() + datetime.timedelta(
+            seconds=i
+        )
+        if trial["status"] != "new":
+            trial["start_time"] = datetime.datetime.utcnow() + datetime.timedelta(
+                seconds=i
+            )
 
     for i, trial in enumerate(new_trials):
-        if trial['status'] == 'completed':
-            trial['end_time'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=i)
+        if trial["status"] == "completed":
+            trial["end_time"] = datetime.datetime.utcnow() + datetime.timedelta(
+                seconds=i
+            )
 
     if exp_config:
-        space = SpaceBuilder().build(exp_config['space'])
+        space = SpaceBuilder().build(exp_config["space"])
     else:
-        space = SpaceBuilder().build({'x': 'uniform(0, 200)'})
+        space = SpaceBuilder().build({"x": "uniform(0, 200)"})
 
     # make each trial unique
     for i, trial in enumerate(new_trials):
-        if trial['status'] == 'completed':
-            trial['results'].append({
-                'name': 'loss',
-                'type': 'objective',
-                'value': i})
+        if trial["status"] == "completed":
+            trial["results"].append({"name": "loss", "type": "objective", "value": i})
 
         trial_stub = tuple_to_trial(space.sample(seed=i)[0], space)
-        trial['params'] = trial_stub.to_dict()['params']
+        trial["params"] = trial_stub.to_dict()["params"]
 
     return new_trials
 
@@ -81,7 +84,8 @@ def mock_space_iterate(monkeypatch):
         for point in sample(self, seed=seed, *args, **kwargs):
             points.append([seed] * len(point))
         return points
-    monkeypatch.setattr('orion.algo.space.Space.sample', iterate)
+
+    monkeypatch.setattr("orion.algo.space.Space.sample", iterate)
 
 
 @contextmanager
@@ -92,15 +96,17 @@ def create_experiment(exp_config=None, trial_config=None, statuses=None):
     if trial_config is None:
         raise ValueError("Parameter 'trial_config' is missing")
     if statuses is None:
-        statuses = ['new', 'interrupted', 'suspended', 'reserved', 'completed']
+        statuses = ["new", "interrupted", "suspended", "reserved", "completed"]
 
     from orion.client.experiment import ExperimentClient
 
-    with OrionState(experiments=[exp_config],
-                    trials=generate_trials(trial_config, statuses, exp_config)) as cfg:
-        experiment = experiment_builder.build(name=exp_config['name'])
+    with OrionState(
+        experiments=[exp_config],
+        trials=generate_trials(trial_config, statuses, exp_config),
+    ) as cfg:
+        experiment = experiment_builder.build(name=exp_config["name"])
         if cfg.trials:
-            experiment._id = cfg.trials[0]['experiment']
+            experiment._id = cfg.trials[0]["experiment"]
         client = ExperimentClient(experiment, Producer(experiment))
         yield cfg, experiment, client
 

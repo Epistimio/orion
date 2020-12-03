@@ -15,6 +15,7 @@ import copy
 
 def flatten(dictionary):
     """Turn all nested dict keys into a {key}.{subkey} format"""
+
     def _flatten(dictionary):
         if dictionary == {}:
             return dictionary
@@ -27,7 +28,7 @@ def flatten(dictionary):
 
         flat_sub_dictionary = flatten(value)
         for flat_sub_key in list(flat_sub_dictionary.keys()):
-            flat_key = key + '.' + flat_sub_key
+            flat_key = key + "." + flat_sub_key
             flat_sub_dictionary[flat_key] = flat_sub_dictionary.pop(flat_sub_key)
 
         new_dictionary = flat_sub_dictionary
