@@ -23,19 +23,21 @@ Consumer = consumer.Consumer
 def config(exp_config):
     """Return a configuration."""
     config = exp_config[0][0]
-    config['metadata']['user_args'] = ['--x~uniform(-50, 50)']
-    config['metadata']['VCS'] = resolve_config.infer_versioning_metadata(
-        config['metadata']['user_script'])
-    config['name'] = 'exp'
-    config['working_dir'] = "/tmp/orion"
+    config["metadata"]["user_args"] = ["--x~uniform(-50, 50)"]
+    config["metadata"]["VCS"] = resolve_config.infer_versioning_metadata(
+        config["metadata"]["user_script"]
+    )
+    config["name"] = "exp"
+    config["working_dir"] = "/tmp/orion"
     backward.populate_space(config)
-    config['space'] = config['metadata']['priors']
+    config["space"] = config["metadata"]["priors"]
     return config
 
 
 @pytest.mark.usefixtures("create_db_instance")
 def test_trials_interrupted_keyboard_int(config, monkeypatch):
     """Check if a trial is set as interrupted when a KeyboardInterrupt is raised."""
+
     def mock_Popen(*args, **kwargs):
         raise KeyboardInterrupt
 
@@ -52,7 +54,7 @@ def test_trials_interrupted_keyboard_int(config, monkeypatch):
     with pytest.raises(KeyboardInterrupt):
         con.consume(trial)
 
-    trials = exp.fetch_trials_by_status('interrupted')
+    trials = exp.fetch_trials_by_status("interrupted")
     assert len(trials)
     assert trials[0].id == trial.id
 
@@ -60,6 +62,7 @@ def test_trials_interrupted_keyboard_int(config, monkeypatch):
 @pytest.mark.usefixtures("create_db_instance")
 def test_trials_interrupted_sigterm(config, monkeypatch):
     """Check if a trial is set as interrupted when a signal is raised."""
+
     def mock_popen(*args, **kwargs):
         os.kill(os.getpid(), signal.SIGTERM)
 
@@ -76,7 +79,7 @@ def test_trials_interrupted_sigterm(config, monkeypatch):
     with pytest.raises(KeyboardInterrupt):
         con.consume(trial)
 
-    trials = exp.fetch_trials_by_status('interrupted')
+    trials = exp.fetch_trials_by_status("interrupted")
     assert len(trials)
     assert trials[0].id == trial.id
 
@@ -88,7 +91,7 @@ def test_pacemaker_termination(config):
 
     trial = tuple_to_trial((1.0,), exp.space)
 
-    exp.register_trial(trial, status='reserved')
+    exp.register_trial(trial, status="reserved")
 
     con = Consumer(exp)
 
@@ -109,7 +112,7 @@ def test_trial_working_dir_is_changed(config):
 
     trial = tuple_to_trial((1.0,), exp.space)
 
-    exp.register_trial(trial, status='reserved')
+    exp.register_trial(trial, status="reserved")
 
     con = Consumer(exp)
     con.consume(trial)
@@ -125,21 +128,22 @@ def test_code_changed(config, monkeypatch):
 
     trial = tuple_to_trial((1.0,), exp.space)
 
-    exp.register_trial(trial, status='reserved')
+    exp.register_trial(trial, status="reserved")
 
     con = Consumer(exp)
 
     def code_changed(user_script):
         return dict(
-            type='git',
+            type="git",
             is_dirty=True,
-            HEAD_sha='changed',
-            active_branch='new_branch',
-            diff_sha='new_diff')
+            HEAD_sha="changed",
+            active_branch="new_branch",
+            diff_sha="new_diff",
+        )
 
-    monkeypatch.setattr(consumer, 'infer_versioning_metadata', code_changed)
+    monkeypatch.setattr(consumer, "infer_versioning_metadata", code_changed)
 
     with pytest.raises(BranchingEvent) as exc:
         con.consume(trial)
 
-    assert exc.match('Code changed between execution of 2 trials')
+    assert exc.match("Code changed between execution of 2 trials")

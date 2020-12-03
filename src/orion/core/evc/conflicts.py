@@ -50,7 +50,7 @@ created by resolutions. For instance, a `RenameDimensionResolution` may create a
 of the old name.
 """
 
-from abc import (ABCMeta, abstractmethod)
+from abc import ABCMeta, abstractmethod
 import copy
 import pprint
 import traceback
@@ -74,24 +74,26 @@ def _build_extended_user_args(config):
     """Return a list of user arguments augmented with key-value pairs found in
     user's script's configuration file.
     """
-    if 'user_args' not in config['metadata']:
+    if "user_args" not in config["metadata"]:
         return []
 
-    user_args = config['metadata']['user_args']
+    user_args = config["metadata"]["user_args"]
 
     # No need to pass config_prefix because we have access to everything
     # required in config[metadata][parser] (parsed data)
     parser = OrionCmdlineParser()
-    parser.set_state_dict(config['metadata']['parser'])
+    parser.set_state_dict(config["metadata"]["parser"])
 
-    return user_args + [standard_param_name(key) + value
-                        for key, value in parser.config_file_data.items()]
+    return user_args + [
+        standard_param_name(key) + value
+        for key, value in parser.config_file_data.items()
+    ]
 
 
 def _build_space(config):
     """Build an optimization space based on given configuration"""
     space_builder = SpaceBuilder()
-    space_config = config['space']
+    space_config = config["space"]
     space = space_builder.build(space_config)
 
     return space
@@ -100,7 +102,9 @@ def _build_space(config):
 def detect_conflicts(old_config, new_config, branching=None):
     """Generate a Conflicts object with all conflicts found in pair (old_config, new_config)"""
     conflicts = Conflicts()
-    for conflict_class in sorted(Conflict.__subclasses__(), key=lambda cls: cls.__name__):
+    for conflict_class in sorted(
+        Conflict.__subclasses__(), key=lambda cls: cls.__name__
+    ):
         for conflict in conflict_class.detect(old_config, new_config, branching):
             conflicts.register(conflict)
 
@@ -140,8 +144,11 @@ class Conflicts(object):
 
     def _get(self, callback=None):
         """Fetch conflicts for which callback return True if callback is given, else return all"""
-        return [conflict for conflict in self.conflicts
-                if (callback is None or callback(conflict))]
+        return [
+            conflict
+            for conflict in self.conflicts
+            if (callback is None or callback(conflict))
+        ]
 
     def get(self, types=(), dimension_name=None, callback=None):
         """Fetch conflicts
@@ -162,25 +169,31 @@ class Conflicts(object):
             If argument dimension_name is not None and no conflict is found.
 
         """
+
         def wrap(types, dimension_name, callback):
             """Wrap types, dimension_name and callback inside another callback"""
+
             def _callback(conflict):
                 if callback is not None and not callback(conflict):
                     return False
                 if types and not isinstance(conflict, tuple(types)):
                     return False
-                if (dimension_name is not None and
-                        (not hasattr(conflict, "dimension") or
-                         standard_param_name(conflict.dimension.name) != dimension_name)):
+                if dimension_name is not None and (
+                    not hasattr(conflict, "dimension")
+                    or standard_param_name(conflict.dimension.name) != dimension_name
+                ):
                     return False
 
                 return True
+
             return _callback
 
         found_conflicts = self._get(wrap(types, dimension_name, callback))
 
         if dimension_name is not None and not found_conflicts:
-            raise ValueError("Dimension name \'{}\' not found in conflicts".format(dimension_name))
+            raise ValueError(
+                "Dimension name '{}' not found in conflicts".format(dimension_name)
+            )
 
         return found_conflicts
 
@@ -192,8 +205,10 @@ class Conflicts(object):
             See :meth:`orion.core.evc.conflict.Conflicts.get` for more information.
 
         """
+
         def _is_not_resolved(conflict):
             return not conflict.is_resolved and (callback is None or callback(conflict))
+
         return self.get(types, dimension_name, callback=_is_not_resolved)
 
     def get_resolved(self, types=(), dimension_name=None, callback=None):
@@ -204,8 +219,10 @@ class Conflicts(object):
             See :meth:`orion.core.evc.conflict.Conflicts.get` for more information.
 
         """
+
         def _is_resolved(conflict):
             return conflict.is_resolved and (callback is None or callback(conflict))
+
         return self.get(types, dimension_name, callback=_is_resolved)
 
     def get_resolutions(self, types=(), dimension_name=None, callback=None):
@@ -626,11 +643,14 @@ class NewDimensionConflict(Conflict):
 
         def _validate(self, default_value):
             """Validate default value is NO_DEFAULT_VALUE or is in dimension's interval"""
-            if ((default_value is not Dimension.NO_DEFAULT_VALUE) and
-                    (default_value not in self.conflict.dimension)):
+            if (default_value is not Dimension.NO_DEFAULT_VALUE) and (
+                default_value not in self.conflict.dimension
+            ):
                 raise ValueError(
                     "Default value `{}` is outside of dimension's prior interval `{}`".format(
-                        default_value, self.conflict.prior))
+                        default_value, self.conflict.prior
+                    )
+                )
 
         def get_adapters(self):
             """Return DimensionAddition adapter"""
@@ -640,21 +660,23 @@ class NewDimensionConflict(Conflict):
         @property
         def prefix(self):
             """Build the prefix including the marker"""
-            return '{0}{1}'.format(standard_param_name(self.conflict.dimension.name),
-                                   self.MARKER)
+            return "{0}{1}".format(
+                standard_param_name(self.conflict.dimension.name), self.MARKER
+            )
 
         @property
         def new_prior(self):
             """Build the new prior string, including the default value"""
             tmp_dim = copy.deepcopy(self.conflict.dimension)
-            tmp_dim._default_value = self.default_value  # pylint:disable=protected-access
+            # pylint:disable=protected-access
+            tmp_dim._default_value = self.default_value
             return tmp_dim.get_prior_string()
 
         def __repr__(self):
             """Representation of the resolution as it should be provided in command line of
             configuration file by the user
             """
-            return '{0}{1}'.format(self.prefix, self.new_prior)
+            return "{0}{1}".format(self.prefix, self.new_prior)
 
 
 class ChangedDimensionConflict(Conflict):
@@ -704,8 +726,9 @@ class ChangedDimensionConflict(Conflict):
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
-        return "{0}~{1} != {0}~{2}".format(standard_param_name(self.dimension.name),
-                                           self.old_prior, self.new_prior)
+        return "{0}~{1} != {0}~{2}".format(
+            standard_param_name(self.dimension.name), self.old_prior, self.new_prior
+        )
 
     class ChangeDimensionResolution(Resolution):
         """Representation of a changed prior resolution
@@ -720,14 +743,20 @@ class ChangedDimensionConflict(Conflict):
 
         def get_adapters(self):
             """Return DimensionPriorChange adapter"""
-            return [adapters.DimensionPriorChange(
-                self.conflict.dimension.name, self.conflict.old_prior, self.conflict.new_prior)]
+            return [
+                adapters.DimensionPriorChange(
+                    self.conflict.dimension.name,
+                    self.conflict.old_prior,
+                    self.conflict.new_prior,
+                )
+            ]
 
         @property
         def prefix(self):
             """Build the new prior string, including the default value"""
-            return '{0}{1}'.format(standard_param_name(self.conflict.dimension.name),
-                                   self.MARKER)
+            return "{0}{1}".format(
+                standard_param_name(self.conflict.dimension.name), self.MARKER
+            )
 
         def __repr__(self):
             """Representation of the resolution as it should be provided in command line of
@@ -801,14 +830,15 @@ class MissingDimensionConflict(Conflict):
         arguments = remove_dimension_resolution.find_marked_argument()
         if arguments:
             new_default_value = arguments.split(
-                MissingDimensionConflict.RemoveDimensionResolution.MARKER)[1]
+                MissingDimensionConflict.RemoveDimensionResolution.MARKER
+            )[1]
 
             if not new_default_value:
                 new_default_value = Dimension.NO_DEFAULT_VALUE
             else:
                 new_default_value = self.dimension.cast(new_default_value)
 
-            return {'default_value': new_default_value}
+            return {"default_value": new_default_value}
         return {}
 
     def get_marked_rename_arguments(self, conflicts):
@@ -824,7 +854,8 @@ class MissingDimensionConflict(Conflict):
             return {}
 
         resolution = copy.deepcopy(self).try_resolve(
-            new_dimension_conflict=copy.deepcopy(new_dimension_conflicts[0]))
+            new_dimension_conflict=copy.deepcopy(new_dimension_conflicts[0])
+        )
 
         if not resolution:
             return {}
@@ -832,13 +863,16 @@ class MissingDimensionConflict(Conflict):
         arguments = resolution.find_marked_argument()
 
         if arguments:
-            new_dimension_name = "~>".join(arguments.split('~>')[1:])
+            new_dimension_name = "~>".join(arguments.split("~>")[1:])
 
             try:
-                conflict = conflicts.get([NewDimensionConflict],
-                                         dimension_name=new_dimension_name)[0]
+                conflict = conflicts.get(
+                    [NewDimensionConflict], dimension_name=new_dimension_name
+                )[0]
             except ValueError as e:
-                if "Dimension name '{}' not found".format(new_dimension_name) not in str(e):
+                if "Dimension name '{}' not found".format(
+                    new_dimension_name
+                ) not in str(e):
                     return {}
 
                 raise
@@ -846,11 +880,13 @@ class MissingDimensionConflict(Conflict):
             if conflict.is_resolved:
                 conflicts.revert(str(conflict.resolution))
 
-            return {'new_dimension_conflict': conflict}
+            return {"new_dimension_conflict": conflict}
 
         return {}
 
-    def try_resolve(self, new_dimension_conflict=None, default_value=Dimension.NO_DEFAULT_VALUE):
+    def try_resolve(
+        self, new_dimension_conflict=None, default_value=Dimension.NO_DEFAULT_VALUE
+    ):
         """Try to create a resolution RenameDimensionResolution of RemoveDimensionResolution
 
         Parameters
@@ -873,7 +909,9 @@ class MissingDimensionConflict(Conflict):
             return None
 
         if new_dimension_conflict:
-            return MissingDimensionConflict.RenameDimensionResolution(self, new_dimension_conflict)
+            return MissingDimensionConflict.RenameDimensionResolution(
+                self, new_dimension_conflict
+            )
 
         return MissingDimensionConflict.RemoveDimensionResolution(self, default_value)
 
@@ -916,7 +954,9 @@ class MissingDimensionConflict(Conflict):
                 Dimension used for a rename resolution.
 
             """
-            super(MissingDimensionConflict.RenameDimensionResolution, self).__init__(conflict)
+            super(MissingDimensionConflict.RenameDimensionResolution, self).__init__(
+                conflict
+            )
 
             self.new_dimension_conflict = new_dimension_conflict
             new_dimension_conflict.resolution = self
@@ -925,8 +965,10 @@ class MissingDimensionConflict(Conflict):
                 changed_dimension_conflict = ChangedDimensionConflict(
                     self.conflict.old_config,
                     self.conflict.new_config,
-                    new_dimension_conflict.dimension, self.conflict.prior,
-                    new_dimension_conflict.prior)
+                    new_dimension_conflict.dimension,
+                    self.conflict.prior,
+                    new_dimension_conflict.prior,
+                )
 
                 self.new_conflicts.append(changed_dimension_conflict)
 
@@ -939,7 +981,8 @@ class MissingDimensionConflict(Conflict):
 
             deprecated_conflicts = self.new_conflicts
             if deprecated_conflicts:
-                deprecated_conflicts[0]._is_resolved = True  # pylint:disable=protected-access
+                # pylint:disable=protected-access
+                deprecated_conflicts[0]._is_resolved = True
 
             self.new_conflicts = []
 
@@ -947,22 +990,28 @@ class MissingDimensionConflict(Conflict):
 
         def get_adapters(self):
             """Return DimensionRenaming adapter"""
-            return [adapters.DimensionRenaming(
-                self.conflict.dimension.name, self.new_dimension_conflict.dimension.name)]
+            return [
+                adapters.DimensionRenaming(
+                    self.conflict.dimension.name,
+                    self.new_dimension_conflict.dimension.name,
+                )
+            ]
 
         @property
         def prefix(self):
             """Build the new prior string, including the default value"""
             return "{0}{1}".format(
-                standard_param_name(self.conflict.dimension.name),
-                self.MARKER)
+                standard_param_name(self.conflict.dimension.name), self.MARKER
+            )
 
         def __repr__(self):
             """Representation of the resolution as it should be provided in command line of
             configuration file by the user
             """
             return "{0}{1}".format(
-                self.prefix, standard_param_name(self.new_dimension_conflict.dimension.name))
+                self.prefix,
+                standard_param_name(self.new_dimension_conflict.dimension.name),
+            )
 
     class RemoveDimensionResolution(Resolution):
         """Representation of a remove dimension resolution
@@ -998,7 +1047,9 @@ class MissingDimensionConflict(Conflict):
                 If default_value is invalid for the corresponding dimension.
 
             """
-            super(MissingDimensionConflict.RemoveDimensionResolution, self).__init__(conflict)
+            super(MissingDimensionConflict.RemoveDimensionResolution, self).__init__(
+                conflict
+            )
             if default_value is Dimension.NO_DEFAULT_VALUE:
                 default_value = conflict.dimension.default_value
             else:
@@ -1009,11 +1060,14 @@ class MissingDimensionConflict(Conflict):
 
         def _validate(self, default_value):
             """Validate default value is NO_DEFAULT_VALUE or is in dimension's interval"""
-            if ((default_value is not Dimension.NO_DEFAULT_VALUE) and
-                    (default_value not in self.conflict.dimension)):
+            if (default_value is not Dimension.NO_DEFAULT_VALUE) and (
+                default_value not in self.conflict.dimension
+            ):
                 raise ValueError(
                     "Default value `{}` is outside of dimension's prior interval `{}`".format(
-                        default_value, self.conflict.prior))
+                        default_value, self.conflict.prior
+                    )
+                )
 
         def get_adapters(self):
             """Return DimensionDeletion adapter"""
@@ -1023,8 +1077,9 @@ class MissingDimensionConflict(Conflict):
         @property
         def prefix(self):
             """Build the new prior string, including the default value"""
-            return '{0}{1}'.format(standard_param_name(self.conflict.dimension.name),
-                                   self.MARKER)
+            return "{0}{1}".format(
+                standard_param_name(self.conflict.dimension.name), self.MARKER
+            )
 
         def __repr__(self):
             """Representation of the resolution as it should be provided in command line of
@@ -1050,7 +1105,7 @@ class AlgorithmConflict(Conflict):
         """Detect if algorithm definition in `new_config` differs from `old_config`
         :param branching_config:
         """
-        if old_config['algorithms'] != new_config['algorithms']:
+        if old_config["algorithms"] != new_config["algorithms"]:
             yield cls(old_config, new_config)
 
     def try_resolve(self):
@@ -1064,15 +1119,17 @@ class AlgorithmConflict(Conflict):
     def diff(self):
         """Produce human-readable differences"""
         return colored_diff(
-            pprint.pformat(self.old_config['algorithms']),
-            pprint.pformat(self.new_config['algorithms']))
+            pprint.pformat(self.old_config["algorithms"]),
+            pprint.pformat(self.new_config["algorithms"]),
+        )
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
         # TODO: select different subset rather than printing the old dict
         return "{0}\n   !=\n{1}".format(
-            pprint.pformat(self.old_config['algorithms']),
-            pprint.pformat(self.new_config['algorithms']))
+            pprint.pformat(self.old_config["algorithms"]),
+            pprint.pformat(self.new_config["algorithms"]),
+        )
 
     class AlgorithmResolution(Resolution):
         """Representation of an algorithn configuration resolution
@@ -1110,15 +1167,22 @@ class CodeConflict(Conflict):
         """Detect if commit hash in `new_config` differs from `old_config`
         :param branching_config:
         """
-        old_hash_commit = old_config['metadata'].get('VCS', None)
-        new_hash_commit = new_config['metadata'].get('VCS')
+        old_hash_commit = old_config["metadata"].get("VCS", None)
+        new_hash_commit = new_config["metadata"].get("VCS")
 
-        ignore_code_changes = branching_config is not None and \
-            branching_config.get('ignore_code_changes', False)
-        if not ignore_code_changes and new_hash_commit and old_hash_commit != new_hash_commit:
+        ignore_code_changes = branching_config is not None and branching_config.get(
+            "ignore_code_changes", False
+        )
+        if (
+            not ignore_code_changes
+            and new_hash_commit
+            and old_hash_commit != new_hash_commit
+        ):
             yield cls(old_config, new_config)
 
-    def get_marked_arguments(self, conflicts, code_change_type=None, **branching_kwargs):
+    def get_marked_arguments(
+        self, conflicts, code_change_type=None, **branching_kwargs
+    ):
         """Find and return marked arguments for code change conflict
 
         .. seealso::
@@ -1159,14 +1223,18 @@ class CodeConflict(Conflict):
     def diff(self):
         """Produce human-readable differences"""
         return colored_diff(
-            self.old_config['metadata'].get('VCS', None),
-            self.new_config['metadata'].get('VCS'))
+            self.old_config["metadata"].get("VCS", None),
+            self.new_config["metadata"].get("VCS"),
+        )
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
         return "Old hash commit '{0}'  != new hash commit '{1}'".format(
-            pprint.pformat(self.old_config['metadata'].get('VCS', None)).replace("\n", ""),
-            pprint.pformat(self.new_config['metadata'].get('VCS')).replace("\n", ""))
+            pprint.pformat(self.old_config["metadata"].get("VCS", None)).replace(
+                "\n", ""
+            ),
+            pprint.pformat(self.new_config["metadata"].get("VCS")).replace("\n", ""),
+        )
 
     class CodeResolution(Resolution):
         """Representation of an code change resolution
@@ -1233,11 +1301,12 @@ class CommandLineConflict(Conflict):
 
     # pylint: disable=unused-argument
     @classmethod
-    def get_nameless_args(cls, config, user_script_config=None,
-                          non_monitored_arguments=None, **kwargs):
+    def get_nameless_args(
+        cls, config, user_script_config=None, non_monitored_arguments=None, **kwargs
+    ):
         """Get user's commandline arguments which are not dimension definitions"""
         # Used python API
-        if 'parser' not in config['metadata']:
+        if "parser" not in config["metadata"]:
             return ""
 
         if user_script_config is None:
@@ -1246,15 +1315,20 @@ class CommandLineConflict(Conflict):
             non_monitored_arguments = orion.core.config.evc.non_monitored_arguments
 
         parser = OrionCmdlineParser(user_script_config)
-        parser.set_state_dict(config['metadata']['parser'])
+        parser.set_state_dict(config["metadata"]["parser"])
         priors = parser.priors_to_normal()
         nameless_keys = set(parser.parser.arguments.keys()) - set(priors.keys())
 
-        nameless_args = {key: arg for key, arg in parser.parser.arguments.items()
-                         if key in nameless_keys and key not in non_monitored_arguments}
+        nameless_args = {
+            key: arg
+            for key, arg in parser.parser.arguments.items()
+            if key in nameless_keys and key not in non_monitored_arguments
+        }
 
-        return " ".join(" ".join([key, str(arg)]) for key, arg in
-                        sorted(nameless_args.items(), key=lambda a: a[0]))
+        return " ".join(
+            " ".join([key, str(arg)])
+            for key, arg in sorted(nameless_args.items(), key=lambda a: a[0])
+        )
 
     @classmethod
     def detect(cls, old_config, new_config, branching_config=None):
@@ -1309,14 +1383,17 @@ class CommandLineConflict(Conflict):
     @property
     def diff(self):
         """Produce human-readable differences"""
-        return colored_diff(self.get_nameless_args(self.old_config),
-                            self.get_nameless_args(self.new_config))
+        return colored_diff(
+            self.get_nameless_args(self.old_config),
+            self.get_nameless_args(self.new_config),
+        )
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
-        return "Old arguments \'{0}\' != new arguments \'{1}\'".format(
+        return "Old arguments '{0}' != new arguments '{1}'".format(
             self.get_nameless_args(self.old_config),
-            self.get_nameless_args(self.new_config))
+            self.get_nameless_args(self.new_config),
+        )
 
     class CommandLineResolution(Resolution):
         """Representation of an commandline change resolution
@@ -1386,18 +1463,20 @@ class ScriptConfigConflict(Conflict):
     def get_nameless_config(cls, config, user_script_config=None, **branching_kwargs):
         """Get configuration dict of user's script without dimension definitions"""
         # Used python API
-        if 'parser' not in config['metadata']:
+        if "parser" not in config["metadata"]:
             return ""
 
         if user_script_config is None:
             user_script_config = orion.core.config.worker.user_script_config
 
         parser = OrionCmdlineParser(user_script_config)
-        parser.set_state_dict(config['metadata']['parser'])
+        parser.set_state_dict(config["metadata"]["parser"])
 
-        nameless_config = dict((key, value)
-                               for (key, value) in parser.config_file_data.items()
-                               if not (isinstance(value, str) and value.startswith('orion~')))
+        nameless_config = dict(
+            (key, value)
+            for (key, value) in parser.config_file_data.items()
+            if not (isinstance(value, str) and value.startswith("orion~"))
+        )
 
         return nameless_config
 
@@ -1415,7 +1494,9 @@ class ScriptConfigConflict(Conflict):
         if old_script_config != new_script_config:
             yield cls(old_config, new_config)
 
-    def get_marked_arguments(self, conflicts, config_change_type=None, **branching_kwargs):
+    def get_marked_arguments(
+        self, conflicts, config_change_type=None, **branching_kwargs
+    ):
         """Find and return marked arguments for user's script's config change conflict
 
         .. seealso::
@@ -1457,7 +1538,8 @@ class ScriptConfigConflict(Conflict):
         """Produce human-readable differences"""
         return colored_diff(
             pprint.pformat(self.get_nameless_config(self.old_config)),
-            pprint.pformat(self.get_nameless_config(self.new_config)))
+            pprint.pformat(self.get_nameless_config(self.new_config)),
+        )
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
@@ -1553,7 +1635,7 @@ class ExperimentNameConflict(Conflict):
     @property
     def version(self):
         """Retrieve version of configuration"""
-        return self.old_config['version']
+        return self.old_config["version"]
 
     def try_resolve(self, new_name=None):
         """Try to create a resolution ExperimentNameResolution
@@ -1582,8 +1664,9 @@ class ExperimentNameConflict(Conflict):
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
-        return "Experiment name \'{0}\' already exist with version \'{1}\'".format(
-            self.old_config['name'], self.version)
+        return "Experiment name '{0}' already exist with version '{1}'".format(
+            self.old_config["name"], self.version
+        )
 
     class ExperimentNameResolution(Resolution):
         """Representation of an experiment name resolution
@@ -1620,15 +1703,17 @@ class ExperimentNameConflict(Conflict):
                 If name already exists in database with a direct child for current version.
 
             """
-            super(ExperimentNameConflict.ExperimentNameResolution, self).__init__(conflict)
+            super(ExperimentNameConflict.ExperimentNameResolution, self).__init__(
+                conflict
+            )
 
             self.new_name = new_name
-            self.old_name = self.conflict.old_config['name']
-            self.old_version = self.conflict.old_config.get('version', 1)
+            self.old_name = self.conflict.old_config["name"]
+            self.old_version = self.conflict.old_config.get("version", 1)
             self.new_version = self.old_version
             self.validate()
-            self.conflict.new_config['name'] = self.new_name
-            self.conflict.new_config['version'] = self.new_version
+            self.conflict.new_config["name"] = self.new_name
+            self.conflict.new_config["version"] = self.new_version
 
         def _validate(self):
             """Validate new_name is not in database with a direct child for current version"""
@@ -1640,7 +1725,9 @@ class ExperimentNameConflict(Conflict):
                 if not self._name_is_unique():
                     raise ValueError(
                         "Cannot branch from {} with name {} since it already exists.".format(
-                            self.old_name, self.new_name))
+                            self.old_name, self.new_name
+                        )
+                    )
                 # Since the name changes, we reset the version count.
                 self.new_version = 1
 
@@ -1648,16 +1735,17 @@ class ExperimentNameConflict(Conflict):
             # the version of the experiment.
             elif self._check_for_greater_versions():
                 raise ValueError(
-                    "Experiment name \'{0}\' already exist for version \'{1}\' and has children. "
-                    "Version cannot be auto-incremented and a new name is required for branching."
-                    .format(self.new_name, self.conflict.version))
+                    f"Experiment name '{self.new_name}' already exist for version "
+                    f"'{self.conflict.version}' and has children. Version cannot be "
+                    "auto-incremented and a new name is required for branching."
+                )
             else:
                 self.new_name = self.old_name
-                self.new_version = self.conflict.old_config.get('version', 1) + 1
+                self.new_version = self.conflict.old_config.get("version", 1) + 1
 
         def _name_is_unique(self):
             """Return True if given name is not in database for current version"""
-            query = {'name': self.new_name, 'version': self.conflict.version}
+            query = {"name": self.new_name, "version": self.conflict.version}
 
             named_experiments = len(get_storage().fetch_experiments(query))
             return named_experiments == 0
@@ -1667,15 +1755,15 @@ class ExperimentNameConflict(Conflict):
             # If we made it this far, new_name is actually the name of the parent.
             parent = self.conflict.old_config
 
-            query = {'name': parent['name'], 'refers.parent_id': parent['_id']}
+            query = {"name": parent["name"], "refers.parent_id": parent["_id"]}
             children = len(get_storage().fetch_experiments(query))
 
             return bool(children)
 
         def revert(self):
             """Reset conflict set experiment name back to old one in new configuration"""
-            self.conflict.new_config['name'] = self.old_name
-            self.conflict.new_config['version'] = self.old_version
+            self.conflict.new_config["name"] = self.old_name
+            self.conflict.new_config["version"] = self.old_version
             return super(ExperimentNameConflict.ExperimentNameResolution, self).revert()
 
         def get_adapters(self):

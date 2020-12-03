@@ -9,7 +9,7 @@
       objective.
 
 """
-from abc import (ABCMeta, abstractmethod)
+from abc import ABCMeta, abstractmethod
 import hashlib
 import logging
 
@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 def infer_trial_id(point):
     """Compute a hashing of a point"""
-    return hashlib.md5(str(list(point)).encode('utf-8')).hexdigest()
+    return hashlib.md5(str(list(point)).encode("utf-8")).hexdigest()
 
 
 # pylint: disable=too-many-public-methods
@@ -101,8 +101,11 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
     requires_dist = None
 
     def __init__(self, space, **kwargs):
-        log.debug("Creating Algorithm object of %s type with parameters:\n%s",
-                  type(self).__name__, kwargs)
+        log.debug(
+            "Creating Algorithm object of %s type with parameters:\n%s",
+            type(self).__name__,
+            kwargs,
+        )
         self._trials_info = {}  # Stores Unique Trial -> Result
         self._space = space
         self._param_names = list(kwargs.keys())
@@ -113,13 +116,14 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
                 subalgo_type = list(param)[0]
                 subalgo_kwargs = param[subalgo_type]
                 if isinstance(subalgo_kwargs, dict):
-                    param = OptimizationAlgorithm(subalgo_type,
-                                                  space, **subalgo_kwargs)
-            elif isinstance(param, str) and \
-                    param.lower() in OptimizationAlgorithm.typenames:
+                    param = OptimizationAlgorithm(subalgo_type, space, **subalgo_kwargs)
+            elif (
+                isinstance(param, str)
+                and param.lower() in OptimizationAlgorithm.typenames
+            ):
                 # pylint: disable=too-many-function-args
                 param = OptimizationAlgorithm(param, space)
-            elif varname == 'seed':
+            elif varname == "seed":
                 self.seed_rng(param)
 
             setattr(self, varname, param)
@@ -136,14 +140,14 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {'_trials_info': self._trials_info}
+        return {"_trials_info": self._trials_info}
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
 
         :param state_dict: Dictionary representing state of an algorithm
         """
-        self._trials_info = state_dict.get('_trials_info')
+        self._trials_info = state_dict.get("_trials_info")
 
     @abstractmethod
     def suggest(self, num=1):
@@ -208,7 +212,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         if len(self._trials_info) >= self.space.cardinality:
             return True
 
-        if len(self._trials_info) >= getattr(self, 'max_trials', float('inf')):
+        if len(self._trials_info) >= getattr(self, "max_trials", float("inf")):
             return True
 
         return False
@@ -264,7 +268,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         """
         dict_form = dict()
         for attrname in self._param_names:
-            if attrname.startswith('_'):  # Do not log _space or others in conf
+            if attrname.startswith("_"):  # Do not log _space or others in conf
                 continue
             attr = getattr(self, attrname)
             if isinstance(attr, BaseAlgorithm):

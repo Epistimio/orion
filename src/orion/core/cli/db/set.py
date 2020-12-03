@@ -54,41 +54,57 @@ To proceed, type again the name of the experiment: """
 def add_subparser(parser):
     """Return the parser that needs to be used for this command"""
     set_parser = parser.add_parser(
-        'set',
+        "set",
         description=DESCRIPTION,
         help="Update trials' attributes",
-        formatter_class=argparse.RawTextHelpFormatter)
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
 
     set_parser.set_defaults(func=main)
 
-    set_parser.add_argument(
-        'name',
-        help='Name of the experiment to delete.')
+    set_parser.add_argument("name", help="Name of the experiment to delete.")
 
     set_parser.add_argument(
-        '-c', '--config', type=argparse.FileType('r'), metavar='path-to-config',
-        help="user provided orion configuration file")
+        "-c",
+        "--config",
+        type=argparse.FileType("r"),
+        metavar="path-to-config",
+        help="user provided orion configuration file",
+    )
 
     set_parser.add_argument(
-        '-v', '--version', type=int, default=None,
+        "-v",
+        "--version",
+        type=int,
+        default=None,
         help="specific version of experiment to fetch; "
-             "(default: last version matching.)")
+        "(default: last version matching.)",
+    )
 
     set_parser.add_argument(
-        '-f', '--force', action='store_true',
-        help='Force modify without asking to enter experiment name twice.')
+        "-f",
+        "--force",
+        action="store_true",
+        help="Force modify without asking to enter experiment name twice.",
+    )
 
     set_parser.add_argument(
-        'query',
-        help=(f'Query for trials to update. Can be `*` to update all trials. '
-              f'Otherwise format must be <attribute>=<value>. Ex: status=broken. '
-              f'Supported attributes are {VALID_QUERY_ATTRS}'))
+        "query",
+        help=(
+            f"Query for trials to update. Can be `*` to update all trials. "
+            f"Otherwise format must be <attribute>=<value>. Ex: status=broken. "
+            f"Supported attributes are {VALID_QUERY_ATTRS}"
+        ),
+    )
 
     set_parser.add_argument(
-        'update',
-        help=(f'Update for trials. Format must be <attribute>=<value>. '
-              f'Ex: status=interrupted. '
-              f'Supported attributes are {VALID_UPDATE_ATTRS}'))
+        "update",
+        help=(
+            f"Update for trials. Format must be <attribute>=<value>. "
+            f"Ex: status=interrupted. "
+            f"Supported attributes are {VALID_UPDATE_ATTRS}"
+        ),
+    )
 
     return set_parser
 
@@ -98,15 +114,19 @@ def process_updates(storage, root, query, update):
     trials_total = 0
     for node in root:
         count = storage.update_trials(node.item, where=query, **update)
-        logger.debug('%d trials modified in experiment %s-v%d',
-                     count, node.item.name, node.item.version)
+        logger.debug(
+            "%d trials modified in experiment %s-v%d",
+            count,
+            node.item.name,
+            node.item.version,
+        )
         trials_total += count
 
-    print(f'{trials_total} trials modified')
+    print(f"{trials_total} trials modified")
 
 
-VALID_QUERY_ATTRS = ['status', 'id']
-VALID_UPDATE_ATTRS = ['status']
+VALID_QUERY_ATTRS = ["status", "id"]
+VALID_UPDATE_ATTRS = ["status"]
 
 
 def build_query(query):
@@ -114,17 +134,18 @@ def build_query(query):
 
     String format must be <attr name>=<value>
     """
-    if query.strip() == '*':
+    if query.strip() == "*":
         return {}
 
-    attribute, value = query.split('=')
+    attribute, value = query.split("=")
 
     if attribute not in VALID_QUERY_ATTRS:
         raise ValueError(
-            f'Invalid query attribute `{attribute}`. Must be one of {VALID_QUERY_ATTRS}')
+            f"Invalid query attribute `{attribute}`. Must be one of {VALID_QUERY_ATTRS}"
+        )
 
-    if attribute == 'id':
-        attribute = '_id'
+    if attribute == "id":
+        attribute = "_id"
 
     return {attribute: value}
 
@@ -134,11 +155,12 @@ def build_update(update):
 
     String format must be <attr name>=<value>
     """
-    attribute, value = update.split('=')
+    attribute, value = update.split("=")
 
     if attribute not in VALID_UPDATE_ATTRS:
         raise ValueError(
-            f'Invalid update attribute `{attribute}`. Must be one of {VALID_UPDATE_ATTRS}')
+            f"Invalid update attribute `{attribute}`. Must be one of {VALID_UPDATE_ATTRS}"
+        )
 
     return {attribute: value}
 
@@ -146,28 +168,31 @@ def build_update(update):
 def main(args):
     """Remove the experiment(s) or trial(s)."""
     config = experiment_builder.get_cmd_config(args)
-    experiment_builder.setup_storage(config.get('storage'))
+    experiment_builder.setup_storage(config.get("storage"))
 
     # Find root experiment
-    root = experiment_builder.build_view(name=args['name'],
-                                         version=args.get('version', None)).node
+    root = experiment_builder.build_view(
+        name=args["name"], version=args.get("version", None)
+    ).node
 
     try:
-        query = build_query(args['query'])
-        update = build_update(args['update'])
+        query = build_query(args["query"])
+        update = build_update(args["update"])
     except ValueError as e:
-        print(f'Error: {e}', file=sys.stderr)
+        print(f"Error: {e}", file=sys.stderr)
         return 1
 
     # List all experiments with children
-    print_tree(root, nameattr='tree_name')
+    print_tree(root, nameattr="tree_name")
 
     confirmed = confirm_name(
-        CONFIRM_MESSAGE.format(query=args['query'], update=args['update']),
-        args['name'], args['force'])
+        CONFIRM_MESSAGE.format(query=args["query"], update=args["update"]),
+        args["name"],
+        args["force"],
+    )
 
     if not confirmed:
-        print('Confirmation failed, aborting operation.')
+        print("Confirmation failed, aborting operation.")
         return 1
 
     storage = get_storage()

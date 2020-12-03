@@ -43,7 +43,7 @@ import re
 
 from scipy.stats import distributions as sp_dists
 
-from orion.algo.space import (Categorical, Fidelity, Integer, Real, Space)
+from orion.algo.space import Categorical, Fidelity, Integer, Real, Space
 from orion.core.utils.flatten import flatten
 
 
@@ -51,7 +51,7 @@ log = logging.getLogger(__name__)
 
 
 def _check_expr_to_eval(expr):
-    if '__' in expr or ';' in expr:
+    if "__" in expr or ";" in expr:
         raise RuntimeError("Cannot use builtins, '__' or ';'. Sorry.")
     return
 
@@ -61,7 +61,7 @@ def _get_arguments(*args, **kwargs):
 
 
 def _real_or_int(kwargs):
-    return Integer if kwargs.pop('discrete', False) else Real
+    return Integer if kwargs.pop("discrete", False) else Real
 
 
 def replace_key_in_order(odict, key_prev, key_after):
@@ -79,11 +79,15 @@ def replace_key_in_order(odict, key_prev, key_after):
 
 
 def _should_not_be_built(expression):
-    return expression.startswith('-') or expression.startswith('>')
+    return expression.startswith("-") or expression.startswith(">")
 
 
-def _remove_marker(expression, marker='+'):
-    return expression.replace(marker, '', 1) if expression.startswith(marker) else expression
+def _remove_marker(expression, marker="+"):
+    return (
+        expression.replace(marker, "", 1)
+        if expression.startswith(marker)
+        else expression
+    )
 
 
 class DimensionBuilder(object):
@@ -136,8 +140,9 @@ class DimensionBuilder(object):
             if isinstance(args[0], (dict, list)):
                 return Categorical(name, *args, **kwargs)
         except IndexError as exc:
-            raise TypeError("Parameter '{}': "
-                            "Expected argument with categories.".format(name)) from exc
+            raise TypeError(
+                "Parameter '{}': " "Expected argument with categories.".format(name)
+            ) from exc
 
         return Categorical(name, args, **kwargs)
 
@@ -157,8 +162,8 @@ class DimensionBuilder(object):
         name = self.name
         klass = _real_or_int(kwargs)
         if len(args) == 2:
-            return klass(name, 'uniform', args[0], args[1] - args[0], **kwargs)
-        return klass(name, 'uniform', *args, **kwargs)
+            return klass(name, "uniform", args[0], args[1] - args[0], **kwargs)
+        return klass(name, "uniform", *args, **kwargs)
 
     def randint(self, *args, **kwargs):
         """Create an `Integer` or `Real` uniformly distributed dimension.
@@ -168,7 +173,9 @@ class DimensionBuilder(object):
            means uniform in the interval [a, b].
 
         """
-        raise NotImplementedError('`randint` is not supported. Use uniform(discrete=True) instead.')
+        raise NotImplementedError(
+            "`randint` is not supported. Use uniform(discrete=True) instead."
+        )
 
     def gaussian(self, *args, **kwargs):
         """Synonym for `scipy.stats.distributions.norm`."""
@@ -178,7 +185,7 @@ class DimensionBuilder(object):
         """Another synonym for `scipy.stats.distributions.norm`."""
         name = self.name
         klass = _real_or_int(kwargs)
-        return klass(name, 'norm', *args, **kwargs)
+        return klass(name, "norm", *args, **kwargs)
 
     def loguniform(self, *args, **kwargs):
         """Return a `Dimension` object with
@@ -186,7 +193,7 @@ class DimensionBuilder(object):
         """
         name = self.name
         klass = _real_or_int(kwargs)
-        return klass(name, 'reciprocal', *args, **kwargs)
+        return klass(name, "reciprocal", *args, **kwargs)
 
     def _build(self, name, expression):
         """Build a `Dimension` object using a string as its `name` and another
@@ -195,10 +202,10 @@ class DimensionBuilder(object):
         self.name = name
         _check_expr_to_eval(expression)
 
-        prior, arg_string = re.findall(r'([a-z][a-z0-9_]*)\((.*)\)', expression)[0]
-        globals_ = {'__builtins__': {}}
+        prior, arg_string = re.findall(r"([a-z][a-z0-9_]*)\((.*)\)", expression)[0]
+        globals_ = {"__builtins__": {}}
         try:
-            dimension = eval("self." + expression, globals_, {'self': self})
+            dimension = eval("self." + expression, globals_, {"self": self})
 
             return dimension
         except AttributeError:
@@ -207,18 +214,23 @@ class DimensionBuilder(object):
         # If not found in the methods of `DimensionBuilder`.
         # try to see if it is legit scipy stuff and call a `Dimension`
         # appropriately.
-        args, kwargs = eval("_get_arguments(" + arg_string + ")",
-                            globals_,
-                            {'_get_arguments': _get_arguments})
+        args, kwargs = eval(
+            "_get_arguments(" + arg_string + ")",
+            globals_,
+            {"_get_arguments": _get_arguments},
+        )
 
         if hasattr(sp_dists._continuous_distns, prior):
             klass = _real_or_int(kwargs)
         elif hasattr(sp_dists._discrete_distns, prior):
             klass = Integer
         else:
-            raise TypeError("Parameter '{0}': "
-                            "'{1}' does not correspond to a supported distribution.".format(
-                                name, prior))
+            raise TypeError(
+                "Parameter '{0}': "
+                "'{1}' does not correspond to a supported distribution.".format(
+                    name, prior
+                )
+            )
         dimension = klass(name, prior, *args, **kwargs)
 
         return dimension
@@ -232,23 +244,31 @@ class DimensionBuilder(object):
         try:
             dimension = self._build(name, expression)
         except ValueError as exc:
-            raise TypeError("Parameter '{}': Incorrect arguments.".format(name)) from exc
+            raise TypeError(
+                "Parameter '{}': Incorrect arguments.".format(name)
+            ) from exc
         except IndexError as exc:
-            error_msg = "Parameter '{0}': Please provide a valid form for prior:\n"\
-                        "'distribution(*args, **kwargs)'\n"\
-                        "Provided: '{1}'".format(name, expression)
+            error_msg = (
+                "Parameter '{0}': Please provide a valid form for prior:\n"
+                "'distribution(*args, **kwargs)'\n"
+                "Provided: '{1}'".format(name, expression)
+            )
             raise TypeError(error_msg) from exc
 
         try:
             dimension.sample()
         except TypeError as exc:
-            error_msg = "Parameter '{0}': Incorrect arguments for distribution '{1}'.\n"\
-                        "Scipy Docs::\n\n{2}".format(name,
-                                                     dimension._prior_name,
-                                                     dimension.prior.__doc__)
+            error_msg = (
+                "Parameter '{0}': Incorrect arguments for distribution '{1}'.\n"
+                "Scipy Docs::\n\n{2}".format(
+                    name, dimension._prior_name, dimension.prior.__doc__
+                )
+            )
             raise TypeError(error_msg) from exc
         except ValueError as exc:
-            raise TypeError("Parameter '{0}': Incorrect arguments.".format(name)) from exc
+            raise TypeError(
+                "Parameter '{0}': Incorrect arguments.".format(name)
+            ) from exc
 
         return dimension
 
@@ -295,7 +315,7 @@ class SpaceBuilder(object):
             try:
                 self.space.register(dimension)
             except ValueError as exc:
-                error_msg = 'Conflict for name \'{}\' in parameters'.format(namespace)
+                error_msg = "Conflict for name '{}' in parameters".format(namespace)
                 raise ValueError(error_msg) from exc
 
         return self.space

@@ -39,7 +39,8 @@ def format_info(experiment):
         space=format_space(experiment),
         metadata=format_metadata(experiment),
         refers=format_refers(experiment),
-        stats=format_stats(experiment))
+        stats=format_stats(experiment),
+    )
 
     return info_string
 
@@ -52,10 +53,7 @@ TITLE_TEMPLATE = """\
 
 def format_title(title):
     """Render a title above an horizontal bar"""
-    title_string = TITLE_TEMPLATE.format(
-        title=title,
-        title_len=len(title),
-        empty='')
+    title_string = TITLE_TEMPLATE.format(title=title, title_len=len(title), empty="")
 
     return title_string
 
@@ -112,25 +110,28 @@ def format_dict(dictionary, depth=0, width=4, templates=None):
     if templates is None:
         templates = dict()
 
-    empty_leaf_template = templates.get('empty_leaf', DICT_EMPTY_LEAF_TEMPLATE)
-    leaf_template = templates.get('leaf', DICT_LEAF_TEMPLATE)
-    node_template = templates.get('dict_node', DICT_NODE_TEMPLATE)
+    empty_leaf_template = templates.get("empty_leaf", DICT_EMPTY_LEAF_TEMPLATE)
+    leaf_template = templates.get("leaf", DICT_LEAF_TEMPLATE)
+    node_template = templates.get("dict_node", DICT_NODE_TEMPLATE)
 
     dict_string = ""
     for key in sorted(dictionary.keys()):
-        tab = (" " * (depth * width))
+        tab = " " * (depth * width)
         value = dictionary[key]
         if isinstance(value, (dict, list, tuple)):
             if not value:
                 dict_string += empty_leaf_template.format(tab=tab, key=key)
             else:
                 subdict_string = format_dict(
-                    value, depth + 1, width=width, templates=templates)
-                dict_string += node_template.format(tab=tab, key=key, value=subdict_string)
+                    value, depth + 1, width=width, templates=templates
+                )
+                dict_string += node_template.format(
+                    tab=tab, key=key, value=subdict_string
+                )
         else:
             dict_string += leaf_template.format(tab=tab, key=key, value=value)
 
-    return dict_string.replace(' \n', '\n').rstrip("\n")
+    return dict_string.replace(" \n", "\n").rstrip("\n")
 
 
 LIST_TEMPLATE = """\
@@ -200,14 +201,14 @@ def format_list(a_list, depth=0, width=4, templates=None):
     if templates is None:
         templates = dict()
 
-    list_template = templates.get('list', LIST_TEMPLATE)
-    item_template = templates.get('item', LIST_ITEM_TEMPLATE)
-    node_template = templates.get('list_node', LIST_NODE_TEMPLATE)
+    list_template = templates.get("list", LIST_TEMPLATE)
+    item_template = templates.get("item", LIST_ITEM_TEMPLATE)
+    node_template = templates.get("list_node", LIST_NODE_TEMPLATE)
 
-    tab = (" " * (depth * width))
+    tab = " " * (depth * width)
     list_string = ""
     for i, item in enumerate(a_list, 1):
-        subtab = (" " * ((depth + 1) * width))
+        subtab = " " * ((depth + 1) * width)
         if isinstance(item, (dict, list, tuple)):
             item_string = format_dict(item, depth + 1, width=width, templates=templates)
             list_string += node_template.format(tab=subtab, id=i, item=item_string)
@@ -231,7 +232,8 @@ def format_identification(experiment):
         title=format_title("Identification"),
         name=experiment.name,
         version=experiment.version,
-        user=experiment.metadata['user'])
+        user=experiment.metadata["user"],
+    )
 
     return identification_string
 
@@ -244,12 +246,13 @@ COMMANDLINE_TEMPLATE = """\
 
 def format_commandline(experiment):
     """Render a string for commandline section"""
-    if 'user_args' not in experiment.metadata:
-        return ''
+    if "user_args" not in experiment.metadata:
+        return ""
 
     commandline_string = COMMANDLINE_TEMPLATE.format(
         title=format_title("Commandline"),
-        commandline=" ".join(experiment.metadata['user_args']))
+        commandline=" ".join(experiment.metadata["user_args"]),
+    )
 
     return commandline_string
 
@@ -266,8 +269,8 @@ working dir: {experiment.working_dir}
 def format_config(experiment):
     """Render a string for config section"""
     config_string = CONFIG_TEMPLATE.format(
-        title=format_title("Config"),
-        experiment=experiment)
+        title=format_title("Config"), experiment=experiment
+    )
 
     return config_string
 
@@ -282,7 +285,8 @@ def format_algorithm(experiment):
     """Render a string for algorithm section"""
     algorithm_string = ALGORITHM_TEMPLATE.format(
         title=format_title("Algorithm"),
-        configuration=format_dict(experiment.configuration['algorithms']))
+        configuration=format_dict(experiment.configuration["algorithms"]),
+    )
 
     return algorithm_string
 
@@ -297,8 +301,11 @@ def format_space(experiment):
     """Render a string for space section"""
     space_string = SPACE_TEMPLATE.format(
         title=format_title("Space"),
-        params="\n".join(name + ": " + experiment.space[name].get_prior_string()
-                         for name in experiment.space.keys()))
+        params="\n".join(
+            name + ": " + experiment.space[name].get_prior_string()
+            for name in experiment.space.keys()
+        ),
+    )
 
     return space_string
 
@@ -318,7 +325,8 @@ def format_metadata(experiment):
     metadata_string = METADATA_TEMPLATE.format(
         title=format_title("Meta-data"),
         experiment=experiment,
-        vcs=format_dict(experiment.metadata.get('VCS', {}), depth=1, width=2))
+        vcs=format_dict(experiment.metadata.get("VCS", {}), depth=1, width=2),
+    )
 
     return metadata_string
 
@@ -334,19 +342,22 @@ adapter: {adapter}
 def format_refers(experiment):
     """Render a string for refers section"""
     if experiment.node.root is experiment.node:
-        root = ''
-        parent = ''
-        adapter = ''
+        root = ""
+        parent = ""
+        adapter = ""
     else:
         root = experiment.node.root.name
         parent = experiment.node.parent.name
-        adapter = "\n" + format_dict(experiment.refers['adapter'].configuration, depth=1, width=2)
+        adapter = "\n" + format_dict(
+            experiment.refers["adapter"].configuration, depth=1, width=2
+        )
 
     refers_string = REFERS_TEMPLATE.format(
         title=format_title("Parent experiment"),
         root=root,
         parent=parent,
-        adapter=adapter)
+        adapter=adapter,
+    )
 
     return refers_string
 
@@ -385,16 +396,16 @@ def format_stats(experiment):
     """
     stats = experiment.stats
     if not stats:
-        return NO_STATS_TEMPLATE.format(
-            title=format_title("Stats"))
+        return NO_STATS_TEMPLATE.format(title=format_title("Stats"))
 
-    best_params = get_trial_params(stats['best_trials_id'], experiment)
+    best_params = get_trial_params(stats["best_trials_id"], experiment)
 
     stats_string = STATS_TEMPLATE.format(
         title=format_title("Stats"),
         stats=stats,
         best_params=format_dict(best_params, depth=2, width=2),
-        is_done=experiment.is_done)
+        is_done=experiment.is_done,
+    )
 
     return stats_string
 

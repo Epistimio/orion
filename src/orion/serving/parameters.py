@@ -14,8 +14,11 @@ from orion.core.io import experiment_builder
 from orion.core.utils.exceptions import NoConfigurationError
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
-from orion.serving.responses import ERROR_EXPERIMENT_NOT_FOUND, ERROR_INVALID_PARAMETER, \
-    ERROR_TRIAL_NOT_FOUND
+from orion.serving.responses import (
+    ERROR_EXPERIMENT_NOT_FOUND,
+    ERROR_INVALID_PARAMETER,
+    ERROR_TRIAL_NOT_FOUND,
+)
 
 
 def verify_query_parameters(parameters: dict, supported_parameters: list):
@@ -44,8 +47,9 @@ def verify_status(status):
     """Verifies that the given trial status is supported. Raises falcon.HTTPBadRequest otherwise"""
     if status and status not in Trial.allowed_stati:
         description = 'The "status" parameter is invalid. '
-        description += 'The value of the parameter must be one of {}'.format(
-            list(Trial.allowed_stati))
+        description += "The value of the parameter must be one of {}".format(
+            list(Trial.allowed_stati)
+        )
 
         raise falcon.HTTPBadRequest(ERROR_INVALID_PARAMETER, description)
 
@@ -56,14 +60,16 @@ def _compose_error_message(key: str, supported_parameters: list):
 
     if len(supported_parameters) > 1:
         supported_parameters.sort()
-        error_message += f'one of {supported_parameters}.'
+        error_message += f"one of {supported_parameters}."
     else:
         error_message += f'parameter "{supported_parameters[0]}".'
 
     return error_message
 
 
-def retrieve_experiment(experiment_name: str, version: int = None) -> Optional[Experiment]:
+def retrieve_experiment(
+    experiment_name: str, version: int = None
+) -> Optional[Experiment]:
     """
     Retrieve an experiment from the database with the given name and version.
 
@@ -77,11 +83,14 @@ def retrieve_experiment(experiment_name: str, version: int = None) -> Optional[E
         if version and experiment.version != version:
             raise falcon.HTTPNotFound(
                 title=ERROR_EXPERIMENT_NOT_FOUND,
-                description=f'Experiment "{experiment_name}" has no version "{version}"')
+                description=f'Experiment "{experiment_name}" has no version "{version}"',
+            )
         return experiment
     except NoConfigurationError:
-        raise falcon.HTTPNotFound(title=ERROR_EXPERIMENT_NOT_FOUND,
-                                  description=f'Experiment "{experiment_name}" does not exist')
+        raise falcon.HTTPNotFound(
+            title=ERROR_EXPERIMENT_NOT_FOUND,
+            description=f'Experiment "{experiment_name}" does not exist',
+        )
 
 
 def retrieve_trial(experiment: Experiment, trial_id: str):
@@ -104,6 +113,8 @@ def retrieve_trial(experiment: Experiment, trial_id: str):
     """
     trial = experiment.get_trial(uid=trial_id)
     if not trial:
-        raise falcon.HTTPNotFound(title=ERROR_TRIAL_NOT_FOUND,
-                                  description=f'Trial "{trial_id}" does not exist')
+        raise falcon.HTTPNotFound(
+            title=ERROR_TRIAL_NOT_FOUND,
+            description=f'Trial "{trial_id}" does not exist',
+        )
     return trial

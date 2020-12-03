@@ -16,7 +16,11 @@ import sys
 from numpy import inf as infinity
 
 from orion.core.io.database import DuplicateKeyError
-from orion.core.utils.exceptions import BrokenExperiment, SampleTimeout, WaitingForTrials
+from orion.core.utils.exceptions import (
+    BrokenExperiment,
+    SampleTimeout,
+    WaitingForTrials,
+)
 from orion.core.utils.flatten import flatten, unflatten
 import orion.core.utils.format_trials as format_trials
 import orion.core.worker
@@ -32,14 +36,16 @@ log = logging.getLogger(__name__)
 def set_broken_trials(client):
     """Release all trials with status broken if the process exits without releasing them."""
     if sys.exc_info()[0] is KeyboardInterrupt:
-        status = 'interrupted'
+        status = "interrupted"
     else:
-        status = 'broken'
+        status = "broken"
 
     for trial_id in list(client._pacemakers.keys()):  # pylint: disable=protected-access
         trial = client.get_trial(uid=trial_id)
         if trial is None:
-            log.warning('Trial {} was not found in storage, could not set status to `broken`.')
+            log.warning(
+                "Trial {} was not found in storage, could not set status to `broken`."
+            )
             continue
         client.release(trial, status=status)
 
@@ -242,7 +248,9 @@ class ExperimentClient:
 
         :return: list of `Trial` objects
         """
-        return self._experiment.fetch_trials_by_status(status, with_evc_tree=with_evc_tree)
+        return self._experiment.fetch_trials_by_status(
+            status, with_evc_tree=with_evc_tree
+        )
 
     def fetch_noncompleted_trials(self, with_evc_tree=False):
         """Fetch non-completed trials of this `Experiment` instance.
@@ -302,15 +310,19 @@ class ExperimentClient:
         """
         if results and reserve:
             raise ValueError(
-                'Cannot observe a trial and reserve it. A trial with results has status '
-                '`completed` and cannot be reserved.')
+                "Cannot observe a trial and reserve it. A trial with results has status "
+                "`completed` and cannot be reserved."
+            )
         trial = format_trials.dict_to_trial(params, self.space)
         try:
-            self._experiment.register_trial(trial, status='reserved')
+            self._experiment.register_trial(trial, status="reserved")
             self._maintain_reservation(trial)
         except DuplicateKeyError as e:
-            message = 'A trial with params {} already exist for experiment {}-v{}'.format(
-                params, self.name, self.version)
+            message = (
+                "A trial with params {} already exist for experiment {}-v{}".format(
+                    params, self.name, self.version
+                )
+            )
             raise DuplicateKeyError(message) from e
 
         if results:
@@ -355,21 +367,27 @@ class ExperimentClient:
         since twice the value of `heartbeat`.
 
         """
-        if trial.status == 'reserved' and trial.id in self._pacemakers:
-            log.warning('Trial %s is already reserved.', trial.id)
+        if trial.status == "reserved" and trial.id in self._pacemakers:
+            log.warning("Trial %s is already reserved.", trial.id)
             return
-        elif trial.status == 'reserved' and trial.id not in self._pacemakers:
-            raise RuntimeError('Trial {} is already reserved by another process.'.format(trial.id))
+        elif trial.status == "reserved" and trial.id not in self._pacemakers:
+            raise RuntimeError(
+                "Trial {} is already reserved by another process.".format(trial.id)
+            )
         try:
-            self._experiment.set_trial_status(trial, 'reserved', heartbeat=self.heartbeat)
+            self._experiment.set_trial_status(
+                trial, "reserved", heartbeat=self.heartbeat
+            )
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
-                raise ValueError('Trial {} does not exist in database.'.format(trial.id)) from e
-            raise RuntimeError('Could not reserve trial {}.'.format(trial.id)) from e
+                raise ValueError(
+                    "Trial {} does not exist in database.".format(trial.id)
+                ) from e
+            raise RuntimeError("Could not reserve trial {}.".format(trial.id)) from e
 
         self._maintain_reservation(trial)
 
-    def release(self, trial, status='interrupted'):
+    def release(self, trial, status="interrupted"):
         """Release a trial.
 
         Release the reservation and stop the heartbeat.
@@ -394,9 +412,14 @@ class ExperimentClient:
             self._experiment.set_trial_status(trial, status)
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
-                raise ValueError('Trial {} does not exist in database.'.format(trial.id)) from e
+                raise ValueError(
+                    "Trial {} does not exist in database.".format(trial.id)
+                ) from e
             raise RuntimeError(
-                'Reservation for trial {} has been lost before release.'.format(trial.id)) from e
+                "Reservation for trial {} has been lost before release.".format(
+                    trial.id
+                )
+            ) from e
         finally:
             self._release_reservation(trial)
 
@@ -483,13 +506,17 @@ class ExperimentClient:
         trial.results += [Trial.Result(**result) for result in results]
         try:
             self._experiment.update_completed_trial(trial)
-            self.release(trial, 'completed')
+            self.release(trial, "completed")
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
-                raise ValueError('Trial {} does not exist in database.'.format(trial.id)) from e
+                raise ValueError(
+                    "Trial {} does not exist in database.".format(trial.id)
+                ) from e
 
             self._release_reservation(trial)
-            raise RuntimeError('Reservation for trial {} has been lost.'.format(trial.id)) from e
+            raise RuntimeError(
+                "Reservation for trial {} has been lost.".format(trial.id)
+            ) from e
 
     def workon(self, fct, max_trials=infinity, **kwargs):
         """Optimize a given function
@@ -518,7 +545,7 @@ class ExperimentClient:
         while not self.is_done and trials < max_trials:
             trial = self.suggest()
             if trial is None:
-                log.warning('Algorithm could not sample new points')
+                log.warning("Algorithm could not sample new points")
                 return trials
             kwargs.update(flatten(trial.params))
             results = fct(**unflatten(kwargs))
@@ -530,9 +557,11 @@ class ExperimentClient:
     def close(self):
         """Verify that no reserved trials are remaining and unregister atexit()."""
         if self._pacemakers:
-            raise RuntimeError("There is still reserved trials: {}\nRelease all trials before "
-                               "closing the client, using "
-                               "client.release(trial).".format(self._pacemakers.keys()))
+            raise RuntimeError(
+                "There is still reserved trials: {}\nRelease all trials before "
+                "closing the client, using "
+                "client.release(trial).".format(self._pacemakers.keys())
+            )
 
         atexit.unregister(self.set_broken_trials)
 
@@ -547,12 +576,14 @@ class ExperimentClient:
     def _verify_reservation(self, trial):
         if trial.id not in self._pacemakers:
             raise RuntimeError(
-                'Trial {} had no pacemakers. Was is reserved properly?'.format(trial.id))
+                "Trial {} had no pacemakers. Was is reserved properly?".format(trial.id)
+            )
 
-        if self.get_trial(trial).status != 'reserved':
+        if self.get_trial(trial).status != "reserved":
             self._release_reservation(trial)
             raise RuntimeError(
-                'Reservation for trial {} has been lost.'.format(trial.id))
+                "Reservation for trial {} has been lost.".format(trial.id)
+            )
 
     def _maintain_reservation(self, trial):
         self._pacemakers[trial.id] = TrialPacemaker(trial)
@@ -561,5 +592,6 @@ class ExperimentClient:
     def _release_reservation(self, trial):
         if trial.id not in self._pacemakers:
             raise RuntimeError(
-                'Trial {} had no pacemakers. Was is reserved properly?'.format(trial.id))
+                "Trial {} had no pacemakers. Was is reserved properly?".format(trial.id)
+            )
         self._pacemakers.pop(trial.id).stop()

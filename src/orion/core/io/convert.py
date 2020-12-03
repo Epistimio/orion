@@ -20,16 +20,15 @@ A `GenericConverter` is provided that tries and parses configuration
 files, regardless of their type, according to predefined Oríon's markers.
 
 """
-from abc import (ABC, abstractmethod)
+from abc import ABC, abstractmethod
 from collections import deque
 import importlib
 import os
 
-from orion.core.utils import (Factory, nesteddict)
+from orion.core.utils import Factory, nesteddict
 
 
-def infer_converter_from_file_type(config_path,
-                                   regex=None, default_keyword=''):
+def infer_converter_from_file_type(config_path, regex=None, default_keyword=""):
     """Use filetype extension to infer and build the correct configuration file
     converter.
     """
@@ -87,11 +86,11 @@ class BaseConverter(ABC):
 class YAMLConverter(BaseConverter):
     """Converter for YAML files."""
 
-    file_extensions = ['.yml', '.yaml']
+    file_extensions = [".yml", ".yaml"]
 
     def __init__(self):
         """Try to dynamically import yaml module."""
-        self.yaml = importlib.import_module('yaml')
+        self.yaml = importlib.import_module("yaml")
 
     def parse(self, filepath):
         """Read dictionary out of the configuration file.
@@ -107,18 +106,18 @@ class YAMLConverter(BaseConverter):
 
     def generate(self, filepath, data):
         """Create a configuration file at `filepath` using dictionary `data`."""
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             self.yaml.dump(data, stream=f)
 
 
 class JSONConverter(BaseConverter):
     """Converter for JSON files."""
 
-    file_extensions = ['.json']
+    file_extensions = [".json"]
 
     def __init__(self):
         """Try to dynamically import json module."""
-        self.json = importlib.import_module('json')
+        self.json = importlib.import_module("json")
 
     def parse(self, filepath):
         """Read dictionary out of the configuration file.
@@ -134,7 +133,7 @@ class JSONConverter(BaseConverter):
 
     def generate(self, filepath, data):
         """Create a configuration file at `filepath` using dictionary `data`."""
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             self.json.dump(data, f)
 
 
@@ -155,12 +154,15 @@ class GenericConverter(BaseConverter):
 
     """
 
-    def __init__(self, regex=r'([\/]?[\w|\/|-]+)~([\+]?.*\)|\-|\>[A-Za-z_]\w*)',
-                 expression_prefix=''):
+    def __init__(
+        self,
+        regex=r"([\/]?[\w|\/|-]+)~([\+]?.*\)|\-|\>[A-Za-z_]\w*)",
+        expression_prefix="",
+    ):
         """Initialize with the regex expression which will be searched for
         to define a `Dimension`.
         """
-        self.re_module = importlib.import_module('re')
+        self.re_module = importlib.import_module("re")
         self.regex = self.re_module.compile(regex)
         self.expression_prefix = expression_prefix
         self.template = None
@@ -173,14 +175,15 @@ class GenericConverter(BaseConverter):
             regex=self.regex.pattern,
             expression_prefix=self.expression_prefix,
             template=self.template,
-            has_leading=self.has_leading)
+            has_leading=self.has_leading,
+        )
 
     def set_state_dict(self, state):
         """Reset the converter based on previous state"""
-        self.regex = self.re_module.compile(state['regex'])
-        self.expression_prefix = state['expression_prefix']
-        self.template = state['template']
-        self.has_leading = state['has_leading']
+        self.regex = self.re_module.compile(state["regex"])
+        self.expression_prefix = state["expression_prefix"]
+        self.template = state["template"]
+        self.has_leading = state["has_leading"]
 
     def _raise_conflict(self, path, namespace):
         raise ValueError(self.conflict_msg.format(path, namespace))
@@ -218,20 +221,22 @@ class GenericConverter(BaseConverter):
 
         # Create template using each namespace as format key,
         # exactly as provided by the user
-        subst = self.re_module.sub(r'{', r'{{', self.template)
-        subst = self.re_module.sub(r'}', r'}}', subst)
-        substituted, num_subs = self.regex.subn(r'{\1!s}', subst)
-        assert len(ret) == num_subs, "This means an error in the regex. Report bug. Details::\n"\
+        subst = self.re_module.sub(r"{", r"{{", self.template)
+        subst = self.re_module.sub(r"}", r"}}", subst)
+        substituted, num_subs = self.regex.subn(r"{\1!s}", subst)
+        assert len(ret) == num_subs, (
+            "This means an error in the regex. Report bug. Details::\n"
             "original: {}\n, regex:{}".format(self.template, self.regex)
+        )
         self.template = substituted
 
         # Wrap it in style of what the rest of `Converter`s return
         ret_nested = nesteddict()
         for namespace, expression in ret.items():
-            keys = namespace.split('/')
+            keys = namespace.split("/")
             if not keys[0]:  # It means that user wrote a namespace starting from '/'
                 keys = keys[1:]  # Safe because of the regex pattern
-                self.has_leading[namespace[1:]] = '/'
+                self.has_leading[namespace[1:]] = "/"
 
             stuff = ret_nested
             for i, key in enumerate(keys[:-1]):
@@ -240,7 +245,7 @@ class GenericConverter(BaseConverter):
                     # If `stuff` is not a dictionary while traversing the
                     # namespace path, then this amounts to a conflict which was
                     # not sufficiently get caught
-                    self._raise_conflict(filepath, '/'.join(keys[:i + 1]))
+                    self._raise_conflict(filepath, "/".join(keys[: i + 1]))
             # If final value is already filled,
             # then this must be also due to a conflict
             if stuff[keys[-1]]:
@@ -263,16 +268,16 @@ class GenericConverter(BaseConverter):
                 break
             if isinstance(stuff, dict):
                 for k, v in stuff.items():
-                    stack.append((['/'.join(namespace + [str(k)])], v))
+                    stack.append((["/".join(namespace + [str(k)])], v))
             else:
                 name = namespace[0]
-                unnested_data[self.has_leading.get(name, '') + name] = stuff
+                unnested_data[self.has_leading.get(name, "") + name] = stuff
 
         print(self.template)
         print(unnested_data)
         document = self.template.format(**unnested_data)
 
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             f.write(document)
 
 

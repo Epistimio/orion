@@ -16,13 +16,13 @@ from orion.algo.base import BaseAlgorithm
 class Gradient_Descent(BaseAlgorithm):
     """Implement a gradient descent algorithm."""
 
-    requires = 'real'
+    requires = "real"
 
-    def __init__(self, space, learning_rate=1., dx_tolerance=1e-7):
+    def __init__(self, space, learning_rate=1.0, dx_tolerance=1e-7):
         """Declare `learning_rate` as a hyperparameter of this algorithm."""
-        super(Gradient_Descent, self).__init__(space,
-                                               learning_rate=learning_rate,
-                                               dx_tolerance=dx_tolerance)
+        super(Gradient_Descent, self).__init__(
+            space, learning_rate=learning_rate, dx_tolerance=dx_tolerance
+        )
         self.has_observed_once = False
         self.current_point = None
         self.gradient = numpy.array([numpy.inf])
@@ -48,7 +48,7 @@ class Gradient_Descent(BaseAlgorithm):
 
         """
         self.current_point = numpy.asarray(points[-1])
-        self.gradient = numpy.asarray(results[-1]['gradient'])
+        self.gradient = numpy.asarray(results[-1]["gradient"])
         self.has_observed_once = True
 
     @property

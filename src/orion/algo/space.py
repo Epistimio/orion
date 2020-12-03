@@ -47,15 +47,19 @@ logger = logging.getLogger(__name__)
 def check_random_state(seed):
     """Return numpy global rng or RandomState if seed is specified"""
     if seed is None or seed is numpy.random:
-        rng = numpy.random.mtrand._rand  # pylint:disable=protected-access,c-extension-no-member
+        rng = (
+            numpy.random.mtrand._rand
+        )  # pylint:disable=protected-access,c-extension-no-member
     elif isinstance(seed, numpy.random.RandomState):
         rng = seed
     else:
         try:
             rng = numpy.random.RandomState(seed)
         except Exception as e:
-            raise ValueError('%r cannot be used to seed a numpy.random.RandomState'
-                             ' instance' % seed) from e
+            raise ValueError(
+                "%r cannot be used to seed a numpy.random.RandomState"
+                " instance" % seed
+            ) from e
 
     return rng
 
@@ -63,7 +67,7 @@ def check_random_state(seed):
 # helper class to be able to print [1, ..., 4] instead of [1, '...', 4]
 class _Ellipsis:  # pylint:disable=too-few-public-methods
     def __repr__(self):
-        return '...'
+        return "..."
 
 
 class Dimension:
@@ -122,28 +126,44 @@ class Dimension:
             self.prior = prior
         self._args = args
         self._kwargs = kwargs
-        self._default_value = kwargs.pop('default_value', self.NO_DEFAULT_VALUE)
-        self._shape = kwargs.pop('shape', None)
+        self._default_value = kwargs.pop("default_value", self.NO_DEFAULT_VALUE)
+        self._shape = kwargs.pop("shape", None)
         self.validate()
 
     def validate(self):
         """Validate dimension arguments"""
-        if 'random_state' in self._kwargs or 'seed' in self._kwargs:
-            raise ValueError("random_state/seed cannot be set in a "
-                             "parameter's definition! Set seed globally!")
-        if 'discrete' in self._kwargs:
-            raise ValueError("Do not use kwarg 'discrete' on `Dimension`, "
-                             "use pure `_Discrete` class instead!")
-        if 'size' in self._kwargs:
+        if "random_state" in self._kwargs or "seed" in self._kwargs:
+            raise ValueError(
+                "random_state/seed cannot be set in a "
+                "parameter's definition! Set seed globally!"
+            )
+        if "discrete" in self._kwargs:
+            raise ValueError(
+                "Do not use kwarg 'discrete' on `Dimension`, "
+                "use pure `_Discrete` class instead!"
+            )
+        if "size" in self._kwargs:
             raise ValueError("Use 'shape' keyword only instead of 'size'.")
 
-        if self.default_value is not self.NO_DEFAULT_VALUE and self.default_value not in self:
-            raise ValueError("{} is not a valid value for this Dimension. "
-                             "Can't set default value.".format(self.default_value))
+        if (
+            self.default_value is not self.NO_DEFAULT_VALUE
+            and self.default_value not in self
+        ):
+            raise ValueError(
+                "{} is not a valid value for this Dimension. "
+                "Can't set default value.".format(self.default_value)
+            )
 
     def _get_hashable_members(self):
-        return (self.name, self.shape, self.type, tuple(self._args), tuple(self._kwargs.items()),
-                self.default_value, self._prior_name)
+        return (
+            self.name,
+            self.shape,
+            self.type,
+            tuple(self._args),
+            tuple(self._kwargs.items()),
+            self.default_value,
+            self._prior_name,
+        )
 
     # pylint:disable=protected-access
     def __eq__(self, other):
@@ -180,9 +200,12 @@ class Dimension:
            across many samples.
 
         """
-        samples = [self.prior.rvs(*self._args, size=self.shape,
-                                  random_state=seed,
-                                  **self._kwargs) for _ in range(n_samples)]
+        samples = [
+            self.prior.rvs(
+                *self._args, size=self.shape, random_state=seed, **self._kwargs
+            )
+            for _ in range(n_samples)
+        ]
         return samples
 
     def cast(self, point):
@@ -218,13 +241,19 @@ class Dimension:
     def __repr__(self):
         """Represent the object as a string."""
         return "{0}(name={1}, prior={{{2}: {3}, {4}}}, shape={5}, default value={6})".format(
-            self.__class__.__name__, self.name, self._prior_name,
-            self._args, self._kwargs, self.shape, self._default_value)
+            self.__class__.__name__,
+            self.name,
+            self._prior_name,
+            self._args,
+            self._kwargs,
+            self.shape,
+            self._default_value,
+        )
 
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
         args = copy.deepcopy(list(self._args[:]))
-        if self._prior_name == 'uniform' and len(args) == 2:
+        if self._prior_name == "uniform" and len(args) == 2:
             args[1] = args[0] + args[1]
             args[0] = args[0]
 
@@ -237,14 +266,16 @@ class Dimension:
                 args += ["{}={}".format(k, v)]
 
         if self._shape is not None:
-            args += ['shape={}'.format(self._shape)]
+            args += ["shape={}".format(self._shape)]
         if self.default_value is not self.NO_DEFAULT_VALUE:
-            args += ['default_value={}'.format(repr(self.default_value))]
+            args += ["default_value={}".format(repr(self.default_value))]
 
         prior_name = self._prior_name
-        if prior_name == 'reciprocal':
-            prior_name = 'loguniform'
-        return "{prior_name}({args})".format(prior_name=prior_name, args=", ".join(args))
+        if prior_name == "reciprocal":
+            prior_name = "loguniform"
+        return "{prior_name}({args})".format(
+            prior_name=prior_name, args=", ".join(args)
+        )
 
     def get_string(self):
         """Build the string corresponding to current dimension"""
@@ -260,8 +291,10 @@ class Dimension:
         if isinstance(value, str) or value is None:
             self._name = value
         else:
-            raise TypeError("Dimension's name must be either string or None. "
-                            "Provided: {}, of type: {}".format(value, type(value)))
+            raise TypeError(
+                "Dimension's name must be either string or None. "
+                "Provided: {}, of type: {}".format(value, type(value))
+            )
 
     @property
     def default_value(self):
@@ -287,9 +320,11 @@ class Dimension:
         if self.prior is None:
             return None
 
-        _, _, _, size = self.prior._parse_args_rvs(*self._args,  # pylint:disable=protected-access
-                                                   size=self._shape,
-                                                   **self._kwargs)
+        _, _, _, size = self.prior._parse_args_rvs(
+            *self._args,  # pylint:disable=protected-access
+            size=self._shape,
+            **self._kwargs
+        )
         return size
 
     # pylint:disable=no-self-use
@@ -303,6 +338,7 @@ class Dimension:
 
 def _is_numeric_array(point):
     """Test whether a point is numerical object or an array containing only numerical objects"""
+
     def _is_numeric(item):
         return isinstance(item, (numbers.Number, numpy.ndarray))
 
@@ -344,18 +380,23 @@ class Real(Dimension):
     """
 
     def __init__(self, name, prior, *args, **kwargs):
-        self._low = kwargs.pop('low', -numpy.inf)
-        self._high = kwargs.pop('high', numpy.inf)
+        self._low = kwargs.pop("low", -numpy.inf)
+        self._high = kwargs.pop("high", numpy.inf)
         if self._high <= self._low:
-            raise ValueError("Lower bound {} has to be less than upper bound {}"
-                             .format(self._low, self._high))
+            raise ValueError(
+                "Lower bound {} has to be less than upper bound {}".format(
+                    self._low, self._high
+                )
+            )
 
-        precision = kwargs.pop('precision', 4)
+        precision = kwargs.pop("precision", 4)
         if (isinstance(precision, int) and precision > 0) or precision is None:
             self.precision = precision
         else:
-            raise TypeError("Precision should be a non-negative int or None, "
-                            "instead was {} of type {}.".format(precision, type(precision)))
+            raise TypeError(
+                "Precision should be a non-negative int or None, "
+                "instead was {} of type {}.".format(precision, type(precision))
+            )
 
         super(Real, self).__init__(name, prior, *args, **kwargs)
 
@@ -411,8 +452,10 @@ class Real(Dimension):
                 samples.extend(sample)
                 break
             if not nice:
-                raise ValueError("Improbable bounds: (low={0}, high={1}). "
-                                 "Please make interval larger.".format(self._low, self._high))
+                raise ValueError(
+                    "Improbable bounds: (low={0}, high={1}). "
+                    "Please make interval larger.".format(self._low, self._high)
+                )
 
         return samples
 
@@ -442,7 +485,6 @@ class Real(Dimension):
 
 
 class _Discrete(Dimension):
-
     def sample(self, n_samples=1, seed=None):
         """Draw random samples from `prior`.
 
@@ -540,7 +582,7 @@ class Integer(Real, _Discrete):
         # Rescale point to make high bound inclusive.
         low, high = self.interval()
         if not numpy.any(numpy.isinf([low, high])):
-            high = (high - low)
+            high = high - low
             casted_point -= low
             casted_point = casted_point / high
             casted_point = casted_point * (high + (1 - 1e-10))
@@ -557,12 +599,12 @@ class Integer(Real, _Discrete):
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
         prior_string = super(Integer, self).get_prior_string()
-        return prior_string[:-1] + ', discrete=True)'
+        return prior_string[:-1] + ", discrete=True)"
 
     @property
     def prior_name(self):
         """Return the name of the prior"""
-        return 'int_{}'.format(super(Integer, self).prior_name)
+        return "int_{}".format(super(Integer, self).prior_name)
 
     @staticmethod
     def get_cardinality(shape, interval):
@@ -582,7 +624,7 @@ def _get_shape_cardinality(shape):
         return shape_cardinality
 
     if isinstance(shape, int):
-        shape = (shape, )
+        shape = (shape,)
 
     for cardinality in shape:
         shape_cardinality *= cardinality
@@ -610,12 +652,13 @@ class Categorical(Dimension):
             self._probs = tuple(categories.values())
         else:
             self.categories = tuple(categories)
-            self._probs = tuple(numpy.tile(1. / len(categories), len(categories)))
+            self._probs = tuple(numpy.tile(1.0 / len(categories), len(categories)))
 
         # Just for compatibility; everything should be `Dimension` to let the
         # `Transformer` decorators be able to wrap smoothly anything.
-        prior = distributions.rv_discrete(values=(list(range(len(self.categories))),
-                                                  self._probs))
+        prior = distributions.rv_discrete(
+            values=(list(range(len(self.categories))), self._probs)
+        )
         super(Categorical, self).__init__(name, prior, **kwargs)
 
     @staticmethod
@@ -636,8 +679,10 @@ class Categorical(Dimension):
         """
         rng = check_random_state(seed)
         cat_ndarray = numpy.array(self.categories, dtype=numpy.object)
-        samples = [rng.choice(cat_ndarray, p=self._probs, size=self._shape)
-                   for _ in range(n_samples)]
+        samples = [
+            rng.choice(cat_ndarray, p=self._probs, size=self._shape)
+            for _ in range(n_samples)
+        ]
         return samples
 
     def interval(self, alpha=1.0):
@@ -669,34 +714,39 @@ class Categorical(Dimension):
             probs = self._probs
             prior = list(zip(cats, probs))
 
-        prior = map(lambda x: '{0[0]}: {0[1]:.2f}'.format(x)
-                    if not isinstance(x, _Ellipsis) else str(x), prior)
+        prior = map(
+            lambda x: "{0[0]}: {0[1]:.2f}".format(x)
+            if not isinstance(x, _Ellipsis)
+            else str(x),
+            prior,
+        )
 
-        prior = "{" + ', '.join(prior) + "}"
+        prior = "{" + ", ".join(prior) + "}"
 
-        return "Categorical(name={0}, prior={1}, shape={2}, default value={3})"\
-               .format(self.name, prior, self.shape, self.default_value)
+        return "Categorical(name={0}, prior={1}, shape={2}, default value={3})".format(
+            self.name, prior, self.shape, self.default_value
+        )
 
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
         args = list(map(str, self._args[:]))
         args += ["{}={}".format(k, v) for k, v in self._kwargs.items()]
         if self.default_value is not self.NO_DEFAULT_VALUE:
-            args += ['default_value={}'.format(self.default_value)]
+            args += ["default_value={}".format(self.default_value)]
 
         cats = [repr(c) for c in self.categories]
         if all(p == self._probs[0] for p in self._probs):
-            prior = '[{}]'.format(", ".join(cats))
+            prior = "[{}]".format(", ".join(cats))
         else:
             probs = list(zip(cats, self._probs))
-            prior = '{' + ", ".join('{0}: {1:.2f}'.format(c, p) for c, p in probs) + '}'
+            prior = "{" + ", ".join("{0}: {1:.2f}".format(c, p) for c, p in probs) + "}"
 
         args = [prior]
 
         if self.default_value is not self.NO_DEFAULT_VALUE:
-            args += ['default_value={}'.format(repr(self.default_value))]
+            args += ["default_value={}".format(repr(self.default_value))]
 
-        return 'choices({args})'.format(args=', '.join(args))
+        return "choices({args})".format(args=", ".join(args))
 
     @property
     def get_prior(self):
@@ -772,7 +822,9 @@ class Fidelity(Dimension):
         if low <= 0:
             raise AttributeError("Minimum resources must be a positive number.")
         elif low > high:
-            raise AttributeError("Minimum resources must be smaller than maximum resources.")
+            raise AttributeError(
+                "Minimum resources must be smaller than maximum resources."
+            )
         if base < 1:
             raise AttributeError("Base should be greater than or equal to 1")
         self.name = name
@@ -780,7 +832,7 @@ class Fidelity(Dimension):
         self.high = int(high)
         self.base = int(base)
         self.prior = None
-        self._prior_name = 'None'
+        self._prior_name = "None"
 
     @property
     def default_value(self):
@@ -803,7 +855,7 @@ class Fidelity(Dimension):
 
     def get_prior_string(self):
         """Build the string corresponding to current prior"""
-        return 'fidelity({}, {}, {})'.format(self.low, self.high, self.base)
+        return "fidelity({}, {}, {})".format(self.low, self.high, self.base)
 
     def validate(self):
         """Do not do anything."""
@@ -824,7 +876,8 @@ class Fidelity(Dimension):
     def __repr__(self):
         """Represent the object as a string."""
         return "{0}(name={1}, low={2}, high={3}, base={4})".format(
-            self.__class__.__name__, self.name, self.low, self.high, self.base)
+            self.__class__.__name__, self.name, self.low, self.high, self.base
+        )
 
     def __contains__(self, value):
         """Check if constraints hold for this `point` of `Dimension`.
@@ -882,7 +935,7 @@ class Space(dict):
         """Return a list with the intervals for each contained dimension."""
         res = list()
         for dim in self.values():
-            if dim.type == 'categorical':
+            if dim.type == "categorical":
                 res.append(dim.categories)
             else:
                 res.append(dim.interval(alpha))
@@ -901,15 +954,22 @@ class Space(dict):
         values and string keys.
         """
         if not isinstance(key, str):
-            raise TypeError("Keys registered to {} must be string types. "
-                            "Provided: {}".format(self.__class__.__name__, key))
+            raise TypeError(
+                "Keys registered to {} must be string types. "
+                "Provided: {}".format(self.__class__.__name__, key)
+            )
         if not isinstance(value, self.contains):
-            raise TypeError("Values registered to {} must be {} types. "
-                            "Provided: {}".format(self.__class__.__name__,
-                                                  self.contains.__name__, value))
+            raise TypeError(
+                "Values registered to {} must be {} types. "
+                "Provided: {}".format(
+                    self.__class__.__name__, self.contains.__name__, value
+                )
+            )
         if key in self:
-            raise ValueError("There is already a Dimension registered with this name. "
-                             "Register it with another name. Provided: {}".format(key))
+            raise ValueError(
+                "There is already a Dimension registered with this name. "
+                "Register it with another name. Provided: {}".format(key)
+            )
         super(Space, self).__setitem__(key, value)
 
     def __contains__(self, value):
@@ -929,8 +989,10 @@ class Space(dict):
         try:
             len(value)
         except TypeError as exc:
-            raise TypeError("Can check only for dimension names or "
-                            "for tuples with parameter values.") from exc
+            raise TypeError(
+                "Can check only for dimension names or "
+                "for tuples with parameter values."
+            ) from exc
 
         if not self:
             return False
@@ -944,7 +1006,7 @@ class Space(dict):
     def __repr__(self):
         """Represent as a string the space and the dimensions it contains."""
         dims = list(self.values())
-        return "Space([{}])".format(',\n       '.join(map(str, dims)))
+        return "Space([{}])".format(",\n       ".join(map(str, dims)))
 
     def items(self):
         """Return items sorted according to keys"""
@@ -982,8 +1044,10 @@ def pack_point(point, space):
     This function is deprecated and will be removed in v0.2.0. Use
     `orion.core.utils.points.regroup_dims` instead.
     """
-    logger.warning('`pack_point` is deprecated and will be removed in v0.2.0. Use '
-                   '`orion.core.utils.points.regroup_dims` instead.')
+    logger.warning(
+        "`pack_point` is deprecated and will be removed in v0.2.0. Use "
+        "`orion.core.utils.points.regroup_dims` instead."
+    )
     return regroup_dims(point, space)
 
 
@@ -993,6 +1057,8 @@ def unpack_point(point, space):
     This function is deprecated and will be removed in v0.2.0. Use
     `orion.core.utils.points.flatten_dims` instead.
     """
-    logger.warning('`unpack_point` is deprecated and will be removed in v0.2.0. Use '
-                   '`orion.core.utils.points.regroup_dims` instead.')
+    logger.warning(
+        "`unpack_point` is deprecated and will be removed in v0.2.0. Use "
+        "`orion.core.utils.points.regroup_dims` instead."
+    )
     return flatten_dims(point, space)

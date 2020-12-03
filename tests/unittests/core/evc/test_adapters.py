@@ -6,8 +6,15 @@ import pytest
 
 from orion.algo.space import Real
 from orion.core.evc.adapters import (
-    Adapter, AlgorithmChange, CodeChange, CompositeAdapter, DimensionAddition, DimensionDeletion,
-    DimensionPriorChange, DimensionRenaming)
+    Adapter,
+    AlgorithmChange,
+    CodeChange,
+    CompositeAdapter,
+    DimensionAddition,
+    DimensionDeletion,
+    DimensionPriorChange,
+    DimensionRenaming,
+)
 from orion.core.io.space_builder import DimensionBuilder
 from orion.core.worker.trial import Trial
 
@@ -15,7 +22,7 @@ from orion.core.worker.trial import Trial
 @pytest.fixture
 def dummy_param():
     """Give dummy param integer param with value 1"""
-    return Trial.Param(name='dummy', type='integer', value=1)
+    return Trial.Param(name="dummy", type="integer", value=1)
 
 
 @pytest.fixture
@@ -61,13 +68,23 @@ def multidim_prior():
 
 
 @pytest.fixture
-def trials(small_prior, large_prior, normal_prior, disjoint_prior,
-           integer_prior, categorical_prior, multidim_prior):
+def trials(
+    small_prior,
+    large_prior,
+    normal_prior,
+    disjoint_prior,
+    integer_prior,
+    categorical_prior,
+    multidim_prior,
+):
     """Trials with dimensions for all priors defined as fixtures"""
     N_TRIALS = 10
 
-    priors = dict((name, prior) for (name, prior) in locals().items()
-                  if isinstance(name, str) and name.endswith("_prior"))
+    priors = dict(
+        (name, prior)
+        for (name, prior) in locals().items()
+        if isinstance(name, str) and name.endswith("_prior")
+    )
 
     trials = []
     for _ in range(N_TRIALS):
@@ -75,7 +92,9 @@ def trials(small_prior, large_prior, normal_prior, disjoint_prior,
         for name, prior in priors.items():
             dimension = DimensionBuilder().build(name, prior)
             value = dimension.sample()[0]
-            params.append(Trial.Param(name=name, type=dimension.type, value=value).to_dict())
+            params.append(
+                Trial.Param(name=name, type=dimension.type, value=value).to_dict()
+            )
         trials.append(Trial(params=params))
 
     return trials
@@ -97,7 +116,7 @@ class TestDimensionAdditionInit(object):
         with object which is not a param or a dictionary definition of it
         """
         with pytest.raises(TypeError) as exc_info:
-            DimensionAddition('bad')
+            DimensionAddition("bad")
 
         assert "Invalid param argument type ('<class 'str'>')." in str(exc_info.value)
 
@@ -112,7 +131,7 @@ class TestDimensionAdditionInit(object):
         with a dictionary which is a bad definition of a param
         """
         with pytest.raises(AttributeError) as exc_info:
-            DimensionAddition({'bad': 'dict'})
+            DimensionAddition({"bad": "dict"})
 
         assert "'Param' object has no attribute 'bad'" in str(exc_info.value)
 
@@ -133,7 +152,7 @@ class TestDimensionDeletionInit(object):
         with object which is not a param or a dictionary definition of it
         """
         with pytest.raises(TypeError) as exc_info:
-            DimensionDeletion('bad')
+            DimensionDeletion("bad")
 
         assert "Invalid param argument type ('<class 'str'>')." in str(exc_info.value)
 
@@ -148,7 +167,7 @@ class TestDimensionDeletionInit(object):
         with a dictionary which is a bad definition of a param
         """
         with pytest.raises(AttributeError) as exc_info:
-            print(DimensionDeletion({'bad': 'dict'}).param)
+            print(DimensionDeletion({"bad": "dict"}).param)
 
         assert "'Param' object has no attribute 'bad'" in str(exc_info.value)
 
@@ -156,11 +175,13 @@ class TestDimensionDeletionInit(object):
 class TestDimensionPriorChangeInit(object):
     """Test initialization of :class:`orion.core.evc.adapters.DimensionPriorChange`"""
 
-    def test_dimension_prior_change_init_with_dimensions(self, large_prior, small_prior):
+    def test_dimension_prior_change_init_with_dimensions(
+        self, large_prior, small_prior
+    ):
         """Test initialization of :class:`orion.core.evc.adapters.DimensionPriorChange`
         with valid string definitions of dimension prior
         """
-        dimension_prior_change = DimensionPriorChange('dummy', large_prior, small_prior)
+        dimension_prior_change = DimensionPriorChange("dummy", large_prior, small_prior)
 
         assert dimension_prior_change.old_prior == large_prior
         assert dimension_prior_change.new_prior == small_prior
@@ -175,9 +196,11 @@ class TestDimensionPriorChangeInit(object):
         with non valid string definitions of dimension prior
         """
         with pytest.raises(TypeError) as exc_info:
-            DimensionPriorChange('dummy', 'bad', 'priors')
+            DimensionPriorChange("dummy", "bad", "priors")
 
-        assert "Parameter 'old': Please provide a valid form for prior" in str(exc_info.value)
+        assert "Parameter 'old': Please provide a valid form for prior" in str(
+            exc_info.value
+        )
 
 
 class TestDimensionRenamingInit(object):
@@ -187,16 +210,16 @@ class TestDimensionRenamingInit(object):
         """Test initialization of :class:`orion.core.evc.adapters.DimensionRenaming`
         with valid names
         """
-        dimension_renaming = DimensionRenaming('old_name', 'new_name')
-        assert dimension_renaming.old_name == 'old_name'
-        assert dimension_renaming.new_name == 'new_name'
+        dimension_renaming = DimensionRenaming("old_name", "new_name")
+        assert dimension_renaming.old_name == "old_name"
+        assert dimension_renaming.new_name == "new_name"
 
     def test_dimension_renaming_init_bad_name(self):
         """Test initialization of :class:`orion.core.evc.adapters.DimensionRenaming`
         with invalid names which are not strings
         """
         with pytest.raises(TypeError) as exc_info:
-            DimensionRenaming({'bad': 'name'}, None)
+            DimensionRenaming({"bad": "name"}, None)
 
         assert "" in str(exc_info.value)
 
@@ -227,7 +250,7 @@ class TestCodeChangeInit(object):
         with invalid change types
         """
         with pytest.raises(ValueError) as exc_info:
-            CodeChange('bad type')
+            CodeChange("bad type")
 
         assert "Invalid code change type 'bad type'" in str(exc_info.value)
 
@@ -258,17 +281,18 @@ class TestCompositeAdapterInit(object):
         with invalid adapters
         """
         with pytest.raises(TypeError) as exc_info:
-            CompositeAdapter('bad', 'adapters')
+            CompositeAdapter("bad", "adapters")
 
-        assert ("Provided adapters must be adapter objects, not '<class 'str'>" in
-                str(exc_info.value))
+        assert "Provided adapters must be adapter objects, not '<class 'str'>" in str(
+            exc_info.value
+        )
 
 
 def test_adapter_creation(dummy_param):
     """Test initialization using :meth:`orion.core.evc.adapters.Adapter.build`"""
-    adapter = Adapter.build([{
-        'of_type': 'DimensionAddition',
-        'param': dummy_param.to_dict()}])
+    adapter = Adapter.build(
+        [{"of_type": "DimensionAddition", "param": dummy_param.to_dict()}]
+    )
 
     assert isinstance(adapter, CompositeAdapter)
     assert len(adapter.adapters) == 1
@@ -285,7 +309,7 @@ class TestDimensionAdditionForwardBackward(object):
         """Test :meth:`orion.core.evc.adapters.DimensionAddition.forward`
         with valid param and trials
         """
-        new_param = Trial.Param(name='second_normal_prior', type='integer', value=1)
+        new_param = Trial.Param(name="second_normal_prior", type="integer", value=1)
         dimension_addition_adapter = DimensionAddition(new_param)
 
         adapted_trials = dimension_addition_adapter.forward(trials)
@@ -298,24 +322,26 @@ class TestDimensionAdditionForwardBackward(object):
         """Test :meth:`orion.core.evc.adapters.DimensionAddition.forward`
         with valid param and incompatible trials because param already exists
         """
-        new_param = Trial.Param(name='normal_prior', type='integer', value=1)
+        new_param = Trial.Param(name="normal_prior", type="integer", value=1)
         dimension_addition_adapter = DimensionAddition(new_param)
 
         with pytest.raises(RuntimeError) as exc_info:
             dimension_addition_adapter.forward(trials)
-        assert "Provided trial does not have a compatible configuration" in str(exc_info.value)
+        assert "Provided trial does not have a compatible configuration" in str(
+            exc_info.value
+        )
 
     def test_dimension_addition_backward(self, dummy_param, trials):
         """Test :meth:`orion.core.evc.adapters.DimensionAddition.backward`
         with valid param and valid trials
         """
-        new_param = Trial.Param(name='second_normal_prior', type='integer', value=1)
+        new_param = Trial.Param(name="second_normal_prior", type="integer", value=1)
         dimension_addition_adapter = DimensionAddition(new_param)
 
-        sampler = DimensionBuilder().build('random', 'uniform(10, 100, discrete=True)')
+        sampler = DimensionBuilder().build("random", "uniform(10, 100, discrete=True)")
         for trial in trials:
             random_param = new_param.to_dict()
-            random_param['value'] = sampler.sample()
+            random_param["value"] = sampler.sample()
             trial._params.append(Trial.Param(**random_param))
 
         adapted_trials = dimension_addition_adapter.backward(trials)
@@ -347,12 +373,14 @@ class TestDimensionAdditionForwardBackward(object):
         """Test :meth:`orion.core.evc.adapters.DimensionAddition.backward`
         with valid param and invalid trials because param does not exist
         """
-        new_param = Trial.Param(name='second_normal_prior', type='integer', value=1)
+        new_param = Trial.Param(name="second_normal_prior", type="integer", value=1)
         dimension_addition_adapter = DimensionAddition(new_param)
 
         with pytest.raises(RuntimeError) as exc_info:
             dimension_addition_adapter.backward(trials)
-        assert "Provided trial does not have a compatible configuration" in str(exc_info.value)
+        assert "Provided trial does not have a compatible configuration" in str(
+            exc_info.value
+        )
 
 
 class TestDimensionDeletionForwardBackward(object):
@@ -364,13 +392,13 @@ class TestDimensionDeletionForwardBackward(object):
         """Test :meth:`orion.core.evc.adapters.DimensionDeletion.forward`
         with valid param and valid trials
         """
-        new_param = Trial.Param(name='second_normal_prior', type='integer', value=1)
+        new_param = Trial.Param(name="second_normal_prior", type="integer", value=1)
         dimension_deletion_adapter = DimensionDeletion(new_param)
 
-        sampler = DimensionBuilder().build('random', 'uniform(10, 100, discrete=True)')
+        sampler = DimensionBuilder().build("random", "uniform(10, 100, discrete=True)")
         for trial in trials:
             random_param = new_param.to_dict()
-            random_param['value'] = sampler.sample()
+            random_param["value"] = sampler.sample()
             trial._params.append(Trial.Param(**random_param))
 
         adapted_trials = dimension_deletion_adapter.forward(trials)
@@ -402,18 +430,20 @@ class TestDimensionDeletionForwardBackward(object):
         """Test :meth:`orion.core.evc.adapters.DimensionDeletion.forward`
         with valid param and invalid trials because param does not exist
         """
-        new_param = Trial.Param(name='second_normal_prior', type='integer', value=1)
+        new_param = Trial.Param(name="second_normal_prior", type="integer", value=1)
         dimension_deletion_adapter = DimensionDeletion(new_param)
 
         with pytest.raises(RuntimeError) as exc_info:
             dimension_deletion_adapter.forward(trials)
-        assert "Provided trial does not have a compatible configuration" in str(exc_info.value)
+        assert "Provided trial does not have a compatible configuration" in str(
+            exc_info.value
+        )
 
     def test_dimension_deletion_backward(self, dummy_param, trials):
         """Test :meth:`orion.core.evc.adapters.DimensionDeletion.backward`
         with valid param and valid trials
         """
-        new_param = Trial.Param(name='second_normal_prior', type='integer', value=1)
+        new_param = Trial.Param(name="second_normal_prior", type="integer", value=1)
         dimension_deletion_adapter = DimensionDeletion(new_param)
 
         adapted_trials = dimension_deletion_adapter.backward(trials)
@@ -426,12 +456,14 @@ class TestDimensionDeletionForwardBackward(object):
         """Test :meth:`orion.core.evc.adapters.DimensionDeletion.backward`
         with valid param and invalid trials because param already exist
         """
-        new_param = Trial.Param(name='normal_prior', type='integer', value=1)
+        new_param = Trial.Param(name="normal_prior", type="integer", value=1)
         dimension_deletion_adapter = DimensionDeletion(new_param)
 
         with pytest.raises(RuntimeError) as exc_info:
             dimension_deletion_adapter.backward(trials)
-        assert "Provided trial does not have a compatible configuration" in str(exc_info.value)
+        assert "Provided trial does not have a compatible configuration" in str(
+            exc_info.value
+        )
 
 
 class TestDimensionPriorChangeForwardBackward(object):
@@ -444,19 +476,22 @@ class TestDimensionPriorChangeForwardBackward(object):
         with compatible priors
         """
         dimension_prior_change_adapter = DimensionPriorChange(
-            'small_prior', small_prior, large_prior)
+            "small_prior", small_prior, large_prior
+        )
 
         adapted_trials = dimension_prior_change_adapter.forward(trials)
 
         assert len(adapted_trials) == len(trials)
 
     def test_dimension_prior_change_forward_incompatible_dimensions(
-            self, small_prior, disjoint_prior, trials):
+        self, small_prior, disjoint_prior, trials
+    ):
         """Test :meth:`orion.core.evc.adapters.DimensionPriorChange.forward`
         with incompatible priors, such that all trials are filtered out
         """
         dimension_prior_change_adapter = DimensionPriorChange(
-            'small_prior', small_prior, disjoint_prior)
+            "small_prior", small_prior, disjoint_prior
+        )
 
         adapted_trials = dimension_prior_change_adapter.forward(trials)
 
@@ -467,19 +502,22 @@ class TestDimensionPriorChangeForwardBackward(object):
         with compatible priors
         """
         dimension_prior_change_adapter = DimensionPriorChange(
-            'large_prior', large_prior, small_prior)
+            "large_prior", large_prior, small_prior
+        )
 
         adapted_trials = dimension_prior_change_adapter.backward(trials)
 
         assert len(adapted_trials) == len(trials)
 
     def test_dimension_prior_change_backward_incompatible_dimensions(
-            self, disjoint_prior, small_prior, trials):
+        self, disjoint_prior, small_prior, trials
+    ):
         """Test :meth:`orion.core.evc.adapters.DimensionPriorChange.backward`
         with incompatible priors, such that all trials are filtered out
         """
         dimension_prior_change_adapter = DimensionPriorChange(
-            'small_prior', disjoint_prior, small_prior)
+            "small_prior", disjoint_prior, small_prior
+        )
 
         adapted_trials = dimension_prior_change_adapter.backward(trials)
 
@@ -495,8 +533,8 @@ class TestDimensionRenamingForwardBackward(object):
         """Test :meth:`orion.core.evc.adapters.DimensionRenaming.forward`
         with valid names
         """
-        old_name = 'small_prior'
-        new_name = 'new_name'
+        old_name = "small_prior"
+        new_name = "new_name"
 
         dimension_renaming_adapter = DimensionRenaming(old_name, new_name)
 
@@ -514,21 +552,23 @@ class TestDimensionRenamingForwardBackward(object):
         """Test :meth:`orion.core.evc.adapters.DimensionRenaming.forward`
         with non existing old name in trials
         """
-        old_name = 'bad name'
-        new_name = 'small_prior'
+        old_name = "bad name"
+        new_name = "small_prior"
 
         dimension_renaming_adapter = DimensionRenaming(old_name, new_name)
 
         with pytest.raises(RuntimeError) as exc_info:
             dimension_renaming_adapter.forward(trials)
-        assert "Provided trial does not have a compatible configuration" in str(exc_info.value)
+        assert "Provided trial does not have a compatible configuration" in str(
+            exc_info.value
+        )
 
     def test_dimension_renaming_backward(self, trials):
         """Test :meth:`orion.core.evc.adapters.DimensionRenaming.backward`
         with valid names
         """
-        old_name = 'old_name'
-        new_name = 'small_prior'
+        old_name = "old_name"
+        new_name = "small_prior"
 
         dimension_renaming_adapter = DimensionRenaming(old_name, new_name)
 
@@ -546,14 +586,16 @@ class TestDimensionRenamingForwardBackward(object):
         """Test :meth:`orion.core.evc.adapters.DimensionRenaming.backward`
         with non existing new name in trials
         """
-        old_name = 'small_prior'
-        new_name = 'bad name'
+        old_name = "small_prior"
+        new_name = "bad name"
 
         dimension_renaming_adapter = DimensionRenaming(old_name, new_name)
 
         with pytest.raises(RuntimeError) as exc_info:
             dimension_renaming_adapter.backward(trials)
-        assert "Provided trial does not have a compatible configuration" in str(exc_info.value)
+        assert "Provided trial does not have a compatible configuration" in str(
+            exc_info.value
+        )
 
 
 class TestAlgorithmChangeForwardBackward(object):
@@ -663,7 +705,7 @@ class TestCompositeAdapterForwardBackward(object):
 
     def test_composite_adapter_forward(self, dummy_param, trials):
         """Test :meth:`orion.core.evc.adapters.CompositeAdapter.forward` with two adapters"""
-        new_param = Trial.Param(name='second_normal_prior', type='integer', value=1)
+        new_param = Trial.Param(name="second_normal_prior", type="integer", value=1)
 
         dimension_addition_adapter = DimensionAddition(new_param)
         dimension_deletion_adapter = DimensionDeletion(new_param)
@@ -676,7 +718,9 @@ class TestCompositeAdapterForwardBackward(object):
         assert adapted_trials[4]._params[-1] == new_param
         assert adapted_trials[-1]._params[-1] == new_param
 
-        composite_adapter = CompositeAdapter(dimension_addition_adapter, dimension_deletion_adapter)
+        composite_adapter = CompositeAdapter(
+            dimension_addition_adapter, dimension_deletion_adapter
+        )
 
         adapted_trials = composite_adapter.forward(trials)
 
@@ -688,7 +732,7 @@ class TestCompositeAdapterForwardBackward(object):
 
     def test_composite_adapter_backward(self, dummy_param, trials):
         """Test :meth:`orion.core.evc.adapters.CompositeAdapter.backward` with two adapters"""
-        new_param = Trial.Param(name='second_normal_prior', type='integer', value=1)
+        new_param = Trial.Param(name="second_normal_prior", type="integer", value=1)
 
         dimension_addition_adapter = DimensionAddition(new_param)
         dimension_deletion_adapter = DimensionDeletion(new_param)
@@ -701,7 +745,9 @@ class TestCompositeAdapterForwardBackward(object):
         assert adapted_trials[4]._params[-1] == new_param
         assert adapted_trials[-1]._params[-1] == new_param
 
-        composite_adapter = CompositeAdapter(dimension_addition_adapter, dimension_deletion_adapter)
+        composite_adapter = CompositeAdapter(
+            dimension_addition_adapter, dimension_deletion_adapter
+        )
 
         adapted_trials = composite_adapter.backward(trials)
 
@@ -718,8 +764,8 @@ def test_dimension_addition_configuration(dummy_param):
 
     configuration = dimension_addition_adapter.configuration[0]
 
-    assert configuration['of_type'] == "dimensionaddition"
-    assert configuration['param'] == dummy_param.to_dict()
+    assert configuration["of_type"] == "dimensionaddition"
+    assert configuration["param"] == dummy_param.to_dict()
 
     assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
 
@@ -730,38 +776,40 @@ def test_dimension_deletion_configuration(dummy_param):
 
     configuration = dimension_deletion_adapter.configuration[0]
 
-    assert configuration['of_type'] == "dimensiondeletion"
-    assert configuration['param'] == dummy_param.to_dict()
+    assert configuration["of_type"] == "dimensiondeletion"
+    assert configuration["param"] == dummy_param.to_dict()
 
     assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
 
 
 def test_dimension_prior_change_configuration(small_prior, large_prior):
     """Test :meth:`orion.core.evc.adapters.DimensionPriorChange.configuration`"""
-    dimension_name = 'small_prior'
-    dimension_prior_change_adapter = DimensionPriorChange(dimension_name, small_prior, large_prior)
+    dimension_name = "small_prior"
+    dimension_prior_change_adapter = DimensionPriorChange(
+        dimension_name, small_prior, large_prior
+    )
 
     configuration = dimension_prior_change_adapter.configuration[0]
 
-    assert configuration['of_type'] == "dimensionpriorchange"
-    assert configuration['name'] == dimension_name
-    assert configuration['old_prior'] == small_prior
-    assert configuration['new_prior'] == large_prior
+    assert configuration["of_type"] == "dimensionpriorchange"
+    assert configuration["name"] == dimension_name
+    assert configuration["old_prior"] == small_prior
+    assert configuration["new_prior"] == large_prior
 
     assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
 
 
 def test_dimension_renaming_configuration():
     """Test :meth:`orion.core.evc.adapters.DimensionRenaming.configuration`"""
-    old_name = 'old_name'
-    new_name = 'new_name'
+    old_name = "old_name"
+    new_name = "new_name"
     dimension_renaming_adapter = DimensionRenaming(old_name, new_name)
 
     configuration = dimension_renaming_adapter.configuration[0]
 
-    assert configuration['of_type'] == "dimensionrenaming"
-    assert configuration['old_name'] == old_name
-    assert configuration['new_name'] == new_name
+    assert configuration["of_type"] == "dimensionrenaming"
+    assert configuration["old_name"] == old_name
+    assert configuration["new_name"] == new_name
 
     assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
 
@@ -772,7 +820,7 @@ def test_algorithm_change_configuration():
 
     configuration = algorithm_change_adaptor.configuration[0]
 
-    assert configuration['of_type'] == "algorithmchange"
+    assert configuration["of_type"] == "algorithmchange"
 
     assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
 
@@ -783,19 +831,21 @@ def test_code_change_configuration():
 
     configuration = code_change_adaptor.configuration[0]
 
-    assert configuration['of_type'] == "codechange"
-    assert configuration['change_type'] == CodeChange.UNSURE
+    assert configuration["of_type"] == "codechange"
+    assert configuration["change_type"] == CodeChange.UNSURE
 
     assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
 
 
 def test_composite_configuration(dummy_param):
     """Test :meth:`orion.core.evc.adapters.CompositeAdapter.configuration`"""
-    new_param = Trial.Param(name='second_normal_prior', type='integer', value=1)
+    new_param = Trial.Param(name="second_normal_prior", type="integer", value=1)
     dimension_addition_adapter = DimensionAddition(dummy_param)
     dimension_deletion_adapter = DimensionDeletion(new_param)
 
-    composite_adapter = CompositeAdapter(dimension_addition_adapter, dimension_deletion_adapter)
+    composite_adapter = CompositeAdapter(
+        dimension_addition_adapter, dimension_deletion_adapter
+    )
 
     configuration = composite_adapter.configuration
 

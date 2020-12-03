@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 
 # pylint: disable = unused-argument
 def _handler(signum, frame):
-    log.error('Oríon has been interrupted.')
+    log.error("Oríon has been interrupted.")
     raise KeyboardInterrupt
 
 
@@ -71,14 +71,21 @@ class Consumer(object):
 
     """
 
-    def __init__(self, experiment, heartbeat=None, user_script_config=None,
-                 interrupt_signal_code=None):
+    def __init__(
+        self,
+        experiment,
+        heartbeat=None,
+        user_script_config=None,
+        interrupt_signal_code=None,
+    ):
         log.debug("Creating Consumer object.")
         self.experiment = experiment
         self.space = experiment.space
         if self.space is None:
-            raise RuntimeError("Experiment object provided to Consumer has not yet completed"
-                               " initialization.")
+            raise RuntimeError(
+                "Experiment object provided to Consumer has not yet completed"
+                " initialization."
+            )
 
         if heartbeat is None:
             heartbeat = orion.core.config.worker.heartbeat
@@ -94,12 +101,12 @@ class Consumer(object):
 
         # Fetch space builder
         self.template_builder = OrionCmdlineParser(user_script_config)
-        self.template_builder.set_state_dict(experiment.metadata['parser'])
+        self.template_builder.set_state_dict(experiment.metadata["parser"])
         # Get path to user's script and infer trial configuration directory
         if experiment.working_dir:
             self.working_dir = os.path.abspath(experiment.working_dir)
         else:
-            self.working_dir = os.path.join(tempfile.gettempdir(), 'orion')
+            self.working_dir = os.path.join(tempfile.gettempdir(), "orion")
 
         self.pacemaker = None
 
@@ -124,32 +131,35 @@ class Consumer(object):
         suffix = trial.id
 
         try:
-            with WorkingDir(self.working_dir, temp_dir,
-                            prefix=prefix, suffix=suffix) as workdirname:
+            with WorkingDir(
+                self.working_dir, temp_dir, prefix=prefix, suffix=suffix
+            ) as workdirname:
                 log.debug("## New consumer context: %s", workdirname)
                 trial.working_dir = workdirname
 
                 results_file = self._consume(trial, workdirname)
 
-                log.debug("## Parse results from file and fill corresponding Trial object.")
+                log.debug(
+                    "## Parse results from file and fill corresponding Trial object."
+                )
                 self.experiment.update_completed_trial(trial, results_file)
 
             success = True
 
         except KeyboardInterrupt:
             log.debug("### Save %s as interrupted.", trial)
-            self.experiment.set_trial_status(trial, status='interrupted')
+            self.experiment.set_trial_status(trial, status="interrupted")
             raise
 
         except ExecutionError:
             log.debug("### Save %s as broken.", trial)
-            self.experiment.set_trial_status(trial, status='broken')
+            self.experiment.set_trial_status(trial, status="broken")
 
             success = False
 
         return success
 
-    def get_execution_environment(self, trial, results_file='results.log'):
+    def get_execution_environment(self, trial, results_file="results.log"):
         """Set a few environment variables to allow users and
         underlying processes to know if they are running under orion.
 
@@ -192,32 +202,34 @@ class Consumer(object):
 
         """
         env = dict(os.environ)
-        env['ORION_EXPERIMENT_ID'] = str(self.experiment.id)
-        env['ORION_EXPERIMENT_NAME'] = str(self.experiment.name)
-        env['ORION_EXPERIMENT_VERSION'] = str(self.experiment.version)
-        env['ORION_TRIAL_ID'] = str(trial.id)
+        env["ORION_EXPERIMENT_ID"] = str(self.experiment.id)
+        env["ORION_EXPERIMENT_NAME"] = str(self.experiment.name)
+        env["ORION_EXPERIMENT_VERSION"] = str(self.experiment.version)
+        env["ORION_TRIAL_ID"] = str(trial.id)
 
-        env['ORION_WORKING_DIR'] = str(trial.working_dir)
-        env['ORION_RESULTS_PATH'] = str(results_file)
-        env['ORION_INTERRUPT_CODE'] = str(self.interrupt_signal_code)
+        env["ORION_WORKING_DIR"] = str(trial.working_dir)
+        env["ORION_RESULTS_PATH"] = str(results_file)
+        env["ORION_INTERRUPT_CODE"] = str(self.interrupt_signal_code)
 
         return env
 
     def _consume(self, trial, workdirname):
-        config_file = tempfile.NamedTemporaryFile(mode='w', prefix='trial_',
-                                                  suffix='.conf', dir=workdirname,
-                                                  delete=False)
+        config_file = tempfile.NamedTemporaryFile(
+            mode="w", prefix="trial_", suffix=".conf", dir=workdirname, delete=False
+        )
         config_file.close()
         log.debug("## New temp config file: %s", config_file.name)
-        results_file = tempfile.NamedTemporaryFile(mode='w', prefix='results_',
-                                                   suffix='.log', dir=workdirname,
-                                                   delete=False)
+        results_file = tempfile.NamedTemporaryFile(
+            mode="w", prefix="results_", suffix=".log", dir=workdirname, delete=False
+        )
         results_file.close()
         log.debug("## New temp results file: %s", results_file.name)
 
         log.debug("## Building command line argument and configuration for trial.")
         env = self.get_execution_environment(trial, results_file.name)
-        cmd_args = self.template_builder.format(config_file.name, trial, self.experiment)
+        cmd_args = self.template_builder.format(
+            config_file.name, trial, self.experiment
+        )
 
         log.debug("## Launch user's script as a subprocess and wait for finish.")
 
@@ -236,14 +248,18 @@ class Consumer(object):
     def _validate_code_version(self):
         old_config = self.experiment.configuration
         new_config = copy.deepcopy(old_config)
-        new_config['metadata']['VCS'] = infer_versioning_metadata(
-            old_config['metadata']['user_script'])
+        new_config["metadata"]["VCS"] = infer_versioning_metadata(
+            old_config["metadata"]["user_script"]
+        )
 
         # Circular import
         from orion.core.evc.conflicts import CodeConflict
+
         conflicts = list(CodeConflict.detect(old_config, new_config))
         if conflicts:
-            raise BranchingEvent(f'Code changed between execution of 2 trials:\n{conflicts[0]}')
+            raise BranchingEvent(
+                f"Code changed between execution of 2 trials:\n{conflicts[0]}"
+            )
 
     # pylint: disable = no-self-use
     def execute_process(self, cmd_args, environ):
@@ -256,12 +272,14 @@ class Consumer(object):
             process = subprocess.Popen(command, env=environ)
         except PermissionError:
             log.debug("### Script is not executable")
-            raise InexecutableUserScript(' '.join(cmd_args))
+            raise InexecutableUserScript(" ".join(cmd_args))
 
         return_code = process.wait()
 
         if return_code == self.interrupt_signal_code:
             raise KeyboardInterrupt()
         elif return_code != 0:
-            raise ExecutionError("Something went wrong. Check logs. Process "
-                                 "returned with code {} !".format(return_code))
+            raise ExecutionError(
+                "Something went wrong. Check logs. Process "
+                "returned with code {} !".format(return_code)
+            )

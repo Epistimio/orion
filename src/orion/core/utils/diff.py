@@ -35,7 +35,7 @@ def colored_diff(string_a, string_b):
 
     colored_result = []
     for i, line in enumerate(result):
-        line = line.strip('\n')
+        line = line.strip("\n")
         if line[0] == "-" or (line[0] == "?" and result[i - 1][0] == "-"):
             line = red(line)
         elif line[0] == "+" or (line[0] == "?" and result[i - 1][0] == "+"):

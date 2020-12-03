@@ -11,7 +11,7 @@ import numpy
 import pandas as pd
 
 
-def regret(trials, names=('best', 'best_id')):
+def regret(trials, names=("best", "best_id")):
     """
     Calculates the regret for a collection of :class:`Trial`. The regret is calculated sequentially
     from the order of the collection.
@@ -30,15 +30,17 @@ def regret(trials, names=('best', 'best_id')):
     so far and its trial id.
     """
     if len(names) != 2:
-        raise ValueError(f"`names` requires a tuple with 2 elements. {len(names)} provided.")
+        raise ValueError(
+            f"`names` requires a tuple with 2 elements. {len(names)} provided."
+        )
 
     df = pd.DataFrame(trials, copy=True)
     if df.empty:
         return df
 
-    regrets_idx = get_regrets_idx(df['objective'])
-    df[names[0]] = df['objective'].to_numpy()[list(regrets_idx)]
-    df[names[1]] = df['id'].to_numpy()[regrets_idx]
+    regrets_idx = get_regrets_idx(df["objective"])
+    df[names[0]] = df["objective"].to_numpy()[list(regrets_idx)]
+    df[names[1]] = df["id"].to_numpy()[regrets_idx]
 
     return df
 
@@ -48,6 +50,6 @@ def get_regrets_idx(x):
     minima = numpy.minimum.accumulate(x)
     diff = numpy.diff(minima)
     jumps = numpy.arange(len(x))
-    jumps[1:] *= (diff != 0)
+    jumps[1:] *= diff != 0
     jumps = numpy.maximum.accumulate(jumps)
     return jumps

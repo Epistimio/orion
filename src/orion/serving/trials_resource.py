@@ -11,12 +11,16 @@ import json
 
 from falcon import Request, Response
 
-from orion.serving.parameters import retrieve_experiment, retrieve_trial, verify_query_parameters, \
-    verify_status
+from orion.serving.parameters import (
+    retrieve_experiment,
+    retrieve_trial,
+    verify_query_parameters,
+    verify_status,
+)
 from orion.serving.responses import build_trial_response, build_trials_response
 from orion.storage.base import get_storage
 
-SUPPORTED_PARAMETERS = ['ancestors', 'status', 'version']
+SUPPORTED_PARAMETERS = ["ancestors", "status", "version"]
 
 
 class TrialsResource(object):
@@ -25,17 +29,19 @@ class TrialsResource(object):
     def __init__(self):
         self.storage = get_storage()
 
-    def on_get_trials_in_experiment(self, req: Request, resp: Response, experiment_name: str):
+    def on_get_trials_in_experiment(
+        self, req: Request, resp: Response, experiment_name: str
+    ):
         """
         Handle GET requests for trials/:experiment where ``experiment`` is
         the user-defined name of the experiment.
         """
         verify_query_parameters(req.params, SUPPORTED_PARAMETERS)
 
-        status = req.get_param('status', default=None)
+        status = req.get_param("status", default=None)
         verify_status(status)
-        version = req.get_param_as_int('version')
-        with_ancestors = req.get_param_as_bool('ancestors', default=False)
+        version = req.get_param_as_int("version")
+        with_ancestors = req.get_param_as_bool("ancestors", default=False)
 
         experiment = retrieve_experiment(experiment_name, version)
         if status:
@@ -46,8 +52,9 @@ class TrialsResource(object):
         response = build_trials_response(trials)
         resp.body = json.dumps(response)
 
-    def on_get_trial_in_experiment(self, req: Request, resp: Response, experiment_name: str,
-                                   trial_id: str):
+    def on_get_trial_in_experiment(
+        self, req: Request, resp: Response, experiment_name: str, trial_id: str
+    ):
         """
         Handle GET requests for trials/:experiment/:trial_id where ``experiment`` is
         the user-defined name of the experiment and ``trial_id`` the id of the trial.

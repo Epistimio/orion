@@ -73,10 +73,14 @@ class PrimaryAlgo(BaseAlgorithm):
 
         for point in points:
             if point not in self.transformed_space:
-                raise ValueError("""
+                raise ValueError(
+                    """
 Point is not contained in space:
 Point: {}
-Space: {}""".format(point, self.transformed_space))
+Space: {}""".format(
+                        point, self.transformed_space
+                    )
+                )
 
         return [self.transformed_space.reverse(point) for point in points]
 
@@ -116,8 +120,9 @@ Space: {}""".format(point, self.transformed_space))
 
         """
         assert point in self._space
-        return self.algorithm.judge(self.transformed_space.transform(point),
-                                    measurements)
+        return self.algorithm.judge(
+            self.transformed_space.transform(point), measurements
+        )
 
     @property
     def should_suspend(self):

@@ -11,7 +11,7 @@ import orion.core.cli
 def test_no_experiments(clean_db, monkeypatch, capsys):
     """Test status with no experiments."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -20,7 +20,7 @@ def test_no_experiments(clean_db, monkeypatch, capsys):
 
 def test_no_version_backward_compatible(clean_db, one_experiment_no_version, capsys):
     """Test status with no experiments."""
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -36,7 +36,7 @@ empty
 
 def test_python_api(clean_db, with_experiment_using_python_api, capsys):
     """Test status with experiments built using python api."""
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -57,7 +57,7 @@ empty
 
 def test_missing_conf_file(clean_db, with_experiment_missing_conf_file, capsys):
     """Test status can handle experiments when the user script config file is missing"""
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -73,7 +73,7 @@ empty
 
 def test_experiment_without_trials_wout_ac(clean_db, one_experiment, capsys):
     """Test status with only one experiment and no trials."""
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -89,7 +89,7 @@ empty
 
 def test_experiment_wout_success_wout_ac(clean_db, single_without_success, capsys):
     """Test status with only one experiment and no successful trial."""
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -109,10 +109,9 @@ suspended             1
     assert captured == expected
 
 
-def test_experiment_number_same_list_status(clean_db,
-                                            single_without_success, capsys):
+def test_experiment_number_same_list_status(clean_db, single_without_success, capsys):
     """Test status and list command output the consistent number of experiments"""
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -131,7 +130,7 @@ suspended             1
 """
     assert captured == expected
 
-    orion.core.cli.main(['list'])
+    orion.core.cli.main(["list"])
 
     captured = capsys.readouterr().out
 
@@ -140,7 +139,7 @@ suspended             1
 
 def test_experiment_w_trials_wout_ac(clean_db, single_with_trials, capsys):
     """Test status with only one experiment and all trials."""
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -163,7 +162,7 @@ suspended             1
 
 def test_two_unrelated_w_trials_wout_ac(clean_db, unrelated_with_trials, capsys):
     """Test two unrelated experiments, with all types of trials."""
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -199,7 +198,7 @@ suspended             1
 
 def test_two_related_w_trials_wout_ac(clean_db, family_with_trials, capsys):
     """Test two related experiments, with all types of trials."""
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -235,7 +234,7 @@ suspended             1
 
 def test_three_unrelated_wout_ac(clean_db, three_experiments_with_trials, capsys):
     """Test three unrelated experiments with all types of trials."""
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -283,7 +282,7 @@ suspended             1
 
 def test_three_related_wout_ac(clean_db, three_family_with_trials, capsys):
     """Test three related experiments with all types of trials."""
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -329,9 +328,11 @@ suspended             1
     assert captured == expected
 
 
-def test_three_related_branch_wout_ac(clean_db, three_family_branch_with_trials, capsys):
+def test_three_related_branch_wout_ac(
+    clean_db, three_family_branch_with_trials, capsys
+):
     """Test three related experiments with all types of trials."""
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -379,7 +380,7 @@ suspended             1
 
 def test_one_wout_trials_w_a_wout_c(clean_db, one_experiment, capsys):
     """Test experiments, without trials, with --all."""
-    orion.core.cli.main(['status', '--all'])
+    orion.core.cli.main(["status", "--all"])
 
     captured = capsys.readouterr().out
 
@@ -398,7 +399,7 @@ empty
 
 def test_one_w_trials_w_a_wout_c(clean_db, single_with_trials, capsys):
     """Test experiment, with all trials, with --all."""
-    orion.core.cli.main(['status', '--all'])
+    orion.core.cli.main(["status", "--all"])
 
     captured = capsys.readouterr().out
 
@@ -422,7 +423,7 @@ b49e902aebccce14e834d96e411f896e  suspended
 
 def test_one_wout_success_w_a_wout_c(clean_db, single_without_success, capsys):
     """Test experiment, without success, with --all."""
-    orion.core.cli.main(['status', '--all'])
+    orion.core.cli.main(["status", "--all"])
 
     captured = capsys.readouterr().out
 
@@ -445,7 +446,7 @@ b49e902aebccce14e834d96e411f896e  suspended
 
 def test_two_unrelated_w_a_wout_c(clean_db, unrelated_with_trials, capsys):
     """Test two unrelated experiments with --all."""
-    orion.core.cli.main(['status', '--all'])
+    orion.core.cli.main(["status", "--all"])
 
     captured = capsys.readouterr().out
 
@@ -481,7 +482,7 @@ b49e902aebccce14e834d96e411f896e  suspended
 
 def test_two_related_w_a_wout_c(clean_db, family_with_trials, capsys):
     """Test two related experiments with --all."""
-    orion.core.cli.main(['status', '--all'])
+    orion.core.cli.main(["status", "--all"])
 
     captured = capsys.readouterr().out
 
@@ -517,7 +518,7 @@ b849f69cc3a77f39382d7435d0d41b14  interrupted
 
 def test_three_unrelated_w_a_wout_c(clean_db, three_experiments_with_trials, capsys):
     """Test three unrelated experiments with --all."""
-    orion.core.cli.main(['status', '--all'])
+    orion.core.cli.main(["status", "--all"])
 
     captured = capsys.readouterr().out
 
@@ -565,7 +566,7 @@ b49e902aebccce14e834d96e411f896e  suspended
 
 def test_three_related_w_a_wout_c(clean_db, three_family_with_trials, capsys):
     """Test three related experiments with --all."""
-    orion.core.cli.main(['status', '--all'])
+    orion.core.cli.main(["status", "--all"])
 
     captured = capsys.readouterr().out
 
@@ -611,9 +612,11 @@ b849f69cc3a77f39382d7435d0d41b14  interrupted
     assert captured == expected
 
 
-def test_three_related_branch_w_a_wout_c(clean_db, three_family_branch_with_trials, capsys):
+def test_three_related_branch_w_a_wout_c(
+    clean_db, three_family_branch_with_trials, capsys
+):
     """Test three related experiments in a branch with --all."""
-    orion.core.cli.main(['status', '--all'])
+    orion.core.cli.main(["status", "--all"])
 
     captured = capsys.readouterr().out
 
@@ -661,7 +664,7 @@ b849f69cc3a77f39382d7435d0d41b14  interrupted
 
 def test_two_unrelated_w_c_wout_a(clean_db, unrelated_with_trials, capsys):
     """Test two unrelated experiments with --collapse."""
-    orion.core.cli.main(['status', '--collapse'])
+    orion.core.cli.main(["status", "--collapse"])
 
     captured = capsys.readouterr().out
 
@@ -697,7 +700,7 @@ suspended             1
 
 def test_two_related_w_c_wout_a(clean_db, family_with_trials, capsys):
     """Test two related experiments with --collapse."""
-    orion.core.cli.main(['status', '--collapse'])
+    orion.core.cli.main(["status", "--collapse"])
 
     captured = capsys.readouterr().out
 
@@ -721,7 +724,7 @@ suspended             1
 
 def test_three_unrelated_w_c_wout_a(clean_db, three_experiments_with_trials, capsys):
     """Test three unrelated experiments with --collapse."""
-    orion.core.cli.main(['status', '--collapse'])
+    orion.core.cli.main(["status", "--collapse"])
 
     captured = capsys.readouterr().out
 
@@ -757,7 +760,7 @@ suspended             1
 
 def test_three_related_w_c_wout_a(clean_db, three_family_with_trials, capsys):
     """Test three related experiments with --collapse."""
-    orion.core.cli.main(['status', '--collapse'])
+    orion.core.cli.main(["status", "--collapse"])
 
     captured = capsys.readouterr().out
 
@@ -779,9 +782,11 @@ suspended             1
     assert captured == expected
 
 
-def test_three_related_branch_w_c_wout_a(clean_db, three_family_branch_with_trials, capsys):
+def test_three_related_branch_w_c_wout_a(
+    clean_db, three_family_branch_with_trials, capsys
+):
     """Test three related experiments with --collapse."""
-    orion.core.cli.main(['status', '--collapse'])
+    orion.core.cli.main(["status", "--collapse"])
 
     captured = capsys.readouterr().out
 
@@ -805,7 +810,7 @@ suspended             1
 
 def test_two_unrelated_w_ac(clean_db, unrelated_with_trials, capsys):
     """Test two unrelated experiments with --collapse and --all."""
-    orion.core.cli.main(['status', '--collapse', '--all'])
+    orion.core.cli.main(["status", "--collapse", "--all"])
 
     captured = capsys.readouterr().out
 
@@ -841,7 +846,7 @@ b49e902aebccce14e834d96e411f896e  suspended
 
 def test_two_related_w_ac(clean_db, family_with_trials, capsys):
     """Test two related experiments with --collapse and --all."""
-    orion.core.cli.main(['status', '--collapse', '--all'])
+    orion.core.cli.main(["status", "--collapse", "--all"])
 
     captured = capsys.readouterr().out
 
@@ -866,7 +871,7 @@ d5f1c1cae188608b581ded20cd198679  new
 
 def test_three_unrelated_w_ac(clean_db, three_experiments_with_trials, capsys):
     """Test three unrelated experiments with --collapse and --all."""
-    orion.core.cli.main(['status', '--collapse', '--all'])
+    orion.core.cli.main(["status", "--collapse", "--all"])
 
     captured = capsys.readouterr().out
 
@@ -903,7 +908,7 @@ b49e902aebccce14e834d96e411f896e  suspended
 
 def test_three_related_w_ac(clean_db, three_family_with_trials, capsys):
     """Test three related experiments with --collapse and --all."""
-    orion.core.cli.main(['status', '--collapse', '--all'])
+    orion.core.cli.main(["status", "--collapse", "--all"])
 
     captured = capsys.readouterr().out
 
@@ -929,7 +934,7 @@ e5bf1dd6dec1a0c690ed62ff9146e5b8  new
 
 def test_three_related_branch_w_ac(clean_db, three_family_branch_with_trials, capsys):
     """Test three related experiments in a branch with --collapse and --all."""
-    orion.core.cli.main(['status', '--collapse', '--all'])
+    orion.core.cli.main(["status", "--collapse", "--all"])
 
     captured = capsys.readouterr().out
 
@@ -956,7 +961,7 @@ d5f1c1cae188608b581ded20cd198679  new
 def test_no_experiments_w_name(clean_db, monkeypatch, capsys):
     """Test status when --name <exp> does not exist."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    orion.core.cli.main(['status', '--name', 'test_ghost_exp'])
+    orion.core.cli.main(["status", "--name", "test_ghost_exp"])
 
     captured = capsys.readouterr().out
 
@@ -965,7 +970,7 @@ def test_no_experiments_w_name(clean_db, monkeypatch, capsys):
 
 def test_experiment_wout_child_w_name(clean_db, unrelated_with_trials, capsys):
     """Test status with the name argument and no child."""
-    orion.core.cli.main(['status', '--name', 'test_single_exp'])
+    orion.core.cli.main(["status", "--name", "test_single_exp"])
 
     captured = capsys.readouterr().out
 
@@ -989,7 +994,7 @@ suspended             1
 
 def test_experiment_w_child_w_name(clean_db, three_experiments_with_trials, capsys):
     """Test status with the name argument and one child."""
-    orion.core.cli.main(['status', '--name', 'test_double_exp'])
+    orion.core.cli.main(["status", "--name", "test_double_exp"])
 
     captured = capsys.readouterr().out
 
@@ -1025,7 +1030,7 @@ suspended             1
 
 def test_experiment_w_parent_w_name(clean_db, three_experiments_with_trials, capsys):
     """Test status with the name argument and one parent."""
-    orion.core.cli.main(['status', '--name', 'test_double_exp_child'])
+    orion.core.cli.main(["status", "--name", "test_double_exp_child"])
 
     captured = capsys.readouterr().out
 
@@ -1049,7 +1054,7 @@ suspended             1
 
 def test_experiment_same_name_wout_exv(clean_db, three_experiments_same_name, capsys):
     """Test status with three experiments having the same name but different versions."""
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -1064,9 +1069,11 @@ empty
     assert captured == expected
 
 
-def test_experiment_same_name_wout_exv_w_name(clean_db, three_experiments_same_name, capsys):
+def test_experiment_same_name_wout_exv_w_name(
+    clean_db, three_experiments_same_name, capsys
+):
     """Test status with three experiments having the same name but different versions."""
-    orion.core.cli.main(['status', '--name', 'test_single_exp'])
+    orion.core.cli.main(["status", "--name", "test_single_exp"])
 
     captured = capsys.readouterr().out
 
@@ -1081,10 +1088,11 @@ empty
     assert captured == expected
 
 
-def test_experiment_same_name_wout_exv_w_child_w_name(clean_db,
-                                                      three_experiments_family_same_name, capsys):
+def test_experiment_same_name_wout_exv_w_child_w_name(
+    clean_db, three_experiments_family_same_name, capsys
+):
     """Test status name with two experiments having the same name and one with a child."""
-    orion.core.cli.main(['status', '--name', 'test_single_exp'])
+    orion.core.cli.main(["status", "--name", "test_single_exp"])
 
     captured = capsys.readouterr().out
 
@@ -1110,9 +1118,10 @@ empty
 
 
 def test_experiment_same_name_wout_exv_w_c_w_child_w_name(
-        clean_db, three_experiments_family_same_name, capsys):
+    clean_db, three_experiments_family_same_name, capsys
+):
     """Test status name collapsed with two experiments having the same name and one with a child."""
-    orion.core.cli.main(['status', '--name', 'test_single_exp', '--collapse'])
+    orion.core.cli.main(["status", "--name", "test_single_exp", "--collapse"])
 
     captured = capsys.readouterr().out
 
@@ -1127,10 +1136,11 @@ empty
     assert captured == expected
 
 
-def test_experiment_same_name_wout_exv_w_child(clean_db,
-                                               three_experiments_family_same_name, capsys):
+def test_experiment_same_name_wout_exv_w_child(
+    clean_db, three_experiments_family_same_name, capsys
+):
     """Test status with two experiments having the same name and one with a child."""
-    orion.core.cli.main(['status'])
+    orion.core.cli.main(["status"])
 
     captured = capsys.readouterr().out
 
@@ -1157,7 +1167,7 @@ empty
 
 def test_experiment_same_name_w_exv(clean_db, three_experiments_same_name, capsys):
     """Test status with three experiments with the same name and `--expand-verions`."""
-    orion.core.cli.main(['status', '--expand-versions'])
+    orion.core.cli.main(["status", "--expand-versions"])
 
     captured = capsys.readouterr().out
 
@@ -1182,9 +1192,11 @@ empty
     assert captured == expected
 
 
-def test_experiment_same_name_w_exv_w_child(clean_db, three_experiments_family_same_name, capsys):
+def test_experiment_same_name_w_exv_w_child(
+    clean_db, three_experiments_family_same_name, capsys
+):
     """Test status with two experiments having the same name and one with a child."""
-    orion.core.cli.main(['status', '--expand-versions'])
+    orion.core.cli.main(["status", "--expand-versions"])
 
     captured = capsys.readouterr().out
 
@@ -1211,7 +1223,7 @@ empty
 
 def test_experiment_specific_version(clean_db, three_experiments_same_name, capsys):
     """Test status using `--version`."""
-    orion.core.cli.main(['status', '--version', '2'])
+    orion.core.cli.main(["status", "--version", "2"])
 
     captured = capsys.readouterr().out
 
@@ -1229,11 +1241,11 @@ empty
 def test_experiment_cant_use_version(clean_db, three_experiments_same_name):
     """Test status using `--version`."""
     with pytest.raises(RuntimeError) as ex:
-        orion.core.cli.main(['status', '--version', '2', '--collapse'])
+        orion.core.cli.main(["status", "--version", "2", "--collapse"])
 
-    assert 'collapse' in str(ex.value)
+    assert "collapse" in str(ex.value)
 
     with pytest.raises(RuntimeError) as ex:
-        orion.core.cli.main(['status', '--version', '2', '--expand-versions'])
+        orion.core.cli.main(["status", "--version", "2", "--expand-versions"])
 
-    assert 'expand-versions' in str(ex.value)
+    assert "expand-versions" in str(ex.value)

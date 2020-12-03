@@ -11,9 +11,9 @@
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
 
-ERROR_EXPERIMENT_NOT_FOUND = 'Experiment not found'
-ERROR_INVALID_PARAMETER = 'Invalid parameter'
-ERROR_TRIAL_NOT_FOUND = 'Trial not found'
+ERROR_EXPERIMENT_NOT_FOUND = "Experiment not found"
+ERROR_INVALID_PARAMETER = "Invalid parameter"
+ERROR_TRIAL_NOT_FOUND = "Trial not found"
 
 
 def build_trial_response(trial: Trial) -> dict:
@@ -30,19 +30,22 @@ def build_trial_response(trial: Trial) -> dict:
     A JSON-serializable dict representing the given trial.
 
     """
-    return {'id': trial.id,
-            'submitTime': str(trial.submit_time),
-            'startTime': str(trial.start_time),
-            'endTime': str(trial.end_time),
-            'parameters': trial.params,
-            'objective': trial.objective.value,
-            'statistics': {statistic.name: statistic.value for statistic in trial.statistics}}
+    return {
+        "id": trial.id,
+        "submitTime": str(trial.submit_time),
+        "startTime": str(trial.start_time),
+        "endTime": str(trial.end_time),
+        "parameters": trial.params,
+        "objective": trial.objective.value,
+        "statistics": {
+            statistic.name: statistic.value for statistic in trial.statistics
+        },
+    }
 
 
-def build_experiment_response(experiment: Experiment,
-                              status: str,
-                              algorithm: dict,
-                              best_trial: Trial = None):
+def build_experiment_response(
+    experiment: Experiment, status: str, algorithm: dict, best_trial: Trial = None
+):
     """
     Build the response representing an experiment response object according to the API
     specification.
@@ -66,19 +69,21 @@ def build_experiment_response(experiment: Experiment,
         "name": experiment.name,
         "version": experiment.version,
         "status": status,
-        "trialsCompleted": experiment.stats['trials_completed'] if experiment.stats else 0,
-        "startTime": str(experiment.stats['start_time']) if experiment.stats else None,
-        "endTime": str(experiment.stats['finish_time']) if experiment.stats else None,
-        "user": experiment.metadata['user'],
-        "orionVersion": experiment.metadata['orion_version'],
+        "trialsCompleted": experiment.stats["trials_completed"]
+        if experiment.stats
+        else 0,
+        "startTime": str(experiment.stats["start_time"]) if experiment.stats else None,
+        "endTime": str(experiment.stats["finish_time"]) if experiment.stats else None,
+        "user": experiment.metadata["user"],
+        "orionVersion": experiment.metadata["orion_version"],
         "config": {
             "maxTrials": experiment.max_trials,
             "maxBroken": experiment.max_broken,
             "poolSize": experiment.pool_size,
             "algorithm": algorithm,
-            "space": experiment.configuration['space']
+            "space": experiment.configuration["space"],
         },
-        "bestTrial": build_trial_response(best_trial) if best_trial else {}
+        "bestTrial": build_trial_response(best_trial) if best_trial else {},
     }
 
 
@@ -97,10 +102,7 @@ def build_experiments_response(experiments: dict):
     """
     result = []
     for name, version in experiments.items():
-        result.append({
-            'name': name,
-            'version': version
-        })
+        result.append({"name": name, "version": version})
     return result
 
 
@@ -119,7 +121,5 @@ def build_trials_response(trials: list):
     """
     response = []
     for trial in trials:
-        response.append({
-            'id': trial.id
-        })
+        response.append({"id": trial.id})
     return response

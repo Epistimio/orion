@@ -45,7 +45,12 @@ class ExperimentNode(TreeNode):
 
     """
 
-    __slots__ = ('name', 'version', '_no_parent_lookup', '_no_children_lookup') + TreeNode.__slots__
+    __slots__ = (
+        "name",
+        "version",
+        "_no_parent_lookup",
+        "_no_children_lookup",
+    ) + TreeNode.__slots__
 
     def __init__(self, name, version, experiment=None, parent=None, children=tuple()):
         """Initialize experiment node with item, experiment, parent and children
@@ -70,7 +75,10 @@ class ExperimentNode(TreeNode):
         if self._item is None:
             # TODO: Find another way around the circular import
             import orion.core.io.experiment_builder as experiment_builder
-            self._item = experiment_builder.build_view(name=self.name, version=self.version)
+
+            self._item = experiment_builder.build_view(
+                name=self.name, version=self.version
+            )
             self._item._experiment._node = self
 
         return self._item
@@ -87,13 +95,15 @@ class ExperimentNode(TreeNode):
         """
         if self._parent is None and self._no_parent_lookup:
             self._no_parent_lookup = False
-            query = {'_id': self.item.refers.get('parent_id')}
-            selection = {'name': 1, 'version': 1}
+            query = {"_id": self.item.refers.get("parent_id")}
+            selection = {"name": 1, "version": 1}
             experiments = get_storage().fetch_experiments(query, selection)
 
             if experiments:
                 parent = experiments[0]
-                exp_node = ExperimentNode(name=parent['name'], version=parent.get('version', 1))
+                exp_node = ExperimentNode(
+                    name=parent["name"], version=parent.get("version", 1)
+                )
                 self.set_parent(exp_node)
         return self._parent
 
@@ -110,13 +120,13 @@ class ExperimentNode(TreeNode):
         if self._no_children_lookup:
             self._children = []
             self._no_children_lookup = False
-            query = {'refers.parent_id': self.item.id}
-            selection = {'name': 1, 'version': 1}
+            query = {"refers.parent_id": self.item.id}
+            selection = {"name": 1, "version": 1}
             experiments = get_storage().fetch_experiments(query, selection)
             for child in experiments:
                 self.add_children(
-                    ExperimentNode(name=child['name'],
-                                   version=child.get('version', 1)))
+                    ExperimentNode(name=child["name"], version=child.get("version", 1))
+                )
 
         return self._children
 
@@ -135,23 +145,23 @@ class ExperimentNode(TreeNode):
 
     def fetch_lost_trials(self):
         """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
-        return self._fetch_trials('fetch_lost_trials')
+        return self._fetch_trials("fetch_lost_trials")
 
     def fetch_trials(self):
         """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
-        return self._fetch_trials('fetch_trials')
+        return self._fetch_trials("fetch_trials")
 
     def fetch_pending_trials(self):
         """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
-        return self._fetch_trials('fetch_pending_trials')
+        return self._fetch_trials("fetch_pending_trials")
 
     def fetch_noncompleted_trials(self):
         """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
-        return self._fetch_trials('fetch_noncompleted_trials')
+        return self._fetch_trials("fetch_noncompleted_trials")
 
     def fetch_trials_by_status(self, status):
         """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
-        return self._fetch_trials('fetch_trials_by_status', status=status)
+        return self._fetch_trials("fetch_trials_by_status", status=status)
 
     def _fetch_trials(self, fun_name, *args, **kwargs):
         """Fetch trials recursively in the EVC tree using the fetch function `fun_name`.
@@ -169,6 +179,7 @@ class ExperimentNode(TreeNode):
             Keyword arguments to pass to `fun_name.
 
         """
+
         def retrieve_trials(node, parent_or_children):
             """Retrieve the trials of a node/experiment."""
             fun = getattr(node.item, fun_name)
@@ -186,7 +197,7 @@ class ExperimentNode(TreeNode):
         children_trials.set_parent(parent_trials)
 
         adapt_trials(children_trials)
-        return sum([node.item['trials'] for node in children_trials.root], [])
+        return sum([node.item["trials"] for node in children_trials.root], [])
 
 
 def _adapt_parent_trials(node, parent_trials_node):
@@ -198,9 +209,9 @@ def _adapt_parent_trials(node, parent_trials_node):
 
     """
     if parent_trials_node is not None:
-        adapter = node.item['experiment'].refers['adapter']
+        adapter = node.item["experiment"].refers["adapter"]
         for parent in parent_trials_node.root:
-            parent.item['trials'] = adapter.forward(parent.item['trials'])
+            parent.item["trials"] = adapter.forward(parent.item["trials"])
 
     return node.item, parent_trials_node
 
@@ -214,9 +225,9 @@ def _adapt_children_trials(node, children_trials_nodes):
 
     """
     for child in children_trials_nodes:
-        adapter = child.item['experiment'].refers['adapter']
+        adapter = child.item["experiment"].refers["adapter"]
         for subchild in child:  # Includes child itself
-            subchild.item['trials'] = adapter.backward(subchild.item['trials'])
+            subchild.item["trials"] = adapter.backward(subchild.item["trials"])
 
     return node.item, children_trials_nodes
 

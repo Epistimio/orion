@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        toxenv: [flake8, pylint, doc8, docs]
+        toxenv: [pylint, black, doc8, docs]
 
     steps:
     - uses: actions/checkout@v1
