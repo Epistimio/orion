@@ -6,13 +6,13 @@ from datetime import datetime
 
 import pytest
 
+import orion.core.utils.backward as backward
 from orion.core.io.database import Database, DatabaseError, DuplicateKeyError
 from orion.core.io.database.ephemeraldb import (
     EphemeralCollection,
     EphemeralDB,
     EphemeralDocument,
 )
-import orion.core.utils.backward as backward
 
 
 @pytest.fixture()

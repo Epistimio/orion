@@ -8,13 +8,13 @@ import os
 
 import pytest
 
+import orion.core.io.experiment_builder as experiment_builder
+import orion.core.utils.backward as backward
 from orion.algo.space import Categorical, Integer, Real, Space
 from orion.core.evc import conflicts
 from orion.core.io.convert import JSONConverter, YAMLConverter
-import orion.core.io.experiment_builder as experiment_builder
 from orion.core.io.space_builder import DimensionBuilder
-import orion.core.utils.backward as backward
-from orion.testing import default_datetime, MockDatetime
+from orion.testing import MockDatetime, default_datetime
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, "sample_config.yml")

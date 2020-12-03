@@ -8,8 +8,8 @@
    :synopsis: Implement non permanent version of :class:`orion.core.io.database.AbstractDB`
 
 """
-from collections import defaultdict
 import copy
+from collections import defaultdict
 
 from orion.core.io.database import AbstractDB, DatabaseError, DuplicateKeyError
 from orion.core.utils.flatten import flatten, unflatten

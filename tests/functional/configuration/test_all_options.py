@@ -1,21 +1,21 @@
 """Perform functional tests merge of configuration levels"""
-from contextlib import contextmanager
 import copy
 import datetime
 import os
 import random
+from contextlib import contextmanager
 
 import pytest
 import yaml
 
-from orion.client import get_experiment
 import orion.core
 import orion.core.cli
 import orion.core.evc.conflicts
-from orion.core.io.database.pickleddb import PickledDB
 import orion.core.io.resolve_config
-from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
 import orion.core.worker
+from orion.client import get_experiment
+from orion.core.io.database.pickleddb import PickledDB
+from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 from orion.testing.state import OrionState

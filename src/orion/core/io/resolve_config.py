@@ -38,8 +38,8 @@ import logging
 import os
 
 import git
-from numpy import inf as infinity
 import yaml
+from numpy import inf as infinity
 
 import orion
 import orion.core

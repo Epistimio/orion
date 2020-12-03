@@ -1,22 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.io.database.pickleddb`."""
-from datetime import datetime
 import logging
-from multiprocessing import Pool
 import os
+from datetime import datetime
+from multiprocessing import Pool
 
-from filelock import FileLock, Timeout
 import pytest
+from filelock import FileLock, Timeout
 
+import orion.core.utils.backward as backward
 from orion.core.io.database import Database, DatabaseTimeout, DuplicateKeyError
 from orion.core.io.database.ephemeraldb import EphemeralCollection
 from orion.core.io.database.pickleddb import (
+    PickledDB,
     find_unpickable_doc,
     find_unpickable_field,
-    PickledDB,
 )
-import orion.core.utils.backward as backward
 
 
 @pytest.fixture()

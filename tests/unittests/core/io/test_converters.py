@@ -7,11 +7,10 @@ import pytest
 
 from orion.core.io.convert import (
     GenericConverter,
-    infer_converter_from_file_type,
     JSONConverter,
     YAMLConverter,
+    infer_converter_from_file_type,
 )
-
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 

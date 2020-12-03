@@ -4,8 +4,8 @@ import subprocess
 
 import pytest
 
-from orion.client import create_experiment
 import orion.core.cli
+from orion.client import create_experiment
 from orion.storage.base import get_storage
 
 

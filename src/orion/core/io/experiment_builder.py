@@ -91,16 +91,16 @@ import getpass
 import logging
 import sys
 
-from orion.algo.space import Space
 import orion.core
+import orion.core.utils.backward as backward
+from orion.algo.space import Space
 from orion.core.evc.adapters import Adapter
-from orion.core.evc.conflicts import detect_conflicts, ExperimentNameConflict
+from orion.core.evc.conflicts import ExperimentNameConflict, detect_conflicts
 from orion.core.io import resolve_config
 from orion.core.io.database import DuplicateKeyError
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
-import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import (
     BranchingEvent,
     NoConfigurationError,
@@ -111,7 +111,6 @@ from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import Strategy
 from orion.storage.base import get_storage, setup_storage
-
 
 log = logging.getLogger(__name__)
 

@@ -1,8 +1,8 @@
 """Example usage and tests for :mod:`orion.core.utils.backward`."""
 import pytest
 
-from orion.algo.base import BaseAlgorithm
 import orion.core.utils.backward as backward
+from orion.algo.base import BaseAlgorithm
 
 
 def create_algo_class(**attributes):

@@ -23,7 +23,6 @@ from orion.core.utils.exceptions import (
     NoNameError,
 )
 
-
 CLI_DOC_HEADER = "Oríon CLI for asynchronous distributed optimization"
 
 

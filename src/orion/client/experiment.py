@@ -15,6 +15,8 @@ import sys
 
 from numpy import inf as infinity
 
+import orion.core.utils.format_trials as format_trials
+import orion.core.worker
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
     BrokenExperiment,
@@ -22,13 +24,10 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.utils.flatten import flatten, unflatten
-import orion.core.utils.format_trials as format_trials
-import orion.core.worker
 from orion.core.worker.trial import Trial
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
-
 
 log = logging.getLogger(__name__)
 

@@ -24,7 +24,6 @@ from orion.core.evc import adapters, conflicts
 from orion.core.utils.diff import green, red
 from orion.storage.base import get_storage
 
-
 readline.set_completer_delims(" ")
 
 

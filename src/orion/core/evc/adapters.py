@@ -34,8 +34,8 @@ Adapters can be build using the factory class `Adapter(**kwargs)` or using
 `Adapter.build(list_of_dicts)`.
 
 """
-from abc import ABCMeta, abstractmethod
 import copy
+from abc import ABCMeta, abstractmethod
 
 from orion.core.io.space_builder import DimensionBuilder
 from orion.core.utils import Factory

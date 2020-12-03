@@ -22,7 +22,6 @@ from orion.analysis.lpi import (
 )
 from orion.core.io.space_builder import SpaceBuilder
 
-
 data = pd.DataFrame(
     data={
         "id": ["a", "b", "c", "d"],

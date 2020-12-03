@@ -12,8 +12,8 @@ import numpy
 import pandas as pd
 import plotly.graph_objects as go
 
-from orion.algo.space import Categorical, Fidelity
 import orion.analysis.regret
+from orion.algo.space import Categorical, Fidelity
 
 
 def lpi(experiment, model="RandomForestRegressor", model_kwargs=None, n=20, **kwargs):

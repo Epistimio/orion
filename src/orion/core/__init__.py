@@ -20,8 +20,8 @@ import socket
 from appdirs import AppDirs
 
 from orion.core.io.config import Configuration
-from ._version import get_versions
 
+from ._version import get_versions
 
 logger = logging.getLogger(__name__)
 

@@ -6,10 +6,10 @@ import pprint
 
 import pytest
 
+import orion.core.utils.backward as backward
 from orion.algo.space import Dimension
 from orion.core import evc
 from orion.core.evc import conflicts as conflict
-import orion.core.utils.backward as backward
 
 
 @pytest.fixture

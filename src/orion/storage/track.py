@@ -9,18 +9,19 @@
 
 """
 
-from collections import defaultdict
 import copy
 import datetime
 import hashlib
 import logging
 import sys
 import warnings
+from collections import defaultdict
 
 import orion.core
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.flatten import flatten, unflatten
-from orion.core.worker.trial import Trial as OrionTrial, validate_status
+from orion.core.worker.trial import Trial as OrionTrial
+from orion.core.worker.trial import validate_status
 from orion.storage.base import BaseStorageProtocol, FailedUpdate, get_uid
 
 log = logging.getLogger(__name__)
@@ -38,11 +39,13 @@ HAS_TRACK = False
 REASON = None
 try:
     from track.client import TrackClient
+    from track.persistence.local import ConcurrentWrite
     from track.persistence.utils import parse_uri
     from track.serialization import to_json
-    from track.structure import CustomStatus, Status as TrackStatus
-    from track.structure import Project, Trial as TrackTrial, TrialGroup
-    from track.persistence.local import ConcurrentWrite
+    from track.structure import CustomStatus, Project
+    from track.structure import Status as TrackStatus
+    from track.structure import Trial as TrackTrial
+    from track.structure import TrialGroup
     from track.utils import ItemNotFound
 
     HAS_TRACK = True

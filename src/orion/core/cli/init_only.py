@@ -12,9 +12,9 @@
 import logging
 
 import orion.core
+import orion.core.io.experiment_builder as experiment_builder
 from orion.core.cli import base as cli
 from orion.core.cli import evc as evc_cli
-import orion.core.io.experiment_builder as experiment_builder
 
 log = logging.getLogger(__name__)
 DESCRIPTION = "(DEPRECATED) Use command `orion hunt --init_only` instead"

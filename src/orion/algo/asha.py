@@ -17,7 +17,6 @@ import numpy
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Fidelity
 
-
 logger = logging.getLogger(__name__)
 
 

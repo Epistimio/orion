@@ -19,7 +19,6 @@ from sklearn.ensemble import (
 
 from orion.core.worker.transformer import build_required_space
 
-
 _regressors_ = {
     "AdaBoostRegressor": AdaBoostRegressor,
     "BaggingRegressor": BaggingRegressor,

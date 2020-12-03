@@ -9,8 +9,8 @@
 """
 import logging
 
-from orion.core.cli import base as cli
 import orion.core.io.experiment_builder as experiment_builder
+from orion.core.cli import base as cli
 from orion.core.utils.pptree import print_tree
 from orion.storage.base import get_storage
 

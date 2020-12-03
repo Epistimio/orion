@@ -16,17 +16,16 @@ CmdlineParser provides an interface to parse command line arguments from input b
 utility functions to build it again as a list or an already formatted string.
 """
 
-from collections import defaultdict, OrderedDict
 import copy
 import errno
 import logging
 import os
 import re
 import shutil
+from collections import OrderedDict, defaultdict
 
 from orion.core.io.cmdline_parser import CmdlineParser
 from orion.core.io.convert import infer_converter_from_file_type
-
 
 log = logging.getLogger(__name__)
 

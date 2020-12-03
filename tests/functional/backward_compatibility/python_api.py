@@ -3,7 +3,6 @@
 """Simple example to fill db with python api"""
 from orion.client import create_experiment
 
-
 create_experiment(
     "hunt-python", space={"x": "uniform(-50,50)"}, algorithms={"random": {"seed": 1}}
 )

@@ -12,9 +12,9 @@ import pandas
 import pytest
 
 import orion.core
-from orion.core.io.space_builder import SpaceBuilder
 import orion.core.utils.backward as backward
 import orion.core.worker.experiment
+from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.trial import Trial

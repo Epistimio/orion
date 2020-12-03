@@ -20,10 +20,10 @@ A `GenericConverter` is provided that tries and parses configuration
 files, regardless of their type, according to predefined Oríon's markers.
 
 """
-from abc import ABC, abstractmethod
-from collections import deque
 import importlib
 import os
+from abc import ABC, abstractmethod
+from collections import deque
 
 from orion.core.utils import Factory, nesteddict
 

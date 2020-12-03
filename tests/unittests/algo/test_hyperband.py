@@ -7,7 +7,7 @@ import hashlib
 import numpy as np
 import pytest
 
-from orion.algo.hyperband import Bracket, compute_budgets, Hyperband
+from orion.algo.hyperband import Bracket, Hyperband, compute_budgets
 from orion.algo.space import Fidelity, Integer, Real, Space
 
 

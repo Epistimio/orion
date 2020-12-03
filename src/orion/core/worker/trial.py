@@ -14,7 +14,6 @@ import logging
 
 from orion.core.utils.flatten import unflatten
 
-
 log = logging.getLogger(__name__)
 
 

@@ -9,20 +9,20 @@ import pytest
 import yaml
 
 import orion.core
+import orion.core.utils.backward as backward
 from orion.core import evc
 from orion.core.evc.conflicts import (
     AlgorithmConflict,
     ChangedDimensionConflict,
     CodeConflict,
     CommandLineConflict,
-    detect_conflicts,
     ExperimentNameConflict,
     MissingDimensionConflict,
     NewDimensionConflict,
     ScriptConfigConflict,
+    detect_conflicts,
 )
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
-import orion.core.utils.backward as backward
 
 
 def filter_true(c):

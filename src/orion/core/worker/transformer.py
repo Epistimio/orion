@@ -10,14 +10,13 @@
       algorithm can operate on.
 
 """
-from abc import ABCMeta, abstractmethod
 import functools
 import itertools
+from abc import ABCMeta, abstractmethod
 
 import numpy
 
 from orion.algo.space import Categorical, Dimension, Fidelity, Integer, Real, Space
-
 
 NON_LINEAR = ["loguniform", "reciprocal"]
 

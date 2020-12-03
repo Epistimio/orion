@@ -15,9 +15,9 @@ import logging
 import os
 import re
 
+import orion.core.io.experiment_builder as experiment_builder
 from orion.core.cli import base as cli
 from orion.core.io.convert import infer_converter_from_file_type
-import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.format_trials import tuple_to_trial
 
 log = logging.getLogger(__name__)

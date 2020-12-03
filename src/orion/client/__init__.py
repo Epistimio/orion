@@ -8,6 +8,7 @@
    :synopsis: Provides functions for communicating with `orion.core`.
 
 """
+import orion.core.io.experiment_builder as experiment_builder
 from orion.client.cli import (
     interrupt_trial,
     report_bad_trial,
@@ -15,7 +16,6 @@ from orion.client.cli import (
     report_results,
 )
 from orion.client.experiment import ExperimentClient
-import orion.core.io.experiment_builder as experiment_builder
 from orion.core.utils.exceptions import RaceCondition
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.producer import Producer

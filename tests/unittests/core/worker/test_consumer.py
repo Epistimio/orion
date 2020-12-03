@@ -11,10 +11,9 @@ import pytest
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.io.resolve_config as resolve_config
 import orion.core.utils.backward as backward
+import orion.core.worker.consumer as consumer
 from orion.core.utils.exceptions import BranchingEvent
 from orion.core.utils.format_trials import tuple_to_trial
-import orion.core.worker.consumer as consumer
-
 
 Consumer = consumer.Consumer
 

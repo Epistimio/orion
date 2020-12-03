@@ -15,7 +15,6 @@ import logging
 import orion.core
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 
-
 log = logging.getLogger(__name__)
 
 

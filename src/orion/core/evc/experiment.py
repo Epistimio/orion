@@ -21,7 +21,6 @@ import logging
 from orion.core.evc.tree import TreeNode
 from orion.storage.base import get_storage
 
-
 log = logging.getLogger(__name__)
 
 

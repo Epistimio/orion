@@ -37,15 +37,14 @@ minimal intrusion to user's workflow as possible by:
      script's execution in each hyperiteration.
 
 """
-from collections import OrderedDict
 import logging
 import re
+from collections import OrderedDict
 
 from scipy.stats import distributions as sp_dists
 
 from orion.algo.space import Categorical, Fidelity, Integer, Real, Space
 from orion.core.utils.flatten import flatten
-
 
 log = logging.getLogger(__name__)
 
