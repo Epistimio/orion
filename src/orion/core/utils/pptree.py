@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# flake8: noqa
 # pylint: disable-all
 """
 :mod:`orion.core.utils.pptree` -- Utilitary functions for printing trees

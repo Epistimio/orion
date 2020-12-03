@@ -6,16 +6,17 @@ In this chapter, we present the different standards and guidelines we use throug
 All the conventions are enforced automatically during the PR process.
 
 You can verify if your code will pass the checks locally beforehand using ``$ tox -e lint`` (which
-is the equivalent of ``$ tox -e flake8,pylint,doc8,packaging``).
+is the equivalent of ``$ tox -e black,isort,pylint,doc8,packaging``).
 
 .. _standard-coding:
 
 Coding standard
 ===============
 
-Our coding standards are specified via flake8_ and pylint_. Their configurations are provided in
+Our coding standards are specified via black_, isort_ and pylint_. Their configurations are provided in
 ``tox.ini`` and ``.pylintrc`` respectively. You can verify the conformity of your changes locally
-by running ``$ tox -e flake8`` and ``$ tox -e pylint``.
+by running ``$ tox -e black``, ``$ tox -e isort`` and ``$ tox -e pylint``. There is also 2 tox commands
+provided to help fix black and isort issues; ``$ tox -e run-black`` and ``$ tox -e run-isort``.
 
 In addition, we follow `Numpy's docstring standards
 <https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard>`_ to ensure a good
@@ -222,8 +223,9 @@ No action needed or possible. The issue is either fixed, addressed
 .. _invalid: https://github.com/Epistimio/orion/labels/invalid
 
 .. _Github: https://github.com
-.. _flake8: http://flake8.pycqa.org/en/latest/
 .. _doc8: https://pypi.org/project/doc8/
+.. _black: https://black.readthedocs.io/en/stable/
+.. _isort: https://pycqa.github.io/isort/
 .. _pylint: https://www.pylint.org/
 .. _check-manifest: https://pypi.org/project/check-manifest/
 .. _readme_renderer: https://pypi.org/project/readme_renderer/

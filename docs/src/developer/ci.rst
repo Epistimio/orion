@@ -16,8 +16,9 @@ the repository level.
 When a commit is pushed in a pull request, a github workflow is spawned which
 triggers the following chain of events:
 
-#. Code styles verifications, and quality checks are run (``flake8``, ``pylint``, ``doc8``). The
-   documentation is also built at this time (``docs``).
+#. Code styles verifications, and quality checks are run
+   (``black``, ``isort``, ``pylint``, ``doc8``).
+   The documentation is also built at this time (``docs``).
 #. When code style verifications and documentation built passes, a test environment is spun up for
    each version of python tested (defined in ``.github/workflows/build.yml``).
 #. The test suite is run completely with coverage, including the dedicated backward

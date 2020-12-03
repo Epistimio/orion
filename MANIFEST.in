@@ -14,7 +14,6 @@ include versioneer.py
 exclude tox.ini
 exclude *-requirements.txt
 exclude .pylintrc
-exclude .flake8
 exclude codecov.yml
 exclude .mailmap
 prune conda/
