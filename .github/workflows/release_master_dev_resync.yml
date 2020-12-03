@@ -21,6 +21,7 @@ jobs:
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           signoff: false
           branch: master
+          base: master
           delete-branch: false
           title: 'Merge back master in develop after release'
           body: |
