@@ -1736,7 +1736,7 @@ class ExperimentNameConflict(Conflict):
             elif self._check_for_greater_versions():
                 raise ValueError(
                     f"Experiment name '{self.new_name}' already exist for version "
-                    "'{self.conflict.version}' and has children. Version cannot be "
+                    f"'{self.conflict.version}' and has children. Version cannot be "
                     "auto-incremented and a new name is required for branching."
                 )
             else:
