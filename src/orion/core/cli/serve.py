@@ -17,7 +17,6 @@ from gunicorn.app.base import BaseApplication
 import orion.core.io.experiment_builder as experiment_builder
 from orion.serving.webapi import WebApi
 
-
 log = logging.getLogger(__name__)
 DESCRIPTION = "Starts Oríon's REST API server"
 

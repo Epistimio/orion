@@ -50,13 +50,13 @@ created by resolutions. For instance, a `RenameDimensionResolution` may create a
 of the old name.
 """
 
-from abc import ABCMeta, abstractmethod
 import copy
 import pprint
 import traceback
+from abc import ABCMeta, abstractmethod
 
-from orion.algo.space import Dimension
 import orion.core
+from orion.algo.space import Dimension
 from orion.core.evc import adapters
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.io.space_builder import SpaceBuilder

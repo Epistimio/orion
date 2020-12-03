@@ -40,7 +40,6 @@ from scipy.stats import distributions
 
 from orion.core.utils.points import flatten_dims, regroup_dims
 
-
 logger = logging.getLogger(__name__)
 
 

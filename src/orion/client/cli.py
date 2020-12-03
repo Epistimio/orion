@@ -13,7 +13,6 @@ import sys
 
 from orion.core import config
 
-
 IS_ORION_ON = False
 _HAS_REPORTED_RESULTS = False
 RESULTS_FILENAME = os.getenv("ORION_RESULTS_PATH", None)

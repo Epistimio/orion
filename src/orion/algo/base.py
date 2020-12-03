@@ -9,9 +9,9 @@
       objective.
 
 """
-from abc import ABCMeta, abstractmethod
 import hashlib
 import logging
+from abc import ABCMeta, abstractmethod
 
 from orion.core.utils import Factory
 

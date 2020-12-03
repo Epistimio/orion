@@ -21,11 +21,10 @@ and the child experiment.
 
 import logging
 
-from orion.algo.space import Dimension
 import orion.core
+from orion.algo.space import Dimension
 from orion.core.evc import conflicts
 from orion.core.evc.adapters import CompositeAdapter
-
 
 log = logging.getLogger(__name__)
 

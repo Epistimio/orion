@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.client`."""
 import copy
-from importlib import reload
 import json
+from importlib import reload
 
 import pytest
 
 import orion.client
-from orion.client import get_experiment
 import orion.client.cli as cli
 import orion.core
+from orion.client import get_experiment
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.exceptions import (

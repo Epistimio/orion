@@ -13,16 +13,16 @@ import json
 import logging
 
 import orion.core
+import orion.core.utils.backward as backward
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database, OutdatedDatabaseError
-import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import MissingResultFile
 from orion.core.worker.trial import Trial, validate_status
 from orion.storage.base import (
     BaseStorageProtocol,
     FailedUpdate,
-    get_uid,
     MissingArguments,
+    get_uid,
 )
 
 log = logging.getLogger(__name__)

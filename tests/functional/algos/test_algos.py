@@ -8,7 +8,6 @@ import pytest
 
 from orion.client import workon
 
-
 storage = {"type": "legacy", "database": {"type": "ephemeraldb"}}
 
 

@@ -3,11 +3,11 @@
 """Script that will always interrupt trials."""
 import argparse
 
-from orion.client import (
+from orion.client import (  # noqa: F401
     interrupt_trial,
     report_bad_trial,
     report_objective,
-)  # noqa: F401
+)
 
 
 def no_report():

@@ -6,13 +6,13 @@ import datetime
 
 import pytest
 
+import orion.core.io.experiment_builder as experiment_builder
+import orion.core.utils.backward as backward
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
-import orion.core.io.experiment_builder as experiment_builder
-import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import (
     BranchingEvent,
     NoConfigurationError,

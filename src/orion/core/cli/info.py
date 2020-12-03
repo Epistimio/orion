@@ -12,8 +12,8 @@
 import logging
 import sys
 
-from orion.core.cli.base import get_basic_args_group
 import orion.core.io.experiment_builder as experiment_builder
+from orion.core.cli.base import get_basic_args_group
 from orion.core.utils.format_terminal import format_info
 
 log = logging.getLogger(__name__)

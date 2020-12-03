@@ -8,12 +8,12 @@
    :synopsis: Helper functions useful in possibly all :mod:`orion.core`'s modules.
 """
 
+import logging
+import os
 from abc import ABCMeta
 from collections import defaultdict
 from glob import glob
 from importlib import import_module
-import logging
-import os
 
 import pkg_resources
 

@@ -15,8 +15,8 @@ the command line.
 CmdlineParser provides an interface to parse command line arguments from input but also
 templates to build it again as a list or an already formatted string.
 """
-from collections import OrderedDict
 import os
+from collections import OrderedDict
 
 
 class CmdlineParser(object):

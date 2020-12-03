@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.core.io.cmdline_parser`."""
-from collections import OrderedDict
 import os
+from collections import OrderedDict
 
 import pytest
 

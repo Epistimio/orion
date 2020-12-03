@@ -4,15 +4,15 @@
 import copy
 import os
 
-from pymongo import MongoClient
 import pytest
 import yaml
+from pymongo import MongoClient
 
-from orion.algo.base import BaseAlgorithm, OptimizationAlgorithm
 import orion.core.cli
-from orion.core.io.database import Database
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
+from orion.algo.base import BaseAlgorithm, OptimizationAlgorithm
+from orion.core.io.database import Database
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
 

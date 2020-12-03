@@ -8,7 +8,7 @@ import hashlib
 import numpy as np
 import pytest
 
-from orion.algo.evolution_es import BracketEVES, compute_budgets, EvolutionES
+from orion.algo.evolution_es import BracketEVES, EvolutionES, compute_budgets
 from orion.algo.space import Fidelity, Real, Space
 
 

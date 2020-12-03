@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.io.database.mongodb`."""
 
-from datetime import datetime
 import functools
+from datetime import datetime
 from timeit import timeit
 
 import pymongo
-from pymongo import MongoClient
 import pytest
+from pymongo import MongoClient
 
 from orion.core.io.database import Database, DatabaseError, DuplicateKeyError
 from orion.core.io.database.mongodb import AUTH_FAILED_MESSAGES, MongoDB

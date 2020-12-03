@@ -14,7 +14,6 @@ import logging
 
 from orion.core.cli.db.test import main
 
-
 log = logging.getLogger(__name__)
 DESCRIPTION = "(DEPRECATED) Use command `orion db test` instead"
 

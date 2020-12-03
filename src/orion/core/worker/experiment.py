@@ -18,7 +18,7 @@ import pandas
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
 from orion.core.utils.flatten import flatten
-from orion.storage.base import FailedUpdate, get_storage, ReadOnlyStorageProtocol
+from orion.storage.base import FailedUpdate, ReadOnlyStorageProtocol, get_storage
 
 log = logging.getLogger(__name__)
 

@@ -5,8 +5,7 @@
 import pytest
 
 from orion.algo.space import Dimension
-from orion.core.evc import adapters
-from orion.core.evc import conflicts
+from orion.core.evc import adapters, conflicts
 
 
 @pytest.fixture

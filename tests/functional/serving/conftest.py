@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Common fixtures for functional serving tests"""
-from falcon import testing
 import pytest
+from falcon import testing
 
 from orion.serving.webapi import WebApi
 from orion.testing import OrionState

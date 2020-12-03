@@ -20,10 +20,10 @@ from orion.core.utils.singleton import (
 from orion.core.worker.trial import Trial
 from orion.storage.base import (
     FailedUpdate,
-    get_storage,
     MissingArguments,
-    setup_storage,
     Storage,
+    get_storage,
+    setup_storage,
 )
 from orion.storage.legacy import Legacy
 from orion.storage.track import HAS_TRACK, REASON

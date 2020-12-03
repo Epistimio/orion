@@ -19,7 +19,7 @@ from orion.core.utils.singleton import (
     update_singletons,
 )
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage, Storage
+from orion.storage.base import Storage, get_storage
 
 
 # pylint: disable=no-self-use,protected-access

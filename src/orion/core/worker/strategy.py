@@ -8,8 +8,8 @@
    :synopsis: Strategies to register objectives for incomplete trials.
 
 """
-from abc import ABCMeta, abstractmethod
 import logging
+from abc import ABCMeta, abstractmethod
 
 from orion.core.utils import Factory
 from orion.core.worker.trial import Trial

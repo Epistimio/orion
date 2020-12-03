@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Perform a stress tests on python API."""
-from multiprocessing import Pool
 import os
 import random
 import time
 import traceback
+from multiprocessing import Pool
 
 import matplotlib.pyplot as plt
 from pymongo import MongoClient

@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Perform a functional test for demo purposes."""
-from collections import defaultdict
 import os
 import shutil
 import subprocess
 import tempfile
+from collections import defaultdict
 
 import numpy
 import pytest
 import yaml
 
 import orion.core.cli
-from orion.core.io.database.ephemeraldb import EphemeralDB
 import orion.core.io.experiment_builder as experiment_builder
+from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.worker import workon
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy

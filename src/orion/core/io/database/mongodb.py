@@ -19,7 +19,6 @@ from orion.core.io.database import (
     DuplicateKeyError,
 )
 
-
 AUTH_FAILED_MESSAGES = ["auth failed", "Authentication failed."]
 
 INDEX_OP_ERROR_MESSAGES = ["index not found with name"]

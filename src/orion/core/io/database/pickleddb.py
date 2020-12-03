@@ -9,10 +9,10 @@
 
 """
 
-from contextlib import contextmanager
 import logging
 import os
 import pickle
+from contextlib import contextmanager
 from pickle import PicklingError
 
 from filelock import FileLock, Timeout

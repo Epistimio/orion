@@ -8,12 +8,12 @@ from scipy.stats import norm
 
 from orion.algo.space import Categorical, Fidelity, Integer, Real, Space
 from orion.algo.tpe import (
-    adaptive_parzen_estimator,
-    CategoricalSampler,
-    compute_max_ei_point,
-    GMMSampler,
-    ramp_up_weights,
     TPE,
+    CategoricalSampler,
+    GMMSampler,
+    adaptive_parzen_estimator,
+    compute_max_ei_point,
+    ramp_up_weights,
 )
 
 

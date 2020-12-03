@@ -14,7 +14,6 @@ import logging
 from orion.client import create_experiment
 from orion.core.utils import format_trials
 
-
 log = logging.getLogger(__name__)
 
 

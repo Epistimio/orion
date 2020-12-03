@@ -2,22 +2,22 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.algo.space`."""
 
-from collections import defaultdict, OrderedDict
 import sys
+from collections import OrderedDict, defaultdict
 
 import numpy as np
-from numpy.testing import assert_array_equal as assert_eq
 import pytest
+from numpy.testing import assert_array_equal as assert_eq
 from scipy.stats import distributions as dists
 
 from orion.algo.space import (
     Categorical,
-    check_random_state,
     Dimension,
     Fidelity,
     Integer,
     Real,
     Space,
+    check_random_state,
 )
 
 

@@ -6,17 +6,17 @@ import os
 import tempfile
 
 import numpy
-from pymongo import MongoClient
 import pytest
 import yaml
+from pymongo import MongoClient
 
-from orion.algo.base import BaseAlgorithm, OptimizationAlgorithm
 import orion.core
+import orion.core.utils.backward as backward
+from orion.algo.base import BaseAlgorithm, OptimizationAlgorithm
 from orion.core.io import resolve_config
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
-import orion.core.utils.backward as backward
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import Storage

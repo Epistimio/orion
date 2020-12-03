@@ -2,9 +2,9 @@
 
 from orion.core.evc.tree import (
     DepthFirstTraversal,
-    flattened,
     PreOrderTraversal,
     TreeNode,
+    flattened,
 )
 
 

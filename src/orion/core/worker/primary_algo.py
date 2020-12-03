@@ -8,8 +8,8 @@
    :synopsis: Performs checks and organizes required transformations of points.
 
 """
-from orion.algo.base import BaseAlgorithm
 import orion.core.utils.backward as backward
+from orion.algo.base import BaseAlgorithm
 from orion.core.worker.transformer import build_required_space
 
 

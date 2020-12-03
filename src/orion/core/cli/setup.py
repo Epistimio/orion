@@ -13,7 +13,6 @@ import logging
 
 from orion.core.cli.db.setup import main
 
-
 log = logging.getLogger(__name__)
 DESCRIPTION = "(DEPRECATED) Use command `orion db setup` instead"
 

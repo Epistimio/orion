@@ -5,17 +5,16 @@ import os
 import shutil
 import subprocess
 
-from pymongo import MongoClient
 import pytest
+from pymongo import MongoClient
 
+import orion.core.io.experiment_builder as experiment_builder
 from orion.client import create_experiment
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
-import orion.core.io.experiment_builder as experiment_builder
-from orion.storage.base import get_storage, Storage
+from orion.storage.base import Storage, get_storage
 from orion.storage.legacy import Legacy
-
 
 DIRNAME = os.path.dirname(os.path.abspath(__file__))
 
