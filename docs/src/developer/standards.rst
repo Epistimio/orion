@@ -13,10 +13,11 @@ is the equivalent of ``$ tox -e black,isort,pylint,doc8,packaging``).
 Coding standard
 ===============
 
-Our coding standards are specified via black_, isort_ and pylint_. Their configurations are provided in
-``tox.ini`` and ``.pylintrc`` respectively. You can verify the conformity of your changes locally
-by running ``$ tox -e black``, ``$ tox -e isort`` and ``$ tox -e pylint``. There is also 2 tox commands
-provided to help fix black and isort issues; ``$ tox -e run-black`` and ``$ tox -e run-isort``.
+Our coding standards are specified via black_, isort_ and pylint_. Their configurations are provided
+in ``tox.ini`` and ``.pylintrc`` respectively. You can verify the conformity of your changes locally
+by running ``$ tox -e black``, ``$ tox -e isort`` and ``$ tox -e pylint``. There is also 2 tox
+commands provided to help fix black and isort issues; ``$ tox -e run-black`` and
+``$ tox -e run-isort``.
 
 In addition, we follow `Numpy's docstring standards
 <https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard>`_ to ensure a good
