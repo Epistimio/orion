@@ -15,7 +15,8 @@ import pickle
 from contextlib import contextmanager
 from pickle import PicklingError
 
-from filelock import FileLock, Timeout
+import psutil
+from filelock import FileLock, SoftFileLock, Timeout
 
 import orion.core
 from orion.core.io.database import AbstractDB, DatabaseTimeout
@@ -227,7 +228,7 @@ class PickledDB(AbstractDB):
     @contextmanager
     def locked_database(self, write=True):
         """Lock database file during wrapped operation call."""
-        lock = FileLock(self.host + ".lock")
+        lock = _create_lock(self.host + ".lock")
 
         try:
             with lock.acquire(timeout=self.timeout):
@@ -239,3 +240,58 @@ class PickledDB(AbstractDB):
                     self._dump_database(database)
         except Timeout as e:
             raise DatabaseTimeout(TIMEOUT_ERROR_MESSAGE.format(self.timeout)) from e
+
+
+local_file_systems = ["ext2", "ext3", "ext4", "ntfs"]
+
+
+def _fs_support_globalflock(file_system):
+    if file_system.fstype == "lustre":
+        return ("flock" in file_system.opts) and ("localflock" not in file_system.opts)
+
+    elif file_system.fstype == "beegfs":
+        return "tuneUseGlobalFileLocks" in file_system.opts
+
+    elif file_system.fstype == "gpfs":
+        return True
+
+    elif file_system.fstype == "nfs":
+        return False
+
+    return file_system.fstype in local_file_systems
+
+
+def _find_mount_point(path):
+    """Finds the mount point used to access `path`."""
+    path = os.path.abspath(path)
+    while not os.path.ismount(path):
+        path = os.path.dirname(path)
+
+    return path
+
+
+def _get_fs(path):
+    """Gets info about the filesystem on which `path` lives."""
+    mount = _find_mount_point(path)
+
+    for file_system in psutil.disk_partitions(True):
+        if file_system.mountpoint == mount:
+            return file_system
+
+    return None
+
+
+def _create_lock(path):
+    """Create lock based on file system capabilities
+
+    Determine if we can rely on the fcntl module for locking files.
+    Otherwise, fallback on using the directory creation atomicity as a locking mechanism.
+    """
+    file_system = _get_fs(path)
+
+    if _fs_support_globalflock(file_system):
+        log.debug("Using flock.")
+        return FileLock(path)
+    else:
+        log.debug("Cluster does not support flock. Falling back to softfilelock.")
+        return SoftFileLock(path)
