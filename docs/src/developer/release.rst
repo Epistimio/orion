@@ -27,8 +27,8 @@ such as the README.rst.
    using the base `master` instead of `develop`.
 #. Go to the `release page`_ copy paste the current draft
    (which was automatically wrote by the `release drafter`_ app) into the description of the new
-   pull request. Adapt if necessary, sometimes new features are spread across multiple pull requests or
-   some pull requests are changes that should not figure in the release description, like
+   pull request. Adapt if necessary, sometimes new features are spread across multiple pull requests
+   or some pull requests are changes that should not figure in the release description, like
    merging master back to develop branch (ex: `PR #510 <https://github.com/Epistimio/orion/pull/510>`_).
 
 .. _release-make:
@@ -49,8 +49,9 @@ time to create the release artifacts and publish the release.
 
 Once the release is made, the :ref:`ci` will be automatically started by Github. The code will
 then be published on PyPI_ and Anaconda_ automatically if the tests passes. If test fails for
-random reasons (sometimes mongodb setup fails during build), you can fetch the tagged version locally
-and publish on PyPI_ and Anaconda_ manually, using ``$ tox -e release`` and ``./conda/upload.sh``.
+random reasons (sometimes mongodb setup fails during build), you can fetch the tagged version
+locally and publish on PyPI_ and Anaconda_ manually, using ``$ tox -e release`` and
+``./conda/upload.sh``.
 
 After the release
 =================
