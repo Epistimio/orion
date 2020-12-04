@@ -23,7 +23,7 @@ SCRIPT_PATH = os.path.join(DIRNAME, "black_box.py")
 CONFIG_FILE = os.path.join(DIRNAME, "random.yaml")
 
 # Ignore pre-0.1.6 because was on orion.core and pypi project was deleted.
-VERSIONS = ["0.1.6", "0.1.7", "0.1.8", "0.1.9"]
+VERSIONS = ["0.1.6", "0.1.7", "0.1.8", "0.1.9", "0.1.10"]
 
 
 def get_branch_argument(version):
