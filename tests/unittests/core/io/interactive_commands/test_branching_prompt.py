@@ -14,19 +14,23 @@ from orion.core.io.space_builder import DimensionBuilder
 @pytest.fixture
 def new_cat_dimension_conflict(old_config, new_config):
     """Generate a new dimension conflict with categorical prior for new experiment configuration"""
-    name = 'new-cat'
+    name = "new-cat"
     prior = 'choices(["hello", 2])'
     dimension = DimensionBuilder().build(name, prior)
     return evc.conflicts.NewDimensionConflict(old_config, new_config, dimension, prior)
 
 
 @pytest.fixture
-def missing_conflict_with_identical_prior(old_config, new_config, new_dimension_conflict):
+def missing_conflict_with_identical_prior(
+    old_config, new_config, new_dimension_conflict
+):
     """Generate a missing dimension conflict which have the same prior as the new dim conflict"""
-    name = 'missing-idem'
+    name = "missing-idem"
     prior = new_dimension_conflict.prior
     dimension = DimensionBuilder().build(name, prior)
-    return evc.conflicts.MissingDimensionConflict(old_config, new_config, dimension, prior)
+    return evc.conflicts.MissingDimensionConflict(
+        old_config, new_config, dimension, prior
+    )
 
 
 @pytest.fixture
@@ -34,19 +38,28 @@ def missing_cat_dimension_conflict(old_config, new_config):
     """Generate a missing dimension conflict with categorical prior for new experiment
     configuration
     """
-    name = 'missing-cat'
+    name = "missing-cat"
     prior = 'choices(["goodbye", 5])'
     dimension = DimensionBuilder().build(name, prior)
-    return evc.conflicts.MissingDimensionConflict(old_config, new_config, dimension, prior)
+    return evc.conflicts.MissingDimensionConflict(
+        old_config, new_config, dimension, prior
+    )
 
 
 @pytest.fixture
-def conflicts(new_dimension_conflict, new_cat_dimension_conflict,
-              changed_dimension_conflict,
-              missing_dimension_conflict, missing_cat_dimension_conflict,
-              missing_conflict_with_identical_prior,
-              algorithm_conflict, code_conflict, cli_conflict, config_conflict,
-              experiment_name_conflict):
+def conflicts(
+    new_dimension_conflict,
+    new_cat_dimension_conflict,
+    changed_dimension_conflict,
+    missing_dimension_conflict,
+    missing_cat_dimension_conflict,
+    missing_conflict_with_identical_prior,
+    algorithm_conflict,
+    code_conflict,
+    cli_conflict,
+    config_conflict,
+    experiment_name_conflict,
+):
     """Create a container for conflicts with one of each types for testing purposes"""
     conflicts = evc.conflicts.Conflicts()
     conflicts.register(new_dimension_conflict)
@@ -66,7 +79,7 @@ def conflicts(new_dimension_conflict, new_cat_dimension_conflict,
 @pytest.fixture
 def branch_builder(conflicts):
     """Generate the experiment branch builder"""
-    return ExperimentBranchBuilder(conflicts, {'manual_resolution': True})
+    return ExperimentBranchBuilder(conflicts, {"manual_resolution": True})
 
 
 @pytest.fixture
@@ -99,7 +112,7 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 1
         branch_solver_prompt.do_add("new")
         out, err = capsys.readouterr()
-        assert "Dimension name \'new\' not found in conflicts" in out
+        assert "Dimension name 'new' not found in conflicts" in out
         assert len(conflicts.get_resolved()) == 1
 
     def test_add_dim_with_default(self, conflicts, branch_solver_prompt):
@@ -128,7 +141,7 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_add("new_cat --default-value='hello'")
         assert len(conflicts.get_resolved()) == 1
-        assert conflicts.get_resolved()[0].resolution.default_value == 'hello'
+        assert conflicts.get_resolved()[0].resolution.default_value == "hello"
 
         conflicts.revert(conflicts.get_resolved()[0].resolution)
         assert len(conflicts.get_resolved()) == 0
@@ -136,7 +149,9 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 1
         assert conflicts.get_resolved()[0].resolution.default_value == 2
 
-    def test_add_dim_with_cat_bad_default(self, capsys, conflicts, branch_solver_prompt):
+    def test_add_dim_with_cat_bad_default(
+        self, capsys, conflicts, branch_solver_prompt
+    ):
         """Verify that error message is given for default value of invalid category"""
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_add("new_cat --default-value='bad'")
@@ -149,7 +164,9 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_add("new")
         assert len(conflicts.get_resolved()) == 1
-        branch_solver_prompt.do_reset("'{}'".format(str(conflicts.get_resolved()[0].resolution)))
+        branch_solver_prompt.do_reset(
+            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+        )
         assert len(conflicts.get_resolved()) == 0
 
     def test_change_dim(self, conflicts, branch_solver_prompt):
@@ -165,7 +182,7 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 1
         branch_solver_prompt.do_add("changed")
         out, err = capsys.readouterr()
-        assert "Dimension name \'changed\' not found in conflicts" in out
+        assert "Dimension name 'changed' not found in conflicts" in out
         assert len(conflicts.get_resolved()) == 1
 
     def test_reset_change(self, conflicts, branch_solver_prompt):
@@ -173,7 +190,9 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_add("changed")
         assert len(conflicts.get_resolved()) == 1
-        branch_solver_prompt.do_reset("'{}'".format(str(conflicts.get_resolved()[0].resolution)))
+        branch_solver_prompt.do_reset(
+            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+        )
         assert len(conflicts.get_resolved()) == 0
 
     def test_remove_dim(self, conflicts, branch_solver_prompt):
@@ -197,7 +216,7 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 1
         branch_solver_prompt.do_remove("missing")
         out, err = capsys.readouterr()
-        assert "Dimension name \'missing\' not found in conflicts" in out
+        assert "Dimension name 'missing' not found in conflicts" in out
         assert len(conflicts.get_resolved()) == 1
 
     def test_remove_dim_with_default(self, conflicts, branch_solver_prompt):
@@ -226,7 +245,7 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_remove("missing_cat --default-value='goodbye'")
         assert len(conflicts.get_resolved()) == 1
-        assert conflicts.get_resolved()[0].resolution.default_value == 'goodbye'
+        assert conflicts.get_resolved()[0].resolution.default_value == "goodbye"
 
         conflicts.revert(conflicts.get_resolved()[0].resolution)
         assert len(conflicts.get_resolved()) == 0
@@ -234,7 +253,9 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 1
         assert conflicts.get_resolved()[0].resolution.default_value == 5
 
-    def test_remove_dim_with_cat_bad_default(self, capsys, conflicts, branch_solver_prompt):
+    def test_remove_dim_with_cat_bad_default(
+        self, capsys, conflicts, branch_solver_prompt
+    ):
         """Verify that error message is given for default value of invalid category"""
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_remove("missing_cat --default-value='bad'")
@@ -247,7 +268,9 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_remove("missing")
         assert len(conflicts.get_resolved()) == 1
-        branch_solver_prompt.do_reset("'{}'".format(str(conflicts.get_resolved()[0].resolution)))
+        branch_solver_prompt.do_reset(
+            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+        )
         assert len(conflicts.get_resolved()) == 0
 
     def test_rename_dim(self, conflicts, branch_solver_prompt):
@@ -272,7 +295,7 @@ class TestCommands(object):
         assert len(conflicts.get()) == 11
         branch_solver_prompt.do_rename("new_cat new")
         out, err = capsys.readouterr()
-        assert "Dimension name \'new_cat\' not found in conflicts" in out
+        assert "Dimension name 'new_cat' not found in conflicts" in out
         assert len(conflicts.get_resolved()) == 0
         assert len(conflicts.get()) == 11
 
@@ -280,7 +303,7 @@ class TestCommands(object):
         assert len(conflicts.get()) == 11
         branch_solver_prompt.do_rename("missing missing_cat")
         out, err = capsys.readouterr()
-        assert "Dimension name \'missing_cat\' not found in conflicts" in out
+        assert "Dimension name 'missing_cat' not found in conflicts" in out
         assert len(conflicts.get_resolved()) == 0
         assert len(conflicts.get()) == 11
 
@@ -291,7 +314,9 @@ class TestCommands(object):
         branch_solver_prompt.do_rename("missing_idem new")
         assert len(conflicts.get_resolved()) == 2
         assert len(conflicts.get()) == 11
-        branch_solver_prompt.do_reset("'{}'".format(str(conflicts.get_resolved()[0].resolution)))
+        branch_solver_prompt.do_reset(
+            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+        )
         assert len(conflicts.get_resolved()) == 0
         assert len(conflicts.get()) == 11
 
@@ -302,7 +327,9 @@ class TestCommands(object):
         branch_solver_prompt.do_rename("missing new")
         assert len(conflicts.get_resolved()) == 2
         assert len(conflicts.get()) == 12
-        branch_solver_prompt.do_reset("'{}'".format(str(conflicts.get_resolved()[0].resolution)))
+        branch_solver_prompt.do_reset(
+            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+        )
         assert len(conflicts.get_resolved()) == 0
         assert len(conflicts.get()) == 11
 
@@ -335,7 +362,9 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_code("break")
         assert len(conflicts.get_resolved()) == 1
-        branch_solver_prompt.do_reset("'{}'".format(str(conflicts.get_resolved()[0].resolution)))
+        branch_solver_prompt.do_reset(
+            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+        )
         assert len(conflicts.get_resolved()) == 0
 
     def test_set_algo(self, conflicts, branch_solver_prompt):
@@ -359,7 +388,9 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_algo("")
         assert len(conflicts.get_resolved()) == 1
-        branch_solver_prompt.do_reset("' {}'".format(str(conflicts.get_resolved()[0].resolution)))
+        branch_solver_prompt.do_reset(
+            "' {}'".format(str(conflicts.get_resolved()[0].resolution))
+        )
         assert len(conflicts.get_resolved()) == 0
 
     def test_set_config_change_type(self, conflicts, branch_solver_prompt):
@@ -376,7 +407,9 @@ class TestCommands(object):
         assert "invalid choice: 'bad'" in err
         assert len(conflicts.get_resolved()) == 0
 
-    def test_set_config_change_type_twice(self, capsys, conflicts, branch_solver_prompt):
+    def test_set_config_change_type_twice(
+        self, capsys, conflicts, branch_solver_prompt
+    ):
         """Verify that error message is given trying to solve twice the same conflict"""
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_config("break")
@@ -391,7 +424,9 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_config("break")
         assert len(conflicts.get_resolved()) == 1
-        branch_solver_prompt.do_reset("'{}'".format(str(conflicts.get_resolved()[0].resolution)))
+        branch_solver_prompt.do_reset(
+            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+        )
         assert len(conflicts.get_resolved()) == 0
 
     def test_set_commandline_change_type(self, conflicts, branch_solver_prompt):
@@ -400,7 +435,9 @@ class TestCommands(object):
         branch_solver_prompt.do_commandline("break")
         assert len(conflicts.get_resolved()) == 1
 
-    def test_set_commandline_change_bad_type(self, capsys, conflicts, branch_solver_prompt):
+    def test_set_commandline_change_bad_type(
+        self, capsys, conflicts, branch_solver_prompt
+    ):
         """Verify error message when attempting cli resolution with bad type"""
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_commandline("bad")
@@ -408,7 +445,9 @@ class TestCommands(object):
         assert "invalid choice: 'bad'" in err
         assert len(conflicts.get_resolved()) == 0
 
-    def test_set_commandline_change_type_twice(self, capsys, conflicts, branch_solver_prompt):
+    def test_set_commandline_change_type_twice(
+        self, capsys, conflicts, branch_solver_prompt
+    ):
         """Verify that error message is given trying to solve twice the same conflict"""
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_commandline("break")
@@ -423,7 +462,9 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_commandline("break")
         assert len(conflicts.get_resolved()) == 1
-        branch_solver_prompt.do_reset("'{}'".format(str(conflicts.get_resolved()[0].resolution)))
+        branch_solver_prompt.do_reset(
+            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+        )
         assert len(conflicts.get_resolved()) == 0
 
     def test_set_experiment_name(self, conflicts, branch_solver_prompt):
@@ -455,7 +496,9 @@ class TestCommands(object):
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_name("new-name")
         assert len(conflicts.get_resolved()) == 1
-        branch_solver_prompt.do_reset("'{}'".format(str(conflicts.get_resolved()[0].resolution)))
+        branch_solver_prompt.do_reset(
+            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+        )
         assert len(conflicts.get_resolved()) == 0
 
     def test_commit_wont_quit_if_not_solved(self, conflicts, branch_solver_prompt):

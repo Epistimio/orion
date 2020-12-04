@@ -34,7 +34,9 @@ Cannot build budgets below max_resources;
 """
 
 
-def compute_budgets(min_resources, max_resources, reduction_factor, nums_population, pairs):
+def compute_budgets(
+    min_resources, max_resources, reduction_factor, nums_population, pairs
+):
     """Compute the budgets used for each execution of hyperband"""
     budgets_eves = []
     if reduction_factor == 1:
@@ -49,10 +51,16 @@ def compute_budgets(min_resources, max_resources, reduction_factor, nums_populat
         budgets_tab = {}  # just for display consideration
         for bracket_id in range(0, num_brackets + 1):
             bracket_budgets = []
-            num_trials = int(np.ceil(int((num_brackets + 1) / (num_brackets - bracket_id + 1)) *
-                                     (reduction_factor ** (num_brackets - bracket_id))))
+            num_trials = int(
+                np.ceil(
+                    int((num_brackets + 1) / (num_brackets - bracket_id + 1))
+                    * (reduction_factor ** (num_brackets - bracket_id))
+                )
+            )
 
-            min_resources = max_resources / reduction_factor ** (num_brackets - bracket_id)
+            min_resources = max_resources / reduction_factor ** (
+                num_brackets - bracket_id
+            )
             for i in range(0, num_brackets - bracket_id + 1):
                 n_i = int(num_trials / reduction_factor ** i)
                 min_i = int(min_resources * reduction_factor ** i)
@@ -98,7 +106,9 @@ class EvolutionES(Hyperband):
 
     """
 
-    def __init__(self, space, seed=None, repetitions=np.inf, nums_population=20, mutate=None):
+    def __init__(
+        self, space, seed=None, repetitions=np.inf, nums_population=20, mutate=None
+    ):
         super(EvolutionES, self).__init__(space, seed=seed, repetitions=repetitions)
         pair = nums_population // 2
         mutate_ratio = 0.3
@@ -106,8 +116,11 @@ class EvolutionES(Hyperband):
         self.nums_comp_pairs = pair
         self.mutate_ratio = mutate_ratio
         self.mutate_attr = mutate
-        self.nums_mutate_gene = int((len(self.space.values()) - 1) * mutate_ratio) if int(
-            (len(self.space.values()) - 1) * mutate_ratio) > 0 else 1
+        self.nums_mutate_gene = (
+            int((len(self.space.values()) - 1) * mutate_ratio)
+            if int((len(self.space.values()) - 1) * mutate_ratio) > 0
+            else 1
+        )
 
         self.hurdles = []
 
@@ -118,8 +131,13 @@ class EvolutionES(Hyperband):
 
         self.performance = np.inf * np.ones(nums_population)
 
-        self.budgets = compute_budgets(self.min_resources, self.max_resources,
-                                       self.reduction_factor, nums_population, pair)
+        self.budgets = compute_budgets(
+            self.min_resources,
+            self.max_resources,
+            self.reduction_factor,
+            nums_population,
+            pair,
+        )
 
         self.brackets = [
             BracketEVES(self, bracket_budgets, 1, space)
@@ -157,9 +175,10 @@ class BracketEVES(Bracket):
         else:
             self.mutate_attr = {}
 
-        function_string = self.mutate_attr.pop('function',
-                                               "orion.algo.mutate_functions.default_mutate")
-        mod_name, func_name = function_string.rsplit('.', 1)
+        function_string = self.mutate_attr.pop(
+            "function", "orion.algo.mutate_functions.default_mutate"
+        )
+        mod_name, func_name = function_string.rsplit(".", 1)
         mod = importlib.import_module(mod_name)
         self.mutate_func = getattr(mod, func_name)
 
@@ -172,11 +191,13 @@ class BracketEVES(Bracket):
         if self.has_rung_filled(rung_id + 1):
             return []
 
-        rung = self.rungs[rung_id]['results']
+        rung = self.rungs[rung_id]["results"]
 
-        population_range = (self.eves.nums_population
-                            if len(list(rung.values())) > self.eves.nums_population
-                            else len(list(rung.values())))
+        population_range = (
+            self.eves.nums_population
+            if len(list(rung.values())) > self.eves.nums_population
+            else len(list(rung.values()))
+        )
 
         for i in range(population_range):
             for j in self.search_space_remove_fidelity:
@@ -184,11 +205,13 @@ class BracketEVES(Bracket):
             self.eves.performance[i] = list(rung.values())[i][0]
 
         population_index = list(range(self.eves.nums_population))
-        red_team = self.eves.rng.choice(population_index, self.eves.nums_comp_pairs,
-                                        replace=False)
+        red_team = self.eves.rng.choice(
+            population_index, self.eves.nums_comp_pairs, replace=False
+        )
         diff_list = list(set(population_index).difference(set(red_team)))
-        blue_team = self.eves.rng.choice(diff_list, self.eves.nums_comp_pairs,
-                                         replace=False)
+        blue_team = self.eves.rng.choice(
+            diff_list, self.eves.nums_comp_pairs, replace=False
+        )
 
         return rung, population_range, red_team, blue_team
 
@@ -200,10 +223,12 @@ class BracketEVES(Bracket):
         if set(red_team) != set(blue_team):
             hurdles = 0
             for i, _ in enumerate(red_team):
-                winner, loser = ((red_team, blue_team)
-                                 if self.eves.performance[red_team[i]] <
-                                 self.eves.performance[blue_team[i]]
-                                 else (blue_team, red_team))
+                winner, loser = (
+                    (red_team, blue_team)
+                    if self.eves.performance[red_team[i]]
+                    < self.eves.performance[blue_team[i]]
+                    else (blue_team, red_team)
+                )
 
                 winner_list.append(winner[i])
                 loser_list.append(loser[i])
@@ -213,15 +238,16 @@ class BracketEVES(Bracket):
             hurdles /= len(red_team)
             self.eves.hurdles.append(hurdles)
 
-            logger.debug('Evolution hurdles are: %s', str(self.eves.hurdles))
+            logger.debug("Evolution hurdles are: %s", str(self.eves.hurdles))
 
         points = []
         nums_all_equal = [0] * population_range
         for i in range(population_range):
             point = [0] * len(self.space)
             while True:
-                point[self.eves.fidelity_index] = \
-                    list(rung.values())[i][1][self.eves.fidelity_index]
+                point[self.eves.fidelity_index] = list(rung.values())[i][1][
+                    self.eves.fidelity_index
+                ]
 
                 for j in self.search_space_remove_fidelity:
                     point[j] = self.eves.population[j][i]
@@ -233,8 +259,9 @@ class BracketEVES(Bracket):
                 else:
                     break
                 if nums_all_equal[i] > 10:
-                    logger.warning("Can not Evolve any more, "
-                                   "You can make an early stop.")
+                    logger.warning(
+                        "Can not Evolve any more, " "You can make an early stop."
+                    )
                     break
 
             points.append(tuple(point))
@@ -247,9 +274,9 @@ class BracketEVES(Bracket):
         return self._mutate_population(red_team, blue_team, rung, population_range)[0]
 
     def _mutate(self, winner_id, loser_id):
-        select_genes_key_list = self.eves.rng.choice(self.search_space_remove_fidelity,
-                                                     self.eves.nums_mutate_gene,
-                                                     replace=False)
+        select_genes_key_list = self.eves.rng.choice(
+            self.search_space_remove_fidelity, self.eves.nums_mutate_gene, replace=False
+        )
         self.copy_winner(winner_id, loser_id)
         kwargs = copy.deepcopy(self.mutate_attr)
 
@@ -264,4 +291,6 @@ class BracketEVES(Bracket):
     def copy_winner(self, winner_id, loser_id):
         """Copy winner to loser"""
         for key in self.search_space_remove_fidelity:
-            self.eves.population[key][loser_id] = self.eves.population[key][winner_id].copy()
+            self.eves.population[key][loser_id] = self.eves.population[key][
+                winner_id
+            ].copy()

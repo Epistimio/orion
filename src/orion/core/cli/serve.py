@@ -17,18 +17,21 @@ from gunicorn.app.base import BaseApplication
 import orion.core.io.experiment_builder as experiment_builder
 from orion.serving.webapi import WebApi
 
-
 log = logging.getLogger(__name__)
 DESCRIPTION = "Starts Oríon's REST API server"
 
 
 def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
-    serve_parser = parser.add_parser('serve', help=DESCRIPTION, description=DESCRIPTION)
+    serve_parser = parser.add_parser("serve", help=DESCRIPTION, description=DESCRIPTION)
 
-    serve_parser.add_argument('-c', '--config', type=argparse.FileType('r'),
-                              metavar='path-to-config', help="user provided "
-                              "orion configuration file")
+    serve_parser.add_argument(
+        "-c",
+        "--config",
+        type=argparse.FileType("r"),
+        metavar="path-to-config",
+        help="user provided " "orion configuration file",
+    )
 
     serve_parser.set_defaults(func=main)
 

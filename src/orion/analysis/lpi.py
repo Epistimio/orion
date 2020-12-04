@@ -9,18 +9,22 @@
 """
 import numpy
 import pandas as pd
-from sklearn.ensemble import AdaBoostRegressor, BaggingRegressor,\
-    ExtraTreesRegressor, GradientBoostingRegressor, RandomForestRegressor
+from sklearn.ensemble import (
+    AdaBoostRegressor,
+    BaggingRegressor,
+    ExtraTreesRegressor,
+    GradientBoostingRegressor,
+    RandomForestRegressor,
+)
 
 from orion.core.worker.transformer import build_required_space
 
-
 _regressors_ = {
-    'AdaBoostRegressor': AdaBoostRegressor,
-    'BaggingRegressor': BaggingRegressor,
-    'ExtraTreesRegressor': ExtraTreesRegressor,
-    'GradientBoostingRegressor': GradientBoostingRegressor,
-    'RandomForestRegressor': RandomForestRegressor,
+    "AdaBoostRegressor": AdaBoostRegressor,
+    "BaggingRegressor": BaggingRegressor,
+    "ExtraTreesRegressor": ExtraTreesRegressor,
+    "GradientBoostingRegressor": GradientBoostingRegressor,
+    "RandomForestRegressor": RandomForestRegressor,
 }
 
 
@@ -46,8 +50,9 @@ def train_regressor(regressor_name, data, **kwargs):
     """
     if regressor_name not in _regressors_:
         raise ValueError(
-            f'{regressor_name} is not a supported regressor. '
-            f'Did you mean any of theses: list(_regressors_.keys())')
+            f"{regressor_name} is not a supported regressor. "
+            f"Did you mean any of theses: list(_regressors_.keys())"
+        )
 
     regressor = _regressors_[regressor_name](**kwargs)
     return regressor.fit(data[:, :-1], data[:, -1])
@@ -55,13 +60,14 @@ def train_regressor(regressor_name, data, **kwargs):
 
 def to_numpy(trials, space):
     """Convert trials in DataFrame to Numpy array of (params + objective)"""
-    return trials[list(space.keys()) + ['objective']].to_numpy()
+    return trials[list(space.keys()) + ["objective"]].to_numpy()
 
 
 def flatten(trials_array, flattened_space):
     """Flatten dimensions"""
     flattened_points = numpy.array(
-        [flattened_space.transform(point[:-1]) for point in trials_array])
+        [flattened_space.transform(point[:-1]) for point in trials_array]
+    )
 
     return numpy.concatenate((flattened_points, trials_array[:, -1:]), axis=1)
 
@@ -113,7 +119,7 @@ def _lpi(point, space, model, n):
     grid = make_grid(point, space, model, n)
     variances = compute_variances(grid)
     ratios = variances / variances.sum()
-    return pd.DataFrame(data=ratios, index=space.keys(), columns=['LPI'])
+    return pd.DataFrame(data=ratios, index=space.keys(), columns=["LPI"])
 
 
 def _linear_lpi(point, space, model, n):
@@ -121,12 +127,10 @@ def _linear_lpi(point, space, model, n):
     return
 
 
-modes = dict(
-    best=_lpi,
-    linear=_linear_lpi)
+modes = dict(best=_lpi, linear=_linear_lpi)
 
 
-def lpi(trials, space, mode='best', model='RandomForestRegressor', n=20, **kwargs):
+def lpi(trials, space, mode="best", model="RandomForestRegressor", n=20, **kwargs):
     """
     Calculates the Local Parameter Importance for a collection of :class:`Trial`.
 
@@ -171,12 +175,14 @@ def lpi(trials, space, mode='best', model='RandomForestRegressor', n=20, **kwarg
         param values and LPI metrics are returned in a DataFrame format.
     """
     flattened_space = build_required_space(
-        space, type_requirement='numerical', shape_requirement='flattened')
+        space, type_requirement="numerical", shape_requirement="flattened"
+    )
     if trials.empty or trials.shape[0] == 0:
         return pd.DataFrame(
             data=[0] * len(flattened_space),
             index=flattened_space.keys(),
-            columns=['LPI'])
+            columns=["LPI"],
+        )
 
     data = to_numpy(trials, space)
     data = flatten(data, flattened_space)

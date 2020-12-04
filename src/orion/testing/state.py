@@ -14,9 +14,12 @@ import tempfile
 import yaml
 
 from orion.core.io import experiment_builder as experiment_builder
-from orion.core.utils.singleton import SingletonAlreadyInstantiatedError, update_singletons
+from orion.core.utils.singleton import (
+    SingletonAlreadyInstantiatedError,
+    update_singletons,
+)
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage, Storage
+from orion.storage.base import Storage, get_storage
 
 
 # pylint: disable=no-self-use,protected-access
@@ -59,8 +62,16 @@ class BaseOrionState:
     resources = []
     workers = []
 
-    def __init__(self, experiments=None, trials=None, workers=None, lies=None, resources=None,
-                 from_yaml=None, storage=None):
+    def __init__(
+        self,
+        experiments=None,
+        trials=None,
+        workers=None,
+        lies=None,
+        resources=None,
+        from_yaml=None,
+        storage=None,
+    ):
         if from_yaml is not None:
             with open(from_yaml) as f:
                 exp_config = list(yaml.safe_load_all(f))
@@ -127,16 +138,16 @@ class BaseOrionState:
         for i, t_dict in enumerate(self._lies):
             self._lies[i] = Trial(**t_dict).to_dict()
 
-        self._trials.sort(key=lambda obj: int(obj['_id'], 16), reverse=True)
+        self._trials.sort(key=lambda obj: int(obj["_id"], 16), reverse=True)
 
         for i, experiment in enumerate(self._experiments):
-            if 'user_script' in experiment['metadata']:
+            if "user_script" in experiment["metadata"]:
                 path = os.path.join(
-                    os.path.dirname(__file__),
-                    experiment["metadata"]["user_script"])
+                    os.path.dirname(__file__), experiment["metadata"]["user_script"]
+                )
                 experiment["metadata"]["user_script"] = path
 
-            experiment['_id'] = i
+            experiment["_id"] = i
 
         self._set_tables()
 
@@ -144,7 +155,7 @@ class BaseOrionState:
         """Iterate over the database configuration and replace ${file}
         by the name of a temporary file
         """
-        self.tempfile, self.tempfile_path = tempfile.mkstemp('_orion_test')
+        self.tempfile, self.tempfile_path = tempfile.mkstemp("_orion_test")
         _remove(self.tempfile_path)
 
         def map_dict(fun, dictionary):
@@ -154,7 +165,7 @@ class BaseOrionState:
         def replace_file(v):
             """Replace `${file}` by a generated temporary file"""
             if isinstance(v, str):
-                v = v.replace('${file}', self.tempfile_path)
+                v = v.replace("${file}", self.tempfile_path)
 
             if isinstance(v, dict):
                 v = map_dict(replace_file, v)
@@ -181,7 +192,7 @@ class BaseOrionState:
             return get_storage()
 
         try:
-            config['of_type'] = config.pop('type')
+            config["of_type"] = config.pop("type")
             db = Storage(**config)
             self.storage_config = config
         except SingletonAlreadyInstantiatedError:
@@ -211,9 +222,9 @@ class LegacyOrionState(BaseOrionState):
         self.storage(config)
         self.initialized = True
 
-        if hasattr(get_storage(), '_db'):
-            self.database.remove('experiments', {})
-            self.database.remove('trials', {})
+        if hasattr(get_storage(), "_db"):
+            self.database.remove("experiments", {})
+            self.database.remove("trials", {})
 
         self.load_experience_configuration()
         return self
@@ -226,15 +237,15 @@ class LegacyOrionState(BaseOrionState):
 
     def _set_tables(self):
         if self._experiments:
-            self.database.write('experiments', self._experiments)
+            self.database.write("experiments", self._experiments)
         if self._trials:
-            self.database.write('trials', self._trials)
+            self.database.write("trials", self._trials)
         if self._workers:
-            self.database.write('workers', self._workers)
+            self.database.write("workers", self._workers)
         if self._resources:
-            self.database.write('resources', self._resources)
+            self.database.write("resources", self._resources)
         if self._lies:
-            self.database.write('lying_trials', self._lies)
+            self.database.write("lying_trials", self._lies)
 
         self.lies = self._lies
         self.trials = self._trials
@@ -242,8 +253,8 @@ class LegacyOrionState(BaseOrionState):
     def cleanup(self):
         """Cleanup after testing"""
         if self.initialized:
-            self.database.remove('experiments', {})
-            self.database.remove('trials', {})
+            self.database.remove("experiments", {})
+            self.database.remove("trials", {})
             if self.tempfile is not None:
                 os.close(self.tempfile)
             _remove(self.tempfile_path)
@@ -254,9 +265,9 @@ class LegacyOrionState(BaseOrionState):
 # pylint: disable=C0103
 def OrionState(*args, **kwargs):
     """Build an orion state in function of the storage type"""
-    storage = kwargs.get('storage')
+    storage = kwargs.get("storage")
 
-    if not storage or storage['type'] == 'legacy':
+    if not storage or storage["type"] == "legacy":
         return LegacyOrionState(*args, **kwargs)
 
     return BaseOrionState(*args, **kwargs)
@@ -264,8 +275,8 @@ def OrionState(*args, **kwargs):
 
 def customized_mutate_example(search_space, old_value, **kwargs):
     """Define a customized mutate function example"""
-    multiply_factor = kwargs.pop('multiply_factor', 3.0)
-    add_factor = kwargs.pop('add_factor', 1)
+    multiply_factor = kwargs.pop("multiply_factor", 3.0)
+    add_factor = kwargs.pop("add_factor", 1)
     if search_space.type == "real":
         new_value = old_value / multiply_factor
     elif search_space.type == "integer":
@@ -277,13 +288,7 @@ def customized_mutate_example(search_space, old_value, **kwargs):
 
 def _get_default_test_storage():
     """Return default configuration for the test storage"""
-    return {
-        'type': 'legacy',
-        'database': {
-            'type': 'PickledDB',
-            'host': '${file}'
-        }
-    }
+    return {"type": "legacy", "database": {"type": "PickledDB", "host": "${file}"}}
 
 
 def _remove(file_name):

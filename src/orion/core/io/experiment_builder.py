@@ -91,23 +91,26 @@ import getpass
 import logging
 import sys
 
-from orion.algo.space import Space
 import orion.core
+import orion.core.utils.backward as backward
+from orion.algo.space import Space
 from orion.core.evc.adapters import Adapter
-from orion.core.evc.conflicts import detect_conflicts, ExperimentNameConflict
+from orion.core.evc.conflicts import ExperimentNameConflict, detect_conflicts
 from orion.core.io import resolve_config
 from orion.core.io.database import DuplicateKeyError
 from orion.core.io.experiment_branch_builder import ExperimentBranchBuilder
 from orion.core.io.interactive_commands.branching_prompt import BranchingPrompt
 from orion.core.io.space_builder import SpaceBuilder
-import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import (
-    BranchingEvent, NoConfigurationError, NoNameError, RaceCondition)
+    BranchingEvent,
+    NoConfigurationError,
+    NoNameError,
+    RaceCondition,
+)
 from orion.core.worker.experiment import Experiment, ExperimentView
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import Strategy
 from orion.storage.base import get_storage, setup_storage
-
 
 log = logging.getLogger(__name__)
 
@@ -115,6 +118,7 @@ log = logging.getLogger(__name__)
 ##
 # Functions to build experiments
 ##
+
 
 def build(name, version=None, branching=None, **config):
     """Build an experiment object
@@ -173,11 +177,12 @@ def build(name, version=None, branching=None, **config):
 
     config = consolidate_config(name, version, config)
 
-    if 'space' not in config:
+    if "space" not in config:
         raise NoConfigurationError(
-            'Experiment {} does not exist in DB and space was not defined.'.format(name))
+            "Experiment {} does not exist in DB and space was not defined.".format(name)
+        )
 
-    if len(config['space']) == 0:
+    if len(config["space"]) == 0:
         raise NoConfigurationError("No prior found. Please include at least one.")
 
     experiment = create_experiment(**copy.deepcopy(config))
@@ -190,13 +195,15 @@ def build(name, version=None, branching=None, **config):
         return experiment
 
     conflicts = _get_conflicts(experiment, branching)
-    must_branch = len(conflicts.get()) > 1 or branching.get('branch_to')
+    must_branch = len(conflicts.get()) > 1 or branching.get("branch_to")
     if must_branch:
-        branched_experiment = _branch_experiment(experiment, conflicts, version, branching)
+        branched_experiment = _branch_experiment(
+            experiment, conflicts, version, branching
+        )
         try:
             _register_experiment(branched_experiment)
         except DuplicateKeyError as e:
-            raise RaceCondition('There was a race condition during branching.') from e
+            raise RaceCondition("There was a race condition during branching.") from e
 
         return branched_experiment
 
@@ -208,18 +215,18 @@ def clean_config(name, config, branching):
     """Clean configuration from hidden fields (ex: `_id`) and update branching if necessary"""
     config = copy.deepcopy(config)
     for key, value in list(config.items()):
-        if key.startswith('_') or value is None:
+        if key.startswith("_") or value is None:
             config.pop(key)
 
-    if 'strategy' in config:
-        config['producer'] = {'strategy': config.pop('strategy')}
+    if "strategy" in config:
+        config["producer"] = {"strategy": config.pop("strategy")}
 
     if branching is None:
         branching = {}
 
-    if branching.get('branch_from'):
-        branching.setdefault('branch_to', name)
-        name = branching['branch_from']
+    if branching.get("branch_from"):
+        branching.setdefault("branch_to", name)
+        name = branching["branch_from"]
 
     return name, config, branching
 
@@ -231,38 +238,41 @@ def consolidate_config(name, version, config):
     db_config = fetch_config_from_db(name, version)
 
     # Do not merge spaces, the new definition overrides it.
-    if 'space' in config:
-        db_config.pop('space', None)
+    if "space" in config:
+        db_config.pop("space", None)
 
     new_config = config
     config = resolve_config.merge_configs(db_config, config)
 
     metadata = resolve_config.fetch_metadata(
-        config.get('user'), config.get('user_args'), config.get('user_script_config'))
+        config.get("user"), config.get("user_args"), config.get("user_script_config")
+    )
 
-    config = resolve_config.merge_configs(config, {'metadata': metadata})
+    config = resolve_config.merge_configs(config, {"metadata": metadata})
 
     merge_algorithm_config(config, new_config)
     merge_producer_config(config, new_config)
 
-    config.setdefault('name', name)
-    config.setdefault('version', version)
+    config.setdefault("name", name)
+    config.setdefault("version", version)
     return config
 
 
 def merge_algorithm_config(config, new_config):
     """Merge given algorithm configuration with db config"""
     # TODO: Find a better solution
-    if isinstance(config.get('algorithms'), dict) and len(config['algorithms']) > 1:
-        config['algorithms'] = new_config['algorithms']
+    if isinstance(config.get("algorithms"), dict) and len(config["algorithms"]) > 1:
+        config["algorithms"] = new_config["algorithms"]
 
 
 def merge_producer_config(config, new_config):
     """Merge given producer configuration with db config"""
     # TODO: Find a better solution
-    if (isinstance(config.get('producer', {}).get('strategy'), dict) and
-            len(config['producer']['strategy']) > 1):
-        config['producer']['strategy'] = new_config['producer']['strategy']
+    if (
+        isinstance(config.get("producer", {}).get("strategy"), dict)
+        and len(config["producer"]["strategy"]) > 1
+    ):
+        config["producer"]["strategy"] = new_config["producer"]["strategy"]
 
 
 def build_view(name, version=None):
@@ -283,11 +293,13 @@ def build_view(name, version=None):
     db_config = fetch_config_from_db(name, version)
 
     if not db_config:
-        message = ("No experiment with given name '%s' and version '%s' inside database, "
-                   "no view can be created." % (name, version if version else '*'))
+        message = (
+            "No experiment with given name '%s' and version '%s' inside database, "
+            "no view can be created." % (name, version if version else "*")
+        )
         raise NoConfigurationError(message)
 
-    db_config.setdefault('version', 1)
+    db_config.setdefault("version", 1)
 
     experiment = create_experiment(**db_config)
 
@@ -321,21 +333,38 @@ def create_experiment(name, version, space, **kwargs):
 
     """
     experiment = Experiment(name=name, version=version)
-    experiment._id = kwargs.get('_id', None)  # pylint:disable=protected-access
-    experiment.pool_size = kwargs.get('pool_size')
+    experiment._id = kwargs.get("_id", None)  # pylint:disable=protected-access
+    experiment.pool_size = kwargs.get("pool_size")
     if experiment.pool_size is None:
         experiment.pool_size = orion.core.config.experiment.get(
-            'pool_size', deprecated='ignore')
-    experiment.max_trials = kwargs.get('max_trials', orion.core.config.experiment.max_trials)
-    experiment.max_broken = kwargs.get('max_broken', orion.core.config.experiment.max_broken)
+            "pool_size", deprecated="ignore"
+        )
+    experiment.max_trials = kwargs.get(
+        "max_trials", orion.core.config.experiment.max_trials
+    )
+    experiment.max_broken = kwargs.get(
+        "max_broken", orion.core.config.experiment.max_broken
+    )
     experiment.space = _instantiate_space(space)
-    experiment.algorithms = _instantiate_algo(experiment.space, kwargs.get('algorithms'))
-    experiment.producer = kwargs.get('producer', {})
-    experiment.producer['strategy'] = _instantiate_strategy(experiment.producer.get('strategy'))
-    experiment.working_dir = kwargs.get('working_dir', orion.core.config.experiment.working_dir)
-    experiment.metadata = kwargs.get('metadata', {'user': kwargs.get('user', getpass.getuser())})
-    experiment.refers = kwargs.get('refers', {'parent_id': None, 'root_id': None, 'adapter': []})
-    experiment.refers['adapter'] = _instantiate_adapters(experiment.refers.get('adapter', []))
+    experiment.algorithms = _instantiate_algo(
+        experiment.space, kwargs.get("algorithms")
+    )
+    experiment.producer = kwargs.get("producer", {})
+    experiment.producer["strategy"] = _instantiate_strategy(
+        experiment.producer.get("strategy")
+    )
+    experiment.working_dir = kwargs.get(
+        "working_dir", orion.core.config.experiment.working_dir
+    )
+    experiment.metadata = kwargs.get(
+        "metadata", {"user": kwargs.get("user", getpass.getuser())}
+    )
+    experiment.refers = kwargs.get(
+        "refers", {"parent_id": None, "root_id": None, "adapter": []}
+    )
+    experiment.refers["adapter"] = _instantiate_adapters(
+        experiment.refers.get("adapter", [])
+    )
 
     return experiment
 
@@ -352,7 +381,7 @@ def fetch_config_from_db(name, version=None):
         largest version available, the largest version will be selected.
 
     """
-    configs = get_storage().fetch_experiments({'name': name})
+    configs = get_storage().fetch_experiments({"name": name})
 
     if not configs:
         return {}
@@ -360,8 +389,12 @@ def fetch_config_from_db(name, version=None):
     config = _fetch_config_version(configs, version)
 
     if len(configs) > 1:
-        log.info("Many versions for experiment %s have been found. Using latest "
-                 "version %s.", name, config['version'])
+        log.info(
+            "Many versions for experiment %s have been found. Using latest "
+            "version %s.",
+            name,
+            config["version"],
+        )
 
     backward.populate_space(config, force_update=False)
     backward.update_max_broken(config)
@@ -372,6 +405,7 @@ def fetch_config_from_db(name, version=None):
 ##
 # Private helper functions to build experiments
 ##
+
 
 def _instantiate_adapters(config):
     """Instantiate the adapter object
@@ -443,7 +477,7 @@ def _instantiate_strategy(config=None):
 
 def _register_experiment(experiment):
     """Register a new experiment in the database"""
-    experiment.metadata['datetime'] = datetime.datetime.utcnow()
+    experiment.metadata["datetime"] = datetime.datetime.utcnow()
     config = experiment.configuration
     # This will raise DuplicateKeyError if a concurrent experiment with
     # identical (name, metadata.user) is written first in the database.
@@ -452,18 +486,20 @@ def _register_experiment(experiment):
 
     # XXX: Reminder for future DB implementations:
     # MongoDB, updates an inserted dict with _id, so should you :P
-    experiment._id = config['_id']  # pylint:disable=protected-access
+    experiment._id = config["_id"]  # pylint:disable=protected-access
 
     # Update refers in db if experiment is root
-    if experiment.refers.get('parent_id') is None:
-        log.debug('update refers (name: %s)', experiment.name)
-        experiment.refers['root_id'] = experiment.id
-        get_storage().update_experiment(experiment, refers=experiment.configuration['refers'])
+    if experiment.refers.get("parent_id") is None:
+        log.debug("update refers (name: %s)", experiment.name)
+        experiment.refers["root_id"] = experiment.id
+        get_storage().update_experiment(
+            experiment, refers=experiment.configuration["refers"]
+        )
 
 
 def _update_experiment(experiment):
     """Update experiment configuration in database"""
-    log.debug('updating experiment (name: %s)', experiment.name)
+    log.debug("updating experiment (name: %s)", experiment.name)
     config = experiment.configuration
 
     # TODO: Remove since this should not occur anymore without metadata.user in the indices?
@@ -481,13 +517,16 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
     """Create a new branch experiment with adapters for the given conflicts"""
     experiment_brancher = ExperimentBranchBuilder(conflicts, **branching_arguments)
 
-    needs_manual_resolution = (not experiment_brancher.is_resolved or
-                               experiment_brancher.manual_resolution)
+    needs_manual_resolution = (
+        not experiment_brancher.is_resolved or experiment_brancher.manual_resolution
+    )
 
     if not experiment_brancher.is_resolved:
         name_conflict = conflicts.get([ExperimentNameConflict])[0]
         if not name_conflict.is_resolved and not version:
-            raise RaceCondition('There was likely a race condition during version increment.')
+            raise RaceCondition(
+                "There was likely a race condition during version increment."
+            )
 
     if needs_manual_resolution:
         # TODO: This should only be possible when using cmdline API
@@ -502,10 +541,10 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
             sys.exit()
 
     config = experiment_brancher.conflicting_config
-    config['refers']['adapter'] = experiment_brancher.create_adapters().configuration
-    config['refers']['parent_id'] = experiment.id
+    config["refers"]["adapter"] = experiment_brancher.create_adapters().configuration
+    config["refers"]["parent_id"] = experiment.id
 
-    config.pop('_id')
+    config.pop("_id")
 
     return create_experiment(**config)
 
@@ -513,8 +552,9 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
 def _get_conflicts(experiment, branching):
     """Get conflicts between current experiment and corresponding configuration in database"""
     db_experiment = build_view(experiment.name, experiment.version)
-    conflicts = detect_conflicts(db_experiment.configuration, experiment.configuration,
-                                 branching)
+    conflicts = detect_conflicts(
+        db_experiment.configuration, experiment.configuration, branching
+    )
 
     # elif must_branch and not enable_branching:
     #     raise ValueError("Configuration is different and generate a branching event")
@@ -534,7 +574,7 @@ def _fetch_config_version(configs, version=None):
         largest version available, the largest version will be selected.
 
     """
-    max_version = max(configs, key=lambda exp: exp.get('version', 1)).get('version', 1)
+    max_version = max(configs, key=lambda exp: exp.get("version", 1)).get("version", 1)
 
     if version is None:
         version = max_version
@@ -542,12 +582,16 @@ def _fetch_config_version(configs, version=None):
         version = version
 
     if version > max_version:
-        log.warning("Version %s was specified but most recent version is only %s. "
-                    "Using %s.", version, max_version, max_version)
+        log.warning(
+            "Version %s was specified but most recent version is only %s. " "Using %s.",
+            version,
+            max_version,
+            max_version,
+        )
 
     version = min(version, max_version)
 
-    configs = filter(lambda exp: exp.get('version', 1) == version, configs)
+    configs = filter(lambda exp: exp.get("version", 1) == version, configs)
 
     return next(iter(configs))
 
@@ -555,6 +599,7 @@ def _fetch_config_version(configs, version=None):
 ###
 # Functions for commandline API
 ###
+
 
 def build_from_args(cmdargs):
     """Build an experiment based on commandline arguments.
@@ -570,10 +615,10 @@ def build_from_args(cmdargs):
     """
     cmd_config = get_cmd_config(cmdargs)
 
-    if 'name' not in cmd_config:
+    if "name" not in cmd_config:
         raise NoNameError()
 
-    setup_storage(cmd_config['storage'], debug=cmd_config.get('debug'))
+    setup_storage(cmd_config["storage"], debug=cmd_config.get("debug"))
 
     return build(**cmd_config)
 
@@ -589,13 +634,13 @@ def build_view_from_args(cmdargs):
     """
     cmd_config = get_cmd_config(cmdargs)
 
-    if 'name' not in cmd_config:
+    if "name" not in cmd_config:
         raise NoNameError()
 
-    setup_storage(cmd_config['storage'], debug=cmd_config.get('debug'))
+    setup_storage(cmd_config["storage"], debug=cmd_config.get("debug"))
 
-    name = cmd_config.get('name')
-    version = cmd_config.get('version')
+    name = cmd_config.get("name")
+    version = cmd_config.get("version")
 
     return build_view(name, version)
 
@@ -609,27 +654,36 @@ def get_cmd_config(cmdargs):
     cmd_config = resolve_config.fetch_config(cmdargs)
     cmd_config = resolve_config.merge_configs(cmd_config, cmdargs)
 
-    cmd_config.update(cmd_config.pop('experiment', {}))
-    cmd_config['user_script_config'] = cmd_config.get('worker', {}).get('user_script_config', None)
+    cmd_config.update(cmd_config.pop("experiment", {}))
+    cmd_config["user_script_config"] = cmd_config.get("worker", {}).get(
+        "user_script_config", None
+    )
 
-    cmd_config['branching'] = cmd_config.pop('evc', {})
+    cmd_config["branching"] = cmd_config.pop("evc", {})
 
     # TODO: We should move branching specific stuff below in a centralized place for EVC stuff.
-    if (cmd_config['branching'].get('auto_resolution', False) and
-            cmdargs.get('manual_resolution', None) is None):
-        cmd_config['branching']['manual_resolution'] = False
+    if (
+        cmd_config["branching"].get("auto_resolution", False)
+        and cmdargs.get("manual_resolution", None) is None
+    ):
+        cmd_config["branching"]["manual_resolution"] = False
 
-    non_monitored_arguments = cmdargs.get('non_monitored_arguments')
+    non_monitored_arguments = cmdargs.get("non_monitored_arguments")
     if non_monitored_arguments:
-        cmd_config['branching']['non_monitored_arguments'] = non_monitored_arguments.split(':')
+        cmd_config["branching"][
+            "non_monitored_arguments"
+        ] = non_monitored_arguments.split(":")
 
     # TODO: user_args won't be defined if reading from DB only (`orion hunt -n <exp> ` alone)
     metadata = resolve_config.fetch_metadata(
-        cmd_config.get('user'), cmd_config.get('user_args'), cmd_config.get('user_script_config'))
-    cmd_config['metadata'] = metadata
-    cmd_config.pop('config', None)
+        cmd_config.get("user"),
+        cmd_config.get("user_args"),
+        cmd_config.get("user_script_config"),
+    )
+    cmd_config["metadata"] = metadata
+    cmd_config.pop("config", None)
 
-    cmd_config['space'] = cmd_config['metadata'].get('priors', None)
+    cmd_config["space"] = cmd_config["metadata"].get("priors", None)
 
     backward.update_db_config(cmd_config)
 

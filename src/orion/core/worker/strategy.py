@@ -8,8 +8,8 @@
    :synopsis: Strategies to register objectives for incomplete trials.
 
 """
-from abc import (ABCMeta, abstractmethod)
 import logging
+from abc import ABCMeta, abstractmethod
 
 from orion.core.utils import Factory
 from orion.core.worker.trial import Trial
@@ -34,15 +34,18 @@ def get_objective(trial):
     :return: Float or None
         The value of the objective, or None if it doesn't exist
     """
-    objectives = [result.value for result in trial.results
-                  if result.type == 'objective']
+    objectives = [
+        result.value for result in trial.results if result.type == "objective"
+    ]
 
     if not objectives:
         objective = None
     elif len(objectives) == 1:
         objective = objectives[0]
     elif len(objectives) > 1:
-        raise RuntimeError("Trial {} has {} objectives".format(trial.id, len(objectives)))
+        raise RuntimeError(
+            "Trial {} has {} objectives".format(trial.id, len(objectives))
+        )
 
     return objective
 
@@ -95,7 +98,7 @@ class BaseParallelStrategy(object, metaclass=ABCMeta):
         objective = get_objective(trial)
         if objective:
             log.warning(CORRUPTED_DB_WARNING, trial.id)
-            return Trial.Result(name='lie', type='lie', value=objective)
+            return Trial.Result(name="lie", type="lie", value=objective)
 
         return None
 
@@ -124,7 +127,7 @@ class NoParallelStrategy(BaseParallelStrategy):
 class MaxParallelStrategy(BaseParallelStrategy):
     """Parallel strategy that uses the max of completed objectives"""
 
-    def __init__(self, default_result=float('inf')):
+    def __init__(self, default_result=float("inf")):
         """Initialize the maximum result used to lie"""
         super(MaxParallelStrategy, self).__init__()
         self.default_result = default_result
@@ -133,13 +136,14 @@ class MaxParallelStrategy(BaseParallelStrategy):
     @property
     def configuration(self):
         """Provide the configuration of the strategy as a dictionary."""
-        return {self.__class__.__name__: {'default_result': self.default_result}}
+        return {self.__class__.__name__: {"default_result": self.default_result}}
 
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
         super(MaxParallelStrategy, self).observe(points, results)
-        self.max_result = max(result['objective'] for result in results
-                              if result['objective'] is not None)
+        self.max_result = max(
+            result["objective"] for result in results if result["objective"] is not None
+        )
 
     def lie(self, trial):
         """See BaseParallelStrategy.lie"""
@@ -147,13 +151,13 @@ class MaxParallelStrategy(BaseParallelStrategy):
         if result:
             return result
 
-        return Trial.Result(name='lie', type='lie', value=self.max_result)
+        return Trial.Result(name="lie", type="lie", value=self.max_result)
 
 
 class MeanParallelStrategy(BaseParallelStrategy):
     """Parallel strategy that uses the mean of completed objectives"""
 
-    def __init__(self, default_result=float('inf')):
+    def __init__(self, default_result=float("inf")):
         """Initialize the mean result used to lie"""
         super(MeanParallelStrategy, self).__init__()
         self.default_result = default_result
@@ -162,14 +166,17 @@ class MeanParallelStrategy(BaseParallelStrategy):
     @property
     def configuration(self):
         """Provide the configuration of the strategy as a dictionary."""
-        return {self.__class__.__name__: {'default_result': self.default_result}}
+        return {self.__class__.__name__: {"default_result": self.default_result}}
 
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
         super(MeanParallelStrategy, self).observe(points, results)
-        objective_values = [result['objective'] for result in results
-                            if result['objective'] is not None]
-        self.mean_result = sum(value for value in objective_values) / float(len(objective_values))
+        objective_values = [
+            result["objective"] for result in results if result["objective"] is not None
+        ]
+        self.mean_result = sum(value for value in objective_values) / float(
+            len(objective_values)
+        )
 
     def lie(self, trial):
         """See BaseParallelStrategy.lie"""
@@ -177,7 +184,7 @@ class MeanParallelStrategy(BaseParallelStrategy):
         if result:
             return result
 
-        return Trial.Result(name='lie', type='lie', value=self.mean_result)
+        return Trial.Result(name="lie", type="lie", value=self.mean_result)
 
 
 class StubParallelStrategy(BaseParallelStrategy):
@@ -191,7 +198,7 @@ class StubParallelStrategy(BaseParallelStrategy):
     @property
     def configuration(self):
         """Provide the configuration of the strategy as a dictionary."""
-        return {self.__class__.__name__: {'stub_value': self.stub_value}}
+        return {self.__class__.__name__: {"stub_value": self.stub_value}}
 
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
@@ -203,7 +210,7 @@ class StubParallelStrategy(BaseParallelStrategy):
         if result:
             return result
 
-        return Trial.Result(name='lie', type='lie', value=self.stub_value)
+        return Trial.Result(name="lie", type="lie", value=self.stub_value)
 
 
 # pylint: disable=too-few-public-methods,abstract-method

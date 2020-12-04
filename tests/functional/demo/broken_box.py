@@ -8,7 +8,7 @@ def execute():
     """Execute a simple pipeline as an example."""
     # 1. Receive inputs as you want
     parser = argparse.ArgumentParser()
-    parser.add_argument('-x', type=float, required=True)
+    parser.add_argument("-x", type=float, required=True)
 
     raise RuntimeError
 

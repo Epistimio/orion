@@ -10,13 +10,12 @@ from orion.core.worker.primary_algo import PrimaryAlgo
 @pytest.fixture()
 def palgo(dumbalgo, space, fixed_suggestion):
     """Set up a PrimaryAlgo with dumb configuration."""
-    algo_config = {'DumbAlgo': {
-        'value': fixed_suggestion,
-        'subone': {'DumbAlgo': dict(
-            value=6,
-            scoring=5
-            )}
-        }}
+    algo_config = {
+        "DumbAlgo": {
+            "value": fixed_suggestion,
+            "subone": {"DumbAlgo": dict(value=6, scoring=5)},
+        }
+    }
     palgo = PrimaryAlgo(space, algo_config)
 
     return palgo
@@ -32,25 +31,25 @@ class TestPrimaryAlgoWraps(object):
         """Check if initialization works."""
         assert isinstance(palgo.algorithm, dumbalgo)
         assert palgo.configuration == {
-            'dumbalgo': {
-                'seed': None,
-                'value': fixed_suggestion,
-                'scoring': 0,
-                'judgement': None,
-                'suspend': False,
-                'done': False,
-                'subone': {
-                    'dumbalgo': {
-                        'seed': None,
-                        'value': 6,
-                        'scoring': 5,
-                        'judgement': None,
-                        'suspend': False,
-                        'done': False,
-                        }
+            "dumbalgo": {
+                "seed": None,
+                "value": fixed_suggestion,
+                "scoring": 0,
+                "judgement": None,
+                "suspend": False,
+                "done": False,
+                "subone": {
+                    "dumbalgo": {
+                        "seed": None,
+                        "value": 6,
+                        "scoring": 5,
+                        "judgement": None,
+                        "suspend": False,
+                        "done": False,
                     }
-                }
+                },
             }
+        }
 
     def test_space_can_only_retrieved(self, palgo, space):
         """Set space is forbidden, getter works as supposed."""
@@ -98,8 +97,8 @@ class TestPrimaryAlgoWraps(object):
 
     def test_judge(self, palgo, fixed_suggestion):
         """Wrap judge."""
-        palgo.algorithm.judgement = 'naedw'
-        assert palgo.judge(fixed_suggestion, 8) == 'naedw'
+        palgo.algorithm.judgement = "naedw"
+        assert palgo.judge(fixed_suggestion, 8) == "naedw"
         assert palgo.algorithm._judge_point == fixed_suggestion
         assert palgo.algorithm._measurements == 8
         with pytest.raises(AssertionError):

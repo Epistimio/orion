@@ -57,7 +57,7 @@ def confirm_name(message, name, force=False):
     """
     if force:
         print(message)
-        print('FORCED')
+        print("FORCED")
         return True
 
     answer = input(message)

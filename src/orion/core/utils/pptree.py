@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# flake8: noqa
 # pylint: disable-all
 """
 :mod:`orion.core.utils.pptree` -- Utilitary functions for printing trees
@@ -38,6 +37,7 @@ SOFTWARE.
 
 """
 
+
 class Node:
     def __init__(self, name, parent=None):
         self.name = name
@@ -48,7 +48,9 @@ class Node:
             self.parent.children.append(self)
 
 
-def print_tree(current_node, childattr='children', nameattr='name', indent='', last='updown'):
+def print_tree(
+    current_node, childattr="children", nameattr="name", indent="", last="updown"
+):
     if hasattr(current_node, nameattr):
         name = lambda node: getattr(node, nameattr)
     else:
@@ -61,29 +63,42 @@ def print_tree(current_node, childattr='children', nameattr='name', indent='', l
     """ Creation of balanced lists for "up" branch and "down" branch. """
     up = sorted(children(current_node), key=lambda node: nb_children(node))
     down = []
-    while up and sum(size_branch[node] for node in down) < sum(size_branch[node] for node in up):
+    while up and sum(size_branch[node] for node in down) < sum(
+        size_branch[node] for node in up
+    ):
         down.append(up.pop())
 
     """ Printing of "up" branch. """
-    for child in up:     
-        next_last = 'up' if up.index(child) is 0 else ''
-        next_indent = '{0}{1}{2}'.format(indent, ' ' if 'up' in last else '│', ' ' * len(name(current_node)))
+    for child in up:
+        next_last = "up" if up.index(child) is 0 else ""
+        next_indent = "{0}{1}{2}".format(
+            indent, " " if "up" in last else "│", " " * len(name(current_node))
+        )
         print_tree(child, childattr, nameattr, next_indent, next_last)
 
     """ Printing of current node. """
-    if last == 'up': start_shape = '┌'
-    elif last == 'down': start_shape = '└'
-    elif last == 'updown': start_shape = ' '
-    else: start_shape = '├'
+    if last == "up":
+        start_shape = "┌"
+    elif last == "down":
+        start_shape = "└"
+    elif last == "updown":
+        start_shape = " "
+    else:
+        start_shape = "├"
 
-    if up: end_shape = '┤'
-    elif down: end_shape = '┐'
-    else: end_shape = ''
+    if up:
+        end_shape = "┤"
+    elif down:
+        end_shape = "┐"
+    else:
+        end_shape = ""
 
-    print('{0}{1}{2}{3}'.format(indent, start_shape, name(current_node), end_shape))
+    print("{0}{1}{2}{3}".format(indent, start_shape, name(current_node), end_shape))
 
     """ Printing of "down" branch. """
     for child in down:
-        next_last = 'down' if down.index(child) is len(down) - 1 else ''
-        next_indent = '{0}{1}{2}'.format(indent, ' ' if 'down' in last else '│', ' ' * len(name(current_node)))
+        next_last = "down" if down.index(child) is len(down) - 1 else ""
+        next_indent = "{0}{1}{2}".format(
+            indent, " " if "down" in last else "│", " " * len(name(current_node))
+        )
         print_tree(child, childattr, nameattr, next_indent, next_last)

@@ -14,8 +14,8 @@ import logging
 
 import tabulate
 
-from orion.core.cli import base as cli
 import orion.core.io.experiment_builder as experiment_builder
+from orion.core.cli import base as cli
 from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
@@ -30,23 +30,37 @@ experiments by outlining every single trial, its status and its objective.
 
 def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
-    status_parser = parser.add_parser('status', help=SHORT_DESCRIPTION, description=DESCRIPTION)
+    status_parser = parser.add_parser(
+        "status", help=SHORT_DESCRIPTION, description=DESCRIPTION
+    )
 
     cli.get_basic_args_group(status_parser)
 
     status_parser.add_argument(
-        '-a', '--all', action="store_true",
-        help="Show all trials line by line. Otherwise, they are all aggregated by status")
+        "-a",
+        "--all",
+        action="store_true",
+        help="Show all trials line by line. Otherwise, they are all aggregated by status",
+    )
 
     status_parser.add_argument(
-        '-C', '--collapse', action="store_true",
-        help=("Aggregate together results of all child experiments. Otherwise they are all "
-              "printed hierarchically"))
+        "-C",
+        "--collapse",
+        action="store_true",
+        help=(
+            "Aggregate together results of all child experiments. Otherwise they are all "
+            "printed hierarchically"
+        ),
+    )
 
     status_parser.add_argument(
-        '-e', '--expand-versions', action='store_true',
-        help=("Show all the version of every experiments instead of only the latest one")
-        )
+        "-e",
+        "--expand-versions",
+        action="store_true",
+        help=(
+            "Show all the version of every experiments instead of only the latest one"
+        ),
+    )
 
     status_parser.set_defaults(func=main)
 
@@ -56,9 +70,9 @@ def add_subparser(parser):
 def main(args):
     """Fetch config and status experiments"""
     config = experiment_builder.get_cmd_config(args)
-    experiment_builder.setup_storage(config.get('storage'))
+    experiment_builder.setup_storage(config.get("storage"))
 
-    args['all_trials'] = args.pop('all', False)
+    args["all_trials"] = args.pop("all", False)
 
     experiments = get_experiments(args)
 
@@ -66,21 +80,29 @@ def main(args):
         print("No experiment found")
         return
 
-    if args.get('name'):
+    if args.get("name"):
         print_evc([experiments[0]], **args)
         return
 
-    if args.get('version'):
-        if args.get('collapse') or args.get('expand_versions'):
-            raise RuntimeError("Cannot fetch specific version of experiments with --collapse "
-                               "or --expand-versions.")
+    if args.get("version"):
+        if args.get("collapse") or args.get("expand_versions"):
+            raise RuntimeError(
+                "Cannot fetch specific version of experiments with --collapse "
+                "or --expand-versions."
+            )
 
     print_evc(experiments, **args)
 
 
 # pylint: disable=unused-argument
-def print_evc(experiments, version=None, all_trials=False, collapse=False,
-              expand_versions=False, **kwargs):
+def print_evc(
+    experiments,
+    version=None,
+    all_trials=False,
+    collapse=False,
+    expand_versions=False,
+    **kwargs
+):
     """Print each EVC tree
 
     Parameters
@@ -111,19 +133,24 @@ def get_experiments(args):
         Commandline arguments.
 
     """
-    projection = {'name': 1, 'version': 1, 'refers': 1}
+    projection = {"name": 1, "version": 1, "refers": 1}
 
-    query = {'name': args['name']} if args.get('name') else {}
+    query = {"name": args["name"]} if args.get("name") else {}
     experiments = get_storage().fetch_experiments(query, projection)
 
-    if args['name']:
+    if args["name"]:
         root_experiments = experiments
     else:
-        root_experiments = [exp for exp in experiments
-                            if exp['refers'].get('root_id', exp['_id']) == exp['_id']]
+        root_experiments = [
+            exp
+            for exp in experiments
+            if exp["refers"].get("root_id", exp["_id"]) == exp["_id"]
+        ]
 
-    return [experiment_builder.build_view(name=exp['name'], version=exp.get('version', 1))
-            for exp in root_experiments]
+    return [
+        experiment_builder.build_view(name=exp["name"], version=exp.get("version", 1))
+        for exp in root_experiments
+    ]
 
 
 def _has_named_children(exp):
@@ -188,15 +215,17 @@ def print_summary(trials, offset=0):
     for trial in trials:
         status_dict[trial.status].append(trial)
 
-    headers = ['status', 'quantity']
+    headers = ["status", "quantity"]
 
     lines = []
     for status, c_trials in sorted(status_dict.items()):
         line = [status, len(c_trials)]
 
         if c_trials[0].objective:
-            headers.append('min {}'.format(c_trials[0].objective.name))
-            line.append(min(trial.objective.value for trial in c_trials if trial.objective))
+            headers.append("min {}".format(c_trials[0].objective.name))
+            line.append(
+                min(trial.objective.value for trial in c_trials if trial.objective)
+            )
 
         lines.append(line)
 
@@ -205,7 +234,7 @@ def print_summary(trials, offset=0):
         tab = " " * offset
         print(tab + ("\n" + tab).join(grid.split("\n")))
     else:
-        print(" " * offset, 'empty', sep="")
+        print(" " * offset, "empty", sep="")
 
     print("\n")
 
@@ -221,20 +250,20 @@ def print_all_trials(trials, offset=0):
         The number of tabs to the right this experiment is.
 
     """
-    headers = ['id', 'status', 'best objective']
+    headers = ["id", "status", "best objective"]
     lines = []
 
     for trial in sorted(trials, key=lambda t: t.status):
         line = [trial.id, trial.status]
 
         if trial.objective:
-            headers[-1] = 'min {}'.format(trial.objective.name)
+            headers[-1] = "min {}".format(trial.objective.name)
             line.append(trial.objective.value)
 
         lines.append(line)
 
     if not trials:
-        lines.append(['empty', '', ''])
+        lines.append(["empty", "", ""])
 
     grid = tabulate.tabulate(lines, headers=headers)
     tab = " " * offset

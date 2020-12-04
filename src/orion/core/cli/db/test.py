@@ -18,17 +18,22 @@ from orion.core.cli.checks.presence import PresenceStage
 from orion.core.utils.exceptions import CheckError
 
 log = logging.getLogger(__name__)
-SHORT_DESCRIPTION = 'Verifies that the database is correctly configured'
+SHORT_DESCRIPTION = "Verifies that the database is correctly configured"
 
 
 def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
-    test_db_parser = parser.add_parser('test', help=SHORT_DESCRIPTION,
-                                       description=SHORT_DESCRIPTION)
+    test_db_parser = parser.add_parser(
+        "test", help=SHORT_DESCRIPTION, description=SHORT_DESCRIPTION
+    )
 
-    test_db_parser.add_argument('-c', '--config', type=argparse.FileType('r'),
-                                metavar='path-to-config', help="user provided "
-                                "orion configuration file")
+    test_db_parser.add_argument(
+        "-c",
+        "--config",
+        type=argparse.FileType("r"),
+        metavar="path-to-config",
+        help="user provided " "orion configuration file",
+    )
 
     test_db_parser.set_defaults(func=main)
 
@@ -44,7 +49,7 @@ def main(args):
 
     for stage in stages:
         for check in stage.checks():
-            print(check.__doc__, end='.. ')
+            print(check.__doc__, end=".. ")
             try:
                 status, msg = check()
                 print(status)

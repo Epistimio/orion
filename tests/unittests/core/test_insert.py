@@ -29,7 +29,7 @@ def categorical_space():
 
 def test_validate_input_value_real_real(real_space):
     """Test if real value passed to real space is validated properly"""
-    namespace = 'x'
+    namespace = "x"
     is_valid, casted_value = _validate_input_value("10.0", real_space, namespace)
     assert is_valid
     assert isinstance(casted_value, numbers.Number)
@@ -37,7 +37,7 @@ def test_validate_input_value_real_real(real_space):
 
 def test_validate_input_value_real_integer(real_space):
     """Test if integer value passed to real space is validated properly"""
-    namespace = 'x'
+    namespace = "x"
     is_valid, casted_value = _validate_input_value("10", real_space, namespace)
     assert is_valid
     assert isinstance(casted_value, numbers.Number)
@@ -45,14 +45,14 @@ def test_validate_input_value_real_integer(real_space):
 
 def test_validate_input_value_real_string(real_space):
     """Test if string value passed to real space is rejected properly"""
-    namespace = 'x'
+    namespace = "x"
     is_valid, casted_value = _validate_input_value("string", real_space, namespace)
     assert not is_valid
 
 
 def test_validate_input_value_real_out_of_bound(real_space):
     """Test if out of bound values passed to real space are rejected properly"""
-    namespace = 'x'
+    namespace = "x"
 
     is_valid, casted_value = _validate_input_value("100.0", real_space, namespace)
     assert not is_valid
@@ -63,7 +63,7 @@ def test_validate_input_value_real_out_of_bound(real_space):
 
 def test_validate_input_value_integer_real(integer_space):
     """Test if real value passed to integer space is validated properly"""
-    namespace = 'x'
+    namespace = "x"
 
     is_valid, casted_value = _validate_input_value("10.0", integer_space, namespace)
     assert is_valid
@@ -72,7 +72,7 @@ def test_validate_input_value_integer_real(integer_space):
 
 def test_validate_input_value_integer_integer(integer_space):
     """Test if integer value passed to integer space is validated properly"""
-    namespace = 'x'
+    namespace = "x"
 
     is_valid, casted_value = _validate_input_value("10", integer_space, namespace)
     assert is_valid
@@ -81,7 +81,7 @@ def test_validate_input_value_integer_integer(integer_space):
 
 def test_validate_input_value_integer_string(integer_space):
     """Test if string value passed to integer space is rejected properly"""
-    namespace = 'x'
+    namespace = "x"
 
     is_valid, casted_value = _validate_input_value("string", integer_space, namespace)
     assert not is_valid
@@ -89,7 +89,7 @@ def test_validate_input_value_integer_string(integer_space):
 
 def test_validate_input_value_integer_out_of_bound(integer_space):
     """Test if out of bound values passed to integer space are rejected properly"""
-    namespace = 'x'
+    namespace = "x"
 
     is_valid, casted_value = _validate_input_value("100.0", integer_space, namespace)
     assert not is_valid
@@ -100,7 +100,7 @@ def test_validate_input_value_integer_out_of_bound(integer_space):
 
 def test_validate_input_value_categorical_real_hit(categorical_space):
     """Test if real value passed to categorical space is validated properly"""
-    namespace = 'x'
+    namespace = "x"
 
     is_valid, casted_value = _validate_input_value("10.1", categorical_space, namespace)
     assert is_valid
@@ -109,7 +109,7 @@ def test_validate_input_value_categorical_real_hit(categorical_space):
 
 def test_validate_input_value_categorical_real_nohit(categorical_space):
     """Test if bad real value passed to categorical space is rejected properly"""
-    namespace = 'x'
+    namespace = "x"
 
     is_valid, casted_value = _validate_input_value("10", categorical_space, namespace)
     assert not is_valid
@@ -123,7 +123,7 @@ def test_validate_input_value_categorical_real_nohit(categorical_space):
 
 def test_validate_input_value_categorical_integer_hit(categorical_space):
     """Test if integer value passed to categorical space is validated properly"""
-    namespace = 'x'
+    namespace = "x"
 
     is_valid, casted_value = _validate_input_value("11", categorical_space, namespace)
     assert is_valid
@@ -136,7 +136,7 @@ def test_validate_input_value_categorical_integer_hit(categorical_space):
 
 def test_validate_input_value_categorical_integer_nohit(categorical_space):
     """Test if bad integer value passed to categorical space is rejected properly"""
-    namespace = 'x'
+    namespace = "x"
 
     is_valid, casted_value = _validate_input_value("15", categorical_space, namespace)
     assert not is_valid
@@ -144,7 +144,7 @@ def test_validate_input_value_categorical_integer_nohit(categorical_space):
 
 def test_validate_input_value_categorical_string_number(categorical_space):
     """Test if string number value passed to categorical space is validated properly"""
-    namespace = 'x'
+    namespace = "x"
 
     # Make sure integer 12 does not pass
     is_valid, casted_value = _validate_input_value("12", categorical_space, namespace)
@@ -158,11 +158,15 @@ def test_validate_input_value_categorical_string_number(categorical_space):
 
 def test_validate_input_value_categorical_string_value(categorical_space):
     """Test if literal string value passed to categorical space is validated properly"""
-    namespace = 'x'
+    namespace = "x"
 
-    is_valid, casted_value = _validate_input_value("random", categorical_space, namespace)
+    is_valid, casted_value = _validate_input_value(
+        "random", categorical_space, namespace
+    )
     assert not is_valid
 
-    is_valid, casted_value = _validate_input_value("string", categorical_space, namespace)
+    is_valid, casted_value = _validate_input_value(
+        "string", categorical_space, namespace
+    )
     assert is_valid
     assert isinstance(casted_value, str)

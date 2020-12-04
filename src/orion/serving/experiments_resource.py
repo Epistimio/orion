@@ -15,7 +15,10 @@ from falcon import Request, Response
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial
 from orion.serving.parameters import retrieve_experiment, verify_query_parameters
-from orion.serving.responses import build_experiment_response, build_experiments_response
+from orion.serving.responses import (
+    build_experiment_response,
+    build_experiments_response,
+)
 from orion.storage.base import get_storage
 
 
@@ -38,8 +41,8 @@ class ExperimentsResource(object):
         Handle GET requests for experiments/:name where `name` is
         the user-defined name of the experiment
         """
-        verify_query_parameters(req.params, ['version'])
-        version = req.get_param_as_int('version')
+        verify_query_parameters(req.params, ["version"])
+        version = req.get_param_as_int("version")
         experiment = retrieve_experiment(name, version)
 
         status = _retrieve_status(experiment)
@@ -54,8 +57,8 @@ def _find_latest_versions(experiments):
     """Find the latest versions of the experiments"""
     leaf_experiments = {}
     for experiment in experiments:
-        name = experiment['name']
-        version = experiment['version']
+        name = experiment["name"]
+        version = experiment["version"]
 
         if name in leaf_experiments:
             leaf_experiments[name] = max(leaf_experiments[name], version)
@@ -79,7 +82,7 @@ def _retrieve_algorithm(experiment: Experiment) -> dict:
     """Populates the `algorithm` key with the configuration of the experiment's algorithm."""
     algorithm_name = list(experiment.algorithms.configuration.keys())[0]
 
-    result = {'name': algorithm_name}
+    result = {"name": algorithm_name}
     result.update(experiment.algorithms.configuration[algorithm_name])
     return result
 
@@ -89,4 +92,4 @@ def _retrieve_best_trial(experiment: Experiment) -> Optional[Trial]:
     if not experiment.stats:
         return None
 
-    return experiment.get_trial(uid=experiment.stats['best_trials_id'])
+    return experiment.get_trial(uid=experiment.stats["best_trials_id"])

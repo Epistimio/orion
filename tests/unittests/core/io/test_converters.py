@@ -5,9 +5,12 @@ import os
 
 import pytest
 
-from orion.core.io.convert import (GenericConverter, infer_converter_from_file_type,
-                                   JSONConverter, YAMLConverter)
-
+from orion.core.io.convert import (
+    GenericConverter,
+    JSONConverter,
+    YAMLConverter,
+    infer_converter_from_file_type,
+)
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -33,7 +36,7 @@ def test_unknown_file_ext(unknown_type_sample_path):
 @pytest.fixture()
 def generic_converter():
     """Return a generic converter."""
-    return GenericConverter(expression_prefix='o~')
+    return GenericConverter(expression_prefix="o~")
 
 
 class TestGenericConverter(object):
@@ -43,28 +46,29 @@ class TestGenericConverter(object):
         """Test parsing method."""
         ret = generic_converter.parse(unknown_type_sample_path)
         assert ret == {
-            'lalala': 'o~uniform(1, 3, shape=(100, 3))',
-            'lala': {
-                'la': 'o~uniform(1, 3, shape=(100, 3))',
-                'l2a': 'o~+gaussian(0, 0.1, shape=(100, 3))'
-                },
-            '': {
-                'lala': {
-                    'iela': 'o~uniform(1, 3, shape=(100, 3))',
-                    '': {
-                        'iela': 'o~uniform(1, 3, shape=(100, 3))',
-                        },
+            "lalala": "o~uniform(1, 3, shape=(100, 3))",
+            "lala": {
+                "la": "o~uniform(1, 3, shape=(100, 3))",
+                "l2a": "o~+gaussian(0, 0.1, shape=(100, 3))",
+            },
+            "": {
+                "lala": {
+                    "iela": "o~uniform(1, 3, shape=(100, 3))",
+                    "": {
+                        "iela": "o~uniform(1, 3, shape=(100, 3))",
                     },
                 },
-            'aaalispera': 'o~normal(3, 1)',
-            'a': 'o~normal(5, 3)',
-            'b': 'o~>a_serious_name',
-            'a_serious_name': 'o~-',
-            'another_serious_name': 'o~loguniform(0.001, 0.5)',
-            }
+            },
+            "aaalispera": "o~normal(3, 1)",
+            "a": "o~normal(5, 3)",
+            "b": "o~>a_serious_name",
+            "a_serious_name": "o~-",
+            "another_serious_name": "o~loguniform(0.001, 0.5)",
+        }
 
-        assert generic_converter.template == \
-            """{lalala!s}
+        assert (
+            generic_converter.template
+            == """{lalala!s}
 
 {/lala/la!s}
 {//lala/iela!s}
@@ -96,34 +100,35 @@ a_var = {b!s}
 
 {lala/l2a!s}
 """
+        )
 
     def test_bad_parse_1(self, generic_converter):
         """Check that conflict is reported when duplicates are present."""
-        BAD_UNKNOWN_SAMPLE_1 = os.path.join(TEST_DIR, '..', 'bad_config1.txt')
+        BAD_UNKNOWN_SAMPLE_1 = os.path.join(TEST_DIR, "..", "bad_config1.txt")
         with pytest.raises(ValueError) as exc:
             generic_converter.parse(BAD_UNKNOWN_SAMPLE_1)
-        assert '/lala/la' in str(exc.value)
+        assert "/lala/la" in str(exc.value)
 
     def test_bad_parse_2(self, generic_converter):
         """Check that conflict is reported even when more sneaky duplicate happens."""
-        BAD_UNKNOWN_SAMPLE_2 = os.path.join(TEST_DIR, '..', 'bad_config2.txt')
+        BAD_UNKNOWN_SAMPLE_2 = os.path.join(TEST_DIR, "..", "bad_config2.txt")
         with pytest.raises(ValueError) as exc:
             generic_converter.parse(BAD_UNKNOWN_SAMPLE_2)
-        assert 'lala/la' in str(exc.value)
+        assert "lala/la" in str(exc.value)
 
     def test_bad_parse_3(self, generic_converter):
         """Check that conflict is reported if a namespace points is both and not final."""
-        BAD_UNKNOWN_SAMPLE_3 = os.path.join(TEST_DIR, '..', 'bad_config3.txt')
+        BAD_UNKNOWN_SAMPLE_3 = os.path.join(TEST_DIR, "..", "bad_config3.txt")
         with pytest.raises(ValueError) as exc:
             generic_converter.parse(BAD_UNKNOWN_SAMPLE_3)
-        assert 'lala' in str(exc.value)
+        assert "lala" in str(exc.value)
 
     def test_bad_parse_4(self, generic_converter):
         """Check that conflict is reported if a namespace points is both and not final."""
-        BAD_UNKNOWN_SAMPLE_4 = os.path.join(TEST_DIR, '..', 'bad_config4.txt')
+        BAD_UNKNOWN_SAMPLE_4 = os.path.join(TEST_DIR, "..", "bad_config4.txt")
         with pytest.raises(ValueError) as exc:
             generic_converter.parse(BAD_UNKNOWN_SAMPLE_4)
-        assert 'lala' in str(exc.value)
+        assert "lala" in str(exc.value)
 
     def test_generate(self, tmpdir, generic_converter, unknown_type_sample_path):
         """Check generation of a particular instance of configuration."""
@@ -131,31 +136,32 @@ a_var = {b!s}
 
         output_file = str(tmpdir.join("output.lalal"))
         data = {
-            'lalala': 'ispi',
-            'lala': {
-                'la': 5,
-                'l2a': '+gaussian(0, 0.1, shape=(100, 3))',
-                },
-            '': {
-                'lala': {
-                    'iela': 1,
-                    '': {
-                        'iela': 2,
-                        },
+            "lalala": "ispi",
+            "lala": {
+                "la": 5,
+                "l2a": "+gaussian(0, 0.1, shape=(100, 3))",
+            },
+            "": {
+                "lala": {
+                    "iela": 1,
+                    "": {
+                        "iela": 2,
                     },
                 },
-            'aaalispera': 3,
-            'a': 4,
-            'b': 'o~>a_serious_name',
-            'a_serious_name': 'o~-',
-            'another_serious_name': [1, 3],
-            }
+            },
+            "aaalispera": 3,
+            "a": 4,
+            "b": "o~>a_serious_name",
+            "a_serious_name": "o~-",
+            "another_serious_name": [1, 3],
+        }
         generic_converter.generate(output_file, data)
 
         with open(output_file) as f:
             out = f.read()
-        assert out == \
-            """ispi
+        assert (
+            out
+            == """ispi
 
 5
 1
@@ -187,38 +193,45 @@ a_var = o~>a_serious_name
 
 +gaussian(0, 0.1, shape=(100, 3))
 """
+        )
 
-    def test_get_state_dict(self, unknown_type_sample_path, unknown_type_template_path,
-                            generic_converter):
+    def test_get_state_dict(
+        self, unknown_type_sample_path, unknown_type_template_path, generic_converter
+    ):
         """Test getting state dict."""
         generic_converter.parse(unknown_type_sample_path)
         assert generic_converter.get_state_dict() == {
-            'expression_prefix': 'o~',
-            'has_leading': {
-                '/lala//iela': '/',
-                '/lala/iela': '/',
-                'lala/la': '/'},
-            'regex': '([\\/]?[\\w|\\/|-]+)~([\\+]?.*\\)|\\-|\\>[A-Za-z_]\\w*)',
-            'template': open(unknown_type_template_path, 'r').read()}
+            "expression_prefix": "o~",
+            "has_leading": {"/lala//iela": "/", "/lala/iela": "/", "lala/la": "/"},
+            "regex": "([\\/]?[\\w|\\/|-]+)~([\\+]?.*\\)|\\-|\\>[A-Za-z_]\\w*)",
+            "template": open(unknown_type_template_path, "r").read(),
+        }
 
     def test_set_state_dict(self, tmpdir, generic_converter):
         """Test that set_state_dict sets state properly to generate new config."""
-        generic_converter.set_state_dict({
-            'expression_prefix': '',
-            'has_leading': {
-                'voici': '/'},
-            'regex': generic_converter.regex.pattern,
-            'template': """\
+        generic_converter.set_state_dict(
+            {
+                "expression_prefix": "",
+                "has_leading": {"voici": "/"},
+                "regex": generic_converter.regex.pattern,
+                "template": """\
 voici = {/voici}
-voila = voici + {voila}"""})
+voila = voici + {voila}""",
+            }
+        )
 
         output_file = str(tmpdir.join("output.lalal"))
 
-        generic_converter.generate(output_file, {'/voici': 'me voici', 'voila': 'me voila'})
+        generic_converter.generate(
+            output_file, {"/voici": "me voici", "voila": "me voila"}
+        )
 
         with open(output_file) as f:
             out = f.read()
 
-        assert out == """\
+        assert (
+            out
+            == """\
 voici = me voici
 voila = voici + me voila"""
+        )

@@ -10,16 +10,15 @@
       algorithm can operate on.
 
 """
-from abc import (ABCMeta, abstractmethod)
 import functools
 import itertools
+from abc import ABCMeta, abstractmethod
 
 import numpy
 
-from orion.algo.space import (Categorical, Dimension, Fidelity, Integer, Real, Space)
+from orion.algo.space import Categorical, Dimension, Fidelity, Integer, Real, Space
 
-
-NON_LINEAR = ['loguniform', 'reciprocal']
+NON_LINEAR = ["loguniform", "reciprocal"]
 
 
 # pylint: disable=unused-argument
@@ -49,10 +48,11 @@ def build_transform(dim, type_requirement, dist_requirement):
 @build_transform.register(Categorical)
 def _(dim, type_requirement, dist_requirement):
     transformers = []
-    if type_requirement == 'real':
-        transformers.extend([Enumerate(dim.categories),
-                             OneHotEncode(len(dim.categories))])
-    elif type_requirement in ['integer', 'numerical']:
+    if type_requirement == "real":
+        transformers.extend(
+            [Enumerate(dim.categories), OneHotEncode(len(dim.categories))]
+        )
+    elif type_requirement in ["integer", "numerical"]:
         transformers.append(Enumerate(dim.categories))
 
     return transformers
@@ -66,12 +66,12 @@ def _(dim, type_requirement, dist_requirement):
 @build_transform.register(Integer)
 def _(dim, type_requirement, dist_requirement):
     transformers = []
-    if dist_requirement == 'linear' and dim.prior_name[4:] in NON_LINEAR:
+    if dist_requirement == "linear" and dim.prior_name[4:] in NON_LINEAR:
         transformers.extend([Reverse(Quantize()), Linearize()])
         # Turn back to integer because Linearize outputs real
-        if type_requirement != 'real':
+        if type_requirement != "real":
             transformers.extend([Quantize()])
-    elif type_requirement == 'real':
+    elif type_requirement == "real":
         transformers.append(Reverse(Quantize()))
 
     return transformers
@@ -83,9 +83,9 @@ def _(dim, type_requirement, dist_requirement):
     if dim.precision is not None:
         transformers.append(Precision(dim.precision))
 
-    if dist_requirement == 'linear' and dim.prior_name in NON_LINEAR:
+    if dist_requirement == "linear" and dim.prior_name in NON_LINEAR:
         transformers.append(Linearize())
-    elif type_requirement == 'integer':
+    elif type_requirement == "integer":
         transformers.append(Quantize())
 
     return transformers
@@ -98,8 +98,7 @@ def transform(original_space, type_requirement, dist_requirement):
         transformers = build_transform(dim, type_requirement, dist_requirement)
         space.register(
             TransformedDimension(
-                transformer=Compose(transformers, dim.type),
-                original_dimension=dim
+                transformer=Compose(transformers, dim.type), original_dimension=dim
             )
         )
 
@@ -121,7 +120,7 @@ def reshape(space, shape_requirement):
                 ReshapedDimension(
                     transformer=Identity(dim.type),
                     original_dimension=dim,
-                    index=dim_index
+                    index=dim_index,
                 )
             )
         else:
@@ -132,7 +131,7 @@ def reshape(space, shape_requirement):
                         transformer=View(dim.shape, index, dim.type),
                         original_dimension=dim,
                         name=key,
-                        index=dim_index
+                        index=dim_index,
                     )
                 )
 
@@ -140,7 +139,8 @@ def reshape(space, shape_requirement):
 
 
 def build_required_space(
-        original_space, type_requirement=None, shape_requirement=None, dist_requirement=None):
+    original_space, type_requirement=None, shape_requirement=None, dist_requirement=None
+):
     """Build a `Space` object which agrees to the `requirements` imposed
     by the desired optimization algorithm.
 
@@ -268,8 +268,10 @@ class Compose(Transformer):
             self.composition = Compose(transformers[:-1], base_domain_type)
         else:
             self.composition = Identity(base_domain_type)
-        assert self.apply.domain_type is None or \
-            self.composition.target_type == self.apply.domain_type
+        assert (
+            self.apply.domain_type is None
+            or self.composition.target_type == self.apply.domain_type
+        )
 
     def transform(self, point):
         """Apply transformers in the increasing order of the `transformers` list."""
@@ -284,7 +286,7 @@ class Compose(Transformer):
 
     def interval(self, alpha=1.0):
         """Return interval of composed transformation."""
-        if hasattr(self.apply, 'interval'):
+        if hasattr(self.apply, "interval"):
             return self.apply.interval(alpha)
 
         return None
@@ -312,16 +314,20 @@ class Compose(Transformer):
 
     # pylint:disable=protected-access
     def _get_hashable_members(self):
-        return ((self.__class__.__name__, ) +
-                self.apply._get_hashable_members() +
-                self.composition._get_hashable_members())
+        return (
+            (self.__class__.__name__,)
+            + self.apply._get_hashable_members()
+            + self.composition._get_hashable_members()
+        )
 
 
 class Reverse(Transformer):
     """Apply the reverse transformation that another one would do."""
 
     def __init__(self, transformer: Transformer):
-        assert not isinstance(transformer, OneHotEncode), "real to categorical is pointless"
+        assert not isinstance(
+            transformer, OneHotEncode
+        ), "real to categorical is pointless"
         self.transformer = transformer
 
     def transform(self, point):
@@ -335,7 +341,9 @@ class Reverse(Transformer):
 
     def repr_format(self, what):
         """Format a string for calling ``__repr__`` in `TransformedDimension`."""
-        return "{}{}".format(self.__class__.__name__, self.transformer.repr_format(what))
+        return "{}{}".format(
+            self.__class__.__name__, self.transformer.repr_format(what)
+        )
 
     @property
     def target_type(self):
@@ -351,8 +359,8 @@ class Reverse(Transformer):
 class Precision(Transformer):
     """Round real numbers to requested precision."""
 
-    domain_type = 'real'
-    target_type = 'real'
+    domain_type = "real"
+    target_type = "real"
 
     def __init__(self, precision=4):
         self.precision = precision
@@ -360,12 +368,20 @@ class Precision(Transformer):
     def transform(self, point):
         """Round `point` to the requested precision, as numpy arrays."""
         # numpy.format_float_scientific precision starts at 0
-        if isinstance(point, (list, tuple)) or (isinstance(point, numpy.ndarray) and point.shape):
-            point = map(lambda x: numpy.format_float_scientific(x, precision=self.precision - 1),
-                        point)
+        if isinstance(point, (list, tuple)) or (
+            isinstance(point, numpy.ndarray) and point.shape
+        ):
+            point = map(
+                lambda x: numpy.format_float_scientific(
+                    x, precision=self.precision - 1
+                ),
+                point,
+            )
             point = list(map(float, point))
         else:
-            point = float(numpy.format_float_scientific(point, precision=self.precision - 1))
+            point = float(
+                numpy.format_float_scientific(point, precision=self.precision - 1)
+            )
 
         return numpy.asarray(point)
 
@@ -382,8 +398,8 @@ class Precision(Transformer):
 class Quantize(Transformer):
     """Transform real numbers to integers, violating injection."""
 
-    domain_type = 'real'
-    target_type = 'integer'
+    domain_type = "real"
+    target_type = "integer"
 
     def transform(self, point):
         """Cast `point` to the floor and then to integers, as numpy arrays."""
@@ -391,8 +407,10 @@ class Quantize(Transformer):
 
         if numpy.any(numpy.isinf(point)):
             isinf = int(numpy.isinf(point))
-            quantized = (isinf * (quantized - 1) * int(numpy.sign(point)) +
-                         (1 - isinf) * (quantized - 1)).astype(int)
+            quantized = (
+                isinf * (quantized - 1) * int(numpy.sign(point))
+                + (1 - isinf) * (quantized - 1)
+            ).astype(int)
 
         return quantized
 
@@ -408,13 +426,13 @@ class Enumerate(Transformer):
     Effectively transform from a list of objects to a range of integers.
     """
 
-    domain_type = 'categorical'
-    target_type = 'integer'
+    domain_type = "categorical"
+    target_type = "integer"
 
     def __init__(self, categories):
         self.categories = categories
         map_dict = {cat: i for i, cat in enumerate(categories)}
-        self._map = numpy.vectorize(lambda x: map_dict[x], otypes='i')
+        self._map = numpy.vectorize(lambda x: map_dict[x], otypes="i")
         self._imap = numpy.vectorize(lambda x: categories[x], otypes=[numpy.object])
 
     def __deepcopy__(self, memo):
@@ -445,8 +463,8 @@ class Enumerate(Transformer):
 class OneHotEncode(Transformer):
     """Encode categories to a 1-hot integer space representation."""
 
-    domain_type = 'integer'
-    target_type = 'real'
+    domain_type = "integer"
+    target_type = "real"
 
     def __init__(self, bound: int):
         self.num_cats = bound
@@ -460,15 +478,19 @@ class OneHotEncode(Transformer):
         .. note:: This transformation possibly appends one more tensor dimension to `point`.
         """
         point_ = numpy.asarray(point)
-        assert numpy.all(point_ < self.num_cats) and numpy.all(point_ >= 0) and\
-            numpy.all(point_ % 1 == 0)
+        assert (
+            numpy.all(point_ < self.num_cats)
+            and numpy.all(point_ >= 0)
+            and numpy.all(point_ % 1 == 0)
+        )
 
         if self.num_cats <= 2:
             return numpy.asarray(point_, dtype=float)
 
         hot = numpy.zeros(self.infer_target_shape(point_.shape))
-        grid = numpy.meshgrid(*[numpy.arange(dim) for dim in point_.shape],
-                              indexing='ij')
+        grid = numpy.meshgrid(
+            *[numpy.arange(dim) for dim in point_.shape], indexing="ij"
+        )
         hot[grid + [point_]] = 1
         return hot
 
@@ -511,14 +533,14 @@ class OneHotEncode(Transformer):
         return tuple(list(shape) + [self.num_cats]) if self.num_cats > 2 else shape
 
     def _get_hashable_members(self):
-        return super(OneHotEncode, self)._get_hashable_members() + (self.num_cats, )
+        return super(OneHotEncode, self)._get_hashable_members() + (self.num_cats,)
 
 
 class Linearize(Transformer):
     """Transform real numbers from loguniform to linear."""
 
-    domain_type = 'real'
-    target_type = 'real'
+    domain_type = "real"
+    target_type = "real"
 
     def transform(self, point):
         """Linearize logarithmic distribution."""
@@ -549,7 +571,7 @@ class View(Transformer):
 
     def reverse(self, transformed_point, index=None):
         """Only return packend point if view of first element, otherwise drop."""
-        subset = transformed_point[index:index + numpy.prod(self.shape)]
+        subset = transformed_point[index : index + numpy.prod(self.shape)]
         return numpy.array(subset).reshape(self.shape)
 
     def interval(self, interval):
@@ -568,8 +590,9 @@ class View(Transformer):
 
     def repr_format(self, what):
         """Format a string for calling ``__repr__`` in `TransformedDimension`."""
-        return "{}(shape={}, index={}, {})".format(self.__class__.__name__, self.shape, self.index,
-                                                   what)
+        return "{}(shape={}, index={}, {})".format(
+            self.__class__.__name__, self.shape, self.index, what
+        )
 
 
 class TransformedDimension(object):
@@ -595,11 +618,11 @@ class TransformedDimension(object):
 
     def interval(self, alpha=1.0):
         """Map the interval bounds to the transformed ones."""
-        if hasattr(self.transformer, 'interval'):
+        if hasattr(self.transformer, "interval"):
             interval = self.transformer.interval()
             if interval:
                 return interval
-        if self.original_dimension.type == 'categorical':
+        if self.original_dimension.type == "categorical":
             return self.original_dimension.categories
 
         low, high = self.original_dimension.interval(alpha)
@@ -626,8 +649,10 @@ class TransformedDimension(object):
         if not (hasattr(other, "transformer") and hasattr(other, "original_dimension")):
             return False
 
-        return (self.transformer == other.transformer and
-                self.original_dimension == other.original_dimension)
+        return (
+            self.transformer == other.transformer
+            and self.original_dimension == other.original_dimension
+        )
 
     def __hash__(self):
         """Hash of the transformed dimension"""
@@ -636,8 +661,10 @@ class TransformedDimension(object):
     # pylint:disable=protected-access
     def _get_hashable_members(self):
         """Hashable members of transformation and original dimension"""
-        return (self.transformer._get_hashable_members() +
-                self.original_dimension._get_hashable_members())
+        return (
+            self.transformer._get_hashable_members()
+            + self.original_dimension._get_hashable_members()
+        )
 
     def validate(self):
         """Validate original_dimension"""
@@ -652,7 +679,7 @@ class TransformedDimension(object):
     def type(self):
         """Ask transformer which is its target class."""
         type_ = self.transformer.target_type
-        return type_ if type_ != 'invariant' else self.original_dimension.type
+        return type_ if type_ != "invariant" else self.original_dimension.type
 
     @property
     def prior_name(self):
@@ -667,16 +694,16 @@ class TransformedDimension(object):
     @property
     def cardinality(self):
         """Wrap original `Dimension` capacity"""
-        if self.type == 'real':
+        if self.type == "real":
             return Real.get_cardinality(self.shape, self.interval())
-        elif self.type == 'integer':
+        elif self.type == "integer":
             return Integer.get_cardinality(self.shape, self.interval())
-        elif self.type == 'categorical':
+        elif self.type == "categorical":
             return Categorical.get_cardinality(self.shape, self.interval())
-        elif self.type == 'fidelity':
+        elif self.type == "fidelity":
             return Fidelity.get_cardinality(self.shape, self.interval())
         else:
-            raise RuntimeError(f'No cardinality can be computed for type `{self.type}`')
+            raise RuntimeError(f"No cardinality can be computed for type `{self.type}`")
 
 
 class ReshapedDimension(TransformedDimension):
@@ -705,7 +732,7 @@ class ReshapedDimension(TransformedDimension):
     def interval(self, alpha=1.0):
         """Map the interval bounds to the transformed ones."""
         interval = self.original_dimension.interval(alpha)
-        if hasattr(interval[0], 'shape') and numpy.prod(interval[0].shape) > 1:
+        if hasattr(interval[0], "shape") and numpy.prod(interval[0].shape) > 1:
             return self.transformer.interval(interval)
 
         return interval
@@ -758,7 +785,9 @@ class TransformedSpace(Space):
         """Reverses transformation so that a point from this `TransformedSpace`
         to be in the original one.
         """
-        return tuple([dim.reverse(transformed_point[i]) for i, dim in enumerate(self.values())])
+        return tuple(
+            [dim.reverse(transformed_point[i]) for i, dim in enumerate(self.values())]
+        )
 
     def sample(self, n_samples=1, seed=None):
         """Sample from the original dimension and forward transform them."""
@@ -832,8 +861,10 @@ class ReshapedSpace(Space):
         try:
             len(value)
         except TypeError as exc:
-            raise TypeError("Can check only for dimension names or "
-                            "for tuples with parameter values.") from exc
+            raise TypeError(
+                "Can check only for dimension names or "
+                "for tuples with parameter values."
+            ) from exc
 
         if not self:
             return False

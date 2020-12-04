@@ -28,7 +28,7 @@ class WebApi(falcon.API):
         super(WebApi, self).__init__()
         self.config = config
 
-        setup_storage(config.get('storage'))
+        setup_storage(config.get("storage"))
 
         # Create our resources
         root_resource = RuntimeResource()
@@ -37,15 +37,25 @@ class WebApi(falcon.API):
         plots_resource = PlotsResource()
 
         # Build routes
-        self.add_route('/', root_resource)
-        self.add_route('/experiments', experiments_resource)
-        self.add_route('/experiments/{name}', experiments_resource, suffix="experiment")
-        self.add_route('/trials/{experiment_name}', trials_resource, suffix='trials_in_experiment')
-        self.add_route('/trials/{experiment_name}/{trial_id}',
-                       trials_resource, suffix='trial_in_experiment')
-        self.add_route('/plots/regret/{experiment_name}', plots_resource, suffix='regret')
-        self.add_route('/plots/parallel_coordinates/{experiment_name}',
-                       plots_resource, suffix='parallel_coordinates')
+        self.add_route("/", root_resource)
+        self.add_route("/experiments", experiments_resource)
+        self.add_route("/experiments/{name}", experiments_resource, suffix="experiment")
+        self.add_route(
+            "/trials/{experiment_name}", trials_resource, suffix="trials_in_experiment"
+        )
+        self.add_route(
+            "/trials/{experiment_name}/{trial_id}",
+            trials_resource,
+            suffix="trial_in_experiment",
+        )
+        self.add_route(
+            "/plots/regret/{experiment_name}", plots_resource, suffix="regret"
+        )
+        self.add_route(
+            "/plots/parallel_coordinates/{experiment_name}",
+            plots_resource,
+            suffix="parallel_coordinates",
+        )
 
     def start(self):
         """A hook to when a Gunicorn worker calls run()."""

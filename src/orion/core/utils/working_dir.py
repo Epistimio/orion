@@ -39,8 +39,9 @@ class WorkingDir:
             os.makedirs(path, exist_ok=True)
             return path
 
-        self._tmpdir = tempfile.TemporaryDirectory(suffix=self._suffix, prefix=self._prefix,
-                                                   dir=self.working_dir)
+        self._tmpdir = tempfile.TemporaryDirectory(
+            suffix=self._suffix, prefix=self._prefix, dir=self.working_dir
+        )
         return self._tmpdir.name
 
     def __exit__(self, exc_type, exc_value, traceback):

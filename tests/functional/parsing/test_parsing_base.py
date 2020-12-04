@@ -28,8 +28,8 @@ def test_common_group_arguments(database, monkeypatch):
 
     cli.get_basic_args_group(parser)
     args = vars(parser.parse_args(args_list))
-    assert args['name'] == 'test'
-    assert args['config'].name == "./orion_config_random.yaml"
+    assert args["name"] == "test"
+    assert args["config"].name == "./orion_config_random.yaml"
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -41,8 +41,8 @@ def test_user_group_arguments(database, monkeypatch):
 
     cli.get_user_args_group(parser)
     args = vars(parser.parse_args(args_list))
-    assert len(args['user_args']) == 2
-    assert args['user_args'] == ['./black_box.py', '-x~normal(50,50)']
+    assert len(args["user_args"]) == 2
+    assert args["user_args"] == ["./black_box.py", "-x~normal(50,50)"]
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -50,13 +50,19 @@ def test_common_and_user_group_arguments(database, monkeypatch):
     """Test the parsing of the command and user groups"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     parser = _create_parser(False)
-    args_list = ["-n", "test", "-c", "./orion_config_random.yaml",
-                 "./black_box.py", "-x~normal(50,50)"]
+    args_list = [
+        "-n",
+        "test",
+        "-c",
+        "./orion_config_random.yaml",
+        "./black_box.py",
+        "-x~normal(50,50)",
+    ]
 
     cli.get_basic_args_group(parser)
     cli.get_user_args_group(parser)
     args = vars(parser.parse_args(args_list))
-    assert args['name'] == 'test'
-    assert args['config'].name == './orion_config_random.yaml'
-    assert len(args['user_args']) == 2
-    assert args['user_args'] == ['./black_box.py', '-x~normal(50,50)']
+    assert args["name"] == "test"
+    assert args["config"].name == "./orion_config_random.yaml"
+    assert len(args["user_args"]) == 2
+    assert args["user_args"] == ["./black_box.py", "-x~normal(50,50)"]

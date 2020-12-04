@@ -8,12 +8,12 @@
    :synopsis: Helper functions useful in possibly all :mod:`orion.core`'s modules.
 """
 
+import logging
+import os
 from abc import ABCMeta
 from collections import defaultdict
 from glob import glob
 from importlib import import_module
-import logging
-import os
 
 import pkg_resources
 
@@ -49,10 +49,16 @@ class Factory(ABCMeta):
         cls.modules = []
         base = import_module(cls.__base__.__module__)
         try:
-            py_files = glob(os.path.abspath(os.path.join(base.__path__[0], '[A-Za-z]*.py')))
-            py_mods = map(lambda x: '.' + os.path.split(os.path.splitext(x)[0])[1], py_files)
+            py_files = glob(
+                os.path.abspath(os.path.join(base.__path__[0], "[A-Za-z]*.py"))
+            )
+            py_mods = map(
+                lambda x: "." + os.path.split(os.path.splitext(x)[0])[1], py_files
+            )
             for py_mod in py_mods:
-                cls.modules.append(import_module(py_mod, package=cls.__base__.__module__))
+                cls.modules.append(
+                    import_module(py_mod, package=cls.__base__.__module__)
+                )
         except AttributeError:
             # This means that base class and implementations reside in a module
             # itself and not a subpackage.
@@ -61,9 +67,13 @@ class Factory(ABCMeta):
         # Get types advertised through entry points!
         for entry_point in pkg_resources.iter_entry_points(cls.__name__):
             entry_point.load()
-            log.debug("Found a %s %s from distribution: %s=%s",
-                      entry_point.name, cls.__name__,
-                      entry_point.dist.project_name, entry_point.dist.version)
+            log.debug(
+                "Found a %s %s from distribution: %s=%s",
+                entry_point.name,
+                cls.__name__,
+                entry_point.dist.project_name,
+                entry_point.dist.version,
+            )
 
         # Get types visible from base module or package, but internal
         def get_all_subclasses(parent):
@@ -104,7 +114,8 @@ class Factory(ABCMeta):
                 return inherited_class.__call__(*args, **kwargs)
 
         error = "Could not find implementation of {0}, type = '{1}'".format(
-            cls.__base__.__name__, of_type)
+            cls.__base__.__name__, of_type
+        )
         error += "\nCurrently, there is an implementation for types:\n"
         error += str(cls.typenames)
         raise NotImplementedError(error)

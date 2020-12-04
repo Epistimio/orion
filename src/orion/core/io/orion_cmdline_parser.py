@@ -16,26 +16,25 @@ CmdlineParser provides an interface to parse command line arguments from input b
 utility functions to build it again as a list or an already formatted string.
 """
 
-from collections import defaultdict, OrderedDict
 import copy
 import errno
 import logging
 import os
 import re
 import shutil
+from collections import OrderedDict, defaultdict
 
 from orion.core.io.cmdline_parser import CmdlineParser
 from orion.core.io.convert import infer_converter_from_file_type
-
 
 log = logging.getLogger(__name__)
 
 
 def _is_nonprior_wave(arg):
-    return arg.startswith('/') or arg == ''
+    return arg.startswith("/") or arg == ""
 
 
-class OrionCmdlineParser():
+class OrionCmdlineParser:
     """Python interface commandline parser
 
     The `OrionCmdlineParser` is used as a way to obtain the parsing process of Orion
@@ -79,7 +78,7 @@ class OrionCmdlineParser():
 
     """
 
-    def __init__(self, config_prefix='config', allow_non_existing_files=False):
+    def __init__(self, config_prefix="config", allow_non_existing_files=False):
         """Create an `OrionCmdlineParser`."""
         self.parser = CmdlineParser()
         self.cmd_priors = OrderedDict()
@@ -94,13 +93,15 @@ class OrionCmdlineParser():
         self.user_script = None
 
         # Extraction methods for the file parsing part.
-        self._extraction_method = {dict: self._extract_dict,
-                                   defaultdict: self._extract_defaultdict,
-                                   list: self._extract_list,
-                                   str: self._extract_file_string}
+        self._extraction_method = {
+            dict: self._extract_dict,
+            defaultdict: self._extract_defaultdict,
+            list: self._extract_list,
+            str: self._extract_file_string,
+        }
 
         # Look for anything followed by a tilt and possible branching attributes + prior
-        self.prior_regex = re.compile(r'(.+)~([\+\-\>]?.+)')
+        self.prior_regex = re.compile(r"(.+)~([\+\-\>]?.+)")
 
     def get_state_dict(self):
         """Give state dict that can be used to reconstruct the parser"""
@@ -111,22 +112,23 @@ class OrionCmdlineParser():
             config_file_data=self.config_file_data,
             config_prefix=self.config_prefix,
             file_config_path=self.file_config_path,
-            converter=self.converter.get_state_dict() if self.converter else None)
+            converter=self.converter.get_state_dict() if self.converter else None,
+        )
 
     def set_state_dict(self, state):
         """Reset the parser based on previous state"""
-        self.parser.set_state_dict(state['parser'])
+        self.parser.set_state_dict(state["parser"])
 
-        self.cmd_priors = OrderedDict(state['cmd_priors'])
-        self.file_priors = OrderedDict(state['file_priors'])
+        self.cmd_priors = OrderedDict(state["cmd_priors"])
+        self.file_priors = OrderedDict(state["file_priors"])
 
-        self.config_file_data = state['config_file_data']
-        self.config_prefix = state['config_prefix']
-        self.file_config_path = state['file_config_path']
+        self.config_file_data = state["config_file_data"]
+        self.config_prefix = state["config_prefix"]
+        self.file_config_path = state["file_config_path"]
 
         if self.file_config_path:
             self.converter = infer_converter_from_file_type(self.file_config_path)
-            self.converter.set_state_dict(state['converter'])
+            self.converter.set_state_dict(state["converter"])
 
     def parse(self, commandline):
         """Parse the commandline given for the definition of priors.
@@ -148,8 +150,10 @@ class OrionCmdlineParser():
 
         duplicated_priors = set(self.cmd_priors.keys()) & set(self.file_priors.keys())
         if duplicated_priors:
-            raise ValueError("Conflict: definition of same prior in commandline and config: "
-                             "{}".format(duplicated_priors))
+            raise ValueError(
+                "Conflict: definition of same prior in commandline and config: "
+                "{}".format(duplicated_priors)
+            )
 
     def infer_user_script(self, user_args):
         """Infer the script name and perform some checks"""
@@ -157,15 +161,21 @@ class OrionCmdlineParser():
             return
 
         # TODO: Parse commandline for any options to python and pick the script filepath properly
-        if user_args[0] == 'python':
+        if user_args[0] == "python":
             user_script = user_args[1]
         else:
             user_script = user_args[0]
 
-        if (not os.path.exists(user_script) and not shutil.which(user_script) and
-                not self.allow_non_existing_files):
-            raise OSError(errno.ENOENT, "The path specified for the script does not exist",
-                          user_script)
+        if (
+            not os.path.exists(user_script)
+            and not shutil.which(user_script)
+            and not self.allow_non_existing_files
+        ):
+            raise OSError(
+                errno.ENOENT,
+                "The path specified for the script does not exist",
+                user_script,
+            )
 
         self.user_script = user_script
 
@@ -198,9 +208,9 @@ class OrionCmdlineParser():
         """
         replaced = []
         for item in args:
-            if item.startswith('-'):
+            if item.startswith("-"):
                 # Get the prior part after the `~`
-                parts = item.split('~')
+                parts = item.split("~")
 
                 if len(parts) > 1 and _is_nonprior_wave(parts[1]):
                     replaced.append(item)
@@ -208,13 +218,13 @@ class OrionCmdlineParser():
 
                 # If the argument was defined has a long one but only has a single letter
                 # then it needs to be shortened.
-                if parts[0].startswith('--') and len(parts[0]) == 3:
+                if parts[0].startswith("--") and len(parts[0]) == 3:
                     parts[0] = parts[0][1:]
 
                 replaced.append(parts[0])
 
                 if len(parts) > 1:
-                    replaced.append('orion~' + parts[1])
+                    replaced.append("orion~" + parts[1])
             else:
                 replaced.append(item)
 
@@ -256,13 +266,16 @@ class OrionCmdlineParser():
         """
         if not os.path.exists(path):
             if self.allow_non_existing_files:
-                log.info("The path specified for the script config does not exist: %s", path)
+                log.info(
+                    "The path specified for the script config does not exist: %s", path
+                )
                 return
             else:
                 raise OSError(
                     errno.ENOENT,
                     "The path specified for the script config does not exist",
-                    path)
+                    path,
+                )
 
         self.converter = infer_converter_from_file_type(path)
         self.config_file_data = self.converter.parse(path)
@@ -270,11 +283,11 @@ class OrionCmdlineParser():
 
     def _extract_defaultdict(self, current_depth, ex_dict):
         for key, value in ex_dict.items():
-            sub_depth = current_depth + '/' + str(key)
+            sub_depth = current_depth + "/" + str(key)
 
             try:
                 if isinstance(value, str):
-                    value = 'orion~' + value
+                    value = "orion~" + value
                 self._extraction_method[type(value)](sub_depth, value)
             except KeyError:
                 pass
@@ -294,7 +307,7 @@ class OrionCmdlineParser():
 
         """
         for key, value in ex_dict.items():
-            sub_depth = current_depth + '/' + str(key)
+            sub_depth = current_depth + "/" + str(key)
 
             try:
                 self._extraction_method[type(value)](sub_depth, value)
@@ -316,7 +329,7 @@ class OrionCmdlineParser():
 
         """
         for i, value in enumerate(ex_list):
-            sub_depth = current_depth + '/' + str(i)
+            sub_depth = current_depth + "/" + str(i)
 
             try:
                 self._extraction_method[type(value)](sub_depth, value)
@@ -337,7 +350,7 @@ class OrionCmdlineParser():
             Value from which to extract a prior.
 
         """
-        substrings = value.split('~')
+        substrings = value.split("~")
 
         if len(substrings) == 1:
             return
@@ -375,8 +388,8 @@ class OrionCmdlineParser():
         _, expression = prior.groups(2)
 
         name = key
-        if not name.startswith('/'):
-            name = '/' + name
+        if not name.startswith("/"):
+            name = "/" + name
 
         insert_into[name] = expression
 
@@ -430,8 +443,10 @@ class OrionCmdlineParser():
 
         """
         if self.file_config_path and config_path is None:
-            raise ValueError('The configuration contains a config file. '
-                             'Cannot format without a `config_path` argument.')
+            raise ValueError(
+                "The configuration contains a config file. "
+                "Cannot format without a `config_path` argument."
+            )
         elif self.file_config_path:
             self._create_config_file(config_path, trial)
         configuration = self._build_configuration(trial)
@@ -461,7 +476,7 @@ class OrionCmdlineParser():
 
             # Since namespace start with '/', we must skip
             # the first element of the list.
-            path = name.split('/')[1:]
+            path = name.split("/")[1:]
             current_depth = instance
 
             for key in path:
@@ -490,11 +505,11 @@ class OrionCmdlineParser():
         configuration = copy.deepcopy(self.parser.arguments)
 
         for name, value in trial.params.items():
-            name = name.lstrip('/')
+            name = name.lstrip("/")
             configuration[name] = value
 
         return configuration
 
     def priors_to_normal(self):
         """Remove the namespace `/` prefix from priors."""
-        return {key.lstrip('/'): arg for key, arg in self.cmd_priors.items()}
+        return {key.lstrip("/"): arg for key, arg in self.cmd_priors.items()}

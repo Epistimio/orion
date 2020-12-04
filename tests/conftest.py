@@ -6,17 +6,17 @@ import os
 import tempfile
 
 import numpy
-from pymongo import MongoClient
 import pytest
 import yaml
+from pymongo import MongoClient
 
-from orion.algo.base import (BaseAlgorithm, OptimizationAlgorithm)
 import orion.core
+import orion.core.utils.backward as backward
+from orion.algo.base import BaseAlgorithm, OptimizationAlgorithm
 from orion.core.io import resolve_config
 from orion.core.io.database import Database
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
-import orion.core.utils.backward as backward
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import Storage
@@ -33,7 +33,7 @@ def shield_from_user_config(request):
 def _pop_out_yaml_from_config(config):
     """Remove any configuration fetch from yaml file"""
     for key in config._config.keys():
-        config._config[key].pop('yaml', None)
+        config._config[key].pop("yaml", None)
 
     for key in config._subconfigs.keys():
         _pop_out_yaml_from_config(config._subconfigs[key])
@@ -42,9 +42,17 @@ def _pop_out_yaml_from_config(config):
 class DumbAlgo(BaseAlgorithm):
     """Stab class for `BaseAlgorithm`."""
 
-    def __init__(self, space, value=5,
-                 scoring=0, judgement=None,
-                 suspend=False, done=False, seed=None, **nested_algo):
+    def __init__(
+        self,
+        space,
+        value=5,
+        scoring=0,
+        judgement=None,
+        suspend=False,
+        done=False,
+        seed=None,
+        **nested_algo
+    ):
         """Configure returns, allow for variable variables."""
         self._times_called_suspend = 0
         self._times_called_is_done = 0
@@ -57,12 +65,16 @@ class DumbAlgo(BaseAlgorithm):
         self._judge_point = None
         self._measurements = None
         self.possible_values = [value]
-        super(DumbAlgo, self).__init__(space, value=value,
-                                       scoring=scoring, judgement=judgement,
-                                       suspend=suspend,
-                                       done=done,
-                                       seed=seed,
-                                       **nested_algo)
+        super(DumbAlgo, self).__init__(
+            space,
+            value=value,
+            scoring=scoring,
+            judgement=judgement,
+            suspend=suspend,
+            done=done,
+            seed=seed,
+            **nested_algo
+        )
 
     def seed(self, seed):
         """Set the index to seed.
@@ -76,8 +88,14 @@ class DumbAlgo(BaseAlgorithm):
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
         _state_dict = super(DumbAlgo, self).state_dict
-        _state_dict.update({'index': self._index, 'suggested': self._suggested, 'num': self._num,
-                            'done': self.done})
+        _state_dict.update(
+            {
+                "index": self._index,
+                "suggested": self._suggested,
+                "num": self._num,
+                "done": self.done,
+            }
+        )
         return _state_dict
 
     def set_state(self, state_dict):
@@ -86,10 +104,10 @@ class DumbAlgo(BaseAlgorithm):
         :param state_dict: Dictionary representing state of an algorithm
         """
         super(DumbAlgo, self).set_state(state_dict)
-        self._index = state_dict['index']
-        self._suggested = state_dict['suggested']
-        self._num = state_dict['num']
-        self.done = state_dict['done']
+        self._index = state_dict["index"]
+        self._suggested = state_dict["suggested"]
+        self._num = state_dict["num"]
+        self.done = state_dict["done"]
 
     def suggest(self, num=1):
         """Suggest based on `value`."""
@@ -97,7 +115,9 @@ class DumbAlgo(BaseAlgorithm):
 
         rval = []
         while len(rval) < num:
-            value = self.possible_values[min(self._index, len(self.possible_values) - 1)]
+            value = self.possible_values[
+                min(self._index, len(self.possible_values) - 1)
+            ]
             self._index += 1
             rval.append(value)
 
@@ -153,14 +173,15 @@ def empty_config():
 @pytest.fixture()
 def test_config(empty_config):
     """Return orion's config overwritten with local config file"""
-    config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                               "orion_config.yaml")
+    config_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "orion_config.yaml"
+    )
     empty_config.load_yaml(config_file)
 
     return empty_config
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def dumbalgo():
     """Return stab algorithm class."""
     return DumbAlgo
@@ -169,23 +190,41 @@ def dumbalgo():
 @pytest.fixture()
 def categorical_values():
     """Return a list of all the categorical points possible for `supernaedo2` and `supernaedo3`"""
-    return [('rnn', 'rnn'), ('lstm_with_attention', 'rnn'), ('gru', 'rnn'),
-            ('rnn', 'gru'), ('lstm_with_attention', 'gru'), ('gru', 'gru'),
-            ('rnn', 'lstm'), ('lstm_with_attention', 'lstm'), ('gru', 'lstm')]
+    return [
+        ("rnn", "rnn"),
+        ("lstm_with_attention", "rnn"),
+        ("gru", "rnn"),
+        ("rnn", "gru"),
+        ("lstm_with_attention", "gru"),
+        ("gru", "gru"),
+        ("rnn", "lstm"),
+        ("lstm_with_attention", "lstm"),
+        ("gru", "lstm"),
+    ]
 
 
 @pytest.fixture()
 def exp_config_file():
     """Return configuration file used for stuff"""
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        'unittests', 'core', 'experiment.yaml')
+    return os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "unittests",
+        "core",
+        "experiment.yaml",
+    )
 
 
 @pytest.fixture()
 def exp_config():
     """Load an example database."""
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-              'unittests', 'core', 'experiment.yaml')) as f:
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "unittests",
+            "core",
+            "experiment.yaml",
+        )
+    ) as f:
         exp_config = list(yaml.safe_load_all(f))
 
     for i, t_dict in enumerate(exp_config[1]):
@@ -193,17 +232,18 @@ def exp_config():
 
     for config in exp_config[0]:
         config["metadata"]["user_script"] = os.path.join(
-            os.path.dirname(__file__), config["metadata"]["user_script"])
+            os.path.dirname(__file__), config["metadata"]["user_script"]
+        )
         backward.populate_space(config)
-        config['version'] = 1
+        config["version"] = 1
 
     return exp_config
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def database():
     """Return Mongo database object to test with example entries."""
-    client = MongoClient(username='user', password='pass', authSource='orion_test')
+    client = MongoClient(username="user", password="pass", authSource="orion_test")
     database = client.orion_test
     yield database
     client.close()
@@ -215,7 +255,7 @@ def mock_database():
     Lightweight fixture for an empty, in-memory database using :class:`OrionState`.
     The database is automatically discarded after each test method.
     """
-    storage = {'type': 'legacy', 'database': {'type': 'EphemeralDB'}}
+    storage = {"type": "legacy", "database": {"type": "EphemeralDB"}}
     with OrionState(storage=storage) as state:
         yield state
 
@@ -244,7 +284,7 @@ def null_db_instances():
     PickledDB.instance = None
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def seed():
     """Return a fixed ``numpy.random.RandomState`` and global seed."""
     seed = 5
@@ -260,8 +300,9 @@ def version_XYZ(monkeypatch):
 
     def fetch_metadata(user=None, user_args=None, user_script_config=None):
         metadata = non_patched_fetch_metadata(user, user_args, user_script_config)
-        metadata['orion_version'] = 'XYZ'
+        metadata["orion_version"] = "XYZ"
         return metadata
+
     monkeypatch.setattr(resolve_config, "fetch_metadata", fetch_metadata)
 
 
@@ -270,12 +311,12 @@ def create_db_instance(null_db_instances, clean_db):
     """Create and save a singleton database instance."""
     try:
         database = {
-            'type': 'MongoDB',
-            'name': 'orion_test',
-            'username': 'user',
-            'password': 'pass'
+            "type": "MongoDB",
+            "name": "orion_test",
+            "username": "user",
+            "password": "pass",
         }
-        db = Storage(of_type='legacy', database=database)
+        db = Storage(of_type="legacy", database=database)
     except ValueError:
         db = Storage()
 
@@ -292,15 +333,17 @@ def script_path():
 @pytest.fixture()
 def mock_infer_versioning_metadata(monkeypatch):
     """Mock infer_versioning_metadata and create a VCS"""
+
     def fixed_dictionary(user_script):
         """Create VCS"""
         vcs = {}
-        vcs['type'] = 'git'
-        vcs['is_dirty'] = False
-        vcs['HEAD_sha'] = "test"
-        vcs['active_branch'] = None
-        vcs['diff_sha'] = "diff"
+        vcs["type"] = "git"
+        vcs["is_dirty"] = False
+        vcs["HEAD_sha"] = "test"
+        vcs["active_branch"] = None
+        vcs["diff_sha"] = "diff"
         return vcs
+
     monkeypatch.setattr(resolve_config, "infer_versioning_metadata", fixed_dictionary)
 
 
@@ -310,15 +353,15 @@ def setup_pickleddb_database():
     update_singletons()
     temporary_file = tempfile.NamedTemporaryFile()
 
-    os.environ['ORION_DB_TYPE'] = "pickleddb"
-    os.environ['ORION_DB_ADDRESS'] = temporary_file.name
+    os.environ["ORION_DB_TYPE"] = "pickleddb"
+    os.environ["ORION_DB_ADDRESS"] = temporary_file.name
     yield
     temporary_file.close()
-    del os.environ['ORION_DB_TYPE']
-    del os.environ['ORION_DB_ADDRESS']
+    del os.environ["ORION_DB_TYPE"]
+    del os.environ["ORION_DB_ADDRESS"]
 
 
 @pytest.fixture()
 def with_user_userxyz(monkeypatch):
     """Make ``getpass.getuser()`` return ``'userxyz'``."""
-    monkeypatch.setattr(getpass, 'getuser', lambda: 'userxyz')
+    monkeypatch.setattr(getpass, "getuser", lambda: "userxyz")

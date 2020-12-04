@@ -34,8 +34,8 @@ Adapters can be build using the factory class `Adapter(**kwargs)` or using
 `Adapter.build(list_of_dicts)`.
 
 """
-from abc import (ABCMeta, abstractmethod)
 import copy
+from abc import ABCMeta, abstractmethod
 
 from orion.core.io.space_builder import DimensionBuilder
 from orion.core.utils import Factory
@@ -133,10 +133,15 @@ class CompositeAdapter(BaseAdapter):
 
         """
         if any(not isinstance(adapter, BaseAdapter) for adapter in adapters):
-            wrong_object_type = [type(adapter) for adapter in adapters
-                                 if not isinstance(adapter, BaseAdapter)][0]
-            raise TypeError("Provided adapters must be adapter objects, not '%s'" %
-                            str(wrong_object_type))
+            wrong_object_type = [
+                type(adapter)
+                for adapter in adapters
+                if not isinstance(adapter, BaseAdapter)
+            ][0]
+            raise TypeError(
+                "Provided adapters must be adapter objects, not '%s'"
+                % str(wrong_object_type)
+            )
 
         self.adapters = adapters
 
@@ -183,10 +188,12 @@ class CompositeAdapter(BaseAdapter):
             :meth:`orion.core.evc.BaseAdapter.configuration`
         """
         if len(self.adapters) > 1:
-            return [adapter.configuration
-                    if len(adapter.configuration) > 1
-                    else adapter.configuration[0]
-                    for adapter in self.adapters]
+            return [
+                adapter.configuration
+                if len(adapter.configuration) > 1
+                else adapter.configuration[0]
+                for adapter in self.adapters
+            ]
         elif self.adapters:
             return self.adapters[0].configuration
 
@@ -222,9 +229,10 @@ def apply_if_valid(name, trial, callback=None, raise_if_not=True):
             return callback is None or callback(trial, param)
 
     if raise_if_not:
-        raise RuntimeError("Provided trial does not have a compatible configuration. "
-                           "A dimension named '%s' should be present.\n %s" %
-                           (name, trial))
+        raise RuntimeError(
+            "Provided trial does not have a compatible configuration. "
+            "A dimension named '%s' should be present.\n %s" % (name, trial)
+        )
 
     return False
 
@@ -259,10 +267,11 @@ class DimensionAddition(BaseAdapter):
         if isinstance(param, dict):
             param = Trial.Param(**param)
         elif not isinstance(param, Trial.Param):
-            raise TypeError("Invalid param argument type ('%s'). "
-                            "Param argument must be a Param object or a dictionnary "
-                            "as defined by Trial.Param.to_dict()." %
-                            str(type(param)))
+            raise TypeError(
+                "Invalid param argument type ('%s'). "
+                "Param argument must be a Param object or a dictionnary "
+                "as defined by Trial.Param.to_dict()." % str(type(param))
+            )
 
         self.param = param
 
@@ -277,9 +286,11 @@ class DimensionAddition(BaseAdapter):
 
         for trial in trials:
             if apply_if_valid(self.param.name, trial, raise_if_not=False):
-                raise RuntimeError("Provided trial does not have a compatible configuration. "
-                                   "A dimension named '%s' was already present.\n %s" %
-                                   (self.param.name, trial))
+                raise RuntimeError(
+                    "Provided trial does not have a compatible configuration. "
+                    "A dimension named '%s' was already present.\n %s"
+                    % (self.param.name, trial)
+                )
 
             adapted_trial = copy.deepcopy(trial)
             # pylint: disable=protected-access
@@ -320,9 +331,7 @@ class DimensionAddition(BaseAdapter):
 
             :meth:`orion.core.evc.adapters.BaseAdapter.to_dict`
         """
-        ret = dict(
-            of_type=self.__class__.__name__.lower(),
-            param=self.param.to_dict())
+        ret = dict(of_type=self.__class__.__name__.lower(), param=self.param.to_dict())
         return ret
 
 
@@ -393,7 +402,7 @@ class DimensionDeletion(BaseAdapter):
             :meth:`orion.core.evc.adapters.BaseAdapter.to_dict`
         """
         ret = self.dimension_addition_adapter.to_dict()
-        ret['of_type'] = 'dimensiondeletion'
+        ret["of_type"] = "dimensiondeletion"
         return ret
 
 
@@ -434,12 +443,13 @@ class DimensionPriorChange(BaseAdapter):
         self.name = name
         self.old_prior = old_prior
         self.new_prior = new_prior
-        self.old_dimension = DimensionBuilder().build('old', old_prior)
-        self.new_dimension = DimensionBuilder().build('new', new_prior)
+        self.old_dimension = DimensionBuilder().build("old", old_prior)
+        self.new_dimension = DimensionBuilder().build("new", new_prior)
 
         if self.old_dimension.shape != self.new_dimension.shape:
-            raise NotImplementedError("Oríon does not support yet adaptations on prior "
-                                      "shape changes.")
+            raise NotImplementedError(
+                "Oríon does not support yet adaptations on prior " "shape changes."
+            )
 
     def forward(self, trials):
         """Filter out trials which have out of bound values based on the child's prior.
@@ -453,7 +463,11 @@ class DimensionPriorChange(BaseAdapter):
             """Test if param's value is in the new prior's bounds"""
             return param.value in self.new_dimension
 
-        return [trial for trial in trials if apply_if_valid(self.name, trial, callback=is_in_bound)]
+        return [
+            trial
+            for trial in trials
+            if apply_if_valid(self.name, trial, callback=is_in_bound)
+        ]
 
     def backward(self, trials):
         """Filter out trials which have out of bound values based on the parent's prior.
@@ -462,7 +476,9 @@ class DimensionPriorChange(BaseAdapter):
 
             :meth:`orion.core.evc.BaseAdapter.backward`
         """
-        return DimensionPriorChange(self.name, self.new_prior, self.old_prior).forward(trials)
+        return DimensionPriorChange(self.name, self.new_prior, self.old_prior).forward(
+            trials
+        )
 
     def to_dict(self):
         """Provide the configuration of the adapter as a dictionary
@@ -475,7 +491,8 @@ class DimensionPriorChange(BaseAdapter):
             of_type=self.__class__.__name__.lower(),
             name=self.name,
             old_prior=self.old_prior,
-            new_prior=self.new_prior)
+            new_prior=self.new_prior,
+        )
         return ret
 
 
@@ -506,10 +523,13 @@ class DimensionRenaming(BaseAdapter):
 
         """
         if any(not isinstance(name, str) for name in [old_name, new_name]):
-            wrong_object_type = [type(name) for name in [old_name, new_name]
-                                 if not isinstance(name, str)][0]
-            raise TypeError("Invalid name type '%s'. Names must be strings." %
-                            str(wrong_object_type))
+            wrong_object_type = [
+                type(name) for name in [old_name, new_name] if not isinstance(name, str)
+            ][0]
+            raise TypeError(
+                "Invalid name type '%s'. Names must be strings."
+                % str(wrong_object_type)
+            )
         self.old_name = old_name
         self.new_name = new_name
 
@@ -552,7 +572,8 @@ class DimensionRenaming(BaseAdapter):
         ret = dict(
             of_type=self.__class__.__name__.lower(),
             old_name=self.old_name,
-            new_name=self.new_name)
+            new_name=self.new_name,
+        )
         return ret
 
 
@@ -590,8 +611,7 @@ class AlgorithmChange(BaseAdapter):
 
             :meth:`orion.core.evc.adapters.BaseAdapter.to_dict`
         """
-        ret = dict(
-            of_type=self.__class__.__name__.lower())
+        ret = dict(of_type=self.__class__.__name__.lower())
         return ret
 
 
@@ -636,8 +656,10 @@ class CodeChange(BaseAdapter):
     def validate(cls, change_type):
         """Validate change type and raise ValueError if invalid"""
         if change_type not in cls.types:
-            raise ValueError("Invalid code change type '%s'. Should be one of %s" %
-                             (change_type, str(cls.types)))
+            raise ValueError(
+                "Invalid code change type '%s'. Should be one of %s"
+                % (change_type, str(cls.types))
+            )
 
     def forward(self, trials):
         """Filter out parent's trials if type of code change is BREAK.
@@ -671,8 +693,8 @@ class CodeChange(BaseAdapter):
             :meth:`orion.core.evc.adapters.BaseAdapter.to_dict`
         """
         ret = dict(
-            of_type=self.__class__.__name__.lower(),
-            change_type=self.change_type)
+            of_type=self.__class__.__name__.lower(), change_type=self.change_type
+        )
         return ret
 
 
@@ -717,8 +739,10 @@ class CommandLineChange(BaseAdapter):
     def validate(cls, change_type):
         """Validate change type and raise ValueError if invalid"""
         if change_type not in cls.types:
-            raise ValueError("Invalid cli change type '%s'. Should be one of %s" %
-                             (change_type, str(cls.types)))
+            raise ValueError(
+                "Invalid cli change type '%s'. Should be one of %s"
+                % (change_type, str(cls.types))
+            )
 
     def forward(self, trials):
         """Filter out parent's trials if type of cli change is BREAK.
@@ -752,8 +776,8 @@ class CommandLineChange(BaseAdapter):
             :meth:`orion.core.evc.adapters.BaseAdapter.to_dict`
         """
         ret = dict(
-            of_type=self.__class__.__name__.lower(),
-            change_type=self.change_type)
+            of_type=self.__class__.__name__.lower(), change_type=self.change_type
+        )
         return ret
 
 
@@ -798,8 +822,10 @@ class ScriptConfigChange(BaseAdapter):
     def validate(cls, change_type):
         """Validate change type and raise ValueError if invalid"""
         if change_type not in cls.types:
-            raise ValueError("Invalid script's config change type '%s'. Should be one of %s" %
-                             (change_type, str(cls.types)))
+            raise ValueError(
+                "Invalid script's config change type '%s'. Should be one of %s"
+                % (change_type, str(cls.types))
+            )
 
     def forward(self, trials):
         """Filter out parent's trials if type of script's config change is BREAK.
@@ -833,8 +859,8 @@ class ScriptConfigChange(BaseAdapter):
             :meth:`orion.core.evc.adapters.BaseAdapter.to_dict`
         """
         ret = dict(
-            of_type=self.__class__.__name__.lower(),
-            change_type=self.change_type)
+            of_type=self.__class__.__name__.lower(), change_type=self.change_type
+        )
         return ret
 
 

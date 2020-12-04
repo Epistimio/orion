@@ -12,9 +12,9 @@ from orion.algo.space import Integer, Real, Space
 def space():
     """Return an optimization space"""
     space = Space()
-    dim1 = Integer('yolo1', 'uniform', -3, 6)
+    dim1 = Integer("yolo1", "uniform", -3, 6)
     space.register(dim1)
-    dim2 = Real('yolo2', 'norm', 0.9)
+    dim2 = Real("yolo2", "norm", 0.9)
     space.register(dim2)
 
     return space
@@ -48,7 +48,7 @@ def test_set_state(space):
 def test_suggest_unique():
     """Verify that RandomSearch do not sample duplicates"""
     space = Space()
-    space.register(Integer('yolo1', 'uniform', -3, 6))
+    space.register(Integer("yolo1", "uniform", -3, 6))
 
     random_search = Random(space)
 
@@ -61,7 +61,7 @@ def test_suggest_unique():
 def test_suggest_unique_history():
     """Verify that RandomSearch do not sample duplicates based observed points"""
     space = Space()
-    space.register(Integer('yolo1', 'uniform', -3, 6))
+    space.register(Integer("yolo1", "uniform", -3, 6))
 
     random_search = Random(space)
 

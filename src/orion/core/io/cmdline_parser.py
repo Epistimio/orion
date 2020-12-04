@@ -15,8 +15,8 @@ the command line.
 CmdlineParser provides an interface to parse command line arguments from input but also
 templates to build it again as a list or an already formatted string.
 """
-from collections import OrderedDict
 import os
+from collections import OrderedDict
 
 
 class CmdlineParser(object):
@@ -59,16 +59,17 @@ class CmdlineParser(object):
         return dict(
             arguments=list(map(list, self.arguments.items())),
             keys=list(map(list, self.keys.items())),
-            template=self.template)
+            template=self.template,
+        )
 
     def set_state_dict(self, state):
         """Reset the parser based on previous state"""
-        if state.get('keys') is None:
+        if state.get("keys") is None:
             # NOTE: To support experiments prior to 0.1.9
-            state['keys'] = [(key, self._key_to_arg(key)) for key in state['arguments']]
-        self.keys = OrderedDict(state['keys'])
-        self.arguments = OrderedDict(state['arguments'])
-        self.template = state['template']
+            state["keys"] = [(key, self._key_to_arg(key)) for key in state["arguments"]]
+        self.keys = OrderedDict(state["keys"])
+        self.arguments = OrderedDict(state["arguments"])
+        self.template = state["template"]
         self._already_parsed = bool(self.template)
 
     def format(self, configuration):
@@ -93,7 +94,7 @@ class CmdlineParser(object):
         # Hence we iterate over the list as-is and format on each item separately.
         formatted = []
         for item in self.template:
-            if item.startswith('-'):
+            if item.startswith("-"):
                 formatted.append(item)
             else:
                 formatted.append(item.format(**configuration))
@@ -224,13 +225,14 @@ class CmdlineParser(object):
             if item.startswith("-"):
                 # Make sure we're not defining the same argument twice
                 # If the argument is in the form of `--name=value`
-                argument_parts = item.split('=')
+                argument_parts = item.split("=")
                 argument_name = argument_parts[0]
-                key = argument_name.lstrip('-')
+                key = argument_name.lstrip("-")
 
                 if key in keys:
-                    raise ValueError("Conflict: two arguments have the same name: {}"
-                                     .format(key))
+                    raise ValueError(
+                        "Conflict: two arguments have the same name: {}".format(key)
+                    )
 
                 arguments[key] = []
                 keys[key] = argument_name
