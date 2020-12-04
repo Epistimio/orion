@@ -1,12 +1,13 @@
 # Roadmap
-Last update February 25th, 2020
+Last update December 3rd, 2020
 
 ## Next releases - Short-Term
-### v0.1.10
+
+### v0.1.12
 
 #### Quick release for bug fixes
 
-### v0.1.11
+### v0.1.13
 
 #### Default database backend
 PickledDB will become the default database backend instead of MongoDB. This initiative reduces
