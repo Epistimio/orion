@@ -23,7 +23,7 @@ SCRIPT_PATH = os.path.join(DIRNAME, "black_box.py")
 CONFIG_FILE = os.path.join(DIRNAME, "random.yaml")
 
 # Ignore pre-0.1.6 because was on orion.core and pypi project was deleted.
-VERSIONS = ["0.1.6", "0.1.7", "0.1.8", "0.1.9"]
+VERSIONS = ["0.1.6", "0.1.7", "0.1.8", "0.1.9", "0.1.10"]
 
 
 def get_branch_argument(version):
@@ -31,7 +31,12 @@ def get_branch_argument(version):
 
     Before v0.1.8 it was --branch. From v0.1.8 and forward it is now --branch-to.
     """
-    return "--branch" if version < "0.1.8" else "--branch-to"
+    return "--branch" if version in ["0.1.6", "0.1.7"] else "--branch-to"
+
+
+def has_python_api(version):
+    """Whether the python api exist in given version"""
+    return not version in ["0.1.6", "0.1.7"]
 
 
 def clean_mongodb():
@@ -195,7 +200,7 @@ def fill_db(request):
     assert orion_version == "orion {}".format(version)
 
     fill_from_cmdline_api(orion_script, version)
-    if version > "0.1.7":
+    if has_python_api(version):
         fill_from_python_api(python_script, version)
 
     orion_version = get_version("orion")
@@ -254,7 +259,7 @@ class TestBackwardCompatibility:
         assert "hunt-cmdline-branch-old-v1" in out
 
         version = fill_db
-        if version > "0.1.7":
+        if has_python_api(version):
             assert "hunt-python-v1" in out
 
     def test_status(self, fill_db):
@@ -266,7 +271,7 @@ class TestBackwardCompatibility:
         assert "hunt-cmdline-branch-old-v1" in out
 
         version = fill_db
-        if version > "0.1.7":
+        if has_python_api(version):
             assert "hunt-python-v1" in out
 
     def test_info_cmdline_api(self):
@@ -277,7 +282,7 @@ class TestBackwardCompatibility:
     def test_info_python_api(self, fill_db):
         """Verify info command from python api"""
         version = fill_db
-        if version < "0.1.8":
+        if not has_python_api(version):
             pytest.skip("Python API not supported by {}".format(version))
 
         out = execute("orion info --name hunt-python")
@@ -321,7 +326,7 @@ class TestBackwardCompatibility:
     def test_hunt_python_api(self, fill_db):
         """Verify hunt command from python api parent"""
         version = fill_db
-        if version < "0.1.8":
+        if not has_python_api(version):
             pytest.skip("Python API not supported by {}".format(version))
 
         def function(x):
