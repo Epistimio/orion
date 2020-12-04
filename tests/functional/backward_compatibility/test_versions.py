@@ -31,7 +31,7 @@ def get_branch_argument(version):
 
     Before v0.1.8 it was --branch. From v0.1.8 and forward it is now --branch-to.
     """
-    return "--branch" if version < "0.1.8" else "--branch-to"
+    return "--branch" if version in ["0.1.6", "0.1.7", "0.1.8"] else "--branch-to"
 
 
 def clean_mongodb():
