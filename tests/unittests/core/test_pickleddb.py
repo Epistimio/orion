@@ -3,19 +3,23 @@
 """Collection of tests for :mod:`orion.core.io.database.pickleddb`."""
 import logging
 import os
+import random
+import uuid
 from datetime import datetime
 from multiprocessing import Pool
 
 import pytest
-from filelock import FileLock, Timeout
+from filelock import FileLock, SoftFileLock, Timeout
 
 import orion.core.utils.backward as backward
 from orion.core.io.database import Database, DatabaseTimeout, DuplicateKeyError
 from orion.core.io.database.ephemeraldb import EphemeralCollection
 from orion.core.io.database.pickleddb import (
     PickledDB,
+    _create_lock,
     find_unpickable_doc,
     find_unpickable_field,
+    local_file_systems,
 )
 
 
@@ -484,3 +488,39 @@ def test_query_timeout(monkeypatch, orion_db):
         orion_db.read("whatever", {"it should": "fail"})
 
     assert exc.match("Could not acquire lock for PickledDB after 0.1 seconds.")
+
+
+class _MockFS:
+    pass
+
+
+@pytest.mark.parametrize(
+    "fs_type,options,file_lock_class",
+    [
+        ["lustre", [], SoftFileLock],
+        ["lustre", ["flock"], FileLock],
+        ["lustre", ["localfilelock"], SoftFileLock],
+        ["lustre", ["flock", "localflock"], SoftFileLock],
+        ["beegfs", [], SoftFileLock],
+        ["beegfs", ["tuneUseGlobalFileLocks"], FileLock],
+        ["gpfs", [], FileLock],
+        ["nfs", [], SoftFileLock],
+        ["idontknow", [], SoftFileLock],
+    ]
+    + [[fs_type, [], FileLock] for fs_type in local_file_systems],
+)
+def test_file_locks(monkeypatch, fs_type, options, file_lock_class):
+    """Verify that the correct file lock type is used based on FS type and configuration"""
+
+    def _get_fs(path):
+        fs = _MockFS()
+
+        choices = [str(uuid.uuid4()) for _ in range(random.randint(3, 10))] + options
+        random.shuffle(choices)
+        fs.opts = ",".join(choices)
+        fs.fstype = fs_type
+        return fs
+
+    monkeypatch.setattr("orion.core.io.database.pickleddb._get_fs", _get_fs)
+
+    assert isinstance(_create_lock("/whatever/the/path/is"), file_lock_class)
