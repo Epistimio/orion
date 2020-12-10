@@ -1,3 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+:mod:`orion.benchmark.task` -- Task for CarromTable Function
+================================================================
+
+.. module:: task
+   :platform: Unix
+   :synopsis: Benchmark algorithms with CarromTable function.
+
+"""
 import numpy
 
 from orion.benchmark.base import BaseTask
@@ -6,7 +17,6 @@ from orion.benchmark.base import BaseTask
 class CarromTable(BaseTask):
 
     def __init__(self, max_trials=20):
-        self.max_trials = max_trials
         super(CarromTable, self).__init__(max_trials=max_trials)
 
     def get_blackbox_function(self):
@@ -22,9 +32,6 @@ class CarromTable(BaseTask):
                 value=y)]
 
         return carromtable
-
-    def get_max_trials(self):
-        return self.max_trials
 
     def get_search_space(self):
 

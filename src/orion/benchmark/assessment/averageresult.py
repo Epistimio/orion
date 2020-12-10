@@ -1,3 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+:mod:`orion.benchmark.assessment` -- Average Rank Result
+================================================================
+
+.. module:: assessment
+   :platform: Unix
+   :synopsis: Benchmark algorithms with average result.
+
+"""
 from collections import defaultdict
 
 from orion.benchmark.base import BaseAssess
@@ -18,26 +29,18 @@ class AverageResult(BaseAssess):
     def __init__(self, task_num=1):
         super(AverageResult, self).__init__(task_num=task_num)
 
-    def display(self, task, experiments, notebook=True):
-        """
-        - define the visual charts of the assess, based on the task performance output
-        :return:
-        """
-        best_evals = defaultdict(list)
+    def plot_figures(self, task, experiments):
         algorithm_exp_trials = defaultdict(list)
 
         for _, exp in experiments:
-            stats = exp.stats
             algorithm_name = list(exp.configuration['algorithms'].keys())[0]
-
-            best_evals[algorithm_name].append(stats['best_evaluation'])
 
             trials = list(filter(lambda trial: trial.status == 'completed', exp.fetch_trials()))
             exp_trails = self._build_exp_trails(trials)
             algorithm_exp_trials[algorithm_name].append(exp_trails)
 
-        self._display_table(task, best_evals, notebook)
-        self._display_plot(task, algorithm_exp_trials)
+        ploty = self._display_plot(task, algorithm_exp_trials)
+        return ploty
 
     def _display_plot(self, task, algorithm_exp_trials):
 
@@ -53,32 +56,13 @@ class AverageResult(BaseAssess):
         df = pd.concat(plot_tables)
         title = 'Assessment {} over Task {}'.format(self.__class__.__name__, task)
         fig = px.line(df, y='objective', labels={'index': 'trial_seq'}, color='algorithm', title=title)
-        fig.show()
-
-    def _display_table(self, task, best_evals, notebook):
-
-        algorithm_tasks = {}
-        for algo, evals in best_evals.items():
-            evals.sort()
-            best = evals[0]
-            average = sum(evals) / len(evals)
-
-            algorithm_tasks[algo] = {'Assessment': self.__class__.__name__, 'Task': task}
-            algorithm_tasks[algo]['Algorithm'] = algo
-            algorithm_tasks[algo]['Average Evaluation'] = average
-            algorithm_tasks[algo]['Best Evaluation'] = best
-            algorithm_tasks[algo]['Experiments Number'] = len(evals)
-
-        if notebook:
-            from IPython.display import HTML, display
-            display(HTML(tabulate(list(algorithm_tasks.values()), headers='keys', tablefmt='html', stralign='center',
-                                  numalign='center')))
-        else:
-            table = tabulate(list(algorithm_tasks.values()), headers='keys', tablefmt='grid', stralign='center',
-                             numalign='center')
-            print(table)
+        return fig
 
     def _build_exp_trails(self, trials):
+        """
+        1. sort the trials wrt. submit time
+        2. reset the objective value of each trail with the best until it
+        """
         data = [[trial.submit_time,
                  trial.objective.value] for trial in trials]
         sorted(data, key=lambda x: x[0])

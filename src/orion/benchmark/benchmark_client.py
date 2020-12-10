@@ -1,21 +1,57 @@
-import itertools
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+:mod:`orion.benchmark.client` -- Benchmark client
+================================================================
+
+.. module:: client
+   :platform: Unix
+   :synopsis: Client to use Orion benchmark.
+
+"""
 import datetime
 import importlib
 
 from orion.benchmark import Benchmark
 from orion.benchmark import Study
-
+from orion.core.utils.exceptions import NoConfigurationError
 from orion.storage.base import get_storage, setup_storage
 
 
-def create_benchmark(name, algorithms=None, targets=None):
+def get_or_create_benchmark(name, algorithms=None, targets=None):
+    """
+    Create or get a benchmark object.
+
+    Parameters
+    ----------
+    name: str
+        Name of the benchmark
+    algorithms: list, optional
+        Algorithms used for benchmark, each algorithm can be a string or dict.
+    targets: list, optional
+        Targets for the benchmark, each target will be a dict with two keys.
+
+        assess: list
+            Assessment objects
+        task: list
+            Task objects
+
+    Returns
+    -------
+    An instance of `orion.benchmark.Benchmark`
+    """
     setup_storage()
     # fetch benchmark from db
     db_config = _fetch_benchmark(name)
 
     benchmark_id = None
+
     if db_config:
-        benchmark_id, algorithms, targets = _resolve_db_config(db_config[0])
+        benchmark_id, algorithms, targets = _resolve_db_config(db_config)
+
+    if not algorithms or not targets:
+        raise NoConfigurationError('Benchmark {} does not exist in DB, '
+                                   'algorithms and targets space was not defined.'.format(name))
 
     benchmark = _create_benchmark(name, algorithms, targets)
 
@@ -24,19 +60,6 @@ def create_benchmark(name, algorithms=None, targets=None):
         _register_benchmark(benchmark)
 
     return benchmark
-
-
-def get_benchmarks(name=None):
-    setup_storage()
-    db_configs = _fetch_benchmark(name)
-
-    for config in db_configs:
-        del config['targets']
-
-    from tabulate import tabulate
-    table = tabulate(db_configs, headers='keys', tablefmt='grid', stralign='center',
-                     numalign='center')
-    print(table)
 
 
 def _resolve_db_config(db_config):
@@ -84,6 +107,8 @@ def _resolve_db_config(db_config):
 
 def _create_benchmark(name, algorithms, targets):
 
+    # _instantiate_algo(experiment.space, kwargs.get('algorithms'))
+
     benchmark = Benchmark(name, algorithms, targets)
     benchmark.setup_studies()
 
@@ -107,7 +132,7 @@ def _fetch_benchmark(name):
     if not configs:
         return {}
 
-    return configs
+    return configs[0]
 
 
 def _register_benchmark(benchmark):

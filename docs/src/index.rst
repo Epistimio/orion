@@ -59,6 +59,7 @@
    :caption: Code Reference
 
    code/algo
+   code/benchmark
    code/client
    code/core
    code/plotting

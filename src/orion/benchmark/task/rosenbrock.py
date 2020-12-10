@@ -1,3 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+:mod:`orion.benchmark.task` -- Task for RosenBrock Function
+================================================================
+
+.. module:: task
+   :platform: Unix
+   :synopsis: Benchmark algorithms with RosenBrock function.
+
+"""
 import numpy
 
 from orion.benchmark.base import BaseTask
@@ -6,7 +17,6 @@ from orion.benchmark.base import BaseTask
 class RosenBrock(BaseTask):
 
     def __init__(self, max_trials=20, dim=2):
-        self.max_trials = max_trials
         self.dim = dim
         super(RosenBrock, self).__init__(max_trials=max_trials, dim=dim)
 

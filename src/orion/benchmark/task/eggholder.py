@@ -1,3 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+:mod:`orion.benchmark.task` -- Task for EggHolder Function
+================================================================
+
+.. module:: task
+   :platform: Unix
+   :synopsis: Benchmark algorithms with EggHolder function.
+
+"""
 import numpy
 
 from orion.benchmark.base import BaseTask
@@ -6,7 +17,6 @@ from orion.benchmark.base import BaseTask
 class EggHolder(BaseTask):
 
     def __init__(self, max_trials=20, dim=2):
-        self.max_trials = max_trials
         self.dim = dim
         super(EggHolder, self).__init__(max_trials=max_trials, dim=dim)
 
@@ -27,9 +37,6 @@ class EggHolder(BaseTask):
                 value=y)]
 
         return eggholder
-
-    def get_max_trials(self):
-        return self.max_trials
 
     def get_search_space(self):
 
