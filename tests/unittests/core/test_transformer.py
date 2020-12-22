@@ -1311,3 +1311,53 @@ def test_quantization_does_not_violate_bounds():
     assert tdim.reverse(9.6) in dim
     # solution is to quantize with 'floor' instead of 'round'
     assert tdim.reverse(9.6) == 9
+
+
+def test_precision_with_linear(space, logdim, logintdim):
+    """Test that precision isn't messed up by linearization."""
+    space.register(logdim)
+    space.register(logintdim)
+
+    # Force precision on all real or linearized dimensions
+    space["yolo0"].precision = 3
+    space["yolo4"].precision = 4
+    space["yolo5"].precision = 5
+
+    # Create a point
+    point = list(space.sample(1)[0])
+    real_index = list(space.keys()).index("yolo0")
+    logreal_index = list(space.keys()).index("yolo4")
+    logint_index = list(space.keys()).index("yolo5")
+    point[real_index] = 0.133333
+    point[logreal_index] = 0.1222222
+    point[logint_index] = 2
+
+    # Check first without linearization
+    tspace = build_required_space(space, type_requirement="numerical")
+    # Check that transform is fine
+    tpoint = tspace.transform(point)
+    assert tpoint[real_index] == 0.133
+    assert tpoint[logreal_index] == 0.1222
+    assert tpoint[logint_index] == 2
+
+    # Check that reserve does not break precision
+    rpoint = tspace.reverse(tpoint)
+    assert rpoint[real_index] == 0.133
+    assert rpoint[logreal_index] == 0.1222
+    assert rpoint[logint_index] == 2
+
+    # Check with linearization
+    tspace = build_required_space(
+        space, dist_requirement="linear", type_requirement="real"
+    )
+    # Check that transform is fine
+    tpoint = tspace.transform(point)
+    assert tpoint[real_index] == 0.133
+    assert tpoint[logreal_index] == numpy.log(0.1222)
+    assert tpoint[logint_index] == numpy.log(2)
+
+    # Check that reserve does not break precision
+    rpoint = tspace.reverse(tpoint)
+    assert rpoint[real_index] == 0.133
+    assert rpoint[logreal_index] == 0.1222
+    assert rpoint[logint_index] == 2
