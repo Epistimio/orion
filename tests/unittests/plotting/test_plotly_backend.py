@@ -94,7 +94,7 @@ def mock_experiment(monkeypatch, x=None, y=None):
     monkeypatch.setattr(Experiment, "to_pandas", to_pandas)
 
 
-def assert_lpi_plot(plot, dims):
+def assert_lpi_plot(plot, dims, known_best=True):
     """Checks the layout of a LPI plot"""
     assert plot.layout.title.text == "LPI for experiment 'experiment-name'"
     assert plot.layout.xaxis.title.text == "Hyperparameters"
@@ -102,7 +102,8 @@ def assert_lpi_plot(plot, dims):
 
     trace = plot.data[0]
     assert trace["x"] == tuple(dims)
-    assert trace["y"][0] > trace["y"][1]
+    if known_best:
+        assert trace["y"][0] > trace["y"][1]
 
 
 class TestLPI:
@@ -154,7 +155,7 @@ class TestLPI:
         """Tests that ``ExperimentView`` is a valid parameter"""
         config = mock_space()
         mock_experiment(monkeypatch)
-        with create_experiment(config, trial_config, ["completed"]) as (
+        with create_experiment(config, trial_config) as (
             _,
             experiment,
             _,
@@ -162,6 +163,26 @@ class TestLPI:
             plot = lpi(ExperimentView(experiment), random_state=1)
 
         assert_lpi_plot(plot, dims=["x", "y"])
+
+    def test_ignore_uncompleted_statuses(self):
+        """Tests that uncompleted statuses are ignored"""
+        config = mock_space()
+        with create_experiment(
+            config,
+            trial_config,
+            [
+                "new",
+                "interrupted",
+                "suspended",
+                "reserved",
+                "completed",
+                "completed",
+                "completed",
+            ],
+        ) as (_, _, experiment):
+            plot = lpi(experiment)
+
+        assert_lpi_plot(plot, dims=["x", "y"], known_best=False)
 
     def test_multidim(self, monkeypatch):
         """Tests that dimensions with shape > 1 are flattened properly"""
