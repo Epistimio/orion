@@ -72,20 +72,29 @@ def mock_space(x="uniform(0, 6)", y="uniform(0, 3)", **kwargs):
     return mocked_config
 
 
-def mock_experiment(monkeypatch, x=None, y=None):
+def mock_experiment(
+    monkeypatch, ids=None, x=None, y=None, objectives=None, status=None
+):
     """Mock experiment to_pandas to return given data (or default one)"""
+    if ids is None:
+        ids = ["a", "b", "c", "d"]
     if x is None:
         x = [0, 1, 2, 3]
     if y is None:
         y = [1, 2, 0, 3]
+    if objectives is None:
+        objectives = [0.1, 0.2, 0.3, 0.5]
+    if status is None:
+        status = ["completed", "completed", "completed", "completed"]
 
     def to_pandas(self, with_evc_tree=False):
         data = pandas.DataFrame(
             data={
-                "id": ["a", "b", "c", "d"],
+                "id": ids,
                 "x": x,
                 "y": y,
-                "objective": [0.1, 0.2, 0.3, 0.5],
+                "objective": objectives,
+                "status": status,
             }
         )
 
@@ -154,12 +163,37 @@ class TestLPI:
         """Tests that ``ExperimentView`` is a valid parameter"""
         config = mock_space()
         mock_experiment(monkeypatch)
-        with create_experiment(config, trial_config, ["completed"]) as (
+        with create_experiment(config, trial_config) as (
             _,
             experiment,
             _,
         ):
             plot = lpi(ExperimentView(experiment), random_state=1)
+
+        assert_lpi_plot(plot, dims=["x", "y"])
+
+    def test_ignore_uncompleted_statuses(self, monkeypatch):
+        """Tests that uncompleted statuses are ignored"""
+        config = mock_space()
+        mock_experiment(
+            monkeypatch,
+            ids="abcdefgh",
+            x=[0, 0, 0, 1, 0, 2, 0, 3],
+            y=[1, 0, 0, 2, 0, 0, 0, 3],
+            objectives=[0.1, None, None, 0.2, None, 0.3, None, 0.5],
+            status=[
+                "completed",
+                "new",
+                "reserved",
+                "completed",
+                "broken",
+                "completed",
+                "interrupted",
+                "completed",
+            ],
+        )
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            plot = lpi(experiment)
 
         assert_lpi_plot(plot, dims=["x", "y"])
 

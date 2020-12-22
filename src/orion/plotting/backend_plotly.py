@@ -25,6 +25,7 @@ def lpi(experiment, model="RandomForestRegressor", model_kwargs=None, n=20, **kw
         model_kwargs = {}
 
     df = experiment.to_pandas()
+    df = df.loc[df["status"] == "completed"]
     df = orion.analysis.lpi(df, experiment.space, model=model, n=n, **model_kwargs)
 
     fig = go.Figure(data=[go.Bar(x=df.index.tolist(), y=df["LPI"].tolist())])
