@@ -72,7 +72,10 @@ class OrionArgsParser:
 
         verbose = args.pop("verbose", 0)
         levels = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
-        logging.basicConfig(level=levels.get(verbose, logging.DEBUG))
+        logging.basicConfig(
+            format="%(asctime)-15s::%(levelname)s::%(name)s::%(message)s",
+            level=levels.get(verbose, logging.DEBUG),
+        )
 
         if args["command"] is None:
             self.parser.parse_args(["--help"])

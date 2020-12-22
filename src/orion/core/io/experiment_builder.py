@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=too-many-lines
 """
 :mod:`orion.core.io.experiment_builder` -- Create experiment from user options
 ==============================================================================
@@ -24,17 +25,8 @@ hierarchy. From the more global to the more specific, there is:
     - `/etc/xdg/xdg-ubuntu/orion.core`
     - `/home/${USER}/.config/orion.core`
 
-  Note that some variables have default value even if user do not defined them in global
-  configuration:
-
-    - `max_trials = orion.core.io.resolve_config.DEF_CMD_MAX_TRIALS`
-    - `pool_size = orion.core.io.resolve_config.DEF_CMD_POOL_SIZE`
-    - `algorithms = random`
-    - Database specific:
-
-      * `database.name = 'orion'`
-      * `database.type = 'MongoDB'`
-      * `database.host = ${HOST}`
+  Note that most variables have default value even if user do not defined them in global
+  configuration. These are defined in `orion.core.__init__`.
 
 2. Oríon specific environment variables:
 
@@ -89,6 +81,7 @@ import copy
 import datetime
 import getpass
 import logging
+import pprint
 import sys
 
 import orion.core
@@ -173,6 +166,10 @@ def build(name, version=None, branching=None, **config):
             'break'.  Defaults to 'break'.
 
     """
+    log.debug(f"Building experiment {name} with {version}")
+    log.debug("    Passed experiment config:\n%s", pprint.pformat(config))
+    log.debug("    Branching config:\n%s", pprint.pformat(branching))
+
     name, config, branching = clean_config(name, config, branching)
 
     config = consolidate_config(name, version, config)
@@ -187,25 +184,47 @@ def build(name, version=None, branching=None, **config):
 
     experiment = create_experiment(**copy.deepcopy(config))
     if experiment.id is None:
+        log.debug("Experiment not found in DB. Now attempting registration in DB.")
         try:
             _register_experiment(experiment)
+            log.debug("Experiment successfully registered in DB.")
         except DuplicateKeyError:
+            log.debug(
+                "Experiment registration failed. This is likely due to a race condition. "
+                "Now rolling back and re-attempting building it."
+            )
             experiment = build(branching=branching, **config)
 
         return experiment
 
+    log.debug(f"Experiment {config['name']}-v{config['version']} already existed.")
+
     conflicts = _get_conflicts(experiment, branching)
     must_branch = len(conflicts.get()) > 1 or branching.get("branch_to")
     if must_branch:
+        if len(conflicts.get()) > 1:
+            log.debug("Experiment must branch because of conflicts")
+        else:
+            assert branching.get("branch_to")
+            log.debug("Experiment branching forced with `branch_to`")
         branched_experiment = _branch_experiment(
             experiment, conflicts, version, branching
         )
+        log.debug("Now attempting registration of branched experiment in DB.")
         try:
             _register_experiment(branched_experiment)
+            log.debug("Branched experiment successfully registered in DB.")
         except DuplicateKeyError as e:
+            log.debug(
+                "Experiment registration failed. This is likely due to a race condition "
+                "during branching. Now rolling back and re-attempting building "
+                "the branched experiment."
+            )
             raise RaceCondition("There was a race condition during branching.") from e
 
         return branched_experiment
+
+    log.debug("No branching required.")
 
     _update_experiment(experiment)
     return experiment
@@ -213,9 +232,12 @@ def build(name, version=None, branching=None, **config):
 
 def clean_config(name, config, branching):
     """Clean configuration from hidden fields (ex: `_id`) and update branching if necessary"""
+    log.debug("Cleaning config")
+
     config = copy.deepcopy(config)
     for key, value in list(config.items()):
         if key.startswith("_") or value is None:
+            log.debug(f"Ignoring field {key}")
             config.pop(key)
 
     if "strategy" in config:
@@ -227,6 +249,10 @@ def clean_config(name, config, branching):
     if branching.get("branch_from"):
         branching.setdefault("branch_to", name)
         name = branching["branch_from"]
+
+    log.debug("Cleaned experiment config")
+    log.debug("    Experiment config:\n%s", pprint.pformat(config))
+    log.debug("    Branching config:\n%s", pprint.pformat(branching))
 
     return name, config, branching
 
@@ -240,6 +266,10 @@ def consolidate_config(name, version, config):
     # Do not merge spaces, the new definition overrides it.
     if "space" in config:
         db_config.pop("space", None)
+
+    log.debug("Merging user and db configs:")
+    log.debug("    config from user:\n%s", pprint.pformat(config))
+    log.debug("    config from DB:\n%s", pprint.pformat(db_config))
 
     new_config = config
     config = resolve_config.merge_configs(db_config, config)
@@ -255,6 +285,9 @@ def consolidate_config(name, version, config):
 
     config.setdefault("name", name)
     config.setdefault("version", version)
+
+    log.debug("    Merged config:\n%s", pprint.pformat(config))
+
     return config
 
 
@@ -262,6 +295,9 @@ def merge_algorithm_config(config, new_config):
     """Merge given algorithm configuration with db config"""
     # TODO: Find a better solution
     if isinstance(config.get("algorithms"), dict) and len(config["algorithms"]) > 1:
+        log.debug("Overriding algo config with new one.")
+        log.debug("    Old config:\n%s", pprint.pformat(config["algorithms"]))
+        log.debug("    New config:\n%s", pprint.pformat(new_config["algorithms"]))
         config["algorithms"] = new_config["algorithms"]
 
 
@@ -272,6 +308,12 @@ def merge_producer_config(config, new_config):
         isinstance(config.get("producer", {}).get("strategy"), dict)
         and len(config["producer"]["strategy"]) > 1
     ):
+        log.debug("Overriding strategy config with new one.")
+        log.debug("    Old config:\n%s", pprint.pformat(config["producer"]["strategy"]))
+        log.debug(
+            "    New config:\n%s", pprint.pformat(new_config["producer"]["strategy"])
+        )
+
         config["producer"]["strategy"] = new_config["producer"]["strategy"]
 
 
@@ -290,6 +332,7 @@ def build_view(name, version=None):
         largest version available, the largest version will be selected.
 
     """
+    log.debug(f"Build view for experiment {name} (version={version})")
     db_config = fetch_config_from_db(name, version)
 
     if not db_config:
@@ -366,6 +409,10 @@ def create_experiment(name, version, space, **kwargs):
         experiment.refers.get("adapter", [])
     )
 
+    log.debug(
+        "Created experiment with config:\n%s", pprint.pformat(experiment.configuration)
+    )
+
     return experiment
 
 
@@ -388,13 +435,15 @@ def fetch_config_from_db(name, version=None):
 
     config = _fetch_config_version(configs, version)
 
-    if len(configs) > 1:
+    if len(configs) > 1 and version is None:
         log.info(
             "Many versions for experiment %s have been found. Using latest "
             "version %s.",
             name,
             config["version"],
         )
+
+    log.debug("Config found in DB:\n%s", pprint.pformat(config))
 
     backward.populate_space(config, force_update=False)
     backward.update_max_broken(config)
@@ -499,7 +548,7 @@ def _register_experiment(experiment):
 
 def _update_experiment(experiment):
     """Update experiment configuration in database"""
-    log.debug("updating experiment (name: %s)", experiment.name)
+    log.debug("Updating experiment (name: %s)", experiment.name)
     config = experiment.configuration
 
     # TODO: Remove since this should not occur anymore without metadata.user in the indices?
@@ -511,6 +560,8 @@ def _update_experiment(experiment):
     config.pop("name")
 
     get_storage().update_experiment(experiment, **config)
+
+    log.debug("Experiment configuration successfully updated in DB.")
 
 
 def _branch_experiment(experiment, conflicts, version, branching_arguments):
@@ -524,15 +575,22 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
     if not experiment_brancher.is_resolved:
         name_conflict = conflicts.get([ExperimentNameConflict])[0]
         if not name_conflict.is_resolved and not version:
+            log.debug(
+                "A race condition likely occured during conflicts resolutions. "
+                "Now rolling back and attempting re-building the branched experiment."
+            )
             raise RaceCondition(
                 "There was likely a race condition during version increment."
             )
 
     if needs_manual_resolution:
+        log.debug("Some conflicts cannot be solved automatically.")
+
         # TODO: This should only be possible when using cmdline API
         branching_prompt = BranchingPrompt(experiment_brancher)
 
         if not sys.__stdin__.isatty():
+            log.debug("No interactive prompt available to manually resolve conflicts.")
             raise BranchingEvent(branching_prompt.get_status())
 
         branching_prompt.cmdloop()
@@ -540,6 +598,7 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
         if branching_prompt.abort or not experiment_brancher.is_resolved:
             sys.exit()
 
+    log.debug("Creating new branched configuration")
     config = experiment_brancher.conflicting_config
     config["refers"]["adapter"] = experiment_brancher.create_adapters().configuration
     config["refers"]["parent_id"] = experiment.id
@@ -551,10 +610,13 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
 
 def _get_conflicts(experiment, branching):
     """Get conflicts between current experiment and corresponding configuration in database"""
+    log.debug("Looking for conflicts in new configuration.")
     db_experiment = build_view(experiment.name, experiment.version)
     conflicts = detect_conflicts(
         db_experiment.configuration, experiment.configuration, branching
     )
+
+    log.debug(f"{len(conflicts.get())} conflicts detected:\n {conflicts.get()}")
 
     # elif must_branch and not enable_branching:
     #     raise ValueError("Configuration is different and generate a branching event")
