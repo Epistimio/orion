@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.asha`."""
-
 import hashlib
+import logging
 
 import numpy as np
 import pytest
@@ -81,6 +81,11 @@ def rung_2(rung_1):
             for value in map(lambda v: (v[0], (9, v[0])), sorted(rung_1[1].values()))
         },
     )
+
+
+def force_observe(asha, point, results):
+    asha.sampled.add(hashlib.md5(str(list(point)).encode("utf-8")).hexdigest())
+    asha.observe([point], [results])
 
 
 def test_compute_budgets():
@@ -262,7 +267,7 @@ class TestASHA:
         point = (fidelity, value)
         point_hash = hashlib.md5(str([value]).encode("utf-8")).hexdigest()
 
-        asha.observe([point], [{"objective": 0.0}])
+        force_observe(asha, point, {"objective": 0.0})
 
         bracket = asha.brackets[0]
 
@@ -274,7 +279,7 @@ class TestASHA:
         point = [fidelity, value]
         point_hash = hashlib.md5(str([value]).encode("utf-8")).hexdigest()
 
-        asha.observe([point], [{"objective": 0.0}])
+        force_observe(asha, point, {"objective": 0.0})
 
         assert len(bracket.rungs[0])
         assert point_hash in bracket.rungs[1][1]
@@ -290,7 +295,7 @@ class TestASHA:
         point = (fidelity, value)
         point_hash = hashlib.md5(str([value]).encode("utf-8")).hexdigest()
 
-        asha.observe([point], [{"objective": 0.0}])
+        force_observe(asha, point, {"objective": 0.0})
 
         assert sum(len(rung[1]) for rung in asha.brackets[0].rungs) == 0
         assert sum(len(rung[1]) for rung in asha.brackets[1].rungs) == 1
@@ -303,7 +308,7 @@ class TestASHA:
         point = (fidelity, value)
         point_hash = hashlib.md5(str([value]).encode("utf-8")).hexdigest()
 
-        asha.observe([point], [{"objective": 0.0}])
+        force_observe(asha, point, {"objective": 0.0})
 
         assert sum(len(rung[1]) for rung in asha.brackets[0].rungs) == 0
         assert sum(len(rung[1]) for rung in asha.brackets[1].rungs) == 1
@@ -320,9 +325,23 @@ class TestASHA:
         point = (fidelity, value)
 
         with pytest.raises(ValueError) as ex:
-            asha.observe([point], [{"objective": 0.0}])
+            force_observe(asha, point, {"objective": 0.0})
 
         assert "No bracket found for point" in str(ex.value)
+
+    def test_register_not_sampled(self, space, b_config, caplog):
+        """Check that a point cannot registered if not sampled."""
+        asha = ASHA(space, num_brackets=3)
+
+        value = 50
+        fidelity = 2
+        point = (fidelity, value)
+
+        with caplog.at_level(logging.INFO, logger="orion.algo.asha"):
+            asha.observe([point], [{"objective": 0.0}])
+
+        assert len(caplog.records) == 1
+        assert "Ignoring point" in caplog.records[0].msg
 
     def test_register_corrupted_db(self, caplog, space, b_config):
         """Check that a point cannot registered if passed in order diff than fidelity."""
@@ -332,14 +351,14 @@ class TestASHA:
         fidelity = 3
         point = (fidelity, value)
 
-        asha.observe([point], [{"objective": 0.0}])
+        force_observe(asha, point, {"objective": 0.0})
         assert "Point registered to wrong bracket" not in caplog.text
 
         fidelity = 1
         point = [fidelity, value]
 
         caplog.clear()
-        asha.observe([point], [{"objective": 0.0}])
+        force_observe(asha, point, {"objective": 0.0})
         assert "Point registered to wrong bracket" in caplog.text
 
     def test_get_id(self, space, b_config):
@@ -427,10 +446,10 @@ class TestASHA:
 
         asha = ASHA(space)
         for i in range(6):
-            asha.observe([(1, i)], [{"objective": i}])
+            force_observe(asha, (1, i), {"objective": i})
 
         for i in range(2):
-            asha.observe([(3, i)], [{"objective": i}])
+            force_observe(asha, (3, i), {"objective": i})
 
         assert asha.suggest() is None
 
