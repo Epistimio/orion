@@ -11,6 +11,7 @@
 """
 import copy
 import logging
+import pprint
 
 import orion.core
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
@@ -24,7 +25,9 @@ def update_user_args(metadata):
         "user_script" in metadata
         and metadata["user_script"] not in metadata["user_args"]
     ):
+        log.debug("Updating user_args for backward compatibility")
         metadata["user_args"] = [metadata["user_script"]] + metadata["user_args"]
+        log.debug(pprint.pformat(metadata["user_args"]))
 
 
 def populate_priors(metadata):
@@ -41,14 +44,23 @@ def populate_priors(metadata):
         # To keep configs like config user_script_config
         parser.config_prefix = metadata["parser"]["config_prefix"]
     parser.parse(metadata["user_args"])
+
+    log.debug("Updating parser for backward compatibility")
     metadata["parser"] = parser.get_state_dict()
+    log.debug(pprint.pformat(metadata["parser"]))
+
+    log.debug("Updating priors for backward compatibility")
     metadata["priors"] = dict(parser.priors)
+    log.debug(pprint.pformat(metadata["priors"]))
 
 
 def update_max_broken(config):
     """Set default max_broken if None (in v <= v0.1.9)"""
     if not config.get("max_broken", None):
         config["max_broken"] = orion.core.config.experiment.max_broken
+        log.debug(
+            "Updating max_broken for backward compatibility: %s", config["max_broken"]
+        )
 
 
 def populate_space(config, force_update=True):
@@ -59,6 +71,8 @@ def populate_space(config, force_update=True):
     populate_priors(config["metadata"])
     # Overwrite space to make sure to include changes from user_args
     if "priors" in config["metadata"]:
+        log.debug("Updating space for backward compatibility")
+        log.debug(pprint.pformat(config["metadata"]["priors"]))
         config["space"] = config["metadata"]["priors"]
 
 
@@ -79,8 +93,10 @@ def update_db_config(config):
     """Merge DB config back into storage config"""
     config.setdefault("storage", orion.core.config.storage.to_dict())
     if "database" in config:
+        log.debug("Updating db config for backward compatibility")
         config["storage"] = {"type": "legacy"}
         config["storage"]["database"] = config.pop("database")
+        log.debug(pprint.pformat(config["storage"]))
 
 
 def get_algo_requirements(algorithm):
@@ -93,6 +109,8 @@ def get_algo_requirements(algorithm):
         requirements = (
             requirements if isinstance(requirements, list) else [requirements]
         )
+
+        log.debug("Algorithm requirements: %s", requirements)
 
         requirements = copy.deepcopy(requirements)
 
@@ -114,11 +132,17 @@ def get_algo_requirements(algorithm):
         else:
             type_requirement = None
 
-        return dict(
+        requirements = dict(
             type_requirement=type_requirement,
             shape_requirement=shape_requirement,
             dist_requirement=dist_requirement,
         )
+
+        log.debug(
+            "Algorithm requirements in new format:\n%s", pprint.pformat(requirements)
+        )
+
+        return requirements
 
     return dict(
         type_requirement=algorithm.requires_type,

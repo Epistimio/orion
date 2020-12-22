@@ -240,6 +240,7 @@ class Experiment:
         trial.end_time = datetime.datetime.utcnow()
         self._storage.retrieve_result(trial, results_file)
         # push trial results updates the entire trial status included
+        log.info("Completed trials with results: %s", trial.results)
         self._storage.push_trial_results(trial)
 
     def register_lie(self, lying_trial):
