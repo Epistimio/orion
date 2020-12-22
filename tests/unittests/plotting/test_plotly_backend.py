@@ -72,20 +72,29 @@ def mock_space(x="uniform(0, 6)", y="uniform(0, 3)", **kwargs):
     return mocked_config
 
 
-def mock_experiment(monkeypatch, x=None, y=None):
+def mock_experiment(
+    monkeypatch, ids=None, x=None, y=None, objectives=None, status=None
+):
     """Mock experiment to_pandas to return given data (or default one)"""
+    if ids is None:
+        ids = ["a", "b", "c", "d"]
     if x is None:
         x = [0, 1, 2, 3]
     if y is None:
         y = [1, 2, 0, 3]
+    if objectives is None:
+        objectives = [0.1, 0.2, 0.3, 0.5]
+    if status is None:
+        status = ["completed", "completed", "completed", "completed"]
 
     def to_pandas(self, with_evc_tree=False):
         data = pandas.DataFrame(
             data={
-                "id": ["a", "b", "c", "d"],
+                "id": ids,
                 "x": x,
                 "y": y,
-                "objective": [0.1, 0.2, 0.3, 0.5],
+                "objective": objectives,
+                "status": status,
             }
         )
 
@@ -94,7 +103,7 @@ def mock_experiment(monkeypatch, x=None, y=None):
     monkeypatch.setattr(Experiment, "to_pandas", to_pandas)
 
 
-def assert_lpi_plot(plot, dims, known_best=True):
+def assert_lpi_plot(plot, dims):
     """Checks the layout of a LPI plot"""
     assert plot.layout.title.text == "LPI for experiment 'experiment-name'"
     assert plot.layout.xaxis.title.text == "Hyperparameters"
@@ -102,8 +111,7 @@ def assert_lpi_plot(plot, dims, known_best=True):
 
     trace = plot.data[0]
     assert trace["x"] == tuple(dims)
-    if known_best:
-        assert trace["y"][0] > trace["y"][1]
+    assert trace["y"][0] > trace["y"][1]
 
 
 class TestLPI:
@@ -164,25 +172,30 @@ class TestLPI:
 
         assert_lpi_plot(plot, dims=["x", "y"])
 
-    def test_ignore_uncompleted_statuses(self):
+    def test_ignore_uncompleted_statuses(self, monkeypatch):
         """Tests that uncompleted statuses are ignored"""
         config = mock_space()
-        with create_experiment(
-            config,
-            trial_config,
-            [
+        mock_experiment(
+            monkeypatch,
+            ids="abcdefgh",
+            x=[0, 0, 0, 1, 0, 2, 0, 3],
+            y=[1, 0, 0, 2, 0, 0, 0, 3],
+            objectives=[0.1, None, None, 0.2, None, 0.3, None, 0.5],
+            status=[
+                "completed",
                 "new",
-                "interrupted",
-                "suspended",
                 "reserved",
                 "completed",
+                "broken",
                 "completed",
+                "interrupted",
                 "completed",
             ],
-        ) as (_, _, experiment):
+        )
+        with create_experiment(config, trial_config) as (_, _, experiment):
             plot = lpi(experiment)
 
-        assert_lpi_plot(plot, dims=["x", "y"], known_best=False)
+        assert_lpi_plot(plot, dims=["x", "y"])
 
     def test_multidim(self, monkeypatch):
         """Tests that dimensions with shape > 1 are flattened properly"""
