@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.hyperband`."""
-
 import hashlib
+import logging
 
 import numpy as np
 import pytest
@@ -100,6 +100,11 @@ def test_compute_budgets():
         [(3, 16)],
     ]
     assert compute_budgets(16, 5) == [[(5, 3), (1, 16)], [(2, 16)]]
+
+
+def force_observe(hyperband, point, results):
+    hyperband.sampled.add(hashlib.md5(str(list(point)).encode("utf-8")).hexdigest())
+    hyperband.observe([point], [results])
 
 
 class TestBracket:
@@ -258,7 +263,7 @@ class TestHyperband:
         point = (fidelity, value)
         point_hash = hashlib.md5(str([value]).encode("utf-8")).hexdigest()
 
-        hyperband.observe([point], [{"objective": 0.0}])
+        force_observe(hyperband, point, {"objective": 0.0})
 
         bracket = hyperband.brackets[0]
 
@@ -270,7 +275,7 @@ class TestHyperband:
         point = [fidelity, value]
         point_hash = hashlib.md5(str([value]).encode("utf-8")).hexdigest()
 
-        hyperband.observe([point], [{"objective": 0.0}])
+        force_observe(hyperband, point, {"objective": 0.0})
 
         assert len(bracket.rungs[0])
         assert point_hash in bracket.rungs[1]["results"]
@@ -286,7 +291,7 @@ class TestHyperband:
         point = (fidelity, value)
         point_hash = hashlib.md5(str([value]).encode("utf-8")).hexdigest()
 
-        hyperband.observe([point], [{"objective": 0.0}])
+        force_observe(hyperband, point, {"objective": 0.0})
 
         assert sum(len(rung["results"]) for rung in hyperband.brackets[0].rungs) == 0
         assert sum(len(rung["results"]) for rung in hyperband.brackets[1].rungs) == 1
@@ -299,7 +304,7 @@ class TestHyperband:
         point = (fidelity, value)
         point_hash = hashlib.md5(str([value]).encode("utf-8")).hexdigest()
 
-        hyperband.observe([point], [{"objective": 0.0}])
+        force_observe(hyperband, point, {"objective": 0.0})
 
         assert sum(len(rung["results"]) for rung in hyperband.brackets[0].rungs) == 0
         assert sum(len(rung["results"]) for rung in hyperband.brackets[1].rungs) == 1
@@ -316,9 +321,23 @@ class TestHyperband:
         point = (fidelity, value)
 
         with pytest.raises(ValueError) as ex:
-            hyperband.observe([point], [{"objective": 0.0}])
+            force_observe(hyperband, point, {"objective": 0.0})
 
         assert "No bracket found for point" in str(ex.value)
+
+    def test_register_not_sampled(self, space, caplog):
+        """Check that a point cannot registered if not sampled."""
+        hyperband = Hyperband(space)
+
+        value = 50
+        fidelity = 2
+        point = (fidelity, value)
+
+        with caplog.at_level(logging.INFO, logger="orion.algo.hyperband"):
+            hyperband.observe([point], [{"objective": 0.0}])
+
+        assert len(caplog.records) == 1
+        assert "Ignoring point" in caplog.records[0].msg
 
     def test_register_corrupted_db(self, caplog, space):
         """Check that a point cannot registered if passed in order diff than fidelity."""
@@ -328,14 +347,14 @@ class TestHyperband:
         fidelity = 3
         point = (fidelity, value)
 
-        hyperband.observe([point], [{"objective": 0.0}])
+        force_observe(hyperband, point, {"objective": 0.0})
         assert "Point registered to wrong bracket" not in caplog.text
 
         fidelity = 1
         point = [fidelity, value]
 
         caplog.clear()
-        hyperband.observe([point], [{"objective": 0.0}])
+        force_observe(hyperband, point, {"objective": 0.0})
         assert "Point registered to wrong bracket" in caplog.text
 
     def test_get_id(self, space):
@@ -459,12 +478,12 @@ class TestHyperband:
         bracket.hyperband = hyperband
 
         for i in range(9):
-            hyperband.observe([(1, i)], [{"objective": i}])
+            force_observe(hyperband, (1, i), {"objective": i})
 
         for i in range(3):
-            hyperband.observe([(3, i)], [{"objective": i}])
+            force_observe(hyperband, (3, i), {"objective": i})
 
-        hyperband.observe([(9, 0)], [{"objective": 0}])
+        force_observe(hyperband, (9, 0), {"objective": 0})
 
         assert not hyperband.is_done
 
@@ -502,7 +521,7 @@ class TestHyperband:
 
         hyperband = Hyperband(space, repetitions=1)
         for i in range(6):
-            hyperband.observe([(1, i)], [{"objective": i}])
+            force_observe(hyperband, (1, i), {"objective": i})
 
         assert hyperband.suggest() is None
 

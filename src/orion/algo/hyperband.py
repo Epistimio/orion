@@ -126,6 +126,7 @@ class Hyperband(BaseAlgorithm):
         self.trial_info_wo_fidelity = (
             {}
         )  # Stores Point id (with no fidelity) -> Bracket
+        self.sampled = set()
 
         self.points_in_suggest_call = {}
 
@@ -211,6 +212,7 @@ class Hyperband(BaseAlgorithm):
             "rng_state": self.rng.get_state(),
             "seed": self.seed,
             "executed_times": self.executed_times,
+            "sampled": self.sampled,
         }
 
     def set_state(self, state_dict):
@@ -221,6 +223,7 @@ class Hyperband(BaseAlgorithm):
         self.seed_rng(state_dict["seed"])
         self.rng.set_state(state_dict["rng_state"])
         self.executed_times = state_dict["executed_times"]
+        self.sampled = state_dict["sampled"]
 
     def suggest(self, num=1):
         """Suggest a number of new sets of parameters.
@@ -250,6 +253,8 @@ class Hyperband(BaseAlgorithm):
                 samples += bracket.sample()
 
         if samples:
+            for sample in samples:
+                self.sampled.add(self.get_id(sample, ignore_fidelity=False))
             return samples
 
         # All brackets are filled
@@ -259,6 +264,8 @@ class Hyperband(BaseAlgorithm):
                 samples += bracket.promote()
 
         if samples:
+            for sample in samples:
+                self.sampled.add(self.get_id(sample, ignore_fidelity=False))
             return samples
 
         # Either all brackets are done or none are ready and algo needs to wait for some trials to
@@ -348,6 +355,14 @@ class Hyperband(BaseAlgorithm):
         A simple random sampler though does not take anything into account.
         """
         for point, result in zip(points, results):
+
+            full_id = self.get_id(point, ignore_fidelity=False)
+            if full_id not in self.sampled:
+                logger.info(
+                    "Ignoring point %s because it was not sampled by current algo.",
+                    full_id,
+                )
+                continue
 
             bracket = self._get_bracket(point)
 

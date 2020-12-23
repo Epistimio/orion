@@ -119,6 +119,7 @@ class ASHA(BaseAlgorithm):
         )
 
         self.trial_info = {}  # Stores Trial -> Bracket
+        self.sampled = set()
 
         try:
             fidelity_index = self.fidelity_index
@@ -197,7 +198,7 @@ class ASHA(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {"rng_state": self.rng.get_state()}
+        return {"rng_state": self.rng.get_state(), "sampled": self.sampled}
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
@@ -206,6 +207,7 @@ class ASHA(BaseAlgorithm):
         """
         self.seed_rng(0)
         self.rng.set_state(state_dict["rng_state"])
+        self.sampled = state_dict["sampled"]
 
     def suggest(self, num=1):
         """Suggest a `num` of new sets of parameters.
@@ -226,6 +228,7 @@ class ASHA(BaseAlgorithm):
 
             if candidate:
                 logger.debug("Promoting")
+                self.sampled.add(self.get_id(candidate, ignore_fidelity=False))
                 return [candidate]
 
         point = self._grow_point_for_bottom_rung()
@@ -247,6 +250,7 @@ class ASHA(BaseAlgorithm):
 
         logger.debug("Sampling for bracket %s %s", idx, self.brackets[idx])
 
+        self.sampled.add(self.get_id(point, ignore_fidelity=False))
         return [tuple(point)]
 
     def _grow_point_for_bottom_rung(self):
@@ -284,13 +288,15 @@ class ASHA(BaseAlgorithm):
 
         return point
 
-    def get_id(self, point):
-        """Compute a unique hash for a point based on params, but not fidelity level."""
+    def get_id(self, point, ignore_fidelity=True):
+        """Compute a unique hash for a point based on params, without fidelity level by default."""
         _point = list(point)
-        non_fidelity_dims = _point[0 : self.fidelity_index]
-        non_fidelity_dims.extend(_point[self.fidelity_index + 1 :])
+        if ignore_fidelity:
+            non_fidelity_dims = _point[0 : self.fidelity_index]
+            non_fidelity_dims.extend(_point[self.fidelity_index + 1 :])
+            _point = non_fidelity_dims
 
-        return hashlib.md5(str(non_fidelity_dims).encode("utf-8")).hexdigest()
+        return hashlib.md5(str(_point).encode("utf-8")).hexdigest()
 
     def observe(self, points, results):
         """Observe evaluation `results` corresponding to list of `points` in
@@ -300,7 +306,16 @@ class ASHA(BaseAlgorithm):
         """
         for point, result in zip(points, results):
 
+            full_id = self.get_id(point, ignore_fidelity=False)
+            if full_id not in self.sampled:
+                logger.info(
+                    "Ignoring point %s because it was not sampled by current algo.",
+                    full_id,
+                )
+                continue
+
             _id = self.get_id(point)
+
             bracket = self.trial_info.get(_id)
 
             if not bracket:
@@ -316,6 +331,7 @@ class ASHA(BaseAlgorithm):
                             _id, fidelity
                         )
                     )
+
                 bracket = brackets[0]
 
             try:
