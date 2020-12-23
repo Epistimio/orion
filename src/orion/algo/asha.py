@@ -309,7 +309,7 @@ class ASHA(BaseAlgorithm):
             full_id = self.get_id(point, ignore_fidelity=False)
             if full_id not in self.sampled:
                 logger.info(
-                    "Ignoring point {0} because it was not sampled by current algo.",
+                    "Ignoring point %s because it was not sampled by current algo.",
                     full_id,
                 )
                 continue
