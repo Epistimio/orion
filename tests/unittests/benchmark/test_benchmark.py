@@ -2,20 +2,20 @@
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.benchmark.Benchmark`."""
 
-import pytest
 import datetime
+
 import plotly
+import pytest
 
 from orion.benchmark import Benchmark, Study
-
-from orion.benchmark.assessment import AverageResult, AverageRank
-from orion.benchmark.task import RosenBrock, CarromTable
-
-from orion.core.utils.tests import OrionState
-from orion.core.utils.tests import generate_trials
-import orion.core.io.experiment_builder as experiment_builder
-from orion.core.worker.experiment import Experiment
+from orion.benchmark.assessment import AverageRank, AverageResult
+from orion.benchmark.task import CarromTable, RosenBrock
 from orion.client.experiment import ExperimentClient
+import orion.core.io.experiment_builder as experiment_builder
+from orion.core.utils.tests import generate_trials
+from orion.core.utils.tests import OrionState
+from orion.core.worker.experiment import Experiment
+
 
 config = dict(
     name='experiment-name',
@@ -49,11 +49,13 @@ trial_config = {
 
 @pytest.fixture
 def algorithms():
+    """Return a list of algorithms suitable for Orion experiment"""
     return [{'random': {'seed': 1}}, {'tpe': {'seed': 1}}]
 
 
 @pytest.fixture
 def generate_experiment_trials(algorithms, task_num=2, max_trial=3):
+    """Return a list of experiments and trials"""
     gen_exps = []
     gen_trials = []
     algo_num = len(algorithms)
@@ -78,43 +80,51 @@ def generate_experiment_trials(algorithms, task_num=2, max_trial=3):
 
 @pytest.fixture
 def benchmark(algorithms):
+    """Return a benchmark instance"""
     return Benchmark(name='benchmark007', algorithms=algorithms,
-                          targets=[{'assess':[AverageResult(2), AverageRank(2)],
+                          targets=[{'assess': [AverageResult(2), AverageRank(2)],
                                     'task': [RosenBrock(25, dim=3), CarromTable(20)]}])
 
 
 @pytest.fixture
 def study(benchmark, algorithms):
+    """Return a study instance"""
     return Study(benchmark, algorithms, AverageResult(2), RosenBrock(25, dim=3))
 
 
 class TestBenchmark():
-    def test_creation(self, benchmark):
+    """Test Benchmark"""
 
-        assert benchmark.configuration == {'name': 'benchmark007',
-                                       'algorithms': [{'random': {'seed': 1}}, {'tpe': {'seed': 1}}],
-                                       'targets': [
-                                           {'assess': [
-                                               {'orion-benchmark-assessment-averageresult-AverageResult': {'task_num': 2}},
-                                               {'orion-benchmark-assessment-averagerank-AverageRank': {'task_num': 2}}],
-                                            'task': [
-                                                {'orion-benchmark-task-rosenbrock-RosenBrock': {'dim': 3, 'max_trials': 25}},
-                                                {'orion-benchmark-task-carromtable-CarromTable': {'max_trials': 20}}]}]}
+    def test_creation(self, benchmark):
+        """Test benchmark instance creation"""
+        cfg = {'name': 'benchmark007',
+               'algorithms': [{'random': {'seed': 1}}, {'tpe': {'seed': 1}}],
+               'targets': [
+                   {'assess': [
+                       {'orion-benchmark-assessment-averageresult-AverageResult': {'task_num': 2}},
+                       {'orion-benchmark-assessment-averagerank-AverageRank': {'task_num': 2}}],
+                    'task': [
+                        {'orion-benchmark-task-rosenbrock-RosenBrock':
+                            {'dim': 3, 'max_trials': 25}},
+                        {'orion-benchmark-task-carromtable-CarromTable':
+                            {'max_trials': 20}}]}]}
+        assert benchmark.configuration == cfg
 
     def test_setup_studies(self, benchmark):
-
+        """Test to setup studies for benchmark"""
         with OrionState():
             benchmark.setup_studies()
 
-            assert str(benchmark.studies) == "[Study(assessment=AverageResult, task=RosenBrock, algorithms=[random,tpe]), " \
-                                         "Study(assessment=AverageResult, task=CarromTable, algorithms=[random,tpe]), " \
-                                         "Study(assessment=AverageRank, task=RosenBrock, algorithms=[random,tpe]), " \
-                                         "Study(assessment=AverageRank, task=CarromTable, algorithms=[random,tpe])]"
+            assert str(benchmark.studies) == \
+                "[Study(assessment=AverageResult, task=RosenBrock, algorithms=[random,tpe]), " \
+                "Study(assessment=AverageResult, task=CarromTable, algorithms=[random,tpe]), " \
+                "Study(assessment=AverageRank, task=RosenBrock, algorithms=[random,tpe]), " \
+                "Study(assessment=AverageRank, task=CarromTable, algorithms=[random,tpe])]"
 
         assert len(benchmark.studies) == 4
 
     def test_process(self, benchmark, study):
-
+        """Test to process a benchmark"""
         with OrionState():
             study.setup_experiments()
             benchmark.studies = [study]
@@ -125,48 +135,75 @@ class TestBenchmark():
             assert experiment is not None
 
     def test_status(self, benchmark, study, algorithms, generate_experiment_trials):
-
+        """Test to get the status of a benchmark"""
         algo_num = len(algorithms)
         task_num, gen_exps, gen_trials = generate_experiment_trials
 
         with OrionState(experiments=gen_exps, trials=gen_trials):
             experiments = []
             experiments_info = []
-            for i in range(2*algo_num):
+            for i in range(2 * algo_num):
                 experiment = experiment_builder.build('experiment-name-{}'.format(i))
                 experiments.append(experiment)
 
             for index, exp in enumerate(experiments):
-                experiments_info.append((int(index/task_num), exp))
+                experiments_info.append((int(index / task_num), exp))
 
             study.experiments_info = experiments_info
 
             benchmark.studies = [study]
 
-            assert benchmark.status(silent=True) == [{'Algorithms': 'random', 'Assessments': 'AverageResult',
-                                                       'Tasks': 'RosenBrock', 'Total Experiments': 2,
-                                                       'Completed Experiments': 2, 'Submitted Trials': 6},
-                                                      {'Algorithms': 'tpe', 'Assessments': 'AverageResult',
-                                                       'Tasks': 'RosenBrock', 'Total Experiments': 2,
-                                                       'Completed Experiments': 2, 'Submitted Trials': 6}]
+            assert benchmark.status(silent=True) == [{'Algorithms': 'random',
+                                                      'Assessments': 'AverageResult',
+                                                      'Tasks': 'RosenBrock',
+                                                      'Total Experiments': 2,
+                                                      'Completed Experiments': 2,
+                                                      'Submitted Trials': 6},
+                                                     {'Algorithms': 'tpe',
+                                                      'Assessments': 'AverageResult',
+                                                      'Tasks': 'RosenBrock',
+                                                      'Total Experiments': 2,
+                                                      'Completed Experiments': 2,
+                                                      'Submitted Trials': 6}]
 
-    def test_analysis(self):
-        pass
-
-    def test_experiments(self, benchmark, study, algorithms, generate_experiment_trials):
-
+    def test_analysis(self, benchmark, study, algorithms, generate_experiment_trials):
+        """Test to analysis benchmark result"""
         algo_num = len(algorithms)
         task_num, gen_exps, gen_trials = generate_experiment_trials
 
         with OrionState(experiments=gen_exps, trials=gen_trials):
             experiments = []
             experiments_info = []
-            for i in range(2*algo_num):
+            for i in range(2 * algo_num):
                 experiment = experiment_builder.build('experiment-name-{}'.format(i))
                 experiments.append(experiment)
 
             for index, exp in enumerate(experiments):
-                experiments_info.append((int(index/task_num), exp))
+                experiments_info.append((int(index / task_num), exp))
+
+            study.experiments_info = experiments_info
+
+            benchmark.studies = [study]
+
+            figures = benchmark.analysis()
+
+            assert len(figures) == 1
+            assert type(figures[0]) is plotly.graph_objects.Figure
+
+    def test_experiments(self, benchmark, study, algorithms, generate_experiment_trials):
+        """Test to get experiments list of a benchmark"""
+        algo_num = len(algorithms)
+        task_num, gen_exps, gen_trials = generate_experiment_trials
+
+        with OrionState(experiments=gen_exps, trials=gen_trials):
+            experiments = []
+            experiments_info = []
+            for i in range(2 * algo_num):
+                experiment = experiment_builder.build('experiment-name-{}'.format(i))
+                experiments.append(experiment)
+
+            for index, exp in enumerate(experiments):
+                experiments_info.append((int(index / task_num), exp))
 
             study.experiments_info = experiments_info
 
@@ -184,11 +221,15 @@ class TestBenchmark():
 
 
 class TestStudy():
-    def test_creation(self, study):
+    """Test Study"""
 
-        assert str(study) == 'Study(assessment=AverageResult, task=RosenBrock, algorithms=[random,tpe])'
+    def test_creation(self, study):
+        """Test study instance creation"""
+        assert str(study) == 'Study(assessment=AverageResult, ' \
+                             'task=RosenBrock, algorithms=[random,tpe])'
 
     def test_setup_experiments(self, study):
+        """Test to setup experiments for study"""
         with OrionState():
             study.setup_experiments()
 
@@ -196,7 +237,7 @@ class TestStudy():
             assert isinstance(study.experiments_info[0][1], ExperimentClient)
 
     def test_execute(self, study):
-
+        """Test to execute a study"""
         with OrionState():
             study.setup_experiments()
             study.execute()
@@ -206,40 +247,43 @@ class TestStudy():
             assert experiment is not None
 
     def test_status(self, study, algorithms, generate_experiment_trials):
-
+        """Test to get status of a study"""
         algo_num = len(algorithms)
         task_num, gen_exps, gen_trials = generate_experiment_trials
 
         with OrionState(experiments=gen_exps, trials=gen_trials):
             experiments = []
             experiments_info = []
-            for i in range(2*algo_num):
+            for i in range(2 * algo_num):
                 experiment = experiment_builder.build('experiment-name-{}'.format(i))
                 experiments.append(experiment)
 
             for index, exp in enumerate(experiments):
-                experiments_info.append((int(index/task_num), exp))
+                experiments_info.append((int(index / task_num), exp))
 
             study.experiments_info = experiments_info
 
-            assert study.status() == [{'algorithm': 'random', 'assessment': 'AverageResult', 'task': 'RosenBrock',
+            assert study.status() == [{'algorithm': 'random', 'assessment': 'AverageResult',
+                                       'task': 'RosenBrock',
                                        'experiments': 2, 'completed': 2, 'trials': 6},
-                                      {'algorithm': 'tpe', 'assessment': 'AverageResult', 'task': 'RosenBrock',
+                                      {'algorithm': 'tpe', 'assessment': 'AverageResult',
+                                       'task': 'RosenBrock',
                                        'experiments': 2, 'completed': 2, 'trials': 6}]
 
     def test_display(self, study, algorithms, generate_experiment_trials):
+        """Test to get the ploty figure of a study"""
         algo_num = len(algorithms)
         task_num, gen_exps, gen_trials = generate_experiment_trials
 
         with OrionState(experiments=gen_exps, trials=gen_trials):
             experiments = []
             experiments_info = []
-            for i in range(2*algo_num):
+            for i in range(2 * algo_num):
                 experiment = experiment_builder.build('experiment-name-{}'.format(i))
                 experiments.append(experiment)
 
             for index, exp in enumerate(experiments):
-                experiments_info.append((int(index/task_num), exp))
+                experiments_info.append((int(index / task_num), exp))
 
             study.experiments_info = experiments_info
 
@@ -248,19 +292,19 @@ class TestStudy():
             assert type(plot) is plotly.graph_objects.Figure
 
     def test_experiments(self, study, algorithms, generate_experiment_trials):
-
+        """Test to get experiments of a study"""
         algo_num = len(algorithms)
         task_num, gen_exps, gen_trials = generate_experiment_trials
 
         with OrionState(experiments=gen_exps, trials=gen_trials):
             experiments = []
             experiments_info = []
-            for i in range(2*algo_num):
+            for i in range(2 * algo_num):
                 experiment = experiment_builder.build('experiment-name-{}'.format(i))
                 experiments.append(experiment)
 
             for index, exp in enumerate(experiments):
-                experiments_info.append((int(index/task_num), exp))
+                experiments_info.append((int(index / task_num), exp))
 
             study.experiments_info = experiments_info
 

@@ -11,12 +11,14 @@
 """
 
 from collections import defaultdict
+
 import numpy as np
 import pandas as pd
 import plotly.express as px
 
 
 from orion.benchmark.base import BaseAssess
+
 
 class AverageRank(BaseAssess):
     """
@@ -30,7 +32,15 @@ class AverageRank(BaseAssess):
         super(AverageRank, self).__init__(task_num=task_num)
 
     def plot_figures(self, task, experiments):
+        """
+        Generate a `plotly.graph_objects.Figure`
 
+        task: str
+            Name of the task
+        experiments: list
+            A list of (task_index, experiment), where task_index is the index of task to run for
+            this assessment, and experiment is an instance of `orion.core.worker.experiment`.
+        """
         task_algorithm_exp = defaultdict(list)
 
         for task_index, exp in experiments:
@@ -48,7 +58,7 @@ class AverageRank(BaseAssess):
     def _display_plot(self, task, task_algorithm_exp):
 
         algorithm_trials_ranks = defaultdict(list)
-        for index, algo_exp_trials in task_algorithm_exp.items():
+        for _, algo_exp_trials in task_algorithm_exp.items():
 
             index_trials = []
             index_algo = []
@@ -95,7 +105,7 @@ class AverageRank(BaseAssess):
 
         result = []
         smallest = np.inf
-        for idx, objective in enumerate(data):
+        for _, objective in enumerate(data):
             if smallest > objective[1]:
                 smallest = objective[1]
                 result.append(objective[1])

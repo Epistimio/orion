@@ -99,10 +99,13 @@ class Benchmark():
         return benchmark_status
 
     def analysis(self, notebook=True):
-        """Display benchmark result"""
+        """Return all the assessment figures"""
+        figures = []
         for study in self.studies:
             figure = study.display(notebook)
-            figure.show()
+            # figure.show()
+            figures.append(figure)
+        return figures
 
     def experiments(self, silent=False, notebook=True):
         """Return all the experiments submitted in benchmark"""
@@ -206,8 +209,8 @@ class Study():
             for algo_index, algorithm in enumerate(self.algorithms):
 
                 experiment_name = self.benchmark.name + '_' + self.assess_name + \
-                            '_' + self.task_name + '_' + \
-                            str(task_index) + '_' + str(algo_index);
+                    '_' + self.task_name + '_' + \
+                    str(task_index) + '_' + str(algo_index)
                 experiment = create_experiment(
                     experiment_name, space=space, algorithms=algorithm,
                     max_trials=max_trials)

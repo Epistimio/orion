@@ -4,11 +4,10 @@
 
 import plotly
 
-from orion.core.utils.tests import generate_trials
-import orion.core.io.experiment_builder as experiment_builder
-
-from orion.core.utils.tests import create_experiment
 from orion.benchmark.assessment import AverageRank, AverageResult
+import orion.core.io.experiment_builder as experiment_builder
+from orion.core.utils.tests import create_experiment
+from orion.core.utils.tests import generate_trials
 from orion.core.utils.tests import OrionState
 
 config = dict(
@@ -40,21 +39,26 @@ trial_config = {
     'params': []
 }
 
-algorithms=[{'random': {'seed': 1}}, {'tpe': {'seed': 1}}]
+algorithms = [{'random': {'seed': 1}}, {'tpe': {'seed': 1}}]
 
 
 class TestAverageRank():
-    def test_creation(self):
+    """Test assessment AverageRank"""
 
+    def test_creation(self):
+        """Test creation"""
         ar1 = AverageRank()
         assert ar1.task_num == 1
-        assert ar1.configuration == {'orion-benchmark-assessment-averagerank-AverageRank': {'task_num': 1}}
+        assert ar1.configuration == {'orion-benchmark-assessment-averagerank-AverageRank':
+                                     {'task_num': 1}}
 
         ar2 = AverageRank(task_num=5)
         assert ar2.task_num == 5
-        assert ar2.configuration == {'orion-benchmark-assessment-averagerank-AverageRank': {'task_num': 5}}
+        assert ar2.configuration == {'orion-benchmark-assessment-averagerank-AverageRank':
+                                     {'task_num': 5}}
 
     def test_plot_figures(self):
+        """Test assessment plot"""
         ar1 = AverageRank()
 
         with create_experiment(config, trial_config, ['completed']) as (_, experiment, _):
@@ -63,18 +67,18 @@ class TestAverageRank():
         assert type(plot) is plotly.graph_objects.Figure
 
     def test_figure_layout(self):
-
+        """Test assessment plot format"""
         ar1 = AverageRank()
 
         gen_exps = []
         gen_trials = []
         algo_num = len(algorithms)
-        for i in range(2*algo_num):
+        for i in range(2 * algo_num):
             import copy
             exp = copy.deepcopy(config)
             exp['_id'] = i
             exp['name'] = 'experiment-name-{}'.format(i)
-            exp['algorithms'] = algorithms[i%algo_num]
+            exp['algorithms'] = algorithms[i % algo_num]
             gen_exps.append(exp)
             for j in range(3):
                 trial = copy.deepcopy(trial_config)
@@ -85,7 +89,7 @@ class TestAverageRank():
 
         experiments = list()
         with OrionState(experiments=gen_exps, trials=gen_trials):
-            for i in range(2*algo_num):
+            for i in range(2 * algo_num):
                 experiment = experiment_builder.build('experiment-name-{}'.format(i))
                 experiments.append((i, copy.deepcopy(experiment)))
             plot = ar1.plot_figures('task_name', experiments)
@@ -106,17 +110,22 @@ class TestAverageRank():
 
 
 class TestAverageResult():
+    """Test assessment AverageResult"""
+
     def test_creation(self):
+        """Test creation"""
         ar1 = AverageResult()
         assert ar1.task_num == 1
-        assert ar1.configuration == {'orion-benchmark-assessment-averageresult-AverageResult': {'task_num': 1}}
+        assert ar1.configuration == {'orion-benchmark-assessment-averageresult-AverageResult':
+                                     {'task_num': 1}}
 
         ar2 = AverageResult(task_num=5)
         assert ar2.task_num == 5
-        assert ar2.configuration == {'orion-benchmark-assessment-averageresult-AverageResult': {'task_num': 5}}
+        assert ar2.configuration == {'orion-benchmark-assessment-averageresult-AverageResult':
+                                     {'task_num': 5}}
 
     def test_plot_figures(self):
-
+        """Test assessment plot"""
         ar1 = AverageResult()
 
         with create_experiment(config, trial_config, ['completed']) as (_, experiment, _):
@@ -125,17 +134,18 @@ class TestAverageResult():
         assert type(plot) is plotly.graph_objects.Figure
 
     def test_figure_layout(self):
+        """Test assessment plot format"""
         ar1 = AverageResult()
 
         gen_exps = []
         gen_trials = []
         algo_num = len(algorithms)
-        for i in range(2*algo_num):
+        for i in range(2 * algo_num):
             import copy
             exp = copy.deepcopy(config)
             exp['_id'] = i
             exp['name'] = 'experiment-name-{}'.format(i)
-            exp['algorithms'] = algorithms[i%algo_num]
+            exp['algorithms'] = algorithms[i % algo_num]
             gen_exps.append(exp)
             for j in range(3):
                 trial = copy.deepcopy(trial_config)
@@ -146,7 +156,7 @@ class TestAverageResult():
 
         experiments = list()
         with OrionState(experiments=gen_exps, trials=gen_trials):
-            for i in range(2*algo_num):
+            for i in range(2 * algo_num):
                 experiment = experiment_builder.build('experiment-name-{}'.format(i))
                 experiments.append((i, copy.deepcopy(experiment)))
             plot = ar1.plot_figures('task_name', experiments)

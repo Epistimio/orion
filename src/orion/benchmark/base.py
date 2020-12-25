@@ -45,7 +45,6 @@ class BaseAssess(ABC):
             A list of (task_index, experiment), where task_index is the index of task to run for
             this assessment, and experiment is an instance of `orion.core.worker.experiment`.
         """
-
         pass
 
     @property
@@ -79,9 +78,6 @@ class BaseTask(ABC):
     """
 
     def __init__(self, max_trials, **kwargs):
-        """
-        - build orion experiment
-        """
         self.trials_num = max_trials
         self._param_names = list(kwargs.keys())
 

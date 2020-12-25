@@ -141,4 +141,3 @@ def _register_benchmark(benchmark):
     # This will raise DuplicateKeyError if a concurrent experiment with
     # identical (name, metadata.user) is written first in the database.
     get_storage().create_benchmark(config)
-

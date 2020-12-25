@@ -11,25 +11,34 @@
 """
 from collections import defaultdict
 
-from orion.benchmark.base import BaseAssess
-from tabulate import tabulate
+import numpy as np
 import pandas as pd
 import plotly.express as px
-import numpy as np
+
+from orion.benchmark.base import BaseAssess
 
 
 class AverageResult(BaseAssess):
     """
-    For each algorithm, run fixed number of Experiment, average the performance of trials for the same algorithm
-    at the same trial sequence order.
-    For the performance of trials in an Experiment, instead using the actual trial objective value, here we use the
-    best objective value in the same Experiment until the particular trial.
+    For each algorithm, run fixed number of Experiment, average the performance of trials
+    for the same algorithm at the same trial sequence order.
+    For the performance of trials in an Experiment, instead using the actual trial objective
+    value, here we use the best objective value in the same Experiment until the particular trial.
     """
 
     def __init__(self, task_num=1):
         super(AverageResult, self).__init__(task_num=task_num)
 
     def plot_figures(self, task, experiments):
+        """
+        Generate a `plotly.graph_objects.Figure`
+
+        task: str
+            Name of the task
+        experiments: list
+            A list of (task_index, experiment), where task_index is the index of task to run for
+            this assessment, and experiment is an instance of `orion.core.worker.experiment`.
+        """
         algorithm_exp_trials = defaultdict(list)
 
         for _, exp in experiments:
@@ -55,7 +64,8 @@ class AverageResult(BaseAssess):
 
         df = pd.concat(plot_tables)
         title = 'Assessment {} over Task {}'.format(self.__class__.__name__, task)
-        fig = px.line(df, y='objective', labels={'index': 'trial_seq'}, color='algorithm', title=title)
+        fig = px.line(df, y='objective', labels={'index': 'trial_seq'},
+                      color='algorithm', title=title)
         return fig
 
     def _build_exp_trails(self, trials):
@@ -69,7 +79,7 @@ class AverageResult(BaseAssess):
 
         result = []
         smallest = np.inf
-        for idx, objective in enumerate(data):
+        for _, objective in enumerate(data):
             if smallest > objective[1]:
                 smallest = objective[1]
                 result.append(objective[1])
