@@ -19,6 +19,7 @@
    user/algorithms
    user/searchspace
    user/monitoring
+   user/benchmark
    user/evc
    user/storage
    user/config

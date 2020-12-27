@@ -1,6 +1,6 @@
 """
 :mod:`orion.benchmark.assessment` -- Benchmark Assessments definition
-================================================================
+=======================================================================
 
 .. module:: assessment
    :platform: Unix
