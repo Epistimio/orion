@@ -64,7 +64,7 @@ class Benchmark:
         for study in self.studies:
             study.execute()
 
-    def status(self, silent=False, notebook=True):
+    def status(self, silent=True):
         """Display benchmark status"""
         total_exp_num = 0
         complete_exp_num = 0
@@ -90,7 +90,7 @@ class Benchmark:
                     self.name, complete_exp_num, total_exp_num, total_trials
                 )
             )
-            if notebook:
+            try:
                 from IPython.display import HTML, display
 
                 display(
@@ -104,7 +104,7 @@ class Benchmark:
                         )
                     )
                 )
-            else:
+            except ImportError:
                 table = tabulate(
                     benchmark_status,
                     headers="keys",
@@ -116,16 +116,16 @@ class Benchmark:
 
         return benchmark_status
 
-    def analysis(self, notebook=True):
+    def analysis(self):
         """Return all the assessment figures"""
         figures = []
         for study in self.studies:
-            figure = study.display(notebook)
+            figure = study.display()
             # figure.show()
             figures.append(figure)
         return figures
 
-    def experiments(self, silent=False, notebook=True):
+    def experiments(self, silent=True):
         """Return all the experiments submitted in benchmark"""
         experiment_table = []
         for study in self.studies:
@@ -141,7 +141,7 @@ class Benchmark:
                 experiment_table.append(exp_column)
 
         if not silent:
-            if notebook:
+            try:
                 from IPython.display import HTML, display
 
                 display(
@@ -155,7 +155,7 @@ class Benchmark:
                         )
                     )
                 )
-            else:
+            except ImportError:
                 table = tabulate(
                     experiment_table,
                     headers="keys",
@@ -165,6 +165,7 @@ class Benchmark:
                 )
                 print(table)
             print("Total Experiments: {}".format(len(experiment_table)))
+
         return experiment_table
 
     # pylint: disable=invalid-name
@@ -301,7 +302,7 @@ class Study:
 
         return list(algorithm_tasks.values())
 
-    def display(self, notebook=True):
+    def display(self):
         """Return assessment figure"""
         return self.assessment.plot_figures(self.task_name, self.experiments_info)
 

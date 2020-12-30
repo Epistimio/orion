@@ -187,7 +187,7 @@ class TestBenchmark:
 
             benchmark.studies = [study]
 
-            assert benchmark.status(silent=True) == [
+            assert benchmark.status() == [
                 {
                     "Algorithms": "random",
                     "Assessments": "AverageResult",
@@ -251,7 +251,7 @@ class TestBenchmark:
 
             benchmark.studies = [study]
 
-            assert benchmark.experiments(silent=True) == [
+            assert benchmark.experiments() == [
                 {
                     "Algorithm": "random",
                     "Experiment Name": "experiment-name-0",
