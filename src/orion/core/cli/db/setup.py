@@ -18,11 +18,18 @@ import orion.core
 from orion.core.utils.terminal import ask_question
 
 log = logging.getLogger(__name__)
+SHORT_DESCRIPTION = "Starts the database configuration wizard"
+DESCRIPTION = """
+This command starts the database configuration wizard and creates a configuration file for the
+database.
+"""
 
 
 def add_subparser(parser):
     """Return the parser that needs to be used for this command"""
-    setup_parser = parser.add_parser('setup', help='setup help')
+    setup_parser = parser.add_parser(
+        "setup", help=SHORT_DESCRIPTION, description=DESCRIPTION
+    )
 
     setup_parser.set_defaults(func=main)
 
@@ -35,25 +42,29 @@ def main(*args):
     default_file = orion.core.DEF_CONFIG_FILES_PATHS[-1]
 
     if os.path.exists(default_file):
-        cancel = ''
-        while cancel.strip().lower() not in ['y', 'n']:
+        cancel = ""
+        while cancel.strip().lower() not in ["y", "n"]:
             cancel = ask_question(
-                "This will overwrite {}, do you want to proceed? (y/n) ".format(default_file), "n")
+                "This will overwrite {}, do you want to proceed? (y/n) ".format(
+                    default_file
+                ),
+                "n",
+            )
 
-        if cancel.strip().lower() == 'n':
+        if cancel.strip().lower() == "n":
             return
 
     _type = ask_question("Enter the database type: ", "mongodb")
     name = ask_question("Enter the database name: ", "test")
     host = ask_question("Enter the database host: ", "localhost")
 
-    config = {'database': {'type': _type, 'name': name, 'host': host}}
+    config = {"database": {"type": _type, "name": name, "host": host}}
 
     print("Default configuration file will be saved at: ")
     print(default_file)
 
-    dirs = '/'.join(default_file.split('/')[:-1])
+    dirs = "/".join(default_file.split("/")[:-1])
     os.makedirs(dirs, exist_ok=True)
 
-    with open(default_file, 'w') as output:
+    with open(default_file, "w") as output:
         yaml.dump(config, output, default_flow_style=False)

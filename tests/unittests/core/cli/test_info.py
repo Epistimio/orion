@@ -7,13 +7,24 @@ import pytest
 
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.format_terminal import (
-    format_algorithm, format_commandline, format_config, format_dict, format_identification,
-    format_info, format_list, format_metadata, format_refers, format_space, format_stats,
-    format_title, get_trial_params)
+    format_algorithm,
+    format_commandline,
+    format_config,
+    format_dict,
+    format_identification,
+    format_info,
+    format_list,
+    format_metadata,
+    format_refers,
+    format_space,
+    format_stats,
+    format_title,
+    get_trial_params,
+)
 from orion.core.worker.trial import Trial
 
 
-class DummyExperiment():
+class DummyExperiment:
     """Dummy container to mock experiments"""
 
     pass
@@ -24,9 +35,10 @@ def dummy_trial():
     """Return a dummy trial object"""
     trial = Trial()
     trial._params = [
-        Trial.Param(name='a', type='real', value=0.0),
-        Trial.Param(name='b', type='integer', value=1),
-        Trial.Param(name='c', type='categorical', value='Some')]
+        Trial.Param(name="a", type="real", value=0.0),
+        Trial.Param(name="b", type="integer", value=1),
+        Trial.Param(name="c", type="categorical", value="Some"),
+    ]
     return trial
 
 
@@ -34,30 +46,16 @@ def dummy_trial():
 def dummy_dict():
     """Return a dict of dicts"""
     return {
-        1: {
-            1.1: "1.1.1",
-            1.2: {
-                "1.2.1": {},
-                "1.2.2": "1.2.2.1"
-            }
-        },
-        2: {
-            2.1: "2.1.1",
-            2.2: {}
-        },
-        3: {}
+        1: {1.1: "1.1.1", 1.2: {"1.2.1": {}, "1.2.2": "1.2.2.1"}},
+        2: {2.1: "2.1.1", 2.2: {}},
+        3: {},
     }
 
 
 @pytest.fixture
 def dummy_list_of_lists():
     """Return a list of lists"""
-    return [
-        1,
-        [2, 3],
-        4,
-        [5, 6, 7, 8]
-    ]
+    return [1, [2, 3], 4, [5, 6, 7, 8]]
 
 
 @pytest.fixture
@@ -65,24 +63,10 @@ def dummy_list_of_objects(dummy_dict):
     """Return a list of objects"""
     return [
         {
-            1: {
-                1.1: "1.1.1",
-                1.2: [
-                    "1.2.1",
-                    "1.2.2"
-                ]
-            },
+            1: {1.1: "1.1.1", 1.2: ["1.2.1", "1.2.2"]},
         },
-        [
-            4, 5
-        ],
-        {
-            2: {
-                2.1: "2.1.1",
-                2.2: {}
-            },
-            3: {}
-        }
+        [4, 5],
+        {2: {2.1: "2.1.1", 2.2: {}}, 3: {}},
     ]
 
 
@@ -91,18 +75,20 @@ def algorithm_dict():
     """Return an algorithm configuration"""
     return dict(
         bayesianoptimizer=dict(
-            acq_func='gp_hedge',
+            acq_func="gp_hedge",
             alpha=1e-10,
             n_initial_points=10,
             n_restarts_optimizer=0,
-            normalize_y=False))
+            normalize_y=False,
+        )
+    )
 
 
 def test_format_title():
     """Test title formatting template"""
     result = """Test\n===="""
 
-    assert format_title('Test') == result
+    assert format_title("Test") == result
 
 
 @pytest.mark.parametrize("depth", [0, 1, 2])
@@ -110,7 +96,11 @@ def test_format_dict_depth_synthetic(depth, dummy_dict):
     """Test dict formatting with different depths for one line"""
     WIDTH = 4
     tab = (" " * WIDTH) * depth
-    assert format_dict(dummy_dict, depth=depth, width=WIDTH).split("\n")[0].startswith(tab + "1")
+    assert (
+        format_dict(dummy_dict, depth=depth, width=WIDTH)
+        .split("\n")[0]
+        .startswith(tab + "1")
+    )
 
 
 def test_format_dict_depth_full(dummy_dict):
@@ -131,12 +121,15 @@ def test_format_dict_depth_full(dummy_dict):
     assert lines[8].startswith("3")
 
 
-@pytest.mark.parametrize("width,depth",
-                         itertools.product([0, 2], [1, 2]))
+@pytest.mark.parametrize("width,depth", itertools.product([0, 2], [1, 2]))
 def test_format_dict_width_synthetic(width, depth, dummy_dict):
     """Test dict formatting with different combination of widths and depth for one line"""
     tab = (" " * width) * depth
-    assert format_dict(dummy_dict, depth=depth, width=width).split("\n")[0].startswith(tab + "1")
+    assert (
+        format_dict(dummy_dict, depth=depth, width=width)
+        .split("\n")[0]
+        .startswith(tab + "1")
+    )
 
 
 @pytest.mark.parametrize("width", [0, 5, 12])
@@ -173,7 +166,9 @@ def test_format_dict_empty_leaf_template_custom():
     """Test dict empty leaf node formatting with custom template"""
     template = "{key} is a leaf\n"
     dummy_dict_with_leafs = {1: {2: {}}, 2: {}, 3: {1: 3, 2: {}}}
-    lines = format_dict(dummy_dict_with_leafs, templates={'empty_leaf': template}).split("\n")
+    lines = format_dict(
+        dummy_dict_with_leafs, templates={"empty_leaf": template}
+    ).split("\n")
     assert len(lines) == 6
     # 1:
     assert lines[1] == "2 is a leaf"
@@ -199,7 +194,7 @@ def test_format_dict_leaf_template_custom():
     """Test dict leaf node formatting with custom template"""
     template = "value of {key} is {value}\n"
     dummy_dict_with_leafs = {1: {2: {}}, 2: {}, 3: {1: 3, 2: {}}}
-    lines = format_dict(dummy_dict_with_leafs, templates={'leaf': template}).split("\n")
+    lines = format_dict(dummy_dict_with_leafs, templates={"leaf": template}).split("\n")
     assert len(lines) == 6
     # 1:
     #   2
@@ -226,7 +221,9 @@ def test_format_dict_node_template_custom():
     """Test dict formatting with custom node template"""
     template = "{key} is a dict:\n{value}\n"
     dummy_dict_with_leafs = {1: {2: {}}, 2: {}, 3: {1: {4: 3}, 2: {}}}
-    lines = format_dict(dummy_dict_with_leafs, templates={'dict_node': template}).split("\n")
+    lines = format_dict(dummy_dict_with_leafs, templates={"dict_node": template}).split(
+        "\n"
+    )
     assert len(lines) == 7
     assert lines[0] == "1 is a dict:"
     #   2
@@ -269,12 +266,14 @@ def test_format_list_depth_full(dummy_list_of_lists):
     assert lines[13] == "]"
 
 
-@pytest.mark.parametrize("width,depth",
-                         itertools.product([0, 2], [1, 2]))
+@pytest.mark.parametrize("width,depth", itertools.product([0, 2], [1, 2]))
 def test_format_list_width_synthetic(width, depth, dummy_list_of_lists):
     """Test list of lists formatting with different combination of widths and depth for one line"""
     tab = (" " * width) * depth
-    assert format_list(dummy_list_of_lists, depth=depth, width=width).split("\n")[0] == tab + "["
+    assert (
+        format_list(dummy_list_of_lists, depth=depth, width=width).split("\n")[0]
+        == tab + "["
+    )
 
 
 @pytest.mark.parametrize("width", [0, 5, 12])
@@ -310,7 +309,7 @@ def test_format_list_item_template(dummy_list_of_lists):
 def test_format_list_item_template_custom(dummy_list_of_lists):
     """Test list of lists with custom item template"""
     template = "{item} is an item\n"
-    lines = format_list(dummy_list_of_lists, templates={'item': template}).split("\n")
+    lines = format_list(dummy_list_of_lists, templates={"item": template}).split("\n")
     assert len(lines) == 14
     # 1:
     assert lines[1] == "1 is an item"
@@ -331,10 +330,7 @@ def test_format_list_node_template(dummy_list_of_lists):
 
 def test_format_list_node_template_custom(dummy_list_of_lists):
     """Test list of lists custom formatting"""
-    templates = dict(
-        list="[{items}]",
-        item="{item}",
-        list_node="{item}")
+    templates = dict(list="[{items}]", item="{item}", list_node="{item}")
     lines = format_list(dummy_list_of_lists, templates=templates).split("\n")
     assert len(lines) == 1
     assert lines[0] == "[1[23]4[5678]]"
@@ -342,7 +338,9 @@ def test_format_list_node_template_custom(dummy_list_of_lists):
 
 def test_format_dict_with_list(dummy_list_of_objects):
     """Test dict formatting with embedded lists"""
-    assert format_dict(dummy_list_of_objects) == """\
+    assert (
+        format_dict(dummy_list_of_objects)
+        == """\
 [
     1:
         1.1: 1.1.1
@@ -361,6 +359,7 @@ def test_format_dict_with_list(dummy_list_of_objects):
     3
 ]\
 """
+    )
 
 
 def test_format_identification():
@@ -368,26 +367,32 @@ def test_format_identification():
     experiment = DummyExperiment()
     experiment.name = "test"
     experiment.version = 1
-    experiment.metadata = {'user': 'corneauf'}
-    assert format_identification(experiment) == """\
+    experiment.metadata = {"user": "corneauf"}
+    assert (
+        format_identification(experiment)
+        == """\
 Identification
 ==============
 name: test
 version: 1
 user: corneauf
 """
+    )
 
 
 def test_format_commandline():
     """Test commandline section formatting"""
     experiment = DummyExperiment()
-    commandline = ['executing.sh', '--some', 'random', '--command', 'line', 'arguments']
-    experiment.metadata = {'user_args': commandline}
-    assert format_commandline(experiment) == """\
+    commandline = ["executing.sh", "--some", "random", "--command", "line", "arguments"]
+    experiment.metadata = {"user_args": commandline}
+    assert (
+        format_commandline(experiment)
+        == """\
 Commandline
 ===========
 executing.sh --some random --command line arguments
 """
+    )
 
 
 def test_format_config(monkeypatch):
@@ -395,19 +400,28 @@ def test_format_config(monkeypatch):
     experiment = DummyExperiment()
     experiment.pool_size = 10
     experiment.max_trials = 100
-    assert format_config(experiment) == """\
+    experiment.max_broken = 5
+    experiment.working_dir = "working_dir"
+    assert (
+        format_config(experiment)
+        == """\
 Config
 ======
 pool size: 10
 max trials: 100
+max broken: 5
+working dir: working_dir
 """
+    )
 
 
 def test_format_algorithm(algorithm_dict):
     """Test algorithm section formatting"""
     experiment = DummyExperiment()
-    experiment.configuration = {'algorithms': algorithm_dict}
-    assert format_algorithm(experiment) == """\
+    experiment.configuration = {"algorithms": algorithm_dict}
+    assert (
+        format_algorithm(experiment)
+        == """\
 Algorithm
 =========
 bayesianoptimizer:
@@ -417,37 +431,45 @@ bayesianoptimizer:
     n_restarts_optimizer: 0
     normalize_y: False
 """
+    )
 
 
 def test_format_space():
     """Test space section formatting"""
     experiment = DummyExperiment()
     space = SpaceBuilder().build(
-        {"some": 'choices(["random", "or", "not"])',
-         "command": 'uniform(0, 1)'})
+        {"some": 'choices(["random", "or", "not"])', "command": "uniform(0, 1)"}
+    )
     experiment.space = space
-    assert format_space(experiment) == """\
+    assert (
+        format_space(experiment)
+        == """\
 Space
 =====
 command: uniform(0, 1)
 some: choices(['random', 'or', 'not'])
 """
+    )
 
 
 def test_format_metadata():
     """Test metadata section formatting"""
     experiment = DummyExperiment()
     experiment.metadata = dict(
-        user='user',
-        datetime='now',
-        orion_version='1.0.1',
+        user="user",
+        datetime="now",
+        orion_version="1.0.1",
         VCS=dict(
-            HEAD_sha='sha',
-            active_branch='branch',
-            diff_sha='smt',
+            HEAD_sha="sha",
+            active_branch="branch",
+            diff_sha="smt",
             is_dirty=True,
-            type='git'))
-    assert format_metadata(experiment) == """\
+            type="git",
+        ),
+    )
+    assert (
+        format_metadata(experiment)
+        == """\
 Meta-data
 =========
 user: user
@@ -460,6 +482,7 @@ VCS:
   is_dirty: True
   type: git
 """
+    )
 
 
 def test_format_refers_root():
@@ -472,19 +495,22 @@ def test_format_refers_root():
     #     parent='user',
     #     datetime='now',
     #     orion_version='1.0.1')
-    assert format_refers(experiment) == """\
+    assert (
+        format_refers(experiment)
+        == """\
 Parent experiment
 =================
 root: 
 parent: 
 adapter: 
-"""  # noqa: W291
+"""
+    )  # noqa: W291
 
 
 def test_format_refers_child():
     """Test refers section formatting for a child experiment"""
-    ROOT_NAME = 'root-name'
-    PARENT_NAME = 'parent-name'
+    ROOT_NAME = "root-name"
+    PARENT_NAME = "parent-name"
 
     root = DummyExperiment()
     root.name = ROOT_NAME
@@ -498,9 +524,7 @@ def test_format_refers_child():
     child.node.root = root
 
     adapter = DummyExperiment()
-    adapter.configuration = dict(
-        adummy='dict',
-        foran='adapter')
+    adapter.configuration = dict(adummy="dict", foran="adapter")
 
     child.refers = dict(adapter=adapter)
 
@@ -508,7 +532,9 @@ def test_format_refers_child():
     #     parent='user',
     #     datetime='now',
     #     orion_version='1.0.1')
-    assert format_refers(child) == """\
+    assert (
+        format_refers(child)
+        == """\
 Parent experiment
 =================
 root: root-name
@@ -516,7 +542,8 @@ parent: parent-name
 adapter: 
   adummy: dict
   foran: adapter
-"""  # noqa: W291
+"""
+    )  # noqa: W291
 
 
 def test_get_trial_params_empty():
@@ -531,25 +558,30 @@ def test_get_trial_params(dummy_trial):
     experiment = DummyExperiment()
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
     params = get_trial_params(None, experiment)
-    assert params['a'] == 0.0
-    assert params['b'] == 1
-    assert params['c'] == 'Some'
+    assert params["a"] == 0.0
+    assert params["b"] == 1
+    assert params["c"] == "Some"
 
 
 def test_format_stats(dummy_trial):
     """Test stats section formatting"""
     experiment = DummyExperiment()
     experiment.stats = dict(
-        best_trials_id='dummy',
+        best_trials_id="dummy",
         trials_completed=10,
         best_evaluation=0.1,
-        start_time='yesterday',
-        finish_time='now',
-        duration='way too long')
+        start_time="yesterday",
+        finish_time="now",
+        duration="way too long",
+    )
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
-    assert format_stats(experiment) == """\
+    experiment.is_done = False
+    assert (
+        format_stats(experiment)
+        == """\
 Stats
 =====
+completed: False
 trials completed: 10
 best trial:
   id: dummy
@@ -562,37 +594,47 @@ start time: yesterday
 finish time: now
 duration: way too long
 """
+    )
 
 
 def test_format_info(algorithm_dict, dummy_trial):
     """Test full formatting string"""
     experiment = DummyExperiment()
-    commandline = ['executing.sh', '--some~choices(["random", "or", "not"])',
-                   '--command~uniform(0, 1)']
-    experiment.name = 'test'
+    commandline = [
+        "executing.sh",
+        '--some~choices(["random", "or", "not"])',
+        "--command~uniform(0, 1)",
+    ]
+    experiment.name = "test"
     experiment.version = 1
-    experiment.metadata = {'user_args': commandline}
+    experiment.metadata = {"user_args": commandline}
     experiment.pool_size = 10
     experiment.max_trials = 100
-    experiment.configuration = {'algorithms': algorithm_dict}
+    experiment.max_broken = 5
+    experiment.working_dir = "working_dir"
+    experiment.configuration = {"algorithms": algorithm_dict}
 
     space = SpaceBuilder().build(
-        {"some": 'choices(["random", "or", "not"])',
-         "command": 'uniform(0, 1)'})
+        {"some": 'choices(["random", "or", "not"])', "command": "uniform(0, 1)"}
+    )
     experiment.space = space
-    experiment.metadata.update(dict(
-        user='user',
-        datetime='now',
-        orion_version='1.0.1',
-        VCS=dict(
-            HEAD_sha='sha',
-            active_branch='branch',
-            diff_sha='smt',
-            is_dirty=True,
-            type='git')))
+    experiment.metadata.update(
+        dict(
+            user="user",
+            datetime="now",
+            orion_version="1.0.1",
+            VCS=dict(
+                HEAD_sha="sha",
+                active_branch="branch",
+                diff_sha="smt",
+                is_dirty=True,
+                type="git",
+            ),
+        )
+    )
 
-    ROOT_NAME = 'root-name'
-    PARENT_NAME = 'parent-name'
+    ROOT_NAME = "root-name"
+    PARENT_NAME = "parent-name"
 
     root = DummyExperiment()
     root.name = ROOT_NAME
@@ -605,21 +647,23 @@ def test_format_info(algorithm_dict, dummy_trial):
     experiment.node.root = root
 
     adapter = DummyExperiment()
-    adapter.configuration = dict(
-        adummy='dict',
-        foran='adapter')
+    adapter.configuration = dict(adummy="dict", foran="adapter")
 
     experiment.refers = dict(adapter=adapter)
     experiment.stats = dict(
-        best_trials_id='dummy',
+        best_trials_id="dummy",
         trials_completed=10,
         best_evaluation=0.1,
-        start_time='yesterday',
-        finish_time='now',
-        duration='way too long')
+        start_time="yesterday",
+        finish_time="now",
+        duration="way too long",
+    )
     experiment.get_trial = lambda trial=None, uid=None: dummy_trial
+    experiment.is_done = False
 
-    assert format_info(experiment) == """\
+    assert (
+        format_info(experiment)
+        == """\
 Identification
 ==============
 name: test
@@ -636,6 +680,8 @@ Config
 ======
 pool size: 10
 max trials: 100
+max broken: 5
+working dir: working_dir
 
 
 Algorithm
@@ -678,6 +724,7 @@ adapter:
 
 Stats
 =====
+completed: False
 trials completed: 10
 best trial:
   id: dummy
@@ -690,4 +737,5 @@ start time: yesterday
 finish time: now
 duration: way too long
 
-"""  # noqa: W291
+"""
+    )  # noqa: W291

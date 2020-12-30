@@ -1,6 +1,11 @@
 """Test for generic :class:`orion.core.evc.tree`"""
 
-from orion.core.evc.tree import DepthFirstTraversal, flattened, PreOrderTraversal, TreeNode
+from orion.core.evc.tree import (
+    DepthFirstTraversal,
+    PreOrderTraversal,
+    TreeNode,
+    flattened,
+)
 
 
 def test_node_creation():
@@ -319,7 +324,7 @@ def test_preorder_traversal():
     TreeNode("h", e)
 
     rval = [node.item for node in PreOrderTraversal(root)]
-    assert rval == ['a', 'b', 'f', 'g', 'c', 'd', 'e', 'h']
+    assert rval == ["a", "b", "f", "g", "c", "d", "e", "h"]
 
 
 def test_depth_first_traversal():
@@ -341,7 +346,7 @@ def test_depth_first_traversal():
     TreeNode("h", e)
 
     rval = [node.item for node in DepthFirstTraversal(root)]
-    assert rval == ['f', 'g', 'b', 'c', 'd', 'h', 'e', 'a']
+    assert rval == ["f", "g", "b", "c", "d", "h", "e", "a"]
 
 
 def test_map_children():
@@ -440,4 +445,4 @@ def test_flattened():
 
     TreeNode("h", e)
 
-    assert flattened(root) == ['a', 'b', 'f', 'g', 'c', 'd', 'e', 'h']
+    assert flattened(root) == ["a", "b", "f", "g", "c", "d", "e", "h"]

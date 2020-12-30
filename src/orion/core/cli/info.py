@@ -12,16 +12,19 @@
 import logging
 import sys
 
-from orion.core.cli.base import get_basic_args_group
 import orion.core.io.experiment_builder as experiment_builder
+from orion.core.cli.base import get_basic_args_group
 from orion.core.utils.format_terminal import format_info
 
 log = logging.getLogger(__name__)
+SHORT_DESCRIPTION = "Gives detailed information about experiments"
 
 
 def add_subparser(parser):
     """Add the subparser that needs to be used for this command"""
-    info_parser = parser.add_parser('info', help='info help')
+    info_parser = parser.add_parser(
+        "info", help=SHORT_DESCRIPTION, description=SHORT_DESCRIPTION
+    )
     get_basic_args_group(info_parser)
 
     info_parser.set_defaults(func=main)
@@ -34,7 +37,7 @@ def main(args):
     try:
         experiment = experiment_builder.build_view_from_args(args)
     except ValueError:
-        print('Experiment {} not found in db.'.format(args.get('name', None)))
+        print("Experiment {} not found in db.".format(args.get("name", None)))
         sys.exit(1)
 
     print(format_info(experiment))

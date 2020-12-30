@@ -1,5 +1,5 @@
-Command lines
-=============
+Command line
+============
 
 .. automodule:: orion.core.cli
    :members:

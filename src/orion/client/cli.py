@@ -13,17 +13,19 @@ import sys
 
 from orion.core import config
 
-
 IS_ORION_ON = False
 _HAS_REPORTED_RESULTS = False
-RESULTS_FILENAME = os.getenv('ORION_RESULTS_PATH', None)
+RESULTS_FILENAME = os.getenv("ORION_RESULTS_PATH", None)
 if RESULTS_FILENAME and os.path.isfile(RESULTS_FILENAME):
     import json
+
     IS_ORION_ON = True
 
 if RESULTS_FILENAME and not IS_ORION_ON:
-    raise RuntimeWarning("Results file path provided in environmental variable "
-                         "does not correspond to an existing file.")
+    raise RuntimeWarning(
+        "Results file path provided in environmental variable "
+        "does not correspond to an existing file."
+    )
 
 
 def interrupt_trial():
@@ -31,7 +33,7 @@ def interrupt_trial():
     sys.exit(config.worker.interrupt_signal_code)
 
 
-def report_objective(objective, name='objective'):
+def report_objective(objective, name="objective"):
     """Report only the objective at the end of execution
 
     To send more data (statistic, constraint, gradient), use ``report_results``.
@@ -57,10 +59,10 @@ def report_objective(objective, name='objective'):
         Name of the objective. Default is 'objective'.
 
     """
-    report_results([dict(name=name, type='objective', value=objective)])
+    report_results([dict(name=name, type="objective", value=objective)])
 
 
-def report_bad_trial(objective=1e10, name='objective', data=None):
+def report_bad_trial(objective=1e10, name="objective", data=None):
     """Report a bad trial with large objective to Oríon.
 
     This is especially useful if some parameter values lead to exceptions such as out of memory.
@@ -96,7 +98,7 @@ def report_bad_trial(objective=1e10, name='objective', data=None):
     """
     if data is None:
         data = []
-    report_results([dict(name=name, type='objective', value=objective)] + data)
+    report_results([dict(name=name, type="objective", value=objective)] + data)
 
 
 def report_results(data):
@@ -129,7 +131,7 @@ def report_results(data):
     if _HAS_REPORTED_RESULTS:
         raise RuntimeWarning("Has already reported evaluation results once.")
     if IS_ORION_ON:
-        with open(RESULTS_FILENAME, 'w') as results_file:
+        with open(RESULTS_FILENAME, "w") as results_file:
             json.dump(data, results_file)
     else:
         print(data)

@@ -30,7 +30,7 @@ class PreOrderTraversal(object):
 
     """
 
-    __slots__ = ('stack', )
+    __slots__ = ("stack",)
 
     def __init__(self, tree_node):
         """Initialize the stack for iteration"""
@@ -65,7 +65,7 @@ class DepthFirstTraversal(object):
 
     """
 
-    __slots__ = ('stack', 'seen')
+    __slots__ = ("stack", "seen")
 
     def __init__(self, tree_node):
         """Initialize the stack and set of seen nodes for iteration"""
@@ -181,7 +181,7 @@ class TreeNode(object):
 
     """
 
-    __slots__ = ('_item', '_parent', '_children')
+    __slots__ = ("_item", "_parent", "_children")
 
     def __init__(self, item, parent=None, children=tuple()):
         """Initialize node with item, parent and children
@@ -392,7 +392,9 @@ class TreeNode(object):
             rval, parent_node = function(self, rval_parent_node)
             return TreeNode(rval, parent_node)
         elif node is self.children:
-            rval_children_nodes = [child.map(function, child.children) for child in self.children]
+            rval_children_nodes = [
+                child.map(function, child.children) for child in self.children
+            ]
             rval, children_nodes = function(self, rval_children_nodes)
             return TreeNode(rval, parent=None, children=children_nodes)
         else:
@@ -410,8 +412,12 @@ class TreeNode(object):
 
         children = [child.item for child in self.children]
 
-        return ("%s(%s, parent=%s, children=%s)" %
-                (self.__class__.__name__, str(self.item), str(parent), str(children)))
+        return "%s(%s, parent=%s, children=%s)" % (
+            self.__class__.__name__,
+            str(self.item),
+            str(parent),
+            str(children),
+        )
 
 
 def flattened(trials_tree):

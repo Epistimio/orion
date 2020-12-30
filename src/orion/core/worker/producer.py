@@ -42,14 +42,16 @@ class Producer(object):
         self.experiment = experiment
         self.space = experiment.space
         if self.space is None:
-            raise RuntimeError("Experiment object provided to Producer has not yet completed"
-                               " initialization.")
+            raise RuntimeError(
+                "Experiment object provided to Producer has not yet completed"
+                " initialization."
+            )
         self.algorithm = experiment.algorithms
         self.algorithm.algorithm.max_trials = experiment.max_trials
         if max_idle_time is None:
             max_idle_time = orion.core.config.worker.max_idle_time
         self.max_idle_time = max_idle_time
-        self.strategy = experiment.producer['strategy']
+        self.strategy = experiment.producer["strategy"]
         self.naive_algorithm = None
         # TODO: Move trials_history into PrimaryAlgo during the refactoring of Algorithm with
         #       Strategist and Scheduler.
@@ -66,9 +68,9 @@ class Producer(object):
     def backoff(self):
         """Wait some time and update algorithm."""
         waiting_time = max(0, random.gauss(1, 0.2))
-        log.info('Waiting %d seconds', waiting_time)
+        log.info("Waiting %d seconds", waiting_time)
         time.sleep(waiting_time)
-        log.info('Updating algorithm.')
+        log.info("Updating algorithm.")
         self.update()
         self.failure_count += 1
 
@@ -77,7 +79,10 @@ class Producer(object):
         if time.time() - start > self.max_idle_time:
             raise SampleTimeout(
                 "Algorithm could not sample new points in less than {} seconds."
-                "Failed to sample points {} times".format(self.max_idle_time, self.failure_count))
+                "Failed to sample points {} times".format(
+                    self.max_idle_time, self.failure_count
+                )
+            )
 
     def produce(self):
         """Create and register new trials."""
@@ -87,8 +92,9 @@ class Producer(object):
         self.failure_count = 0
         start = time.time()
 
-        while (sampled_points < self.pool_size and
-               not (self.experiment.is_done or self.naive_algorithm.is_done)):
+        while sampled_points < self.pool_size and not (
+            self.experiment.is_done or self.naive_algorithm.is_done
+        ):
             self._sample_guard(start)
 
             log.debug("### Algorithm suggests new points.")
@@ -101,8 +107,10 @@ class Producer(object):
                 if self.algorithm.is_done:
                     return
 
-                raise WaitingForTrials('Algo does not have more trials to sample.'
-                                       'Waiting for current trials to finish')
+                raise WaitingForTrials(
+                    "Algo does not have more trials to sample."
+                    "Waiting for current trials to finish"
+                )
 
             for new_point in new_points:
                 sampled_points += self.register_trials(new_point)
@@ -132,20 +140,24 @@ class Producer(object):
             return 1
 
         except DuplicateKeyError:
-            log.debug("#### Duplicate sample.")
+            log.debug("#### Duplicate sample: %s", new_trial)
             self.backoff()
             return 0
 
     def _prevalidate_trial(self, new_trial):
         """Verify if trial is not in parent history"""
-        if Trial.compute_trial_hash(new_trial, ignore_experiment=True) in self.params_hashes:
+        if (
+            Trial.compute_trial_hash(new_trial, ignore_experiment=True)
+            in self.params_hashes
+        ):
             raise DuplicateKeyError
 
     def _update_params_hashes(self, trials):
         """Register locally all param hashes of trials"""
         for trial in trials:
             self.params_hashes.add(
-                Trial.compute_trial_hash(trial, ignore_experiment=True, ignore_lie=True))
+                Trial.compute_trial_hash(trial, ignore_experiment=True, ignore_lie=True)
+            )
 
     def update(self):
         """Pull all trials to update model with completed ones and naive model with non completed
@@ -153,8 +165,12 @@ class Producer(object):
         """
         trials = self.experiment.fetch_trials(with_evc_tree=True)
 
-        self._update_algorithm([trial for trial in trials if trial.status == 'completed'])
-        self._update_naive_algorithm([trial for trial in trials if trial.status != 'completed'])
+        self._update_algorithm(
+            [trial for trial in trials if trial.status == "completed"]
+        )
+        self._update_naive_algorithm(
+            [trial for trial in trials if trial.status != "completed"]
+        )
 
     def _update_algorithm(self, completed_trials):
         """Pull newest completed trials to update local model."""
@@ -169,8 +185,12 @@ class Producer(object):
 
         if new_completed_trials:
             log.debug("### Convert them to list of points and their results.")
-            points = list(map(lambda trial: format_trials.trial_to_tuple(trial, self.space),
-                              new_completed_trials))
+            points = list(
+                map(
+                    lambda trial: format_trials.trial_to_tuple(trial, self.space),
+                    new_completed_trials,
+                )
+            )
             results = list(map(format_trials.get_trial_results, new_completed_trials))
 
             log.debug("### Observe them.")
@@ -200,7 +220,9 @@ class Producer(object):
                 try:
                     self.experiment.register_lie(lying_trial)
                 except DuplicateKeyError:
-                    log.debug("#### Duplicate lie. No need to register a duplicate in DB.")
+                    log.debug(
+                        "#### Duplicate lie. No need to register a duplicate in DB."
+                    )
 
         return lying_trials
 
@@ -213,8 +235,12 @@ class Producer(object):
         log.debug("### %s", lying_trials)
         if lying_trials:
             log.debug("### Convert them to list of points and their results.")
-            points = list(map(lambda trial: format_trials.trial_to_tuple(trial, self.space),
-                              lying_trials))
+            points = list(
+                map(
+                    lambda trial: format_trials.trial_to_tuple(trial, self.space),
+                    lying_trials,
+                )
+            )
             results = list(map(format_trials.get_trial_results, lying_trials))
 
             log.debug("### Observe them.")

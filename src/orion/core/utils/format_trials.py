@@ -24,10 +24,14 @@ def trial_to_tuple(trial, space):
     trial_keys = set(params.keys())
     space_keys = set(space.keys())
     if trial_keys != space_keys:
-        raise ValueError(""""
+        raise ValueError(
+            """"
 The trial {} has wrong params:
 Trial params: {}
-Space dims: {}""".format(trial.id, sorted(trial_keys), sorted(space_keys)))
+Space dims: {}""".format(
+                trial.id, sorted(trial_keys), sorted(space_keys)
+            )
+        )
     return tuple(params[name] for name in space.keys())
 
 
@@ -44,19 +48,19 @@ def dict_to_trial(data, space):
     for name, dim in space.items():
         if name not in data and dim.default_value is dim.NO_DEFAULT_VALUE:
             raise ValueError(
-                'Dimension {} not specified and does not have a default value.'.format(name))
+                "Dimension {} not specified and does not have a default value.".format(
+                    name
+                )
+            )
         value = data.get(name, dim.default_value)
 
         if value not in dim:
             error_msg = "Dimension {} value {} is outside of prior {}".format(
-                name, value, dim.get_prior_string())
+                name, value, dim.get_prior_string()
+            )
             raise ValueError(error_msg)
 
-        params.append(dict(
-            name=dim.name,
-            type=dim.type,
-            value=value
-            ))
+        params.append(dict(name=dim.name, type=dim.type, value=value))
     assert len(params) == len(space)
     return Trial(params=params)
 
@@ -72,11 +76,7 @@ def tuple_to_trial(data, space):
     assert len(data) == len(space)
     params = []
     for i, dim in enumerate(space.values()):
-        params.append(dict(
-            name=dim.name,
-            type=dim.type,
-            value=data[i]
-            ))
+        params.append(dict(name=dim.name, type=dim.type, value=data[i]))
     return Trial(params=params)
 
 
@@ -88,16 +88,17 @@ def get_trial_results(trial):
     objective = trial.objective
 
     if lie:
-        results['objective'] = lie.value
+        results["objective"] = lie.value
     elif objective:
-        results['objective'] = objective.value
+        results["objective"] = objective.value
     else:
-        results['objective'] = None
+        results["objective"] = None
 
-    results['constraint'] = [result.value for result in trial.results
-                             if result.type == 'constraint']
+    results["constraint"] = [
+        result.value for result in trial.results if result.type == "constraint"
+    ]
     grad = trial.gradient
-    results['gradient'] = tuple(grad.value) if grad else None
+    results["gradient"] = tuple(grad.value) if grad else None
 
     return results
 

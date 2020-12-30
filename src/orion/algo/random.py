@@ -36,7 +36,7 @@ class Random(BaseAlgorithm):
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
         _state_dict = super(Random, self).state_dict
-        _state_dict['rng_state'] = self.rng.get_state()
+        _state_dict["rng_state"] = self.rng.get_state()
         return _state_dict
 
     def set_state(self, state_dict):
@@ -46,7 +46,7 @@ class Random(BaseAlgorithm):
         """
         super(Random, self).set_state(state_dict)
         self.seed_rng(0)
-        self.rng.set_state(state_dict['rng_state'])
+        self.rng.set_state(state_dict["rng_state"])
 
     def suggest(self, num=1):
         """Suggest a `num` of new sets of parameters. Randomly draw samples
@@ -61,7 +61,9 @@ class Random(BaseAlgorithm):
         point_ids = set(self._trials_info.keys())
         i = 0
         while len(points) < num:
-            new_point = self.space.sample(1, seed=tuple(self.rng.randint(0, 1000000, size=3)))[0]
+            new_point = self.space.sample(
+                1, seed=tuple(self.rng.randint(0, 1000000, size=3))
+            )[0]
             point_id = infer_trial_id(new_point)
             if point_id not in point_ids:
                 point_ids.add(point_id)

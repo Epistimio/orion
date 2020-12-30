@@ -28,14 +28,20 @@ requirements:
     - AppDirs
     - plotly
     - pandas
+    - falcon
+    - gunicorn
+    - scikit-learn
+    - psutil
 
 test:
   import:
-    - orion.core
-    - orion.core.cli
     - orion.algo
     - orion.client
+    - orion.core
+    - orion.core.cli
+    - orion.serving
     - orion.storage
+    - orion.testing
   commands:
     - orion --help
 

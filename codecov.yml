@@ -1,21 +1,7 @@
-codecov:
-  branch: master
-  bot: null
-
 coverage:
   precision: 2
   round: down
-  range: "60...100"
-
-  notify:
-    slack:
-      default:
-        url: "https://hooks.slack.com/services/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"
-        threshold: null
-        only_pulls: false
-        branches: master
-        flags: null
-        paths: null
+  range: "70...100"
 
   status:
     project:
@@ -27,25 +13,16 @@ coverage:
       core:
         # change this to more strict number and some allowance threshold later
         target: auto
-        threshold: null
         branches: null
-        paths: src/orion
+        paths:
+          - "src"
 
     patch:
       default:
-        target: auto
         branches: null
 
     changes:
       default:
         branches: null
 
-  ignore:
-    - tests/*
-  fixes:
-    - .tox
-
-comment:
-  layout: "header, diff, changes, sunburst, uncovered, tree"
-  branches: null
-  behavior: default
+comment: false

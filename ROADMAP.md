@@ -1,15 +1,17 @@
 # Roadmap
-Last update February 25th, 2020
+Last update December 3rd, 2020
 
 ## Next releases - Short-Term
-### v0.1.9
+
+### v0.1.12
+
+#### Quick release for bug fixes
+
+### v0.1.13
+
 #### Default database backend
 PickledDB will become the default database backend instead of MongoDB. This initiative reduces
 initial configuration, allowing users to get started faster.
-
-#### Deleting experiments
-Adding a new (very requested) feature enabling the deletion of experiments from the CLI or python 
-API.
 
 ### v0.2
 #### Journal Protocol Plugins

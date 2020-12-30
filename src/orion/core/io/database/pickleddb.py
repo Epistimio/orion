@@ -9,13 +9,14 @@
 
 """
 
-from contextlib import contextmanager
 import logging
 import os
 import pickle
+from contextlib import contextmanager
 from pickle import PicklingError
 
-from filelock import FileLock, Timeout
+import psutil
+from filelock import FileLock, SoftFileLock, Timeout
 
 import orion.core
 from orion.core.io.database import AbstractDB, DatabaseTimeout
@@ -23,7 +24,7 @@ from orion.core.io.database.ephemeraldb import EphemeralDB
 
 log = logging.getLogger(__name__)
 
-DEFAULT_HOST = os.path.join(orion.core.DIRS.user_data_dir, 'orion', 'orion_db.pkl')
+DEFAULT_HOST = os.path.join(orion.core.DIRS.user_data_dir, "orion", "orion_db.pkl")
 
 TIMEOUT_ERROR_MESSAGE = """\
 Could not acquire lock for PickledDB after {} seconds.
@@ -165,8 +166,9 @@ class PickledDB(AbstractDB):
 
         """
         with self.locked_database() as database:
-            return database.read_and_write(collection_name, query=query, data=data,
-                                           selection=selection)
+            return database.read_and_write(
+                collection_name, query=query, data=data, selection=selection
+            )
 
     def count(self, collection_name, query=None):
         """Count the number of documents in a collection which match the `query`.
@@ -191,7 +193,7 @@ class PickledDB(AbstractDB):
         if not os.path.exists(self.host):
             return EphemeralDB()
 
-        with open(self.host, 'rb') as f:
+        with open(self.host, "rb") as f:
             data = f.read()
             if not data:
                 database = EphemeralDB()
@@ -202,20 +204,23 @@ class PickledDB(AbstractDB):
 
     def _dump_database(self, database):
         """Write pickled DB on disk"""
-        tmp_file = self.host + '.tmp'
+        tmp_file = self.host + ".tmp"
 
         try:
-            with open(tmp_file, 'wb') as f:
+            with open(tmp_file, "wb") as f:
                 pickle.dump(database, f)
 
         except (PicklingError, AttributeError):
-            collection, doc = find_unpickable_doc(database._db)  # pylint: disable=protected-access
-            log.error('Document in (collection: %s) is not pickable\ndoc: %s',
-                      collection, doc.to_dict())
+            # pylint: disable=protected-access
+            collection, doc = find_unpickable_doc(database._db)
+            log.error(
+                "Document in (collection: %s) is not pickable\ndoc: %s",
+                collection,
+                doc.to_dict(),
+            )
 
             key, value = find_unpickable_field(doc)
-            log.error('because (value %s) in (field: %s) is not pickable',
-                      value, key)
+            log.error("because (value %s) in (field: %s) is not pickable", value, key)
             raise
 
         os.rename(tmp_file, self.host)
@@ -223,7 +228,7 @@ class PickledDB(AbstractDB):
     @contextmanager
     def locked_database(self, write=True):
         """Lock database file during wrapped operation call."""
-        lock = FileLock(self.host + '.lock')
+        lock = _create_lock(self.host + ".lock")
 
         try:
             with lock.acquire(timeout=self.timeout):
@@ -235,3 +240,58 @@ class PickledDB(AbstractDB):
                     self._dump_database(database)
         except Timeout as e:
             raise DatabaseTimeout(TIMEOUT_ERROR_MESSAGE.format(self.timeout)) from e
+
+
+local_file_systems = ["ext2", "ext3", "ext4", "ntfs"]
+
+
+def _fs_support_globalflock(file_system):
+    if file_system.fstype == "lustre":
+        return ("flock" in file_system.opts) and ("localflock" not in file_system.opts)
+
+    elif file_system.fstype == "beegfs":
+        return "tuneUseGlobalFileLocks" in file_system.opts
+
+    elif file_system.fstype == "gpfs":
+        return True
+
+    elif file_system.fstype == "nfs":
+        return False
+
+    return file_system.fstype in local_file_systems
+
+
+def _find_mount_point(path):
+    """Finds the mount point used to access `path`."""
+    path = os.path.abspath(path)
+    while not os.path.ismount(path):
+        path = os.path.dirname(path)
+
+    return path
+
+
+def _get_fs(path):
+    """Gets info about the filesystem on which `path` lives."""
+    mount = _find_mount_point(path)
+
+    for file_system in psutil.disk_partitions(True):
+        if file_system.mountpoint == mount:
+            return file_system
+
+    return None
+
+
+def _create_lock(path):
+    """Create lock based on file system capabilities
+
+    Determine if we can rely on the fcntl module for locking files.
+    Otherwise, fallback on using the directory creation atomicity as a locking mechanism.
+    """
+    file_system = _get_fs(path)
+
+    if _fs_support_globalflock(file_system):
+        log.debug("Using flock.")
+        return FileLock(path)
+    else:
+        log.debug("Cluster does not support flock. Falling back to softfilelock.")
+        return SoftFileLock(path)

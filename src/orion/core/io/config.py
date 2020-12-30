@@ -18,9 +18,6 @@ import os
 
 import yaml
 
-from orion.core.utils.flatten import flatten
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +39,7 @@ class ConfigurationError(Exception):
 
 
 def _curate(key):
-    return key.replace('-', '_')
+    return key.replace("-", "_")
 
 
 class Configuration:
@@ -72,8 +69,15 @@ class Configuration:
 
     """
 
-    SPECIAL_KEYS = ['_config', '_subconfigs', '_yaml', '_default', '_env_var', '_help',
-                    '_deprecated']
+    SPECIAL_KEYS = [
+        "_config",
+        "_subconfigs",
+        "_yaml",
+        "_default",
+        "_env_var",
+        "_help",
+        "_deprecated",
+    ]
 
     def __init__(self):
         self._config = {}
@@ -97,15 +101,33 @@ class Configuration:
             cfg = yaml.safe_load(f)
             if cfg is None:
                 return
-            # implies that yaml must be in dict form
-            for key, value in flatten(cfg).items():
-                default = self[key + '._default']
-                deprecated = self[key + '._deprecated']
-                logger.debug('Overwritting "%s" default %s with %s', key, default, value)
-                self[key + '._yaml'] = value
-                if deprecated and deprecated.get('alternative'):
-                    logger.debug('Overwritting "%s" default %s with %s', key, default, value)
-                    self[deprecated.get('alternative') + '._yaml'] = value
+            self._load_yaml_dict(self, cfg)
+
+    def _load_yaml_dict(self, root, config):
+        for key in self._config:
+            if key not in config:
+                continue
+            value = config.pop(key)
+            default = self[key + "._default"]
+            deprecated = self[key + "._deprecated"]
+            logger.debug('Overwritting "%s" default %s with %s', key, default, value)
+            self[key + "._yaml"] = value
+            if deprecated and deprecated.get("alternative"):
+                logger.debug(
+                    'Overwritting "%s" default %s with %s', key, default, value
+                )
+                root[deprecated.get("alternative") + "._yaml"] = value
+
+        for key in self._subconfigs:
+            if key not in config:
+                continue
+
+            # pylint: disable=protected-access
+            self._subconfigs[key]._load_yaml_dict(root, config.pop(key))
+
+        if config:
+            # Make it fail
+            self[next(iter(config.keys()))]
 
     def __getattr__(self, key):
         """Get the value of the option
@@ -125,33 +147,36 @@ class Configuration:
             If the option does not exist
 
         """
-        if key == 'config':
+        if key == "config":
             raise AttributeError
 
         if key not in self._config and key not in self._subconfigs:
-            raise ConfigurationError("Configuration does not have an attribute "
-                                     "'{}'.".format(key))
+            raise ConfigurationError(
+                "Configuration does not have an attribute " "'{}'.".format(key)
+            )
         if key in self._subconfigs:
             return self._subconfigs[key]
 
         config_setting = self._config[key]
-        if 'value' in config_setting:
-            value = config_setting['value']
-        elif ('env_var' in config_setting and
-              config_setting['env_var'] in os.environ):
-            value = os.environ[config_setting['env_var']]
-        elif 'yaml' in config_setting:
-            value = config_setting['yaml']
-        elif 'default' in config_setting:
-            value = config_setting['default']
+        if "value" in config_setting:
+            value = config_setting["value"]
+        elif "env_var" in config_setting and config_setting["env_var"] in os.environ:
+            value = os.environ[config_setting["env_var"]]
+            if config_setting["type"] in (list, tuple):
+                value = value.split(":")
+        elif "yaml" in config_setting:
+            value = config_setting["yaml"]
+        elif "default" in config_setting:
+            value = config_setting["default"]
         else:
-            raise ConfigurationError("Configuration not set and no default "
-                                     "provided: {}.".format(key))
+            raise ConfigurationError(
+                "Configuration not set and no default " "provided: {}.".format(key)
+            )
 
-        if config_setting.get('deprecated'):
+        if config_setting.get("deprecated"):
             self._deprecate(key)
 
-        return config_setting['type'](value)
+        return config_setting["type"](value)
 
     def __setattr__(self, key, value):
         """Set option value or subconfiguration
@@ -180,35 +205,39 @@ class Configuration:
         key = _curate(key)
         if key not in self.SPECIAL_KEYS and key in self._config:
             self._validate(key, value)
-            self._config[key]['value'] = value
-            if self._config[key].get('deprecated'):
+            self._config[key]["value"] = value
+            if self._config[key].get("deprecated"):
                 self._deprecate(key, value)
 
-        elif key in ['_config', '_subconfigs']:
+        elif key in ["_config", "_subconfigs"]:
             super(Configuration, self).__setattr__(key, value)
 
         elif key in self._subconfigs:
-            raise ValueError('Configuration already contains subconfiguration {}'.format(key))
+            raise ValueError(
+                "Configuration already contains subconfiguration {}".format(key)
+            )
 
         elif isinstance(value, Configuration):
             self._subconfigs[key] = value
 
         else:
-            raise TypeError("Can only set {} as a Configuration, not {}. Use add_option to set a "
-                            "new option.".format(key, type(value)))
+            raise TypeError(
+                "Can only set {} as a Configuration, not {}. Use add_option to set a "
+                "new option.".format(key, type(value))
+            )
 
     # pylint: disable=unused-argument
     def _deprecate(self, key, value=NOT_SET):
-        deprecate = self._config[key]['deprecated']
+        deprecate = self._config[key]["deprecated"]
         message = "(DEPRECATED) Option `%s` will be removed in %s."
-        args = [deprecate.get('name', key), deprecate['version']]
-        if 'alternative' in deprecate:
+        args = [deprecate.get("name", key), deprecate["version"]]
+        if "alternative" in deprecate:
             message += " Use `%s` instead."
-            args.append(deprecate['alternative'])
+            args.append(deprecate["alternative"])
 
         logger.warning(message, *args)
 
-    def get(self, key, deprecated='warn'):
+    def get(self, key, deprecated="warn"):
         """Access value
 
         Parameters
@@ -220,7 +249,7 @@ class Configuration:
             else if 'ignore', no warning will be logged for access to deprecated options.
 
         """
-        with _disable_logger(disable=(deprecated == 'ignore')):
+        with _disable_logger(disable=(deprecated == "ignore")):
             value = self[key]
 
         return value
@@ -237,13 +266,16 @@ class Configuration:
 
         """
         if isinstance(value, Configuration):
-            raise TypeError("Cannot overwrite option {} with a configuration".format(key))
+            raise TypeError(
+                "Cannot overwrite option {} with a configuration".format(key)
+            )
 
         try:
-            self._config[key]['type'](value)
+            self._config[key]["type"](value)
         except ValueError as e:
             message = "Option {} of type {} cannot be set to {} with type {}".format(
-                key, self._config[key]['type'], value, type(value))
+                key, self._config[key]["type"], value, type(value)
+            )
             raise TypeError(message) from e
 
     def __setitem__(self, key, value):
@@ -266,8 +298,8 @@ class Configuration:
         if len(keys) == 2 and keys[-1] in self.SPECIAL_KEYS:
             key, field = keys
             self._validate(key, value)
-            self._config[key][field.lstrip('_')] = value
-            if self._config[key].get('deprecated'):
+            self._config[key][field.lstrip("_")] = value
+            if self._config[key].get("deprecated"):
                 self._deprecate(key)
 
         # Set in current configuration
@@ -299,21 +331,24 @@ class Configuration:
         if len(keys) == 2 and keys[1] in self.SPECIAL_KEYS:
             key_config = self._config.get(keys[0], None)
             if key_config is None:
-                raise ConfigurationError("Configuration does not have an attribute "
-                                         "'{}'.".format(keys[0]))
+                raise ConfigurationError(
+                    "Configuration does not have an attribute " "'{}'.".format(keys[0])
+                )
             return key_config.get(keys[1][1:], None)
         elif len(keys) > 1:
             subconfig = getattr(self, keys[0])
             if subconfig is None:
-                raise ConfigurationError("Configuration does not have an attribute "
-                                         "'{}'.".format(key))
+                raise ConfigurationError(
+                    "Configuration does not have an attribute " "'{}'.".format(key)
+                )
             return subconfig[".".join(keys[1:])]
         # Set in current configuration
         else:
             return getattr(self, keys[0])
 
-    def add_option(self, key, option_type, default=NOT_SET, env_var=None, deprecate=None,
-                   help=None):
+    def add_option(
+        self, key, option_type, default=NOT_SET, env_var=None, deprecate=None, help=None
+    ):
         """Add a configuration setting.
 
         Parameters
@@ -350,29 +385,31 @@ class Configuration:
         """
         key = _curate(key)
         if key in self._config or key in self._subconfigs:
-            raise ValueError('Configuration already contains {}'.format(key))
-        self._config[key] = {'type': option_type}
+            raise ValueError("Configuration already contains {}".format(key))
+        self._config[key] = {"type": option_type}
         if env_var is not None:
-            self._config[key]['env_var'] = env_var
+            self._config[key]["env_var"] = env_var
         if default is not NOT_SET:
-            self._config[key]['default'] = default
+            self._config[key]["default"] = default
         if deprecate is not None:
-            if 'version' not in deprecate:
-                raise ValueError(f'`version` is missing in deprecate option: {deprecate}')
-            self._config[key]['deprecated'] = deprecate
+            if "version" not in deprecate:
+                raise ValueError(
+                    f"`version` is missing in deprecate option: {deprecate}"
+                )
+            self._config[key]["deprecated"] = deprecate
 
         if help is None:
-            help = 'Undocumented'
+            help = "Undocumented"
 
         if default is not NOT_SET:
-            help += ' (default: {})'.format(default)
+            help += " (default: {})".format(default)
         if deprecate is not None:
-            help = '(DEPRECATED) ' + help
-        self._config[key]['help'] = help
+            help = "(DEPRECATED) " + help
+        self._config[key]["help"] = help
 
     def help(self, key):
         """Return the help message for the given option."""
-        return self[key + '._help']
+        return self[key + "._help"]
 
     def add_arguments(self, parser, rename=None):
         """Add arguments to an `argparse` parser based on configuration
@@ -393,15 +430,17 @@ class Configuration:
         for key in self._config:
             # TODO: Try with list and nargs='*', but it may case issues with
             # nargs=argparse.REMAINDER.
-            if self._config[key]['type'] in (dict, list, tuple):
+            if self._config[key]["type"] in (dict, list, tuple):
                 continue
 
             # NOTE: Do not set default, if parser.parse_argv().options[key] is None, then code
             # should look to config[key].
-            arg_name = rename.get(key, "--{}".format(key.replace('_', '-')))
+            arg_name = rename.get(key, "--{}".format(key.replace("_", "-")))
             parser.add_argument(
-                arg_name, type=self._config[key]['type'],
-                help=self._config[key].get('help'))
+                arg_name,
+                type=self._config[key]["type"],
+                help=self._config[key].get("help"),
+            )
 
     def __contains__(self, key):
         """Return True if the option is defined."""

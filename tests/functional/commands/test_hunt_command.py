@@ -13,18 +13,18 @@ def test_hunt_no_prior(clean_db, one_experiment, capsys):
     captured = capsys.readouterr().err
 
     assert "No prior found" in captured
-    assert 'Traceback' not in captured
+    assert "Traceback" not in captured
 
 
 def test_no_args(capsys):
     """Test that help is printed when no args are given."""
     with pytest.raises(SystemExit):
-        orion.core.cli.main(['hunt'])
+        orion.core.cli.main(["hunt"])
 
     captured = capsys.readouterr().out
 
-    assert 'usage:' in captured
-    assert 'Traceback' not in captured
+    assert "usage:" in captured
+    assert "Traceback" not in captured
 
 
 def test_no_name(capsys):
@@ -34,4 +34,4 @@ def test_no_name(capsys):
 
     captured = capsys.readouterr().err
 
-    assert captured == 'Error: No name provided for the experiment.\n'
+    assert captured == "Error: No name provided for the experiment.\n"

@@ -21,11 +21,10 @@ and the child experiment.
 
 import logging
 
-from orion.algo.space import Dimension
 import orion.core
+from orion.algo.space import Dimension
 from orion.core.evc import conflicts
 from orion.core.evc.adapters import CompositeAdapter
-
 
 log = logging.getLogger(__name__)
 
@@ -94,8 +93,12 @@ class ExperimentBranchBuilder:
             conflict = self.conflicts.conflicts[ith_conflict]
 
             resolution = self.conflicts.try_resolve(
-                conflict, silence_errors=silence_errors,
-                **conflict.get_marked_arguments(self.conflicts, **self.branching_arguments))
+                conflict,
+                silence_errors=silence_errors,
+                **conflict.get_marked_arguments(
+                    self.conflicts, **self.branching_arguments
+                )
+            )
 
             if resolution and (self.manual_resolution and not resolution.is_marked):
                 self.conflicts.revert(resolution)
@@ -124,9 +127,11 @@ class ExperimentBranchBuilder:
             If there is no code change conflict left to resolve.
 
         """
-        exp_name_conflicts = self.conflicts.get_remaining([conflicts.ExperimentNameConflict])
+        exp_name_conflicts = self.conflicts.get_remaining(
+            [conflicts.ExperimentNameConflict]
+        )
         if not exp_name_conflicts:
-            raise RuntimeError('No experiment name conflict to solve')
+            raise RuntimeError("No experiment name conflict to solve")
 
         self.conflicts.try_resolve(exp_name_conflicts[0], name)
 
@@ -148,7 +153,7 @@ class ExperimentBranchBuilder:
         """
         code_conflicts = self.conflicts.get_remaining([conflicts.CodeConflict])
         if not code_conflicts:
-            raise RuntimeError('No code conflicts to solve')
+            raise RuntimeError("No code conflicts to solve")
 
         self.conflicts.try_resolve(code_conflicts[0], change_type=change_type)
 
@@ -170,7 +175,7 @@ class ExperimentBranchBuilder:
         """
         cli_conflicts = self.conflicts.get_remaining([conflicts.CommandLineConflict])
         if not cli_conflicts:
-            raise RuntimeError('No command line conflicts to solve')
+            raise RuntimeError("No command line conflicts to solve")
 
         self.conflicts.try_resolve(cli_conflicts[0], change_type)
 
@@ -190,9 +195,11 @@ class ExperimentBranchBuilder:
             If there is no script config conflict left to resolve.
 
         """
-        script_config_conflicts = self.conflicts.get_remaining([conflicts.ScriptConfigConflict])
+        script_config_conflicts = self.conflicts.get_remaining(
+            [conflicts.ScriptConfigConflict]
+        )
         if not script_config_conflicts:
-            raise RuntimeError('No script\'s config conflicts to solve')
+            raise RuntimeError("No script's config conflicts to solve")
 
         self.conflicts.try_resolve(script_config_conflicts[0], change_type)
 
@@ -207,7 +214,7 @@ class ExperimentBranchBuilder:
         """
         algo_conflicts = self.conflicts.get_remaining([conflicts.AlgorithmConflict])
         if not algo_conflicts:
-            raise RuntimeError('No algo conflict to solve')
+            raise RuntimeError("No algo conflict to solve")
 
         self.conflicts.try_resolve(algo_conflicts[0])
 
@@ -234,7 +241,8 @@ class ExperimentBranchBuilder:
         """
         conflict = self.conflicts.get_remaining(
             [conflicts.NewDimensionConflict, conflicts.ChangedDimensionConflict],
-            dimension_name=name)[0]
+            dimension_name=name,
+        )[0]
 
         if isinstance(conflict, conflicts.NewDimensionConflict):
             self.conflicts.try_resolve(conflict, default_value=default_value)
@@ -261,7 +269,8 @@ class ExperimentBranchBuilder:
 
         """
         conflict = self.conflicts.get_remaining(
-            [conflicts.MissingDimensionConflict], dimension_name=name)[0]
+            [conflicts.MissingDimensionConflict], dimension_name=name
+        )[0]
 
         self.conflicts.try_resolve(conflict, default_value=default_value)
 
@@ -289,22 +298,32 @@ class ExperimentBranchBuilder:
 
         """
         potential_conflicts = self.conflicts.get_remaining(
-            [conflicts.MissingDimensionConflict], dimension_name=old_name)
+            [conflicts.MissingDimensionConflict], dimension_name=old_name
+        )
 
-        assert len(potential_conflicts) == 1, ("Many missing dimensions with the same name: "
-                                               "{}".format(", ".join(potential_conflicts)))
+        assert (
+            len(potential_conflicts) == 1
+        ), "Many missing dimensions with the same name: " "{}".format(
+            ", ".join(potential_conflicts)
+        )
 
         old_dim_conflict = potential_conflicts[0]
 
         potential_conflicts = self.conflicts.get_remaining(
-            [conflicts.NewDimensionConflict], dimension_name=new_name)
+            [conflicts.NewDimensionConflict], dimension_name=new_name
+        )
 
-        assert len(potential_conflicts) == 1, ("Many new dimensions with the same name: "
-                                               "{}".format(", ".join(potential_conflicts)))
+        assert (
+            len(potential_conflicts) == 1
+        ), "Many new dimensions with the same name: " "{}".format(
+            ", ".join(potential_conflicts)
+        )
 
         new_dim_conflict = potential_conflicts[0]
 
-        self.conflicts.try_resolve(old_dim_conflict, new_dimension_conflict=new_dim_conflict)
+        self.conflicts.try_resolve(
+            old_dim_conflict, new_dimension_conflict=new_dim_conflict
+        )
 
     def reset(self, name):
         """Revert a resolution and reset its corresponding conflicts

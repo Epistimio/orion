@@ -36,7 +36,7 @@ class CreationStage:
     def check_database_creation(self):
         """Check if database of specified type can be created."""
         database = self.p_stage.db_config
-        db_type = database.pop('type')
+        db_type = database.pop("type")
 
         try:
             db = Database(of_type=db_type, **database)
@@ -52,4 +52,4 @@ class CreationStage:
 
     def post_stage(self):
         """Print the created database."""
-        print('DB instance', self.instance)
+        print("DB instance", self.instance)

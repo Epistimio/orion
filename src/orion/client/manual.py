@@ -14,7 +14,6 @@ import logging
 from orion.client import create_experiment
 from orion.core.utils import format_trials
 
-
 log = logging.getLogger(__name__)
 
 
@@ -41,8 +40,10 @@ def insert_trials(experiment_name, points, raise_exc=True):
        the database.
 
     """
-    log.warning('insert_trials() is deprecated and will be removed in 0.3.0. '
-                'You should use ExperimentClient.insert() instead.')
+    log.warning(
+        "insert_trials() is deprecated and will be removed in 0.3.0. "
+        "You should use ExperimentClient.insert() instead."
+    )
     experiment = create_experiment(experiment_name)
 
     valid_points = []
@@ -59,8 +60,11 @@ def insert_trials(experiment_name, points, raise_exc=True):
         return
 
     new_trials = list(
-        map(lambda data: format_trials.tuple_to_trial(data, experiment.space),
-            valid_points))
+        map(
+            lambda data: format_trials.tuple_to_trial(data, experiment.space),
+            valid_points,
+        )
+    )
 
     for new_trial in new_trials:
         experiment.insert(new_trial.params)

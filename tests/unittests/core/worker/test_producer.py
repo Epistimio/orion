@@ -30,7 +30,7 @@ class DumbParallelStrategy:
         else:
             value = len(self._observed_points)
 
-        self._lie = lie = Trial.Result(name='lie', type='lie', value=value)
+        self._lie = lie = Trial.Result(name="lie", type="lie", value=value)
         return lie
 
 
@@ -41,12 +41,16 @@ def produce_lies(producer):
 
 def update_algorithm(producer):
     """Wrap update of algorithm outside of `Producer.update`"""
-    return producer._update_algorithm(producer.experiment.fetch_trials_by_status('completed'))
+    return producer._update_algorithm(
+        producer.experiment.fetch_trials_by_status("completed")
+    )
 
 
 def update_naive_algorithm(producer):
     """Wrap update of naive algorithm outside of `Producer.update`"""
-    return producer._update_naive_algorithm(producer.experiment.fetch_noncompleted_trials())
+    return producer._update_naive_algorithm(
+        producer.experiment.fetch_noncompleted_trials()
+    )
 
 
 @pytest.fixture()
@@ -58,7 +62,7 @@ def producer(monkeypatch, hacked_exp, random_dt, exp_config, categorical_values)
     hacked_exp.algorithms.algorithm.possible_values = categorical_values
     hacked_exp.algorithms.seed_rng(0)
 
-    hacked_exp.producer['strategy'] = DumbParallelStrategy()
+    hacked_exp.producer["strategy"] = DumbParallelStrategy()
 
     producer = Producer(hacked_exp)
 
@@ -67,7 +71,7 @@ def producer(monkeypatch, hacked_exp, random_dt, exp_config, categorical_values)
         self.update()
         self.failure_count += 1
 
-    monkeypatch.setattr(Producer, 'backoff', backoff)
+    monkeypatch.setattr(Producer, "backoff", backoff)
 
     return producer
 
@@ -80,25 +84,13 @@ def test_algo_observe_completed(producer):
     obs_points = producer.algorithm.algorithm._points
     obs_results = producer.algorithm.algorithm._results
     assert len(obs_points) == 3
-    assert obs_points[0] == ('rnn', 'lstm')
-    assert obs_points[1] == ('rnn', 'rnn')
-    assert obs_points[2] == ('lstm_with_attention', 'gru')
+    assert obs_points[0] == ("rnn", "lstm")
+    assert obs_points[1] == ("rnn", "rnn")
+    assert obs_points[2] == ("lstm_with_attention", "gru")
     assert len(obs_results) == 3
-    assert obs_results[0] == {
-        'objective': 3,
-        'gradient': None,
-        'constraint': []
-        }
-    assert obs_results[1] == {
-        'objective': 2,
-        'gradient': (-0.1, 2),
-        'constraint': []
-        }
-    assert obs_results[2] == {
-        'objective': 10,
-        'gradient': (5, 3),
-        'constraint': [1.2]
-        }
+    assert obs_results[0] == {"objective": 3, "gradient": None, "constraint": []}
+    assert obs_results[1] == {"objective": 2, "gradient": (-0.1, 2), "constraint": []}
+    assert obs_results[2] == {"objective": 10, "gradient": (5, 3), "constraint": [1.2]}
 
 
 def test_strategist_observe_completed(producer):
@@ -109,34 +101,22 @@ def test_strategist_observe_completed(producer):
     obs_points = producer.strategy._observed_points
     obs_results = producer.strategy._observed_results
     assert len(obs_points) == 3
-    assert obs_points[0] == ('rnn', 'lstm')
-    assert obs_points[1] == ('rnn', 'rnn')
-    assert obs_points[2] == ('lstm_with_attention', 'gru')
+    assert obs_points[0] == ("rnn", "lstm")
+    assert obs_points[1] == ("rnn", "rnn")
+    assert obs_points[2] == ("lstm_with_attention", "gru")
     assert len(obs_results) == 3
-    assert obs_results[0] == {
-        'objective': 3,
-        'gradient': None,
-        'constraint': []
-        }
-    assert obs_results[1] == {
-        'objective': 2,
-        'gradient': (-0.1, 2),
-        'constraint': []
-        }
-    assert obs_results[2] == {
-        'objective': 10,
-        'gradient': (5, 3),
-        'constraint': [1.2]
-        }
+    assert obs_results[0] == {"objective": 3, "gradient": None, "constraint": []}
+    assert obs_results[1] == {"objective": 2, "gradient": (-0.1, 2), "constraint": []}
+    assert obs_results[2] == {"objective": 10, "gradient": (5, 3), "constraint": [1.2]}
 
 
 def test_naive_algorithm_is_producing(monkeypatch, producer, database, random_dt):
     """Verify naive algo is used to produce, not original algo"""
     producer.experiment.pool_size = 1
-    producer.algorithm.algorithm.possible_values = [('gru', 'rnn')]
+    producer.algorithm.algorithm.possible_values = [("gru", "rnn")]
     producer.update()
-    monkeypatch.setattr(producer.algorithm.algorithm, 'set_state', lambda value: None)
-    producer.algorithm.algorithm.possible_values = [('gru', 'gru')]
+    monkeypatch.setattr(producer.algorithm.algorithm, "set_state", lambda value: None)
+    producer.algorithm.algorithm.possible_values = [("gru", "gru")]
     producer.produce()
 
     assert producer.naive_algorithm.algorithm._num == 1  # pool size
@@ -145,7 +125,7 @@ def test_naive_algorithm_is_producing(monkeypatch, producer, database, random_dt
 
 def test_update_and_produce(producer, database, random_dt):
     """Test new trials are properly produced"""
-    possible_values = [('gru', 'rnn')]
+    possible_values = [("gru", "rnn")]
     producer.experiment.pool_size = 1
     producer.experiment.algorithms.algorithm.possible_values = possible_values
 
@@ -162,10 +142,10 @@ def test_update_and_produce(producer, database, random_dt):
 def test_register_new_trials(producer, database, random_dt):
     """Test new trials are properly registered"""
     trials_in_db_before = database.trials.count()
-    new_trials_in_db_before = database.trials.count({'status': 'new'})
+    new_trials_in_db_before = database.trials.count({"status": "new"})
 
     producer.experiment.pool_size = 1
-    producer.experiment.algorithms.algorithm.possible_values = [('gru', 'rnn')]
+    producer.experiment.algorithms.algorithm.possible_values = [("gru", "rnn")]
 
     producer.update()
     producer.produce()
@@ -176,27 +156,23 @@ def test_register_new_trials(producer, database, random_dt):
 
     # `num_new_points` new trials were registered at database
     assert database.trials.count() == trials_in_db_before + 1
-    assert database.trials.count({'status': 'new'}) == new_trials_in_db_before + 1
-    new_trials = list(database.trials.find({'status': 'new', 'submit_time': random_dt}))
-    assert new_trials[0]['experiment'] == producer.experiment.name
-    assert new_trials[0]['start_time'] is None
-    assert new_trials[0]['end_time'] is None
-    assert new_trials[0]['results'] == []
-    assert new_trials[0]['params'] == [
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'},
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'rnn'}
-        ]
+    assert database.trials.count({"status": "new"}) == new_trials_in_db_before + 1
+    new_trials = list(database.trials.find({"status": "new", "submit_time": random_dt}))
+    assert new_trials[0]["experiment"] == producer.experiment.name
+    assert new_trials[0]["start_time"] is None
+    assert new_trials[0]["end_time"] is None
+    assert new_trials[0]["results"] == []
+    assert new_trials[0]["params"] == [
+        {"name": "/decoding_layer", "type": "categorical", "value": "gru"},
+        {"name": "/encoding_layer", "type": "categorical", "value": "rnn"},
+    ]
 
 
 def test_no_lies_if_all_trials_completed(producer, database, random_dt):
     """Verify that no lies are created if all trials are completed"""
-    query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
+    query = {"status": {"$ne": "completed"}, "experiment": producer.experiment.id}
     database.trials.remove(query)
-    trials_in_db_before = database.trials.count({'experiment': producer.experiment.id})
+    trials_in_db_before = database.trials.count({"experiment": producer.experiment.id})
     assert trials_in_db_before == 3
 
     producer.update()
@@ -206,10 +182,10 @@ def test_no_lies_if_all_trials_completed(producer, database, random_dt):
 
 def test_lies_generation(producer, database, random_dt):
     """Verify that lies are created properly"""
-    query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
+    query = {"status": {"$ne": "completed"}, "experiment": producer.experiment.id}
     trials_non_completed = list(database.trials.find(query))
     assert len(trials_non_completed) == 4
-    query = {'status': 'completed', 'experiment': producer.experiment.id}
+    query = {"status": "completed", "experiment": producer.experiment.id}
     trials_completed = list(database.trials.find(query))
     assert len(trials_completed) == 3
 
@@ -219,52 +195,64 @@ def test_lies_generation(producer, database, random_dt):
     assert len(lies) == 4
 
     trials_non_completed = list(
-        sorted(trials_non_completed,
-               key=lambda trial: trial.get('submit_time', datetime.datetime.utcnow())))
+        sorted(
+            trials_non_completed,
+            key=lambda trial: trial.get("submit_time", datetime.datetime.utcnow()),
+        )
+    )
 
     for i in range(4):
-        trials_non_completed[i]['_id'] = lies[i].id
-        trials_non_completed[i]['status'] = 'completed'
-        trials_non_completed[i]['end_time'] = random_dt
-        trials_non_completed[i]['results'].append(producer.strategy._lie.to_dict())
-        trials_non_completed[i]['parents'] = set([trial['_id'] for trial in trials_completed])
+        trials_non_completed[i]["_id"] = lies[i].id
+        trials_non_completed[i]["status"] = "completed"
+        trials_non_completed[i]["end_time"] = random_dt
+        trials_non_completed[i]["results"].append(producer.strategy._lie.to_dict())
+        trials_non_completed[i]["parents"] = set(
+            [trial["_id"] for trial in trials_completed]
+        )
         lies_dict = lies[i].to_dict()
-        lies_dict['parents'] = set(lies_dict['parents'])
+        lies_dict["parents"] = set(lies_dict["parents"])
         assert lies_dict == trials_non_completed[i]
 
 
 def test_register_lies(producer, database, random_dt):
     """Verify that lies are registed in DB properly"""
-    query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
+    query = {"status": {"$ne": "completed"}, "experiment": producer.experiment.id}
     trials_non_completed = list(database.trials.find(query))
     assert len(trials_non_completed) == 4
-    query = {'status': 'completed', 'experiment': producer.experiment.id}
+    query = {"status": "completed", "experiment": producer.experiment.id}
     trials_completed = list(database.trials.find(query))
     assert len(trials_completed) == 3
 
     producer.update()
     produce_lies(producer)
 
-    lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
+    lying_trials = list(
+        database.lying_trials.find({"experiment": producer.experiment.id})
+    )
     assert len(lying_trials) == 4
 
     trials_non_completed = list(
-        sorted(trials_non_completed,
-               key=lambda trial: trial.get('submit_time', datetime.datetime.utcnow())))
+        sorted(
+            trials_non_completed,
+            key=lambda trial: trial.get("submit_time", datetime.datetime.utcnow()),
+        )
+    )
 
     for i in range(4):
-        trials_non_completed[i]['_id'] = lying_trials[i]['_id']
-        trials_non_completed[i]['status'] = 'completed'
-        trials_non_completed[i]['end_time'] = random_dt
-        trials_non_completed[i]['results'].append(producer.strategy._lie.to_dict())
-        trials_non_completed[i]['parents'] = set([trial['_id'] for trial in trials_completed])
-        lying_trials[i]['parents'] = set(lying_trials[i]['parents'])
+        trials_non_completed[i]["_id"] = lying_trials[i]["_id"]
+        trials_non_completed[i]["status"] = "completed"
+        trials_non_completed[i]["end_time"] = random_dt
+        trials_non_completed[i]["results"].append(producer.strategy._lie.to_dict())
+        trials_non_completed[i]["parents"] = set(
+            [trial["_id"] for trial in trials_completed]
+        )
+        lying_trials[i]["parents"] = set(lying_trials[i]["parents"])
         assert lying_trials[i] == trials_non_completed[i]
 
 
 def test_register_duplicate_lies(producer, database, random_dt):
     """Verify that duplicate lies are not registered twice in DB"""
-    query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
+    query = {"status": {"$ne": "completed"}, "experiment": producer.experiment.id}
     trials_non_completed = list(database.trials.find(query))
     assert len(trials_non_completed) == 4
 
@@ -274,11 +262,13 @@ def test_register_duplicate_lies(producer, database, random_dt):
 
     # Set specific output value for to algo to ensure successful creation of a new trial.
     producer.experiment.pool_size = 1
-    producer.experiment.algorithms.algorithm.possible_values = [('gru', 'rnn')]
+    producer.experiment.algorithms.algorithm.possible_values = [("gru", "rnn")]
 
     producer.update()
     assert len(produce_lies(producer)) == 4
-    lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
+    lying_trials = list(
+        database.lying_trials.find({"experiment": producer.experiment.id})
+    )
     assert len(lying_trials) == 4
 
     # Create a new point to make sure additional non-completed trials increase number of lying
@@ -291,18 +281,22 @@ def test_register_duplicate_lies(producer, database, random_dt):
     producer.update()
 
     assert len(produce_lies(producer)) == 5
-    lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
+    lying_trials = list(
+        database.lying_trials.find({"experiment": producer.experiment.id})
+    )
     assert len(lying_trials) == 5
 
     # Make sure trying to generate again does not add more fake trials since they are identical
     assert len(produce_lies(producer)) == 5
-    lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
+    lying_trials = list(
+        database.lying_trials.find({"experiment": producer.experiment.id})
+    )
     assert len(lying_trials) == 5
 
 
 def test_register_duplicate_lies_with_different_results(producer, database, random_dt):
     """Verify that duplicate lies with different results are all registered in DB"""
-    query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
+    query = {"status": {"$ne": "completed"}, "experiment": producer.experiment.id}
     trials_non_completed = list(database.trials.find(query))
     assert len(trials_non_completed) == 4
 
@@ -310,7 +304,9 @@ def test_register_duplicate_lies_with_different_results(producer, database, rand
     producer.strategy._value = 11
 
     assert len(produce_lies(producer)) == 4
-    lying_trials = list(database.lying_trials.find({'experiment': producer.experiment.id}))
+    lying_trials = list(
+        database.lying_trials.find({"experiment": producer.experiment.id})
+    )
     assert len(lying_trials) == 4
 
     # Overwrite value of lying result to force different results.
@@ -318,16 +314,20 @@ def test_register_duplicate_lies_with_different_results(producer, database, rand
 
     lying_trials = produce_lies(producer)
     assert len(lying_trials) == 4
-    nb_lying_trials = database.lying_trials.count({'experiment': producer.experiment.id})
+    nb_lying_trials = database.lying_trials.count(
+        {"experiment": producer.experiment.id}
+    )
     assert nb_lying_trials == 4 + 4
     assert lying_trials[0].lie.value == new_lying_value
 
 
-def test_naive_algo_not_trained_when_all_trials_completed(producer, database, random_dt):
+def test_naive_algo_not_trained_when_all_trials_completed(
+    producer, database, random_dt
+):
     """Verify that naive algo is not trained on additional trials when all completed"""
-    query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
+    query = {"status": {"$ne": "completed"}, "experiment": producer.experiment.id}
     database.trials.remove(query)
-    trials_in_db_before = database.trials.count({'experiment': producer.experiment.id})
+    trials_in_db_before = database.trials.count({"experiment": producer.experiment.id})
     assert trials_in_db_before == 3
 
     producer.update()
@@ -339,19 +339,24 @@ def test_naive_algo_not_trained_when_all_trials_completed(producer, database, ra
 def test_naive_algo_trained_on_all_non_completed_trials(producer, database, random_dt):
     """Verify that naive algo is trained on additional trials"""
     # Set two of completed trials to broken and reserved to have all possible status
-    query = {'status': 'completed', 'experiment': producer.experiment.id}
+    query = {"status": "completed", "experiment": producer.experiment.id}
     completed_trials = database.trials.find(query)
-    database.trials.update({'_id': completed_trials[0]['_id']}, {'$set': {'status': 'broken'}})
-    database.trials.update({'_id': completed_trials[1]['_id']}, {'$set': {'status': 'reserved'}})
+    database.trials.update(
+        {"_id": completed_trials[0]["_id"]}, {"$set": {"status": "broken"}}
+    )
+    database.trials.update(
+        {"_id": completed_trials[1]["_id"]}, {"$set": {"status": "reserved"}}
+    )
 
     # Make sure non completed trials and completed trials are set properly for the unit-test
-    query = {'status': {'$ne': 'completed'}, 'experiment': producer.experiment.id}
+    query = {"status": {"$ne": "completed"}, "experiment": producer.experiment.id}
     non_completed_trials = list(database.trials.find(query))
     assert len(non_completed_trials) == 6
     # Make sure we have all type of status except completed
-    assert (set(trial['status'] for trial in non_completed_trials) ==
-            set(['new', 'reserved', 'suspended', 'interrupted', 'broken']))
-    query = {'status': 'completed', 'experiment': producer.experiment.id}
+    assert set(trial["status"] for trial in non_completed_trials) == set(
+        ["new", "reserved", "suspended", "interrupted", "broken"]
+    )
+    query = {"status": "completed", "experiment": producer.experiment.id}
     assert database.trials.count(query) == 1
 
     # Executing the actual test
@@ -366,7 +371,7 @@ def test_naive_algo_is_discared(producer, database, monkeypatch):
     """Verify that naive algo is discarded and recopied from original algo"""
     # Set values for predictions
     producer.experiment.pool_size = 1
-    producer.experiment.algorithms.algorithm.possible_values = [('gru', 'rnn')]
+    producer.experiment.algorithms.algorithm.possible_values = [("gru", "rnn")]
 
     producer.update()
     assert len(produce_lies(producer)) == 4
@@ -393,13 +398,13 @@ def test_naive_algo_is_discared(producer, database, monkeypatch):
 def test_concurent_producers(producer, database, random_dt):
     """Test concurrent production of new trials."""
     trials_in_db_before = database.trials.count()
-    new_trials_in_db_before = database.trials.count({'status': 'new'})
+    new_trials_in_db_before = database.trials.count({"status": "new"})
 
     # Set so that first producer's algorithm generate valid point on first time
     # And second producer produce same point and thus must produce next one two.
     # Hence, we know that producer algo will have _num == 1 and
     # second producer algo will have _num == 2
-    producer.algorithm.algorithm.possible_values = [('gru', 'rnn'), ('gru', 'gru')]
+    producer.algorithm.algorithm.possible_values = [("gru", "rnn"), ("gru", "gru")]
     # Make sure it starts from index 0
     producer.algorithm.seed_rng(0)
 
@@ -422,29 +427,21 @@ def test_concurent_producers(producer, database, random_dt):
 
     # `num_new_points` new trials were registered at database
     assert database.trials.count() == trials_in_db_before + 2
-    assert database.trials.count({'status': 'new'}) == new_trials_in_db_before + 2
-    new_trials = list(database.trials.find({'status': 'new', 'submit_time': random_dt}))
-    assert new_trials[0]['experiment'] == producer.experiment.name
-    assert new_trials[0]['start_time'] is None
-    assert new_trials[0]['end_time'] is None
-    assert new_trials[0]['results'] == []
-    assert new_trials[0]['params'] == [
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'},
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'rnn'}
-        ]
+    assert database.trials.count({"status": "new"}) == new_trials_in_db_before + 2
+    new_trials = list(database.trials.find({"status": "new", "submit_time": random_dt}))
+    assert new_trials[0]["experiment"] == producer.experiment.name
+    assert new_trials[0]["start_time"] is None
+    assert new_trials[0]["end_time"] is None
+    assert new_trials[0]["results"] == []
+    assert new_trials[0]["params"] == [
+        {"name": "/decoding_layer", "type": "categorical", "value": "gru"},
+        {"name": "/encoding_layer", "type": "categorical", "value": "rnn"},
+    ]
 
-    assert new_trials[1]['params'] == [
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'},
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'gru'}
-        ]
+    assert new_trials[1]["params"] == [
+        {"name": "/decoding_layer", "type": "categorical", "value": "gru"},
+        {"name": "/encoding_layer", "type": "categorical", "value": "gru"},
+    ]
 
 
 def test_duplicate_within_pool(producer, database, random_dt):
@@ -452,12 +449,15 @@ def test_duplicate_within_pool(producer, database, random_dt):
     if one of them is a duplicate.
     """
     trials_in_db_before = database.trials.count()
-    new_trials_in_db_before = database.trials.count({'status': 'new'})
+    new_trials_in_db_before = database.trials.count({"status": "new"})
 
     producer.experiment.pool_size = 2
 
     producer.experiment.algorithms.algorithm.possible_values = [
-        ('gru', 'rnn'), ('gru', 'rnn'), ('gru', 'gru')]
+        ("gru", "rnn"),
+        ("gru", "rnn"),
+        ("gru", "gru"),
+    ]
 
     producer.update()
     producer.produce()
@@ -468,29 +468,21 @@ def test_duplicate_within_pool(producer, database, random_dt):
 
     # `num_new_points` new trials were registered at database
     assert database.trials.count() == trials_in_db_before + 2
-    assert database.trials.count({'status': 'new'}) == new_trials_in_db_before + 2
-    new_trials = list(database.trials.find({'status': 'new', 'submit_time': random_dt}))
-    assert new_trials[0]['experiment'] == producer.experiment.name
-    assert new_trials[0]['start_time'] is None
-    assert new_trials[0]['end_time'] is None
-    assert new_trials[0]['results'] == []
-    assert new_trials[0]['params'] == [
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'},
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'rnn'}
-        ]
+    assert database.trials.count({"status": "new"}) == new_trials_in_db_before + 2
+    new_trials = list(database.trials.find({"status": "new", "submit_time": random_dt}))
+    assert new_trials[0]["experiment"] == producer.experiment.name
+    assert new_trials[0]["start_time"] is None
+    assert new_trials[0]["end_time"] is None
+    assert new_trials[0]["results"] == []
+    assert new_trials[0]["params"] == [
+        {"name": "/decoding_layer", "type": "categorical", "value": "gru"},
+        {"name": "/encoding_layer", "type": "categorical", "value": "rnn"},
+    ]
 
-    assert new_trials[1]['params'] == [
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'},
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'gru'}
-        ]
+    assert new_trials[1]["params"] == [
+        {"name": "/decoding_layer", "type": "categorical", "value": "gru"},
+        {"name": "/encoding_layer", "type": "categorical", "value": "gru"},
+    ]
 
 
 def test_duplicate_within_pool_and_db(producer, database, random_dt):
@@ -498,12 +490,15 @@ def test_duplicate_within_pool_and_db(producer, database, random_dt):
     if one of them is a duplicate with db.
     """
     trials_in_db_before = database.trials.count()
-    new_trials_in_db_before = database.trials.count({'status': 'new'})
+    new_trials_in_db_before = database.trials.count({"status": "new"})
 
     producer.experiment.pool_size = 2
 
     producer.experiment.algorithms.algorithm.possible_values = [
-        ('gru', 'rnn'), ('rnn', 'rnn'), ('gru', 'gru')]
+        ("gru", "rnn"),
+        ("rnn", "rnn"),
+        ("gru", "gru"),
+    ]
 
     producer.update()
     producer.produce()
@@ -514,36 +509,28 @@ def test_duplicate_within_pool_and_db(producer, database, random_dt):
 
     # `num_new_points` new trials were registered at database
     assert database.trials.count() == trials_in_db_before + 2
-    assert database.trials.count({'status': 'new'}) == new_trials_in_db_before + 2
-    new_trials = list(database.trials.find({'status': 'new', 'submit_time': random_dt}))
-    assert new_trials[0]['experiment'] == producer.experiment.name
-    assert new_trials[0]['start_time'] is None
-    assert new_trials[0]['end_time'] is None
-    assert new_trials[0]['results'] == []
-    assert new_trials[0]['params'] == [
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'},
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'rnn'}
-        ]
+    assert database.trials.count({"status": "new"}) == new_trials_in_db_before + 2
+    new_trials = list(database.trials.find({"status": "new", "submit_time": random_dt}))
+    assert new_trials[0]["experiment"] == producer.experiment.name
+    assert new_trials[0]["start_time"] is None
+    assert new_trials[0]["end_time"] is None
+    assert new_trials[0]["results"] == []
+    assert new_trials[0]["params"] == [
+        {"name": "/decoding_layer", "type": "categorical", "value": "gru"},
+        {"name": "/encoding_layer", "type": "categorical", "value": "rnn"},
+    ]
 
-    assert new_trials[1]['params'] == [
-        {'name': '/decoding_layer',
-         'type': 'categorical',
-         'value': 'gru'},
-        {'name': '/encoding_layer',
-         'type': 'categorical',
-         'value': 'gru'}
-        ]
+    assert new_trials[1]["params"] == [
+        {"name": "/decoding_layer", "type": "categorical", "value": "gru"},
+        {"name": "/encoding_layer", "type": "categorical", "value": "gru"},
+    ]
 
 
 def test_exceed_max_idle_time_because_of_duplicates(producer, database, random_dt):
     """Test that RuntimeError is raised when algo keep suggesting the same points"""
     timeout = 3
     producer.max_idle_time = timeout  # to limit run-time, default would work as well.
-    producer.experiment.algorithms.algorithm.possible_values = [('rnn', 'rnn')]
+    producer.experiment.algorithms.algorithm.possible_values = [("rnn", "rnn")]
 
     assert producer.experiment.pool_size == 1
 
@@ -557,7 +544,9 @@ def test_exceed_max_idle_time_because_of_duplicates(producer, database, random_d
     assert timeout <= time.time() - start < timeout + 1
 
 
-def test_exceed_max_idle_time_because_of_optout(producer, database, random_dt, monkeypatch):
+def test_exceed_max_idle_time_because_of_optout(
+    producer, database, random_dt, monkeypatch
+):
     """Test that RuntimeError is raised when algo keeps opting out"""
     timeout = 3
     producer.max_idle_time = timeout  # to limit run-time, default would work as well.
@@ -567,7 +556,9 @@ def test_exceed_max_idle_time_because_of_optout(producer, database, random_dt, m
         self._suggested = None
         return None
 
-    monkeypatch.setattr(producer.experiment.algorithms.algorithm.__class__, 'suggest', opt_out)
+    monkeypatch.setattr(
+        producer.experiment.algorithms.algorithm.__class__, "suggest", opt_out
+    )
 
     assert producer.experiment.pool_size == 1
 
@@ -579,15 +570,19 @@ def test_exceed_max_idle_time_because_of_optout(producer, database, random_dt, m
 
 def test_stops_if_algo_done(producer, database, random_dt, monkeypatch):
     """Test that producer stops producing when algo is done."""
+
     def opt_out_and_complete(self, num=1):
         """Return None to always opt out and set id_done to True"""
         self._suggested = None
         self.done = True
-        print('set')
+        print("set")
         return None
 
-    monkeypatch.setattr(producer.experiment.algorithms.algorithm.__class__, 'suggest',
-                        opt_out_and_complete)
+    monkeypatch.setattr(
+        producer.experiment.algorithms.algorithm.__class__,
+        "suggest",
+        opt_out_and_complete,
+    )
 
     assert producer.experiment.pool_size == 1
 
@@ -632,13 +627,15 @@ def test_original_seeding(producer, database):
 def test_evc(monkeypatch, producer):
     """Verify that producer is using available trials from EVC"""
     experiment = producer.experiment
-    new_experiment = build(experiment.name, algorithms='random')
+    new_experiment = build(experiment.name, algorithms="random")
 
     # Replace parent with hacked exp, otherwise parent ID does not match trials in DB
     # and fetch_trials() won't return anything.
     new_experiment._node.parent._item = experiment
 
-    assert len(new_experiment.fetch_trials(with_evc_tree=True)) == len(experiment.fetch_trials())
+    assert len(new_experiment.fetch_trials(with_evc_tree=True)) == len(
+        experiment.fetch_trials()
+    )
 
     producer.experiment = new_experiment
 
@@ -648,8 +645,8 @@ def test_evc(monkeypatch, producer):
     def update_naive_algo(trials):
         assert len(trials) == 4
 
-    monkeypatch.setattr(producer, '_update_algorithm', update_algo)
-    monkeypatch.setattr(producer, '_update_naive_algorithm', update_naive_algo)
+    monkeypatch.setattr(producer, "_update_algorithm", update_algo)
+    monkeypatch.setattr(producer, "_update_naive_algorithm", update_naive_algo)
 
     producer.update()
 
@@ -657,13 +654,15 @@ def test_evc(monkeypatch, producer):
 def test_evc_duplicates(monkeypatch, producer):
     """Verify that producer wont register samples that are available in parent experiment"""
     experiment = producer.experiment
-    new_experiment = build(experiment.name, algorithms='random')
+    new_experiment = build(experiment.name, algorithms="random")
 
     # Replace parent with hacked exp, otherwise parent ID does not match trials in DB
     # and fetch_trials() won't return anything.
     new_experiment._node.parent._item = experiment
 
-    assert len(new_experiment.fetch_trials(with_evc_tree=True)) == len(experiment.fetch_trials())
+    assert len(new_experiment.fetch_trials(with_evc_tree=True)) == len(
+        experiment.fetch_trials()
+    )
 
     def suggest(pool_size):
         return [trial_to_tuple(experiment.fetch_trials()[-1], experiment.space)]
@@ -672,7 +671,7 @@ def test_evc_duplicates(monkeypatch, producer):
     producer.algorithm = new_experiment.algorithms
     producer.max_idle_time = 1
 
-    monkeypatch.setattr(new_experiment.algorithms, 'suggest', suggest)
+    monkeypatch.setattr(new_experiment.algorithms, "suggest", suggest)
 
     producer.update()
     with pytest.raises(SampleTimeout):
@@ -690,11 +689,12 @@ def test_algorithm_is_done(monkeypatch, producer):
 
     def suggest_one_only(self, num=1):
         """Return only one point, whatever `num` is"""
-        return [('gru', 'rnn')]
+        return [("gru", "rnn")]
 
-    monkeypatch.delattr(producer.experiment.algorithms.algorithm.__class__, 'is_done')
-    monkeypatch.setattr(producer.experiment.algorithms.algorithm.__class__, 'suggest',
-                        suggest_one_only)
+    monkeypatch.delattr(producer.experiment.algorithms.algorithm.__class__, "is_done")
+    monkeypatch.setattr(
+        producer.experiment.algorithms.algorithm.__class__, "suggest", suggest_one_only
+    )
 
     assert producer.experiment.pool_size == 10
     trials_in_exp_before = len(producer.experiment.fetch_trials())

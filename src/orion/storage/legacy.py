@@ -13,13 +13,17 @@ import json
 import logging
 
 import orion.core
+import orion.core.utils.backward as backward
 from orion.core.io.convert import JSONConverter
 from orion.core.io.database import Database, OutdatedDatabaseError
-import orion.core.utils.backward as backward
 from orion.core.utils.exceptions import MissingResultFile
 from orion.core.worker.trial import Trial, validate_status
 from orion.storage.base import (
-    BaseStorageProtocol, FailedUpdate, get_uid, MissingArguments)
+    BaseStorageProtocol,
+    FailedUpdate,
+    MissingArguments,
+    get_uid,
+)
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +63,7 @@ def setup_database(config=None):
         config = orion.core.config.database.to_dict()
 
     db_opts = config
-    dbtype = db_opts.pop('type')
+    dbtype = db_opts.pop("type")
 
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
     try:
@@ -95,22 +99,25 @@ class Legacy(BaseStorageProtocol):
     def _setup_db(self):
         """Database index setup"""
         if backward.db_is_outdated(self._db):
-            raise OutdatedDatabaseError("The database is outdated. You can upgrade it with the "
-                                        "command `orion db upgrade`.")
+            raise OutdatedDatabaseError(
+                "The database is outdated. You can upgrade it with the "
+                "command `orion db upgrade`."
+            )
 
-        self._db.index_information('experiment')
-        self._db.ensure_index('experiments',
-                              [('name', Database.ASCENDING),
-                               ('version', Database.ASCENDING)],
-                              unique=True)
+        self._db.index_information("experiment")
+        self._db.ensure_index(
+            "experiments",
+            [("name", Database.ASCENDING), ("version", Database.ASCENDING)],
+            unique=True,
+        )
 
-        self._db.ensure_index('experiments', 'metadata.datetime')
+        self._db.ensure_index("experiments", "metadata.datetime")
 
-        self._db.ensure_index('trials', 'experiment')
-        self._db.ensure_index('trials', 'status')
-        self._db.ensure_index('trials', 'results')
-        self._db.ensure_index('trials', 'start_time')
-        self._db.ensure_index('trials', [('end_time', Database.DESCENDING)])
+        self._db.ensure_index("trials", "experiment")
+        self._db.ensure_index("trials", "status")
+        self._db.ensure_index("trials", "results")
+        self._db.ensure_index("trials", "start_time")
+        self._db.ensure_index("trials", [("end_time", Database.DESCENDING)])
 
     def create_benchmark(self, config):
         """Insert a new experiment inside the database"""
@@ -122,12 +129,12 @@ class Legacy(BaseStorageProtocol):
 
     def create_experiment(self, config):
         """See :func:`~orion.storage.BaseStorageProtocol.create_experiment`"""
-        return self._db.write('experiments', data=config, query=None)
+        return self._db.write("experiments", data=config, query=None)
 
     def delete_experiment(self, experiment=None, uid=None):
         """See :func:`~orion.storage.BaseStorageProtocol.delete_experiment`"""
         uid = get_uid(experiment, uid)
-        return self._db.remove('experiments', query={'_id': uid})
+        return self._db.remove("experiments", query={"_id": uid})
 
     def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
@@ -137,12 +144,12 @@ class Legacy(BaseStorageProtocol):
             where = dict()
 
         if uid is not None:
-            where['_id'] = uid
-        return self._db.write('experiments', data=kwargs, query=where)
+            where["_id"] = uid
+        return self._db.write("experiments", data=kwargs, query=where)
 
     def fetch_experiments(self, query, selection=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_experiments`"""
-        return self._db.read('experiments', query, selection)
+        return self._db.read("experiments", query, selection)
 
     def fetch_trials(self, experiment=None, uid=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
@@ -152,20 +159,21 @@ class Legacy(BaseStorageProtocol):
 
     def _fetch_trials(self, query, selection=None):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
+
         def sort_key(item):
             submit_time = item.submit_time
             if submit_time is None:
                 return 0
             return submit_time
 
-        trials = Trial.build(self._db.read('trials', query=query, selection=selection))
+        trials = Trial.build(self._db.read("trials", query=query, selection=selection))
         trials.sort(key=sort_key)
 
         return trials
 
     def register_trial(self, trial):
         """See :func:`~orion.storage.BaseStorageProtocol.register_trial`"""
-        self._db.write('trials', trial.to_dict())
+        self._db.write("trials", trial.to_dict())
         return trial
 
     def delete_trials(self, experiment=None, uid=None, where=None):
@@ -176,12 +184,12 @@ class Legacy(BaseStorageProtocol):
             where = dict()
 
         if uid is not None:
-            where['experiment'] = uid
-        return self._db.remove('trials', query=where)
+            where["experiment"] = uid
+        return self._db.remove("trials", query=where)
 
     def register_lie(self, trial):
         """See :func:`~orion.storage.BaseStorageProtocol.register_lie`"""
-        return self._db.write('lying_trials', trial.to_dict())
+        return self._db.write("lying_trials", trial.to_dict())
 
     def retrieve_result(self, trial, results_file=None, **kwargs):
         """Parse the results file that was generated by the trial process.
@@ -212,10 +220,8 @@ class Legacy(BaseStorageProtocol):
             raise MissingResultFile()
 
         trial.results = [
-            Trial.Result(
-                name=res['name'],
-                type=res['type'],
-                value=res['value']) for res in results
+            Trial.Result(name=res["name"], type=res["type"], value=res["value"])
+            for res in results
         ]
 
         return trial
@@ -227,11 +233,11 @@ class Legacy(BaseStorageProtocol):
 
         if uid is None:
             if trial is None:
-                raise MissingArguments('Either `trial` or `uid` should be set')
+                raise MissingArguments("Either `trial` or `uid` should be set")
 
             uid = trial.id
 
-        result = self._db.read('trials', {'_id': uid})
+        result = self._db.read("trials", {"_id": uid})
         if not result:
             return None
 
@@ -243,8 +249,8 @@ class Legacy(BaseStorageProtocol):
         if where is None:
             where = dict()
 
-        where['experiment'] = uid
-        return self._db.write('trials', data=kwargs, query=where)
+        where["experiment"] = uid
+        return self._db.write("trials", data=kwargs, query=where)
 
     def update_trial(self, trial=None, uid=None, where=None, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.update_trial`"""
@@ -253,26 +259,29 @@ class Legacy(BaseStorageProtocol):
         if where is None:
             where = dict()
 
-        where['_id'] = uid
-        return self._db.write('trials', data=kwargs, query=where)
+        where["_id"] = uid
+        return self._db.write("trials", data=kwargs, query=where)
 
     def fetch_lost_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_lost_trials`"""
         heartbeat = orion.core.config.worker.heartbeat
-        threshold = datetime.datetime.utcnow() - datetime.timedelta(seconds=heartbeat)
-        lte_comparison = {'$lte': threshold}
+        threshold = datetime.datetime.utcnow() - datetime.timedelta(
+            seconds=heartbeat * 5
+        )
+        lte_comparison = {"$lte": threshold}
         query = {
-            'experiment': experiment._id,
-            'status': 'reserved',
-            'heartbeat': lte_comparison
+            "experiment": experiment._id,
+            "status": "reserved",
+            "heartbeat": lte_comparison,
         }
 
         return self._fetch_trials(query)
 
     def push_trial_results(self, trial):
         """See :func:`~orion.storage.BaseStorageProtocol.push_trial_results`"""
-        rc = self.update_trial(trial, **trial.to_dict(),
-                               where={'_id': trial.id, 'status': 'reserved'})
+        rc = self.update_trial(
+            trial, **trial.to_dict(), where={"_id": trial.id, "status": "reserved"}
+        )
         if not rc:
             raise FailedUpdate()
 
@@ -283,15 +292,13 @@ class Legacy(BaseStorageProtocol):
         if heartbeat is None:
             heartbeat = datetime.datetime.utcnow()
 
-        update = dict(
-            status=status,
-            heartbeat=heartbeat,
-            experiment=trial.experiment
-        )
+        update = dict(status=status, heartbeat=heartbeat, experiment=trial.experiment)
 
         validate_status(status)
 
-        rc = self.update_trial(trial, **update, where={'status': trial.status, '_id': trial.id})
+        rc = self.update_trial(
+            trial, **update, where={"status": trial.status, "_id": trial.id}
+        )
 
         if not rc:
             raise FailedUpdate()
@@ -302,7 +309,7 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_pending_trials`"""
         query = dict(
             experiment=experiment._id,
-            status={'$in': ['new', 'suspended', 'interrupted']}
+            status={"$in": ["new", "suspended", "interrupted"]},
         )
         return self._fetch_trials(query)
 
@@ -310,18 +317,15 @@ class Legacy(BaseStorageProtocol):
         """See :func:`~orion.storage.BaseStorageProtocol.reserve_trial`"""
         query = dict(
             experiment=experiment._id,
-            status={'$in': ['interrupted', 'new', 'suspended']}
+            status={"$in": ["interrupted", "new", "suspended"]},
         )
         # read and write works on a single document
         now = datetime.datetime.utcnow()
         trial = self._db.read_and_write(
-            'trials',
+            "trials",
             query=query,
-            data=dict(
-                status='reserved',
-                start_time=now,
-                heartbeat=now
-            ))
+            data=dict(status="reserved", start_time=now, heartbeat=now),
+        )
 
         if trial is None:
             return None
@@ -330,36 +334,26 @@ class Legacy(BaseStorageProtocol):
 
     def fetch_noncompleted_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_noncompleted_trials`"""
-        query = dict(
-            experiment=experiment._id,
-            status={'$ne': 'completed'}
-        )
+        query = dict(experiment=experiment._id, status={"$ne": "completed"})
         return self._fetch_trials(query)
 
     def count_completed_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.count_completed_trials`"""
-        query = dict(
-            experiment=experiment._id,
-            status='completed'
-        )
-        return self._db.count('trials', query)
+        query = dict(experiment=experiment._id, status="completed")
+        return self._db.count("trials", query)
 
     def count_broken_trials(self, experiment):
         """See :func:`~orion.storage.BaseStorageProtocol.count_broken_trials`"""
-        query = dict(
-            experiment=experiment._id,
-            status='broken'
-        )
-        return self._db.count('trials', query)
+        query = dict(experiment=experiment._id, status="broken")
+        return self._db.count("trials", query)
 
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
-        return self.update_trial(trial, heartbeat=datetime.datetime.utcnow(), status='reserved')
+        return self.update_trial(
+            trial, heartbeat=datetime.datetime.utcnow(), status="reserved"
+        )
 
     def fetch_trials_by_status(self, experiment, status):
         """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials_by_status`"""
-        query = dict(
-            experiment=experiment._id,
-            status=status
-        )
+        query = dict(experiment=experiment._id, status=status)
         return self._fetch_trials(query)

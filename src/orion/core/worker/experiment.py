@@ -13,10 +13,12 @@ import copy
 import datetime
 import logging
 
-import orion.core
+import pandas
+
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
-from orion.storage.base import FailedUpdate, get_storage, ReadOnlyStorageProtocol
+from orion.core.utils.flatten import flatten
+from orion.storage.base import FailedUpdate, ReadOnlyStorageProtocol, get_storage
 
 log = logging.getLogger(__name__)
 
@@ -45,6 +47,11 @@ class Experiment:
        How many workers can participate asynchronously in this `Experiment`.
     max_trials : int
        How many trials must be evaluated, before considering this `Experiment` done.
+       This attribute can be updated if the rest of the experiment configuration
+       is the same. In that case, if trying to set to an already set experiment,
+       it will overwrite the previous one.
+    max_broken: int
+       How many trials must be broken, before considering this `Experiment` broken.
        This attribute can be updated if the rest of the experiment configuration
        is the same. In that case, if trying to set to an already set experiment,
        it will overwrite the previous one.
@@ -77,10 +84,23 @@ class Experiment:
 
     """
 
-    __slots__ = ('name', 'refers', 'metadata', 'pool_size', 'max_trials', 'version',
-                 'space', 'algorithms', 'producer', 'working_dir', '_id',
-                 '_node', '_storage')
-    non_branching_attrs = ('pool_size', 'max_trials')
+    __slots__ = (
+        "name",
+        "refers",
+        "metadata",
+        "pool_size",
+        "max_trials",
+        "max_broken",
+        "version",
+        "space",
+        "algorithms",
+        "producer",
+        "working_dir",
+        "_id",
+        "_node",
+        "_storage",
+    )
+    non_branching_attrs = ("pool_size", "max_trials", "max_broken")
 
     def __init__(self, name, version=None):
         self._id = None
@@ -91,6 +111,7 @@ class Experiment:
         self.metadata = {}
         self.pool_size = None
         self.max_trials = None
+        self.max_broken = None
         self.space = None
         self.algorithms = None
         self.working_dir = None
@@ -100,9 +121,53 @@ class Experiment:
 
         self._node = ExperimentNode(self.name, self.version, experiment=self)
 
+    def to_pandas(self, with_evc_tree=False):
+        """Builds a dataframe with the trials of the experiment
+
+        Parameters
+        ----------
+        with_evc_tree: bool, optional
+            Fetch all trials from the EVC tree.
+            Default: False
+
+        """
+        columns = [
+            "id",
+            "experiment_id",
+            "status",
+            "suggested",
+            "reserved",
+            "completed",
+            "objective",
+        ]
+
+        data = []
+        for trial in self.fetch_trials(with_evc_tree=with_evc_tree):
+            row = [
+                trial.id,
+                trial.experiment,
+                trial.status,
+                trial.submit_time,
+                trial.start_time,
+                trial.end_time,
+            ]
+            row.append(trial.objective.value if trial.objective else None)
+            params = flatten(trial.params)
+            for name in self.space.keys():
+                row.append(params[name])
+
+            data.append(row)
+
+        columns += list(self.space.keys())
+
+        if not data:
+            return pandas.DataFrame([], columns=columns)
+
+        return pandas.DataFrame(data, columns=columns)
+
     def fetch_trials(self, with_evc_tree=False):
         """Fetch all trials of the experiment"""
-        return self._select_evc_call(with_evc_tree, 'fetch_trials')
+        return self._select_evc_call(with_evc_tree, "fetch_trials")
 
     def get_trial(self, trial=None, uid=None):
         """Fetch a single Trial, see `orion.storage.base.BaseStorage.get_trial`"""
@@ -132,12 +197,12 @@ class Experiment:
         Selected `Trial` object, None if could not find any.
 
         """
-        log.debug('reserving trial with (score: %s)', score_handle)
+        log.debug("reserving trial with (score: %s)", score_handle)
 
         self.fix_lost_trials()
 
         selected_trial = self._storage.reserve_trial(self)
-        log.debug('reserved trial (trial: %s)', selected_trial)
+        log.debug("reserved trial (trial: %s)", selected_trial)
         return selected_trial
 
     def fix_lost_trials(self):
@@ -152,13 +217,13 @@ class Experiment:
         trials = self._storage.fetch_lost_trials(self)
 
         for trial in trials:
-            log.debug('Setting lost trial %s status to interrupted...', trial.id)
+            log.debug("Setting lost trial %s status to interrupted...", trial.id)
 
             try:
-                self._storage.set_trial_status(trial, status='interrupted')
-                log.debug('success')
+                self._storage.set_trial_status(trial, status="interrupted")
+                log.debug("success")
             except FailedUpdate:
-                log.debug('failed')
+                log.debug("failed")
 
     def update_completed_trial(self, trial, results_file=None):
         """Inform database about an evaluated `trial` with results.
@@ -171,10 +236,11 @@ class Experiment:
             Change status from *reserved* to *completed*.
 
         """
-        trial.status = 'completed'
+        trial.status = "completed"
         trial.end_time = datetime.datetime.utcnow()
         self._storage.retrieve_result(trial, results_file)
         # push trial results updates the entire trial status included
+        log.info("Completed trials with results: %s", trial.results)
         self._storage.push_trial_results(trial)
 
     def register_lie(self, lying_trial):
@@ -199,11 +265,11 @@ class Experiment:
             in the database.
 
         """
-        lying_trial.status = 'completed'
+        lying_trial.status = "completed"
         lying_trial.end_time = datetime.datetime.utcnow()
         self._storage.register_lie(lying_trial)
 
-    def register_trial(self, trial, status='new'):
+    def register_trial(self, trial, status="new"):
         """Register new trial in the database.
 
         Inform database about *new* suggested trial with specific parameter values. Trials may only
@@ -242,7 +308,7 @@ class Experiment:
 
         :return: list of `Trial` objects
         """
-        return self._select_evc_call(with_evc_tree, 'fetch_trials_by_status', status)
+        return self._select_evc_call(with_evc_tree, "fetch_trials_by_status", status)
 
     def fetch_noncompleted_trials(self, with_evc_tree=False):
         """Fetch non-completed trials of this `Experiment` instance.
@@ -256,7 +322,7 @@ class Experiment:
 
         :return: list of non-completed `Trial` objects
         """
-        return self._select_evc_call(with_evc_tree, 'fetch_noncompleted_trials')
+        return self._select_evc_call(with_evc_tree, "fetch_noncompleted_trials")
 
     # pylint: disable=invalid-name
     @property
@@ -297,14 +363,14 @@ class Experiment:
         num_completed_trials = 0
         num_pending_trials = 0
         for trial in trials:
-            if trial.status == 'completed':
+            if trial.status == "completed":
                 num_completed_trials += 1
-            elif trial.status in ['new', 'reserved', 'interrupted']:
+            elif trial.status in ["new", "reserved", "interrupted"]:
                 num_pending_trials += 1
 
-        return (
-            (num_completed_trials >= self.max_trials) or
-            (self.algorithms.is_done and num_pending_trials == 0))
+        return (num_completed_trials >= self.max_trials) or (
+            self.algorithms.is_done and num_pending_trials == 0
+        )
 
     @property
     def is_broken(self):
@@ -316,26 +382,30 @@ class Experiment:
 
         """
         num_broken_trials = self._storage.count_broken_trials(self)
-        return num_broken_trials >= orion.core.config.worker.max_broken
+        return num_broken_trials >= self.max_broken
 
     @property
     def configuration(self):
         """Return a copy of an `Experiment` configuration as a dictionary."""
         config = dict()
         for attrname in self.__slots__:
-            if attrname.startswith('_'):
+            if attrname.startswith("_"):
                 continue
             attribute = copy.deepcopy(getattr(self, attrname))
             config[attrname] = attribute
-            if attrname in ['algorithms', 'space']:
+            if attrname in ["algorithms", "space"]:
                 config[attrname] = attribute.configuration
-            elif attrname == "refers" and isinstance(attribute.get("adapter"), BaseAdapter):
-                config[attrname]['adapter'] = config[attrname]['adapter'].configuration
+            elif attrname == "refers" and isinstance(
+                attribute.get("adapter"), BaseAdapter
+            ):
+                config[attrname]["adapter"] = config[attrname]["adapter"].configuration
             elif attrname == "producer" and attribute.get("strategy"):
-                config[attrname]['strategy'] = config[attrname]['strategy'].configuration
+                config[attrname]["strategy"] = config[attrname][
+                    "strategy"
+                ].configuration
 
         if self.id is not None:
-            config['_id'] = self.id
+            config["_id"] = self.id
 
         return copy.deepcopy(config)
 
@@ -364,35 +434,38 @@ class Experiment:
            Elapsed time.
 
         """
-        completed_trials = self.fetch_trials_by_status('completed')
+        completed_trials = self.fetch_trials_by_status("completed")
 
         if not completed_trials:
             return dict()
         stats = dict()
-        stats['trials_completed'] = len(completed_trials)
-        stats['best_trials_id'] = None
+        stats["trials_completed"] = len(completed_trials)
+        stats["best_trials_id"] = None
         trial = completed_trials[0]
-        stats['best_evaluation'] = trial.objective.value
-        stats['best_trials_id'] = trial.id
-        stats['start_time'] = self.metadata['datetime']
-        stats['finish_time'] = stats['start_time']
+        stats["best_evaluation"] = trial.objective.value
+        stats["best_trials_id"] = trial.id
+        stats["start_time"] = self.metadata["datetime"]
+        stats["finish_time"] = stats["start_time"]
         for trial in completed_trials:
             # All trials are going to finish certainly after the start date
             # of the experiment they belong to
-            if trial.end_time > stats['finish_time']:  # pylint:disable=no-member
-                stats['finish_time'] = trial.end_time
+            if trial.end_time > stats["finish_time"]:  # pylint:disable=no-member
+                stats["finish_time"] = trial.end_time
             objective = trial.objective.value
-            if objective < stats['best_evaluation']:
-                stats['best_evaluation'] = objective
-                stats['best_trials_id'] = trial.id
-        stats['duration'] = stats['finish_time'] - stats['start_time']
+            if objective < stats["best_evaluation"]:
+                stats["best_evaluation"] = objective
+                stats["best_trials_id"] = trial.id
+        stats["duration"] = stats["finish_time"] - stats["start_time"]
 
         return stats
 
     def __repr__(self):
         """Represent the object as a string."""
-        return "Experiment(name=%s, metadata.user=%s, version=%s)" % \
-            (self.name, self.metadata['user'], self.version)
+        return "Experiment(name=%s, metadata.user=%s, version=%s)" % (
+            self.name,
+            self.metadata["user"],
+            self.version,
+        )
 
 
 # pylint: disable=too-few-public-methods
@@ -405,15 +478,30 @@ class ExperimentView(object):
 
     """
 
-    __slots__ = ('_experiment', )
+    __slots__ = ("_experiment",)
 
     #                     Attributes
-    valid_attributes = (["_id", "name", "refers", "metadata", "pool_size", "max_trials",
-                         "version", "space"] +
-                        # Properties
-                        ["id", "node", "is_done", "algorithms", "stats", "configuration"] +
-                        # Methods
-                        ["fetch_trials", "fetch_trials_by_status", "get_trial"])
+    valid_attributes = (
+        [
+            "_id",
+            "name",
+            "refers",
+            "metadata",
+            "pool_size",
+            "max_trials",
+            "max_broken",
+            "version",
+            "space",
+            "working_dir",
+            "producer",
+        ]
+        +
+        # Properties
+        ["id", "node", "is_done", "is_broken", "algorithms", "stats", "configuration"]
+        +
+        # Methods
+        ["to_pandas", "fetch_trials", "fetch_trials_by_status", "get_trial"]
+    )
 
     def __init__(self, experiment):
         self._experiment = experiment
@@ -422,11 +510,16 @@ class ExperimentView(object):
     def __getattr__(self, name):
         """Get attribute only if valid"""
         if name not in self.valid_attributes:
-            raise AttributeError("Cannot access attribute %s on view-only experiments." % name)
+            raise AttributeError(
+                "Cannot access attribute %s on view-only experiments." % name
+            )
 
         return getattr(self._experiment, name)
 
     def __repr__(self):
         """Represent the object as a string."""
-        return "ExperimentView(name=%s, metadata.user=%s, version=%s)" % \
-            (self.name, self.metadata['user'], self.version)
+        return "ExperimentView(name=%s, metadata.user=%s, version=%s)" % (
+            self.name,
+            self.metadata["user"],
+            self.version,
+        )

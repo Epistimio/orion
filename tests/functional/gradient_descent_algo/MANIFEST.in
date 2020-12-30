@@ -8,7 +8,6 @@ include src/orion/core/_version.py
 include versioneer.py
 
 # Exclude development helpers
-exclude .travis.yml
 exclude tox.ini
 exclude *-requirements.txt
 exclude .pylintrc

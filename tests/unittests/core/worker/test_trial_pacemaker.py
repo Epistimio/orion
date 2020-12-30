@@ -16,8 +16,8 @@ from orion.storage.base import get_storage
 def config(exp_config):
     """Return a configuration."""
     config = exp_config[0][0]
-    config['space'] = {'x': 'uniform(-50, 50)'}
-    config['name'] = 'exp'
+    config["space"] = {"x": "uniform(-50, 50)"}
+    config["name"] = "exp"
     return config
 
 
@@ -33,7 +33,7 @@ def trial(exp):
     trial = tuple_to_trial((1.0,), exp.space)
     heartbeat = datetime.datetime.utcnow()
     trial.experiment = exp.id
-    trial.status = 'reserved'
+    trial.status = "reserved"
     trial.heartbeat = heartbeat
 
     get_storage().register_trial(trial)
@@ -49,7 +49,7 @@ def test_trial_update_heartbeat(exp, trial):
     trial_monitor.start()
     time.sleep(2)
 
-    trials = exp.fetch_trials_by_status('reserved')
+    trials = exp.fetch_trials_by_status("reserved")
 
     assert trial.heartbeat != trials[0].heartbeat
 
@@ -57,7 +57,7 @@ def test_trial_update_heartbeat(exp, trial):
 
     time.sleep(2)
 
-    trials = exp.fetch_trials_by_status(status='reserved')
+    trials = exp.fetch_trials_by_status(status="reserved")
 
     assert heartbeat != trials[0].heartbeat
     trial_monitor.stop()
@@ -71,11 +71,11 @@ def test_trial_heartbeat_not_updated(exp, trial):
     trial_monitor.start()
     time.sleep(2)
 
-    trials = exp.fetch_trials_by_status('reserved')
+    trials = exp.fetch_trials_by_status("reserved")
 
     assert trial.heartbeat != trials[0].heartbeat
 
-    get_storage().set_trial_status(trial, status='interrupted')
+    get_storage().set_trial_status(trial, status="interrupted")
 
     time.sleep(2)
 
@@ -92,14 +92,16 @@ def test_trial_heartbeat_not_updated_inbetween(exp, trial):
     trial_monitor.start()
     time.sleep(1)
 
-    trials = exp.fetch_trials_by_status('reserved')
-    assert trial.heartbeat.replace(microsecond=0) == trials[0].heartbeat.replace(microsecond=0)
+    trials = exp.fetch_trials_by_status("reserved")
+    assert trial.heartbeat.replace(microsecond=0) == trials[0].heartbeat.replace(
+        microsecond=0
+    )
 
     heartbeat = trials[0].heartbeat
 
     time.sleep(6)
 
-    trials = exp.fetch_trials_by_status(status='reserved')
+    trials = exp.fetch_trials_by_status(status="reserved")
 
     assert heartbeat != trials[0].heartbeat
     trial_monitor.stop()

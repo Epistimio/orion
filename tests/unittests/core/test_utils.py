@@ -9,6 +9,7 @@ from orion.core.utils import Factory
 
 def test_factory_subclasses_detection():
     """Verify that meta-class Factory finds all subclasses"""
+
     class Base(object):
         pass
 
@@ -45,4 +46,6 @@ def test_factory_subclasses_detection():
 
     with pytest.raises(NotImplementedError) as exc_info:
         MyFactory(of_type="random")
-    assert "Could not find implementation of Base, type = 'random'" in str(exc_info.value)
+    assert "Could not find implementation of Base, type = 'random'" in str(
+        exc_info.value
+    )

@@ -39,7 +39,7 @@ class OperationsStage:
         database = self.c_stage.instance
 
         try:
-            database.write('test', {'index': 'value'})
+            database.write("test", {"index": "value"})
         except Exception as ex:
             raise CheckError(str(ex))
 
@@ -50,7 +50,7 @@ class OperationsStage:
         database = self.c_stage.instance
 
         try:
-            result = database.read('test', {'index': 'value'})
+            result = database.read("test", {"index": "value"})
         except Exception as ex:
             raise CheckError(str(ex))
 
@@ -63,7 +63,7 @@ class OperationsStage:
         """Check if database supports count operation."""
         database = self.c_stage.instance
 
-        count = database.count('test', {'index': 'value'})
+        count = database.count("test", {"index": "value"})
 
         if count != 1:
             raise CheckError("Expected 1 hit, received {}.".format(count))
@@ -74,8 +74,8 @@ class OperationsStage:
         """Check if database supports delete operation."""
         database = self.c_stage.instance
 
-        database.remove('test', {'index': 'value'})
-        remaining = database.count('test', {'index': 'value'})
+        database.remove("test", {"index": "value"})
+        remaining = database.count("test", {"index": "value"})
 
         if remaining:
             raise CheckError("{} items remaining.".format(remaining))

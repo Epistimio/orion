@@ -7,10 +7,11 @@
    :platform: Unix
    :synopsis: Provide tools to calculate regret
 """
+import numpy
 import pandas as pd
 
 
-def regret(trials, names=('best', 'best_id')):
+def regret(trials, names=("best", "best_id")):
     """
     Calculates the regret for a collection of :class:`Trial`. The regret is calculated sequentially
     from the order of the collection.
@@ -29,28 +30,26 @@ def regret(trials, names=('best', 'best_id')):
     so far and its trial id.
     """
     if len(names) != 2:
-        raise ValueError(f"`names` requires a tuple with 2 elements. {len(names)} provided.")
+        raise ValueError(
+            f"`names` requires a tuple with 2 elements. {len(names)} provided."
+        )
 
     df = pd.DataFrame(trials, copy=True)
     if df.empty:
         return df
 
-    df[names[0]] = df['objective'].cummin()
-    df[names[1]] = __get_best_ids(df, names[0])
+    regrets_idx = get_regrets_idx(df["objective"])
+    df[names[0]] = df["objective"].to_numpy()[list(regrets_idx)]
+    df[names[1]] = df["id"].to_numpy()[regrets_idx]
+
     return df
 
 
-def __get_best_ids(dataframe, best_name):
-    """Links the cumulative best objectives with their respective ids"""
-    best_id = None
-    best_objective = None
-    result = []
-
-    for i, id in enumerate(dataframe.id):
-        if dataframe.objective[i] == dataframe[best_name][i] \
-                and dataframe.objective[i] != best_objective:
-            best_id = id
-            best_objective = dataframe.objective[i]
-        result.append(best_id)
-
-    return result
+def get_regrets_idx(x):
+    """Return the indices corresponding to the cumulative minimum"""
+    minima = numpy.minimum.accumulate(x)
+    diff = numpy.diff(minima)
+    jumps = numpy.arange(len(x))
+    jumps[1:] *= diff != 0
+    jumps = numpy.maximum.accumulate(jumps)
+    return jumps

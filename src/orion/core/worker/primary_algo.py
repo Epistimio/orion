@@ -8,6 +8,7 @@
    :synopsis: Performs checks and organizes required transformations of points.
 
 """
+import orion.core.utils.backward as backward
 from orion.algo.base import BaseAlgorithm
 from orion.core.worker.transformer import build_required_space
 
@@ -37,8 +38,8 @@ class PrimaryAlgo(BaseAlgorithm):
         """
         self.algorithm = None
         super(PrimaryAlgo, self).__init__(space, algorithm=algorithm_config)
-        requirements = self.algorithm.requires
-        self.transformed_space = build_required_space(requirements, self.space)
+        requirements = backward.get_algo_requirements(self.algorithm)
+        self.transformed_space = build_required_space(self.space, **requirements)
         self.algorithm.space = self.transformed_space
 
     def seed_rng(self, seed):
@@ -72,10 +73,14 @@ class PrimaryAlgo(BaseAlgorithm):
 
         for point in points:
             if point not in self.transformed_space:
-                raise ValueError("""
+                raise ValueError(
+                    """
 Point is not contained in space:
 Point: {}
-Space: {}""".format(point, self.transformed_space))
+Space: {}""".format(
+                        point, self.transformed_space
+                    )
+                )
 
         return [self.transformed_space.reverse(point) for point in points]
 
@@ -115,8 +120,9 @@ Space: {}""".format(point, self.transformed_space))
 
         """
         assert point in self._space
-        return self.algorithm.judge(self.transformed_space.transform(point),
-                                    measurements)
+        return self.algorithm.judge(
+            self.transformed_space.transform(point), measurements
+        )
 
     @property
     def should_suspend(self):

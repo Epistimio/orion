@@ -9,12 +9,12 @@
               different storage backend
 
 """
-
+import copy
 import logging
 
 import orion.core
-from orion.core.utils import (AbstractSingletonType, SingletonFactory)
-
+from orion.core.io import resolve_config
+from orion.core.utils.singleton import AbstractSingletonType, SingletonFactory
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ def get_uid(item=None, uid=None, force_uid=True):
 
     if uid is None:
         if item is None and force_uid:
-            raise MissingArguments('Either `item` or `uid` should be set')
+            raise MissingArguments("Either `item` or `uid` should be set")
         elif item is not None:
             uid = item.id
 
@@ -423,15 +423,23 @@ def setup_storage(storage=None, debug=False):
     if storage is None:
         storage = orion.core.config.storage.to_dict()
 
-    if storage.get('type') == 'legacy' and 'database' not in storage:
-        storage['database'] = orion.core.config.storage.database.to_dict()
-    elif storage.get('type') is None and 'database' in storage:
-        storage['type'] = 'legacy'
+    storage = copy.deepcopy(storage)
+
+    if storage.get("type") == "legacy" and "database" not in storage:
+        storage["database"] = orion.core.config.storage.database.to_dict()
+    elif storage.get("type") is None and "database" in storage:
+        storage["type"] = "legacy"
+
+    # If using same storage type
+    if storage["type"] == orion.core.config.storage.type:
+        storage = resolve_config.merge_configs(
+            orion.core.config.storage.to_dict(), storage
+        )
 
     if debug:
-        storage = {'type': 'legacy', 'database': {'type': 'EphemeralDB'}}
+        storage = {"type": "legacy", "database": {"type": "EphemeralDB"}}
 
-    storage_type = storage.pop('type')
+    storage_type = storage.pop("type")
 
     log.debug("Creating %s storage client with args: %s", storage_type, storage)
     try:
@@ -450,17 +458,17 @@ class ReadOnlyStorageProtocol(object):
         :py:class:`orion.core.storage.BaseStorageProtocol`
     """
 
-    __slots__ = ('_storage', )
+    __slots__ = ("_storage",)
     valid_attributes = {
-        'get_trial',
-        'fetch_trials',
-        'fetch_experiments',
-        'count_broken_trials',
-        'count_completed_trials',
-        'fetch_noncompleted_trials',
-        'fetch_pending_trials',
-        'fetch_lost_trials',
-        'fetch_trials_by_status'
+        "get_trial",
+        "fetch_trials",
+        "fetch_experiments",
+        "count_broken_trials",
+        "count_completed_trials",
+        "fetch_noncompleted_trials",
+        "fetch_pending_trials",
+        "fetch_lost_trials",
+        "fetch_trials_by_status",
     }
 
     def __init__(self, protocol):
@@ -470,6 +478,8 @@ class ReadOnlyStorageProtocol(object):
     def __getattr__(self, attr):
         """Get attribute only if valid"""
         if attr not in self.valid_attributes:
-            raise AttributeError("Cannot access attribute %s on ReadOnlyStorageProtocol." % attr)
+            raise AttributeError(
+                "Cannot access attribute %s on ReadOnlyStorageProtocol." % attr
+            )
 
         return getattr(self._storage, attr)

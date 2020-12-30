@@ -1,154 +1,25 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.tests` -- Utils for tests
-================================================
-.. module:: state
+:mod:`orion.testing.state` -- Mocks Oríon's runtime.
+====================================================
+.. module:: testing
    :platform: Unix
-   :synopsis: Helper functions for tests
-
+   :synopsis: Boilerplate to simulate Oríon's runtime and data sources
 """
 # pylint: disable=protected-access
 
-from contextlib import contextmanager
-import copy
-import datetime
 import os
 import tempfile
 
 import yaml
 
-from orion.core.io.database import Database
-from orion.core.io.database.ephemeraldb import EphemeralDB
-from orion.core.io.database.mongodb import MongoDB
-from orion.core.io.database.pickleddb import PickledDB
-import orion.core.io.experiment_builder as experiment_builder
-from orion.core.utils import SingletonAlreadyInstantiatedError
-from orion.core.worker.producer import Producer
+from orion.core.io import experiment_builder as experiment_builder
+from orion.core.utils.singleton import (
+    SingletonAlreadyInstantiatedError,
+    update_singletons,
+)
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage, Storage
-from orion.storage.legacy import Legacy
-from orion.storage.track import Track
-
-
-def _select(lhs, rhs):
-    if lhs:
-        return lhs
-    return rhs
-
-
-def default_datetime():
-    """Return default datetime"""
-    return datetime.datetime(1903, 4, 25, 0, 0, 0)
-
-
-def generate_trials(trial_config, statuses):
-    """Generate Trials with different configurations"""
-
-    def _generate(obj, *args, value):
-        if obj is None:
-            return None
-
-        obj = copy.deepcopy(obj)
-        data = obj
-
-        data[args[-1]] = value
-        return obj
-
-    new_trials = [_generate(trial_config, 'status', value=s) for s in statuses]
-
-    for i, trial in enumerate(new_trials):
-        trial['submit_time'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=i)
-        if trial['status'] != 'new':
-            trial['start_time'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=i)
-
-    for i, trial in enumerate(new_trials):
-        if trial['status'] == 'completed':
-            trial['end_time'] = datetime.datetime.utcnow() + datetime.timedelta(seconds=i)
-
-    # make each trial unique
-    for i, trial in enumerate(new_trials):
-        if trial['status'] == 'completed':
-            trial['results'].append({
-                'name': 'loss',
-                'type': 'objective',
-                'value': i})
-
-        trial['params'].append({
-            'name': 'x',
-            'type': 'real',
-            'value': i
-        })
-
-    return new_trials
-
-
-@contextmanager
-def create_experiment(exp_config=None, trial_config=None, statuses=None):
-    """Context manager for the creation of an ExperimentClient and storage init"""
-    if exp_config is None:
-        raise ValueError("Parameter 'exp_config' is missing")
-    if trial_config is None:
-        raise ValueError("Parameter 'trial_config' is missing")
-    if statuses is None:
-        statuses = ['new', 'interrupted', 'suspended', 'reserved', 'completed']
-
-    from orion.client.experiment import ExperimentClient
-
-    with OrionState(experiments=[exp_config],
-                    trials=generate_trials(trial_config, statuses)) as cfg:
-        experiment = experiment_builder.build(name=exp_config['name'])
-        if cfg.trials:
-            experiment._id = cfg.trials[0]['experiment']
-        client = ExperimentClient(experiment, Producer(experiment))
-        yield cfg, experiment, client
-
-    client.close()
-
-
-class MockDatetime(datetime.datetime):
-    """Fake Datetime"""
-
-    @classmethod
-    def utcnow(cls):
-        """Return our random/fixed datetime"""
-        return default_datetime()
-
-
-def _get_default_test_storage():
-    """Return default configuration for the test storage"""
-    return {
-        'type': 'legacy',
-        'database': {
-            'type': 'PickledDB',
-            'host': '${file}'
-        }
-    }
-
-
-def _remove(file_name):
-    if file_name is None:
-        return
-
-    try:
-        os.remove(file_name)
-    except FileNotFoundError:
-        pass
-
-
-SINGLETONS = (Storage, Legacy, Database, MongoDB, PickledDB, EphemeralDB, Track)
-
-
-def update_singletons(values=None):
-    """Replace singletons by given values and return previous singleton objects"""
-    if values is None:
-        values = {}
-
-    singletons = {}
-    for singleton in SINGLETONS:
-        singletons[singleton] = singleton.instance
-        singleton.instance = values.get(singleton, None)
-
-    return singletons
+from orion.storage.base import Storage, get_storage
 
 
 # pylint: disable=no-self-use,protected-access
@@ -191,8 +62,16 @@ class BaseOrionState:
     resources = []
     workers = []
 
-    def __init__(self, experiments=None, trials=None, workers=None, lies=None, resources=None,
-                 from_yaml=None, storage=None):
+    def __init__(
+        self,
+        experiments=None,
+        trials=None,
+        workers=None,
+        lies=None,
+        resources=None,
+        from_yaml=None,
+        storage=None,
+    ):
         if from_yaml is not None:
             with open(from_yaml) as f:
                 exp_config = list(yaml.safe_load_all(f))
@@ -259,16 +138,16 @@ class BaseOrionState:
         for i, t_dict in enumerate(self._lies):
             self._lies[i] = Trial(**t_dict).to_dict()
 
-        self._trials.sort(key=lambda obj: int(obj['_id'], 16), reverse=True)
+        self._trials.sort(key=lambda obj: int(obj["_id"], 16), reverse=True)
 
         for i, experiment in enumerate(self._experiments):
-            if 'user_script' in experiment['metadata']:
+            if "user_script" in experiment["metadata"]:
                 path = os.path.join(
-                    os.path.dirname(__file__),
-                    experiment["metadata"]["user_script"])
+                    os.path.dirname(__file__), experiment["metadata"]["user_script"]
+                )
                 experiment["metadata"]["user_script"] = path
 
-            experiment['_id'] = i
+            experiment["_id"] = i
 
         self._set_tables()
 
@@ -276,7 +155,7 @@ class BaseOrionState:
         """Iterate over the database configuration and replace ${file}
         by the name of a temporary file
         """
-        self.tempfile, self.tempfile_path = tempfile.mkstemp('_orion_test')
+        self.tempfile, self.tempfile_path = tempfile.mkstemp("_orion_test")
         _remove(self.tempfile_path)
 
         def map_dict(fun, dictionary):
@@ -286,7 +165,7 @@ class BaseOrionState:
         def replace_file(v):
             """Replace `${file}` by a generated temporary file"""
             if isinstance(v, str):
-                v = v.replace('${file}', self.tempfile_path)
+                v = v.replace("${file}", self.tempfile_path)
 
             if isinstance(v, dict):
                 v = map_dict(replace_file, v)
@@ -313,7 +192,7 @@ class BaseOrionState:
             return get_storage()
 
         try:
-            config['of_type'] = config.pop('type')
+            config["of_type"] = config.pop("type")
             db = Storage(**config)
             self.storage_config = config
         except SingletonAlreadyInstantiatedError:
@@ -343,9 +222,9 @@ class LegacyOrionState(BaseOrionState):
         self.storage(config)
         self.initialized = True
 
-        if hasattr(get_storage(), '_db'):
-            self.database.remove('experiments', {})
-            self.database.remove('trials', {})
+        if hasattr(get_storage(), "_db"):
+            self.database.remove("experiments", {})
+            self.database.remove("trials", {})
 
         self.load_experience_configuration()
         return self
@@ -358,15 +237,15 @@ class LegacyOrionState(BaseOrionState):
 
     def _set_tables(self):
         if self._experiments:
-            self.database.write('experiments', self._experiments)
+            self.database.write("experiments", self._experiments)
         if self._trials:
-            self.database.write('trials', self._trials)
+            self.database.write("trials", self._trials)
         if self._workers:
-            self.database.write('workers', self._workers)
+            self.database.write("workers", self._workers)
         if self._resources:
-            self.database.write('resources', self._resources)
+            self.database.write("resources", self._resources)
         if self._lies:
-            self.database.write('lying_trials', self._lies)
+            self.database.write("lying_trials", self._lies)
 
         self.lies = self._lies
         self.trials = self._trials
@@ -374,8 +253,8 @@ class LegacyOrionState(BaseOrionState):
     def cleanup(self):
         """Cleanup after testing"""
         if self.initialized:
-            self.database.remove('experiments', {})
-            self.database.remove('trials', {})
+            self.database.remove("experiments", {})
+            self.database.remove("trials", {})
             if self.tempfile is not None:
                 os.close(self.tempfile)
             _remove(self.tempfile_path)
@@ -386,9 +265,43 @@ class LegacyOrionState(BaseOrionState):
 # pylint: disable=C0103
 def OrionState(*args, **kwargs):
     """Build an orion state in function of the storage type"""
-    storage = kwargs.get('storage')
+    storage = kwargs.get("storage")
 
-    if not storage or storage['type'] == 'legacy':
+    if not storage or storage["type"] == "legacy":
         return LegacyOrionState(*args, **kwargs)
 
     return BaseOrionState(*args, **kwargs)
+
+
+def customized_mutate_example(search_space, old_value, **kwargs):
+    """Define a customized mutate function example"""
+    multiply_factor = kwargs.pop("multiply_factor", 3.0)
+    add_factor = kwargs.pop("add_factor", 1)
+    if search_space.type == "real":
+        new_value = old_value / multiply_factor
+    elif search_space.type == "integer":
+        new_value = int(old_value + add_factor)
+    else:
+        new_value = old_value
+    return new_value
+
+
+def _get_default_test_storage():
+    """Return default configuration for the test storage"""
+    return {"type": "legacy", "database": {"type": "PickledDB", "host": "${file}"}}
+
+
+def _remove(file_name):
+    if file_name is None:
+        return
+
+    try:
+        os.remove(file_name)
+    except FileNotFoundError:
+        pass
+
+
+def _select(lhs, rhs):
+    if lhs:
+        return lhs
+    return rhs

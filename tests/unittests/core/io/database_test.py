@@ -6,7 +6,10 @@ import pytest
 
 from orion.core.io.database import Database, ReadOnlyDB
 from orion.core.io.database.mongodb import MongoDB
-from orion.core.utils import SingletonAlreadyInstantiatedError, SingletonNotInstantiatedError
+from orion.core.utils.singleton import (
+    SingletonAlreadyInstantiatedError,
+    SingletonNotInstantiatedError,
+)
 
 
 @pytest.mark.usefixtures("null_db_instances")
@@ -32,21 +35,22 @@ class TestDatabaseFactory(object):
     def test_notfound_type_first_call(self):
         """Raise when supplying not implemented wrapper name."""
         with pytest.raises(NotImplementedError) as exc_info:
-            Database('notfound')
+            Database("notfound")
 
-        assert 'AbstractDB' in str(exc_info.value)
+        assert "AbstractDB" in str(exc_info.value)
 
     def test_instantiation_and_singleton(self):
         """Test create just one object, that object persists between calls."""
-        database = Database(of_type='MongoDB', name='orion_test',
-                            username='user', password='pass')
+        database = Database(
+            of_type="MongoDB", name="orion_test", username="user", password="pass"
+        )
 
         assert isinstance(database, MongoDB)
         assert database is MongoDB()
         assert database is Database()
 
         with pytest.raises(SingletonAlreadyInstantiatedError):
-            Database('fire', [], {'it_matters': 'it\'s singleton'})
+            Database("fire", [], {"it_matters": "it's singleton"})
 
 
 @pytest.mark.usefixtures("null_db_instances", "clean_db")
@@ -69,7 +73,10 @@ class TestReadOnlyDatabase(object):
         database = create_db_instance
         readonly_database = ReadOnlyDB(database)
 
-        args = {"collection_name": "trials", "query": {"experiment": "supernaedo2-dendi"}}
+        args = {
+            "collection_name": "trials",
+            "query": {"experiment": "supernaedo2-dendi"},
+        }
         readonly_result = readonly_database.read(**args)
         result = database.read(**args)
 

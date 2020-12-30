@@ -1,13 +1,12 @@
 #!/bin/bash
 
-set -e
-set -x
-
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
 bash miniconda.sh -b -p $HOME/miniconda
 export PATH="$HOME/miniconda/bin:$PATH"
 hash -r
 conda config --set always_yes yes --set changeps1 no
+conda config --add channels conda-forge
+conda config --set channel_priority strict
 
 pip uninstall -y setuptools
 conda install -c anaconda setuptools
@@ -17,14 +16,6 @@ conda info -a
 conda install conda-build anaconda-client
 
 conda build conda --python 3.6
-conda build conda --python 3.6
 conda build conda --python 3.7
 conda build conda --python 3.8
-
-if [[ -n "${TRAVIS_TAG}" ]]
-then
-    mkdir -p conda-bld/linux-64
-    cp $HOME/miniconda/conda-bld/linux-64/orion* conda-bld/linux-64/
-    conda convert --platform all conda-bld/linux-64/orion* --output-dir conda-bld/
-    anaconda -t $ANACONDA_TOKEN upload conda-bld/**/orion*
-fi
+conda build conda --python 3.9

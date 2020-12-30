@@ -13,10 +13,10 @@ Currently, implemented wrappers:
    - :class:`orion.core.io.database.mongodb.MongoDB`
 
 """
-from abc import abstractmethod, abstractproperty
 import logging
+from abc import abstractmethod, abstractproperty
 
-from orion.core.utils import (AbstractSingletonType, SingletonFactory)
+from orion.core.utils.singleton import AbstractSingletonType, SingletonFactory
 
 
 # pylint: disable=too-many-public-methods
@@ -43,8 +43,15 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
     ASCENDING = 0
     DESCENDING = 1
 
-    def __init__(self, host='localhost', name=None,
-                 port=None, username=None, password=None, **kwargs):
+    def __init__(
+        self,
+        host="localhost",
+        name=None,
+        port=None,
+        username=None,
+        password=None,
+        **kwargs
+    ):
         """Init method, see attributes of :class:`AbstractDB`."""
         self.host = host
         self.name = name
@@ -268,14 +275,18 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
 class ReadOnlyDB(object):
     """Read-only view on a database."""
 
-    __slots__ = ('_database', )
+    __slots__ = ("_database",)
 
     #                     Attributes
-    valid_attributes = (["host", "name", "port", "username", "password"] +
-                        # Properties
-                        ["is_connected"] +
-                        # Methods
-                        ["initiate_connection", "close_connection", "read", "count"])
+    valid_attributes = (
+        ["host", "name", "port", "username", "password"]
+        +
+        # Properties
+        ["is_connected"]
+        +
+        # Methods
+        ["initiate_connection", "close_connection", "read", "count"]
+    )
 
     def __init__(self, database):
         """Init method, see attributes of :class:`AbstractDB`."""
@@ -284,7 +295,9 @@ class ReadOnlyDB(object):
     def __getattr__(self, attr):
         """Get attribute only if valid"""
         if attr not in self.valid_attributes:
-            raise AttributeError("Cannot access attribute %s on view-only experiments." % attr)
+            raise AttributeError(
+                "Cannot access attribute %s on view-only experiments." % attr
+            )
 
         return getattr(self._database, attr)
 
@@ -325,4 +338,4 @@ class Database(AbstractDB, metaclass=SingletonFactory):
 
 
 # set per-module log level
-logging.getLogger('filelock').setLevel('ERROR')
+logging.getLogger("filelock").setLevel("ERROR")

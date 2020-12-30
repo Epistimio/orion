@@ -7,31 +7,31 @@ import orion.core.io.resolve_config
 
 def test_info_no_hit(clean_db, one_experiment, capsys):
     """Test info if no experiment with given name."""
-    returncode = orion.core.cli.main(['info', '--name', 'i do not exist'])
+    returncode = orion.core.cli.main(["info", "--name", "i do not exist"])
 
     assert returncode == 1
 
     captured = capsys.readouterr().err
 
-    assert captured.startswith('Error: No experiment with given name \'i do not exist\'')
+    assert captured.startswith("Error: No experiment with given name 'i do not exist'")
 
 
 def test_info_hit(clean_db, one_experiment, capsys):
     """Test info if existing experiment."""
-    orion.core.cli.main(['info', '--name', 'test_single_exp'])
+    orion.core.cli.main(["info", "--name", "test_single_exp"])
 
     captured = capsys.readouterr().out
 
-    assert '--x~uniform(0,1)' in captured
+    assert "--x~uniform(0,1)" in captured
 
 
 def test_info_broken(clean_db, broken_refers, capsys):
     """Test info if experiment.refers is missing."""
-    orion.core.cli.main(['info', '--name', 'test_single_exp'])
+    orion.core.cli.main(["info", "--name", "test_single_exp"])
 
     captured = capsys.readouterr().out
 
-    assert '--x~uniform(0,1)' in captured
+    assert "--x~uniform(0,1)" in captured
 
 
 def test_info_no_branching(clean_db, one_experiment_changed_vcs, capsys):
@@ -39,31 +39,40 @@ def test_info_no_branching(clean_db, one_experiment_changed_vcs, capsys):
 
     Version should not increase!
     """
-    orion.core.cli.main(['info', '--name', 'test_single_exp'])
+    orion.core.cli.main(["info", "--name", "test_single_exp"])
 
     captured = capsys.readouterr().out
 
-    assert '\nversion: 1\n' in captured
+    assert "\nversion: 1\n" in captured
 
 
 def test_info_python_api(clean_db, with_experiment_using_python_api, capsys):
     """Test info if config built using python api"""
-    orion.core.cli.main(['info', '--name', 'from-python-api'])
+    orion.core.cli.main(["info", "--name", "from-python-api"])
 
     captured = capsys.readouterr().out
 
-    assert 'from-python-api' in captured
-    assert 'Commandline' not in captured
+    assert "from-python-api" in captured
+    assert "Commandline" not in captured
+
+
+def test_missing_conf_file(clean_db, with_experiment_missing_conf_file, capsys):
+    """Test info can handle experiments when the user script config file is missing"""
+    orion.core.cli.main(["info", "--name", "test_single_exp"])
+
+    captured = capsys.readouterr().out
+
+    assert "--x~uniform(0,1)" in captured
 
 
 def test_info_cmdline_api(clean_db, with_experiment_using_python_api, capsys):
     """Test info if config built using cmdline api"""
-    orion.core.cli.main(['info', '--name', 'test_single_exp'])
+    orion.core.cli.main(["info", "--name", "test_single_exp"])
 
     captured = capsys.readouterr().out
 
-    assert 'test_single_exp' in captured
-    assert 'Commandline' in captured
+    assert "test_single_exp" in captured
+    assert "Commandline" in captured
 
 
 def test_no_args(capsys):
@@ -73,4 +82,4 @@ def test_no_args(capsys):
 
     captured = capsys.readouterr().err
 
-    assert captured == 'Error: No name provided for the experiment.\n'
+    assert captured == "Error: No name provided for the experiment.\n"
