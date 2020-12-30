@@ -52,15 +52,15 @@ class BaseAssess(ABC):
         """Return the configuration of the assessment."""
         dict_form = dict()
         for attrname in self._param_names:
-            if attrname.startswith('_'):  # Do not log _space or others in conf
+            if attrname.startswith("_"):  # Do not log _space or others in conf
                 continue
             attr = getattr(self, attrname)
             dict_form[attrname] = attr
-        dict_form['task_num'] = self.task_num
+        dict_form["task_num"] = self.task_num
 
         mod = self.__class__.__module__
-        fullname = mod + '.' + self.__class__.__qualname__
-        fullname = fullname.replace('.', '-')
+        fullname = mod + "." + self.__class__.__qualname__
+        fullname = fullname.replace(".", "-")
         return {fullname: dict_form}
 
 
@@ -104,13 +104,13 @@ class BaseTask(ABC):
         """Return the configuration of the task."""
         dict_form = dict()
         for attrname in self._param_names:
-            if attrname.startswith('_'):  # Do not log _space or others in conf
+            if attrname.startswith("_"):  # Do not log _space or others in conf
                 continue
             attr = getattr(self, attrname)
             dict_form[attrname] = attr
-        dict_form['max_trials'] = self.max_trials
+        dict_form["max_trials"] = self.max_trials
 
         mod = self.__class__.__module__
-        fullname = mod + '.' + self.__class__.__qualname__
-        fullname = fullname.replace('.', '-')
+        fullname = mod + "." + self.__class__.__qualname__
+        fullname = fullname.replace(".", "-")
         return {fullname: dict_form}

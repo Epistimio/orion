@@ -49,8 +49,10 @@ def get_or_create_benchmark(name, algorithms=None, targets=None):
         benchmark_id, algorithms, targets = _resolve_db_config(db_config)
 
     if not algorithms or not targets:
-        raise NoConfigurationError('Benchmark {} does not exist in DB, '
-                                   'algorithms and targets space was not defined.'.format(name))
+        raise NoConfigurationError(
+            "Benchmark {} does not exist in DB, "
+            "algorithms and targets space was not defined.".format(name)
+        )
 
     benchmark = _create_benchmark(name, algorithms, targets)
 
@@ -63,39 +65,39 @@ def get_or_create_benchmark(name, algorithms=None, targets=None):
 
 def _resolve_db_config(db_config):
 
-    benchmark_id = db_config['_id']
-    algorithms = db_config['algorithms']
+    benchmark_id = db_config["_id"]
+    algorithms = db_config["algorithms"]
 
     obj_targets = []
-    str_targets = db_config['targets']
+    str_targets = db_config["targets"]
     for target in str_targets:
         obj_target = {}
 
-        assessments = target['assess']
+        assessments = target["assess"]
         obj_assessments = []
         for assessment in assessments:
             assess_cls = list(assessment.keys())[0]
-            assess_cls = assess_cls.replace('-', '.')
+            assess_cls = assess_cls.replace("-", ".")
             assess_cfg = list(assessment.values())[0]
-            mod_str, _sep, class_str = assess_cls.rpartition('.')
+            mod_str, _sep, class_str = assess_cls.rpartition(".")
 
             module = importlib.import_module(mod_str)
             assess_class = getattr(module, class_str)
             obj_assessments.append(assess_class(**assess_cfg))
-        obj_target['assess'] = obj_assessments
+        obj_target["assess"] = obj_assessments
 
-        tasks = target['task']
+        tasks = target["task"]
         obj_tasks = []
         for task in tasks:
             task_cls = list(task.keys())[0]
-            task_cls = task_cls.replace('-', '.')
+            task_cls = task_cls.replace("-", ".")
             task_cfg = list(task.values())[0]
-            mod_str, _sep, class_str = task_cls.rpartition('.')
+            mod_str, _sep, class_str = task_cls.rpartition(".")
 
             module = importlib.import_module(mod_str)
             task_class = getattr(module, class_str)
             obj_tasks.append(task_class(**task_cfg))
-        obj_target['task'] = obj_tasks
+        obj_target["task"] = obj_tasks
 
     obj_targets.append(obj_target)
 
@@ -124,7 +126,7 @@ def _create_study(benchmark, algorithms, assess, task):
 def _fetch_benchmark(name):
 
     if name:
-        configs = get_storage().fetch_benchmark({'name': name})
+        configs = get_storage().fetch_benchmark({"name": name})
     else:
         configs = get_storage().fetch_benchmark({})
 
@@ -135,7 +137,7 @@ def _fetch_benchmark(name):
 
 
 def _register_benchmark(benchmark):
-    benchmark.metadata['datetime'] = datetime.datetime.utcnow()
+    benchmark.metadata["datetime"] = datetime.datetime.utcnow()
     config = benchmark.configuration
     # This will raise DuplicateKeyError if a concurrent experiment with
     # identical (name, metadata.user) is written first in the database.

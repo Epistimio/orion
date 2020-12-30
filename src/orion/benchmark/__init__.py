@@ -17,7 +17,7 @@ from tabulate import tabulate
 from orion.client import create_experiment
 
 
-class Benchmark():
+class Benchmark:
     """
     Benchmark definition
 
@@ -51,10 +51,10 @@ class Benchmark():
         define a study.
         """
         for target in self.targets:
-            assessments = target['assess']
-            tasks = target['task']
+            assessments = target["assess"]
+            tasks = target["task"]
 
-            for assess, task in (itertools.product(*[assessments, tasks])):
+            for assess, task in itertools.product(*[assessments, tasks]):
                 study = Study(self, self.algorithms, assess, task)
                 study.setup_experiments()
                 self.studies.append(study)
@@ -73,27 +73,45 @@ class Benchmark():
         for study in self.studies:
             for status in study.status():
                 column = dict()
-                column['Algorithms'] = status['algorithm']
-                column['Assessments'] = status['assessment']
-                column['Tasks'] = status['task']
-                column['Total Experiments'] = status['experiments']
-                total_exp_num += status['experiments']
-                column['Completed Experiments'] = status['completed']
-                complete_exp_num += status['completed']
-                column['Submitted Trials'] = status['trials']
-                total_trials += status['trials']
+                column["Algorithms"] = status["algorithm"]
+                column["Assessments"] = status["assessment"]
+                column["Tasks"] = status["task"]
+                column["Total Experiments"] = status["experiments"]
+                total_exp_num += status["experiments"]
+                column["Completed Experiments"] = status["completed"]
+                complete_exp_num += status["completed"]
+                column["Submitted Trials"] = status["trials"]
+                total_trials += status["trials"]
                 benchmark_status.append(column)
 
         if not silent:
-            print('Benchmark name: {}, Experiments: {}/{}, Submitted trials: {}'.
-                  format(self.name, complete_exp_num, total_exp_num, total_trials))
+            print(
+                "Benchmark name: {}, Experiments: {}/{}, Submitted trials: {}".format(
+                    self.name, complete_exp_num, total_exp_num, total_trials
+                )
+            )
             if notebook:
                 from IPython.display import HTML, display
-                display(HTML(tabulate(benchmark_status, headers='keys',
-                                      tablefmt='html', stralign='center', numalign='center')))
+
+                display(
+                    HTML(
+                        tabulate(
+                            benchmark_status,
+                            headers="keys",
+                            tablefmt="html",
+                            stralign="center",
+                            numalign="center",
+                        )
+                    )
+                )
             else:
-                table = tabulate(benchmark_status, headers='keys',
-                                 tablefmt='grid', stralign='center', numalign='center')
+                table = tabulate(
+                    benchmark_status,
+                    headers="keys",
+                    tablefmt="grid",
+                    stralign="center",
+                    numalign="center",
+                )
                 print(table)
 
         return benchmark_status
@@ -114,22 +132,39 @@ class Benchmark():
             for exp in study.experiments():
                 exp_column = dict()
                 stats = exp.stats
-                exp_column['Algorithm'] = list(exp.configuration['algorithms'].keys())[0]
-                exp_column['Experiment Name'] = exp.name
-                exp_column['Number Trial'] = len(exp.fetch_trials())
-                exp_column['Best Evaluation'] = stats['best_evaluation']
+                exp_column["Algorithm"] = list(exp.configuration["algorithms"].keys())[
+                    0
+                ]
+                exp_column["Experiment Name"] = exp.name
+                exp_column["Number Trial"] = len(exp.fetch_trials())
+                exp_column["Best Evaluation"] = stats["best_evaluation"]
                 experiment_table.append(exp_column)
 
         if not silent:
             if notebook:
                 from IPython.display import HTML, display
-                display(HTML(tabulate(experiment_table, headers='keys',
-                                      tablefmt='html', stralign='center', numalign='center')))
+
+                display(
+                    HTML(
+                        tabulate(
+                            experiment_table,
+                            headers="keys",
+                            tablefmt="html",
+                            stralign="center",
+                            numalign="center",
+                        )
+                    )
+                )
             else:
-                table = tabulate(experiment_table, headers='keys',
-                                 tablefmt='grid', stralign='center', numalign='center')
+                table = tabulate(
+                    experiment_table,
+                    headers="keys",
+                    tablefmt="grid",
+                    stralign="center",
+                    numalign="center",
+                )
                 print(table)
-            print('Total Experiments: {}'.format(len(experiment_table)))
+            print("Total Experiments: {}".format(len(experiment_table)))
         return experiment_table
 
     # pylint: disable=invalid-name
@@ -146,34 +181,34 @@ class Benchmark():
         """Return a copy of an `Benchmark` configuration as a dictionary."""
         config = dict()
 
-        config['name'] = self.name
-        config['algorithms'] = self.algorithms
+        config["name"] = self.name
+        config["algorithms"] = self.algorithms
 
         targets = []
         for target in self.targets:
             str_target = {}
-            assessments = target['assess']
+            assessments = target["assess"]
             str_assessments = []
             for assessment in assessments:
                 str_assessments.append(assessment.configuration)
-            str_target['assess'] = str_assessments
+            str_target["assess"] = str_assessments
 
-            tasks = target['task']
+            tasks = target["task"]
             str_tasks = []
             for task in tasks:
                 str_tasks.append(task.configuration)
-            str_target['task'] = str_tasks
+            str_target["task"] = str_tasks
         targets.append(str_target)
-        config['targets'] = targets
+        config["targets"] = targets
 
         if self.id is not None:
-            config['_id'] = self.id
+            config["_id"] = self.id
 
         # print('config:', config)
         return copy.deepcopy(config)
 
 
-class Study():
+class Study:
     """
     Benchmark definition
 
@@ -208,12 +243,23 @@ class Study():
 
             for algo_index, algorithm in enumerate(self.algorithms):
 
-                experiment_name = self.benchmark.name + '_' + self.assess_name + \
-                    '_' + self.task_name + '_' + \
-                    str(task_index) + '_' + str(algo_index)
+                experiment_name = (
+                    self.benchmark.name
+                    + "_"
+                    + self.assess_name
+                    + "_"
+                    + self.task_name
+                    + "_"
+                    + str(task_index)
+                    + "_"
+                    + str(algo_index)
+                )
                 experiment = create_experiment(
-                    experiment_name, space=space, algorithms=algorithm,
-                    max_trials=max_trials)
+                    experiment_name,
+                    space=space,
+                    algorithms=algorithm,
+                    max_trials=max_trials,
+                )
                 self.experiments_info.append((task_index, experiment))
 
     def execute(self):
@@ -232,19 +278,24 @@ class Study():
         for _, experiment in self.experiments_info:
             trials = experiment.fetch_trials()
 
-            algorithm_name = list(experiment.configuration['algorithms'].keys())[0]
+            algorithm_name = list(experiment.configuration["algorithms"].keys())[0]
 
             if algorithm_tasks.get(algorithm_name, None) is None:
-                task_state = {'algorithm': algorithm_name, 'experiments': 0,
-                              'assessment': self.assess_name, 'task': self.task_name,
-                              'completed': 0, 'trials': 0}
+                task_state = {
+                    "algorithm": algorithm_name,
+                    "experiments": 0,
+                    "assessment": self.assess_name,
+                    "task": self.task_name,
+                    "completed": 0,
+                    "trials": 0,
+                }
             else:
                 task_state = algorithm_tasks[algorithm_name]
 
-            task_state['experiments'] += 1
-            task_state['trials'] += len(trials)
+            task_state["experiments"] += 1
+            task_state["trials"] += len(trials)
             if experiment.is_done:
-                task_state['completed'] += 1
+                task_state["completed"] += 1
 
             algorithm_tasks[algorithm_name] = task_state
 
@@ -271,5 +322,8 @@ class Study():
                 algorithm_name = algorithm
             algorithms_list.append(algorithm_name)
 
-        return "Study(assessment=%s, task=%s, algorithms=[%s])" % \
-            (self.assess_name, self.task_name, ','.join(algorithms_list))
+        return "Study(assessment=%s, task=%s, algorithms=[%s])" % (
+            self.assess_name,
+            self.task_name,
+            ",".join(algorithms_list),
+        )

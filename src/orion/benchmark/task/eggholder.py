@@ -26,6 +26,7 @@ class EggHolder(BaseTask):
         Return the black box function to optimize, the function will expect hyper-parameters to
         search and return objective values of trial with the hyper-parameters.
         """
+
         def eggholder(x):
             """Evaluate a n-D eggholder function."""
             x = numpy.asarray(x)
@@ -36,15 +37,12 @@ class EggHolder(BaseTask):
 
             y = numpy.sum(summands)
 
-            return [dict(
-                name='eggholder',
-                type='objective',
-                value=y)]
+            return [dict(name="eggholder", type="objective", value=y)]
 
         return eggholder
 
     def get_search_space(self):
         """Return the search space for the task objective function"""
-        rspace = {'x': 'uniform(-512, 512, shape={})'.format(self.dim)}
+        rspace = {"x": "uniform(-512, 512, shape={})".format(self.dim)}
 
         return rspace

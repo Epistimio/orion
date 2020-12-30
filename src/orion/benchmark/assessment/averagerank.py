@@ -43,9 +43,11 @@ class AverageRank(BaseAssess):
         task_algorithm_exp = defaultdict(list)
 
         for task_index, exp in experiments:
-            algorithm_name = list(exp.configuration['algorithms'].keys())[0]
+            algorithm_name = list(exp.configuration["algorithms"].keys())[0]
 
-            trials = list(filter(lambda trial: trial.status == 'completed', exp.fetch_trials()))
+            trials = list(
+                filter(lambda trial: trial.status == "completed", exp.fetch_trials())
+            )
             exp_trails = self._build_exp_trails(trials)
 
             task_algorithm_exp[task_index].append((algorithm_name, exp_trails))
@@ -83,13 +85,15 @@ class AverageRank(BaseAssess):
         plot_tables = []
         for algo, ranks in algorithm_trials_ranks.items():
             data = np.array(ranks).transpose().mean(axis=-1)
-            df = pd.DataFrame(data, columns=['rank'])
-            df['algorithm'] = algo
+            df = pd.DataFrame(data, columns=["rank"])
+            df["algorithm"] = algo
             plot_tables.append(df)
 
         df = pd.concat(plot_tables)
-        title = 'Assessment {} over Task {}'.format(self.__class__.__name__, task)
-        fig = px.line(df, y='rank', labels={'index': 'trial_seq'}, color='algorithm', title=title)
+        title = "Assessment {} over Task {}".format(self.__class__.__name__, task)
+        fig = px.line(
+            df, y="rank", labels={"index": "trial_seq"}, color="algorithm", title=title
+        )
 
         return fig
 
@@ -98,8 +102,7 @@ class AverageRank(BaseAssess):
         1. sort the trials wrt. submit time
         2. reset the objective value of each trail with the best until it
         """
-        data = [[trial.submit_time,
-                 trial.objective.value] for trial in trials]
+        data = [[trial.submit_time, trial.objective.value] for trial in trials]
         sorted(data, key=lambda x: x[0])
 
         result = []

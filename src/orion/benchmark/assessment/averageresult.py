@@ -42,9 +42,11 @@ class AverageResult(BaseAssess):
         algorithm_exp_trials = defaultdict(list)
 
         for _, exp in experiments:
-            algorithm_name = list(exp.configuration['algorithms'].keys())[0]
+            algorithm_name = list(exp.configuration["algorithms"].keys())[0]
 
-            trials = list(filter(lambda trial: trial.status == 'completed', exp.fetch_trials()))
+            trials = list(
+                filter(lambda trial: trial.status == "completed", exp.fetch_trials())
+            )
             exp_trails = self._build_exp_trails(trials)
             algorithm_exp_trials[algorithm_name].append(exp_trails)
 
@@ -58,14 +60,19 @@ class AverageResult(BaseAssess):
         for algo, sorted_trails in algorithm_exp_trials.items():
             data = np.array(sorted_trails).transpose().mean(axis=-1)
             algorithm_averaged_trials[algo] = data
-            df = pd.DataFrame(data, columns=['objective'])
-            df['algorithm'] = algo
+            df = pd.DataFrame(data, columns=["objective"])
+            df["algorithm"] = algo
             plot_tables.append(df)
 
         df = pd.concat(plot_tables)
-        title = 'Assessment {} over Task {}'.format(self.__class__.__name__, task)
-        fig = px.line(df, y='objective', labels={'index': 'trial_seq'},
-                      color='algorithm', title=title)
+        title = "Assessment {} over Task {}".format(self.__class__.__name__, task)
+        fig = px.line(
+            df,
+            y="objective",
+            labels={"index": "trial_seq"},
+            color="algorithm",
+            title=title,
+        )
         return fig
 
     def _build_exp_trails(self, trials):
@@ -73,8 +80,7 @@ class AverageResult(BaseAssess):
         1. sort the trials wrt. submit time
         2. reset the objective value of each trail with the best until it
         """
-        data = [[trial.submit_time,
-                 trial.objective.value] for trial in trials]
+        data = [[trial.submit_time, trial.objective.value] for trial in trials]
         sorted(data, key=lambda x: x[0])
 
         result = []

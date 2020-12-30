@@ -13,4 +13,4 @@ from .carromtable import CarromTable
 from .eggholder import EggHolder
 from .rosenbrock import RosenBrock
 
-__all__ = ['RosenBrock', 'Branin', 'CarromTable', 'EggHolder']
+__all__ = ["RosenBrock", "Branin", "CarromTable", "EggHolder"]

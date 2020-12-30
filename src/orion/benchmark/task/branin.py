@@ -27,6 +27,7 @@ class Branin(BaseTask):
         Return the black box function to optimize, the function will expect hyper-parameters to
         search and return objective values of trial with the hyper-parameters.
         """
+
         def branin(x):
             """Evaluate a 2-D branin function."""
             x[0] = (x[1] * 15) - 5
@@ -38,18 +39,18 @@ class Branin(BaseTask):
             r = 6
             t = 1 / (8 * math.pi)
             s = 10
-            y = a * numpy.square(x[1] - b * numpy.square(x[0]) + c * x[0] - r) + \
-                s * (1 - t) * numpy.cos(x[0]) + s
+            y = (
+                a * numpy.square(x[1] - b * numpy.square(x[0]) + c * x[0] - r)
+                + s * (1 - t) * numpy.cos(x[0])
+                + s
+            )
 
-            return [dict(
-                name='branin',
-                type='objective',
-                value=y)]
+            return [dict(name="branin", type="objective", value=y)]
 
         return branin
 
     def get_search_space(self):
         """Return the search space for the task objective function"""
-        rspace = {'x': 'uniform(0, 1, shape=2)'}
+        rspace = {"x": "uniform(0, 1, shape=2)"}
 
         return rspace
