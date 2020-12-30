@@ -12,8 +12,7 @@
 import datetime
 import importlib
 
-from orion.benchmark import Benchmark
-from orion.benchmark import Study
+from orion.benchmark import Benchmark, Study
 from orion.core.utils.exceptions import NoConfigurationError
 from orion.storage.base import get_storage, setup_storage
 

@@ -9,7 +9,6 @@ from orion.benchmark.base import BaseTask
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task import Branin, CarromTable, EggHolder, RosenBrock
 
-
 algorithms = [{'random': {'seed': 1}}, {'tpe': {'seed': 1}}]
 
 

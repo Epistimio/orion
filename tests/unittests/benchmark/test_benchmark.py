@@ -7,15 +7,13 @@ import datetime
 import plotly
 import pytest
 
+import orion.core.io.experiment_builder as experiment_builder
 from orion.benchmark import Benchmark, Study
 from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.task import CarromTable, RosenBrock
 from orion.client.experiment import ExperimentClient
-import orion.core.io.experiment_builder as experiment_builder
-from orion.core.utils.tests import generate_trials
-from orion.core.utils.tests import OrionState
+from orion.core.utils.tests import OrionState, generate_trials
 from orion.core.worker.experiment import Experiment
-
 
 config = dict(
     name='experiment-name',
