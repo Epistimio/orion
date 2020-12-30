@@ -12,8 +12,8 @@ from orion.benchmark import Benchmark, Study
 from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.task import CarromTable, RosenBrock
 from orion.client.experiment import ExperimentClient
-from orion.core.utils.tests import OrionState, generate_trials
 from orion.core.worker.experiment import Experiment
+from orion.testing import OrionState, generate_trials
 
 config = dict(
     name="experiment-name",

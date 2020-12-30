@@ -6,7 +6,7 @@ import plotly
 
 import orion.core.io.experiment_builder as experiment_builder
 from orion.benchmark.assessment import AverageRank, AverageResult
-from orion.core.utils.tests import OrionState, create_experiment, generate_trials
+from orion.testing import OrionState, create_experiment, generate_trials
 
 config = dict(
     name="experiment-name",

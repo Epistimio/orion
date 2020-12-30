@@ -8,7 +8,7 @@ from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task import CarromTable, RosenBrock
 from orion.core.utils.exceptions import NoConfigurationError
-from orion.core.utils.tests import OrionState
+from orion.testing import OrionState
 
 
 class DummyTask:
