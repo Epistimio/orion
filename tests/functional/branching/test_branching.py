@@ -938,7 +938,7 @@ def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
     ]
 
 
-def test_init_w_version_from_parent_w_children(monkeypatch, capsys):
+def test_init_w_version_from_parent_w_children(create_db_instance, monkeypatch, capsys):
     """Test that init of experiment from version with children fails."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -961,7 +961,7 @@ def test_init_w_version_from_parent_w_children(monkeypatch, capsys):
     assert "Experiment name" in captured.err
 
 
-def test_init_w_version_from_exp_wout_child(monkeypatch):
+def test_init_w_version_from_exp_wout_child(create_db_instance, monkeypatch):
     """Test that init of experiment from version without child works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -980,7 +980,7 @@ def test_init_w_version_from_exp_wout_child(monkeypatch):
     assert len(list(exp))
 
 
-def test_init_w_version_gt_max(monkeypatch):
+def test_init_w_version_gt_max(create_db_instance, monkeypatch):
     """Test that init of experiment from version higher than max works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -999,7 +999,7 @@ def test_init_w_version_gt_max(monkeypatch):
     assert len(list(exp))
 
 
-def test_init_check_increment_w_children(monkeypatch):
+def test_init_check_increment_w_children(create_db_instance, monkeypatch):
     """Test that incrementing version works with not same-named children."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1018,7 +1018,7 @@ def test_init_check_increment_w_children(monkeypatch):
     assert len(list(exp))
 
 
-def test_branch_from_selected_version(monkeypatch):
+def test_branch_from_selected_version(create_db_instance, monkeypatch):
     """Test that branching from a version passed with `--version` works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
