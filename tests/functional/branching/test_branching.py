@@ -834,6 +834,23 @@ def test_new_code_triggers_code_conflict(capsys):
 
 
 @pytest.mark.usefixtures("init_full_x", "mock_infer_versioning_metadata")
+def test_new_code_triggers_code_conflict_with_name_only(capsys):
+    """Test that a different git hash is generating a child, even if cmdline is not passed"""
+    name = "full_x"
+    error_code = orion.core.cli.main(
+        ("hunt --init-only -n {name} " "--manual-resolution")
+        .format(name=name)
+        .split(" ")
+    )
+    assert error_code == 1
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "Configuration is different and generates a branching event" in captured.err
+    assert "--code-change-type" in captured.err
+
+
+@pytest.mark.usefixtures("init_full_x", "mock_infer_versioning_metadata")
 def test_new_code_ignores_code_conflict():
     """Test that a different git hash is *not* generating a child if --ignore-code-changes"""
     name = "full_x"
@@ -864,6 +881,18 @@ def test_new_cli(init_full_x_new_cli):
 
     assert len(experiment.fetch_trials(with_evc_tree=True)) == 21
     assert len(experiment.fetch_trials()) == 20
+
+
+@pytest.mark.usefixtures("init_full_x")
+def test_no_cli_no_branching():
+    """Test that no branching occurs when using same code and not passing cmdline"""
+    name = "full_x"
+    error_code = orion.core.cli.main(
+        ("hunt --init-only -n {name} " "--manual-resolution")
+        .format(name=name)
+        .split(" ")
+    )
+    assert error_code == 0
 
 
 def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):

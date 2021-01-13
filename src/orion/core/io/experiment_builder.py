@@ -274,8 +274,11 @@ def consolidate_config(name, version, config):
     new_config = config
     config = resolve_config.merge_configs(db_config, config)
 
+    metadata = config.get("metadata", {})
     metadata = resolve_config.fetch_metadata(
-        config.get("user"), config.get("user_args"), config.get("user_script_config")
+        metadata.get("user"),
+        metadata.get("user_args"),
+        metadata.get("user_script_config"),
     )
 
     config = resolve_config.merge_configs(config, {"metadata": metadata})
