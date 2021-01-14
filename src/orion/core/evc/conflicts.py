@@ -51,6 +51,7 @@ of the old name.
 """
 
 import copy
+import logging
 import pprint
 import traceback
 from abc import ABCMeta, abstractmethod
@@ -63,6 +64,8 @@ from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.diff import colored_diff
 from orion.core.utils.format_trials import standard_param_name
 from orion.storage.base import get_storage
+
+log = logging.getLogger(__name__)
 
 
 def _create_param(dimension, default_value):
@@ -1173,6 +1176,8 @@ class CodeConflict(Conflict):
         ignore_code_changes = branching_config is not None and branching_config.get(
             "ignore_code_changes", False
         )
+        if ignore_code_changes:
+            log.debug("Ignoring code changes")
         if (
             not ignore_code_changes
             and new_hash_commit
@@ -1314,6 +1319,9 @@ class CommandLineConflict(Conflict):
         if non_monitored_arguments is None:
             non_monitored_arguments = orion.core.config.evc.non_monitored_arguments
 
+        log.debug("User script config: %s", user_script_config)
+        log.debug("Non monitored arguments: %s", non_monitored_arguments)
+
         parser = OrionCmdlineParser(user_script_config)
         parser.set_state_dict(config["metadata"]["parser"])
         priors = parser.priors_to_normal()
@@ -1324,6 +1332,8 @@ class CommandLineConflict(Conflict):
             for key, arg in parser.parser.arguments.items()
             if key in nameless_keys and key not in non_monitored_arguments
         }
+
+        log.debug("Arguments that may cause a conflict: %s", nameless_args)
 
         return " ".join(
             " ".join([key, str(arg)])
@@ -1339,6 +1349,9 @@ class CommandLineConflict(Conflict):
             branching_config = {}
         old_nameless_args = cls.get_nameless_args(old_config, **branching_config)
         new_nameless_args = cls.get_nameless_args(new_config, **branching_config)
+
+        log.debug("Previous arguments: %s", old_nameless_args)
+        log.debug("New arguments: %s", new_nameless_args)
 
         if old_nameless_args != new_nameless_args:
             yield cls(old_config, new_config)
