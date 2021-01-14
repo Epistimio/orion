@@ -11,7 +11,7 @@
     user: corneau
     datetime: 2017-11-22T20:00:00
     orion_version: 0.post246.dev0+g7aae75d
-    user_script: functional/demo/black_box.py
+    user_script: ../demo/black_box.py
     user_args: ["-x~normal(10,10,default_value=1)"]
     VCS:
           type: git

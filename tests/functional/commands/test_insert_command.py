@@ -54,12 +54,13 @@ def test_insert_single_trial(database, monkeypatch, script_path):
             "test_insert_normal",
             "-c",
             "./orion_config_random.yaml",
-            script_path,
+            "blabla",
             "-x=1",
         ]
     )
 
     exp = list(database.experiments.find({"name": "test_insert_normal"}))
+
     assert len(exp) == 1
     exp = exp[0]
     assert "_id" in exp

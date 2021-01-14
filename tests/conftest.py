@@ -305,6 +305,15 @@ def version_XYZ(monkeypatch):
 
     monkeypatch.setattr(resolve_config, "fetch_metadata", fetch_metadata)
 
+    non_patched_update_metadata = resolve_config.update_metadata
+
+    def update_metadata(metadata):
+        metadata = non_patched_update_metadata(metadata)
+        metadata["orion_version"] = "XYZ"
+        return metadata
+
+    monkeypatch.setattr(resolve_config, "update_metadata", update_metadata)
+
 
 @pytest.fixture()
 def create_db_instance(null_db_instances, clean_db):
@@ -327,7 +336,9 @@ def create_db_instance(null_db_instances, clean_db):
 @pytest.fixture()
 def script_path():
     """Return a script path for mock"""
-    return os.path.join(os.path.dirname(__file__), "functional/demo/black_box.py")
+    return os.path.join(
+        os.path.abspath(os.path.dirname(__file__)), "functional/demo/black_box.py"
+    )
 
 
 @pytest.fixture()

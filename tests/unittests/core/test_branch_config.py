@@ -50,7 +50,7 @@ def user_config():
 @pytest.fixture
 def parent_config(user_config):
     """Create a configuration that will not hit the database."""
-    user_script = "abs_path/black_box.py"
+    user_script = "tests/functional/demo/black_box.py"
     config = dict(
         _id="test",
         name="test",
@@ -189,7 +189,7 @@ def list_arg_with_equals_cli_config(child_config):
 @pytest.fixture
 def cl_config(create_db_instance):
     """Create a child config with markers for commandline solving"""
-    user_script = "abs_path/black_box.py"
+    user_script = "tests/functional/demo/black_box.py"
     config = dict(
         name="test",
         branch="test2",

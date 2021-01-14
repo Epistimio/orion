@@ -332,11 +332,11 @@ class TestCommandLineConflict(object):
             cli_conflict.try_resolve("bad-change-type")
         assert "Invalid cli change type 'bad-change-type'" in str(exc.value)
 
-    def test_repr(self, cli_conflict):
+    def test_repr(self, cli_conflict, script_path):
         """Verify the representation of conflict for user interface"""
         assert repr(cli_conflict) == (
-            "Old arguments '_pos_0 abs_path/black_box.py' != "
-            "new arguments '_pos_0 abs_path/black_box.py bool-arg True some-new args'"
+            f"Old arguments '_pos_0 {script_path}' != "
+            f"new arguments '_pos_0 {script_path} bool-arg True some-new args'"
         )
 
 
@@ -377,10 +377,14 @@ class TestScriptConfigConflict(object):
         """Verify the representation of conflict for user interface"""
         assert repr(config_conflict) == "Script's configuration file changed"
 
-    def test_comparison(self, yaml_config, yaml_diff_config):
+    def test_comparison(self, yaml_config, yaml_diff_config, script_path):
         """Test that different configs are detected as conflict."""
-        old_config = {"metadata": {"user_args": yaml_config}}
-        new_config = {"metadata": {"user_args": yaml_diff_config}}
+        old_config = {
+            "metadata": {"user_args": yaml_config, "user_script": script_path}
+        }
+        new_config = {
+            "metadata": {"user_args": yaml_diff_config, "user_script": script_path}
+        }
 
         backward.populate_space(old_config)
         backward.populate_space(new_config)
@@ -388,10 +392,17 @@ class TestScriptConfigConflict(object):
         conflicts = list(conflict.ScriptConfigConflict.detect(old_config, new_config))
         assert len(conflicts) == 1
 
-    def test_comparison_idem(self, yaml_config):
+    def test_comparison_idem(self, yaml_config, script_path):
         """Test that identical configs are not detected as conflict."""
-        old_config = {"metadata": {"user_args": yaml_config}}
-        new_config = {"metadata": {"user_args": yaml_config + ["--other", "args"]}}
+        old_config = {
+            "metadata": {"user_args": yaml_config, "user_script": script_path}
+        }
+        new_config = {
+            "metadata": {
+                "user_args": yaml_config + ["--other", "args"],
+                "user_script": script_path,
+            }
+        }
 
         backward.populate_space(old_config)
         backward.populate_space(new_config)

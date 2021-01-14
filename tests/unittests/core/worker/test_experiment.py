@@ -31,7 +31,7 @@ def new_config(random_dt):
         metadata={
             "user": "tsirif",
             "orion_version": 0.1,
-            "user_script": "abs_path/to_yoyoy.py",
+            "user_script": "tests/functional/demo/black_box.py",
             "user_config": "abs_path/hereitis.yaml",
             "user_args": ["--mini-batch~uniform(32, 256, discrete=True)"],
             "VCS": {
