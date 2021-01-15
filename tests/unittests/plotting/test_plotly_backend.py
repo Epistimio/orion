@@ -79,9 +79,9 @@ def mock_experiment(
     if ids is None:
         ids = ["a", "b", "c", "d"]
     if x is None:
-        x = [0, 1, 2, 3]
+        x = [0, 1, 2, 4]
     if y is None:
-        y = [1, 2, 0, 3]
+        y = [3, 2, 0, 1]
     if objectives is None:
         objectives = [0.1, 0.2, 0.3, 0.5]
     if status is None:
@@ -146,8 +146,8 @@ class TestLPI:
             plot = lpi(experiment, random_state=1)
             # Why is this test failing?
             df = experiment.to_pandas()
-            assert df["x"].tolist() == [0, 1, 2, 3]
-            assert df["y"].tolist() == [1, 2, 0, 3]
+            assert df["x"].tolist() == [0, 1, 2, 4]
+            assert df["y"].tolist() == [3, 2, 0, 1]
             assert df["objective"].tolist() == [0.1, 0.2, 0.3, 0.5]
 
         assert_lpi_plot(plot, dims=["x", "y"])
