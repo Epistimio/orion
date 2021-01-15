@@ -144,6 +144,11 @@ class TestLPI:
             experiment,
         ):
             plot = lpi(experiment, random_state=1)
+            # Why is this test failing?
+            df = experiment.to_pandas()
+            assert df["x"].tolist() == [0, 1, 2, 3]
+            assert df["y"].tolist() == [1, 2, 0, 3]
+            assert df["objective"].tolist() == [0.1, 0.2, 0.3, 0.5]
 
         assert_lpi_plot(plot, dims=["x", "y"])
 
