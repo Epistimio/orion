@@ -47,6 +47,7 @@ base_experiment = {
         "user_script": "abc",
         "priors": {"x": "uniform(0, 10)"},
         "datetime": "2017-11-23T02:00:00",
+        "orion_version": "XYZ",
     },
 }
 

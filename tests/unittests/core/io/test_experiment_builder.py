@@ -143,6 +143,7 @@ def parent_version_config(script_path):
                 "active_branch": None,
                 "diff_sha": "diff",
             },
+            "orion_version": "XYZ",
         },
     )
 
@@ -530,7 +531,7 @@ def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
     assert exp.algorithms.configuration == new_config["algorithms"]
 
 
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
 class TestExperimentVersioning(object):
     """Create new Experiment with auto-versioning."""
 
