@@ -214,7 +214,7 @@ def refers_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_inst
 @pytest.fixture
 def new_config():
     """Generate a new experiment configuration"""
-    user_script = "abs_path/black_box.py"
+    user_script = "tests/functional/demo/black_box.py"
     config = dict(
         name="test",
         algorithms="fancy",
@@ -235,7 +235,7 @@ def new_config():
 @pytest.fixture
 def old_config(create_db_instance):
     """Generate an old experiment configuration"""
-    user_script = "abs_path/black_box.py"
+    user_script = "tests/functional/demo/black_box.py"
     config = dict(
         name="test",
         algorithms="random",
@@ -361,7 +361,11 @@ def bad_exp_parent_config():
     config = dict(
         _id="test",
         name="test",
-        metadata={"user": "corneauf", "user_args": ["--x~normal(0,1)"]},
+        metadata={
+            "user": "corneauf",
+            "user_args": ["--x~normal(0,1)"],
+            "user_script": "tests/functional/demo/black_box.py",
+        },
         version=1,
         algorithms="random",
     )

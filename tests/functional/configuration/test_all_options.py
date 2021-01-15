@@ -99,7 +99,9 @@ class ConfigurationTestSuite:
         with self.setup_env_var_config(tmp_path):
             self.check_env_var_config(tmp_path, monkeypatch)
 
-    @pytest.mark.usefixtures("with_user_userxyz")
+    @pytest.mark.usefixtures(
+        "with_user_userxyz", "version_XYZ", "mock_infer_versioning_metadata"
+    )
     def test_db_config(self, tmp_path):
         """Test that exp config in db overrides global config"""
         update_singletons()
@@ -115,7 +117,7 @@ class ConfigurationTestSuite:
         with self.setup_local_config(tmp_path) as conf_file:
             self.check_local_config(tmp_path, conf_file, monkeypatch)
 
-    @pytest.mark.usefixtures("with_user_userxyz")
+    @pytest.mark.usefixtures("with_user_userxyz", "version_XYZ")
     def test_cmd_args_config(self, tmp_path, monkeypatch):
         """Test that cmd_args config overrides local config"""
         update_singletons()
@@ -366,9 +368,15 @@ class TestExperimentConfig(ConfigurationTestSuite):
         "producer": {"strategy": {"sb": {"e": "c", "d": "g"}}},
         "space": {"/x": "uniform(0, 1)"},
         "metadata": {
-            "VCS": {},
+            "VCS": {
+                "HEAD_sha": "test",
+                "active_branch": None,
+                "diff_sha": "diff",
+                "is_dirty": False,
+                "type": "git",
+            },
             "datetime": datetime.datetime.utcnow(),
-            "orion_version": orion.core.__version__,
+            "orion_version": "XYZ",
             "parser": {
                 "cmd_priors": [["/x", "uniform(0, 1)"]],
                 "config_file_data": {},
