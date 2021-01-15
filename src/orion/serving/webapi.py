@@ -48,13 +48,14 @@ class WebApi(falcon.API):
             trials_resource,
             suffix="trial_in_experiment",
         )
-        self.add_route(
-            "/plots/regret/{experiment_name}", plots_resource, suffix="regret"
-        )
+        self.add_route("/plots/lpi/{experiment_name}", plots_resource, suffix="lpi")
         self.add_route(
             "/plots/parallel_coordinates/{experiment_name}",
             plots_resource,
             suffix="parallel_coordinates",
+        )
+        self.add_route(
+            "/plots/regret/{experiment_name}", plots_resource, suffix="regret"
         )
 
     def start(self):
