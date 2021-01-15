@@ -898,8 +898,7 @@ class OrionVersionChange(BaseAdapter):
 
             :meth:`orion.core.evc.adapters.BaseAdapter.to_dict`
         """
-        ret = dict(
-            of_type=self.__class__.__name__.lower())
+        ret = dict(of_type=self.__class__.__name__.lower())
         return ret
 
 
