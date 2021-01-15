@@ -10,6 +10,7 @@
 """
 import atexit
 import functools
+import inspect
 import logging
 import sys
 
@@ -21,6 +22,7 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     SampleTimeout,
+    UnsupportedOperation,
     WaitingForTrials,
 )
 from orion.core.utils.flatten import flatten, unflatten
@@ -186,6 +188,32 @@ class ExperimentClient:
         """Return the producer configuration of the experiment."""
         return self._experiment.producer
 
+    @property
+    def mode(self):
+        """Return the access right of the experiment
+
+        {'r': read, 'w': read/write, 'x': read/write/execute}
+        """
+        return self._experiment.mode
+
+    ###
+    # Rights
+    ###
+
+    def _check_if_writable(self):
+        if self.mode == "r":
+            foo = inspect.stack()[1].function
+            raise UnsupportedOperation(
+                f"ExperimentClient must have write rights to execute `{foo}()`"
+            )
+
+    def _check_if_executable(self):
+        if self.mode != "x":
+            foo = inspect.stack()[1].function
+            raise UnsupportedOperation(
+                f"ExperimentClient must have execution rights to execute `{foo}()`"
+            )
+
     ###
     # Queries
     ###
@@ -305,8 +333,12 @@ class ExperimentClient:
             - If results have invalid format
         `orion.core.io.database.DuplicateKeyError`
             - If a trial with identical params already exist for the current experiment.
+        `UnsupportedOperation`
+            If the experiment was not loaded in writable mode.
 
         """
+        self._check_if_writable()
+
         if results and reserve:
             raise ValueError(
                 "Cannot observe a trial and reserve it. A trial with results has status "
@@ -355,6 +387,8 @@ class ExperimentClient:
             If trial is reserved by another process
         `ValueError`
             If the trial does not exist in storage.
+        `UnsupportedOperation`
+            If the experiment was not loaded in executable mode.
 
         Notes
         -----
@@ -366,6 +400,8 @@ class ExperimentClient:
         since twice the value of `heartbeat`.
 
         """
+        self._check_if_executable()
+
         if trial.status == "reserved" and trial.id in self._pacemakers:
             log.warning("Trial %s is already reserved.", trial.id)
             return
@@ -405,8 +441,12 @@ class ExperimentClient:
             If reservation of the trial has been lost prior to releasing it.
         `ValueError`
             If the trial does not exist in storage.
+        `UnsupportedOperation`
+            If the experiment was not loaded in writable mode.
 
         """
+        self._check_if_writable()
+
         try:
             self._experiment.set_trial_status(trial, status)
         except FailedUpdate as e:
@@ -448,7 +488,12 @@ class ExperimentClient:
         `SampleTimeout`
             if the algorithm of the experiment could not sample new unique points.
 
+        `UnsupportedOperation`
+            If the experiment was not loaded in executable mode.
+
         """
+        self._check_if_executable()
+
         if self.is_broken:
             raise BrokenExperiment("Trials failed too many times")
 
@@ -500,8 +545,12 @@ class ExperimentClient:
             - If the trial does not exist in storage.
         `RuntimeError`
             If reservation of the trial has been lost prior to releasing it.
+        `UnsupportedOperation`
+            If the experiment was not loaded in executable mode.
 
         """
+        self._check_if_executable()
+
         trial.results += [Trial.Result(**result) for result in results]
         try:
             self._experiment.update_completed_trial(trial)
@@ -537,8 +586,12 @@ class ExperimentClient:
         ------
         `ValueError`
              If results returned by `fct` have invalid format
+        `UnsupportedOperation`
+            If the experiment was not loaded in executable mode.
 
         """
+        self._check_if_executable()
+
         trials = 0
         kwargs = flatten(kwargs)
         while not self.is_done and trials < max_trials:
@@ -554,7 +607,16 @@ class ExperimentClient:
         return trials
 
     def close(self):
-        """Verify that no reserved trials are remaining and unregister atexit()."""
+        """Verify that no reserved trials are remaining and unregister atexit().
+
+        Raises
+        ------
+        `UnsupportedOperation`
+            If the experiment was not loaded in executable mode.
+
+        """
+        self._check_if_executable()
+
         if self._pacemakers:
             raise RuntimeError(
                 "There is still reserved trials: {}\nRelease all trials before "

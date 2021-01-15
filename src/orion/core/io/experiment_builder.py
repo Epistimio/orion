@@ -6,13 +6,13 @@
 
 .. module:: experiment
    :platform: Unix
-   :synopsis: Functions which build `Experiment` and `ExperimentView` objects
+   :synopsis: Functions which build `Experiment` objects
        based on user configuration.
 
 
 The instantiation of an `Experiment` is not a trivial process when the user request an experiment
 with specific options. One can easily create a new experiment with
-`ExperimentView('some_experiment_name')`, but the configuration of a _writable_ experiment is less
+`Experiment('some_experiment_name')`, but the configuration of a _writable_ experiment is less
 straighforward. This is because there is many sources of configuration and they have a strict
 hierarchy. From the more global to the more specific, there is:
 
@@ -99,8 +99,9 @@ from orion.core.utils.exceptions import (
     NoConfigurationError,
     NoNameError,
     RaceCondition,
+    UnsupportedOperation,
 )
-from orion.core.worker.experiment import Experiment, ExperimentView
+from orion.core.worker.experiment import Experiment
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import Strategy
 from orion.storage.base import get_storage, setup_storage
@@ -185,7 +186,7 @@ def build(name, version=None, branching=None, **config):
     if len(config["space"]) == 0:
         raise NoConfigurationError("No prior found. Please include at least one.")
 
-    experiment = create_experiment(**copy.deepcopy(config))
+    experiment = create_experiment(mode="x", **copy.deepcopy(config))
     if experiment.id is None:
         log.debug("Experiment not found in DB. Now attempting registration in DB.")
         try:
@@ -318,7 +319,15 @@ def merge_producer_config(config, new_config):
 
 
 def build_view(name, version=None):
-    """Build experiment view
+    """Load experiment from database
+
+    This function is deprecated and will be remove in v0.3.0. Use `load()` instead.
+    """
+    return load(name, version=version, mode="r")
+
+
+def load(name, version=None, mode="r"):
+    """Load experiment from database
 
     An experiment view provides all reading operations of standard experiment but prevents the
     modification of the experiment and its trials.
@@ -330,9 +339,18 @@ def build_view(name, version=None):
     version: int, optional
         Version to select. If None, last version will be selected. If version given is larger than
         largest version available, the largest version will be selected.
+    mode: str, optional
+        The access rights of the experiment on the database.
+        'r': read access only
+        'w': can read and write to database
+        Default is 'r'
 
     """
-    log.debug(f"Build view for experiment {name} (version={version})")
+    assert mode in set("rw")
+
+    log.debug(
+        f"Loading experiment {name} (version={version}) from database in mode `{mode}`"
+    )
     db_config = fetch_config_from_db(name, version)
 
     if not db_config:
@@ -344,12 +362,10 @@ def build_view(name, version=None):
 
     db_config.setdefault("version", 1)
 
-    experiment = create_experiment(**db_config)
-
-    return ExperimentView(experiment)
+    return create_experiment(mode=mode, **db_config)
 
 
-def create_experiment(name, version, space, **kwargs):
+def create_experiment(name, version, mode, space, **kwargs):
     """Instantiate the experiment and its attribute objects
 
     All unspecified arguments will be replaced by system's defaults (orion.core.config.*).
@@ -360,6 +376,11 @@ def create_experiment(name, version, space, **kwargs):
         Name of the experiment.
     version: int
         Version of the experiment.
+    mode: str
+        The access rights of the experiment on the database.
+        'r': read access only
+        'w': can read and write to database
+        'x': can read and write to database, algo is instantiated and can execute optimization
     space: dict or Space object
         Optimization space of the algorithm. If dict, should have the form
         `dict(name='<prior>(args)')`.
@@ -375,7 +396,7 @@ def create_experiment(name, version, space, **kwargs):
         Configuration of the storage backend.
 
     """
-    experiment = Experiment(name=name, version=version)
+    experiment = Experiment(name=name, version=version, mode=mode)
     experiment._id = kwargs.get("_id", None)  # pylint:disable=protected-access
     experiment.pool_size = kwargs.get("pool_size")
     if experiment.pool_size is None:
@@ -605,7 +626,7 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
 
     config.pop("_id")
 
-    return create_experiment(**config)
+    return create_experiment(mode="x", **config)
 
 
 def _get_conflicts(experiment, branching):

@@ -17,6 +17,7 @@ from orion.core.utils.exceptions import (
     BranchingEvent,
     NoConfigurationError,
     RaceCondition,
+    UnsupportedOperation,
 )
 from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
 from orion.core.worker.experiment import ExperimentView
@@ -540,4 +541,30 @@ class TestGetExperiment:
         assert (
             "Version 2 was specified but most recent version is only 1. Using 1."
             in caplog.text
+        )
+
+    @pytest.mark.usefixtures("mock_database")
+    def test_read_write_mode(self):
+        """Tests that experiment can be created in write mode"""
+        experiment = create_experiment("a", space={"x": "uniform(0, 10)"})
+        assert experiment.mode == "x"
+
+        experiment = get_experiment("a", 2, mode="r")
+        assert experiment.mode == "r"
+
+        with pytest.raises(UnsupportedOperation) as exc:
+            experiment.insert({"x": 0})
+
+        assert exc.match("ExperimentClient must have write rights to execute `insert()")
+
+        experiment = get_experiment("a", 2, mode="w")
+        assert experiment.mode == "w"
+
+        trial = experiment.insert({"x": 0})
+
+        with pytest.raises(UnsupportedOperation) as exc:
+            experiment.reserve(trial)
+
+        assert exc.match(
+            "ExperimentClient must have execution rights to execute `reserve()"
         )

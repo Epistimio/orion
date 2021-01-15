@@ -78,7 +78,7 @@ class ExperimentNode(TreeNode):
             self._item = experiment_builder.build_view(
                 name=self.name, version=self.version
             )
-            self._item._experiment._node = self
+            self._item._node = self
 
         return self._item
 
