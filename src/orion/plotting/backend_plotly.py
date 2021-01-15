@@ -50,6 +50,9 @@ def parallel_coordinates(experiment, order=None, colorscale="YlOrRd", **kwargs):
         df = experiment.to_pandas()
         df = df.loc[df["status"] == "completed"]
 
+        if df.empty:
+            return df
+
         df[names] = df[names].transform(
             functools.partial(_curate_params, space=experiment.space)
         )
