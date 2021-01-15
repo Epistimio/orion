@@ -79,7 +79,7 @@ def retrieve_experiment(
         When the experiment doesn't exist
     """
     try:
-        experiment = experiment_builder.build_view(experiment_name, version)
+        experiment = experiment_builder.load(experiment_name, version)
         if version and experiment.version != version:
             raise falcon.HTTPNotFound(
                 title=ERROR_EXPERIMENT_NOT_FOUND,

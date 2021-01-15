@@ -5,7 +5,7 @@ import pandas
 import plotly
 import pytest
 
-from orion.core.worker.experiment import Experiment, ExperimentView
+from orion.core.worker.experiment import Experiment
 from orion.plotting.base import lpi, parallel_coordinates, regret
 from orion.testing import create_experiment
 
@@ -165,19 +165,6 @@ class TestLPI:
 
         assert_lpi_plot(plot, dims=["x", "y"])
 
-    def test_experiment_view_as_parameter(self, monkeypatch):
-        """Tests that ``ExperimentView`` is a valid parameter"""
-        config = mock_space()
-        mock_experiment(monkeypatch)
-        with create_experiment(config, trial_config) as (
-            _,
-            experiment,
-            _,
-        ):
-            plot = lpi(ExperimentView(experiment), random_state=1)
-
-        assert_lpi_plot(plot, dims=["x", "y"])
-
     def test_ignore_uncompleted_statuses(self, monkeypatch):
         """Tests that uncompleted statuses are ignored"""
         config = mock_space()
@@ -286,17 +273,6 @@ class TestRegret:
 
         assert_regret_plot(plot)
 
-    def test_experiment_view_as_parameter(self):
-        """Tests that ``ExperimentView`` is a valid parameter"""
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            experiment,
-            _,
-        ):
-            plot = regret(ExperimentView(experiment))
-
-        assert_regret_plot(plot)
-
     def test_ignore_uncompleted_statuses(self):
         """Tests that uncompleted statuses are ignored"""
         with create_experiment(config, trial_config) as (_, _, experiment):
@@ -362,17 +338,6 @@ class TestParallelCoordinates:
             _,
         ):
             plot = parallel_coordinates(experiment)
-
-        assert_parallel_coordinates_plot(plot, order=["x", "loss"])
-
-    def test_experiment_view_as_parameter(self):
-        """Tests that ``ExperimentView`` is a valid parameter"""
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            experiment,
-            _,
-        ):
-            plot = parallel_coordinates(ExperimentView(experiment))
 
         assert_parallel_coordinates_plot(plot, order=["x", "loss"])
 

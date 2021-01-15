@@ -265,7 +265,7 @@ def get_experiment(name, version=None, mode="r", storage=None):
 
     Returns
     -------
-    An instance of :class:`orion.core.worker.experiment.ExperimentView` representing the experiment.
+    An instance of :class:`orion.client.experiment.ExperimentClient` representing the experiment.
 
     Raises
     ------

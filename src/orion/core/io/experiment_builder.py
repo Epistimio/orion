@@ -410,11 +410,11 @@ def create_experiment(name, version, mode, space, **kwargs):
     )
     experiment.space = _instantiate_space(space)
     experiment.algorithms = _instantiate_algo(
-        experiment.space, kwargs.get("algorithms")
+        experiment.space, kwargs.get("algorithms"), ignore_unavailable=mode != "x"
     )
     experiment.producer = kwargs.get("producer", {})
     experiment.producer["strategy"] = _instantiate_strategy(
-        experiment.producer.get("strategy")
+        experiment.producer.get("strategy"), ignore_unavailable=mode != "x"
     )
     experiment.working_dir = kwargs.get(
         "working_dir", orion.core.config.experiment.working_dir
@@ -505,23 +505,35 @@ def _instantiate_space(config):
     return SpaceBuilder().build(config)
 
 
-def _instantiate_algo(space, config):
+def _instantiate_algo(space, config=None, ignore_unavailable=False):
     """Instantiate the algorithm object
 
     Parameters
     ----------
     config: dict, optional
-        Configuration of the strategy. If None of empty, system's defaults are used
+        Configuration of the algorithm. If None or empty, system's defaults are used
         (orion.core.config.experiment.algorithms).
+    ignore_unavailable: bool, optional
+        If True and algorithm is not available (plugin not installed), return the configuration.
+        Otherwise, raise Factory error from PrimaryAlgo
 
     """
     if not config:
         config = orion.core.config.experiment.algorithms
 
-    return PrimaryAlgo(space, config)
+    try:
+        algo = PrimaryAlgo(space, config)
+    except NotImplementedError as e:
+        if not ignore_unavailable:
+            raise e
+        log.warning(str(e))
+        log.warning("Algorithm will not be instantiated.")
+        algo = config
+
+    return algo
 
 
-def _instantiate_strategy(config=None):
+def _instantiate_strategy(config=None, ignore_unavailable=False):
     """Instantiate the strategy object
 
     Parameters
@@ -529,6 +541,10 @@ def _instantiate_strategy(config=None):
     config: dict, optional
         Configuration of the strategy. If None of empty, system's defaults are used
         (orion.core.config.producer.strategy).
+    ignore_unavailable: bool, optional
+        If True and algorithm is not available (plugin not installed), return the configuration.
+        Otherwise, raise Factory error from PrimaryAlgo
+
 
     """
     if not config:
@@ -541,7 +557,16 @@ def _instantiate_strategy(config=None):
         config = copy.deepcopy(config)
         strategy_type, config = next(iter(config.items()))
 
-    return Strategy(of_type=strategy_type, **config)
+    try:
+        strategy = Strategy(of_type=strategy_type, **config)
+    except NotImplementedError as e:
+        if not ignore_unavailable:
+            raise e
+        log.warning(str(e))
+        log.warning("Strategy will not be instantiated.")
+        strategy = {strategy_type: config}
+
+    return strategy
 
 
 def _register_experiment(experiment):
@@ -631,7 +656,7 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
 def _get_conflicts(experiment, branching):
     """Get conflicts between current experiment and corresponding configuration in database"""
     log.debug("Looking for conflicts in new configuration.")
-    db_experiment = build_view(experiment.name, experiment.version)
+    db_experiment = load(experiment.name, experiment.version, mode="r")
     conflicts = detect_conflicts(
         db_experiment.configuration, experiment.configuration, branching
     )

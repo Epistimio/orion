@@ -301,6 +301,8 @@ class ExperimentClient:
     def insert(self, params, results=None, reserve=False):
         """Insert a new trial.
 
+        Experiment must be in writable ('w') or executable ('x') mode.
+
         Parameters
         ----------
         params: dict
@@ -373,6 +375,8 @@ class ExperimentClient:
     def reserve(self, trial):
         """Reserve a trial.
 
+        Experiment must be in executable ('x') mode.
+
         Set a trial status to reserve to ensure that concurrent process cannot work on it.
         Trials can only be reserved with status 'new', 'interrupted' or 'suspended'.
 
@@ -427,6 +431,8 @@ class ExperimentClient:
 
         Release the reservation and stop the heartbeat.
 
+        Experiment must be in writable ('w') or executable ('x') mode.
+
         Parameters
         ----------
         trial: `orion.core.worker.trial.Trial`
@@ -464,6 +470,8 @@ class ExperimentClient:
 
     def suggest(self):
         """Suggest a trial to execute.
+
+        Experiment must be in executable ('x') mode.
 
         If any trial is available (new or interrupted), it selects one and reserves it.
         Otherwise, the algorithm is used to generate a new trial that is registered in storage and
@@ -523,6 +531,8 @@ class ExperimentClient:
     def observe(self, trial, results):
         """Observe trial results
 
+        Experiment must be in executable ('x') mode.
+
         Parameters
         ----------
         trial: `orion.core.worker.trial.Trial`
@@ -569,6 +579,8 @@ class ExperimentClient:
     def workon(self, fct, max_trials=infinity, **kwargs):
         """Optimize a given function
 
+        Experiment must be in executable ('x') mode.
+
         Parameters
         ----------
         fct: callable
@@ -608,6 +620,8 @@ class ExperimentClient:
 
     def close(self):
         """Verify that no reserved trials are remaining and unregister atexit().
+
+        Experiment must be in executable ('x') mode.
 
         Raises
         ------

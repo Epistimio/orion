@@ -77,6 +77,20 @@ def python_api_config():
 
 
 @pytest.fixture()
+def algo_unavailable_config(python_api_config):
+    python_api_config["algorithms"] = {"idontreallyexist": {"but": "iwishiwould"}}
+    return python_api_config
+
+
+@pytest.fixture()
+def strategy_unavailable_config(python_api_config):
+    python_api_config["producer"]["strategy"] = {
+        "idontreallyexist": {"but": "iwishiwould"}
+    }
+    return python_api_config
+
+
+@pytest.fixture()
 def new_config(random_dt, script_path):
     """Create a configuration that will not hit the database."""
     new_config = dict(
@@ -801,7 +815,7 @@ class TestBuild(object):
         # - once in build(),
         #     -> then register fails,
         # - then called once again in build,
-        # - then called in build_view to evaluate the conflicts
+        # - then called in load to evaluate the conflicts
         assert insert_race_condition.count == 3
 
     def test_algorithm_config_with_just_a_string(self):
@@ -1043,6 +1057,48 @@ class TestBuild(object):
                     name=name, version=1, space={"x": "loguniform(1,10)"}
                 )
             assert "There was a race condition during branching." in str(exc_info.value)
+
+
+def test_load_unavailable_algo(algo_unavailable_config, capsys):
+    with OrionState(experiments=[algo_unavailable_config]):
+        experiment = experiment_builder.load("supernaekei", mode="r")
+        assert experiment.algorithms == algo_unavailable_config["algorithms"]
+        assert (
+            experiment.configuration["algorithms"]
+            == algo_unavailable_config["algorithms"]
+        )
+
+        experiment = experiment_builder.load("supernaekei", mode="w")
+        assert experiment.algorithms == algo_unavailable_config["algorithms"]
+        assert (
+            experiment.configuration["algorithms"]
+            == algo_unavailable_config["algorithms"]
+        )
+
+        with pytest.raises(NotImplementedError) as exc:
+            experiment_builder.build("supernaekei")
+        exc.match("Could not find implementation of BaseAlgorithm")
+
+
+def test_load_unavailable_strategy(strategy_unavailable_config, capsys):
+    with OrionState(experiments=[strategy_unavailable_config]):
+        experiment = experiment_builder.load("supernaekei", mode="r")
+        assert experiment.producer == strategy_unavailable_config["producer"]
+        assert (
+            experiment.configuration["producer"]
+            == strategy_unavailable_config["producer"]
+        )
+
+        experiment = experiment_builder.load("supernaekei", mode="w")
+        assert experiment.producer == strategy_unavailable_config["producer"]
+        assert (
+            experiment.configuration["producer"]
+            == strategy_unavailable_config["producer"]
+        )
+
+        with pytest.raises(NotImplementedError) as exc:
+            experiment_builder.build("supernaekei")
+        exc.match("Could not find implementation of BaseParallelStrategy")
 
 
 class TestInitExperimentReadWrite(object):

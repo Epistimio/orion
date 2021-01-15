@@ -20,7 +20,6 @@ from orion.core.utils.exceptions import (
     UnsupportedOperation,
 )
 from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
-from orion.core.worker.experiment import ExperimentView
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
@@ -520,7 +519,7 @@ class TestGetExperiment:
     @pytest.mark.usefixtures("mock_database")
     def test_experiment_exist(self):
         """
-        Tests that an instance of :class:`orion.core.worker.experiment.ExperimentView` is
+        Tests that an instance of :class:`orion.client.experiment.ExperimentClient` is
         returned representing the latest version when none is given.
         """
         experiment = create_experiment("a", space={"x": "uniform(0, 10)"})
@@ -528,7 +527,8 @@ class TestGetExperiment:
         experiment = get_experiment("a")
 
         assert experiment
-        assert isinstance(experiment, ExperimentView)
+        assert isinstance(experiment, ExperimentClient)
+        assert experiment.mode == "r"
 
     @pytest.mark.usefixtures("mock_database")
     def test_version_do_not_exist(self, caplog):

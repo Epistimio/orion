@@ -424,13 +424,19 @@ class Experiment:
                 continue
             attribute = copy.deepcopy(getattr(self, attrname))
             config[attrname] = attribute
-            if attrname in ["algorithms", "space"]:
+            if attrname == "space":
+                config[attrname] = attribute.configuration
+            elif attrname == "algorithms" and not isinstance(attribute, dict):
                 config[attrname] = attribute.configuration
             elif attrname == "refers" and isinstance(
                 attribute.get("adapter"), BaseAdapter
             ):
                 config[attrname]["adapter"] = config[attrname]["adapter"].configuration
-            elif attrname == "producer" and attribute.get("strategy"):
+            elif (
+                attrname == "producer"
+                and attribute.get("strategy")
+                and not isinstance(attribute["strategy"], dict)
+            ):
                 config[attrname]["strategy"] = config[attrname][
                     "strategy"
                 ].configuration
