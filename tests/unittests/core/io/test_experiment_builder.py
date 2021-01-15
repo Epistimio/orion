@@ -236,25 +236,25 @@ def test_fetch_config_from_db_hit(new_config):
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
-def test_build_view_from_args_no_hit(config_file):
+def test_get_from_args_no_hit(config_file):
     """Try building experiment view when not in db"""
     cmdargs = {"name": "supernaekei", "config": config_file}
 
     with OrionState(experiments=[], trials=[]):
         with pytest.raises(NoConfigurationError) as exc_info:
-            experiment_builder.build_view_from_args(cmdargs)
+            experiment_builder.get_from_args(cmdargs)
         assert "No experiment with given name 'supernaekei' and version '*'" in str(
             exc_info.value
         )
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
-def test_build_view_from_args_hit(config_file, random_dt, new_config):
+def test_get_from_args_hit(config_file, random_dt, new_config):
     """Try building experiment view when in db"""
     cmdargs = {"name": "supernaekei", "config": config_file}
 
     with OrionState(experiments=[new_config], trials=[]):
-        exp_view = experiment_builder.build_view_from_args(cmdargs)
+        exp_view = experiment_builder.get_from_args(cmdargs)
 
     assert exp_view._id == new_config["_id"]
     assert exp_view.name == new_config["name"]
@@ -267,7 +267,7 @@ def test_build_view_from_args_hit(config_file, random_dt, new_config):
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
-def test_build_view_from_args_hit_no_conf_file(config_file, random_dt, new_config):
+def test_get_from_args_hit_no_conf_file(config_file, random_dt, new_config):
     """Try building experiment view when in db, and local config file of user script does
     not exist
     """
@@ -278,7 +278,7 @@ def test_build_view_from_args_hit_no_conf_file(config_file, random_dt, new_confi
     ]
 
     with OrionState(experiments=[new_config], trials=[]) as cfg:
-        exp_view = experiment_builder.build_view_from_args(cmdargs)
+        exp_view = experiment_builder.get_from_args(cmdargs)
 
     assert exp_view._id == new_config["_id"]
     assert exp_view.name == new_config["name"]
@@ -301,7 +301,7 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
 
     with OrionState(experiments=[], trials=[]):
         with pytest.raises(NoConfigurationError) as exc_info:
-            experiment_builder.build_view_from_args(cmdargs)
+            experiment_builder.get_from_args(cmdargs)
         assert "No experiment with given name 'supernaekei' and version '*'" in str(
             exc_info.value
         )
@@ -337,7 +337,7 @@ def test_build_from_args_hit(old_config_file, script_path, new_config):
 
     with OrionState(experiments=[new_config], trials=[]):
         # Test that experiment already exists
-        experiment_builder.build_view_from_args(cmdargs)
+        experiment_builder.get_from_args(cmdargs)
 
         exp = experiment_builder.build_from_args(cmdargs)
 
@@ -394,13 +394,13 @@ def test_build_from_args_debug_mode(script_path):
 
 
 @pytest.mark.usefixtures("setup_pickleddb_database")
-def test_build_view_from_args_debug_mode(script_path):
+def test_get_from_args_debug_mode(script_path):
     """Try building experiment view in debug mode"""
     update_singletons()
 
     # Can't build view if none exist. It's fine we only want to test the storage creation.
     with pytest.raises(NoConfigurationError):
-        experiment_builder.build_view_from_args({"name": "whatever"})
+        experiment_builder.get_from_args({"name": "whatever"})
 
     storage = get_storage()
 
@@ -411,7 +411,7 @@ def test_build_view_from_args_debug_mode(script_path):
 
     # Can't build view if none exist. It's fine we only want to test the storage creation.
     with pytest.raises(NoConfigurationError):
-        experiment_builder.build_view_from_args({"name": "whatever", "debug": True})
+        experiment_builder.get_from_args({"name": "whatever", "debug": True})
 
     storage = get_storage()
 
@@ -519,7 +519,7 @@ def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
 
     with OrionState(experiments=[new_config], trials=[]):
         # Test that experiment already exists (this should fail otherwise)
-        experiment_builder.build_view_from_args(cmdargs)
+        experiment_builder.get_from_args(cmdargs)
 
         exp = experiment_builder.build_from_args(cmdargs)
 

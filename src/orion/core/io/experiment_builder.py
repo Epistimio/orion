@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint:disable=too-many-lines
 """
 :mod:`orion.core.io.experiment_builder` -- Create experiment from user options
@@ -706,13 +705,13 @@ def build_from_args(cmdargs):
     return build(**cmd_config)
 
 
-def build_view_from_args(cmdargs):
+def get_from_args(cmdargs, mode="r"):
     """Build an experiment view based on commandline arguments
 
     .. seealso::
 
-        :func:`orion.core.io.experiment_builder.build_view` for more information on experiment view
-        creation.
+        :func:`orion.core.io.experiment_builder.load` for more information on creation of read-only
+        experiments.
 
     """
     cmd_config = get_cmd_config(cmdargs)
@@ -725,7 +724,7 @@ def build_view_from_args(cmdargs):
     name = cmd_config.get("name")
     version = cmd_config.get("version")
 
-    return build_view(name, version)
+    return load(name, version, mode=mode)
 
 
 def get_cmd_config(cmdargs):
