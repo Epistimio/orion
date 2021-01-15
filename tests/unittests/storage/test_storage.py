@@ -236,6 +236,7 @@ def test_get_storage():
     assert get_storage() == storage
 
 
+@pytest.mark.usefixture("version_XYZ")
 @pytest.mark.parametrize("storage", storage_backends)
 class TestStorage:
     """Test all storage backend"""
