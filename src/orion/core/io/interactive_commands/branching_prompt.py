@@ -367,6 +367,12 @@ class BranchingPrompt(cmd.Cmd):
         self.do_status("")
 
     @parse_command
+    def do_orion_version(self, options):
+        """Resolve the orion version conflict"""
+        self.branch_builder.set_orion_version()
+        self.do_status("")
+
+    @parse_command
     def do_add(self, options):
         """Add the given `new` or `changed` dimension to the configuration"""
         print(

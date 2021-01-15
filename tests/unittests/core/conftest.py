@@ -224,6 +224,7 @@ def new_config():
             "user_script": user_script,
             "user_args": [user_script, "--new~normal(0,2)", "--changed~normal(0,2)"],
             "user": "some_user_name",
+            "orion_version": "UVW",
         },
     )
 
@@ -255,6 +256,7 @@ def old_config(create_db_instance):
                 "--changed~uniform(-10,10)",
             ],
             "user": "some_user_name",
+            "orion_version": "XYZ",
         },
     )
 
@@ -328,6 +330,12 @@ def algorithm_conflict(old_config, new_config):
 
 
 @pytest.fixture
+def orion_version_conflict(old_config, new_config):
+    """Generate an orion version conflict"""
+    return conflicts.OrionVersionConflict(old_config, new_config)
+
+
+@pytest.fixture
 def code_conflict(old_config, new_config):
     """Generate a code conflict"""
     return conflicts.CodeConflict(old_config, new_config)
@@ -365,6 +373,7 @@ def bad_exp_parent_config():
             "user": "corneauf",
             "user_args": ["--x~normal(0,1)"],
             "user_script": "tests/functional/demo/black_box.py",
+            "orion_version": "XYZ",
         },
         version=1,
         algorithms="random",

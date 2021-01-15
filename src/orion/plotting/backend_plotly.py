@@ -187,7 +187,7 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
         hovertemplate=_template_best(),
     )
 
-    if trial:
+    if trial is None:
         y_axis_label = "Objective unknown"
     else:
         y_axis_label = f"{trial.objective.type.capitalize()} '{trial.objective.name}'"

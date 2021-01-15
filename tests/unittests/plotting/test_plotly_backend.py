@@ -114,6 +114,7 @@ def assert_lpi_plot(plot, dims):
     assert trace["y"][0] > trace["y"][1]
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestLPI:
     """Tests the ``lpi()`` method provided by the plotly backend"""
 
@@ -238,6 +239,7 @@ class TestLPI:
         assert_lpi_plot(plot, dims=["x", "y[0]", "y[1]", "y[2]"])
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestRegret:
     """Tests the ``regret()`` method provided by the plotly backend"""
 
@@ -316,6 +318,7 @@ def assert_parallel_coordinates_plot(plot, order):
         assert trace.dimensions[i].label == order[i]
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestParallelCoordinates:
     """Tests the ``parallel_coordinates()`` method provided by the plotly backend"""
 

@@ -1809,7 +1809,10 @@ class OrionVersionConflict(Conflict):
     @classmethod
     def detect(cls, old_config, new_config, branching_config=None):
         """Detect if orion versions differs"""
-        if old_config['metadata']['orion_version'] != new_config['metadata']['orion_version']:
+        if (
+            old_config["metadata"]["orion_version"]
+            != new_config["metadata"]["orion_version"]
+        ):
             yield cls(old_config, new_config)
 
     def try_resolve(self):
@@ -1823,14 +1826,16 @@ class OrionVersionConflict(Conflict):
     def diff(self):
         """Produce human-readable differences"""
         return colored_diff(
-            self.old_config['metadata']['orion_version'],
-            self.new_config['metadata']['orion_version'])
+            self.old_config["metadata"]["orion_version"],
+            self.new_config["metadata"]["orion_version"],
+        )
 
     def __repr__(self):
         """Reprensentation of the conflict for user interface"""
-        return "{0}\n   !=\n{1}".format(
-            self.old_config['metadata']['orion_version'],
-            self.new_config['metadata']['orion_version'])
+        return "{0} != {1}".format(
+            self.old_config["metadata"]["orion_version"],
+            self.new_config["metadata"]["orion_version"],
+        )
 
     class OrionVersionResolution(Resolution):
         """Representation of an orion version resolution

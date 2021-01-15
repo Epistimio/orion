@@ -55,6 +55,7 @@ def conflicts(
     missing_cat_dimension_conflict,
     missing_conflict_with_identical_prior,
     algorithm_conflict,
+    orion_version_conflict,
     code_conflict,
     cli_conflict,
     config_conflict,
@@ -69,6 +70,7 @@ def conflicts(
     conflicts.register(missing_cat_dimension_conflict)
     conflicts.register(missing_conflict_with_identical_prior)
     conflicts.register(algorithm_conflict)
+    conflicts.register(orion_version_conflict)
     conflicts.register(code_conflict)
     conflicts.register(config_conflict)
     conflicts.register(cli_conflict)
@@ -276,62 +278,62 @@ class TestCommands(object):
     def test_rename_dim(self, conflicts, branch_solver_prompt):
         """Verify that rename resolution is properly created"""
         assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
+        assert len(conflicts.get()) == 12
         branch_solver_prompt.do_rename("missing_idem new")
         assert len(conflicts.get_resolved()) == 2
-        assert len(conflicts.get()) == 11
+        assert len(conflicts.get()) == 12
 
     def test_rename_and_change_dim(self, conflicts, branch_solver_prompt):
         """Verify that rename resolution is created and a new side-effect conflict added"""
         assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
+        assert len(conflicts.get()) == 12
         branch_solver_prompt.do_rename("missing new")
         assert len(conflicts.get_resolved()) == 2
-        assert len(conflicts.get()) == 12
+        assert len(conflicts.get()) == 13
 
     def test_rename_bad_dim(self, capsys, conflicts, branch_solver_prompt):
         """Verify error messages when attempting invalid renamings"""
         assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
+        assert len(conflicts.get()) == 12
         branch_solver_prompt.do_rename("new_cat new")
         out, err = capsys.readouterr()
         assert "Dimension name 'new_cat' not found in conflicts" in out
         assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
+        assert len(conflicts.get()) == 12
 
         assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
+        assert len(conflicts.get()) == 12
         branch_solver_prompt.do_rename("missing missing_cat")
         out, err = capsys.readouterr()
         assert "Dimension name 'missing_cat' not found in conflicts" in out
         assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
+        assert len(conflicts.get()) == 12
 
     def test_reset_rename_with_same_priors(self, conflicts, branch_solver_prompt):
         """Verify that rename resolution is reverted"""
         assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
+        assert len(conflicts.get()) == 12
         branch_solver_prompt.do_rename("missing_idem new")
-        assert len(conflicts.get_resolved()) == 2
-        assert len(conflicts.get()) == 11
-        branch_solver_prompt.do_reset(
-            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
-        )
-        assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
-
-    def test_reset_rename_with_different_priors(self, conflicts, branch_solver_prompt):
-        """Verify that rename resolution is reverted and side-effect conflit is removed"""
-        assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
-        branch_solver_prompt.do_rename("missing new")
         assert len(conflicts.get_resolved()) == 2
         assert len(conflicts.get()) == 12
         branch_solver_prompt.do_reset(
             "'{}'".format(str(conflicts.get_resolved()[0].resolution))
         )
         assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
+        assert len(conflicts.get()) == 12
+
+    def test_reset_rename_with_different_priors(self, conflicts, branch_solver_prompt):
+        """Verify that rename resolution is reverted and side-effect conflit is removed"""
+        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts.get()) == 12
+        branch_solver_prompt.do_rename("missing new")
+        assert len(conflicts.get_resolved()) == 2
+        assert len(conflicts.get()) == 13
+        branch_solver_prompt.do_reset(
+            "'{}'".format(str(conflicts.get_resolved()[0].resolution))
+        )
+        assert len(conflicts.get_resolved()) == 0
+        assert len(conflicts.get()) == 12
 
     def test_set_code_change_type(self, conflicts, branch_solver_prompt):
         """Verify that code change resolution is created"""
@@ -387,6 +389,32 @@ class TestCommands(object):
         """Verify that algo resolution is reverted"""
         assert len(conflicts.get_resolved()) == 0
         branch_solver_prompt.do_algo("")
+        assert len(conflicts.get_resolved()) == 1
+        branch_solver_prompt.do_reset(
+            "' {}'".format(str(conflicts.get_resolved()[0].resolution))
+        )
+        assert len(conflicts.get_resolved()) == 0
+
+    def test_set_orion_version(self, conflicts, branch_solver_prompt):
+        """Verify that orion version resolution is created"""
+        assert len(conflicts.get_resolved()) == 0
+        branch_solver_prompt.do_orion_version("")
+        assert len(conflicts.get_resolved()) == 1
+
+    def test_set_orion_version_twice(self, capsys, conflicts, branch_solver_prompt):
+        """Verify that error message is given trying to solve twice the same conflict"""
+        assert len(conflicts.get_resolved()) == 0
+        branch_solver_prompt.do_orion_version("")
+        assert len(conflicts.get_resolved()) == 1
+        branch_solver_prompt.do_orion_version("")
+        out, err = capsys.readouterr()
+        assert "No orion version conflict to solve" in out
+        assert len(conflicts.get_resolved()) == 1
+
+    def test_reset_orion_version(self, conflicts, branch_solver_prompt):
+        """Verify that orion version resolution is reverted"""
+        assert len(conflicts.get_resolved()) == 0
+        branch_solver_prompt.do_orion_version("")
         assert len(conflicts.get_resolved()) == 1
         branch_solver_prompt.do_reset(
             "' {}'".format(str(conflicts.get_resolved()[0].resolution))
@@ -504,10 +532,10 @@ class TestCommands(object):
     def test_commit_wont_quit_if_not_solved(self, conflicts, branch_solver_prompt):
         """Verify that commit will not quit if some conflicts are not resolved"""
         assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
+        assert len(conflicts.get()) == 12
         branch_solver_prompt.do_auto("")
-        assert len(conflicts.get()) == 11
-        assert len(conflicts.get_resolved()) == 10
+        assert len(conflicts.get()) == 12
+        assert len(conflicts.get_resolved()) == 11
 
         assert branch_solver_prompt.do_commit("") is False
 
@@ -521,18 +549,18 @@ class TestCommands(object):
     def test_auto(self, conflicts, branch_solver_prompt):
         """Verify that all conflicts which requires not input are automatically resolved"""
         assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
+        assert len(conflicts.get()) == 12
         branch_solver_prompt.do_auto("")
-        assert len(conflicts.get()) == 11
-        assert len(conflicts.get_resolved()) == 10
+        assert len(conflicts.get()) == 12
+        assert len(conflicts.get_resolved()) == 11
 
     def test_reset_many(self, conflicts, branch_solver_prompt):
         """Verify that all resolutions are reverted"""
         assert len(conflicts.get_resolved()) == 0
-        assert len(conflicts.get()) == 11
+        assert len(conflicts.get()) == 12
         branch_solver_prompt.do_auto("")
-        assert len(conflicts.get()) == 11
-        assert len(conflicts.get_resolved()) == 10
+        assert len(conflicts.get()) == 12
+        assert len(conflicts.get_resolved()) == 11
 
         reset_strings = []
         for resolution in conflicts.get_resolutions():
