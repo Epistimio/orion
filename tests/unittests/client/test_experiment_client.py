@@ -113,6 +113,7 @@ def test_experiment_to_pandas():
         pandas.testing.assert_frame_equal(experiment.to_pandas(), client.to_pandas())
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestInsert:
     """Tests for ExperimentClient.insert"""
 
@@ -253,6 +254,7 @@ class TestInsert:
             assert client._pacemakers == {}
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestReserve:
     """Tests for ExperimentClient.reserve"""
 
@@ -333,6 +335,7 @@ class TestReserve:
             assert client._pacemakers == {}
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestRelease:
     """Tests for ExperimentClient.release"""
 
@@ -424,6 +427,7 @@ class TestRelease:
             assert client._pacemakers == {}
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestClose:
     """Test close method of the client"""
 
@@ -465,6 +469,7 @@ class TestClose:
             client.close()
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestBroken:
     """Test handling of broken trials with atexit()"""
 
@@ -566,6 +571,7 @@ class TestBroken:
             assert client.get_trial(trial).status == "interrupted"
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestSuggest:
     """Tests for ExperimentClient.suggest"""
 
@@ -767,6 +773,7 @@ class TestSuggest:
             client._pacemakers.pop(trial.id).stop()
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestObserve:
     """Tests for ExperimentClient.observe"""
 
@@ -840,6 +847,7 @@ class TestObserve:
             assert client._pacemakers == {}
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestWorkon:
     """Tests for ExperimentClient.workon"""
 

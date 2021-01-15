@@ -145,6 +145,7 @@ class TestReportResults(object):
         assert reloaded_client._HAS_REPORTED_RESULTS is True
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestCreateExperiment:
     """Test creation of experiment with `client.create_experiment()`"""
 

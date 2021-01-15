@@ -119,6 +119,7 @@ Full Example of Global Configuration
         cli_change_type: break
         code_change_type: break
         config_change_type: break
+        orion_version_change: False
         ignore_code_changes: False
         manual_resolution: False
         non_monitored_arguments: []
@@ -482,6 +483,7 @@ Experiment Version Control
         cli_change_type: break
         code_change_type: break
         config_change_type: break
+        orion_version_change: False
         ignore_code_changes: False
         manual_resolution: False
         non_monitored_arguments: []
@@ -618,3 +620,17 @@ config_change_type
     incompatible results. The child cannot access the trials from parent if ``config_change_type``
     is ``break``.  The parent cannot access trials from child if ``config_change_type`` is
     ``unsure`` or ``break``.
+
+
+.. _config_evc_orion_version_change:
+
+orion_version_change
+~~~~~~~~~~~~~~~~~~~~
+
+:Type: bool
+:Default: False
+:Env var: ORION_EVC_ORION_VERSION_CHANGE
+:Description:
+    If ``True``, set orion version change as resolved if branching event occured.
+    Child and parent experiment have access to all trials from each other
+    when the only difference between them is the orion version used during execution.

@@ -308,6 +308,10 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
         == orion.core.config.evc.ignore_code_changes
     )
     assert evc_config.pop("algorithm_change") == orion.core.config.evc.algorithm_change
+    assert (
+        evc_config.pop("orion_version_change")
+        == orion.core.config.evc.orion_version_change
+    )
     assert evc_config.pop("code_change_type") == orion.core.config.evc.code_change_type
     assert evc_config.pop("cli_change_type") == orion.core.config.evc.cli_change_type
     assert (

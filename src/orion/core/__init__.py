@@ -393,6 +393,18 @@ def define_evc_config(config):
         ),
     )
 
+    evc_config.add_option(
+        "orion_version_change",
+        option_type=bool,
+        default=False,
+        env_var="ORION_EVC_ORION_VERSION_CHANGE",
+        help=(
+            "Set orion version change as resolved if branching event occured"
+            "Child and parent experiment have access to all trials from each other "
+            "when the only difference between them is the orion version used during execution."
+        ),
+    )
+
     config.evc = evc_config
 
 

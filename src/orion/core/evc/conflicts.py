@@ -1795,3 +1795,65 @@ class ExperimentNameConflict(Conflict):
             incrementing version of an experiment.
             """
             return True
+
+
+class OrionVersionConflict(Conflict):
+    """Representation of conflict due to different Orion versions
+
+    .. seealso ::
+
+        :class:`orion.core.evc.conflicts.Conflict`
+
+    """
+
+    @classmethod
+    def detect(cls, old_config, new_config, branching_config=None):
+        """Detect if orion versions differs"""
+        if (
+            old_config["metadata"]["orion_version"]
+            != new_config["metadata"]["orion_version"]
+        ):
+            yield cls(old_config, new_config)
+
+    def try_resolve(self):
+        """Try to create a resolution OrionVersionResolution"""
+        if self.is_resolved:
+            return None
+
+        return self.OrionVersionResolution(self)
+
+    @property
+    def diff(self):
+        """Produce human-readable differences"""
+        return colored_diff(
+            self.old_config["metadata"]["orion_version"],
+            self.new_config["metadata"]["orion_version"],
+        )
+
+    def __repr__(self):
+        """Reprensentation of the conflict for user interface"""
+        return "{0} != {1}".format(
+            self.old_config["metadata"]["orion_version"],
+            self.new_config["metadata"]["orion_version"],
+        )
+
+    class OrionVersionResolution(Resolution):
+        """Representation of an orion version resolution
+
+        .. seealso ::
+
+            :class:`orion.core.evc.conflicts.Resolution`
+
+        """
+
+        ARGUMENT = "--orion-version-change"
+
+        def get_adapters(self):
+            """Return OrionVersionChange adapter"""
+            return [adapters.OrionVersionChange()]
+
+        def __repr__(self):
+            """Representation of the resolution as it should be provided in command line of
+            configuration file by the user
+            """
+            return "{0}".format(self.ARGUMENT)

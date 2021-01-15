@@ -166,6 +166,7 @@ Source of conflicts
 3. Script configuration file modification
 4. Optimization space modification (new hyper-parameters or change of prior distribution)
 5. Algorithm configuration modification
+6. Orion version change
 
 Iterative Results
 =================

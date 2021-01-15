@@ -155,6 +155,9 @@ def build(name, version=None, branching=None, **config):
         algorithm_change: bool, optional
             Whether to automatically solve the algorithm conflict (change of algo config).
             Defaults to True.
+        orion_version_change: bool, optional
+            Whether to automatically solve the orion version conflict.
+            Defaults to True.
         code_change_type: str, optional
             How to resolve code change automatically. Must be one of 'noeffect', 'unsure' or
             'break'.  Defaults to 'break'.

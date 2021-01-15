@@ -45,6 +45,12 @@ def algorithm_resolution(algorithm_conflict):
 
 
 @pytest.fixture
+def orion_version_resolution(orion_version_conflict):
+    """Create a resolution for a new orion version"""
+    return orion_version_conflict.OrionVersionResolution(orion_version_conflict)
+
+
+@pytest.fixture
 def code_resolution(code_conflict):
     """Create a resolution for a code conflict"""
     return code_conflict.CodeResolution(code_conflict, adapters.CodeChange.BREAK)
@@ -405,6 +411,30 @@ class TestAlgorithmResolution(object):
         assert algorithm_resolution.revert() == []
         assert not algorithm_conflict.is_resolved
         assert algorithm_conflict.resolution is None
+
+
+class TestOrionVersionResolution(object):
+    """Test methods for resolution of orion version changes"""
+
+    def test_adapters(self, orion_version_resolution):
+        """Verify shallow adapters for orion version change"""
+        resolution_adapters = orion_version_resolution.get_adapters()
+        assert len(resolution_adapters) == 1
+        assert (
+            resolution_adapters[0].configuration
+            == adapters.OrionVersionChange().configuration
+        )
+
+    def test_repr(self, orion_version_resolution):
+        """Verify resolution representation for user interface"""
+        assert repr(orion_version_resolution) == "--orion-version-change"
+
+    def test_revert(self, orion_version_conflict, orion_version_resolution):
+        """Verify reverting resolution set conflict to unresolved"""
+        assert orion_version_conflict.is_resolved
+        assert orion_version_resolution.revert() == []
+        assert not orion_version_conflict.is_resolved
+        assert orion_version_conflict.resolution is None
 
 
 class TestCodeResolution(object):

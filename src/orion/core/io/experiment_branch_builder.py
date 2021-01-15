@@ -218,6 +218,23 @@ class ExperimentBranchBuilder:
 
         self.conflicts.try_resolve(algo_conflicts[0])
 
+    def set_orion_version(self):
+        """Set orion version resolution
+
+        Raises
+        ------
+        RuntimeError
+            If there is no orion version conflict left to resolve.
+
+        """
+        orion_version_conflicts = self.conflicts.get_remaining(
+            [conflicts.OrionVersionConflict]
+        )
+        if not orion_version_conflicts:
+            raise RuntimeError("No orion version conflict to solve")
+
+        self.conflicts.try_resolve(orion_version_conflicts[0])
+
     def add_dimension(self, name, default_value=Dimension.NO_DEFAULT_VALUE):
         """Add dimension with given `name`
 
