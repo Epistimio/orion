@@ -72,11 +72,11 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
     """
 
     def create_benchmark(self, config):
-        """Insert a new experiment inside the database"""
+        """Insert a new benchmark inside the database"""
         raise NotImplementedError()
 
     def fetch_benchmark(self, query, selection=None):
-        """Fetch all experiments that match the query"""
+        """Fetch all benchmarks that match the query"""
         raise NotImplementedError()
 
     def create_experiment(self, config):

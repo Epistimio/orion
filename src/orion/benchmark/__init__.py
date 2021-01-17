@@ -90,29 +90,7 @@ class Benchmark:
                     self.name, complete_exp_num, total_exp_num, total_trials
                 )
             )
-            try:
-                from IPython.display import HTML, display
-
-                display(
-                    HTML(
-                        tabulate(
-                            benchmark_status,
-                            headers="keys",
-                            tablefmt="html",
-                            stralign="center",
-                            numalign="center",
-                        )
-                    )
-                )
-            except ImportError:
-                table = tabulate(
-                    benchmark_status,
-                    headers="keys",
-                    tablefmt="grid",
-                    stralign="center",
-                    numalign="center",
-                )
-                print(table)
+            self._pretty_table(benchmark_status)
 
         return benchmark_status
 
@@ -120,8 +98,7 @@ class Benchmark:
         """Return all the assessment figures"""
         figures = []
         for study in self.studies:
-            figure = study.display()
-            # figure.show()
+            figure = study.analysis()
             figures.append(figure)
         return figures
 
@@ -141,39 +118,46 @@ class Benchmark:
                 experiment_table.append(exp_column)
 
         if not silent:
-            try:
-                from IPython.display import HTML, display
-
-                display(
-                    HTML(
-                        tabulate(
-                            experiment_table,
-                            headers="keys",
-                            tablefmt="html",
-                            stralign="center",
-                            numalign="center",
-                        )
-                    )
-                )
-            except ImportError:
-                table = tabulate(
-                    experiment_table,
-                    headers="keys",
-                    tablefmt="grid",
-                    stralign="center",
-                    numalign="center",
-                )
-                print(table)
             print("Total Experiments: {}".format(len(experiment_table)))
+            self._pretty_table(experiment_table)
 
         return experiment_table
+
+    def _pretty_table(self, dict_list):
+        """
+        Print a list of same format dict as pretty table with IPython disaply(notebook) or tablute
+        :param dict_list: a list of dict where each dict has the same keys.
+        """
+        try:
+            from IPython.display import HTML, display
+
+            display(
+                HTML(
+                    tabulate(
+                        dict_list,
+                        headers="keys",
+                        tablefmt="html",
+                        stralign="center",
+                        numalign="center",
+                    )
+                )
+            )
+        except ImportError:
+            table = tabulate(
+                dict_list,
+                headers="keys",
+                tablefmt="grid",
+                stralign="center",
+                numalign="center",
+            )
+            print(table)
 
     # pylint: disable=invalid-name
     @property
     def id(self):
-        """Id of the experiment in the database if configured.
+        """Id of the benchmark in the database if configured.
 
-        Value is `None` if the experiment is not configured.
+        Value is `None` if the benchmark is not configured.
         """
         return self._id
 
@@ -205,13 +189,13 @@ class Benchmark:
         if self.id is not None:
             config["_id"] = self.id
 
-        # print('config:', config)
         return copy.deepcopy(config)
 
 
 class Study:
     """
-    Benchmark definition
+    A study is one assessment and task combination in the `Benchmark` targets. It will
+    build and run experiments for all the algorithms for that task.
 
     Parameters
     ----------
@@ -302,9 +286,9 @@ class Study:
 
         return list(algorithm_tasks.values())
 
-    def display(self):
+    def analysis(self):
         """Return assessment figure"""
-        return self.assessment.plot_figures(self.task_name, self.experiments_info)
+        return self.assessment.analysis(self.task_name, self.experiments_info)
 
     def experiments(self):
         """Return all the experiments of the study"""

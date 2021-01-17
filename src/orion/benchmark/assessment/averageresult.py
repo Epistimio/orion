@@ -20,16 +20,15 @@ from orion.benchmark.base import BaseAssess
 
 class AverageResult(BaseAssess):
     """
-    For each algorithm, run fixed number of Experiment, average the performance of trials
-    for the same algorithm at the same trial sequence order.
-    For the performance of trials in an Experiment, instead using the actual trial objective
-    value, here we use the best objective value in the same Experiment until the particular trial.
+    Evaluate the average performance (objective value) for a search algorithm
+    at different time steps (trial number).
+    The performance (objective value) used for a trial will the best result until the trial.
     """
 
     def __init__(self, task_num=1):
         super(AverageResult, self).__init__(task_num=task_num)
 
-    def plot_figures(self, task, experiments):
+    def analysis(self, task, experiments):
         """
         Generate a `plotly.graph_objects.Figure`
 

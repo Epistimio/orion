@@ -17,7 +17,9 @@ from orion.core.utils.exceptions import NoConfigurationError
 from orion.storage.base import get_storage, setup_storage
 
 
-def get_or_create_benchmark(name, algorithms=None, targets=None):
+def get_or_create_benchmark(
+    name, algorithms=None, targets=None, storage=None, debug=False
+):
     """
     Create or get a benchmark object.
 
@@ -34,12 +36,18 @@ def get_or_create_benchmark(name, algorithms=None, targets=None):
             Assessment objects
         task: list
             Task objects
+    storage: dict, optional
+        Configuration of the storage backend.
+    debug: bool, optional
+        If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
+        Defaults to False.
 
     Returns
     -------
     An instance of `orion.benchmark.Benchmark`
     """
-    setup_storage()
+    setup_storage(storage=storage, debug=debug)
+
     # fetch benchmark from db
     db_config = _fetch_benchmark(name)
 
@@ -89,6 +97,7 @@ def _resolve_db_config(db_config):
         tasks = target["task"]
         obj_tasks = []
         for task in tasks:
+
             task_cls = list(task.keys())[0]
             task_cls = task_cls.replace("-", ".")
             task_cfg = list(task.values())[0]

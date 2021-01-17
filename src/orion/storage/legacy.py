@@ -120,7 +120,7 @@ class Legacy(BaseStorageProtocol):
         self._db.ensure_index("trials", [("end_time", Database.DESCENDING)])
 
     def create_benchmark(self, config):
-        """Insert a new experiment inside the database"""
+        """Insert a new benchmark inside the database"""
         return self._db.write("benchmarks", data=config, query=None)
 
     def fetch_benchmark(self, query, selection=None):

@@ -15,7 +15,8 @@ from orion.benchmark.base import BaseTask
 
 
 class CarromTable(BaseTask):
-    """CarromTable function as benchmark task"""
+    """`CarromTable function <http://infinity77.net/global_optimization/test_functions_nd_C.html#go_benchmark.CarromTable>`_
+    as benchmark task"""
 
     def __init__(self, max_trials=20):
         super(CarromTable, self).__init__(max_trials=max_trials)

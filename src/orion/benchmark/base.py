@@ -27,7 +27,8 @@ class BaseAssess(ABC):
 
     def __init__(self, task_num, **kwargs):
         self.task_number = task_num
-        self._param_names = list(kwargs.keys())
+        self._param_names = kwargs
+        self._param_names["task_num"] = task_num
 
     @property
     def task_num(self):
@@ -35,7 +36,7 @@ class BaseAssess(ABC):
         return self.task_number
 
     @abstractmethod
-    def plot_figures(self, task, experiments):
+    def analysis(self, task, experiments):
         """
         Generate a `plotly.graph_objects.Figure`
 
@@ -50,18 +51,11 @@ class BaseAssess(ABC):
     @property
     def configuration(self):
         """Return the configuration of the assessment."""
-        dict_form = dict()
-        for attrname in self._param_names:
-            if attrname.startswith("_"):  # Do not log _space or others in conf
-                continue
-            attr = getattr(self, attrname)
-            dict_form[attrname] = attr
-        dict_form["task_num"] = self.task_num
 
         mod = self.__class__.__module__
         fullname = mod + "." + self.__class__.__qualname__
         fullname = fullname.replace(".", "-")
-        return {fullname: dict_form}
+        return {fullname: self._param_names}
 
 
 class BaseTask(ABC):
@@ -79,7 +73,8 @@ class BaseTask(ABC):
 
     def __init__(self, max_trials, **kwargs):
         self.trials_num = max_trials
-        self._param_names = list(kwargs.keys())
+        self._param_names = kwargs
+        self._param_names["max_trials"] = max_trials
 
     @abstractmethod
     def get_blackbox_function(self):
@@ -102,15 +97,8 @@ class BaseTask(ABC):
     @property
     def configuration(self):
         """Return the configuration of the task."""
-        dict_form = dict()
-        for attrname in self._param_names:
-            if attrname.startswith("_"):  # Do not log _space or others in conf
-                continue
-            attr = getattr(self, attrname)
-            dict_form[attrname] = attr
-        dict_form["max_trials"] = self.max_trials
 
         mod = self.__class__.__module__
         fullname = mod + "." + self.__class__.__qualname__
         fullname = fullname.replace(".", "-")
-        return {fullname: dict_form}
+        return {fullname: self._param_names}

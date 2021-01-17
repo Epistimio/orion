@@ -8,41 +8,6 @@ import orion.core.io.experiment_builder as experiment_builder
 from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.testing import OrionState, create_experiment, generate_trials
 
-config = dict(
-    name="experiment-name",
-    space={"x": "uniform(0, 200)"},
-    metadata={
-        "user": "test-user",
-        "orion_version": "XYZ",
-        "VCS": {
-            "type": "git",
-            "is_dirty": False,
-            "HEAD_sha": "test",
-            "active_branch": None,
-            "diff_sha": "diff",
-        },
-    },
-    version=1,
-    pool_size=1,
-    max_trials=10,
-    working_dir="",
-    algorithms={"random": {"seed": 1}},
-    producer={"strategy": "NoParallelStrategy"},
-)
-
-trial_config = {
-    "experiment": 0,
-    "status": "completed",
-    "worker": None,
-    "start_time": None,
-    "end_time": None,
-    "heartbeat": None,
-    "results": [],
-    "params": [],
-}
-
-algorithms = [{"random": {"seed": 1}}, {"tpe": {"seed": 1}}]
-
 
 class TestAverageRank:
     """Test assessment AverageRank"""
@@ -61,47 +26,33 @@ class TestAverageRank:
             "orion-benchmark-assessment-averagerank-AverageRank": {"task_num": 5}
         }
 
-    def test_plot_figures(self):
+    def test_analysis(self, experiment_config, trial_config):
         """Test assessment plot"""
         ar1 = AverageRank()
 
-        with create_experiment(config, trial_config, ["completed"]) as (
+        with create_experiment(experiment_config, trial_config, ["completed"]) as (
             _,
             experiment,
             _,
         ):
-            plot = ar1.plot_figures("task_name", [(0, experiment)])
+            plot = ar1.analysis("task_name", [(0, experiment)])
 
         assert type(plot) is plotly.graph_objects.Figure
 
-    def test_figure_layout(self):
+    def test_figure_layout(self, algorithms, generate_experiment_trials):
         """Test assessment plot format"""
         ar1 = AverageRank()
-
-        gen_exps = []
-        gen_trials = []
         algo_num = len(algorithms)
-        for i in range(2 * algo_num):
-            import copy
 
-            exp = copy.deepcopy(config)
-            exp["_id"] = i
-            exp["name"] = "experiment-name-{}".format(i)
-            exp["algorithms"] = algorithms[i % algo_num]
-            gen_exps.append(exp)
-            for j in range(3):
-                trial = copy.deepcopy(trial_config)
-                trial["_id"] = "{}{}".format(i, j)
-                trial["experiment"] = i
-                trials = generate_trials(trial, ["completed"])
-                gen_trials.extend(trials)
-
+        gen_exps, gen_trials = generate_experiment_trials
         experiments = list()
         with OrionState(experiments=gen_exps, trials=gen_trials):
+            import copy
+
             for i in range(2 * algo_num):
                 experiment = experiment_builder.build("experiment-name-{}".format(i))
                 experiments.append((i, copy.deepcopy(experiment)))
-            plot = ar1.plot_figures("task_name", experiments)
+            plot = ar1.analysis("task_name", experiments)
 
         assert type(plot) is plotly.graph_objects.Figure
 
@@ -135,47 +86,33 @@ class TestAverageResult:
             "orion-benchmark-assessment-averageresult-AverageResult": {"task_num": 5}
         }
 
-    def test_plot_figures(self):
+    def test_plot_figures(self, experiment_config, trial_config):
         """Test assessment plot"""
         ar1 = AverageResult()
 
-        with create_experiment(config, trial_config, ["completed"]) as (
+        with create_experiment(experiment_config, trial_config, ["completed"]) as (
             _,
             experiment,
             _,
         ):
-            plot = ar1.plot_figures("task_name", [(0, experiment)])
+            plot = ar1.analysis("task_name", [(0, experiment)])
 
         assert type(plot) is plotly.graph_objects.Figure
 
-    def test_figure_layout(self):
+    def test_figure_layout(self, algorithms, generate_experiment_trials):
         """Test assessment plot format"""
         ar1 = AverageResult()
-
-        gen_exps = []
-        gen_trials = []
         algo_num = len(algorithms)
-        for i in range(2 * algo_num):
-            import copy
 
-            exp = copy.deepcopy(config)
-            exp["_id"] = i
-            exp["name"] = "experiment-name-{}".format(i)
-            exp["algorithms"] = algorithms[i % algo_num]
-            gen_exps.append(exp)
-            for j in range(3):
-                trial = copy.deepcopy(trial_config)
-                trial["_id"] = "{}{}".format(i, j)
-                trial["experiment"] = i
-                trials = generate_trials(trial, ["completed"])
-                gen_trials.extend(trials)
-
+        gen_exps, gen_trials = generate_experiment_trials
         experiments = list()
         with OrionState(experiments=gen_exps, trials=gen_trials):
+            import copy
+
             for i in range(2 * algo_num):
                 experiment = experiment_builder.build("experiment-name-{}".format(i))
                 experiments.append((i, copy.deepcopy(experiment)))
-            plot = ar1.plot_figures("task_name", experiments)
+            plot = ar1.analysis("task_name", experiments)
 
         assert type(plot) is plotly.graph_objects.Figure
 

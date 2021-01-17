@@ -15,7 +15,8 @@ from orion.benchmark.base import BaseTask
 
 
 class EggHolder(BaseTask):
-    """EggHolder function as benchmark task"""
+    """`EggHolder function <http://infinity77.net/global_optimization/test_functions_nd_E.html#go_benchmark.EggHolder>`_
+    as benchmark task"""
 
     def __init__(self, max_trials=20, dim=2):
         self.dim = dim

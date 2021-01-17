@@ -17,7 +17,9 @@ from orion.benchmark.base import BaseTask
 
 
 class Branin(BaseTask):
-    """Branin function as benchmark task"""
+    """`Branin function <http://infinity77.net/global_optimization/test_functions_nd_B.html#go_benchmark.Branin01>`_
+    as benchmark task
+    """
 
     def __init__(self, max_trials=20):
         super(Branin, self).__init__(max_trials=max_trials)

@@ -6,7 +6,7 @@ You can benchmark the performance of search algorithms with different tasks at d
 assessment levels.
 
 
-Benchmark can be created as below, refer :doc:`/code/benchmark/benchmark_client`
+Benchmark can be created as below, refer to :doc:`/code/benchmark/benchmark_client`
 for how to create and :doc:`/code/benchmark` for how to use benchmark.
 
 .. code-block:: python

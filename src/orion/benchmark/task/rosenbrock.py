@@ -15,7 +15,8 @@ from orion.benchmark.base import BaseTask
 
 
 class RosenBrock(BaseTask):
-    """RosenBrock function as benchmark task"""
+    """`RosenBrock function <http://infinity77.net/global_optimization/test_functions_nd_R.html#go_benchmark.Rosenbrock>`_
+    as benchmark task"""
 
     def __init__(self, max_trials=20, dim=2):
         self.dim = dim
