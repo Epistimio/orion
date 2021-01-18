@@ -65,7 +65,7 @@ def test_missing_conf_file(clean_db, with_experiment_missing_conf_file, capsys):
     assert "--x~uniform(0,1)" in captured
 
 
-def test_info_cmdline_api(clean_db, with_experiment_using_python_api, capsys):
+def test_info_cmdline_api(clean_db, one_experiment, capsys):
     """Test info if config built using cmdline api"""
     orion.core.cli.main(["info", "--name", "test_single_exp"])
 

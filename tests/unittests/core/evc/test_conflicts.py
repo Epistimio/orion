@@ -18,6 +18,7 @@ def conflicts(
     changed_dimension_conflict,
     missing_dimension_conflict,
     algorithm_conflict,
+    orion_version_conflict,
     code_conflict,
     experiment_name_conflict,
 ):
@@ -27,6 +28,7 @@ def conflicts(
     conflicts.register(changed_dimension_conflict)
     conflicts.register(missing_dimension_conflict)
     conflicts.register(algorithm_conflict)
+    conflicts.register(orion_version_conflict)
     conflicts.register(code_conflict)
     conflicts.register(experiment_name_conflict)
     return conflicts
@@ -248,6 +250,36 @@ class TestAlgorithmConflict(object):
         assert repr(algorithm_conflict) == repr_baseline
 
 
+class TestOrionVersionConflict(object):
+    """Tests methods related to orion version conflicts"""
+
+    def test_try_resolve_twice(self, orion_version_conflict):
+        """Verify that conflict cannot be resolved twice"""
+        assert not orion_version_conflict.is_resolved
+        assert isinstance(
+            orion_version_conflict.try_resolve(),
+            orion_version_conflict.OrionVersionResolution,
+        )
+        assert orion_version_conflict.is_resolved
+        assert orion_version_conflict.try_resolve() is None
+
+    def test_try_resolve(self, orion_version_conflict):
+        """Verify that resolution is achievable without any input"""
+        assert not orion_version_conflict.is_resolved
+        resolution = orion_version_conflict.try_resolve()
+        assert isinstance(resolution, orion_version_conflict.OrionVersionResolution)
+        assert orion_version_conflict.is_resolved
+        assert resolution.conflict is orion_version_conflict
+
+    def test_repr(self, old_config, new_config, orion_version_conflict):
+        """Verify the representation of conflict for user interface"""
+        repr_baseline = "{0} != {1}".format(
+            old_config["metadata"]["orion_version"],
+            new_config["metadata"]["orion_version"],
+        )
+        assert repr(orion_version_conflict) == repr_baseline
+
+
 class TestCodeConflict(object):
     """Tests methods related to code conflicts"""
 
@@ -332,11 +364,11 @@ class TestCommandLineConflict(object):
             cli_conflict.try_resolve("bad-change-type")
         assert "Invalid cli change type 'bad-change-type'" in str(exc.value)
 
-    def test_repr(self, cli_conflict):
+    def test_repr(self, cli_conflict, script_path):
         """Verify the representation of conflict for user interface"""
         assert repr(cli_conflict) == (
-            "Old arguments '_pos_0 abs_path/black_box.py' != "
-            "new arguments '_pos_0 abs_path/black_box.py bool-arg True some-new args'"
+            f"Old arguments '_pos_0 {script_path}' != "
+            f"new arguments '_pos_0 {script_path} bool-arg True some-new args'"
         )
 
 
@@ -377,10 +409,14 @@ class TestScriptConfigConflict(object):
         """Verify the representation of conflict for user interface"""
         assert repr(config_conflict) == "Script's configuration file changed"
 
-    def test_comparison(self, yaml_config, yaml_diff_config):
+    def test_comparison(self, yaml_config, yaml_diff_config, script_path):
         """Test that different configs are detected as conflict."""
-        old_config = {"metadata": {"user_args": yaml_config}}
-        new_config = {"metadata": {"user_args": yaml_diff_config}}
+        old_config = {
+            "metadata": {"user_args": yaml_config, "user_script": script_path}
+        }
+        new_config = {
+            "metadata": {"user_args": yaml_diff_config, "user_script": script_path}
+        }
 
         backward.populate_space(old_config)
         backward.populate_space(new_config)
@@ -388,10 +424,17 @@ class TestScriptConfigConflict(object):
         conflicts = list(conflict.ScriptConfigConflict.detect(old_config, new_config))
         assert len(conflicts) == 1
 
-    def test_comparison_idem(self, yaml_config):
+    def test_comparison_idem(self, yaml_config, script_path):
         """Test that identical configs are not detected as conflict."""
-        old_config = {"metadata": {"user_args": yaml_config}}
-        new_config = {"metadata": {"user_args": yaml_config + ["--other", "args"]}}
+        old_config = {
+            "metadata": {"user_args": yaml_config, "user_script": script_path}
+        }
+        new_config = {
+            "metadata": {
+                "user_args": yaml_config + ["--other", "args"],
+                "user_script": script_path,
+            }
+        }
 
         backward.populate_space(old_config)
         backward.populate_space(new_config)
@@ -484,13 +527,13 @@ class TestConflicts(object):
 
     def test_register(self, conflicts):
         """Verify that conflicts are properly registerd"""
-        assert len(conflicts.conflicts) == 6
+        assert len(conflicts.conflicts) == 7
         isinstance(conflicts.conflicts[0], evc.conflicts.NewDimensionConflict)
         isinstance(conflicts.conflicts[-1], evc.conflicts.ExperimentNameConflict)
 
     def test_get(self, conflicts):
         """Verify that bare get() fetches all conflicts"""
-        assert len(conflicts.get()) == 6
+        assert len(conflicts.get()) == 7
         isinstance(conflicts.get()[0], evc.conflicts.NewDimensionConflict)
         isinstance(conflicts.get()[-1], evc.conflicts.ExperimentNameConflict)
 
@@ -533,7 +576,7 @@ class TestConflicts(object):
             return True
 
         found_conflicts = conflicts.get(callback=always_true)
-        assert len(found_conflicts) == 6
+        assert len(found_conflicts) == 7
         isinstance(found_conflicts[0], evc.conflicts.NewDimensionConflict)
         isinstance(found_conflicts[-1], evc.conflicts.ExperimentNameConflict)
 
@@ -544,11 +587,11 @@ class TestConflicts(object):
 
     def test_get_remaining(self, conflicts):
         """Verify that get_remaining() only fetch non resolved conflicts"""
+        assert len(conflicts.get_remaining()) == 7
+        conflicts.get_remaining()[0].try_resolve()
         assert len(conflicts.get_remaining()) == 6
         conflicts.get_remaining()[0].try_resolve()
         assert len(conflicts.get_remaining()) == 5
-        conflicts.get_remaining()[0].try_resolve()
-        assert len(conflicts.get_remaining()) == 4
 
     def test_get_resolved(self, conflicts):
         """Verify that get_resolved() only fetch resolved conflicts"""
@@ -598,13 +641,13 @@ class TestConflicts(object):
 
     def test_deprecate_existing_conflict(self, new_dimension_conflict, conflicts):
         """Verify deprecated conflicts are not inside conflicts anymore"""
-        assert len(conflicts.conflicts) == 6
+        assert len(conflicts.conflicts) == 7
         conflicts.deprecate([new_dimension_conflict])
-        assert len(conflicts.conflicts) == 5
+        assert len(conflicts.conflicts) == 6
 
     def test_deprecate_non_existing_conflict(self, conflicts):
         """Verify attempt to deprecate non-existing conflicts raises ValueError"""
-        assert len(conflicts.conflicts) == 6
+        assert len(conflicts.conflicts) == 7
         with pytest.raises(ValueError) as exc:
             conflicts.deprecate(["dummy object"])
         assert "'dummy object' is not in list" in str(exc.value)
@@ -645,11 +688,11 @@ class TestConflicts(object):
         self, new_dimension_conflict, missing_dimension_conflict, conflicts
     ):
         """Verify try_resolve register new conflicts created by resolutions"""
-        assert len(conflicts.conflicts) == 6
+        assert len(conflicts.conflicts) == 7
         conflicts.try_resolve(
             missing_dimension_conflict, new_dimension_conflict=new_dimension_conflict
         )
-        assert len(conflicts.conflicts) == 7
+        assert len(conflicts.conflicts) == 8
         assert isinstance(
             conflicts.conflicts[-1], evc.conflicts.ChangedDimensionConflict
         )

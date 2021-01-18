@@ -1,4 +1,6 @@
 """Perform tests for the REST endpoint `/plots`"""
+import pytest
+
 from orion.testing import create_experiment
 
 config = dict(
@@ -42,6 +44,7 @@ def test_root_not_available(client):
     assert response.status == "404 Not Found"
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestRegretPlots:
     """Tests regret plots"""
 
@@ -68,7 +71,20 @@ class TestRegretPlots:
         assert response.json
         assert list(response.json.keys()) == ["data", "layout"]
 
+    def test_no_trials(self, client):
+        """Tests that the API returns an empty figure when no trials are found."""
+        with create_experiment(config, trial_config, []) as (
+            _,
+            _,
+            experiment,
+        ):
+            response = client.simulate_get("/plots/regret/experiment-name")
 
+        assert response.status == "200 OK"
+        assert list(response.json.keys()) == ["data", "layout"]
+
+
+@pytest.mark.usefixtures("version_XYZ")
 class TestParallelCoordinatesPlots:
     """Tests parallel coordinates plots"""
 
@@ -95,4 +111,58 @@ class TestParallelCoordinatesPlots:
 
         assert response.status == "200 OK"
         assert response.json
+        assert list(response.json.keys()) == ["data", "layout"]
+
+    def test_no_trials(self, client):
+        """Tests that the API returns an empty figure when no trials are found."""
+        with create_experiment(config, trial_config, []) as (
+            _,
+            _,
+            experiment,
+        ):
+            response = client.simulate_get(
+                "/plots/parallel_coordinates/experiment-name"
+            )
+
+        assert response.status == "200 OK"
+        assert list(response.json.keys()) == ["data", "layout"]
+
+
+@pytest.mark.usefixtures("version_XYZ")
+class TestLPIPlots:
+    """Tests lpi plots"""
+
+    def test_unknown_experiment(self, client):
+        """Tests that the API returns a 404 Not Found when an unknown experiment is queried."""
+        response = client.simulate_get("/plots/lpi/unknown-experiment")
+
+        assert response.status == "404 Not Found"
+        assert response.json == {
+            "title": "Experiment not found",
+            "description": 'Experiment "unknown-experiment" does not exist',
+        }
+
+    def test_plot(self, client):
+        """Tests that the API returns the plot in json format."""
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            response = client.simulate_get("/plots/lpi/experiment-name")
+
+        assert response.status == "200 OK"
+        assert response.json
+        assert list(response.json.keys()) == ["data", "layout"]
+
+    def test_no_trials(self, client):
+        """Tests that the API returns an empty figure when no trials are found."""
+        with create_experiment(config, trial_config, []) as (
+            _,
+            _,
+            experiment,
+        ):
+            response = client.simulate_get("/plots/lpi/experiment-name")
+
+        assert response.status == "200 OK"
         assert list(response.json.keys()) == ["data", "layout"]

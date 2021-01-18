@@ -155,6 +155,9 @@ def build(name, version=None, branching=None, **config):
         algorithm_change: bool, optional
             Whether to automatically solve the algorithm conflict (change of algo config).
             Defaults to True.
+        orion_version_change: bool, optional
+            Whether to automatically solve the orion version conflict.
+            Defaults to True.
         code_change_type: str, optional
             How to resolve code change automatically. Must be one of 'noeffect', 'unsure' or
             'break'.  Defaults to 'break'.
@@ -274,11 +277,8 @@ def consolidate_config(name, version, config):
     new_config = config
     config = resolve_config.merge_configs(db_config, config)
 
-    metadata = resolve_config.fetch_metadata(
-        config.get("user"), config.get("user_args"), config.get("user_script_config")
-    )
-
-    config = resolve_config.merge_configs(config, {"metadata": metadata})
+    config.setdefault("metadata", {})
+    resolve_config.update_metadata(config["metadata"])
 
     merge_algorithm_config(config, new_config)
     merge_producer_config(config, new_config)

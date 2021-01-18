@@ -79,9 +79,9 @@ def mock_experiment(
     if ids is None:
         ids = ["a", "b", "c", "d"]
     if x is None:
-        x = [0, 1, 2, 3]
+        x = [0, 1, 2, 4]
     if y is None:
-        y = [1, 2, 0, 3]
+        y = [3, 2, 0, 1]
     if objectives is None:
         objectives = [0.1, 0.2, 0.3, 0.5]
     if status is None:
@@ -114,6 +114,7 @@ def assert_lpi_plot(plot, dims):
     assert trace["y"][0] > trace["y"][1]
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestLPI:
     """Tests the ``lpi()`` method provided by the plotly backend"""
 
@@ -143,6 +144,11 @@ class TestLPI:
             experiment,
         ):
             plot = lpi(experiment, random_state=1)
+            # Why is this test failing?
+            df = experiment.to_pandas()
+            assert df["x"].tolist() == [0, 1, 2, 4]
+            assert df["y"].tolist() == [3, 2, 0, 1]
+            assert df["objective"].tolist() == [0.1, 0.2, 0.3, 0.5]
 
         assert_lpi_plot(plot, dims=["x", "y"])
 
@@ -238,6 +244,7 @@ class TestLPI:
         assert_lpi_plot(plot, dims=["x", "y[0]", "y[1]", "y[2]"])
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestRegret:
     """Tests the ``regret()`` method provided by the plotly backend"""
 
@@ -316,6 +323,7 @@ def assert_parallel_coordinates_plot(plot, order):
         assert trace.dimensions[i].label == order[i]
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestParallelCoordinates:
     """Tests the ``parallel_coordinates()`` method provided by the plotly backend"""
 

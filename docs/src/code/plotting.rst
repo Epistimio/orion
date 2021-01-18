@@ -2,5 +2,9 @@
 Plotting
 ********
 
-.. automodule:: orion.plotting
-   :members:
+.. toctree::
+   :maxdepth: 1
+   :caption: Modules
+
+   plotting/base
+   plotting/plotly

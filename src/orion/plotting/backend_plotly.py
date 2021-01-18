@@ -50,6 +50,9 @@ def parallel_coordinates(experiment, order=None, colorscale="YlOrRd", **kwargs):
         df = experiment.to_pandas()
         df = df.loc[df["status"] == "completed"]
 
+        if df.empty:
+            return df
+
         df[names] = df[names].transform(
             functools.partial(_curate_params, space=experiment.space)
         )
@@ -92,8 +95,12 @@ def parallel_coordinates(experiment, order=None, colorscale="YlOrRd", **kwargs):
     if not experiment:
         raise ValueError("Parameter 'experiment' is None")
 
-    trial = experiment.fetch_trials_by_status("completed")[0]
     df = build_frame()
+
+    if df.empty:
+        return go.Figure()
+
+    trial = experiment.fetch_trials_by_status("completed")[0]
 
     dimensions = []
     for name in infer_order(order):
@@ -159,10 +166,14 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
     if order_by not in ORDER_KEYS:
         raise ValueError(f"Parameter 'order_by' is not one of {ORDER_KEYS}")
 
-    trial = experiment.fetch_trials_by_status("completed")[0]
     df = build_frame()
 
     fig = go.Figure()
+
+    if df.empty:
+        return fig
+
+    trial = experiment.fetch_trials_by_status("completed")[0]
 
     fig.add_scatter(
         y=df["objective"],
@@ -179,7 +190,11 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
         hovertemplate=_template_best(),
     )
 
-    y_axis_label = f"{trial.objective.type.capitalize()} '{trial.objective.name}'"
+    if trial is None:
+        y_axis_label = "Objective unknown"
+    else:
+        y_axis_label = f"{trial.objective.type.capitalize()} '{trial.objective.name}'"
+
     fig.update_layout(
         title=f"Regret for experiment '{experiment.name}'",
         xaxis_title=f"Trials ordered by {order_by} time",

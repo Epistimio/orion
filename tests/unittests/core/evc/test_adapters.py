@@ -14,6 +14,7 @@ from orion.core.evc.adapters import (
     DimensionDeletion,
     DimensionPriorChange,
     DimensionRenaming,
+    OrionVersionChange,
 )
 from orion.core.io.space_builder import DimensionBuilder
 from orion.core.worker.trial import Trial
@@ -230,6 +231,14 @@ class TestAlgorithmChangeInit(object):
     def test_algorithm_change_init(self):
         """Test initialization of :class:`orion.core.evc.adapters.AlgorithmChange`"""
         AlgorithmChange()
+
+
+class TestOrionVersionChangeInit(object):
+    """Test initialization of :class:`orion.core.evc.adapters.OrionVersionChange`"""
+
+    def test_orion_version_change_init(self):
+        """Test initialization of :class:`orion.core.evc.adapters.OrionVersionChange`"""
+        OrionVersionChange()
 
 
 class TestCodeChangeInit(object):
@@ -626,6 +635,34 @@ class TestAlgorithmChangeForwardBackward(object):
         assert adapted_trials[-1] is trials[-1]
 
 
+class TestOrionVersionChangeForwardBackward(object):
+    """Test :meth:`orion.core.evc.adapters.OrionVersionChange.forward` and
+    :meth:`orion.core.evc.adapters.OrionVersionChange.backward`
+    """
+
+    def test_orion_version_change_forward(self, trials):
+        """Test :meth:`orion.core.evc.adapters.OrionVersionChange.forward`"""
+        orion_version_change_adaptor = OrionVersionChange()
+
+        adapted_trials = orion_version_change_adaptor.forward(trials)
+
+        assert len(adapted_trials) == len(trials)
+
+        assert adapted_trials[0] is trials[0]
+        assert adapted_trials[-1] is trials[-1]
+
+    def test_orion_version_change_backward(self, trials):
+        """Test :meth:`orion.core.evc.adapters.OrionVersionChange.backward`"""
+        orion_version_change_adaptor = OrionVersionChange()
+
+        adapted_trials = orion_version_change_adaptor.backward(trials)
+
+        assert len(adapted_trials) == len(trials)
+
+        assert adapted_trials[0] is trials[0]
+        assert adapted_trials[-1] is trials[-1]
+
+
 class TestCodeChangeForwardBackward(object):
     """Test :meth:`orion.core.evc.adapters.CodeChange.forward` and
     :meth:`orion.core.evc.adapters.CodeChange.backward`
@@ -821,6 +858,17 @@ def test_algorithm_change_configuration():
     configuration = algorithm_change_adaptor.configuration[0]
 
     assert configuration["of_type"] == "algorithmchange"
+
+    assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
+
+
+def test_orion_version_change_configuration():
+    """Test :meth:`orion.core.evc.adapters.OrionVersionChange.configuration`"""
+    orion_version_change_adaptor = OrionVersionChange()
+
+    configuration = orion_version_change_adaptor.configuration[0]
+
+    assert configuration["of_type"] == "orionversionchange"
 
     assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
 

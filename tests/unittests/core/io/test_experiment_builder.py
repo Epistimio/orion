@@ -84,6 +84,7 @@ def new_config(random_dt, script_path):
             "user": "tsirif",
             "orion_version": "XYZ",
             "user_script": script_path,
+            "user_script_config": "config",
             "user_config": "abs_path/hereitis.yaml",
             "user_args": [script_path, "--mini-batch~uniform(32, 256, discrete=True)"],
             "VCS": {
@@ -123,7 +124,7 @@ def new_config(random_dt, script_path):
 
 
 @pytest.fixture
-def parent_version_config():
+def parent_version_config(script_path):
     """Return a configuration for an experiment."""
     config = dict(
         _id="parent_config",
@@ -134,6 +135,15 @@ def parent_version_config():
             "user": "corneauf",
             "datetime": datetime.datetime.utcnow(),
             "user_args": ["--x~normal(0,1)"],
+            "user_script": script_path,
+            "VCS": {
+                "type": "git",
+                "is_dirty": False,
+                "HEAD_sha": "test",
+                "active_branch": None,
+                "diff_sha": "diff",
+            },
+            "orion_version": "XYZ",
         },
     )
 
@@ -454,7 +464,7 @@ def test_build_no_commandline_config():
 
 
 @pytest.mark.usefixtures(
-    "with_user_dendi", "mock_infer_versioning_metadata", "version_XYZ"
+    "with_user_tsirif", "mock_infer_versioning_metadata", "version_XYZ"
 )
 def test_build_hit(python_api_config):
     """Try building experiment from config when in db (no branch)"""
@@ -470,7 +480,6 @@ def test_build_hit(python_api_config):
     assert exp._id == python_api_config["_id"]
     assert exp.name == python_api_config["name"]
     assert exp.configuration["refers"] == python_api_config["refers"]
-    python_api_config["metadata"]["user"] = "dendi"
     assert exp.metadata == python_api_config["metadata"]
     assert exp.max_trials == python_api_config["max_trials"]
     assert exp.max_broken == python_api_config["max_broken"]
@@ -498,7 +507,9 @@ def test_build_without_config_hit(python_api_config):
     assert exp.algorithms.configuration == python_api_config["algorithms"]
 
 
-@pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
+@pytest.mark.usefixtures(
+    "with_user_tsirif", "version_XYZ", "mock_infer_versioning_metadata"
+)
 def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
     """Try building experiment without commandline when in db (no branch)"""
     name = "supernaekei"
@@ -520,7 +531,7 @@ def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
     assert exp.algorithms.configuration == new_config["algorithms"]
 
 
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
 class TestExperimentVersioning(object):
     """Create new Experiment with auto-versioning."""
 
@@ -550,6 +561,7 @@ class TestExperimentVersioning(object):
 
         assert exp.version == 2
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_old_experiment_wout_version(self, parent_version_config):
         """Create an already existing experiment without a version."""
         with OrionState(experiments=[parent_version_config]):
@@ -557,6 +569,7 @@ class TestExperimentVersioning(object):
 
         assert exp.version == 1
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_old_experiment_2_wout_version(
         self, parent_version_config, child_version_config
     ):
@@ -566,6 +579,7 @@ class TestExperimentVersioning(object):
 
         assert exp.version == 2
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_old_experiment_w_version(
         self, parent_version_config, child_version_config
     ):
@@ -577,11 +591,11 @@ class TestExperimentVersioning(object):
 
         assert exp.version == 1
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_old_experiment_w_version_bigger_than_max(
         self, parent_version_config, child_version_config
     ):
         """Create an already existing experiment with a too large version."""
-        print(child_version_config["name"])
         with OrionState(experiments=[parent_version_config, child_version_config]):
             exp = experiment_builder.build(
                 name=parent_version_config["name"], version=8
@@ -594,6 +608,7 @@ class TestExperimentVersioning(object):
 class TestBuild(object):
     """Test building the experiment"""
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_good_set_before_init_hit_no_diffs_exc_max_trials(self, new_config):
         """Trying to set, and NO differences were found from the config pulled from db.
 
@@ -617,6 +632,7 @@ class TestBuild(object):
         new_config.pop("something_to_be_ignored")
         assert exp.configuration == new_config
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_good_set_before_init_no_hit(self, random_dt, new_config):
         """Trying to set, overwrite everything from input."""
         with OrionState(experiments=[], trials=[]):
@@ -685,6 +701,7 @@ class TestBuild(object):
             exp = experiment_builder.build(**found_config)
             assert exp.working_dir == ""
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_configuration_hit_no_diffs(self, new_config):
         """Return a configuration dict according to an experiment object.
 
@@ -716,6 +733,7 @@ class TestBuild(object):
         assert isinstance(exp.space, Space)
         assert isinstance(exp.refers["adapter"], BaseAdapter)
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_algo_case_insensitive(self, new_config):
         """Verify that algo with uppercase or lowercase leads to same experiment"""
         with OrionState(experiments=[new_config], trials=[]):
