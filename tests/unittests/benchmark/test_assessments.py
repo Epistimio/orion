@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.benchmark.assessment`."""
 
+import copy
+
 import plotly
 
 import orion.core.io.experiment_builder as experiment_builder
 from orion.benchmark.assessment import AverageRank, AverageResult
-from orion.testing import OrionState, create_experiment, generate_trials
+from orion.testing import OrionState, create_experiment
 
 
 class TestAverageRank:
@@ -39,17 +41,17 @@ class TestAverageRank:
 
         assert type(plot) is plotly.graph_objects.Figure
 
-    def test_figure_layout(self, algorithms, generate_experiment_trials):
+    def test_figure_layout(
+        self, benchmark_algorithms, generate_experiment_trials, task_number
+    ):
         """Test assessment plot format"""
         ar1 = AverageRank()
-        algo_num = len(algorithms)
+        algo_num = len(benchmark_algorithms)
 
         gen_exps, gen_trials = generate_experiment_trials
         experiments = list()
         with OrionState(experiments=gen_exps, trials=gen_trials):
-            import copy
-
-            for i in range(2 * algo_num):
+            for i in range(task_number * algo_num):
                 experiment = experiment_builder.build("experiment-name-{}".format(i))
                 experiments.append((i, copy.deepcopy(experiment)))
             plot = ar1.analysis("task_name", experiments)
@@ -63,7 +65,7 @@ class TestAverageRank:
         for i in range(algo_num):
             trace1 = plot.data[i]
             assert trace1.type == "scatter"
-            assert trace1.name == list(algorithms[i].keys())[0]
+            assert trace1.name == list(benchmark_algorithms[i].keys())[0]
             assert trace1.mode == "lines"
             assert len(trace1.y) == 3
             assert len(trace1.x) == 3
@@ -99,17 +101,17 @@ class TestAverageResult:
 
         assert type(plot) is plotly.graph_objects.Figure
 
-    def test_figure_layout(self, algorithms, generate_experiment_trials):
+    def test_figure_layout(
+        self, benchmark_algorithms, generate_experiment_trials, task_number
+    ):
         """Test assessment plot format"""
         ar1 = AverageResult()
-        algo_num = len(algorithms)
+        algo_num = len(benchmark_algorithms)
 
         gen_exps, gen_trials = generate_experiment_trials
         experiments = list()
         with OrionState(experiments=gen_exps, trials=gen_trials):
-            import copy
-
-            for i in range(2 * algo_num):
+            for i in range(task_number * algo_num):
                 experiment = experiment_builder.build("experiment-name-{}".format(i))
                 experiments.append((i, copy.deepcopy(experiment)))
             plot = ar1.analysis("task_name", experiments)
@@ -123,7 +125,7 @@ class TestAverageResult:
         for i in range(algo_num):
             trace1 = plot.data[i]
             assert trace1.type == "scatter"
-            assert trace1.name == list(algorithms[i].keys())[0]
+            assert trace1.name == list(benchmark_algorithms[i].keys())[0]
             assert trace1.mode == "lines"
             assert len(trace1.y) == 3
             assert len(trace1.x) == 3

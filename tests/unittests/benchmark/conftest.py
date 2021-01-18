@@ -22,13 +22,13 @@ def max_trial():
 
 
 @pytest.fixture
-def algorithms():
+def benchmark_algorithms():
     """Return a list of algorithms suitable for Orion experiment"""
     return [{"random": {"seed": 1}}, {"tpe": {"seed": 1}}]
 
 
 @pytest.fixture()
-def experiment_config(max_trial, algorithms):
+def experiment_config(max_trial, benchmark_algorithms):
     """Return a experiment template configure"""
     config = dict(
         name="experiment-name",
@@ -48,7 +48,7 @@ def experiment_config(max_trial, algorithms):
         pool_size=1,
         max_trials=max_trial,
         working_dir="",
-        algorithms=algorithms[0],
+        algorithms=benchmark_algorithms[0],
         producer={"strategy": "NoParallelStrategy"},
     )
     return config
@@ -72,19 +72,19 @@ def trial_config():
 
 @pytest.fixture
 def generate_experiment_trials(
-    algorithms, experiment_config, trial_config, task_number, max_trial
+    benchmark_algorithms, experiment_config, trial_config, task_number, max_trial
 ):
     """Return a list of experiments and trials"""
     gen_exps = []
     gen_trials = []
-    algo_num = len(algorithms)
+    algo_num = len(benchmark_algorithms)
     for i in range(task_number * algo_num):
         import copy
 
         exp = copy.deepcopy(experiment_config)
         exp["_id"] = i
         exp["name"] = "experiment-name-{}".format(i)
-        exp["algorithms"] = algorithms[i % algo_num]
+        exp["algorithms"] = benchmark_algorithms[i % algo_num]
         exp["max_trials"] = max_trial
         exp["metadata"]["datetime"] = datetime.datetime.utcnow()
         gen_exps.append(exp)

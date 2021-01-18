@@ -29,17 +29,11 @@ class DummyAssess:
     pass
 
 
-@pytest.fixture
-def algorithms():
-    """Return a list of algorithms suitable for Orion experiment"""
-    return [{"random": {"seed": 1}}, {"tpe": {"seed": 1}}]
-
-
 class TestCreateBenchmark:
     """Test Benchmark creation"""
 
     @pytest.mark.usefixtures("setup_pickleddb_database")
-    def test_create_experiment_no_storage(self, algorithms):
+    def test_create_experiment_no_storage(self, benchmark_algorithms):
         """Test creation if storage is not configured"""
         name = "oopsie_forgot_a_storage"
         host = orion.core.config.storage.database.host
@@ -55,7 +49,7 @@ class TestCreateBenchmark:
 
             bm1 = get_or_create_benchmark(
                 "bm00001",
-                algorithms=algorithms,
+                algorithms=benchmark_algorithms,
                 targets=[
                     {
                         "assess": [AverageResult(2), AverageRank(2)],
@@ -70,7 +64,7 @@ class TestCreateBenchmark:
             assert isinstance(storage._db, PickledDB)
             assert storage._db.host == host
 
-    def test_create_experiment_bad_storage(self, algorithms):
+    def test_create_experiment_bad_storage(self, benchmark_algorithms):
         """Test error message if storage is not configured properly"""
         name = "oopsie_bad_storage"
         # Make sure there is no existing storage singleton
@@ -79,7 +73,7 @@ class TestCreateBenchmark:
         with pytest.raises(NotImplementedError) as exc:
             get_or_create_benchmark(
                 "bm00001",
-                algorithms=algorithms,
+                algorithms=benchmark_algorithms,
                 targets=[
                     {
                         "assess": [AverageResult(2), AverageRank(2)],
@@ -94,7 +88,7 @@ class TestCreateBenchmark:
             in str(exc.value)
         )
 
-    def test_create_experiment_debug_mode(self, tmp_path, algorithms):
+    def test_create_experiment_debug_mode(self, tmp_path, benchmark_algorithms):
         """Test that EphemeralDB is used in debug mode whatever the storage config given"""
         update_singletons()
 
@@ -102,7 +96,7 @@ class TestCreateBenchmark:
 
         get_or_create_benchmark(
             "bm00001",
-            algorithms=algorithms,
+            algorithms=benchmark_algorithms,
             targets=[
                 {
                     "assess": [AverageResult(2), AverageRank(2)],
@@ -124,7 +118,7 @@ class TestCreateBenchmark:
 
         get_or_create_benchmark(
             "bm00001",
-            algorithms=algorithms,
+            algorithms=benchmark_algorithms,
             targets=[
                 {
                     "assess": [AverageResult(2), AverageRank(2)],
@@ -140,12 +134,12 @@ class TestCreateBenchmark:
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, EphemeralDB)
 
-    def test_create_benchmark(self, algorithms):
+    def test_create_benchmark(self, benchmark_algorithms):
         """Test creation with valid configuration"""
         with OrionState():
             bm1 = get_or_create_benchmark(
                 "bm00001",
-                algorithms=algorithms,
+                algorithms=benchmark_algorithms,
                 targets=[
                     {
                         "assess": [AverageResult(2), AverageRank(2)],
@@ -158,7 +152,7 @@ class TestCreateBenchmark:
 
             cfg = {
                 "name": "bm00001",
-                "algorithms": algorithms,
+                "algorithms": benchmark_algorithms,
                 "targets": [
                     {
                         "assess": [
@@ -219,14 +213,14 @@ class TestCreateBenchmark:
                 )
             assert "Could not find implementation of BaseAlgorithm" in str(exc.value)
 
-    def test_create_with_invalid_targets(self, algorithms):
+    def test_create_with_invalid_targets(self, benchmark_algorithms):
         """Test creation with invalid Task and Assessment"""
         with OrionState():
             name = "bm00001"
             with pytest.raises(AttributeError) as exc:
                 get_or_create_benchmark(
                     name,
-                    algorithms=algorithms,
+                    algorithms=benchmark_algorithms,
                     targets=[{"assess": [AverageResult(2)], "task": [DummyTask]}],
                 )
             print(str(exc.value))
@@ -238,7 +232,7 @@ class TestCreateBenchmark:
             with pytest.raises(AttributeError) as exc:
                 get_or_create_benchmark(
                     name,
-                    algorithms=algorithms,
+                    algorithms=benchmark_algorithms,
                     targets=[
                         {"assess": [DummyAssess], "task": [RosenBrock(25, dim=3)]}
                     ],
