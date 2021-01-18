@@ -223,7 +223,6 @@ class TestCreateBenchmark:
                     algorithms=benchmark_algorithms,
                     targets=[{"assess": [AverageResult(2)], "task": [DummyTask]}],
                 )
-            print(str(exc.value))
 
             assert "type object '{}' has no attribute ".format("DummyTask") in str(
                 exc.value
@@ -237,7 +236,6 @@ class TestCreateBenchmark:
                         {"assess": [DummyAssess], "task": [RosenBrock(25, dim=3)]}
                     ],
                 )
-            print(str(exc.value))
 
             assert "type object '{}' has no attribute ".format("DummyAssess") in str(
                 exc.value

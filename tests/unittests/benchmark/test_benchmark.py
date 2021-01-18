@@ -117,6 +117,7 @@ class TestBenchmark:
 
             assert experiment is not None
 
+    @pytest.mark.usefixtures("version_XYZ")
     def test_status(
         self,
         benchmark,
@@ -156,6 +157,7 @@ class TestBenchmark:
                 },
             ]
 
+    @pytest.mark.usefixtures("version_XYZ")
     def test_analysis(
         self,
         benchmark,
@@ -180,6 +182,7 @@ class TestBenchmark:
             assert len(figures) == 1
             assert type(figures[0]) is plotly.graph_objects.Figure
 
+    @pytest.mark.usefixtures("version_XYZ")
     def test_experiments(
         self,
         benchmark,
@@ -256,6 +259,7 @@ class TestStudy:
 
             assert experiment is not None
 
+    @pytest.mark.usefixtures("version_XYZ")
     def test_status(
         self,
         study,
@@ -292,6 +296,7 @@ class TestStudy:
                 },
             ]
 
+    @pytest.mark.usefixtures("version_XYZ")
     def test_analysis(
         self, study, benchmark_algorithms, generate_experiment_trials, task_number
     ):

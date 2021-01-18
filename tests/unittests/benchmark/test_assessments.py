@@ -5,6 +5,7 @@
 import copy
 
 import plotly
+import pytest
 
 import orion.core.io.experiment_builder as experiment_builder
 from orion.benchmark.assessment import AverageRank, AverageResult
@@ -41,6 +42,7 @@ class TestAverageRank:
 
         assert type(plot) is plotly.graph_objects.Figure
 
+    @pytest.mark.usefixtures("version_XYZ")
     def test_figure_layout(
         self, benchmark_algorithms, generate_experiment_trials, task_number
     ):
@@ -49,6 +51,7 @@ class TestAverageRank:
         algo_num = len(benchmark_algorithms)
 
         gen_exps, gen_trials = generate_experiment_trials
+
         experiments = list()
         with OrionState(experiments=gen_exps, trials=gen_trials):
             for i in range(task_number * algo_num):
@@ -101,6 +104,7 @@ class TestAverageResult:
 
         assert type(plot) is plotly.graph_objects.Figure
 
+    @pytest.mark.usefixtures("version_XYZ")
     def test_figure_layout(
         self, benchmark_algorithms, generate_experiment_trials, task_number
     ):
