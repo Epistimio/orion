@@ -124,6 +124,11 @@ class ExperimentClient:
         return self._experiment.algorithms
 
     @property
+    def refers(self):
+        """References to the experiment version control"""
+        return self._experiment.refers
+
+    @property
     def is_done(self):
         """Return True, if this experiment is considered to be finished.
 
