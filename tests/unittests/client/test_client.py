@@ -11,6 +11,7 @@ import orion.client
 import orion.client.cli as cli
 import orion.core
 from orion.client import get_experiment
+from orion.client.experiment import ExperimentClient
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.exceptions import (
