@@ -71,7 +71,7 @@ def ranking(trials, group_by="order", key="best"):
         return trials
 
     def rank(row):
-        indices = row[key].argsort()
+        indices = row[key].argsort().to_numpy()
         ranks = numpy.empty_like(indices)
         ranks[indices] = numpy.arange(len(ranks))
         row["rank"] = ranks
