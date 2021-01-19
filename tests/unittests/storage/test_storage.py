@@ -47,6 +47,7 @@ base_experiment = {
         "user_script": "abc",
         "priors": {"x": "uniform(0, 10)"},
         "datetime": "2017-11-23T02:00:00",
+        "orion_version": "XYZ",
     },
 }
 
@@ -235,6 +236,7 @@ def test_get_storage():
     assert get_storage() == storage
 
 
+@pytest.mark.usefixtures("version_XYZ")
 @pytest.mark.parametrize("storage", storage_backends)
 class TestStorage:
     """Test all storage backend"""

@@ -130,6 +130,11 @@ class OrionCmdlineParser:
             self.converter = infer_converter_from_file_type(self.file_config_path)
             self.converter.set_state_dict(state["converter"])
 
+        if "user_script" in state:
+            self.user_script = state["user_script"]
+        else:
+            self.infer_user_script(self.parser.format(self.parser.arguments))
+
     def parse(self, commandline):
         """Parse the commandline given for the definition of priors.
 

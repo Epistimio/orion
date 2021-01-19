@@ -214,7 +214,7 @@ def refers_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_inst
 @pytest.fixture
 def new_config():
     """Generate a new experiment configuration"""
-    user_script = "abs_path/black_box.py"
+    user_script = "tests/functional/demo/black_box.py"
     config = dict(
         name="test",
         algorithms="fancy",
@@ -224,6 +224,7 @@ def new_config():
             "user_script": user_script,
             "user_args": [user_script, "--new~normal(0,2)", "--changed~normal(0,2)"],
             "user": "some_user_name",
+            "orion_version": "UVW",
         },
     )
 
@@ -235,7 +236,7 @@ def new_config():
 @pytest.fixture
 def old_config(create_db_instance):
     """Generate an old experiment configuration"""
-    user_script = "abs_path/black_box.py"
+    user_script = "tests/functional/demo/black_box.py"
     config = dict(
         name="test",
         algorithms="random",
@@ -255,6 +256,7 @@ def old_config(create_db_instance):
                 "--changed~uniform(-10,10)",
             ],
             "user": "some_user_name",
+            "orion_version": "XYZ",
         },
     )
 
@@ -328,6 +330,12 @@ def algorithm_conflict(old_config, new_config):
 
 
 @pytest.fixture
+def orion_version_conflict(old_config, new_config):
+    """Generate an orion version conflict"""
+    return conflicts.OrionVersionConflict(old_config, new_config)
+
+
+@pytest.fixture
 def code_conflict(old_config, new_config):
     """Generate a code conflict"""
     return conflicts.CodeConflict(old_config, new_config)
@@ -361,7 +369,12 @@ def bad_exp_parent_config():
     config = dict(
         _id="test",
         name="test",
-        metadata={"user": "corneauf", "user_args": ["--x~normal(0,1)"]},
+        metadata={
+            "user": "corneauf",
+            "user_args": ["--x~normal(0,1)"],
+            "user_script": "tests/functional/demo/black_box.py",
+            "orion_version": "XYZ",
+        },
         version=1,
         algorithms="random",
     )

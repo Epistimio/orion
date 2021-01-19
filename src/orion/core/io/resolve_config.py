@@ -316,7 +316,27 @@ def fetch_metadata(user=None, user_args=None, user_script_config=None):
     if user_args:
         metadata["user_args"] = user_args
         metadata["parser"] = cmdline_parser.get_state_dict()
+        metadata["user_script_config"] = user_script_config
         metadata["priors"] = dict(cmdline_parser.priors)
+
+    return metadata
+
+
+def update_metadata(metadata):
+    """Update information about the process + versioning"""
+    metadata.setdefault("user", getpass.getuser())
+    metadata["orion_version"] = orion.core.__version__
+
+    if not metadata.get("user_args"):
+        return metadata
+
+    cmdline_parser = OrionCmdlineParser()
+    cmdline_parser.set_state_dict(metadata["parser"])
+
+    if cmdline_parser.user_script:
+        # TODO: Remove this, it is all in cmdline_parser now
+        metadata["user_script"] = cmdline_parser.user_script
+        metadata["VCS"] = infer_versioning_metadata(cmdline_parser.user_script)
 
     return metadata
 

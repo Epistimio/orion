@@ -17,6 +17,7 @@ from orion.core.utils.exceptions import (
     BranchingEvent,
     NoConfigurationError,
     RaceCondition,
+    UnsupportedOperation,
 )
 from orion.core.utils.singleton import update_singletons
 from orion.storage.base import get_storage
@@ -76,6 +77,20 @@ def python_api_config():
 
 
 @pytest.fixture()
+def algo_unavailable_config(python_api_config):
+    python_api_config["algorithms"] = {"idontreallyexist": {"but": "iwishiwould"}}
+    return python_api_config
+
+
+@pytest.fixture()
+def strategy_unavailable_config(python_api_config):
+    python_api_config["producer"]["strategy"] = {
+        "idontreallyexist": {"but": "iwishiwould"}
+    }
+    return python_api_config
+
+
+@pytest.fixture()
 def new_config(random_dt, script_path):
     """Create a configuration that will not hit the database."""
     new_config = dict(
@@ -84,6 +99,7 @@ def new_config(random_dt, script_path):
             "user": "tsirif",
             "orion_version": "XYZ",
             "user_script": script_path,
+            "user_script_config": "config",
             "user_config": "abs_path/hereitis.yaml",
             "user_args": [script_path, "--mini-batch~uniform(32, 256, discrete=True)"],
             "VCS": {
@@ -123,7 +139,7 @@ def new_config(random_dt, script_path):
 
 
 @pytest.fixture
-def parent_version_config():
+def parent_version_config(script_path):
     """Return a configuration for an experiment."""
     config = dict(
         _id="parent_config",
@@ -134,6 +150,15 @@ def parent_version_config():
             "user": "corneauf",
             "datetime": datetime.datetime.utcnow(),
             "user_args": ["--x~normal(0,1)"],
+            "user_script": script_path,
+            "VCS": {
+                "type": "git",
+                "is_dirty": False,
+                "HEAD_sha": "test",
+                "active_branch": None,
+                "diff_sha": "diff",
+            },
+            "orion_version": "XYZ",
         },
     )
 
@@ -225,25 +250,25 @@ def test_fetch_config_from_db_hit(new_config):
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
-def test_build_view_from_args_no_hit(config_file):
+def test_get_from_args_no_hit(config_file):
     """Try building experiment view when not in db"""
     cmdargs = {"name": "supernaekei", "config": config_file}
 
     with OrionState(experiments=[], trials=[]):
         with pytest.raises(NoConfigurationError) as exc_info:
-            experiment_builder.build_view_from_args(cmdargs)
+            experiment_builder.get_from_args(cmdargs)
         assert "No experiment with given name 'supernaekei' and version '*'" in str(
             exc_info.value
         )
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
-def test_build_view_from_args_hit(config_file, random_dt, new_config):
+def test_get_from_args_hit(config_file, random_dt, new_config):
     """Try building experiment view when in db"""
     cmdargs = {"name": "supernaekei", "config": config_file}
 
     with OrionState(experiments=[new_config], trials=[]):
-        exp_view = experiment_builder.build_view_from_args(cmdargs)
+        exp_view = experiment_builder.get_from_args(cmdargs)
 
     assert exp_view._id == new_config["_id"]
     assert exp_view.name == new_config["name"]
@@ -256,7 +281,7 @@ def test_build_view_from_args_hit(config_file, random_dt, new_config):
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
-def test_build_view_from_args_hit_no_conf_file(config_file, random_dt, new_config):
+def test_get_from_args_hit_no_conf_file(config_file, random_dt, new_config):
     """Try building experiment view when in db, and local config file of user script does
     not exist
     """
@@ -267,7 +292,7 @@ def test_build_view_from_args_hit_no_conf_file(config_file, random_dt, new_confi
     ]
 
     with OrionState(experiments=[new_config], trials=[]) as cfg:
-        exp_view = experiment_builder.build_view_from_args(cmdargs)
+        exp_view = experiment_builder.get_from_args(cmdargs)
 
     assert exp_view._id == new_config["_id"]
     assert exp_view.name == new_config["name"]
@@ -290,7 +315,7 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
 
     with OrionState(experiments=[], trials=[]):
         with pytest.raises(NoConfigurationError) as exc_info:
-            experiment_builder.build_view_from_args(cmdargs)
+            experiment_builder.get_from_args(cmdargs)
         assert "No experiment with given name 'supernaekei' and version '*'" in str(
             exc_info.value
         )
@@ -326,7 +351,7 @@ def test_build_from_args_hit(old_config_file, script_path, new_config):
 
     with OrionState(experiments=[new_config], trials=[]):
         # Test that experiment already exists
-        experiment_builder.build_view_from_args(cmdargs)
+        experiment_builder.get_from_args(cmdargs)
 
         exp = experiment_builder.build_from_args(cmdargs)
 
@@ -383,13 +408,13 @@ def test_build_from_args_debug_mode(script_path):
 
 
 @pytest.mark.usefixtures("setup_pickleddb_database")
-def test_build_view_from_args_debug_mode(script_path):
+def test_get_from_args_debug_mode(script_path):
     """Try building experiment view in debug mode"""
     update_singletons()
 
     # Can't build view if none exist. It's fine we only want to test the storage creation.
     with pytest.raises(NoConfigurationError):
-        experiment_builder.build_view_from_args({"name": "whatever"})
+        experiment_builder.get_from_args({"name": "whatever"})
 
     storage = get_storage()
 
@@ -400,7 +425,7 @@ def test_build_view_from_args_debug_mode(script_path):
 
     # Can't build view if none exist. It's fine we only want to test the storage creation.
     with pytest.raises(NoConfigurationError):
-        experiment_builder.build_view_from_args({"name": "whatever", "debug": True})
+        experiment_builder.get_from_args({"name": "whatever", "debug": True})
 
     storage = get_storage()
 
@@ -419,7 +444,7 @@ def test_build_no_hit(config_file, random_dt, script_path):
     with OrionState(experiments=[], trials=[]):
 
         with pytest.raises(NoConfigurationError) as exc_info:
-            experiment_builder.build_view(name)
+            experiment_builder.load(name)
         assert "No experiment with given name 'supernaekei' and version '*'" in str(
             exc_info.value
         )
@@ -454,7 +479,7 @@ def test_build_no_commandline_config():
 
 
 @pytest.mark.usefixtures(
-    "with_user_dendi", "mock_infer_versioning_metadata", "version_XYZ"
+    "with_user_tsirif", "mock_infer_versioning_metadata", "version_XYZ"
 )
 def test_build_hit(python_api_config):
     """Try building experiment from config when in db (no branch)"""
@@ -463,14 +488,13 @@ def test_build_hit(python_api_config):
     with OrionState(experiments=[python_api_config], trials=[]):
 
         # Test that experiment already exists (this should fail otherwise)
-        experiment_builder.build_view(name=name)
+        experiment_builder.load(name=name)
 
         exp = experiment_builder.build(**python_api_config)
 
     assert exp._id == python_api_config["_id"]
     assert exp.name == python_api_config["name"]
     assert exp.configuration["refers"] == python_api_config["refers"]
-    python_api_config["metadata"]["user"] = "dendi"
     assert exp.metadata == python_api_config["metadata"]
     assert exp.max_trials == python_api_config["max_trials"]
     assert exp.max_broken == python_api_config["max_broken"]
@@ -485,7 +509,7 @@ def test_build_without_config_hit(python_api_config):
     with OrionState(experiments=[python_api_config], trials=[]):
 
         # Test that experiment already exists (this should fail otherwise)
-        experiment_builder.build_view(name=name)
+        experiment_builder.load(name=name)
 
         exp = experiment_builder.build(name=name)
 
@@ -498,7 +522,9 @@ def test_build_without_config_hit(python_api_config):
     assert exp.algorithms.configuration == python_api_config["algorithms"]
 
 
-@pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
+@pytest.mark.usefixtures(
+    "with_user_tsirif", "version_XYZ", "mock_infer_versioning_metadata"
+)
 def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
     """Try building experiment without commandline when in db (no branch)"""
     name = "supernaekei"
@@ -507,7 +533,7 @@ def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
 
     with OrionState(experiments=[new_config], trials=[]):
         # Test that experiment already exists (this should fail otherwise)
-        experiment_builder.build_view_from_args(cmdargs)
+        experiment_builder.get_from_args(cmdargs)
 
         exp = experiment_builder.build_from_args(cmdargs)
 
@@ -520,7 +546,7 @@ def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
     assert exp.algorithms.configuration == new_config["algorithms"]
 
 
-@pytest.mark.usefixtures("with_user_tsirif")
+@pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
 class TestExperimentVersioning(object):
     """Create new Experiment with auto-versioning."""
 
@@ -550,6 +576,7 @@ class TestExperimentVersioning(object):
 
         assert exp.version == 2
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_old_experiment_wout_version(self, parent_version_config):
         """Create an already existing experiment without a version."""
         with OrionState(experiments=[parent_version_config]):
@@ -557,6 +584,7 @@ class TestExperimentVersioning(object):
 
         assert exp.version == 1
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_old_experiment_2_wout_version(
         self, parent_version_config, child_version_config
     ):
@@ -566,6 +594,7 @@ class TestExperimentVersioning(object):
 
         assert exp.version == 2
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_old_experiment_w_version(
         self, parent_version_config, child_version_config
     ):
@@ -577,11 +606,11 @@ class TestExperimentVersioning(object):
 
         assert exp.version == 1
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_old_experiment_w_version_bigger_than_max(
         self, parent_version_config, child_version_config
     ):
         """Create an already existing experiment with a too large version."""
-        print(child_version_config["name"])
         with OrionState(experiments=[parent_version_config, child_version_config]):
             exp = experiment_builder.build(
                 name=parent_version_config["name"], version=8
@@ -594,6 +623,7 @@ class TestExperimentVersioning(object):
 class TestBuild(object):
     """Test building the experiment"""
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_good_set_before_init_hit_no_diffs_exc_max_trials(self, new_config):
         """Trying to set, and NO differences were found from the config pulled from db.
 
@@ -617,6 +647,7 @@ class TestBuild(object):
         new_config.pop("something_to_be_ignored")
         assert exp.configuration == new_config
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_good_set_before_init_no_hit(self, random_dt, new_config):
         """Trying to set, overwrite everything from input."""
         with OrionState(experiments=[], trials=[]):
@@ -685,6 +716,7 @@ class TestBuild(object):
             exp = experiment_builder.build(**found_config)
             assert exp.working_dir == ""
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_configuration_hit_no_diffs(self, new_config):
         """Return a configuration dict according to an experiment object.
 
@@ -716,6 +748,7 @@ class TestBuild(object):
         assert isinstance(exp.space, Space)
         assert isinstance(exp.refers["adapter"], BaseAdapter)
 
+    @pytest.mark.usefixtures("mock_infer_versioning_metadata")
     def test_algo_case_insensitive(self, new_config):
         """Verify that algo with uppercase or lowercase leads to same experiment"""
         with OrionState(experiments=[new_config], trials=[]):
@@ -782,7 +815,7 @@ class TestBuild(object):
         # - once in build(),
         #     -> then register fails,
         # - then called once again in build,
-        # - then called in build_view to evaluate the conflicts
+        # - then called in load to evaluate the conflicts
         assert insert_race_condition.count == 3
 
     def test_algorithm_config_with_just_a_string(self):
@@ -1026,44 +1059,80 @@ class TestBuild(object):
             assert "There was a race condition during branching." in str(exc_info.value)
 
 
-class TestInitExperimentView(object):
-    """Create new ExperimentView instance."""
+def test_load_unavailable_algo(algo_unavailable_config, capsys):
+    with OrionState(experiments=[algo_unavailable_config]):
+        experiment = experiment_builder.load("supernaekei", mode="r")
+        assert experiment.algorithms == algo_unavailable_config["algorithms"]
+        assert (
+            experiment.configuration["algorithms"]
+            == algo_unavailable_config["algorithms"]
+        )
 
-    def test_empty_experiment_view(self):
+        experiment = experiment_builder.load("supernaekei", mode="w")
+        assert experiment.algorithms == algo_unavailable_config["algorithms"]
+        assert (
+            experiment.configuration["algorithms"]
+            == algo_unavailable_config["algorithms"]
+        )
+
+        with pytest.raises(NotImplementedError) as exc:
+            experiment_builder.build("supernaekei")
+        exc.match("Could not find implementation of BaseAlgorithm")
+
+
+def test_load_unavailable_strategy(strategy_unavailable_config, capsys):
+    with OrionState(experiments=[strategy_unavailable_config]):
+        experiment = experiment_builder.load("supernaekei", mode="r")
+        assert experiment.producer == strategy_unavailable_config["producer"]
+        assert (
+            experiment.configuration["producer"]
+            == strategy_unavailable_config["producer"]
+        )
+
+        experiment = experiment_builder.load("supernaekei", mode="w")
+        assert experiment.producer == strategy_unavailable_config["producer"]
+        assert (
+            experiment.configuration["producer"]
+            == strategy_unavailable_config["producer"]
+        )
+
+        with pytest.raises(NotImplementedError) as exc:
+            experiment_builder.build("supernaekei")
+        exc.match("Could not find implementation of BaseParallelStrategy")
+
+
+class TestInitExperimentReadWrite(object):
+    """Create new Experiment instance that only supports read/write."""
+
+    def test_empty_experiment_rw(self):
         """Hit user name, but exp_name does not hit the db."""
         with OrionState(experiments=[], trials=[]):
             with pytest.raises(NoConfigurationError) as exc_info:
-                experiment_builder.build_view("supernaekei")
+                experiment_builder.load("supernaekei")
             assert "No experiment with given name 'supernaekei' and version '*'" in str(
                 exc_info.value
             )
 
-    def test_existing_experiment_view(self, new_config):
-        """Hit exp_name + user's name in the db, fetch most recent entry."""
+    def test_existing_experiment_read_mode(self, new_config):
+        """Hit exp_name + user's name in the db, support read only."""
         with OrionState(experiments=[new_config], trials=[]):
-            exp = experiment_builder.build_view(name="supernaekei")
+            exp = experiment_builder.load(name="supernaekei", mode="r")
 
-        assert exp._id == new_config["_id"]
-        assert exp.name == new_config["name"]
-        assert exp.configuration["refers"] == new_config["refers"]
-        assert exp.metadata == new_config["metadata"]
-        assert exp.pool_size == new_config["pool_size"]
-        assert exp.max_trials == new_config["max_trials"]
-        assert exp.max_broken == new_config["max_broken"]
-        assert exp.version == new_config["version"]
-        assert isinstance(exp.refers["adapter"], BaseAdapter)
-        assert exp.algorithms.configuration == new_config["algorithms"]
+        assert exp.mode == "r"
+        exp.fetch_trials()  # Should pass
+        with pytest.raises(UnsupportedOperation) as exc:
+            exp.fix_lost_trials()
+        assert exc.match("to execute `fix_lost_trials()")
 
-        with pytest.raises(AttributeError):
-            exp.this_is_not_in_config = 5
+    def test_existing_experiment_read_write_mode(self, new_config):
+        """Hit exp_name + user's name in the db, support read and write."""
+        with OrionState(experiments=[new_config], trials=[]):
+            exp = experiment_builder.load(name="supernaekei", mode="w")
 
-        # Test that experiment.update_completed_trial indeed exists
-        exp._experiment.update_completed_trial
-        with pytest.raises(AttributeError):
-            exp.update_completed_trial
+        assert exp.mode == "w"
+        exp.fetch_trials()  # Should pass
+        exp.fix_lost_trials()  # Should pass
 
-        with pytest.raises(AttributeError):
-            exp.register_trial
-
-        with pytest.raises(AttributeError):
-            exp.reserve_trial
+        with pytest.raises(UnsupportedOperation) as exc:
+            exp.reserve_trial()
+        assert exc.match("to execute `reserve_trial()")

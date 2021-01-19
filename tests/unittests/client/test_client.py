@@ -11,15 +11,16 @@ import orion.client
 import orion.client.cli as cli
 import orion.core
 from orion.client import get_experiment
+from orion.client.experiment import ExperimentClient
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.exceptions import (
     BranchingEvent,
     NoConfigurationError,
     RaceCondition,
+    UnsupportedOperation,
 )
 from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
-from orion.core.worker.experiment import ExperimentView
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
@@ -145,6 +146,7 @@ class TestReportResults(object):
         assert reloaded_client._HAS_REPORTED_RESULTS is True
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestCreateExperiment:
     """Test creation of experiment with `client.create_experiment()`"""
 
@@ -518,7 +520,7 @@ class TestGetExperiment:
     @pytest.mark.usefixtures("mock_database")
     def test_experiment_exist(self):
         """
-        Tests that an instance of :class:`orion.core.worker.experiment.ExperimentView` is
+        Tests that an instance of :class:`orion.client.experiment.ExperimentClient` is
         returned representing the latest version when none is given.
         """
         experiment = create_experiment("a", space={"x": "uniform(0, 10)"})
@@ -526,7 +528,8 @@ class TestGetExperiment:
         experiment = get_experiment("a")
 
         assert experiment
-        assert isinstance(experiment, ExperimentView)
+        assert isinstance(experiment, ExperimentClient)
+        assert experiment.mode == "r"
 
     @pytest.mark.usefixtures("mock_database")
     def test_version_do_not_exist(self, caplog):
@@ -539,4 +542,30 @@ class TestGetExperiment:
         assert (
             "Version 2 was specified but most recent version is only 1. Using 1."
             in caplog.text
+        )
+
+    @pytest.mark.usefixtures("mock_database")
+    def test_read_write_mode(self):
+        """Tests that experiment can be created in write mode"""
+        experiment = create_experiment("a", space={"x": "uniform(0, 10)"})
+        assert experiment.mode == "x"
+
+        experiment = get_experiment("a", 2, mode="r")
+        assert experiment.mode == "r"
+
+        with pytest.raises(UnsupportedOperation) as exc:
+            experiment.insert({"x": 0})
+
+        assert exc.match("ExperimentClient must have write rights to execute `insert()")
+
+        experiment = get_experiment("a", 2, mode="w")
+        assert experiment.mode == "w"
+
+        trial = experiment.insert({"x": 0})
+
+        with pytest.raises(UnsupportedOperation) as exc:
+            experiment.reserve(trial)
+
+        assert exc.match(
+            "ExperimentClient must have execution rights to execute `reserve()"
         )

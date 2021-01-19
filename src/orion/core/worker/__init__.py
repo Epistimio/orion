@@ -120,7 +120,7 @@ def workon(
             break
 
         if trial is not None:
-            log.debug("#### Successfully reserved %s to evaluate. Consuming...", trial)
+            log.info("#### Successfully reserved %s to evaluate. Consuming...", trial)
             success = consumer.consume(trial)
             if not success:
                 worker_broken_trials += 1

@@ -5,7 +5,7 @@ import pandas
 import plotly
 import pytest
 
-from orion.core.worker.experiment import Experiment, ExperimentView
+from orion.core.worker.experiment import Experiment
 from orion.plotting.base import lpi, parallel_coordinates, regret
 from orion.testing import create_experiment
 
@@ -72,20 +72,29 @@ def mock_space(x="uniform(0, 6)", y="uniform(0, 3)", **kwargs):
     return mocked_config
 
 
-def mock_experiment(monkeypatch, x=None, y=None):
+def mock_experiment(
+    monkeypatch, ids=None, x=None, y=None, objectives=None, status=None
+):
     """Mock experiment to_pandas to return given data (or default one)"""
+    if ids is None:
+        ids = ["a", "b", "c", "d"]
     if x is None:
-        x = [0, 1, 2, 3]
+        x = [0, 1, 2, 4]
     if y is None:
-        y = [1, 2, 0, 3]
+        y = [3, 2, 0, 1]
+    if objectives is None:
+        objectives = [0.1, 0.2, 0.3, 0.5]
+    if status is None:
+        status = ["completed", "completed", "completed", "completed"]
 
     def to_pandas(self, with_evc_tree=False):
         data = pandas.DataFrame(
             data={
-                "id": ["a", "b", "c", "d"],
+                "id": ids,
                 "x": x,
                 "y": y,
-                "objective": [0.1, 0.2, 0.3, 0.5],
+                "objective": objectives,
+                "status": status,
             }
         )
 
@@ -105,6 +114,7 @@ def assert_lpi_plot(plot, dims):
     assert trace["y"][0] > trace["y"][1]
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestLPI:
     """Tests the ``lpi()`` method provided by the plotly backend"""
 
@@ -134,6 +144,11 @@ class TestLPI:
             experiment,
         ):
             plot = lpi(experiment, random_state=1)
+            # Why is this test failing?
+            df = experiment.to_pandas()
+            assert df["x"].tolist() == [0, 1, 2, 4]
+            assert df["y"].tolist() == [3, 2, 0, 1]
+            assert df["objective"].tolist() == [0.1, 0.2, 0.3, 0.5]
 
         assert_lpi_plot(plot, dims=["x", "y"])
 
@@ -150,16 +165,28 @@ class TestLPI:
 
         assert_lpi_plot(plot, dims=["x", "y"])
 
-    def test_experiment_view_as_parameter(self, monkeypatch):
-        """Tests that ``ExperimentView`` is a valid parameter"""
+    def test_ignore_uncompleted_statuses(self, monkeypatch):
+        """Tests that uncompleted statuses are ignored"""
         config = mock_space()
-        mock_experiment(monkeypatch)
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            experiment,
-            _,
-        ):
-            plot = lpi(ExperimentView(experiment), random_state=1)
+        mock_experiment(
+            monkeypatch,
+            ids="abcdefgh",
+            x=[0, 0, 0, 1, 0, 2, 0, 3],
+            y=[1, 0, 0, 2, 0, 0, 0, 3],
+            objectives=[0.1, None, None, 0.2, None, 0.3, None, 0.5],
+            status=[
+                "completed",
+                "new",
+                "reserved",
+                "completed",
+                "broken",
+                "completed",
+                "interrupted",
+                "completed",
+            ],
+        )
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            plot = lpi(experiment)
 
         assert_lpi_plot(plot, dims=["x", "y"])
 
@@ -204,6 +231,7 @@ class TestLPI:
         assert_lpi_plot(plot, dims=["x", "y[0]", "y[1]", "y[2]"])
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestRegret:
     """Tests the ``regret()`` method provided by the plotly backend"""
 
@@ -245,17 +273,6 @@ class TestRegret:
 
         assert_regret_plot(plot)
 
-    def test_experiment_view_as_parameter(self):
-        """Tests that ``ExperimentView`` is a valid parameter"""
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            experiment,
-            _,
-        ):
-            plot = regret(ExperimentView(experiment))
-
-        assert_regret_plot(plot)
-
     def test_ignore_uncompleted_statuses(self):
         """Tests that uncompleted statuses are ignored"""
         with create_experiment(config, trial_config) as (_, _, experiment):
@@ -282,6 +299,7 @@ def assert_parallel_coordinates_plot(plot, order):
         assert trace.dimensions[i].label == order[i]
 
 
+@pytest.mark.usefixtures("version_XYZ")
 class TestParallelCoordinates:
     """Tests the ``parallel_coordinates()`` method provided by the plotly backend"""
 
@@ -320,17 +338,6 @@ class TestParallelCoordinates:
             _,
         ):
             plot = parallel_coordinates(experiment)
-
-        assert_parallel_coordinates_plot(plot, order=["x", "loss"])
-
-    def test_experiment_view_as_parameter(self):
-        """Tests that ``ExperimentView`` is a valid parameter"""
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            experiment,
-            _,
-        ):
-            plot = parallel_coordinates(ExperimentView(experiment))
 
         assert_parallel_coordinates_plot(plot, order=["x", "loss"])
 

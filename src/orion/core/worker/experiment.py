@@ -11,14 +11,16 @@
 """
 import copy
 import datetime
+import inspect
 import logging
 
 import pandas
 
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
+from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
-from orion.storage.base import FailedUpdate, ReadOnlyStorageProtocol, get_storage
+from orion.storage.base import FailedUpdate, get_storage
 
 log = logging.getLogger(__name__)
 
@@ -99,13 +101,15 @@ class Experiment:
         "_id",
         "_node",
         "_storage",
+        "_mode",
     )
     non_branching_attrs = ("pool_size", "max_trials", "max_broken")
 
-    def __init__(self, name, version=None):
+    def __init__(self, name, version=None, mode="r"):
         self._id = None
         self.name = name
         self.version = version if version else 1
+        self._mode = mode
         self._node = None
         self.refers = {}
         self.metadata = {}
@@ -116,10 +120,23 @@ class Experiment:
         self.algorithms = None
         self.working_dir = None
         self.producer = {}
-        # this needs to be an attribute because we override it in ExperienceView
         self._storage = get_storage()
 
         self._node = ExperimentNode(self.name, self.version, experiment=self)
+
+    def _check_if_writable(self):
+        if self.mode == "r":
+            calling_function = inspect.stack()[1].function
+            raise UnsupportedOperation(
+                f"Experiment must have write rights to execute `{calling_function}()`"
+            )
+
+    def _check_if_executable(self):
+        if self.mode != "x":
+            calling_function = inspect.stack()[1].function
+            raise UnsupportedOperation(
+                f"Experiment must have execution rights to execute `{calling_function}()`"
+            )
 
     def to_pandas(self, with_evc_tree=False):
         """Builds a dataframe with the trials of the experiment
@@ -179,6 +196,7 @@ class Experiment:
 
     def set_trial_status(self, *args, **kwargs):
         """See :func:`~orion.storage.BaseStorageProtocol.set_trial_status`"""
+        self._check_if_writable()
         return self._storage.set_trial_status(*args, **kwargs)
 
     def reserve_trial(self, score_handle=None):
@@ -197,6 +215,7 @@ class Experiment:
         Selected `Trial` object, None if could not find any.
 
         """
+        self._check_if_executable()
         log.debug("reserving trial with (score: %s)", score_handle)
 
         self.fix_lost_trials()
@@ -214,6 +233,7 @@ class Experiment:
         trials and set them as interrupted so they can be launched again.
 
         """
+        self._check_if_writable()
         trials = self._storage.fetch_lost_trials(self)
 
         for trial in trials:
@@ -236,10 +256,12 @@ class Experiment:
             Change status from *reserved* to *completed*.
 
         """
+        self._check_if_executable()
         trial.status = "completed"
         trial.end_time = datetime.datetime.utcnow()
         self._storage.retrieve_result(trial, results_file)
         # push trial results updates the entire trial status included
+        log.info("Completed trials with results: %s", trial.results)
         self._storage.push_trial_results(trial)
 
     def register_lie(self, lying_trial):
@@ -264,6 +286,7 @@ class Experiment:
             in the database.
 
         """
+        self._check_if_writable()
         lying_trial.status = "completed"
         lying_trial.end_time = datetime.datetime.utcnow()
         self._storage.register_lie(lying_trial)
@@ -287,6 +310,7 @@ class Experiment:
             in the database.
 
         """
+        self._check_if_writable()
         stamp = datetime.datetime.utcnow()
         trial.experiment = self._id
         trial.status = status
@@ -331,6 +355,14 @@ class Experiment:
         Value is `None` if the experiment is not configured.
         """
         return self._id
+
+    @property
+    def mode(self):
+        """Return the access right of the experiment
+
+        {'r': read, 'w': read/write, 'x': read/write/execute}
+        """
+        return self._mode
 
     @property
     def node(self):
@@ -392,13 +424,19 @@ class Experiment:
                 continue
             attribute = copy.deepcopy(getattr(self, attrname))
             config[attrname] = attribute
-            if attrname in ["algorithms", "space"]:
+            if attrname == "space":
+                config[attrname] = attribute.configuration
+            elif attrname == "algorithms" and not isinstance(attribute, dict):
                 config[attrname] = attribute.configuration
             elif attrname == "refers" and isinstance(
                 attribute.get("adapter"), BaseAdapter
             ):
                 config[attrname]["adapter"] = config[attrname]["adapter"].configuration
-            elif attrname == "producer" and attribute.get("strategy"):
+            elif (
+                attrname == "producer"
+                and attribute.get("strategy")
+                and not isinstance(attribute["strategy"], dict)
+            ):
                 config[attrname]["strategy"] = config[attrname][
                     "strategy"
                 ].configuration
@@ -461,63 +499,6 @@ class Experiment:
     def __repr__(self):
         """Represent the object as a string."""
         return "Experiment(name=%s, metadata.user=%s, version=%s)" % (
-            self.name,
-            self.metadata["user"],
-            self.version,
-        )
-
-
-# pylint: disable=too-few-public-methods
-class ExperimentView(object):
-    """Non-writable view of an experiment
-
-    .. seealso::
-
-        :py:class:`orion.core.worker.experiment.Experiment` for writable experiments.
-
-    """
-
-    __slots__ = ("_experiment",)
-
-    #                     Attributes
-    valid_attributes = (
-        [
-            "_id",
-            "name",
-            "refers",
-            "metadata",
-            "pool_size",
-            "max_trials",
-            "max_broken",
-            "version",
-            "space",
-            "working_dir",
-            "producer",
-        ]
-        +
-        # Properties
-        ["id", "node", "is_done", "is_broken", "algorithms", "stats", "configuration"]
-        +
-        # Methods
-        ["to_pandas", "fetch_trials", "fetch_trials_by_status", "get_trial"]
-    )
-
-    def __init__(self, experiment):
-        self._experiment = experiment
-        self._experiment._storage = ReadOnlyStorageProtocol(experiment._storage)
-
-    def __getattr__(self, name):
-        """Get attribute only if valid"""
-        if name not in self.valid_attributes:
-            raise AttributeError(
-                "Cannot access attribute %s on view-only experiments." % name
-            )
-
-        return getattr(self._experiment, name)
-
-    def __repr__(self):
-        """Represent the object as a string."""
-        return "ExperimentView(name=%s, metadata.user=%s, version=%s)" % (
             self.name,
             self.metadata["user"],
             self.version,

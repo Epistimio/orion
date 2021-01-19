@@ -99,7 +99,9 @@ class ConfigurationTestSuite:
         with self.setup_env_var_config(tmp_path):
             self.check_env_var_config(tmp_path, monkeypatch)
 
-    @pytest.mark.usefixtures("with_user_userxyz")
+    @pytest.mark.usefixtures(
+        "with_user_userxyz", "version_XYZ", "mock_infer_versioning_metadata"
+    )
     def test_db_config(self, tmp_path):
         """Test that exp config in db overrides global config"""
         update_singletons()
@@ -115,7 +117,7 @@ class ConfigurationTestSuite:
         with self.setup_local_config(tmp_path) as conf_file:
             self.check_local_config(tmp_path, conf_file, monkeypatch)
 
-    @pytest.mark.usefixtures("with_user_userxyz")
+    @pytest.mark.usefixtures("with_user_userxyz", "version_XYZ")
     def test_cmd_args_config(self, tmp_path, monkeypatch):
         """Test that cmd_args config overrides local config"""
         update_singletons()
@@ -366,9 +368,15 @@ class TestExperimentConfig(ConfigurationTestSuite):
         "producer": {"strategy": {"sb": {"e": "c", "d": "g"}}},
         "space": {"/x": "uniform(0, 1)"},
         "metadata": {
-            "VCS": {},
+            "VCS": {
+                "HEAD_sha": "test",
+                "active_branch": None,
+                "diff_sha": "diff",
+                "is_dirty": False,
+                "type": "git",
+            },
             "datetime": datetime.datetime.utcnow(),
-            "orion_version": orion.core.__version__,
+            "orion_version": "XYZ",
             "parser": {
                 "cmd_priors": [["/x", "uniform(0, 1)"]],
                 "config_file_data": {},
@@ -722,6 +730,7 @@ class TestEVCConfig(ConfigurationTestSuite):
             "code_change_type": "noeffect",
             "cli_change_type": "noeffect",
             "config_change_type": "noeffect",
+            "orion_version_change": True,
         }
     }
 
@@ -733,6 +742,7 @@ class TestEVCConfig(ConfigurationTestSuite):
         "ORION_EVC_CODE_CHANGE": "unsure",
         "ORION_EVC_CMDLINE_CHANGE": "unsure",
         "ORION_EVC_CONFIG_CHANGE": "unsure",
+        "ORION_EVC_ORION_VERSION_CHANGE": "",
     }
 
     local = {
@@ -744,6 +754,7 @@ class TestEVCConfig(ConfigurationTestSuite):
             "code_change_type": "break",
             "cli_change_type": "break",
             "config_change_type": "noeffect",
+            "orion_version_change": True,
         }
     }
 
@@ -755,6 +766,7 @@ class TestEVCConfig(ConfigurationTestSuite):
         "code-change-type": "noeffect",
         "cli-change-type": "unsure",
         "config-change-type": "break",
+        "orion-version-change": False,
     }
 
     def sanity_check(self):
@@ -856,6 +868,7 @@ class TestEVCConfig(ConfigurationTestSuite):
         assert orion.core.config.evc.code_change_type == "unsure"
         assert orion.core.config.evc.cli_change_type == "unsure"
         assert orion.core.config.evc.config_change_type == "unsure"
+        assert not orion.core.config.evc.orion_version_change
 
         script = os.path.abspath(__file__)
         name = "env-var-test"

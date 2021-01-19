@@ -19,6 +19,7 @@ from orion.core.evc.conflicts import (
     ExperimentNameConflict,
     MissingDimensionConflict,
     NewDimensionConflict,
+    OrionVersionConflict,
     ScriptConfigConflict,
     detect_conflicts,
 )
@@ -50,7 +51,7 @@ def user_config():
 @pytest.fixture
 def parent_config(user_config):
     """Create a configuration that will not hit the database."""
-    user_script = "abs_path/black_box.py"
+    user_script = "tests/functional/demo/black_box.py"
     config = dict(
         _id="test",
         name="test",
@@ -74,6 +75,7 @@ def parent_config(user_config):
                 "--manual-resolution",
             ],
             "user": "some_user_name",
+            "orion_version": "XYZ",
         },
         refers={},
     )
@@ -130,8 +132,15 @@ def changed_config(child_config):
 
 @pytest.fixture
 def changed_algo_config(child_config):
-    """Create a child config with a changed dimension"""
+    """Create a child config with a new algo"""
     child_config["algorithms"] = "stupid-grid"
+    return child_config
+
+
+@pytest.fixture
+def changed_orion_version_config(child_config):
+    """Create a child config with new orion version"""
+    child_config["metadata"]["orion_version"] = "UVW"
     return child_config
 
 
@@ -189,7 +198,7 @@ def list_arg_with_equals_cli_config(child_config):
 @pytest.fixture
 def cl_config(create_db_instance):
     """Create a child config with markers for commandline solving"""
-    user_script = "abs_path/black_box.py"
+    user_script = "tests/functional/demo/black_box.py"
     config = dict(
         name="test",
         branch="test2",
@@ -207,6 +216,7 @@ def cl_config(create_db_instance):
                 "--omega~+normal(0,1)",
             ],
             "user": "some_user_name",
+            "orion_version": "XYZ",
         },
     )
     backward.populate_space(config)
@@ -219,6 +229,7 @@ def conflicts(
     changed_dimension_conflict,
     missing_dimension_conflict,
     algorithm_conflict,
+    orion_version_conflict,
     code_conflict,
     experiment_name_conflict,
     config_conflict,
@@ -230,6 +241,7 @@ def conflicts(
     conflicts.register(changed_dimension_conflict)
     conflicts.register(missing_dimension_conflict)
     conflicts.register(algorithm_conflict)
+    conflicts.register(orion_version_conflict)
     conflicts.register(code_conflict)
     conflicts.register(experiment_name_conflict)
     conflicts.register(config_conflict)
@@ -304,6 +316,18 @@ class TestConflictDetection(object):
         assert conflict.old_config["algorithms"] == "random"
         assert conflict.new_config["algorithms"] == "stupid-grid"
         assert isinstance(conflict, AlgorithmConflict)
+
+    def test_orion_version_conflict(self, parent_config, changed_orion_version_config):
+        """Test if orion version changes are currently detected"""
+        conflicts = detect_conflicts(parent_config, changed_orion_version_config)
+
+        assert len(conflicts.get()) == 2
+        conflict = conflicts.get()[1]
+
+        assert conflict.is_resolved is False
+        assert conflict.old_config["metadata"]["orion_version"] == "XYZ"
+        assert conflict.new_config["metadata"]["orion_version"] == "UVW"
+        assert isinstance(conflict, OrionVersionConflict)
 
     def test_code_conflict(self, parent_config, changed_code_config):
         """Test if code commit hash change is currently detected"""
@@ -593,6 +617,24 @@ class TestResolutions(object):
         assert conflict.is_resolved
         assert isinstance(conflict.resolution, conflict.AlgorithmResolution)
 
+    def test_orion_version_change(self, parent_config, changed_orion_version_config):
+        """Test if setting the orion version conflict solves it"""
+        conflicts = detect_conflicts(parent_config, changed_orion_version_config)
+        branch_builder = ExperimentBranchBuilder(conflicts, manual_resolution=True)
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 1
+
+        branch_builder.set_orion_version()
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 2
+
+        conflict = conflicts.get_resolved()[1]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.OrionVersionResolution)
+
     def test_code_change(self, parent_config, changed_code_config):
         """Test if giving a proper change-type solves the code conflict"""
         conflicts = detect_conflicts(parent_config, changed_code_config)
@@ -686,7 +728,7 @@ class TestResolutions(object):
         """Test if all conflicts all automatically resolve by the ExperimentBranchBuilder."""
         ExperimentBranchBuilder(conflicts)
 
-        assert len(conflicts.get_resolved()) == 8
+        assert len(conflicts.get_resolved()) == 9
 
 
 class TestResolutionsWithMarkers(object):
@@ -996,6 +1038,20 @@ class TestResolutionsWithMarkers(object):
 
         assert conflict.is_resolved
         assert isinstance(conflict.resolution, conflict.AlgorithmResolution)
+
+    def test_orion_version_change(self, parent_config, changed_orion_version_config):
+        """Test if orion version conflict is resolved automatically"""
+        changed_orion_version_config["orion_version_change"] = True
+        conflicts = detect_conflicts(parent_config, changed_orion_version_config)
+        ExperimentBranchBuilder(conflicts, manual_resolution=True)
+
+        assert len(conflicts.get()) == 2
+        assert len(conflicts.get_resolved()) == 2
+
+        conflict = conflicts.get_resolved()[1]
+
+        assert conflict.is_resolved
+        assert isinstance(conflict.resolution, conflict.OrionVersionResolution)
 
     def test_config_change(self, parent_config, changed_userconfig_config):
         """Test if user's script's config conflict is resolved automatically"""

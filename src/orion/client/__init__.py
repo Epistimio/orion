@@ -32,8 +32,16 @@ __all__ = [
 ]
 
 
+def create_experiment(name, **config):
+    """Build an experiment to be executable
+
+    This function is deprecated and will be removed in v0.3.0. Use `build_experiment` instead.
+    """
+    return build_experiment(name, **config)
+
+
 # pylint: disable=too-many-arguments
-def create_experiment(
+def build_experiment(
     name,
     version=None,
     space=None,
@@ -48,7 +56,11 @@ def create_experiment(
     working_dir=None,
     debug=False,
 ):
-    """Create an experiment
+    """Build an experiment to be executable
+
+    Building the experiment can result in branching if there are any changes in the environment.
+    This is required to ensure coherence between execution of trials. For an experiment
+    in read/write mode without execution rights, see `get_experiment`.
 
     There is 2 main scenarios
 
@@ -97,6 +109,8 @@ def create_experiment(
     - Change of strategy (Not implemented yet)
 
     - Change of code version (Only supported by commandline API for now)
+
+    - Change of orion version
 
     Parameters
     ----------
@@ -149,6 +163,9 @@ def create_experiment(
             Starts the prompt to resolve manually the conflicts. Defaults to False.
         algorithm_change: bool, optional
             Whether to automatically solve the algorithm conflict (change of algo config).
+            Defaults to True.
+        orion_version_change: bool, optional
+            Whether to automatically solve the orion version conflict.
             Defaults to True.
         code_change_type: str, optional
             How to resolve code change automatically. Must be one of 'noeffect', 'unsure' or
@@ -226,9 +243,9 @@ def create_experiment(
     return ExperimentClient(experiment, producer, heartbeat)
 
 
-def get_experiment(name, version=None, storage=None):
+def get_experiment(name, version=None, mode="r", storage=None):
     """
-    Retrieve an existing experiment as :class:`orion.core.worker.experiment.ExperimentView`.
+    Retrieve an existing experiment as :class:`orion.core.worker.experiment.ExperimentClient`.
 
     Parameters
     ----------
@@ -237,12 +254,18 @@ def get_experiment(name, version=None, storage=None):
     version: int, optional
         Version to select. If None, last version will be selected. If version given is larger than
         largest version available, the largest version will be selected.
+    mode: str, optional
+        The access rights of the experiment on the database.
+        'r': read access only
+        'w': can read and write to database
+        Default is 'r'
+
     storage: dict, optional
         Configuration of the storage backend.
 
     Returns
     -------
-    An instance of :class:`orion.core.worker.experiment.ExperimentView` representing the experiment.
+    An instance of :class:`orion.client.experiment.ExperimentClient` representing the experiment.
 
     Raises
     ------
@@ -250,7 +273,9 @@ def get_experiment(name, version=None, storage=None):
         The experiment is not in the database provided by the user.
     """
     setup_storage(storage)
-    return experiment_builder.build_view(name, version)
+    assert mode in set("rw")
+    experiment = experiment_builder.load(name, version, mode)
+    return ExperimentClient(experiment, None)
 
 
 def workon(

@@ -40,8 +40,7 @@ def test_insert_invalid_experiment(database, monkeypatch, capsys):
     assert "Error: No experiment with given name 'dumb_experiment'"
 
 
-@pytest.mark.usefixtures("only_experiments_db")
-@pytest.mark.usefixtures("null_db_instances")
+@pytest.mark.usefixtures("only_experiments_db", "null_db_instances", "version_XYZ")
 def test_insert_single_trial(database, monkeypatch, script_path):
     """Try to insert a single trial"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -54,12 +53,13 @@ def test_insert_single_trial(database, monkeypatch, script_path):
             "test_insert_normal",
             "-c",
             "./orion_config_random.yaml",
-            script_path,
+            "blabla",
             "-x=1",
         ]
     )
 
     exp = list(database.experiments.find({"name": "test_insert_normal"}))
+
     assert len(exp) == 1
     exp = exp[0]
     assert "_id" in exp
@@ -74,8 +74,7 @@ def test_insert_single_trial(database, monkeypatch, script_path):
     assert trial["params"][0]["value"] == 1
 
 
-@pytest.mark.usefixtures("only_experiments_db")
-@pytest.mark.usefixtures("null_db_instances")
+@pytest.mark.usefixtures("only_experiments_db", "null_db_instances", "version_XYZ")
 def test_insert_single_trial_default_value(database, monkeypatch):
     """Try to insert a single trial using a default value"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -175,8 +174,7 @@ def test_insert_with_outside_bound_value(database, monkeypatch):
     assert "Value 100 is outside of" in str(exc_info.value)
 
 
-@pytest.mark.usefixtures("only_experiments_db")
-@pytest.mark.usefixtures("null_db_instances")
+@pytest.mark.usefixtures("only_experiments_db", "null_db_instances", "version_XYZ")
 def test_insert_two_hyperparameters(database, monkeypatch):
     """Try to insert a single trial with two hyperparameters"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
