@@ -369,7 +369,7 @@ def get_name_value_pairs(trials):
 
 def test_init(init_full_x, create_db_instance):
     """Test if original experiment contains trial 0"""
-    experiment = experiment_builder.build_view(name="full_x")
+    experiment = experiment_builder.load(name="full_x")
 
     assert experiment.refers["adapter"].configuration == []
 
@@ -379,7 +379,7 @@ def test_init(init_full_x, create_db_instance):
 
 def test_full_x_full_y(init_full_x_full_y, create_db_instance):
     """Test if full x full y is properly initialized and can fetch original trial"""
-    experiment = experiment_builder.build_view(name="full_x_full_y")
+    experiment = experiment_builder.load(name="full_x_full_y")
 
     assert experiment.refers["adapter"].configuration == [
         {"change_type": "noeffect", "of_type": "commandlinechange"},
@@ -409,7 +409,7 @@ def test_full_x_full_y(init_full_x_full_y, create_db_instance):
 
 def test_half_x_full_y(init_half_x_full_y, create_db_instance):
     """Test if half x full y is properly initialized and can fetch from its 2 parents"""
-    experiment = experiment_builder.build_view(name="half_x_full_y")
+    experiment = experiment_builder.load(name="half_x_full_y")
 
     assert experiment.refers["adapter"].configuration == [
         {
@@ -435,7 +435,7 @@ def test_half_x_full_y(init_half_x_full_y, create_db_instance):
 
 def test_full_x_half_y(init_full_x_half_y, create_db_instance):
     """Test if full x half y is properly initialized and can fetch from its 2 parents"""
-    experiment = experiment_builder.build_view(name="full_x_half_y")
+    experiment = experiment_builder.load(name="full_x_half_y")
 
     assert experiment.refers["adapter"].configuration == [
         {
@@ -461,7 +461,7 @@ def test_full_x_half_y(init_full_x_half_y, create_db_instance):
 
 def test_full_x_rename_y_z(init_full_x_rename_y_z, create_db_instance):
     """Test if full x full z is properly initialized and can fetch from its 2 parents"""
-    experiment = experiment_builder.build_view(name="full_x_rename_y_z")
+    experiment = experiment_builder.load(name="full_x_rename_y_z")
 
     assert experiment.refers["adapter"].configuration == [
         {"of_type": "commandlinechange", "change_type": "noeffect"},
@@ -494,7 +494,7 @@ def test_full_x_rename_half_y_half_z(
     init_full_x_rename_half_y_half_z, create_db_instance
 ):
     """Test if full x half z is properly initialized and can fetch from its 3 parents"""
-    experiment = experiment_builder.build_view(name="full_x_rename_half_y_half_z")
+    experiment = experiment_builder.load(name="full_x_rename_half_y_half_z")
 
     assert experiment.refers["adapter"].configuration == [
         {"of_type": "commandlinechange", "change_type": "noeffect"},
@@ -520,7 +520,7 @@ def test_full_x_rename_half_y_full_z(
     init_full_x_rename_half_y_full_z, create_db_instance
 ):
     """Test if full x half->full z is properly initialized and can fetch from its 3 parents"""
-    experiment = experiment_builder.build_view(name="full_x_rename_half_y_full_z")
+    experiment = experiment_builder.load(name="full_x_rename_half_y_full_z")
 
     assert experiment.refers["adapter"].configuration == [
         {"of_type": "commandlinechange", "change_type": "noeffect"},
@@ -557,7 +557,7 @@ def test_full_x_rename_half_y_full_z(
 
 def test_full_x_remove_y(init_full_x_remove_y, create_db_instance):
     """Test if full x removed y is properly initialized and can fetch from its 2 parents"""
-    experiment = experiment_builder.build_view(name="full_x_remove_y")
+    experiment = experiment_builder.load(name="full_x_remove_y")
 
     assert experiment.refers["adapter"].configuration == [
         {"of_type": "commandlinechange", "change_type": "noeffect"},
@@ -584,7 +584,7 @@ def test_full_x_full_y_add_z_remove_y(
     init_full_x_full_y_add_z_remove_y, create_db_instance
 ):
     """Test that if z is added and y removed at the same time, both are correctly detected"""
-    experiment = experiment_builder.build_view(name="full_x_full_z_remove_y")
+    experiment = experiment_builder.load(name="full_x_full_z_remove_y")
 
     assert experiment.refers["adapter"].configuration == [
         {"of_type": "commandlinechange", "change_type": "noeffect"},
@@ -613,7 +613,7 @@ def test_full_x_full_y_add_z_remove_y(
 
 def test_full_x_remove_z(init_full_x_remove_z, create_db_instance):
     """Test if full x removed z is properly initialized and can fetch from 2 of its 3 parents"""
-    experiment = experiment_builder.build_view(name="full_x_remove_z")
+    experiment = experiment_builder.load(name="full_x_remove_z")
 
     assert experiment.refers["adapter"].configuration == [
         {"change_type": "noeffect", "of_type": "commandlinechange"},
@@ -641,7 +641,7 @@ def test_full_x_remove_z_default_4(init_full_x_remove_z_default_4, create_db_ins
     """Test if full x removed z  (default 4) is properly initialized and can fetch
     from 1 of its 3 parents
     """
-    experiment = experiment_builder.build_view(name="full_x_remove_z_default_4")
+    experiment = experiment_builder.load(name="full_x_remove_z_default_4")
 
     assert experiment.refers["adapter"].configuration == [
         {"change_type": "noeffect", "of_type": "commandlinechange"},
@@ -661,7 +661,7 @@ def test_full_x_remove_z_default_4(init_full_x_remove_z_default_4, create_db_ins
 
 def test_entire_full_x_full_y(init_entire, create_db_instance):
     """Test if full x full y can fetch from its parent and all children"""
-    experiment = experiment_builder.build_view(name="full_x_full_y")
+    experiment = experiment_builder.load(name="full_x_full_y")
 
     assert experiment.refers["adapter"].configuration == [
         {"change_type": "noeffect", "of_type": "commandlinechange"},
@@ -720,7 +720,7 @@ def test_entire_full_x_full_y(init_entire, create_db_instance):
 
 def test_run_entire_full_x_full_y(init_entire, create_db_instance):
     """Test if branched experiment can be executed without triggering a branching event again"""
-    experiment = experiment_builder.build_view(name="full_x_full_y")
+    experiment = experiment_builder.load(name="full_x_full_y")
 
     assert experiment.refers["adapter"].configuration == [
         {"change_type": "noeffect", "of_type": "commandlinechange"},
@@ -748,7 +748,7 @@ def test_run_entire_full_x_full_y(init_entire, create_db_instance):
 
 def test_run_entire_full_x_full_y_no_args(init_entire, create_db_instance):
     """Test if branched experiment can be executed without script arguments"""
-    experiment = experiment_builder.build_view(name="full_x_full_y")
+    experiment = experiment_builder.load(name="full_x_full_y")
 
     assert len(experiment.fetch_trials(with_evc_tree=True)) == 23
     assert len(experiment.fetch_trials()) == 4
@@ -763,7 +763,7 @@ def test_run_entire_full_x_full_y_no_args(init_entire, create_db_instance):
 
 def test_new_algo(init_full_x_new_algo):
     """Test that new algo conflict is automatically resolved"""
-    experiment = experiment_builder.build_view(name="full_x_new_algo")
+    experiment = experiment_builder.load(name="full_x_new_algo")
 
     assert experiment.refers["adapter"].configuration == [
         {"of_type": "algorithmchange"}
@@ -881,7 +881,7 @@ def test_new_orion_version_triggers_conflict(capsys):
 
 def test_new_cli(init_full_x_new_cli):
     """Test that new cli conflict is automatically resolved"""
-    experiment = experiment_builder.build_view(name="full_x_new_cli")
+    experiment = experiment_builder.load(name="full_x_new_cli")
 
     assert experiment.refers["adapter"].configuration == [
         {"change_type": "noeffect", "of_type": "commandlinechange"}
@@ -929,7 +929,7 @@ def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
         .split(" ")
     )
 
-    experiment = experiment_builder.build_view(name=branch)
+    experiment = experiment_builder.load(name=branch)
 
     assert experiment.refers["adapter"].configuration == [
         {
@@ -968,7 +968,7 @@ def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
         .split(" ")
     )
 
-    experiment = experiment_builder.build_view(name=branch)
+    experiment = experiment_builder.load(name=branch)
 
     assert experiment.refers["adapter"].configuration == [
         {

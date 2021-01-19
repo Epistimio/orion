@@ -6,7 +6,6 @@ import pytest
 
 from orion.core.evc.adapters import Adapter, CodeChange
 from orion.core.evc.experiment import ExperimentNode
-from orion.core.worker.experiment import ExperimentView
 
 # To avoid flake8 issues
 build_trimmed_tree = "dummy"

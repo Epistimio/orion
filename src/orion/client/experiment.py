@@ -10,6 +10,7 @@
 """
 import atexit
 import functools
+import inspect
 import logging
 import sys
 
@@ -21,6 +22,7 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     SampleTimeout,
+    UnsupportedOperation,
     WaitingForTrials,
 )
 from orion.core.utils.flatten import flatten, unflatten
@@ -122,6 +124,11 @@ class ExperimentClient:
         return self._experiment.algorithms
 
     @property
+    def refers(self):
+        """References to the experiment version control"""
+        return self._experiment.refers
+
+    @property
     def is_done(self):
         """Return True, if this experiment is considered to be finished.
 
@@ -185,6 +192,32 @@ class ExperimentClient:
     def producer(self):
         """Return the producer configuration of the experiment."""
         return self._experiment.producer
+
+    @property
+    def mode(self):
+        """Return the access right of the experiment
+
+        {'r': read, 'w': read/write, 'x': read/write/execute}
+        """
+        return self._experiment.mode
+
+    ###
+    # Rights
+    ###
+
+    def _check_if_writable(self):
+        if self.mode == "r":
+            calling_function = inspect.stack()[1].function
+            raise UnsupportedOperation(
+                f"ExperimentClient must have write rights to execute `{calling_function}()`"
+            )
+
+    def _check_if_executable(self):
+        if self.mode != "x":
+            calling_function = inspect.stack()[1].function
+            raise UnsupportedOperation(
+                f"ExperimentClient must have execution rights to execute `{calling_function}()`"
+            )
 
     ###
     # Queries
@@ -273,6 +306,8 @@ class ExperimentClient:
     def insert(self, params, results=None, reserve=False):
         """Insert a new trial.
 
+        Experiment must be in writable ('w') or executable ('x') mode.
+
         Parameters
         ----------
         params: dict
@@ -305,8 +340,12 @@ class ExperimentClient:
             - If results have invalid format
         `orion.core.io.database.DuplicateKeyError`
             - If a trial with identical params already exist for the current experiment.
+        `UnsupportedOperation`
+            If the experiment was not loaded in writable mode.
 
         """
+        self._check_if_writable()
+
         if results and reserve:
             raise ValueError(
                 "Cannot observe a trial and reserve it. A trial with results has status "
@@ -341,6 +380,8 @@ class ExperimentClient:
     def reserve(self, trial):
         """Reserve a trial.
 
+        Experiment must be in executable ('x') mode.
+
         Set a trial status to reserve to ensure that concurrent process cannot work on it.
         Trials can only be reserved with status 'new', 'interrupted' or 'suspended'.
 
@@ -355,6 +396,8 @@ class ExperimentClient:
             If trial is reserved by another process
         `ValueError`
             If the trial does not exist in storage.
+        `UnsupportedOperation`
+            If the experiment was not loaded in executable mode.
 
         Notes
         -----
@@ -366,6 +409,8 @@ class ExperimentClient:
         since twice the value of `heartbeat`.
 
         """
+        self._check_if_executable()
+
         if trial.status == "reserved" and trial.id in self._pacemakers:
             log.warning("Trial %s is already reserved.", trial.id)
             return
@@ -391,6 +436,8 @@ class ExperimentClient:
 
         Release the reservation and stop the heartbeat.
 
+        Experiment must be in writable ('w') or executable ('x') mode.
+
         Parameters
         ----------
         trial: `orion.core.worker.trial.Trial`
@@ -405,8 +452,12 @@ class ExperimentClient:
             If reservation of the trial has been lost prior to releasing it.
         `ValueError`
             If the trial does not exist in storage.
+        `UnsupportedOperation`
+            If the experiment was not loaded in writable mode.
 
         """
+        self._check_if_writable()
+
         try:
             self._experiment.set_trial_status(trial, status)
         except FailedUpdate as e:
@@ -424,6 +475,8 @@ class ExperimentClient:
 
     def suggest(self):
         """Suggest a trial to execute.
+
+        Experiment must be in executable ('x') mode.
 
         If any trial is available (new or interrupted), it selects one and reserves it.
         Otherwise, the algorithm is used to generate a new trial that is registered in storage and
@@ -448,7 +501,12 @@ class ExperimentClient:
         `SampleTimeout`
             if the algorithm of the experiment could not sample new unique points.
 
+        `UnsupportedOperation`
+            If the experiment was not loaded in executable mode.
+
         """
+        self._check_if_executable()
+
         if self.is_broken:
             raise BrokenExperiment("Trials failed too many times")
 
@@ -478,6 +536,8 @@ class ExperimentClient:
     def observe(self, trial, results):
         """Observe trial results
 
+        Experiment must be in executable ('x') mode.
+
         Parameters
         ----------
         trial: `orion.core.worker.trial.Trial`
@@ -500,8 +560,12 @@ class ExperimentClient:
             - If the trial does not exist in storage.
         `RuntimeError`
             If reservation of the trial has been lost prior to releasing it.
+        `UnsupportedOperation`
+            If the experiment was not loaded in executable mode.
 
         """
+        self._check_if_executable()
+
         trial.results += [Trial.Result(**result) for result in results]
         try:
             self._experiment.update_completed_trial(trial)
@@ -520,6 +584,8 @@ class ExperimentClient:
     def workon(self, fct, max_trials=infinity, **kwargs):
         """Optimize a given function
 
+        Experiment must be in executable ('x') mode.
+
         Parameters
         ----------
         fct: callable
@@ -537,8 +603,12 @@ class ExperimentClient:
         ------
         `ValueError`
              If results returned by `fct` have invalid format
+        `UnsupportedOperation`
+            If the experiment was not loaded in executable mode.
 
         """
+        self._check_if_executable()
+
         trials = 0
         kwargs = flatten(kwargs)
         while not self.is_done and trials < max_trials:
@@ -554,7 +624,18 @@ class ExperimentClient:
         return trials
 
     def close(self):
-        """Verify that no reserved trials are remaining and unregister atexit()."""
+        """Verify that no reserved trials are remaining and unregister atexit().
+
+        Experiment must be in executable ('x') mode.
+
+        Raises
+        ------
+        `UnsupportedOperation`
+            If the experiment was not loaded in executable mode.
+
+        """
+        self._check_if_executable()
+
         if self._pacemakers:
             raise RuntimeError(
                 "There is still reserved trials: {}\nRelease all trials before "

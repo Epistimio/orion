@@ -36,7 +36,7 @@ class ExperimentNode(TreeNode):
         Name of the experiment
     item: None or :class:`orion.core.worker.experiment.Experiment`
         None if the experiment is not initialized yet. When initializing lazily, it creates an
-        `ExperimentView`.
+        `Experiment` in read only mode.
 
     .. seealso::
 
@@ -75,10 +75,8 @@ class ExperimentNode(TreeNode):
             # TODO: Find another way around the circular import
             import orion.core.io.experiment_builder as experiment_builder
 
-            self._item = experiment_builder.build_view(
-                name=self.name, version=self.version
-            )
-            self._item._experiment._node = self
+            self._item = experiment_builder.load(name=self.name, version=self.version)
+            self._item._node = self
 
         return self._item
 

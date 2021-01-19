@@ -112,7 +112,7 @@ def print_evc(
 
     """
     for exp in experiments:
-        experiment = experiment_builder.build_view(exp.name, version)
+        experiment = experiment_builder.load(exp.name, version)
         if version is None:
             expand_experiment = exp
         else:
@@ -148,7 +148,7 @@ def get_experiments(args):
         ]
 
     return [
-        experiment_builder.build_view(name=exp["name"], version=exp.get("version", 1))
+        experiment_builder.load(name=exp["name"], version=exp.get("version", 1))
         for exp in root_experiments
     ]
 

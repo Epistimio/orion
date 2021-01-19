@@ -35,7 +35,7 @@ def add_subparser(parser):
 def main(args):
     """Fetch config and info experiments"""
     try:
-        experiment = experiment_builder.build_view_from_args(args)
+        experiment = experiment_builder.get_from_args(args, mode="r")
     except ValueError:
         print("Experiment {} not found in db.".format(args.get("name", None)))
         sys.exit(1)

@@ -22,7 +22,7 @@ def lpi(experiment, model="RandomForestRegressor", model_kwargs=None, n=20, **kw
 
     Parameters
     ----------
-    experiment: ExperimentClient, Experiment or ExperimentView
+    experiment: ExperimentClient or Experiment
         The orion object containing the experiment data
 
     model: str
@@ -64,7 +64,7 @@ def parallel_coordinates(experiment, order=None, **kwargs):
 
     Parameters
     ----------
-    experiment: ExperimentClient, Experiment or ExperimentView
+    experiment: ExperimentClient or Experiment
         The orion object containing the experiment data
 
     order: list of str or None
@@ -97,7 +97,7 @@ def regret(experiment, order_by="suggested", verbose_hover=True, **kwargs):
 
     Parameters
     ----------
-    experiment: ExperimentClient, Experiment or ExperimentView
+    experiment: ExperimentClient or Experiment
         The orion object containing the experiment data
 
     order_by: str

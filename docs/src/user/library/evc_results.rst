@@ -14,9 +14,9 @@ trials of the specific experiment.
 
    import pprint
 
-   from orion.client import create_experiment
+   from orion.client import get_experiment
 
-   experiment = create_experiment(name="orion-tutorial-with-momentum")
+   experiment = get_experiment(name="orion-tutorial-with-momentum")
 
    print(experiment.name)
    pprint.pprint(experiment.stats)

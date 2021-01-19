@@ -115,9 +115,9 @@ def test_update_no_match_query(clean_db, single_with_trials, capsys):
 
 def test_update_child_only(clean_db, three_experiments_same_name_with_trials, capsys):
     """Test trials of the parent experiment are not updated"""
-    exp1 = experiment_builder.build_view(name="test_single_exp", version=1)
-    exp2 = experiment_builder.build_view(name="test_single_exp", version=2)
-    exp3 = experiment_builder.build_view(name="test_single_exp", version=3)
+    exp1 = experiment_builder.load(name="test_single_exp", version=1)
+    exp2 = experiment_builder.load(name="test_single_exp", version=2)
+    exp3 = experiment_builder.load(name="test_single_exp", version=3)
     execute("db set -f test_single_exp --version 2 status=broken status=interrupted")
     assert len(exp1.fetch_trials_by_status("broken")) > 0
     assert len(exp2.fetch_trials_by_status("broken")) == 0
@@ -130,9 +130,9 @@ def test_update_child_only(clean_db, three_experiments_same_name_with_trials, ca
 
 def test_update_default_leaf(clean_db, three_experiments_same_name_with_trials, capsys):
     """Test trials of the parent experiment are not updated"""
-    exp1 = experiment_builder.build_view(name="test_single_exp", version=1)
-    exp2 = experiment_builder.build_view(name="test_single_exp", version=2)
-    exp3 = experiment_builder.build_view(name="test_single_exp", version=3)
+    exp1 = experiment_builder.load(name="test_single_exp", version=1)
+    exp2 = experiment_builder.load(name="test_single_exp", version=2)
+    exp3 = experiment_builder.load(name="test_single_exp", version=3)
     execute("db set -f test_single_exp status=broken status=interrupted")
     assert len(exp1.fetch_trials_by_status("broken")) > 0
     assert len(exp2.fetch_trials_by_status("broken")) > 0
@@ -147,9 +147,9 @@ def test_no_update_id_from_parent(
     clean_db, three_experiments_same_name_with_trials, capsys
 ):
     """Test trials of the parent experiment are not updated"""
-    exp1 = experiment_builder.build_view(name="test_single_exp", version=1)
-    exp2 = experiment_builder.build_view(name="test_single_exp", version=2)
-    exp3 = experiment_builder.build_view(name="test_single_exp", version=3)
+    exp1 = experiment_builder.load(name="test_single_exp", version=1)
+    exp2 = experiment_builder.load(name="test_single_exp", version=2)
+    exp3 = experiment_builder.load(name="test_single_exp", version=3)
     trial = exp1.fetch_trials_by_status("broken")[0]
     execute(f"db set -f test_single_exp id={trial.id} status=shouldnothappen")
     assert len(exp1.fetch_trials_by_status("shouldnothappen")) == 0

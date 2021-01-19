@@ -4,21 +4,21 @@ Results
 You can fetch experiments and trials using python code. There is no need to understand the
 specific database backend used (such as MongoDB) since you can fetch results using the
 :class:`orion.client.experiment.ExperimentClient` object.
-The helper function :py:func:`orion.client.create_experiment`
+The helper function :py:func:`orion.client.get_experiment`
 provides a simple way to fetch experiments
 using their unique names. You do not need to explicitly open a connection to the database since it
 will automatically infer its configuration from the global configuration file as when calling Oríon
 in commandline. Otherwise you can specify the configuration directly to
-:py:func:`create_experiment() <orion.client.create_experiment>`. Take a look at the documentation
+:py:func:`get_experiment() <orion.client.get_experiment>`. Take a look at the documentation
 for more details on all configuration arguments that are supported.
 
 .. code-block:: python
 
    # Database automatically inferred
-   create_experiment(name="orion-tutorial")
+   get_experiment(name="orion-tutorial")
 
    # Database manually set
-   create_experiment(
+   get_experiment(
        name="orion-tutorial",
        storage={
            'type': 'legacy',
@@ -33,9 +33,9 @@ For a complete example, here is how you can fetch trials from a given experiment
 
    import pprint
 
-   from orion.client import create_experiment
+   from orion.client import get_experiment
 
-   experiment = create_experiment(name="orion-tutorial")
+   experiment = get_experiment(name="orion-tutorial")
 
    pprint.pprint(experiment.stats)
 

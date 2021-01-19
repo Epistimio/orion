@@ -183,7 +183,7 @@ def main(args):
     experiment_builder.setup_storage(config.get("storage"))
 
     # Find root experiment
-    root = experiment_builder.build_view(
+    root = experiment_builder.load(
         name=args["name"], version=args.get("version", None)
     ).node
 

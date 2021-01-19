@@ -60,7 +60,7 @@ def main(args):
         return
 
     for root_experiment in root_experiments:
-        root = experiment_builder.build_view(
+        root = experiment_builder.load(
             name=root_experiment["name"], version=root_experiment.get("version")
         ).node
         print_tree(root, nameattr="tree_name")
