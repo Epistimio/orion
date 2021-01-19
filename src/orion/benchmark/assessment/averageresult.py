@@ -11,11 +11,8 @@
 """
 from collections import defaultdict
 
-import numpy as np
-import pandas as pd
-import plotly.express as px
-
 from orion.benchmark.base import BaseAssess
+from orion.plotting.base import regrets
 
 
 class AverageResult(BaseAssess):
@@ -38,56 +35,10 @@ class AverageResult(BaseAssess):
             A list of (task_index, experiment), where task_index is the index of task to run for
             this assessment, and experiment is an instance of `orion.core.worker.experiment`.
         """
-        algorithm_exp_trials = defaultdict(list)
+        algorithm_groups = defaultdict(list)
 
         for _, exp in experiments:
             algorithm_name = list(exp.configuration["algorithms"].keys())[0]
+            algorithm_groups[algorithm_name].append(exp)
 
-            trials = list(
-                filter(lambda trial: trial.status == "completed", exp.fetch_trials())
-            )
-            exp_trails = self._build_exp_trails(trials)
-            algorithm_exp_trials[algorithm_name].append(exp_trails)
-
-        ploty = self._display_plot(task, algorithm_exp_trials)
-        return ploty
-
-    def _display_plot(self, task, algorithm_exp_trials):
-
-        algorithm_averaged_trials = {}
-        plot_tables = []
-        for algo, sorted_trails in algorithm_exp_trials.items():
-            data = np.array(sorted_trails).transpose().mean(axis=-1)
-            algorithm_averaged_trials[algo] = data
-            df = pd.DataFrame(data, columns=["objective"])
-            df["algorithm"] = algo
-            plot_tables.append(df)
-
-        df = pd.concat(plot_tables)
-        title = "Assessment {} over Task {}".format(self.__class__.__name__, task)
-        fig = px.line(
-            df,
-            y="objective",
-            labels={"index": "trial_seq"},
-            color="algorithm",
-            title=title,
-        )
-        return fig
-
-    def _build_exp_trails(self, trials):
-        """
-        1. sort the trials wrt. submit time
-        2. reset the objective value of each trail with the best until it
-        """
-        data = [[trial.submit_time, trial.objective.value] for trial in trials]
-        sorted(data, key=lambda x: x[0])
-
-        result = []
-        smallest = np.inf
-        for _, objective in enumerate(data):
-            if smallest > objective[1]:
-                smallest = objective[1]
-                result.append(objective[1])
-            else:
-                result.append(smallest)
-        return result
+        return regrets(algorithm_groups)
