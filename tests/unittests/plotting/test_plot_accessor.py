@@ -39,11 +39,10 @@ trial_config = {
 }
 
 
-def check_regret_plot(plot):
-    """Verifies that existence of the regret plot"""
+def check_plot(plot, kind):
+    """Verifies that existence of the plot"""
     assert plot
-    assert "regret" in plot.layout.title.text.lower()
-    assert 2 == len(plot.data)
+    assert kind.replace("_", " ") in plot.layout.title.text.lower()
 
 
 def test_init_require_experiment():
@@ -70,22 +69,24 @@ def test_regret_is_default_plot():
         pa = PlotAccessor(experiment)
         plot = pa()
 
-        check_regret_plot(plot)
+        check_plot(plot, "regret")
 
 
-def test_regret_kind():
-    """Tests that a regret plot can be created from specifying `kind` as a parameter."""
+@pytest.mark.parametrize("kind", ("lpi", "regret", "parallel_coordinates"))
+def test_kind(kind):
+    """Tests that a plot can be created from specifying `kind` as a parameter."""
     with create_experiment(config, trial_config, ["completed"]) as (_, _, experiment):
         pa = PlotAccessor(experiment)
-        plot = pa(kind="regret")
+        plot = pa(kind=kind)
 
-        check_regret_plot(plot)
+        check_plot(plot, kind)
 
 
-def test_call_to_regret():
-    """Tests instance calls to `PlotAccessor.regret()`"""
+@pytest.mark.parametrize("kind", ("lpi", "regret", "parallel_coordinates"))
+def test_call_to(kind):
+    """Tests instance calls to `PlotAccessor.{kind}()`"""
     with create_experiment(config, trial_config, ["completed"]) as (_, _, experiment):
         pa = PlotAccessor(experiment)
-        plot = pa.regret()
+        plot = getattr(pa, kind)()
 
-        check_regret_plot(plot)
+        check_plot(plot, kind)
