@@ -98,7 +98,6 @@ from orion.core.utils.exceptions import (
     NoConfigurationError,
     NoNameError,
     RaceCondition,
-    UnsupportedOperation,
 )
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.primary_algo import PrimaryAlgo

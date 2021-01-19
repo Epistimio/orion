@@ -207,16 +207,16 @@ class ExperimentClient:
 
     def _check_if_writable(self):
         if self.mode == "r":
-            foo = inspect.stack()[1].function
+            calling_function = inspect.stack()[1].function
             raise UnsupportedOperation(
-                f"ExperimentClient must have write rights to execute `{foo}()`"
+                f"ExperimentClient must have write rights to execute `{calling_function}()`"
             )
 
     def _check_if_executable(self):
         if self.mode != "x":
-            foo = inspect.stack()[1].function
+            calling_function = inspect.stack()[1].function
             raise UnsupportedOperation(
-                f"ExperimentClient must have execution rights to execute `{foo}()`"
+                f"ExperimentClient must have execution rights to execute `{calling_function}()`"
             )
 
     ###

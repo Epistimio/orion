@@ -20,7 +20,7 @@ from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
-from orion.storage.base import FailedUpdate, ReadOnlyStorageProtocol, get_storage
+from orion.storage.base import FailedUpdate, get_storage
 
 log = logging.getLogger(__name__)
 
@@ -126,16 +126,16 @@ class Experiment:
 
     def _check_if_writable(self):
         if self.mode == "r":
-            foo = inspect.stack()[1].function
+            calling_function = inspect.stack()[1].function
             raise UnsupportedOperation(
-                f"Experiment must have write rights to execute `{foo}()`"
+                f"Experiment must have write rights to execute `{calling_function}()`"
             )
 
     def _check_if_executable(self):
         if self.mode != "x":
-            foo = inspect.stack()[1].function
+            calling_function = inspect.stack()[1].function
             raise UnsupportedOperation(
-                f"Experiment must have execution rights to execute `{foo}()`"
+                f"Experiment must have execution rights to execute `{calling_function}()`"
             )
 
     def to_pandas(self, with_evc_tree=False):
