@@ -176,7 +176,7 @@ def regret(experiment, order_by="suggested", verbose_hover=True, **kwargs):
 
 def regrets(experiments, order_by="suggested", **kwargs):
     """
-    Make a plot to visualy compare the performance of different hyper-optimization processes.
+    Make a plot to visually compare the performance of different hyper-optimization processes.
 
     The x-axis contain the trials and the y-axis their respective best performance.
 
