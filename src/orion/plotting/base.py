@@ -91,7 +91,7 @@ def parallel_coordinates(experiment, order=None, **kwargs):
 
 def rankings(experiments, order_by="suggested", **kwargs):
     """
-    Make a plot to visualy compare the ranking of different hyper-optimization processes.
+    Make a plot to visually compare the ranking of different hyper-optimization processes.
 
     The x-axis contain the trials and the y-axis their respective ranking.
 
