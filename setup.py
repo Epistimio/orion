@@ -46,6 +46,7 @@ setup_args = dict(
         ],
         "OptimizationAlgorithm": [
             "random = orion.algo.random:Random",
+            "gridsearch = orion.algo.gridsearch:GridSearch",
             "asha = orion.algo.asha:ASHA",
             "hyperband = orion.algo.hyperband:Hyperband",
             "tpe = orion.algo.tpe:TPE",
