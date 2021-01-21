@@ -4,7 +4,13 @@ import logging
 import numpy.testing
 import pytest
 
-from orion.algo.gridsearch import GridSearch, categorical_grid, discrete_grid, real_grid
+from orion.algo.gridsearch import (
+    GridSearch,
+    categorical_grid,
+    discrete_grid,
+    grid,
+    real_grid,
+)
 from orion.algo.space import Categorical, Integer, Real, Space
 
 
@@ -85,6 +91,23 @@ def test_unsupported_real_prior():
         real_grid(dim, 5)
 
     assert exc.match("Grid Search only supports `loguniform`, `uniform`")
+
+
+def test_unsupported_type():
+    """Test unsupported real prior message"""
+
+    class NewDimType:
+        @property
+        def type(self):
+            return "newdimtype"
+
+    dim = NewDimType()
+    with pytest.raises(TypeError) as exc:
+        grid(dim, 5)
+
+    assert exc.match(
+        f"Grid Search only supports `real`, `integer`, `categorical` and `fidelity`: `{dim.type}`"
+    )
 
 
 def test_build_grid():

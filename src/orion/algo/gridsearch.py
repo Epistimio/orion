@@ -32,8 +32,10 @@ def grid(dim, num):
         return fidelity_grid(dim, num)
     else:
         raise TypeError(
-            "Grid Search only supports `loguniform`, `uniform` and `choices`: "
-            "`{}`".format(dim.prior_name)
+            "Grid Search only supports `real`, `integer`, `categorical` and `fidelity`: "
+            f"`{dim.type}`\n"
+            "For more information on dimension types, see "
+            "https://orion.readthedocs.io/en/stable/user/searchspace.html"
         )
 
 
