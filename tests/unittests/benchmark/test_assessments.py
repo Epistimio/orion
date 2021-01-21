@@ -61,17 +61,31 @@ class TestAverageRank:
 
         assert type(plot) is plotly.graph_objects.Figure
 
-        assert plot.layout.title.text == "Assessment AverageRank over Task task_name"
-        assert plot.layout.xaxis.title.text == "trial_seq"
-        assert plot.layout.yaxis.title.text == "rank"
+        assert plot.layout.title.text == "Average Rankings"
+        assert plot.layout.xaxis.title.text == "Trials ordered by suggested time"
+        assert plot.layout.yaxis.title.text == "Ranking based on loss"
 
+        assert len(plot.data) == len(benchmark_algorithms) * 2
+
+        line_plots = plot.data[::2]
+        err_plots = plot.data[1::2]
         for i in range(algo_num):
-            trace1 = plot.data[i]
-            assert trace1.type == "scatter"
-            assert trace1.name == list(benchmark_algorithms[i].keys())[0]
-            assert trace1.mode == "lines"
-            assert len(trace1.y) == 3
-            assert len(trace1.x) == 3
+            algo_name = next(iter(benchmark_algorithms[i].keys()))
+
+            line_trace = line_plots[i]
+            assert line_trace.type == "scatter"
+            assert line_trace.name == algo_name
+            assert line_trace.mode == "lines"
+            assert len(line_trace.y) == 3
+            assert len(line_trace.x) == 3
+
+            err_trace = err_plots[i]
+            assert err_trace.fill == "toself"
+            assert err_trace.name == algo_name
+            assert not err_trace.showlegend
+            # * 2 because trace is above and under the mean
+            assert len(err_trace.y) == 3 * 2
+            assert len(err_trace.x) == 3 * 2
 
 
 class TestAverageResult:
@@ -122,14 +136,28 @@ class TestAverageResult:
 
         assert type(plot) is plotly.graph_objects.Figure
 
-        assert plot.layout.title.text == "Assessment AverageResult over Task task_name"
-        assert plot.layout.xaxis.title.text == "trial_seq"
-        assert plot.layout.yaxis.title.text == "objective"
+        assert plot.layout.title.text == "Average Regret"
+        assert plot.layout.xaxis.title.text == "Trials ordered by suggested time"
+        assert plot.layout.yaxis.title.text == "loss"
 
+        assert len(plot.data) == len(benchmark_algorithms) * 2
+
+        line_plots = plot.data[::2]
+        err_plots = plot.data[1::2]
         for i in range(algo_num):
-            trace1 = plot.data[i]
-            assert trace1.type == "scatter"
-            assert trace1.name == list(benchmark_algorithms[i].keys())[0]
-            assert trace1.mode == "lines"
-            assert len(trace1.y) == 3
-            assert len(trace1.x) == 3
+            algo_name = next(iter(benchmark_algorithms[i].keys()))
+
+            line_trace = line_plots[i]
+            assert line_trace.type == "scatter"
+            assert line_trace.name == algo_name
+            assert line_trace.mode == "lines"
+            assert len(line_trace.y) == 3
+            assert len(line_trace.x) == 3
+
+            err_trace = err_plots[i]
+            assert err_trace.fill == "toself"
+            assert err_trace.name == algo_name
+            assert not err_trace.showlegend
+            # * 2 because trace is above and under the mean
+            assert len(err_trace.y) == 3 * 2
+            assert len(err_trace.x) == 3 * 2

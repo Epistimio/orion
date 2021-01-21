@@ -12,11 +12,8 @@
 
 from collections import defaultdict
 
-import numpy as np
-import pandas as pd
-import plotly.express as px
-
 from orion.benchmark.base import BaseAssess
+from orion.plotting.base import rankings
 
 
 class AverageRank(BaseAssess):
@@ -39,77 +36,10 @@ class AverageRank(BaseAssess):
             A list of (task_index, experiment), where task_index is the index of task to run for
             this assessment, and experiment is an instance of `orion.core.worker.experiment`.
         """
-        task_algorithm_exp = defaultdict(list)
+        algorithm_groups = defaultdict(list)
 
-        for task_index, exp in experiments:
+        for _, exp in experiments:
             algorithm_name = list(exp.configuration["algorithms"].keys())[0]
+            algorithm_groups[algorithm_name].append(exp)
 
-            trials = list(
-                filter(lambda trial: trial.status == "completed", exp.fetch_trials())
-            )
-            exp_trails = self._build_exp_trails(trials)
-
-            task_algorithm_exp[task_index].append((algorithm_name, exp_trails))
-
-        ploty = self._display_plot(task, task_algorithm_exp)
-
-        return ploty
-
-    def _display_plot(self, task, task_algorithm_exp):
-
-        algorithm_trials_ranks = defaultdict(list)
-        for _, algo_exp_trials in task_algorithm_exp.items():
-
-            index_trials = []
-            index_algo = []
-            for algo, exp_trials in algo_exp_trials:
-                index_algo.append(algo)
-                index_trials.append(exp_trials)
-
-            # [n_algo, n_trial] => [n_trial, n_algo],
-            # then argsort the trial objective at different timestamp
-            algo_sorted_trials = np.array(index_trials).transpose().argsort()
-
-            # replace the sort index for each trail among different algorithms
-            algo_ranks = np.zeros(algo_sorted_trials.shape, dtype=int)
-            for trial_index, argsorts in enumerate(algo_sorted_trials):
-                for argsort_index, algo_index in enumerate(argsorts):
-                    algo_ranks[trial_index][algo_index] = argsort_index + 1
-            # [n_trial, n_algo] => [n_algo, n_trial]
-            algo_ranks = algo_ranks.transpose()
-
-            for algo_index, ranks in enumerate(algo_ranks):
-                algorithm_trials_ranks[index_algo[algo_index]].append(ranks)
-
-        plot_tables = []
-        for algo, ranks in algorithm_trials_ranks.items():
-            data = np.array(ranks).transpose().mean(axis=-1)
-            df = pd.DataFrame(data, columns=["rank"])
-            df["algorithm"] = algo
-            plot_tables.append(df)
-
-        df = pd.concat(plot_tables)
-        title = "Assessment {} over Task {}".format(self.__class__.__name__, task)
-        fig = px.line(
-            df, y="rank", labels={"index": "trial_seq"}, color="algorithm", title=title
-        )
-
-        return fig
-
-    def _build_exp_trails(self, trials):
-        """
-        1. sort the trials wrt. submit time
-        2. reset the objective value of each trail with the best until it
-        """
-        data = [[trial.submit_time, trial.objective.value] for trial in trials]
-        sorted(data, key=lambda x: x[0])
-
-        result = []
-        smallest = np.inf
-        for _, objective in enumerate(data):
-            if smallest > objective[1]:
-                smallest = objective[1]
-                result.append(objective[1])
-            else:
-                result.append(smallest)
-        return result
+        return rankings(algorithm_groups)

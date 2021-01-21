@@ -8,7 +8,8 @@
    :synopsis: Provides agnostic HPO analysis tools
 """
 
+from orion.analysis.base import average, ranking
 from orion.analysis.lpi import lpi
 from orion.analysis.regret import regret
 
-__all__ = ["lpi", "regret"]
+__all__ = ["average", "ranking", "lpi", "regret"]

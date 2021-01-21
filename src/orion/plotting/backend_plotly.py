@@ -6,13 +6,15 @@
    :platform: Unix
    :synopsis: Plotly backend for plotting methods
 """
+from collections import Iterable
 import functools
 
 import numpy
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 
-import orion.analysis.regret
+import orion.analysis
 from orion.algo.space import Categorical, Fidelity
 
 
@@ -143,6 +145,130 @@ def parallel_coordinates(experiment, order=None, colorscale="YlOrRd", **kwargs):
     return fig
 
 
+def rankings(experiments, order_by, **kwargs):
+    """Plotly implementation of `orion.plotting.rankings`"""
+
+    def reformat_competitions(experiments):
+        if isinstance(experiments, dict) and isinstance(
+            next(iter(experiments.values())), Iterable
+        ):
+            competitions = []
+            remaining = True
+            i = 0
+            n_competitions = len(next(iter(experiments.values())))
+            for ith_competition in range(n_competitions):
+                competition = {}
+                for name in experiments.keys():
+                    competition[name] = experiments[name][i]
+                competitions.append(competition)
+        elif isinstance(experiments, dict):
+            competitions = experiments
+        elif isinstance(experiments, Iterable) and not isinstance(experiments[0], dict):
+            competitions = {
+                f"{experiment.name}-v{experiment.version}": experiment
+                for experiment in experiments
+            }
+        else:
+            competitions = experiments
+
+        return competitions
+
+    def build_groups(competitions):
+
+        if not isinstance(competitions, dict):
+            rankings = []
+            for competition in competitions:
+                rankings.append(build_frame(competition))
+            df = pd.concat(rankings)
+            data_frames = orion.analysis.average(
+                df, group_by=["order", "name"], key="rank", return_var=True
+            )
+        else:
+            data_frames = build_frame(competitions)
+
+        return data_frames
+
+    def build_frame(competition):
+        """Builds the dataframe for the plot"""
+
+        frames = []
+        for name, experiment in competition.items():
+            df = experiment.to_pandas()
+            df = df.loc[df["status"] == "completed"]
+            df = df.sort_values(order_by)
+            df = orion.analysis.regret(df)
+            df["name"] = [name] * len(df)
+            df["order"] = range(len(df))
+            frames.append(df)
+
+        df = pd.concat(frames)
+
+        return orion.analysis.ranking(df)
+
+    def get_objective_name(competition):
+        """Infer name of objective based on trials of one experiment"""
+        if not isinstance(competition, dict):
+            return get_objective_name(competition[0])
+
+        for experiment in competition.values():
+            trials = experiment.fetch_trials_by_status("completed")
+            if trials:
+                return trials[0].objective.name
+        return "objective"
+
+    ORDER_KEYS = ["suggested", "reserved", "completed"]
+
+    if not experiments:
+        raise ValueError("Parameter 'experiment' is None")
+
+    if order_by not in ORDER_KEYS:
+        raise ValueError(f"Parameter 'order_by' is not one of {ORDER_KEYS}")
+
+    competitions = reformat_competitions(experiments)
+    df = build_groups(competitions)
+
+    fig = go.Figure()
+
+    if df.empty:
+        return fig
+
+    names = set(df["name"])
+    for i, name in enumerate(sorted(names)):
+        exp_data = df[df["name"] == name]
+        if "rank_mean" in exp_data:
+            y = exp_data["rank_mean"]
+        else:
+            y = exp_data["rank"]
+        x = list(range(len(y)))
+        fig.add_scatter(
+            x=x,
+            y=y,
+            mode="lines",
+            line=dict(color=px.colors.qualitative.G10[i]),
+            name=name,
+        )
+        if "rank_var" in exp_data:
+            dy = exp_data["rank_var"]
+            fig.add_scatter(
+                x=list(x) + list(x)[::-1],
+                y=list(y - dy) + list(y + dy)[::-1],
+                fill="toself",
+                showlegend=False,
+                line=dict(color=px.colors.qualitative.G10[i], width=0),
+                name=name,
+            )
+
+    objective = get_objective_name(competitions)
+    fig.update_layout(
+        title=f"Average Rankings",
+        xaxis_title=f"Trials ordered by {order_by} time",
+        yaxis_title=f"Ranking based on {objective}",
+        hovermode="x",
+    )
+
+    return fig
+
+
 def regret(experiment, order_by, verbose_hover, **kwargs):
     """Plotly implementation of `orion.plotting.regret`"""
 
@@ -199,6 +325,115 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
         title=f"Regret for experiment '{experiment.name}'",
         xaxis_title=f"Trials ordered by {order_by} time",
         yaxis_title=y_axis_label,
+    )
+
+    return fig
+
+
+
+
+
+def regrets(experiments, order_by, **kwargs):
+    """Plotly implementation of `orion.plotting.regrets`"""
+
+    compute_average = bool(
+        isinstance(experiments, dict)
+        and isinstance(next(iter(experiments.values())), Iterable)
+    )
+
+    def build_groups():
+        """Build dataframes for groups of experiments"""
+        # TODO move this
+        if compute_average:
+            data_frames = dict()
+            for name, group in experiments.items():
+                df = orion.analysis.average(build_frame(group), return_var=True)
+                df["name"] = [name] * len(df)
+                data_frames[name] = df
+            data_frames = pd.concat(data_frames)
+        elif isinstance(experiments, dict):
+            data_frames = build_frame(experiments.values(), list(experiments.keys()))
+        else:
+            data_frames = build_frame(experiments)
+
+        return data_frames
+
+    def build_frame(experiments, names=None):
+        """Builds the dataframe for the plot"""
+        frames = []
+        for i, experiment in enumerate(experiments):
+            df = experiment.to_pandas()
+            df = df.loc[df["status"] == "completed"]
+            df = df.sort_values(order_by)
+            df = orion.analysis.regret(df)
+            df["name"] = [
+                names[i] if names else f"{experiment.name}-v{experiment.version}"
+            ] * len(df)
+            df["order"] = range(len(df))
+            frames.append(df)
+
+        return pd.concat(frames)
+
+    def get_objective_name(experiments):
+        """Infer name of objective based on trials of one experiment"""
+        if compute_average and isinstance(experiments, dict):
+            return get_objective_name(sum(map(list, experiments.values()), []))
+
+        if isinstance(experiments, dict):
+            experiments = experiments.values()
+
+        for experiment in experiments:
+            trials = experiment.fetch_trials_by_status("completed")
+            if trials:
+                return trials[0].objective.name
+        return "objective"
+
+    ORDER_KEYS = ["suggested", "reserved", "completed"]
+
+    if not experiments:
+        raise ValueError("Parameter 'experiment' is None")
+
+    if order_by not in ORDER_KEYS:
+        raise ValueError(f"Parameter 'order_by' is not one of {ORDER_KEYS}")
+
+    df = build_groups()
+
+    fig = go.Figure()
+
+    if df.empty:
+        return fig
+
+    names = set(df["name"])
+    for i, name in enumerate(sorted(names)):
+        exp_data = df[df["name"] == name]
+        if "best_mean" in exp_data:
+            y = exp_data["best_mean"]
+        else:
+            y = exp_data["best"]
+        x = list(range(len(y)))
+        fig.add_scatter(
+            x=x,
+            y=y,
+            mode="lines",
+            line=dict(color=px.colors.qualitative.G10[i]),
+            name=name,
+        )
+        if "best_var" in exp_data:
+            dy = exp_data["best_var"]
+            fig.add_scatter(
+                x=list(x) + list(x)[::-1],
+                y=list(y - dy) + list(y + dy)[::-1],
+                fill="toself",
+                showlegend=False,
+                line=dict(color=px.colors.qualitative.G10[i]),
+                name=name,
+            )
+
+    fig.update_layout(
+        title=f"Average Regret",
+        xaxis_title=f"Trials ordered by {order_by} time",
+        yaxis_title=get_objective_name(experiments),
+        hovermode="x",
     )
 
     return fig
