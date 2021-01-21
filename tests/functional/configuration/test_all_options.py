@@ -20,6 +20,10 @@ from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 from orion.testing.state import OrionState
 
+script = os.path.join(
+    os.path.abspath(os.path.dirname(__file__)), "..", "demo", "black_box.py"
+)
+
 
 class ConfigurationTestSuite:
     """Test suite for the configuration groups"""
@@ -169,7 +173,6 @@ class TestStorage(ConfigurationTestSuite):
         with pytest.raises(SingletonNotInstantiatedError):
             get_storage()
 
-        script = os.path.abspath(__file__)
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
@@ -195,7 +198,6 @@ class TestStorage(ConfigurationTestSuite):
         with pytest.raises(SingletonNotInstantiatedError):
             get_storage()
 
-        script = os.path.abspath(__file__)
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
@@ -225,7 +227,6 @@ class TestStorage(ConfigurationTestSuite):
         with pytest.raises(SingletonNotInstantiatedError):
             get_storage()
 
-        script = os.path.abspath(__file__)
         command = f"hunt --exp-max-trials 0 -n test -c {conf_file} python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
@@ -273,7 +274,6 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         with pytest.raises(SingletonNotInstantiatedError):
             get_storage()
 
-        script = os.path.abspath(__file__)
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
@@ -296,7 +296,6 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         with pytest.raises(SingletonNotInstantiatedError):
             get_storage()
 
-        script = os.path.abspath(__file__)
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
@@ -323,7 +322,6 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         with pytest.raises(SingletonNotInstantiatedError):
             get_storage()
 
-        script = os.path.abspath(__file__)
         command = f"hunt --exp-max-trials 0 -n test -c {conf_file} python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
@@ -387,7 +385,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
                 "parser": {
                     "arguments": [
                         ["_pos_0", "python"],
-                        ["_pos_1", os.path.abspath(__file__)],
+                        ["_pos_1", script],
                         ["x", "orion~uniform(0, 1)"],
                     ],
                     "keys": [["_pos_0", "_pos_0"], ["_pos_1", "_pos_1"], ["x", "-x"]],
@@ -396,8 +394,8 @@ class TestExperimentConfig(ConfigurationTestSuite):
             },
             "priors": {"/x": "uniform(0, 1)"},
             "user": "userxyz",
-            "user_args": ["python", os.path.abspath(__file__), "-x~uniform(0, 1)"],
-            "user_script": os.path.abspath(__file__),
+            "user_args": ["python", script, "-x~uniform(0, 1)"],
+            "user_script": script,
         },
         "refers": {"adapter": [], "parent_id": None, "root_id": 1},
     }
@@ -456,7 +454,6 @@ class TestExperimentConfig(ConfigurationTestSuite):
             self.config["experiment"], orion.core.config.to_dict()["experiment"]
         )
 
-        script = os.path.abspath(__file__)
         command = f"hunt --init-only -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
@@ -484,7 +481,6 @@ class TestExperimentConfig(ConfigurationTestSuite):
             == self.env_vars["ORION_WORKING_DIR"]
         )
 
-        script = os.path.abspath(__file__)
         command = f"hunt --init-only -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
@@ -496,7 +492,6 @@ class TestExperimentConfig(ConfigurationTestSuite):
 
     def check_db_config(self):
         """Check that db config overrides global/envvar config"""
-        script = os.path.abspath(__file__)
         name = "test-name"
         command = f"hunt --worker-max-trials 0 -n {name}"
         orion.core.cli.main(command.split(" "))
@@ -508,8 +503,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
 
     def check_local_config(self, tmp_path, conf_file, monkeypatch):
         """Check that local configuration overrides global/envvars configuration"""
-        script = os.path.abspath(__file__)
-        command = f"hunt --worker-trials 0 -c {conf_file}"
+        command = f"hunt --worker-max-trials 0 -c {conf_file}"
         orion.core.cli.main(command.split(" "))
 
         storage = get_storage()
@@ -519,8 +513,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
 
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """Check that cmdargs configuration overrides global/envvars/local configuration"""
-        script = os.path.abspath(__file__)
-        command = f"hunt --worker-trials 0 -c {conf_file} --branch-from test-name"
+        command = f"hunt --worker-max-trials 0 -c {conf_file} --branch-from test-name"
         command += " " + " ".join(
             "--{} {}".format(name, value) for name, value in self.cmdargs.items()
         )
@@ -638,7 +631,6 @@ class TestWorkerConfig(ConfigurationTestSuite):
         self._mock_producer(monkeypatch)
         self._mock_workon(monkeypatch)
 
-        script = os.path.abspath(__file__)
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
@@ -663,7 +655,6 @@ class TestWorkerConfig(ConfigurationTestSuite):
         self._mock_producer(monkeypatch)
         self._mock_workon(monkeypatch)
 
-        script = os.path.abspath(__file__)
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
@@ -681,7 +672,6 @@ class TestWorkerConfig(ConfigurationTestSuite):
         self._mock_producer(monkeypatch)
         self._mock_workon(monkeypatch)
 
-        script = os.path.abspath(__file__)
         command = f"hunt --exp-max-trials 0 -n test -c {conf_file} python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
@@ -704,8 +694,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
         self._mock_producer(monkeypatch)
         self._mock_workon(monkeypatch)
 
-        script = os.path.abspath(__file__)
-        command = f"hunt --worker-trials 0 -c {conf_file} -n cmd-test"
+        command = f"hunt --worker-max-trials 0 -c {conf_file} -n cmd-test"
         command += " " + " ".join(
             "--{} {}".format(name, value) for name, value in self.cmdargs.items()
         )
@@ -774,62 +763,26 @@ class TestEVCConfig(ConfigurationTestSuite):
         assert orion.core.config.to_dict()["evc"] != self.config["evc"]
 
     def _mock_consumer(self, monkeypatch):
-
         self.consumer = None
+        old_init = orion.core.worker.Consumer.__init__
 
-        def register(cls, *args, **kwargs):
-            obj = super(orion.core.worker.Consumer, cls).__new__(cls)
-            self.consumer = obj
-            return obj
+        def init(c_self, *args, **kwargs):
+            old_init(c_self, *args, **kwargs)
+            self.consumer = c_self
 
-        monkeypatch.setattr(orion.core.worker.Consumer, "__new__", register)
-
-    def _mock_producer(self, monkeypatch):
-
-        self.producer = None
-
-        def register(cls, *args, **kwargs):
-            obj = super(orion.core.worker.Producer, cls).__new__(cls)
-            self.producer = obj
-            return obj
-
-        monkeypatch.setattr(orion.core.worker.Producer, "__new__", register)
-
-    def _mock_workon(self, monkeypatch):
-        workon = orion.core.worker.workon
-
-        self.workon_kwargs = None
-
-        def mocked_workon(experiment, **kwargs):
-            self.workon_kwargs = kwargs
-            return workon(experiment, **kwargs)
-
-        monkeypatch.setattr("orion.core.cli.hunt.workon", mocked_workon)
+        monkeypatch.setattr(orion.core.worker.Consumer, "__init__", init)
 
     def _check_consumer(self, config):
-
-        assert self.consumer.heartbeat == config["heartbeat"]
-        assert (
-            self.consumer.template_builder.config_prefix == config["user_script_config"]
-        )
-        assert self.consumer.interrupt_signal_code == config["interrupt_signal_code"]
-
-    def _check_producer(self, config):
-
-        assert self.producer.max_idle_time == config["max_idle_time"]
-
-    def _check_workon(self, config):
-
-        assert self.workon_kwargs["max_trials"] == config["max_trials"]
-        assert self.workon_kwargs["max_broken"] == config["max_broken"]
+        assert self.consumer.ignore_code_changes == config["ignore_code_changes"]
 
     def check_global_config(self, tmp_path, monkeypatch):
         """Check that global configuration is set properly"""
         assert orion.core.config.to_dict()["evc"] == self.config["evc"]
 
-        script = os.path.abspath(__file__)
         name = "global-test"
-        command = f"hunt --init-only -n {name} python {script} -x~uniform(0,1)"
+        command = (
+            f"hunt --worker-max-trials 0 -n {name} python {script} -x~uniform(0,1)"
+        )
         assert orion.core.cli.main(command.split(" ")) == 0
 
         # Test that manual_resolution is True and it branches when changing cli
@@ -851,8 +804,9 @@ class TestEVCConfig(ConfigurationTestSuite):
             name,
             command,
             version=3,
-            ignore_code_change=None,
-            change_type="noeffect",
+            mock_ignore_code_changes=None,
+            ignore_code_changes=self.config["evc"]["ignore_code_changes"],
+            change_type=self.config["evc"]["code_change_type"],
         )
 
     def check_env_var_config(self, tmp_path, monkeypatch):
@@ -870,9 +824,10 @@ class TestEVCConfig(ConfigurationTestSuite):
         assert orion.core.config.evc.config_change_type == "unsure"
         assert not orion.core.config.evc.orion_version_change
 
-        script = os.path.abspath(__file__)
         name = "env-var-test"
-        command = f"hunt --init-only -n {name} python {script} -x~uniform(0,1)"
+        command = (
+            f"hunt --worker-max-trials 0 -n {name} python {script} -x~uniform(0,1)"
+        )
         assert orion.core.cli.main(command.split(" ")) == 0
 
         # TODO: Anything to test still???
@@ -889,8 +844,9 @@ class TestEVCConfig(ConfigurationTestSuite):
             name,
             command,
             version=3,
-            ignore_code_change=None,
-            change_type="unsure",
+            mock_ignore_code_changes=None,
+            ignore_code_changes=bool(self.env_vars["ORION_EVC_IGNORE_CODE_CHANGES"]),
+            change_type=self.env_vars["ORION_EVC_CODE_CHANGE"],
         )
 
     def check_db_config(self):
@@ -899,11 +855,12 @@ class TestEVCConfig(ConfigurationTestSuite):
 
     def check_local_config(self, tmp_path, conf_file, monkeypatch):
         """Check that local configuration overrides global/envvars configuration"""
-        script = os.path.abspath(__file__)
         name = "local-test"
         command = (
-            f"hunt --init-only -n {name} -c {conf_file} python {script} -x~uniform(0,1)"
+            f"hunt --worker-max-trials 0 -n {name} -c {conf_file} "
+            f"python {script} -x~uniform(0,1)"
         )
+
         assert orion.core.cli.main(command.split(" ")) == 0
 
         # Test that manual_resolution is True and it branches when changing cli
@@ -932,16 +889,16 @@ class TestEVCConfig(ConfigurationTestSuite):
             name,
             command,
             version=3,
-            ignore_code_change=True,
+            mock_ignore_code_changes=True,
+            ignore_code_changes=self.local["evc"]["ignore_code_changes"],
             change_type=self.local["evc"]["code_change_type"],
         )
 
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """Check that cmdargs configuration overrides global/envvars/local configuration"""
-        script = os.path.abspath(__file__)
         name = "cmd-test"
         command = (
-            f"hunt --init-only -c {conf_file} -n {name} "
+            f"hunt --worker-max-trials 0 -c {conf_file} -n {name} "
             "--auto-resolution "
             "--non-monitored-arguments test:cmdargs "
             "--code-change-type noeffect "
@@ -985,7 +942,8 @@ class TestEVCConfig(ConfigurationTestSuite):
             name,
             command,
             version=3,
-            ignore_code_change=False,
+            mock_ignore_code_changes=False,
+            ignore_code_changes=False,
             change_type=self.cmdargs["code-change-type"],
         )
 
@@ -997,7 +955,8 @@ class TestEVCConfig(ConfigurationTestSuite):
             name,
             command,
             version=4,
-            ignore_code_change=True,
+            mock_ignore_code_changes=True,
+            ignore_code_changes=True,
             change_type=self.cmdargs["code-change-type"],
         )
 
@@ -1031,7 +990,14 @@ class TestEVCConfig(ConfigurationTestSuite):
         return command
 
     def _check_code_change(
-        self, monkeypatch, name, command, version, ignore_code_change, change_type
+        self,
+        monkeypatch,
+        name,
+        command,
+        version,
+        mock_ignore_code_changes,
+        ignore_code_changes,
+        change_type,
     ):
 
         # Test that code change is handled with 'no-effect'
@@ -1049,11 +1015,15 @@ class TestEVCConfig(ConfigurationTestSuite):
             orion.core.io.resolve_config, "infer_versioning_metadata", fixed_dictionary
         )
 
+        self._mock_consumer(monkeypatch)
+
         detect = orion.core.evc.conflicts.CodeConflict.detect
 
-        def mock_detect(old_config, new_config, branching_config):
-            if "ignore_code_changes" in branching_config:
-                assert branching_config["ignore_code_changes"] is ignore_code_change
+        def mock_detect(old_config, new_config, branching_config=None):
+            if branching_config and "ignore_code_changes" in branching_config:
+                assert (
+                    branching_config["ignore_code_changes"] is mock_ignore_code_changes
+                )
                 branching_config["ignore_code_changes"] = False
             return detect(old_config, new_config, branching_config)
 
@@ -1061,6 +1031,8 @@ class TestEVCConfig(ConfigurationTestSuite):
             orion.core.evc.conflicts.CodeConflict, "detect", mock_detect
         )
         assert orion.core.cli.main(command.split(" ")) == 0
+        self._check_consumer({"ignore_code_changes": ignore_code_changes})
+
         experiment = get_experiment(name, version=version + 1)
         assert experiment.version == version + 1
         assert experiment.refers["adapter"].configuration[0] == {
