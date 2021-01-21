@@ -16,6 +16,7 @@ exclude *-requirements.txt
 exclude .pylintrc
 exclude codecov.yml
 exclude .mailmap
+exclude .readthedocs.yml
 prune conda/
 prune .github/
 
