@@ -11,7 +11,7 @@ import versioneer
 repo_root = os.path.dirname(os.path.abspath(__file__))
 
 
-tests_require = ["pytest>=3.0.0" "scikit-learn"]
+tests_require = ["pytest>=3.0.0", "numpy", "scikit-learn"]
 
 
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
