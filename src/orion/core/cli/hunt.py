@@ -90,4 +90,8 @@ def main(args):
     if config.get("worker"):
         worker_config.update(config.get("worker"))
 
-    workon(experiment, **worker_config)
+    workon(
+        experiment,
+        ignore_code_changes=config["branching"].get("ignore_code_changes"),
+        **worker_config
+    )

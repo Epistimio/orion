@@ -854,14 +854,16 @@ def test_new_code_triggers_code_conflict_with_name_only(capsys):
 def test_new_code_ignores_code_conflict():
     """Test that a different git hash is *not* generating a child if --ignore-code-changes"""
     name = "full_x"
-    orion.core.cli.main(
+    # Let it run for 2 trials to test consumer._validate_code_version too.
+    error_code = orion.core.cli.main(
         (
-            "hunt --init-only -n {name} --ignore-code-changes "
+            "hunt --worker-max-trials 2 -n {name} --ignore-code-changes "
             "--manual-resolution ./black_box.py -x~uniform(-10,10)"
         )
         .format(name=name)
         .split(" ")
     )
+    assert error_code == 0
 
 
 @pytest.mark.usefixtures("init_full_x", "version_XYZ")
