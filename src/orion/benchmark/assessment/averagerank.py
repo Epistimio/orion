@@ -28,7 +28,8 @@ class AverageRank(BaseAssess):
 
     def analysis(self, task, experiments):
         """
-        Generate a `plotly.graph_objects.Figure`
+        Generate a `plotly.graph_objects.Figure` to display average rankings
+        between different search algorithms.
 
         task: str
             Name of the task

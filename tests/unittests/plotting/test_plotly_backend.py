@@ -7,7 +7,7 @@ import plotly
 import pytest
 
 import orion.client
-from orion.core.worker.experiment import Experiment, ExperimentView
+from orion.core.worker.experiment import Experiment
 from orion.plotting.base import lpi, parallel_coordinates, rankings, regret, regrets
 from orion.testing import create_experiment
 

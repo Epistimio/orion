@@ -17,7 +17,7 @@ from orion.plotting.base import regrets
 
 class AverageResult(BaseAssess):
     """
-    Evaluate the average performance (objective value) for a search algorithm
+    Evaluate the average performance (objective value) for each search algorithm
     at different time steps (trial number).
     The performance (objective value) used for a trial will the best result until the trial.
     """
@@ -27,7 +27,8 @@ class AverageResult(BaseAssess):
 
     def analysis(self, task, experiments):
         """
-        Generate a `plotly.graph_objects.Figure`
+        Generate a `plotly.graph_objects.Figure` to display average performance
+        for each search algorithm.
 
         task: str
             Name of the task

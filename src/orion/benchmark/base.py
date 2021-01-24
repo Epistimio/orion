@@ -38,7 +38,8 @@ class BaseAssess(ABC):
     @abstractmethod
     def analysis(self, task, experiments):
         """
-        Generate a `plotly.graph_objects.Figure`
+        Generate a `plotly.graph_objects.Figure` to display the performance analysis
+        based on the assessment purpose.
 
         task: str
             Name of the task
