@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # pylint:disable=too-many-lines
 """
 :mod:`orion.core.io.experiment_builder` -- Create experiment from user options
@@ -6,13 +5,13 @@
 
 .. module:: experiment
    :platform: Unix
-   :synopsis: Functions which build `Experiment` and `ExperimentView` objects
+   :synopsis: Functions which build `Experiment` objects
        based on user configuration.
 
 
 The instantiation of an `Experiment` is not a trivial process when the user request an experiment
 with specific options. One can easily create a new experiment with
-`ExperimentView('some_experiment_name')`, but the configuration of a _writable_ experiment is less
+`Experiment('some_experiment_name')`, but the configuration of a _writable_ experiment is less
 straighforward. This is because there is many sources of configuration and they have a strict
 hierarchy. From the more global to the more specific, there is:
 
@@ -100,7 +99,7 @@ from orion.core.utils.exceptions import (
     NoNameError,
     RaceCondition,
 )
-from orion.core.worker.experiment import Experiment, ExperimentView
+from orion.core.worker.experiment import Experiment
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.strategy import Strategy
 from orion.storage.base import get_storage, setup_storage
@@ -185,7 +184,7 @@ def build(name, version=None, branching=None, **config):
     if len(config["space"]) == 0:
         raise NoConfigurationError("No prior found. Please include at least one.")
 
-    experiment = create_experiment(**copy.deepcopy(config))
+    experiment = create_experiment(mode="x", **copy.deepcopy(config))
     if experiment.id is None:
         log.debug("Experiment not found in DB. Now attempting registration in DB.")
         try:
@@ -318,7 +317,15 @@ def merge_producer_config(config, new_config):
 
 
 def build_view(name, version=None):
-    """Build experiment view
+    """Load experiment from database
+
+    This function is deprecated and will be remove in v0.3.0. Use `load()` instead.
+    """
+    return load(name, version=version, mode="r")
+
+
+def load(name, version=None, mode="r"):
+    """Load experiment from database
 
     An experiment view provides all reading operations of standard experiment but prevents the
     modification of the experiment and its trials.
@@ -330,9 +337,18 @@ def build_view(name, version=None):
     version: int, optional
         Version to select. If None, last version will be selected. If version given is larger than
         largest version available, the largest version will be selected.
+    mode: str, optional
+        The access rights of the experiment on the database.
+        'r': read access only
+        'w': can read and write to database
+        Default is 'r'
 
     """
-    log.debug(f"Build view for experiment {name} (version={version})")
+    assert mode in set("rw")
+
+    log.debug(
+        f"Loading experiment {name} (version={version}) from database in mode `{mode}`"
+    )
     db_config = fetch_config_from_db(name, version)
 
     if not db_config:
@@ -344,12 +360,10 @@ def build_view(name, version=None):
 
     db_config.setdefault("version", 1)
 
-    experiment = create_experiment(**db_config)
-
-    return ExperimentView(experiment)
+    return create_experiment(mode=mode, **db_config)
 
 
-def create_experiment(name, version, space, **kwargs):
+def create_experiment(name, version, mode, space, **kwargs):
     """Instantiate the experiment and its attribute objects
 
     All unspecified arguments will be replaced by system's defaults (orion.core.config.*).
@@ -360,6 +374,11 @@ def create_experiment(name, version, space, **kwargs):
         Name of the experiment.
     version: int
         Version of the experiment.
+    mode: str
+        The access rights of the experiment on the database.
+        'r': read access only
+        'w': can read and write to database
+        'x': can read and write to database, algo is instantiated and can execute optimization
     space: dict or Space object
         Optimization space of the algorithm. If dict, should have the form
         `dict(name='<prior>(args)')`.
@@ -375,7 +394,7 @@ def create_experiment(name, version, space, **kwargs):
         Configuration of the storage backend.
 
     """
-    experiment = Experiment(name=name, version=version)
+    experiment = Experiment(name=name, version=version, mode=mode)
     experiment._id = kwargs.get("_id", None)  # pylint:disable=protected-access
     experiment.pool_size = kwargs.get("pool_size")
     if experiment.pool_size is None:
@@ -390,11 +409,11 @@ def create_experiment(name, version, space, **kwargs):
     )
     experiment.space = _instantiate_space(space)
     experiment.algorithms = _instantiate_algo(
-        experiment.space, kwargs.get("algorithms")
+        experiment.space, kwargs.get("algorithms"), ignore_unavailable=mode != "x"
     )
     experiment.producer = kwargs.get("producer", {})
     experiment.producer["strategy"] = _instantiate_strategy(
-        experiment.producer.get("strategy")
+        experiment.producer.get("strategy"), ignore_unavailable=mode != "x"
     )
     experiment.working_dir = kwargs.get(
         "working_dir", orion.core.config.experiment.working_dir
@@ -485,23 +504,35 @@ def _instantiate_space(config):
     return SpaceBuilder().build(config)
 
 
-def _instantiate_algo(space, config):
+def _instantiate_algo(space, config=None, ignore_unavailable=False):
     """Instantiate the algorithm object
 
     Parameters
     ----------
     config: dict, optional
-        Configuration of the strategy. If None of empty, system's defaults are used
+        Configuration of the algorithm. If None or empty, system's defaults are used
         (orion.core.config.experiment.algorithms).
+    ignore_unavailable: bool, optional
+        If True and algorithm is not available (plugin not installed), return the configuration.
+        Otherwise, raise Factory error from PrimaryAlgo
 
     """
     if not config:
         config = orion.core.config.experiment.algorithms
 
-    return PrimaryAlgo(space, config)
+    try:
+        algo = PrimaryAlgo(space, config)
+    except NotImplementedError as e:
+        if not ignore_unavailable:
+            raise e
+        log.warning(str(e))
+        log.warning("Algorithm will not be instantiated.")
+        algo = config
+
+    return algo
 
 
-def _instantiate_strategy(config=None):
+def _instantiate_strategy(config=None, ignore_unavailable=False):
     """Instantiate the strategy object
 
     Parameters
@@ -509,6 +540,10 @@ def _instantiate_strategy(config=None):
     config: dict, optional
         Configuration of the strategy. If None of empty, system's defaults are used
         (orion.core.config.producer.strategy).
+    ignore_unavailable: bool, optional
+        If True and algorithm is not available (plugin not installed), return the configuration.
+        Otherwise, raise Factory error from PrimaryAlgo
+
 
     """
     if not config:
@@ -521,7 +556,16 @@ def _instantiate_strategy(config=None):
         config = copy.deepcopy(config)
         strategy_type, config = next(iter(config.items()))
 
-    return Strategy(of_type=strategy_type, **config)
+    try:
+        strategy = Strategy(of_type=strategy_type, **config)
+    except NotImplementedError as e:
+        if not ignore_unavailable:
+            raise e
+        log.warning(str(e))
+        log.warning("Strategy will not be instantiated.")
+        strategy = {strategy_type: config}
+
+    return strategy
 
 
 def _register_experiment(experiment):
@@ -605,13 +649,13 @@ def _branch_experiment(experiment, conflicts, version, branching_arguments):
 
     config.pop("_id")
 
-    return create_experiment(**config)
+    return create_experiment(mode="x", **config)
 
 
 def _get_conflicts(experiment, branching):
     """Get conflicts between current experiment and corresponding configuration in database"""
     log.debug("Looking for conflicts in new configuration.")
-    db_experiment = build_view(experiment.name, experiment.version)
+    db_experiment = load(experiment.name, experiment.version, mode="r")
     conflicts = detect_conflicts(
         db_experiment.configuration, experiment.configuration, branching
     )
@@ -685,13 +729,13 @@ def build_from_args(cmdargs):
     return build(**cmd_config)
 
 
-def build_view_from_args(cmdargs):
+def get_from_args(cmdargs, mode="r"):
     """Build an experiment view based on commandline arguments
 
     .. seealso::
 
-        :func:`orion.core.io.experiment_builder.build_view` for more information on experiment view
-        creation.
+        :func:`orion.core.io.experiment_builder.load` for more information on creation of read-only
+        experiments.
 
     """
     cmd_config = get_cmd_config(cmdargs)
@@ -704,7 +748,7 @@ def build_view_from_args(cmdargs):
     name = cmd_config.get("name")
     version = cmd_config.get("version")
 
-    return build_view(name, version)
+    return load(name, version, mode=mode)
 
 
 def get_cmd_config(cmdargs):

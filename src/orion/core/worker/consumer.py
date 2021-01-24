@@ -77,6 +77,7 @@ class Consumer(object):
         heartbeat=None,
         user_script_config=None,
         interrupt_signal_code=None,
+        ignore_code_changes=None,
     ):
         log.debug("Creating Consumer object.")
         self.experiment = experiment
@@ -96,8 +97,12 @@ class Consumer(object):
         if interrupt_signal_code is None:
             interrupt_signal_code = orion.core.config.worker.interrupt_signal_code
 
+        if ignore_code_changes is None:
+            ignore_code_changes = orion.core.config.evc.ignore_code_changes
+
         self.heartbeat = heartbeat
         self.interrupt_signal_code = interrupt_signal_code
+        self.ignore_code_changes = ignore_code_changes
 
         # Fetch space builder
         self.template_builder = OrionCmdlineParser(user_script_config)
@@ -246,6 +251,9 @@ class Consumer(object):
         return results_file
 
     def _validate_code_version(self):
+        if self.ignore_code_changes:
+            return
+
         old_config = self.experiment.configuration
         new_config = copy.deepcopy(old_config)
         new_config["metadata"]["VCS"] = infer_versioning_metadata(
