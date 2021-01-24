@@ -18,19 +18,11 @@ class BirdLike(BaseTask):
     def __init__(self, max_trials=20):
         super(BirdLike, self).__init__(max_trials=max_trials)
 
-    def get_blackbox_function(self):
-        """
-        Return the black box function to optimize, the function will expect hyper-parameters to
-        search and return objective values of trial with the hyper-parameters.
-        """
+    def call(self, x):
 
-        def birdlike(x):
+        y = (2 * x ** 4 + x ** 2 + 2) / (x ** 4 + 1)
 
-            y = (2 * x ** 4 + x ** 2 + 2) / (x ** 4 + 1)
-
-            return [dict(name="birdlike", type="objective", value=y)]
-
-        return birdlike
+        return [dict(name="birdlike", type="objective", value=y)]
 
     def get_search_space(self):
         """Return the search space for the task objective function"""
