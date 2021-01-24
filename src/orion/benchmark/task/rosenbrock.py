@@ -22,20 +22,12 @@ class RosenBrock(BaseTask):
         self.dim = dim
         super(RosenBrock, self).__init__(max_trials=max_trials, dim=dim)
 
-    def get_blackbox_function(self):
-        """
-        Return the black box function to optimize, the function will expect hyper-parameters to
-        search and return objective values of trial with the hyper-parameters.
-        """
-
-        def rosenbrock(x):
-            """Evaluate a n-D rosenbrock function."""
-            x = numpy.asarray(x)
-            summands = 100 * (x[1:] - x[:-1] ** 2) ** 2 + (1 - x[:-1]) ** 2
-            y = numpy.sum(summands)
-            return [dict(name="rosenbrock", type="objective", value=y)]
-
-        return rosenbrock
+    def call(self, x):
+        """Evaluate a n-D rosenbrock function."""
+        x = numpy.asarray(x)
+        summands = 100 * (x[1:] - x[:-1] ** 2) ** 2 + (1 - x[:-1]) ** 2
+        y = numpy.sum(summands)
+        return [dict(name="rosenbrock", type="objective", value=y)]
 
     def get_search_space(self):
         """Return the search space for the task objective function"""

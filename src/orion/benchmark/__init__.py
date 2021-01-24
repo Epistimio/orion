@@ -249,12 +249,11 @@ class Study:
 
     def execute(self):
         """Execute all the experiments of the study"""
-        blackbox_fun = self.task.get_blackbox_function()
         max_trials = self.task.max_trials
 
         for _, experiment in self.experiments_info:
             # TODO: it is a blocking call
-            experiment.workon(blackbox_fun, max_trials)
+            experiment.workon(self.task, max_trials)
 
     def status(self):
         """Return status of the study"""

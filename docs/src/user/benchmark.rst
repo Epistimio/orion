@@ -5,7 +5,6 @@ Benchmark
 You can benchmark the performance of search algorithms with different tasks at different
 assessment levels.
 
-
 Benchmark can be created as below, refer to :doc:`/code/benchmark/benchmark_client`
 for how to create and :doc:`/code/benchmark` for how to use benchmark.
 
@@ -24,7 +23,10 @@ for how to create and :doc:`/code/benchmark` for how to use benchmark.
               }
           ])
 
-
 Beside out of box :doc:`/code/benchmark/task` and :doc:`/code/benchmark/assessment`,
 you can also extend benchmark to add new ``Tasks`` and ``Assessments`` by referring
 :doc:`/code/benchmark/base`,
+
+Learn how to get start using benchmark in Orion with this `sample notebook`_.
+
+.. _sample notebook: https://github.com/Epistimio/orion/tree/develop/examples/benchmark/benchmark_get_start.ipynb

@@ -16,14 +16,13 @@ class TestBranin:
             "orion-benchmark-task-branin-Branin": {"max_trials": 2}
         }
 
-    def test_bb_function(self):
+    def test_call(self):
         """Test to get task function"""
         branin = Branin(2)
-        bfunc = branin.get_blackbox_function()
 
-        assert callable(bfunc)
+        assert callable(branin)
 
-        objectives = bfunc([1, 2])
+        objectives = branin([1, 2])
         assert type(objectives[0]) == dict
 
     def test_search_space(self):
@@ -44,14 +43,13 @@ class TestCarromTable:
             "orion-benchmark-task-carromtable-CarromTable": {"max_trials": 2}
         }
 
-    def test_bb_function(self):
+    def test_call(self):
         """Test to get task function"""
         carrom = CarromTable(2)
-        bfunc = carrom.get_blackbox_function()
 
-        assert callable(bfunc)
+        assert callable(carrom)
 
-        objectives = bfunc([1, 2])
+        objectives = carrom([1, 2])
         assert type(objectives[0]) == dict
 
     def test_search_space(self):
@@ -72,14 +70,13 @@ class TestEggHolder:
             "orion-benchmark-task-eggholder-EggHolder": {"dim": 3, "max_trials": 2}
         }
 
-    def test_bb_function(self):
+    def test_call(self):
         """Test to get task function"""
         egg = EggHolder(2)
-        bfunc = egg.get_blackbox_function()
 
-        assert callable(bfunc)
+        assert callable(egg)
 
-        objectives = bfunc([1, 2])
+        objectives = egg([1, 2])
         assert type(objectives[0]) == dict
 
     def test_search_space(self):
@@ -100,14 +97,13 @@ class TestRosenBrock:
             "orion-benchmark-task-rosenbrock-RosenBrock": {"dim": 3, "max_trials": 2}
         }
 
-    def test_bb_function(self):
+    def test_call(self):
         """Test to get task function"""
         rb = RosenBrock(2)
-        bfunc = rb.get_blackbox_function()
 
-        assert callable(bfunc)
+        assert callable(rb)
 
-        objectives = bfunc([1, 2])
+        objectives = rb([1, 2])
         assert type(objectives[0]) == dict
 
     def test_search_space(self):

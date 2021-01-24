@@ -77,12 +77,19 @@ class BaseTask(ABC):
         self._param_names["max_trials"] = max_trials
 
     @abstractmethod
-    def get_blackbox_function(self):
+    def call(self, *args, **kwargs):
         """
-        Return the black box function to optimize, the function will expect hyper-parameters to
+        Define the black box function to optimize, the function will expect hyper-parameters to
         search and return objective values of trial with the hyper-parameters.
         """
         pass
+
+    def __call__(self, *args, **kwargs):
+        """
+        All tasks will be callable by default,
+        and method `call()` will be executed when a task is called directly.
+        """
+        return self.call(*args, **kwargs)
 
     @property
     def max_trials(self):

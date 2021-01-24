@@ -6,13 +6,13 @@
    :platform: Unix
    :synopsis: Plotly backend for plotting methods
 """
-from collections import Iterable
 import functools
+from collections import Iterable
 
 import numpy
 import pandas as pd
-import plotly.graph_objects as go
 import plotly.express as px
+import plotly.graph_objects as go
 
 import orion.analysis
 from orion.algo.space import Categorical, Fidelity
@@ -328,9 +328,6 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
     )
 
     return fig
-
-
-
 
 
 def regrets(experiments, order_by, **kwargs):
