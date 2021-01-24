@@ -159,14 +159,19 @@ ExperimentClient
 ~~~~~~~~~~~~~~~~
 
 The experiment client must be created with the helper function
-:py:func:`create_experiment() <orion.client.create_experiment>` which will take care of
-initiating the storage backend and create a new experiment if non-existant or simply load
-the corresponding experiment from the storage.
+:py:func:`get_experiment() <orion.client.get_experiment>` which will take care of
+initiating the storage backend and load the corresponding experiment from the storage.
+To create a new experiment use :py:func:`create_experiment() <orion.client.create_experiment>`.
 
-There is a small subset of methods to fetch trials or create new ones. We focus here
+There is a small subset of methods to fetch trials or register new ones. We focus here
 on the methods for loading or creation of trials in particular, see
 :py:class:`ExperimentClient <orion.client.experiment.ExperimentClient>` for documentation
 of all methods.
+
+The experiment client can be loaded in read-only or read/write mode. Make sure to
+load the experiment with the proper mode if you want to edit the database.
+For full read/write/execution rights, use
+:py:func:`create_experiment() <orion.client.create_experiment>`.
 
 Here is a short example to fetch trials or insert a new one.
 

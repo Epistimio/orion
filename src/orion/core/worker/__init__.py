@@ -83,11 +83,16 @@ def workon(
     heartbeat=None,
     user_script_config=None,
     interrupt_signal_code=None,
+    ignore_code_changes=None,
 ):
     """Try to find solution to the search problem defined in `experiment`."""
     producer = Producer(experiment, max_idle_time)
     consumer = Consumer(
-        experiment, heartbeat, user_script_config, interrupt_signal_code
+        experiment,
+        heartbeat,
+        user_script_config,
+        interrupt_signal_code,
+        ignore_code_changes,
     )
 
     log.debug("#####  Init Experiment  #####")

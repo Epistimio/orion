@@ -133,3 +133,7 @@ class InexecutableUserScript(PermissionError):
 
     def __init__(self, cmdline, message=INEXECUTABLE_USER_SCRIPT_ERROR_MESSAGE):
         super().__init__(message.format(cmdline))
+
+
+class UnsupportedOperation(Exception):
+    """The operation is not supported with current access rights"""
