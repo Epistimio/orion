@@ -47,7 +47,6 @@ class Producer(object):
                 " initialization."
             )
         self.algorithm = experiment.algorithms
-        self.algorithm.algorithm.max_trials = experiment.max_trials
         if max_idle_time is None:
             max_idle_time = orion.core.config.worker.max_idle_time
         self.max_idle_time = max_idle_time

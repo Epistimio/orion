@@ -371,13 +371,12 @@ class Precision(Transformer):
         if isinstance(point, (list, tuple)) or (
             isinstance(point, numpy.ndarray) and point.shape
         ):
-            point = map(
-                lambda x: numpy.format_float_scientific(
-                    x, precision=self.precision - 1
-                ),
-                point,
+            format_float = numpy.vectorize(
+                lambda x: numpy.format_float_scientific(x, precision=self.precision - 1)
             )
-            point = list(map(float, point))
+            point = format_float(point)
+            to_float = numpy.vectorize(float)
+            point = to_float(point)
         else:
             point = float(
                 numpy.format_float_scientific(point, precision=self.precision - 1)

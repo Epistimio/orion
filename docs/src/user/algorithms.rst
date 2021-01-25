@@ -60,6 +60,47 @@ Configuration
 
 Seed for the random number generator used to sample new trials. Default is ``None``.
 
+.. _grid-search:
+
+Grid Search
+-----------
+
+Grid search is one of the simplest algorithm. It can work reasonably well for small search spaces of
+one or two dimensions but should be avoided for larger search spaces. The search space can be
+configured in three different ways.
+
+1. Default for the lazy. You can set a very large ``n_values`` (ex: 100) and the grid will be
+   adjusted so that it results in less than ``max_trials`` as defined in the experiment
+   configuration.
+2. You can set ``n_values`` to the number of points desired by dimension. Note that if this
+   leads to too many trials the grid will be shrunken down to fit below ``max_trials``.
+3. You can pass a dictionary to ``n_values`` specifying the number of points for each dimensions.
+   Ex: ``n_values: {'dim1': 3, 'dim2': 4}``.
+
+.. note::
+
+   For categorical dimensions (``choices()``) all values are used to build the grid. This means
+   ``n_values`` will not be honored. A warning is printed when this happens. Accordingly,
+   if too many options are provided for the categorical dimensions the grid may lead to more trials
+   than ``max_trials``. A ``ValueError`` will be raised in such scenario.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+    experiment:
+        algorithms:
+            gridsearch:
+                n_values: 100
+
+
+``n_values``
+
+Number of different values to use for each dimensions to build the grid. Can be either
+1. An integer. The same number will be used for all dimensions
+2. A dictionary many dimension names to integers. Each dimension will have its own number of values.
+
 .. _hyperband-algorithm:
 
 Hyperband
@@ -363,8 +404,8 @@ Algorithm Plugins
 
 .. _scikit-bayesopt:
 
-Bayesian Optimizer
-------------------
+Scikit Bayesian Optimizer
+-------------------------
 
 ``orion.algo.skopt`` provides a wrapper for `Bayesian optimizer`_ using Gaussian process implemented
 in `scikit optimize`_.

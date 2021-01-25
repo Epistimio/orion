@@ -409,7 +409,10 @@ def create_experiment(name, version, mode, space, **kwargs):
     )
     experiment.space = _instantiate_space(space)
     experiment.algorithms = _instantiate_algo(
-        experiment.space, kwargs.get("algorithms"), ignore_unavailable=mode != "x"
+        experiment.space,
+        experiment.max_trials,
+        kwargs.get("algorithms"),
+        ignore_unavailable=mode != "x",
     )
     experiment.producer = kwargs.get("producer", {})
     experiment.producer["strategy"] = _instantiate_strategy(
@@ -504,7 +507,7 @@ def _instantiate_space(config):
     return SpaceBuilder().build(config)
 
 
-def _instantiate_algo(space, config=None, ignore_unavailable=False):
+def _instantiate_algo(space, max_trials, config=None, ignore_unavailable=False):
     """Instantiate the algorithm object
 
     Parameters
@@ -522,6 +525,7 @@ def _instantiate_algo(space, config=None, ignore_unavailable=False):
 
     try:
         algo = PrimaryAlgo(space, config)
+        algo.algorithm.max_trials = max_trials
     except NotImplementedError as e:
         if not ignore_unavailable:
             raise e
