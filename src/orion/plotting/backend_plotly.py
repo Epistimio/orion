@@ -12,8 +12,10 @@ import numpy
 import pandas as pd
 import plotly.graph_objects as go
 
-import orion.analysis.regret
+import orion.analysis
+import orion.analysis.base
 from orion.algo.space import Categorical, Fidelity
+from orion.core.worker.transformer import build_required_space
 
 
 def lpi(experiment, model="RandomForestRegressor", model_kwargs=None, n=20, **kwargs):
@@ -61,33 +63,26 @@ def parallel_coordinates(experiment, order=None, colorscale="YlOrRd", **kwargs):
 
         return df
 
-    def infer_order(order):
-        """Create order if not passed, otherwised verify it"""
+    def infer_order(space, order):
+        """Create order if not passed, otherwise verify it"""
+        params = orion.analysis.base.flatten_params(space, order)
         if order is None:
-            order = list(experiment.space.keys())
             fidelity_dims = [
                 dim for dim in experiment.space.values() if isinstance(dim, Fidelity)
             ]
-            if fidelity_dims:
-                del order[order.index(fidelity_dims[0].name)]
-                order.insert(0, fidelity_dims[0].name)
-        else:
-            names = set(experiment.space.keys())
-            any_invalid = set(order) - names
-            if any_invalid:
-                raise ValueError(
-                    f"Some names are invalid: {any_invalid} not in {names}"
-                )
+            fidelity = fidelity_dims[0].name if fidelity_dims else None
+            if fidelity in params:
+                del params[params.index(fidelity)]
+                params.insert(0, fidelity)
 
-        return order
+        return params
 
     def get_dimension(data, name, dim):
         dim_data = dict(label=name, values=data[name])
-        if isinstance(dim, Categorical):
-            dim_data["tickvals"] = list(range(len(dim.categories)))
-            dim_data["ticktext"] = dim.categories
-        elif isinstance(dim, Fidelity):
-            dim_data["range"] = (dim.low, dim.high)
+        if dim.type == "categorical":
+            categories = dim.interval()
+            dim_data["tickvals"] = list(range(len(categories)))
+            dim_data["ticktext"] = categories
         else:
             dim_data["range"] = dim.interval()
         return dim_data
@@ -102,17 +97,14 @@ def parallel_coordinates(experiment, order=None, colorscale="YlOrRd", **kwargs):
 
     trial = experiment.fetch_trials_by_status("completed")[0]
 
-    dimensions = []
-    for name in infer_order(order):
-        dim = experiment.space[name]
-        shape = dim.shape
-        if shape:
-            assert len(shape) == 1
-            for i in range(shape[0]):
-                name_i = f"{name}[{i}]"
-                dimensions.append(get_dimension(df, name_i, dim))
-        else:
-            dimensions.append(get_dimension(df, name, dim))
+    flattened_space = build_required_space(
+        experiment.space, shape_requirement="flattened"
+    )
+
+    dimensions = [
+        get_dimension(df, name, flattened_space[name])
+        for name in infer_order(experiment.space, order)
+    ]
 
     objective_name = trial.objective.name
 
