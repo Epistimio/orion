@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.analysis.lpi` -- Provide tools to calculate Local Parameter Importance
-==================================================================================
+:mod:`orion.analysis.lpi_utils` -- Provide tools to calculate Local Parameter Importance
+========================================================================================
 
 .. module:: orion.analysis.lpi
    :platform: Unix
@@ -9,32 +9,17 @@
 """
 import numpy
 import pandas as pd
-from sklearn.ensemble import (
-    AdaBoostRegressor,
-    BaggingRegressor,
-    ExtraTreesRegressor,
-    GradientBoostingRegressor,
-    RandomForestRegressor,
-)
 
-from orion.analysis.base import train_regressor, to_numpy, flatten_numpy
+from orion.analysis.base import flatten_numpy, to_numpy, train_regressor
 from orion.core.worker.transformer import build_required_space
 
-_regressors_ = {
-    "AdaBoostRegressor": AdaBoostRegressor,
-    "BaggingRegressor": BaggingRegressor,
-    "ExtraTreesRegressor": ExtraTreesRegressor,
-    "GradientBoostingRegressor": GradientBoostingRegressor,
-    "RandomForestRegressor": RandomForestRegressor,
-}
 
-
-def make_grid(point, space, model, n):
+def make_grid(point, space, model, n_points):
     """Build a grid based on point.
 
     The shape of the grid will be
         (number of hyperparameters,
-         number of points ``n``,
+         number of points ``n_points``,
          number of hyperparameters + 1)
 
     Last column is the objective predicted by the model for a given point.
@@ -43,25 +28,18 @@ def make_grid(point, space, model, n):
     ----------
     point: numpy.ndarray
         A tuple representation of the best trials, (hyperparameters + objective)
-    model: str
-        Name of the regression model to use. Can be one of
-        - AdaBoostRegressor
-        - BaggingRegressor
-        - ExtraTreesRegressor
-        - GradientBoostingRegressor
-        - RandomForestRegressor (Default)
-    trials: DataFrame or dict
-        A dataframe of trials containing, at least, the columns 'objective' and 'id'. Or a dict
-        equivalent.
-
-    **kwargs
-        Arguments for the regressor model.
+    space: Space object
+        A space object from an experiment. It must be flattened and linearized.
+    model: `sklearn.base.RegressorMixin`
+        Trained regressor used to compute predictions on the grid
+    n_points: int
+        Number of points for each dimension on the grid.
 
     """
-    grid = numpy.zeros((len(space), n, len(space) + 1))
+    grid = numpy.zeros((len(space), n_points, len(space) + 1))
     for i, dim in enumerate(space.values()):
         grid[i, :, :] = point
-        grid[i, :, i] = numpy.linspace(*dim.interval(), num=n)
+        grid[i, :, i] = numpy.linspace(*dim.interval(), num=n_points)
         grid[i, :, -1] = model.predict(grid[i, :, :-1])
     return grid
 
@@ -71,23 +49,25 @@ def compute_variances(grid):
     return grid[:, :, -1].var(axis=1)
 
 
-def _lpi(point, space, model, n):
+def _lpi(point, space, model, n_points):
     """Local parameter importance for each hyperparameters"""
-    grid = make_grid(point, space, model, n)
+    grid = make_grid(point, space, model, n_points)
     variances = compute_variances(grid)
     ratios = variances / variances.sum()
     return pd.DataFrame(data=ratios, index=space.keys(), columns=["LPI"])
 
 
-def _linear_lpi(point, space, model, n):
-    # TODO
-    return
+# def _linear_lpi(point, space, model, n):
+#     # TODO
+#     return
 
 
-modes = dict(best=_lpi, linear=_linear_lpi)
+modes = dict(best=_lpi)  # , linear=_linear_lpi)
 
 
-def lpi(trials, space, mode="best", model="RandomForestRegressor", n=20, **kwargs):
+def lpi(
+    trials, space, mode="best", model="RandomForestRegressor", n_points=20, **kwargs
+):
     """
     Calculates the Local Parameter Importance for a collection of :class:`Trial`.
 
@@ -119,7 +99,7 @@ def lpi(trials, space, mode="best", model="RandomForestRegressor", n=20, **kwarg
         - GradientBoostingRegressor
         - RandomForestRegressor (Default)
 
-    n: int
+    n_points: int
         Number of points to compute the variances. Default is 20.
 
     **kwargs
@@ -148,5 +128,5 @@ def lpi(trials, space, mode="best", model="RandomForestRegressor", n=20, **kwarg
     data = flatten_numpy(data, flattened_space)
     model = train_regressor(model, data, **kwargs)
     best_point = data[numpy.argmin(data[:, -1])]
-    results = modes[mode](best_point, flattened_space, model, n)
+    results = modes[mode](best_point, flattened_space, model, n_points)
     return results

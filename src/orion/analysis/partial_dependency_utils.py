@@ -1,12 +1,18 @@
-# TODO move model stuff from lpi to analysis.base
+"""
+:mod:`orion.analysis.partial_dependency_utils` -- Tools to compute Partial Dependency
+=====================================================================================
+
+.. module:: orion.analysis.lpi
+   :platform: Unix
+   :synopsis: Provide tools to calculate Partial Dependency
+"""
 import copy
 import itertools
 
-import pandas
 import numpy
+import pandas
 
-from orion.analysis.base import flatten_params, train_regressor, to_numpy, flatten_numpy
-
+from orion.analysis.base import flatten_numpy, flatten_params, to_numpy, train_regressor
 from orion.core.worker.transformer import build_required_space
 
 
@@ -79,18 +85,19 @@ def partial_dependency(
     data = pandas.DataFrame(data, columns=flattened_space.keys())
 
     partial_dependencies = dict()
-    for x_i in range(len(params)):
+    for x_i, x_name in enumerate(params):
         grid, averages, stds = partial_dependency_grid(
-            flattened_space, model, [params[x_i]], data, n_grid_points
+            flattened_space, model, [x_name], data, n_grid_points
         )
         grid = reverse(flattened_space, grid)
-        partial_dependencies[params[x_i]] = (grid, averages, stds)
+        partial_dependencies[x_name] = (grid, averages, stds)
         for y_i in range(x_i + 1, len(params)):
+            y_name = params[y_i]
             grid, averages, stds = partial_dependency_grid(
-                flattened_space, model, [params[x_i], params[y_i]], data, n_grid_points
+                flattened_space, model, [x_name, y_name], data, n_grid_points
             )
             grid = reverse(flattened_space, grid)
-            partial_dependencies[(params[x_i], params[y_i])] = (grid, averages, stds)
+            partial_dependencies[(x_name, y_name)] = (grid, averages, stds)
 
     return partial_dependencies
 
@@ -100,8 +107,8 @@ def reverse(transformed_space, grid):
     for param in grid.keys():
         transformed_dim = transformed_space[param].original_dimension
         param_grid = []
-        for i, e in enumerate(grid[param]):
-            param_grid.append(transformed_dim.reverse(e))
+        for value in grid[param]:
+            param_grid.append(transformed_dim.reverse(value))
         grid[param] = param_grid
     return grid
 
@@ -116,6 +123,7 @@ def make_grid(dim, n_points):
 
 
 def partial_dependency_grid(space, model, params, samples, n_points=40):
+    """Compute the dependency grid for a given set of params (1 or 2)"""
 
     samples = copy.deepcopy(samples)
 

@@ -5,12 +5,9 @@ import copy
 import numpy
 import pandas as pd
 import pytest
+
 from orion.analysis.base import to_numpy, train_regressor
-from orion.analysis.lpi_utils import (
-    compute_variances,
-    lpi,
-    make_grid,
-)
+from orion.analysis.lpi_utils import compute_variances, lpi, make_grid
 from orion.core.io.space_builder import SpaceBuilder
 
 data = pd.DataFrame(

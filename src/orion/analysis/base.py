@@ -1,5 +1,5 @@
 """
-:mod:`orion.analysis.base` -- Base tools to compute diverse analysis 
+:mod:`orion.analysis.base` -- Base tools to compute diverse analysis
 ====================================================================
 
 .. module:: orion.analysis.base
@@ -29,6 +29,40 @@ _regressors_ = {
 
 
 def flatten_params(space, params=None):
+    """Return the sorted params of the corresponding flat space
+
+    If no params are passed, returns all flattened params.
+    If params are passed, returns the corresponding flattened params.
+
+    Parameters
+    ----------
+    space: Space object
+        A space object from an experiment.
+    params: list of str, optional
+        The parameters to select from the search space. If the flattened search space
+        contains flattened params such as ('y' -> 'y[0]', 'y[1]'), passing 'y' in the list of
+        params will returned the flattened version ['y[0]', 'y[1]']
+
+    Examples
+    --------
+    If space has x~uniform(0, 1) and y~uniform(0, 1, shape=(1, 2)).
+    >>> flatten_params(space)
+    ['x', 'y[0,0]', 'y[0,1]']
+    >>> flatten_params(space, params=['x'])
+    ['x']
+    >>> flatten_params(space, params=['x', 'y'])
+    ['x', 'y[0,0]', 'y[0,1]']
+    >>> flatten_params(space, params=['x', 'y[0,1]'])
+    ['x', 'y[0,1]']
+    >>> flatten_params(space, params=['y[0,1]', 'x'])
+    ['x', 'y[0,1]']
+
+    Raises
+    ------
+    ValueError
+        If one of the parameter names passed is not in the flattened space.
+
+    """
     keys = set(space.keys())
     flattened_keys = set(
         build_required_space(
@@ -57,7 +91,7 @@ def flatten_params(space, params=None):
         else:
             flattened_params.append(param)
 
-    return flattened_params
+    return sorted(flattened_params)
 
 
 def to_numpy(trials, space):
