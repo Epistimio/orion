@@ -106,7 +106,9 @@ def mock_train_regressor(monkeypatch, assert_model=None):
             assert model == assert_model
         return mock_model()
 
-    monkeypatch.setattr("orion.analysis.base.train_regressor", train_regressor)
+    monkeypatch.setattr(
+        "orion.analysis.partial_dependency_utils.train_regressor", train_regressor
+    )
 
 
 def test_reverse_no_reshape_needed(space):
@@ -363,7 +365,7 @@ def test_n_samples(monkeypatch, space):
     N_SAMPLES = numpy.random.randint(20, 50)
 
     def mock_partial_dependency_grid(space, model, params, samples, n_points):
-        assert samples.shape == (N_SAMPLES, len(PARAMS) + 1)
+        assert samples.shape == (N_SAMPLES, len(space))
         return partial_dependency_grid(space, model, params, samples, n_points)
 
     monkeypatch.setattr(

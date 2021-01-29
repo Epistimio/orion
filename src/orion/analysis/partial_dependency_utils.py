@@ -22,7 +22,7 @@ def partial_dependency(
     params=None,
     model="RandomForestRegressor",
     n_grid_points=10,
-    n_samples=40,
+    n_samples=50,
     **kwargs
 ):
     """
@@ -49,10 +49,11 @@ def partial_dependency(
         - RandomForestRegressor (Default)
 
     n_grid_points: int
-        Number of points in the grid to compute partial dependency. Default is 20.
+        Number of points in the grid to compute partial dependency. Default is 10.
 
     n_samples: int
         Number of samples to randomly generate the grid used to compute the partial dependency.
+        Default is 50.
 
     **kwargs
         Arguments for the regressor model.

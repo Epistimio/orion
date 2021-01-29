@@ -173,11 +173,6 @@ def partial_dependencies(
         df = _flatten_dims(df, experiment.space)
         return (df, data)
 
-    if model_kwargs is None:
-        model_kwargs = {}
-
-    df, data = build_data()
-
     def _set_scale(figure, dims, x, y):
         for axis, dim in zip("xy", dims):
             if "reciprocal" in dim.prior_name:
@@ -238,6 +233,14 @@ def partial_dependencies(
             showlegend=False,
         )
 
+    if model_kwargs is None:
+        model_kwargs = {}
+
+    df, data = build_data()
+
+    if not data:
+        return go.Figure()
+
     params = [
         param_names for param_names in data.keys() if isinstance(param_names, str)
     ]
@@ -258,7 +261,6 @@ def partial_dependencies(
     cmin = float("inf")
     cmax = -float("inf")
 
-    subplotid = 1
     for x_i in range(len(params)):
         x_name = params[x_i]
         fig.add_trace(
@@ -272,7 +274,6 @@ def partial_dependencies(
             col=x_i + 1,
         )
 
-        subplotid += 1
         _set_scale(fig, [flattened_space[x_name]], x_i + 1, x_i + 1)
 
         fig.update_xaxes(title_text=x_name, row=len(params), col=x_i + 1)
@@ -292,13 +293,11 @@ def partial_dependencies(
                 row=y_i + 1,
                 col=x_i + 1,
             )
-            subplotid += 1
             fig.add_trace(
                 _plot_scatter(df[x_name], df[y_name]),
                 row=y_i + 1,
                 col=x_i + 1,
             )
-            subplotid += 1
 
             cmin = min(cmin, data[(x_name, y_name)][1].min())
             cmax = max(cmax, data[(x_name, y_name)][1].max())

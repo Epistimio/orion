@@ -29,7 +29,7 @@ _regressors_ = {
 
 
 def flatten_params(space, params=None):
-    """Return the sorted params of the corresponding flat space
+    """Return the params of the corresponding flat space
 
     If no params are passed, returns all flattened params.
     If params are passed, returns the corresponding flattened params.
@@ -91,7 +91,7 @@ def flatten_params(space, params=None):
         else:
             flattened_params.append(param)
 
-    return sorted(flattened_params)
+    return flattened_params
 
 
 def to_numpy(trials, space):
