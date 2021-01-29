@@ -6,7 +6,7 @@ import numpy
 import pandas as pd
 import pytest
 from orion.analysis.base import to_numpy, train_regressor
-from orion.analysis.lpi import (
+from orion.analysis.lpi_utils import (
     compute_variances,
     lpi,
     make_grid,
