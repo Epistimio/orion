@@ -17,6 +17,7 @@ from sklearn.ensemble import (
     RandomForestRegressor,
 )
 
+from orion.analysis.base import train_regressor, to_numpy, flatten_numpy
 from orion.core.worker.transformer import build_required_space
 
 _regressors_ = {
@@ -26,50 +27,6 @@ _regressors_ = {
     "GradientBoostingRegressor": GradientBoostingRegressor,
     "RandomForestRegressor": RandomForestRegressor,
 }
-
-
-def train_regressor(regressor_name, data, **kwargs):
-    """Train regressor model
-
-    Parameters
-    ----------
-    model: str
-        Name of the regression model to use. Can be one of
-        - AdaBoostRegressor
-        - BaggingRegressor
-        - ExtraTreesRegressor
-        - GradientBoostingRegressor
-        - RandomForestRegressor (Default)
-    trials: DataFrame or dict
-        A dataframe of trials containing, at least, the columns 'objective' and 'id'. Or a dict
-        equivalent.
-
-    **kwargs
-        Arguments for the regressor model.
-
-    """
-    if regressor_name not in _regressors_:
-        raise ValueError(
-            f"{regressor_name} is not a supported regressor. "
-            f"Did you mean any of theses: list(_regressors_.keys())"
-        )
-
-    regressor = _regressors_[regressor_name](**kwargs)
-    return regressor.fit(data[:, :-1], data[:, -1])
-
-
-def to_numpy(trials, space):
-    """Convert trials in DataFrame to Numpy array of (params + objective)"""
-    return trials[list(space.keys()) + ["objective"]].to_numpy()
-
-
-def flatten(trials_array, flattened_space):
-    """Flatten dimensions"""
-    flattened_points = numpy.array(
-        [flattened_space.transform(point[:-1]) for point in trials_array]
-    )
-
-    return numpy.concatenate((flattened_points, trials_array[:, -1:]), axis=1)
 
 
 def make_grid(point, space, model, n):
@@ -175,7 +132,10 @@ def lpi(trials, space, mode="best", model="RandomForestRegressor", n=20, **kwarg
         param values and LPI metrics are returned in a DataFrame format.
     """
     flattened_space = build_required_space(
-        space, type_requirement="numerical", shape_requirement="flattened"
+        space,
+        dist_requirement="linear",
+        type_requirement="numerical",
+        shape_requirement="flattened",
     )
     if trials.empty or trials.shape[0] == 0:
         return pd.DataFrame(
@@ -185,7 +145,7 @@ def lpi(trials, space, mode="best", model="RandomForestRegressor", n=20, **kwarg
         )
 
     data = to_numpy(trials, space)
-    data = flatten(data, flattened_space)
+    data = flatten_numpy(data, flattened_space)
     model = train_regressor(model, data, **kwargs)
     best_point = data[numpy.argmin(data[:, -1])]
     results = modes[mode](best_point, flattened_space, model, n)

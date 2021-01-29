@@ -5,20 +5,11 @@ import copy
 import numpy
 import pandas as pd
 import pytest
-from sklearn.ensemble import (
-    AdaBoostRegressor,
-    BaggingRegressor,
-    ExtraTreesRegressor,
-    GradientBoostingRegressor,
-    RandomForestRegressor,
-)
-
+from orion.analysis.base import to_numpy, train_regressor
 from orion.analysis.lpi import (
     compute_variances,
     lpi,
     make_grid,
-    to_numpy,
-    train_regressor,
 )
 from orion.core.io.space_builder import SpaceBuilder
 
@@ -58,49 +49,6 @@ def test_parameter_not_modified():
     lpi(data, space)
 
     pd.testing.assert_frame_equal(data, original)
-
-
-def test_to_numpy():
-    """Test that trials are correctly converted to numpy array"""
-    array = to_numpy(data, space)
-
-    assert array.shape == (4, 3)
-    numpy.testing.assert_equal(array[:, 0], data["x"])
-    numpy.testing.assert_equal(array[:, 1], data["y"])
-    numpy.testing.assert_equal(array[:, 2], data["objective"])
-
-
-def test_train_regressor():
-    """Test training different models"""
-    array = to_numpy(data, space)
-    model = train_regressor("AdaBoostRegressor", array)
-    assert isinstance(model, AdaBoostRegressor)
-    model = train_regressor("BaggingRegressor", array)
-    assert isinstance(model, BaggingRegressor)
-    model = train_regressor("ExtraTreesRegressor", array)
-    assert isinstance(model, ExtraTreesRegressor)
-    model = train_regressor("GradientBoostingRegressor", array)
-    assert isinstance(model, GradientBoostingRegressor)
-    model = train_regressor("RandomForestRegressor", array)
-    assert isinstance(model, RandomForestRegressor)
-
-
-def test_train_regressor_kwargs():
-    """Test training models with kwargs"""
-    array = to_numpy(data, space)
-    model = train_regressor(
-        "RandomForestRegressor", array, max_depth=2, max_features="sqrt"
-    )
-    assert model.max_depth == 2
-    assert model.max_features == "sqrt"
-
-
-def test_train_regressor_invalid():
-    """Test error message for invalid model names"""
-    array = to_numpy(data, space)
-    with pytest.raises(ValueError) as exc:
-        train_regressor("IDontExist", array)
-    assert exc.match("IDontExist is not a supported regressor")
 
 
 def test_make_grid():

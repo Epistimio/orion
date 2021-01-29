@@ -1,8 +1,28 @@
 """Tests for :mod:`orion.analysis.base`"""
+import numpy
+import pandas as pd
 import pytest
+from sklearn.ensemble import (
+    AdaBoostRegressor,
+    BaggingRegressor,
+    ExtraTreesRegressor,
+    GradientBoostingRegressor,
+    RandomForestRegressor,
+)
 
-from orion.analysis.base import flatten_params
+from orion.analysis.base import flatten_numpy, flatten_params, to_numpy, train_regressor
 from orion.core.io.space_builder import SpaceBuilder
+from orion.core.worker.transformer import build_required_space
+
+data = pd.DataFrame(
+    data={
+        "id": ["a", "b", "c"],
+        "x": [0, 1, 2],
+        "y": [1, 2, 0],
+        "z": ["a", "b", "c"],
+        "objective": [0.1, 0.2, 0.3],
+    }
+)
 
 
 @pytest.fixture
@@ -15,6 +35,16 @@ def space():
         }
     )
     return space
+
+
+@pytest.fixture
+def fspace(space):
+    return build_required_space(
+        space,
+        dist_requirement="linear",
+        type_requirement="numerical",
+        shape_requirement="flattened",
+    )
 
 
 @pytest.fixture
@@ -80,3 +110,46 @@ class TestFlattenParams:
         assert (
             flatten_params(hspace, params) == [f"x[{i}]" for i in range(3)] + params[1:]
         )
+
+
+def test_to_numpy(space):
+    """Test that trials are correctly converted to numpy array"""
+    array = to_numpy(data, space)
+
+    assert array.shape == (3, 4)
+    numpy.testing.assert_equal(array[:, 0], data["x"])
+    numpy.testing.assert_equal(array[:, 1], data["y"])
+    numpy.testing.assert_equal(array[:, 2], data["z"])
+    numpy.testing.assert_equal(array[:, 3], data["objective"])
+
+
+class TestTrainRegressor:
+    def test_train_regressor(self, space, fspace):
+        """Test training different models"""
+        array = flatten_numpy(to_numpy(data, space), fspace)
+        model = train_regressor("AdaBoostRegressor", array)
+        assert isinstance(model, AdaBoostRegressor)
+        model = train_regressor("BaggingRegressor", array)
+        assert isinstance(model, BaggingRegressor)
+        model = train_regressor("ExtraTreesRegressor", array)
+        assert isinstance(model, ExtraTreesRegressor)
+        model = train_regressor("GradientBoostingRegressor", array)
+        assert isinstance(model, GradientBoostingRegressor)
+        model = train_regressor("RandomForestRegressor", array)
+        assert isinstance(model, RandomForestRegressor)
+
+    def test_train_regressor_kwargs(self, space, fspace):
+        """Test training models with kwargs"""
+        array = flatten_numpy(to_numpy(data, space), fspace)
+        model = train_regressor(
+            "RandomForestRegressor", array, max_depth=2, max_features="sqrt"
+        )
+        assert model.max_depth == 2
+        assert model.max_features == "sqrt"
+
+    def test_train_regressor_invalid(self, space, fspace):
+        """Test error message for invalid model names"""
+        array = flatten_numpy(to_numpy(data, space), fspace)
+        with pytest.raises(ValueError) as exc:
+            train_regressor("IDontExist", array)
+        assert exc.match("IDontExist is not a supported regressor")
