@@ -13,7 +13,8 @@ import math
 
 import numpy
 
-from orion.benchmark.base import BaseTask
+# from orion.benchmark.base import BaseTask
+from orion.benchmark.task.base import BaseTask
 
 
 class Branin(BaseTask):

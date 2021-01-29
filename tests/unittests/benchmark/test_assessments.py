@@ -19,15 +19,11 @@ class TestAverageRank:
         """Test creation"""
         ar1 = AverageRank()
         assert ar1.task_num == 1
-        assert ar1.configuration == {
-            "orion-benchmark-assessment-averagerank-AverageRank": {"task_num": 1}
-        }
+        assert ar1.configuration == {"AverageRank": {"task_num": 1}}
 
         ar2 = AverageRank(task_num=5)
         assert ar2.task_num == 5
-        assert ar2.configuration == {
-            "orion-benchmark-assessment-averagerank-AverageRank": {"task_num": 5}
-        }
+        assert ar2.configuration == {"AverageRank": {"task_num": 5}}
 
     def test_analysis(self, experiment_config, trial_config):
         """Test assessment plot"""
@@ -95,15 +91,11 @@ class TestAverageResult:
         """Test creation"""
         ar1 = AverageResult()
         assert ar1.task_num == 1
-        assert ar1.configuration == {
-            "orion-benchmark-assessment-averageresult-AverageResult": {"task_num": 1}
-        }
+        assert ar1.configuration == {"AverageResult": {"task_num": 1}}
 
         ar2 = AverageResult(task_num=5)
         assert ar2.task_num == 5
-        assert ar2.configuration == {
-            "orion-benchmark-assessment-averageresult-AverageResult": {"task_num": 5}
-        }
+        assert ar2.configuration == {"AverageResult": {"task_num": 5}}
 
     def test_plot_figures(self, experiment_config, trial_config):
         """Test assessment plot"""

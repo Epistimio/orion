@@ -12,7 +12,7 @@
 
 from collections import defaultdict
 
-from orion.benchmark.base import BaseAssess
+from orion.benchmark.assessment.base import BaseAssess
 from orion.plotting.base import rankings
 
 

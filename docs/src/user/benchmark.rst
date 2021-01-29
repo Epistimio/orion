@@ -24,8 +24,8 @@ for how to create and :doc:`/code/benchmark` for how to use benchmark.
           ])
 
 Beside out of box :doc:`/code/benchmark/task` and :doc:`/code/benchmark/assessment`,
-you can also extend benchmark to add new ``Tasks`` and ``Assessments`` by referring
-:doc:`/code/benchmark/base`,
+you can also extend benchmark to add new ``Tasks`` with :doc:`/code/benchmark/task/base` and
+``Assessments`` with :doc:`/code/benchmark/assessment/base`,
 
 Learn how to get start using benchmark in Orion with this `sample notebook`_.
 

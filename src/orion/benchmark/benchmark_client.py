@@ -10,11 +10,12 @@
 
 """
 import datetime
-import importlib
 
 from orion.benchmark import Benchmark, Study
 from orion.core.utils.exceptions import NoConfigurationError
 from orion.storage.base import get_storage, setup_storage
+from orion.benchmark.task.base import BenchmarkTask
+from orion.benchmark.assessment.base import BenchmarkAssessment
 
 
 def get_or_create_benchmark(
@@ -71,6 +72,14 @@ def get_or_create_benchmark(
     return benchmark
 
 
+def _get_task(name, **kwargs):
+    return BenchmarkTask(of_type=name, **kwargs)
+
+
+def _get_assessment(name, **kwargs):
+    return BenchmarkAssessment(of_type=name, **kwargs)
+
+
 def _resolve_db_config(db_config):
 
     benchmark_id = db_config["_id"]
@@ -83,29 +92,14 @@ def _resolve_db_config(db_config):
 
         assessments = target["assess"]
         obj_assessments = []
-        for assessment in assessments:
-            assess_cls = list(assessment.keys())[0]
-            assess_cls = assess_cls.replace("-", ".")
-            assess_cfg = list(assessment.values())[0]
-            mod_str, _sep, class_str = assess_cls.rpartition(".")
-
-            module = importlib.import_module(mod_str)
-            assess_class = getattr(module, class_str)
-            obj_assessments.append(assess_class(**assess_cfg))
+        for name, parameters in assessments.items():
+            obj_assessments.append(_get_assessment(name, **parameters))
         obj_target["assess"] = obj_assessments
 
         tasks = target["task"]
         obj_tasks = []
-        for task in tasks:
-
-            task_cls = list(task.keys())[0]
-            task_cls = task_cls.replace("-", ".")
-            task_cfg = list(task.values())[0]
-            mod_str, _sep, class_str = task_cls.rpartition(".")
-
-            module = importlib.import_module(mod_str)
-            task_class = getattr(module, class_str)
-            obj_tasks.append(task_class(**task_cfg))
+        for name, parameters in tasks.items():
+            obj_tasks.append(_get_task(name, **parameters))
         obj_target["task"] = obj_tasks
 
     obj_targets.append(obj_target)
@@ -116,8 +110,6 @@ def _resolve_db_config(db_config):
 
 
 def _create_benchmark(name, algorithms, targets):
-
-    # _instantiate_algo(experiment.space, kwargs.get('algorithms'))
 
     benchmark = Benchmark(name, algorithms, targets)
     benchmark.setup_studies()

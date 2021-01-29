@@ -173,16 +173,21 @@ class Benchmark:
         for target in self.targets:
             str_target = {}
             assessments = target["assess"]
-            str_assessments = []
+            # str_assessments = []
+            str_assessments = dict()
             for assessment in assessments:
-                str_assessments.append(assessment.configuration)
+                # str_assessments.append(assessment.configuration)
+                str_assessments.update(assessment.configuration)
             str_target["assess"] = str_assessments
 
             tasks = target["task"]
-            str_tasks = []
+            # str_tasks = []
+            str_tasks = dict()
             for task in tasks:
-                str_tasks.append(task.configuration)
+                # str_tasks.append(task.configuration)
+                str_tasks.update(task.configuration)
             str_target["task"] = str_tasks
+
         targets.append(str_target)
         config["targets"] = targets
 

@@ -155,31 +155,14 @@ class TestCreateBenchmark:
                 "algorithms": benchmark_algorithms,
                 "targets": [
                     {
-                        "assess": [
-                            {
-                                "orion-benchmark-assessment-averageresult-AverageResult": {
-                                    "task_num": 2
-                                }
-                            },
-                            {
-                                "orion-benchmark-assessment-averagerank-AverageRank": {
-                                    "task_num": 2
-                                }
-                            },
-                        ],
-                        "task": [
-                            {
-                                "orion-benchmark-task-rosenbrock-RosenBrock": {
-                                    "dim": 3,
-                                    "max_trials": 25,
-                                }
-                            },
-                            {
-                                "orion-benchmark-task-carromtable-CarromTable": {
-                                    "max_trials": 20
-                                }
-                            },
-                        ],
+                        "assess": {
+                            "AverageResult": {"task_num": 2},
+                            "AverageRank": {"task_num": 2},
+                        },
+                        "task": {
+                            "RosenBrock": {"dim": 3, "max_trials": 25},
+                            "CarromTable": {"max_trials": 20},
+                        },
                     }
                 ],
             }

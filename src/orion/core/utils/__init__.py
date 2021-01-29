@@ -28,6 +28,16 @@ def nesteddict():
     return defaultdict(nesteddict)
 
 
+def get_all_subclasses(parent):
+    """Get set of subclasses recursively"""
+    subclasses = set()
+    for subclass in parent.__subclasses__():
+        subclasses.add(subclass)
+        subclasses |= get_all_subclasses(subclass)
+
+    return subclasses
+
+
 class Factory(ABCMeta):
     """Instantiate appropriate wrapper for the infrastructure based on input
     argument, ``of_type``.
@@ -76,15 +86,6 @@ class Factory(ABCMeta):
             )
 
         # Get types visible from base module or package, but internal
-        def get_all_subclasses(parent):
-            """Get set of subclasses recursively"""
-            subclasses = set()
-            for subclass in parent.__subclasses__():
-                subclasses.add(subclass)
-                subclasses |= get_all_subclasses(subclass)
-
-            return subclasses
-
         cls.types = list(get_all_subclasses(cls.__base__))
         cls.types = [class_ for class_ in cls.types if class_.__name__ != cls.__name__]
         cls.typenames = list(map(lambda x: x.__name__.lower(), cls.types))
@@ -109,9 +110,18 @@ class Factory(ABCMeta):
 
         :return: The object which was created on the first call.
         """
-        for inherited_class in cls.types:
-            if inherited_class.__name__.lower() == of_type.lower():
-                return inherited_class.__call__(*args, **kwargs)
+        classes = {clz.__name__.lower(): clz for clz in cls.types}
+
+        if not classes.get(of_type.lower()):
+            cls.types = list(get_all_subclasses(cls.__base__))
+            cls.types = [
+                class_ for class_ in cls.types if class_.__name__ != cls.__name__
+            ]
+            classes = {clz.__name__.lower(): clz for clz in cls.types}
+
+        inherited_class = classes.get(of_type.lower())
+        if inherited_class:
+            return inherited_class(*args, **kwargs)
 
         error = "Could not find implementation of {0}, type = '{1}'".format(
             cls.__base__.__name__, of_type

@@ -10,6 +10,5 @@ Benchmark modules
    :caption: Benchmark modules of Oríon
 
    benchmark/benchmark_client
-   benchmark/base
    benchmark/task
    benchmark/assessment

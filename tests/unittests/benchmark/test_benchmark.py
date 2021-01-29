@@ -54,41 +54,25 @@ def study(benchmark, benchmark_algorithms):
 class TestBenchmark:
     """Test Benchmark"""
 
-    def test_creation(self, benchmark):
+    def test_creation(self, benchmark, benchmark_algorithms):
         """Test benchmark instance creation"""
         cfg = {
             "name": "benchmark007",
-            "algorithms": [{"random": {"seed": 1}}, {"tpe": {"seed": 1}}],
+            "algorithms": benchmark_algorithms,
             "targets": [
                 {
-                    "assess": [
-                        {
-                            "orion-benchmark-assessment-averageresult-AverageResult": {
-                                "task_num": 2
-                            }
-                        },
-                        {
-                            "orion-benchmark-assessment-averagerank-AverageRank": {
-                                "task_num": 2
-                            }
-                        },
-                    ],
-                    "task": [
-                        {
-                            "orion-benchmark-task-rosenbrock-RosenBrock": {
-                                "dim": 3,
-                                "max_trials": 25,
-                            }
-                        },
-                        {
-                            "orion-benchmark-task-carromtable-CarromTable": {
-                                "max_trials": 20
-                            }
-                        },
-                    ],
+                    "assess": {
+                        "AverageResult": {"task_num": 2},
+                        "AverageRank": {"task_num": 2},
+                    },
+                    "task": {
+                        "RosenBrock": {"dim": 3, "max_trials": 25},
+                        "CarromTable": {"max_trials": 20},
+                    },
                 }
             ],
         }
+
         assert benchmark.configuration == cfg
 
     def test_setup_studies(self, benchmark):

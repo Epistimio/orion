@@ -9,5 +9,6 @@ Assessment modules
    :maxdepth: 2
    :caption: Assessment modules of Oríon
 
+   assessment/base
    assessment/averagerank
    assessment/averageresult

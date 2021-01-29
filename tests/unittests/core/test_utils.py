@@ -49,3 +49,8 @@ def test_factory_subclasses_detection():
     assert "Could not find implementation of Base, type = 'random'" in str(
         exc_info.value
     )
+
+    class Random(Base):
+        pass
+
+    assert type(MyFactory(of_type="random")) is Random

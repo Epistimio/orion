@@ -12,9 +12,7 @@ class TestBranin:
         """Test creation"""
         branin = Branin(2)
         assert branin.max_trials == 2
-        assert branin.configuration == {
-            "orion-benchmark-task-branin-Branin": {"max_trials": 2}
-        }
+        assert branin.configuration == {"Branin": {"max_trials": 2}}
 
     def test_call(self):
         """Test to get task function"""
@@ -39,9 +37,7 @@ class TestCarromTable:
         """Test creation"""
         branin = CarromTable(2)
         assert branin.max_trials == 2
-        assert branin.configuration == {
-            "orion-benchmark-task-carromtable-CarromTable": {"max_trials": 2}
-        }
+        assert branin.configuration == {"CarromTable": {"max_trials": 2}}
 
     def test_call(self):
         """Test to get task function"""
@@ -66,9 +62,7 @@ class TestEggHolder:
         """Test creation"""
         branin = EggHolder(max_trials=2, dim=3)
         assert branin.max_trials == 2
-        assert branin.configuration == {
-            "orion-benchmark-task-eggholder-EggHolder": {"dim": 3, "max_trials": 2}
-        }
+        assert branin.configuration == {"EggHolder": {"dim": 3, "max_trials": 2}}
 
     def test_call(self):
         """Test to get task function"""
@@ -93,9 +87,7 @@ class TestRosenBrock:
         """Test creation"""
         branin = RosenBrock(max_trials=2, dim=3)
         assert branin.max_trials == 2
-        assert branin.configuration == {
-            "orion-benchmark-task-rosenbrock-RosenBrock": {"dim": 3, "max_trials": 2}
-        }
+        assert branin.configuration == {"RosenBrock": {"dim": 3, "max_trials": 2}}
 
     def test_call(self):
         """Test to get task function"""

@@ -10,5 +10,6 @@
 
 from .averagerank import AverageRank
 from .averageresult import AverageResult
+from .base import BaseAssess
 
-__all__ = ["AverageRank", "AverageResult"]
+__all__ = ["BaseAssess", "AverageRank", "AverageResult"]
