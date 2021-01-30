@@ -8,10 +8,10 @@
 
 """
 
+from .base import BaseTask
 from .branin import Branin
 from .carromtable import CarromTable
 from .eggholder import EggHolder
 from .rosenbrock import RosenBrock
-from .base import BaseTask
 
 __all__ = ["BaseTask", "RosenBrock", "Branin", "CarromTable", "EggHolder"]
