@@ -14,6 +14,7 @@ TODO
    algo/space
    algo/base
    algo/random
+   algo/gridsearch
    algo/hyperband
    algo/asha
    algo/tpe

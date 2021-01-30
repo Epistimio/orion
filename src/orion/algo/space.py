@@ -342,7 +342,7 @@ def _is_numeric_array(point):
         return isinstance(item, (numbers.Number, numpy.ndarray))
 
     try:
-        return all(_is_numeric(item) for item in point)
+        return numpy.all(numpy.vectorize(_is_numeric)(point))
     except TypeError:
         return _is_numeric(point)
 

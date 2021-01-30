@@ -172,6 +172,10 @@ class TPE(BaseAlgorithm):
 
     """
 
+    requires_type = None
+    requires_dist = None
+    requires_shape = "flattened"
+
     # pylint:disable=too-many-arguments
     def __init__(
         self,
@@ -185,6 +189,20 @@ class TPE(BaseAlgorithm):
         full_weight_num=25,
     ):
 
+        if n_initial_points < 2:
+            n_initial_points = 2
+            logger.warning(
+                "n_initial_points %s is not valid, set n_initial_points = 2",
+                str(n_initial_points),
+            )
+
+        if n_ei_candidates < 1:
+            n_ei_candidates = 1
+            logger.warning(
+                "n_ei_candidates %s is not valid, set n_ei_candidates = 1",
+                str(n_ei_candidates),
+            )
+
         super(TPE, self).__init__(
             space,
             seed=seed,
@@ -195,6 +213,20 @@ class TPE(BaseAlgorithm):
             prior_weight=prior_weight,
             full_weight_num=full_weight_num,
         )
+
+    @property
+    def space(self):
+        """Return transformed space of TPE"""
+        return self._space
+
+    @space.setter
+    def space(self, space):
+        """Set the space of TPE and initialize it"""
+        self._space = space
+        self._initialize()
+
+    def _initialize(self):
+        """Initialize TPE once the space is transformed"""
 
         for dimension in self.space.values():
 
@@ -212,22 +244,6 @@ class TPE(BaseAlgorithm):
             shape = dimension.shape
             if shape and len(shape) != 1:
                 raise ValueError("TPE now only supports 1D shape.")
-
-        if n_initial_points < 2:
-            n_initial_points = 2
-            logger.warning(
-                "n_initial_points %s is not valid, set n_initial_points = 2",
-                str(n_initial_points),
-            )
-
-        if n_ei_candidates < 1:
-            n_ei_candidates = 1
-            logger.warning(
-                "n_ei_candidates %s is not valid, set n_ei_candidates = 1",
-                str(n_ei_candidates),
-            )
-
-        self.seed_rng(seed)
 
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
