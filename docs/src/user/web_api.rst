@@ -274,6 +274,21 @@ visualize your experiments and their results.
 
    :statuscode 404: When the specified experiment doesn't exist in the database.
 
+.. http:get:: /plots/partial_dependencies/:experiment
+
+   Return a partial dependency plot for the specified experiment.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   The JSON output is generated automatically according to the `Plotly.js schema reference <https://plotly.com/python/reference/index/>`_.
+
+   :statuscode 404: When the specified experiment doesn't exist in the database.
+
 .. http:get:: /plots/regret/:experiment
 
    Return a regret plot for the specified experiment.

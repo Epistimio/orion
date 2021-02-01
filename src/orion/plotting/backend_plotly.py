@@ -10,13 +10,19 @@ import functools
 
 import numpy
 import pandas as pd
+import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
-import orion.analysis.regret
+import orion.analysis
+import orion.analysis.base
 from orion.algo.space import Categorical, Fidelity
+from orion.core.worker.transformer import build_required_space
 
 
-def lpi(experiment, model="RandomForestRegressor", model_kwargs=None, n=20, **kwargs):
+def lpi(
+    experiment, model="RandomForestRegressor", model_kwargs=None, n_points=20, **kwargs
+):
     """Plotly implementation of `orion.plotting.lpi`"""
     if not experiment:
         raise ValueError("Parameter 'experiment' is None")
@@ -26,7 +32,9 @@ def lpi(experiment, model="RandomForestRegressor", model_kwargs=None, n=20, **kw
 
     df = experiment.to_pandas()
     df = df.loc[df["status"] == "completed"]
-    df = orion.analysis.lpi(df, experiment.space, model=model, n=n, **model_kwargs)
+    df = orion.analysis.lpi(
+        df, experiment.space, model=model, n_points=n_points, **model_kwargs
+    )
 
     fig = go.Figure(data=[go.Bar(x=df.index.tolist(), y=df["LPI"].tolist())])
 
@@ -61,33 +69,26 @@ def parallel_coordinates(experiment, order=None, colorscale="YlOrRd", **kwargs):
 
         return df
 
-    def infer_order(order):
-        """Create order if not passed, otherwised verify it"""
+    def infer_order(space, order):
+        """Create order if not passed, otherwise verify it"""
+        params = orion.analysis.base.flatten_params(space, order)
         if order is None:
-            order = list(experiment.space.keys())
             fidelity_dims = [
                 dim for dim in experiment.space.values() if isinstance(dim, Fidelity)
             ]
-            if fidelity_dims:
-                del order[order.index(fidelity_dims[0].name)]
-                order.insert(0, fidelity_dims[0].name)
-        else:
-            names = set(experiment.space.keys())
-            any_invalid = set(order) - names
-            if any_invalid:
-                raise ValueError(
-                    f"Some names are invalid: {any_invalid} not in {names}"
-                )
+            fidelity = fidelity_dims[0].name if fidelity_dims else None
+            if fidelity in params:
+                del params[params.index(fidelity)]
+                params.insert(0, fidelity)
 
-        return order
+        return params
 
     def get_dimension(data, name, dim):
         dim_data = dict(label=name, values=data[name])
-        if isinstance(dim, Categorical):
-            dim_data["tickvals"] = list(range(len(dim.categories)))
-            dim_data["ticktext"] = dim.categories
-        elif isinstance(dim, Fidelity):
-            dim_data["range"] = (dim.low, dim.high)
+        if dim.type == "categorical":
+            categories = dim.interval()
+            dim_data["tickvals"] = list(range(len(categories)))
+            dim_data["ticktext"] = categories
         else:
             dim_data["range"] = dim.interval()
         return dim_data
@@ -102,17 +103,14 @@ def parallel_coordinates(experiment, order=None, colorscale="YlOrRd", **kwargs):
 
     trial = experiment.fetch_trials_by_status("completed")[0]
 
-    dimensions = []
-    for name in infer_order(order):
-        dim = experiment.space[name]
-        shape = dim.shape
-        if shape:
-            assert len(shape) == 1
-            for i in range(shape[0]):
-                name_i = f"{name}[{i}]"
-                dimensions.append(get_dimension(df, name_i, dim))
-        else:
-            dimensions.append(get_dimension(df, name, dim))
+    flattened_space = build_required_space(
+        experiment.space, shape_requirement="flattened"
+    )
+
+    dimensions = [
+        get_dimension(df, name, flattened_space[name])
+        for name in infer_order(experiment.space, order)
+    ]
 
     objective_name = trial.objective.name
 
@@ -139,6 +137,192 @@ def parallel_coordinates(experiment, order=None, colorscale="YlOrRd", **kwargs):
     fig.update_layout(
         title=f"Parallel Coordinates Plot for experiment '{experiment.name}'"
     )
+
+    return fig
+
+
+def partial_dependencies(
+    experiment,
+    params=None,
+    smoothing=0.85,
+    n_grid_points=10,
+    n_samples=50,
+    colorscale="Blues",
+    model="RandomForestRegressor",
+    model_kwargs=None,
+):
+    """Plotly implementation of `orion.plotting.partial_dependencies`"""
+
+    def build_data():
+        """Builds the dataframe for the plot"""
+        df = experiment.to_pandas()
+
+        names = list(experiment.space.keys())
+        df["params"] = df[names].apply(_format_hyperparameters, args=(names,), axis=1)
+
+        df = df.loc[df["status"] == "completed"]
+        data = orion.analysis.partial_dependency(
+            df,
+            experiment.space,
+            params=params,
+            model=model,
+            n_grid_points=n_grid_points,
+            n_samples=n_samples,
+            **model_kwargs,
+        )
+        df = _flatten_dims(df, experiment.space)
+        return (df, data)
+
+    def _set_scale(figure, dims, x, y):
+        for axis, dim in zip("xy", dims):
+            if "reciprocal" in dim.prior_name:
+                getattr(figure, f"update_{axis}axes")(type="log", row=y, col=x)
+
+    def _plot_marginalized_avg(data, x_name):
+        return go.Scatter(
+            x=data[0][x_name],
+            y=data[1],
+            mode="lines",
+            name=None,
+            showlegend=False,
+            line=dict(
+                color=px.colors.qualitative.D3[0],
+            ),
+        )
+
+    def _plot_marginalized_std(data, x_name):
+        return go.Scatter(
+            x=list(data[0][x_name]) + list(data[0][x_name])[::-1],
+            y=list(data[1] - data[2]) + list((data[1] + data[2]))[::-1],
+            mode="lines",
+            name=None,
+            fill="toself",
+            showlegend=False,
+            line=dict(
+                color=px.colors.qualitative.D3[0],
+                width=0,
+            ),
+        )
+
+    def _plot_contour(data, x_name, y_name):
+        return go.Contour(
+            x=data[0][x_name],
+            y=data[0][y_name],
+            z=data[1],
+            connectgaps=True,
+            # Share the same color range across contour plots
+            coloraxis="coloraxis",
+            line_smoothing=smoothing,
+            # To show labels
+            contours=dict(
+                coloring="heatmap",
+                showlabels=True,  # show labels on contours
+                labelfont=dict(  # label font properties
+                    size=12,
+                    color="white",
+                ),
+            ),
+        )
+
+    def _plot_scatter(x, y):
+        return go.Scatter(
+            x=x,
+            y=y,
+            marker={"line": {"width": 0.5, "color": "Grey"}, "color": "black"},
+            mode="markers",
+            showlegend=False,
+        )
+
+    if model_kwargs is None:
+        model_kwargs = {}
+
+    df, data = build_data()
+
+    if not data:
+        return go.Figure()
+
+    params = [
+        param_names for param_names in data.keys() if isinstance(param_names, str)
+    ]
+
+    flattened_space = build_required_space(
+        experiment.space,
+        shape_requirement="flattened",
+    )
+
+    fig = make_subplots(
+        rows=len(params),
+        cols=len(params),
+        shared_xaxes=True,
+        shared_yaxes=False,
+    )
+
+    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    cmin = float("inf")
+    cmax = -float("inf")
+
+    for x_i in range(len(params)):
+        x_name = params[x_i]
+        fig.add_trace(
+            _plot_marginalized_avg(data[x_name], x_name),
+            row=x_i + 1,
+            col=x_i + 1,
+        )
+        fig.add_trace(
+            _plot_marginalized_std(data[x_name], x_name),
+            row=x_i + 1,
+            col=x_i + 1,
+        )
+
+        _set_scale(fig, [flattened_space[x_name]], x_i + 1, x_i + 1)
+
+        fig.update_xaxes(title_text=x_name, row=len(params), col=x_i + 1)
+        if x_i > 0:
+            fig.update_yaxes(title_text=x_name, row=x_i + 1, col=1)
+        else:
+            fig.update_yaxes(title_text="Objective", row=x_i + 1, col=x_i + 1)
+
+        for y_i in range(x_i + 1, len(params)):
+            y_name = params[y_i]
+            fig.add_trace(
+                _plot_contour(
+                    data[(x_name, y_name)],
+                    x_name,
+                    y_name,
+                ),
+                row=y_i + 1,
+                col=x_i + 1,
+            )
+            fig.add_trace(
+                _plot_scatter(df[x_name], df[y_name]),
+                row=y_i + 1,
+                col=x_i + 1,
+            )
+
+            cmin = min(cmin, data[(x_name, y_name)][1].min())
+            cmax = max(cmax, data[(x_name, y_name)][1].max())
+
+            _set_scale(
+                fig,
+                [flattened_space[name] for name in [x_name, y_name]],
+                x_i + 1,
+                y_i + 1,
+            )
+
+    for x_i in range(len(params)):
+        plot_id = len(params) * x_i + x_i + 1
+        if plot_id > 1:
+            key = f"yaxis{plot_id}_range"
+        else:
+            key = "yaxis_range"
+        fig.update_layout(**{key: [cmin, cmax]})
+
+    fig.update_layout(
+        title=f"Partial dependencies for experiment '{experiment.name}'",
+    )
+    fig.layout.coloraxis.colorbar.title = "Objective"
+
+    fig.update_layout(coloraxis=dict(colorscale=colorscale), showlegend=False)
 
     return fig
 
