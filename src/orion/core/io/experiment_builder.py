@@ -3,12 +3,12 @@
 Create experiment from user options
 ===================================
 
-Functions which build `Experiment` objects based on user configuration.
+Functions which build :class:`orion.core.worker.experiment.Experiment` objects based on user configuration.
 
-The instantiation of an `Experiment` is not a trivial process when the user request an experiment
-with specific options. One can easily create a new experiment with
-`Experiment('some_experiment_name')`, but the configuration of a _writable_ experiment is less
-straighforward. This is because there is many sources of configuration and they have a strict
+The instantiation of an :class:`orion.core.worker.experiment.Experiment` is not a trivial process
+when the user request an experiment with specific options. One can easily create a new experiment
+with ``Experiment('some_experiment_name')``, but the configuration of a _writable_ experiment is
+less straighforward. This is because there is many sources of configuration and they have a strict
 hierarchy. From the more global to the more specific, there is:
 
 1. Global configuration:
