@@ -20,6 +20,7 @@
    user/searchspace
    user/monitoring
    user/viz
+   auto_examples/index
    user/benchmark
    user/evc
    user/storage
