@@ -3,7 +3,8 @@
 Create experiment from user options
 ===================================
 
-Functions which build :class:`orion.core.worker.experiment.Experiment` objects based on user configuration.
+Functions which build :class:`orion.core.worker.experiment.Experiment` objects based on user
+configuration.
 
 The instantiation of an :class:`orion.core.worker.experiment.Experiment` is not a trivial process
 when the user request an experiment with specific options. One can easily create a new experiment
