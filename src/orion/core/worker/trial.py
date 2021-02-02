@@ -297,7 +297,7 @@ class Trial:
 
     @property
     def id(self):
-        """Return hash_name which is also the database key `_id`."""
+        """Return hash_name which is also the database key ``_id``."""
         if self.id_override is None:
             return self.__hash__()
         return self.id_override

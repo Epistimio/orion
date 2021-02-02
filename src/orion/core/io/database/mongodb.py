@@ -3,10 +3,6 @@
 :mod:`orion.core.io.database.mongodb` -- Wrapper for MongoDB
 ============================================================
 
-.. module:: database
-   :platform: Unix
-   :synopsis: Implement :class:`orion.core.io.database.AbstractDB` for MongoDB.
-
 """
 import functools
 
@@ -128,7 +124,7 @@ class MongoDB(AbstractDB):
     def initiate_connection(self):
         """Connect to database, unless MongoDB `is_connected`.
 
-        :raises :exc:`DatabaseError`: if connection or authentication fails
+        :raises :exc:`orion.core.io.database.DatabaseError`: if connection or authentication fails
 
         """
         if self.is_connected:
@@ -176,7 +172,8 @@ class MongoDB(AbstractDB):
     def ensure_index(self, collection_name, keys, unique=False):
         """Create given indexes if they do not already exist in database.
 
-        .. seealso:: :meth:`AbstractDB.ensure_index` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.ensure_index` for argument
+            documentation.
 
         """
         # MongoDB's `create_index()` is idempotent, which means it will only
@@ -226,7 +223,7 @@ class MongoDB(AbstractDB):
     def write(self, collection_name, data, query=None):
         """Write new information to a collection. Perform insert or update.
 
-        .. seealso:: :meth:`AbstractDB.write` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.write` for argument documentation.
 
         """
         dbcollection = self._db[collection_name]
@@ -250,7 +247,7 @@ class MongoDB(AbstractDB):
     def read(self, collection_name, query=None, selection=None):
         """Read a collection and return a value according to the query.
 
-        .. seealso:: :meth:`AbstractDB.read` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.read` for argument documentation.
 
         """
         dbcollection = self._db[collection_name]
@@ -266,7 +263,7 @@ class MongoDB(AbstractDB):
 
         Returns the updated document, or None if nothing found.
 
-        .. seealso:: :meth:`AbstractDB.read_and_write` for
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.read_and_write` for
                      argument documentation.
 
         """
@@ -286,7 +283,7 @@ class MongoDB(AbstractDB):
     def count(self, collection_name, query=None):
         """Count the number of documents in a collection which match the `query`.
 
-        .. seealso:: :meth:`AbstractDB.count` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.count` for argument documentation.
 
         """
         dbcollection = self._db[collection_name]
@@ -300,7 +297,7 @@ class MongoDB(AbstractDB):
     def remove(self, collection_name, query):
         """Delete from a collection document[s] which match the `query`.
 
-        .. seealso:: :meth:`AbstractDB.remove` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.remove` for argument documentation.
 
         """
         dbcollection = self._db[collection_name]

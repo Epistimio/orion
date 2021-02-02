@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.io.experiment_branch_builder.py` -- Module offering an API to solve conflicts
-==============================================================================================
+Module offering an API to solve conflicts
+=========================================
 
-.. module:: experiment_branch_builder
-   :platform: Unix
-   :synopsis: Create a list of adapters from the conflicts between an experiment and its parent.
+Create a list of adapters from the conflicts between an experiment and its parent.
 
 Conflicts between two experiments arise when those have different configuration but have the same
 name. Solving these conflicts require the creation of adapters to bridge from the parent experiment
@@ -141,12 +139,12 @@ class ExperimentBranchBuilder:
         Parameters
         ----------
         change_type: string
-            One of the types defined in `orion.core.evc.adapters.CodeChange.types`.
+            One of the types defined in ``orion.core.evc.adapters.CodeChange.types``.
 
         Raises
         ------
         ValueError
-            If change_type is not in `orion.core.evc.adapters.CodeChange.types`.
+            If change_type is not in ``orion.core.evc.adapters.CodeChange.types``.
         RuntimeError
             If there is no code change conflict left to resolve.
 
@@ -163,12 +161,12 @@ class ExperimentBranchBuilder:
         Parameters
         ----------
         change_type: string
-            One of the types defined in `orion.core.evc.adapters.CommandLineChange.types`.
+            One of the types defined in ``orion.core.evc.adapters.CommandLineChange.types``.
 
         Raises
         ------
         ValueError
-            If change_type is not in `orion.core.evc.adapters.CommandLineChange.types`.
+            If change_type is not in ``orion.core.evc.adapters.CommandLineChange.types``.
         RuntimeError
             If there is no cli conflict left to resolve.
 
@@ -185,12 +183,12 @@ class ExperimentBranchBuilder:
         Parameters
         ----------
         change_type: string
-            One of the types defined in `orion.core.evc.adapters.ScriptConfigChange.types`.
+            One of the types defined in ``orion.core.evc.adapters.ScriptConfigChange.types``.
 
         Raises
         ------
         ValueError
-            If change_type is not in `orion.core.evc.adapters.ScriptConfigChange.types`.
+            If change_type is not in ``orion.core.evc.adapters.ScriptConfigChange.types``.
         RuntimeError
             If there is no script config conflict left to resolve.
 
@@ -246,7 +244,7 @@ class ExperimentBranchBuilder:
         name: str
             Name of the dimension to add
         default_value: object
-            Default value for the new dimension. Defaults to `Dimension.NO_DEFAULT_VALUE`.
+            Default value for the new dimension. Defaults to ``Dimension.NO_DEFAULT_VALUE``.
             If conflict is ChangedDimensionConflict, default_value is ignored.
 
         Raises
@@ -276,7 +274,7 @@ class ExperimentBranchBuilder:
         name: str
             Name of the dimension to add
         default_value: object
-            Default value for the missing dimension. Defaults to `Dimension.NO_DEFAULT_VALUE`.
+            Default value for the missing dimension. Defaults to ``Dimension.NO_DEFAULT_VALUE``.
 
         Raises
         ------

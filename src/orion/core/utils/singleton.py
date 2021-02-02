@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.singleton` -- Singleton helpers and boilerplate.
-=======================================================================
+Singleton helpers and boilerplate
+=================================
 
-.. module:: singleton
-   :platform: Unix
-   :synopsis: Helper functions and boilerplate for Singleton manipulation and creation.
 """
 from abc import ABCMeta
 
@@ -65,7 +62,8 @@ class AbstractSingletonType(SingletonType, ABCMeta):
 
 
 class SingletonFactory(AbstractSingletonType, Factory):
-    """Wrapping `Factory` with `SingletonType`. Keep compatibility with `AbstractSingletonType`."""
+    """Wrapping `orion.core.utils.Factory` with `SingletonType`. Keep compatibility with
+    `AbstractSingletonType`."""
 
     pass
 

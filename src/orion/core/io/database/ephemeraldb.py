@@ -3,9 +3,7 @@
 :mod:`orion.core.io.database.ephemeraldb` -- Non permanent database
 ===================================================================
 
-.. module:: database
-   :platform: Unix
-   :synopsis: Implement non permanent version of :class:`orion.core.io.database.AbstractDB`
+Implement non permanent version of :class:`orion.core.io.database.AbstractDB`
 
 """
 import copy
@@ -68,7 +66,7 @@ class EphemeralDB(AbstractDB):
     def write(self, collection_name, data, query=None):
         """Write new information to a collection. Perform insert or update.
 
-        .. seealso:: :meth:`AbstractDB.write` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.write` for argument documentation.
 
         """
         dbcollection = self._db[collection_name]
@@ -87,7 +85,7 @@ class EphemeralDB(AbstractDB):
     def read(self, collection_name, query=None, selection=None):
         """Read a collection and return a value according to the query.
 
-        .. seealso:: :meth:`AbstractDB.read` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.read` for argument documentation.
 
         """
         dbcollection = self._db[collection_name]
@@ -101,7 +99,7 @@ class EphemeralDB(AbstractDB):
 
         Returns the updated document, or None if nothing found.
 
-        .. seealso:: :meth:`AbstractDB.read_and_write` for
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.read_and_write` for
                      argument documentation.
 
         """
@@ -116,7 +114,7 @@ class EphemeralDB(AbstractDB):
     def count(self, collection_name, query=None):
         """Count the number of documents in a collection which match the `query`.
 
-        .. seealso:: :meth:`AbstractDB.count` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.count` for argument documentation.
 
         """
         dbcollection = self._db[collection_name]
@@ -125,7 +123,7 @@ class EphemeralDB(AbstractDB):
     def remove(self, collection_name, query):
         """Delete from a collection document[s] which match the `query`.
 
-        .. seealso:: :meth:`AbstractDB.remove` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.remove` for argument documentation.
 
         """
         dbcollection = self._db[collection_name]
@@ -193,7 +191,7 @@ class EphemeralCollection(object):
     def find(self, query=None, selection=None):
         """Find documents in the collection and return a value according to the query.
 
-        .. seealso:: :meth:`AbstractDB.read` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.read` for argument documentation.
 
         """
         found_documents = []
@@ -288,7 +286,7 @@ class EphemeralCollection(object):
     def count(self, query=None):
         """Count the number of documents in a collection which match the `query`.
 
-        .. seealso:: :meth:`AbstractDB.count` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.count` for argument documentation.
 
         """
         return len(self.find(query))
@@ -296,7 +294,7 @@ class EphemeralCollection(object):
     def delete_many(self, query=None):
         """Delete from a collection document[s] which match the `query`.
 
-        .. seealso:: :meth:`AbstractDB.remove` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.remove` for argument documentation.
 
         """
         deleted = 0

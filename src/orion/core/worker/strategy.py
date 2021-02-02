@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.worker.strategy` -- register objectives for incomplete trials
-========================================================================
+Parallel Strategies
+===================
 
-.. module:: strategy
-   :platform: Unix
-   :synopsis: Strategies to register objectives for incomplete trials.
+Register objectives for incomplete trials
 
 """
 import logging
@@ -62,12 +60,15 @@ class BaseParallelStrategy(object, metaclass=ABCMeta):
 
         .. seealso:: `orion.algo.base.BaseAlgorithm.observe` method
 
-        :param points: list of tuples of array-likes
+        Parameters
+        ----------
+        points: list of tuples of array-likes
            Points from a `orion.algo.space.Space`.
            Evaluated problem parameters by a consumer.
-        :param results : list of dicts
+        results: list of dict
            Contains the result of an evaluation; partial information about the
            black-box function at each point in `params`.
+
         """
         # NOTE: In future points and results will be converted to trials for coherence with
         # `Strategy.lie()` as well as for coherence with `Algorithm.observe` which will also be

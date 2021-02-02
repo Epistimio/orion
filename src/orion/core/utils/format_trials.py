@@ -81,7 +81,7 @@ def tuple_to_trial(data, space):
 
 
 def get_trial_results(trial):
-    """Format results from a `Trial` using standard structures."""
+    """Format results from a `orion.core.worker.trial.Trial` using standard structures."""
     results = dict()
 
     lie = trial.lie

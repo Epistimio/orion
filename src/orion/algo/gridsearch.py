@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.algo.gridsearch` -- Grid Search
-===========================================
-
-.. module:: gridsearch
-    :platform: Unix
-    :synopsis: Grid Search Algorithm
-
+Grid Search
+===========
 """
 import itertools
 import logging

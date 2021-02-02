@@ -3,9 +3,6 @@
 :mod:`orion.analysis.lpi_utils` -- Provide tools to calculate Local Parameter Importance
 ========================================================================================
 
-.. module:: orion.analysis.lpi
-   :platform: Unix
-   :synopsis: Provide tools to calculate Local Parameter Importance
 """
 import numpy
 import pandas as pd

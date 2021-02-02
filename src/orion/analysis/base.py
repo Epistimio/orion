@@ -2,9 +2,8 @@
 :mod:`orion.analysis.base` -- Base tools to compute diverse analysis
 ====================================================================
 
-.. module:: orion.analysis.base
-   :platform: Unix
-   :synopsis: Base tools to compute diverse analysis
+Base tools to compute diverse analysis
+
 """
 import itertools
 

@@ -3,9 +3,7 @@
 :mod:`orion.core.evc.tree` -- Tree data structure for the experiment version control system
 ===========================================================================================
 
-.. module:: evc
-   :platform: Unix
-   :synopsis: Tree data structure for the experiment version control system
+Tree data structure for the experiment version control system
 
 Experiment version control requires building trees of the experiments so
 that we can fetch trials from one experiment to another or navigate from

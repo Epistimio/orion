@@ -2,10 +2,6 @@
 :mod:`orion.plotting.base` -- Provides public plotting API
 ===========================================================
 
-.. module:: base
-   :platform: Unix
-   :synopsis: Provides public plotting API
-
 """
 import orion.plotting.backend_plotly as backend
 
@@ -42,7 +38,7 @@ def lpi(
         Number of points to compute the variances. Default is 20.
     kwargs: dict
         All other plotting keyword arguments to be passed to
-        :meth:`plotly.express.line`.
+        :plotly:`express.line`.
 
     Returns
     -------
@@ -76,7 +72,7 @@ def parallel_coordinates(experiment, order=None, **kwargs):
 
     kwargs: dict
         All other plotting keyword arguments to be passed to
-        :meth:`plotly.express.line`.
+        :plotly:`express.line`.
 
     Returns
     -------
@@ -184,7 +180,7 @@ def regret(experiment, order_by="suggested", verbose_hover=True, **kwargs):
 
     kwargs: dict
         All other plotting keyword arguments to be passed to
-        :meth:`plotly.express.line`.
+        :plotly:`express.line`.
 
     Returns
     -------

@@ -1,10 +1,7 @@
 """
-:mod:`orion.core.plotting.backend_plotly` -- Plotly backend for plotting methods
-================================================================================
+Plotly backend for plotting methods
+===================================
 
-.. module:: backend_plotly
-   :platform: Unix
-   :synopsis: Plotly backend for plotting methods
 """
 import functools
 

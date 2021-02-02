@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.io.interactive_commands.base_commands` -- CLI for conflict solving
-===================================================================================
-.. module:: base_commands
-    :platform: Unix
-    :synopsis: Launch the interactive prompt and call the related commands
+CLI for conflict solving
+========================
 
-.... ....  TODO
+Launch the interactive prompt and call the related commands
+
 """
 
 import argparse

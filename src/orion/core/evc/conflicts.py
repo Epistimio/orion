@@ -4,10 +4,6 @@
 :mod:`orion.core.evc.conflicts` -- Description and resolution of configuration conflicts
 ========================================================================================
 
-.. module:: conflicts
-   :platform: Unix
-   :synopsis: Detection and description of configuration conflicts and their resolutions
-
 Conflicts between a parent experiment and a child configuration exist in many different forms. This
 module provides the function `detect_conflicts` to automatically detect them. Any conflict type
 which inherits from class `Conflict` is used to detect corresponding conflicts. These conflicts
@@ -205,7 +201,7 @@ class Conflicts(object):
 
         .. note::
 
-            See :meth:`orion.core.evc.conflict.Conflicts.get` for more information.
+            See :meth:`orion.core.evc.conflicts.Conflicts.get` for more information.
 
         """
 
@@ -219,7 +215,7 @@ class Conflicts(object):
 
         .. note::
 
-            See :meth:`orion.core.evc.conflict.Conflicts.get` for more information.
+            See :meth:`orion.core.evc.conflicts.Conflicts.get` for more information.
 
         """
 
@@ -239,7 +235,7 @@ class Conflicts(object):
 
         .. note::
 
-            See :meth:`orion.core.evc.conflict.Conflicts.get` for more information.
+            See :meth:`orion.core.evc.conflicts.Conflicts.get` for more information.
 
         """
         resolutions = set()
@@ -578,7 +574,7 @@ class NewDimensionConflict(Conflict):
         Parameters
         ----------
         default_value: object
-            Default value for the new dimension. Defaults to `Dimension.NO_DEFAULT_VALUE`.
+            Default value for the new dimension. Defaults to ``Dimension.NO_DEFAULT_VALUE``.
 
         Raises
         ------
@@ -624,8 +620,8 @@ class NewDimensionConflict(Conflict):
             conflict: `orion.core.evc.conflicts.Conflict`
                 The conflict which is resolved by this resolution.
             default_value: object
-                Default value for the new dimension. Defaults to `Dimension.NO_DEFAULT_VALUE`.
-                If `Dimension.NO_DEFAULT_VALUE`, default_value from corresponding dimension will be
+                Default value for the new dimension. Defaults to ``Dimension.NO_DEFAULT_VALUE``.
+                If ``Dimension.NO_DEFAULT_VALUE``, default_value from corresponding dimension will be
                 used.
 
             Raises
@@ -898,8 +894,8 @@ class MissingDimensionConflict(Conflict):
             Dimension used for a rename resolution. If None, a remove resolution will be created
             instead.
         default_value: object
-            Default value for the missing dimension. Defaults to `Dimension.NO_DEFAULT_VALUE`.
-            If `Dimension.NO_DEFAULT_VALUE`, default_value from corresponding dimension will be
+            Default value for the missing dimension. Defaults to ``Dimension.NO_DEFAULT_VALUE``.
+            If ``Dimension.NO_DEFAULT_VALUE``, default_value from corresponding dimension will be
             used. This argument is ignored if new_dimension_conflict is not None.
 
         Raises
@@ -1040,8 +1036,8 @@ class MissingDimensionConflict(Conflict):
             conflict: `orion.core.evc.conflicts.Conflict`
                 The conflict which is resolved by this resolution.
             default_value: object
-                Default value for the missing dimension. Defaults to `Dimension.NO_DEFAULT_VALUE`.
-                If `Dimension.NO_DEFAULT_VALUE`, default_value from corresponding dimension will be
+                Default value for the missing dimension. Defaults to ``Dimension.NO_DEFAULT_VALUE``.
+                If ``Dimension.NO_DEFAULT_VALUE``, default_value from corresponding dimension will be
                 used.
 
             Raises
@@ -1211,12 +1207,12 @@ class CodeConflict(Conflict):
         Parameters
         ----------
         change_type: None or string
-            One of the types defined in `orion.core.evc.adapters.CodeChange.types`.
+            One of the types defined in ``orion.core.evc.adapters.CodeChange.types``.
 
         Raises
         ------
         ValueError
-            If change_type is not in `orion.core.evc.adapters.CodeChange.types`.
+            If change_type is not in ``orion.core.evc.adapters.CodeChange.types``.
 
         """
         if self.is_resolved:
@@ -1249,7 +1245,7 @@ class CodeConflict(Conflict):
         conflict: `orion.core.evc.conflicts.Conflict`
             The conflict which is resolved by this resolution.
         change_type: string
-            One of the types defined in `orion.core.evc.adapters.CodeChange.types`.
+            One of the types defined in ``orion.core.evc.adapters.CodeChange.types``.
 
         .. seealso ::
 
@@ -1267,12 +1263,12 @@ class CodeConflict(Conflict):
             conflict: `orion.core.evc.conflicts.Conflict`
                 The conflict which is resolved by this resolution.
             change_type: string
-                One of the types defined in `orion.core.evc.adapters.CodeChange.types`.
+                One of the types defined in ``orion.core.evc.adapters.CodeChange.types``.
 
             Raises
             ------
             ValueError
-                If change_type is not in `orion.core.evc.adapters.CodeChange.types`.
+                If change_type is not in ``orion.core.evc.adapters.CodeChange.types``.
 
             """
             super(CodeConflict.CodeResolution, self).__init__(conflict)
@@ -1281,7 +1277,7 @@ class CodeConflict(Conflict):
             self.type = change_type
 
         def _validate(self, change_type):
-            """Validate change_type is in `orion.core.evc.adapters.CodeChange.types`"""
+            """Validate change_type is in ``orion.core.evc.adapters.CodeChange.types``"""
             adapters.CodeChange.validate(change_type)
 
         def get_adapters(self):
@@ -1380,12 +1376,12 @@ class CommandLineConflict(Conflict):
         Parameters
         ----------
         change_type: None or string
-            One of the types defined in `orion.core.evc.adapters.CommandLineChange.types`.
+            One of the types defined in ``orion.core.evc.adapters.CommandLineChange.types``.
 
         Raises
         ------
         ValueError
-            If change_type is not in `orion.core.evc.adapters.CommandLineChange.types`.
+            If change_type is not in ``orion.core.evc.adapters.CommandLineChange.types``.
 
         """
         if self.is_resolved:
@@ -1416,7 +1412,7 @@ class CommandLineConflict(Conflict):
         conflict: `orion.core.evc.conflicts.Conflict`
             The conflict which is resolved by this resolution.
         change_type: string
-            One of the types defined in `orion.core.evc.adapters.CommandLineChange.types`.
+            One of the types defined in ``orion.core.evc.adapters.CommandLineChange.types``.
 
         .. seealso ::
 
@@ -1434,12 +1430,12 @@ class CommandLineConflict(Conflict):
             conflict: `orion.core.evc.conflicts.Conflict`
                 The conflict which is resolved by this resolution.
             change_type: string
-                One of the types defined in `orion.core.evc.adapters.CommandLineChange.types`.
+                One of the types defined in ``orion.core.evc.adapters.CommandLineChange.types``.
 
             Raises
             ------
             ValueError
-                If change_type is not in `orion.core.evc.adapters.CommandLineChange.types`.
+                If change_type is not in ``orion.core.evc.adapters.CommandLineChange.types``.
 
             """
             super(CommandLineConflict.CommandLineResolution, self).__init__(conflict)
@@ -1448,7 +1444,7 @@ class CommandLineConflict(Conflict):
             self.type = change_type
 
         def _validate(self, change_type):
-            """Validate change_type is in `orion.core.evc.adapters.CommandLineChange.types`"""
+            """Validate change_type is in ``orion.core.evc.adapters.CommandLineChange.types``"""
             adapters.CommandLineChange.validate(change_type)
 
         def get_adapters(self):
@@ -1533,12 +1529,12 @@ class ScriptConfigConflict(Conflict):
         Parameters
         ----------
         change_type: None or string
-            One of the types defined in `orion.core.evc.adapters.ScriptConfigChange.types`.
+            One of the types defined in ``orion.core.evc.adapters.ScriptConfigChange.types``.
 
         Raises
         ------
         ValueError
-            If change_type is not in `orion.core.evc.adapters.ScriptConfigChange.types`.
+            If change_type is not in ``orion.core.evc.adapters.ScriptConfigChange.types``.
 
         """
         if self.is_resolved:
@@ -1566,7 +1562,7 @@ class ScriptConfigConflict(Conflict):
         conflict: `orion.core.evc.conflicts.Conflict`
             The conflict which is resolved by this resolution.
         change_type: string
-            One of the types defined in `orion.core.evc.adapters.ScriptConfighange.types`.
+            One of the types defined in ``orion.core.evc.adapters.ScriptConfighange.types``.
 
         .. seealso ::
 
@@ -1584,12 +1580,12 @@ class ScriptConfigConflict(Conflict):
             conflict: `orion.core.evc.conflicts.Conflict`
                 The conflict which is resolved by this resolution.
             change_type: string
-                One of the types defined in `orion.core.evc.adapters.ScriptConfigChange.types`.
+                One of the types defined in ``orion.core.evc.adapters.ScriptConfigChange.types``.
 
             Raises
             ------
             ValueError
-                If change_type is not in `orion.core.evc.adapters.ScriptConfigChange.types`.
+                If change_type is not in ``orion.core.evc.adapters.ScriptConfigChange.types``.
 
             """
             super(ScriptConfigConflict.ScriptConfigResolution, self).__init__(conflict)
@@ -1598,7 +1594,7 @@ class ScriptConfigConflict(Conflict):
             self.type = change_type
 
         def _validate(self, change_type):
-            """Validate change_type is in `orion.core.evc.adapters.ScriptConfigChange.types`"""
+            """Validate change_type is in ``orion.core.evc.adapters.ScriptConfigChange.types``"""
             adapters.ScriptConfigChange.validate(change_type)
 
         def get_adapters(self):

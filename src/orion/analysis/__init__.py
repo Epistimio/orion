@@ -3,9 +3,6 @@
 :mod:`orion.analysis` -- Provides HPO analysis tools
 ====================================================
 
-.. module:: analysis
-   :platform: Unix
-   :synopsis: Provides agnostic HPO analysis tools
 """
 
 from orion.analysis.lpi_utils import lpi

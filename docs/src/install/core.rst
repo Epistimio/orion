@@ -7,7 +7,7 @@ Windows 10 is also supported through the `Windows Subsystem for Linux <https://d
 Oríon is tested on Ubuntu 16.04 LTS and Mac OS X 10.13.
 
 The easiest way to install the latest version of Oríon is through the Python package manager. Oríon
-is registered on PyPI_ under `orion`. Use the following command to install Oríon:
+is registered on PyPI_ under ``orion``. Use the following command to install Oríon:
 
 .. code-block:: sh
 

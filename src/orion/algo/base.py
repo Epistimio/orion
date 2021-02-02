@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.algo.base` -- What is a search algorithm, optimizer of a process
-==============================================================================
+Base Search Algorithm
+=====================
 
-.. module:: base
-   :platform: Unix
-   :synopsis: Formulation of a general search algorithm with respect to some
-      objective.
+Formulation of a general search algorithm with respect to some objective.
+Algorithm implementations must inherit from `orion.algo.base.OptimizationAlgorithm`.
 
 """
 import hashlib
@@ -43,17 +41,15 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
     sample of the parameter space of the problem as a candidate solution and observes
     the results of its evaluation.
 
-    **Developer Note**: Each algorithm's complete specification, i.e.
-    implementation of its methods and parameters of its own, lies in a
-    separate concrete algorithm class, which must be an **immediate** subclass of
-    `BaseAlgorithm`. [The reason for this is current implementation of `Factory`
-    metaclass which uses `BaseAlgorithm.__subclasses__()`.] Second, one must
-    declare an algorithm's own parameters (tunable elements which could be set
-    by configuration). This is done by passing them to `BaseAlgorithm.__init__`
-    by calling Python's super with a `Space` object as a positional argument plus
-    algorithm's own parameters as keyword arguments. The keys of the keyword
-    arguments passed to `BaseAlgorithm.__init__` are interpreted as the algorithm's
-    parameter names. So for example, a subclass could be as simple as this
+    **Developer Note**: Each algorithm's complete specification, i.e.  implementation of its methods
+    and parameters of its own, lies in a separate concrete algorithm class, which must be an
+    **immediate** subclass of `BaseAlgorithm`. [The reason for this is current implementation of
+    `orion.core.utils.Factory` metaclass which uses `BaseAlgorithm.__subclasses__()`.] Second, one
+    must declare an algorithm's own parameters (tunable elements which could be set by
+    configuration). This is done by passing them to `BaseAlgorithm.__init__()` by calling Python's
+    super with a `Space` object as a positional argument plus algorithm's own parameters as keyword
+    arguments. The keys of the keyword arguments passed to `BaseAlgorithm.__init__()` are interpreted
+    as the algorithm's parameter names. So for example, a subclass could be as simple as this
     (regarding the logistics, not an actual algorithm's implementation):
 
     Examples
@@ -293,9 +289,6 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
 # pylint: disable=too-few-public-methods,abstract-method
 class OptimizationAlgorithm(BaseAlgorithm, metaclass=Factory):
-    """Class used to inject dependency on an algorithm implementation.
-
-    .. seealso:: `orion.core.utils.Factory` metaclass and `BaseAlgorithm` interface.
-    """
+    """Class used to inject dependency on an algorithm implementation."""
 
     pass

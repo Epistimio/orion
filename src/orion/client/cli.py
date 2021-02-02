@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.client.cli` -- Helper function for returning results from script
-============================================================================
-
-.. module:: cli
-   :platform: Unix
-   :synopsis: Provides functions for communicating with `orion.core`.
-
+Helper function for returning results from script
+=================================================
 """
 import os
 import sys

@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.client` -- Python API
-=================================
+Python API
+==========
 
-.. module:: client
-   :platform: Unix
-   :synopsis: Provides functions for communicating with `orion.core`.
+Provides functions for communicating with `orion.core`.
 
 """
 import orion.core.io.experiment_builder as experiment_builder
@@ -27,6 +25,7 @@ __all__ = [
     "report_objective",
     "report_results",
     "create_experiment",
+    "build_experiment",
     "get_experiment",
     "workon",
 ]
@@ -35,7 +34,8 @@ __all__ = [
 def create_experiment(name, **config):
     """Build an experiment to be executable
 
-    This function is deprecated and will be removed in v0.3.0. Use `build_experiment` instead.
+    This function is deprecated and will be removed in v0.3.0. Use `build_experiment`
+    instead.
     """
     return build_experiment(name, **config)
 
@@ -139,13 +139,13 @@ def build_experiment(
         Such timeout are generally caused by slow database, large number of
         concurrent workers leading to many race conditions or small search spaces
         with integer/categorical dimensions that may be fully explored.
-        Defaults to `orion.core.config.worker.max_idle_time`.
+        Defaults to ``orion.core.config.worker.max_idle_time``.
     heartbeat: int, optional
         Frequency (seconds) at which the heartbeat of the trial is updated.
         If the heartbeat of a `reserved` trial is larger than twice the configured
         heartbeat, Oríon will reset the status of the trial to `interrupted`.
         This allows restoring lost trials (ex: due to killed worker).
-        Defaults to `orion.core.config.worker.max_idle_time`.
+        Defaults to ``orion.core.config.worker.max_idle_time``.
     debug: bool, optional
         If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
         Defaults to False.
@@ -179,18 +179,18 @@ def build_experiment(
 
     Raises
     ------
-    `orion.core.utils.SingletonAlreadyInstantiatedError`
+    :class:`orion.core.utils.singleton.SingletonAlreadyInstantiatedError`
         If the storage is already instantiated and given configuration is different.
         Storage is a singleton, you may only use one instance per process.
-    `orion.core.utils.exceptions.NoConfigurationError`
+    :class:`orion.core.utils.exceptions.NoConfigurationError`
         The experiment is not in database and no space is provided by the user.
-    `orion.core.utils.exceptions.RaceCondition`
+    :class:`orion.core.utils.exceptions.RaceCondition`
         There was a race condition during branching and new version cannot be infered because of
         that. Single race conditions are normally handled seemlessly. If this error gets raised, it
         means that different modifications occured during each race condition resolution. This is
         likely due to quick code change during experiment creation. Make sure your script is not
         generating files within your code repository.
-    `orion.core.utils.exceptions.BranchingEvent`
+    :class:`orion.core.utils.exceptions.BranchingEvent`
         The configuration is different than the corresponding one in DB and the branching cannot be
         solved automatically. This usually happens if the version=x is specified but the experiment
         ``(name, x)`` already has a child ``(name, x+1)``. If you really need to branch from version
@@ -245,7 +245,7 @@ def build_experiment(
 
 def get_experiment(name, version=None, mode="r", storage=None):
     """
-    Retrieve an existing experiment as :class:`orion.core.worker.experiment.ExperimentClient`.
+    Retrieve an existing experiment as :class:`orion.client.experiment.ExperimentClient`.
 
     Parameters
     ----------

@@ -3,10 +3,6 @@
 :mod:`orion.core.io.database` -- Wrappers for database frameworks
 =================================================================
 
-.. module:: database
-   :platform: Unix
-   :synopsis: Import name for wrappers of database frameworks.
-
 Contains :class:`AbstractDB`, an interface for databases.
 Currently, implemented wrappers:
 
@@ -97,8 +93,8 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         keys: str or list of tuples
            Can be a string representing a key to index, or a list of tuples
            with the structure `[(key_name, sort_order)]`. `key_name` must be a
-           string and sort_order can be either `AbstractDB.ASCENDING` or
-           AbstractDB.DESCENDING`.
+           string and sort_order can be either ``AbstractDB.ASCENDING`` or
+           ``AbstractDB.DESCENDING``.
         unique: bool, optional
            Ensure each document have a different key value. If not, operations
            like `write()` and `read_and_write()` will raise

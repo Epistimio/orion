@@ -4,10 +4,7 @@
 :mod:`orion.core.worker.experiment` -- Description of an optimization attempt
 =============================================================================
 
-.. module:: experiment
-   :platform: Unix
-   :synopsis: Manage history of trials corresponding to a black box process
-
+Manage history of trials corresponding to a black box process
 """
 import copy
 import datetime
@@ -32,15 +29,15 @@ class Experiment:
     Attributes
     ----------
     name : str
-       Unique identifier for this experiment per `user`.
+       Unique identifier for this experiment per ``user``.
     id: object
-       id of the experiment in the database if experiment is configured. Value is `None`
+       id of the experiment in the database if experiment is configured. Value is ``None``
        if the experiment is not configured.
     refers : dict or list of `Experiment` objects, after initialization is done.
        A dictionary pointing to a past `Experiment` id, ``refers[parent_id]``, whose
        trials we want to add in the history of completed trials we want to re-use.
        For convenience and database effiency purpose, all experiments of a common tree shares
-       `refers[root_id]`, with the root experiment refering to itself.
+       ``refers[root_id]``, with the root experiment refering to itself.
     version: int
         Current version of this experiment.
     metadata : dict
@@ -187,15 +184,15 @@ class Experiment:
         return self._select_evc_call(with_evc_tree, "fetch_trials")
 
     def get_trial(self, trial=None, uid=None):
-        """Fetch a single Trial, see `orion.storage.base.BaseStorage.get_trial`"""
+        """Fetch a single Trial, see :meth:`orion.storage.base.BaseStorageProtocol.get_trial`"""
         return self._storage.get_trial(trial, uid)
 
     def retrieve_result(self, trial, *args, **kwargs):
-        """See :func:`~orion.storage.BaseStorageProtocol.retrieve_result`"""
+        """See :meth:`orion.storage.base.BaseStorageProtocol.retrieve_result`"""
         return self._storage.retrieve_result(trial, *args, **kwargs)
 
     def set_trial_status(self, *args, **kwargs):
-        """See :func:`~orion.storage.BaseStorageProtocol.set_trial_status`"""
+        """See :meth:`orion.storage.base.BaseStorageProtocol.set_trial_status`"""
         self._check_if_writable()
         return self._storage.set_trial_status(*args, **kwargs)
 
@@ -270,7 +267,7 @@ class Experiment:
         The main difference between fake trial and orignal ones is the addition of a fake objective
         result, and status being set to completed. The id of the fake trial is different than the id
         of the original trial, but the original id can be computed using the hashcode on parameters
-        of the fake trial. See mod:`orion.core.worker.strategy` for more information and the
+        of the fake trial. See :mod:`orion.core.worker.strategy` for more information and the
         Strategist object and generation of fake trials.
 
         Parameters
@@ -370,10 +367,6 @@ class Experiment:
 
         Value is `None` if the experiment is not connected to the version control tree.
 
-        .. seealso::
-
-            :py:meth:`orion.core.worker.experiment.Experiment.connect_to_version_control_tree`
-
         """
         return self._node
 
@@ -381,8 +374,8 @@ class Experiment:
     def is_done(self):
         """Return True, if this experiment is considered to be finished.
 
-        1. Count how many trials have been completed and compare with `max_trials`.
-        2. Ask `algorithms` if they consider there is a chance for further improvement, and
+        1. Count how many trials have been completed and compare with ``max_trials``.
+        2. Ask ``algorithms`` if they consider there is a chance for further improvement, and
            verify is there is any pending trial.
 
         .. note::
