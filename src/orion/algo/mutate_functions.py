@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.algo.mutate_functions` --
 Different mutate functions: large-scale evolution of image classifiers
-===========================================================================================
+======================================================================
 
-.. module:: mutate_functions
-    :platform: Unix
-    :synopsis: Implement evolution to exploit configurations with fixed resource efficiently
+Implement evolution to exploit configurations with fixed resource efficiently
 
 """
 import logging

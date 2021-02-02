@@ -1,31 +1,28 @@
 # pylint:disable=too-many-lines
 """
-:mod:`orion.core.io.experiment_builder` -- Create experiment from user options
-==============================================================================
+Create experiment from user options
+===================================
 
-.. module:: experiment
-   :platform: Unix
-   :synopsis: Functions which build `Experiment` objects
-       based on user configuration.
+Functions which build :class:`orion.core.worker.experiment.Experiment` objects based on user
+configuration.
 
-
-The instantiation of an `Experiment` is not a trivial process when the user request an experiment
-with specific options. One can easily create a new experiment with
-`Experiment('some_experiment_name')`, but the configuration of a _writable_ experiment is less
-straighforward. This is because there is many sources of configuration and they have a strict
+The instantiation of an :class:`orion.core.worker.experiment.Experiment` is not a trivial process
+when the user request an experiment with specific options. One can easily create a new experiment
+with ``Experiment('some_experiment_name')``, but the configuration of a _writable_ experiment is
+less straighforward. This is because there is many sources of configuration and they have a strict
 hierarchy. From the more global to the more specific, there is:
 
 1. Global configuration:
 
-  Defined by `orion.core.DEF_CONFIG_FILES_PATHS`.
+  Defined by ``orion.core.DEF_CONFIG_FILES_PATHS``.
   Can be scattered in user file system, defaults could look like:
 
-    - `/some/path/to/.virtualenvs/orion/share/orion.core`
-    - `/etc/xdg/xdg-ubuntu/orion.core`
-    - `/home/${USER}/.config/orion.core`
+    - ``/some/path/to/.virtualenvs/orion/share/orion.core``
+    - ``/etc/xdg/xdg-ubuntu/orion.core``
+    - ``/home/${USER}/.config/orion.core``
 
   Note that most variables have default value even if user do not defined them in global
-  configuration. These are defined in `orion.core.__init__`.
+  configuration. These are defined in ``orion.core.__init__``.
 
 2. Oríon specific environment variables:
 
@@ -33,9 +30,9 @@ hierarchy. From the more global to the more specific, there is:
 
     - Database specific:
 
-      * `ORION_DB_NAME`
-      * `ORION_DB_TYPE`
-      * `ORION_DB_ADDRESS`
+      * ``ORION_DB_NAME``
+      * ``ORION_DB_TYPE``
+      * ``ORION_DB_ADDRESS``
 
 3. Experiment configuration inside the database
 
@@ -72,8 +69,8 @@ hierarchy. From the more global to the more specific, there is:
 
 5. Command-line arguments
 
-  Those are the arguments provided to `orion` for any method (hunt, insert, etc). It includes the
-  argument to `orion` itself as well as the user's script name and its arguments.
+  Those are the arguments provided to ``orion`` for any method (hunt, insert, etc). It includes the
+  argument to ``orion`` itself as well as the user's script name and its arguments.
 
 """
 import copy
@@ -115,7 +112,7 @@ log = logging.getLogger(__name__)
 def build(name, version=None, branching=None, **config):
     """Build an experiment object
 
-    If new, `space` argument must be provided, else all arguments are fetched from the database
+    If new, ``space`` argument must be provided, else all arguments are fetched from the database
     based on (name, version). If any argument given does not match the corresponding ones in the
     database for given (name, version), than the version is incremented and the experiment will be a
     child of the previous version.
@@ -128,7 +125,7 @@ def build(name, version=None, branching=None, **config):
         Version to select. If None, last version will be selected. If version given is larger than
         largest version available, the largest version will be selected.
     space: dict, optional
-        Optimization space of the algorithm. Should have the form `dict(name='<prior>(args)')`.
+        Optimization space of the algorithm. Should have the form ``dict(name='<prior>(args)')``.
     algorithms: str or dict, optional
         Algorithm used for optimization.
     strategy: str or dict, optional
@@ -208,7 +205,7 @@ def build(name, version=None, branching=None, **config):
             log.debug("Experiment must branch because of conflicts")
         else:
             assert branching.get("branch_to")
-            log.debug("Experiment branching forced with `branch_to`")
+            log.debug("Experiment branching forced with ``branch_to``")
         branched_experiment = _branch_experiment(
             experiment, conflicts, version, branching
         )
@@ -233,7 +230,7 @@ def build(name, version=None, branching=None, **config):
 
 
 def clean_config(name, config, branching):
-    """Clean configuration from hidden fields (ex: `_id`) and update branching if necessary"""
+    """Clean configuration from hidden fields (ex: ``_id``) and update branching if necessary"""
     log.debug("Cleaning config")
 
     config = copy.deepcopy(config)
@@ -261,7 +258,7 @@ def clean_config(name, config, branching):
 
 def consolidate_config(name, version, config):
     """Merge together given configuration with db configuration matching
-    for experiment (`name`, `version`)
+    for experiment (``name``, ``version``)
     """
     db_config = fetch_config_from_db(name, version)
 

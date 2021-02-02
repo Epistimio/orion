@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.serving.plots_resources` -- Module responsible for the plots/ REST endpoint
-========================================================================================
+Module responsible for the plots/ REST endpoint
+================================================
 
-.. module:: plots_resources
-   :platform: Unix
-   :synopsis: Serves all the requests made to plots/ REST endpoint
+Serves all the requests made to plots/ REST endpoint.
+
 """
 from falcon import Request, Response
 

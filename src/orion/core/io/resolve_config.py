@@ -1,34 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.resolve_config` -- Configuration parsing and resolving
-=======================================================================
-
-.. module:: resolve_config
-   :platform: Unix
-   :synopsis: How does orion resolve configuration settings?
-
-How:
-
- - Experiment name resolves like this:
-    * cmd-arg **>** cmd-provided orion_config **>** REQUIRED (no default is given)
-
- - Database options resolve with the following precedence (high to low):
-    * cmd-provided orion_config **>** env vars **>** default files **>** defaults
-
-.. seealso:: :const:`ENV_VARS`, :const:`ENV_VARS_DB`
-
-
- - All other managerial, `Optimization` or `Dynamic` options resolve like this:
-
-    * cmd-args **>** cmd-provided orion_config **>** database (if experiment name
-      can be found) **>** default files
-
-Default files are given as a list at :const:`orion.core.DEF_CONFIG_FILES_PATHS` and a
-precedence is respected when building the settings dictionary:
-
- * default orion example file **<** system-wide config **<** user-wide config
-
-.. note:: `Optimization` entries are required, `Dynamic` entry is optional.
+Configuration parsing and resolving
+===================================
 
 """
 import copy
@@ -48,7 +21,7 @@ from orion.core.utils.flatten import unflatten
 
 
 def is_exe(path):
-    """Test whether `path` describes an executable file."""
+    """Test whether ``path`` describes an executable file."""
     return os.path.isfile(path) and os.access(path, os.X_OK)
 
 

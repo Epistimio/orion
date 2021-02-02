@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.db.set` -- Module running the set command
-==============================================================
+Module running the set command
+==============================
 
-.. module:: setup
-   :platform: Unix
-   :synopsis: Update data of experiments and trials in the storage
+Update data of experiments and trials in the storage
+
 """
 import argparse
 import logging

@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.analysis.regret` -- Provide tools to calculate regret
-=================================================================
-
-.. module:: orion.analysis.regret
-   :platform: Unix
-   :synopsis: Provide tools to calculate regret
+Provide tools to calculate regret
+=================================
 """
 import numpy
 import pandas as pd

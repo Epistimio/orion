@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.worker.primary_algo` -- Sanitizing wrapper of main algorithm
-=============================================================================
+Sanitizing wrapper of main algorithm
+====================================
 
-.. module:: primary_algo
-   :platform: Unix
-   :synopsis: Performs checks and organizes required transformations of points.
+Performs checks and organizes required transformations of points.
 
 """
 import orion.core.utils.backward as backward

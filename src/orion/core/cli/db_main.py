@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.db_main` -- Module containing database related operations
-==============================================================================
+Module containing database related operations
+=============================================
 
-.. module:: db_main
-   :platform: Unix
-   :synopsis: Root command for database operations
+Root command for database operations
 
 """
 import logging

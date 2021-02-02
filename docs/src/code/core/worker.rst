@@ -8,9 +8,11 @@ Worker and its components
    :maxdepth: 1
    :caption: Modules
 
-   worker/experiment
-   worker/trial
-   worker/producer
    worker/consumer
+   worker/experiment
    worker/primary_algo
+   worker/producer
+   worker/strategy
    worker/transformer
+   worker/trial
+   worker/trial_pacemaker

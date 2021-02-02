@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.worker.trial_monitor` -- Monitor trial execution
-=================================================================
-.. module:: trial_monitor
-   :platform: Unix
-   :synopsis: Monitor trials and update their heartbeat
+Trial Pacemaker
+===============
+
+Monitor trials and update their heartbeat
 
 """
 import threading

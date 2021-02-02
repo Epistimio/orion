@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.checks.presence` -- Presence stage for database checks
-===========================================================================
+Presence stage for database checks
+==================================
 
-.. module:: presence
-    :platform: Unix
-    :synopsis: Checks for the presence of a configuration.
+Checks for the presence of a configuration.
 
 """
 

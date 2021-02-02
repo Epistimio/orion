@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=too-many-lines
 """
-:mod:`orion.core.evc.adapters` -- Adapters to connect experiments within the EVC system
-=======================================================================================
-
-.. module:: adapters
-   :platform: Unix
-   :synopsis: Adapters to connect experiments within the EVC system
+Adapters to connect experiments within the EVC system
+=====================================================
 
 Experiment branches because of changes in the configuration or the user's code. This make
 experiments incompatible with one another unless we define adapters such that a branched experiment
@@ -150,7 +146,7 @@ class CompositeAdapter(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.forward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
         for adapter in self.adapters:
             trials = adapter.forward(trials)
@@ -162,7 +158,7 @@ class CompositeAdapter(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.backward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.backward`
         """
         for adapter in self.adapters[::-1]:
             trials = adapter.backward(trials)
@@ -185,7 +181,7 @@ class CompositeAdapter(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.configuration`
+            :meth:`orion.core.evc.adapters.BaseAdapter.configuration`
         """
         if len(self.adapters) > 1:
             return [
@@ -280,7 +276,7 @@ class DimensionAddition(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.forward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
         adapted_trials = []
 
@@ -304,7 +300,7 @@ class DimensionAddition(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.backward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.backward`
         """
         adapted_trials = []
 
@@ -379,8 +375,8 @@ class DimensionDeletion(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.DimensionAddition.backward`
-            :meth:`orion.core.evc.BaseAdapter.forward`
+            :meth:`orion.core.evc.adapters.DimensionAddition.backward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
         return self.dimension_addition_adapter.backward(trials)
 
@@ -389,8 +385,8 @@ class DimensionDeletion(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.DimensionAddition.forward`
-            :meth:`orion.core.evc.BaseAdapter.backward`
+            :meth:`orion.core.evc.adapters.DimensionAddition.forward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.backward`
         """
         return self.dimension_addition_adapter.forward(trials)
 
@@ -456,7 +452,7 @@ class DimensionPriorChange(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.forward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
         # pylint: disable=unused-argument
         def is_in_bound(trial, param):
@@ -474,7 +470,7 @@ class DimensionPriorChange(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.backward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.backward`
         """
         return DimensionPriorChange(self.name, self.new_prior, self.old_prior).forward(
             trials
@@ -538,7 +534,7 @@ class DimensionRenaming(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.forward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
         # pylint: disable=unused-argument
         def rename(trial, param):
@@ -558,7 +554,7 @@ class DimensionRenaming(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.forward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
         return DimensionRenaming(self.new_name, self.old_name).forward(trials)
 
@@ -591,7 +587,7 @@ class AlgorithmChange(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.forward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
         return trials
 
@@ -600,7 +596,7 @@ class AlgorithmChange(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.forward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
         return trials
 
@@ -629,8 +625,8 @@ class CodeChange(BaseAdapter):
     Attributes
     ----------
     change_type: `str`
-        Type of change of the code. Can be one of `CodeChange.NOEFFET`, `CodeChange.BREAK` or
-        `CodeChange.UNSURE`.
+        Type of change of the code. Can be one of ``CodeChange.NOEFFET``, ``CodeChange.BREAK`` or
+        ``CodeChange.UNSURE``.
 
     """
 
@@ -645,8 +641,8 @@ class CodeChange(BaseAdapter):
         Parameters
         ----------
         change_type: `str`
-            Type of change of the code. Can be one of `CodeChange.NOEFFET`, `CodeChange.BREAK` or
-            `CodeChange.UNSURE`.
+            Type of change of the code. Can be one of ``CodeChange.NOEFFET``, ``CodeChange.BREAK``
+            or ``CodeChange.UNSURE``.
 
         """
         self.validate(change_type)
@@ -666,7 +662,7 @@ class CodeChange(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.forward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
         if self.change_type == self.BREAK:
             return []
@@ -678,7 +674,7 @@ class CodeChange(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.backward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.backward`
         """
         if self.change_type in [self.BREAK, self.UNSURE]:
             return []
@@ -712,8 +708,8 @@ class CommandLineChange(BaseAdapter):
     Attributes
     ----------
     change_type: `str`
-        Type of change of the command line. Can be one of `CommandLineChange.NOEFFET`,
-        `CommandLineChange.BREAK` or `CommandLineChange.UNSURE`.
+        Type of change of the command line. Can be one of ``CommandLineChange.NOEFFET``,
+        ``CommandLineChange.BREAK`` or ``CommandLineChange.UNSURE``.
 
     """
 
@@ -728,8 +724,8 @@ class CommandLineChange(BaseAdapter):
         Parameters
         ----------
         change_type: `str`
-            Type of change of the command line. Can be one of `Change.NOEFFET`,
-            `CommandLineChange.BREAK` or `CommandLineChange.UNSURE`.
+            Type of change of the command line. Can be one of ``Change.NOEFFET``,
+            ``CommandLineChange.BREAK`` or ``CommandLineChange.UNSURE``.
 
         """
         self.validate(change_type)
@@ -749,7 +745,7 @@ class CommandLineChange(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.forward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
         if self.change_type == self.BREAK:
             return []
@@ -761,7 +757,7 @@ class CommandLineChange(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.backward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.backward`
         """
         if self.change_type in [self.BREAK, self.UNSURE]:
             return []
@@ -795,8 +791,8 @@ class ScriptConfigChange(BaseAdapter):
     Attributes
     ----------
     change_type: `str`
-        Type of change of the command line. Can be one of `ScriptConfigChange.NOEFFET`,
-        `ScriptConfigChange.BREAK` or `ScriptConfigChange.UNSURE`.
+        Type of change of the command line. Can be one of ``ScriptConfigChange.NOEFFET``,
+        ``ScriptConfigChange.BREAK`` or ``ScriptConfigChange.UNSURE``.
 
     """
 
@@ -811,8 +807,8 @@ class ScriptConfigChange(BaseAdapter):
         Parameters
         ----------
         change_type: `str`
-            Type of change of the script's config. Can be one of `ScriptConfigChange.NOEFFET`,
-            `ScriptConfigChange.BREAK` or `ScriptConfigChange.UNSURE`.
+            Type of change of the script's config. Can be one of ``ScriptConfigChange.NOEFFET``,
+            ``ScriptConfigChange.BREAK`` or ``ScriptConfigChange.UNSURE``.
 
         """
         self.validate(change_type)
@@ -832,7 +828,7 @@ class ScriptConfigChange(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.forward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
         if self.change_type == self.BREAK:
             return []
@@ -844,7 +840,7 @@ class ScriptConfigChange(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.backward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.backward`
         """
         if self.change_type in [self.BREAK, self.UNSURE]:
             return []
@@ -878,7 +874,7 @@ class OrionVersionChange(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.forward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
         return trials
 
@@ -887,7 +883,7 @@ class OrionVersionChange(BaseAdapter):
 
         .. seealso::
 
-            :meth:`orion.core.evc.BaseAdapter.forward`
+            :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
         return trials
 

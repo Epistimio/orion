@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.worker` -- Coordination of the optimization procedure
-======================================================================
+Coordination of the optimization procedure
+==========================================
 
-.. module:: worker
-   :platform: Unix
-   :synopsis: Executes optimization steps and runs training experiment
-      with parameter values suggested.
+Executes optimization steps and runs training experiment with parameter values suggested.
 
 """
 import itertools

@@ -1,10 +1,6 @@
 """
-:mod:`orion.analysis.partial_dependency_utils` -- Tools to compute Partial Dependency
-=====================================================================================
-
-.. module:: orion.analysis.lpi
-   :platform: Unix
-   :synopsis: Provide tools to calculate Partial Dependency
+Tools to compute Partial Dependency
+===================================
 """
 import copy
 import itertools

@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.algo.tpe` -- Tree-structured Parzen Estimator Approach
-==================================================================
-
-.. module:: tpe
-   :platform: Unix
-   :synopsis: Tree-structured Parzen Estimator Approach
-
+Tree-structured Parzen Estimator Approach
+=========================================
 """
 import logging
 

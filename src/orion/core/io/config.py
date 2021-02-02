@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=redefined-builtin
 """
-:mod:`orion.core.io.config` -- Configuration object
-===================================================
+Configuration object
+====================
 
-.. module:: config
-   :platform: Unix
-   :synopsis: Configuration object to define package configuration
-
+Configuration object to define package configuration.
 
 Highly inspired from https://github.com/mila-iqia/blocks/blob/master/blocks/config.py.
 

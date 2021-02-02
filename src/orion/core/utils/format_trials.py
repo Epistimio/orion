@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.format_trials` -- Utility functions for formatting data
-==============================================================================
+Utility functions for formatting data
+=====================================
 
-.. module:: format_trials
-   :platform: Unix
-   :synopsis: Conversion functions between various data types used in
-      framework's ecosystem.
+Conversion functions between various data types used in framework's ecosystem.
 
 """
 
@@ -81,7 +78,7 @@ def tuple_to_trial(data, space):
 
 
 def get_trial_results(trial):
-    """Format results from a `Trial` using standard structures."""
+    """Format results from a `orion.core.worker.trial.Trial` using standard structures."""
     results = dict()
 
     lie = trial.lie

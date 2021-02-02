@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.hunt` -- Module running the optimization command
-=====================================================================
+Module running the optimization command
+=======================================
 
-.. module:: hunt
-   :platform: Unix
-   :synopsis: Gets an experiment and iterates over it until one of the exit conditions is met
+Gets an experiment and iterates over it until one of the exit conditions is met
 
 """
 

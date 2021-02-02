@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.client.experiment` -- Experiment wrapper client
-===========================================================
+Experiment wrapper client
+=========================
 
-.. module:: experiment
-   :platform: Unix
-   :synopsis: Wraps the core Experiment object to provide further functionalities for the user
-
+Wraps the core Experiment object to provide further functionalities for the user
 """
 import atexit
 import functools
@@ -164,8 +161,8 @@ class ExperimentClient:
         trials_completed : int
            Number of completed trials
         best_trials_id : int
-           Unique identifier of the `Trial` object in the database which achieved
-           the best known objective result.
+           Unique identifier of the :class:`orion.core.worker.trial.Trial` object in the database
+           which achieved the best known objective result.
         best_evaluation : float
            Evaluation score of the best trial
         start_time : `datetime.datetime`
@@ -276,9 +273,9 @@ class ExperimentClient:
     def fetch_trials_by_status(self, status, with_evc_tree=False):
         """Fetch all trials with the given status
 
-        Trials are sorted based on `Trial.submit_time`
+        Trials are sorted based on ``Trial.submit_time``
 
-        :return: list of `Trial` objects
+        :return: list of :class:`orion.core.worker.trial.Trial` objects
         """
         return self._experiment.fetch_trials_by_status(
             status, with_evc_tree=with_evc_tree
@@ -287,14 +284,14 @@ class ExperimentClient:
     def fetch_noncompleted_trials(self, with_evc_tree=False):
         """Fetch non-completed trials of this `Experiment` instance.
 
-        Trials are sorted based on `Trial.submit_time`
+        Trials are sorted based on ``Trial.submit_time``
 
         .. note::
 
             It will return all non-completed trials, including new, reserved, suspended,
             interrupted and broken ones.
 
-        :return: list of non-completed `Trial` objects
+        :return: list of non-completed :class:`orion.core.worker.trial.Trial` objects
         """
         return self._experiment.fetch_noncompleted_trials(with_evc_tree=with_evc_tree)
 
@@ -340,7 +337,7 @@ class ExperimentClient:
             - If results have invalid format
         `orion.core.io.database.DuplicateKeyError`
             - If a trial with identical params already exist for the current experiment.
-        `UnsupportedOperation`
+        `orion.core.utils.exceptions.UnsupportedOperation`
             If the experiment was not loaded in writable mode.
 
         """
@@ -396,17 +393,17 @@ class ExperimentClient:
             If trial is reserved by another process
         `ValueError`
             If the trial does not exist in storage.
-        `UnsupportedOperation`
+        `orion.core.utils.exceptions.UnsupportedOperation`
             If the experiment was not loaded in executable mode.
 
         Notes
         -----
-        When reserved, a `TrialPacemaker` is started to update an heartbeat in storage. The
-        frequency of the heartbeat is configurable at creation of experiment
-        or with `orion.core.config.worker.heartbeat`.
+        When reserved, a :class:`TrialPacemaker <orion.core.worker.trial_pacemaker.TrialPacemaker>`
+        is started to update an heartbeat in storage. The frequency of the heartbeat is configurable
+        at creation of experiment or with ``orion.core.config.worker.heartbeat``.
         If the process terminates unexpectedly, the heartbeat will cease and remote processes
         may reset the status of the trial to 'interrupted' when the heartbeat has not been updated
-        since twice the value of `heartbeat`.
+        since twice the value of ``heartbeat``.
 
         """
         self._check_if_executable()
@@ -452,7 +449,7 @@ class ExperimentClient:
             If reservation of the trial has been lost prior to releasing it.
         `ValueError`
             If the trial does not exist in storage.
-        `UnsupportedOperation`
+        `orion.core.utils.exceptions.UnsupportedOperation`
             If the experiment was not loaded in writable mode.
 
         """
@@ -490,18 +487,18 @@ class ExperimentClient:
 
         Raises
         ------
-        `WaitingForTrials`
+        :class:`orion.core.utils.exceptions.WaitingForTrials`
             if the experiment is not completed and algorithm needs to wait for some
             trials to complete before it can suggest new trials.
 
-        `BrokenExperiment`
+        :class:`orion.core.utils.exceptions.BrokenExperiment`
             if too many trials failed to run and the experiment cannot continue.
             This is determined by ``max_broken`` in the configuration of the experiment.
 
-        `SampleTimeout`
+        :class:`orion.core.utils.exceptions.SampleTimeout`
             if the algorithm of the experiment could not sample new unique points.
 
-        `UnsupportedOperation`
+        :class:`orion.core.utils.exceptions.UnsupportedOperation`
             If the experiment was not loaded in executable mode.
 
         """
@@ -560,7 +557,7 @@ class ExperimentClient:
             - If the trial does not exist in storage.
         `RuntimeError`
             If reservation of the trial has been lost prior to releasing it.
-        `UnsupportedOperation`
+        `orion.core.utils.exceptions.UnsupportedOperation`
             If the experiment was not loaded in executable mode.
 
         """
@@ -603,7 +600,7 @@ class ExperimentClient:
         ------
         `ValueError`
              If results returned by `fct` have invalid format
-        `UnsupportedOperation`
+        `orion.core.utils.exceptions.UnsupportedOperation`
             If the experiment was not loaded in executable mode.
 
         """
@@ -630,7 +627,7 @@ class ExperimentClient:
 
         Raises
         ------
-        `UnsupportedOperation`
+        `orion.core.utils.exceptions.UnsupportedOperation`
             If the experiment was not loaded in executable mode.
 
         """

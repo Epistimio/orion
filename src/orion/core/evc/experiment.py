@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=protected-access
 """
-:mod:`orion.core.evc.experiment` -- Experiment node for EVC
-===========================================================
+Experiment node for EVC
+=======================
 
-.. module:: experiment
-   :platform: Unix
-   :synopsis: Experiment nodes connecting experiments to the EVC tree
+Experiment nodes connecting experiments to the EVC tree
 
 The experiments are connected to one another through the experiment nodes. The former can be created
 standalone without an EVC tree. When connected to an `ExperimentNode`, the experiments gain access
@@ -40,7 +38,7 @@ class ExperimentNode(TreeNode):
 
     .. seealso::
 
-        :py:class:`TreeNode` for tree-specific attributes and methods.
+        :py:class:`orion.core.evc.tree.TreeNode` for tree-specific attributes and methods.
 
     """
 
@@ -141,39 +139,39 @@ class ExperimentNode(TreeNode):
         return self.name
 
     def fetch_lost_trials(self):
-        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
-        return self._fetch_trials("fetch_lost_trials")
+        """See :meth:`orion.core.evc.experiment.ExperimentNode.recurvise_fetch`"""
+        return self.recurvise_fetch("fetch_lost_trials")
 
     def fetch_trials(self):
-        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
-        return self._fetch_trials("fetch_trials")
+        """See :meth:`orion.core.evc.experiment.ExperimentNode.recurvise_fetch`"""
+        return self.recurvise_fetch("fetch_trials")
 
     def fetch_pending_trials(self):
-        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
-        return self._fetch_trials("fetch_pending_trials")
+        """See :meth:`orion.core.evc.experiment.ExperimentNode.recurvise_fetch`"""
+        return self.recurvise_fetch("fetch_pending_trials")
 
     def fetch_noncompleted_trials(self):
-        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
-        return self._fetch_trials("fetch_noncompleted_trials")
+        """See :meth:`orion.core.evc.experiment.ExperimentNode.recurvise_fetch`"""
+        return self.recurvise_fetch("fetch_noncompleted_trials")
 
     def fetch_trials_by_status(self, status):
-        """See :meth:`orion.core.evc.experiment:Experiment._fetch_trials`"""
-        return self._fetch_trials("fetch_trials_by_status", status=status)
+        """See :meth:`orion.core.evc.experiment.ExperimentNode.recurvise_fetch`"""
+        return self.recurvise_fetch("fetch_trials_by_status", status=status)
 
-    def _fetch_trials(self, fun_name, *args, **kwargs):
+    def recurvise_fetch(self, fun_name, *args, **kwargs):
         """Fetch trials recursively in the EVC tree using the fetch function `fun_name`.
 
         Parameters
         ----------
         fun_name: callable
             Function name to call to fetch trials. The function must be an attribute of
-            :class:`orion.core.worker.experiment:Experiment`
+            :class:`orion.core.worker.experiment.Experiment`
 
         *args:
             Positional arguments to pass to `fun_name`.
 
         **kwargs
-            Keyword arguments to pass to `fun_name.
+            Keyword arguments to pass to `fun_name`.
 
         """
 

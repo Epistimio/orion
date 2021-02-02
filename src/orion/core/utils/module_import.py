@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.module_import` -- Utility functions for importing modules
-================================================================================
+Utility functions for importing modules
+=======================================
 
-.. module:: format_trials
-   :platform: Unix
-   :synopsis: Conversion functions between various data types used in
-      framework's ecosystem.
+Conversion functions between various data types used in framework's ecosystem.
 
 """
 
