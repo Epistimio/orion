@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.status` -- Module to status experiments
-============================================================
+Module to status experiments
+============================
 
-.. module:: status
-   :platform: Unix
-   :synopsis: List the trials and their statuses for experiments.
+List the trials and their statuses for experiments.
 
 """
 import collections

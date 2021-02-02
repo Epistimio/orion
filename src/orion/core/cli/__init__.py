@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli` -- Functions that define console scripts
-================================================================
+Functions that define console scripts
+=====================================
 
-.. module:: cli
-   :platform: Unix
-   :synopsis: Helper functions to setup an experiment and execute it.
+Helper functions to setup an experiment and execute it.
 
 """
 import logging

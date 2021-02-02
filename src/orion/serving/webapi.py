@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.serving.webapi` -- WSGI REST server application
-===========================================================
+WSGI REST server application
+============================
 
-.. module:: webapi
-   :platform: Unix
-   :synopsis: Exposes a WSGI REST server application instance by subclassing ``falcon.API``
+Exposes a WSGI REST server application instance by subclassing ``falcon.API``.
+
 """
 
 import falcon

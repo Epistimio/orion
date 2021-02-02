@@ -1,7 +1,6 @@
 """
-:mod:`orion.plotting.base` -- Provides public plotting API
-===========================================================
-
+Provides public plotting API
+=============================
 """
 import orion.plotting.backend_plotly as backend
 

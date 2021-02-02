@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=protected-access,too-many-public-methods,too-many-lines
 """
-:mod:`orion.core.worker.experiment` -- Description of an optimization attempt
-=============================================================================
+Description of an optimization attempt
+======================================
 
-Manage history of trials corresponding to a black box process
+Manage history of trials corresponding to a black box process.
+
 """
 import copy
 import datetime

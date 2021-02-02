@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.storage.legacy` -- Legacy storage
-=============================================
+Legacy storage
+==============
 
-Old Storage implementation
+Old Storage implementation.
 
 """
 import datetime

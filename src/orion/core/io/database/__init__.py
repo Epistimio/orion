@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.io.database` -- Wrappers for database frameworks
-=================================================================
+Wrappers for database frameworks
+================================
 
 Contains :class:`AbstractDB`, an interface for databases.
 Currently, implemented wrappers:

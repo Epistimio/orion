@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.storage.base` -- Generic Storage Protocol
-=====================================================
+Generic Storage Protocol
+========================
 
-Implement a generic protocol to allow Orion to communicate using different storage backend
+Implement a generic protocol to allow Orion to communicate using different storage backend.
 
 """
 import copy

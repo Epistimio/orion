@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.worker.producer` -- Produce and register samples to try
-========================================================================
+Produce and register samples to try
+===================================
 
-.. module:: producer
-   :platform: Unix
-   :synopsis: Suggest new parameter sets which optimize the objective.
+Suggest new parameter sets which optimize the objective.
 
 """
 import copy

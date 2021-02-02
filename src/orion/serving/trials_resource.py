@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.serving.trials_resource` -- Module responsible for the trials/ REST endpoint
-========================================================================================
-
-.. module:: trials_resource
-   :platform: Unix
-   :synopsis: Serves all the requests made to trials/ REST endpoint
+Module responsible for the trials/ REST endpoint
+================================================
 """
 import json
 

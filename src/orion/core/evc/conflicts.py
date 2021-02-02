@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=too-many-lines,arguments-differ
 """
-:mod:`orion.core.evc.conflicts` -- Description and resolution of configuration conflicts
-========================================================================================
+Description and resolution of configuration conflicts
+=====================================================
 
 Conflicts between a parent experiment and a child configuration exist in many different forms. This
 module provides the function `detect_conflicts` to automatically detect them. Any conflict type

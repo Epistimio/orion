@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.base` -- Base class and function utilities for cli
-=======================================================================
+Base class and function utilities for cli
+=========================================
 """
 import argparse
 import logging

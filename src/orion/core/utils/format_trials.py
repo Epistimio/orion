@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.format_trials` -- Utility functions for formatting data
-==============================================================================
+Utility functions for formatting data
+=====================================
 
-.. module:: format_trials
-   :platform: Unix
-   :synopsis: Conversion functions between various data types used in
-      framework's ecosystem.
+Conversion functions between various data types used in framework's ecosystem.
 
 """
 

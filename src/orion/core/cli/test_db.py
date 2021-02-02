@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.test_db` -- Module to check if the DB works
-=================================================================
+Module to check if the DB works
+===============================
 
-.. module:: test_db
-   :platform: Unix
-   :synopsis: Runs multiple checks to see if the database was correctly setup.
+Runs multiple checks to see if the database was correctly setup.
 
 """
 import argparse

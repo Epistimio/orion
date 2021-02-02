@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.serving.responses` -- Helpers for building responses according to the specification
-===============================================================================================
+Helpers for building responses according to the specification
+=============================================================
 
-.. module:: responses
-   :platform: Unix
-   :synopsis: Offers functions and attributes to generate response objects according
-      to the API specification
+Offers functions and attributes to generate response objects according to the API specification.
+
 """
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.trial import Trial

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.evc.tree` -- Tree data structure for the experiment version control system
-===========================================================================================
+Tree data structure for the experiment version control system
+=============================================================
 
 Tree data structure for the experiment version control system
 

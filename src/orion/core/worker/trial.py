@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 # pylint: skip-file
 """
-:mod:`orion.core.worker.trial` -- Container class for `Trial` entity
-====================================================================
+Container class for `Trial` entity
+==================================
 
-.. module:: trial
-   :platform: Unix
-   :synopsis: Describe a particular training run, parameters and results
+Describe a particular training run, parameters and results.
 
 """
 import hashlib

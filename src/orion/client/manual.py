@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.client.manual` -- Routines for manual interaction with database
-=============================================================================
+Routines for manual interaction with database
+===============================================
 
-.. module:: manual
-   :platform: Unix
-   :synopsis: Provides a simple interface to log new trials into the database
-      and link them with a particular existing experiment.
+Provides a simple interface to log new trials into the database and link them with a particular
+existing experiment.
 
 """
 import logging

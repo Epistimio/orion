@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.storage.track` -- Track Storage Protocol
-====================================================
+Track Storage Protocol
+======================
 
-Implement a storage protocol to allow Orion to use track as a storage method
+Implement a storage protocol to allow Orion to use track as a storage method.
 
 """
 

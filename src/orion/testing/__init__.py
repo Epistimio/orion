@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.testing` -- Common testing support module
-=====================================================
-.. module:: testing
-   :platform: Unix
-   :synopsis: Common testing support module providing defaults, functions and mocks.
+Common testing support module
+=============================
+
+Common testing support module providing defaults, functions and mocks.
+
 """
 # pylint: disable=protected-access
 

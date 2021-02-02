@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.points` -- Utility functions for manipulating trial points
-=================================================================================
+Utility functions for manipulating trial points
+===============================================
 
-.. module:: points
-   :platform: Unix
-   :synopsis: Conversion functions between higher shape points and lists.
+Conversion functions between higher shape points and lists.
 
 """
 

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.analysis` -- Provides HPO analysis tools
-====================================================
-
+Provides HPO analysis tools
+===========================
 """
 
 from orion.analysis.lpi_utils import lpi

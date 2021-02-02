@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.worker.consumer` -- Evaluate objective on a set of parameters
-==============================================================================
+Evaluate objective on a set of parameters
+=========================================
 
-.. module:: consumer
-   :platform: Unix
-   :synopsis: Call user's script as a black box process to evaluate a trial.
+Call user's script as a black box process to evaluate a trial.
 
 """
 import copy

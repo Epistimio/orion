@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.io.database.ephemeraldb` -- Non permanent database
-===================================================================
+Non permanent database
+======================
 
 Implement non permanent version of :class:`orion.core.io.database.AbstractDB`
 

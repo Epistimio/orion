@@ -1,13 +1,9 @@
 # pylint:disable=too-many-lines
 """
-:mod:`orion.core.io.experiment_builder` -- Create experiment from user options
-==============================================================================
+Create experiment from user options
+===================================
 
-.. module:: experiment
-   :platform: Unix
-   :synopsis: Functions which build `Experiment` objects
-       based on user configuration.
-
+Functions which build `Experiment` objects based on user configuration.
 
 The instantiation of an `Experiment` is not a trivial process when the user request an experiment
 with specific options. One can easily create a new experiment with

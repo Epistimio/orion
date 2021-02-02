@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.db.upgrade` -- Module to upgrade DB schemes
-================================================================
+Module to upgrade DB schemes
+============================
 
-.. module:: test_db
-   :platform: Unix
-   :synopsis: Upgrade the scheme of the databases
+Upgrade the scheme of the databases
 
 """
 import argparse

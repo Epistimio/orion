@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.client.experiment` -- Experiment wrapper client
-===========================================================
+Experiment wrapper client
+=========================
 
 Wraps the core Experiment object to provide further functionalities for the user
 """

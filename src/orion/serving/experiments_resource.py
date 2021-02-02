@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.serving.experiments_resource` -- Module responsible for the experiments/ REST endpoint
-==================================================================================================
+Module responsible for the experiments/ REST endpoint
+=====================================================
 
-.. module:: experiments_resource
-   :platform: Unix
-   :synopsis: Serves all the requests made to experiments/ REST endpoint
+Serves all the requests made to experiments/ REST endpoint.
+
 """
 import json
 from typing import Optional

@@ -1,7 +1,6 @@
 """
-:mod:`orion.analysis.partial_dependency_utils` -- Tools to compute Partial Dependency
-=====================================================================================
-
+Tools to compute Partial Dependency
+===================================
 """
 import copy
 import itertools

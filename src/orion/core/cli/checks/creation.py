@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.checks.creation` -- Creation stage for database checks
-===========================================================================
+Creation stage for database checks
+==================================
 
-.. module:: creation
-    :platform: Unix
-    :synopsis: Checks for the creation of a `Database` object.
+Checks for the creation of a `Database` object.
 
 """
 

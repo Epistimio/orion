@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.io.database.mongodb` -- Wrapper for MongoDB
-============================================================
-
+Wrapper for MongoDB
+===================
 """
 import functools
 
