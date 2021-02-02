@@ -102,6 +102,8 @@ class PickledDB(AbstractDB):
             host = DEFAULT_HOST
         super(PickledDB, self).__init__(host)
 
+        self.host = os.path.abspath(host)
+
         self.timeout = timeout
 
         if os.path.dirname(host):
