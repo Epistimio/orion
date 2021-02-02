@@ -621,8 +621,8 @@ class NewDimensionConflict(Conflict):
                 The conflict which is resolved by this resolution.
             default_value: object
                 Default value for the new dimension. Defaults to ``Dimension.NO_DEFAULT_VALUE``.
-                If ``Dimension.NO_DEFAULT_VALUE``, default_value from corresponding dimension will be
-                used.
+                If ``Dimension.NO_DEFAULT_VALUE``, default_value from corresponding dimension will
+                be used.
 
             Raises
             ------
@@ -1037,8 +1037,8 @@ class MissingDimensionConflict(Conflict):
                 The conflict which is resolved by this resolution.
             default_value: object
                 Default value for the missing dimension. Defaults to ``Dimension.NO_DEFAULT_VALUE``.
-                If ``Dimension.NO_DEFAULT_VALUE``, default_value from corresponding dimension will be
-                used.
+                If ``Dimension.NO_DEFAULT_VALUE``, default_value from corresponding dimension will
+                be used.
 
             Raises
             ------

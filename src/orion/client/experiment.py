@@ -161,8 +161,8 @@ class ExperimentClient:
         trials_completed : int
            Number of completed trials
         best_trials_id : int
-           Unique identifier of the :class:`orion.core.worker.trial.Trial` object in the database which achieved
-           the best known objective result.
+           Unique identifier of the :class:`orion.core.worker.trial.Trial` object in the database
+           which achieved the best known objective result.
         best_evaluation : float
            Evaluation score of the best trial
         start_time : `datetime.datetime`

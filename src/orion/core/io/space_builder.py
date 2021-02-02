@@ -163,7 +163,8 @@ class DimensionBuilder(object):
         return klass(name, "uniform", *args, **kwargs)
 
     def randint(self, *args, **kwargs):
-        """Create an :class:`orion.algo.space.Integer` or :class:`orion.algo.space.Real` uniformly distributed dimension.
+        """Create an :class:`orion.algo.space.Integer` or :class:`orion.algo.space.Real` uniformly
+        distributed dimension.
 
         .. note:: Changes scipy convention for uniform's arguments. In scipy,
            ``uniform(a, b)`` means uniform in the interval [a, a+b). Here, it
