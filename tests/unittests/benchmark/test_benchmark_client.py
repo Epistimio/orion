@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.benchmark.benchmark_client`."""
+import copy
 
 import pytest
 
@@ -47,7 +48,7 @@ class TestCreateBenchmark:
             with pytest.raises(SingletonNotInstantiatedError):
                 get_storage()
 
-            bm1 = get_or_create_benchmark(
+            get_or_create_benchmark(
                 "bm00001",
                 algorithms=benchmark_algorithms,
                 targets=[
@@ -134,7 +135,7 @@ class TestCreateBenchmark:
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, EphemeralDB)
 
-    def test_create_benchmark(self, benchmark_algorithms):
+    def test_create_benchmark(self, benchmark_algorithms, benchmark_config):
         """Test creation with valid configuration"""
         with OrionState():
             bm1 = get_or_create_benchmark(
@@ -150,23 +151,7 @@ class TestCreateBenchmark:
 
             bm2 = get_or_create_benchmark("bm00001")
 
-            cfg = {
-                "name": "bm00001",
-                "algorithms": benchmark_algorithms,
-                "targets": [
-                    {
-                        "assess": {
-                            "AverageResult": {"task_num": 2},
-                            "AverageRank": {"task_num": 2},
-                        },
-                        "task": {
-                            "RosenBrock": {"dim": 3, "max_trials": 25},
-                            "CarromTable": {"max_trials": 20},
-                        },
-                    }
-                ],
-            }
-            assert bm1.configuration == cfg
+            assert bm1.configuration == benchmark_config
 
             assert bm1.configuration == bm2.configuration
 
@@ -224,95 +209,42 @@ class TestCreateBenchmark:
                 exc.value
             )
 
-    def test_create_with_not_loaded_targets(self, benchmark_algorithms):
+    def test_create_with_not_loaded_targets(self, benchmark_config):
         """Test creation with assessment or task does not exist or not loaded"""
-        cfg_assess = {
-            "name": "bm00002",
-            "algorithms": benchmark_algorithms,
-            "targets": [
-                {
-                    "assess": {
-                        "idontexist": {"task_num": 2},
-                        "AverageRank": {"task_num": 2},
-                    },
-                    "task": {
-                        "RosenBrock": {"dim": 3, "max_trials": 25},
-                        "CarromTable": {"max_trials": 20},
-                    },
-                }
-            ],
-        }
-        with OrionState(benchmarks=cfg_assess):
+
+        cfg_invalid_assess = copy.deepcopy(benchmark_config)
+        cfg_invalid_assess["targets"][0]["assess"]["idontexist"] = {"task_num": 2}
+
+        with OrionState(benchmarks=cfg_invalid_assess):
             with pytest.raises(NotImplementedError) as exc:
-                get_or_create_benchmark("bm00002")
+                get_or_create_benchmark(benchmark_config["name"])
             assert "Could not find implementation of BaseAssess" in str(exc.value)
 
-        cfg_task = {
-            "name": "bm00002",
-            "algorithms": benchmark_algorithms,
-            "targets": [
-                {
-                    "assess": {
-                        "AverageResult": {"task_num": 2},
-                        "AverageRank": {"task_num": 2},
-                    },
-                    "task": {
-                        "RosenBrock": {"dim": 3, "max_trials": 25},
-                        "idontexist": {"max_trials": 20},
-                    },
-                }
-            ],
-        }
+        cfg_invalid_task = copy.deepcopy(benchmark_config)
+        cfg_invalid_task["targets"][0]["task"]["idontexist"] = {"max_trials": 2}
 
-        with OrionState(benchmarks=cfg_task):
+        with OrionState(benchmarks=cfg_invalid_task):
             with pytest.raises(NotImplementedError) as exc:
-                get_or_create_benchmark("bm00002")
+                get_or_create_benchmark(benchmark_config["name"])
             assert "Could not find implementation of BaseTask" in str(exc.value)
 
-    def test_create_with_not_exist_targets_parameters(self, benchmark_algorithms):
+    def test_create_with_not_exist_targets_parameters(self, benchmark_config):
         """Test creation with not existing assessment parameters"""
-        cfg = {
-            "name": "bm00002",
-            "algorithms": benchmark_algorithms,
-            "targets": [
-                {
-                    "assess": {
-                        "AverageResult": {"task_num": 2, "idontexist": 100},
-                        "AverageRank": {"task_num": 2},
-                    },
-                    "task": {
-                        "RosenBrock": {"dim": 3, "max_trials": 25},
-                        "CarromTable": {"max_trials": 20},
-                    },
-                }
-            ],
+
+        benchmark_config["targets"][0]["assess"]["AverageResult"] = {
+            "task_num": 2,
+            "idontexist": 100,
         }
 
-        with OrionState(benchmarks=cfg):
+        with OrionState(benchmarks=benchmark_config):
             with pytest.raises(TypeError) as exc:
-                get_or_create_benchmark("bm00002")
+                get_or_create_benchmark(benchmark_config["name"])
             assert "__init__() got an unexpected keyword argument 'idontexist'" in str(
                 exc.value
             )
 
-    def test_create_from_db_config(self, benchmark_algorithms):
-        """Test creation from existing db configure"""
-        cfg = {
-            "name": "bm00002",
-            "algorithms": benchmark_algorithms,
-            "targets": [
-                {
-                    "assess": {
-                        "AverageResult": {"task_num": 2},
-                        "AverageRank": {"task_num": 2},
-                    },
-                    "task": {
-                        "RosenBrock": {"dim": 3, "max_trials": 25},
-                        "CarromTable": {"max_trials": 20},
-                    },
-                }
-            ],
-        }
-        with OrionState(benchmarks=cfg.copy()):
-            bm = get_or_create_benchmark("bm00002")
-            assert bm.configuration == cfg
+    def test_create_from_db_config(self, benchmark_config):
+        """Test creation from existing db configubenchmark_configre"""
+        with OrionState(benchmarks=copy.deepcopy(benchmark_config)):
+            bm = get_or_create_benchmark(benchmark_config["name"])
+            assert bm.configuration == benchmark_config

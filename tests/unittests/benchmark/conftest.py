@@ -27,6 +27,28 @@ def benchmark_algorithms():
     return [{"random": {"seed": 1}}, {"tpe": {"seed": 1}}]
 
 
+@pytest.fixture
+def benchmark_config(benchmark_algorithms):
+    config = {
+        "name": "bm00001",
+        "algorithms": benchmark_algorithms,
+        "targets": [
+            {
+                "assess": {
+                    "AverageResult": {"task_num": 2},
+                    "AverageRank": {"task_num": 2},
+                },
+                "task": {
+                    "RosenBrock": {"dim": 3, "max_trials": 25},
+                    "CarromTable": {"max_trials": 20},
+                },
+            }
+        ],
+    }
+
+    return config
+
+
 @pytest.fixture()
 def experiment_config(max_trial, benchmark_algorithms):
     """Return a experiment template configure"""
