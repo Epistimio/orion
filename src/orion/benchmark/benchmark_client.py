@@ -68,7 +68,7 @@ def get_or_create_benchmark(
 
     benchmark = _create_benchmark(name, algorithms, targets)
 
-    if input_configure and input_benchmark != benchmark.configuration:
+    if input_configure and input_benchmark.configuration != benchmark.configuration:
         logger.warn(
             "Benchmark with same name is found but has different configuration, "
             "which will be used for this creation.\n{}".format(benchmark.configuration)

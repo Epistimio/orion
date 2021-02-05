@@ -60,6 +60,7 @@ def average(trials, group_by="order", key="best", return_var=False):
     return mean
 
 
+# pylint:disable=unsupported-assignment-operation
 def ranking(trials, group_by="order", key="best"):
     """Compute the ranking of some trial attribute.
 
