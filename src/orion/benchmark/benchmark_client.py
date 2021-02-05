@@ -10,12 +10,16 @@
 
 """
 import datetime
+import logging
 
 from orion.benchmark import Benchmark, Study
 from orion.benchmark.assessment.base import BenchmarkAssessment
 from orion.benchmark.task.base import BenchmarkTask
+from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import NoConfigurationError
 from orion.storage.base import get_storage, setup_storage
+
+logger = logging.getLogger(__name__)
 
 
 def get_or_create_benchmark(
@@ -53,8 +57,12 @@ def get_or_create_benchmark(
     db_config = _fetch_benchmark(name)
 
     benchmark_id = None
+    input_configure = None
 
     if db_config:
+        if algorithms or targets:
+            input_benchmark = Benchmark(name, algorithms, targets)
+            input_configure = input_benchmark.configuration
         benchmark_id, algorithms, targets = _resolve_db_config(db_config)
 
     if not algorithms or not targets:
@@ -65,9 +73,24 @@ def get_or_create_benchmark(
 
     benchmark = _create_benchmark(name, algorithms, targets)
 
+    if input_configure and input_benchmark != benchmark.configuration:
+        logger.warn(
+            "Benchmark with same name is found but has different configuration, "
+            "which will be used for this creation.\n{}".format(benchmark.configuration)
+        )
+
     if benchmark_id is None:
-        # persist benchmark into db
-        _register_benchmark(benchmark)
+        logger.debug("Benchmark not found in DB. Now attempting registration in DB.")
+        try:
+            _register_benchmark(benchmark)
+            logger.debug("Benchmark successfully registered in DB.")
+        except DuplicateKeyError:
+            print("exception....")
+            logger.debug(
+                "Benchmark registration failed. This is likely due to a race condition. "
+                "Now rolling back and re-attempting building it."
+            )
+            get_or_create_benchmark(name, algorithms, targets, storage, debug)
 
     return benchmark
 

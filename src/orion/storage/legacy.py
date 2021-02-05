@@ -113,6 +113,8 @@ class Legacy(BaseStorageProtocol):
 
         self._db.ensure_index("experiments", "metadata.datetime")
 
+        self._db.ensure_index("benchmarks", "name", unique=True)
+
         self._db.ensure_index("trials", "experiment")
         self._db.ensure_index("trials", "status")
         self._db.ensure_index("trials", "results")

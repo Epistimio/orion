@@ -6,6 +6,8 @@ import datetime
 
 import pytest
 
+from orion.benchmark.assessment import AverageRank, AverageResult
+from orion.benchmark.task import CarromTable, RosenBrock
 from orion.testing import generate_trials
 
 
@@ -46,6 +48,21 @@ def benchmark_config(benchmark_algorithms):
         ],
     }
 
+    return config
+
+
+@pytest.fixture
+def benchmark_config_py(benchmark_algorithms):
+    config = dict(
+        name="bm00001",
+        algorithms=benchmark_algorithms,
+        targets=[
+            {
+                "assess": [AverageResult(2), AverageRank(2)],
+                "task": [RosenBrock(25, dim=3), CarromTable(20)],
+            }
+        ],
+    )
     return config
 
 
