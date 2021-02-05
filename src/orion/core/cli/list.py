@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.list` -- Module to list experiments
-========================================================
-.. module:: list
-   :platform: Unix
-   :synopsis: List experiments in terminal
+Module to list experiments
+==========================
+
+List experiments in terminal
+
 """
 import logging
 

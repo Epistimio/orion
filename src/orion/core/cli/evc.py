@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.evc` -- Function utilities for evc in cli
-==============================================================
+Function utilities for evc in cli
+=================================
 
-.. module:: evc
-   :platform: Unix
-   :synopsis: Orion helper functions to parse command-line options for branching resolution
+Orion helper functions to parse command-line options for branching resolution
 
 """
 from orion.core.evc import adapters

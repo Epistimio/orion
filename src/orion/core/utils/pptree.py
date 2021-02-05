@@ -1,13 +1,8 @@
 # -*- coding: utf-8 -*-
 # pylint: disable-all
 """
-:mod:`orion.core.utils.pptree` -- Utilitary functions for printing trees
-========================================================================
-
-.. module:: pptree
-   :platform: Unix
-   :synopsis: Utilitary functions to provided pretty trees
-
+Utilitary functions for printing trees
+======================================
 
 Clement Michard (c) 2015
 

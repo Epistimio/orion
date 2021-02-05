@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.worker.convert` -- Parse and generate user script's configuration
-==================================================================================
+Parse and generate user script's configuration
+==============================================
 
-.. module:: convert
-   :platform: Unix
-   :synopsis: Defines and instantiates a converter for configuration file types.
+Defines and instantiates a converter for configuration file types.
 
 Given a file path infer which configuration file parser/emitter it corresponds to.
 Define `Converter` classes with a common interface for many popular configuration
@@ -285,7 +283,7 @@ class GenericConverter(BaseConverter):
 class Converter(BaseConverter, metaclass=Factory):
     """Class used to inject dependency on a configuration file parser/generator.
 
-    .. seealso:: `Factory` metaclass and `BaseConverter` interface.
+    .. seealso:: :class:`orion.core.utils.Factory` metaclass and `BaseConverter` interface.
     """
 
     pass

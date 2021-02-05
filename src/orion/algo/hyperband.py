@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.algo.hyperband` -- A Novel Bandit-Based Approach to Hyperparameter Optimization
-===========================================================================================
+A Novel Bandit-Based Approach to Hyperparameter Optimization
+============================================================
 
-.. module:: hyperband
-    :platform: Unix
-    :synopsis: Implement Hyperband to exploit configurations with fixed resource efficiently
+Implement Hyperband to exploit configurations with fixed resource efficiently
 
 """
 import copy

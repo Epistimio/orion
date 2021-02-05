@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.db.setup` -- Module running the setup command
-===============================================================
+Module running the setup command
+================================
 
-.. module:: setup
-   :platform: Unix
-   :synopsis: Creates a configurarion file for the database.
+Creates a configurarion file for the database.
+
 """
 
 import logging

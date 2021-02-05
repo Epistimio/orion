@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.working_dir` -- ContextManager for working directory
-===========================================================================
+ContextManager for working directory
+====================================
 
-.. module:: working_dir
-   :platform: Unix
-   :synopsis: ContextManager class to create a permanent directory or a temporary one.
+ContextManager class to create a permanent directory or a temporary one.
+
 """
 import os
 import tempfile

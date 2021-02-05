@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=eval-used,protected-access
 """
-:mod:`orion.core.io.space_builder` -- Create Space objects from configuration
-=============================================================================
+Create Space objects from configuration
+=======================================
 
-.. module:: space_builder
-   :platform: Unix
-   :synopsis: Functions which build `Dimension` and `Space` objects for
-      defining problem's search space.
+Functions which build ``Dimension`` and ``Space`` objects for defining problem's search space.
 
 Replace actual hyperparam values in your script's config files or cmd
 arguments with orion's keywords for declaring hyperparameter types
@@ -22,8 +19,8 @@ minimal intrusion to user's workflow as possible by:
      arguments**.
 
    * Instead of passing the actual hyperparameter values, use one of
-     the characteristic keywords, names enlisted in `scipy.stats.distributions`
-     or `orion.core.io.space_builder.DimensionBuilder`,
+     the characteristic keywords, names enlisted in :scipy.stats:`distributions`
+     or :class:`orion.core.io.space_builder.DimensionBuilder`,
      to describe distributions and declare the hyperparameters
      to be optimized. So that a possible command line argument
      like ``-lrate0=0.1`` becomes ``-lrate0~'uniform(-3, 1)'``.
@@ -64,7 +61,7 @@ def _real_or_int(kwargs):
 
 
 def replace_key_in_order(odict, key_prev, key_after):
-    """Replace `key_prev` of `OrderedDict` `odict` with `key_after`,
+    """Replace ``key_prev`` of ``OrderedDict`` ``odict`` with ``key_after``,
     while leaving its value and the rest of the dictionary intact and in the
     same order.
     """
@@ -98,18 +95,18 @@ class DimensionBuilder(object):
     about that distributions and information about the `Dimension`, if it
     cannot be inferred. One example for the latter case is:
 
-    ``uniform(-3, 5)`` will return a `Real` dimension, while
-    ``uniform(-3, 5, discrete=True)`` will return an `Integer` dimension.
+    ``uniform(-3, 5)`` will return a :class:`orion.algo.space.Real` dimension, while
+    ``uniform(-3, 5, discrete=True)`` will return an :class:`orion.algo.space.Integer` dimension.
 
     Sometimes there is also a separate name for the same distribution in integers,
     for the 'uniform' example:
 
-    ``randint(-3, 5)`` will return a uniform `Integer` dimension.
+    ``randint(-3, 5)`` will return a uniform :class:`orion.algo.space.Integer` dimension.
 
     For categorical dimensions, one can use either ``enum`` or ``random`` name.
     ``random`` however can be used for uniform reals or integers as well.
 
-    Most names are taken from instances contained in `scipy.stats.distributions`.
+    Most names are taken from instances contained in :scipy.stats:`distributions`.
     So, if the distribution you are searching for is there, then `DimensionBuilder`
     can build one dimension with that prior!
 
@@ -133,7 +130,7 @@ class DimensionBuilder(object):
         self.name = None
 
     def choices(self, *args, **kwargs):
-        """Create a `Categorical` dimension."""
+        """Create a :class:`orion.algo.space.Categorical` dimension."""
         name = self.name
         try:
             if isinstance(args[0], (dict, list)):
@@ -146,12 +143,13 @@ class DimensionBuilder(object):
         return Categorical(name, args, **kwargs)
 
     def fidelity(self, *args, **kwargs):
-        """Create a `Fidelity` dimension."""
+        """Create a :class:`orion.algo.space.Fidelity` dimension."""
         name = self.name
         return Fidelity(name, *args, **kwargs)
 
     def uniform(self, *args, **kwargs):
-        """Create an `Integer` or `Real` uniformly distributed dimension.
+        """Create an :class:`orion.algo.space.Integer` or :class:`orion.algo.space.Real` uniformly
+        distributed dimension.
 
         .. note:: Changes scipy convention for uniform's arguments. In scipy,
            ``uniform(a, b)`` means uniform in the interval [a, a+b). Here, it
@@ -165,7 +163,8 @@ class DimensionBuilder(object):
         return klass(name, "uniform", *args, **kwargs)
 
     def randint(self, *args, **kwargs):
-        """Create an `Integer` or `Real` uniformly distributed dimension.
+        """Create an :class:`orion.algo.space.Integer` or :class:`orion.algo.space.Real` uniformly
+        distributed dimension.
 
         .. note:: Changes scipy convention for uniform's arguments. In scipy,
            ``uniform(a, b)`` means uniform in the interval [a, a+b). Here, it
@@ -177,18 +176,18 @@ class DimensionBuilder(object):
         )
 
     def gaussian(self, *args, **kwargs):
-        """Synonym for `scipy.stats.distributions.norm`."""
+        """Synonym for :scipy.stats:`distributions.norm`."""
         return self.normal(*args, **kwargs)
 
     def normal(self, *args, **kwargs):
-        """Another synonym for `scipy.stats.distributions.norm`."""
+        """Another synonym for :scipy.stats:`distributions.norm`."""
         name = self.name
         klass = _real_or_int(kwargs)
         return klass(name, "norm", *args, **kwargs)
 
     def loguniform(self, *args, **kwargs):
         """Return a `Dimension` object with
-        `scipy.stats.distributions.reciprocal` prior distribution.
+        :scipy.stats:`distributions.reciprocal` prior distribution.
         """
         name = self.name
         klass = _real_or_int(kwargs)
@@ -235,7 +234,7 @@ class DimensionBuilder(object):
         return dimension
 
     def build(self, name, expression):
-        """Check `DimensionBuilder._build` for documentation.
+        """Check ``DimensionBuilder._build`` for documentation.
 
         .. note:: Warm-up: Fail early if arguments make object not usable.
 
@@ -273,10 +272,9 @@ class DimensionBuilder(object):
 
 
 class SpaceBuilder(object):
-    """Build a `Space` object form user's configuration."""
+    """Build a :class:`orion.algo.space.Space` object form user's configuration."""
 
     def __init__(self):
-        """Initialize a `SpaceBuilder`."""
         self.dimbuilder = DimensionBuilder()
         self.space = None
 
@@ -289,8 +287,8 @@ class SpaceBuilder(object):
         """Create a definition of the problem's search space.
 
         Using information from the user's script configuration (if provided) and the
-        command line arguments, will create a `Space` object defining the problem's
-        search space.
+        command line arguments, will create a :class:`orion.algo.space.Space` object defining the
+        problem's search space.
 
         Parameters
         ----------
@@ -299,7 +297,7 @@ class SpaceBuilder(object):
 
         Returns
         -------
-        `orion.algo.space.Space`
+        :class:`orion.algo.space.Space`
             The problem's search space definition.
 
         """
@@ -331,8 +329,8 @@ class SpaceBuilder(object):
         config_path: str
             Path in which the configuration file instance will be created.
         trial: `orion.core.worker.trial.Trial`
-            Object with concrete parameter values for the defined `Space`.
-        experiment: `orion.core.worker.experiment.Experiment`, optional
+            Object with concrete parameter values for the defined :class:`orion.algo.space.Space`.
+        experiment: :class:`orion.core.worker.experiment.Experiment`, optional
             Object with information related to the current experiment.
 
         Returns

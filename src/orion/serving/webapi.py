@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.serving.webapi` -- WSGI REST server application
-===========================================================
+WSGI REST server application
+============================
 
-.. module:: webapi
-   :platform: Unix
-   :synopsis: Exposes a WSGI REST server application instance by subclassing ``falcon.API``
+Exposes a WSGI REST server application instance by subclassing ``falcon.API``.
+
 """
 
 import falcon
@@ -49,6 +48,11 @@ class WebApi(falcon.API):
             suffix="trial_in_experiment",
         )
         self.add_route("/plots/lpi/{experiment_name}", plots_resource, suffix="lpi")
+        self.add_route(
+            "/plots/partial_dependencies/{experiment_name}",
+            plots_resource,
+            suffix="partial_dependencies",
+        )
         self.add_route(
             "/plots/parallel_coordinates/{experiment_name}",
             plots_resource,

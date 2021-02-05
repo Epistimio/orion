@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.testing.state` -- Mocks Oríon's runtime.
-====================================================
-.. module:: testing
-   :platform: Unix
-   :synopsis: Boilerplate to simulate Oríon's runtime and data sources
+Mocks Oríon's runtime
+=====================
+
+Boilerplate to simulate Oríon's runtime and data sources.
+
 """
 # pylint: disable=protected-access
 

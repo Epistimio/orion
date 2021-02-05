@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.io.database.pickleddb` -- Pickled Database
-===========================================================
+Pickled Database
+================
 
-.. module:: database
-   :platform: Unix
-   :synopsis: Implement permanent version of :class:`orion.core.io.database.EphemeralDB`
+Implement permanent version of :class:`orion.core.io.database.ephemeraldb.EphemeralDB`.
 
 """
 
@@ -141,7 +139,7 @@ class PickledDB(AbstractDB):
     def write(self, collection_name, data, query=None):
         """Write new information to a collection. Perform insert or update.
 
-        .. seealso:: :meth:`AbstractDB.write` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.write` for argument documentation.
 
         """
         with self.locked_database() as database:
@@ -150,7 +148,7 @@ class PickledDB(AbstractDB):
     def read(self, collection_name, query=None, selection=None):
         """Read a collection and return a value according to the query.
 
-        .. seealso:: :meth:`AbstractDB.read` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.read` for argument documentation.
 
         """
         with self.locked_database(write=False) as database:
@@ -161,7 +159,7 @@ class PickledDB(AbstractDB):
 
         Returns the updated document, or None if nothing found.
 
-        .. seealso:: :meth:`AbstractDB.read_and_write` for
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.read_and_write` for
                      argument documentation.
 
         """
@@ -173,7 +171,7 @@ class PickledDB(AbstractDB):
     def count(self, collection_name, query=None):
         """Count the number of documents in a collection which match the `query`.
 
-        .. seealso:: :meth:`AbstractDB.count` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.count` for argument documentation.
 
         """
         with self.locked_database(write=False) as database:
@@ -182,7 +180,7 @@ class PickledDB(AbstractDB):
     def remove(self, collection_name, query):
         """Delete from a collection document[s] which match the `query`.
 
-        .. seealso:: :meth:`AbstractDB.remove` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.remove` for argument documentation.
 
         """
         with self.locked_database() as database:

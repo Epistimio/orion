@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-lines
 """
-:mod:`orion.algo.space` -- Objects describing a problem's domain
-==================================================================
+Search space of optimization problems
+=====================================
 
-.. module:: space
-   :platform: Unix
-   :synopsis: Classes for representing the search space of an
-      optimization problem.
+Classes for representing the search space of an optimization problem.
 
 There are 3 classes representing possible parameter types. All of them subclass
 the base class `Dimension`:
@@ -26,7 +23,7 @@ and are in concordance with `orion.algo.space` objects. These objects will be
 defined by `orion.core` using the user script's configuration file.
 
 Prior distributions, contained in `Dimension` classes, are based on
-`scipy.stats.distributions` and should be configured as noted in the
+:scipy.stats:`distributions` and should be configured as noted in the
 scipy documentation for each specific implentation of a random variable type,
 unless noted otherwise!
 
@@ -99,7 +96,7 @@ class Dimension:
            e.g. 'learning_rate'.
         prior : str | `scipy.stats.distributions.rv_generic`
            Corresponds to a name of an instance or an instance itself of
-           `scipy.stats._distn_infrastructure.rv_generic`. Basically,
+           `scipy.stats.distributions.rv_generic`. Basically,
            the name of the distribution one wants to use as a :attr:`prior`.
         args : list
         kwargs : dict
@@ -330,7 +327,7 @@ class Dimension:
     @property
     def cardinality(self):
         """Return the number of all the possible points from `Dimension`.
-        The default value is `numpy.inf`.
+        The default value is ``numpy.inf``.
         """
         return numpy.inf
 
@@ -356,10 +353,10 @@ class Real(Dimension):
     ----------
     name : str
     prior : str
-       See Parameters of `Dimension.__init__`.
+       See Parameters of `Dimension.__init__()`.
     args : list
     kwargs : dict
-       See Parameters of `Dimension.__init__` for general.
+       See Parameters of `Dimension.__init__()` for general.
 
     Real kwargs (extra)
     -------------------
@@ -533,10 +530,10 @@ class Integer(Real, _Discrete):
     ----------
     name : str
     prior : str
-       See Parameters of `Dimension.__init__`.
+       See Parameters of `Dimension.__init__()`.
     args : list
     kwargs : dict
-       See Parameters of `Dimension.__init__` for general.
+       See Parameters of `Dimension.__init__()` for general.
 
     Real kwargs (extra)
     -------------------
@@ -636,12 +633,12 @@ class Categorical(Dimension):
     Parameters
     ----------
     name : str
-       See Parameters of `Dimension.__init__`.
+       See Parameters of `Dimension.__init__()`.
     categories : dict or other iterable
        A dictionary would associate categories to probabilities, else
        it assumes to be drawn uniformly from the iterable.
     kwargs : dict
-       See Parameters of `Dimension.__init__` for general.
+       See Parameters of `Dimension.__init__()` for general.
 
     """
 

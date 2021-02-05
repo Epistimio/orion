@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli` -- Base class and function utilities for cli
-==================================================================
-
-.. module:: cli
-   :platform: Unix
-   :synopsis: Orion main parser class and helper functions to parse command-line options
-
+Base class and function utilities for cli
+=========================================
 """
 import argparse
 import logging

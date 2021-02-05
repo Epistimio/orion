@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.backward` -- Backward compatibility utils
-================================================================
+Backward compatibility utils
+============================
 
-.. module:: info
-   :platform: Unix
-   :synopsis: Helper functions to support backward compatibility
+Helper functions to support backward compatibility.
 
 """
 import copy

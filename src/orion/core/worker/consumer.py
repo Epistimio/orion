@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.worker.consumer` -- Evaluate objective on a set of parameters
-==============================================================================
+Evaluate objective on a set of parameters
+=========================================
 
-.. module:: consumer
-   :platform: Unix
-   :synopsis: Call user's script as a black box process to evaluate a trial.
+Call user's script as a black box process to evaluate a trial.
 
 """
 import copy
@@ -59,15 +57,15 @@ class Consumer(object):
         If the heartbeat of a `reserved` trial is larger than twice the configured
         heartbeat, Oríon will reset the status of the trial to `interrupted`.
         This allows restoring lost trials (ex: due to killed worker).
-        Defaults to `orion.core.config.worker.heartbeat`.
+        Defaults to ``orion.core.config.worker.heartbeat``.
 
     user_script_config: str, optional
         Config argument name of user's script (--config).
-        Defaults to `orion.core.config.worker.user_script_config`.
+        Defaults to ``orion.core.config.worker.user_script_config``.
 
     interrupt_signal_code: int, optional
         Signal returned by user script to signal to Oríon that it was interrupted.
-        Defaults to `orion.core.config.worker.interrupt_signal_code`.
+        Defaults to ``orion.core.config.worker.interrupt_signal_code``.
 
     """
 
@@ -181,26 +179,32 @@ class Consumer(object):
         This function defines the environment variables described below
 
         .. envvar:: ORION_EXPERIMENT_ID
+           :noindex:
 
            Current experiment that is being ran.
 
         .. envvar::  ORION_EXPERIMENT_NAME
+           :noindex:
 
            Name of the experiment the worker is currently working on.
 
         .. envvar::  ORION_EXPERIMENT_VERSION
+           :noindex:
 
            Version of the experiment the worker is currently working on.
 
         .. envvar:: ORION_TRIAL_ID
+           :noindex:
 
            Current trial id that is currently being executed in this process.
 
         .. envvar:: ORION_WORKING_DIRECTORY
+           :noindex:
 
            Trial's current working directory.
 
         .. envvar:: ORION_RESULTS_PATH
+           :noindex:
 
            Trial's results file that is read by the legacy protocol to get the results of the trial
            after a successful run.

@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.storage.base` -- Generic Storage Protocol
-=====================================================
+Generic Storage Protocol
+========================
 
-.. module:: base
-   :platform: Unix
-   :synopsis: Implement a generic protocol to allow Orion to communicate using
-              different storage backend
+Implement a generic protocol to allow Orion to communicate using different storage backend.
 
 """
 import copy
@@ -455,7 +452,7 @@ class ReadOnlyStorageProtocol(object):
 
     .. seealso::
 
-        :py:class:`orion.core.storage.BaseStorageProtocol`
+        :py:class:`BaseStorageProtocol`
     """
 
     __slots__ = ("_storage",)

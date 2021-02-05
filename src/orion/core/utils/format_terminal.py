@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.format_terminal` -- Utility functions for formatting prints to terminal
-==============================================================================================
+Utility functions for formatting prints to terminal
+===================================================
 
-.. module:: format_terminal
-   :platform: Unix
-   :synopsis: Functions to build strings for terminal prints
+Functions to build strings for terminal prints
 
 """
 

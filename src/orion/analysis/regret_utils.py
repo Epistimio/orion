@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.analysis.regret` -- Provide tools to calculate regret
-=================================================================
-
-.. module:: orion.analysis.regret
-   :platform: Unix
-   :synopsis: Provide tools to calculate regret
+Provide tools to calculate regret
+=================================
 """
 import numpy
 import pandas as pd
@@ -45,11 +41,11 @@ def regret(trials, names=("best", "best_id")):
     return df
 
 
-def get_regrets_idx(x):
+def get_regrets_idx(objectives):
     """Return the indices corresponding to the cumulative minimum"""
-    minima = numpy.minimum.accumulate(x)
+    minima = numpy.minimum.accumulate(objectives)
     diff = numpy.diff(minima)
-    jumps = numpy.arange(len(x))
+    jumps = numpy.arange(len(objectives))
     jumps[1:] *= diff != 0
     jumps = numpy.maximum.accumulate(jumps)
     return jumps

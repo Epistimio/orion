@@ -1,10 +1,6 @@
 """
-:mod:`orion.serving.parameters` -- Common code for verifying query parameters
-=============================================================================
-
-.. module:: parameters
-   :platform: Unix
-   :synopsis: Common code related to query parameters verification
+Common code for verifying query parameters
+==========================================
 """
 from typing import Optional
 

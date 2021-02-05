@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.flatten` -- Flatten and unflatten dicts
-==============================================================
+Flatten and unflatten dicts
+===========================
 
-.. module:: flatten
-   :platform: Unix
-   :synopsis: Turn deep dictionaries into flat key.subkey versions and vice-versa.
+Turn deep dictionaries into flat key.subkey versions and vice-versa.
 
 """
 

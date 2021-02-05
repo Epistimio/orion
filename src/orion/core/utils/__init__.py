@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils` -- Package-wide useful routines
-=======================================================
+Package-wide useful routines
+============================
 
-.. module:: utils
-   :platform: Unix
-   :synopsis: Helper functions useful in possibly all :mod:`orion.core`'s modules.
 """
 
 import logging

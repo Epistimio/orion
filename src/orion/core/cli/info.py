@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.info` -- Module to info experiments
-========================================================
+Module to info experiments
+==========================
 
-.. module:: info
-   :platform: Unix
-   :synopsis: Commandline support to print details of experiments in terminal
+Commandline support to print details of experiments in terminal
 
 """
 import logging

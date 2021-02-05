@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.io.orion_cmdline_parser` -- Parse command line arguments for Orion
-===================================================================================
+Parse command line arguments for Orion
+======================================
 
-.. module:: orion_cmdline_parser
-   :platform: Unix
-   :synopsis: Parsing and building of the command line input for using script
+Parsing and building of the command line input for using script.
 
 Simplify the parsing of a command line by storing every values inside an `OrderedDict`
 mapping the name of the argument to its value as a key-pair relation. Positional arguments

@@ -2,12 +2,10 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=eval-used,protected-access
 """
-:mod:`orion.core.cli.insert` -- Module to insert new trials
-===========================================================
+Module to insert new trials
+===========================
 
-.. module:: insert
-   :platform: Unix
-   :synopsis: Insert creates new trials for a given experiment with fixed values
+Insert creates new trials for a given experiment with fixed values
 
 """
 import collections

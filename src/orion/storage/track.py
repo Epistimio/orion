@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.storage.track` -- Track Storage Protocol
-====================================================
+Track Storage Protocol
+======================
 
-.. module:: base
-   :platform: Unix
-   :synopsis: Implement a storage protocol to allow Orion to use track as a storage method
+Implement a storage protocol to allow Orion to use track as a storage method.
 
 """
 
@@ -411,7 +409,7 @@ class Track(BaseStorageProtocol):  # noqa: F811
         return config
 
     def update_experiment(self, experiment=None, uid=None, where=None, **kwargs):
-        """See :func:`~orion.storage.BaseStorageProtocol.update_experiment`"""
+        """See :meth:`orion.storage.base.BaseStorageProtocol.update_experiment`"""
         uid = get_uid(experiment, uid)
 
         self.group = self.backend.fetch_and_update_group(
@@ -584,7 +582,7 @@ class Track(BaseStorageProtocol):  # noqa: F811
         return new_trial
 
     def fetch_pending_trials(self, experiment):
-        """See :func:`~orion.storage.BaseStorageProtocol.fetch_pending_trials`"""
+        """See :meth:`orion.storage.base.BaseStorageProtocol.fetch_pending_trials`"""
         pending_status = ["new", "suspended", "interrupted"]
         pending_status = [get_track_status(s) for s in pending_status]
 
@@ -617,13 +615,13 @@ class Track(BaseStorageProtocol):  # noqa: F811
         return result_trial
 
     def fetch_trials(self, experiment=None, uid=None):
-        """See :func:`~orion.storage.BaseStorageProtocol.fetch_trials`"""
+        """See :meth:`orion.storage.base.BaseStorageProtocol.fetch_trials`"""
         uid = get_uid(experiment, uid)
 
         return self._fetch_trials(dict(group_id=uid))
 
     def get_trial(self, trial=None, uid=None):
-        """See :func:`~orion.storage.BaseStorageProtocol.get_trials`"""
+        """See :meth:`orion.storage.base.BaseStorageProtocol.get_trial`"""
         uid = get_uid(trial, uid)
 
         _hash, _rev = 0, 0
@@ -663,7 +661,7 @@ class Track(BaseStorageProtocol):  # noqa: F811
         return TrialAdapter(trial, objective=self.objective)
 
     def update_trials(self, experiment=None, uid=None, where=None, **kwargs):
-        """See :func:`~orion.storage.BaseStorageProtocol.update_trials`"""
+        """See :meth:`orion.storage.base.BaseStorageProtocol.update_trials`"""
         uid = get_uid(experiment, uid)
 
         if where is None:
