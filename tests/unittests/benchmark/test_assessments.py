@@ -7,9 +7,9 @@ import copy
 import plotly
 import pytest
 
-import orion.core.io.experiment_builder as experiment_builder
 from orion.benchmark.assessment import AverageRank, AverageResult
-from orion.testing import OrionState, create_experiment
+from orion.testing import create_experiment, create_study_experiments
+from orion.testing.plotting import assert_rankings_plot, assert_regrets_plot
 
 
 class TestAverageRank:
@@ -39,49 +39,22 @@ class TestAverageRank:
         assert type(plot) is plotly.graph_objects.Figure
 
     @pytest.mark.usefixtures("version_XYZ")
-    def test_figure_layout(
-        self, benchmark_algorithms, generate_experiment_trials, task_number
-    ):
+    def test_figure_layout(self, study_experiments_config):
         """Test assessment plot format"""
         ar1 = AverageRank()
-        algo_num = len(benchmark_algorithms)
 
-        gen_exps, gen_trials = generate_experiment_trials
-
-        experiments = list()
-        with OrionState(experiments=gen_exps, trials=gen_trials):
-            for i in range(task_number * algo_num):
-                experiment = experiment_builder.build("experiment-name-{}".format(i))
-                experiments.append((i, copy.deepcopy(experiment)))
+        with create_study_experiments(**study_experiments_config) as experiments:
             plot = ar1.analysis("task_name", experiments)
 
-        assert type(plot) is plotly.graph_objects.Figure
-
-        assert plot.layout.title.text == "Average Rankings"
-        assert plot.layout.xaxis.title.text == "Trials ordered by suggested time"
-        assert plot.layout.yaxis.title.text == "Ranking based on loss"
-
-        assert len(plot.data) == len(benchmark_algorithms) * 2
-
-        line_plots = plot.data[::2]
-        err_plots = plot.data[1::2]
-        for i in range(algo_num):
-            algo_name = next(iter(benchmark_algorithms[i].keys()))
-
-            line_trace = line_plots[i]
-            assert line_trace.type == "scatter"
-            assert line_trace.name == algo_name
-            assert line_trace.mode == "lines"
-            assert len(line_trace.y) == 3
-            assert len(line_trace.x) == 3
-
-            err_trace = err_plots[i]
-            assert err_trace.fill == "toself"
-            assert err_trace.name == algo_name
-            assert not err_trace.showlegend
-            # * 2 because trace is above and under the mean
-            assert len(err_trace.y) == 3 * 2
-            assert len(err_trace.x) == 3 * 2
+            assert_rankings_plot(
+                plot,
+                [
+                    list(algorithm.keys())[0]
+                    for algorithm in study_experiments_config["algorithms"]
+                ],
+                balanced=study_experiments_config["max_trial"],
+                with_avg=True,
+            )
 
 
 class TestAverageResult:
@@ -97,7 +70,7 @@ class TestAverageResult:
         assert ar2.task_num == 5
         assert ar2.configuration == {"AverageResult": {"task_num": 5}}
 
-    def test_plot_figures(self, experiment_config, trial_config):
+    def test_analysis(self, experiment_config, trial_config):
         """Test assessment plot"""
         ar1 = AverageResult()
 
@@ -111,45 +84,19 @@ class TestAverageResult:
         assert type(plot) is plotly.graph_objects.Figure
 
     @pytest.mark.usefixtures("version_XYZ")
-    def test_figure_layout(
-        self, benchmark_algorithms, generate_experiment_trials, task_number
-    ):
+    def test_figure_layout(self, study_experiments_config):
         """Test assessment plot format"""
         ar1 = AverageResult()
-        algo_num = len(benchmark_algorithms)
 
-        gen_exps, gen_trials = generate_experiment_trials
-        experiments = list()
-        with OrionState(experiments=gen_exps, trials=gen_trials):
-            for i in range(task_number * algo_num):
-                experiment = experiment_builder.build("experiment-name-{}".format(i))
-                experiments.append((i, copy.deepcopy(experiment)))
+        with create_study_experiments(**study_experiments_config) as experiments:
             plot = ar1.analysis("task_name", experiments)
 
-        assert type(plot) is plotly.graph_objects.Figure
-
-        assert plot.layout.title.text == "Average Regret"
-        assert plot.layout.xaxis.title.text == "Trials ordered by suggested time"
-        assert plot.layout.yaxis.title.text == "loss"
-
-        assert len(plot.data) == len(benchmark_algorithms) * 2
-
-        line_plots = plot.data[::2]
-        err_plots = plot.data[1::2]
-        for i in range(algo_num):
-            algo_name = next(iter(benchmark_algorithms[i].keys()))
-
-            line_trace = line_plots[i]
-            assert line_trace.type == "scatter"
-            assert line_trace.name == algo_name
-            assert line_trace.mode == "lines"
-            assert len(line_trace.y) == 3
-            assert len(line_trace.x) == 3
-
-            err_trace = err_plots[i]
-            assert err_trace.fill == "toself"
-            assert err_trace.name == algo_name
-            assert not err_trace.showlegend
-            # * 2 because trace is above and under the mean
-            assert len(err_trace.y) == 3 * 2
-            assert len(err_trace.x) == 3 * 2
+            assert_regrets_plot(
+                plot,
+                [
+                    list(algorithm.keys())[0]
+                    for algorithm in study_experiments_config["algorithms"]
+                ],
+                balanced=study_experiments_config["max_trial"],
+                with_avg=True,
+            )

@@ -10,7 +10,14 @@ from sklearn.ensemble import (
     RandomForestRegressor,
 )
 
-from orion.analysis.base import average, ranking, flatten_numpy, flatten_params, to_numpy, train_regressor
+from orion.analysis.base import (
+    average,
+    flatten_numpy,
+    flatten_params,
+    ranking,
+    to_numpy,
+    train_regressor,
+)
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.transformer import build_required_space
 

@@ -110,28 +110,15 @@ def trial_config():
 
 
 @pytest.fixture
-def generate_experiment_trials(
-    benchmark_algorithms, experiment_config, trial_config, task_number, max_trial
+def study_experiments_config(
+    experiment_config, trial_config, benchmark_algorithms, task_number, max_trial
 ):
-    """Return a list of experiments and trials"""
-    gen_exps = []
-    gen_trials = []
-    algo_num = len(benchmark_algorithms)
-    for i in range(task_number * algo_num):
-        import copy
+    config = dict(
+        exp_config=experiment_config,
+        trial_config=trial_config,
+        algorithms=benchmark_algorithms,
+        task_number=task_number,
+        max_trial=max_trial,
+    )
 
-        exp = copy.deepcopy(experiment_config)
-        exp["_id"] = i
-        exp["name"] = "experiment-name-{}".format(i)
-        exp["algorithms"] = benchmark_algorithms[i % algo_num]
-        exp["max_trials"] = max_trial
-        exp["metadata"]["datetime"] = datetime.datetime.utcnow()
-        gen_exps.append(exp)
-        for j in range(max_trial):
-            trial = copy.deepcopy(trial_config)
-            trial["_id"] = "{}{}".format(i, j)
-            trial["experiment"] = i
-            trials = generate_trials(trial, ["completed"])
-            gen_trials.extend(trials)
-
-    return gen_exps, gen_trials
+    return config
