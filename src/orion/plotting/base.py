@@ -165,10 +165,10 @@ def rankings(experiments, order_by="suggested", **kwargs):
 
         1. List of experiments. The names of the experiments will be used for the figure labels.
         2. Dictionary of experiments. The keys of the dictionary will be used for the figure labels.
-        3. List of dictionary of experiments. The keys of the dictionary will be used for the figure
+        3. List of dictionary of experiments. The keys of the dictionary will be used for the figure \
         labels. The ranking will be averaged across the dictionaries.
-        4. Dictionary of list of experiments. The keys of the dictionary will be used for the figure
-        labels. A dictionary of experiments will be build grouping the i-th experiments of each
+        4. Dictionary of list of experiments. The keys of the dictionary will be used for the figure \
+        labels. A dictionary of experiments will be build grouping the i-th experiments of each \
         list to result in a list of dictionary of experiments. Behavior will be same as format 3.
 
     Parameters
@@ -186,7 +186,7 @@ def rankings(experiments, order_by="suggested", **kwargs):
 
     kwargs: dict
         All other plotting keyword arguments to be passed to
-        :meth:`plotly.express.line`.
+        :plotly:`express.line`.
 
     Returns
     -------
@@ -269,7 +269,7 @@ def regrets(experiments, order_by="suggested", **kwargs):
 
     kwargs: dict
         All other plotting keyword arguments to be passed to
-        :meth:`plotly.express.line`.
+        :plotly:`express.line`.
 
     Returns
     -------

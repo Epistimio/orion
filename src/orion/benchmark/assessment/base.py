@@ -1,13 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.benchmark.base` -- Base definition of Assessment
-======================================================================
-
-.. module:: base
-   :platform: Unix
-   :synopsis: Base definition of Assessment.
-
+Base definition of Assessment
+==============================
 """
 
 from abc import ABC, abstractmethod
@@ -59,9 +54,6 @@ class BaseAssess(ABC):
 
 # pylint: disable=too-few-public-methods,abstract-method
 class BenchmarkAssessment(BaseAssess, metaclass=Factory):
-    """Class used to inject dependency on an algorithm implementation.
-
-    .. seealso:: `orion.core.utils.Factory` metaclass and `BaseAlgorithm` interface.
-    """
+    """Class used to inject dependency on an assessment implementation."""
 
     pass

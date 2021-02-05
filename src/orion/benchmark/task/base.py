@@ -1,13 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.benchmark.base` -- Base definition of Task
-===========================================================================
-
-.. module:: base
-   :platform: Unix
-   :synopsis: Base definition of Task.
-
+Base definition of Task
+========================
 """
 
 from abc import ABC, abstractmethod
@@ -66,9 +61,6 @@ class BaseTask(ABC):
 
 # pylint: disable=too-few-public-methods,abstract-method
 class BenchmarkTask(BaseTask, metaclass=Factory):
-    """Class used to inject dependency on an algorithm implementation.
-
-    .. seealso:: `orion.core.utils.Factory` metaclass and `BaseAlgorithm` interface.
-    """
+    """Class used to inject dependency on an task implementation."""
 
     pass

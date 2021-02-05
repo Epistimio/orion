@@ -1,13 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.benchmark.assessment` -- Average Rank Assessment
-================================================================
-
-.. module:: assessment
-   :platform: Unix
-   :synopsis: Benchmark algorithms with average rank.
-
+Average Rank Assessment
+========================
 """
 
 from collections import defaultdict

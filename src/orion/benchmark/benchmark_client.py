@@ -1,13 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.benchmark.client` -- Benchmark client
-================================================================
-
-.. module:: client
-   :platform: Unix
-   :synopsis: Client to use Orion benchmark.
-
+Benchmark client
+=================
 """
 import datetime
 import logging

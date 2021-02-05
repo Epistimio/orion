@@ -1,11 +1,6 @@
 """
-:mod:`orion.benchmark.task` -- Benchmark Tasks definition
-================================================================
-
-.. module:: assessment
-   :platform: Unix
-   :synopsis: Benchmark Assessments definition.
-
+Benchmark Tasks definition
+===========================
 """
 
 from .base import BaseTask

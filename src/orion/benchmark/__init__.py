@@ -1,13 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.benchmark` -- Benchmark definition
-================================================================
-
-.. module:: benchmark
-   :platform: Unix
-   :synopsis: Benchmark definition.
-
+Benchmark definition
+======================
 """
 import copy
 import itertools

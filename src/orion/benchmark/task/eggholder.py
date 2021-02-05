@@ -1,17 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.benchmark.task` -- Task for EggHolder Function
-================================================================
-
-.. module:: task
-   :platform: Unix
-   :synopsis: Benchmark algorithms with EggHolder function.
-
+Task for EggHolder Function
+=============================
 """
 import numpy
 
-# from orion.benchmark.base import BaseTask
 from orion.benchmark.task.base import BaseTask
 
 
