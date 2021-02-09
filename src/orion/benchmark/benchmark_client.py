@@ -80,8 +80,7 @@ def get_or_create_benchmark(
             _register_benchmark(benchmark)
             logger.debug("Benchmark successfully registered in DB.")
         except DuplicateKeyError:
-            print("exception....")
-            logger.debug(
+            logger.info(
                 "Benchmark registration failed. This is likely due to a race condition. "
                 "Now rolling back and re-attempting building it."
             )

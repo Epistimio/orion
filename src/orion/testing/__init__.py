@@ -71,10 +71,10 @@ def generate_trials(trial_config, statuses, exp_config=None):
     return new_trials
 
 
-def generate_experiments_trials(
+def generate_benchmark_experiments_trials(
     benchmark_algorithms, experiment_config, trial_config, task_number, max_trial
 ):
-    """Return a list of experiments and trials"""
+    """Return a list of experiments and trials for a benchmark"""
     gen_exps = []
     gen_trials = []
     algo_num = len(benchmark_algorithms)
@@ -102,7 +102,7 @@ def generate_experiments_trials(
 def create_study_experiments(
     exp_config, trial_config, algorithms, task_number, max_trial
 ):
-    gen_exps, gen_trials = generate_experiments_trials(
+    gen_exps, gen_trials = generate_benchmark_experiments_trials(
         algorithms, exp_config, trial_config, task_number, max_trial
     )
     with OrionState(experiments=gen_exps, trials=gen_trials):

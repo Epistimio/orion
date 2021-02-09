@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.benchmark.benchmark_client`."""
 import copy
+import logging
 
 import pytest
 
@@ -129,7 +130,7 @@ class TestCreateBenchmark:
 
             assert "Benchmark {} does not exist in DB".format(name) in str(exc.value)
 
-    def test_create_with_different_configure(self, benchmark_config_py):
+    def test_create_with_different_configure(self, benchmark_config_py, caplog):
         """Test creation with same name but different configure"""
         with OrionState():
             config = copy.deepcopy(benchmark_config_py)
@@ -137,15 +138,31 @@ class TestCreateBenchmark:
 
             config = copy.deepcopy(benchmark_config_py)
             config["targets"][0]["assess"] = [AverageResult(2)]
-            bm2 = get_or_create_benchmark(**config)
+
+            with caplog.at_level(
+                logging.WARNING, logger="orion.benchmark.benchmark_client"
+            ):
+                bm2 = get_or_create_benchmark(**config)
 
             assert bm2.configuration == bm1.configuration
+            assert (
+                "Benchmark with same name is found but has different configuration, "
+                "which will be used for this creation." in caplog.text
+            )
 
+            caplog.clear()
             config = copy.deepcopy(benchmark_config_py)
             config["targets"][0]["task"] = [RosenBrock(26, dim=3), CarromTable(20)]
-            bm3 = get_or_create_benchmark(**config)
+            with caplog.at_level(
+                logging.WARNING, logger="orion.benchmark.benchmark_client"
+            ):
+                bm3 = get_or_create_benchmark(**config)
 
             assert bm3.configuration == bm1.configuration
+            assert (
+                "Benchmark with same name is found but has different configuration, "
+                "which will be used for this creation." in caplog.text
+            )
 
     def test_create_with_invalid_algorithms(self, benchmark_config_py):
         """Test creation with a not existed algorithm"""
@@ -223,7 +240,7 @@ class TestCreateBenchmark:
             assert bm.configuration == benchmark_config
 
     def test_create_race_condition(
-        self, benchmark_config, benchmark_config_py, monkeypatch
+        self, benchmark_config, benchmark_config_py, monkeypatch, caplog
     ):
         """Test creation in race condition"""
         with OrionState(benchmarks=benchmark_config):
@@ -243,8 +260,15 @@ class TestCreateBenchmark:
                 benchmark_client, "_fetch_benchmark", insert_race_condition
             )
 
-            bm = benchmark_client.get_or_create_benchmark(**benchmark_config_py)
+            with caplog.at_level(
+                logging.INFO, logger="orion.benchmark.benchmark_client"
+            ):
+                bm = benchmark_client.get_or_create_benchmark(**benchmark_config_py)
 
+            assert (
+                "Benchmark registration failed. This is likely due to a race condition. "
+                "Now rolling back and re-attempting building it." in caplog.text
+            )
             assert insert_race_condition.count == 2
 
             del benchmark_config["_id"]
