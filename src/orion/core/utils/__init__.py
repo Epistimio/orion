@@ -25,6 +25,25 @@ def nesteddict():
     return defaultdict(nesteddict)
 
 
+def get_all_subclasses(parent):
+    """Get set of subclasses recursively"""
+    subclasses = set()
+    for subclass in parent.__subclasses__():
+        subclasses.add(subclass)
+        subclasses |= get_all_subclasses(subclass)
+
+    return subclasses
+
+
+def get_all_types(parent_cls, cls_name):
+    """Get all subclasses and lowercase subclass names"""
+    types = list(get_all_subclasses(parent_cls))
+    types = [class_ for class_ in types if class_.__name__ != cls_name]
+    typenames = list(map(lambda x: x.__name__.lower(), types))
+
+    return types, typenames
+
+
 class Factory(ABCMeta):
     """Instantiate appropriate wrapper for the infrastructure based on input
     argument, ``of_type``.
@@ -73,18 +92,7 @@ class Factory(ABCMeta):
             )
 
         # Get types visible from base module or package, but internal
-        def get_all_subclasses(parent):
-            """Get set of subclasses recursively"""
-            subclasses = set()
-            for subclass in parent.__subclasses__():
-                subclasses.add(subclass)
-                subclasses |= get_all_subclasses(subclass)
-
-            return subclasses
-
-        cls.types = list(get_all_subclasses(cls.__base__))
-        cls.types = [class_ for class_ in cls.types if class_.__name__ != cls.__name__]
-        cls.typenames = list(map(lambda x: x.__name__.lower(), cls.types))
+        cls.types, cls.typenames = get_all_types(cls.__base__, cls.__name__)
         log.debug("Implementations found: %s", cls.typenames)
 
     def __call__(cls, of_type, *args, **kwargs):
@@ -106,9 +114,12 @@ class Factory(ABCMeta):
 
         :return: The object which was created on the first call.
         """
+        if of_type.lower() not in cls.typenames:
+            cls.types, cls.typenames = get_all_types(cls.__base__, cls.__name__)
+
         for inherited_class in cls.types:
             if inherited_class.__name__.lower() == of_type.lower():
-                return inherited_class.__call__(*args, **kwargs)
+                return inherited_class(*args, **kwargs)
 
         error = "Could not find implementation of {0}, type = '{1}'".format(
             cls.__base__.__name__, of_type

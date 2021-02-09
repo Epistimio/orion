@@ -32,6 +32,8 @@ class BaseOrionState:
 
     Parameters
     ----------
+    benchmarks: List, optional
+       List of benchmarks ot insert into the database
     experiments: list, optional
         List of experiments to insert into the database
     trials: list, optional
@@ -64,6 +66,7 @@ class BaseOrionState:
 
     def __init__(
         self,
+        benchmarks=None,
         experiments=None,
         trials=None,
         workers=None,
@@ -82,6 +85,7 @@ class BaseOrionState:
         self.tempfile_path = None
         self.storage_config = _select(storage, _get_default_test_storage())
 
+        self._benchmarks = _select(benchmarks, [])
         self._experiments = _select(experiments, [])
         self._trials = _select(trials, [])
         self._workers = _select(workers, [])
@@ -236,6 +240,8 @@ class LegacyOrionState(BaseOrionState):
         return exp
 
     def _set_tables(self):
+        if self._benchmarks:
+            self.database.write("benchmarks", self._benchmarks)
         if self._experiments:
             self.database.write("experiments", self._experiments)
         if self._trials:
@@ -253,6 +259,7 @@ class LegacyOrionState(BaseOrionState):
     def cleanup(self):
         """Cleanup after testing"""
         if self.initialized:
+            self.database.remove("benchmarks", {})
             self.database.remove("experiments", {})
             self.database.remove("trials", {})
             if self.tempfile is not None:

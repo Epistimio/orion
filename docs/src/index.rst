@@ -19,6 +19,7 @@
    user/algorithms
    user/searchspace
    user/monitoring
+   user/benchmark
    user/evc
    user/storage
    user/config
@@ -59,6 +60,7 @@
    :caption: Code Reference
 
    code/algo
+   code/benchmark
    code/client
    code/core
    code/plotting

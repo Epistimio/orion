@@ -6,10 +6,26 @@ import pandas
 import plotly
 import pytest
 
+import orion.client
 from orion.analysis.partial_dependency_utils import partial_dependency_grid
 from orion.core.worker.experiment import Experiment
-from orion.plotting.base import lpi, parallel_coordinates, partial_dependencies, regret
+from orion.plotting.base import (
+    lpi,
+    parallel_coordinates,
+    partial_dependencies,
+    rankings,
+    regret,
+    regrets,
+)
 from orion.testing import create_experiment
+from orion.testing.plotting import (
+    assert_lpi_plot,
+    assert_parallel_coordinates_plot,
+    assert_partial_dependencies_plot,
+    assert_rankings_plot,
+    assert_regret_plot,
+    assert_regrets_plot,
+)
 
 config = dict(
     name="experiment-name",
@@ -43,27 +59,6 @@ trial_config = {
     "results": [],
     "params": [],
 }
-
-
-def assert_regret_plot(plot):
-    """Checks the layout of a regret plot"""
-    assert plot.layout.title.text == "Regret for experiment 'experiment-name'"
-    assert plot.layout.xaxis.title.text == "Trials ordered by suggested time"
-    assert plot.layout.yaxis.title.text == "Objective 'loss'"
-
-    trace1 = plot.data[0]
-    assert trace1.type == "scatter"
-    assert trace1.name == "trials"
-    assert trace1.mode == "markers"
-    assert len(trace1.y) == 1
-    assert not trace1.x
-
-    trace2 = plot.data[1]
-    assert trace2.type == "scatter"
-    assert trace2.name == "best-to-date"
-    assert trace2.mode == "lines"
-    assert len(trace2.y) == 1
-    assert not trace2.x
 
 
 def mock_space(x="uniform(0, 6)", y="uniform(0, 3)", **kwargs):
@@ -110,6 +105,39 @@ def mock_experiment(
     monkeypatch.setattr(Experiment, "to_pandas", to_pandas)
 
 
+def mock_experiment_with_random_to_pandas(monkeypatch, status=None, unbalanced=False):
+    def to_pandas(self, with_evc_tree=False):
+        if unbalanced:
+            N = numpy.random.randint(5, 15)
+        elif status is not None:
+            N = len(status)
+        else:
+            N = 10
+        ids = numpy.arange(N)
+        x = numpy.random.normal(0, 0.1, size=N)
+        y = numpy.random.normal(0, 0.1, size=N)
+        objectives = numpy.random.normal(0, 0.1, size=N)
+        if status is None:
+            exp_status = ["completed"] * N
+        else:
+            exp_status = status
+
+        data = pandas.DataFrame(
+            data={
+                "id": ids,
+                "x": x,
+                "y": y,
+                "objective": objectives,
+                "status": exp_status,
+                "suggested": ids,
+            }
+        )
+
+        return data
+
+    monkeypatch.setattr(Experiment, "to_pandas", to_pandas)
+
+
 def mock_model():
     """Return a mocked regressor which just predict iterated integers"""
 
@@ -144,190 +172,155 @@ def mock_train_regressor(monkeypatch, assert_model=None, assert_model_kwargs=Non
     )
 
 
-def assert_lpi_plot(plot, dims):
-    """Checks the layout of a LPI plot"""
-    assert plot.layout.title.text == "LPI for experiment 'experiment-name'"
-    assert plot.layout.xaxis.title.text == "Hyperparameters"
-    assert plot.layout.yaxis.title.text == "Local Parameter Importance (LPI)"
+@pytest.mark.usefixtures("version_XYZ")
+class TestRankings:
+    """Tests the ``rankings()`` method provided by the plotly backend"""
 
-    trace = plot.data[0]
-    assert trace["x"] == tuple(dims)
-    assert trace["y"][0] > trace["y"][1]
+    def test_requires_argument(self):
+        """Tests that the experiment data are required."""
+        with pytest.raises(ValueError):
+            rankings(None)
 
+    def test_returns_plotly_object(self, monkeypatch):
+        """Tests that the plotly backend returns a plotly object"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = rankings([experiment, experiment])
 
-def assert_partial_dependencies_plot(
-    plot,
-    dims,
-    custom_colorscale=False,
-    smoothing=0.85,
-    n_grid_points=5,
-    n_samples=4,
-    log_dims=None,
-):
-    """Checks the layout of a partial dependencies plot"""
-    if not isinstance(n_grid_points, dict):
-        n_grid_points = {dim: n_grid_points for dim in dims}
-    if log_dims is None:
-        log_dims = {}
+        assert type(plot) is plotly.graph_objects.Figure
 
-    def _ax_label(axis, index):
-        if index == 0:
-            return f"{axis}axis"
+    def test_graph_layout(self, monkeypatch):
+        """Tests the layout of the plot"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = rankings([experiment])
 
-        return f"{axis}axis{index + 1}"
+        assert_rankings_plot(plot, [f"{experiment.name}-v{experiment.version}"])
 
-    def _ax_layout(axis, index):
-        return plot.layout[_ax_label(axis, index)]
-
-    assert (
-        plot.layout.title.text
-        == "Partial dependencies for experiment 'experiment-name'"
-    )
-
-    assert plot.layout.coloraxis.colorbar.title.text == "Objective"
-    assert plot.layout.yaxis.title.text == "Objective"
-
-    yrange = _ax_layout("y", 0).range
-
-    def all_indices():
-        return {
-            j * len(dims) + i + 1 for i in range(len(dims)) for j in range(i, len(dims))
-        }
-
-    def first_column():
-        return {i * len(dims) + 1 for i in range(len(dims))}
-
-    def last_row():
-        return {len(dims) * (len(dims) - 1) + i + 1 for i in range(len(dims))}
-
-    def diagonal():
-        return {i * len(dims) + i + 1 for i in range(len(dims))}
-
-    def assert_axis_log(axis, index, name):
-        axis_type = _ax_layout(axis, index).type
-        if name in log_dims:
-            assert axis_type == "log"
-        else:
-            assert axis_type != "log"
-
-    def assert_log_x():
-        x_tested = set()
-        for dim_i, dim_name in enumerate(dims):
-            x_index = dim_i * len(dims) + dim_i
-            for row in range(dim_i, len(dims)):
-                assert_axis_log("x", x_index, dim_name)
-                x_tested.add(x_index + 1)
-                x_index += len(dims)
-
-        assert x_tested == all_indices()
-
-    assert_log_x()
-
-    def assert_shared_y_on_diagonal():
-        y_tested = set()
-        for dim_i, dim_name in enumerate(dims):
-            # Test shared y axis across the diagonal
-            y_index = dim_i * len(dims) + dim_i
-            assert _ax_layout("y", y_index).range == yrange
-            y_tested.add(y_index + 1)
-
-        assert y_tested == diagonal()
-
-    assert_shared_y_on_diagonal()
-
-    def assert_log_y():
-        y_tested = set()
-        for dim_i, dim_name in enumerate(dims):
-            # Test shared y axis across the diagonal
-            y_index = dim_i * len(dims) + dim_i
-            # Should not be log
-            assert_axis_log("y", y_index, None)
-            y_tested.add(y_index + 1)
-
-            y_index = dim_i * len(dims)
-            for column in range(max(dim_i, 0)):
-                assert_axis_log("y", y_index, dim_name)
-                y_tested.add(y_index + 1)
-                y_index += 1
-
-        assert y_tested == all_indices()
-
-    assert_log_y()
-
-    def assert_x_labels():
-        x_tested = set()
-        for dim_i, dim_name in enumerate(dims):
-            x_index = len(dims) * (len(dims) - 1) + dim_i
-            assert _ax_layout("x", x_index).title.text == dim_name
-
-        assert x_tested == last_row()
-
-    def assert_y_labels():
-        y_tested = set()
-        for dim_i, dim_name in enumerate(dims):
-            if dim_i > 0:
-                # Test lable at left of row
-                y_index = dim_i * len(dims)
-                assert _ax_layout("y", y_index).title.text == dim_name
-                y_tested.add(y_index + 1)
-            else:
-                assert _ax_layout("y", 0).title.text == "Objective"
-                y_tested.add(1)
-
-        assert y_tested == first_column()
-
-    assert_y_labels()
-
-    # assert x_tested == {1, 4, 5, 7, 8, 9}
-    # assert y_tested == {1, 4, 5, 7, 8, 9}
-
-    if custom_colorscale:
-        assert plot.layout.coloraxis.colorscale[0][1] != "rgb(247,251,255)"
-    else:
-        assert plot.layout.coloraxis.colorscale[0][1] == "rgb(247,251,255)"
-
-    data = plot.data
-    data_index = 0
-    for x_i, x_name in enumerate(dims):
-
-        # Test scatter mean
-        assert data[data_index].mode == "lines"
-        assert data[data_index].showlegend is False
-        assert len(data[data_index].x) == n_grid_points[x_name]
-        assert len(data[data_index].y) == n_grid_points[x_name]
-        data_index += 1
-        # Test scatter var
-        assert data[data_index].mode == "lines"
-        assert data[data_index].fill == "toself"
-        assert data[data_index].showlegend is False
-        assert len(data[data_index].x) == 2 * n_grid_points[x_name]
-        assert len(data[data_index].y) == 2 * n_grid_points[x_name]
-        data_index += 1
-
-        for y_i in range(x_i + 1, len(dims)):
-            y_name = dims[y_i]
-
-            # Test contour
-            assert data[data_index].line.smoothing == smoothing
-            # To share colorscale across subplots
-            assert data[data_index].coloraxis == "coloraxis"
-            assert len(data[data_index].x) == n_grid_points[x_name]
-            assert len(data[data_index].y) == n_grid_points[y_name]
-            assert data[data_index].z.shape == (
-                n_grid_points[y_name],
-                n_grid_points[x_name],
+    def test_list_of_experiments(self, monkeypatch):
+        """Tests the rankings with list of experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            child = orion.client.create_experiment(
+                experiment.name, branching={"branch_to": "child"}
             )
-            data_index += 1
 
-            # Test scatter
-            assert data[data_index].mode == "markers"
-            assert data[data_index].showlegend is False
-            assert len(data[data_index].x) == n_samples
-            assert len(data[data_index].y) == n_samples
-            data_index += 1
+            plot = rankings([experiment, child])
 
-    # Make sure we covered all data
-    assert len(data) == data_index
+        # Exps are sorted alphabetically by names.
+        assert_rankings_plot(
+            plot, [f"{exp.name}-v{exp.version}" for exp in [child, experiment]]
+        )
+
+    def test_list_of_experiments_name_conflict(self, monkeypatch):
+        """Tests the rankings with list of experiments with the same name"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            child = orion.client.create_experiment(
+                experiment.name, branching={"branch_to": experiment.name}
+            )
+            assert child.name == experiment.name
+            assert child.version == experiment.version + 1
+            plot = rankings([experiment, child])
+
+        # Exps are sorted alphabetically by names.
+        assert_rankings_plot(
+            plot, [f"{exp.name}-v{exp.version}" for exp in [experiment, child]]
+        )
+
+    def test_dict_of_experiments(self, monkeypatch):
+        """Tests the rankings with renamed experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = rankings({"exp-1": experiment, "exp-2": experiment})
+
+        assert_rankings_plot(plot, ["exp-1", "exp-2"])
+
+    def test_list_of_dict_of_experiments(self, monkeypatch):
+        """Tests the rankings with avg of competitions"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = rankings(
+                [{"exp-1": experiment, "exp-2": experiment} for _ in range(10)]
+            )
+
+        assert_rankings_plot(plot, ["exp-1", "exp-2"], with_avg=True)
+
+    def test_dict_of_list_of_experiments(self, monkeypatch):
+        """Tests the rankings with avg of experiments separated in lists"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = rankings({"exp-1": [experiment] * 10, "exp-2": [experiment] * 10})
+
+        assert_rankings_plot(plot, ["exp-1", "exp-2"], with_avg=True)
+
+    def test_unbalanced_experiments(self, monkeypatch):
+        """Tests the regrets with avg of unbalanced experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch, unbalanced=True)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = rankings({"exp-1": [experiment] * 10, "exp-2": [experiment] * 10})
+
+        assert_rankings_plot(plot, ["exp-1", "exp-2"], with_avg=True, balanced=0)
+
+    def test_ignore_uncompleted_statuses(self, monkeypatch):
+        """Tests that uncompleted statuses are ignored"""
+        mock_experiment_with_random_to_pandas(
+            monkeypatch,
+            status=[
+                "completed",
+                "new",
+                "reserved",
+                "completed",
+                "broken",
+                "completed",
+                "interrupted",
+                "completed",
+            ],
+        )
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            plot = rankings([experiment])
+
+        assert_rankings_plot(
+            plot, [f"{experiment.name}-v{experiment.version}"], balanced=4
+        )
+
+    def test_unsupported_order_key(self):
+        """Tests that unsupported order keys are rejected"""
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            with pytest.raises(ValueError):
+                rankings([experiment], order_by="unsupported")
 
 
 @pytest.mark.usefixtures("version_XYZ")
@@ -820,16 +813,141 @@ class TestRegret:
                 regret(experiment, order_by="unsupported")
 
 
-def assert_parallel_coordinates_plot(plot, order):
-    """Checks the layout of a parallel coordinates plot"""
-    assert (
-        plot.layout.title.text
-        == "Parallel Coordinates Plot for experiment 'experiment-name'"
-    )
+@pytest.mark.usefixtures("version_XYZ")
+class TestRegrets:
+    """Tests the ``regrets()`` method provided by the plotly backend"""
 
-    trace = plot.data[0]
-    for i in range(len(order)):
-        assert trace.dimensions[i].label == order[i]
+    def test_requires_argument(self):
+        """Tests that the experiment data are required."""
+        with pytest.raises(ValueError):
+            regrets(None)
+
+    def test_returns_plotly_object(self, monkeypatch):
+        """Tests that the plotly backend returns a plotly object"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = regrets([experiment])
+
+        assert type(plot) is plotly.graph_objects.Figure
+
+    def test_graph_layout(self, monkeypatch):
+        """Tests the layout of the plot"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = regrets([experiment])
+
+        assert_regrets_plot(plot, [f"{experiment.name}-v{experiment.version}"])
+
+    def test_list_of_experiments(self, monkeypatch):
+        """Tests the regrets with list of experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            child = orion.client.create_experiment(
+                experiment.name, branching={"branch_to": "child"}
+            )
+
+            plot = regrets([experiment, child])
+
+        # Exps are sorted alphabetically by names.
+        assert_regrets_plot(
+            plot, [f"{exp.name}-v{exp.version}" for exp in [child, experiment]]
+        )
+
+    def test_list_of_experiments_name_conflict(self, monkeypatch):
+        """Tests the regrets with list of experiments with the same name"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            child = orion.client.create_experiment(
+                experiment.name, branching={"branch_to": experiment.name}
+            )
+            assert child.name == experiment.name
+            assert child.version == experiment.version + 1
+            plot = regrets([experiment, child])
+
+        # Exps are sorted alphabetically by names.
+        assert_regrets_plot(
+            plot, [f"{exp.name}-v{exp.version}" for exp in [experiment, child]]
+        )
+
+    def test_dict_of_experiments(self, monkeypatch):
+        """Tests the regrets with renamed experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = regrets({"exp-1": experiment, "exp-2": experiment})
+
+        assert_regrets_plot(plot, ["exp-1", "exp-2"])
+
+    def test_dict_of_list_of_experiments(self, monkeypatch):
+        """Tests the regrets with avg of experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = regrets({"exp-1": [experiment] * 10, "exp-2": [experiment] * 10})
+
+        assert_regrets_plot(plot, ["exp-1", "exp-2"], with_avg=True)
+
+    def test_unbalanced_experiments(self, monkeypatch):
+        """Tests the regrets with avg of unbalanced experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch, unbalanced=True)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = regrets({"exp-1": [experiment] * 10, "exp-2": [experiment] * 10})
+
+        assert_regrets_plot(plot, ["exp-1", "exp-2"], with_avg=True, balanced=0)
+
+    def test_ignore_uncompleted_statuses(self, monkeypatch):
+        """Tests that uncompleted statuses are ignored"""
+        mock_experiment_with_random_to_pandas(
+            monkeypatch,
+            status=[
+                "completed",
+                "new",
+                "reserved",
+                "completed",
+                "broken",
+                "completed",
+                "interrupted",
+                "completed",
+            ],
+        )
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            plot = regrets([experiment])
+
+        assert_regrets_plot(
+            plot, [f"{experiment.name}-v{experiment.version}"], balanced=4
+        )
+
+    def test_unsupported_order_key(self):
+        """Tests that unsupported order keys are rejected"""
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            with pytest.raises(ValueError):
+                regrets([experiment], order_by="unsupported")
 
 
 @pytest.mark.usefixtures("version_XYZ")

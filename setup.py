@@ -17,6 +17,7 @@ tests_require = ["pytest>=3.0.0", "scikit-learn"]
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
     "orion.algo",
     "orion.analysis",
+    "orion.benchmark",
     "orion.client",
     "orion.core",
     "orion.plotting",
