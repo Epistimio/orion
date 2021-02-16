@@ -31,6 +31,7 @@
    :caption: Tutorials
    :maxdepth: 1
 
+   auto_tutorials/index
    tutorials/scikit-learn
    tutorials/pytorch-mnist
    tutorials/cluster
