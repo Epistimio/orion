@@ -537,7 +537,7 @@ def regret(
     return fig
 
 
-def regrets(experiments, order_by="suggested", **kwargs):
+def regrets(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
     """Plotly implementation of `orion.plotting.regrets`"""
 
     compute_average = bool(
