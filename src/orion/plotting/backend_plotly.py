@@ -20,6 +20,7 @@ from orion.core.worker.transformer import build_required_space
 
 def lpi(
     experiment,
+    with_evc_tree=True,
     model="RandomForestRegressor",
     model_kwargs=None,
     n_points=20,
@@ -33,7 +34,7 @@ def lpi(
     if model_kwargs is None:
         model_kwargs = {}
 
-    df = experiment.to_pandas()
+    df = experiment.to_pandas(with_evc_tree=with_evc_tree)
     df = df.loc[df["status"] == "completed"]
 
     if df.empty:
@@ -68,14 +69,16 @@ def lpi(
     return fig
 
 
-def parallel_coordinates(experiment, order=None, colorscale="YlOrRd", **kwargs):
+def parallel_coordinates(
+    experiment, with_evc_tree=True, order=None, colorscale="YlOrRd", **kwargs
+):
     """Plotly implementation of `orion.plotting.parallel_coordinates`"""
 
     def build_frame():
         """Builds the dataframe for the plot"""
         names = list(experiment.space.keys())
 
-        df = experiment.to_pandas()
+        df = experiment.to_pandas(with_evc_tree=with_evc_tree)
         df = df.loc[df["status"] == "completed"]
 
         if df.empty:
@@ -161,7 +164,7 @@ def parallel_coordinates(experiment, order=None, colorscale="YlOrRd", **kwargs):
     return fig
 
 
-def rankings(experiments, order_by, **kwargs):
+def rankings(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
     """Plotly implementation of `orion.plotting.rankings`"""
 
     def reformat_competitions(experiments):
@@ -209,7 +212,7 @@ def rankings(experiments, order_by, **kwargs):
 
         frames = []
         for name, experiment in competition.items():
-            df = experiment.to_pandas()
+            df = experiment.to_pandas(with_evc_tree=with_evc_tree)
             df = df.loc[df["status"] == "completed"]
             df = df.sort_values(order_by)
             df = orion.analysis.regret(df)
@@ -286,6 +289,7 @@ def rankings(experiments, order_by, **kwargs):
 
 def partial_dependencies(
     experiment,
+    with_evc_tree=True,
     params=None,
     smoothing=0.85,
     n_grid_points=10,
@@ -298,7 +302,7 @@ def partial_dependencies(
 
     def build_data():
         """Builds the dataframe for the plot"""
-        df = experiment.to_pandas()
+        df = experiment.to_pandas(with_evc_tree=with_evc_tree)
 
         names = list(experiment.space.keys())
         df["params"] = df[names].apply(_format_hyperparameters, args=(names,), axis=1)
@@ -470,12 +474,14 @@ def partial_dependencies(
     return fig
 
 
-def regret(experiment, order_by, verbose_hover, **kwargs):
+def regret(
+    experiment, with_evc_tree=True, order_by="suggested", verbose_hover=True, **kwargs
+):
     """Plotly implementation of `orion.plotting.regret`"""
 
     def build_frame():
         """Builds the dataframe for the plot"""
-        df = experiment.to_pandas()
+        df = experiment.to_pandas(with_evc_tree=with_evc_tree)
 
         names = list(experiment.space.keys())
         df["params"] = df[names].apply(_format_hyperparameters, args=(names,), axis=1)
@@ -531,7 +537,7 @@ def regret(experiment, order_by, verbose_hover, **kwargs):
     return fig
 
 
-def regrets(experiments, order_by, **kwargs):
+def regrets(experiments, order_by="suggested", **kwargs):
     """Plotly implementation of `orion.plotting.regrets`"""
 
     compute_average = bool(
@@ -560,7 +566,7 @@ def regrets(experiments, order_by, **kwargs):
         """Builds the dataframe for the plot"""
         frames = []
         for i, experiment in enumerate(experiments):
-            df = experiment.to_pandas()
+            df = experiment.to_pandas(with_evc_tree=with_evc_tree)
             df = df.loc[df["status"] == "completed"]
             df = df.sort_values(order_by)
             df = orion.analysis.regret(df)
