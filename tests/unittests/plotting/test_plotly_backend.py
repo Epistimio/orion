@@ -173,157 +173,6 @@ def mock_train_regressor(monkeypatch, assert_model=None, assert_model_kwargs=Non
 
 
 @pytest.mark.usefixtures("version_XYZ")
-class TestRankings:
-    """Tests the ``rankings()`` method provided by the plotly backend"""
-
-    def test_requires_argument(self):
-        """Tests that the experiment data are required."""
-        with pytest.raises(ValueError):
-            rankings(None)
-
-    def test_returns_plotly_object(self, monkeypatch):
-        """Tests that the plotly backend returns a plotly object"""
-        mock_experiment_with_random_to_pandas(monkeypatch)
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            _,
-            experiment,
-        ):
-            plot = rankings([experiment, experiment])
-
-        assert type(plot) is plotly.graph_objects.Figure
-
-    def test_graph_layout(self, monkeypatch):
-        """Tests the layout of the plot"""
-        mock_experiment_with_random_to_pandas(monkeypatch)
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            _,
-            experiment,
-        ):
-            plot = rankings([experiment])
-
-        assert_rankings_plot(plot, [f"{experiment.name}-v{experiment.version}"])
-
-    def test_list_of_experiments(self, monkeypatch):
-        """Tests the rankings with list of experiments"""
-        mock_experiment_with_random_to_pandas(monkeypatch)
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            _,
-            experiment,
-        ):
-            child = orion.client.create_experiment(
-                experiment.name, branching={"branch_to": "child"}
-            )
-
-            plot = rankings([experiment, child])
-
-        # Exps are sorted alphabetically by names.
-        assert_rankings_plot(
-            plot, [f"{exp.name}-v{exp.version}" for exp in [child, experiment]]
-        )
-
-    def test_list_of_experiments_name_conflict(self, monkeypatch):
-        """Tests the rankings with list of experiments with the same name"""
-        mock_experiment_with_random_to_pandas(monkeypatch)
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            _,
-            experiment,
-        ):
-            child = orion.client.create_experiment(
-                experiment.name, branching={"branch_to": experiment.name}
-            )
-            assert child.name == experiment.name
-            assert child.version == experiment.version + 1
-            plot = rankings([experiment, child])
-
-        # Exps are sorted alphabetically by names.
-        assert_rankings_plot(
-            plot, [f"{exp.name}-v{exp.version}" for exp in [experiment, child]]
-        )
-
-    def test_dict_of_experiments(self, monkeypatch):
-        """Tests the rankings with renamed experiments"""
-        mock_experiment_with_random_to_pandas(monkeypatch)
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            _,
-            experiment,
-        ):
-            plot = rankings({"exp-1": experiment, "exp-2": experiment})
-
-        assert_rankings_plot(plot, ["exp-1", "exp-2"])
-
-    def test_list_of_dict_of_experiments(self, monkeypatch):
-        """Tests the rankings with avg of competitions"""
-        mock_experiment_with_random_to_pandas(monkeypatch)
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            _,
-            experiment,
-        ):
-            plot = rankings(
-                [{"exp-1": experiment, "exp-2": experiment} for _ in range(10)]
-            )
-
-        assert_rankings_plot(plot, ["exp-1", "exp-2"], with_avg=True)
-
-    def test_dict_of_list_of_experiments(self, monkeypatch):
-        """Tests the rankings with avg of experiments separated in lists"""
-        mock_experiment_with_random_to_pandas(monkeypatch)
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            _,
-            experiment,
-        ):
-            plot = rankings({"exp-1": [experiment] * 10, "exp-2": [experiment] * 10})
-
-        assert_rankings_plot(plot, ["exp-1", "exp-2"], with_avg=True)
-
-    def test_unbalanced_experiments(self, monkeypatch):
-        """Tests the regrets with avg of unbalanced experiments"""
-        mock_experiment_with_random_to_pandas(monkeypatch, unbalanced=True)
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            _,
-            experiment,
-        ):
-            plot = rankings({"exp-1": [experiment] * 10, "exp-2": [experiment] * 10})
-
-        assert_rankings_plot(plot, ["exp-1", "exp-2"], with_avg=True, balanced=0)
-
-    def test_ignore_uncompleted_statuses(self, monkeypatch):
-        """Tests that uncompleted statuses are ignored"""
-        mock_experiment_with_random_to_pandas(
-            monkeypatch,
-            status=[
-                "completed",
-                "new",
-                "reserved",
-                "completed",
-                "broken",
-                "completed",
-                "interrupted",
-                "completed",
-            ],
-        )
-        with create_experiment(config, trial_config) as (_, _, experiment):
-            plot = rankings([experiment])
-
-        assert_rankings_plot(
-            plot, [f"{experiment.name}-v{experiment.version}"], balanced=4
-        )
-
-    def test_unsupported_order_key(self):
-        """Tests that unsupported order keys are rejected"""
-        with create_experiment(config, trial_config) as (_, _, experiment):
-            with pytest.raises(ValueError):
-                rankings([experiment], order_by="unsupported")
-
-
-@pytest.mark.usefixtures("version_XYZ")
 class TestLPI:
     """Tests the ``lpi()`` method provided by the plotly backend"""
 
@@ -437,6 +286,112 @@ class TestLPI:
             plot = lpi(experiment, model_kwargs=dict(random_state=1))
 
         assert_lpi_plot(plot, dims=["x", "y[0]", "y[1]", "y[2]"])
+
+
+@pytest.mark.usefixtures("version_XYZ")
+class TestParallelCoordinates:
+    """Tests the ``parallel_coordinates()`` method provided by the plotly backend"""
+
+    def test_requires_argument(self):
+        """Tests that the experiment data are required."""
+        with pytest.raises(ValueError):
+            parallel_coordinates(None)
+
+    def test_returns_plotly_object(self):
+        """Tests that the plotly backend returns a plotly object"""
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = parallel_coordinates(experiment)
+
+        assert type(plot) is plotly.graph_objects.Figure
+
+    def test_graph_layout(self):
+        """Tests the layout of the plot"""
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = parallel_coordinates(experiment)
+
+        assert_parallel_coordinates_plot(plot, order=["x", "loss"])
+
+    def test_experiment_worker_as_parameter(self):
+        """Tests that ``Experiment`` is a valid parameter"""
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            experiment,
+            _,
+        ):
+            plot = parallel_coordinates(experiment)
+
+        assert_parallel_coordinates_plot(plot, order=["x", "loss"])
+
+    def test_ignore_uncompleted_statuses(self):
+        """Tests that uncompleted statuses are ignored"""
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            plot = parallel_coordinates(experiment)
+
+        assert_parallel_coordinates_plot(plot, order=["x", "loss"])
+
+    def test_unsupported_order_key(self):
+        """Tests that unsupported order keys are rejected"""
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            with pytest.raises(ValueError):
+                parallel_coordinates(experiment, order=["unsupported"])
+
+    def test_order_columns(self):
+        """Tests that columns are sorted according to ``order``"""
+        multidim_config = copy.deepcopy(config)
+        for k in "yzutv":
+            multidim_config["space"][k] = "uniform(0, 200)"
+        with create_experiment(multidim_config, trial_config) as (_, _, experiment):
+            plot = parallel_coordinates(experiment, order="vzyx")
+
+        assert_parallel_coordinates_plot(plot, order=["v", "z", "y", "x", "loss"])
+
+    def test_multidim(self):
+        """Tests that dimensions with shape > 1 are flattened properly"""
+        multidim_config = copy.deepcopy(config)
+        multidim_config["space"]["y"] = "uniform(0, 200, shape=4)"
+        with create_experiment(multidim_config, trial_config) as (_, _, experiment):
+            plot = parallel_coordinates(experiment)
+
+        assert_parallel_coordinates_plot(
+            plot, order=["x", "y[0]", "y[1]", "y[2]", "y[3]", "loss"]
+        )
+
+    def test_fidelity(self):
+        """Tests that fidelity is set to first column by default"""
+        fidelity_config = copy.deepcopy(config)
+        fidelity_config["space"]["z"] = "fidelity(1, 200, base=3)"
+        with create_experiment(fidelity_config, trial_config) as (_, _, experiment):
+            plot = parallel_coordinates(experiment)
+
+        assert_parallel_coordinates_plot(plot, order=["z", "x", "loss"])
+
+    def test_categorical(self):
+        """Tests that categorical is supported"""
+        categorical_config = copy.deepcopy(config)
+        categorical_config["space"]["z"] = 'choices(["a", "b", "c"])'
+        with create_experiment(categorical_config, trial_config) as (_, _, experiment):
+            plot = parallel_coordinates(experiment)
+
+        assert_parallel_coordinates_plot(plot, order=["x", "z", "loss"])
+
+    def test_categorical_multidim(self):
+        """Tests that multidim categorical is supported"""
+        categorical_config = copy.deepcopy(config)
+        categorical_config["space"]["z"] = 'choices(["a", "b", "c"], shape=3)'
+        with create_experiment(categorical_config, trial_config) as (_, _, experiment):
+            plot = parallel_coordinates(experiment)
+
+        assert_parallel_coordinates_plot(
+            plot, order=["x", "z[0]", "z[1]", "z[2]", "loss"]
+        )
 
 
 @pytest.mark.usefixtures("version_XYZ")
@@ -758,6 +713,157 @@ class TestPartialDependencies:
 
 
 @pytest.mark.usefixtures("version_XYZ")
+class TestRankings:
+    """Tests the ``rankings()`` method provided by the plotly backend"""
+
+    def test_requires_argument(self):
+        """Tests that the experiment data are required."""
+        with pytest.raises(ValueError):
+            rankings(None)
+
+    def test_returns_plotly_object(self, monkeypatch):
+        """Tests that the plotly backend returns a plotly object"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = rankings([experiment, experiment])
+
+        assert type(plot) is plotly.graph_objects.Figure
+
+    def test_graph_layout(self, monkeypatch):
+        """Tests the layout of the plot"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = rankings([experiment])
+
+        assert_rankings_plot(plot, [f"{experiment.name}-v{experiment.version}"])
+
+    def test_list_of_experiments(self, monkeypatch):
+        """Tests the rankings with list of experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            child = orion.client.create_experiment(
+                experiment.name, branching={"branch_to": "child"}
+            )
+
+            plot = rankings([experiment, child])
+
+        # Exps are sorted alphabetically by names.
+        assert_rankings_plot(
+            plot, [f"{exp.name}-v{exp.version}" for exp in [child, experiment]]
+        )
+
+    def test_list_of_experiments_name_conflict(self, monkeypatch):
+        """Tests the rankings with list of experiments with the same name"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            child = orion.client.create_experiment(
+                experiment.name, branching={"branch_to": experiment.name}
+            )
+            assert child.name == experiment.name
+            assert child.version == experiment.version + 1
+            plot = rankings([experiment, child])
+
+        # Exps are sorted alphabetically by names.
+        assert_rankings_plot(
+            plot, [f"{exp.name}-v{exp.version}" for exp in [experiment, child]]
+        )
+
+    def test_dict_of_experiments(self, monkeypatch):
+        """Tests the rankings with renamed experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = rankings({"exp-1": experiment, "exp-2": experiment})
+
+        assert_rankings_plot(plot, ["exp-1", "exp-2"])
+
+    def test_list_of_dict_of_experiments(self, monkeypatch):
+        """Tests the rankings with avg of competitions"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = rankings(
+                [{"exp-1": experiment, "exp-2": experiment} for _ in range(10)]
+            )
+
+        assert_rankings_plot(plot, ["exp-1", "exp-2"], with_avg=True)
+
+    def test_dict_of_list_of_experiments(self, monkeypatch):
+        """Tests the rankings with avg of experiments separated in lists"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = rankings({"exp-1": [experiment] * 10, "exp-2": [experiment] * 10})
+
+        assert_rankings_plot(plot, ["exp-1", "exp-2"], with_avg=True)
+
+    def test_unbalanced_experiments(self, monkeypatch):
+        """Tests the regrets with avg of unbalanced experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch, unbalanced=True)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = rankings({"exp-1": [experiment] * 10, "exp-2": [experiment] * 10})
+
+        assert_rankings_plot(plot, ["exp-1", "exp-2"], with_avg=True, balanced=0)
+
+    def test_ignore_uncompleted_statuses(self, monkeypatch):
+        """Tests that uncompleted statuses are ignored"""
+        mock_experiment_with_random_to_pandas(
+            monkeypatch,
+            status=[
+                "completed",
+                "new",
+                "reserved",
+                "completed",
+                "broken",
+                "completed",
+                "interrupted",
+                "completed",
+            ],
+        )
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            plot = rankings([experiment])
+
+        assert_rankings_plot(
+            plot, [f"{experiment.name}-v{experiment.version}"], balanced=4
+        )
+
+    def test_unsupported_order_key(self):
+        """Tests that unsupported order keys are rejected"""
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            with pytest.raises(ValueError):
+                rankings([experiment], order_by="unsupported")
+
+
+@pytest.mark.usefixtures("version_XYZ")
 class TestRegret:
     """Tests the ``regret()`` method provided by the plotly backend"""
 
@@ -948,109 +1054,3 @@ class TestRegrets:
         with create_experiment(config, trial_config) as (_, _, experiment):
             with pytest.raises(ValueError):
                 regrets([experiment], order_by="unsupported")
-
-
-@pytest.mark.usefixtures("version_XYZ")
-class TestParallelCoordinates:
-    """Tests the ``parallel_coordinates()`` method provided by the plotly backend"""
-
-    def test_requires_argument(self):
-        """Tests that the experiment data are required."""
-        with pytest.raises(ValueError):
-            parallel_coordinates(None)
-
-    def test_returns_plotly_object(self):
-        """Tests that the plotly backend returns a plotly object"""
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            _,
-            experiment,
-        ):
-            plot = parallel_coordinates(experiment)
-
-        assert type(plot) is plotly.graph_objects.Figure
-
-    def test_graph_layout(self):
-        """Tests the layout of the plot"""
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            _,
-            experiment,
-        ):
-            plot = parallel_coordinates(experiment)
-
-        assert_parallel_coordinates_plot(plot, order=["x", "loss"])
-
-    def test_experiment_worker_as_parameter(self):
-        """Tests that ``Experiment`` is a valid parameter"""
-        with create_experiment(config, trial_config, ["completed"]) as (
-            _,
-            experiment,
-            _,
-        ):
-            plot = parallel_coordinates(experiment)
-
-        assert_parallel_coordinates_plot(plot, order=["x", "loss"])
-
-    def test_ignore_uncompleted_statuses(self):
-        """Tests that uncompleted statuses are ignored"""
-        with create_experiment(config, trial_config) as (_, _, experiment):
-            plot = parallel_coordinates(experiment)
-
-        assert_parallel_coordinates_plot(plot, order=["x", "loss"])
-
-    def test_unsupported_order_key(self):
-        """Tests that unsupported order keys are rejected"""
-        with create_experiment(config, trial_config) as (_, _, experiment):
-            with pytest.raises(ValueError):
-                parallel_coordinates(experiment, order=["unsupported"])
-
-    def test_order_columns(self):
-        """Tests that columns are sorted according to ``order``"""
-        multidim_config = copy.deepcopy(config)
-        for k in "yzutv":
-            multidim_config["space"][k] = "uniform(0, 200)"
-        with create_experiment(multidim_config, trial_config) as (_, _, experiment):
-            plot = parallel_coordinates(experiment, order="vzyx")
-
-        assert_parallel_coordinates_plot(plot, order=["v", "z", "y", "x", "loss"])
-
-    def test_multidim(self):
-        """Tests that dimensions with shape > 1 are flattened properly"""
-        multidim_config = copy.deepcopy(config)
-        multidim_config["space"]["y"] = "uniform(0, 200, shape=4)"
-        with create_experiment(multidim_config, trial_config) as (_, _, experiment):
-            plot = parallel_coordinates(experiment)
-
-        assert_parallel_coordinates_plot(
-            plot, order=["x", "y[0]", "y[1]", "y[2]", "y[3]", "loss"]
-        )
-
-    def test_fidelity(self):
-        """Tests that fidelity is set to first column by default"""
-        fidelity_config = copy.deepcopy(config)
-        fidelity_config["space"]["z"] = "fidelity(1, 200, base=3)"
-        with create_experiment(fidelity_config, trial_config) as (_, _, experiment):
-            plot = parallel_coordinates(experiment)
-
-        assert_parallel_coordinates_plot(plot, order=["z", "x", "loss"])
-
-    def test_categorical(self):
-        """Tests that categorical is supported"""
-        categorical_config = copy.deepcopy(config)
-        categorical_config["space"]["z"] = 'choices(["a", "b", "c"])'
-        with create_experiment(categorical_config, trial_config) as (_, _, experiment):
-            plot = parallel_coordinates(experiment)
-
-        assert_parallel_coordinates_plot(plot, order=["x", "z", "loss"])
-
-    def test_categorical_multidim(self):
-        """Tests that multidim categorical is supported"""
-        categorical_config = copy.deepcopy(config)
-        categorical_config["space"]["z"] = 'choices(["a", "b", "c"], shape=3)'
-        with create_experiment(categorical_config, trial_config) as (_, _, experiment):
-            plot = parallel_coordinates(experiment)
-
-        assert_parallel_coordinates_plot(
-            plot, order=["x", "z[0]", "z[1]", "z[2]", "loss"]
-        )
