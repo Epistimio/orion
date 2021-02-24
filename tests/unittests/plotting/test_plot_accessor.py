@@ -4,6 +4,14 @@ import pytest
 from orion.plotting.base import PlotAccessor
 from orion.testing import create_experiment
 
+
+SINGLE_EXPERIMENT_PLOTS = (
+    "lpi",
+    "regret",
+    "parallel_coordinates",
+    "partial_dependencies",
+)
+
 config = dict(
     name="experiment-name",
     space={"x": "uniform(0, 200)"},
@@ -72,7 +80,7 @@ def test_regret_is_default_plot():
         check_plot(plot, "regret")
 
 
-@pytest.mark.parametrize("kind", ("lpi", "regret", "parallel_coordinates"))
+@pytest.mark.parametrize("kind", SINGLE_EXPERIMENT_PLOTS)
 def test_kind(kind):
     """Tests that a plot can be created from specifying `kind` as a parameter."""
     with create_experiment(config, trial_config, ["completed"]) as (_, _, experiment):
@@ -82,7 +90,7 @@ def test_kind(kind):
         check_plot(plot, kind)
 
 
-@pytest.mark.parametrize("kind", ("lpi", "regret", "parallel_coordinates"))
+@pytest.mark.parametrize("kind", SINGLE_EXPERIMENT_PLOTS)
 def test_call_to(kind):
     """Tests instance calls to `PlotAccessor.{kind}()`"""
     with create_experiment(config, trial_config, ["completed"]) as (_, _, experiment):
