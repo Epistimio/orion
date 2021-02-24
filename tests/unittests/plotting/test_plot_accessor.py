@@ -5,7 +5,6 @@ from orion.core.worker.experiment import Experiment
 from orion.plotting.base import PlotAccessor
 from orion.testing import create_experiment
 
-
 SINGLE_EXPERIMENT_PLOTS = (
     "lpi",
     "regret",
