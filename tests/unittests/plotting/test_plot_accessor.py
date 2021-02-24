@@ -90,3 +90,13 @@ def test_call_to(kind):
         plot = getattr(pa, kind)()
 
         check_plot(plot, kind)
+
+
+@pytest.mark.parametrize(
+    "kind", ("lpi", "regret", "parallel_coordinates", "partial_dependencies")
+)
+def test_emtpy(kind):
+    """Tests instance calls to `PlotAccessor.{kind}()`"""
+    with create_experiment(config, trial_config, []) as (_, _, experiment):
+        pa = PlotAccessor(experiment)
+        getattr(pa, kind)()

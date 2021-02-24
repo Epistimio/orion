@@ -35,6 +35,10 @@ def lpi(
 
     df = experiment.to_pandas()
     df = df.loc[df["status"] == "completed"]
+
+    if df.empty:
+        return go.Figure()
+
     df = orion.analysis.lpi(
         df,
         experiment.space,
