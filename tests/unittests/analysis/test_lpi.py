@@ -105,7 +105,7 @@ def test_compute_variance():
 def test_lpi_results():
     """Verify LPI results in DataFrame"""
     results = lpi(data, space, random_state=1)
-    assert results.columns.tolist() == ["LPI"]
+    assert results.columns.tolist() == ["LPI", "STD"]
     assert results.index.tolist() == list(space.keys())
     # The data is made such that x correlates more strongly with objective than y
     assert results["LPI"].loc["x"] > results["LPI"].loc["y"]
@@ -127,7 +127,7 @@ def test_lpi_with_categorical_data():
     )
 
     results = lpi(data, space, random_state=1)
-    assert results.columns.tolist() == ["LPI"]
+    assert results.columns.tolist() == ["LPI", "STD"]
     assert results.index.tolist() == ["x", "y"]
     # The data is made such that x correlates more strongly with objective than y
     assert results["LPI"].loc["x"] > results["LPI"].loc["y"]
@@ -149,10 +149,45 @@ def test_lpi_with_multidim_data():
     )
 
     results = lpi(data, space, random_state=1)
-    assert results.columns.tolist() == ["LPI"]
+    assert results.columns.tolist() == ["LPI", "STD"]
     assert results.index.tolist() == ["x[0]", "x[1]", "x[2]", "y[0]", "y[1]"]
     # The data is made such some x correlates more strongly with objective than other x and most y
     assert results["LPI"].loc["x[0]"] > results["LPI"].loc["x[1]"]
     assert results["LPI"].loc["x[1]"] > results["LPI"].loc["x[2]"]
     assert results["LPI"].loc["x[0]"] > results["LPI"].loc["y[0]"]
     assert results["LPI"].loc["x[0]"] > results["LPI"].loc["y[1]"]
+
+
+def test_lpi_n_points(monkeypatch):
+    """Verify given number of points is used"""
+    N_POINTS = numpy.random.randint(2, 50)
+
+    def mock_make_grid(*args, **kwargs):
+        grid = make_grid(*args, **kwargs)
+        assert grid.shape == (len(space), N_POINTS, len(space) + 1)
+        return grid
+
+    monkeypatch.setattr("orion.analysis.lpi_utils.make_grid", mock_make_grid)
+    lpi(data, space, random_state=1, n_points=N_POINTS)
+
+
+def test_lpi_n_runs(monkeypatch):
+    """Verify number of runs"""
+    N_RUNS = 5
+
+    seeds = set()
+    n_runs = 0
+
+    def mock_train_regressor(*args, **kwargs):
+        nonlocal n_runs
+        n_runs += 1
+        seeds.add(kwargs["random_state"])
+        return train_regressor(*args, **kwargs)
+
+    monkeypatch.setattr(
+        "orion.analysis.lpi_utils.train_regressor", mock_train_regressor
+    )
+    lpi(data, space, random_state=1, n_runs=N_RUNS)
+
+    assert n_runs == N_RUNS
+    assert len(seeds) > 0

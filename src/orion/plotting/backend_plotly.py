@@ -19,7 +19,12 @@ from orion.core.worker.transformer import build_required_space
 
 
 def lpi(
-    experiment, model="RandomForestRegressor", model_kwargs=None, n_points=20, **kwargs
+    experiment,
+    model="RandomForestRegressor",
+    model_kwargs=None,
+    n_points=20,
+    n_runs=10,
+    **kwargs,
 ):
     """Plotly implementation of `orion.plotting.lpi`"""
     if not experiment:
@@ -31,10 +36,23 @@ def lpi(
     df = experiment.to_pandas()
     df = df.loc[df["status"] == "completed"]
     df = orion.analysis.lpi(
-        df, experiment.space, model=model, n_points=n_points, **model_kwargs
+        df,
+        experiment.space,
+        model=model,
+        n_points=n_points,
+        n_runs=n_runs,
+        **model_kwargs,
     )
 
-    fig = go.Figure(data=[go.Bar(x=df.index.tolist(), y=df["LPI"].tolist())])
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=df.index.tolist(),
+                y=df["LPI"].tolist(),
+                error_y=dict(type="data", array=df["STD"].tolist()),
+            )
+        ]
+    )
 
     y_axis_label = "Local Parameter Importance (LPI)"
     fig.update_layout(
