@@ -6,7 +6,12 @@ import orion.plotting.backend_plotly as backend
 
 
 def lpi(
-    experiment, model="RandomForestRegressor", model_kwargs=None, n_points=20, **kwargs
+    experiment,
+    model="RandomForestRegressor",
+    model_kwargs=None,
+    n_points=20,
+    n_runs=10,
+    **kwargs,
 ):
     """
     Make a bar plot to visualize the local parameter importance metric.
@@ -50,7 +55,12 @@ def lpi(
 
     """
     return backend.lpi(
-        experiment, model=model, model_kwargs=model_kwargs, n_points=n_points, **kwargs
+        experiment,
+        model=model,
+        model_kwargs=model_kwargs,
+        n_points=n_points,
+        n_runs=n_runs,
+        **kwargs,
     )
 
 

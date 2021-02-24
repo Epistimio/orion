@@ -107,6 +107,7 @@ def assert_lpi_plot(plot, dims):
     trace = plot.data[0]
     assert trace["x"] == tuple(dims)
     assert trace["y"][0] > trace["y"][1]
+    assert len(trace["error_y"]["array"]) == len(dims)
 
 
 def assert_partial_dependencies_plot(

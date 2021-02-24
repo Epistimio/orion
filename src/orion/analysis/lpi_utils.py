@@ -50,7 +50,7 @@ def _lpi(point, space, model, n_points):
     grid = make_grid(point, space, model, n_points)
     variances = compute_variances(grid)
     ratios = variances / variances.sum()
-    return pd.DataFrame(data=ratios, index=space.keys(), columns=["LPI"])
+    return ratios
 
 
 # def _linear_lpi(point, space, model, n):
@@ -62,10 +62,17 @@ modes = dict(best=_lpi)  # , linear=_linear_lpi)
 
 
 def lpi(
-    trials, space, mode="best", model="RandomForestRegressor", n_points=20, **kwargs
+    trials,
+    space,
+    mode="best",
+    model="RandomForestRegressor",
+    n_points=20,
+    n_runs=10,
+    **kwargs
 ):
     """
-    Calculates the Local Parameter Importance for a collection of :class:`Trial`.
+    Calculates the Local Parameter Importance for a collection of
+    :class:`orion.core.worker.trial.Trial`.
 
     For more information on the metric, see original paper at
     https://ml.informatik.uni-freiburg.de/papers/18-LION12-CAVE.pdf.
@@ -98,7 +105,10 @@ def lpi(
     n_points: int
         Number of points to compute the variances. Default is 20.
 
-    **kwargs
+    n_runs: int
+        Number of runs to compute the standard error of the LPI. Default is 10.
+
+    ``**kwargs``
         Arguments for the regressor model.
 
     Returns
@@ -106,6 +116,7 @@ def lpi(
     DataFrame
         LPI value for each parameter. If ``mode`` is `linear`, then a list of
         param values and LPI metrics are returned in a DataFrame format.
+
     """
     flattened_space = build_required_space(
         space,
@@ -122,7 +133,20 @@ def lpi(
 
     data = to_numpy(trials, space)
     data = flatten_numpy(data, flattened_space)
-    model = train_regressor(model, data, **kwargs)
     best_point = data[numpy.argmin(data[:, -1])]
-    results = modes[mode](best_point, flattened_space, model, n_points)
-    return results
+    rng = numpy.random.RandomState(kwargs.pop("random_state", None))
+    results = numpy.zeros((n_runs, len(flattened_space)))
+    for i in range(n_runs):
+        trained_model = train_regressor(
+            model, data, random_state=rng.randint(2 ** 32 - 1), **kwargs
+        )
+        results[i] = modes[mode](best_point, flattened_space, trained_model, n_points)
+
+    averages = results.mean(0)
+    standard_errors = results.std(0)
+    frame = pd.DataFrame(
+        data=numpy.array([averages, standard_errors]).T,
+        index=flattened_space.keys(),
+        columns=["LPI", "STD"],
+    )
+    return frame
