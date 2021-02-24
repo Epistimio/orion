@@ -271,6 +271,7 @@ def partial_dependencies(
     colorscale="Blues",
     model="RandomForestRegressor",
     model_kwargs=None,
+    verbose_hover=True,
 ):
     """Plotly implementation of `orion.plotting.partial_dependencies`"""
 
@@ -296,7 +297,7 @@ def partial_dependencies(
 
     def _set_scale(figure, dims, x, y):
         for axis, dim in zip("xy", dims):
-            if "reciprocal" in dim.prior_name:
+            if "reciprocal" in dim.prior_name or dim.type == "fidelity":
                 getattr(figure, f"update_{axis}axes")(type="log", row=y, col=x)
 
     def _plot_marginalized_avg(data, x_name):
@@ -345,13 +346,20 @@ def partial_dependencies(
             ),
         )
 
-    def _plot_scatter(x, y):
+    def _plot_scatter(x, y, df):
         return go.Scatter(
             x=x,
             y=y,
-            marker={"line": {"width": 0.5, "color": "Grey"}, "color": "black"},
+            marker={
+                "line": {"width": 0.5, "color": "Grey"},
+                "color": "black",
+                "size": 5,
+            },
             mode="markers",
+            opacity=0.5,
             showlegend=False,
+            customdata=list(zip(df["id"], df["suggested"], df["params"])),
+            hovertemplate=_template_trials(verbose_hover),
         )
 
     if model_kwargs is None:
@@ -394,6 +402,11 @@ def partial_dependencies(
             row=x_i + 1,
             col=x_i + 1,
         )
+        fig.add_trace(
+            _plot_scatter(df[x_name], df["objective"], df),
+            row=x_i + 1,
+            col=x_i + 1,
+        )
 
         _set_scale(fig, [flattened_space[x_name]], x_i + 1, x_i + 1)
 
@@ -415,7 +428,7 @@ def partial_dependencies(
                 col=x_i + 1,
             )
             fig.add_trace(
-                _plot_scatter(df[x_name], df[y_name]),
+                _plot_scatter(df[x_name], df[y_name], df),
                 row=y_i + 1,
                 col=x_i + 1,
             )
@@ -637,7 +650,7 @@ def _format_hyperparameters(hyperparameters, names):
     result = ""
 
     for name, value in zip(names, hyperparameters):
-        x = f"<br>  {name[1:]}: {_format_value(value)}"
+        x = f"<br>  {name}: {_format_value(value)}"
         result += x
 
     return result

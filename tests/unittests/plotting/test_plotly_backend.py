@@ -91,6 +91,7 @@ def mock_experiment(
         "x": x,
         "objective": objectives,
         "status": status,
+        "suggested": ids,
     }
 
     if not isinstance(y, str):
@@ -525,7 +526,7 @@ class TestPartialDependencies:
                 experiment, n_grid_points=5, model_kwargs=dict(random_state=1)
             )
 
-        assert_partial_dependencies_plot(plot, dims=["x", "y"])
+        assert_partial_dependencies_plot(plot, dims=["x", "y"], log_dims=["y"])
 
     def test_categorical(self, monkeypatch):
         """Tests that categorical is supported"""
