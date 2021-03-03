@@ -8,7 +8,10 @@ from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task import BaseTask, Branin, CarromTable, EggHolder, RosenBrock
 
-algorithms = [{"algorithm": {"random": {"seed": 1}}}, {"algorithm": {"tpe": {"seed": 1}}}]
+algorithms = [
+    {"algorithm": {"random": {"seed": 1}}},
+    {"algorithm": {"tpe": {"seed": 1}}},
+]
 
 
 class BirdLike(BaseTask):
