@@ -21,7 +21,13 @@ class Benchmark:
     name: str
         Name of the benchmark
     algorithms: list, optional
-        Algorithms used for benchmark, each algorithm can be a string or dict.
+        Algorithms used for benchmark, each algorithm definition will be a dict with two keys.
+
+        algorithm: str or dict
+            Algorithm name in string or a dict with algorithm configure.
+        deterministic: bool, optional
+            True if it is a deterministic algorithm, then for each assessment, only one experiment
+            will be run for this algorithm.
     targets: list, optional
         Targets for the benchmark, each target will be a dict with two keys.
 
@@ -224,6 +230,13 @@ class Study:
 
             for algo_index, algorithm in enumerate(self.algorithms):
 
+                deterministic = algorithm.get("deterministic", False)
+                algorithm = algorithm["algorithm"]
+
+                # Run only 1 experiment for deterministic algorithm
+                if deterministic and task_index > 0:
+                    continue
+
                 experiment_name = (
                     self.benchmark.name
                     + "_"
@@ -235,6 +248,7 @@ class Study:
                     + "_"
                     + str(algo_index)
                 )
+
                 experiment = create_experiment(
                     experiment_name,
                     space=space,
@@ -296,10 +310,11 @@ class Study:
         """Represent the object as a string."""
         algorithms_list = list()
         for algorithm in self.algorithms:
-            if isinstance(algorithm, dict):
-                algorithm_name = list(algorithm.keys())[0]
+            algo = algorithm["algorithm"]
+            if isinstance(algo, dict):
+                algorithm_name = list(algo.keys())[0]
             else:
-                algorithm_name = algorithm
+                algorithm_name = algo
             algorithms_list.append(algorithm_name)
 
         return "Study(assessment=%s, task=%s, algorithms=[%s])" % (
