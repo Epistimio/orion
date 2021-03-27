@@ -21,13 +21,18 @@ class Benchmark:
     name: str
         Name of the benchmark
     algorithms: list, optional
-        Algorithms used for benchmark, each algorithm definition will be a dict with two keys.
+        Algorithms used for benchmark, with supported formats:
 
-        algorithm: str or dict
-            Algorithm name in string or a dict with algorithm configure.
-        deterministic: bool, optional
-            True if it is a deterministic algorithm, then for each assessment, only one experiment
-            will be run for this algorithm.
+        - A `str` of the algorithm name
+        - A `dict`, with only one key and one value, where key is the algorithm name and value is a dict for the algorithm config.
+        - A `dict`, with two keys.
+
+            algorithm: str or dict
+                Algorithm name in string or a dict with algorithm configure.
+            deterministic: bool, optional
+                True if it is a deterministic algorithm, then for each assessment, only one experiment
+                will be run for this algorithm.
+
     targets: list, optional
         Targets for the benchmark, each target will be a dict with two keys.
 
@@ -201,17 +206,66 @@ class Study:
 
     Parameters
     ----------
-    benchmark: `Benchmark` instance
+    benchmark: A Benchmark instance
     algorithms: list
-        Algorithms used for benchmark, each algorithm can be a string or dict.
+        Algorithms used for benchmark, each algorithm can be a string or dict, with same format as `Benchmark` algorithms.
     assessment: list
         `Assessment` instance
     task: list
         `Task` instance
     """
 
+    class _StudyAlgorithm:
+        """
+        Represent user input json format algorithm as a Study algorithm object for easy to use.
+        Parameters
+        ----------
+        algorithm: one algorithm in the `Study` algorithms list.
+        """
+
+        def __init__(self, algorithm):
+            parameters = None
+            deterministic = False
+
+            if isinstance(algorithm, dict):
+                if len(algorithm) > 1 or algorithm.get("algorithm"):
+                    print(algorithm)
+                    deterministic = algorithm.get("deterministic", False)
+                    experiment_algorithm = algorithm["algorithm"]
+
+                    if isinstance(experiment_algorithm, dict):
+                        name, parameters = list(experiment_algorithm.items())[0]
+                    else:
+                        name = experiment_algorithm
+                else:
+                    print(list(algorithm.items())[0])
+                    name, parameters = list(algorithm.items())[0]
+                    print(name, parameters)
+            else:
+                print(algorithm)
+                name = algorithm
+
+            self.algo_name = name
+            self.parameters = parameters
+            self.deterministic = deterministic
+
+        @property
+        def name(self):
+            return self.algo_name
+
+        @property
+        def experiment_algorithm(self):
+            if self.parameters:
+                return {self.algo_name: self.parameters}
+            else:
+                return self.algo_name
+
+        @property
+        def is_deterministic(self):
+            return self.deterministic
+
     def __init__(self, benchmark, algorithms, assessment, task):
-        self.algorithms = algorithms
+        self.algorithms = self._build_benchmark_algorithms(algorithms)  # algorithms
         self.assessment = assessment
         self.task = task
         self.benchmark = benchmark
@@ -219,6 +273,13 @@ class Study:
         self.assess_name = type(self.assessment).__name__
         self.task_name = type(self.task).__name__
         self.experiments_info = []
+
+    def _build_benchmark_algorithms(self, algorithms):
+        benchmark_algorithms = list()
+        for algorithm in algorithms:
+            benchmark_algorithm = self._StudyAlgorithm(algorithm)
+            benchmark_algorithms.append(benchmark_algorithm)
+        return benchmark_algorithms
 
     def setup_experiments(self):
         """Setup experiments to run of the study"""
@@ -230,11 +291,11 @@ class Study:
 
             for algo_index, algorithm in enumerate(self.algorithms):
 
-                deterministic = algorithm.get("deterministic", False)
-                algorithm = algorithm["algorithm"]
+                # deterministic = algorithm.get("deterministic", False)
+                # algorithm = algorithm["algorithm"]
 
                 # Run only 1 experiment for deterministic algorithm
-                if deterministic and task_index > 0:
+                if algorithm.is_deterministic and task_index > 0:
                     continue
 
                 experiment_name = (
@@ -252,7 +313,7 @@ class Study:
                 experiment = create_experiment(
                     experiment_name,
                     space=space,
-                    algorithms=algorithm,
+                    algorithms=algorithm.experiment_algorithm,
                     max_trials=max_trials,
                 )
                 self.experiments_info.append((task_index, experiment))
@@ -308,7 +369,8 @@ class Study:
 
     def __repr__(self):
         """Represent the object as a string."""
-        algorithms_list = list()
+        algorithms_list = [algorithm.name for algorithm in self.algorithms]
+        """
         for algorithm in self.algorithms:
             algo = algorithm["algorithm"]
             if isinstance(algo, dict):
@@ -316,6 +378,7 @@ class Study:
             else:
                 algorithm_name = algo
             algorithms_list.append(algorithm_name)
+        """
 
         return "Study(assessment=%s, task=%s, algorithms=[%s])" % (
             self.assess_name,
