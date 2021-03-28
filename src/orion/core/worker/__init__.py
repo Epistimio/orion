@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.worker` -- Coordination of the optimization procedure
-======================================================================
+Coordination of the optimization procedure
+==========================================
 
-.. module:: worker
-   :platform: Unix
-   :synopsis: Executes optimization steps and runs training experiment
-      with parameter values suggested.
+Executes optimization steps and runs training experiment with parameter values suggested.
 
 """
 import itertools
@@ -83,11 +80,16 @@ def workon(
     heartbeat=None,
     user_script_config=None,
     interrupt_signal_code=None,
+    ignore_code_changes=None,
 ):
     """Try to find solution to the search problem defined in `experiment`."""
     producer = Producer(experiment, max_idle_time)
     consumer = Consumer(
-        experiment, heartbeat, user_script_config, interrupt_signal_code
+        experiment,
+        heartbeat,
+        user_script_config,
+        interrupt_signal_code,
+        ignore_code_changes,
     )
 
     log.debug("#####  Init Experiment  #####")

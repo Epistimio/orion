@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.hunt` -- Module running the optimization command
-=====================================================================
+Module running the optimization command
+=======================================
 
-.. module:: hunt
-   :platform: Unix
-   :synopsis: Gets an experiment and iterates over it until one of the exit conditions is met
+Gets an experiment and iterates over it until one of the exit conditions is met
 
 """
 
@@ -90,4 +88,8 @@ def main(args):
     if config.get("worker"):
         worker_config.update(config.get("worker"))
 
-    workon(experiment, **worker_config)
+    workon(
+        experiment,
+        ignore_code_changes=config["branching"].get("ignore_code_changes"),
+        **worker_config
+    )

@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from orion.analysis.regret import regret
+from orion.analysis import regret
 
 
 def test_accept_dict():

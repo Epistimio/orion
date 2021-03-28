@@ -129,6 +129,50 @@ class TestParallelCoordinatesPlots:
 
 
 @pytest.mark.usefixtures("version_XYZ")
+class TestPartialDependenciesPlots:
+    """Tests parallel coordinates plots"""
+
+    def test_unknown_experiment(self, client):
+        """Tests that the API returns a 404 Not Found when an unknown experiment is queried."""
+        response = client.simulate_get("/plots/partial_dependencies/unknown-experiment")
+
+        assert response.status == "404 Not Found"
+        assert response.json == {
+            "title": "Experiment not found",
+            "description": 'Experiment "unknown-experiment" does not exist',
+        }
+
+    def test_plot(self, client):
+        """Tests that the API returns the plot in json format."""
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            response = client.simulate_get(
+                "/plots/partial_dependencies/experiment-name"
+            )
+
+        assert response.status == "200 OK"
+        assert response.json
+        assert list(response.json.keys()) == ["data", "layout"]
+
+    def test_no_trials(self, client):
+        """Tests that the API returns an empty figure when no trials are found."""
+        with create_experiment(config, trial_config, []) as (
+            _,
+            _,
+            experiment,
+        ):
+            response = client.simulate_get(
+                "/plots/partial_dependencies/experiment-name"
+            )
+
+        assert response.status == "200 OK"
+        assert list(response.json.keys()) == ["data", "layout"]
+
+
+@pytest.mark.usefixtures("version_XYZ")
 class TestLPIPlots:
     """Tests lpi plots"""
 

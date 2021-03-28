@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.algo.evolution_es` --
 The Evolved Transformer and large-scale evolution of image classifiers
-===========================================================================================
+======================================================================
 
-.. module:: evolution_es
-    :platform: Unix
-    :synopsis: Implement evolution to exploit configurations with fixed resource efficiently
+Implement evolution to exploit configurations with fixed resource efficiently
 
 """
 import copy

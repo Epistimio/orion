@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.storage.base` -- Generic Storage Protocol
-=====================================================
+Generic Storage Protocol
+========================
 
-.. module:: base
-   :platform: Unix
-   :synopsis: Implement a generic protocol to allow Orion to communicate using
-              different storage backend
+Implement a generic protocol to allow Orion to communicate using different storage backend.
 
 """
 import copy
@@ -70,6 +67,14 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
     different storage backend
 
     """
+
+    def create_benchmark(self, config):
+        """Insert a new benchmark inside the database"""
+        raise NotImplementedError()
+
+    def fetch_benchmark(self, query, selection=None):
+        """Fetch all benchmarks that match the query"""
+        raise NotImplementedError()
 
     def create_experiment(self, config):
         """Insert a new experiment inside the database"""
@@ -447,7 +452,7 @@ class ReadOnlyStorageProtocol(object):
 
     .. seealso::
 
-        :py:class:`orion.core.storage.BaseStorageProtocol`
+        :py:class:`BaseStorageProtocol`
     """
 
     __slots__ = ("_storage",)

@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.serving` -- Web server
-==================================
+Web server
+==========
 
-.. module:: serving
-   :platform: Unix
-   :synopsis: Web server related features
+Web server related features
 
 """

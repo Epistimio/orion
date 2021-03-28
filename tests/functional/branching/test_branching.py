@@ -18,7 +18,7 @@ def execute(command, assert_code=0):
 
 
 @pytest.fixture
-def init_full_x(clean_db, monkeypatch):
+def init_full_x(create_db_instance, monkeypatch):
     """Init original experiment"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     name = "full_x"
@@ -367,7 +367,7 @@ def get_name_value_pairs(trials):
     return tuple(pairs)
 
 
-def test_init(init_full_x, create_db_instance):
+def test_init(init_full_x):
     """Test if original experiment contains trial 0"""
     experiment = experiment_builder.load(name="full_x")
 
@@ -377,7 +377,7 @@ def test_init(init_full_x, create_db_instance):
     assert pairs == ((("/x", 0),),)
 
 
-def test_full_x_full_y(init_full_x_full_y, create_db_instance):
+def test_full_x_full_y(init_full_x_full_y):
     """Test if full x full y is properly initialized and can fetch original trial"""
     experiment = experiment_builder.load(name="full_x_full_y")
 
@@ -407,7 +407,7 @@ def test_full_x_full_y(init_full_x_full_y, create_db_instance):
     )
 
 
-def test_half_x_full_y(init_half_x_full_y, create_db_instance):
+def test_half_x_full_y(init_half_x_full_y):
     """Test if half x full y is properly initialized and can fetch from its 2 parents"""
     experiment = experiment_builder.load(name="half_x_full_y")
 
@@ -433,7 +433,7 @@ def test_half_x_full_y(init_half_x_full_y, create_db_instance):
     )
 
 
-def test_full_x_half_y(init_full_x_half_y, create_db_instance):
+def test_full_x_half_y(init_full_x_half_y):
     """Test if full x half y is properly initialized and can fetch from its 2 parents"""
     experiment = experiment_builder.load(name="full_x_half_y")
 
@@ -459,7 +459,7 @@ def test_full_x_half_y(init_full_x_half_y, create_db_instance):
     )
 
 
-def test_full_x_rename_y_z(init_full_x_rename_y_z, create_db_instance):
+def test_full_x_rename_y_z(init_full_x_rename_y_z):
     """Test if full x full z is properly initialized and can fetch from its 2 parents"""
     experiment = experiment_builder.load(name="full_x_rename_y_z")
 
@@ -490,9 +490,7 @@ def test_full_x_rename_y_z(init_full_x_rename_y_z, create_db_instance):
     )
 
 
-def test_full_x_rename_half_y_half_z(
-    init_full_x_rename_half_y_half_z, create_db_instance
-):
+def test_full_x_rename_half_y_half_z(init_full_x_rename_half_y_half_z):
     """Test if full x half z is properly initialized and can fetch from its 3 parents"""
     experiment = experiment_builder.load(name="full_x_rename_half_y_half_z")
 
@@ -516,9 +514,7 @@ def test_full_x_rename_half_y_half_z(
     )
 
 
-def test_full_x_rename_half_y_full_z(
-    init_full_x_rename_half_y_full_z, create_db_instance
-):
+def test_full_x_rename_half_y_full_z(init_full_x_rename_half_y_full_z):
     """Test if full x half->full z is properly initialized and can fetch from its 3 parents"""
     experiment = experiment_builder.load(name="full_x_rename_half_y_full_z")
 
@@ -555,7 +551,7 @@ def test_full_x_rename_half_y_full_z(
     )
 
 
-def test_full_x_remove_y(init_full_x_remove_y, create_db_instance):
+def test_full_x_remove_y(init_full_x_remove_y):
     """Test if full x removed y is properly initialized and can fetch from its 2 parents"""
     experiment = experiment_builder.load(name="full_x_remove_y")
 
@@ -580,9 +576,7 @@ def test_full_x_remove_y(init_full_x_remove_y, create_db_instance):
     )
 
 
-def test_full_x_full_y_add_z_remove_y(
-    init_full_x_full_y_add_z_remove_y, create_db_instance
-):
+def test_full_x_full_y_add_z_remove_y(init_full_x_full_y_add_z_remove_y):
     """Test that if z is added and y removed at the same time, both are correctly detected"""
     experiment = experiment_builder.load(name="full_x_full_z_remove_y")
 
@@ -611,7 +605,7 @@ def test_full_x_full_y_add_z_remove_y(
     )
 
 
-def test_full_x_remove_z(init_full_x_remove_z, create_db_instance):
+def test_full_x_remove_z(init_full_x_remove_z):
     """Test if full x removed z is properly initialized and can fetch from 2 of its 3 parents"""
     experiment = experiment_builder.load(name="full_x_remove_z")
 
@@ -637,7 +631,7 @@ def test_full_x_remove_z(init_full_x_remove_z, create_db_instance):
     )
 
 
-def test_full_x_remove_z_default_4(init_full_x_remove_z_default_4, create_db_instance):
+def test_full_x_remove_z_default_4(init_full_x_remove_z_default_4):
     """Test if full x removed z  (default 4) is properly initialized and can fetch
     from 1 of its 3 parents
     """
@@ -659,7 +653,7 @@ def test_full_x_remove_z_default_4(init_full_x_remove_z_default_4, create_db_ins
     assert pairs == ((("/x", 4),), (("/x", -4),), (("/x", 9),), (("/x", -9),))
 
 
-def test_entire_full_x_full_y(init_entire, create_db_instance):
+def test_entire_full_x_full_y(init_entire):
     """Test if full x full y can fetch from its parent and all children"""
     experiment = experiment_builder.load(name="full_x_full_y")
 
@@ -718,7 +712,7 @@ def test_entire_full_x_full_y(init_entire, create_db_instance):
     )
 
 
-def test_run_entire_full_x_full_y(init_entire, create_db_instance):
+def test_run_entire_full_x_full_y(init_entire):
     """Test if branched experiment can be executed without triggering a branching event again"""
     experiment = experiment_builder.load(name="full_x_full_y")
 
@@ -746,7 +740,7 @@ def test_run_entire_full_x_full_y(init_entire, create_db_instance):
     assert len(experiment.fetch_trials()) == 20
 
 
-def test_run_entire_full_x_full_y_no_args(init_entire, create_db_instance):
+def test_run_entire_full_x_full_y_no_args(init_entire):
     """Test if branched experiment can be executed without script arguments"""
     experiment = experiment_builder.load(name="full_x_full_y")
 
@@ -854,14 +848,16 @@ def test_new_code_triggers_code_conflict_with_name_only(capsys):
 def test_new_code_ignores_code_conflict():
     """Test that a different git hash is *not* generating a child if --ignore-code-changes"""
     name = "full_x"
-    orion.core.cli.main(
+    # Let it run for 2 trials to test consumer._validate_code_version too.
+    error_code = orion.core.cli.main(
         (
-            "hunt --init-only -n {name} --ignore-code-changes "
+            "hunt --worker-max-trials 2 -n {name} --ignore-code-changes "
             "--manual-resolution ./black_box.py -x~uniform(-10,10)"
         )
         .format(name=name)
         .split(" ")
     )
+    assert error_code == 0
 
 
 @pytest.mark.usefixtures("init_full_x", "version_XYZ")
@@ -988,7 +984,7 @@ def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
     ]
 
 
-def test_init_w_version_from_parent_w_children(clean_db, monkeypatch, capsys):
+def test_init_w_version_from_parent_w_children(create_db_instance, monkeypatch, capsys):
     """Test that init of experiment from version with children fails."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1011,7 +1007,7 @@ def test_init_w_version_from_parent_w_children(clean_db, monkeypatch, capsys):
     assert "Experiment name" in captured.err
 
 
-def test_init_w_version_from_exp_wout_child(clean_db, monkeypatch):
+def test_init_w_version_from_exp_wout_child(create_db_instance, monkeypatch):
     """Test that init of experiment from version without child works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1030,7 +1026,7 @@ def test_init_w_version_from_exp_wout_child(clean_db, monkeypatch):
     assert len(list(exp))
 
 
-def test_init_w_version_gt_max(clean_db, monkeypatch):
+def test_init_w_version_gt_max(create_db_instance, monkeypatch):
     """Test that init of experiment from version higher than max works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1049,7 +1045,7 @@ def test_init_w_version_gt_max(clean_db, monkeypatch):
     assert len(list(exp))
 
 
-def test_init_check_increment_w_children(clean_db, monkeypatch):
+def test_init_check_increment_w_children(create_db_instance, monkeypatch):
     """Test that incrementing version works with not same-named children."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
@@ -1068,7 +1064,7 @@ def test_init_check_increment_w_children(clean_db, monkeypatch):
     assert len(list(exp))
 
 
-def test_branch_from_selected_version(clean_db, monkeypatch):
+def test_branch_from_selected_version(create_db_instance, monkeypatch):
     """Test that branching from a version passed with `--version` works."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(

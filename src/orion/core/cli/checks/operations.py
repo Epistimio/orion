@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.checks.operations` -- Operations stage for database checks
-===============================================================================
+Operations stage for database checks
+====================================
 
-.. module:: operations
-    :platform: Unix
-    :synopsis: Checks for the operations of a `Database` object.
+Checks for the operations of a `Database` object.
 
 """
 

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.testing` -- Common testing support module
-=====================================================
-.. module:: testing
-   :platform: Unix
-   :synopsis: Common testing support module providing defaults, functions and mocks.
+Common testing support module
+=============================
+
+Common testing support module providing defaults, functions and mocks.
+
 """
 # pylint: disable=protected-access
 
@@ -69,6 +69,53 @@ def generate_trials(trial_config, statuses, exp_config=None):
         trial["params"] = trial_stub.to_dict()["params"]
 
     return new_trials
+
+
+def generate_benchmark_experiments_trials(
+    benchmark_algorithms, experiment_config, trial_config, task_number, max_trial
+):
+    """Return a list of experiments and trials for a benchmark"""
+    gen_exps = []
+    gen_trials = []
+    algo_num = len(benchmark_algorithms)
+    for i in range(task_number * algo_num):
+        import copy
+
+        exp = copy.deepcopy(experiment_config)
+        exp["_id"] = i
+        exp["name"] = "experiment-name-{}".format(i)
+        exp["algorithms"] = benchmark_algorithms[i % algo_num]
+        exp["max_trials"] = max_trial
+        exp["metadata"]["datetime"] = datetime.datetime.utcnow()
+        gen_exps.append(exp)
+        for j in range(max_trial):
+            trial = copy.deepcopy(trial_config)
+            trial["_id"] = "{}{}".format(i, j)
+            trial["experiment"] = i
+            trials = generate_trials(trial, ["completed"])
+            gen_trials.extend(trials)
+
+    return gen_exps, gen_trials
+
+
+@contextmanager
+def create_study_experiments(
+    exp_config, trial_config, algorithms, task_number, max_trial
+):
+    gen_exps, gen_trials = generate_benchmark_experiments_trials(
+        algorithms, exp_config, trial_config, task_number, max_trial
+    )
+    with OrionState(experiments=gen_exps, trials=gen_trials):
+        experiments = []
+        experiments_info = []
+        for i in range(task_number * len(algorithms)):
+            experiment = experiment_builder.build("experiment-name-{}".format(i))
+            experiments.append(experiment)
+
+        for index, exp in enumerate(experiments):
+            experiments_info.append((int(index / task_number), exp))
+
+        yield experiments_info
 
 
 def mock_space_iterate(monkeypatch):

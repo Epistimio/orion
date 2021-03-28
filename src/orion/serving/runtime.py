@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.serving.root_resource` -- Represent the '/' REST endpoint
-=====================================================================================
-
-.. module:: root_resource
-   :platform: Unix
-   :synopsis: Represent the '/' REST endpoint
+Represent the '/' REST endpoint
+===============================
 """
 import json
 

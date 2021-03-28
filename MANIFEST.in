@@ -16,11 +16,13 @@ exclude *-requirements.txt
 exclude .pylintrc
 exclude codecov.yml
 exclude .mailmap
+exclude .readthedocs.yml
 prune conda/
 prune .github/
 
 # Include src, tests, docs
 recursive-include docs *.rst *.py *.gitkeep *.png
+recursive-include examples *.rst
 include docs/requirements.txt
 prune docs/build
 prune docs/src/reference

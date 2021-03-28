@@ -42,7 +42,7 @@ The runtime resource represents the runtime information for the API server.
       HTTP/1.1 200 OK
       Content-Type: text/javascript
 
-   .. code-block:: json
+   .. sourcecode:: json
 
       {
         "orion": "v0.1.7",
@@ -50,9 +50,10 @@ The runtime resource represents the runtime information for the API server.
         "database": "pickleddb"
       }
 
-   :>json string orion: The version of Oríon running the API server.
-   :>json string server: The WSGI HTTP Server hosting the API server.
-   :>json string database: The type of database where the HPO data is stored.
+   :>json orion: The version of Oríon running the API server.
+   :>json server: The WSGI HTTP Server hosting the API server.
+   :>json database: The type of database where the HPO data is stored.
+
 
 Experiments
 -----------
@@ -84,8 +85,8 @@ retrieve individual experiments as well as a list of all your experiments.
         }
       ]
 
-   :>jsonarr boolean name: Name of the experiment.
-   :>jsonarr string version: Latest version of the experiment.
+   :>jsonarr name: Name of the experiment.
+   :>jsonarr version: Latest version of the experiment.
 
 .. http:get:: /experiments/:name
 
@@ -138,23 +139,23 @@ retrieve individual experiments as well as a list of all your experiments.
          }
       }
 
-   :query int version: Optional version of the experiment to retrieve. If unspecified, the latest
+   :query version: Optional version of the experiment to retrieve. If unspecified, the latest
       version of the experiment is retrieved.
 
-   :>json string name: The name of the experiment.
-   :>json int version: The version fo the experiment.
-   :>json string status: The status of the experiment. Can be one of 'done' or 'not done' if there
+   :>json name: The name of the experiment.
+   :>json version: The version fo the experiment.
+   :>json status: The status of the experiment. Can be one of 'done' or 'not done' if there
       is trials remaining.
-   :>json int trialsCompleted: The number of trials completed.
-   :>json timestamp startTime: The timestamp when the experiment started.
-   :>json timestamp endTime: The timestamp when the experiment finished.
-   :>json string user: The name of the user that registered the experiment.
-   :>json string orionVersion: The version of Oríon that carried out the experiment.
-   :>json dict config: The configuration of the experiment.
-   :>json int config.maxTrials: The trial budget for the experiment.
-   :>json dict config.algorithm: The algorithm settings for the experiment.
-   :>json dict config.space: The dictionary of priors as ``"prior-name":"prior-value"``.
-   :>json dict bestTrial: The result of the optimization process in the form of the best trial.
+   :>json trialsCompleted: The number of trials completed.
+   :>json startTime: The timestamp when the experiment started.
+   :>json endTime: The timestamp when the experiment finished.
+   :>json user: The name of the user that registered the experiment.
+   :>json orionVersion: The version of Oríon that carried out the experiment.
+   :>json config: The configuration of the experiment.
+   :>json config.maxTrials: The trial budget for the experiment.
+   :>json config.algorithm: The algorithm settings for the experiment.
+   :>json config.space: The dictionary of priors as ``"prior-name":"prior-value"``.
+   :>json bestTrial: The result of the optimization process in the form of the best trial.
       See the specification of :http:get:`/trials/:experiment/:id`.
 
    :statuscode 400: When an invalid query parameter is passed in the request.
@@ -184,14 +185,14 @@ retrieve individual trials as well as a list of all your trials per experiment.
          {"id": "a5f7e1b"}
       ]
 
-   :query boolean ancestors: Optionally include the trials from all the experiment's parents.
+   :query ancestors: Optionally include the trials from all the experiment's parents.
       If unspecified, only the trials for this experiment version are retrieved.
-   :query string status: Optionally filter the trials by their status.
+   :query status: Optionally filter the trials by their status.
       See the available statuses in :py:func:`orion.core.worker.trial.validate_status`.
-   :query int version: Optional version of the experiment to retrieve. If unspecified, the latest
+   :query version: Optional version of the experiment to retrieve. If unspecified, the latest
       version of the experiment is retrieved.
 
-   :>jsonarr string id: The ID of one trial for this experiment's version.
+   :>jsonarr id: The ID of one trial for this experiment's version.
 
    :statuscode 400: When an invalid query parameter is passed in the request.
    :statuscode 404: When the specified experiment doesn't exist in the database.
@@ -225,14 +226,14 @@ retrieve individual trials as well as a list of all your trials per experiment.
          }
       }
 
-   :>json string id: The ID of the trial.
-   :>json timestamp submitTime: The timestamp when the trial was created
-   :>json timestamp startTime: The timestamp when the trial started to be executed.
-   :>json timestamp endTime: The timestamp when the trial finished its execution.
-   :>json dict parameters: The dictionary of hyper-parameters as
+   :>json id: The ID of the trial.
+   :>json submitTime: The timestamp when the trial was created
+   :>json startTime: The timestamp when the trial started to be executed.
+   :>json endTime: The timestamp when the trial finished its execution.
+   :>json parameters: The dictionary of hyper-parameters as
       ``"parameter-name":"parameter-value"`` for this trial.
-   :>json real objective: The objective found for this trial with the given hyper-parameters.
-   :>json dict statistics: The dictionary of statistics recorded during the trial
+   :>json objective: The objective found for this trial with the given hyper-parameters.
+   :>json statistics: The dictionary of statistics recorded during the trial
       as ``"statistic-name":"statistic-value"``.
 
    :statuscode 400: When an invalid query parameter is passed in the request.
@@ -262,6 +263,21 @@ visualize your experiments and their results.
 .. http:get:: /plots/parallel_coordinates/:experiment
 
    Return a parallel coordinates plot for the specified experiment.
+
+   **Example response**
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: text/javascript
+
+   The JSON output is generated automatically according to the `Plotly.js schema reference <https://plotly.com/python/reference/index/>`_.
+
+   :statuscode 404: When the specified experiment doesn't exist in the database.
+
+.. http:get:: /plots/partial_dependencies/:experiment
+
+   Return a partial dependency plot for the specified experiment.
 
    **Example response**
 

@@ -5,21 +5,9 @@ import copy
 import numpy
 import pandas as pd
 import pytest
-from sklearn.ensemble import (
-    AdaBoostRegressor,
-    BaggingRegressor,
-    ExtraTreesRegressor,
-    GradientBoostingRegressor,
-    RandomForestRegressor,
-)
 
-from orion.analysis.lpi import (
-    compute_variances,
-    lpi,
-    make_grid,
-    to_numpy,
-    train_regressor,
-)
+from orion.analysis.base import to_numpy, train_regressor
+from orion.analysis.lpi_utils import compute_variances, lpi, make_grid
 from orion.core.io.space_builder import SpaceBuilder
 
 data = pd.DataFrame(
@@ -58,49 +46,6 @@ def test_parameter_not_modified():
     lpi(data, space)
 
     pd.testing.assert_frame_equal(data, original)
-
-
-def test_to_numpy():
-    """Test that trials are correctly converted to numpy array"""
-    array = to_numpy(data, space)
-
-    assert array.shape == (4, 3)
-    numpy.testing.assert_equal(array[:, 0], data["x"])
-    numpy.testing.assert_equal(array[:, 1], data["y"])
-    numpy.testing.assert_equal(array[:, 2], data["objective"])
-
-
-def test_train_regressor():
-    """Test training different models"""
-    array = to_numpy(data, space)
-    model = train_regressor("AdaBoostRegressor", array)
-    assert isinstance(model, AdaBoostRegressor)
-    model = train_regressor("BaggingRegressor", array)
-    assert isinstance(model, BaggingRegressor)
-    model = train_regressor("ExtraTreesRegressor", array)
-    assert isinstance(model, ExtraTreesRegressor)
-    model = train_regressor("GradientBoostingRegressor", array)
-    assert isinstance(model, GradientBoostingRegressor)
-    model = train_regressor("RandomForestRegressor", array)
-    assert isinstance(model, RandomForestRegressor)
-
-
-def test_train_regressor_kwargs():
-    """Test training models with kwargs"""
-    array = to_numpy(data, space)
-    model = train_regressor(
-        "RandomForestRegressor", array, max_depth=2, max_features="sqrt"
-    )
-    assert model.max_depth == 2
-    assert model.max_features == "sqrt"
-
-
-def test_train_regressor_invalid():
-    """Test error message for invalid model names"""
-    array = to_numpy(data, space)
-    with pytest.raises(ValueError) as exc:
-        train_regressor("IDontExist", array)
-    assert exc.match("IDontExist is not a supported regressor")
 
 
 def test_make_grid():
@@ -160,7 +105,7 @@ def test_compute_variance():
 def test_lpi_results():
     """Verify LPI results in DataFrame"""
     results = lpi(data, space, random_state=1)
-    assert results.columns.tolist() == ["LPI"]
+    assert results.columns.tolist() == ["LPI", "STD"]
     assert results.index.tolist() == list(space.keys())
     # The data is made such that x correlates more strongly with objective than y
     assert results["LPI"].loc["x"] > results["LPI"].loc["y"]
@@ -182,7 +127,7 @@ def test_lpi_with_categorical_data():
     )
 
     results = lpi(data, space, random_state=1)
-    assert results.columns.tolist() == ["LPI"]
+    assert results.columns.tolist() == ["LPI", "STD"]
     assert results.index.tolist() == ["x", "y"]
     # The data is made such that x correlates more strongly with objective than y
     assert results["LPI"].loc["x"] > results["LPI"].loc["y"]
@@ -204,10 +149,45 @@ def test_lpi_with_multidim_data():
     )
 
     results = lpi(data, space, random_state=1)
-    assert results.columns.tolist() == ["LPI"]
+    assert results.columns.tolist() == ["LPI", "STD"]
     assert results.index.tolist() == ["x[0]", "x[1]", "x[2]", "y[0]", "y[1]"]
     # The data is made such some x correlates more strongly with objective than other x and most y
     assert results["LPI"].loc["x[0]"] > results["LPI"].loc["x[1]"]
     assert results["LPI"].loc["x[1]"] > results["LPI"].loc["x[2]"]
     assert results["LPI"].loc["x[0]"] > results["LPI"].loc["y[0]"]
     assert results["LPI"].loc["x[0]"] > results["LPI"].loc["y[1]"]
+
+
+def test_lpi_n_points(monkeypatch):
+    """Verify given number of points is used"""
+    N_POINTS = numpy.random.randint(2, 50)
+
+    def mock_make_grid(*args, **kwargs):
+        grid = make_grid(*args, **kwargs)
+        assert grid.shape == (len(space), N_POINTS, len(space) + 1)
+        return grid
+
+    monkeypatch.setattr("orion.analysis.lpi_utils.make_grid", mock_make_grid)
+    lpi(data, space, random_state=1, n_points=N_POINTS)
+
+
+def test_lpi_n_runs(monkeypatch):
+    """Verify number of runs"""
+    N_RUNS = 5
+
+    seeds = set()
+    n_runs = 0
+
+    def mock_train_regressor(*args, **kwargs):
+        nonlocal n_runs
+        n_runs += 1
+        seeds.add(kwargs["random_state"])
+        return train_regressor(*args, **kwargs)
+
+    monkeypatch.setattr(
+        "orion.analysis.lpi_utils.train_regressor", mock_train_regressor
+    )
+    lpi(data, space, random_state=1, n_runs=N_RUNS)
+
+    assert n_runs == N_RUNS
+    assert len(seeds) > 0

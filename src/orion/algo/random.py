@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.algo.random` -- Random sampler as optimization algorithm
-======================================================================
+Random sampler as optimization algorithm
+========================================
 
-.. module:: random
-   :platform: Unix
-   :synopsis: Draw and deliver samples from prior defined in problem's domain.
+Draw and deliver samples from prior defined in problem's domain.
 
 """
 import numpy

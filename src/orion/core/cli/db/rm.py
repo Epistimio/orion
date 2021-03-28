@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.db.rm` -- Module running the rm command
-============================================================
+Module running the rm command
+=============================
 
-.. module:: setup
-   :platform: Unix
-   :synopsis: Delete experiments and trials from the database
+Delete experiments and trials from the database
+
 """
 import argparse
 import logging

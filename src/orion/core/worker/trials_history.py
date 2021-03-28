@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.worker.trials_history` -- History of past trials
-=================================================================
+History of past trials
+======================
 
-.. module:: trials_history
-    :platform: Unix
-    :synopsis: Maintain the history of past trials used by an algorithm
+Maintain the history of past trials used by an algorithm.
 
 """
 

@@ -683,8 +683,8 @@ def test_evc_duplicates(monkeypatch, producer):
 def test_algorithm_is_done(monkeypatch, producer):
     """Verify that producer won't register new samples if algorithm is done meanwhile."""
     producer.experiment.max_trials = 8
+    producer.experiment.algorithms.algorithm.max_trials = 8
     producer.experiment.pool_size = 10
-    # Reset Producer to test that max_trial is set properly during init.
     producer = Producer(producer.experiment)
 
     def suggest_one_only(self, num=1):

@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=too-many-lines
 """
-:mod:`orion.core.worker.transformer` -- Perform transformations on Dimensions
-=============================================================================
+Perform transformations on Dimensions
+=====================================
 
-.. module:: transformer
-   :platform: Unix
-   :synopsis: Provide functions and classes to build a Space which an
-      algorithm can operate on.
+Provide functions and classes to build a Space which an algorithm can operate on.
 
 """
 import functools
@@ -32,9 +29,10 @@ def build_transform(dim, type_requirement, dist_requirement):
         A dimension object which may need transformations to match provided requirements.
     type_requirement: str, None
         String defining the requirement of the algorithm. It can be one of the following
-        - 'real', the dim should be transformed so type is `Real`
-        - 'integer', the dim should be transformed so type is `Integer`
-        - 'numerical', the dim should be transformed so type is either `Integer` or `Real`
+        - 'real', the dim should be transformed so type is `orion.algo.space.Real`
+        - 'integer', the dim should be transformed so type is `orion.algo.space.Integer`
+        - 'numerical', the dim should be transformed so type is either `orion.algo.space.Integer` or
+        `orion.algo.space.Real`
         - None, no requirement
     dist_requirement: str, None
         String defining the distribution requirement of the algorithm.
@@ -141,22 +139,23 @@ def reshape(space, shape_requirement):
 def build_required_space(
     original_space, type_requirement=None, shape_requirement=None, dist_requirement=None
 ):
-    """Build a `Space` object which agrees to the `requirements` imposed
+    """Build a :class:`orion.algo.space.Space` object which agrees to the `requirements` imposed
     by the desired optimization algorithm.
 
-    It uses appropriate cascade of `Transformer` objects per `Dimension`
+    It uses appropriate cascade of `Transformer` objects per `orion.algo.space.Dimension`
     contained in `original_space`. `ReshapedTransformer` objects are used above
     the `Transformer` if the optimizatios algorithm requires flattened dimensions.
 
     Parameters
     ----------
     original_space : `orion.algo.space.Space`
-       Original problem's definition of parameter space given by the user to Oríon.
+        Original problem's definition of parameter space given by the user to Oríon.
     type_requirement: str, None
         String defining the requirement of the algorithm. It can be one of the following
-        - 'real', the dim should be transformed so type is `Real`
-        - 'integer', the dim should be transformed so type is `Integer`
-        - 'numerical', the dim should be transformed so type is either `Integer` or `Real`
+        - 'real', the dim should be transformed so type is `orion.algo.space.Real`
+        - 'integer', the dim should be transformed so type is `orion.algo.space.Integer`
+        - 'numerical', the dim should be transformed so type is either `orion.algo.space.Integer` or
+        `orion.algo.space.Real`
         - None, no requirement
     shape_requirement: str, None
         String defining the shape requirement of the algorithm.
@@ -177,11 +176,15 @@ def build_required_space(
 class Transformer(object, metaclass=ABCMeta):
     """Define an (injective) function and its inverse. Base transformation class.
 
-    :attr:`target_type` defines the type of the target space of the forward function.
-    It can provide one of the values: ``['real', 'integer', 'categorical']``.
+    Attributes
+    ----------
+    target_type: str
+        Defines the type of the target space of the forward function.
+        It can provide one of the values: ``['real', 'integer', 'categorical']``.
+    domain_type: str
+        Is similar to ``target_type`` but it refers to the domain.
+        If it is ``None``, then it can receive inputs of any type.
 
-    :attr:`domain_type` is similar to `target_type` but it refers to the domain.
-    If it is ``None``, then it can receive inputs of any type.
     """
 
     domain_type = None
@@ -371,13 +374,12 @@ class Precision(Transformer):
         if isinstance(point, (list, tuple)) or (
             isinstance(point, numpy.ndarray) and point.shape
         ):
-            point = map(
-                lambda x: numpy.format_float_scientific(
-                    x, precision=self.precision - 1
-                ),
-                point,
+            format_float = numpy.vectorize(
+                lambda x: numpy.format_float_scientific(x, precision=self.precision - 1)
             )
-            point = list(map(float, point))
+            point = format_float(point)
+            to_float = numpy.vectorize(float)
+            point = to_float(point)
         else:
             point = float(
                 numpy.format_float_scientific(point, precision=self.precision - 1)
@@ -440,18 +442,12 @@ class Enumerate(Transformer):
         return type(self)(self.categories)
 
     def transform(self, point):
-        """Return integers corresponding uniquely to the categories in `point`.
-
-        :rtype: numpy.ndarray, integer
-        """
+        """Return integers corresponding uniquely to the categories in `point`."""
         return self._map(point)
 
     # pylint:disable=unused-argument
     def reverse(self, transformed_point, index=None):
-        """Return categories corresponding to their positions inside `transformed_point`.
-
-        :rtype: numpy.ndarray, numpy.object
-        """
+        """Return categories corresponding to their positions inside `transformed_point`."""
         return self._imap(transformed_point)
 
     # pylint:disable=unused-argument
@@ -596,9 +592,9 @@ class View(Transformer):
 
 
 class TransformedDimension(object):
-    """Duck-type `Dimension` to mimic its functionality,
-    while transform automatically and appropriately an underlying `Dimension` object
-    according to a `Transformer` object.
+    """Duck-type :class:`orion.algo.space.Dimension` to mimic its functionality,
+    while transform automatically and appropriately an underlying
+    :class:`orion.algo.space.Dimension` object according to a `Transformer` object.
     """
 
     NO_DEFAULT_VALUE = Dimension.NO_DEFAULT_VALUE
@@ -693,7 +689,7 @@ class TransformedDimension(object):
 
     @property
     def cardinality(self):
-        """Wrap original `Dimension` capacity"""
+        """Wrap original :class:`orion.algo.space.Dimension` capacity"""
         if self.type == "real":
             return Real.get_cardinality(self.shape, self.interval())
         elif self.type == "integer":
@@ -707,7 +703,7 @@ class TransformedDimension(object):
 
 
 class ReshapedDimension(TransformedDimension):
-    """Duck-type `Dimension` to mimic its functionality."""
+    """Duck-type :class:`orion.algo.space.Dimension` to mimic its functionality."""
 
     def __init__(self, transformer, original_dimension, index, name=None):
         super(ReshapedDimension, self).__init__(transformer, original_dimension)
@@ -762,7 +758,7 @@ class ReshapedDimension(TransformedDimension):
 
 
 class TransformedSpace(Space):
-    """Wrap the `Space` to support transformation methods.
+    """Wrap the :class:`orion.algo.space.Space` to support transformation methods.
 
     Parameter
     ---------

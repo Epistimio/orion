@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.algo.asha` -- Asynchronous Successive Halving Algorithm
-===================================================================
-
-.. module:: asha
-   :platform: Unix
-   :synopsis: Asynchronous Successive Halving Algorithm
-
+Asynchronous Successive Halving Algorithm
+=========================================
 """
 import copy
 import hashlib

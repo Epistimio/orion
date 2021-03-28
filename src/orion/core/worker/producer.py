@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.worker.producer` -- Produce and register samples to try
-========================================================================
+Produce and register samples to try
+===================================
 
-.. module:: producer
-   :platform: Unix
-   :synopsis: Suggest new parameter sets which optimize the objective.
+Suggest new parameter sets which optimize the objective.
 
 """
 import copy
@@ -47,7 +45,6 @@ class Producer(object):
                 " initialization."
             )
         self.algorithm = experiment.algorithms
-        self.algorithm.algorithm.max_trials = experiment.max_trials
         if max_idle_time is None:
             max_idle_time = orion.core.config.worker.max_idle_time
         self.max_idle_time = max_idle_time

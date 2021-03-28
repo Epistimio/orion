@@ -11,12 +11,13 @@ import versioneer
 repo_root = os.path.dirname(os.path.abspath(__file__))
 
 
-tests_require = ["pytest>=3.0.0" "scikit-learn"]
+tests_require = ["pytest>=3.0.0", "scikit-learn"]
 
 
 packages = [  # Packages must be sorted alphabetically to ease maintenance and merges.
     "orion.algo",
     "orion.analysis",
+    "orion.benchmark",
     "orion.client",
     "orion.core",
     "orion.plotting",
@@ -46,6 +47,7 @@ setup_args = dict(
         ],
         "OptimizationAlgorithm": [
             "random = orion.algo.random:Random",
+            "gridsearch = orion.algo.gridsearch:GridSearch",
             "asha = orion.algo.asha:ASHA",
             "hyperband = orion.algo.hyperband:Hyperband",
             "tpe = orion.algo.tpe:TPE",

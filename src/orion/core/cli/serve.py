@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.cli.serve` -- Web application endpoint
-=======================================================
+Web application endpoint
+========================
 
-.. module:: serve
-   :platform: Unix
-   :synopsis: Starts an http endpoint to serve requests
+Starts an http endpoint to serve requests
 
 """
 import argparse

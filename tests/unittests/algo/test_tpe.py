@@ -15,6 +15,7 @@ from orion.algo.tpe import (
     compute_max_ei_point,
     ramp_up_weights,
 )
+from orion.core.worker.transformer import build_required_space
 
 
 @pytest.fixture()
@@ -408,21 +409,15 @@ class TestTPE:
         space.register(dim)
 
         with pytest.raises(ValueError) as ex:
-            TPE(space)
+            tpe = TPE(space)
+            tpe.space = build_required_space(
+                space, shape_requirement=TPE.requires_shape
+            )
 
         assert (
             "TPE now only supports uniform, loguniform, uniform discrete and choices"
             in str(ex.value)
         )
-
-        space = Space()
-        dim = Real("yolo1", "uniform", 0.9, shape=(2, 1))
-        space.register(dim)
-
-        with pytest.raises(ValueError) as ex:
-            TPE(space)
-
-        assert "TPE now only supports 1D shape" in str(ex.value)
 
     def test_split_trials(self, tpe):
         """Test observed trials can be split based on TPE gamma"""

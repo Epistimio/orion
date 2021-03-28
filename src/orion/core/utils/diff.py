@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.diff` -- Utilitary functions for diffs
-=============================================================
+Utilitary functions for diffs
+=============================
 
-.. module:: experiment
-   :platform: Unix
-   :synopsis: Utilitary functions to provided colored diffs of (multi-line) strings
+Utilitary functions to provided colored diffs of (multi-line) strings
 
 """
 

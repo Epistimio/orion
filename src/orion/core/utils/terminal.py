@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-:mod:`orion.core.utils.terminal` -- Helper functions for terminal i/o
-=====================================================================
-
-.. module:: setup
-   :platform: Unix
-   :synopsis: Helper functions for interaction with user on terminal
+Helper functions for terminal i/o
+=================================
 """
 
 
