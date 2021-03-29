@@ -156,7 +156,7 @@ def random_dt(monkeypatch):
 
 
 @pytest.fixture()
-def hacked_exp(with_user_dendi, random_dt, clean_db, create_db_instance):
+def hacked_exp(with_user_dendi, random_dt, pdatabase):
     """Return an `Experiment` instance with hacked _id to find trials in
     fake database.
     """
@@ -166,9 +166,9 @@ def hacked_exp(with_user_dendi, random_dt, clean_db, create_db_instance):
 
 
 @pytest.fixture()
-def trial_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_instance):
+def trial_id_substitution(with_user_tsirif, random_dt, pdatabase):
     """Replace trial ids by the actual ids of the experiments."""
-    db = create_db_instance
+    db = pdatabase
     experiments = db.read("experiments", {})
     experiment_dict = dict(
         (experiment["name"], experiment) for experiment in experiments
@@ -182,9 +182,9 @@ def trial_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_insta
 
 
 @pytest.fixture()
-def refers_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_instance):
+def refers_id_substitution(with_user_tsirif, random_dt, pdatabase):
     """Replace trial ids by the actual ids of the experiments."""
-    db = create_db_instance
+    db = pdatabase
     query = {"metadata.user": "tsirif"}
     selection = {"name": 1, "refers": 1}
     experiments = db.read("experiments", query, selection)
@@ -234,7 +234,7 @@ def new_config():
 
 
 @pytest.fixture
-def old_config(create_db_instance):
+def old_config(pdatabase):
     """Generate an old experiment configuration"""
     user_script = "tests/functional/demo/black_box.py"
     config = dict(
@@ -262,7 +262,7 @@ def old_config(create_db_instance):
 
     backward.populate_space(config)
 
-    create_db_instance.write("experiments", config)
+    pdatabase.write("experiments", config)
     return config
 
 

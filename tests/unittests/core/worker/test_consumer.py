@@ -33,7 +33,7 @@ def config(exp_config):
     return config
 
 
-@pytest.mark.usefixtures("create_db_instance")
+@pytest.mark.usefixtures("storage")
 def test_trials_interrupted_keyboard_int(config, monkeypatch):
     """Check if a trial is set as interrupted when a KeyboardInterrupt is raised."""
 
@@ -58,7 +58,7 @@ def test_trials_interrupted_keyboard_int(config, monkeypatch):
     assert trials[0].id == trial.id
 
 
-@pytest.mark.usefixtures("create_db_instance")
+@pytest.mark.usefixtures("storage")
 def test_trials_interrupted_sigterm(config, monkeypatch):
     """Check if a trial is set as interrupted when a signal is raised."""
 
@@ -83,7 +83,7 @@ def test_trials_interrupted_sigterm(config, monkeypatch):
     assert trials[0].id == trial.id
 
 
-@pytest.mark.usefixtures("create_db_instance")
+@pytest.mark.usefixtures("storage")
 def test_pacemaker_termination(config):
     """Check if pacemaker stops as soon as the trial completes."""
     exp = experiment_builder.build(**config)
@@ -104,7 +104,7 @@ def test_pacemaker_termination(config):
     assert duration < con.pacemaker.wait_time
 
 
-@pytest.mark.usefixtures("create_db_instance")
+@pytest.mark.usefixtures("storage")
 def test_trial_working_dir_is_changed(config):
     """Check that trial has its working_dir attribute changed."""
     exp = experiment_builder.build(**config)
@@ -120,7 +120,7 @@ def test_trial_working_dir_is_changed(config):
     assert trial.working_dir == con.working_dir + "/exp_" + trial.id
 
 
-@pytest.mark.usefixtures("create_db_instance")
+@pytest.mark.usefixtures("storage")
 def test_code_changed(config, monkeypatch):
     """Check that trial has its working_dir attribute changed."""
     exp = experiment_builder.build(**config)

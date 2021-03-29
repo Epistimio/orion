@@ -155,9 +155,9 @@ def generate_trials(status):
     return new_trials
 
 
-def assert_protocol(exp, create_db_instance):
+def assert_protocol(exp, pdatabase):
     """Transitional method to move away from mongodb"""
-    assert exp._storage._db is create_db_instance
+    assert exp._storage._db is pdatabase
 
 
 def count_experiment(exp):
@@ -180,7 +180,7 @@ def algorithm(space):
 class TestReserveTrial(object):
     """Calls to interface `Experiment.reserve_trial`."""
 
-    @pytest.mark.usefixtures("create_db_instance")
+    @pytest.mark.usefixtures("setup_pickleddb_database")
     def test_reserve_none(self):
         """Find nothing, return None."""
         with OrionState(experiments=[], trials=[]):
