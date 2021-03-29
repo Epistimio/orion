@@ -12,7 +12,7 @@ def execute(command, assert_code=0):
     assert returncode == assert_code
 
 
-def test_no_exp(clean_db, capsys):
+def test_no_exp(pdatabase, capsys):
     """Test that set non-existing exp exits gracefully"""
     execute("db set i-dont-exist whatever=1 idontcare=2", assert_code=1)
 
@@ -23,7 +23,7 @@ def test_no_exp(clean_db, capsys):
     )
 
 
-def test_confirm_name(monkeypatch, clean_db, single_with_trials):
+def test_confirm_name(monkeypatch, single_with_trials):
     """Test name must be confirmed for update"""
 
     def incorrect_name(*args):
@@ -43,7 +43,7 @@ def test_confirm_name(monkeypatch, clean_db, single_with_trials):
     assert len(get_storage()._fetch_trials({"status": "broken"})) == 0
 
 
-def test_invalid_query(clean_db, single_with_trials, capsys):
+def test_invalid_query(single_with_trials, capsys):
     """Test error message when query is invalid"""
     execute("db set -f test_single_exp whatever=1 idontcare=2", assert_code=1)
 
@@ -52,7 +52,7 @@ def test_invalid_query(clean_db, single_with_trials, capsys):
     assert captured.err.startswith("Error: Invalid query attribute `whatever`.")
 
 
-def test_invalid_update(clean_db, single_with_trials, capsys):
+def test_invalid_update(single_with_trials, capsys):
     """Test error message when update attribute is invalid"""
     execute("db set -f test_single_exp status=new yoopidoo=2", assert_code=1)
 
@@ -61,7 +61,7 @@ def test_invalid_update(clean_db, single_with_trials, capsys):
     assert captured.err.startswith("Error: Invalid update attribute `yoopidoo`.")
 
 
-def test_update_trial(clean_db, single_with_trials, capsys):
+def test_update_trial(single_with_trials, capsys):
     """Test that trial is updated properly"""
     trials = get_storage()._fetch_trials({})
     assert sum(trial.status == "broken" for trial in trials) > 0
@@ -80,7 +80,7 @@ def test_update_trial(clean_db, single_with_trials, capsys):
     assert captured.out.endswith("1 trials modified\n")
 
 
-def test_update_trial_with_id(clean_db, single_with_trials, capsys):
+def test_update_trial_with_id(single_with_trials, capsys):
     """Test that trial is updated properly when querying with the id"""
     trials = get_storage()._fetch_trials({})
     trials = dict(zip((trial.id for trial in trials), trials))
@@ -98,7 +98,7 @@ def test_update_trial_with_id(clean_db, single_with_trials, capsys):
     assert captured.out.endswith("1 trials modified\n")
 
 
-def test_update_no_match_query(clean_db, single_with_trials, capsys):
+def test_update_no_match_query(single_with_trials, capsys):
     """Test that no trials are updated when there is no match"""
     trials = get_storage()._fetch_trials({})
     trials = dict(zip((trial.id for trial in trials), trials))
@@ -113,7 +113,7 @@ def test_update_no_match_query(clean_db, single_with_trials, capsys):
     assert captured.out.endswith("0 trials modified\n")
 
 
-def test_update_child_only(clean_db, three_experiments_same_name_with_trials, capsys):
+def test_update_child_only(three_experiments_same_name_with_trials, capsys):
     """Test trials of the parent experiment are not updated"""
     exp1 = experiment_builder.load(name="test_single_exp", version=1)
     exp2 = experiment_builder.load(name="test_single_exp", version=2)
@@ -128,7 +128,7 @@ def test_update_child_only(clean_db, three_experiments_same_name_with_trials, ca
     assert captured.out.endswith("2 trials modified\n")
 
 
-def test_update_default_leaf(clean_db, three_experiments_same_name_with_trials, capsys):
+def test_update_default_leaf(three_experiments_same_name_with_trials, capsys):
     """Test trials of the parent experiment are not updated"""
     exp1 = experiment_builder.load(name="test_single_exp", version=1)
     exp2 = experiment_builder.load(name="test_single_exp", version=2)
@@ -143,9 +143,7 @@ def test_update_default_leaf(clean_db, three_experiments_same_name_with_trials, 
     assert captured.out.endswith("1 trials modified\n")
 
 
-def test_no_update_id_from_parent(
-    clean_db, three_experiments_same_name_with_trials, capsys
-):
+def test_no_update_id_from_parent(three_experiments_same_name_with_trials, capsys):
     """Test trials of the parent experiment are not updated"""
     exp1 = experiment_builder.load(name="test_single_exp", version=1)
     exp2 = experiment_builder.load(name="test_single_exp", version=2)

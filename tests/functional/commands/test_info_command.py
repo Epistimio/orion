@@ -5,7 +5,7 @@ import orion.core.cli
 import orion.core.io.resolve_config
 
 
-def test_info_no_hit(clean_db, one_experiment, capsys):
+def test_info_no_hit(one_experiment, capsys):
     """Test info if no experiment with given name."""
     returncode = orion.core.cli.main(["info", "--name", "i do not exist"])
 
@@ -16,7 +16,7 @@ def test_info_no_hit(clean_db, one_experiment, capsys):
     assert captured.startswith("Error: No experiment with given name 'i do not exist'")
 
 
-def test_info_hit(clean_db, one_experiment, capsys):
+def test_info_hit(one_experiment, capsys):
     """Test info if existing experiment."""
     orion.core.cli.main(["info", "--name", "test_single_exp"])
 
@@ -25,7 +25,7 @@ def test_info_hit(clean_db, one_experiment, capsys):
     assert "--x~uniform(0,1)" in captured
 
 
-def test_info_broken(clean_db, broken_refers, capsys):
+def test_info_broken(broken_refers, capsys):
     """Test info if experiment.refers is missing."""
     orion.core.cli.main(["info", "--name", "test_single_exp"])
 
@@ -34,7 +34,7 @@ def test_info_broken(clean_db, broken_refers, capsys):
     assert "--x~uniform(0,1)" in captured
 
 
-def test_info_no_branching(clean_db, one_experiment_changed_vcs, capsys):
+def test_info_no_branching(one_experiment_changed_vcs, capsys):
     """Test info if config file is different
 
     Version should not increase!
@@ -46,7 +46,7 @@ def test_info_no_branching(clean_db, one_experiment_changed_vcs, capsys):
     assert "\nversion: 1\n" in captured
 
 
-def test_info_python_api(clean_db, with_experiment_using_python_api, capsys):
+def test_info_python_api(with_experiment_using_python_api, capsys):
     """Test info if config built using python api"""
     orion.core.cli.main(["info", "--name", "from-python-api"])
 
@@ -56,7 +56,7 @@ def test_info_python_api(clean_db, with_experiment_using_python_api, capsys):
     assert "Commandline" not in captured
 
 
-def test_missing_conf_file(clean_db, with_experiment_missing_conf_file, capsys):
+def test_missing_conf_file(with_experiment_missing_conf_file, capsys):
     """Test info can handle experiments when the user script config file is missing"""
     orion.core.cli.main(["info", "--name", "test_single_exp"])
 
@@ -65,7 +65,7 @@ def test_missing_conf_file(clean_db, with_experiment_missing_conf_file, capsys):
     assert "--x~uniform(0,1)" in captured
 
 
-def test_info_cmdline_api(clean_db, one_experiment, capsys):
+def test_info_cmdline_api(one_experiment, capsys):
     """Test info if config built using cmdline api"""
     orion.core.cli.main(["info", "--name", "test_single_exp"])
 

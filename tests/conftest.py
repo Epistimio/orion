@@ -19,7 +19,7 @@ from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
-from orion.storage.base import Storage
+from orion.storage.base import Storage, get_storage, setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
 
@@ -370,6 +370,17 @@ def setup_pickleddb_database():
     temporary_file.close()
     del os.environ["ORION_DB_TYPE"]
     del os.environ["ORION_DB_ADDRESS"]
+
+
+@pytest.fixture(scope="function")
+def storage(setup_pickleddb_database):
+    setup_storage()
+    yield get_storage()
+
+
+@pytest.fixture(scope="function")
+def pdatabase(storage):
+    yield storage._db
 
 
 @pytest.fixture()

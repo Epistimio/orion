@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Perform functional tests for db rm."""
+import zlib
+
 import pytest
 
 import orion.core.cli
 from orion.storage.base import get_storage
+
+
+def hsh(name, version):
+    return zlib.adler32(str((name, version)).encode())
 
 
 def execute(command, assert_code=0):
@@ -13,7 +19,7 @@ def execute(command, assert_code=0):
     assert returncode == assert_code
 
 
-def test_no_exp(clean_db, capsys):
+def test_no_exp(setup_pickleddb_database, capsys):
     """Test that rm non-existing exp exits gracefully"""
     execute("db rm i-dont-exist", assert_code=1)
 
@@ -24,7 +30,7 @@ def test_no_exp(clean_db, capsys):
     )
 
 
-def test_confirm_name(monkeypatch, clean_db, single_with_trials):
+def test_confirm_name(monkeypatch, single_with_trials):
     """Test name must be confirmed for deletion"""
 
     def incorrect_name(*args):
@@ -45,7 +51,7 @@ def test_confirm_name(monkeypatch, clean_db, single_with_trials):
     assert len(get_storage().fetch_experiments({})) == 0
 
 
-def test_one_exp(clean_db, single_with_trials):
+def test_one_exp(single_with_trials):
     """Test that one exp is deleted properly"""
     assert len(get_storage().fetch_experiments({})) == 1
     assert len(get_storage()._fetch_trials({})) > 0
@@ -54,7 +60,7 @@ def test_one_exp(clean_db, single_with_trials):
     assert len(get_storage()._fetch_trials({})) == 0
 
 
-def test_rm_all_evc(clean_db, three_family_branch_with_trials):
+def test_rm_all_evc(three_family_branch_with_trials):
     """Test that deleting root removes all experiments"""
     assert len(get_storage().fetch_experiments({})) == 3
     assert len(get_storage()._fetch_trials({})) > 0
@@ -63,7 +69,7 @@ def test_rm_all_evc(clean_db, three_family_branch_with_trials):
     assert len(get_storage()._fetch_trials({})) == 0
 
 
-def test_rm_under_evc(clean_db, three_family_branch_with_trials):
+def test_rm_under_evc(three_family_branch_with_trials):
     """Test that deleting an experiment removes all children"""
     assert len(get_storage().fetch_experiments({})) == 3
     assert len(get_storage()._fetch_trials({})) > 0
@@ -73,14 +79,14 @@ def test_rm_under_evc(clean_db, three_family_branch_with_trials):
     # TODO: Test that the correct trials were deleted
 
 
-def test_rm_default_leaf(clean_db, three_experiments_same_name):
+def test_rm_default_leaf(three_experiments_same_name):
     """Test that deleting an experiment removes the leaf by default"""
     assert len(get_storage().fetch_experiments({})) == 3
     execute("db rm -f test_single_exp")
     assert len(get_storage().fetch_experiments({})) == 2
 
 
-def test_rm_trials_by_status(clean_db, single_with_trials):
+def test_rm_trials_by_status(single_with_trials):
     """Test that trials can be deleted by status"""
     trials = get_storage()._fetch_trials({})
     n_broken = sum(trial.status == "broken" for trial in trials)
@@ -89,23 +95,30 @@ def test_rm_trials_by_status(clean_db, single_with_trials):
     assert len(get_storage()._fetch_trials({})) == len(trials) - n_broken
 
 
-def test_rm_trials_all(clean_db, single_with_trials):
+def test_rm_trials_all(single_with_trials):
     """Test that trials all be deleted with '*'"""
     assert len(get_storage()._fetch_trials({})) > 0
     execute("db rm -f test_single_exp --status *")
     assert len(get_storage()._fetch_trials({})) == 0
 
 
-def test_rm_trials_in_evc(clean_db, three_family_branch_with_trials):
+def test_rm_trials_in_evc(three_family_branch_with_trials):
     """Test that trials of parent experiment are not deleted"""
     assert len(get_storage().fetch_experiments({})) == 3
-    assert len(get_storage()._fetch_trials({"experiment": "test_double_exp_1"})) > 0
     assert (
-        len(get_storage()._fetch_trials({"experiment": "test_double_exp_child_1"})) > 0
+        len(get_storage()._fetch_trials({"experiment": hsh("test_double_exp", 1)})) > 0
     )
     assert (
         len(
-            get_storage()._fetch_trials({"experiment": "test_double_exp_grand_child_1"})
+            get_storage()._fetch_trials({"experiment": hsh("test_double_exp_child", 1)})
+        )
+        > 0
+    )
+    assert (
+        len(
+            get_storage()._fetch_trials(
+                {"experiment": hsh("test_double_exp_grand_child", 1)}
+            )
         )
         > 0
     )
@@ -113,13 +126,20 @@ def test_rm_trials_in_evc(clean_db, three_family_branch_with_trials):
     # Make sure no experiments were deleted
     assert len(get_storage().fetch_experiments({})) == 3
     # Make sure only trials of given experiment were deleted
-    assert len(get_storage()._fetch_trials({"experiment": "test_double_exp_1"})) > 0
     assert (
-        len(get_storage()._fetch_trials({"experiment": "test_double_exp_child_1"})) == 0
+        len(get_storage()._fetch_trials({"experiment": hsh("test_double_exp", 1)})) > 0
     )
     assert (
         len(
-            get_storage()._fetch_trials({"experiment": "test_double_exp_grand_child_1"})
+            get_storage()._fetch_trials({"experiment": hsh("test_double_exp_child", 1)})
+        )
+        == 0
+    )
+    assert (
+        len(
+            get_storage()._fetch_trials(
+                {"experiment": hsh("test_double_exp_grand_child", 1)}
+            )
         )
         == 0
     )
