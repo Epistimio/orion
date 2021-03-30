@@ -158,8 +158,7 @@ class Legacy(BaseStorageProtocol):
         if where is None:
             where = dict()
 
-        if uid is not None:
-            where["experiment"] = uid
+        where["experiment"] = uid
 
         return self._fetch_trials(where)
 

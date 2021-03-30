@@ -621,8 +621,7 @@ class Track(BaseStorageProtocol):  # noqa: F811
         if where is None:
             where = dict()
 
-        if uid is not None:
-            where["group_id"] = uid
+        where["group_id"] = uid
 
         return self._fetch_trials(where)
 
