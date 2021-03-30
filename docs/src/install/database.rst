@@ -10,8 +10,8 @@ to enable fast, seamless, and scalable storage integration.
 Out of the box, we support three database backend:
 
 #. :ref:`EphemeralDB Config`, an in-memory database
-#. :ref:`PickledDB Config`, a file-based database
-#. :ref:`MongoDB Config`, a document-oriented database (default)
+#. :ref:`PickledDB Config`, a file-based database (default)
+#. :ref:`MongoDB Config`, a document-oriented database
 
 In this document, we'll review the different methods by which you can configure which database Oríon
 will use during its execution. This page also contains the :ref:`installation instructions for
@@ -29,9 +29,8 @@ This will create a yaml file of the following format.
    .. code-block:: yaml
 
       database:
-        type: 'mongodb'
-        name: 'orion_test'
-        host: 'mongodb://user:pass@localhost'
+        type: 'pickleddb'
+        host: '/path/to/a/file.pkl'
 
 The file is typically located at ``$HOME/.config/orion.core/orion_config.yaml`` but it may differ
 based on your operating system.
@@ -40,10 +39,8 @@ The second way of configuring the database backend is to use environment variabl
 
    .. code-block:: sh
 
-       ORION_DB_ADDRESS=mongodb://user:pass@localhost
-       ORION_DB_NAME=orion_test
-       ORION_DB_TYPE=MongoDB
-       ORION_DB_PORT=27017
+       ORION_DB_ADDRESS=/path/to/a/file.pkl
+       ORION_DB_TYPE=PickledDB
 
 Note that both configuration methods can be used together, environment variables that are set will
 overwrite the corresponding values in the global configuration. This is useful if you need to define
@@ -79,7 +76,7 @@ stage.
    $ orion db test
 
    Check for a configuration inside the default paths...
-       {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
+       {'type': 'pickleddb', 'name': 'orion', 'host': 'orion_db.pkl'}
    Success
 
    Check for a configuration inside the environment variables... Skipping
@@ -101,15 +98,15 @@ Alternatively, here's an example including all three configuration methods.
    $ orion db test --config local.yaml
 
    Check for a configuration inside the global paths...
-       {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
+       {'type': 'pickleddb', 'name': 'mydb', 'host': 'orion_db.pkl'}
    Success
 
    Check for a configuration inside the environment variables...
-       {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost', 'port': '27018'}
+       {'type': 'pickleddb', 'name': 'mydb', 'host': 'orion_db.pkl', 'port': '27018'}
    Success
 
    Check if configuration file has valid database configuration...
-       {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost', 'port': '27017'}
+       {'type': 'pickleddb', 'name': 'mydb', 'host': 'orion_db.pkl', 'port': '27017'}
    Success
 
    [...]
@@ -123,9 +120,9 @@ that will be used and then prints the instance created to confirm the database t
 
    [...]
 
-   Using configuration: {'type': 'mongodb', 'name': 'mydb', 'host': 'localhost'}
+   Using configuration: {'type': 'pickleddb', 'name': 'mydb', 'host': 'orion_db.pkl'}
    Check if database of specified type can be created... Success
-   DB instance <orion.core.io.database.mongodb.MongoDB object at 0x7f86d70067f0>
+   DB instance <orion.core.io.database.pickleddb.PickledDB object at 0x7f86d70067f0>
 
    [...]
 
@@ -234,7 +231,7 @@ To install MongoDB locally, follow the `official instructions
 <https://docs.mongodb.com/manual/administration/install-community/>`_ for your operating system.
 Alternatively, use :ref:`MongoDB Atlas <mongodb-atlas>` to create a database in the cloud.
 
-Once MondoDB is installed, create the database using:
+Once MongoDB is installed, create the database using:
 
 .. code-block:: sh
 
