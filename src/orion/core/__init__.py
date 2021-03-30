@@ -107,7 +107,7 @@ def define_database_config(config):
     database_config.add_option(
         "type",
         option_type=str,
-        default="PickledDB",
+        default="MongoDB",
         env_var="ORION_DB_TYPE",
         help=(
             "Type of database. Builtin backends are ``mongodb``, "
