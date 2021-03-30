@@ -614,11 +614,16 @@ class Track(BaseStorageProtocol):  # noqa: F811
         trial.status = status
         return result_trial
 
-    def fetch_trials(self, experiment=None, uid=None):
+    def fetch_trials(self, experiment=None, uid=None, where=None):
         """See :meth:`orion.storage.base.BaseStorageProtocol.fetch_trials`"""
         uid = get_uid(experiment, uid)
 
-        return self._fetch_trials(dict(group_id=uid))
+        if where is None:
+            where = dict()
+
+        where["group_id"] = uid
+
+        return self._fetch_trials(where)
 
     def get_trial(self, trial=None, uid=None):
         """See :meth:`orion.storage.base.BaseStorageProtocol.get_trial`"""
