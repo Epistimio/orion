@@ -15,6 +15,7 @@ from orion.core.evc import conflicts
 from orion.core.io.convert import JSONConverter, YAMLConverter
 from orion.core.io.space_builder import DimensionBuilder
 from orion.testing import MockDatetime, default_datetime
+from orion.testing.state import OrionState
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, "sample_config.yml")
@@ -155,14 +156,160 @@ def random_dt(monkeypatch):
     return default_datetime()
 
 
+dendi_exp_config = dict(
+    name="supernaedo2-dendi",
+    space={
+        "/decoding_layer": f"choices(['rnn', 'lstm_with_attention', 'gru'])",
+        "/encoding_layer": f"choices(['rnn', 'lstm', 'gru'])",
+    },
+    metadata={
+        "user": "dendi",
+        "orion_version": "XYZ",
+        "VCS": {
+            "type": "git",
+            "is_dirty": False,
+            "HEAD_sha": "test",
+            "active_branch": None,
+            "diff_sha": "diff",
+        },
+    },
+    version=1,
+    pool_size=1,
+    max_trials=1000,
+    working_dir="",
+    algorithms={"dumbalgo": {}},
+    producer={"strategy": "NoParallelStrategy"},
+)
+
+
+dendi_base_trials = [
+    {
+        "experiment": "supernaedo2-dendi",
+        "status": "completed",
+        "worker": 12512301,
+        "submit_time": MockDatetime(2017, 11, 22, 23),
+        "start_time": None,
+        "end_time": MockDatetime(2017, 11, 22, 23),
+        "results": [{"name": None, "type": "objective", "value": 3}],
+        "params": [
+            {"name": "/decoding_layer", "type": "categorical", "value": "rnn"},
+            {"name": "/encoding_layer", "type": "categorical", "value": "lstm"},
+        ],
+        "parents": [],
+    },
+    {
+        "experiment": "supernaedo2-dendi",
+        "status": "completed",
+        "worker": 23415151,
+        "submit_time": MockDatetime(2017, 11, 23, 0),
+        "start_time": None,
+        "end_time": MockDatetime(2017, 11, 23, 0),
+        "results": [
+            {"name": "yolo", "type": "objective", "value": 10},
+            {"name": "contra", "type": "constraint", "value": 1.2},
+            {"name": "naedw_grad", "type": "gradient", "value": [5, 3]},
+        ],
+        "params": [
+            {
+                "name": "/decoding_layer",
+                "type": "categorical",
+                "value": "lstm_with_attention",
+            },
+            {"name": "/encoding_layer", "type": "categorical", "value": "gru"},
+        ],
+        "parents": [],
+    },
+    {
+        "experiment": "supernaedo2-dendi",
+        "status": "completed",
+        "worker": 1251231,
+        "submit_time": MockDatetime(2017, 11, 22, 23),
+        "start_time": None,
+        "end_time": MockDatetime(2017, 11, 22, 22),
+        "results": [
+            {"name": None, "type": "objective", "value": 2},
+            {"name": "naedw_grad", "type": "gradient", "value": [-0.1, 2]},
+        ],
+        "params": [
+            {"name": "/decoding_layer", "type": "categorical", "value": "rnn"},
+            {"name": "/encoding_layer", "type": "categorical", "value": "rnn"},
+        ],
+        "parents": [],
+    },
+    {
+        "experiment": "supernaedo2-dendi",
+        "status": "new",
+        "worker": None,
+        "submit_time": MockDatetime(2017, 11, 23, 1),
+        "start_time": None,
+        "end_time": None,
+        "results": [{"name": None, "type": "objective", "value": None}],
+        "params": [
+            {"name": "/decoding_layer", "type": "categorical", "value": "rnn"},
+            {"name": "/encoding_layer", "type": "categorical", "value": "gru"},
+        ],
+        "parents": [],
+    },
+    {
+        "experiment": "supernaedo2-dendi",
+        "status": "new",
+        "worker": None,
+        "submit_time": MockDatetime(2017, 11, 23, 2),
+        "start_time": None,
+        "end_time": None,
+        "results": [{"name": None, "type": "objective", "value": None}],
+        "params": [
+            {
+                "name": "/decoding_layer",
+                "type": "categorical",
+                "value": "lstm_with_attention",
+            },
+            {"name": "/encoding_layer", "type": "categorical", "value": "rnn"},
+        ],
+        "parents": [],
+    },
+    {
+        "experiment": "supernaedo2-dendi",
+        "status": "interrupted",
+        "worker": None,
+        "submit_time": MockDatetime(2017, 11, 23, 3),
+        "start_time": MockDatetime(2017, 11, 23, 3),
+        "end_time": None,
+        "results": [{"name": None, "type": "objective", "value": None}],
+        "params": [
+            {
+                "name": "/decoding_layer",
+                "type": "categorical",
+                "value": "lstm_with_attention",
+            },
+            {"name": "/encoding_layer", "type": "categorical", "value": "lstm"},
+        ],
+        "parents": [],
+    },
+    {
+        "experiment": "supernaedo2-dendi",
+        "status": "suspended",
+        "worker": None,
+        "submit_time": MockDatetime(2017, 11, 23, 4),
+        "start_time": MockDatetime(2017, 11, 23, 4),
+        "end_time": None,
+        "results": [{"name": None, "type": "objective", "value": None}],
+        "params": [
+            {"name": "/decoding_layer", "type": "categorical", "value": "gru"},
+            {"name": "/encoding_layer", "type": "categorical", "value": "lstm"},
+        ],
+        "parents": [],
+    },
+]
+
+
 @pytest.fixture()
-def hacked_exp(with_user_dendi, random_dt, pdatabase):
-    """Return an `Experiment` instance with hacked _id to find trials in
-    fake database.
-    """
-    exp = experiment_builder.build(name="supernaedo2-dendi")
-    exp._id = "supernaedo2-dendi"  # white box hack
-    return exp
+def hacked_exp(with_user_dendi, random_dt, storage):
+    """Return an `Experiment` instance to find trials in fake database."""
+    with OrionState(experiments=[dendi_exp_config], trials=dendi_base_trials) as cfg:
+        exp = experiment_builder.build(name=dendi_exp_config["name"])
+        exp._id = cfg.trials[0]["experiment"]
+        yield exp
 
 
 @pytest.fixture()
