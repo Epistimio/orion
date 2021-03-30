@@ -316,24 +316,6 @@ def version_XYZ(monkeypatch):
 
 
 @pytest.fixture()
-def create_db_instance(null_db_instances, clean_db):
-    """Create and save a singleton database instance."""
-    try:
-        database = {
-            "type": "MongoDB",
-            "name": "orion_test",
-            "username": "user",
-            "password": "pass",
-        }
-        db = Storage(of_type="legacy", database=database)
-    except ValueError:
-        db = Storage()
-
-    db = db._db
-    return db
-
-
-@pytest.fixture()
 def script_path():
     """Return a script path for mock"""
     return os.path.join(

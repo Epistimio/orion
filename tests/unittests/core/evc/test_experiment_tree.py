@@ -14,7 +14,7 @@ build_trimmed_tree = "dummy"
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_parent_fetch_trials(create_db_instance):
+def test_parent_fetch_trials(setup_pickleddb_database):
     """Test that experiment fetch trials from parent properly (adapters are muted)"""
     experiment_name = "supernaedo2.3"
     root_name = "supernaedo2"
@@ -48,7 +48,7 @@ def test_parent_fetch_trials(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_children_fetch_trials(create_db_instance):
+def test_children_fetch_trials(setup_pickleddb_database):
     """Test that experiment fetch trials from children properly (adapters are muted)"""
     experiment_name = "supernaedo2"
     root_name = "supernaedo2"
@@ -79,7 +79,7 @@ def test_children_fetch_trials(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_parent_parent_fetch_trials(create_db_instance):
+def test_parent_parent_fetch_trials(setup_pickleddb_database):
     """Test that experiment fetch trials from grand parent properly (adapters are muted)"""
     experiment_name = "supernaedo2.3.1"
     root_name = "supernaedo2"
@@ -114,7 +114,7 @@ def test_parent_parent_fetch_trials(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_children_children_fetch_trials(create_db_instance):
+def test_children_children_fetch_trials(setup_pickleddb_database):
     """Test that experiment fetch trials from grand children properly (adapters are muted)"""
     experiment_name = "supernaedo2"
     root_name = "supernaedo2"
@@ -148,7 +148,7 @@ def test_children_children_fetch_trials(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_deletion_adapter_forward(create_db_instance):
+def test_deletion_adapter_forward(setup_pickleddb_database):
     """Test that all decoding_layer=gru pass to children"""
     experiment_name = "supernaedo2.1"
     root_name = "supernaedo2"
@@ -179,7 +179,7 @@ def test_deletion_adapter_forward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_deletion_adapter_backward(create_db_instance):
+def test_deletion_adapter_backward(setup_pickleddb_database):
     """Test that all decoding_layer are passed with gru to parent"""
     experiment_name = "supernaedo2"
     root_name = "supernaedo2"
@@ -209,7 +209,7 @@ def test_deletion_adapter_backward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_renaming_forward(create_db_instance):
+def test_renaming_forward(setup_pickleddb_database):
     """Test that all encoding_layer are renamed to encoding in children"""
     experiment_name = "supernaedo2.3"
     root_name = "supernaedo2"
@@ -247,7 +247,7 @@ def test_renaming_forward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_renaming_backward(create_db_instance):
+def test_renaming_backward(setup_pickleddb_database):
     """Test that all encoding are renamed to encoding_layer in parent"""
     experiment_name = "supernaedo2"
     root_name = "supernaedo2"
@@ -286,7 +286,7 @@ def test_renaming_backward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_prior_change_forward(create_db_instance):
+def test_prior_change_forward(setup_pickleddb_database):
     """Test that trials from parent only pass to children if valid in the new prior"""
     experiment_name = "supernaedo2.3.1"
     root_name = "supernaedo2.3"
@@ -318,7 +318,7 @@ def test_prior_change_forward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_prior_change_backward(create_db_instance):
+def test_prior_change_backward(setup_pickleddb_database):
     """Test that all encoding are renamed to encoding_layer in parent"""
     experiment_name = "supernaedo2.3"
     root_name = "supernaedo2.3"
@@ -351,7 +351,7 @@ def test_prior_change_backward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_code_change_noeffect_forward(create_db_instance):
+def test_code_change_noeffect_forward(setup_pickleddb_database):
     """Test that all trials pass to children when code change type is 'noeffect'"""
     experiment_name = "supernaedo2.3.1.1"
     root_name = "supernaedo2.3.1"
@@ -384,7 +384,7 @@ def test_code_change_noeffect_forward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_code_change_noeffect_backward(create_db_instance):
+def test_code_change_noeffect_backward(setup_pickleddb_database):
     """Test that all trials pass to parent when code change type is 'noeffect'"""
     experiment_name = "supernaedo2.3.1"
     root_name = "supernaedo2.3.1"
@@ -418,7 +418,7 @@ def test_code_change_noeffect_backward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_code_change_unsure_forward(create_db_instance):
+def test_code_change_unsure_forward(setup_pickleddb_database):
     """Test that all trials pass to children when code change type is 'unsure'"""
     experiment_name = "supernaedo2.3.1.2"
     root_name = "supernaedo2.3.1"
@@ -451,7 +451,7 @@ def test_code_change_unsure_forward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_code_change_unsure_backward(create_db_instance):
+def test_code_change_unsure_backward(setup_pickleddb_database):
     """Test that no trials pass to parent when code change type is 'unsure'"""
     experiment_name = "supernaedo2.3.1"
     root_name = "supernaedo2.3.1"
@@ -485,7 +485,7 @@ def test_code_change_unsure_backward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_code_change_break_forward(create_db_instance):
+def test_code_change_break_forward(setup_pickleddb_database):
     """Test that no trials pass to children when code change type is 'break'"""
     experiment_name = "supernaedo2.3.1.3"
     root_name = "supernaedo2.3.1"
@@ -518,7 +518,7 @@ def test_code_change_break_forward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_code_change_break_backward(create_db_instance):
+def test_code_change_break_backward(setup_pickleddb_database):
     """Test that no trials pass to parent when code change type is 'break'"""
     experiment_name = "supernaedo2.3.1"
     root_name = "supernaedo2.3.1"
@@ -552,7 +552,7 @@ def test_code_change_break_backward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_algo_change_forward(create_db_instance):
+def test_algo_change_forward(setup_pickleddb_database):
     """Test that all trials pass to children when algorithm is changed"""
     experiment_name = "supernaedo2.2.1"
     root_name = "supernaedo2.2"
@@ -584,7 +584,7 @@ def test_algo_change_forward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_algo_change_backward(create_db_instance):
+def test_algo_change_backward(setup_pickleddb_database):
     """Test that all trials pass to parent when algorithm is changed"""
     experiment_name = "supernaedo2.2"
     root_name = "supernaedo2.2"
@@ -617,7 +617,7 @@ def test_algo_change_backward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_full_backward(create_db_instance):
+def test_full_backward(setup_pickleddb_database):
     """Test that trials are adapted properly up to root"""
     experiment_name = "supernaedo2"
     root_name = None
@@ -669,7 +669,7 @@ def test_full_backward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_full_forward(create_db_instance):
+def test_full_forward(setup_pickleddb_database):
     """Test that trials are adapted properly down to leaf"""
     experiment_name = "supernaedo2.3.1.1"
     root_name = None
@@ -705,7 +705,7 @@ def test_full_forward(create_db_instance):
 @pytest.mark.skip(reason="Support for leafs and parents dropped for now")
 @pytest.mark.usefixtures("trial_id_substitution")
 @pytest.mark.usefixtures("refers_id_substitution")
-def test_full_forward_full_backward(create_db_instance):
+def test_full_forward_full_backward(setup_pickleddb_database):
     """Test that trials are adapted properly forward from parent and backward from leafs"""
     experiment_name = "supernaedo2.3"
     root_name = "supernaedo2"
