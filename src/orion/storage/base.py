@@ -200,7 +200,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """
         raise NotImplementedError()
 
-    def fetch_trials(self, experiment=None, uid=None):
+    def fetch_trials(self, experiment=None, uid=None, where=None):
         """Fetch all the trials of an experiment in the database
 
         Parameters
@@ -210,6 +210,9 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
 
         uid: str, optional
             experiment id used to retrieve the trial object
+
+        where: Optional[dict]
+            constraint trials must respect
 
         Returns
         -------

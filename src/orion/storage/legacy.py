@@ -151,11 +151,17 @@ class Legacy(BaseStorageProtocol):
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_experiments`"""
         return self._db.read("experiments", query, selection)
 
-    def fetch_trials(self, experiment=None, uid=None):
+    def fetch_trials(self, experiment=None, uid=None, where=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_trials`"""
         uid = get_uid(experiment, uid)
 
-        return self._fetch_trials(dict(experiment=uid))
+        if where is None:
+            where = dict()
+
+        if uid is not None:
+            where["experiment"] = uid
+
+        return self._fetch_trials(where)
 
     def _fetch_trials(self, query, selection=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_trials`"""
