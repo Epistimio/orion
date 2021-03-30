@@ -26,10 +26,10 @@ def presence():
 
 
 @pytest.fixture
-def creation(create_db_instance):
+def creation(pdatabase):
     """Return a CreationStage instance."""
     stage = CreationStage(None)
-    stage.instance = create_db_instance
+    stage.instance = pdatabase
     return stage
 
 
@@ -150,7 +150,7 @@ def test_config_file_skips(monkeypatch, presence, config):
     assert presence.db_config == config["database"]
 
 
-@pytest.mark.usefixtures("null_db_instances")
+@pytest.mark.usefixtures("null_db_instances", "setup_pickleddb_database")
 def test_creation_pass(presence, config):
     """Check if test passes with valid database configuration."""
     presence.db_config = config["database"]
@@ -163,7 +163,7 @@ def test_creation_pass(presence, config):
     assert creation.instance is not None
 
 
-@pytest.mark.usefixtures("null_db_instances")
+@pytest.mark.usefixtures("null_db_instances", "setup_pickleddb_database")
 def test_creation_fails(monkeypatch, presence, config):
     """Check if test fails when not connected."""
     presence.db_config = config["database"]
@@ -199,7 +199,7 @@ def test_operation_write_fails(monkeypatch, operation):
     assert "Not working" in str(ex.value)
 
 
-def test_operation_read_pass(operation, clean_test):
+def test_operation_read_pass(operation):
     """Check if test passes when read operation works."""
     operation.c_stage.instance.write("test", {"index": "value"})
     result, msg = operation.check_read()
@@ -222,7 +222,7 @@ def test_operation_read_fail_not_working(monkeypatch, operation):
     assert "Not working" in str(ex.value)
 
 
-def test_operation_read_fail_unexpected_value(operation, clean_test):
+def test_operation_read_fail_unexpected_value(operation):
     """Check if test fails on unexpected read value."""
     operation.c_stage.instance.write("test", {"index": "value2"})
 
@@ -232,7 +232,7 @@ def test_operation_read_fail_unexpected_value(operation, clean_test):
     assert "value" in str(ex.value)
 
 
-def test_operation_count_pass(operation, clean_test):
+def test_operation_count_pass(operation):
     """Check if test passes when count operation works."""
     operation.c_stage.instance.write("test", {"index": "value"})
     result, msg = operation.check_count()
@@ -241,7 +241,7 @@ def test_operation_count_pass(operation, clean_test):
     assert msg == ""
 
 
-def test_operation_count_fails(monkeypatch, operation, clean_test):
+def test_operation_count_fails(monkeypatch, operation):
     """Check if test fails when count operation fails."""
     operation.c_stage.instance.write("test", {"index": "value"})
     operation.c_stage.instance.write("test", {"index": "value"})
@@ -251,7 +251,7 @@ def test_operation_count_fails(monkeypatch, operation, clean_test):
     assert "2" in str(ex.value)
 
 
-def test_operation_remove_pass(operation, clean_test):
+def test_operation_remove_pass(operation):
     """Check if test passes when remove operation works."""
     operation.c_stage.instance.write("test", {"index": "value"})
     result, msg = operation.check_remove()
@@ -260,13 +260,13 @@ def test_operation_remove_pass(operation, clean_test):
     assert msg == ""
 
 
-def test_operation_remove_fails(monkeypatch, operation, clean_test, database):
+def test_operation_remove_fails(monkeypatch, operation, pdatabase):
     """Check if test fails when remove operation fails."""
     operation.c_stage.instance.write("test", {"index": "value"})
     operation.c_stage.instance.write("test", {"index": "value"})
 
     def mock_remove(one, two):
-        database.test.delete_one({"index": "value"})
+        pdatabase.test.delete_one({"index": "value"})
 
     monkeypatch.setattr(operation.c_stage.instance, "remove", mock_remove)
 

@@ -214,7 +214,7 @@ class PickledDB(AbstractDB):
             log.error(
                 "Document in (collection: %s) is not pickable\ndoc: %s",
                 collection,
-                doc.to_dict(),
+                doc.to_dict() if hasattr(doc, "to_dict") else str(doc),
             )
 
             key, value = find_unpickable_field(doc)
