@@ -9,14 +9,14 @@ import orion.core.utils.backward as backward
 from orion.core.cli.checks.creation import CreationStage
 from orion.core.cli.checks.operations import OperationsStage
 from orion.core.cli.checks.presence import PresenceStage
-from orion.core.io.database.mongodb import MongoDB
+from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.exceptions import CheckError
 
 
 @pytest.fixture
 def config():
     """Return a basic database configuration."""
-    return {"database": {"host": "localhost", "type": "mongodb", "name": "user"}}
+    return {"database": {"host": "test_db.pkl", "type": "pickleddb"}}
 
 
 @pytest.fixture
@@ -169,7 +169,7 @@ def test_creation_fails(monkeypatch, presence, config):
     presence.db_config = config["database"]
     creation = CreationStage(presence)
 
-    monkeypatch.setattr(MongoDB, "is_connected", False)
+    monkeypatch.setattr(PickledDB, "is_connected", False)
 
     with pytest.raises(CheckError) as ex:
         creation.check_database_creation()
@@ -265,10 +265,10 @@ def test_operation_remove_fails(monkeypatch, operation, pdatabase):
     operation.c_stage.instance.write("test", {"index": "value"})
     operation.c_stage.instance.write("test", {"index": "value"})
 
-    def mock_remove(one, two):
-        pdatabase.test.delete_one({"index": "value"})
+    def mock_count(one, two=None):
+        return 1
 
-    monkeypatch.setattr(operation.c_stage.instance, "remove", mock_remove)
+    monkeypatch.setattr(operation.c_stage.instance, "count", mock_count)
 
     with pytest.raises(CheckError) as ex:
         operation.check_remove()
