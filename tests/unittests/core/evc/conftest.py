@@ -18,7 +18,7 @@ def child_config(parent_config):
     """Generate a new experiment configuration"""
     config = copy.deepcopy(parent_config)
     config["_id"] = 1235
-    config["refers"] = {"parent_id": "test"}
+    config["refers"] = {"parent_id": 1234}
     config["version"] = 2
 
     return config
