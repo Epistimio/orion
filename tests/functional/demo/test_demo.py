@@ -394,7 +394,9 @@ def test_stress_unique_folder_creation(storage, monkeypatch, tmpdir, capfd):
     # test to create underdamped behaviour), that it begins to suggest same
     # things from the past. This is intended to be shown with the assertions
     # in the for-loop below.
-    trials_c = list(storage._fetch_trials({"experiment": exp_id, "status": "completed"}))
+    trials_c = list(
+        storage._fetch_trials({"experiment": exp_id, "status": "completed"})
+    )
     list_of_cx = [trial.params["/x"] for trial in trials_c]
     trials_b = list(storage._fetch_trials({"experiment": exp_id, "status": "broken"}))
     list_of_bx = [trial.params["/x"] for trial in trials_b]

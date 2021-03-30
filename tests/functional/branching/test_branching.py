@@ -984,7 +984,9 @@ def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
     ]
 
 
-def test_init_w_version_from_parent_w_children(setup_pickleddb_database, monkeypatch, capsys):
+def test_init_w_version_from_parent_w_children(
+    setup_pickleddb_database, monkeypatch, capsys
+):
     """Test that init of experiment from version with children fails."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
