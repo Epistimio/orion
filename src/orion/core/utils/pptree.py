@@ -65,7 +65,7 @@ def print_tree(
 
     """ Printing of "up" branch. """
     for child in up:
-        next_last = "up" if up.index(child) is 0 else ""
+        next_last = "up" if up.index(child) == 0 else ""
         next_indent = "{0}{1}{2}".format(
             indent, " " if "up" in last else "│", " " * len(name(current_node))
         )
