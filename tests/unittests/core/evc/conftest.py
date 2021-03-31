@@ -25,31 +25,31 @@ def child_config(parent_config):
 
 
 @pytest.fixture
-def exp_no_child_conflict(pdatabase, parent_config):
+def exp_no_child_conflict(storage, parent_config):
     """Generate an experiment name conflict"""
-    pdatabase.write("experiments", parent_config)
+    storage.create_experiment(parent_config)
     return conflicts.ExperimentNameConflict(parent_config, parent_config)
 
 
 @pytest.fixture
-def exp_w_child_conflict(pdatabase, parent_config, child_config):
+def exp_w_child_conflict(storage, parent_config, child_config):
     """Generate an experiment name conflict"""
-    pdatabase.write("experiments", parent_config)
-    pdatabase.write("experiments", child_config)
+    storage.create_experiment(parent_config)
+    storage.create_experiment(child_config)
     return conflicts.ExperimentNameConflict(child_config, child_config)
 
 
 @pytest.fixture
-def exp_w_child_as_parent_conflict(pdatabase, parent_config, child_config):
+def exp_w_child_as_parent_conflict(storage, parent_config, child_config):
     """Generate an experiment name conflict"""
-    pdatabase.write("experiments", parent_config)
-    pdatabase.write("experiments", child_config)
+    storage.create_experiment(parent_config)
+    storage.create_experiment(child_config)
     return conflicts.ExperimentNameConflict(parent_config, parent_config)
 
 
 @pytest.fixture
-def existing_exp_conflict(pdatabase, parent_config):
+def existing_exp_conflict(storage, parent_config):
     """Generate an experiment name conflict"""
-    pdatabase.write("experiments", parent_config)
-    pdatabase.write("experiments", {"name": "dummy", "version": 1})
+    storage.create_experiment(parent_config)
+    storage.create_experiment({"name": "dummy", "version": 1})
     return conflicts.ExperimentNameConflict(parent_config, parent_config)
