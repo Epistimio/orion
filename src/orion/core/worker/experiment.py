@@ -494,6 +494,6 @@ class Experiment:
         """Represent the object as a string."""
         return "Experiment(name=%s, metadata.user=%s, version=%s)" % (
             self.name,
-            self.metadata["user"],
+            self.metadata.get("user", "n/a"),
             self.version,
         )

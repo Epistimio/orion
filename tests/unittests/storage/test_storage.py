@@ -452,6 +452,28 @@ class TestStorage:
             assert len(trials1) == len(cfg.trials), "trial count should match"
             assert len(trials2) == len(cfg.trials), "trial count should match"
 
+    def test_fetch_trials_with_query(self, storage):
+        """Test fetch experiment trials with queries"""
+        with OrionState(
+            experiments=[base_experiment],
+            trials=generate_trials(status=["completed", "reserved", "reserved"]),
+            storage=storage,
+        ) as cfg:
+            storage = cfg.storage()
+            experiment = cfg.get_experiment("default_name", version=None)
+
+            trials_all = storage.fetch_trials(experiment=experiment)
+            trials_completed = storage.fetch_trials(
+                experiment=experiment, where={"status": "completed"}
+            )
+            trials_reserved = storage.fetch_trials(
+                experiment=experiment, where={"status": "reserved"}
+            )
+
+            assert len(trials_all) == len(cfg.trials), "trial count should match"
+            assert len(trials_completed) == 1, "trial count should match"
+            assert len(trials_reserved) == 2, "trial count should match"
+
     def test_delete_all_trials(self, storage):
         """Test delete all trials of an experiment"""
         if storage and storage["type"] == "track":
