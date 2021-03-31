@@ -336,7 +336,7 @@ class MongoDB(AbstractDB):
         """Get database arguments needed to create a database instance.
 
         .. seealso:: :meth:`orion.core.io.database.AbstractDB.get_arguments`
-        for argument documentation.
+                     for argument documentation.
 
         """
         return {"name": "test", "host": "localhost"}

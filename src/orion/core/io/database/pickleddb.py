@@ -244,7 +244,7 @@ class PickledDB(AbstractDB):
         """Get database arguments needed to create a database instance.
 
         .. seealso:: :meth:`orion.core.io.database.AbstractDB.get_arguments`
-        for argument documentation.
+                     for argument documentation.
 
         """
         return {"host": DEFAULT_HOST}
