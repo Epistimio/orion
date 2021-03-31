@@ -102,19 +102,16 @@ class TestTrial(object):
         with pytest.raises(ValueError):
             v.type = "asfda"
 
-    @pytest.mark.usefixtures("setup_pickleddb_database")
-    def test_convertion_to_dict(self, exp_config):
+    def test_conversion_to_dict(self, exp_config):
         """Convert to dictionary form for database using ``dict``."""
         t = Trial(**exp_config[1][1])
         assert t.to_dict() == exp_config[1][1]
 
-    @pytest.mark.usefixtures("setup_pickleddb_database")
     def test_build_trials(self, exp_config):
         """Convert to objects form using `Trial.build`."""
         trials = Trial.build(exp_config[1])
         assert list(map(lambda x: x.to_dict(), trials)) == exp_config[1]
 
-    @pytest.mark.usefixtures("setup_pickleddb_database")
     def test_value_equal(self, exp_config):
         """Compare Param objects using __eq__"""
         trials = Trial.build(exp_config[1])
