@@ -28,9 +28,10 @@ This will create a yaml file of the following format.
 
    .. code-block:: yaml
 
-      database:
-        type: 'pickleddb'
-        host: '/path/to/a/file.pkl'
+      storage:
+        database:
+          type: 'pickleddb'
+          host: '/path/to/a/file.pkl'
 
 The file is typically located at ``$HOME/.config/orion.core/orion_config.yaml`` but it may differ
 based on your operating system.
@@ -76,37 +77,27 @@ stage.
    $ orion db test
 
    Check for a configuration inside the default paths...
-       {'type': 'pickleddb', 'name': 'orion', 'host': 'orion_db.pkl'}
+       {'name': 'orion', 'type': 'pickleddb', 'host': '[...]/orion/orion_db.pkl', 'port': 27017}
    Success
-
-   Check for a configuration inside the environment variables... Skipping
-   No environment variables found.
-
-   Check if configuration file has valid database configuration... Skipping
-   Missing configuration file.
+   Check if configuration file has valid database configuration...
+       {'name': 'orion', 'type': 'pickleddb', 'host': '[...]/orion/orion_db.pkl', 'port': 27017}
+   Success
 
    [...]
 
-In the last example, we can observe that the last two tests were skipped because there were no
-environment variables or local configuration file specified.
-
-Alternatively, here's an example including all three configuration methods.
+Alternatively, here's an example including all configuration methods.
+This is with MongoDB since there are more options to play with.
 
 .. code-block:: sh
 
-   $ ORION_DB_PORT=27018
+   $ ORION_DB_NAME=test
    $ orion db test --config local.yaml
 
    Check for a configuration inside the global paths...
-       {'type': 'pickleddb', 'name': 'mydb', 'host': 'orion_db.pkl'}
+       {'name': 'test', 'type': 'pickleddb', 'host': '[...]/orion/orion_db.pkl', 'port': 27017}
    Success
-
-   Check for a configuration inside the environment variables...
-       {'type': 'pickleddb', 'name': 'mydb', 'host': 'orion_db.pkl', 'port': '27018'}
-   Success
-
    Check if configuration file has valid database configuration...
-       {'type': 'pickleddb', 'name': 'mydb', 'host': 'orion_db.pkl', 'port': '27017'}
+       {'type': 'mongodb', 'host': 'localhost'}
    Success
 
    [...]
@@ -120,7 +111,7 @@ that will be used and then prints the instance created to confirm the database t
 
    [...]
 
-   Using configuration: {'type': 'pickleddb', 'name': 'mydb', 'host': 'orion_db.pkl'}
+   Using configuration: {'name': 'orion', 'type': 'pickleddb', 'host': '[...]/orion/orion_db.pkl', 'port': 27017}
    Check if database of specified type can be created... Success
    DB instance <orion.core.io.database.pickleddb.PickledDB object at 0x7f86d70067f0>
 

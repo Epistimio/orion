@@ -89,8 +89,6 @@ Full Example of Global Configuration
 
     database:
         host: orion_db.pkl
-        name: orion
-        port: 27017
         type: pickleddb
 
     experiment:
