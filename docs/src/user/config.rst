@@ -135,8 +135,6 @@ Database
 
     database:
         host: orion_db.pkl
-        name: orion
-        port: 27017
         type: pickleddb
 
 
@@ -172,7 +170,7 @@ host
 ~~~~
 
 :Type: str
-:Default: orion_db.pkl
+:Default: <user_data_dir>/orion/orion_db.pkl
 :Env var: ORION_DB_ADDRESS
 :Description:
     URI for ``mongodb``, or file path for ``pickleddb``.
