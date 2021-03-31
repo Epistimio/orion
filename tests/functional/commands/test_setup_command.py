@@ -26,7 +26,7 @@ def test_creation_when_not_existing(monkeypatch, tmp_path):
     """Test if a configuration file is created when it does not exist."""
     config_path = str(tmp_path) + "/tmp_config.yaml"
     monkeypatch.setattr(orion.core, "DEF_CONFIG_FILES_PATHS", [config_path])
-    monkeypatch.setattr(builtins, "input", _mock_input(["type", "name", "host"]))
+    monkeypatch.setattr(builtins, "input", _mock_input(["mongodb", "name", "host"]))
 
     try:
         os.remove(config_path)
@@ -40,14 +40,16 @@ def test_creation_when_not_existing(monkeypatch, tmp_path):
     with open(config_path, "r") as output:
         content = yaml.safe_load(output)
 
-    assert content == {"database": {"type": "type", "name": "name", "host": "host"}}
+    assert content == {"database": {"type": "mongodb", "name": "name", "host": "host"}}
 
 
 def test_creation_when_exists(monkeypatch, tmp_path):
     """Test if the configuration file is overwritten when it exists."""
     config_path = str(tmp_path) + "/tmp_config.yaml"
     monkeypatch.setattr(orion.core, "DEF_CONFIG_FILES_PATHS", [config_path])
-    monkeypatch.setattr(builtins, "input", _mock_input(["y", "type", "name", "host"]))
+    monkeypatch.setattr(
+        builtins, "input", _mock_input(["y", "mongodb", "name", "host"])
+    )
 
     dump = {"database": {"type": "allo2", "name": "allo2", "host": "allo2"}}
 
@@ -95,3 +97,33 @@ def test_defaults(monkeypatch, tmp_path):
     assert content == {
         "database": {"type": "mongodb", "name": "test", "host": "localhost"}
     }
+
+
+def test_ephemeraldb(monkeypatch, tmp_path):
+    """Test if config content is written for an ephemeraldb."""
+    config_path = str(tmp_path) + "/tmp_config.yaml"
+    monkeypatch.setattr(orion.core, "DEF_CONFIG_FILES_PATHS", [config_path])
+    monkeypatch.setattr(builtins, "input", _mock_input(["ephemeraldb"]))
+
+    orion.core.cli.main(["db", "setup"])
+
+    with open(config_path, "r") as output:
+        content = yaml.safe_load(output)
+
+    assert content == {"database": {"type": "ephemeraldb"}}
+
+
+def test_pickleddb(monkeypatch, tmp_path):
+    """Test if config content is written for an pickleddb."""
+    host = "my_pickles.db"
+
+    config_path = str(tmp_path) + "/tmp_config.yaml"
+    monkeypatch.setattr(orion.core, "DEF_CONFIG_FILES_PATHS", [config_path])
+    monkeypatch.setattr(builtins, "input", _mock_input(["pickleddb", host]))
+
+    orion.core.cli.main(["db", "setup"])
+
+    with open(config_path, "r") as output:
+        content = yaml.safe_load(output)
+
+    assert content == {"database": {"type": "pickleddb", "host": host}}
