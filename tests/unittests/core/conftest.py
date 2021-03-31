@@ -14,8 +14,8 @@ from orion.algo.space import Categorical, Integer, Real, Space
 from orion.core.evc import conflicts
 from orion.core.io.convert import JSONConverter, YAMLConverter
 from orion.core.io.space_builder import DimensionBuilder
+from orion.core.worker.trial import Trial
 from orion.testing import MockDatetime, default_datetime
-from orion.testing.state import OrionState
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, "sample_config.yml")
@@ -184,7 +184,6 @@ dendi_exp_config = dict(
 
 dendi_base_trials = [
     {
-        "experiment": "supernaedo2-dendi",
         "status": "completed",
         "worker": 12512301,
         "submit_time": MockDatetime(2017, 11, 22, 23),
@@ -198,7 +197,6 @@ dendi_base_trials = [
         "parents": [],
     },
     {
-        "experiment": "supernaedo2-dendi",
         "status": "completed",
         "worker": 23415151,
         "submit_time": MockDatetime(2017, 11, 23, 0),
@@ -220,7 +218,6 @@ dendi_base_trials = [
         "parents": [],
     },
     {
-        "experiment": "supernaedo2-dendi",
         "status": "completed",
         "worker": 1251231,
         "submit_time": MockDatetime(2017, 11, 22, 23),
@@ -237,7 +234,6 @@ dendi_base_trials = [
         "parents": [],
     },
     {
-        "experiment": "supernaedo2-dendi",
         "status": "new",
         "worker": None,
         "submit_time": MockDatetime(2017, 11, 23, 1),
@@ -251,7 +247,6 @@ dendi_base_trials = [
         "parents": [],
     },
     {
-        "experiment": "supernaedo2-dendi",
         "status": "new",
         "worker": None,
         "submit_time": MockDatetime(2017, 11, 23, 2),
@@ -269,7 +264,6 @@ dendi_base_trials = [
         "parents": [],
     },
     {
-        "experiment": "supernaedo2-dendi",
         "status": "interrupted",
         "worker": None,
         "submit_time": MockDatetime(2017, 11, 23, 3),
@@ -287,7 +281,6 @@ dendi_base_trials = [
         "parents": [],
     },
     {
-        "experiment": "supernaedo2-dendi",
         "status": "suspended",
         "worker": None,
         "submit_time": MockDatetime(2017, 11, 23, 4),
@@ -306,10 +299,13 @@ dendi_base_trials = [
 @pytest.fixture()
 def hacked_exp(with_user_dendi, random_dt, storage):
     """Return an `Experiment` instance to find trials in fake database."""
-    with OrionState(experiments=[dendi_exp_config], trials=dendi_base_trials) as cfg:
-        exp = experiment_builder.build(name=dendi_exp_config["name"])
-        exp._id = cfg.trials[0]["experiment"]
-        yield exp
+    storage.create_experiment(dendi_exp_config)
+    exp = experiment_builder.build(name=dendi_exp_config["name"])
+    storage._db.write(
+        "trials",
+        [Trial(experiment=exp.id, **trial).to_dict() for trial in dendi_base_trials],
+    )
+    return exp
 
 
 ###

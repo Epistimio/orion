@@ -12,7 +12,6 @@ from orion.core.utils.exceptions import SampleTimeout, WaitingForTrials
 from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial
-from orion.storage.base import get_storage
 
 
 class DumbParallelStrategy:
@@ -85,12 +84,12 @@ def test_algo_observe_completed(producer):
     obs_points = producer.algorithm.algorithm._points
     obs_results = producer.algorithm.algorithm._results
     assert len(obs_points) == 3
-    assert obs_points[0] == ("rnn", "rnn")
-    assert obs_points[1] == ("rnn", "lstm")
+    assert obs_points[0] == ("rnn", "lstm")
+    assert obs_points[1] == ("rnn", "rnn")
     assert obs_points[2] == ("lstm_with_attention", "gru")
     assert len(obs_results) == 3
-    assert obs_results[0] == {"objective": 2, "gradient": (-0.1, 2), "constraint": []}
-    assert obs_results[1] == {"objective": 3, "gradient": None, "constraint": []}
+    assert obs_results[0] == {"objective": 3, "gradient": None, "constraint": []}
+    assert obs_results[1] == {"objective": 2, "gradient": (-0.1, 2), "constraint": []}
     assert obs_results[2] == {"objective": 10, "gradient": (5, 3), "constraint": [1.2]}
 
 
@@ -102,12 +101,12 @@ def test_strategist_observe_completed(producer):
     obs_points = producer.strategy._observed_points
     obs_results = producer.strategy._observed_results
     assert len(obs_points) == 3
-    assert obs_points[1] == ("rnn", "lstm")
-    assert obs_points[0] == ("rnn", "rnn")
+    assert obs_points[0] == ("rnn", "lstm")
+    assert obs_points[1] == ("rnn", "rnn")
     assert obs_points[2] == ("lstm_with_attention", "gru")
     assert len(obs_results) == 3
-    assert obs_results[1] == {"objective": 3, "gradient": None, "constraint": []}
-    assert obs_results[0] == {"objective": 2, "gradient": (-0.1, 2), "constraint": []}
+    assert obs_results[0] == {"objective": 3, "gradient": None, "constraint": []}
+    assert obs_results[1] == {"objective": 2, "gradient": (-0.1, 2), "constraint": []}
     assert obs_results[2] == {"objective": 10, "gradient": (5, 3), "constraint": [1.2]}
 
 
@@ -140,10 +139,8 @@ def test_update_and_produce(producer, random_dt):
     assert producer.naive_algorithm.algorithm._suggested == possible_values
 
 
-def test_register_new_trials(producer, random_dt):
+def test_register_new_trials(producer, storage, random_dt):
     """Test new trials are properly registered"""
-    storage = get_storage()
-
     trials_in_db_before = len(storage._fetch_trials({}))
     new_trials_in_db_before = len(storage._fetch_trials({"status": "new"}))
 
@@ -163,7 +160,7 @@ def test_register_new_trials(producer, random_dt):
     new_trials = list(
         storage._fetch_trials({"status": "new", "submit_time": random_dt})
     )
-    assert new_trials[0].experiment == producer.experiment.name
+    assert new_trials[0].experiment == producer.experiment.id
     assert new_trials[0].start_time is None
     assert new_trials[0].end_time is None
     assert new_trials[0].results == []
@@ -173,10 +170,8 @@ def test_register_new_trials(producer, random_dt):
     }
 
 
-def test_no_lies_if_all_trials_completed(producer, random_dt):
+def test_no_lies_if_all_trials_completed(producer, storage, random_dt):
     """Verify that no lies are created if all trials are completed"""
-    storage = get_storage()
-
     query = {"status": {"$ne": "completed"}}
     storage.delete_trials(producer.experiment, where=query)
     trials_in_db_before = len(storage.fetch_trials(experiment=producer.experiment))
@@ -187,10 +182,8 @@ def test_no_lies_if_all_trials_completed(producer, random_dt):
     assert len(produce_lies(producer)) == 0
 
 
-def test_lies_generation(producer, random_dt):
+def test_lies_generation(producer, storage, random_dt):
     """Verify that lies are created properly"""
-    storage = get_storage()
-
     query = {"status": {"$ne": "completed"}}
     trials_non_completed = storage.fetch_trials(
         experiment=producer.experiment, where=query
@@ -223,10 +216,8 @@ def test_lies_generation(producer, random_dt):
         assert lies_dict == trials_non_completed[i].to_dict()
 
 
-def test_register_lies(producer, random_dt):
+def test_register_lies(producer, storage, random_dt):
     """Verify that lies are registed in DB properly"""
-    storage = get_storage()
-
     query = {"status": {"$ne": "completed"}}
     trials_non_completed = list(
         storage.fetch_trials(experiment=producer.experiment, where=query)
@@ -261,10 +252,8 @@ def test_register_lies(producer, random_dt):
         assert lying_trials[i] == trials_non_completed[i].to_dict()
 
 
-def test_register_duplicate_lies(producer, random_dt):
+def test_register_duplicate_lies(producer, storage, random_dt):
     """Verify that duplicate lies are not registered twice in DB"""
-    storage = get_storage()
-
     query = {"status": {"$ne": "completed"}}
     trials_non_completed = storage.fetch_trials(
         experiment=producer.experiment, where=query
@@ -304,10 +293,8 @@ def test_register_duplicate_lies(producer, random_dt):
     assert len(lying_trials) == 5
 
 
-def test_register_duplicate_lies_with_different_results(producer, random_dt):
+def test_register_duplicate_lies_with_different_results(producer, storage, random_dt):
     """Verify that duplicate lies with different results are all registered in DB"""
-    storage = get_storage()
-
     query = {"status": {"$ne": "completed"}, "experiment": producer.experiment.id}
     trials_non_completed = list(storage._fetch_trials(query))
     assert len(trials_non_completed) == 4
@@ -329,10 +316,8 @@ def test_register_duplicate_lies_with_different_results(producer, random_dt):
     assert lying_trials[0].lie.value == new_lying_value
 
 
-def test_naive_algo_not_trained_when_all_trials_completed(producer, random_dt):
+def test_naive_algo_not_trained_when_all_trials_completed(producer, storage, random_dt):
     """Verify that naive algo is not trained on additional trials when all completed"""
-    storage = get_storage()
-
     query = {"status": {"$ne": "completed"}}
     storage.delete_trials(producer.experiment, where=query)
     trials_in_db_before = len(storage.fetch_trials(producer.experiment))
@@ -344,11 +329,9 @@ def test_naive_algo_not_trained_when_all_trials_completed(producer, random_dt):
     assert len(producer.naive_algorithm.algorithm._points) == 3
 
 
-def test_naive_algo_trained_on_all_non_completed_trials(producer, random_dt):
+def test_naive_algo_trained_on_all_non_completed_trials(producer, storage, random_dt):
     """Verify that naive algo is trained on additional trials"""
     # Set two of completed trials to broken and reserved to have all possible status
-    storage = get_storage()
-
     query = {"experiment": producer.experiment.id, "status": "completed"}
     completed_trials = storage._fetch_trials(query)
 
@@ -402,10 +385,8 @@ def test_naive_algo_is_discared(producer, monkeypatch):
     assert len(producer.naive_algorithm.algorithm._points) == (3 + 5)
 
 
-def test_concurent_producers(producer, random_dt):
+def test_concurent_producers(producer, storage, random_dt):
     """Test concurrent production of new trials."""
-    storage = get_storage()
-
     trials_in_db_before = len(storage._fetch_trials({}))
     new_trials_in_db_before = len(storage._fetch_trials({"status": "new"}))
 
@@ -440,7 +421,7 @@ def test_concurent_producers(producer, random_dt):
     new_trials = list(
         storage._fetch_trials({"status": "new", "submit_time": random_dt})
     )
-    assert new_trials[0].experiment == producer.experiment.name
+    assert new_trials[0].experiment == producer.experiment.id
     assert new_trials[0].start_time is None
     assert new_trials[0].end_time is None
     assert new_trials[0].results == []
@@ -455,12 +436,10 @@ def test_concurent_producers(producer, random_dt):
     }
 
 
-def test_duplicate_within_pool(producer, random_dt):
+def test_duplicate_within_pool(producer, storage, random_dt):
     """Test that an algo suggesting multiple points can have a few registered even
     if one of them is a duplicate.
     """
-    storage = get_storage()
-
     trials_in_db_before = len(storage._fetch_trials({}))
     new_trials_in_db_before = len(storage._fetch_trials({"status": "new"}))
 
@@ -485,7 +464,7 @@ def test_duplicate_within_pool(producer, random_dt):
     new_trials = list(
         storage._fetch_trials({"status": "new", "submit_time": random_dt})
     )
-    assert new_trials[0].experiment == producer.experiment.name
+    assert new_trials[0].experiment == producer.experiment.id
     assert new_trials[0].start_time is None
     assert new_trials[0].end_time is None
     assert new_trials[0].results == []
@@ -500,12 +479,10 @@ def test_duplicate_within_pool(producer, random_dt):
     }
 
 
-def test_duplicate_within_pool_and_db(producer, random_dt):
+def test_duplicate_within_pool_and_db(producer, storage, random_dt):
     """Test that an algo suggesting multiple points can have a few registered even
     if one of them is a duplicate with db.
     """
-    storage = get_storage()
-
     trials_in_db_before = len(storage._fetch_trials({}))
     new_trials_in_db_before = len(storage._fetch_trials({"status": "new"}))
 
@@ -530,7 +507,7 @@ def test_duplicate_within_pool_and_db(producer, random_dt):
     new_trials = list(
         storage._fetch_trials({"status": "new", "submit_time": random_dt})
     )
-    assert new_trials[0].experiment == producer.experiment.name
+    assert new_trials[0].experiment == producer.experiment.id
     assert new_trials[0].start_time is None
     assert new_trials[0].end_time is None
     assert new_trials[0].results == []
@@ -585,9 +562,8 @@ def test_exceed_max_idle_time_because_of_optout(producer, random_dt, monkeypatch
         producer.produce()
 
 
-def test_stops_if_algo_done(producer, random_dt, monkeypatch):
+def test_stops_if_algo_done(producer, storage, random_dt, monkeypatch):
     """Test that producer stops producing when algo is done."""
-    storage = get_storage()
 
     def opt_out_and_complete(self, num=1):
         """Return None to always opt out and set id_done to True"""
