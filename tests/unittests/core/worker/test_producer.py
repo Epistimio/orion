@@ -179,9 +179,7 @@ def test_no_lies_if_all_trials_completed(producer, random_dt):
 
     query = {"status": {"$ne": "completed"}}
     storage.delete_trials(producer.experiment, where=query)
-    trials_in_db_before = len(
-        storage._fetch_trials({"experiment": producer.experiment.id})
-    )
+    trials_in_db_before = len(storage.fetch_trials(experiment=producer.experiment))
     assert trials_in_db_before == 3
 
     producer.update()
@@ -193,11 +191,13 @@ def test_lies_generation(producer, random_dt):
     """Verify that lies are created properly"""
     storage = get_storage()
 
-    query = {"status": {"$ne": "completed"}, "experiment": producer.experiment.id}
-    trials_non_completed = list(storage._fetch_trials(query))
+    query = {"status": {"$ne": "completed"}}
+    trials_non_completed = storage.fetch_trials(
+        experiment=producer.experiment, where=query
+    )
     assert len(trials_non_completed) == 4
-    query = {"status": "completed", "experiment": producer.experiment.id}
-    trials_completed = list(storage._fetch_trials(query))
+    query = {"status": "completed"}
+    trials_completed = storage.fetch_trials(experiment=producer.experiment, where=query)
     assert len(trials_completed) == 3
 
     producer.update()
@@ -227,11 +227,15 @@ def test_register_lies(producer, random_dt):
     """Verify that lies are registed in DB properly"""
     storage = get_storage()
 
-    query = {"status": {"$ne": "completed"}, "experiment": producer.experiment.id}
-    trials_non_completed = list(storage._fetch_trials(query))
+    query = {"status": {"$ne": "completed"}}
+    trials_non_completed = list(
+        storage.fetch_trials(experiment=producer.experiment, where=query)
+    )
     assert len(trials_non_completed) == 4
-    query = {"status": "completed", "experiment": producer.experiment.id}
-    trials_completed = list(storage._fetch_trials(query))
+    query = {"status": "completed"}
+    trials_completed = list(
+        storage.fetch_trials(experiment=producer.experiment, where=query)
+    )
     assert len(trials_completed) == 3
 
     producer.update()
@@ -261,8 +265,10 @@ def test_register_duplicate_lies(producer, random_dt):
     """Verify that duplicate lies are not registered twice in DB"""
     storage = get_storage()
 
-    query = {"status": {"$ne": "completed"}, "experiment": producer.experiment.id}
-    trials_non_completed = storage._fetch_trials(query)
+    query = {"status": {"$ne": "completed"}}
+    trials_non_completed = storage.fetch_trials(
+        experiment=producer.experiment, where=query
+    )
     assert len(trials_non_completed) == 4
 
     # Overwrite value of lying result of the strategist so that all lying trials have the same value
