@@ -14,8 +14,8 @@ import os
 import yaml
 
 import orion.core
-from orion.core.utils.terminal import ask_question
 from orion.core.io.database import Database
+from orion.core.utils.terminal import ask_question
 
 log = logging.getLogger(__name__)
 SHORT_DESCRIPTION = "Starts the database configuration wizard"
