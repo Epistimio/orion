@@ -445,3 +445,34 @@ class Trial:
         return hashlib.md5(
             (params + experiment_repr + lie_repr).encode("utf-8")
         ).hexdigest()
+
+
+class TrialCM:
+    __slots__ = ("_cm_experiment", "_cm_trial")
+
+    def __init__(self, experiment, trial):
+        self._cm_experiment = experiment
+        self._cm_trial = trial
+
+    def __getattribute__(self, name):
+        if name in {"_cm_experiment", "_cm_trial", "__enter__", "__exit__"}:
+            return object.__getattribute__(self, name)
+        return getattr(self._cm_trial, name)
+
+    def __setattr__(self, name, value):
+        if name not in {"_cm_experiment", "_cm_trial"}:
+            setattr(self._cm_trial, name, value)
+        else:
+            object.__setattr__(self, name, value)
+
+    def __enter__(self):
+        return self._cm_trial
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        try:
+            if exc_type is None:
+                self._cm_experiment.release(self._cm_trial)
+            else:
+                self._cm_experiment.release(self._cm_trial, "broken")
+        except:
+            pass

@@ -496,10 +496,12 @@ class TestBroken:
     def test_broken_trial(self):
         """Test that broken trials are detected"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = client.suggest()
-            assert trial.status == "reserved"
-
-            atexit._run_exitfuncs()
+            try:
+                with client.suggest() as trial:
+                    assert trial.status == "reserved"
+                    raise RuntimeError("Dummy failure!")
+            except:
+                pass
 
             assert client._pacemakers == {}
             assert client.get_trial(trial).status == "broken"
