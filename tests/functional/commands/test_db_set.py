@@ -12,7 +12,7 @@ def execute(command, assert_code=0):
     assert returncode == assert_code
 
 
-def test_no_exp(pdatabase, capsys):
+def test_no_exp(storage, capsys):
     """Test that set non-existing exp exits gracefully"""
     execute("db set i-dont-exist whatever=1 idontcare=2", assert_code=1)
 

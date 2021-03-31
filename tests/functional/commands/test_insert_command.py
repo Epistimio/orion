@@ -62,7 +62,7 @@ def test_insert_single_trial(storage, monkeypatch, script_path):
     exp = exp[0]
     assert "_id" in exp
 
-    trials = list(storage._fetch_trials({"experiment": exp["_id"]}))
+    trials = list(storage.fetch_trials(uid=exp["_id"]))
 
     assert len(trials) == 1
 
@@ -94,7 +94,7 @@ def test_insert_single_trial_default_value(storage, monkeypatch):
     exp = exp[0]
     assert "_id" in exp
 
-    trials = list(storage._fetch_trials({"experiment": exp["_id"]}))
+    trials = list(storage.fetch_trials(uid=exp["_id"]))
 
     assert len(trials) == 1
 
@@ -192,7 +192,7 @@ def test_insert_two_hyperparameters(storage, monkeypatch):
     exp = exp[0]
     assert "_id" in exp
 
-    trials = list(storage._fetch_trials({"experiment": exp["_id"]}))
+    trials = list(storage.fetch_trials(uid=exp["_id"]))
 
     assert len(trials) == 1
 

@@ -91,7 +91,7 @@ def test_demo(storage, monkeypatch):
     assert "orion_version" in exp["metadata"]
     assert "user_script" in exp["metadata"]
     assert exp["metadata"]["user_args"] == user_args
-    trials = list(storage._fetch_trials({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) <= 15
     assert trials[-1].status == "completed"
     trials = list(sorted(trials, key=lambda trial: trial.submit_time))
@@ -147,7 +147,7 @@ def test_demo_with_script_config(storage, monkeypatch):
         "script_config.yaml",
     ]
 
-    trials = list(storage._fetch_trials({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) <= 15
     assert trials[-1].status == "completed"
     trials = list(sorted(trials, key=lambda trial: trial.submit_time))
@@ -205,7 +205,7 @@ def test_demo_with_python_and_script(storage, monkeypatch):
         "script_config.yaml",
     ]
 
-    trials = list(storage._fetch_trials({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) <= 15
     assert trials[-1].status == "completed"
     trials = list(sorted(trials, key=lambda trial: trial.submit_time))
@@ -285,7 +285,7 @@ def test_demo_two_workers(storage, monkeypatch):
     assert "user_script" in exp["metadata"]
     assert exp["metadata"]["user_args"] == ["./black_box.py", "-x~norm(34, 3)"]
 
-    trials = list(storage._fetch_trials({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     status = defaultdict(int)
     for trial in trials:
         status[trial.status] += 1
@@ -394,11 +394,9 @@ def test_stress_unique_folder_creation(storage, monkeypatch, tmpdir, capfd):
     # test to create underdamped behaviour), that it begins to suggest same
     # things from the past. This is intended to be shown with the assertions
     # in the for-loop below.
-    trials_c = list(
-        storage._fetch_trials({"experiment": exp_id, "status": "completed"})
-    )
+    trials_c = list(storage.fetch_trials(uid=exp_id, where={"status": "completed"}))
     list_of_cx = [trial.params["/x"] for trial in trials_c]
-    trials_b = list(storage._fetch_trials({"experiment": exp_id, "status": "broken"}))
+    trials_b = list(storage.fetch_trials(uid=exp_id, where={"status": "broken"}))
     list_of_bx = [trial.params["/x"] for trial in trials_b]
     for bx in list_of_bx:
         assert bx in list_of_cx
@@ -517,7 +515,7 @@ def test_run_with_name_only(storage, monkeypatch):
     exp = exp[0]
     assert "_id" in exp
     exp_id = exp["_id"]
-    trials = list(storage._fetch_trials({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) == 20
 
 
@@ -544,7 +542,7 @@ def test_run_with_name_only_with_trailing_whitespace(storage, monkeypatch):
     exp = exp[0]
     assert "_id" in exp
     exp_id = exp["_id"]
-    trials = list(storage._fetch_trials({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) == 20
 
 
@@ -584,7 +582,7 @@ def test_run_with_parallel_strategy(storage, monkeypatch, strategy):
     assert exp["producer"]["strategy"] == {strategy: {"default_result": float("inf")}}
     assert "_id" in exp
     exp_id = exp["_id"]
-    trials = list(storage._fetch_trials({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) == 20
 
 
@@ -614,21 +612,21 @@ def test_worker_trials(storage, monkeypatch):
     assert "_id" in exp
     exp_id = exp["_id"]
 
-    assert len(list(storage._fetch_trials({"experiment": exp_id}))) == 0
+    assert len(list(storage.fetch_trials(uid=exp_id))) == 0
 
     # Test only executes 2 trials
     orion.core.cli.main(
         ["hunt", "--name", "demo_random_search", "--worker-trials", "2"]
     )
 
-    assert len(list(storage._fetch_trials({"experiment": exp_id}))) == 2
+    assert len(list(storage.fetch_trials(uid=exp_id))) == 2
 
     # Test only executes 3 more trials
     orion.core.cli.main(
         ["hunt", "--name", "demo_random_search", "--worker-trials", "3"]
     )
 
-    assert len(list(storage._fetch_trials({"experiment": exp_id}))) == 5
+    assert len(list(storage.fetch_trials(uid=exp_id))) == 5
 
     # Test that max-trials has precedence over worker-trials
     orion.core.cli.main(
@@ -643,7 +641,7 @@ def test_worker_trials(storage, monkeypatch):
         ]
     )
 
-    assert len(list(storage._fetch_trials({"experiment": exp_id}))) == 6
+    assert len(list(storage.fetch_trials(uid=exp_id))) == 6
 
 
 @pytest.mark.usefixtures("storage")
@@ -727,7 +725,7 @@ def test_demo_with_nondefault_config_keyword(storage, monkeypatch):
         "script_config.yaml",
     ]
 
-    trials = list(storage._fetch_trials({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) <= 15
     assert trials[-1].status == "completed"
     trials = list(sorted(trials, key=lambda trial: trial.submit_time))
@@ -770,7 +768,7 @@ def test_demo_precision(storage, monkeypatch):
     exp = list(storage.fetch_experiments({"name": "voila_voici"}))
     exp = exp[0]
     exp_id = exp["_id"]
-    trials = list(storage._fetch_trials({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     trials = list(sorted(trials, key=lambda trial: trial.submit_time))
     params = trials[-1].params
     value = params["/x"]

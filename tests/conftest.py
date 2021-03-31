@@ -360,11 +360,6 @@ def storage(setup_pickleddb_database):
     yield get_storage()
 
 
-@pytest.fixture(scope="function")
-def pdatabase(storage):
-    yield storage._db
-
-
 @pytest.fixture()
 def with_user_userxyz(monkeypatch):
     """Make ``getpass.getuser()`` return ``'userxyz'``."""

@@ -26,10 +26,10 @@ def presence():
 
 
 @pytest.fixture
-def creation(pdatabase):
+def creation(storage):
     """Return a CreationStage instance."""
     stage = CreationStage(None)
-    stage.instance = pdatabase
+    stage.instance = storage._db
     return stage
 
 
@@ -260,7 +260,7 @@ def test_operation_remove_pass(operation):
     assert msg == ""
 
 
-def test_operation_remove_fails(monkeypatch, operation, pdatabase):
+def test_operation_remove_fails(monkeypatch, operation):
     """Check if test fails when remove operation fails."""
     operation.c_stage.instance.write("test", {"index": "value"})
     operation.c_stage.instance.write("test", {"index": "value"})

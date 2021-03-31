@@ -31,25 +31,6 @@ def exp_config():
     return exp_config
 
 
-@pytest.fixture(scope="session")
-def database():
-    """Return Mongo database object to test with example entries."""
-    client = MongoClient(username="user", password="pass", authSource="orion_test")
-    database = client.orion_test
-    yield database
-    client.close()
-
-
-@pytest.fixture()
-def clean_db(database, db_instance):
-    """Clean insert example experiment entries to collections."""
-    database.experiments.drop()
-    database.lying_trials.drop()
-    database.trials.drop()
-    database.workers.drop()
-    database.resources.drop()
-
-
 @pytest.fixture
 def only_experiments_db(storage, exp_config):
     """Clean the database and insert only experiments."""
@@ -57,10 +38,10 @@ def only_experiments_db(storage, exp_config):
         storage.create_experiment(exp)
 
 
-def ensure_deterministic_id(name, db_instance, version=1, update=None):
+def ensure_deterministic_id(name, storage, version=1, update=None):
     """Change the id of experiment to its name."""
-    experiment = db_instance.read("experiments", {"name": name, "version": version})[0]
-    db_instance.remove("experiments", {"_id": experiment["_id"]})
+    experiment = storage.fetch_experiments({"name": name, "version": version})[0]
+    storage.delete_experiment(uid=experiment["_id"])
     _id = zlib.adler32(str((name, version)).encode())
     experiment["_id"] = _id
 
@@ -70,19 +51,19 @@ def ensure_deterministic_id(name, db_instance, version=1, update=None):
     if update is not None:
         experiment.update(update)
 
-    db_instance.write("experiments", experiment)
+    storage.create_experiment(experiment)
 
 
 # Experiments combinations fixtures
 @pytest.fixture
-def one_experiment(monkeypatch, pdatabase):
+def one_experiment(monkeypatch, storage):
     """Create an experiment without trials."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     name = "test_single_exp"
     orion.core.cli.main(
         ["hunt", "--init-only", "-n", name, "./black_box.py", "--x~uniform(0,1)"]
     )
-    ensure_deterministic_id(name, pdatabase)
+    ensure_deterministic_id(name, storage)
     return get_storage().fetch_experiments({"name": name})[0]
 
 
@@ -142,10 +123,10 @@ def with_experiment_missing_conf_file(monkeypatch, one_experiment):
 
 
 @pytest.fixture
-def broken_refers(one_experiment, pdatabase):
+def broken_refers(one_experiment, storage):
     """Create an experiment with broken refers."""
     ensure_deterministic_id(
-        "test_single_exp", pdatabase, update=dict(refers={"oups": "broken"})
+        "test_single_exp", storage, update=dict(refers={"oups": "broken"})
     )
 
 
@@ -178,7 +159,7 @@ def single_with_trials(single_without_success):
 
 
 @pytest.fixture
-def two_experiments(monkeypatch, pdatabase):
+def two_experiments(monkeypatch, storage):
     """Create an experiment and its child."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(
@@ -191,7 +172,7 @@ def two_experiments(monkeypatch, pdatabase):
             "--x~uniform(0,1)",
         ]
     )
-    ensure_deterministic_id("test_double_exp", pdatabase)
+    ensure_deterministic_id("test_double_exp", storage)
 
     orion.core.cli.main(
         [
@@ -206,7 +187,7 @@ def two_experiments(monkeypatch, pdatabase):
             "--y~+uniform(0,1,default_value=0)",
         ]
     )
-    ensure_deterministic_id("test_double_exp_child", pdatabase)
+    ensure_deterministic_id("test_double_exp_child", storage)
 
 
 @pytest.fixture
@@ -251,7 +232,7 @@ def three_experiments_with_trials(family_with_trials, single_with_trials):
 
 
 @pytest.fixture
-def three_experiments_family(two_experiments, pdatabase):
+def three_experiments_family(two_experiments, storage):
     """Create three experiments, one of which is the parent of the other two."""
     orion.core.cli.main(
         [
@@ -266,7 +247,7 @@ def three_experiments_family(two_experiments, pdatabase):
             "--z~+uniform(0,1,default_value=0)",
         ]
     )
-    ensure_deterministic_id("test_double_exp_child2", pdatabase)
+    ensure_deterministic_id("test_double_exp_child2", storage)
 
 
 @pytest.fixture
@@ -286,7 +267,7 @@ def three_family_with_trials(three_experiments_family, family_with_trials):
 
 
 @pytest.fixture
-def three_experiments_family_branch(two_experiments, pdatabase):
+def three_experiments_family_branch(two_experiments, storage):
     """Create three experiments, each parent of the following one."""
     orion.core.cli.main(
         [
@@ -302,7 +283,7 @@ def three_experiments_family_branch(two_experiments, pdatabase):
             "--z~+uniform(0,1,default_value=0)",
         ]
     )
-    ensure_deterministic_id("test_double_exp_grand_child", pdatabase)
+    ensure_deterministic_id("test_double_exp_grand_child", storage)
 
 
 @pytest.fixture
@@ -329,7 +310,7 @@ def three_family_branch_with_trials(
 
 
 @pytest.fixture
-def two_experiments_same_name(one_experiment, pdatabase):
+def two_experiments_same_name(one_experiment, storage):
     """Create two experiments with the same name but different versions."""
     orion.core.cli.main(
         [
@@ -342,11 +323,11 @@ def two_experiments_same_name(one_experiment, pdatabase):
             "--y~+normal(0,1)",
         ]
     )
-    ensure_deterministic_id("test_single_exp", pdatabase, version=2)
+    ensure_deterministic_id("test_single_exp", storage, version=2)
 
 
 @pytest.fixture
-def three_experiments_family_same_name(two_experiments_same_name, pdatabase):
+def three_experiments_family_same_name(two_experiments_same_name, storage):
     """Create three experiments, two of them with the same name but different versions and one
     with a child.
     """
@@ -365,11 +346,11 @@ def three_experiments_family_same_name(two_experiments_same_name, pdatabase):
             "--y~+normal(0,1)",
         ]
     )
-    ensure_deterministic_id("test_single_exp_child", pdatabase)
+    ensure_deterministic_id("test_single_exp_child", storage)
 
 
 @pytest.fixture
-def three_experiments_branch_same_name(two_experiments_same_name, pdatabase):
+def three_experiments_branch_same_name(two_experiments_same_name, storage):
     """Create three experiments, two of them with the same name but different versions and last one
     with a child.
     """
@@ -387,11 +368,11 @@ def three_experiments_branch_same_name(two_experiments_same_name, pdatabase):
             "--z~+normal(0,1)",
         ]
     )
-    ensure_deterministic_id("test_single_exp_child", pdatabase)
+    ensure_deterministic_id("test_single_exp_child", storage)
 
 
 @pytest.fixture
-def three_experiments_same_name(two_experiments_same_name, pdatabase):
+def three_experiments_same_name(two_experiments_same_name, storage):
     """Create three experiments with the same name but different versions."""
     orion.core.cli.main(
         [
@@ -405,11 +386,11 @@ def three_experiments_same_name(two_experiments_same_name, pdatabase):
             "--z~+normal(0,1)",
         ]
     )
-    ensure_deterministic_id("test_single_exp", pdatabase, version=3)
+    ensure_deterministic_id("test_single_exp", storage, version=3)
 
 
 @pytest.fixture
-def three_experiments_same_name_with_trials(two_experiments_same_name, pdatabase):
+def three_experiments_same_name_with_trials(two_experiments_same_name, storage):
     """Create three experiments with the same name but different versions."""
     orion.core.cli.main(
         [
@@ -423,7 +404,7 @@ def three_experiments_same_name_with_trials(two_experiments_same_name, pdatabase
             "--z~+normal(0,1)",
         ]
     )
-    ensure_deterministic_id("test_single_exp", pdatabase, version=3)
+    ensure_deterministic_id("test_single_exp", storage, version=3)
 
     exp = experiment_builder.build(name="test_single_exp", version=1)
     exp2 = experiment_builder.build(name="test_single_exp", version=2)

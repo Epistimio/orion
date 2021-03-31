@@ -342,7 +342,7 @@ def new_config():
 
 
 @pytest.fixture
-def old_config(pdatabase):
+def old_config(storage):
     """Generate an old experiment configuration"""
     user_script = "tests/functional/demo/black_box.py"
     config = dict(
@@ -370,7 +370,7 @@ def old_config(pdatabase):
 
     backward.populate_space(config)
 
-    pdatabase.write("experiments", config)
+    storage.create_experiment(config)
     return config
 
 

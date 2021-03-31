@@ -155,9 +155,9 @@ def generate_trials(status):
     return new_trials
 
 
-def assert_protocol(exp, pdatabase):
+def assert_protocol(exp, storage):
     """Transitional method to move away from mongodb"""
-    assert exp._storage._db is pdatabase
+    assert exp._storage._db is storage._db
 
 
 def count_experiment(exp):
