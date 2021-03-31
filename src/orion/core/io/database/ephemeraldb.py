@@ -130,6 +130,16 @@ class EphemeralDB(AbstractDB):
 
         return dbcollection.delete_many(query=query)
 
+    @classmethod
+    def get_arguments(cls):
+        """Get database arguments needed to create a database instance.
+
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.get_arguments`
+        for argument documentation.
+
+        """
+        return {}
+
 
 class EphemeralCollection(object):
     """Non permanent collection

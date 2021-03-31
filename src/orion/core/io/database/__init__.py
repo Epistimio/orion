@@ -266,6 +266,20 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         """
         pass
 
+    @classmethod
+    @abstractmethod
+    def get_arguments(cls):
+        """Get database arguments needed to create a database instance.
+
+        Returns
+        -------
+        dict
+            A dictionary mapping an argument name to a default value.
+            If unexpected, default value can be None.
+
+        """
+        pass
+
 
 # pylint: disable=too-few-public-methods
 class ReadOnlyDB(object):

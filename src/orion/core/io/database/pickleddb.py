@@ -239,6 +239,16 @@ class PickledDB(AbstractDB):
         except Timeout as e:
             raise DatabaseTimeout(TIMEOUT_ERROR_MESSAGE.format(self.timeout)) from e
 
+    @classmethod
+    def get_arguments(cls):
+        """Get database arguments needed to create a database instance.
+
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.get_arguments`
+        for argument documentation.
+
+        """
+        return {"host": DEFAULT_HOST}
+
 
 local_file_systems = ["ext2", "ext3", "ext4", "ntfs"]
 
