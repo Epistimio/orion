@@ -8,21 +8,25 @@ from timeit import timeit
 import pymongo
 import pytest
 from pymongo import MongoClient
-
-from orion.core.io.database import (
-    Database,
-    DatabaseError,
-    DuplicateKeyError,
+from test_database import (
+    clean_db,
+    db_test_data,
+    drop_collections,
+    get_db,
+    insert_collections,
+    insert_test_collection,
+    orion_db,
+    test_collection,
 )
-from orion.core.io.database.mongodb import AUTH_FAILED_MESSAGES, MongoDB
 
-from test_database import get_db, orion_db, clean_db, drop_collections, insert_test_collection, db_test_data, test_collection, insert_collections
+from orion.core.io.database import Database, DatabaseError, DuplicateKeyError
+from orion.core.io.database.mongodb import AUTH_FAILED_MESSAGES, MongoDB
 
 
 @pytest.fixture(scope="module", autouse=True)
 def db_type(pytestconfig, request):
     """Return the string identifier of a MongoDB if the --mongodb option is
-       active"""
+    active"""
     if not pytestconfig.getoption("--mongodb"):
         pytest.skip("mongodb tests disabled")
     yield "mongodb"
@@ -55,8 +59,8 @@ class TestEnsureIndex(object):
     def test_unique_index(self, orion_db):
         """Index should be set as unique in mongo database's index information."""
         assert (
-                "name_1_metadata.user_1"
-                not in get_db(orion_db)["experiments"].index_information()
+            "name_1_metadata.user_1"
+            not in get_db(orion_db)["experiments"].index_information()
         )
         orion_db.ensure_index(
             "experiments",
@@ -78,26 +82,26 @@ class TestDropIndex(object):
         [
             {
                 "mongodb": (
-                        [("name", Database.ASCENDING)],
-                        [("name", Database.DESCENDING)],
-                        "name_1",
-                        "name_-1",
-                        {"_id_": True, "name_1": False, "name_-1": False},
-                        {"_id_": True, "name_-1": False},
+                    [("name", Database.ASCENDING)],
+                    [("name", Database.DESCENDING)],
+                    "name_1",
+                    "name_-1",
+                    {"_id_": True, "name_1": False, "name_-1": False},
+                    {"_id_": True, "name_-1": False},
                 ),
             },
             {
                 "mongodb": (
-                        [("name", Database.ASCENDING), ("version", Database.DESCENDING)],
-                        [("name", Database.DESCENDING), ("version", Database.ASCENDING)],
-                        "name_1_version_-1",
-                        "name_-1_version_1",
-                        {
-                            "_id_": True,
-                            "name_1_version_-1": False,
-                            "name_-1_version_1": False,
-                        },
-                        {"_id_": True, "name_-1_version_1": False},
+                    [("name", Database.ASCENDING), ("version", Database.DESCENDING)],
+                    [("name", Database.DESCENDING), ("version", Database.ASCENDING)],
+                    "name_1_version_-1",
+                    "name_-1_version_1",
+                    {
+                        "_id_": True,
+                        "name_1_version_-1": False,
+                        "name_-1_version_1": False,
+                    },
+                    {"_id_": True, "name_-1_version_1": False},
                 ),
             },
         ],
@@ -243,16 +247,16 @@ class TestConnection(object):
     def test_change_server_timeout(self):
         """Test that the server timeout is correctly changed."""
         assert (
-                timeit(
-                    lambda: MongoDB(
-                        username="user",
-                        password="pass",
-                        name="orion_test",
-                        serverSelectionTimeoutMS=1000,
-                    ),
-                    number=1,
-                )
-                <= 2
+            timeit(
+                lambda: MongoDB(
+                    username="user",
+                    password="pass",
+                    name="orion_test",
+                    serverSelectionTimeoutMS=1000,
+                ),
+                number=1,
+            )
+            <= 2
         )
 
 
@@ -320,4 +324,5 @@ class TestExceptionWrapper(object):
 
         query = {"_id": test_collection[1]["_id"]}
 
-        with pytest.raises(pymongo.errors.OperationFailure): orion_db.read_and_write("test_collection", query, config_to_add)
+        with pytest.raises(pymongo.errors.OperationFailure):
+            orion_db.read_and_write("test_collection", query, config_to_add)

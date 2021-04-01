@@ -8,14 +8,10 @@ from multiprocessing import Pool
 
 import pytest
 from filelock import FileLock, SoftFileLock, Timeout
+from test_database import clean_db, dump_db, get_db, orion_db
 
-from orion.core.io.database import (
-    DatabaseTimeout,
-    DuplicateKeyError,
-)
-from orion.core.io.database.ephemeraldb import (
-    EphemeralCollection,
-)
+from orion.core.io.database import DatabaseTimeout, DuplicateKeyError
+from orion.core.io.database.ephemeraldb import EphemeralCollection
 from orion.core.io.database.pickleddb import (
     PickledDB,
     _create_lock,
@@ -24,13 +20,11 @@ from orion.core.io.database.pickleddb import (
     local_file_systems,
 )
 
-from test_database import get_db, dump_db, orion_db, clean_db
-
 
 @pytest.fixture(scope="module", autouse=True)
 def db_type(pytestconfig, request):
     """Return the string identifier of a PickledDB if the --mongodb option is
-       not active"""
+    not active"""
     if pytestconfig.getoption("--mongodb"):
         pytest.skip("pickleddb tests disabled")
     yield "pickleddb"
@@ -132,7 +126,7 @@ def test_unpickable_error_find_document():
 
     collection, doc = find_unpickable_doc(database)
     assert (
-            collection == "unpickable_collection"
+        collection == "unpickable_collection"
     ), "should return the unpickable document"
 
     key, value = find_unpickable_field(doc)
@@ -174,7 +168,7 @@ class _MockFS:
         ["idontknow", [], SoftFileLock],
     ]
     + [[fs_type, [], FileLock] for fs_type in local_file_systems],
-    )
+)
 def test_file_locks(monkeypatch, fs_type, options, file_lock_class):
     """Verify that the correct file lock type is used based on FS type and configuration"""
 

@@ -3,9 +3,7 @@
 """Collection of tests for :mod:`orion.core.io.database.pickleddb`."""
 import pytest
 
-from orion.core.io.database import (
-    Database,
-)
+from orion.core.io.database import Database
 from orion.core.io.database.ephemeraldb import (
     EphemeralCollection,
     EphemeralDB,
@@ -16,7 +14,7 @@ from orion.core.io.database.ephemeraldb import (
 @pytest.fixture(scope="module", autouse=True)
 def db_type(pytestconfig, request):
     """Return the string identifier of a EphemeralDB if the --mongodb option is
-       not active"""
+    not active"""
     if pytestconfig.getoption("--mongodb"):
         pytest.skip("ephemeraldb tests disabled")
     yield "ephemeraldb"

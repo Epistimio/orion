@@ -30,8 +30,8 @@ def pytest_addoption(parser):
         action="store_true",
         default=False,
         help="Include MongoDB tests and exclude non-MongoDB databases tests. "
-             "Default behaviour includes non-MongoDB tests and excludes MongoDB "
-             "databases tests.",
+        "Default behaviour includes non-MongoDB tests and excludes MongoDB "
+        "databases tests.",
     )
 
 

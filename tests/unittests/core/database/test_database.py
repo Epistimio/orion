@@ -6,19 +6,10 @@ from datetime import datetime
 
 import pytest
 
-from orion.core.io.database import (
-    Database,
-    DatabaseError,
-    DuplicateKeyError,
-)
-from orion.core.io.database.ephemeraldb import (
-    EphemeralDB,
-)
+from orion.core.io.database import Database, DatabaseError, DuplicateKeyError
+from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.mongodb import MongoDB
-from orion.core.io.database.pickleddb import (
-    PickledDB,
-)
-
+from orion.core.io.database.pickleddb import PickledDB
 
 _DB_TYPES = ["ephemeraldb", "mongodb", "pickleddb"]
 
