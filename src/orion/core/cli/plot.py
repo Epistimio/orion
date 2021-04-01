@@ -14,7 +14,6 @@ import orion.core.io.experiment_builder as experiment_builder
 from orion.core.cli import base as cli
 from orion.plotting.base import SINGLE_EXPERIMENT_PLOTS
 
-
 log = logging.getLogger(__name__)
 DESCRIPTION = "Produce plots for Oríon experiments"
 
