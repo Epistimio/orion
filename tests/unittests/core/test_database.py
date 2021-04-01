@@ -75,9 +75,18 @@ def dump_db(orion_db, db):
         raise TypeError("Invalid database type")
 
 
-@pytest.fixture(scope="module", params=_DB_TYPES)
-def db_type(request):
-    """Return the string identifier of a supported database type"""
+@pytest.fixture(scope="module", autouse=True, params=_DB_TYPES)
+def db_type(pytestconfig, request):
+    """Return the string identifier of a supported database type based on the
+    --mongodb option
+
+    If `--mongodb` is active, only MongoDB tests will be run. Otherwise,
+    all non-MongoDB will be run.
+    """
+    if request.param == "mongodb" and not pytestconfig.getoption("--mongodb"):
+        pytest.skip("{} tests disabled".format(request.param))
+    elif request.param != "mongodb" and pytestconfig.getoption("--mongodb"):
+        pytest.skip("{} tests disabled".format(request.param))
     yield request.param
 
 
@@ -178,16 +187,6 @@ def drop_collections(request, orion_db):
     yield
     for collection in collections:
         db[collection].drop()
-
-
-@pytest.fixture(scope="module", autouse=True)
-def skip_if_not_mongodb(pytestconfig, db_type):
-    """Skip all MongoDB tests if not explicitly requested or skip all
-    non-MongoDB tests if requesting MongoDB tests execution"""
-    if db_type == "mongodb" and not pytestconfig.getoption("--mongodb"):
-        pytest.skip("{} tests disabled".format(db_type))
-    elif db_type != "mongodb" and pytestconfig.getoption("--mongodb"):
-        pytest.skip("{} tests disabled".format(db_type))
 
 
 @pytest.fixture(autouse=True)
