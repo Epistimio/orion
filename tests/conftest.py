@@ -24,6 +24,12 @@ from orion.storage.legacy import Legacy
 from orion.testing import OrionState
 
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "db_types_only(db_types): mark test to run only with listed database types"
+    )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def shield_from_user_config(request):
     """Do not read user's yaml global config."""
