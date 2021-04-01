@@ -170,10 +170,12 @@ host
 ~~~~
 
 :Type: str
-:Default: <user_data_dir>/orion/orion_db.pkl
+:Default: ""
 :Env var: ORION_DB_ADDRESS
 :Description:
-    URI for ``mongodb``, or file path for ``pickleddb``.
+    URI for ``mongodb``, or file path for ``pickleddb``.  An empty
+    string will set the value depending on the database type
+    (localhost or <user_data_dir>/orion/orion_db.pkl).
 
 
 

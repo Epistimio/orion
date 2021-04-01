@@ -92,8 +92,6 @@ def define_database_config(config):
     """Create and define the fields of the database configuration."""
     database_config = Configuration()
 
-    default_host = os.path.join(DIRS.user_data_dir, "orion", "orion_db.pkl")
-
     database_config.add_option(
         "name",
         option_type=str,
@@ -114,7 +112,7 @@ def define_database_config(config):
     database_config.add_option(
         "host",
         option_type=str,
-        default=default_host,
+        default="",
         env_var="ORION_DB_ADDRESS",
         help="URI for ``mongodb``, or file path for ``pickleddb``.",
     )

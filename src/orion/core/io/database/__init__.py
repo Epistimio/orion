@@ -41,7 +41,7 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
 
     def __init__(
         self,
-        host="localhost",
+        host=None,
         name=None,
         port=None,
         username=None,

@@ -77,10 +77,10 @@ stage.
    $ orion db test
 
    Check for a configuration inside the default paths...
-       {'name': 'orion', 'type': 'pickleddb', 'host': '[...]/orion/orion_db.pkl', 'port': 27017}
+       {'name': 'orion', 'type': 'pickleddb', 'host': '', 'port': 27017}
    Success
    Check if configuration file has valid database configuration...
-       {'name': 'orion', 'type': 'pickleddb', 'host': '[...]/orion/orion_db.pkl', 'port': 27017}
+       {'name': 'orion', 'type': 'pickleddb', 'host': '', 'port': 27017}
    Success
 
    [...]
@@ -94,7 +94,7 @@ This is with MongoDB since there are more options to play with.
    $ orion db test --config local.yaml
 
    Check for a configuration inside the global paths...
-       {'name': 'test', 'type': 'pickleddb', 'host': '[...]/orion/orion_db.pkl', 'port': 27017}
+       {'name': 'test', 'type': 'pickleddb', 'host': '', 'port': 27017}
    Success
    Check if configuration file has valid database configuration...
        {'type': 'mongodb', 'host': 'localhost'}
@@ -111,7 +111,7 @@ that will be used and then prints the instance created to confirm the database t
 
    [...]
 
-   Using configuration: {'name': 'orion', 'type': 'pickleddb', 'host': '[...]/orion/orion_db.pkl', 'port': 27017}
+   Using configuration: {'name': 'orion', 'type': 'pickleddb', 'host': '', 'port': 27017}
    Check if database of specified type can be created... Success
    DB instance <orion.core.io.database.pickleddb.PickledDB object at 0x7f86d70067f0>
 
