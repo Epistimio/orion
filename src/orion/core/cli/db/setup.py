@@ -63,7 +63,7 @@ def main(*args):
     ).lower()
     # Get database arguments.
     db_class = Database.types[Database.typenames.index(_type)]
-    db_args = db_class.get_arguments()
+    db_args = db_class.get_defaults()
     arg_vals = {}
     for arg_name, default_value in sorted(db_args.items()):
         arg_vals[arg_name] = ask_question(

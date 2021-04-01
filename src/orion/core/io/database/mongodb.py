@@ -332,10 +332,10 @@ class MongoDB(AbstractDB):
             )
 
     @classmethod
-    def get_arguments(cls):
+    def get_defaults(cls):
         """Get database arguments needed to create a database instance.
 
-        .. seealso:: :meth:`orion.core.io.database.AbstractDB.get_arguments`
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.get_defaults`
                      for argument documentation.
 
         """

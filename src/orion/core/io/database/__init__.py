@@ -268,7 +268,7 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
 
     @classmethod
     @abstractmethod
-    def get_arguments(cls):
+    def get_defaults(cls):
         """Get database arguments needed to create a database instance.
 
         Returns
