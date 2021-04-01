@@ -161,6 +161,16 @@ def clean_db(orion_db, init_db):
         orion_db._dump_database(ephemeral_db)
 
 
+@pytest.fixture()
+def db_test_data(request, db_type):
+    for key in request.param:
+        if db_type in key:
+            yield request.param[key]
+            break
+    else:
+        raise ValueError("Invalid database type")
+
+
 @pytest.fixture(autouse=True)
 def drop_collections(request, orion_db):
     print("\n--drop_collections marker {}--".format(request.node.get_closest_marker("drop_collections")), end="")
@@ -258,6 +268,31 @@ def patch_mongo_client(monkeypatch, db_type):
 class TestEnsureIndex(object):
     """Calls to :meth:`orion.core.io.database.pickleddb.PickledDB.ensure_index`."""
 
+    @pytest.mark.parametrize(
+        "db_test_data",
+        [
+            {
+                "ephemeraldb_pickleddb": (False, "new_field", "new_field_1", False),
+                "mongodb": (False, "new_field", "new_field_1", True),
+            },
+            {
+                "ephemeraldb_pickleddb": (True, "new_field", "new_field_1", True),
+                "mongodb": (True, "new_field", "new_field_1", True),
+            }
+        ],
+        indirect=True
+    )
+    def test_new_index(self, orion_db, db_test_data):
+        """Index should be added to pickled database"""
+        print("\n--test_new_index {}--".format(db_test_data), end="")
+        unique, key, stored_key, key_present = db_test_data
+        assert (
+                stored_key not in get_db(orion_db)["new_collection"].index_information()
+        )
+
+        orion_db.ensure_index("new_collection", key, unique=unique)
+        assert (stored_key in get_db(orion_db)["new_collection"].index_information()) == key_present
+
     def test_existing_index(self, orion_db):
         """Index should be added to pickled database and reattempt should do nothing"""
         assert (
@@ -270,6 +305,21 @@ class TestEnsureIndex(object):
         # reattempt
         orion_db.ensure_index("new_collection", "new_field", unique=True)
         assert "new_field_1" in get_db(orion_db)["new_collection"].index_information()
+
+    @pytest.mark.parametrize(
+        "db_test_data",
+        [{
+            "ephemeraldb_pickleddb": ("end_time", "end_time_1"),
+            "mongodb": ("end_time", "end_time_-1"),
+        }],
+        indirect=True
+    )
+    def test_ordered_index(self, orion_db, db_test_data):
+        """Sort order should be added to index"""
+        key, stored_key = db_test_data
+        assert stored_key not in get_db(orion_db)["new_collection"].index_information()
+        orion_db.ensure_index("new_collection", [(key, Database.DESCENDING)], unique=True)
+        assert stored_key in get_db(orion_db)["new_collection"].index_information()
 
     def test_compound_index(self, orion_db):
         """Tuple of Index should be added as a compound index."""
@@ -287,40 +337,8 @@ class TestEnsureIndex(object):
             in get_db(orion_db)["experiments"].index_information()
         )
 
-    @pytest.mark.db_types_only(["ephemeraldb", "pickleddb"])
-    def test_new_index_ephemeraldb(self, orion_db):
-        """Index should be added to pickled database"""
-        assert (
-                "new_field_1" not in get_db(orion_db)["new_collection"].index_information()
-        )
-
-        orion_db.ensure_index("new_collection", "new_field", unique=False)
-        assert (
-                "new_field_1" not in get_db(orion_db)["new_collection"].index_information()
-        )
-
-        orion_db.ensure_index("new_collection", "new_field", unique=True)
-        assert "new_field_1" in get_db(orion_db)["new_collection"].index_information()
-
     @mongodb_only
-    def test_new_index_mongodb(self, orion_db):
-        """Index should be added to pickled database"""
-        assert (
-                "new_field_1" not in get_db(orion_db)["new_collection"].index_information()
-        )
-
-        orion_db.ensure_index("new_collection", "new_field")
-        assert "new_field_1" in get_db(orion_db)["new_collection"].index_information()
-
-    @mongodb_only
-    def test_ordered_index_mongodb(self, orion_db):
-        """Sort order should be added to index"""
-        assert "end_time_-1" not in get_db(orion_db)["new_collection"].index_information()
-        orion_db.ensure_index("new_collection", [("end_time", Database.DESCENDING)])
-        assert "end_time_-1" in get_db(orion_db)["new_collection"].index_information()
-
-    @mongodb_only
-    def test_unique_index_mongodb(self, orion_db):
+    def test_unique_index(self, orion_db):
         """Index should be set as unique in mongo database's index information."""
         assert (
                 "name_1_metadata.user_1" not in get_db(orion_db)["experiments"].index_information()
@@ -641,85 +659,77 @@ class TestIndexInformation(object):
         """Test that no index is returned when there is none."""
         assert orion_db.index_information("experiments") == {"_id_": True}
 
-    def test_single_index_unique(self, orion_db):
-        """Test with single unique indexes."""
-        orion_db.ensure_index(
-            "experiments", [("name", Database.ASCENDING)], unique=True
-        )
-
-        assert orion_db.index_information("experiments") == {
-            "_id_": True,
-            "name_1": True,
-        }
-
-    @pytest.mark.db_types_only(["ephemeraldb", "pickleddb"])
-    def test_single_index_ephemeraldb(self, orion_db):
+    @pytest.mark.parametrize(
+        "db_test_data",
+        [
+            {
+                "ephemeraldb_pickleddb": (False, "name", {"_id_": True}),
+                "mongodb": (False, "name", {"_id_": True, "name_1": False}),
+            },
+            {
+                "ephemeraldb_pickleddb": (True, "name", {"_id_": True, "name_1": True}),
+                "mongodb": (True, "name", {"_id_": True, "name_1": True}),
+            }
+        ],
+        indirect=True
+    )
+    def test_single_index(self, orion_db, db_test_data):
         """Test that single indexes are ignored if not unique."""
-        orion_db.ensure_index("experiments", [("name", Database.ASCENDING)])
+        print("\n--test_single_index {}--".format(db_test_data), end="")
+        unique, key, index_information = db_test_data
+        orion_db.ensure_index("experiments", [(key, Database.ASCENDING)], unique=unique)
 
-        assert orion_db.index_information("experiments") == {"_id_": True}
+        assert orion_db.index_information("experiments") == index_information
 
-    @pytest.mark.db_types_only(["ephemeraldb", "pickleddb"])
-    def test_ordered_index_ephemeraldb(self, orion_db):
+    @pytest.mark.parametrize(
+        "db_test_data",
+        [
+            {
+                "ephemeraldb_pickleddb": (False, "name", {"_id_": True}),
+                "mongodb": (False, "name", {"_id_": True, "name_-1": False}),
+            },
+            {
+                "ephemeraldb_pickleddb": (True, "name", {"_id_": True, "name_1": True}),
+                "mongodb": (True, "name", {"_id_": True, "name_-1": True}),
+            }
+        ],
+        indirect=True
+    )
+    def test_ordered_index(self, orion_db, db_test_data):
         """Test that ordered indexes are not taken into account."""
+        print("\n--test_ordered_index {}--".format(db_test_data), end="")
+        unique, key, index_information = db_test_data
         orion_db.ensure_index(
-            "experiments", [("name", Database.DESCENDING)], unique=True
+            "experiments", [(key, Database.DESCENDING)], unique=unique
         )
 
-        assert orion_db.index_information("experiments") == {
-            "_id_": True,
-            "name_1": True,
-        }
+        assert orion_db.index_information("experiments") == index_information
 
-    @pytest.mark.db_types_only(["ephemeraldb", "pickleddb"])
-    def test_compound_index_ephemeraldb(self, orion_db):
+    @pytest.mark.parametrize(
+        "db_test_data",
+        [
+            {
+                "ephemeraldb_pickleddb": (False, [("name", Database.DESCENDING), ("version", Database.ASCENDING)], {"_id_": True}),
+                "mongodb": (False, [("name", Database.DESCENDING), ("version", Database.ASCENDING)], {"_id_": True, "name_-1_version_1": False}),
+            },
+            {
+                "ephemeraldb_pickleddb": (True, [("name", Database.DESCENDING), ("version", Database.ASCENDING)], {"_id_": True, "name_1_version_1": True}),
+                "mongodb": (True, [("name", Database.DESCENDING), ("version", Database.ASCENDING)], {"_id_": True, "name_-1_version_1": True}),
+            }
+        ],
+        indirect=True
+    )
+    def test_compound_index(self, orion_db, db_test_data):
         """Test representation of compound indexes."""
+        print("\n--test_compound_index {}--".format(db_test_data), end="")
+        unique, keys_pair, index_information = db_test_data
         orion_db.ensure_index(
             "experiments",
-            [("name", Database.DESCENDING), ("version", Database.ASCENDING)],
-            unique=True,
+            keys_pair,
+            unique=unique,
         )
 
-        index_info = orion_db.index_information("experiments")
-        assert index_info == {"_id_": True, "name_1_version_1": True}
-
-    @mongodb_only
-    def test_single_index_mongodb(self, orion_db):
-        """Test with single indexes."""
-        orion_db.ensure_index("experiments", [("name", Database.ASCENDING)])
-
-        assert orion_db.index_information("experiments") == {
-            "_id_": True,
-            "name_1": False,
-        }
-
-    @mongodb_only
-    def test_ordered_index_mongodb(self, orion_db):
-        """Test with ordered indexes."""
-        orion_db.ensure_index("experiments", [("name", Database.DESCENDING)])
-
-        assert orion_db.index_information("experiments") == {
-            "_id_": True,
-            "name_-1": False,
-        }
-
-    @mongodb_only
-    def test_compound_index_mongodb(self, orion_db):
-        """Test representation of compound indexes."""
-        orion_db.ensure_index(
-            "experiments",
-            [("name", Database.DESCENDING), ("version", Database.ASCENDING)],
-        )
-
-        index_info = orion_db.index_information("experiments")
-        assert index_info == {"_id_": True, "name_-1_version_1": False}
-
-    @mongodb_only
-    def test_unique_index_mongodb(self, orion_db):
-        """Test that unique indexes are correctly inditified."""
-        orion_db.ensure_index("hello", [("bonjour", Database.DESCENDING)], unique=True)
-
-        assert orion_db.index_information("hello") == {"_id_": True, "bonjour_-1": True}
+        assert orion_db.index_information("experiments") == index_information
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -745,74 +755,56 @@ class TestDropIndex(object):
         assert orion_db.index_information("experiments") == {"_id_": True}
 
     @pytest.mark.db_types_only(["ephemeraldb", "pickleddb"])
-    def test_drop_ordered_single_index_ephemeraldb(self, orion_db):
+    @pytest.mark.parametrize(
+        "db_test_data",
+        [
+            {
+                "ephemeraldb_pickleddb": ([("name", Database.DESCENDING)], "name_1", {"_id_": True, "name_1": True}),
+            },
+            {
+                "ephemeraldb_pickleddb": ([("name", Database.ASCENDING), ("version", Database.DESCENDING)], "name_1_version_1", {"_id_": True, "name_1_version_1": True}),
+            }
+        ],
+        indirect=True
+    )
+    def test_drop_ordered_index_ephemeraldb_pickleddb(self, orion_db, db_test_data):
         """Test with single indexes."""
+        print("\n--test_drop_ordered_index_ephemeraldb_pickleddb {}--".format(db_test_data), end="")
+        keys, stored_keys, index_information = db_test_data
         orion_db.ensure_index(
-            "experiments", [("name", Database.DESCENDING)], unique=True
+            "experiments", keys, unique=True
         )
-        index_info = orion_db.index_information("experiments")
-        assert index_info == {"_id_": True, "name_1": True}
-        orion_db.drop_index("experiments", "name_1")
-        index_info = orion_db.index_information("experiments")
-        assert index_info == {"_id_": True}
-
-    @pytest.mark.db_types_only(["ephemeraldb", "pickleddb"])
-    def test_drop_ordered_compound_index_ephemeraldb(self, orion_db):
-        """Test with single indexes."""
-        orion_db.ensure_index(
-            "experiments",
-            [("name", Database.ASCENDING), ("version", Database.DESCENDING)],
-            unique=True,
-        )
-        index_info = orion_db.index_information("experiments")
-        assert index_info == {"_id_": True, "name_1_version_1": True}
-        orion_db.drop_index("experiments", "name_1_version_1")
-        index_info = orion_db.index_information("experiments")
-        assert index_info == {"_id_": True}
+        assert orion_db.index_information("experiments") == index_information
+        orion_db.drop_index("experiments", stored_keys)
+        assert orion_db.index_information("experiments") == {"_id_": True}
 
     @mongodb_only
-    def test_drop_ordered_single_index_mongodb(self, orion_db):
+    @pytest.mark.parametrize(
+        "db_test_data",
+        [
+            {
+                "mongodb": ([("name", Database.ASCENDING)], [("name", Database.DESCENDING)], "name_1", "name_-1", {"_id_": True, "name_1": False, "name_-1": False}, {"_id_": True, "name_-1": False}),
+            },
+            {
+                "mongodb": ([("name", Database.ASCENDING), ("version", Database.DESCENDING)], [("name", Database.DESCENDING), ("version", Database.ASCENDING)], "name_1_version_-1", "name_-1_version_1", {"_id_": True, "name_1_version_-1": False, "name_-1_version_1": False}, {"_id_": True, "name_-1_version_1": False}),
+            }
+        ],
+        indirect=True
+    )
+    def test_drop_ordered_index_mongodb(self, orion_db, db_test_data):
         """Test with single indexes."""
-        orion_db.ensure_index("experiments", [("name", Database.ASCENDING)])
-        orion_db.ensure_index("experiments", [("name", Database.DESCENDING)])
-        index_info = orion_db.index_information("experiments")
-        assert index_info == {"_id_": True, "name_1": False, "name_-1": False}
-        orion_db.drop_index("experiments", "name_1")
-        index_info = orion_db.index_information("experiments")
-        assert index_info == {"_id_": True, "name_-1": False}
+        print("\n--test_drop_ordered_index_mongodb {}--".format(db_test_data), end="")
+        keys_1, keys_2, stored_keys_1, stored_keys_2, index_information_initial, index_information_wo_1 = db_test_data
+        orion_db.ensure_index("experiments", keys_1)
+        orion_db.ensure_index("experiments", keys_2)
+        assert orion_db.index_information("experiments") == index_information_initial
+        orion_db.drop_index("experiments", stored_keys_1)
+        assert orion_db.index_information("experiments") == index_information_wo_1
         with pytest.raises(DatabaseError) as exc:
-            orion_db.drop_index("experiments", "name_1")
+            orion_db.drop_index("experiments", stored_keys_1)
         assert "index not found with name" in str(exc.value)
-        orion_db.drop_index("experiments", "name_-1")
-        index_info = orion_db.index_information("experiments")
-        assert index_info == {"_id_": True}
-
-    @mongodb_only
-    def test_drop_ordered_compound_index_mongodb(self, orion_db):
-        """Test with single indexes."""
-        orion_db.ensure_index(
-            "experiments",
-            [("name", Database.ASCENDING), ("version", Database.DESCENDING)],
-        )
-        orion_db.ensure_index(
-            "experiments",
-            [("name", Database.DESCENDING), ("version", Database.ASCENDING)],
-        )
-        index_info = orion_db.index_information("experiments")
-        assert index_info == {
-            "_id_": True,
-            "name_1_version_-1": False,
-            "name_-1_version_1": False,
-        }
-        orion_db.drop_index("experiments", "name_1_version_-1")
-        index_info = orion_db.index_information("experiments")
-        assert index_info == {"_id_": True, "name_-1_version_1": False}
-        with pytest.raises(DatabaseError) as exc:
-            orion_db.drop_index("experiments", "name_1_version_-1")
-        assert "index not found with name" in str(exc.value)
-        orion_db.drop_index("experiments", "name_-1_version_1")
-        index_info = orion_db.index_information("experiments")
-        assert index_info == {"_id_": True}
+        orion_db.drop_index("experiments", stored_keys_2)
+        assert orion_db.index_information("experiments") == {"_id_": True}
 
     @mongodb_only
     def test_drop_unique_index_mongodb(self, orion_db):
