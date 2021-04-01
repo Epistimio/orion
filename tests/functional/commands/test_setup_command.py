@@ -8,6 +8,7 @@ import yaml
 
 import orion.core
 import orion.core.cli
+from orion.core.io.database import Database
 
 
 class _mock_input:
@@ -83,24 +84,20 @@ def test_stop_creation_when_exists(monkeypatch, tmp_path):
     assert content == dump
 
 
-def test_invalid_database(monkeypatch, tmp_path):
+def test_invalid_database(monkeypatch, tmp_path, capsys):
     """Test if command prompt loops when invalid database is typed."""
+    invalid_db_names = [
+        "invalid database",
+        "invalid database again",
+        "2383ejdd",
+        "another invalid database",
+    ]
     config_path = str(tmp_path) + "/tmp_config.yaml"
     monkeypatch.setattr(orion.core, "DEF_CONFIG_FILES_PATHS", [config_path])
     monkeypatch.setattr(
         builtins,
         "input",
-        _mock_input(
-            [
-                "invalid database",
-                "invalid database again",
-                "2383ejdd",
-                "another invalid database",
-                "mongodb",
-                "the host",
-                "the name",
-            ]
-        ),
+        _mock_input([*invalid_db_names, "mongodb", "the host", "the name",]),
     )
 
     orion.core.cli.main(["db", "setup"])
@@ -111,6 +108,15 @@ def test_invalid_database(monkeypatch, tmp_path):
     assert content == {
         "database": {"type": "mongodb", "name": "the name", "host": "the host"}
     }
+
+    captured_output = capsys.readouterr().out
+    for invalid_db_name in invalid_db_names:
+        assert (
+            "Unexpected value: {}. Must be one of: {}\n".format(
+                invalid_db_name, ", ".join(Database.typenames)
+            )
+            in captured_output
+        )
 
 
 def test_defaults(monkeypatch, tmp_path):
