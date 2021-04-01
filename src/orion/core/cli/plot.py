@@ -80,9 +80,7 @@ def main(args):
     #        the default behavior is to plot "{experiment.name}_{kind}.png".
     
     experiment = experiment_builder.build_from_args(args)
-
-    func_plotting = getattr(orion.plotting.base, args['kind'])
-    output_plot = func_plotting(experiment)
+    output_plot = experiment.plot(kind=args['kind'])
 
     valid_types = ['png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf', 'html', 'json']
     # 'png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf' handled by fig.write_image
