@@ -49,6 +49,7 @@ _DB_TYPES = ["ephemeraldb", "mongodb", "pickleddb"]
 
 
 def get_db(orion_db):
+    """Get database instance"""
     if isinstance(orion_db, EphemeralDB):
         return orion_db._db
     elif isinstance(orion_db, MongoDB):
@@ -60,6 +61,7 @@ def get_db(orion_db):
 
 
 def dump_db(orion_db, db):
+    """Dump database if necessary"""
     if isinstance(orion_db, EphemeralDB):
         pass
     elif isinstance(orion_db, MongoDB):
@@ -74,14 +76,14 @@ def dump_db(orion_db, db):
 
 @pytest.fixture(scope="module", params=_DB_TYPES)
 def db_type(request):
-    """Return a string identifier of the database types"""
+    """Return the string identifier of a supported database type"""
     yield request.param
 
 
 @pytest.fixture(scope="module")
 def orion_db(db_type):
-    """Return a EphemeralDB, MongoDB or a PickledDB wrapper instance initiated
-       with test opts."""
+    """Return a supported database wrapper instance initiated with test opts.
+    """
     if db_type == "ephemeraldb":
         EphemeralDB.instance = None
         orion_db = EphemeralDB()
@@ -102,13 +104,12 @@ def orion_db(db_type):
         orion_db.close_connection()
     elif db_type == "pickleddb":
         pass
-    else:
-        pass
 
 
 @pytest.fixture()
 def init_db(orion_db, exp_config):
-    """Initialise the database with clean insert example experiment entries to collections."""
+    """Initialise and return the current database with clean insert example
+       experiment entries to collections."""
     if isinstance(orion_db, EphemeralDB):
         pass
     elif isinstance(orion_db, MongoDB):
@@ -136,7 +137,7 @@ def init_db(orion_db, exp_config):
 
 @pytest.fixture()
 def clean_db(orion_db, init_db):
-    """Clean database for test."""
+    """Cleaned the current database prior a test."""
     print("\n--CLEAN DB {}--".format(type(orion_db)), end="")
     print("\n--CLEAN DB {}--".format(type(init_db)), end="")
     if isinstance(orion_db, EphemeralDB):
@@ -163,6 +164,7 @@ def clean_db(orion_db, init_db):
 
 @pytest.fixture()
 def db_test_data(request, db_type):
+    """Return test data corresponding to the current database type"""
     for key in request.param:
         if db_type in key:
             yield request.param[key]
@@ -173,6 +175,7 @@ def db_test_data(request, db_type):
 
 @pytest.fixture(autouse=True)
 def drop_collections(request, orion_db):
+    """Drop a collection prior a test"""
     print("\n--drop_collections marker {}--".format(request.node.get_closest_marker("drop_collections")), end="")
     print("\n--drop_collections DB {}--".format(orion_db), end="")
     db = get_db(orion_db)
@@ -192,6 +195,8 @@ def drop_collections(request, orion_db):
 
 @pytest.fixture(scope="module", autouse=True)
 def skip_if_not_mongodb(pytestconfig, db_type):
+    """Skip all MongoDB tests if not explicitly requested or skip all
+       non-MongoDB tests if requesting MongoDB tests execution"""
     print("\n--skip_if_not_mongodb config {}--".format(pytestconfig), end="")
     print("\n--skip_if_not_mongodb DB TYPE {}--".format(db_type), end="")
     if db_type == "mongodb" and not pytestconfig.getoption("--mongodb"):
@@ -202,7 +207,7 @@ def skip_if_not_mongodb(pytestconfig, db_type):
 
 @pytest.fixture(autouse=True)
 def skip_if_not_db_type(request, db_type):
-    """Skip test if th database type does no match the "db_types_only" marker
+    """Skip test if th database type does no match the database type marker
     """
     db_types_only = request.node.get_closest_marker("db_types_only")
     if db_types_only and db_type not in db_types_only.args[0]:
@@ -266,7 +271,7 @@ def patch_mongo_client(monkeypatch, db_type):
 @pytest.mark.usefixtures("clean_db")
 @pytest.mark.drop_collections(["new_collection"])
 class TestEnsureIndex(object):
-    """Calls to :meth:`orion.core.io.database.pickleddb.PickledDB.ensure_index`."""
+    """Calls to :meth:`orion.core.io.database.AbstractDB.ensure_index`."""
 
     @pytest.mark.parametrize(
         "db_test_data",
@@ -283,7 +288,7 @@ class TestEnsureIndex(object):
         indirect=True
     )
     def test_new_index(self, orion_db, db_test_data):
-        """Index should be added to pickled database"""
+        """Index should be added to database"""
         print("\n--test_new_index {}--".format(db_test_data), end="")
         unique, key, stored_key, key_present = db_test_data
         assert (
@@ -294,7 +299,7 @@ class TestEnsureIndex(object):
         assert (stored_key in get_db(orion_db)["new_collection"].index_information()) == key_present
 
     def test_existing_index(self, orion_db):
-        """Index should be added to pickled database and reattempt should do nothing"""
+        """Index should be added to database and reattempt should do nothing"""
         assert (
             "new_field_1" not in get_db(orion_db)["new_collection"].index_information()
         )
@@ -315,7 +320,8 @@ class TestEnsureIndex(object):
         indirect=True
     )
     def test_ordered_index(self, orion_db, db_test_data):
-        """Sort order should be added to index"""
+        """Sort order should only be added to index when executed on a mongo
+           database"""
         key, stored_key = db_test_data
         assert stored_key not in get_db(orion_db)["new_collection"].index_information()
         orion_db.ensure_index("new_collection", [(key, Database.DESCENDING)], unique=True)
@@ -355,7 +361,7 @@ class TestEnsureIndex(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestRead(object):
-    """Calls to :meth:`orion.core.io.database.pickleddb.PickledDB.read`."""
+    """Calls to :meth:`orion.core.io.database.AbstractDB.read`."""
 
     def test_read_experiment(self, exp_config, orion_db):
         """Fetch a whole experiment entries."""
@@ -445,7 +451,7 @@ class TestRead(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestWrite(object):
-    """Calls to :meth:`orion.core.io.database.pickleddb.PickledDB.write`."""
+    """Calls to :meth:`orion.core.io.database.AbstractDB.write`."""
 
     def test_insert_one(self, orion_db):
         """Should insert a single new entry in the collection."""
@@ -514,7 +520,7 @@ class TestWrite(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestReadAndWrite(object):
-    """Calls to :meth:`orion.core.io.database.pickleddb.PickledDB.read_and_write`."""
+    """Calls to :meth:`orion.core.io.database.AbstractDB.read_and_write`."""
 
     def test_read_and_write_one(self, orion_db, exp_config):
         """Should read and update a single entry in the collection."""
@@ -571,7 +577,7 @@ class TestReadAndWrite(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestRemove(object):
-    """Calls to :meth:`orion.core.io.database.pickleddb.PickledDB.remove`."""
+    """Calls to :meth:`orion.core.io.database.AbstractDB.remove`."""
 
     def test_remove_many_default(self, exp_config, orion_db):
         """Should match existing entries, and delete them all."""
@@ -628,7 +634,7 @@ class TestRemove(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestCount(object):
-    """Calls :meth:`orion.core.io.database.pickleddb.PickledDB.count`."""
+    """Calls :meth:`orion.core.io.database.AbstractDB.count`."""
 
     def test_count_default(self, exp_config, orion_db):
         """Call just with collection name."""
@@ -653,7 +659,7 @@ class TestCount(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestIndexInformation(object):
-    """Calls :meth:`orion.core.io.database.mongodb.EphemeralDB.count`."""
+    """Calls :meth:`orion.core.io.database.AbstractDB.index_information`."""
 
     def test_no_index(self, orion_db):
         """Test that no index is returned when there is none."""
@@ -734,7 +740,7 @@ class TestIndexInformation(object):
 
 @pytest.mark.usefixtures("clean_db")
 class TestDropIndex(object):
-    """Calls :meth:`orion.core.io.database.mongodb.EphemeralDB.count`."""
+    """Calls :meth:`orion.core.io.database.AbstractDB.drop_index`."""
 
     def test_no_index(self, orion_db):
         """Test that no index is returned when there is none."""
@@ -768,7 +774,7 @@ class TestDropIndex(object):
         indirect=True
     )
     def test_drop_ordered_index_ephemeraldb_pickleddb(self, orion_db, db_test_data):
-        """Test with single indexes."""
+        """Test with single and compound indexes."""
         print("\n--test_drop_ordered_index_ephemeraldb_pickleddb {}--".format(db_test_data), end="")
         keys, stored_keys, index_information = db_test_data
         orion_db.ensure_index(
@@ -792,7 +798,7 @@ class TestDropIndex(object):
         indirect=True
     )
     def test_drop_ordered_index_mongodb(self, orion_db, db_test_data):
-        """Test with single indexes."""
+        """Test with single and compound indexes."""
         print("\n--test_drop_ordered_index_mongodb {}--".format(db_test_data), end="")
         keys_1, keys_2, stored_keys_1, stored_keys_2, index_information_initial, index_information_wo_1 = db_test_data
         orion_db.ensure_index("experiments", keys_1)
