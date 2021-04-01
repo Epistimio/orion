@@ -11,9 +11,10 @@ def test_no_args(capsys):
     with pytest.raises(SystemExit):
         orion.core.cli.main(["plot"])
 
-    captured = capsys.readouterr().out
+    captured = capsys.readouterr().err
 
     assert "usage:" in captured
+    assert "the following arguments are required: kind" in captured
     assert "Traceback" not in captured
 
 
