@@ -7,8 +7,7 @@ This is a simple tutorial on running hyperparameter search with Oríon on Pytorc
 Installation and setup
 ======================
 
-Make sure Oríon is installed (:doc:`/install/core`) and the database is configured
-(:doc:`/install/database`).
+Make sure Oríon is installed (:doc:`/install/core`).
 
 Then install ``pytorch`` and ``torchvision`` and clone the
 PyTorch `examples repository`_:
