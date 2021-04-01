@@ -2,15 +2,19 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.io.database.pickleddb`."""
 import copy
+import functools
 import logging
 import os
 import random
 import uuid
 from datetime import datetime
 from multiprocessing import Pool
+from timeit import timeit
 
+import pymongo
 import pytest
 from filelock import FileLock, SoftFileLock, Timeout
+from pymongo import MongoClient
 
 import orion.core.utils.backward as backward
 from orion.core.io.database import Database, DatabaseError, DatabaseTimeout, DuplicateKeyError
@@ -18,6 +22,10 @@ from orion.core.io.database.ephemeraldb import (
     EphemeralCollection,
     EphemeralDB,
     EphemeralDocument,
+)
+from orion.core.io.database.mongodb import (
+    AUTH_FAILED_MESSAGES,
+    MongoDB
 )
 from orion.core.io.database.pickleddb import (
     PickledDB,
@@ -31,11 +39,37 @@ from orion.core.io.database.pickleddb import (
 ephemeraldb_only = pytest.mark.db_types_only(["ephemeraldb"])
 
 
+mongodb_only = pytest.mark.db_types_only(["mongodb"])
+
+
 pickleddb_only = pytest.mark.db_types_only(["pickleddb"])
 
 
-# _DATABASE_PARAMS = ["ephemeraldb", "mongodb", "pickleddb"]
-_DB_TYPES = ["ephemeraldb", "pickleddb"]
+_DB_TYPES = ["ephemeraldb", "mongodb", "pickleddb"]
+
+
+def get_db(orion_db):
+    if isinstance(orion_db, EphemeralDB):
+        return orion_db._db
+    elif isinstance(orion_db, MongoDB):
+        return orion_db._db
+    elif isinstance(orion_db, PickledDB):
+        return orion_db._get_database()._db
+    else:
+        raise TypeError("Invalid database type")
+
+
+def dump_db(orion_db, db):
+    if isinstance(orion_db, EphemeralDB):
+        pass
+    elif isinstance(orion_db, MongoDB):
+        pass
+    elif isinstance(orion_db, PickledDB):
+        ephemeral_db = orion_db._get_database()
+        ephemeral_db._db = db
+        orion_db._dump_database(ephemeral_db)
+    else:
+        raise TypeError("Invalid database type")
 
 
 @pytest.fixture(scope="module", params=_DB_TYPES)
@@ -52,7 +86,8 @@ def orion_db(db_type):
         EphemeralDB.instance = None
         orion_db = EphemeralDB()
     elif db_type == "mongodb":
-        pass
+        MongoDB.instance = None
+        orion_db = MongoDB(username="user", password="pass", name="orion_test")
     elif db_type == "pickleddb":
         PickledDB.instance = None
         orion_db = PickledDB(host="orion_db.pkl")
@@ -61,14 +96,23 @@ def orion_db(db_type):
 
     yield orion_db
 
+    if db_type == "ephemeraldb":
+        pass
+    elif db_type == "mongodb":
+        orion_db.close_connection()
+    elif db_type == "pickleddb":
+        pass
+    else:
+        pass
+
 
 @pytest.fixture()
 def init_db(orion_db, exp_config):
     """Initialise the database with clean insert example experiment entries to collections."""
     if isinstance(orion_db, EphemeralDB):
         pass
-    # elif isinstance(orion_db, MongoDB):
-    #     pass
+    elif isinstance(orion_db, MongoDB):
+        pass
     elif isinstance(orion_db, PickledDB):
         if os.path.exists(orion_db.host):
             os.remove(orion_db.host)
@@ -77,6 +121,7 @@ def init_db(orion_db, exp_config):
 
     database["experiments"].drop()
     database["experiments"].insert_many(exp_config[0])
+    database["lying_trials"].drop()
     database["trials"].drop()
     database["trials"].insert_many(exp_config[1])
     database["workers"].drop()
@@ -86,7 +131,7 @@ def init_db(orion_db, exp_config):
 
     dump_db(orion_db, database)
 
-    yield copy.deepcopy(database)
+    yield database
 
 
 @pytest.fixture()
@@ -94,18 +139,55 @@ def clean_db(orion_db, init_db):
     """Clean database for test."""
     print("\n--CLEAN DB {}--".format(type(orion_db)), end="")
     print("\n--CLEAN DB {}--".format(type(init_db)), end="")
+    if isinstance(orion_db, EphemeralDB):
+        clean_database = copy.deepcopy(init_db)
+    elif isinstance(orion_db, MongoDB):
+        pass
+    elif isinstance(orion_db, PickledDB):
+        clean_database = copy.deepcopy(init_db)
+    else:
+        raise TypeError("Invalid database type")
 
     yield
 
     # Restaure initial database
     if isinstance(orion_db, EphemeralDB):
-        orion_db._db = init_db
-    # elif isinstance(orion_db, MongoDB):
-    #     pass
+        orion_db._db = clean_database
+    elif isinstance(orion_db, MongoDB):
+        pass
     elif isinstance(orion_db, PickledDB):
         ephemeral_db = orion_db._get_database()
-        ephemeral_db._db = init_db
+        ephemeral_db._db = clean_database
         orion_db._dump_database(ephemeral_db)
+
+
+@pytest.fixture(autouse=True)
+def drop_collections(request, orion_db):
+    print("\n--drop_collections marker {}--".format(request.node.get_closest_marker("drop_collections")), end="")
+    print("\n--drop_collections DB {}--".format(orion_db), end="")
+    db = get_db(orion_db)
+    collections = (
+        request.node.get_closest_marker("drop_collections").args[0]
+        if request.node.get_closest_marker("drop_collections")
+        else tuple()
+    )
+    for collection in collections:
+        print("\n--drop_collections collection {}--".format(collection), end="")
+        db[collection].drop()
+    yield
+    for collection in collections:
+        print("\n--drop_collections collection {}--".format(collection), end="")
+        db[collection].drop()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def skip_if_not_mongodb(pytestconfig, db_type):
+    print("\n--skip_if_not_mongodb config {}--".format(pytestconfig), end="")
+    print("\n--skip_if_not_mongodb DB TYPE {}--".format(db_type), end="")
+    if db_type == "mongodb" and not pytestconfig.getoption("--mongodb"):
+        pytest.skip("{} tests disabled".format(db_type))
+    elif db_type != "mongodb" and pytestconfig.getoption("--mongodb"):
+        pytest.skip("{} tests disabled".format(db_type))
 
 
 @pytest.fixture(autouse=True)
@@ -150,66 +232,50 @@ def collection(document, db_type):
     yield collection
 
 
-def get_db(orion_db):
-    if isinstance(orion_db, EphemeralDB):
-        return orion_db._db
-    # elif isinstance(orion_db, MongoDB):
-    #     return orion_db
-    elif isinstance(orion_db, PickledDB):
-        return orion_db._get_database()._db
-    else:
-        raise TypeError("Invalid database type")
+# MONGODB ONLY FIXTURES
 
 
-def dump_db(orion_db, db):
-    if isinstance(orion_db, EphemeralDB):
-        pass
-    # elif isinstance(orion_db, MongoDB):
-    #     pass
-    elif isinstance(orion_db, PickledDB):
-        ephemeral_db = orion_db._get_database()
-        ephemeral_db._db = db
-        orion_db._dump_database(ephemeral_db)
-    else:
-        raise TypeError("Invalid database type")
+@pytest.fixture()
+def patch_mongo_client(monkeypatch, db_type):
+    """Patch ``pymongo.MongoClient`` to force serverSelectionTimeoutMS to 1."""
+    if db_type != "mongodb":
+        pytest.skip("mongodb test only")
 
+    def mock_class(*args, **kwargs):
+        # 1 sec, defaults to 20 secs otherwise
+        kwargs["serverSelectionTimeoutMS"] = 1.0
+        # NOTE: Can't use pymongo.MongoClient otherwise there is an infinit
+        # recursion; mock(mock(mock(mock(...(MongoClient)...))))
+        return MongoClient(*args, **kwargs)
+
+    monkeypatch.setattr("pymongo.MongoClient", mock_class)
+
+
+# TESTS SET
 
 @pytest.mark.usefixtures("clean_db")
+@pytest.mark.drop_collections(["new_collection"])
 class TestEnsureIndex(object):
     """Calls to :meth:`orion.core.io.database.pickleddb.PickledDB.ensure_index`."""
-
-    def test_new_index(self, orion_db):
-        """Index should be added to pickled database"""
-        assert (
-                "new_field_1" not in get_db(orion_db)["new_collection"]._indexes
-        )
-
-        orion_db.ensure_index("new_collection", "new_field", unique=False)
-        assert (
-                "new_field_1" not in get_db(orion_db)["new_collection"]._indexes
-        )
-
-        orion_db.ensure_index("new_collection", "new_field", unique=True)
-        assert "new_field_1" in get_db(orion_db)["new_collection"]._indexes
 
     def test_existing_index(self, orion_db):
         """Index should be added to pickled database and reattempt should do nothing"""
         assert (
-            "new_field_1" not in get_db(orion_db)["new_collection"]._indexes
+            "new_field_1" not in get_db(orion_db)["new_collection"].index_information()
         )
 
         orion_db.ensure_index("new_collection", "new_field", unique=True)
-        assert "new_field_1" in get_db(orion_db)["new_collection"]._indexes
+        assert "new_field_1" in get_db(orion_db)["new_collection"].index_information()
 
         # reattempt
         orion_db.ensure_index("new_collection", "new_field", unique=True)
-        assert "new_field_1" in get_db(orion_db)["new_collection"]._indexes
+        assert "new_field_1" in get_db(orion_db)["new_collection"].index_information()
 
     def test_compound_index(self, orion_db):
         """Tuple of Index should be added as a compound index."""
         assert (
             "name_1_metadata.user_1"
-            not in get_db(orion_db)["experiments"]._indexes
+            not in get_db(orion_db)["experiments"].index_information()
         )
         orion_db.ensure_index(
             "experiments",
@@ -218,8 +284,55 @@ class TestEnsureIndex(object):
         )
         assert (
             "name_1_metadata.user_1"
-            in get_db(orion_db)["experiments"]._indexes
+            in get_db(orion_db)["experiments"].index_information()
         )
+
+    @pytest.mark.db_types_only(["ephemeraldb", "pickleddb"])
+    def test_new_index_ephemeraldb(self, orion_db):
+        """Index should be added to pickled database"""
+        assert (
+                "new_field_1" not in get_db(orion_db)["new_collection"].index_information()
+        )
+
+        orion_db.ensure_index("new_collection", "new_field", unique=False)
+        assert (
+                "new_field_1" not in get_db(orion_db)["new_collection"].index_information()
+        )
+
+        orion_db.ensure_index("new_collection", "new_field", unique=True)
+        assert "new_field_1" in get_db(orion_db)["new_collection"].index_information()
+
+    @mongodb_only
+    def test_new_index_mongodb(self, orion_db):
+        """Index should be added to pickled database"""
+        assert (
+                "new_field_1" not in get_db(orion_db)["new_collection"].index_information()
+        )
+
+        orion_db.ensure_index("new_collection", "new_field")
+        assert "new_field_1" in get_db(orion_db)["new_collection"].index_information()
+
+    @mongodb_only
+    def test_ordered_index_mongodb(self, orion_db):
+        """Sort order should be added to index"""
+        assert "end_time_-1" not in get_db(orion_db)["new_collection"].index_information()
+        orion_db.ensure_index("new_collection", [("end_time", Database.DESCENDING)])
+        assert "end_time_-1" in get_db(orion_db)["new_collection"].index_information()
+
+    @mongodb_only
+    def test_unique_index_mongodb(self, orion_db):
+        """Index should be set as unique in mongo database's index information."""
+        assert (
+                "name_1_metadata.user_1" not in get_db(orion_db)["experiments"].index_information()
+        )
+        orion_db.ensure_index(
+            "experiments",
+            [("name", Database.ASCENDING), ("metadata.user", Database.ASCENDING)],
+            unique=True,
+        )
+        index_information = get_db(orion_db)["experiments"].index_information()
+        assert "name_1_metadata.user_1" in index_information
+        assert index_information["name_1_metadata.user_1"]["unique"]
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -287,6 +400,7 @@ class TestRead(object):
         )
         assert value == exp_config[1][3:7]
 
+    @pytest.mark.db_types_only(["ephemeraldb", "pickleddb"])
     def test_null_comp(self, exp_config, orion_db):
         """Fetch value(s) from an entry."""
         all_values = orion_db.read(
@@ -372,6 +486,13 @@ class TestWrite(object):
         assert value[1]["pool_size"] == 36
         assert value[2]["pool_size"] == 2
 
+    def test_no_upsert(self, orion_db):
+        """Query with a non-existent ``_id`` should no upsert something."""
+        assert (
+                orion_db.write("experiments", {"pool_size": 66}, {"_id": "lalalathisisnew"})
+                == 0
+        )
+
 
 @pytest.mark.usefixtures("clean_db")
 class TestReadAndWrite(object):
@@ -418,6 +539,7 @@ class TestReadAndWrite(object):
 
         assert loaded_config is None
 
+    @pickleddb_only
     def test_logging_when_getting_file_lock(self, caplog, orion_db):
         """When logging.level is ERROR, there should be no logging."""
         logging.basicConfig(level=logging.INFO)
@@ -458,7 +580,7 @@ class TestRemove(object):
         assert orion_db.remove("experiments", filt) == 1
         database = get_db(orion_db)
         assert database["experiments"].count() == count_before - 1
-        loaded_configs = database["experiments"].find()
+        loaded_configs = list(database["experiments"].find())
         for loaded_config in loaded_configs:
             backward.populate_space(loaded_config)
         assert loaded_configs == exp_config[0][1:]
@@ -519,16 +641,10 @@ class TestIndexInformation(object):
         """Test that no index is returned when there is none."""
         assert orion_db.index_information("experiments") == {"_id_": True}
 
-    def test_single_index(self, orion_db):
-        """Test that single indexes are ignored if not unique."""
-        orion_db.ensure_index("experiments", [("name", EphemeralDB.ASCENDING)])
-
-        assert orion_db.index_information("experiments") == {"_id_": True}
-
     def test_single_index_unique(self, orion_db):
         """Test with single unique indexes."""
         orion_db.ensure_index(
-            "experiments", [("name", EphemeralDB.ASCENDING)], unique=True
+            "experiments", [("name", Database.ASCENDING)], unique=True
         )
 
         assert orion_db.index_information("experiments") == {
@@ -536,10 +652,18 @@ class TestIndexInformation(object):
             "name_1": True,
         }
 
-    def test_ordered_index(self, orion_db):
+    @pytest.mark.db_types_only(["ephemeraldb", "pickleddb"])
+    def test_single_index_ephemeraldb(self, orion_db):
+        """Test that single indexes are ignored if not unique."""
+        orion_db.ensure_index("experiments", [("name", Database.ASCENDING)])
+
+        assert orion_db.index_information("experiments") == {"_id_": True}
+
+    @pytest.mark.db_types_only(["ephemeraldb", "pickleddb"])
+    def test_ordered_index_ephemeraldb(self, orion_db):
         """Test that ordered indexes are not taken into account."""
         orion_db.ensure_index(
-            "experiments", [("name", EphemeralDB.DESCENDING)], unique=True
+            "experiments", [("name", Database.DESCENDING)], unique=True
         )
 
         assert orion_db.index_information("experiments") == {
@@ -547,16 +671,55 @@ class TestIndexInformation(object):
             "name_1": True,
         }
 
-    def test_compound_index(self, orion_db):
+    @pytest.mark.db_types_only(["ephemeraldb", "pickleddb"])
+    def test_compound_index_ephemeraldb(self, orion_db):
         """Test representation of compound indexes."""
         orion_db.ensure_index(
             "experiments",
-            [("name", EphemeralDB.DESCENDING), ("version", EphemeralDB.ASCENDING)],
+            [("name", Database.DESCENDING), ("version", Database.ASCENDING)],
             unique=True,
         )
 
         index_info = orion_db.index_information("experiments")
         assert index_info == {"_id_": True, "name_1_version_1": True}
+
+    @mongodb_only
+    def test_single_index_mongodb(self, orion_db):
+        """Test with single indexes."""
+        orion_db.ensure_index("experiments", [("name", Database.ASCENDING)])
+
+        assert orion_db.index_information("experiments") == {
+            "_id_": True,
+            "name_1": False,
+        }
+
+    @mongodb_only
+    def test_ordered_index_mongodb(self, orion_db):
+        """Test with ordered indexes."""
+        orion_db.ensure_index("experiments", [("name", Database.DESCENDING)])
+
+        assert orion_db.index_information("experiments") == {
+            "_id_": True,
+            "name_-1": False,
+        }
+
+    @mongodb_only
+    def test_compound_index_mongodb(self, orion_db):
+        """Test representation of compound indexes."""
+        orion_db.ensure_index(
+            "experiments",
+            [("name", Database.DESCENDING), ("version", Database.ASCENDING)],
+        )
+
+        index_info = orion_db.index_information("experiments")
+        assert index_info == {"_id_": True, "name_-1_version_1": False}
+
+    @mongodb_only
+    def test_unique_index_mongodb(self, orion_db):
+        """Test that unique indexes are correctly inditified."""
+        orion_db.ensure_index("hello", [("bonjour", Database.DESCENDING)], unique=True)
+
+        assert orion_db.index_information("hello") == {"_id_": True, "bonjour_-1": True}
 
 
 @pytest.mark.usefixtures("clean_db")
@@ -572,7 +735,7 @@ class TestDropIndex(object):
     def test_drop_single_index(self, orion_db):
         """Test with single indexes."""
         orion_db.ensure_index(
-            "experiments", [("name", EphemeralDB.ASCENDING)], unique=True
+            "experiments", [("name", Database.ASCENDING)], unique=True
         )
         assert orion_db.index_information("experiments") == {
             "_id_": True,
@@ -581,10 +744,11 @@ class TestDropIndex(object):
         orion_db.drop_index("experiments", "name_1")
         assert orion_db.index_information("experiments") == {"_id_": True}
 
-    def test_drop_ordered_single_index(self, orion_db):
+    @pytest.mark.db_types_only(["ephemeraldb", "pickleddb"])
+    def test_drop_ordered_single_index_ephemeraldb(self, orion_db):
         """Test with single indexes."""
         orion_db.ensure_index(
-            "experiments", [("name", EphemeralDB.DESCENDING)], unique=True
+            "experiments", [("name", Database.DESCENDING)], unique=True
         )
         index_info = orion_db.index_information("experiments")
         assert index_info == {"_id_": True, "name_1": True}
@@ -592,17 +756,72 @@ class TestDropIndex(object):
         index_info = orion_db.index_information("experiments")
         assert index_info == {"_id_": True}
 
-    def test_drop_ordered_compound_index(self, orion_db):
+    @pytest.mark.db_types_only(["ephemeraldb", "pickleddb"])
+    def test_drop_ordered_compound_index_ephemeraldb(self, orion_db):
         """Test with single indexes."""
         orion_db.ensure_index(
             "experiments",
-            [("name", EphemeralDB.ASCENDING), ("version", EphemeralDB.DESCENDING)],
+            [("name", Database.ASCENDING), ("version", Database.DESCENDING)],
             unique=True,
         )
         index_info = orion_db.index_information("experiments")
         assert index_info == {"_id_": True, "name_1_version_1": True}
         orion_db.drop_index("experiments", "name_1_version_1")
         index_info = orion_db.index_information("experiments")
+        assert index_info == {"_id_": True}
+
+    @mongodb_only
+    def test_drop_ordered_single_index_mongodb(self, orion_db):
+        """Test with single indexes."""
+        orion_db.ensure_index("experiments", [("name", Database.ASCENDING)])
+        orion_db.ensure_index("experiments", [("name", Database.DESCENDING)])
+        index_info = orion_db.index_information("experiments")
+        assert index_info == {"_id_": True, "name_1": False, "name_-1": False}
+        orion_db.drop_index("experiments", "name_1")
+        index_info = orion_db.index_information("experiments")
+        assert index_info == {"_id_": True, "name_-1": False}
+        with pytest.raises(DatabaseError) as exc:
+            orion_db.drop_index("experiments", "name_1")
+        assert "index not found with name" in str(exc.value)
+        orion_db.drop_index("experiments", "name_-1")
+        index_info = orion_db.index_information("experiments")
+        assert index_info == {"_id_": True}
+
+    @mongodb_only
+    def test_drop_ordered_compound_index_mongodb(self, orion_db):
+        """Test with single indexes."""
+        orion_db.ensure_index(
+            "experiments",
+            [("name", Database.ASCENDING), ("version", Database.DESCENDING)],
+        )
+        orion_db.ensure_index(
+            "experiments",
+            [("name", Database.DESCENDING), ("version", Database.ASCENDING)],
+        )
+        index_info = orion_db.index_information("experiments")
+        assert index_info == {
+            "_id_": True,
+            "name_1_version_-1": False,
+            "name_-1_version_1": False,
+        }
+        orion_db.drop_index("experiments", "name_1_version_-1")
+        index_info = orion_db.index_information("experiments")
+        assert index_info == {"_id_": True, "name_-1_version_1": False}
+        with pytest.raises(DatabaseError) as exc:
+            orion_db.drop_index("experiments", "name_1_version_-1")
+        assert "index not found with name" in str(exc.value)
+        orion_db.drop_index("experiments", "name_-1_version_1")
+        index_info = orion_db.index_information("experiments")
+        assert index_info == {"_id_": True}
+
+    @mongodb_only
+    def test_drop_unique_index_mongodb(self, orion_db):
+        """Test with single indexes."""
+        orion_db.ensure_index("hello", [("bonjour", Database.DESCENDING)], unique=True)
+        index_info = orion_db.index_information("hello")
+        assert index_info == {"_id_": True, "bonjour_-1": True}
+        orion_db.drop_index("hello", "bonjour_-1")
+        index_info = orion_db.index_information("hello")
         assert index_info == {"_id_": True}
 
 
@@ -637,7 +856,7 @@ class TestIndex(object):
     def test_index_over_non_existing_field(self, collection):
         """Test if index values are tracked property."""
         collection.create_index(
-            [("hello", EphemeralDB.DESCENDING), ("idontexist", EphemeralDB.ASCENDING)],
+            [("hello", Database.DESCENDING), ("idontexist", Database.ASCENDING)],
             unique=True,
         )
 
@@ -751,6 +970,197 @@ class TestMatch:
             document.match({"_id": {"$voici_voila": 0}})
 
         assert "Operator '$voici_voila' is not supported" in str(exc.value)
+
+
+# MONGODB ONLY TESTS
+
+
+@mongodb_only
+@pytest.mark.usefixtures("null_db_instances")
+class TestConnection(object):
+    """Create a :class:`orion.core.io.database.mongodb.MongoDB`, check connection cases."""
+
+    @pytest.mark.usefixtures("patch_mongo_client")
+    def test_bad_connection(self, monkeypatch):
+        """Raise when connection cannot be achieved."""
+        monkeypatch.setattr(
+            MongoDB, "initiate_connection", MongoDB.initiate_connection.__wrapped__
+        )
+        with pytest.raises(pymongo.errors.ConnectionFailure) as exc_info:
+            MongoDB(
+                host="asdfada",
+                port=123,
+                name="orion",
+                username="uasdfaf",
+                password="paasdfss",
+            )
+
+        monkeypatch.undo()
+
+        # Verify that the wrapper converts it properly to DatabaseError
+        with pytest.raises(DatabaseError) as exc_info:
+            MongoDB(
+                host="asdfada",
+                port=123,
+                name="orion",
+                username="uasdfaf",
+                password="paasdfss",
+            )
+        assert "Connection" in str(exc_info.value)
+
+    def test_bad_authentication(self, monkeypatch):
+        """Raise when authentication cannot be achieved."""
+        monkeypatch.setattr(
+            MongoDB, "initiate_connection", MongoDB.initiate_connection.__wrapped__
+        )
+        with pytest.raises(pymongo.errors.OperationFailure) as exc_info:
+            MongoDB(name="orion_test", username="uasdfaf", password="paasdfss")
+        assert any(m in str(exc_info.value) for m in AUTH_FAILED_MESSAGES)
+
+        monkeypatch.undo()
+
+        with pytest.raises(DatabaseError) as exc_info:
+            MongoDB(name="orion_test", username="uasdfaf", password="paasdfss")
+        assert "Authentication" in str(exc_info.value)
+
+    def test_connection_with_uri(self):
+        """Check the case when connecting with ready `uri`."""
+        orion_db = MongoDB("mongodb://user:pass@localhost/orion_test")
+        assert orion_db.host == "localhost"
+        assert orion_db.port == 27017
+        assert orion_db.username == "user"
+        assert orion_db.password == "pass"
+        assert orion_db.name == "orion_test"
+
+    def test_overwrite_uri(self):
+        """Check the case when connecting with ready `uri`."""
+        orion_db = MongoDB(
+            "mongodb://user:pass@localhost:27017/orion_test",
+            port=1231,
+            name="orion",
+            username="lala",
+            password="pass",
+        )
+        assert orion_db.host == "localhost"
+        assert orion_db.port == 27017
+        assert orion_db.username == "user"
+        assert orion_db.password == "pass"
+        assert orion_db.name == "orion_test"
+
+    def test_overwrite_partial_uri(self, monkeypatch):
+        """Check the case when connecting with partial `uri`."""
+        monkeypatch.setattr(MongoDB, "initiate_connection", lambda self: None)
+
+        orion_db = MongoDB(
+            "mongodb://localhost",
+            port=1231,
+            name="orion",
+            username="lala",
+            password="none",
+        )
+        orion_db._sanitize_attrs()
+        assert orion_db.host == "localhost"
+        assert orion_db.port == 1231
+        assert orion_db.username == "lala"
+        assert orion_db.password == "none"
+        assert orion_db.name == "orion"
+
+    def test_singleton(self):
+        """Test that MongoDB class is a singleton."""
+        orion_db = MongoDB(
+            "mongodb://localhost",
+            port=27017,
+            name="orion_test",
+            username="user",
+            password="pass",
+        )
+        # reinit connection does not change anything
+        orion_db.initiate_connection()
+        orion_db.close_connection()
+        assert MongoDB() is orion_db
+
+    def test_change_server_timeout(self):
+        """Test that the server timeout is correctly changed."""
+        assert (
+                timeit(
+                    lambda: MongoDB(
+                        username="user",
+                        password="pass",
+                        name="orion_test",
+                        serverSelectionTimeoutMS=1000,
+                    ),
+                    number=1,
+                )
+                <= 2
+        )
+
+
+@mongodb_only
+@pytest.mark.usefixtures("clean_db")
+class TestExceptionWrapper(object):
+    """Call to methods wrapped with `mongodb_exception_wrapper()`."""
+
+    def test_duplicate_key_error(self, monkeypatch, orion_db, exp_config):
+        """Should raise generic DuplicateKeyError."""
+        # Add unique indexes to force trigger of DuplicateKeyError on write()
+        orion_db.ensure_index(
+            "experiments",
+            [("name", Database.ASCENDING), ("metadata.user", Database.ASCENDING)],
+            unique=True,
+        )
+
+        config_to_add = exp_config[0][0]
+        config_to_add.pop("_id")
+
+        query = {"_id": exp_config[0][1]["_id"]}
+
+        # Make sure it raises pymongo.errors.DuplicateKeyError when there is no
+        # wrapper
+        monkeypatch.setattr(
+            orion_db,
+            "read_and_write",
+            functools.partial(orion_db.read_and_write.__wrapped__, orion_db),
+        )
+        with pytest.raises(pymongo.errors.DuplicateKeyError) as exc_info:
+            orion_db.read_and_write("experiments", query, config_to_add)
+
+        monkeypatch.undo()
+
+        # Verify that the wrapper converts it properly to DuplicateKeyError
+        with pytest.raises(DuplicateKeyError) as exc_info:
+            orion_db.read_and_write("experiments", query, config_to_add)
+        assert "duplicate key error" in str(exc_info.value)
+
+    def test_bulk_duplicate_key_error(self, monkeypatch, orion_db, exp_config):
+        """Should raise generic DuplicateKeyError."""
+        # Make sure it raises pymongo.errors.BulkWriteError when there is no
+        # wrapper
+        monkeypatch.setattr(
+            orion_db, "write", functools.partial(orion_db.write.__wrapped__, orion_db)
+        )
+        with pytest.raises(pymongo.errors.BulkWriteError) as exc_info:
+            orion_db.write("experiments", exp_config[0])
+
+        monkeypatch.undo()
+
+        # Verify that the wrapper converts it properly to DuplicateKeyError
+        with pytest.raises(DuplicateKeyError) as exc_info:
+            orion_db.write("experiments", exp_config[0])
+        assert "duplicate key error" in str(exc_info.value)
+
+    def test_non_converted_errors(self, orion_db, exp_config):
+        """Should raise OperationFailure.
+
+        This is because _id inside exp_config[0][0] cannot be set. It is an
+        immutable key of the collection.
+
+        """
+        config_to_add = exp_config[0][0]
+
+        query = {"_id": exp_config[0][1]["_id"]}
+
+        with pytest.raises(pymongo.errors.OperationFailure):
+            orion_db.read_and_write("experiments", query, config_to_add)
 
 
 # PICKLEDDB ONLY TESTS

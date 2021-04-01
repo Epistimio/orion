@@ -24,7 +24,14 @@ from orion.storage.legacy import Legacy
 from orion.testing import OrionState
 
 
+def pytest_addoption(parser):
+    parser.addoption("--mongodb", action="store_true", default=False)
+
+
 def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "drop_collections(collections): mark test to drop collections prior running the test"
+    )
     config.addinivalue_line(
         "markers", "db_types_only(db_types): mark test to run only with listed database types"
     )
