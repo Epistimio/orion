@@ -6,7 +6,7 @@ Helper functions for terminal i/o
 """
 
 
-def ask_question(question, default=None):
+def ask_question(question, default=None, choice=None, ignore_case=False):
     """Ask a question to the user and receive an answer.
 
     Parameters
@@ -15,6 +15,11 @@ def ask_question(question, default=None):
         The question to be asked.
     default: str
         The default value to use if the user enters nothing.
+    choice: list
+        List of expected values to check user answer
+    ignore_case: bool
+        Used only if choice is provided. If True, ignore case when checking
+        user answer against given choice.
 
     Returns
     -------
@@ -22,13 +27,24 @@ def ask_question(question, default=None):
         The answer provided by the user.
 
     """
+    if choice is not None:
+        if ignore_case:
+            choice = [value.lower() for value in choice]
+        question = question + " (choice: {})".format(", ".join(choice))
+
     if default is not None:
         question = question + " (default: {}) ".format(default)
 
-    answer = input(question)
-
-    if answer.strip() == "":
-        return default
+    while True:
+        answer = input(question)
+        if answer.strip() == "":
+            answer = default
+            break
+        if choice is None:
+            break
+        if answer in choice or (ignore_case and answer.lower() in choice):
+            break
+        print("Unexpected value {}\n".format(answer))
 
     return answer
 

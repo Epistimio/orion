@@ -55,25 +55,12 @@ def main(*args):
             return
 
     # Get database type.
-    while True:
-        _type = (
-            ask_question(
-                "Enter the database type (available: {}): ".format(
-                    ", ".join(Database.typenames)
-                ),
-                "mongodb",
-            )
-            .strip()
-            .lower()
-        )
-        if _type in Database.typenames:
-            break
-        print(
-            "Unknown database type: {}, expected: {}".format(
-                _type, ", ".join(Database.typenames)
-            )
-        )
-        print()
+    _type = ask_question(
+        "Enter the database",
+        choice=Database.typenames,
+        default="mongodb",
+        ignore_case=True,
+    ).lower()
     # Get database arguments.
     db_class = Database.types[Database.typenames.index(_type)]
     db_args = db_class.get_arguments()
