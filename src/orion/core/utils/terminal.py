@@ -44,7 +44,11 @@ def ask_question(question, default=None, choice=None, ignore_case=False):
             break
         if answer in choice or (ignore_case and answer.lower() in choice):
             break
-        print("Unexpected value {}\n".format(answer))
+        print(
+            "Unexpected value: {}. Must be one of: {}\n".format(
+                answer, ", ".join(choice)
+            )
+        )
 
     return answer
 
