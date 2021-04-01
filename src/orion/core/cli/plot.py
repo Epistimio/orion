@@ -33,6 +33,7 @@ def add_subparser(parser):
     plot_parser.add_argument(
         "kind",
         type=str,
+        choices=['lpi', 'partial_dependencies', 'parallel_coordinates', 'regret'],
         help="kind of plot to generate. "
         " Pick one among ['lpi', 'partial_dependencies', 'parallel_coordinates', 'regret']"
     )
@@ -42,6 +43,7 @@ def add_subparser(parser):
         "--type",
         type=str,
         default="png",
+        choices=['png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf', 'html', 'json'],
         help="type of plot to return. "
         " Pick one among ['png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf', 'html', 'json']"
         " (default: png)",
@@ -73,20 +75,13 @@ def add_subparser(parser):
 
 def main(args):
     """Starts an application that will generate a plot."""
-    config = experiment_builder.get_cmd_config(args)
-
-    # Note : If you specify no argument at all, the default behavior
-    #        is to plot the lpi as <experiment_name>.png .
-
-
-    # What does this do?    
-    #experiment_builder.setup_storage(config.get("storage"))
+    
+    # Note : If you specify no argument at all (except 'kind'),
+    #        the default behavior is to plot "{experiment.name}_{kind}.png".
     
     experiment = experiment_builder.build_from_args(args)
 
-    assert args['kind'] in ['lpi', 'partial_dependencies', 'parallel_coordinates', 'regret']
     func_plotting = getattr(orion.plotting.base, args['kind'])
-
     output_plot = func_plotting(experiment)
 
     valid_types = ['png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf', 'html', 'json']
@@ -102,8 +97,7 @@ def main(args):
             f"but we got the invalid value : {args['type']} .")
     else:
         # `type` was given, and we'll pick a `output` based on the name
-        assert args['type'] in valid_types, (
-            f"Invalid `type` {args['type']} .")
+
         # Using `experiment.name` instead of args['name'] because it leaves
         # orion the possibility of having inferred the name in other ways.
         args['output'] = f"{experiment.name}_{args['kind']}.{args['type']}"
