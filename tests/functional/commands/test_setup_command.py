@@ -97,7 +97,14 @@ def test_invalid_database(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(
         builtins,
         "input",
-        _mock_input([*invalid_db_names, "mongodb", "the host", "the name",]),
+        _mock_input(
+            [
+                *invalid_db_names,
+                "mongodb",
+                "the host",
+                "the name",
+            ]
+        ),
     )
 
     orion.core.cli.main(["db", "setup"])
