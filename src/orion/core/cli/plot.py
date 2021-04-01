@@ -12,6 +12,8 @@ import logging
 
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.cli import base as cli
+from orion.plotting.base import SINGLE_EXPERIMENT_PLOTS
+
 
 log = logging.getLogger(__name__)
 DESCRIPTION = "Produce plots for Oríon experiments"
@@ -26,9 +28,8 @@ def add_subparser(parser):
     plot_parser.add_argument(
         "kind",
         type=str,
-        choices=["lpi", "partial_dependencies", "parallel_coordinates", "regret"],
-        help="kind of plot to generate. "
-        " Pick one among ['lpi', 'partial_dependencies', 'parallel_coordinates', 'regret']",
+        choices=SINGLE_EXPERIMENT_PLOTS.keys(),
+        help="kind of plot to generate. ",
     )
 
     plot_parser.add_argument(
@@ -37,9 +38,7 @@ def add_subparser(parser):
         type=str,
         default="png",
         choices=["png", "jpg", "jpeg", "webp", "svg", "pdf", "html", "json"],
-        help="type of plot to return. "
-        " Pick one among ['png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf', 'html', 'json']"
-        " (default: png)",
+        help="type of plot to return. (default: png)",
     )
 
     plot_parser.add_argument(
