@@ -19,7 +19,7 @@ from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
-from orion.storage.base import Storage
+from orion.storage.base import Storage, get_storage, setup_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
 
@@ -316,24 +316,6 @@ def version_XYZ(monkeypatch):
 
 
 @pytest.fixture()
-def create_db_instance(null_db_instances, clean_db):
-    """Create and save a singleton database instance."""
-    try:
-        database = {
-            "type": "MongoDB",
-            "name": "orion_test",
-            "username": "user",
-            "password": "pass",
-        }
-        db = Storage(of_type="legacy", database=database)
-    except ValueError:
-        db = Storage()
-
-    db = db._db
-    return db
-
-
-@pytest.fixture()
 def script_path():
     """Return a script path for mock"""
     return os.path.join(
@@ -370,6 +352,12 @@ def setup_pickleddb_database():
     temporary_file.close()
     del os.environ["ORION_DB_TYPE"]
     del os.environ["ORION_DB_ADDRESS"]
+
+
+@pytest.fixture(scope="function")
+def storage(setup_pickleddb_database):
+    setup_storage()
+    yield get_storage()
 
 
 @pytest.fixture()

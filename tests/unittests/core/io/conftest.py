@@ -59,10 +59,13 @@ def child_config(parent_config):
 
 
 @pytest.fixture
-def experiment_name_conflict(create_db_instance, parent_config, child_config):
+def experiment_name_conflict(storage, parent_config, child_config):
     """Generate an experiment name conflict"""
-    create_db_instance.remove("experiments", {"name": "test"})
-    create_db_instance.remove("experiments", {"name": "test2"})
-    create_db_instance.write("experiments", parent_config)
-    create_db_instance.write("experiments", child_config)
+    exps = storage.fetch_experiments({"name": "test"}) + storage.fetch_experiments(
+        {"name": "test2"}
+    )
+    for exp in exps:
+        storage.delete_experiment(uid=exp["_id"])
+    storage.create_experiment(parent_config)
+    storage.create_experiment(child_config)
     return conflicts.ExperimentNameConflict(parent_config, parent_config)

@@ -41,7 +41,7 @@ def trial(exp):
     return trial
 
 
-@pytest.mark.usefixtures("create_db_instance")
+@pytest.mark.usefixtures("storage")
 def test_trial_update_heartbeat(exp, trial):
     """Test that the heartbeat of a trial has been updated."""
     trial_monitor = TrialPacemaker(trial, wait_time=1)
@@ -63,7 +63,7 @@ def test_trial_update_heartbeat(exp, trial):
     trial_monitor.stop()
 
 
-@pytest.mark.usefixtures("create_db_instance")
+@pytest.mark.usefixtures("storage")
 def test_trial_heartbeat_not_updated(exp, trial):
     """Test that the heartbeat of a trial is not updated when trial is not longer reserved."""
     trial_monitor = TrialPacemaker(trial, wait_time=1)
@@ -84,7 +84,7 @@ def test_trial_heartbeat_not_updated(exp, trial):
     assert 1
 
 
-@pytest.mark.usefixtures("create_db_instance")
+@pytest.mark.usefixtures("storage")
 def test_trial_heartbeat_not_updated_inbetween(exp, trial):
     """Test that the heartbeat of a trial is not updated before wait time."""
     trial_monitor = TrialPacemaker(trial, wait_time=5)

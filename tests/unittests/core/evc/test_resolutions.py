@@ -57,7 +57,7 @@ def code_resolution(code_conflict):
 
 
 @pytest.fixture
-def experiment_name_resolution(create_db_instance, experiment_name_conflict):
+def experiment_name_resolution(setup_pickleddb_database, experiment_name_conflict):
     """Create a resolution for a code conflict"""
     return experiment_name_conflict.ExperimentNameResolution(
         experiment_name_conflict, new_name="new-exp-name"

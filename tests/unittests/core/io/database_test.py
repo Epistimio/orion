@@ -5,11 +5,12 @@
 import pytest
 
 from orion.core.io.database import Database, ReadOnlyDB
-from orion.core.io.database.mongodb import MongoDB
+from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.singleton import (
     SingletonAlreadyInstantiatedError,
     SingletonNotInstantiatedError,
 )
+from orion.storage.base import get_storage
 
 
 @pytest.mark.usefixtures("null_db_instances")
@@ -41,41 +42,36 @@ class TestDatabaseFactory(object):
 
     def test_instantiation_and_singleton(self):
         """Test create just one object, that object persists between calls."""
-        database = Database(
-            of_type="MongoDB", name="orion_test", username="user", password="pass"
-        )
+        database = Database(of_type="PickledDB", name="orion_test")
 
-        assert isinstance(database, MongoDB)
-        assert database is MongoDB()
+        assert isinstance(database, PickledDB)
+        assert database is PickledDB()
         assert database is Database()
 
         with pytest.raises(SingletonAlreadyInstantiatedError):
             Database("fire", [], {"it_matters": "it's singleton"})
 
 
-@pytest.mark.usefixtures("null_db_instances", "clean_db")
+@pytest.mark.usefixtures("null_db_instances")
 class TestReadOnlyDatabase(object):
     """Test coherence of read-only database and its wrapped database."""
 
-    def test_valid_attributes(self, create_db_instance):
+    def test_valid_attributes(self, storage):
         """Test attributes are coherent from view and wrapped database."""
-        database = create_db_instance
+        database = storage._db
         readonly_database = ReadOnlyDB(database)
 
-        assert readonly_database.is_connected == database.is_connected
         assert readonly_database.host == database.host
         assert readonly_database.port == database.port
-        assert readonly_database.username == database.username
-        assert readonly_database.password == database.password
 
-    def test_read(self, create_db_instance):
+    def test_read(self, hacked_exp):
         """Test read is coherent from view and wrapped database."""
-        database = create_db_instance
+        database = get_storage()._db
         readonly_database = ReadOnlyDB(database)
 
         args = {
-            "collection_name": "trials",
-            "query": {"experiment": "supernaedo2-dendi"},
+            "collection_name": "experiments",
+            "query": {"name": "supernaedo2-dendi"},
         }
         readonly_result = readonly_database.read(**args)
         result = database.read(**args)
@@ -83,9 +79,9 @@ class TestReadOnlyDatabase(object):
         assert len(result) > 0  # Otherwise the test is pointless
         assert readonly_result == result
 
-    def test_invalid_attributes(self, create_db_instance):
+    def test_invalid_attributes(self, storage):
         """Test that attributes for writing are not accessible."""
-        database = create_db_instance
+        database = storage._db
         readonly_database = ReadOnlyDB(database)
 
         # Test that database.ensure_index indeed exists

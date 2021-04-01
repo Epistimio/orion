@@ -355,7 +355,7 @@ class Legacy(BaseStorageProtocol):
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
         return self.update_trial(
-            trial, heartbeat=datetime.datetime.utcnow(), status="reserved"
+            trial, heartbeat=datetime.datetime.utcnow(), where={"status": "reserved"}
         )
 
     def fetch_trials_by_status(self, experiment, status):

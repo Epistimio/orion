@@ -20,13 +20,9 @@ from orion.storage.legacy import Legacy
 from orion.testing import OrionState
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
+def test_demo_with_default_algo_cli_config_only(storage, monkeypatch):
     """Check that random algorithm is used, when no algo is chosen explicitly."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
-    monkeypatch.setenv("ORION_DB_NAME", "orion_test")
-    monkeypatch.setenv("ORION_DB_ADDRESS", "mongodb://user:pass@localhost")
 
     orion.core.cli.main(
         [
@@ -40,7 +36,7 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
         ]
     )
 
-    exp = list(database.experiments.find({"name": "default_algo"}))
+    exp = list(storage.fetch_experiments({"name": "default_algo"}))
     assert len(exp) == 1
     exp = exp[0]
     assert "_id" in exp
@@ -56,9 +52,7 @@ def test_demo_with_default_algo_cli_config_only(database, monkeypatch):
     assert exp["metadata"]["user_args"] == ["./black_box.py", "-x~uniform(-50, 50)"]
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_demo(database, monkeypatch):
+def test_demo(storage, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -80,7 +74,7 @@ def test_demo(database, monkeypatch):
 
     orion.core.cli.main(["hunt", "--config", "./orion_config.yaml"] + user_args)
 
-    exp = list(database.experiments.find({"name": "voila_voici"}))
+    exp = list(storage.fetch_experiments({"name": "voila_voici"}))
     assert len(exp) == 1
     exp = exp[0]
     assert "_id" in exp
@@ -97,29 +91,27 @@ def test_demo(database, monkeypatch):
     assert "orion_version" in exp["metadata"]
     assert "user_script" in exp["metadata"]
     assert exp["metadata"]["user_args"] == user_args
-    trials = list(database.trials.find({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) <= 15
-    assert trials[-1]["status"] == "completed"
-    trials = list(sorted(trials, key=lambda trial: trial["submit_time"]))
-    for result in trials[-1]["results"]:
-        assert result["type"] != "constraint"
-        if result["type"] == "objective":
-            assert abs(result["value"] - 23.4) < 1e-6
-            assert result["name"] == "example_objective"
-        elif result["type"] == "gradient":
-            res = numpy.asarray(result["value"])
+    assert trials[-1].status == "completed"
+    trials = list(sorted(trials, key=lambda trial: trial.submit_time))
+    for result in trials[-1].results:
+        assert result.type != "constraint"
+        if result.type == "objective":
+            assert abs(result.value - 23.4) < 1e-6
+            assert result.name == "example_objective"
+        elif result.type == "gradient":
+            res = numpy.asarray(result.value)
             assert 0.1 * numpy.sqrt(res.dot(res)) < 1e-7
-            assert result["name"] == "example_gradient"
-    params = trials[-1]["params"]
+            assert result.name == "example_gradient"
+    params = trials[-1].params
     assert len(params) == 1
-    assert params[0]["name"] == "/x"
-    assert params[0]["type"] == "real"
-    assert (params[0]["value"] - 34.56789) < 1e-5
+    px = params["/x"]
+    assert isinstance(px, float)
+    assert (px - 34.56789) < 1e-5
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_demo_with_script_config(database, monkeypatch):
+def test_demo_with_script_config(storage, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(
@@ -133,7 +125,7 @@ def test_demo_with_script_config(database, monkeypatch):
         ]
     )
 
-    exp = list(database.experiments.find({"name": "voila_voici"}))
+    exp = list(storage.fetch_experiments({"name": "voila_voici"}))
     assert len(exp) == 1
     exp = exp[0]
     assert "_id" in exp
@@ -155,29 +147,27 @@ def test_demo_with_script_config(database, monkeypatch):
         "script_config.yaml",
     ]
 
-    trials = list(database.trials.find({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) <= 15
-    assert trials[-1]["status"] == "completed"
-    trials = list(sorted(trials, key=lambda trial: trial["submit_time"]))
-    for result in trials[-1]["results"]:
-        assert result["type"] != "constraint"
-        if result["type"] == "objective":
-            assert abs(result["value"] - 23.4) < 1e-6
-            assert result["name"] == "example_objective"
-        elif result["type"] == "gradient":
-            res = numpy.asarray(result["value"])
+    assert trials[-1].status == "completed"
+    trials = list(sorted(trials, key=lambda trial: trial.submit_time))
+    for result in trials[-1].results:
+        assert result.type != "constraint"
+        if result.type == "objective":
+            assert abs(result.value - 23.4) < 1e-6
+            assert result.name == "example_objective"
+        elif result.type == "gradient":
+            res = numpy.asarray(result.value)
             assert 0.1 * numpy.sqrt(res.dot(res)) < 1e-7
-            assert result["name"] == "example_gradient"
-    params = trials[-1]["params"]
+            assert result.name == "example_gradient"
+    params = trials[-1].params
     assert len(params) == 1
-    assert params[0]["name"] == "/x"
-    assert params[0]["type"] == "real"
-    assert (params[0]["value"] - 34.56789) < 1e-5
+    px = params["/x"]
+    assert isinstance(px, float)
+    assert (px - 34.56789) < 1e-5
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_demo_with_python_and_script(database, monkeypatch):
+def test_demo_with_python_and_script(storage, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(
@@ -192,7 +182,7 @@ def test_demo_with_python_and_script(database, monkeypatch):
         ]
     )
 
-    exp = list(database.experiments.find({"name": "voila_voici"}))
+    exp = list(storage.fetch_experiments({"name": "voila_voici"}))
     assert len(exp) == 1
     exp = exp[0]
     assert "_id" in exp
@@ -215,28 +205,27 @@ def test_demo_with_python_and_script(database, monkeypatch):
         "script_config.yaml",
     ]
 
-    trials = list(database.trials.find({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) <= 15
-    assert trials[-1]["status"] == "completed"
-    trials = list(sorted(trials, key=lambda trial: trial["submit_time"]))
-    for result in trials[-1]["results"]:
-        assert result["type"] != "constraint"
-        if result["type"] == "objective":
-            assert abs(result["value"] - 23.4) < 1e-6
-            assert result["name"] == "example_objective"
-        elif result["type"] == "gradient":
-            res = numpy.asarray(result["value"])
+    assert trials[-1].status == "completed"
+    trials = list(sorted(trials, key=lambda trial: trial.submit_time))
+    for result in trials[-1].results:
+        assert result.type != "constraint"
+        if result.type == "objective":
+            assert abs(result.value - 23.4) < 1e-6
+            assert result.name == "example_objective"
+        elif result.type == "gradient":
+            res = numpy.asarray(result.value)
             assert 0.1 * numpy.sqrt(res.dot(res)) < 1e-7
-            assert result["name"] == "example_gradient"
-    params = trials[-1]["params"]
+            assert result.name == "example_gradient"
+    params = trials[-1].params
     assert len(params) == 1
-    assert params[0]["name"] == "/x"
-    assert params[0]["type"] == "real"
-    assert (params[0]["value"] - 34.56789) < 1e-5
+    px = params["/x"]
+    assert isinstance(px, float)
+    assert (px - 34.56789) < 1e-5
 
 
-@pytest.mark.usefixtures("clean_db")
-def test_demo_inexecutable_script(database, monkeypatch, capsys):
+def test_demo_inexecutable_script(storage, monkeypatch, capsys):
     """Test error message when user script is not executable."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     script = tempfile.NamedTemporaryFile()
@@ -255,8 +244,7 @@ def test_demo_inexecutable_script(database, monkeypatch, capsys):
     assert "User script is not executable" in captured
 
 
-@pytest.mark.usefixtures("clean_db")
-def test_demo_two_workers(database, monkeypatch):
+def test_demo_two_workers(storage, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     processes = []
@@ -281,7 +269,7 @@ def test_demo_two_workers(database, monkeypatch):
         rcode = process.wait()
         assert rcode == 0
 
-    exp = list(database.experiments.find({"name": "two_workers_demo"}))
+    exp = list(storage.fetch_experiments({"name": "two_workers_demo"}))
     assert len(exp) == 1
     exp = exp[0]
     assert "_id" in exp
@@ -297,16 +285,16 @@ def test_demo_two_workers(database, monkeypatch):
     assert "user_script" in exp["metadata"]
     assert exp["metadata"]["user_args"] == ["./black_box.py", "-x~norm(34, 3)"]
 
-    trials = list(database.trials.find({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     status = defaultdict(int)
     for trial in trials:
-        status[trial["status"]] += 1
+        status[trial.status] += 1
     assert 100 <= status["completed"] <= 101
     assert status["new"] < 5
-    params = trials[-1]["params"]
+    params = trials[-1].params
     assert len(params) == 1
-    assert params[0]["name"] == "/x"
-    assert params[0]["type"] == "real"
+    px = params["/x"]
+    assert isinstance(px, float)
 
 
 def test_workon():
@@ -358,16 +346,14 @@ def test_workon():
                 res = numpy.asarray(result.value)
                 assert 0.1 * numpy.sqrt(res.dot(res)) < 1e-7
                 assert result.name == "example_gradient"
-        params = trials[-1]._params
+        params = trials[-1].params
         assert len(params) == 1
-        assert params[0].name == "/x"
-        assert params[0].type == "real"
-        assert (params[0].value - 34.56789) < 1e-5
+        px = params["/x"]
+        assert isinstance(px, float)
+        assert (px - 34.56789) < 1e-5
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
+def test_stress_unique_folder_creation(storage, monkeypatch, tmpdir, capfd):
     """Test integration with a possible framework that needs to create
     unique directories per trial.
     """
@@ -393,7 +379,7 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
         ]
     )
 
-    exp = list(database.experiments.find({"name": "lalala"}))
+    exp = list(storage.fetch_experiments({"name": "lalala"}))
     assert len(exp) == 1
     exp = exp[0]
     assert "_id" in exp
@@ -408,10 +394,10 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     # test to create underdamped behaviour), that it begins to suggest same
     # things from the past. This is intended to be shown with the assertions
     # in the for-loop below.
-    trials_c = list(database.trials.find({"experiment": exp_id, "status": "completed"}))
-    list_of_cx = [trial["params"][0]["value"] for trial in trials_c]
-    trials_b = list(database.trials.find({"experiment": exp_id, "status": "broken"}))
-    list_of_bx = [trial["params"][0]["value"] for trial in trials_b]
+    trials_c = list(storage.fetch_trials(uid=exp_id, where={"status": "completed"}))
+    list_of_cx = [trial.params["/x"] for trial in trials_c]
+    trials_b = list(storage.fetch_trials(uid=exp_id, where={"status": "broken"}))
+    list_of_bx = [trial.params["/x"] for trial in trials_b]
     for bx in list_of_bx:
         assert bx in list_of_cx
 
@@ -424,9 +410,7 @@ def test_stress_unique_folder_creation(database, monkeypatch, tmpdir, capfd):
     capfd.readouterr()  # Suppress fd level 1 & 2
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_working_dir_argument_cmdline(database, monkeypatch, tmp_path):
+def test_working_dir_argument_cmdline(storage, monkeypatch, tmp_path):
     """Check that a permanent directory is used instead of tmpdir"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     path = str(tmp_path) + "/test"
@@ -447,7 +431,7 @@ def test_working_dir_argument_cmdline(database, monkeypatch, tmp_path):
         ]
     )
 
-    exp = list(database.experiments.find({"name": "allo"}))[0]
+    exp = list(storage.fetch_experiments({"name": "allo"}))[0]
     assert exp["working_dir"] == path
     assert os.path.exists(path)
     assert os.listdir(path)
@@ -455,9 +439,7 @@ def test_working_dir_argument_cmdline(database, monkeypatch, tmp_path):
     shutil.rmtree(path)
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_tmpdir_is_deleted(database, monkeypatch, tmp_path):
+def test_tmpdir_is_deleted(storage, monkeypatch, tmp_path):
     """Check that temporary directory is deletid tmpdir"""
     tmp_path = os.path.join(tempfile.gettempdir(), "orion")
     if os.path.exists(tmp_path):
@@ -481,9 +463,7 @@ def test_tmpdir_is_deleted(database, monkeypatch, tmp_path):
     assert not os.listdir(tmp_path)
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_working_dir_argument_config(database, monkeypatch):
+def test_working_dir_argument_config(storage, monkeypatch):
     """Check that workning dir argument is handled properly"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     dir_path = os.path.join("orion", "test")
@@ -504,7 +484,7 @@ def test_working_dir_argument_config(database, monkeypatch):
         ]
     )
 
-    exp = list(database.experiments.find({"name": "allo"}))[0]
+    exp = list(storage.fetch_experiments({"name": "allo"}))[0]
     assert exp["working_dir"] == dir_path
     assert os.path.exists(dir_path)
     assert os.listdir(dir_path)
@@ -512,9 +492,7 @@ def test_working_dir_argument_config(database, monkeypatch):
     shutil.rmtree(dir_path)
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_run_with_name_only(database, monkeypatch):
+def test_run_with_name_only(storage, monkeypatch):
     """Test hunt can be executed with experiment name only"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(
@@ -532,18 +510,16 @@ def test_run_with_name_only(database, monkeypatch):
         ["hunt", "--max-trials", "20", "--config", "./orion_config_random.yaml"]
     )
 
-    exp = list(database.experiments.find({"name": "demo_random_search"}))
+    exp = list(storage.fetch_experiments({"name": "demo_random_search"}))
     assert len(exp) == 1
     exp = exp[0]
     assert "_id" in exp
     exp_id = exp["_id"]
-    trials = list(database.trials.find({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) == 20
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_run_with_name_only_with_trailing_whitespace(database, monkeypatch):
+def test_run_with_name_only_with_trailing_whitespace(storage, monkeypatch):
     """Test hunt can be executed with experiment name and trailing whitespace"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.cli.main(
@@ -561,19 +537,17 @@ def test_run_with_name_only_with_trailing_whitespace(database, monkeypatch):
         ["hunt", "--max-trials", "20", "--config", "./orion_config_random.yaml", ""]
     )
 
-    exp = list(database.experiments.find({"name": "demo_random_search"}))
+    exp = list(storage.fetch_experiments({"name": "demo_random_search"}))
     assert len(exp) == 1
     exp = exp[0]
     assert "_id" in exp
     exp_id = exp["_id"]
-    trials = list(database.trials.find({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) == 20
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
 @pytest.mark.parametrize("strategy", ["MaxParallelStrategy", "MeanParallelStrategy"])
-def test_run_with_parallel_strategy(database, monkeypatch, strategy):
+def test_run_with_parallel_strategy(storage, monkeypatch, strategy):
     """Test hunt can be executed with max parallel strategies"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -602,23 +576,21 @@ def test_run_with_parallel_strategy(database, monkeypatch, strategy):
 
     os.remove(config_file)
 
-    exp = list(database.experiments.find({"name": "strategy_demo"}))
+    exp = list(storage.fetch_experiments({"name": "strategy_demo"}))
     assert len(exp) == 1
     exp = exp[0]
     assert exp["producer"]["strategy"] == {strategy: {"default_result": float("inf")}}
     assert "_id" in exp
     exp_id = exp["_id"]
-    trials = list(database.trials.find({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) == 20
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_worker_trials(database, monkeypatch):
+def test_worker_trials(storage, monkeypatch):
     """Test number of trials executed is limited based on worker-trials"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-    assert len(list(database.experiments.find({"name": "demo_random_search"}))) == 0
+    assert len(list(storage.fetch_experiments({"name": "demo_random_search"}))) == 0
 
     orion.core.cli.main(
         [
@@ -634,27 +606,27 @@ def test_worker_trials(database, monkeypatch):
         ]
     )
 
-    exp = list(database.experiments.find({"name": "demo_random_search"}))
+    exp = list(storage.fetch_experiments({"name": "demo_random_search"}))
     assert len(exp) == 1
     exp = exp[0]
     assert "_id" in exp
     exp_id = exp["_id"]
 
-    assert len(list(database.trials.find({"experiment": exp_id}))) == 0
+    assert len(list(storage.fetch_trials(uid=exp_id))) == 0
 
     # Test only executes 2 trials
     orion.core.cli.main(
         ["hunt", "--name", "demo_random_search", "--worker-trials", "2"]
     )
 
-    assert len(list(database.trials.find({"experiment": exp_id}))) == 2
+    assert len(list(storage.fetch_trials(uid=exp_id))) == 2
 
     # Test only executes 3 more trials
     orion.core.cli.main(
         ["hunt", "--name", "demo_random_search", "--worker-trials", "3"]
     )
 
-    assert len(list(database.trials.find({"experiment": exp_id}))) == 5
+    assert len(list(storage.fetch_trials(uid=exp_id))) == 5
 
     # Test that max-trials has precedence over worker-trials
     orion.core.cli.main(
@@ -669,11 +641,10 @@ def test_worker_trials(database, monkeypatch):
         ]
     )
 
-    assert len(list(database.trials.find({"experiment": exp_id}))) == 6
+    assert len(list(storage.fetch_trials(uid=exp_id))) == 6
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
+@pytest.mark.usefixtures("storage")
 def test_resilience(monkeypatch):
     """Test if Oríon stops after enough broken trials."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -695,8 +666,7 @@ def test_resilience(monkeypatch):
     assert len(exp.fetch_trials_by_status("broken")) == MAX_BROKEN
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
+@pytest.mark.usefixtures("storage")
 def test_demo_with_shutdown_quickly(monkeypatch):
     """Check simple pipeline with random search is reasonably fast."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -719,9 +689,7 @@ def test_demo_with_shutdown_quickly(monkeypatch):
     assert process.wait(timeout=40) == 0
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_demo_with_nondefault_config_keyword(database, monkeypatch):
+def test_demo_with_nondefault_config_keyword(storage, monkeypatch):
     """Check that the user script configuration file is correctly used with a new keyword."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     orion.core.config.worker.user_script_config = "configuration"
@@ -736,7 +704,7 @@ def test_demo_with_nondefault_config_keyword(database, monkeypatch):
         ]
     )
 
-    exp = list(database.experiments.find({"name": "voila_voici"}))
+    exp = list(storage.fetch_experiments({"name": "voila_voici"}))
     assert len(exp) == 1
     exp = exp[0]
     assert "_id" in exp
@@ -757,31 +725,29 @@ def test_demo_with_nondefault_config_keyword(database, monkeypatch):
         "script_config.yaml",
     ]
 
-    trials = list(database.trials.find({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) <= 15
-    assert trials[-1]["status"] == "completed"
-    trials = list(sorted(trials, key=lambda trial: trial["submit_time"]))
-    for result in trials[-1]["results"]:
-        assert result["type"] != "constraint"
-        if result["type"] == "objective":
-            assert abs(result["value"] - 23.4) < 1e-6
-            assert result["name"] == "example_objective"
-        elif result["type"] == "gradient":
-            res = numpy.asarray(result["value"])
+    assert trials[-1].status == "completed"
+    trials = list(sorted(trials, key=lambda trial: trial.submit_time))
+    for result in trials[-1].results:
+        assert result.type != "constraint"
+        if result.type == "objective":
+            assert abs(result.value - 23.4) < 1e-6
+            assert result.name == "example_objective"
+        elif result.type == "gradient":
+            res = numpy.asarray(result.value)
             assert 0.1 * numpy.sqrt(res.dot(res)) < 1e-7
-            assert result["name"] == "example_gradient"
-    params = trials[-1]["params"]
+            assert result.name == "example_gradient"
+    params = trials[-1].params
     assert len(params) == 1
-    assert params[0]["name"] == "/x"
-    assert params[0]["type"] == "real"
-    assert (params[0]["value"] - 34.56789) < 1e-5
+    px = params["/x"]
+    assert isinstance(px, float)
+    assert (px - 34.56789) < 1e-5
 
     orion.core.config.worker.user_script_config = "config"
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_demo_precision(database, monkeypatch):
+def test_demo_precision(storage, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -799,13 +765,13 @@ def test_demo_precision(database, monkeypatch):
         + user_args
     )
 
-    exp = list(database.experiments.find({"name": "voila_voici"}))
+    exp = list(storage.fetch_experiments({"name": "voila_voici"}))
     exp = exp[0]
     exp_id = exp["_id"]
-    trials = list(database.trials.find({"experiment": exp_id}))
-    trials = list(sorted(trials, key=lambda trial: trial["submit_time"]))
-    params = trials[-1]["params"]
-    value = params[0]["value"]
+    trials = list(storage.fetch_trials(uid=exp_id))
+    trials = list(sorted(trials, key=lambda trial: trial.submit_time))
+    params = trials[-1].params
+    value = params["/x"]
 
     assert value == float(numpy.format_float_scientific(value, precision=4))
 

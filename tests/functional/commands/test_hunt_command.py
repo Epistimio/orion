@@ -6,7 +6,7 @@ import pytest
 import orion.core.cli
 
 
-def test_hunt_no_prior(clean_db, one_experiment, capsys):
+def test_hunt_no_prior(one_experiment, capsys):
     """Test at least one prior is specified"""
     orion.core.cli.main(["hunt", "-n", "test", "./black_box.py"])
 
