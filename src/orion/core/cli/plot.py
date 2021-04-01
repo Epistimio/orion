@@ -7,7 +7,6 @@ Module running the plot command
 Exposes the interface for plotting for command-line usage.
 
 """
-import argparse
 import logging
 
 import orion.core.io.experiment_builder as experiment_builder

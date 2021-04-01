@@ -16,7 +16,9 @@ similar plots, refer to the documentation :doc:`/user/web_api`.
 Usage
 =====
 
-The arguments expected by the "plot" subcommand are as follows::
+The arguments expected by the "plot" subcommand are as follows
+
+.. code-block:: sh
 
    usage: orion plot [-h] [-n stringID] [-u USER] [-v VERSION] [-c path-to-config]
                      [-t {png,jpg,jpeg,webp,svg,pdf,html,json}]
