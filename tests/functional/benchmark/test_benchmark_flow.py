@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 """Perform a functional test for orion benchmark."""
 
-import pytest
-
 import plotly
+import pytest
 
 from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
@@ -30,6 +29,7 @@ class BirdLike(BaseTask):
         rspace = {"x": "uniform(-4, 4)"}
 
         return rspace
+
 
 @pytest.mark.usefixtures("setup_pickleddb_database")
 def test_simple():
