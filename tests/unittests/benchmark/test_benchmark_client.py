@@ -190,6 +190,8 @@ class TestCreateBenchmark:
                     algo = status["algorithm"]
                     if algo == "gridsearch":
                         assert status["experiments"] == 1
+                    else:
+                        assert status["experiments"] == study.assessment.task_num
 
     def test_create_with_invalid_targets(self, benchmark_config_py):
         """Test creation with invalid Task and Assessment"""

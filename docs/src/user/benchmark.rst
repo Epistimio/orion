@@ -15,7 +15,7 @@ for how to create and :doc:`/code/benchmark` for how to use benchmark.
   from orion.benchmark.task import RosenBrock, EggHolder, CarromTable
 
   benchmark = get_or_create_benchmark(name='benchmark',
-          algorithms=[{'algorithm': 'random'}, {'algorithm': 'tpe'}],
+          algorithms=['random', 'tpe'],
           targets=[
               {
                   'assess': [AverageResult(2), AverageRank(2)],
