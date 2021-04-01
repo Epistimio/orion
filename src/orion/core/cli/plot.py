@@ -12,16 +12,9 @@ import logging
 
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.cli import base as cli
-from orion.storage.base import get_storage
-import orion.plotting.base
-
-# c'est quoi que ça fait ça?
-#from orion.storage.base import get_storage
-
 
 log = logging.getLogger(__name__)
 DESCRIPTION = "Produce plots for Oríon experiments"
-
 
 
 def add_subparser(parser):
@@ -64,7 +57,7 @@ def add_subparser(parser):
         type=float,
         default=None,
         help="more pixels, but same proportions of the plot. "
-        " Reference is 1.0."
+        " Scale acts as multiplier on height and width of resulting image."
         " Overrides value of 'scale' in plotly.io.write_image."
     )
 
