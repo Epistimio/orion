@@ -30,10 +30,12 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     config.addinivalue_line(
-        "markers", "drop_collections(collections): mark test to drop collections prior running the test"
+        "markers",
+        "drop_collections(collections): mark test to drop collections prior running the test",
     )
     config.addinivalue_line(
-        "markers", "db_types_only(db_types): mark test to run only with listed database types"
+        "markers",
+        "db_types_only(db_types): mark test to run only with listed database types",
     )
 
 
