@@ -3,15 +3,16 @@ Visualization
 *************
 
 .. contents::
-   :depth: 2
+   :depth: 1
    :local:
 
 Orion uses plotly to generate reports for experiments.
 This section refers to the use of the `orion plot ...` subcommand.
 
 For details about the use of the web api giving
-similar plots, refer to the documentation INSERT_LINK.
+similar plots, refer to the documentation :doc:`/user/web_api`.
 
+=====
 Usage
 =====
 
@@ -42,7 +43,34 @@ The arguments expected by the "plot" subcommand are as follows::
     -c path-to-config, --config path-to-config
                             user provided orion configuration file
 
+========================
 More about the arguments
 ========================
 
-Bla bla bla
+The `kind` positional argument is the only mandatory argument.
+Assuming that the user identified the experiment in the usual
+way (e.g. using ``--name`` or a config file), the default behavior
+is to generate the correct `kind` of plot, and to save it
+as a "png" file in the current directory and with a filename
+automatically formatted as "{experiment.name}_{kind}.png".
+
+----
+kind
+----
+
+The plotting command requires a ``kind`` argument to determine which of the four kinds of plots to generate.
+The choice is between 'lpi', 'partial_dependencies', 'parallel_coordinates' or 'regret'.
+
+
+----
+type
+----
+
+The ``type`` is basically the filename extension. This governs more than just the name of the file
+because it determines the actual format of the output. The default is to give the user a "png" file.
+
+Behind the scenes, *plotly* generates an initial "json" file, and renders it as an image
+to be saved in the desired format. With ``type`` being "json", that original file
+is saved without rendering it to an image.
+
+The accepted values of ``type`` are 'png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf', 'html' and 'json'.
