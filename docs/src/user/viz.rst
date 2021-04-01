@@ -3,7 +3,7 @@ Visualization
 *************
 
 .. contents::
-   :depth: 1
+   :depth: 2
    :local:
 
 Orion uses plotly to generate reports for experiments.
@@ -67,10 +67,37 @@ type
 ----
 
 The ``type`` is basically the filename extension. This governs more than just the name of the file
-because it determines the actual format of the output. The default is to give the user a "png" file.
+because it determines the actual format of the output. The default is to give the user a 'png' file.
 
-Behind the scenes, *plotly* generates an initial "json" file, and renders it as an image
-to be saved in the desired format. With ``type`` being "json", that original file
+Behind the scenes, *plotly* generates an initial 'json' file, and renders it as an image
+to be saved in the desired format. With ``type`` being 'json', that original file
 is saved without rendering it to an image.
 
 The accepted values of ``type`` are 'png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf', 'html' and 'json'.
+
+------
+output
+------
+
+The default value for the output filename is an automatically-generated
+string formatted as "{experiment.name}_{kind}.{type}".
+This also implies that the plot will be saved in the current directory.
+
+When ``output`` is specified by the user, the ``type`` argument
+will be ignored because the value of ``type`` will be instead inferred by
+the file extension in the ``output``.
+For example, with ``--output=../myplot.jpg``, the results will be saved
+in the parent directory and the ``type`` will be 'jpg'.
+
+-----
+scale
+-----
+
+With certain types of plots, it can be desirable to increase the 
+resolution of the output image in terms of pixel counts (equivalent to dpi).
+This applies particularly to 'jpg' and 'png', but it does not affect 'json' or 'html'.
+
+The reference value of ``scale`` is 1.0.
+With ``--scale 2.0``, the height and width are going to be doubled.
+
+
