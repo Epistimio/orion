@@ -87,7 +87,7 @@ def main(args):
     assert args['kind'] in ['lpi', 'partial_dependencies', 'parallel_coordinates', 'regret']
     func_plotting = getattr(orion.plotting.base, args['kind'])
 
-    output_plot = func_plotting(experiment)
+    output_plot = experiment.plot(kind=args['kind'])
 
     valid_types = ['png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf', 'html', 'json']
     # 'png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf' handled by fig.write_image
