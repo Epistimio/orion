@@ -25,18 +25,6 @@ def force_is_exe(monkeypatch):
     monkeypatch.setattr(resolve_config, "is_exe", is_exe)
 
 
-@pytest.mark.usefixtures("empty_config")
-def test_socket_on_osx(monkeypatch):
-    """Verify that default hostname is set properly on OSX"""
-    config = orion.core.build_config()
-    assert config.storage.database.host == socket.gethostbyname(socket.gethostname())
-    assert socket.gethostbyname(socket.gethostname()) != "localhost"
-
-    monkeypatch.setattr(socket, "gethostname", lambda: "wrong_name_on_osx")
-    config = orion.core.build_config()
-    assert config.storage.database.host == "localhost"
-
-
 def test_fetch_env_vars():
     """Verify env vars are fetched properly"""
     env_vars_config = resolve_config.fetch_env_vars()

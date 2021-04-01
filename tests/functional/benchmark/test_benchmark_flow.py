@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """Perform a functional test for orion benchmark."""
 
+import pytest
+
 import plotly
 
 from orion.benchmark.assessment import AverageRank, AverageResult
@@ -29,7 +31,7 @@ class BirdLike(BaseTask):
 
         return rspace
 
-
+@pytest.mark.usefixtures("setup_pickleddb_database")
 def test_simple():
     """Test a end 2 end exucution of benchmark"""
     task_num = 2

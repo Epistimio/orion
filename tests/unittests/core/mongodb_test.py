@@ -154,6 +154,28 @@ class TestConnection(object):
             <= 2
         )
 
+    def test_socket_on_osx(monkeypatch):
+        """Verify that default hostname is set properly on OSX"""
+        orion_db = MongoDB(
+            "",
+            port=1231,
+            name="orion",
+            username="lala",
+            password="pass",
+        )
+        assert orion_db.host == socket.gethostbyname(socket.gethostname())
+        assert socket.gethostbyname(socket.gethostname()) != "localhost"
+
+        monkeypatch.setattr(socket, "gethostname", lambda: "wrong_name_on_osx")
+        orion_db = MongoDB(
+            "",
+            port=1231,
+            name="orion",
+            username="lala",
+            password="pass",
+        )
+        assert orion_db.host == "localhost"
+
 
 @pytest.mark.usefixtures("clean_db")
 class TestExceptionWrapper(object):

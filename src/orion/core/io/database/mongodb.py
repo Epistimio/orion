@@ -4,6 +4,7 @@ Wrapper for MongoDB
 ===================
 """
 import functools
+import socket
 
 import pymongo
 
@@ -103,7 +104,10 @@ class MongoDB(AbstractDB):
     ):
         """Init method, see attributes of :class:`AbstractDB`."""
         if host == "":
-            host = "localhost"
+            try:
+                host = socket.gethostbyname(socket.gethostname())
+            except socket.gaierror:
+                host = "localhost"
         self.uri = None
 
         if port is not None:
