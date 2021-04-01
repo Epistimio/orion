@@ -107,9 +107,8 @@ def orion_db(db_type):
 
 
 @pytest.fixture()
-def init_db(orion_db, exp_config):
-    """Initialise and return the current database with clean insert example
-       experiment entries to collections."""
+def clean_db(orion_db):
+    """Cleaned the current database prior a test."""
     if isinstance(orion_db, EphemeralDB):
         pass
     elif isinstance(orion_db, MongoDB):
@@ -120,46 +119,16 @@ def init_db(orion_db, exp_config):
 
     database = get_db(orion_db)
 
+    # Drop experiment data
     database["experiments"].drop()
-    database["experiments"].insert_many(exp_config[0])
     database["lying_trials"].drop()
     database["trials"].drop()
-    database["trials"].insert_many(exp_config[1])
     database["workers"].drop()
-    database["workers"].insert_many(exp_config[2])
     database["resources"].drop()
-    database["resources"].insert_many(exp_config[3])
 
     dump_db(orion_db, database)
 
     yield database
-
-
-@pytest.fixture()
-def clean_db(orion_db, init_db):
-    """Cleaned the current database prior a test."""
-    print("\n--CLEAN DB {}--".format(type(orion_db)), end="")
-    print("\n--CLEAN DB {}--".format(type(init_db)), end="")
-    if isinstance(orion_db, EphemeralDB):
-        clean_database = copy.deepcopy(init_db)
-    elif isinstance(orion_db, MongoDB):
-        pass
-    elif isinstance(orion_db, PickledDB):
-        clean_database = copy.deepcopy(init_db)
-    else:
-        raise TypeError("Invalid database type")
-
-    yield
-
-    # Restaure initial database
-    if isinstance(orion_db, EphemeralDB):
-        orion_db._db = clean_database
-    elif isinstance(orion_db, MongoDB):
-        pass
-    elif isinstance(orion_db, PickledDB):
-        ephemeral_db = orion_db._get_database()
-        ephemeral_db._db = clean_database
-        orion_db._dump_database(ephemeral_db)
 
 
 @pytest.fixture()
@@ -172,6 +141,28 @@ def db_test_data(request, db_type):
     else:
         raise ValueError("Invalid database type")
 
+@pytest.fixture(autouse=True)
+def insert_collections(request, orion_db, clean_db):
+    """Drop a collection prior a test"""
+    collections_data = (
+        request.node.get_closest_marker("insert_collections").args[0]
+        if request.node.get_closest_marker("insert_collections")
+        else {}
+    )
+    for name, data in collections_data.items():
+        print("\n--insert_collections insert {}--".format(name), end="")
+        clean_db[name].drop()
+        clean_db[name].insert_many(data)
+
+    dump_db(orion_db, clean_db)
+
+    yield collections_data
+
+    for name in collections_data.keys():
+        print("\n--insert_collections drop {}--".format(name), end="")
+        clean_db[name].drop()
+
+    dump_db(orion_db, clean_db)
 
 @pytest.fixture(autouse=True)
 def drop_collections(request, orion_db):
@@ -265,6 +256,67 @@ def patch_mongo_client(monkeypatch, db_type):
 
     monkeypatch.setattr("pymongo.MongoClient", mock_class)
 
+
+ephemeraldb_only = pytest.mark.db_types_only(["ephemeraldb"])
+
+
+mongodb_only = pytest.mark.db_types_only(["mongodb"])
+
+
+pickleddb_only = pytest.mark.db_types_only(["pickleddb"])
+
+
+insert_test_collection = pytest.mark.insert_collections({
+    "test_collection": [
+        {
+            "_id": 0,
+            "field0": "same0",
+            "field1": "same1",
+            "datetime": datetime(2017, 11, 22, 0, 0, 0),
+            "same_field": "same",
+            "unique_field": "unique0",
+            "same_comp": {
+                "ound": "same_compound"
+            },
+            "unique_comp": {
+                "ound": "compound0"
+            },
+        },
+        {
+            "_id": 1,
+            "field0": "same0",
+            "field1": "diff1",
+            "datetime": datetime(2017, 11, 23, 0, 0, 0),
+            "same_field": "same",
+            "unique_field": "unique1",
+            "same_comp": {
+                "ound": "same_compound"
+            },
+            "unique_comp": {
+                "ound": "compound1"
+            },
+        },
+        {
+            "_id": 2,
+            "field0": "diff0",
+            "field1": "same1",
+            "datetime": datetime(2017, 11, 24, 0, 0, 0),
+            "same_field": "same",
+            "unique_field": "unique2",
+            "same_comp": {
+                "ound": "same_compound"
+            },
+            "unique_comp": {
+                "ound": "compound2"
+            },
+        },
+    ]
+})
+
+@pytest.fixture()
+def test_collection(insert_collections):
+    """Drop a collection prior a test"""
+    yield insert_collections["test_collection"]
 
 # TESTS SET
 
@@ -360,40 +412,38 @@ class TestEnsureIndex(object):
 
 
 @pytest.mark.usefixtures("clean_db")
+@insert_test_collection
 class TestRead(object):
     """Calls to :meth:`orion.core.io.database.AbstractDB.read`."""
 
-    def test_read_experiment(self, exp_config, orion_db):
-        """Fetch a whole experiment entries."""
+    def test_read_entries(self, orion_db, test_collection):
+        """Fetch a whole entries."""
         loaded_config = orion_db.read(
-            "trials", {"experiment": "supernaedo2-dendi", "status": "new"}
+            "test_collection", {"field1": "same1", "same_field": "same"}
         )
-        assert loaded_config == [exp_config[1][3], exp_config[1][4]]
+        print("\n--test_read_experiment loaded_config {}--".format(loaded_config), end="")
+        assert loaded_config == [test_collection[0], test_collection[2]]
 
         loaded_config = orion_db.read(
-            "trials",
-            {
-                "experiment": "supernaedo2-dendi",
-                "submit_time": exp_config[1][3]["submit_time"],
-            },
+            "test_collection", {"field1": "same1", "unique_field": "unique2"}
         )
-        assert loaded_config == [exp_config[1][3]]
-        assert loaded_config[0]["_id"] == exp_config[1][3]["_id"]
+        assert loaded_config == test_collection[2:]
+        assert loaded_config[0]["_id"] == test_collection[2]["_id"]
 
-    def test_read_with_id(self, exp_config, orion_db):
+    def test_read_with_id(self, orion_db, test_collection):
         """Query using ``_id`` key."""
-        loaded_config = orion_db.read("experiments", {"_id": exp_config[0][2]["_id"]})
-        backward.populate_space(loaded_config[0])
-        assert loaded_config == [exp_config[0][2]]
+        loaded_config = orion_db.read("test_collection", {"_id": 1})
+        assert loaded_config == test_collection[1:2]
 
-    def test_read_default(self, exp_config, orion_db):
+    def test_read_default(self, orion_db, test_collection):
         """Fetch value(s) from an entry."""
         value = orion_db.read(
-            "experiments",
-            {"name": "supernaedo2", "metadata.user": "tsirif"},
-            selection={"algorithms": 1, "_id": 0},
+            "test_collection",
+            {"field1": "same1", "same_comp.ound": "same_compound"},
+            selection={"unique_comp": 1, "_id": 0},
         )
-        assert value == [{"algorithms": exp_config[0][0]["algorithms"]}]
+        assert value == [{"unique_comp": test_collection[0]["unique_comp"]},
+                         {"unique_comp": test_collection[2]["unique_comp"]}]
 
     def test_read_nothing(self, orion_db):
         """Fetch value(s) from an entry."""
@@ -404,52 +454,53 @@ class TestRead(object):
         )
         assert value == []
 
-    def test_read_trials(self, exp_config, orion_db):
+    def test_read_trials(self, orion_db, test_collection):
         """Fetch value(s) from an entry."""
         value = orion_db.read(
-            "trials",
+            "test_collection",
             {
-                "experiment": "supernaedo2-dendi",
-                "submit_time": {"$gte": datetime(2017, 11, 23, 0, 0, 0)},
+                "same_field": "same",
+                "datetime": {"$gte": datetime(2017, 11, 23, 0, 0, 0)},
             },
         )
-        assert value == [exp_config[1][1]] + exp_config[1][3:7]
+        assert value == test_collection[1:]
 
         value = orion_db.read(
-            "trials",
+            "test_collection",
             {
-                "experiment": "supernaedo2-dendi",
-                "submit_time": {"$gt": datetime(2017, 11, 23, 0, 0, 0)},
+                "same_field": "same",
+                "datetime": {"$gt": datetime(2017, 11, 23, 0, 0, 0)},
             },
         )
-        assert value == exp_config[1][3:7]
+        assert value == test_collection[2:]
 
     @pytest.mark.db_types_only(["ephemeraldb", "pickleddb"])
-    def test_null_comp(self, exp_config, orion_db):
+    def test_null_comp(self, orion_db):
         """Fetch value(s) from an entry."""
         all_values = orion_db.read(
-            "trials",
+            "test_collection",
             {
-                "experiment": "supernaedo2-dendi",
-                "end_time": {"$gte": datetime(2017, 11, 1, 0, 0, 0)},
+                "same_field": "same",
+                "datetime": {"$gte": datetime(2017, 11, 1, 0, 0, 0)},
             },
         )
 
         db = get_db(orion_db)
-        db["trials"]._documents[0]._data["end_time"] = None
+        db["test_collection"]._documents[0]._data["datetime"] = None
         dump_db(orion_db, db)
 
         values = orion_db.read(
-            "trials",
+            "test_collection",
             {
-                "experiment": "supernaedo2-dendi",
-                "end_time": {"$gte": datetime(2017, 11, 1, 0, 0, 0)},
+                "same_field": "same",
+                "datetime": {"$gte": datetime(2017, 11, 1, 0, 0, 0)},
             },
         )
         assert len(values) == len(all_values) - 1
 
 
 @pytest.mark.usefixtures("clean_db")
+@insert_test_collection
 class TestWrite(object):
     """Calls to :meth:`orion.core.io.database.AbstractDB.write`."""
 
@@ -484,31 +535,30 @@ class TestWrite(object):
 
     def test_update_many_default(self, orion_db):
         """Should match existing entries, and update some of their keys."""
-        filt = {"metadata.user": "dendi"}
-        count_before = orion_db.count("experiments")
-        count_query = orion_db.count("experiments", filt)
+        filt = {"field1": "same1"}
+        count_before = orion_db.count("test_collection")
+        count_query = orion_db.count("test_collection", filt)
         # call interface
-        assert orion_db.write("experiments", {"pool_size": 16}, filt) == count_query
+        assert orion_db.write("test_collection", {"same_field": "diff"}, filt) == count_query
         database = get_db(orion_db)
-        assert database["experiments"].count() == count_before
-        value = list(database["experiments"].find({}))
-        assert value[0]["pool_size"] == 16
-        assert value[1]["pool_size"] == 2
-        assert value[2]["pool_size"] == 2
-        assert value[3]["pool_size"] == 2
+        assert database["test_collection"].count() == count_before
+        value = list(database["test_collection"].find({}))
+        assert value[0]["same_field"] == "diff"
+        assert value[1]["same_field"] == "same"
+        assert value[2]["same_field"] == "diff"
 
-    def test_update_with_id(self, exp_config, orion_db):
+    def test_update_with_id(self, orion_db, test_collection):
         """Query using ``_id`` key."""
-        filt = {"_id": exp_config[0][1]["_id"]}
-        count_before = orion_db.count("experiments")
+        filt = {"_id": test_collection[1]["_id"]}
+        count_before = orion_db.count("test_collection")
         # call interface
-        assert orion_db.write("experiments", {"pool_size": 36}, filt) == 1
+        assert orion_db.write("test_collection", {"same_field": "diff"}, filt) == 1
         database = get_db(orion_db)
-        assert database["experiments"].count() == count_before
-        value = list(database["experiments"].find())
-        assert value[0]["pool_size"] == 2
-        assert value[1]["pool_size"] == 36
-        assert value[2]["pool_size"] == 2
+        assert database["test_collection"].count() == count_before
+        value = list(database["test_collection"].find())
+        assert value[0]["same_field"] == "same"
+        assert value[1]["same_field"] == "diff"
+        assert value[2]["same_field"] == "same"
 
     def test_no_upsert(self, orion_db):
         """Query with a non-existent ``_id`` should no upsert something."""
@@ -519,41 +569,40 @@ class TestWrite(object):
 
 
 @pytest.mark.usefixtures("clean_db")
+@insert_test_collection
 class TestReadAndWrite(object):
     """Calls to :meth:`orion.core.io.database.AbstractDB.read_and_write`."""
 
-    def test_read_and_write_one(self, orion_db, exp_config):
+    def test_read_and_write_one(self, orion_db, test_collection):
         """Should read and update a single entry in the collection."""
         # Make sure there is only one match
-        documents = orion_db.read("experiments", {"name": "supernaedo4"})
+        documents = orion_db.read("test_collection", {"unique_field": "unique1"})
         assert len(documents) == 1
 
         # Find and update atomically
         loaded_config = orion_db.read_and_write(
-            "experiments", {"name": "supernaedo4"}, {"pool_size": "lalala"}
+            "test_collection", {"unique_field": "unique1"}, {"field0": "lalala"}
         )
-        exp_config[0][3]["pool_size"] = "lalala"
-        backward.populate_space(loaded_config)
-        assert loaded_config == exp_config[0][3]
+        test_collection[1]["field0"] = "lalala"
+        assert loaded_config == test_collection[1]
 
-    def test_read_and_write_many(self, orion_db, exp_config):
+    def test_read_and_write_many(self, orion_db, test_collection):
         """Should update only one entry."""
-        documents = orion_db.read("experiments", {"metadata.user": "tsirif"})
+        documents = orion_db.read("test_collection", {"same_field": "same"})
         assert len(documents) > 1
 
         # Find many and update first one only
         loaded_config = orion_db.read_and_write(
-            "experiments", {"metadata.user": "tsirif"}, {"pool_size": "lalala"}
+            "test_collection", {"same_field": "same"}, {"unique_field": "lalala"}
         )
 
-        exp_config[0][1]["pool_size"] = "lalala"
-        backward.populate_space(loaded_config)
-        assert loaded_config == exp_config[0][1]
+        test_collection[0]["unique_field"] = "lalala"
+        assert loaded_config == test_collection[0]
 
         # Make sure it only changed the first document found
-        documents = orion_db.read("experiments", {"metadata.user": "tsirif"})
-        assert documents[0]["pool_size"] == "lalala"
-        assert documents[1]["pool_size"] != "lalala"
+        documents = orion_db.read("test_collection", {"same_field": "same"})
+        assert documents[0]["unique_field"] == "lalala"
+        assert documents[1]["unique_field"] != "lalala"
 
     def test_read_and_write_no_match(self, orion_db):
         """Should return None when there is no match."""
@@ -576,94 +625,94 @@ class TestReadAndWrite(object):
 
 
 @pytest.mark.usefixtures("clean_db")
+@insert_test_collection
 class TestRemove(object):
     """Calls to :meth:`orion.core.io.database.AbstractDB.remove`."""
 
-    def test_remove_many_default(self, exp_config, orion_db):
+    def test_remove_many_default(self, orion_db, test_collection):
         """Should match existing entries, and delete them all."""
-        filt = {"metadata.user": "tsirif"}
+        filt = {"field1": "same1"}
         database = get_db(orion_db)
-        count_before = database["experiments"].count()
-        count_filt = database["experiments"].count(filt)
+        count_before = database["test_collection"].count()
+        count_filt = database["test_collection"].count(filt)
         # call interface
-        assert orion_db.remove("experiments", filt) == count_filt
+        assert orion_db.remove("test_collection", filt) == count_filt
         database = get_db(orion_db)
-        assert database["experiments"].count() == count_before - count_filt
-        assert database["experiments"].count() == 1
-        loaded_config = list(database["experiments"].find())
-        backward.populate_space(loaded_config[0])
-        assert loaded_config == [exp_config[0][0]]
+        assert database["test_collection"].count() == count_before - count_filt
+        assert database["test_collection"].count() == 1
+        loaded_config = list(database["test_collection"].find())
+        assert loaded_config == test_collection[1:2]
 
-    def test_remove_with_id(self, exp_config, orion_db):
+    def test_remove_with_id(self, orion_db, test_collection):
         """Query using ``_id`` key."""
-        filt = {"_id": exp_config[0][0]["_id"]}
+        filt = {"_id": test_collection[0]["_id"]}
 
         database = get_db(orion_db)
-        count_before = database["experiments"].count()
+        count_before = database["test_collection"].count()
         # call interface
-        assert orion_db.remove("experiments", filt) == 1
+        assert orion_db.remove("test_collection", filt) == 1
         database = get_db(orion_db)
-        assert database["experiments"].count() == count_before - 1
-        loaded_configs = list(database["experiments"].find())
-        for loaded_config in loaded_configs:
-            backward.populate_space(loaded_config)
-        assert loaded_configs == exp_config[0][1:]
+        assert database["test_collection"].count() == count_before - 1
+        loaded_configs = list(database["test_collection"].find())
+        assert loaded_configs == test_collection[1:]
 
-    def test_remove_update_indexes(self, exp_config, orion_db):
+    def test_remove_update_indexes(self, orion_db, test_collection):
         """Verify that indexes are properly update after deletion."""
         with pytest.raises(DuplicateKeyError):
-            orion_db.write("experiments", {"_id": exp_config[0][0]["_id"]})
+            orion_db.write("test_collection", {"_id": test_collection[0]["_id"]})
         with pytest.raises(DuplicateKeyError):
-            orion_db.write("experiments", {"_id": exp_config[0][1]["_id"]})
+            orion_db.write("test_collection", {"_id": test_collection[1]["_id"]})
 
-        filt = {"_id": exp_config[0][0]["_id"]}
+        filt = {"_id": test_collection[0]["_id"]}
 
         database = get_db(orion_db)
-        count_before = database["experiments"].count()
+        count_before = database["test_collection"].count()
         # call interface
-        assert orion_db.remove("experiments", filt) == 1
+        assert orion_db.remove("test_collection", filt) == 1
         database = get_db(orion_db)
-        assert database["experiments"].count() == count_before - 1
+        assert database["test_collection"].count() == count_before - 1
         # Should not fail now, otherwise it means the indexes were not updated properly during
         # remove()
-        orion_db.write("experiments", filt)
+        orion_db.write("test_collection", filt)
         # And this should still fail
         with pytest.raises(DuplicateKeyError):
-            orion_db.write("experiments", {"_id": exp_config[0][1]["_id"]})
+            orion_db.write("test_collection", {"_id": test_collection[1]["_id"]})
 
 
 @pytest.mark.usefixtures("clean_db")
+@insert_test_collection
 class TestCount(object):
     """Calls :meth:`orion.core.io.database.AbstractDB.count`."""
 
-    def test_count_default(self, exp_config, orion_db):
+    def test_count_default(self, orion_db, test_collection):
         """Call just with collection name."""
-        found = orion_db.count("trials")
-        assert found == len(exp_config[1])
+        found = orion_db.count("test_collection")
+        assert found == len(test_collection)
 
-    def test_count_query(self, exp_config, orion_db):
+    def test_count_query(self, orion_db):
         """Call with a query."""
-        found = orion_db.count("trials", {"status": "completed"})
-        assert found == len([x for x in exp_config[1] if x["status"] == "completed"])
+        found = orion_db.count("test_collection", {"field1": "same1"})
+        assert found == 2
 
-    def test_count_query_with_id(self, exp_config, orion_db):
+    def test_count_query_with_id(self, orion_db, test_collection):
         """Call querying with unique _id."""
-        found = orion_db.count("trials", {"_id": exp_config[1][2]["_id"]})
+        found = orion_db.count("test_collection", {"_id": test_collection[2]["_id"]})
         assert found == 1
 
-    def test_count_nothing(self, orion_db):
+    def test_count_nothing(self, orion_db, test_collection):
         """Call with argument that will not find anything."""
-        found = orion_db.count("experiments", {"name": "lalalanotfound"})
+        found = orion_db.count("test_collection", {"name": "lalalanotfound"})
         assert found == 0
 
 
 @pytest.mark.usefixtures("clean_db")
+@insert_test_collection
 class TestIndexInformation(object):
     """Calls :meth:`orion.core.io.database.AbstractDB.index_information`."""
 
     def test_no_index(self, orion_db):
         """Test that no index is returned when there is none."""
-        assert orion_db.index_information("experiments") == {"_id_": True}
+        assert orion_db.index_information("test_collection") == {"_id_": True}
 
     @pytest.mark.parametrize(
         "db_test_data",
@@ -739,13 +788,14 @@ class TestIndexInformation(object):
 
 
 @pytest.mark.usefixtures("clean_db")
+@insert_test_collection
 class TestDropIndex(object):
     """Calls :meth:`orion.core.io.database.AbstractDB.drop_index`."""
 
     def test_no_index(self, orion_db):
         """Test that no index is returned when there is none."""
         with pytest.raises(DatabaseError) as exc:
-            orion_db.drop_index("experiments", "i_dont_exist")
+            orion_db.drop_index("test_collection", "i_dont_exist")
         assert "index not found with name" in str(exc.value)
 
     def test_drop_single_index(self, orion_db):
@@ -1095,22 +1145,23 @@ class TestConnection(object):
 
 @mongodb_only
 @pytest.mark.usefixtures("clean_db")
+@insert_test_collection
 class TestExceptionWrapper(object):
     """Call to methods wrapped with `mongodb_exception_wrapper()`."""
 
-    def test_duplicate_key_error(self, monkeypatch, orion_db, exp_config):
+    def test_duplicate_key_error(self, monkeypatch, orion_db, test_collection):
         """Should raise generic DuplicateKeyError."""
         # Add unique indexes to force trigger of DuplicateKeyError on write()
         orion_db.ensure_index(
-            "experiments",
-            [("name", Database.ASCENDING), ("metadata.user", Database.ASCENDING)],
+            "test_collection",
+            [("field0", Database.ASCENDING), ("datetime", Database.ASCENDING)],
             unique=True,
         )
 
-        config_to_add = exp_config[0][0]
+        config_to_add = test_collection[0]
         config_to_add.pop("_id")
 
-        query = {"_id": exp_config[0][1]["_id"]}
+        query = {"_id": test_collection[1]["_id"]}
 
         # Make sure it raises pymongo.errors.DuplicateKeyError when there is no
         # wrapper
@@ -1120,16 +1171,16 @@ class TestExceptionWrapper(object):
             functools.partial(orion_db.read_and_write.__wrapped__, orion_db),
         )
         with pytest.raises(pymongo.errors.DuplicateKeyError) as exc_info:
-            orion_db.read_and_write("experiments", query, config_to_add)
+            orion_db.read_and_write("test_collection", query, config_to_add)
 
         monkeypatch.undo()
 
         # Verify that the wrapper converts it properly to DuplicateKeyError
         with pytest.raises(DuplicateKeyError) as exc_info:
-            orion_db.read_and_write("experiments", query, config_to_add)
+            orion_db.read_and_write("test_collection", query, config_to_add)
         assert "duplicate key error" in str(exc_info.value)
 
-    def test_bulk_duplicate_key_error(self, monkeypatch, orion_db, exp_config):
+    def test_bulk_duplicate_key_error(self, monkeypatch, orion_db, test_collection):
         """Should raise generic DuplicateKeyError."""
         # Make sure it raises pymongo.errors.BulkWriteError when there is no
         # wrapper
@@ -1137,28 +1188,28 @@ class TestExceptionWrapper(object):
             orion_db, "write", functools.partial(orion_db.write.__wrapped__, orion_db)
         )
         with pytest.raises(pymongo.errors.BulkWriteError) as exc_info:
-            orion_db.write("experiments", exp_config[0])
+            orion_db.write("test_collection", test_collection)
 
         monkeypatch.undo()
 
         # Verify that the wrapper converts it properly to DuplicateKeyError
         with pytest.raises(DuplicateKeyError) as exc_info:
-            orion_db.write("experiments", exp_config[0])
+            orion_db.write("test_collection", test_collection)
         assert "duplicate key error" in str(exc_info.value)
 
-    def test_non_converted_errors(self, orion_db, exp_config):
+    def test_non_converted_errors(self, orion_db, test_collection):
         """Should raise OperationFailure.
 
         This is because _id inside exp_config[0][0] cannot be set. It is an
         immutable key of the collection.
 
         """
-        config_to_add = exp_config[0][0]
+        config_to_add = test_collection[0]
 
-        query = {"_id": exp_config[0][1]["_id"]}
+        query = {"_id": test_collection[1]["_id"]}
 
         with pytest.raises(pymongo.errors.OperationFailure):
-            orion_db.read_and_write("experiments", query, config_to_add)
+            orion_db.read_and_write("test_collection", query, config_to_add)
 
 
 # PICKLEDDB ONLY TESTS
