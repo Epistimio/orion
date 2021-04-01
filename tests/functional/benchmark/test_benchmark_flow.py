@@ -35,20 +35,19 @@ class BirdLike(BaseTask):
 def test_simple():
     """Test a end 2 end exucution of benchmark"""
     task_num = 2
-    trial_num = 20
+    trial_num = 10
     assessments = [AverageResult(task_num), AverageRank(task_num)]
     tasks = [
-        RosenBrock(trial_num, dim=3),
-        EggHolder(trial_num, dim=4),
-        CarromTable(trial_num),
         Branin(trial_num),
         BirdLike(trial_num),
     ]
+
     benchmark = get_or_create_benchmark(
         name="bm001",
         algorithms=algorithms,
         targets=[{"assess": assessments, "task": tasks}],
     )
+
     benchmark.process()
 
     assert len(benchmark.studies) == len(assessments) * len(tasks)
