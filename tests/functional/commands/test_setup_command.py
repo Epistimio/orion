@@ -83,6 +83,36 @@ def test_stop_creation_when_exists(monkeypatch, tmp_path):
     assert content == dump
 
 
+def test_invalid_database(monkeypatch, tmp_path):
+    """Test if command prompt loops when invalid database is typed."""
+    config_path = str(tmp_path) + "/tmp_config.yaml"
+    monkeypatch.setattr(orion.core, "DEF_CONFIG_FILES_PATHS", [config_path])
+    monkeypatch.setattr(
+        builtins,
+        "input",
+        _mock_input(
+            [
+                "invalid database",
+                "invalid database again",
+                "2383ejdd",
+                "another invalid database",
+                "mongodb",
+                "the host",
+                "the name",
+            ]
+        ),
+    )
+
+    orion.core.cli.main(["db", "setup"])
+
+    with open(config_path, "r") as output:
+        content = yaml.safe_load(output)
+
+    assert content == {
+        "database": {"type": "mongodb", "name": "the name", "host": "the host"}
+    }
+
+
 def test_defaults(monkeypatch, tmp_path):
     """Test if the default values are used when nothing user enters nothing."""
     config_path = str(tmp_path) + "/tmp_config.yaml"
