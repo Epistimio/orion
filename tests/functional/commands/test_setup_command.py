@@ -26,7 +26,7 @@ def test_creation_when_not_existing(monkeypatch, tmp_path):
     """Test if a configuration file is created when it does not exist."""
     config_path = str(tmp_path) + "/tmp_config.yaml"
     monkeypatch.setattr(orion.core, "DEF_CONFIG_FILES_PATHS", [config_path])
-    monkeypatch.setattr(builtins, "input", _mock_input(["mongodb", "name", "host"]))
+    monkeypatch.setattr(builtins, "input", _mock_input(["mongodb", "host", "name"]))
 
     try:
         os.remove(config_path)
@@ -48,7 +48,7 @@ def test_creation_when_exists(monkeypatch, tmp_path):
     config_path = str(tmp_path) + "/tmp_config.yaml"
     monkeypatch.setattr(orion.core, "DEF_CONFIG_FILES_PATHS", [config_path])
     monkeypatch.setattr(
-        builtins, "input", _mock_input(["y", "mongodb", "name", "host"])
+        builtins, "input", _mock_input(["y", "mongodb", "host", "name"])
     )
 
     dump = {"database": {"type": "allo2", "name": "allo2", "host": "allo2"}}

@@ -78,7 +78,7 @@ def main(*args):
     db_class = Database.types[Database.typenames.index(_type)]
     db_args = db_class.get_arguments()
     arg_vals = {}
-    for arg_name, default_value in db_args.items():
+    for arg_name, default_value in sorted(db_args.items()):
         arg_vals[arg_name] = ask_question(
             "Enter the database {}: ".format(arg_name), default_value
         )
