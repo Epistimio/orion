@@ -15,7 +15,8 @@ similar plots, refer to the documentation INSERT_LINK.
 Usage
 =====
 
-.. code-block:: bash
+The arguments expected by the "plot" subcommand are as follows::
+
     usage: orion plot [-h] [-n stringID] [-u USER] [-v VERSION] [-c path-to-config] [-t TYPE] [-o OUTPUT] [--scale SCALE] kind
 
     Produce plots for Oríon experiments
