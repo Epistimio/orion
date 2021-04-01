@@ -330,3 +330,13 @@ class MongoDB(AbstractDB):
             self.options["authSource"] = settings["options"].get(
                 "authsource", self.name
             )
+
+    @classmethod
+    def get_defaults(cls):
+        """Get database arguments needed to create a database instance.
+
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.get_defaults`
+                     for argument documentation.
+
+        """
+        return {"name": "orion", "host": "localhost"}
