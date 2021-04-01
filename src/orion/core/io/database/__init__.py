@@ -49,6 +49,10 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         **kwargs
     ):
         """Init method, see attributes of :class:`AbstractDB`."""
+        defaults = self.get_defaults()
+        host = defaults.get("host", None) if host is None or host == "" else host
+        name = defaults.get("name", None) if name is None or name == "" else name
+
         self.host = host
         self.name = name
         self.port = port

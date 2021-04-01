@@ -339,4 +339,4 @@ class MongoDB(AbstractDB):
                      for argument documentation.
 
         """
-        return {"name": "test", "host": "localhost"}
+        return {"name": "orion", "host": "localhost"}

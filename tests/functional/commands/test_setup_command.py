@@ -131,7 +131,7 @@ def test_defaults(monkeypatch, tmp_path):
         content = yaml.safe_load(output)
 
     assert content == {
-        "database": {"type": "mongodb", "name": "test", "host": "localhost"}
+        "database": {"type": "mongodb", "name": "orion", "host": "localhost"}
     }
 
 
