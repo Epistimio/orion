@@ -151,7 +151,6 @@ def insert_collections(request, orion_db, clean_db):
         else {}
     )
     for name, data in collections_data.items():
-        print("\n--insert_collections insert {}--".format(name), end="")
         clean_db[name].drop()
         clean_db[name].insert_many(data)
 
@@ -160,7 +159,6 @@ def insert_collections(request, orion_db, clean_db):
     yield collections_data
 
     for name in collections_data.keys():
-        print("\n--insert_collections drop {}--".format(name), end="")
         clean_db[name].drop()
 
     dump_db(orion_db, clean_db)
@@ -169,13 +167,6 @@ def insert_collections(request, orion_db, clean_db):
 @pytest.fixture(autouse=True)
 def drop_collections(request, orion_db):
     """Drop a collection prior a test"""
-    print(
-        "\n--drop_collections marker {}--".format(
-            request.node.get_closest_marker("drop_collections")
-        ),
-        end="",
-    )
-    print("\n--drop_collections DB {}--".format(orion_db), end="")
     db = get_db(orion_db)
     collections = (
         request.node.get_closest_marker("drop_collections").args[0]
@@ -183,11 +174,9 @@ def drop_collections(request, orion_db):
         else tuple()
     )
     for collection in collections:
-        print("\n--drop_collections collection {}--".format(collection), end="")
         db[collection].drop()
     yield
     for collection in collections:
-        print("\n--drop_collections collection {}--".format(collection), end="")
         db[collection].drop()
 
 
@@ -195,8 +184,6 @@ def drop_collections(request, orion_db):
 def skip_if_not_mongodb(pytestconfig, db_type):
     """Skip all MongoDB tests if not explicitly requested or skip all
     non-MongoDB tests if requesting MongoDB tests execution"""
-    print("\n--skip_if_not_mongodb config {}--".format(pytestconfig), end="")
-    print("\n--skip_if_not_mongodb DB TYPE {}--".format(db_type), end="")
     if db_type == "mongodb" and not pytestconfig.getoption("--mongodb"):
         pytest.skip("{} tests disabled".format(db_type))
     elif db_type != "mongodb" and pytestconfig.getoption("--mongodb"):
@@ -340,7 +327,6 @@ class TestEnsureIndex(object):
     )
     def test_new_index(self, orion_db, db_test_data):
         """Index should be added to database"""
-        print("\n--test_new_index {}--".format(db_test_data), end="")
         unique, key, stored_key, key_present = db_test_data
         assert stored_key not in get_db(orion_db)["new_collection"].index_information()
 
@@ -424,9 +410,6 @@ class TestRead(object):
         """Fetch a whole entries."""
         loaded_config = orion_db.read(
             "test_collection", {"field1": "same1", "same_field": "same"}
-        )
-        print(
-            "\n--test_read_experiment loaded_config {}--".format(loaded_config), end=""
         )
         assert loaded_config == [test_collection[0], test_collection[2]]
 
@@ -738,7 +721,6 @@ class TestIndexInformation(object):
     )
     def test_single_index(self, orion_db, db_test_data):
         """Test that single indexes are ignored if not unique."""
-        print("\n--test_single_index {}--".format(db_test_data), end="")
         unique, key, index_information = db_test_data
         orion_db.ensure_index("experiments", [(key, Database.ASCENDING)], unique=unique)
 
@@ -760,7 +742,6 @@ class TestIndexInformation(object):
     )
     def test_ordered_index(self, orion_db, db_test_data):
         """Test that ordered indexes are not taken into account."""
-        print("\n--test_ordered_index {}--".format(db_test_data), end="")
         unique, key, index_information = db_test_data
         orion_db.ensure_index(
             "experiments", [(key, Database.DESCENDING)], unique=unique
@@ -800,7 +781,6 @@ class TestIndexInformation(object):
     )
     def test_compound_index(self, orion_db, db_test_data):
         """Test representation of compound indexes."""
-        print("\n--test_compound_index {}--".format(db_test_data), end="")
         unique, keys_pair, index_information = db_test_data
         orion_db.ensure_index(
             "experiments",
@@ -857,12 +837,6 @@ class TestDropIndex(object):
     )
     def test_drop_ordered_index_ephemeraldb_pickleddb(self, orion_db, db_test_data):
         """Test with single and compound indexes."""
-        print(
-            "\n--test_drop_ordered_index_ephemeraldb_pickleddb {}--".format(
-                db_test_data
-            ),
-            end="",
-        )
         keys, stored_keys, index_information = db_test_data
         orion_db.ensure_index("experiments", keys, unique=True)
         assert orion_db.index_information("experiments") == index_information
@@ -902,7 +876,6 @@ class TestDropIndex(object):
     )
     def test_drop_ordered_index_mongodb(self, orion_db, db_test_data):
         """Test with single and compound indexes."""
-        print("\n--test_drop_ordered_index_mongodb {}--".format(db_test_data), end="")
         (
             keys_1,
             keys_2,
