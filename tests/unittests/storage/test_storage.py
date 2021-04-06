@@ -635,6 +635,63 @@ class TestStorage:
         check_status_change("interrupted")
         check_status_change("suspended")
 
+    def test_change_status_success_thanks_to_was(self, storage):
+        """Change the status of a Trial requesting the correct previous state, although local
+        one is not up-to-date.
+        """
+
+        def check_status_change(new_status):
+            with OrionState(
+                experiments=[base_experiment], trials=generate_trials(), storage=storage
+            ) as cfg:
+                trial = get_storage().get_trial(cfg.get_trial(0))
+                assert trial is not None, "Was not able to retrieve trial for test"
+                assert trial.status != new_status
+
+                if trial.status == new_status:
+                    return
+
+                correct_status = trial.status
+                trial.status = "broken"
+                assert correct_status != "broken"
+                with pytest.raises(FailedUpdate):
+                    get_storage().set_trial_status(trial, status=new_status)
+
+                get_storage().set_trial_status(
+                    trial, status=new_status, was=correct_status
+                )
+
+        check_status_change("completed")
+        check_status_change("broken")
+        check_status_change("reserved")
+        check_status_change("interrupted")
+        check_status_change("suspended")
+
+    def test_change_status_failed_update_because_of_was(self, storage):
+        """Change the status of a Trial requesting the wrong previous state."""
+
+        def check_status_change(new_status):
+            with OrionState(
+                experiments=[base_experiment], trials=generate_trials(), storage=storage
+            ) as cfg:
+                trial = get_storage().get_trial(cfg.get_trial(0))
+                assert trial is not None, "Was not able to retrieve trial for test"
+                assert trial.status != new_status
+
+                if trial.status == new_status:
+                    return
+
+                with pytest.raises(FailedUpdate):
+                    get_storage().set_trial_status(
+                        trial, status=new_status, was=new_status
+                    )
+
+        check_status_change("completed")
+        check_status_change("broken")
+        check_status_change("reserved")
+        check_status_change("interrupted")
+        check_status_change("suspended")
+
     def test_fetch_pending_trials(self, storage):
         """Test fetch pending trials"""
         with OrionState(
