@@ -582,6 +582,24 @@ class TestBroken:
             assert client._pacemakers == {}
             assert client.get_trial(trial).status == "interrupted"
 
+    def test_completed_then_interrupted_trial(self):
+        """Test that interrupted trials are not set to broken"""
+        with create_experiment(config, base_trial) as (cfg, experiment, client):
+            with pytest.raises(KeyboardInterrupt):
+                with client.suggest() as trial:
+                    assert trial.status == "reserved"
+                    assert trial.results == []
+                    assert get_storage().get_trial(trial).objective is None
+                    client.observe(
+                        trial, [dict(name="objective", type="objective", value=101)]
+                    )
+                    assert get_storage().get_trial(trial).objective.value == 101
+                    assert trial.status == "completed"
+                    raise KeyboardInterrupt
+
+            assert client._pacemakers == {}
+            assert client.get_trial(trial).status == "completed"
+
 
 @pytest.mark.usefixtures("version_XYZ")
 class TestSuggest:
@@ -857,6 +875,20 @@ class TestObserve:
                 exc.value
             )
             assert client._pacemakers == {}
+
+    def test_observe_under_with(self):
+        with create_experiment(config, base_trial) as (cfg, experiment, client):
+            with client.suggest() as trial:
+                assert trial.status == "reserved"
+                assert trial.results == []
+                assert get_storage().get_trial(trial).objective is None
+                client.observe(
+                    trial, [dict(name="objective", type="objective", value=101)]
+                )
+                assert get_storage().get_trial(trial).objective.value == 101
+                assert trial.status == "completed"
+
+            assert trial.status == "completed"  # Still completed after __exit__
 
 
 @pytest.mark.usefixtures("version_XYZ")
