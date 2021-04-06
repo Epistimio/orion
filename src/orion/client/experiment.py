@@ -572,19 +572,21 @@ class ExperimentClient:
         self._check_if_executable()
 
         trial.results += [Trial.Result(**result) for result in results]
+        raise_if_unreserved = True
         try:
             self._experiment.update_completed_trial(trial)
-            self.release(trial, "completed")
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
+                raise_if_unreserved = False
                 raise ValueError(
                     "Trial {} does not exist in database.".format(trial.id)
                 ) from e
 
-            self._release_reservation(trial)
             raise RuntimeError(
                 "Reservation for trial {} has been lost.".format(trial.id)
             ) from e
+        finally:
+            self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved)
 
     def workon(self, fct, max_trials=infinity, **kwargs):
         """Optimize a given function
