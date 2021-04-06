@@ -455,6 +455,7 @@ class ExperimentClient:
         """
         self._check_if_writable()
 
+        current_status = trial.status
         raise_if_unreserved = True
         try:
             self._experiment.set_trial_status(trial, status, was="reserved")
@@ -463,7 +464,7 @@ class ExperimentClient:
                 raise ValueError(
                     "Trial {} does not exist in database.".format(trial.id)
                 ) from e
-            if trial.status != "reserved":
+            if current_status != "reserved":
                 raise_if_unreserved = False
                 raise RuntimeError(
                     "Trial {} was already released locally.".format(trial.id)
