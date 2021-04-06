@@ -533,10 +533,11 @@ class ExperimentClient:
 
             raise e
 
-        if trial is not None:
+        if trial is None:
+            return trial
+        else:
             self._maintain_reservation(trial)
-
-        return None if trial is None else TrialCM(self, trial)
+            return TrialCM(self, trial)
 
     def observe(self, trial, results):
         """Observe trial results

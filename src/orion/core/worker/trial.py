@@ -470,9 +470,11 @@ class TrialCM:
 
     def __exit__(self, exc_type, exc_value, traceback):
         try:
-            if exc_type is None:
-                self._cm_experiment.release(self._cm_trial)
-            else:
+            if exc_type is KeyboardInterrupt:
+                self._cm_experiment.release(self._cm_trial, "interrupted")
+            elif exc_type is not None:
                 self._cm_experiment.release(self._cm_trial, "broken")
+            else:
+                self._cm_experiment.release(self._cm_trial)
         except:
             pass
