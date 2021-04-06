@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.io.database.pickleddb`."""
 import pytest
+from test_database import clean_db, orion_db
 
 from orion.core.io.database import Database
 from orion.core.io.database.ephemeraldb import (
