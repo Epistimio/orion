@@ -97,7 +97,9 @@ class PickledDB(AbstractDB):
     """
 
     # pylint: disable=unused-argument
-    def __init__(self, host=DEFAULT_HOST, timeout=60, *args, **kwargs):
+    def __init__(self, host="", timeout=60, *args, **kwargs):
+        if host == "":
+            host = DEFAULT_HOST
         super(PickledDB, self).__init__(host)
 
         self.timeout = timeout

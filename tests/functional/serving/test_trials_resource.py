@@ -3,6 +3,8 @@ import copy
 import datetime
 import random
 
+import falcon
+
 from orion.core.io import experiment_builder
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
@@ -85,7 +87,10 @@ def test_root_endpoint_not_supported(client):
     response = client.simulate_get("/trials")
 
     assert response.status == "404 Not Found"
-    assert not response.json
+    if falcon.__version__ < "3.0.0":
+        assert not response.json
+    else:
+        assert response.json == {"title": "404 Not Found"}
 
 
 class TestTrialCollection:

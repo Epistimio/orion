@@ -88,10 +88,8 @@ Full Example of Global Configuration
 .. code-block:: yaml
 
     database:
-        host: localhost
-        name: orion
-        port: 27017
-        type: mongodb
+        host: orion_db.pkl
+        type: pickleddb
 
     experiment:
         algorithms:
@@ -136,10 +134,8 @@ Database
 .. code-block:: yaml
 
     database:
-        host: localhost
-        name: orion
-        port: 27017
-        type: mongodb
+        host: orion_db.pkl
+        type: pickleddb
 
 
 .. _config_database_name:
@@ -161,7 +157,7 @@ type
 ~~~~
 
 :Type: str
-:Default: MongoDB
+:Default: PickledDB
 :Env var: ORION_DB_TYPE
 :Description:
     Type of database. Builtin backends are ``mongodb``, ``pickleddb`` and ``ephemeraldb``.
@@ -174,10 +170,12 @@ host
 ~~~~
 
 :Type: str
-:Default: 127.0.1.1
+:Default: ""
 :Env var: ORION_DB_ADDRESS
 :Description:
-    URI for ``mongodb``, or file path for ``pickleddb``.
+    URI for ``mongodb``, or file path for ``pickleddb``.  An empty
+    string will set the value depending on the database type
+    (localhost or <user_data_dir>/orion/orion_db.pkl).
 
 
 

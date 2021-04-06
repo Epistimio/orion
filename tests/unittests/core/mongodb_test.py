@@ -3,6 +3,7 @@
 """Collection of tests for :mod:`orion.core.io.database.mongodb`."""
 
 import functools
+import socket
 from datetime import datetime
 from timeit import timeit
 

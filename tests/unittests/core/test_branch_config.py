@@ -1228,3 +1228,4 @@ class TestResolutionsConfig(object):
 
         assert len(conflicts.get()) == 4
         assert len(conflicts.get_resolved()) == 3
+        orion.core.config.evc.config_change_type = "break"

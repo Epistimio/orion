@@ -92,11 +92,6 @@ def define_database_config(config):
     """Create and define the fields of the database configuration."""
     database_config = Configuration()
 
-    try:
-        default_host = socket.gethostbyname(socket.gethostname())
-    except socket.gaierror:
-        default_host = "localhost"
-
     database_config.add_option(
         "name",
         option_type=str,
@@ -107,7 +102,7 @@ def define_database_config(config):
     database_config.add_option(
         "type",
         option_type=str,
-        default="MongoDB",
+        default="PickledDB",
         env_var="ORION_DB_TYPE",
         help=(
             "Type of database. Builtin backends are ``mongodb``, "
@@ -117,7 +112,7 @@ def define_database_config(config):
     database_config.add_option(
         "host",
         option_type=str,
-        default=default_host,
+        default="",
         env_var="ORION_DB_ADDRESS",
         help="URI for ``mongodb``, or file path for ``pickleddb``.",
     )

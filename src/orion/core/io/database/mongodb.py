@@ -94,7 +94,7 @@ class MongoDB(AbstractDB):
 
     def __init__(
         self,
-        host="localhost",
+        host="",
         name=None,
         port=None,
         username=None,
@@ -102,6 +102,8 @@ class MongoDB(AbstractDB):
         serverSelectionTimeoutMS=5000,
     ):
         """Init method, see attributes of :class:`AbstractDB`."""
+        if host == "":
+            host = "localhost"
         self.uri = None
 
         if port is not None:
