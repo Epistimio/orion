@@ -600,8 +600,7 @@ class Track(BaseStorageProtocol):  # noqa: F811
             does not match the status in the database
 
         """
-        if was is None:
-            was = trial.status
+        was = was or trial.status
 
         validate_status(status)
         validate_status(was)

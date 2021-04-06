@@ -294,10 +294,8 @@ class Legacy(BaseStorageProtocol):
 
     def set_trial_status(self, trial, status, heartbeat=None, was=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.set_trial_status`"""
-        if heartbeat is None:
-            heartbeat = datetime.datetime.utcnow()
-        if was is None:
-            was = trial.status
+        heartbeat = heartbeat or datetime.datetime.utcnow()
+        was = was or trial.status
 
         validate_status(status)
         validate_status(was)
