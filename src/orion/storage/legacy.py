@@ -292,18 +292,19 @@ class Legacy(BaseStorageProtocol):
 
         return rc
 
-    def set_trial_status(self, trial, status, heartbeat=None):
+    def set_trial_status(self, trial, status, heartbeat=None, was=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.set_trial_status`"""
         if heartbeat is None:
             heartbeat = datetime.datetime.utcnow()
+        if was is None:
+            was = trial.status
+
+        validate_status(status)
+        validate_status(was)
 
         update = dict(status=status, heartbeat=heartbeat, experiment=trial.experiment)
 
-        validate_status(status)
-
-        rc = self.update_trial(
-            trial, **update, where={"status": trial.status, "_id": trial.id}
-        )
+        rc = self.update_trial(trial, **update, where={"status": was, "_id": trial.id})
 
         if not rc:
             raise FailedUpdate()
