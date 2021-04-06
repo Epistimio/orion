@@ -459,14 +459,11 @@ class TestClose:
     def test_close_with_reserved(self):
         """Test client cannot be closed if trials are reserved."""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = client.suggest()
+            with client.suggest() as trial:
+                with pytest.raises(RuntimeError) as exc:
+                    client.close()
 
-            with pytest.raises(RuntimeError) as exc:
-                client.close()
-
-            assert "There is still reserved trials" in str(exc.value)
-
-            client.release(trial)
+                assert "There is still reserved trials" in str(exc.value)
 
     def test_close_unregister_atexit(self, monkeypatch):
         """Test close properly unregister the atexit function"""
@@ -496,12 +493,10 @@ class TestBroken:
     def test_broken_trial(self):
         """Test that broken trials are detected"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            try:
+            with pytest.raises(RuntimeError):
                 with client.suggest() as trial:
                     assert trial.status == "reserved"
                     raise RuntimeError("Dummy failure!")
-            except:
-                pass
 
             assert client._pacemakers == {}
             assert client.get_trial(trial).status == "broken"
@@ -521,13 +516,11 @@ class TestBroken:
                 _,
                 client2,
             ):
-                trial1 = client1.suggest()
-                trial2 = client2.suggest()
-
-                assert trial1.status == "reserved"
-                assert trial2.status == "reserved"
-
-                atexit._run_exitfuncs()
+                with pytest.raises(RuntimeError):
+                    with client1.suggest() as trial1, client2.suggest() as trial2:
+                        assert trial1.status == "reserved"
+                        assert trial2.status == "reserved"
+                        raise RuntimeError("Dummy failure!")
 
                 assert client1._pacemakers == {}
                 assert client2._pacemakers == {}
@@ -581,13 +574,10 @@ class TestBroken:
     def test_interrupted_trial(self):
         """Test that interrupted trials are not set to broken"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
-            trial = client.suggest()
-            assert trial.status == "reserved"
-
-            try:
-                raise KeyboardInterrupt
-            except KeyboardInterrupt as e:
-                atexit._run_exitfuncs()
+            with pytest.raises(KeyboardInterrupt):
+                with client.suggest() as trial:
+                    assert trial.status == "reserved"
+                    raise KeyboardInterrupt
 
             assert client._pacemakers == {}
             assert client.get_trial(trial).status == "interrupted"
