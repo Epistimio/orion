@@ -4,7 +4,6 @@ Wrapper for MongoDB
 ===================
 """
 import functools
-import socket
 
 import pymongo
 
