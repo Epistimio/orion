@@ -104,10 +104,7 @@ class MongoDB(AbstractDB):
     ):
         """Init method, see attributes of :class:`AbstractDB`."""
         if host == "":
-            try:
-                host = socket.gethostbyname(socket.gethostname())
-            except socket.gaierror:
-                host = "localhost"
+            host = "localhost"
         self.uri = None
 
         if port is not None:
