@@ -169,9 +169,29 @@ class TestCreateBenchmark:
         with OrionState():
 
             with pytest.raises(NotImplementedError) as exc:
-                benchmark_config_py["algorithms"] = [{"fake_algorithm": {"seed": 1}}]
+                benchmark_config_py["algorithms"] = [
+                    {"algorithm": {"fake_algorithm": {"seed": 1}}}
+                ]
                 get_or_create_benchmark(**benchmark_config_py)
             assert "Could not find implementation of BaseAlgorithm" in str(exc.value)
+
+    def test_create_with_deterministic_algorithm(self, benchmark_config_py):
+        algorithms = [
+            {"algorithm": {"random": {"seed": 1}}},
+            {"algorithm": {"gridsearch": {"n_values": 50}}, "deterministic": True},
+        ]
+        with OrionState():
+            config = copy.deepcopy(benchmark_config_py)
+            config["algorithms"] = algorithms
+            bm = get_or_create_benchmark(**config)
+
+            for study in bm.studies:
+                for status in study.status():
+                    algo = status["algorithm"]
+                    if algo == "gridsearch":
+                        assert status["experiments"] == 1
+                    else:
+                        assert status["experiments"] == study.assessment.task_num
 
     def test_create_with_invalid_targets(self, benchmark_config_py):
         """Test creation with invalid Task and Assessment"""

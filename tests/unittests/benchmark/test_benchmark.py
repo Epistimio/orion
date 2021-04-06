@@ -189,6 +189,34 @@ class TestStudy:
             "task=RosenBrock, algorithms=[random,tpe])"
         )
 
+    def test_creation_algorithms(self, benchmark):
+        """Test study creation with all support algorithms input format"""
+
+        algorithms = [
+            {"algorithm": {"gridsearch": {"n_values": 1}}, "deterministic": True},
+            {"algorithm": "tpe"},
+            {"random": {"seed": 1}},
+            "asha",
+        ]
+        study = Study(benchmark, algorithms, AverageResult(2), RosenBrock(25, dim=3))
+        assert study.algorithms[0].name == "gridsearch"
+        assert study.algorithms[0].experiment_algorithm == {
+            "gridsearch": {"n_values": 1}
+        }
+        assert study.algorithms[0].is_deterministic
+
+        assert study.algorithms[1].name == "tpe"
+        assert study.algorithms[1].experiment_algorithm == "tpe"
+        assert not study.algorithms[1].is_deterministic
+
+        assert study.algorithms[2].name == "random"
+        assert study.algorithms[2].experiment_algorithm == {"random": {"seed": 1}}
+        assert not study.algorithms[2].is_deterministic
+
+        assert study.algorithms[3].name == "asha"
+        assert study.algorithms[3].experiment_algorithm == "asha"
+        assert not study.algorithms[3].is_deterministic
+
     def test_setup_experiments(self, study):
         """Test to setup experiments for study"""
         with OrionState():
