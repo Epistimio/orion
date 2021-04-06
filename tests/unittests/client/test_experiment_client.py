@@ -378,7 +378,7 @@ class TestRelease:
         with create_experiment(config, base_trial) as (cfg, experiment, client):
             trial = Trial(experiment="idontexist", params=cfg.trials[1]["params"])
 
-            def do_nada(trial):
+            def do_nada(trial, **kwargs):
                 """Don't do anything"""
                 return None
 
@@ -420,11 +420,31 @@ class TestRelease:
             with pytest.raises(RuntimeError) as exc:
                 client.release(trial)
 
-            assert "Trial {} had no pacemakers. Was is reserved properly?".format(
-                trial.id
-            ) == str(exc.value)
+            assert "Trial {} was already released locally.".format(trial.id) == str(
+                exc.value
+            )
 
             assert client._pacemakers == {}
+
+    def test_release_already_released_but_incorrectly(self):
+        """Verify that incorrectly released trials have its pacemaker stopped properly"""
+        with create_experiment(config, base_trial) as (cfg, experiment, client):
+            trial = client.get_trial(uid=cfg.trials[1]["_id"])
+            client.reserve(trial)
+            pacemaker = client._pacemakers[trial.id]
+            assert trial.status == "reserved"
+            experiment.set_trial_status(trial, "interrupted")
+            assert trial.status == "interrupted"
+
+            with pytest.raises(RuntimeError) as exc:
+                client.release(trial)
+
+            assert "Trial {} was already released locally.".format(trial.id) == str(
+                exc.value
+            )
+
+            assert client._pacemakers == {}
+            assert not pacemaker.is_alive()
 
 
 @pytest.mark.usefixtures("version_XYZ")
@@ -796,7 +816,7 @@ class TestObserve:
                     trial, [dict(name="objective", type="objective", value=101)]
                 )
 
-            assert "Trial {} had no pacemakers. Was is reserved properly?".format(
+            assert "Trial {} had no pacemakers. Was it reserved properly?".format(
                 trial.id
             ) == str(exc.value)
 
