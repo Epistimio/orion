@@ -24,6 +24,32 @@ from orion.storage.legacy import Legacy
 from orion.testing import OrionState
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--mongodb",
+        action="store_true",
+        default=False,
+        help="Include MongoDB tests and exclude non-MongoDB databases tests. "
+        "Default behaviour includes non-MongoDB tests and excludes MongoDB "
+        "databases tests.",
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "db_types_only(db_types): mark test to run only with listed database types",
+    )
+    config.addinivalue_line(
+        "markers",
+        "drop_collections(collections): mark test to drop collections prior running",
+    )
+    config.addinivalue_line(
+        "markers",
+        "insert_collections(collections): mark test to insert collections prior running",
+    )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def shield_from_user_config(request):
     """Do not read user's yaml global config."""
