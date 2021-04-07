@@ -8,13 +8,10 @@ Exposes the interface for plotting for command-line usage.
 
 """
 import logging
-import os
-import sys
 
 import orion.core.io.experiment_builder as experiment_builder
 from orion.client.experiment import ExperimentClient
 from orion.core.cli import base as cli
-from orion.core.utils.exceptions import NoConfigurationError
 from orion.plotting.base import SINGLE_EXPERIMENT_PLOTS
 
 log = logging.getLogger(__name__)
@@ -74,6 +71,11 @@ def add_subparser(parser):
 
 
 def infer_type(output, out_type):
+    """Infer type of plot file based on output filename or provided type.
+
+    If output has a valid extension, this extension is used as the type. Otherwise,
+    the provided (or default) output type is used.
+    """
     if output:
         ext = output.split(".")[-1]
         if ext and ext not in VALID_TYPES:
@@ -89,6 +91,11 @@ def infer_type(output, out_type):
 
 
 def get_output(experiment, output, kind, out_type):
+    """Create output file name based on experiment name, plot kind and file type.
+
+    If the output filename is provided, it is appended with the file type if filename
+    does not already has the corresponding extention. (ex output.name -> output.name.png)
+    """
 
     if not output:
         return f"{experiment.name}-v{experiment.version}_{kind}.{out_type}"
@@ -104,7 +111,9 @@ def main(args):
     # Note : If you specify no argument at all (except 'kind'),
     #        the default behavior is to plot "{experiment.name}_{kind}.png".
 
-    experiment = ExperimentClient(experiment_builder.get_from_args(args, mode="r"), None)
+    experiment = ExperimentClient(
+        experiment_builder.get_from_args(args, mode="r"), None
+    )
     output_plot = experiment.plot(kind=args["kind"])
 
     args["type"] = infer_type(args["output"], args["type"])
