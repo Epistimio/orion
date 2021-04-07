@@ -37,7 +37,7 @@ The arguments expected by the "plot" subcommand are as follows
                            type of plot to return. (default: png)
    -o OUTPUT, --output OUTPUT
                            path where plot is saved. Will override the `type` argument.
-                           (default is {exp.name}_{kind}.{type})
+                           (default is {exp.name}-v{exp.version}_{kind}.{type})
    --scale SCALE         more pixels, but same proportions of the plot.
                            Scale acts as multiplier on height and width of resulting image.
                            Overrides value of 'scale' in plotly.io.write_image.
@@ -98,7 +98,7 @@ The default value for the output filename is an automatically-generated
 string formatted as "{experiment.name}_{kind}.{type}".
 This also implies that the plot will be saved in the current directory.
 
-When ``output`` is specified by the user, the ``type`` argument
+When ``output`` is specified by the user with a file extension, the ``type`` argument
 will be ignored because the value of ``type`` will be instead inferred by
 the file extension in the ``output``.
 For example, with ``--output=../myplot.jpg``, the results will be saved
