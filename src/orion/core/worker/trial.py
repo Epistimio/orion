@@ -476,5 +476,5 @@ class TrialCM:
                 self._cm_experiment.release(self._cm_trial, "broken")
             else:
                 self._cm_experiment.release(self._cm_trial)
-        except:
-            pass
+        except RuntimeError as e:
+            log.warning(e)
