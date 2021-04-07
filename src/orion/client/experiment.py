@@ -23,7 +23,7 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.utils.flatten import flatten, unflatten
-from orion.core.worker.trial import Trial
+from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
@@ -533,10 +533,11 @@ class ExperimentClient:
 
             raise e
 
-        if trial is not None:
+        if trial is None:
+            return trial
+        else:
             self._maintain_reservation(trial)
-
-        return trial
+            return TrialCM(self, trial)
 
     def observe(self, trial, results):
         """Observe trial results
