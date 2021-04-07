@@ -14,8 +14,8 @@ import sys
 import orion.core.io.experiment_builder as experiment_builder
 from orion.client.experiment import ExperimentClient
 from orion.core.cli import base as cli
-from orion.plotting.base import SINGLE_EXPERIMENT_PLOTS
 from orion.core.utils.exceptions import NoConfigurationError
+from orion.plotting.base import SINGLE_EXPERIMENT_PLOTS
 
 log = logging.getLogger(__name__)
 DESCRIPTION = "Produce plots for Oríon experiments"

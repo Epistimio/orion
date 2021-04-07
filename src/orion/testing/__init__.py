@@ -10,8 +10,8 @@ Common testing support module providing defaults, functions and mocks.
 
 import copy
 import datetime
-from contextlib import contextmanager
 import os
+from contextlib import contextmanager
 
 import orion.algo.space
 import orion.core.io.experiment_builder as experiment_builder
