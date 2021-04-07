@@ -11,6 +11,7 @@ Common testing support module providing defaults, functions and mocks.
 import copy
 import datetime
 from contextlib import contextmanager
+import os
 
 import orion.algo.space
 import orion.core.io.experiment_builder as experiment_builder
@@ -167,3 +168,17 @@ class MockDatetime(datetime.datetime):
     def utcnow(cls):
         """Return our random/fixed datetime"""
         return default_datetime()
+
+
+class AssertNewFile:
+    def __init__(self, filename):
+        self.filename = filename
+
+    def __enter__(self):
+        if os.path.exists(self.filename):
+            os.remove(self.filename)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is None:
+            assert os.path.exists(self.filename), self.filename
+            os.remove(self.filename)
