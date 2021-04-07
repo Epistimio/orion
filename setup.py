@@ -68,6 +68,8 @@ setup_args = dict(
         "tabulate",
         "AppDirs",
         "plotly",
+        "kaleido",
+        "requests",
         "pandas",
         "gunicorn",
         "falcon",
