@@ -27,6 +27,8 @@ requirements:
     - tabulate
     - AppDirs
     - plotly
+    - python-kaleido
+    - requests
     - pandas
     - falcon
     - gunicorn

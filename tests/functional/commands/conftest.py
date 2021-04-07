@@ -156,6 +156,7 @@ def single_with_trials(single_without_success):
     results = {"name": "obj", "type": "objective", "value": 0}
     trial = Trial(experiment=exp.id, params=[x], status="completed", results=[results])
     Database().write("trials", trial.to_dict())
+    return exp.configuration
 
 
 @pytest.fixture

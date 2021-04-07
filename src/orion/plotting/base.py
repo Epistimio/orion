@@ -351,6 +351,14 @@ PLOT_METHODS = {
 }
 
 
+SINGLE_EXPERIMENT_PLOTS = {
+    "lpi": lpi,
+    "parallel_coordinates": parallel_coordinates,
+    "partial_dependencies": partial_dependencies,
+    "regret": regret,
+}
+
+
 class PlotAccessor:
     """
     Make plots of ExperimentClient.
