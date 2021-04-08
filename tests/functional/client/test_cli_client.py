@@ -9,9 +9,7 @@ import orion.core.cli
 from orion.core.worker.consumer import Consumer
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_interrupt(database, monkeypatch, capsys):
+def test_interrupt(storage, monkeypatch, capsys):
     """Test interruption from within user script."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -37,17 +35,15 @@ def test_interrupt(database, monkeypatch, capsys):
     assert captured.out == "Orion is interrupted.\n"
     assert captured.err == ""
 
-    exp = list(database.experiments.find({"name": "voila_voici"}))
+    exp = list(storage.fetch_experiments({"name": "voila_voici"}))
     exp = exp[0]
     exp_id = exp["_id"]
-    trials = list(database.trials.find({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) == 1
-    assert trials[0]["status"] == "interrupted"
+    assert trials[0].status == "interrupted"
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_interrupt_diff_code(database, monkeypatch, capsys):
+def test_interrupt_diff_code(storage, monkeypatch, capsys):
     """Test interruption from within user script with custom int code"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -80,12 +76,12 @@ def test_interrupt_diff_code(database, monkeypatch, capsys):
 
         assert error_code == 0
 
-        exp = list(database.experiments.find({"name": "voila_voici"}))
+        exp = list(storage.fetch_experiments({"name": "voila_voici"}))
         exp = exp[0]
         exp_id = exp["_id"]
-        trials = list(database.trials.find({"experiment": exp_id}))
+        trials = list(storage.fetch_trials(uid=exp_id))
         assert len(trials) == 2
-        assert trials[0]["status"] == "broken"
+        assert trials[0].status == "broken"
 
     # This time we use true `get_execution_environment which pass properly int code to child.
     error_code = orion.core.cli.main(
@@ -108,12 +104,12 @@ def test_interrupt_diff_code(database, monkeypatch, capsys):
     assert "Orion is interrupted.\n" in captured.out
     assert captured.err == ""
 
-    exp = list(database.experiments.find({"name": "voila_voici"}))
+    exp = list(storage.fetch_experiments({"name": "voila_voici"}))
     exp = exp[0]
     exp_id = exp["_id"]
-    trials = list(database.trials.find({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) == 3
-    assert trials[-1]["status"] == "interrupted"
+    assert trials[-1].status == "interrupted"
 
 
 # TODO:
@@ -124,9 +120,7 @@ def test_interrupt_diff_code(database, monkeypatch, capsys):
 
 
 @pytest.mark.parametrize("fct", ["report_bad_trial", "report_objective"])
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_report_no_name(database, monkeypatch, fct):
+def test_report_no_name(storage, monkeypatch, fct):
     """Test report helper functions with default names"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -148,21 +142,19 @@ def test_report_no_name(database, monkeypatch, fct):
         + user_args
     )
 
-    exp = list(database.experiments.find({"name": "voila_voici"}))
+    exp = list(storage.fetch_experiments({"name": "voila_voici"}))
     exp = exp[0]
     exp_id = exp["_id"]
-    trials = list(database.trials.find({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) == 2
-    assert trials[0]["status"] == "completed"
-    assert trials[0]["results"][0]["name"] == "objective"
-    assert trials[0]["results"][0]["type"] == "objective"
-    assert trials[0]["results"][0]["value"] == 1.0
+    assert trials[0].status == "completed"
+    assert trials[0].results[0].name == "objective"
+    assert trials[0].results[0].type == "objective"
+    assert trials[0].results[0].value == 1.0
 
 
 @pytest.mark.parametrize("fct", ["report_bad_trial", "report_objective"])
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_report_with_name(database, monkeypatch, fct):
+def test_report_with_name(storage, monkeypatch, fct):
     """Test report helper functions with custom names"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -186,21 +178,19 @@ def test_report_with_name(database, monkeypatch, fct):
         + user_args
     )
 
-    exp = list(database.experiments.find({"name": "voila_voici"}))
+    exp = list(storage.fetch_experiments({"name": "voila_voici"}))
     exp = exp[0]
     exp_id = exp["_id"]
-    trials = list(database.trials.find({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) == 2
-    assert trials[0]["status"] == "completed"
-    assert trials[0]["results"][0]["name"] == "metric"
-    assert trials[0]["results"][0]["type"] == "objective"
-    assert trials[0]["results"][0]["value"] == 1.0
+    assert trials[0].status == "completed"
+    assert trials[0].results[0].name == "metric"
+    assert trials[0].results[0].type == "objective"
+    assert trials[0].results[0].value == 1.0
 
 
 @pytest.mark.parametrize("fct", ["report_bad_trial", "report_objective"])
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_report_with_bad_objective(database, monkeypatch, fct):
+def test_report_with_bad_objective(storage, monkeypatch, fct):
     """Test report helper functions with bad objective types"""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -226,9 +216,7 @@ def test_report_with_bad_objective(database, monkeypatch, fct):
     assert "must contain a type `objective` with type float/int" in str(exc.value)
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_report_with_bad_trial_no_objective(database, monkeypatch):
+def test_report_with_bad_trial_no_objective(storage, monkeypatch):
     """Test bad trial report helper function with default objective."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -248,20 +236,18 @@ def test_report_with_bad_trial_no_objective(database, monkeypatch):
         + user_args
     )
 
-    exp = list(database.experiments.find({"name": "voila_voici"}))
+    exp = list(storage.fetch_experiments({"name": "voila_voici"}))
     exp = exp[0]
     exp_id = exp["_id"]
-    trials = list(database.trials.find({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) == 2
-    assert trials[0]["status"] == "completed"
-    assert trials[0]["results"][0]["name"] == "objective"
-    assert trials[0]["results"][0]["type"] == "objective"
-    assert trials[0]["results"][0]["value"] == 1e10
+    assert trials[0].status == "completed"
+    assert trials[0].results[0].name == "objective"
+    assert trials[0].results[0].type == "objective"
+    assert trials[0].results[0].value == 1e10
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_report_with_bad_trial_with_data(database, monkeypatch):
+def test_report_with_bad_trial_with_data(storage, monkeypatch):
     """Test bad trial report helper function with additional data."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -283,24 +269,22 @@ def test_report_with_bad_trial_with_data(database, monkeypatch):
         + user_args
     )
 
-    exp = list(database.experiments.find({"name": "voila_voici"}))
+    exp = list(storage.fetch_experiments({"name": "voila_voici"}))
     exp = exp[0]
     exp_id = exp["_id"]
-    trials = list(database.trials.find({"experiment": exp_id}))
+    trials = list(storage.fetch_trials(uid=exp_id))
     assert len(trials) == 2
-    assert trials[0]["status"] == "completed"
-    assert trials[0]["results"][0]["name"] == "objective"
-    assert trials[0]["results"][0]["type"] == "objective"
-    assert trials[0]["results"][0]["value"] == 1e10
+    assert trials[0].status == "completed"
+    assert trials[0].results[0].name == "objective"
+    assert trials[0].results[0].type == "objective"
+    assert trials[0].results[0].value == 1e10
 
-    assert trials[0]["results"][1]["name"] == "another"
-    assert trials[0]["results"][1]["type"] == "constraint"
-    assert trials[0]["results"][1]["value"] == 1.0
+    assert trials[0].results[1].name == "another"
+    assert trials[0].results[1].type == "constraint"
+    assert trials[0].results[1].value == 1.0
 
 
-@pytest.mark.usefixtures("clean_db")
-@pytest.mark.usefixtures("null_db_instances")
-def test_no_report(database, monkeypatch, capsys):
+def test_no_report(storage, monkeypatch, capsys):
     """Test script call without any results reported."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
 

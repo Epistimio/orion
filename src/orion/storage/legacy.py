@@ -151,11 +151,16 @@ class Legacy(BaseStorageProtocol):
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_experiments`"""
         return self._db.read("experiments", query, selection)
 
-    def fetch_trials(self, experiment=None, uid=None):
+    def fetch_trials(self, experiment=None, uid=None, where=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_trials`"""
         uid = get_uid(experiment, uid)
 
-        return self._fetch_trials(dict(experiment=uid))
+        if where is None:
+            where = dict()
+
+        where["experiment"] = uid
+
+        return self._fetch_trials(where)
 
     def _fetch_trials(self, query, selection=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.fetch_trials`"""
@@ -287,18 +292,17 @@ class Legacy(BaseStorageProtocol):
 
         return rc
 
-    def set_trial_status(self, trial, status, heartbeat=None):
+    def set_trial_status(self, trial, status, heartbeat=None, was=None):
         """See :func:`orion.storage.base.BaseStorageProtocol.set_trial_status`"""
-        if heartbeat is None:
-            heartbeat = datetime.datetime.utcnow()
+        heartbeat = heartbeat or datetime.datetime.utcnow()
+        was = was or trial.status
+
+        validate_status(status)
+        validate_status(was)
 
         update = dict(status=status, heartbeat=heartbeat, experiment=trial.experiment)
 
-        validate_status(status)
-
-        rc = self.update_trial(
-            trial, **update, where={"status": trial.status, "_id": trial.id}
-        )
+        rc = self.update_trial(trial, **update, where={"status": was, "_id": trial.id})
 
         if not rc:
             raise FailedUpdate()
@@ -350,7 +354,7 @@ class Legacy(BaseStorageProtocol):
     def update_heartbeat(self, trial):
         """Update trial's heartbeat"""
         return self.update_trial(
-            trial, heartbeat=datetime.datetime.utcnow(), status="reserved"
+            trial, heartbeat=datetime.datetime.utcnow(), where={"status": "reserved"}
         )
 
     def fetch_trials_by_status(self, experiment, status):

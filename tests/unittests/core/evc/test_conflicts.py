@@ -442,7 +442,7 @@ class TestScriptConfigConflict(object):
         assert list(conflict.ScriptConfigConflict.detect(old_config, new_config)) == []
 
 
-@pytest.mark.usefixtures("create_db_instance")
+@pytest.mark.usefixtures("setup_pickleddb_database")
 class TestExperimentNameConflict(object):
     """Tests methods related to experiment name conflicts"""
 

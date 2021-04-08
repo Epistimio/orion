@@ -124,7 +124,7 @@ If you use Oríon for published work, please cite our work using the following b
      month        = nov,
      year         = 2020,
      publisher    = {Zenodo},
-     version      = {v0.1.11},
+     version      = {v0.1.14},
      doi          = {10.5281/zenodo.3478592},
      url          = {https://doi.org/10.5281/zenodo.3478592}
    }

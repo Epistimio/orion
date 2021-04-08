@@ -94,7 +94,7 @@ def parent_config(user_config):
 
 
 @pytest.fixture
-def child_config(parent_config, create_db_instance):
+def child_config(parent_config, storage):
     """Create a child branching from the test experiment"""
     config = copy.deepcopy(parent_config)
     config["_id"] = "test2"
@@ -196,7 +196,7 @@ def list_arg_with_equals_cli_config(child_config):
 
 
 @pytest.fixture
-def cl_config(create_db_instance):
+def cl_config():
     """Create a child config with markers for commandline solving"""
     user_script = "tests/functional/demo/black_box.py"
     config = dict(
@@ -541,13 +541,13 @@ class TestResolutions(object):
         assert len(conflicts.get_resolved()) == 1
 
     def test_name_experiment(
-        self, bad_exp_parent_config, bad_exp_child_config, create_db_instance
+        self, bad_exp_parent_config, bad_exp_child_config, storage
     ):
         """Test if having the same experiment name does not create a conflict."""
         backward.populate_space(bad_exp_parent_config)
         backward.populate_space(bad_exp_child_config)
-        create_db_instance.write("experiments", bad_exp_parent_config)
-        create_db_instance.write("experiments", bad_exp_child_config)
+        storage.create_experiment(bad_exp_parent_config)
+        storage.create_experiment(bad_exp_child_config)
         conflicts = detect_conflicts(bad_exp_parent_config, bad_exp_parent_config)
         branch_builder = ExperimentBranchBuilder(conflicts, manual_resolution=True)
 
@@ -946,13 +946,11 @@ class TestResolutionsWithMarkers(object):
             == "/w_b"
         )
 
-    def test_name_experiment_version_update(
-        self, parent_config, child_config, create_db_instance
-    ):
+    def test_name_experiment_version_update(self, parent_config, child_config, storage):
         """Test if experiment name conflict is automatically resolved with version update"""
         old_name = "test"
         new_version = 2
-        create_db_instance.write("experiments", parent_config)
+        storage.create_experiment(parent_config)
         child_config["version"] = 1
         conflicts = detect_conflicts(parent_config, child_config)
         ExperimentBranchBuilder(conflicts)
@@ -968,13 +966,11 @@ class TestResolutionsWithMarkers(object):
         assert conflict.new_config["version"] == new_version
         assert conflict.is_resolved
 
-    def test_name_experiment_name_change(
-        self, parent_config, child_config, create_db_instance
-    ):
+    def test_name_experiment_name_change(self, parent_config, child_config, storage):
         """Test if experiment name conflict is automatically resolved when new name provided"""
         new_name = "test2"
-        create_db_instance.write("experiments", parent_config)
-        create_db_instance.write("experiments", child_config)
+        storage.create_experiment(parent_config)
+        storage.create_experiment(child_config)
         child_config2 = copy.deepcopy(child_config)
         child_config2["version"] = 1
         conflicts = detect_conflicts(parent_config, child_config2)
@@ -1232,3 +1228,4 @@ class TestResolutionsConfig(object):
 
         assert len(conflicts.get()) == 4
         assert len(conflicts.get_resolved()) == 3
+        orion.core.config.evc.config_change_type = "break"

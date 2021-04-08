@@ -23,7 +23,7 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.utils.flatten import flatten, unflatten
-from orion.core.worker.trial import Trial
+from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
@@ -455,20 +455,28 @@ class ExperimentClient:
         """
         self._check_if_writable()
 
+        current_status = trial.status
+        raise_if_unreserved = True
         try:
-            self._experiment.set_trial_status(trial, status)
+            self._experiment.set_trial_status(trial, status, was="reserved")
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
                 raise ValueError(
                     "Trial {} does not exist in database.".format(trial.id)
                 ) from e
+            if current_status != "reserved":
+                raise_if_unreserved = False
+                raise RuntimeError(
+                    "Trial {} was already released locally.".format(trial.id)
+                ) from e
+
             raise RuntimeError(
                 "Reservation for trial {} has been lost before release.".format(
                     trial.id
                 )
             ) from e
         finally:
-            self._release_reservation(trial)
+            self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved)
 
     def suggest(self):
         """Suggest a trial to execute.
@@ -525,10 +533,11 @@ class ExperimentClient:
 
             raise e
 
-        if trial is not None:
+        if trial is None:
+            return trial
+        else:
             self._maintain_reservation(trial)
-
-        return trial
+            return TrialCM(self, trial)
 
     def observe(self, trial, results):
         """Observe trial results
@@ -564,19 +573,21 @@ class ExperimentClient:
         self._check_if_executable()
 
         trial.results += [Trial.Result(**result) for result in results]
+        raise_if_unreserved = True
         try:
             self._experiment.update_completed_trial(trial)
-            self.release(trial, "completed")
         except FailedUpdate as e:
             if self.get_trial(trial) is None:
+                raise_if_unreserved = False
                 raise ValueError(
                     "Trial {} does not exist in database.".format(trial.id)
                 ) from e
 
-            self._release_reservation(trial)
             raise RuntimeError(
                 "Reservation for trial {} has been lost.".format(trial.id)
             ) from e
+        finally:
+            self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved)
 
     def workon(self, fct, max_trials=infinity, **kwargs):
         """Optimize a given function
@@ -653,7 +664,7 @@ class ExperimentClient:
     def _verify_reservation(self, trial):
         if trial.id not in self._pacemakers:
             raise RuntimeError(
-                "Trial {} had no pacemakers. Was is reserved properly?".format(trial.id)
+                "Trial {} had no pacemakers. Was it reserved properly?".format(trial.id)
             )
 
         if self.get_trial(trial).status != "reserved":
@@ -666,9 +677,15 @@ class ExperimentClient:
         self._pacemakers[trial.id] = TrialPacemaker(trial)
         self._pacemakers[trial.id].start()
 
-    def _release_reservation(self, trial):
+    def _release_reservation(self, trial, raise_if_unreserved=True):
         if trial.id not in self._pacemakers:
-            raise RuntimeError(
-                "Trial {} had no pacemakers. Was is reserved properly?".format(trial.id)
-            )
+            if raise_if_unreserved:
+                raise RuntimeError(
+                    "Trial {} had no pacemakers. Was it reserved properly?".format(
+                        trial.id
+                    )
+                )
+            else:
+                return
+
         self._pacemakers.pop(trial.id).stop()

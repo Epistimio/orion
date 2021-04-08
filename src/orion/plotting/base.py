@@ -7,6 +7,7 @@ import orion.plotting.backend_plotly as backend
 
 def lpi(
     experiment,
+    with_evc_tree=True,
     model="RandomForestRegressor",
     model_kwargs=None,
     n_points=20,
@@ -26,6 +27,10 @@ def lpi(
     ----------
     experiment: ExperimentClient or Experiment
         The orion object containing the experiment data
+
+    with_evc_tree: bool, optional
+        Fetch all trials from the EVC tree.
+        Default: True
 
     model: str
         Name of the regression model to use. Can be one of
@@ -56,6 +61,7 @@ def lpi(
     """
     return backend.lpi(
         experiment,
+        with_evc_tree=with_evc_tree,
         model=model,
         model_kwargs=model_kwargs,
         n_points=n_points,
@@ -64,7 +70,7 @@ def lpi(
     )
 
 
-def parallel_coordinates(experiment, order=None, **kwargs):
+def parallel_coordinates(experiment, with_evc_tree=True, order=None, **kwargs):
     """
     Make a Parallel Coordinates Plot to visualize the effect of the hyperparameters
     on the objective.
@@ -73,6 +79,10 @@ def parallel_coordinates(experiment, order=None, **kwargs):
     ----------
     experiment: ExperimentClient or Experiment
         The orion object containing the experiment data
+
+    with_evc_tree: bool, optional
+        Fetch all trials from the EVC tree.
+        Default: True
 
     order: list of str or None
         Indicates the order of columns in the parallel coordinate plot. By default
@@ -93,13 +103,17 @@ def parallel_coordinates(experiment, order=None, **kwargs):
         If no experiment is provided.
 
     """
-    return backend.parallel_coordinates(experiment, order=order, **kwargs)
+    return backend.parallel_coordinates(
+        experiment, with_evc_tree=with_evc_tree, order=order, **kwargs
+    )
 
 
 def partial_dependencies(
     experiment,
+    with_evc_tree=True,
     params=None,
     smoothing=0.85,
+    verbose_hover=True,
     n_grid_points=10,
     n_samples=50,
     colorscale="Blues",
@@ -114,11 +128,18 @@ def partial_dependencies(
     experiment: ExperimentClient or Experiment
         The orion object containing the experiment data
 
+    with_evc_tree: bool, optional
+        Fetch all trials from the EVC tree.
+        Default: True
+
     params: list of str, optional
         Indicates the parameters to include in the plots. All parameters are included by default.
 
     smoothing: float, optional
         Smoothing applied to the countor plot. 0 corresponds to no smoothing. Default is 0.85.
+
+    verbose_hover: bool
+        Indicates whether to display the hyperparameter in hover tooltips. True by default.
 
     colorscale: str, optional
         The colorscale used for the contour plots. Supported values depends on the backend.
@@ -155,8 +176,10 @@ def partial_dependencies(
 
     return backend.partial_dependencies(
         experiment,
+        with_evc_tree=with_evc_tree,
         params=params,
         smoothing=smoothing,
+        verbose_hover=verbose_hover,
         n_grid_points=n_grid_points,
         n_samples=n_samples,
         colorscale=colorscale,
@@ -165,7 +188,7 @@ def partial_dependencies(
     )
 
 
-def rankings(experiments, order_by="suggested", **kwargs):
+def rankings(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
     """
     Make a plot to visually compare the ranking of different hyper-optimization processes.
 
@@ -183,8 +206,12 @@ def rankings(experiments, order_by="suggested", **kwargs):
 
     Parameters
     ----------
-    experiment: list or dict
+    experiments: list or dict
         List or dictionary of experiments.
+
+    with_evc_tree: bool, optional
+        Fetch all trials from the EVC tree.
+        Default: True
 
     order_by: str
         Indicates how the trials should be ordered. Acceptable options are below.
@@ -208,10 +235,14 @@ def rankings(experiments, order_by="suggested", **kwargs):
         If no experiment is provided or order_by is invalid.
 
     """
-    return backend.rankings(experiments, order_by, **kwargs)
+    return backend.rankings(
+        experiments, with_evc_tree=with_evc_tree, order_by=order_by, **kwargs
+    )
 
 
-def regret(experiment, order_by="suggested", verbose_hover=True, **kwargs):
+def regret(
+    experiment, with_evc_tree=True, order_by="suggested", verbose_hover=True, **kwargs
+):
     """
     Make a plot to visualize the performance of the hyper-optimization process.
 
@@ -221,6 +252,10 @@ def regret(experiment, order_by="suggested", verbose_hover=True, **kwargs):
     ----------
     experiment: ExperimentClient or Experiment
         The orion object containing the experiment data
+
+    with_evc_tree: bool, optional
+        Fetch all trials from the EVC tree.
+        Default: True
 
     order_by: str
         Indicates how the trials should be ordered. Acceptable options are below.
@@ -247,10 +282,16 @@ def regret(experiment, order_by="suggested", verbose_hover=True, **kwargs):
         If no experiment is provided.
 
     """
-    return backend.regret(experiment, order_by, verbose_hover, **kwargs)
+    return backend.regret(
+        experiment,
+        with_evc_tree=with_evc_tree,
+        order_by=order_by,
+        verbose_hover=verbose_hover,
+        **kwargs,
+    )
 
 
-def regrets(experiments, order_by="suggested", **kwargs):
+def regrets(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
     """
     Make a plot to visually compare the performance of different hyper-optimization processes.
 
@@ -266,8 +307,12 @@ def regrets(experiments, order_by="suggested", **kwargs):
 
     Parameters
     ----------
-    experiment: list or dict
+    experiments: list or dict
         List or dictionary of experiments.
+
+    with_evc_tree: bool, optional
+        Fetch all trials from the EVC tree.
+        Default: True
 
     order_by: str
         Indicates how the trials should be ordered. Acceptable options are below.
@@ -291,7 +336,9 @@ def regrets(experiments, order_by="suggested", **kwargs):
         If no experiment is provided or order_by is invalid.
 
     """
-    return backend.regrets(experiments, order_by, **kwargs)
+    return backend.regrets(
+        experiments, with_evc_tree=with_evc_tree, order_by=order_by, **kwargs
+    )
 
 
 PLOT_METHODS = {
@@ -301,6 +348,14 @@ PLOT_METHODS = {
     "regret": regret,
     "regrets": regrets,
     "rankings": rankings,
+}
+
+
+SINGLE_EXPERIMENT_PLOTS = {
+    "lpi": lpi,
+    "parallel_coordinates": parallel_coordinates,
+    "partial_dependencies": partial_dependencies,
+    "regret": regret,
 }
 
 

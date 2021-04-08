@@ -14,6 +14,7 @@ import os
 import yaml
 
 import orion.core
+from orion.core.io.database import Database
 from orion.core.utils.terminal import ask_question
 
 log = logging.getLogger(__name__)
@@ -53,11 +54,23 @@ def main(*args):
         if cancel.strip().lower() == "n":
             return
 
-    _type = ask_question("Enter the database type: ", "mongodb")
-    name = ask_question("Enter the database name: ", "test")
-    host = ask_question("Enter the database host: ", "localhost")
+    # Get database type.
+    _type = ask_question(
+        "Enter the database",
+        choice=Database.typenames,
+        default="mongodb",
+        ignore_case=True,
+    ).lower()
+    # Get database arguments.
+    db_class = Database.types[Database.typenames.index(_type)]
+    db_args = db_class.get_defaults()
+    arg_vals = {}
+    for arg_name, default_value in sorted(db_args.items()):
+        arg_vals[arg_name] = ask_question(
+            "Enter the database {}: ".format(arg_name), default_value
+        )
 
-    config = {"database": {"type": _type, "name": name, "host": host}}
+    config = {"database": {"type": _type, **arg_vals}}
 
     print("Default configuration file will be saved at: ")
     print(default_file)

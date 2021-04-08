@@ -97,7 +97,9 @@ class PickledDB(AbstractDB):
     """
 
     # pylint: disable=unused-argument
-    def __init__(self, host=DEFAULT_HOST, timeout=60, *args, **kwargs):
+    def __init__(self, host="", timeout=60, *args, **kwargs):
+        if host == "":
+            host = DEFAULT_HOST
         super(PickledDB, self).__init__(host)
 
         self.timeout = timeout
@@ -214,7 +216,7 @@ class PickledDB(AbstractDB):
             log.error(
                 "Document in (collection: %s) is not pickable\ndoc: %s",
                 collection,
-                doc.to_dict(),
+                doc.to_dict() if hasattr(doc, "to_dict") else str(doc),
             )
 
             key, value = find_unpickable_field(doc)
@@ -238,6 +240,16 @@ class PickledDB(AbstractDB):
                     self._dump_database(database)
         except Timeout as e:
             raise DatabaseTimeout(TIMEOUT_ERROR_MESSAGE.format(self.timeout)) from e
+
+    @classmethod
+    def get_defaults(cls):
+        """Get database arguments needed to create a database instance.
+
+        .. seealso:: :meth:`orion.core.io.database.AbstractDB.get_defaults`
+                     for argument documentation.
+
+        """
+        return {"host": DEFAULT_HOST}
 
 
 local_file_systems = ["ext2", "ext3", "ext4", "ntfs"]

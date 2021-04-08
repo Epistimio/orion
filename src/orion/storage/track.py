@@ -590,7 +590,7 @@ class Track(BaseStorageProtocol):  # noqa: F811
 
         return self._fetch_trials(query)
 
-    def set_trial_status(self, trial, status, heartbeat=None):
+    def set_trial_status(self, trial, status, heartbeat=None, was=None):
         """Update the trial status and the heartbeat
 
         Raises
@@ -600,10 +600,13 @@ class Track(BaseStorageProtocol):  # noqa: F811
             does not match the status in the database
 
         """
+        was = was or trial.status
+
         validate_status(status)
+        validate_status(was)
         try:
             result_trial = self.backend.fetch_and_update_trial(
-                {"uid": trial.id, "status": get_track_status(trial.status)},
+                {"uid": trial.id, "status": get_track_status(was)},
                 "set_trial_status",
                 status=get_track_status(status),
             )
@@ -614,11 +617,16 @@ class Track(BaseStorageProtocol):  # noqa: F811
         trial.status = status
         return result_trial
 
-    def fetch_trials(self, experiment=None, uid=None):
+    def fetch_trials(self, experiment=None, uid=None, where=None):
         """See :meth:`orion.storage.base.BaseStorageProtocol.fetch_trials`"""
         uid = get_uid(experiment, uid)
 
-        return self._fetch_trials(dict(group_id=uid))
+        if where is None:
+            where = dict()
+
+        where["group_id"] = uid
+
+        return self._fetch_trials(where)
 
     def get_trial(self, trial=None, uid=None):
         """See :meth:`orion.storage.base.BaseStorageProtocol.get_trial`"""

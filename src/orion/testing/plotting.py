@@ -76,14 +76,11 @@ def assert_rankings_plot(plot, names, balanced=10, with_avg=False):
         line_plots = plot.data
 
     assert len(line_plots) == len(names)
-    print(plot)
     for name, trace in zip(names, line_plots):
         assert trace.type == "scatter"
-        print(trace.name)
         assert trace.name == name
         assert trace.mode == "lines"
         if balanced:
-            print(trace.y, trace.x)
             assert len(trace.y) == balanced
             assert len(trace.x) == balanced
 
@@ -257,6 +254,14 @@ def assert_partial_dependencies_plot(
         assert data[data_index].showlegend is False
         assert len(data[data_index].x) == 2 * n_grid_points[x_name]
         assert len(data[data_index].y) == 2 * n_grid_points[x_name]
+        data_index += 1
+        # Test scatter dots
+        assert data[data_index].mode == "markers"
+        assert data[data_index].showlegend is False
+        assert data[data_index].customdata is not None
+        assert data[data_index].hovertemplate is not None
+        assert len(data[data_index].x) == n_samples
+        assert len(data[data_index].y) == n_samples
         data_index += 1
 
         for y_i in range(x_i + 1, len(dims)):

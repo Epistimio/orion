@@ -10,6 +10,7 @@ Common testing support module providing defaults, functions and mocks.
 
 import copy
 import datetime
+import os
 from contextlib import contextmanager
 
 import orion.algo.space
@@ -84,7 +85,7 @@ def generate_benchmark_experiments_trials(
         exp = copy.deepcopy(experiment_config)
         exp["_id"] = i
         exp["name"] = "experiment-name-{}".format(i)
-        exp["algorithms"] = benchmark_algorithms[i % algo_num]
+        exp["algorithms"] = benchmark_algorithms[i % algo_num]["algorithm"]
         exp["max_trials"] = max_trial
         exp["metadata"]["datetime"] = datetime.datetime.utcnow()
         gen_exps.append(exp)
@@ -167,3 +168,17 @@ class MockDatetime(datetime.datetime):
     def utcnow(cls):
         """Return our random/fixed datetime"""
         return default_datetime()
+
+
+class AssertNewFile:
+    def __init__(self, filename):
+        self.filename = filename
+
+    def __enter__(self):
+        if os.path.exists(self.filename):
+            os.remove(self.filename)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is None:
+            assert os.path.exists(self.filename), self.filename
+            os.remove(self.filename)

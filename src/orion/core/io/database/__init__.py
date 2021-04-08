@@ -40,15 +40,13 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
     DESCENDING = 1
 
     def __init__(
-        self,
-        host="localhost",
-        name=None,
-        port=None,
-        username=None,
-        password=None,
-        **kwargs
+        self, host=None, name=None, port=None, username=None, password=None, **kwargs
     ):
         """Init method, see attributes of :class:`AbstractDB`."""
+        defaults = self.get_defaults()
+        host = defaults.get("host", None) if host is None or host == "" else host
+        name = defaults.get("name", None) if name is None or name == "" else name
+
         self.host = host
         self.name = name
         self.port = port
@@ -262,6 +260,20 @@ class AbstractDB(object, metaclass=AbstractSingletonType):
         -------
         int
             Number of documents removed
+
+        """
+        pass
+
+    @classmethod
+    @abstractmethod
+    def get_defaults(cls):
+        """Get database arguments needed to create a database instance.
+
+        Returns
+        -------
+        dict
+            A dictionary mapping an argument name to a default value.
+            If unexpected, default value can be None.
 
         """
         pass

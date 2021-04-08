@@ -14,6 +14,7 @@ from orion.algo.space import Categorical, Integer, Real, Space
 from orion.core.evc import conflicts
 from orion.core.io.convert import JSONConverter, YAMLConverter
 from orion.core.io.space_builder import DimensionBuilder
+from orion.core.worker.trial import Trial
 from orion.testing import MockDatetime, default_datetime
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -155,53 +156,156 @@ def random_dt(monkeypatch):
     return default_datetime()
 
 
+dendi_exp_config = dict(
+    name="supernaedo2-dendi",
+    space={
+        "/decoding_layer": f"choices(['rnn', 'lstm_with_attention', 'gru'])",
+        "/encoding_layer": f"choices(['rnn', 'lstm', 'gru'])",
+    },
+    metadata={
+        "user": "dendi",
+        "orion_version": "XYZ",
+        "VCS": {
+            "type": "git",
+            "is_dirty": False,
+            "HEAD_sha": "test",
+            "active_branch": None,
+            "diff_sha": "diff",
+        },
+    },
+    version=1,
+    pool_size=1,
+    max_trials=1000,
+    working_dir="",
+    algorithms={"dumbalgo": {}},
+    producer={"strategy": "NoParallelStrategy"},
+)
+
+
+dendi_base_trials = [
+    {
+        "status": "completed",
+        "worker": 12512301,
+        "submit_time": MockDatetime(2017, 11, 22, 23),
+        "start_time": None,
+        "end_time": MockDatetime(2017, 11, 22, 23),
+        "results": [{"name": None, "type": "objective", "value": 3}],
+        "params": [
+            {"name": "/decoding_layer", "type": "categorical", "value": "rnn"},
+            {"name": "/encoding_layer", "type": "categorical", "value": "lstm"},
+        ],
+        "parents": [],
+    },
+    {
+        "status": "completed",
+        "worker": 23415151,
+        "submit_time": MockDatetime(2017, 11, 23, 0),
+        "start_time": None,
+        "end_time": MockDatetime(2017, 11, 23, 0),
+        "results": [
+            {"name": "yolo", "type": "objective", "value": 10},
+            {"name": "contra", "type": "constraint", "value": 1.2},
+            {"name": "naedw_grad", "type": "gradient", "value": [5, 3]},
+        ],
+        "params": [
+            {
+                "name": "/decoding_layer",
+                "type": "categorical",
+                "value": "lstm_with_attention",
+            },
+            {"name": "/encoding_layer", "type": "categorical", "value": "gru"},
+        ],
+        "parents": [],
+    },
+    {
+        "status": "completed",
+        "worker": 1251231,
+        "submit_time": MockDatetime(2017, 11, 22, 23),
+        "start_time": None,
+        "end_time": MockDatetime(2017, 11, 22, 22),
+        "results": [
+            {"name": None, "type": "objective", "value": 2},
+            {"name": "naedw_grad", "type": "gradient", "value": [-0.1, 2]},
+        ],
+        "params": [
+            {"name": "/decoding_layer", "type": "categorical", "value": "rnn"},
+            {"name": "/encoding_layer", "type": "categorical", "value": "rnn"},
+        ],
+        "parents": [],
+    },
+    {
+        "status": "new",
+        "worker": None,
+        "submit_time": MockDatetime(2017, 11, 23, 1),
+        "start_time": None,
+        "end_time": None,
+        "results": [{"name": None, "type": "objective", "value": None}],
+        "params": [
+            {"name": "/decoding_layer", "type": "categorical", "value": "rnn"},
+            {"name": "/encoding_layer", "type": "categorical", "value": "gru"},
+        ],
+        "parents": [],
+    },
+    {
+        "status": "new",
+        "worker": None,
+        "submit_time": MockDatetime(2017, 11, 23, 2),
+        "start_time": None,
+        "end_time": None,
+        "results": [{"name": None, "type": "objective", "value": None}],
+        "params": [
+            {
+                "name": "/decoding_layer",
+                "type": "categorical",
+                "value": "lstm_with_attention",
+            },
+            {"name": "/encoding_layer", "type": "categorical", "value": "rnn"},
+        ],
+        "parents": [],
+    },
+    {
+        "status": "interrupted",
+        "worker": None,
+        "submit_time": MockDatetime(2017, 11, 23, 3),
+        "start_time": MockDatetime(2017, 11, 23, 3),
+        "end_time": None,
+        "results": [{"name": None, "type": "objective", "value": None}],
+        "params": [
+            {
+                "name": "/decoding_layer",
+                "type": "categorical",
+                "value": "lstm_with_attention",
+            },
+            {"name": "/encoding_layer", "type": "categorical", "value": "lstm"},
+        ],
+        "parents": [],
+    },
+    {
+        "status": "suspended",
+        "worker": None,
+        "submit_time": MockDatetime(2017, 11, 23, 4),
+        "start_time": MockDatetime(2017, 11, 23, 4),
+        "end_time": None,
+        "results": [{"name": None, "type": "objective", "value": None}],
+        "params": [
+            {"name": "/decoding_layer", "type": "categorical", "value": "gru"},
+            {"name": "/encoding_layer", "type": "categorical", "value": "lstm"},
+        ],
+        "parents": [],
+    },
+]
+
+
 @pytest.fixture()
-def hacked_exp(with_user_dendi, random_dt, clean_db, create_db_instance):
-    """Return an `Experiment` instance with hacked _id to find trials in
-    fake database.
-    """
-    exp = experiment_builder.build(name="supernaedo2-dendi")
-    exp._id = "supernaedo2-dendi"  # white box hack
+def hacked_exp(with_user_dendi, random_dt, storage):
+    """Return an `Experiment` instance to find trials in fake database."""
+    storage.create_experiment(dendi_exp_config)
+    exp = experiment_builder.build(name=dendi_exp_config["name"])
+    storage._db.write(
+        "trials",
+        [Trial(experiment=exp.id, **trial).to_dict() for trial in dendi_base_trials],
+    )
     return exp
-
-
-@pytest.fixture()
-def trial_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_instance):
-    """Replace trial ids by the actual ids of the experiments."""
-    db = create_db_instance
-    experiments = db.read("experiments", {})
-    experiment_dict = dict(
-        (experiment["name"], experiment) for experiment in experiments
-    )
-    trials = db.read("trials")
-
-    for trial in trials:
-        query = {"experiment": trial["experiment"]}
-        update = {"experiment": experiment_dict[trial["experiment"]]["_id"]}
-        db.write("trials", update, query)
-
-
-@pytest.fixture()
-def refers_id_substitution(with_user_tsirif, random_dt, clean_db, create_db_instance):
-    """Replace trial ids by the actual ids of the experiments."""
-    db = create_db_instance
-    query = {"metadata.user": "tsirif"}
-    selection = {"name": 1, "refers": 1}
-    experiments = db.read("experiments", query, selection)
-    experiment_dict = dict(
-        (experiment["name"], experiment) for experiment in experiments
-    )
-
-    for experiment in experiments:
-        query = {"_id": experiment["_id"]}
-
-        root_id = experiment_dict[experiment["refers"]["root_id"]]["_id"]
-        if experiment["refers"]["parent_id"] is not None:
-            parent_id = experiment_dict[experiment["refers"]["parent_id"]]["_id"]
-        else:
-            parent_id = None
-        update = {"refers.root_id": root_id, "refers.parent_id": parent_id}
-        db.write("experiments", update, query)
 
 
 ###
@@ -234,7 +338,7 @@ def new_config():
 
 
 @pytest.fixture
-def old_config(create_db_instance):
+def old_config(storage):
     """Generate an old experiment configuration"""
     user_script = "tests/functional/demo/black_box.py"
     config = dict(
@@ -262,7 +366,7 @@ def old_config(create_db_instance):
 
     backward.populate_space(config)
 
-    create_db_instance.write("experiments", config)
+    storage.create_experiment(config)
     return config
 
 

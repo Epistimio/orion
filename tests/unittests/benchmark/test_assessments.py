@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.benchmark.assessment`."""
 
-import copy
-
 import plotly
 import pytest
 
@@ -49,7 +47,7 @@ class TestAverageRank:
             assert_rankings_plot(
                 plot,
                 [
-                    list(algorithm.keys())[0]
+                    list(algorithm["algorithm"].keys())[0]
                     for algorithm in study_experiments_config["algorithms"]
                 ],
                 balanced=study_experiments_config["max_trial"],
@@ -94,7 +92,7 @@ class TestAverageResult:
             assert_regrets_plot(
                 plot,
                 [
-                    list(algorithm.keys())[0]
+                    list(algorithm["algorithm"].keys())[0]
                     for algorithm in study_experiments_config["algorithms"]
                 ],
                 balanced=study_experiments_config["max_trial"],

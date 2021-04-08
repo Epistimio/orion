@@ -200,7 +200,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """
         raise NotImplementedError()
 
-    def fetch_trials(self, experiment=None, uid=None):
+    def fetch_trials(self, experiment=None, uid=None, where=None):
         """Fetch all the trials of an experiment in the database
 
         Parameters
@@ -210,6 +210,9 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
 
         uid: str, optional
             experiment id used to retrieve the trial object
+
+        where: Optional[dict]
+            constraint trials must respect
 
         Returns
         -------
@@ -324,8 +327,22 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         """Push the trial's results to the database"""
         raise NotImplementedError()
 
-    def set_trial_status(self, trial, status, heartbeat=None):
+    def set_trial_status(self, trial, status, heartbeat=None, was=None):
         """Update the trial status and the heartbeat
+
+        Parameters
+        ----------
+        trial: `Trial` object
+            Trial object to update in the database.
+        status: str
+            Status to be set to the trial
+        heartbeat: datetime, optional
+            New heartbeat to update simultaneously with status
+        was: str, optional
+            The status the trial should be set to in the database.
+            If None, current ``trial.status`` will be used.
+            This is used to ensure coherence in the database, protecting
+            against race conditions for instance.
 
         Raises
         ------
