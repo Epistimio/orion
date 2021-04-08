@@ -13,6 +13,7 @@ import logging
 from abc import ABCMeta, abstractmethod
 
 from orion.algo.space import Fidelity
+from contextlib import contextmanager
 from orion.core.utils import Factory
 
 log = logging.getLogger(__name__)
@@ -93,7 +94,6 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
        Technical Report SFI-TR-95-02-010, Santa Fe Institute, 1995.
 
     """
-
     requires_type = None
     requires_shape = None
     requires_dist = None
@@ -105,6 +105,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
             kwargs,
         )
         self._trials_info = {}  # Stores Unique Trial -> Result
+        self._warm_start_trials = {}  # Stores unique warm-star trials and their results
         self._space = space
         self._param_names = list(kwargs.keys())
         # Instantiate tunable parameters of an algorithm
@@ -324,6 +325,52 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         return (
             trial_id in self._trials_info and self._trials_info[trial_id][1] is not None
         )
+
+    @property
+    def unwrapped(self) -> "BaseAlgorithm":
+        return self
+
+    @contextmanager
+    def warm_start_mode(self):
+        """ Context manager that is used while using points from similar experiments to
+        bootstrap (warm-start) the algorithm.
+
+        The idea behing this is that we don't want the algorithm to modify its state the
+        same way it would if it were observing regular points. For example, the number
+        of "used" trials shouldn't increase, etc.
+
+        Algorithm subclasses should extend this method in order to prevent their state
+        from being adversely affected by the default warm-starting behaviour, which is
+        to observe points from other experiments with an additional `task_id` dimension.
+        """
+        trials_info_copy = self.unwrapped._trials_info.copy()
+        # state_before = self.state_dict()
+        log.info(
+            f"Entering warm-start mode, with {len(self.unwrapped._warm_start_trials)} "
+            f"warm starting trials and {len(self.unwrapped._trials_info)} 'normal' "
+            f"trials."
+        )
+        log.info(f"self.is_done? {self.is_done}")
+
+        yield
+
+        # Store any new entries into the 'warm start' dict.
+        self.unwrapped._warm_start_trials.update(
+            {
+                k: v
+                for k, v in self.unwrapped._trials_info.items()
+                if k not in trials_info_copy
+            }
+        )
+        # Restore the 'trials_info' to its original state.
+        self.unwrapped._trials_info = trials_info_copy
+        log.info(
+            f"Exiting warm-start mode, with {len(self.unwrapped._warm_start_trials)} "
+            f"warm starting trials and {len(self.unwrapped._trials_info)} 'normal' "
+            f"trials."
+        )
+        # TODO: Do we also need to reset some counter for the number of used trials?
+        log.info(f"self.is_done? {self.is_done}")
 
     @property
     def is_done(self):
