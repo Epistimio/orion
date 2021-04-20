@@ -75,6 +75,7 @@ setup_args = dict(
         "falcon",
         "scikit-learn",
         "psutil",
+        "joblib"
     ],
     tests_require=tests_require,
     setup_requires=["setuptools", "appdirs", "pytest-runner"],

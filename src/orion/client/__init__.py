@@ -240,7 +240,7 @@ def build_experiment(
 
     producer = Producer(experiment, max_idle_time)
 
-    return ExperimentClient(experiment, producer, heartbeat)
+    return ExperimentClient(experiment, producer, heartbeat, storage)
 
 
 def get_experiment(name, version=None, mode="r", storage=None):
@@ -279,7 +279,14 @@ def get_experiment(name, version=None, mode="r", storage=None):
 
 
 def workon(
-    function, space, name="loop", algorithms=None, max_trials=None, max_broken=None
+    function,
+    space,
+    name="loop",
+    algorithms=None,
+    max_trials=None,
+    max_broken=None,
+    n_jobs=None,
+    storage=None,
 ):
     """Optimize a function over a given search space
 
@@ -309,6 +316,11 @@ def workon(
         Maximum number or trials before the experiment is considered done.
     max_broken: int, optional
         Number of broken trials for the experiment to be considered broken.
+    n_jobs: int, optional
+       Number of jobs to run in parallel. None means 1 unless in a `joblib.parallel_backend` context.
+       -1 means using all processors.
+    storage: dict, optional
+        Configuration of the storage backend.
 
     Raises
     ------
@@ -320,7 +332,13 @@ def workon(
     singletons = update_singletons()
 
     try:
-        setup_storage(storage={"type": "legacy", "database": {"type": "EphemeralDB"}})
+
+        if storage is None and n_jobs is None or n_jobs < 2:
+            setup_storage(
+                storage={"type": "legacy", "database": {"type": "EphemeralDB"}}
+            )
+        else:
+            setup_storage(storage=storage)
 
         experiment = experiment_builder.build(
             name,
@@ -335,7 +353,8 @@ def workon(
         producer = Producer(experiment)
 
         experiment_client = ExperimentClient(experiment, producer)
-        experiment_client.workon(function, max_trials=max_trials)
+        experiment_client.workon(function, max_trials=max_trials, n_jobs=n_jobs)
+
     finally:
         # Restore singletons
         update_singletons(singletons)

@@ -98,7 +98,6 @@ class Experiment:
         "working_dir",
         "_id",
         "_node",
-        "_storage",
         "_mode",
     )
     non_branching_attrs = ("pool_size", "max_trials", "max_broken")
@@ -118,9 +117,12 @@ class Experiment:
         self.algorithms = None
         self.working_dir = None
         self.producer = {}
-        self._storage = get_storage()
 
         self._node = ExperimentNode(self.name, self.version, experiment=self)
+
+    @property
+    def _storage(self):
+        return get_storage()
 
     def _check_if_writable(self):
         if self.mode == "r":
