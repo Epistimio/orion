@@ -114,10 +114,24 @@ class Producer(object):
                     "Waiting for current trials to finish"
                 )
 
-            for new_point in new_points:
-                sampled_points += self.register_trials(new_point)
+            registered_trials = self.register_trials(new_points)
 
-    def register_trials(self, new_point):
+            if registered_trials == 0:
+                self.backoff()
+
+            sampled_points += registered_trials
+
+    def register_trials(self, new_points):
+        """Register new sets of sampled parameters into the DB
+        guaranteeing their uniqueness
+        """
+        registered_trials = 0
+        for new_point in new_points:
+            registered_trials += self.register_trial(new_point)
+
+        return registered_trials
+
+    def register_trial(self, new_point):
         """Register a new set of sampled parameters into the DB
         guaranteeing their uniqueness
 
@@ -143,7 +157,6 @@ class Producer(object):
 
         except DuplicateKeyError:
             log.debug("#### Duplicate sample: %s", new_trial)
-            self.backoff()
             return 0
 
     def _prevalidate_trial(self, new_trial):
