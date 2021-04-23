@@ -85,6 +85,7 @@ Presentations
 =============
 
 - 2021-07-14 - SciPy 2021
+- 2021-05-19 - Dask Summit 2021
 - 2021-03-16 - AICamp
   (`Video 
   <https://www.youtube.com/watch?v=QQ69vxF3LTI>`__)
