@@ -30,7 +30,7 @@ def test_demo_with_default_algo_cli_config_only(storage, monkeypatch):
             "-n",
             "default_algo",
             "--max-trials",
-            "10",
+            "5",
             "./black_box.py",
             "-x~uniform(-50, 50)",
         ]
@@ -42,7 +42,7 @@ def test_demo_with_default_algo_cli_config_only(storage, monkeypatch):
     assert "_id" in exp
     assert exp["name"] == "default_algo"
     assert exp["pool_size"] == 1
-    assert exp["max_trials"] == 10
+    assert exp["max_trials"] == 5
     assert exp["max_broken"] == 3
     assert exp["algorithms"] == {"random": {"seed": None}}
     assert "user" in exp["metadata"]
