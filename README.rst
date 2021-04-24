@@ -81,6 +81,22 @@ guide`_.
 
 .. _installation guide: https://orion.readthedocs.io/en/stable/install/core.html
 
+Presentations
+=============
+
+- 2021-07-14 - SciPy 2021
+- 2021-05-19 - Dask Summit 2021
+- 2021-03-16 - AICamp
+  (`Video 
+  <https://www.youtube.com/watch?v=QQ69vxF3LTI>`__)
+  (`Slides
+  <https://docs.google.com/presentation/d/1Tq3KrWcp66wdlZJtCFaxfq1m5ydyhcPiDCGCOuh_REg/edit?usp=sharing>`__)
+- 2019-11-28 - Tech-talk @ Mila 
+  (`Video
+  <https:/bluejeans.com/playback/s/4WUezzFCmb9StHzYgB0RjVbTUCKnRcptBvzBMP7t2UpLyKuAq7Emieo911BqEMnI>`__)
+  (`Slides
+  <https://docs.google.com/presentation/d/18g7Q4xRuhMtcVbwmFwDfH7v9gKS252-laOi9HrEQ7a4/edit?usp=sharing>`__)
+
 Contribute or Ask
 =================
 
