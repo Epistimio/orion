@@ -626,7 +626,7 @@ class ExperimentClient:
             self._experiment.max_trials = max_trials
             self._experiment.algorithms.algorithm.max_trials = max_trials
 
-        with Parallel(n_jobs=n_workers, verbose=100) as parallel:
+        with Parallel(n_jobs=n_workers) as parallel:
             trials = parallel(
                 delayed(self._optimize)(fct, max_trials, **kwargs)
                 for _ in range(n_workers)

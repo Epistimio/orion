@@ -399,7 +399,7 @@ class Experiment:
                 num_completed_trials += 1
             elif trial.status in ["new", "reserved", "interrupted"]:
                 num_pending_trials += 1
-        # print(num_completed_trials, self.max_trials)
+
         return (num_completed_trials >= self.max_trials) or (
             self.algorithms.is_done and num_pending_trials == 0
         )
