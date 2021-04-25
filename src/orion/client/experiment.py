@@ -628,17 +628,18 @@ class ExperimentClient:
 
         with Parallel(n_jobs=n_workers, verbose=100) as parallel:
             trials = parallel(
-                delayed(self._optimize)(fct, max_trials, kwargs)
+                delayed(self._optimize)(fct, max_trials, **kwargs)
                 for _ in range(n_workers)
             )
 
         return sum(trials)
 
-    def _optimize(self, fct, max_trials, *args, **kwargs):
+    def _optimize(self, fct, max_trials, **kwargs):
         # this is required for process-based or remote backend
         setup_storage(storage=self.storage_config)
 
         trials = 0
+        kwargs = flatten(kwargs)
         while not self.is_done and trials < max_trials:
             trial = self.suggest()
             if trial is None:

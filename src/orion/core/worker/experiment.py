@@ -97,6 +97,7 @@ class Experiment:
         "producer",
         "working_dir",
         "_id",
+        "_istorage",
         "_node",
         "_mode",
     )
@@ -118,11 +119,15 @@ class Experiment:
         self.working_dir = None
         self.producer = {}
 
+        self._istorage = None
+
         self._node = ExperimentNode(self.name, self.version, experiment=self)
 
     @property
     def _storage(self):
-        return get_storage()
+        if not self._istorage:
+            self._istorage = get_storage()
+        return self._istorage
 
     def _check_if_writable(self):
         if self.mode == "r":

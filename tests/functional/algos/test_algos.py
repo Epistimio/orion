@@ -221,16 +221,16 @@ def test_with_evc(algorithm):
         assert exp.configuration["algorithms"] == algorithm
 
         trials = exp.fetch_trials(with_evc_tree=False)
-        assert len(trials) >= 30
+        assert len(trials) >= 20
 
         trials_with_evc = exp.fetch_trials(with_evc_tree=True)
-        assert len(trials_with_evc) >= 40
+        assert len(trials_with_evc) >= 30
         assert len(trials_with_evc) - len(trials) == 10
 
         completed_trials = [
             trial for trial in trials_with_evc if trial.status == "completed"
         ]
-        assert len(completed_trials) == 40
+        assert len(completed_trials) == 30
 
         results = [trial.objective.value for trial in completed_trials]
         best_trial = next(
