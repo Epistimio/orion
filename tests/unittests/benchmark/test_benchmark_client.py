@@ -63,6 +63,20 @@ class TestCreateBenchmark:
             assert isinstance(storage._db, PickledDB)
             assert storage._db.host == host
 
+    def test_create_benchmark_with_storage(self, tmp_path, benchmark_config_py):
+        """Test benchmark instance has the storage configurations"""
+        conf_file = str(tmp_path / "db.pkl")
+
+        config = copy.deepcopy(benchmark_config_py)
+        config["storage"] = {
+            "type": "legacy",
+            "database": {"type": "pickleddb", "host": conf_file},
+        }
+
+        bm = get_or_create_benchmark(**config)
+
+        assert bm.storage_config == config["storage"]
+
     def test_create_benchmark_bad_storage(self, benchmark_config_py):
         """Test error message if storage is not configured properly"""
         name = "oopsie_bad_storage"

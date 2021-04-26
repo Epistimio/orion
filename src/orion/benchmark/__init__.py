@@ -46,6 +46,9 @@ class Benchmark:
             Assessment objects
         task: list
             Task objects
+
+    storage: dict, optional
+        Configuration of the storage backend.
     """
 
     def __init__(self, name, algorithms, targets, storage=None):

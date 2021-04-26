@@ -84,6 +84,7 @@ class BaseOrionState:
         self.tempfile = None
         self.tempfile_path = None
         self.storage_config = _select(storage, _get_default_test_storage())
+        print("*******:", self.storage_config)
 
         self._benchmarks = _select(benchmarks, [])
         self._experiments = _select(experiments, [])

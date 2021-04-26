@@ -275,7 +275,7 @@ def get_experiment(name, version=None, mode="r", storage=None):
     setup_storage(storage)
     assert mode in set("rw")
     experiment = experiment_builder.load(name, version, mode)
-    return ExperimentClient(experiment, None)
+    return ExperimentClient(experiment, None, storage=storage)
 
 
 def workon(
