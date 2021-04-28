@@ -49,6 +49,32 @@ def set_broken_trials(client):
         client.release(trial, status=status)
 
 
+def reserve_trial(experiment, producer, _depth=1):
+    """Reserve a new trial, or produce and reserve a trial if none are available."""
+    log.debug("Trying to reserve a new trial to evaluate.")
+    trial = experiment.reserve_trial()
+
+    if trial is None and not experiment.is_done:
+
+        if _depth > 10:
+            raise WaitingForTrials(
+                "No trials are available at the moment "
+                "wait for current trials to finish"
+            )
+
+        log.debug("#### Failed to pull a new trial from database.")
+
+        log.debug("#### Fetch most recent completed trials and update algorithm.")
+        producer.update()
+
+        log.debug("#### Produce new trials.")
+        producer.produce()
+
+        return reserve_trial(experiment, producer, _depth=_depth + 1)
+
+    return trial
+
+
 # pylint: disable=too-many-public-methods
 class ExperimentClient:
     """ExperimentClient providing all functionalities for the python API
@@ -521,7 +547,7 @@ class ExperimentClient:
             return None
 
         try:
-            trial = orion.core.worker.reserve_trial(self._experiment, self._producer)
+            trial = reserve_trial(self._experiment, self._producer)
 
         except WaitingForTrials as e:
             if self.is_broken:

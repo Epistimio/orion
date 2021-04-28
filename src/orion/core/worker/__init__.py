@@ -17,31 +17,6 @@ from orion.core.worker.producer import Producer
 log = logging.getLogger(__name__)
 
 
-def reserve_trial(experiment, producer, _depth=1):
-    """Reserve a new trial, or produce and reserve a trial if none are available."""
-    trial = experiment.reserve_trial()
-
-    if trial is None and not experiment.is_done:
-
-        if _depth > 10:
-            raise WaitingForTrials(
-                "No trials are available at the moment "
-                "wait for current trials to finish"
-            )
-
-        log.debug("#### Failed to pull a new trial from database.")
-
-        log.debug("#### Fetch most recent completed trials and update algorithm.")
-        producer.update()
-
-        log.debug("#### Produce new trials.")
-        producer.produce()
-
-        return reserve_trial(experiment, producer, _depth=_depth + 1)
-
-    return trial
-
-
 COMPLETION_MESSAGE = """\
 Hints
 =====
