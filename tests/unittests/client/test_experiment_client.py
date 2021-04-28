@@ -971,6 +971,175 @@ class TestWorkon:
             assert "x" in params["a"]
             assert "y" in params["b"]
 
+    def test_workon_max_trials(self):
+        """Verify that workon stop when reaching max_trials"""
+
+        def foo(x):
+            return [dict(name="result", type="objective", value=x * 2)]
+
+        with create_experiment(config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            MAX_TRIALS = 5
+            assert client.max_trials > MAX_TRIALS
+            client.workon(foo, max_trials=MAX_TRIALS)
+            assert len(experiment.fetch_trials()) == MAX_TRIALS
+
+    def test_workon_exp_max_broken_before_worker_max_broken(self):
+        """Verify that workon stop when reaching exp.max_broken"""
+
+        def foo(x):
+            raise RuntimeError()
+
+        MAX_TRIALS = 5
+        MAX_BROKEN = 20
+        test_config = copy.deepcopy(config)
+        test_config["max_broken"] = MAX_BROKEN // 2
+
+        with create_experiment(test_config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            with pytest.raises(BrokenExperiment):
+                client.workon(foo, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
+            n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
+            n_trials = len(experiment.fetch_trials())
+            assert n_broken_trials == MAX_BROKEN // 2
+            assert n_trials - n_broken_trials < MAX_TRIALS
+
+    def test_workon_max_broken_all_broken(self):
+        """Verify that workon stop when reaching worker's max_broken"""
+
+        def foo(x):
+            raise RuntimeError()
+
+        MAX_TRIALS = 5
+        MAX_BROKEN = 10
+
+        test_config = copy.deepcopy(config)
+        test_config["max_broken"] = MAX_BROKEN * 2
+
+        with create_experiment(test_config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            with pytest.raises(BrokenExperiment):
+                client.workon(foo, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
+            n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
+            n_trials = len(experiment.fetch_trials())
+            assert n_broken_trials == MAX_BROKEN
+            assert n_trials - n_broken_trials < MAX_TRIALS
+
+    def test_workon_max_trials_before_max_broken(self):
+        """Verify that workon stop when reaching max_trials before max_broken"""
+
+        with create_experiment(config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+
+            def foo(x):
+                if len(client.fetch_trials()) < 5:
+                    raise RuntimeError()
+
+                return [dict(name="result", type="objective", value=x * 2)]
+
+            MAX_TRIALS = 5
+            MAX_BROKEN = 10
+            assert client.max_trials > MAX_TRIALS
+            client.workon(foo, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
+            n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
+            n_trials = len(experiment.fetch_trials())
+            assert n_broken_trials < MAX_BROKEN
+            assert n_trials - n_broken_trials == MAX_TRIALS
+
+    def test_workon_trial_arg(self):
+        """Verify that workon pass trial when trial_arg is defined"""
+
+        def foo(x, my_trial_arg_name):
+            assert isinstance(my_trial_arg_name, Trial)
+            assert my_trial_arg_name.params["x"] == x
+            return [dict(name="result", type="objective", value=x * 2)]
+
+        with create_experiment(config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            client.workon(foo, max_trials=5, trial_arg="my_trial_arg_name")
+            assert len(experiment.fetch_trials()) == 5
+
+    def test_workon_on_error_ignore(self):
+        """Verify that workon on_error callback ignores some errors correctly"""
+
+        def on_error(client, trial, error, worker_broken_trials):
+            assert on_error.counter == worker_broken_trials
+            if isinstance(error, (IndexError, IOError, AttributeError)):
+                client.release(trial, "cancelled")
+                return False
+
+            on_error.counter += 1
+            return True
+
+        on_error.counter = 0
+
+        errors = [
+            IndexError,
+            ValueError,
+            IOError,
+            NotImplementedError,
+            AttributeError,
+            ImportError,
+        ]
+
+        def foo(x):
+            if errors:
+                raise errors.pop()()
+
+            return [dict(name="result", type="objective", value=x * 2)]
+
+        MAX_TRIALS = 5
+        MAX_BROKEN = len(errors) + 1
+
+        test_config = copy.deepcopy(config)
+        test_config["max_broken"] = MAX_BROKEN * 2
+
+        with create_experiment(test_config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+
+            client.workon(foo, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
+            n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
+            n_trials = len(experiment.fetch_trials())
+            assert n_broken_trials == MAX_BROKEN - 1
+            assert n_trials - n_broken_trials == MAX_TRIALS
+
+    def test_workon_on_error_raise(self):
+        """Verify that workon on_error callback can raise and stop iteration"""
+
+        def on_error(client, trial, error, worker_broken_trials):
+            raise error
+
+        def foo(x):
+            raise NotImplementedError("Do not ignore this!")
+
+        with create_experiment(config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            with pytest.raises(NotImplementedError) as exc:
+                client.workon(foo, max_trials=5, max_broken=5, on_error=on_error)
+
+            assert exc.match("Do not ignore this!")
+
     def test_parallel_workers(self, monkeypatch):
         """Test parallel execution with joblib"""
 
