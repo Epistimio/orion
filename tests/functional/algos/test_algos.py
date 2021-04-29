@@ -247,3 +247,64 @@ def test_with_evc(algorithm):
         param = best_trial._params[1]
         assert param.name == "x"
         assert param.type == "real"
+
+
+@pytest.mark.parametrize(
+    "algorithm", algorithm_configs.values(), ids=list(algorithm_configs.keys())
+)
+def test_parallel_workers(algorithm, tmp_path):
+    """Test parallel execution with joblib"""
+    pickle_host = str(tmp_path / "db.pkl")
+
+    name = "{}_exp".format(algorithm)
+
+    storage = {"type": "legacy", "database": {"type": "PickledDB", "host": pickle_host}}
+    base_exp = create_experiment(
+        name=name,
+        space=space_with_fidelity,
+        algorithms=algorithm_configs["random"],
+        storage=storage,
+    )
+    base_exp.workon(rosenbrock, max_trials=10)
+
+    exp = create_experiment(
+        name=name,
+        space=space_with_fidelity,
+        algorithms=algorithm,
+        branching={"branch_from": name},
+        storage=storage,
+    )
+
+    assert exp.version == 2
+
+    exp.workon(rosenbrock, max_trials=30, n_workers=3)
+
+    assert exp.configuration["algorithms"] == algorithm
+
+    trials = exp.fetch_trials(with_evc_tree=False)
+    assert len(trials) >= 20
+
+    trials_with_evc = exp.fetch_trials(with_evc_tree=True)
+    assert len(trials_with_evc) >= 30
+    assert len(trials_with_evc) - len(trials) == 10
+
+    completed_trials = [
+        trial for trial in trials_with_evc if trial.status == "completed"
+    ]
+    assert len(completed_trials) >= 30
+
+    results = [trial.objective.value for trial in completed_trials]
+    best_trial = next(
+        iter(sorted(completed_trials, key=lambda trial: trial.objective.value))
+    )
+
+    assert best_trial.objective.name == "objective"
+    assert abs(best_trial.objective.value - 23.4) < 1e-5
+    assert len(best_trial.params) == 2
+    fidelity = best_trial._params[0]
+    assert fidelity.name == "noise"
+    assert fidelity.type == "fidelity"
+    assert fidelity.value == 10
+    param = best_trial._params[1]
+    assert param.name == "x"
+    assert param.type == "real"

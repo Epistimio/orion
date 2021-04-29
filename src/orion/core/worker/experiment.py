@@ -97,7 +97,7 @@ class Experiment:
         "producer",
         "working_dir",
         "_id",
-        "_istorage",
+        "_storage",
         "_node",
         "_mode",
     )
@@ -119,15 +119,9 @@ class Experiment:
         self.working_dir = None
         self.producer = {}
 
-        self._istorage = None
+        self._storage = get_storage()
 
         self._node = ExperimentNode(self.name, self.version, experiment=self)
-
-    @property
-    def _storage(self):
-        if not self._istorage:
-            self._istorage = get_storage()
-        return self._istorage
 
     def _check_if_writable(self):
         if self.mode == "r":
@@ -142,6 +136,19 @@ class Experiment:
             raise UnsupportedOperation(
                 f"Experiment must have execution rights to execute `{calling_function}()`"
             )
+
+    def __getstate__(self):
+        """Remove storage instance during experiment serialization"""
+        state = dict()
+        for entry in self.__slots__:
+            if entry != "_storage":
+                state[entry] = getattr(self, entry)
+
+        return state
+
+    def __setstate__(self, state):
+        for key, value in state.items():
+            setattr(self, key, value)
 
     def to_pandas(self, with_evc_tree=False):
         """Builds a dataframe with the trials of the experiment

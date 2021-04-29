@@ -975,14 +975,13 @@ class TestWorkon:
             assert "x" in params["a"]
             assert "y" in params["b"]
 
-    def test_parallel(self, monkeypatch):
+    def test_parallel_workers(self, monkeypatch):
         """Test parallel execution with joblib"""
 
         def foo(x):
             return [dict(name="result", type="objective", value=x * 2)]
 
         def optimize(*args, **kwargs):
-            print(args, kwargs)
             optimize.count += 1
             return 1
 

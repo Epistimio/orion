@@ -7,6 +7,7 @@ import datetime
 import inspect
 import json
 import logging
+import pickle
 import tempfile
 
 import pandas
@@ -545,6 +546,29 @@ def test_experiment_stats():
         assert stats["finish_time"] == cfg.trials[0]["end_time"]
         assert stats["duration"] == stats["finish_time"] - stats["start_time"]
         assert len(stats) == 6
+
+
+def test_experiment_pickleable():
+    """Test experiment instance is pickleable"""
+
+    with OrionState(trials=generate_trials(["new"])) as cfg:
+        exp = Experiment("supernaekei", mode="x")
+
+        exp_trials = exp.fetch_trials()
+
+        exp_bytes = pickle.dumps(exp)
+
+        new_exp = pickle.loads(exp_bytes)
+
+        with pytest.raises(AttributeError) as exc:
+            new_exp.fetch_trials()
+        assert exc.match(f"_storage")
+
+        new_exp._storage = get_storage()
+
+        new_exp_trials = new_exp.fetch_trials()
+
+        assert new_exp_trials == exp_trials
 
 
 read_only_methods = [

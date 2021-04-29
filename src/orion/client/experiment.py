@@ -27,7 +27,7 @@ from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.plotting.base import PlotAccessor
-from orion.storage.base import FailedUpdate, setup_storage
+from orion.storage.base import FailedUpdate, get_storage, setup_storage
 
 log = logging.getLogger(__name__)
 
@@ -67,6 +67,7 @@ class ExperimentClient:
 
     def __init__(self, experiment, producer, heartbeat=None, storage=None):
         self._experiment = experiment
+        self._max_trials = experiment.max_trials
         self._producer = producer
         self._pacemakers = {}
         self.set_broken_trials = functools.partial(set_broken_trials, client=self)
@@ -100,7 +101,7 @@ class ExperimentClient:
     @property
     def max_trials(self):
         """Max-trials to execute before stopping the experiment."""
-        return self._experiment.max_trials
+        return self._max_trials
 
     @property
     def max_broken(self):
@@ -634,13 +635,15 @@ class ExperimentClient:
 
         return sum(trials)
 
+    # pylint: disable=protected-access
     def _optimize(self, fct, max_trials, **kwargs):
         # this is required for process-based or remote backend
         setup_storage(storage=self.storage_config)
+        self._experiment._storage = get_storage()
 
         trials = 0
         kwargs = flatten(kwargs)
-        while not self.is_done and trials < max_trials:
+        while not self.is_done:
             trial = self.suggest()
             if trial is None:
                 log.warning("Algorithm could not sample new points")
