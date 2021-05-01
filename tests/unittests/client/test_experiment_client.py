@@ -11,15 +11,11 @@ import pandas.testing
 import pytest
 
 import orion.core
-import orion.core.io.experiment_builder as experiment_builder
-from orion.client.experiment import ExperimentClient
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import BrokenExperiment, SampleTimeout
-from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
-from orion.testing import create_experiment, generate_trials, mock_space_iterate
-from orion.testing.state import OrionState, _get_default_test_storage
+from orion.testing import create_experiment, mock_space_iterate
 
 config = dict(
     name="supernaekei",
@@ -985,16 +981,11 @@ class TestWorkon:
             optimize.count += 1
             return 1
 
-        with OrionState(
-            experiments=[config], trials=generate_trials(base_trial, [], config)
-        ) as cfg:
-
-            experiment = experiment_builder.build(name=config["name"])
-            if cfg.trials:
-                experiment._id = cfg.trials[0]["experiment"]
-            client = ExperimentClient(
-                experiment, Producer(experiment), storage=_get_default_test_storage()
-            )
+        with create_experiment(exp_config=config, trial_config={}, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
 
             monkeypatch.setattr(client, "_optimize", optimize)
             optimize.count = 0

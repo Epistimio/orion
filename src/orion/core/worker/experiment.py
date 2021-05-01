@@ -150,6 +150,17 @@ class Experiment:
         for key, value in state.items():
             setattr(self, key, value)
 
+    def _restore_storage(self):
+        self._storage = get_storage()
+
+        def _restore_storage(node, parent_or_children):
+            node.item._storage = get_storage()
+            return node.item, parent_or_children
+
+        if self._node.parent is not None:
+            self._node.parent.map(_restore_storage, self._node.parent.parent)
+        self._node.map(_restore_storage, self._node.children)
+
     def to_pandas(self, with_evc_tree=False):
         """Builds a dataframe with the trials of the experiment
 

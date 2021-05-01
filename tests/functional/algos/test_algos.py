@@ -256,7 +256,7 @@ def test_parallel_workers(algorithm, tmp_path):
     """Test parallel execution with joblib"""
     pickle_host = str(tmp_path / "db.pkl")
 
-    name = "{}_exp".format(algorithm)
+    name = "{}_exp".format(list(algorithm.keys())[0])
 
     storage = {"type": "legacy", "database": {"type": "PickledDB", "host": pickle_host}}
     base_exp = create_experiment(
@@ -277,7 +277,7 @@ def test_parallel_workers(algorithm, tmp_path):
 
     assert exp.version == 2
 
-    exp.workon(rosenbrock, max_trials=30, n_workers=3)
+    exp.workon(rosenbrock, max_trials=30, n_workers=2)
 
     assert exp.configuration["algorithms"] == algorithm
 
@@ -291,7 +291,7 @@ def test_parallel_workers(algorithm, tmp_path):
     completed_trials = [
         trial for trial in trials_with_evc if trial.status == "completed"
     ]
-    assert len(completed_trials) >= 30
+    assert 30 <= len(completed_trials) <= 30 + 2
 
     results = [trial.objective.value for trial in completed_trials]
     best_trial = next(

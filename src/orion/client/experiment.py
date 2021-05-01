@@ -27,7 +27,7 @@ from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.plotting.base import PlotAccessor
-from orion.storage.base import FailedUpdate, get_storage, setup_storage
+from orion.storage.base import FailedUpdate, setup_storage
 
 log = logging.getLogger(__name__)
 
@@ -622,7 +622,8 @@ class ExperimentClient:
         """
         self._check_if_executable()
 
-        # reduce chance of race condition for trials creation
+        # Use worker's max_trials inside `exp.is_done` to reduce chance of
+        # race condition for trials creation
         if self.max_trials > max_trials:
             self._experiment.max_trials = max_trials
             self._experiment.algorithms.algorithm.max_trials = max_trials
@@ -635,11 +636,10 @@ class ExperimentClient:
 
         return sum(trials)
 
-    # pylint: disable=protected-access
     def _optimize(self, fct, max_trials, **kwargs):
         # this is required for process-based or remote backend
         setup_storage(storage=self.storage_config)
-        self._experiment._storage = get_storage()
+        self._experiment._restore_storage()  # pylint: disable=protected-access
 
         trials = 0
         kwargs = flatten(kwargs)
