@@ -6,20 +6,31 @@ Benchmark client
 """
 import datetime
 import logging
+from typing import Any, Dict, List, Type, Union
 
 from orion.benchmark import Benchmark, Study
-from orion.benchmark.assessment.base import BenchmarkAssessment
-from orion.benchmark.task.base import BenchmarkTask
+from orion.benchmark.assessment.base import BaseAssess, BenchmarkAssessment
+from orion.benchmark.task.base import BaseTask, BenchmarkTask
+from orion.benchmark.warm_start_benchmark import WarmStartBenchmark
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import NoConfigurationError
+from orion.core.worker.knowledge_base import AbstractKnowledgeBase
 from orion.storage.base import get_storage, setup_storage
 
 logger = logging.getLogger(__name__)
 
 
+TargetsDict = Dict[str, Union[List[BaseAssess], List[BaseTask]]]
+
+
 def get_or_create_benchmark(
-    name, algorithms=None, targets=None, storage=None, debug=False
-):
+    name: str,
+    algorithms: List[Union[str, Dict[str, Any]]] = None,
+    targets: List[TargetsDict] = None,
+    storage: Dict = None,
+    debug: bool = False,
+    knowledge_base_type: Type[AbstractKnowledgeBase] = None,
+) -> Benchmark:
     """
     Create or get a benchmark object.
 
@@ -66,10 +77,16 @@ def get_or_create_benchmark(
             "algorithms and targets space was not defined.".format(name)
         )
 
-    benchmark = _create_benchmark(name, algorithms, targets, storage=storage)
+    benchmark = _create_benchmark(
+        name=name,
+        algorithms=algorithms,
+        targets=targets,
+        storage=storage,
+        knowledge_base_type=knowledge_base_type,
+    )
 
     if input_configure and input_benchmark.configuration != benchmark.configuration:
-        logger.warn(
+        logger.warning(
             "Benchmark with same name is found but has different configuration, "
             "which will be used for this creation.\n{}".format(benchmark.configuration)
         )
@@ -84,16 +101,23 @@ def get_or_create_benchmark(
                 "Benchmark registration failed. This is likely due to a race condition. "
                 "Now rolling back and re-attempting building it."
             )
-            get_or_create_benchmark(name, algorithms, targets, storage, debug)
+            get_or_create_benchmark(
+                name=name,
+                algorithms=algorithms,
+                targets=targets,
+                storage=storage,
+                debug=debug,
+                knowledge_base_type=knowledge_base_type,
+            )
 
     return benchmark
 
 
-def _get_task(name, **kwargs):
+def _get_task(name: str, **kwargs) -> BenchmarkTask:
     return BenchmarkTask(of_type=name, **kwargs)
 
 
-def _get_assessment(name, **kwargs):
+def _get_assessment(name: str, **kwargs) -> BenchmarkAssessment:
     return BenchmarkAssessment(of_type=name, **kwargs)
 
 
@@ -126,9 +150,25 @@ def _resolve_db_config(db_config):
     return benchmark_id, algorithms, targets
 
 
-def _create_benchmark(name, algorithms, targets, storage):
-
-    benchmark = Benchmark(name, algorithms, targets, storage)
+def _create_benchmark(
+    name: str,
+    algorithms: List[Union[str, Dict[str, Any]]],
+    targets: List[TargetsDict],
+    storage: Dict,
+    knowledge_base_type: Type[AbstractKnowledgeBase] = None,
+):
+    if knowledge_base_type:
+        benchmark = WarmStartBenchmark(
+            name=name,
+            algorithms=algorithms,
+            targets=targets,
+            storage=storage,
+            knowledge_base_type=knowledge_base_type,
+        )
+    else:
+        benchmark = Benchmark(
+            name=name, algorithms=algorithms, storage=storage, targets=targets
+        )
     benchmark.setup_studies()
 
     return benchmark

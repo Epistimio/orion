@@ -18,6 +18,7 @@ from orion.core.utils import format_trials
 from orion.core.utils.exceptions import SampleTimeout, WaitingForTrials
 from orion.core.worker.trial import Trial
 from orion.core.worker.trials_history import TrialsHistory
+# from orion.core.worker.knowledge_base import AbstractKnowledgeBase
 
 log = logging.getLogger(__name__)
 
@@ -62,8 +63,8 @@ class Producer(object):
         self.num_trials = 0
         self.num_broken = 0
 
-        from warmstart.new_knowledge_base import KnowledgeBase
-        self.knowledge_base: Optional[KnowledgeBase] = knowledge_base
+        from orion.core.worker.knowledge_base import AbstractKnowledgeBase
+        self.knowledge_base: Optional[AbstractKnowledgeBase] = knowledge_base
         # Indicates wether the algo has been warm-started with the knowledge base.
         self.warm_started = False
 
@@ -202,12 +203,12 @@ class Producer(object):
             # TODO: Dont use the KB when we have enough points in the target task.
             ## Option 1:
             # Get the trials from other 'similar' experiments.
-            reusable_trials: Dict[
+            related_trials: Dict[
                 Mapping, List[Trial]
-            ] = self.knowledge_base.get_reusable_trials(self.experiment)
-            if reusable_trials:
+            ] = self.knowledge_base.get_related_trials(self.experiment)
+            if related_trials:
                 log.debug("### Warm starting")
-                self.algorithm.warm_start(reusable_trials)
+                self.algorithm.warm_start(related_trials)
                 self.warm_started = True
             # ## Option 2:
 
