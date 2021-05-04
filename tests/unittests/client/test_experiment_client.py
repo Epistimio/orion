@@ -12,7 +12,11 @@ import pytest
 
 import orion.core
 from orion.core.io.database import DuplicateKeyError
-from orion.core.utils.exceptions import BrokenExperiment, SampleTimeout
+from orion.core.utils.exceptions import (
+    BrokenExperiment,
+    CompletedExperiment,
+    SampleTimeout,
+)
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
 from orion.testing import create_experiment, mock_space_iterate
@@ -682,7 +686,7 @@ class TestSuggest:
             """Never suggest a new trial"""
             return None
 
-        monkeypatch.setattr(orion.core.config.worker, "max_idle_time", 0)
+        monkeypatch.setattr(orion.core.config.worker, "max_idle_time", -1)
 
         with create_experiment(config, base_trial, statuses=["completed"]) as (
             cfg,
@@ -708,7 +712,22 @@ class TestSuggest:
             assert len(experiment.fetch_trials()) == 10
             assert client.is_done
 
-            assert client.suggest() is None
+            with pytest.raises(CompletedExperiment):
+                client.suggest()
+
+    def test_suggest_is_done_context_manager(self):
+        """Verify that context manager handles None"""
+        with create_experiment(config, base_trial, statuses=["completed"] * 10) as (
+            cfg,
+            experiment,
+            client,
+        ):
+
+            assert len(experiment.fetch_trials()) == 10
+            assert client.is_done
+
+            with pytest.raises(CompletedExperiment):
+                client.suggest()
 
     def test_suggest_is_broken(self):
         """Verify that broken experiments cannot suggest new trials"""
@@ -747,7 +766,8 @@ class TestSuggest:
             assert len(experiment.fetch_trials()) == 5
             assert not client.is_done
 
-            assert client.suggest() is None
+            with pytest.raises(CompletedExperiment):
+                client.suggest()
 
             assert len(experiment.fetch_trials()) == 5
             assert client.is_done

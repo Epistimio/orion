@@ -578,6 +578,22 @@ class TestWorkerConfig(ConfigurationTestSuite):
         """Check that defaults are different than testing configuration"""
         assert orion.core.config.to_dict()["worker"] != self.config["worker"]
 
+    def _mock(self, monkeypatch):
+        self._mock_exp_client(monkeypatch)
+        self._mock_consumer(monkeypatch)
+        self._mock_producer(monkeypatch)
+        self._mock_workon(monkeypatch)
+
+    def _mock_exp_client(self, monkeypatch):
+        self.exp_client = None
+        old_init = orion.client.experiment.ExperimentClient.__init__
+
+        def init(c_self, *args, **kwargs):
+            old_init(c_self, *args, **kwargs)
+            self.exp_client = c_self
+
+        monkeypatch.setattr(orion.client.experiment.ExperimentClient, "__init__", init)
+
     def _mock_consumer(self, monkeypatch):
         self.consumer = None
         old_init = orion.core.worker.Consumer.__init__
@@ -609,8 +625,16 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
         monkeypatch.setattr("orion.core.cli.hunt.workon", mocked_workon)
 
+    def _check_mocks(self, config):
+        self._check_exp_client(config)
+        self._check_consumer(config)
+        self._check_producer(config)
+        self._check_workon(config)
+
+    def _check_exp_client(self, config):
+        assert self.exp_client.heartbeat == config["heartbeat"]
+
     def _check_consumer(self, config):
-        assert self.consumer.heartbeat == config["heartbeat"]
         assert (
             self.consumer.template_builder.config_prefix == config["user_script_config"]
         )
@@ -627,16 +651,12 @@ class TestWorkerConfig(ConfigurationTestSuite):
         """Check that global configuration is set properly"""
         assert orion.core.config.to_dict()["worker"] == self.config["worker"]
 
-        self._mock_consumer(monkeypatch)
-        self._mock_producer(monkeypatch)
-        self._mock_workon(monkeypatch)
+        self._mock(monkeypatch)
 
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        self._check_consumer(self.config["worker"])
-        self._check_producer(self.config["worker"])
-        self._check_workon(self.config["worker"])
+        self._check_mocks(self.config["worker"])
 
     def check_env_var_config(self, tmp_path, monkeypatch):
         """Check that env vars overrides global configuration"""
@@ -651,16 +671,12 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
         assert orion.core.config.to_dict()["worker"] == env_var_config
 
-        self._mock_consumer(monkeypatch)
-        self._mock_producer(monkeypatch)
-        self._mock_workon(monkeypatch)
+        self._mock(monkeypatch)
 
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        self._check_consumer(env_var_config)
-        self._check_producer(env_var_config)
-        self._check_workon(env_var_config)
+        self._check_mocks(env_var_config)
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
@@ -668,16 +684,12 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
     def check_local_config(self, tmp_path, conf_file, monkeypatch):
         """Check that local configuration overrides global/envvars configuration"""
-        self._mock_consumer(monkeypatch)
-        self._mock_producer(monkeypatch)
-        self._mock_workon(monkeypatch)
+        self._mock(monkeypatch)
 
         command = f"hunt --exp-max-trials 0 -n test -c {conf_file} python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        self._check_consumer(self.local["worker"])
-        self._check_producer(self.local["worker"])
-        self._check_workon(self.local["worker"])
+        self._check_mocks(self.local["worker"])
 
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """Check that cmdargs configuration overrides global/envvars/local configuration"""
@@ -690,9 +702,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
             "user_script_config": self.cmdargs["user-script-config"],
         }
 
-        self._mock_consumer(monkeypatch)
-        self._mock_producer(monkeypatch)
-        self._mock_workon(monkeypatch)
+        self._mock(monkeypatch)
 
         command = f"hunt --worker-max-trials 0 -c {conf_file} -n cmd-test"
         command += " " + " ".join(
@@ -701,9 +711,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
         command += f" python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        self._check_consumer(config)
-        self._check_producer(config)
-        self._check_workon(config)
+        self._check_mocks(config)
 
 
 class TestEVCConfig(ConfigurationTestSuite):

@@ -9,7 +9,11 @@ Executes optimization steps and runs training experiment with parameter values s
 import itertools
 import logging
 
-from orion.core.utils.exceptions import WaitingForTrials
+from orion.core.utils.exceptions import (
+    BrokenExperiment,
+    InexecutableUserScript,
+    MissingResultFile,
+)
 from orion.core.utils.format_terminal import format_stats
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer
@@ -47,6 +51,15 @@ orion status --name {experiment.name} --version {experiment.version} --all
 """
 
 
+def on_error(experiment_client, trial, error, worker_broken_trials):
+    """If the script is not executable, don't waste time and raise right away"""
+    if isinstance(error, (InexecutableUserScript, MissingResultFile)):
+        raise error
+
+    return True
+
+
+# TODO: Move this to hunt cli. Move `reserve_trial` to experiment client.
 def workon(
     experiment,
     max_trials=None,
@@ -61,51 +74,30 @@ def workon(
     producer = Producer(experiment, max_idle_time)
     consumer = Consumer(
         experiment,
-        heartbeat,
         user_script_config,
         interrupt_signal_code,
         ignore_code_changes,
     )
 
-    log.debug("#####  Init Experiment  #####")
+    # NOTE: Temporary fix before we move workon to orion.core.cli.hunt
+    from orion.client.experiment import ExperimentClient
+
+    experiment_client = ExperimentClient(experiment, producer, heartbeat=heartbeat)
+
+    log.debug("Starting workers")
     try:
-        iterator = range(int(max_trials))
-    except (OverflowError, TypeError):
-        # When worker_trials is inf
-        iterator = itertools.count()
+        experiment_client.workon(
+            consumer,
+            max_trials=max_trials,
+            max_broken=max_broken,
+            trial_arg="trial",
+            on_error=on_error,
+        )
+    except BrokenExperiment as e:
+        print(e)
 
-    worker_broken_trials = 0
-    for _ in iterator:
-        log.debug("#### Poll for experiment termination.")
-        if experiment.is_broken:
-            print("#### Experiment has reached broken trials threshold, terminating.")
-            break
-
-        if experiment.is_done:
-            print("#####  Search finished successfully  #####")
-            break
-
-        log.debug("#### Try to reserve a new trial to evaluate.")
-        try:
-            trial = reserve_trial(experiment, producer)
-        except WaitingForTrials as ex:
-            print(
-                "### Experiment failed to reserve new trials: {reason}, terminating. ".format(
-                    reason=str(ex)
-                )
-            )
-            break
-
-        if trial is not None:
-            log.info("#### Successfully reserved %s to evaluate. Consuming...", trial)
-            success = consumer.consume(trial)
-            if not success:
-                worker_broken_trials += 1
-
-        if worker_broken_trials >= max_broken:
-            print("#### Worker has reached broken trials threshold, terminating.")
-            print(worker_broken_trials, max_broken)
-            break
+    if experiment.is_done:
+        print("Search finished successfully")
 
     print("\n" + format_stats(experiment))
 

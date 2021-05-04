@@ -279,7 +279,7 @@ class Experiment:
         self._check_if_executable()
         trial.status = "completed"
         trial.end_time = datetime.datetime.utcnow()
-        self._storage.retrieve_result(trial, results_file)
+        self._storage.retrieve_result(trial)
         # push trial results updates the entire trial status included
         log.info("Completed trials with results: %s", trial.results)
         self._storage.push_trial_results(trial)
