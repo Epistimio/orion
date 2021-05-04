@@ -111,6 +111,7 @@ orion status --name {experiment.name} --version {experiment.version} --all
 """
 
 
+# pylint:disable=unused-argument
 def on_error(experiment_client, trial, error, worker_broken_trials):
     """If the script is not executable, don't waste time and raise right away"""
     if isinstance(error, (InexecutableUserScript, MissingResultFile)):

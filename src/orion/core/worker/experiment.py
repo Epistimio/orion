@@ -265,6 +265,7 @@ class Experiment:
             except FailedUpdate:
                 log.debug("failed")
 
+    # pylint:disable=unused-argument
     def update_completed_trial(self, trial, results_file=None):
         """Inform database about an evaluated `trial` with results.
 

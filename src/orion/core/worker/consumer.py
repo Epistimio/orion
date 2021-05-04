@@ -24,7 +24,6 @@ from orion.core.utils.exceptions import (
     MissingResultFile,
 )
 from orion.core.utils.working_dir import WorkingDir
-from orion.core.worker.trial_pacemaker import TrialPacemaker
 
 log = logging.getLogger(__name__)
 
@@ -150,6 +149,7 @@ class Consumer(object):
         return results
 
     def retrieve_results(self, results_file):
+        """Retrive the results from the file"""
         try:
             results = JSONConverter().parse(results_file.name)
         except json.decoder.JSONDecodeError:

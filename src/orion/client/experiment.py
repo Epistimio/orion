@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=too-many-lines
 """
 Experiment wrapper client
 =========================
@@ -21,7 +22,6 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
-    InexecutableUserScript,
     InvalidResult,
     SampleTimeout,
     UnsupportedOperation,
