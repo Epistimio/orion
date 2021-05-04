@@ -151,6 +151,10 @@ class Experiment:
             setattr(self, key, value)
 
     def _restore_storage(self):
+        """Restore storage instance after de-serialization of experiment.
+        Since all experiments in the EVC tree are serialized without storage instance,
+        need to restore storage for all the experiments here.
+        """
         self._storage = get_storage()
 
         def _restore_storage(node, parent_or_children):
