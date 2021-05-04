@@ -15,14 +15,14 @@ import traceback
 from joblib import Parallel, delayed
 from numpy import inf as infinity
 
-import orion.core.utils.format_trials as format_trials
 import orion.core
+import orion.core.utils.format_trials as format_trials
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
-    InvalidResult,
     InexecutableUserScript,
+    InvalidResult,
     SampleTimeout,
     UnsupportedOperation,
     WaitingForTrials,

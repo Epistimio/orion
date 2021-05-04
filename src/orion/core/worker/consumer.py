@@ -7,8 +7,8 @@ Call user's script as a black box process to evaluate a trial.
 
 """
 import copy
-import logging
 import json
+import logging
 import os
 import signal
 import subprocess
