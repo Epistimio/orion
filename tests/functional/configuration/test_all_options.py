@@ -10,9 +10,9 @@ import yaml
 
 import orion.core
 import orion.core.cli
+import orion.core.cli.hunt
 import orion.core.evc.conflicts
 import orion.core.io.resolve_config
-import orion.core.worker
 from orion.client import get_experiment
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
@@ -596,26 +596,26 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
     def _mock_consumer(self, monkeypatch):
         self.consumer = None
-        old_init = orion.core.worker.Consumer.__init__
+        old_init = orion.core.cli.hunt.Consumer.__init__
 
         def init(c_self, *args, **kwargs):
             old_init(c_self, *args, **kwargs)
             self.consumer = c_self
 
-        monkeypatch.setattr(orion.core.worker.Consumer, "__init__", init)
+        monkeypatch.setattr(orion.core.cli.hunt.Consumer, "__init__", init)
 
     def _mock_producer(self, monkeypatch):
         self.producer = None
-        old_init = orion.core.worker.Producer.__init__
+        old_init = orion.core.cli.hunt.Producer.__init__
 
         def init(p_self, *args, **kwargs):
             old_init(p_self, *args, **kwargs)
             self.producer = p_self
 
-        monkeypatch.setattr(orion.core.worker.Producer, "__init__", init)
+        monkeypatch.setattr(orion.core.cli.hunt.Producer, "__init__", init)
 
     def _mock_workon(self, monkeypatch):
-        workon = orion.core.worker.workon
+        workon = orion.core.cli.hunt.workon
 
         self.workon_kwargs = None
 
@@ -772,13 +772,13 @@ class TestEVCConfig(ConfigurationTestSuite):
 
     def _mock_consumer(self, monkeypatch):
         self.consumer = None
-        old_init = orion.core.worker.Consumer.__init__
+        old_init = orion.core.cli.hunt.Consumer.__init__
 
         def init(c_self, *args, **kwargs):
             old_init(c_self, *args, **kwargs)
             self.consumer = c_self
 
-        monkeypatch.setattr(orion.core.worker.Consumer, "__init__", init)
+        monkeypatch.setattr(orion.core.cli.hunt.Consumer, "__init__", init)
 
     def _check_consumer(self, config):
         assert self.consumer.ignore_code_changes == config["ignore_code_changes"]

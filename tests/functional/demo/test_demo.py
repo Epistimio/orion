@@ -14,7 +14,7 @@ import yaml
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.io.database.ephemeraldb import EphemeralDB
-from orion.core.worker import workon
+from orion.core.cli.hunt import workon
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
