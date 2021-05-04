@@ -115,7 +115,7 @@ class Consumer(object):
 
     def __call__(self, trial, **kwargs):
         """Execute user's script as a block box using the options contained
-        within `trial`.
+        within ``trial``.
 
         Parameters
         ----------
