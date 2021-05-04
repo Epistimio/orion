@@ -630,13 +630,13 @@ class ExperimentClient:
 
         with Parallel(n_jobs=n_workers) as parallel:
             trials = parallel(
-                delayed(self._optimize)(fct, max_trials, **kwargs)
+                delayed(self._optimize)(fct, **kwargs)
                 for _ in range(n_workers)
             )
 
         return sum(trials)
 
-    def _optimize(self, fct, max_trials, **kwargs):
+    def _optimize(self, fct, **kwargs):
         # this is required for process-based or remote backend
         setup_storage(storage=self.storage_config)
         self._experiment._restore_storage()  # pylint: disable=protected-access
