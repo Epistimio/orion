@@ -553,22 +553,17 @@ def test_experiment_pickleable():
 
     with OrionState(trials=generate_trials(["new"])) as cfg:
         exp = Experiment("supernaekei", mode="x")
+        exp._id = cfg.trials[0]["experiment"]
 
         exp_trials = exp.fetch_trials()
+
+        assert len(exp_trials) > 0
 
         exp_bytes = pickle.dumps(exp)
 
         new_exp = pickle.loads(exp_bytes)
 
-        with pytest.raises(AttributeError) as exc:
-            new_exp.fetch_trials()
-        assert exc.match(f"_storage")
-
-        new_exp._storage = get_storage()
-
-        new_exp_trials = new_exp.fetch_trials()
-
-        assert new_exp_trials == exp_trials
+        assert [trial.to_dict() for trial in exp_trials] == [trial.to_dict() for trial in new_exp.fetch_trials()]
 
 
 read_only_methods = [
