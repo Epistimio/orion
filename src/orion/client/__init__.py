@@ -240,7 +240,7 @@ def build_experiment(
 
     producer = Producer(experiment, max_idle_time)
 
-    return ExperimentClient(experiment, producer, heartbeat, storage)
+    return ExperimentClient(experiment, producer, heartbeat)
 
 
 def get_experiment(name, version=None, mode="r", storage=None):
@@ -275,7 +275,7 @@ def get_experiment(name, version=None, mode="r", storage=None):
     setup_storage(storage)
     assert mode in set("rw")
     experiment = experiment_builder.load(name, version, mode)
-    return ExperimentClient(experiment, None, storage=storage)
+    return ExperimentClient(experiment, None)
 
 
 def workon(
