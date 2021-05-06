@@ -199,7 +199,7 @@ def test_with_multidim(algorithm):
 def test_with_evc(algorithm):
     """Test a scenario where algos are warm-started with EVC."""
 
-    with OrionState(storage={"type": "legacy", "database": {"type": "EphemeralDB"}}):
+    with OrionState(storage={"type": "legacy", "database": {"type": "PickledDB"}}):
         base_exp = create_experiment(
             name="exp",
             space=space_with_fidelity,
@@ -252,59 +252,56 @@ def test_with_evc(algorithm):
 @pytest.mark.parametrize(
     "algorithm", algorithm_configs.values(), ids=list(algorithm_configs.keys())
 )
-def test_parallel_workers(algorithm, tmp_path):
+def test_parallel_workers(algorithm):
     """Test parallel execution with joblib"""
-    pickle_host = str(tmp_path / "db.pkl")
+    with OrionState() as cfg:  # Using PickledDB
 
-    name = "{}_exp".format(list(algorithm.keys())[0])
+        name = "{}_exp".format(list(algorithm.keys())[0])
 
-    storage = {"type": "legacy", "database": {"type": "PickledDB", "host": pickle_host}}
-    base_exp = create_experiment(
-        name=name,
-        space=space_with_fidelity,
-        algorithms=algorithm_configs["random"],
-        storage=storage,
-    )
-    base_exp.workon(rosenbrock, max_trials=10)
+        base_exp = create_experiment(
+            name=name,
+            space=space_with_fidelity,
+            algorithms=algorithm_configs["random"],
+        )
+        base_exp.workon(rosenbrock, max_trials=10)
 
-    exp = create_experiment(
-        name=name,
-        space=space_with_fidelity,
-        algorithms=algorithm,
-        branching={"branch_from": name},
-        storage=storage,
-    )
+        exp = create_experiment(
+            name=name,
+            space=space_with_fidelity,
+            algorithms=algorithm,
+            branching={"branch_from": name},
+        )
 
-    assert exp.version == 2
+        assert exp.version == 2
 
-    exp.workon(rosenbrock, max_trials=30, n_workers=2)
+        exp.workon(rosenbrock, max_trials=30, n_workers=2)
 
-    assert exp.configuration["algorithms"] == algorithm
+        assert exp.configuration["algorithms"] == algorithm
 
-    trials = exp.fetch_trials(with_evc_tree=False)
-    assert len(trials) >= 20
+        trials = exp.fetch_trials(with_evc_tree=False)
+        assert len(trials) >= 20
 
-    trials_with_evc = exp.fetch_trials(with_evc_tree=True)
-    assert len(trials_with_evc) >= 30
-    assert len(trials_with_evc) - len(trials) == 10
+        trials_with_evc = exp.fetch_trials(with_evc_tree=True)
+        assert len(trials_with_evc) >= 30
+        assert len(trials_with_evc) - len(trials) == 10
 
-    completed_trials = [
-        trial for trial in trials_with_evc if trial.status == "completed"
-    ]
-    assert 30 <= len(completed_trials) <= 30 + 2
+        completed_trials = [
+            trial for trial in trials_with_evc if trial.status == "completed"
+        ]
+        assert 30 <= len(completed_trials) <= 30 + 2
 
-    results = [trial.objective.value for trial in completed_trials]
-    best_trial = next(
-        iter(sorted(completed_trials, key=lambda trial: trial.objective.value))
-    )
+        results = [trial.objective.value for trial in completed_trials]
+        best_trial = next(
+            iter(sorted(completed_trials, key=lambda trial: trial.objective.value))
+        )
 
-    assert best_trial.objective.name == "objective"
-    assert abs(best_trial.objective.value - 23.4) < 1e-5
-    assert len(best_trial.params) == 2
-    fidelity = best_trial._params[0]
-    assert fidelity.name == "noise"
-    assert fidelity.type == "fidelity"
-    assert fidelity.value == 10
-    param = best_trial._params[1]
-    assert param.name == "x"
-    assert param.type == "real"
+        assert best_trial.objective.name == "objective"
+        assert abs(best_trial.objective.value - 23.4) < 1e-5
+        assert len(best_trial.params) == 2
+        fidelity = best_trial._params[0]
+        assert fidelity.name == "noise"
+        assert fidelity.type == "fidelity"
+        assert fidelity.value == 10
+        param = best_trial._params[1]
+        assert param.name == "x"
+        assert param.type == "real"

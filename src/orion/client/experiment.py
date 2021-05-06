@@ -65,7 +65,7 @@ class ExperimentClient:
 
     """
 
-    def __init__(self, experiment, producer, heartbeat=None, storage=None):
+    def __init__(self, experiment, producer, heartbeat=None):
         self._experiment = experiment
         self._max_trials = experiment.max_trials
         self._producer = producer
@@ -74,7 +74,6 @@ class ExperimentClient:
         if heartbeat is None:
             heartbeat = orion.core.config.worker.heartbeat
         self.heartbeat = heartbeat
-        self.storage_config = storage
         self.plot = PlotAccessor(self)
         atexit.register(self.set_broken_trials)
 
@@ -630,17 +629,12 @@ class ExperimentClient:
 
         with Parallel(n_jobs=n_workers) as parallel:
             trials = parallel(
-                delayed(self._optimize)(fct, **kwargs)
-                for _ in range(n_workers)
+                delayed(self._optimize)(fct, **kwargs) for _ in range(n_workers)
             )
 
         return sum(trials)
 
     def _optimize(self, fct, **kwargs):
-        # this is required for process-based or remote backend
-        setup_storage(storage=self.storage_config)
-        self._experiment._restore_storage()  # pylint: disable=protected-access
-
         trials = 0
         kwargs = flatten(kwargs)
         while not self.is_done:

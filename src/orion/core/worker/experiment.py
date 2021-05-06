@@ -19,6 +19,7 @@ from orion.core.evc.experiment import ExperimentNode
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
 from orion.storage.base import FailedUpdate, get_storage
+from orion.core.utils.singleton import update_singletons
 
 log = logging.getLogger(__name__)
 
@@ -141,29 +142,21 @@ class Experiment:
         """Remove storage instance during experiment serialization"""
         state = dict()
         for entry in self.__slots__:
-            if entry != "_storage":
-                state[entry] = getattr(self, entry)
+            state[entry] = getattr(self, entry)
+
+        # TODO: This should be removed when singletons and `get_storage()` are removed.
+        #       See https://github.com/Epistimio/orion/issues/606
+        singletons = update_singletons()
+        state["singletons"] = singletons
+        update_singletons(singletons)
 
         return state
 
     def __setstate__(self, state):
-        for key, value in state.items():
-            setattr(self, key, value)
+        for entry in self.__slots__:
+            setattr(self, entry, state[entry])
 
-    def _restore_storage(self):
-        """Restore storage instance after de-serialization of experiment.
-        Since all experiments in the EVC tree are serialized without storage instance,
-        need to restore storage for all the experiments here.
-        """
-        self._storage = get_storage()
-
-        def _restore_storage(node, parent_or_children):
-            node.item._storage = get_storage()
-            return node.item, parent_or_children
-
-        if self._node.parent is not None:
-            self._node.parent.map(_restore_storage, self._node.parent.parent)
-        self._node.map(_restore_storage, self._node.children)
+        update_singletons(state.pop("singletons"))
 
     def to_pandas(self, with_evc_tree=False):
         """Builds a dataframe with the trials of the experiment
