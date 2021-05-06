@@ -563,7 +563,9 @@ def test_experiment_pickleable():
 
         new_exp = pickle.loads(exp_bytes)
 
-        assert [trial.to_dict() for trial in exp_trials] == [trial.to_dict() for trial in new_exp.fetch_trials()]
+        assert [trial.to_dict() for trial in exp_trials] == [
+            trial.to_dict() for trial in new_exp.fetch_trials()
+        ]
 
 
 read_only_methods = [
