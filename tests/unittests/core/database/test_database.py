@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.io.database.pickleddb`."""
 import os
-from datetime import datetime
 import pickle
+from datetime import datetime
 
 import pytest
 

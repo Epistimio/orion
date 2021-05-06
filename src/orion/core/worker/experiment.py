@@ -18,8 +18,8 @@ from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
-from orion.storage.base import FailedUpdate, get_storage
 from orion.core.utils.singleton import update_singletons
+from orion.storage.base import FailedUpdate, get_storage
 
 log = logging.getLogger(__name__)
 

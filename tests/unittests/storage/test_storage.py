@@ -5,8 +5,8 @@
 import copy
 import datetime
 import logging
-import time
 import pickle
+import time
 
 import pytest
 

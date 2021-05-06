@@ -27,7 +27,7 @@ from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.plotting.base import PlotAccessor
-from orion.storage.base import FailedUpdate, setup_storage
+from orion.storage.base import FailedUpdate
 
 log = logging.getLogger(__name__)
 
