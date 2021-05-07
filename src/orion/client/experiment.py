@@ -643,6 +643,21 @@ class ExperimentClient:
         max_trials: int, optional
             Maximum number of trials to execute within `workon`. If the experiment or algorithm
             reach status is_done before, the execution of `workon` terminates.
+        max_broken: int, optional
+            Maximum number of broken trials to accept during `workon`. When this threshold is
+            reached the function will raise :class:`orion.core.utils.exceptions.BrokenExperiment`.
+            Defaults to value of global config.
+        trial_alg: str, optional
+            The function ``fct`` may support receiving the trial as an argument. This argument name
+            can be specified with ``trial_arg``. If not defined (``None``), then only the
+            hyperparameters will be passed to `fct`.
+        on_error: callable, optional
+            Callback that is executed if an error occur during the execution of ``fct``.
+            The signature of the callback must be
+            ``foo(ExperimentClient, Trial, Error, nb_of_worker_broken_trials)``.
+            If the callblack returns False, the error will be ignored, otherwise it is counted
+            for the threshold `max_broken`. In case of critical errors, you may also directly
+            raise an error and force break out of ``workon``.
         **kwargs
             Constant argument to pass to `fct` in addition to trial.params. If values in kwargs are
             present in trial.params, the latter takes precedence.
