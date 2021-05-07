@@ -370,6 +370,9 @@ class Track(BaseStorageProtocol):  # noqa: F811
             # but now that we do we can rethrow it
             raise ImportError("Track is not installed!")
 
+        self._initialize_client(uri)
+
+    def _initialize_client(self, uri):
         self.uri = uri
         self.options = parse_uri(uri)["query"]
 
@@ -380,6 +383,13 @@ class Track(BaseStorageProtocol):  # noqa: F811
         self.objective = self.options.get("objective")
         self.lies = dict()
         assert self.objective is not None, "An objective should be defined!"
+
+    def __getstate__(self):
+        return dict(uri=self.uri, lies=self.lies)
+
+    def __setstate__(self, state):
+        self._initialize_client(state["uri"])
+        self.lies = state["lies"]
 
     def _get_project(self, name):
         if self.project is None:

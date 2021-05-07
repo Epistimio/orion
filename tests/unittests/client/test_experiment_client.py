@@ -6,6 +6,7 @@ import copy
 import datetime
 import logging
 
+import joblib
 import pandas.testing
 import pytest
 
@@ -969,3 +970,30 @@ class TestWorkon:
             assert len(params)
             assert "x" in params["a"]
             assert "y" in params["b"]
+
+    def test_parallel_workers(self, monkeypatch):
+        """Test parallel execution with joblib"""
+
+        def foo(x):
+            return [dict(name="result", type="objective", value=x * 2)]
+
+        def optimize(*args, **kwargs):
+            optimize.count += 1
+            return 1
+
+        with create_experiment(exp_config=config, trial_config={}, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+
+            monkeypatch.setattr(client, "_optimize", optimize)
+            optimize.count = 0
+            with joblib.parallel_backend("threading"):
+                client.workon(foo, max_trials=5, n_workers=2)
+
+            assert optimize.count == 2
+            optimize.count = 0
+            with joblib.parallel_backend("threading"):
+                client.workon(foo, max_trials=5, n_workers=3)
+            assert optimize.count == 3

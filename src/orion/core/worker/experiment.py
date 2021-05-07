@@ -18,6 +18,7 @@ from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
+from orion.core.utils.singleton import update_singletons
 from orion.storage.base import FailedUpdate, get_storage
 
 log = logging.getLogger(__name__)
@@ -97,8 +98,8 @@ class Experiment:
         "producer",
         "working_dir",
         "_id",
-        "_node",
         "_storage",
+        "_node",
         "_mode",
     )
     non_branching_attrs = ("pool_size", "max_trials", "max_broken")
@@ -118,6 +119,7 @@ class Experiment:
         self.algorithms = None
         self.working_dir = None
         self.producer = {}
+
         self._storage = get_storage()
 
         self._node = ExperimentNode(self.name, self.version, experiment=self)
@@ -135,6 +137,26 @@ class Experiment:
             raise UnsupportedOperation(
                 f"Experiment must have execution rights to execute `{calling_function}()`"
             )
+
+    def __getstate__(self):
+        """Remove storage instance during experiment serialization"""
+        state = dict()
+        for entry in self.__slots__:
+            state[entry] = getattr(self, entry)
+
+        # TODO: This should be removed when singletons and `get_storage()` are removed.
+        #       See https://github.com/Epistimio/orion/issues/606
+        singletons = update_singletons()
+        state["singletons"] = singletons
+        update_singletons(singletons)
+
+        return state
+
+    def __setstate__(self, state):
+        for entry in self.__slots__:
+            setattr(self, entry, state[entry])
+
+        update_singletons(state.pop("singletons"))
 
     def to_pandas(self, with_evc_tree=False):
         """Builds a dataframe with the trials of the experiment

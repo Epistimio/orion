@@ -11,6 +11,7 @@ import inspect
 import logging
 import sys
 
+from joblib import Parallel, delayed
 from numpy import inf as infinity
 
 import orion.core.utils.format_trials as format_trials
@@ -66,6 +67,7 @@ class ExperimentClient:
 
     def __init__(self, experiment, producer, heartbeat=None):
         self._experiment = experiment
+        self._max_trials = experiment.max_trials
         self._producer = producer
         self._pacemakers = {}
         self.set_broken_trials = functools.partial(set_broken_trials, client=self)
@@ -98,7 +100,7 @@ class ExperimentClient:
     @property
     def max_trials(self):
         """Max-trials to execute before stopping the experiment."""
-        return self._experiment.max_trials
+        return self._max_trials
 
     @property
     def max_broken(self):
@@ -589,7 +591,7 @@ class ExperimentClient:
         finally:
             self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved)
 
-    def workon(self, fct, max_trials=infinity, **kwargs):
+    def workon(self, fct, max_trials=infinity, n_workers=1, **kwargs):
         """Optimize a given function
 
         Experiment must be in executable ('x') mode.
@@ -603,6 +605,8 @@ class ExperimentClient:
         max_trials: int, optional
             Maximum number of trials to execute within `workon`. If the experiment or algorithm
             reach status is_done before, the execution of `workon` terminates.
+        n_workers: int, optional
+            Number of workers to run in parallel.
         **kwargs
             Constant argument to pass to `fct` in addition to trial.params. If values in kwargs are
             present in trial.params, the latter takes precedence.
@@ -617,9 +621,23 @@ class ExperimentClient:
         """
         self._check_if_executable()
 
+        # Use worker's max_trials inside `exp.is_done` to reduce chance of
+        # race condition for trials creation
+        if self.max_trials > max_trials:
+            self._experiment.max_trials = max_trials
+            self._experiment.algorithms.algorithm.max_trials = max_trials
+
+        with Parallel(n_jobs=n_workers) as parallel:
+            trials = parallel(
+                delayed(self._optimize)(fct, **kwargs) for _ in range(n_workers)
+            )
+
+        return sum(trials)
+
+    def _optimize(self, fct, **kwargs):
         trials = 0
         kwargs = flatten(kwargs)
-        while not self.is_done and trials < max_trials:
+        while not self.is_done:
             trial = self.suggest()
             if trial is None:
                 log.warning("Algorithm could not sample new points")
@@ -628,7 +646,6 @@ class ExperimentClient:
             results = fct(**unflatten(kwargs))
             self.observe(trial, results=results)
             trials += 1
-
         return trials
 
     def close(self):

@@ -5,6 +5,7 @@
 import copy
 import datetime
 import logging
+import pickle
 import time
 
 import pytest
@@ -815,3 +816,13 @@ class TestStorage:
                 assert (
                     trial3.heartbeat is None
                 ), "Legacy does not update trials with a status different from reserved"
+
+    def test_serializable(self, storage):
+        """Test storage can be serialized"""
+        with OrionState(
+            experiments=[base_experiment], trials=generate_trials(), storage=storage
+        ) as cfg:
+            storage = cfg.storage()
+            serialized = pickle.dumps(storage)
+            deserialized = pickle.loads(serialized)
+            assert storage.fetch_experiments({}) == deserialized.fetch_experiments({})

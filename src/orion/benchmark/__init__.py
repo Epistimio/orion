@@ -46,14 +46,18 @@ class Benchmark:
             Assessment objects
         task: list
             Task objects
+
+    storage: dict, optional
+        Configuration of the storage backend.
     """
 
-    def __init__(self, name, algorithms, targets):
+    def __init__(self, name, algorithms, targets, storage=None):
         self._id = None
         self.name = name
         self.algorithms = algorithms
         self.targets = targets
         self.metadata = {}
+        self.storage_config = storage
 
         self.studies = []
 
@@ -71,10 +75,10 @@ class Benchmark:
                 study.setup_experiments()
                 self.studies.append(study)
 
-    def process(self):
+    def process(self, n_workers=1):
         """Run studies experiment"""
         for study in self.studies:
-            study.execute()
+            study.execute(n_workers)
 
     def status(self, silent=True):
         """Display benchmark status"""
@@ -314,16 +318,17 @@ class Study:
                     space=space,
                     algorithms=algorithm.experiment_algorithm,
                     max_trials=max_trials,
+                    storage=self.benchmark.storage_config,
                 )
                 self.experiments_info.append((task_index, experiment))
 
-    def execute(self):
+    def execute(self, n_workers=1):
         """Execute all the experiments of the study"""
         max_trials = self.task.max_trials
 
         for _, experiment in self.experiments_info:
             # TODO: it is a blocking call
-            experiment.workon(self.task, max_trials)
+            experiment.workon(self.task, max_trials, n_workers)
 
     def status(self):
         """Return status of the study"""

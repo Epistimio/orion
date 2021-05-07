@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.io.database.pickleddb`."""
 import os
+import pickle
 from datetime import datetime
 
 import pytest
@@ -718,3 +719,13 @@ class TestDropIndex(object):
         assert orion_db.index_information("experiments") == index_information
         orion_db.drop_index("experiments", stored_keys)
         assert orion_db.index_information("experiments") == {"_id_": True}
+
+
+@insert_test_collection
+def test_serializable(orion_db):
+    serialized = pickle.dumps(orion_db)
+    deserialized = pickle.loads(serialized)
+    assert len(orion_db.read("test_collection", {})) > 0
+    assert orion_db.read("test_collection", {}) == deserialized.read(
+        "test_collection", {}
+    )
