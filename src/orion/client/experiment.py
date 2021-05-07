@@ -14,7 +14,6 @@ import sys
 import traceback
 
 from joblib import Parallel, delayed
-from numpy import inf as infinity
 
 import orion.core
 import orion.core.utils.format_trials as format_trials
