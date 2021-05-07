@@ -1050,7 +1050,8 @@ class TestWorkon:
         def foo(x):
             return [dict(name="result", type="objective", value=x * 2)]
 
-        statuses = ["completed", "completed", "new"]
+        n_completed = 2
+        statuses = ["completed"] * n_completed + ["new"]
         n_trials = len(statuses)
 
         with create_experiment(config, base_trial, statuses=statuses) as (
@@ -1059,13 +1060,12 @@ class TestWorkon:
             client,
         ):
             MAX_TRIALS = 9
-            MAX_TRIALS_PER_WORKER = 5
             assert client.max_trials > MAX_TRIALS
             assert len(experiment.fetch_trials()) == n_trials
-            client.workon(
-                foo, max_trials=MAX_TRIALS, max_trials_per_worker=MAX_TRIALS_PER_WORKER
-            )
-            assert len(experiment.fetch_trials()) == MAX_TRIALS_PER_WORKER + n_trials
+            client.workon(foo, max_trials=MAX_TRIALS, max_trials_per_worker=2)
+            assert len(experiment.fetch_trials()) == 2 + n_completed
+            client.workon(foo, max_trials=MAX_TRIALS, max_trials_per_worker=3)
+            assert len(experiment.fetch_trials()) == 3 + 2 + n_completed
 
     def test_workon_exp_max_broken_before_worker_max_broken(self):
         """Verify that workon stop when reaching exp.max_broken"""
