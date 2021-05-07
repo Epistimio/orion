@@ -208,6 +208,7 @@ def test_with_evc(algorithm):
             name="exp",
             space=space_with_fidelity,
             algorithms=algorithm_configs["random"],
+            max_trials=10,
         )
         base_exp.workon(rosenbrock, max_trials=10)
 
@@ -215,6 +216,7 @@ def test_with_evc(algorithm):
             name="exp",
             space=space_with_fidelity,
             algorithms=algorithm,
+            max_trials=30,
             branching={"branch_from": "exp"},
         )
 
@@ -230,7 +232,7 @@ def test_with_evc(algorithm):
         assert len(trials) >= 20
 
         trials_with_evc = exp.fetch_trials(with_evc_tree=True)
-        assert len(trials_with_evc) >= 31
+        assert len(trials_with_evc) >= 30
         assert len(trials_with_evc) - len(trials) == 10
 
         completed_trials = [
