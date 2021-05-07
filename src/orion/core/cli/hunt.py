@@ -145,7 +145,7 @@ def workon(
     try:
         experiment_client.workon(
             consumer,
-            max_trials=max_trials,
+            max_trials_per_worker=max_trials,
             max_broken=max_broken,
             trial_arg="trial",
             on_error=on_error,

@@ -1007,6 +1007,66 @@ class TestWorkon:
             client.workon(foo, max_trials=MAX_TRIALS)
             assert len(experiment.fetch_trials()) == MAX_TRIALS
 
+    def test_workon_max_trials_resumed(self):
+        """Verify that workon stop when reaching max_trials after resuming"""
+
+        def foo(x):
+            return [dict(name="result", type="objective", value=x * 2)]
+
+        with create_experiment(
+            config, base_trial, statuses=["completed", "completed"]
+        ) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            MAX_TRIALS = 5
+            assert client.max_trials > MAX_TRIALS
+            assert len(experiment.fetch_trials()) == 2
+            client.workon(foo, max_trials=MAX_TRIALS)
+            assert len(experiment.fetch_trials()) == MAX_TRIALS
+
+    def test_workon_max_trials_per_worker(self):
+        """Verify that workon stop when reaching max_trials_per_worker"""
+
+        def foo(x):
+            return [dict(name="result", type="objective", value=x * 2)]
+
+        with create_experiment(config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            MAX_TRIALS = 5
+            assert client.max_trials > MAX_TRIALS
+            client.workon(
+                foo, max_trials=MAX_TRIALS, max_trials_per_worker=MAX_TRIALS - 1
+            )
+            assert len(experiment.fetch_trials()) == MAX_TRIALS - 1
+
+    def test_workon_max_trials_per_worker_resumed(self):
+        """Verify that workon stop when reaching max_trials_per_worker after resuming"""
+
+        def foo(x):
+            return [dict(name="result", type="objective", value=x * 2)]
+
+        statuses = ["completed", "completed", "new"]
+        n_trials = len(statuses)
+
+        with create_experiment(config, base_trial, statuses=statuses) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            MAX_TRIALS = 9
+            MAX_TRIALS_PER_WORKER = 5
+            assert client.max_trials > MAX_TRIALS
+            assert len(experiment.fetch_trials()) == n_trials
+            client.workon(
+                foo, max_trials=MAX_TRIALS, max_trials_per_worker=MAX_TRIALS_PER_WORKER
+            )
+            assert len(experiment.fetch_trials()) == MAX_TRIALS_PER_WORKER + n_trials
+
     def test_workon_exp_max_broken_before_worker_max_broken(self):
         """Verify that workon stop when reaching exp.max_broken"""
 

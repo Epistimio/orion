@@ -97,7 +97,6 @@ class ExperimentClient:
 
     def __init__(self, experiment, producer, heartbeat=None):
         self._experiment = experiment
-        self._max_trials = experiment.max_trials
         self._producer = producer
         self._pacemakers = {}
         self.set_broken_trials = functools.partial(set_broken_trials, client=self)
@@ -130,7 +129,7 @@ class ExperimentClient:
     @property
     def max_trials(self):
         """Max-trials to execute before stopping the experiment."""
-        return self._max_trials
+        return self._experiment.max_trials
 
     @property
     def max_broken(self):
@@ -623,6 +622,7 @@ class ExperimentClient:
         fct,
         n_workers=1,
         max_trials=None,
+        max_trials_per_worker=None,
         max_broken=None,
         trial_arg=None,
         on_error=None,
@@ -641,8 +641,14 @@ class ExperimentClient:
         n_workers: int, optional
             Number of workers to run in parallel.
         max_trials: int, optional
-            Maximum number of trials to execute within `workon`. If the experiment or algorithm
-            reach status is_done before, the execution of `workon` terminates.
+            Maximum number of trials to execute within ``workon``. If the experiment or algorithm
+            reach status is_done before, the execution of ``workon`` terminates.
+            Defaults to experiment's max trial. If ``max_trials`` is larger than
+            ``experiment.max_trials``, the experiment will stop when reaching
+            ``experiment.max_trials``.
+        max_trials_per_worker: int, optional
+            Maximum number of trials to execute within each worker. ``max_trials`` and
+            ``experiment.max_trials`` have precedence. Defaults to global config.
         max_broken: int, optional
             Maximum number of broken trials to accept during `workon`. When this threshold is
             reached the function will raise :class:`orion.core.utils.exceptions.BrokenExperiment`.
@@ -685,7 +691,10 @@ class ExperimentClient:
         self._check_if_executable()
 
         if max_trials is None:
-            max_trials = orion.core.config.worker.max_trials
+            max_trials = self.max_trials
+
+        if max_trials_per_worker is None:
+            max_trials_per_worker = orion.core.config.worker.max_trials
 
         if max_broken is None:
             max_broken = orion.core.config.worker.max_broken
@@ -698,16 +707,24 @@ class ExperimentClient:
 
         with Parallel(n_jobs=n_workers) as parallel:
             trials = parallel(
-                delayed(self._optimize)(fct, max_broken, trial_arg, on_error, **kwargs)
+                delayed(self._optimize)(
+                    fct,
+                    max_trials_per_worker,
+                    max_broken,
+                    trial_arg,
+                    on_error,
+                    **kwargs,
+                )
                 for _ in range(n_workers)
             )
 
         return sum(trials)
 
-    def _optimize(self, fct, max_broken, trial_arg, on_error, **kwargs):
+    def _optimize(self, fct, max_trials, max_broken, trial_arg, on_error, **kwargs):
         worker_broken_trials = 0
         trials = 0
         kwargs = flatten(kwargs)
+        max_trials = min(max_trials, self.max_trials)
         while not self.is_done and trials - worker_broken_trials < max_trials:
             try:
                 with self.suggest() as trial:
