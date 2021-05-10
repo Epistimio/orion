@@ -205,56 +205,6 @@ class MultiTaskAlgo(AlgoWrapper):
             ]
         return self.algorithm.observe(points, results)
 
-    @singledispatchmethod
-    def _add_task_id(self, point: Any, task_id: int) -> Any:
-        raise NotImplementedError(point)
-
-    @_add_task_id.register(np.ndarray)
-    @_add_task_id.register(tuple)
-    def _add_task_id_to_point(self, point: Any, task_id: int) -> Tuple[int, Any]:
-        # NOTE: Need to do a bit of gymnastics here because the points are expected
-        # to be tuples. In order to add the task id at the right index, we convert
-        # them like so:
-        # Tuple -> Trial -> dict (.params) -> dict (add task_id) -> Trial -> Tuple.
-        trial = tuple_to_trial(point, self.space)
-        trial_with_task_id = self._add_task_id(trial, task_id)
-        point_with_task_id = trial_to_tuple(trial_with_task_id, self.algorithm.space)
-        return point_with_task_id
-
-    @_add_task_id.register
-    def _add_task_id_to_trial(self, trial: Trial, task_id: int) -> Trial:
-        # NOTE: Need to do a bit of gymnastics here because the points are expected
-        # to be tuples. In order to add the task id at the right index, we convert
-        # them like so:
-        # Trial -> dict (.params) -> dict (add task_id) -> Trial.
-        params = trial.params.copy()
-        params["task_id"] = task_id
-        # TODO: Should we copy over the status and everything else?
-        trial_with_task_id = dict_to_trial(params, self.algorithm.space)
-        for attribute in trial.__slots__:
-            value = getattr(trial, attribute)
-            if "params" not in attribute:
-                setattr(trial_with_task_id, attribute, value)
-        return trial_with_task_id
-
-    @singledispatchmethod
-    def _remove_task_id(self, point: Any) -> Any:
-        raise NotImplementedError(point)
-
-    @_remove_task_id.register(tuple)
-    def _remove_task_id_from_point(self, point: Tuple) -> Tuple:
-        trial = tuple_to_trial(point, self.algorithm.space)
-        trial_without_task_id = self._remove_task_id(trial)
-        point_without_task_id = trial_to_tuple(trial_without_task_id, self.space)
-        return point_without_task_id
-
-    @_remove_task_id.register(Trial)
-    def _remove_task_id_from_trial(self, trial: Trial) -> Trial:
-        params = trial.params.copy()
-        _ = params.pop("task_id")
-        trial_without_task_id = dict_to_trial(params, self.space)
-        return trial_without_task_id
-
     def warm_start(self, warm_start_trials: Dict[Mapping, List[Trial]]) -> None:
         """ Use the given trials to warm-start the algorithm.
 
@@ -354,15 +304,16 @@ class MultiTaskAlgo(AlgoWrapper):
 
         with self.algorithm.warm_start_mode():
             new_points_with_task_ids = [
-                self._add_task_id(point, task_id) for point, task_id in zip(new_points, new_task_ids)
+                self._add_task_id(point, task_id)
+                for point, task_id in zip(new_points, new_task_ids)
             ]
             new_trials_with_task_ids = [
-                self._add_task_id(trial, task_id) for trial, task_id in zip(new_trials, new_task_ids)
+                self._add_task_id(trial, task_id)
+                for trial, task_id in zip(new_trials, new_task_ids)
             ]
-
             # for new_trial, new_trial_with_task_id in zip(new_trials, new_trials_with_task_ids):
             #     assert False, (new_trial, new_trial_with_task_id)
-            
+
             log.info(f"About to observe {len(new_points)} new warm-starting points!")
             # TODO: Not quite sure I understand what the 'results' is supposed to be!
             # results = [trial.objective for trial in new_trials]
@@ -398,10 +349,6 @@ class MultiTaskAlgo(AlgoWrapper):
             self.transformed_space.transform(point), measurements
         )
 
-    @staticmethod
-    def is_from_other_task(trial: Trial) -> bool:
-        return trial.params["task_id"] != 0
-
     @property
     def is_done(self):
         """Return True, if an algorithm holds that there can be no further improvement.
@@ -410,18 +357,16 @@ class MultiTaskAlgo(AlgoWrapper):
         """
         if not self._enabled:
             return self.algorithm.is_done
+        # NOTE: DEBUGGING:
         total_trials = len(self.unwrapped._trials_info)
-        trials_from_other_tasks = len(
-            list(filter(self.is_from_other_task, self.unwrapped._trials_info.values()))
+        trials_from_target_task = sum(
+            self.get_task_id(point) == 0
+            for point, result in self.unwrapped._trials_info.values()
         )
-        trials_from_target_task = total_trials - trials_from_other_tasks
+        trials_from_other_tasks = total_trials - trials_from_target_task
         log.info(
             f"Trials from target task: {trials_from_target_task}, trials from other tasks: {trials_from_other_tasks}"
         )
-        if total_trials != 0:
-            assert False
-        if trials_from_other_tasks != 0:
-            assert False
 
         if trials_from_target_task >= self.space.cardinality:
             return True
@@ -430,3 +375,74 @@ class MultiTaskAlgo(AlgoWrapper):
             return True
 
         return False
+
+    @singledispatchmethod
+    def _add_task_id(self, point: Any, task_id: int) -> Any:
+        raise NotImplementedError(point)
+
+    @_add_task_id.register(np.ndarray)
+    @_add_task_id.register(tuple)
+    def _add_task_id_to_point(self, point: Any, task_id: int) -> Tuple[int, Any]:
+        # NOTE: Need to do a bit of gymnastics here because the points are expected
+        # to be tuples. In order to add the task id at the right index, we convert
+        # them like so:
+        # Tuple -> Trial -> dict (.params) -> dict (add task_id) -> Trial -> Tuple.
+        trial = tuple_to_trial(point, self.space)
+        trial_with_task_id = self._add_task_id(trial, task_id)
+        point_with_task_id = trial_to_tuple(trial_with_task_id, self.algorithm.space)
+        return point_with_task_id
+
+    @_add_task_id.register
+    def _add_task_id_to_trial(self, trial: Trial, task_id: int) -> Trial:
+        # NOTE: Need to do a bit of gymnastics here because the points are expected
+        # to be tuples. In order to add the task id at the right index, we convert
+        # them like so:
+        # Trial -> dict (.params) -> dict (add task_id) -> Trial.
+        params = trial.params.copy()
+        params["task_id"] = task_id
+        # TODO: Should we copy over the status and everything else?
+        trial_with_task_id = dict_to_trial(params, self.algorithm.space)
+        for attribute in trial.__slots__:
+            value = getattr(trial, attribute)
+            if "params" not in attribute:
+                setattr(trial_with_task_id, attribute, value)
+        return trial_with_task_id
+
+    @singledispatchmethod
+    def _remove_task_id(self, point: Any) -> Any:
+        raise NotImplementedError(point)
+
+    @_remove_task_id.register(tuple)
+    def _remove_task_id_from_point(self, point: Tuple) -> Tuple:
+        trial = tuple_to_trial(point, self.algorithm.space)
+        trial_without_task_id = self._remove_task_id(trial)
+        point_without_task_id = trial_to_tuple(trial_without_task_id, self.space)
+        return point_without_task_id
+
+    @_remove_task_id.register(Trial)
+    def _remove_task_id_from_trial(self, trial: Trial) -> Trial:
+        params = trial.params.copy()
+        _ = params.pop("task_id")
+        trial_without_task_id = dict_to_trial(params, self.space)
+        return trial_without_task_id
+
+    @singledispatchmethod
+    def get_task_id(self, point: Any) -> int:
+        raise NotImplementedError(point)
+
+    @get_task_id.register
+    def get_task_id_from_trial(self, trial: Trial) -> int:
+        return trial.params["task_id"] != 0
+
+    @get_task_id.register(tuple)
+    @get_task_id.register(np.ndarray)
+    def get_task_id_from_point(self, point: Union[tuple, np.ndarray]) -> int:
+        # TODO: Bug in tuple_to_trial? I'm getting point = (0, 1.23, 4.56) instead of
+        # (0, [1.23, 4.56])
+        if isinstance(point, tuple):
+            if len(point) != len(self.algorithm.space):
+                task_id, *point_without_task_id = point
+                assert isinstance(task_id, int)
+                return task_id
+        trial = tuple_to_trial(point, self.algorithm.space)
+        return self.get_task_id(trial)

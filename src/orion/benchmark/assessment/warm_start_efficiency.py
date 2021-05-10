@@ -216,11 +216,7 @@ def warm_start_comparison_figure(
         figures.append(fig)
 
     # Group by experiment, taking the minimum across all trials
-    grouped_df: pd.DataFrame = df.groupby(
-        level=["warm_start_type", "experiment_id"]
-    )
-    reduction = "mean"
-
+    grouped_df: pd.DataFrame = df.groupby(level=["warm_start_type", "experiment_id"])
     reduction_dict: Dict[str, Callable[[DataFrameGroupBy], pd.DataFrame]] = {
         "mean": lambda gdf: gdf.mean(),
         "min": lambda gdf: gdf.min(),
@@ -228,10 +224,13 @@ def warm_start_comparison_figure(
     for reduction, reduction_fn in reduction_dict.items():
         plot_df = reduction_fn(grouped_df)
         plot_df.rename(
-            columns={k: f"{k}_{reduction}" for k in y_columns},
-            inplace=True,
+            columns={k: f"{k}_{reduction}" for k in y_columns}, inplace=True,
         )
         for y_column in y_columns:
+
+            if reduction == "min" and y_column == "best":
+                continue  # Skip this combination, since it is redundant.
+
             fig = px.box(
                 plot_df,
                 x=[v[0] for v in plot_df.index],

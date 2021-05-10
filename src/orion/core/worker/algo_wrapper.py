@@ -98,4 +98,4 @@ class AlgoWrapper(BaseAlgorithm, ABC):
         BaseAlgorithm
             The unwrapped `BaseAlgorithm` instance.
         """
-        return self.algorithm
+        return self.algorithm.unwrapped
