@@ -343,34 +343,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         from being adversely affected by the default warm-starting behaviour, which is
         to observe points from other experiments with an additional `task_id` dimension.
         """
-        trials_info_copy = self.unwrapped._trials_info.copy()
-        # state_before = self.state_dict()
-        log.info(
-            f"Entering warm-start mode, with {len(self.unwrapped._warm_start_trials)} "
-            f"warm starting trials and {len(self.unwrapped._trials_info)} 'normal' "
-            f"trials."
-        )
-        log.info(f"self.is_done? {self.is_done}")
-
         yield
-
-        # Store any new entries into the 'warm start' dict.
-        self.unwrapped._warm_start_trials.update(
-            {
-                k: v
-                for k, v in self.unwrapped._trials_info.items()
-                if k not in trials_info_copy
-            }
-        )
-        # Restore the 'trials_info' to its original state.
-        self.unwrapped._trials_info = trials_info_copy
-        log.info(
-            f"Exiting warm-start mode, with {len(self.unwrapped._warm_start_trials)} "
-            f"warm starting trials and {len(self.unwrapped._trials_info)} 'normal' "
-            f"trials."
-        )
-        # TODO: Do we also need to reset some counter for the number of used trials?
-        log.info(f"self.is_done? {self.is_done}")
 
     @property
     def is_done(self):

@@ -18,7 +18,13 @@ from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.core.worker.trial import Trial
 from orion.storage.base import Storage
 
+try:
+    from functools import singledispatchmethod
+except ImportError:
+    from singledispatchmethod import singledispatchmethod
+
 from .algo_wrapper import AlgoWrapper, Point
+
 
 log = getLogger(__file__)
 
@@ -64,7 +70,7 @@ def is_warm_starteable(
     Parameters
     ----------
     algo_or_config : Union[BaseAlgorithm, Type[BaseAlgorithm], Dict[str, Any]]
-        Algorithm instance, type of algorithm, or algorithm configuration dictionary. 
+        Algorithm instance, type of algorithm, or algorithm configuration dictionary.
 
     Returns
     -------
@@ -199,25 +205,55 @@ class MultiTaskAlgo(AlgoWrapper):
             ]
         return self.algorithm.observe(points, results)
 
-    def _add_task_id(self, point: Tuple, task_id: int) -> Tuple:
+    @singledispatchmethod
+    def _add_task_id(self, point: Any, task_id: int) -> Any:
+        raise NotImplementedError(point)
+
+    @_add_task_id.register(np.ndarray)
+    @_add_task_id.register(tuple)
+    def _add_task_id_to_point(self, point: Any, task_id: int) -> Tuple[int, Any]:
         # NOTE: Need to do a bit of gymnastics here because the points are expected
         # to be tuples. In order to add the task id at the right index, we convert
         # them like so:
         # Tuple -> Trial -> dict (.params) -> dict (add task_id) -> Trial -> Tuple.
         trial = tuple_to_trial(point, self.space)
-        params = trial.params.copy()
-        params["task_id"] = task_id
-        trial_with_task_id = dict_to_trial(params, self.algorithm.space)
+        trial_with_task_id = self._add_task_id(trial, task_id)
         point_with_task_id = trial_to_tuple(trial_with_task_id, self.algorithm.space)
         return point_with_task_id
 
-    def _remove_task_id(self, point: Tuple) -> Tuple:
+    @_add_task_id.register
+    def _add_task_id_to_trial(self, trial: Trial, task_id: int) -> Trial:
+        # NOTE: Need to do a bit of gymnastics here because the points are expected
+        # to be tuples. In order to add the task id at the right index, we convert
+        # them like so:
+        # Trial -> dict (.params) -> dict (add task_id) -> Trial.
+        params = trial.params.copy()
+        params["task_id"] = task_id
+        # TODO: Should we copy over the status and everything else?
+        trial_with_task_id = dict_to_trial(params, self.algorithm.space)
+        for attribute in trial.__slots__:
+            value = getattr(trial, attribute)
+            if "params" not in attribute:
+                setattr(trial_with_task_id, attribute, value)
+        return trial_with_task_id
+
+    @singledispatchmethod
+    def _remove_task_id(self, point: Any) -> Any:
+        raise NotImplementedError(point)
+
+    @_remove_task_id.register(tuple)
+    def _remove_task_id_from_point(self, point: Tuple) -> Tuple:
         trial = tuple_to_trial(point, self.algorithm.space)
+        trial_without_task_id = self._remove_task_id(trial)
+        point_without_task_id = trial_to_tuple(trial_without_task_id, self.space)
+        return point_without_task_id
+
+    @_remove_task_id.register(Trial)
+    def _remove_task_id_from_trial(self, trial: Trial) -> Trial:
         params = trial.params.copy()
         _ = params.pop("task_id")
         trial_without_task_id = dict_to_trial(params, self.space)
-        point_without_task_id = trial_to_tuple(trial_without_task_id, self.space)
-        return point_without_task_id
+        return trial_without_task_id
 
     def warm_start(self, warm_start_trials: Dict[Mapping, List[Trial]]) -> None:
         """ Use the given trials to warm-start the algorithm.
@@ -249,6 +285,7 @@ class MultiTaskAlgo(AlgoWrapper):
 
         compatible_trials: List[Trial] = []
         compatible_points: List[Tuple] = []
+        task_ids: list[int] = []
 
         for i, (experiment_info, trials) in enumerate(warm_start_trials.items()):
             # exp_space = experiment_info.space
@@ -274,9 +311,14 @@ class MultiTaskAlgo(AlgoWrapper):
                     # TODO: This assumes that the trials from the knowledge base don't
                     # include those of the current experiment.
                     task_id = i + 1
-                    point = self._add_task_id(point, task_id)
+
+                    # point = self._add_task_id(point, task_id)
+                    # trial = self._add_task_id(trial, task_id)
+
                     compatible_trials.append(trial)
                     compatible_points.append(point)
+                    task_ids.append(task_id)
+
                 except ValueError as e:
                     log.error(f"Can't reuse trial {trial}: {e}")
                     n_incompatible_trials += 1
@@ -294,24 +336,41 @@ class MultiTaskAlgo(AlgoWrapper):
             return
 
         # Only keep trials that are new.
-        new_trials_and_points = list(
+        # TODO: Check that the task dim doesnt interfere with this:
+        new_trials, new_points, new_task_ids = list(
             zip(
                 *[
-                    (trial, point)
-                    for trial, point in zip(compatible_trials, compatible_points)
+                    (trial, point, task_id)
+                    for trial, point, task_id in zip(
+                        compatible_trials, compatible_points, task_ids
+                    )
                     if infer_trial_id(point) not in self.unwrapped._warm_start_trials
                 ]
             )
         )
-        if not new_trials_and_points:
+        if not new_trials:
             log.info("No new new warm-starting trials detected.")
             return
 
         with self.algorithm.warm_start_mode():
-            new_trials, new_points = new_trials_and_points
-            results = [trial.objective for trial in new_trials]
+            new_points_with_task_ids = [
+                self._add_task_id(point, task_id) for point, task_id in zip(new_points, new_task_ids)
+            ]
+            new_trials_with_task_ids = [
+                self._add_task_id(trial, task_id) for trial, task_id in zip(new_trials, new_task_ids)
+            ]
+
+            # for new_trial, new_trial_with_task_id in zip(new_trials, new_trials_with_task_ids):
+            #     assert False, (new_trial, new_trial_with_task_id)
+            
             log.info(f"About to observe {len(new_points)} new warm-starting points!")
-            self.algorithm.observe(new_points, results)
+            # TODO: Not quite sure I understand what the 'results' is supposed to be!
+            # results = [trial.objective for trial in new_trials]
+            results = [
+                {"objective": trial.objective.value, "constraint": [], "gradient": None}
+                for trial in new_trials_with_task_ids
+            ]
+            self.algorithm.observe(new_points_with_task_ids, results)
 
     def score(self, point: Union[Tuple, np.ndarray]) -> float:
         """Allow algorithm to evaluate `point` based on a prediction about
@@ -349,31 +408,25 @@ class MultiTaskAlgo(AlgoWrapper):
         By default, the cardinality of the specified search space will be used to check
         if all possible sets of parameters has been tried.
         """
-        return self.algorithm.is_done
+        if not self._enabled:
+            return self.algorithm.is_done
+        total_trials = len(self.unwrapped._trials_info)
+        trials_from_other_tasks = len(
+            list(filter(self.is_from_other_task, self.unwrapped._trials_info.values()))
+        )
+        trials_from_target_task = total_trials - trials_from_other_tasks
+        log.info(
+            f"Trials from target task: {trials_from_target_task}, trials from other tasks: {trials_from_other_tasks}"
+        )
+        if total_trials != 0:
+            assert False
+        if trials_from_other_tasks != 0:
+            assert False
 
-        # TODO:
-        trials_info_backup = self.unwrapped._trials_info.copy()
-        # self.unwrapped._trials_info
-        # TODO: Remove trials from other tasks from _trials_info temporarily
-        self.unwrapped._trials_info = {
-            k: trial
-            for k, trial in self.unwrapped._trials_info.items()
-            if not self.is_from_other_task(trial)
-        }
-        if len(trials_info_backup) != len(self.unwrapped._trials_info):
-            assert (
-                False
-            ), f"Yay! {len(trials_info_backup)} != {len(self.unwrapped._trials_info)}"
+        if trials_from_target_task >= self.space.cardinality:
+            return True
 
-        result = self.algorithm.is_done
+        if trials_from_target_task >= getattr(self, "max_trials", float("inf")):
+            return True
 
-        self.unwrapped._trials_info = trials_info_backup
-        return result
-
-        # if len({k for k, v in self._trials_info.items() if from_this_task(v)) >= self.space.cardinality:
-        #     return True
-
-        # if len(self._trials_info) >= getattr(self, "max_trials", float("inf")):
-        #     return True
-
-        # return False
+        return False
