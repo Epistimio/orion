@@ -475,7 +475,7 @@ class TrialCM:
                 self._cm_experiment.release(self._cm_trial, "interrupted")
             elif exc_type is not None:
                 self._cm_experiment.release(self._cm_trial, "broken")
-            else:
+            elif self._cm_trial.status == "reserved":
                 self._cm_experiment.release(self._cm_trial)
         except RuntimeError as e:
             log.warning(e)

@@ -57,7 +57,7 @@ def reserve_trial(experiment, producer, _depth=1):
     log.debug("Trying to reserve a new trial to evaluate.")
     trial = experiment.reserve_trial()
 
-    if trial is None and not experiment.is_done:
+    if trial is None and not producer.is_done:
 
         if _depth > 10:
             raise WaitingForTrials(
@@ -561,7 +561,7 @@ class ExperimentClient:
 
         # This is to handle cases where experiment was completed during call to `reserve_trial`
         if trial is None:
-            raise CompletedExperiment("Experiment is done, cannot sample more trials.")
+            raise CompletedExperiment("Producer is done, cannot sample more trials.")
 
         self._maintain_reservation(trial)
         return TrialCM(self, trial)

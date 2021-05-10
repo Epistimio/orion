@@ -248,17 +248,17 @@ def test_demo_inexecutable_script(storage, monkeypatch, capsys):
     assert "User script is not executable" in captured
 
 
-def test_demo_two_workers(storage, monkeypatch):
+def test_demo_four_workers(storage, monkeypatch):
     """Test a simple usage scenario."""
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     processes = []
-    for _ in range(2):
+    for _ in range(4):
         process = subprocess.Popen(
             [
                 "orion",
                 "hunt",
                 "-n",
-                "two_workers_demo",
+                "four_workers_demo",
                 "--config",
                 "./orion_config_random.yaml",
                 "--max-trials",
@@ -273,12 +273,12 @@ def test_demo_two_workers(storage, monkeypatch):
         rcode = process.wait()
         assert rcode == 0
 
-    exp = list(storage.fetch_experiments({"name": "two_workers_demo"}))
+    exp = list(storage.fetch_experiments({"name": "four_workers_demo"}))
     assert len(exp) == 1
     exp = exp[0]
     assert "_id" in exp
     exp_id = exp["_id"]
-    assert exp["name"] == "two_workers_demo"
+    assert exp["name"] == "four_workers_demo"
     assert exp["pool_size"] == 2
     assert exp["max_trials"] == 20
     assert exp["max_broken"] == 5
@@ -293,7 +293,7 @@ def test_demo_two_workers(storage, monkeypatch):
     status = defaultdict(int)
     for trial in trials:
         status[trial.status] += 1
-    assert 20 <= status["completed"] <= 21
+    assert status["completed"] == 20
     assert status["new"] < 5
     params = trials[-1].params
     assert len(params) == 1
