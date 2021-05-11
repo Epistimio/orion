@@ -4,4 +4,6 @@ pool_size: 2
 max_trials: 20
 max_broken: 5
 
-algorithms: random
+algorithms:
+    random:
+        seed: 2

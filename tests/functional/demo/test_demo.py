@@ -44,7 +44,7 @@ def test_demo_with_default_algo_cli_config_only(storage, monkeypatch):
     assert exp["pool_size"] == 1
     assert exp["max_trials"] == 10
     assert exp["max_broken"] == 3
-    assert exp["algorithms"] == {"random": {"seed": None}}
+    assert exp["algorithms"] == {"random": {"seed": 2}}
     assert "user" in exp["metadata"]
     assert "datetime" in exp["metadata"]
     assert "orion_version" in exp["metadata"]
@@ -282,7 +282,7 @@ def test_demo_four_workers(storage, monkeypatch):
     assert exp["pool_size"] == 2
     assert exp["max_trials"] == 20
     assert exp["max_broken"] == 5
-    assert exp["algorithms"] == {"random": {"seed": None}}
+    assert exp["algorithms"] == {"random": {"seed": 2}}
     assert "user" in exp["metadata"]
     assert "datetime" in exp["metadata"]
     assert "orion_version" in exp["metadata"]
