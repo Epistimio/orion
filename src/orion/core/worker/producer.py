@@ -83,6 +83,7 @@ class Producer(object):
 
     @property
     def is_done(self):
+        """Whether experiment or naive algorithm is done"""
         return self.experiment.is_done or (
             self.naive_algorithm is not None and self.naive_algorithm.is_done
         )
