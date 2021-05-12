@@ -20,6 +20,7 @@ packages = [  # Packages must be sorted alphabetically to ease maintenance and m
     "orion.benchmark",
     "orion.client",
     "orion.core",
+    "orion.executor",
     "orion.plotting",
     "orion.serving",
     "orion.storage",
@@ -57,6 +58,10 @@ setup_args = dict(
             "track = orion.storage.track:Track",
             "legacy = orion.storage.legacy:Legacy",
         ],
+        "Executor": [
+            "joblib = orion.executor.joblib_backend:Joblib",
+            "dask = orion.executor.dask_backend:Dask",
+        ],
     },
     install_requires=[
         "PyYAML",
@@ -80,7 +85,7 @@ setup_args = dict(
     ],
     tests_require=tests_require,
     setup_requires=["setuptools", "appdirs", "pytest-runner"],
-    extras_require=dict(test=tests_require),
+    extras_require=dict(test=tests_require, dask=["dask"]),
     # "Zipped eggs don't play nicely with namespace packaging"
     # from https://github.com/pypa/sample-namespace-packages
     zip_safe=False,
