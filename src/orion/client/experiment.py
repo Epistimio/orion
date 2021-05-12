@@ -6,7 +6,6 @@ Experiment wrapper client
 
 Wraps the core Experiment object to provide further functionalities for the user
 """
-import atexit
 import functools
 import inspect
 import logging
@@ -33,23 +32,6 @@ from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
 
 log = logging.getLogger(__name__)
-
-
-def set_broken_trials(client):
-    """Release all trials with status broken if the process exits without releasing them."""
-    if sys.exc_info()[0] is KeyboardInterrupt:
-        status = "interrupted"
-    else:
-        status = "broken"
-
-    for trial_id in list(client._pacemakers.keys()):  # pylint: disable=protected-access
-        trial = client.get_trial(uid=trial_id)
-        if trial is None:
-            log.warning(
-                "Trial {} was not found in storage, could not set status to `broken`."
-            )
-            continue
-        client.release(trial, status=status)
 
 
 def reserve_trial(experiment, producer, _depth=1):
@@ -98,12 +80,10 @@ class ExperimentClient:
         self._experiment = experiment
         self._producer = producer
         self._pacemakers = {}
-        self.set_broken_trials = functools.partial(set_broken_trials, client=self)
         if heartbeat is None:
             heartbeat = orion.core.config.worker.heartbeat
         self.heartbeat = heartbeat
         self.plot = PlotAccessor(self)
-        atexit.register(self.set_broken_trials)
 
     ###
     # Attributes
@@ -763,7 +743,7 @@ class ExperimentClient:
         return trials
 
     def close(self):
-        """Verify that no reserved trials are remaining and unregister atexit().
+        """Verify that no reserved trials are remaining.
 
         Experiment must be in executable ('x') mode.
 
@@ -781,8 +761,6 @@ class ExperimentClient:
                 "closing the client, using "
                 "client.release(trial).".format(self._pacemakers.keys())
             )
-
-        atexit.unregister(self.set_broken_trials)
 
     ###
     # Private

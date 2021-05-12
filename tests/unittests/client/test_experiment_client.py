@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.client.experiment`."""
-import atexit
 import copy
 import datetime
 import logging
@@ -470,30 +469,10 @@ class TestClose:
 
                 assert "There is still reserved trials" in str(exc.value)
 
-    def test_close_unregister_atexit(self, monkeypatch):
-        """Test close properly unregister the atexit function"""
-
-        def please_dont_call_me(client):
-            raise RuntimeError("Please don't call me!!!")
-
-        monkeypatch.setattr(
-            "orion.client.experiment.set_broken_trials", please_dont_call_me
-        )
-
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
-            # The registered function in atexit is called as expected
-            with pytest.raises(RuntimeError) as exc:
-                atexit._run_exitfuncs()
-
-            assert "Please don't call me!!!" == str(exc.value)
-
-            # Unregister the function
-            client.close()
-
 
 @pytest.mark.usefixtures("version_XYZ")
 class TestBroken:
-    """Test handling of broken trials with atexit()"""
+    """Test handling of broken trials"""
 
     def test_broken_trial(self):
         """Test that broken trials are detected"""
@@ -505,76 +484,6 @@ class TestBroken:
 
             assert client._pacemakers == {}
             assert client.get_trial(trial).status == "broken"
-
-    def test_atexit_with_multiple_clients(self):
-        """Test that each client has a separate atexit function"""
-        config1 = copy.deepcopy(config)
-        config2 = copy.deepcopy(config)
-        config2["name"] = "cloned"
-        with create_experiment(exp_config=config1, trial_config=base_trial) as (
-            _,
-            _,
-            client1,
-        ):
-            with create_experiment(exp_config=config2, trial_config=base_trial) as (
-                _,
-                _,
-                client2,
-            ):
-                with pytest.raises(RuntimeError):
-                    with client1.suggest() as trial1, client2.suggest() as trial2:
-                        assert trial1.status == "reserved"
-                        assert trial2.status == "reserved"
-                        raise RuntimeError("Dummy failure!")
-
-                assert client1._pacemakers == {}
-                assert client2._pacemakers == {}
-                assert client1.get_trial(trial1).status == "broken"
-                assert client2.get_trial(trial2).status == "broken"
-
-    def test_atexit_with_multiple_clients_unregister(self, monkeypatch):
-        """Test that each client has a separate atexit function that can be unregistered"""
-        config1 = copy.deepcopy(config)
-        config2 = copy.deepcopy(config)
-        config2["name"] = "cloned"
-        with create_experiment(exp_config=config1, trial_config=base_trial) as (
-            _,
-            _,
-            client1,
-        ):
-
-            def please_dont_call_me(client):
-                raise RuntimeError("Please don't call me!!!")
-
-            monkeypatch.setattr(
-                "orion.client.experiment.set_broken_trials", please_dont_call_me
-            )
-
-            with create_experiment(exp_config=config2, trial_config=base_trial) as (
-                _,
-                _,
-                client2,
-            ):
-                trial1 = client1.suggest()
-                trial2 = client2.suggest()
-
-                # The registered function in atexit is called as expected
-                with pytest.raises(RuntimeError) as exc:
-                    atexit._run_exitfuncs()
-
-                assert "Please don't call me!!!" == str(exc.value)
-
-                # Unregister the function
-                client2.release(trial2)
-                client2.close()
-
-                # It should not be called
-                atexit._run_exitfuncs()
-
-                assert client1._pacemakers == {}
-                assert client2._pacemakers == {}
-                assert client1.get_trial(trial1).status == "broken"
-                assert client2.get_trial(trial2).status == "interrupted"
 
     def test_interrupted_trial(self):
         """Test that interrupted trials are not set to broken"""
