@@ -6,10 +6,8 @@ Experiment wrapper client
 
 Wraps the core Experiment object to provide further functionalities for the user
 """
-import functools
 import inspect
 import logging
-import sys
 import traceback
 
 from joblib import Parallel, delayed
