@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.client.experiment`."""
-import atexit
 import copy
 import datetime
 import logging
@@ -12,7 +11,11 @@ import pytest
 
 import orion.core
 from orion.core.io.database import DuplicateKeyError
-from orion.core.utils.exceptions import BrokenExperiment, SampleTimeout
+from orion.core.utils.exceptions import (
+    BrokenExperiment,
+    CompletedExperiment,
+    SampleTimeout,
+)
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
 from orion.testing import create_experiment, mock_space_iterate
@@ -466,30 +469,10 @@ class TestClose:
 
                 assert "There is still reserved trials" in str(exc.value)
 
-    def test_close_unregister_atexit(self, monkeypatch):
-        """Test close properly unregister the atexit function"""
-
-        def please_dont_call_me(client):
-            raise RuntimeError("Please don't call me!!!")
-
-        monkeypatch.setattr(
-            "orion.client.experiment.set_broken_trials", please_dont_call_me
-        )
-
-        with create_experiment(config, base_trial) as (cfg, experiment, client):
-            # The registered function in atexit is called as expected
-            with pytest.raises(RuntimeError) as exc:
-                atexit._run_exitfuncs()
-
-            assert "Please don't call me!!!" == str(exc.value)
-
-            # Unregister the function
-            client.close()
-
 
 @pytest.mark.usefixtures("version_XYZ")
 class TestBroken:
-    """Test handling of broken trials with atexit()"""
+    """Test handling of broken trials"""
 
     def test_broken_trial(self):
         """Test that broken trials are detected"""
@@ -501,76 +484,6 @@ class TestBroken:
 
             assert client._pacemakers == {}
             assert client.get_trial(trial).status == "broken"
-
-    def test_atexit_with_multiple_clients(self):
-        """Test that each client has a separate atexit function"""
-        config1 = copy.deepcopy(config)
-        config2 = copy.deepcopy(config)
-        config2["name"] = "cloned"
-        with create_experiment(exp_config=config1, trial_config=base_trial) as (
-            _,
-            _,
-            client1,
-        ):
-            with create_experiment(exp_config=config2, trial_config=base_trial) as (
-                _,
-                _,
-                client2,
-            ):
-                with pytest.raises(RuntimeError):
-                    with client1.suggest() as trial1, client2.suggest() as trial2:
-                        assert trial1.status == "reserved"
-                        assert trial2.status == "reserved"
-                        raise RuntimeError("Dummy failure!")
-
-                assert client1._pacemakers == {}
-                assert client2._pacemakers == {}
-                assert client1.get_trial(trial1).status == "broken"
-                assert client2.get_trial(trial2).status == "broken"
-
-    def test_atexit_with_multiple_clients_unregister(self, monkeypatch):
-        """Test that each client has a separate atexit function that can be unregistered"""
-        config1 = copy.deepcopy(config)
-        config2 = copy.deepcopy(config)
-        config2["name"] = "cloned"
-        with create_experiment(exp_config=config1, trial_config=base_trial) as (
-            _,
-            _,
-            client1,
-        ):
-
-            def please_dont_call_me(client):
-                raise RuntimeError("Please don't call me!!!")
-
-            monkeypatch.setattr(
-                "orion.client.experiment.set_broken_trials", please_dont_call_me
-            )
-
-            with create_experiment(exp_config=config2, trial_config=base_trial) as (
-                _,
-                _,
-                client2,
-            ):
-                trial1 = client1.suggest()
-                trial2 = client2.suggest()
-
-                # The registered function in atexit is called as expected
-                with pytest.raises(RuntimeError) as exc:
-                    atexit._run_exitfuncs()
-
-                assert "Please don't call me!!!" == str(exc.value)
-
-                # Unregister the function
-                client2.release(trial2)
-                client2.close()
-
-                # It should not be called
-                atexit._run_exitfuncs()
-
-                assert client1._pacemakers == {}
-                assert client2._pacemakers == {}
-                assert client1.get_trial(trial1).status == "broken"
-                assert client2.get_trial(trial2).status == "interrupted"
 
     def test_interrupted_trial(self):
         """Test that interrupted trials are not set to broken"""
@@ -682,7 +595,7 @@ class TestSuggest:
             """Never suggest a new trial"""
             return None
 
-        monkeypatch.setattr(orion.core.config.worker, "max_idle_time", 0)
+        monkeypatch.setattr(orion.core.config.worker, "max_idle_time", -1)
 
         with create_experiment(config, base_trial, statuses=["completed"]) as (
             cfg,
@@ -708,7 +621,22 @@ class TestSuggest:
             assert len(experiment.fetch_trials()) == 10
             assert client.is_done
 
-            assert client.suggest() is None
+            with pytest.raises(CompletedExperiment):
+                client.suggest()
+
+    def test_suggest_is_done_context_manager(self):
+        """Verify that context manager handles None"""
+        with create_experiment(config, base_trial, statuses=["completed"] * 10) as (
+            cfg,
+            experiment,
+            client,
+        ):
+
+            assert len(experiment.fetch_trials()) == 10
+            assert client.is_done
+
+            with pytest.raises(CompletedExperiment):
+                client.suggest()
 
     def test_suggest_is_broken(self):
         """Verify that broken experiments cannot suggest new trials"""
@@ -747,7 +675,8 @@ class TestSuggest:
             assert len(experiment.fetch_trials()) == 5
             assert not client.is_done
 
-            assert client.suggest() is None
+            with pytest.raises(CompletedExperiment):
+                client.suggest()
 
             assert len(experiment.fetch_trials()) == 5
             assert client.is_done
@@ -970,6 +899,235 @@ class TestWorkon:
             assert len(params)
             assert "x" in params["a"]
             assert "y" in params["b"]
+
+    def test_workon_max_trials(self):
+        """Verify that workon stop when reaching max_trials"""
+
+        def foo(x):
+            return [dict(name="result", type="objective", value=x * 2)]
+
+        with create_experiment(config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            MAX_TRIALS = 5
+            assert client.max_trials > MAX_TRIALS
+            client.workon(foo, max_trials=MAX_TRIALS)
+            assert len(experiment.fetch_trials()) == MAX_TRIALS
+
+    def test_workon_max_trials_resumed(self):
+        """Verify that workon stop when reaching max_trials after resuming"""
+
+        def foo(x):
+            return [dict(name="result", type="objective", value=x * 2)]
+
+        with create_experiment(
+            config, base_trial, statuses=["completed", "completed"]
+        ) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            MAX_TRIALS = 5
+            assert client.max_trials > MAX_TRIALS
+            assert len(experiment.fetch_trials()) == 2
+            client.workon(foo, max_trials=MAX_TRIALS)
+            assert len(experiment.fetch_trials()) == MAX_TRIALS
+
+    def test_workon_max_trials_per_worker(self):
+        """Verify that workon stop when reaching max_trials_per_worker"""
+
+        def foo(x):
+            return [dict(name="result", type="objective", value=x * 2)]
+
+        with create_experiment(config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            MAX_TRIALS = 5
+            assert client.max_trials > MAX_TRIALS
+            client.workon(
+                foo, max_trials=MAX_TRIALS, max_trials_per_worker=MAX_TRIALS - 1
+            )
+            assert len(experiment.fetch_trials()) == MAX_TRIALS - 1
+
+    def test_workon_max_trials_per_worker_resumed(self):
+        """Verify that workon stop when reaching max_trials_per_worker after resuming"""
+
+        def foo(x):
+            return [dict(name="result", type="objective", value=x * 2)]
+
+        n_completed = 2
+        statuses = ["completed"] * n_completed + ["new"]
+        n_trials = len(statuses)
+
+        with create_experiment(config, base_trial, statuses=statuses) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            MAX_TRIALS = 9
+            assert client.max_trials > MAX_TRIALS
+            assert len(experiment.fetch_trials()) == n_trials
+            client.workon(foo, max_trials=MAX_TRIALS, max_trials_per_worker=2)
+            assert len(experiment.fetch_trials()) == 2 + n_completed
+            client.workon(foo, max_trials=MAX_TRIALS, max_trials_per_worker=3)
+            assert len(experiment.fetch_trials()) == 3 + 2 + n_completed
+
+    def test_workon_exp_max_broken_before_worker_max_broken(self):
+        """Verify that workon stop when reaching exp.max_broken"""
+
+        def foo(x):
+            raise RuntimeError()
+
+        MAX_TRIALS = 5
+        MAX_BROKEN = 20
+        test_config = copy.deepcopy(config)
+        test_config["max_broken"] = MAX_BROKEN // 2
+
+        with create_experiment(test_config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            with pytest.raises(BrokenExperiment):
+                client.workon(foo, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
+            n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
+            n_trials = len(experiment.fetch_trials())
+            assert n_broken_trials == MAX_BROKEN // 2
+            assert n_trials - n_broken_trials < MAX_TRIALS
+
+    def test_workon_max_broken_all_broken(self):
+        """Verify that workon stop when reaching worker's max_broken"""
+
+        def foo(x):
+            raise RuntimeError()
+
+        MAX_TRIALS = 5
+        MAX_BROKEN = 10
+
+        test_config = copy.deepcopy(config)
+        test_config["max_broken"] = MAX_BROKEN * 2
+
+        with create_experiment(test_config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            with pytest.raises(BrokenExperiment):
+                client.workon(foo, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
+            n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
+            n_trials = len(experiment.fetch_trials())
+            assert n_broken_trials == MAX_BROKEN
+            assert n_trials - n_broken_trials < MAX_TRIALS
+
+    def test_workon_max_trials_before_max_broken(self):
+        """Verify that workon stop when reaching max_trials before max_broken"""
+
+        with create_experiment(config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+
+            def foo(x):
+                if len(client.fetch_trials()) < 5:
+                    raise RuntimeError()
+
+                return [dict(name="result", type="objective", value=x * 2)]
+
+            MAX_TRIALS = 5
+            MAX_BROKEN = 10
+            assert client.max_trials > MAX_TRIALS
+            client.workon(foo, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
+            n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
+            n_trials = len(experiment.fetch_trials())
+            assert n_broken_trials < MAX_BROKEN
+            assert n_trials - n_broken_trials == MAX_TRIALS
+
+    def test_workon_trial_arg(self):
+        """Verify that workon pass trial when trial_arg is defined"""
+
+        def foo(x, my_trial_arg_name):
+            assert isinstance(my_trial_arg_name, Trial)
+            assert my_trial_arg_name.params["x"] == x
+            return [dict(name="result", type="objective", value=x * 2)]
+
+        with create_experiment(config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            client.workon(foo, max_trials=5, trial_arg="my_trial_arg_name")
+            assert len(experiment.fetch_trials()) == 5
+
+    def test_workon_on_error_ignore(self):
+        """Verify that workon on_error callback ignores some errors correctly"""
+
+        def on_error(client, trial, error, worker_broken_trials):
+            assert on_error.counter == worker_broken_trials
+            if isinstance(error, (IndexError, IOError, AttributeError)):
+                client.release(trial, "cancelled")
+                return False
+
+            on_error.counter += 1
+            return True
+
+        on_error.counter = 0
+
+        errors = [
+            IndexError,
+            ValueError,
+            IOError,
+            NotImplementedError,
+            AttributeError,
+            ImportError,
+        ]
+
+        def foo(x):
+            if errors:
+                raise errors.pop()()
+
+            return [dict(name="result", type="objective", value=x * 2)]
+
+        MAX_TRIALS = 5
+        MAX_BROKEN = len(errors) + 1
+
+        test_config = copy.deepcopy(config)
+        test_config["max_broken"] = MAX_BROKEN * 2
+
+        with create_experiment(test_config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+
+            client.workon(foo, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
+            n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
+            n_trials = len(experiment.fetch_trials())
+            assert n_broken_trials == MAX_BROKEN - 1
+            assert n_trials - n_broken_trials == MAX_TRIALS
+
+    def test_workon_on_error_raise(self):
+        """Verify that workon on_error callback can raise and stop iteration"""
+
+        def on_error(client, trial, error, worker_broken_trials):
+            raise error
+
+        def foo(x):
+            raise NotImplementedError("Do not ignore this!")
+
+        with create_experiment(config, base_trial, statuses=[]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+            with pytest.raises(NotImplementedError) as exc:
+                client.workon(foo, max_trials=5, max_broken=5, on_error=on_error)
+
+            assert exc.match("Do not ignore this!")
 
     def test_parallel_workers(self, monkeypatch):
         """Test parallel execution with joblib"""

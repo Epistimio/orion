@@ -81,6 +81,13 @@ class Producer(object):
                 )
             )
 
+    @property
+    def is_done(self):
+        """Whether experiment or naive algorithm is done"""
+        return self.experiment.is_done or (
+            self.naive_algorithm is not None and self.naive_algorithm.is_done
+        )
+
     def produce(self):
         """Create and register new trials."""
         sampled_points = 0
@@ -89,9 +96,7 @@ class Producer(object):
         self.failure_count = 0
         start = time.time()
 
-        while sampled_points < self.pool_size and not (
-            self.experiment.is_done or self.naive_algorithm.is_done
-        ):
+        while sampled_points < self.pool_size and not self.is_done:
             self._sample_guard(start)
 
             log.debug("### Algorithm suggests new points.")
