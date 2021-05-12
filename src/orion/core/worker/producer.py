@@ -96,7 +96,6 @@ class Producer(object):
         num = max(self.experiment.max_trials - num_pending, 1)
         return self.naive_algorithm.suggest(num)
 
-
     def produce(self):
         """Create and register new trials."""
         sampled_points = 0
