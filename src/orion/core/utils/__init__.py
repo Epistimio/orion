@@ -44,6 +44,42 @@ def get_all_types(parent_cls, cls_name):
     return types, typenames
 
 
+def _import_modules(cls):
+    cls.modules = []
+    base = import_module(cls.__base__.__module__)
+    try:
+        py_files = glob(os.path.abspath(os.path.join(base.__path__[0], "[A-Za-z]*.py")))
+        py_mods = map(
+            lambda x: "." + os.path.split(os.path.splitext(x)[0])[1], py_files
+        )
+        for py_mod in py_mods:
+            cls.modules.append(import_module(py_mod, package=cls.__base__.__module__))
+    except AttributeError:
+        # This means that base class and implementations reside in a module
+        # itself and not a subpackage.
+        pass
+
+    # Get types advertised through entry points!
+    for entry_point in pkg_resources.iter_entry_points(cls.__name__):
+        entry_point.load()
+        log.debug(
+            "Found a %s %s from distribution: %s=%s",
+            entry_point.name,
+            cls.__name__,
+            entry_point.dist.project_name,
+            entry_point.dist.version,
+        )
+
+
+def _set_typenames(cls):
+    # Get types visible from base module or package, but internal
+    types, typenames = get_all_types(cls.__base__, cls.__name__)
+    cls.types = list(set(cls.types) | set(types))
+    cls.typenames = list(set(cls.typenames) | set(typenames))
+
+    log.debug("Implementations found: %s", cls.typenames)
+
+
 class Factory(ABCMeta):
     """Instantiate appropriate wrapper for the infrastructure based on input
     argument, ``of_type``.
@@ -61,39 +97,13 @@ class Factory(ABCMeta):
     def __init__(cls, names, bases, dictionary):
         """Search in directory for attribute names subclassing `bases[0]`"""
         super(Factory, cls).__init__(names, bases, dictionary)
-
-        cls.modules = []
-        base = import_module(cls.__base__.__module__)
+        cls.types = []
+        cls.typenames = []
         try:
-            py_files = glob(
-                os.path.abspath(os.path.join(base.__path__[0], "[A-Za-z]*.py"))
-            )
-            py_mods = map(
-                lambda x: "." + os.path.split(os.path.splitext(x)[0])[1], py_files
-            )
-            for py_mod in py_mods:
-                cls.modules.append(
-                    import_module(py_mod, package=cls.__base__.__module__)
-                )
-        except AttributeError:
-            # This means that base class and implementations reside in a module
-            # itself and not a subpackage.
+            _import_modules(cls)
+        except ImportError:
             pass
-
-        # Get types advertised through entry points!
-        for entry_point in pkg_resources.iter_entry_points(cls.__name__):
-            entry_point.load()
-            log.debug(
-                "Found a %s %s from distribution: %s=%s",
-                entry_point.name,
-                cls.__name__,
-                entry_point.dist.project_name,
-                entry_point.dist.version,
-            )
-
-        # Get types visible from base module or package, but internal
-        cls.types, cls.typenames = get_all_types(cls.__base__, cls.__name__)
-        log.debug("Implementations found: %s", cls.typenames)
+        _set_typenames(cls)
 
     def __call__(cls, of_type, *args, **kwargs):
         """Create an object, instance of ``cls.__base__``, on first call.
@@ -114,8 +124,8 @@ class Factory(ABCMeta):
 
         :return: The object which was created on the first call.
         """
-        if of_type.lower() not in cls.typenames:
-            cls.types, cls.typenames = get_all_types(cls.__base__, cls.__name__)
+        _import_modules(cls)
+        _set_typenames(cls)
 
         for inherited_class in cls.types:
             if inherited_class.__name__.lower() == of_type.lower():

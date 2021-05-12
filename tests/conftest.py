@@ -186,11 +186,6 @@ class DumbAlgo(BaseAlgorithm):
         return self.done
 
 
-# Hack it into being discoverable
-OptimizationAlgorithm.types.append(DumbAlgo)
-OptimizationAlgorithm.typenames.append(DumbAlgo.__name__.lower())
-
-
 @pytest.fixture()
 def empty_config():
     """Return config purged from global definition"""
