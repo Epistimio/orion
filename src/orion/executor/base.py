@@ -2,8 +2,7 @@ from orion.core.utils import Factory
 
 
 class BaseExecutor:
-    def __init__(self, experiment, n_jobs, **kwargs):
-        self.experiment = experiment
+    def __init__(self, n_jobs, **kwargs):
         self.n_jobs = n_jobs
 
     def __getstate__(self):
@@ -19,14 +18,10 @@ class BaseExecutor:
         pass
 
     def __enter__(self):
-        if self.experiment is None:
-            raise RuntimeError("Executor is not assign to an experiment.")
-        self.past_executor = self.experiment.executor
-        self.experiment.executor = self
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.experiment.executor = self.past_executor
+        pass
 
 
 # pylint: disable=too-few-public-methods,abstract-method

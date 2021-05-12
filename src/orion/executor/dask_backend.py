@@ -15,8 +15,7 @@ except ImportError:
 
 
 class Dask(BaseExecutor):
-    def __init__(self, experiment=None, n_jobs=-1, client=None, **config):
-        self.experiment = experiment
+    def __init__(self, n_jobs=-1, client=None, **config):
 
         if not HAS_DASK:
             raise ImportError("Dask must be installed to use Dask executor.")
@@ -53,7 +52,6 @@ class Dask(BaseExecutor):
         return self.client.submit(function, *args, **kwargs, pure=False)
 
     def __enter__(self):
-        super(Dask, self).__enter__()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):

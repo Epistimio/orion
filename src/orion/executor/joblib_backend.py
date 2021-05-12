@@ -4,8 +4,8 @@ import joblib
 
 
 class Joblib(BaseExecutor):
-    def __init__(self, experiment=None, n_jobs=-1, backend="loky", **config):
-        super(Joblib, self).__init__(experiment, n_jobs)
+    def __init__(self, n_jobs=-1, backend="loky", **config):
+        super(Joblib, self).__init__(n_jobs)
         self.backend = backend
         self.config = config
 
@@ -36,12 +36,6 @@ class Joblib(BaseExecutor):
     def submit(self, function, *args, **kwargs):
         return joblib.delayed(function)(*args, **kwargs)
 
-    def __enter__(self):
-        # Wrap storage with dask parallel wrapper and set storage of experiment
-        super(Joblib, self).__enter__()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):  # Add arguments
-        # Set storage of experiment back to Oríon storage, get rid of dask wrapper
+    def __exit__(self, exc_type, exc_value, traceback):
         self.joblib_parallel.unregister()
         super(Joblib, self).__exit__(exc_type, exc_value, traceback)
