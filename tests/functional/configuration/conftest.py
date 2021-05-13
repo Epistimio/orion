@@ -23,8 +23,7 @@ for char in "ABCDE":
     algo_class = type(f"A{char}", (BaseAlgorithm,), {"suggest": stub, "observe": stub})
 
     # Hack it into being discoverable
-    OptimizationAlgorithm.types.append(algo_class)
-    OptimizationAlgorithm.typenames.append(algo_class.__name__.lower())
+    OptimizationAlgorithm.types[algo_class.__name__.lower()] = algo_class
 
 
 for char in "ABCDE":
@@ -35,5 +34,4 @@ for char in "ABCDE":
     strategy_class.configuration = property(configuration)
 
     # Hack it into being discoverable
-    Strategy.types.append(strategy_class)
-    Strategy.typenames.append(strategy_class.__name__.lower())
+    Strategy.types[strategy_class.__name__.lower()] = strategy_class
