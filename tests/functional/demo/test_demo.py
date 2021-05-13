@@ -347,7 +347,7 @@ def test_workon():
         assert "user_script" in exp["metadata"]
         assert exp["metadata"]["user_args"] == config["user_args"]
 
-        trials = list(storage.fetch_trials(experiment))
+        trials = experiment.fetch_trials_by_status("completed")
         assert len(trials) <= 22
         trials = list(sorted(trials, key=lambda trial: trial.submit_time))
         assert trials[-1].status == "completed"
