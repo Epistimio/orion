@@ -3,3 +3,4 @@ pytest-xdist
 pytest-timeout
 pytest-mock
 git+git://github.com/Delaunay/track
+dask

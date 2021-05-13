@@ -11,8 +11,6 @@ Gets an experiment and iterates over it until one of the exit conditions is met
 import logging
 import signal
 
-import joblib
-
 import orion.core
 import orion.core.io.experiment_builder as experiment_builder
 from orion.client.experiment import ExperimentClient
@@ -26,8 +24,6 @@ from orion.core.utils.exceptions import (
 from orion.core.utils.format_terminal import format_stats
 from orion.core.worker.consumer import Consumer
 from orion.core.worker.producer import Producer
-
-from orion.executor.base import Executor
 
 log = logging.getLogger(__name__)
 SHORT_DESCRIPTION = "Conducts hyperparameter optimization"
@@ -130,6 +126,7 @@ def on_error(client, trial, error, worker_broken_trials):
     return True
 
 
+# pylint:disable=too-many-arguments
 def workon(
     experiment,
     n_workers=None,
