@@ -30,7 +30,7 @@ def test_demo_with_default_algo_cli_config_only(storage, monkeypatch):
             "-n",
             "default_algo",
             "--max-trials",
-            "10",
+            "5",
             "./black_box.py",
             "-x~uniform(-50, 50)",
         ]
@@ -42,7 +42,7 @@ def test_demo_with_default_algo_cli_config_only(storage, monkeypatch):
     assert "_id" in exp
     assert exp["name"] == "default_algo"
     assert exp["pool_size"] == 1
-    assert exp["max_trials"] == 10
+    assert exp["max_trials"] == 5
     assert exp["max_broken"] == 3
     assert exp["algorithms"] == {"random": {"seed": None}}
     assert "user" in exp["metadata"]
@@ -616,21 +616,26 @@ def test_worker_trials(storage, monkeypatch):
     assert "_id" in exp
     exp_id = exp["_id"]
 
-    assert len(list(storage.fetch_trials(uid=exp_id))) == 0
+    def n_completed():
+        return len(
+            list(storage._fetch_trials({"experiment": exp_id, "status": "completed"}))
+        )
+
+    assert n_completed() == 0
 
     # Test only executes 2 trials
     orion.core.cli.main(
         ["hunt", "--name", "demo_random_search", "--worker-trials", "2"]
     )
 
-    assert len(list(storage.fetch_trials(uid=exp_id))) == 2
+    assert n_completed() == 2
 
     # Test only executes 3 more trials
     orion.core.cli.main(
         ["hunt", "--name", "demo_random_search", "--worker-trials", "3"]
     )
 
-    assert len(list(storage.fetch_trials(uid=exp_id))) == 5
+    assert n_completed() == 5
 
     # Test that max-trials has precedence over worker-trials
     orion.core.cli.main(
@@ -645,7 +650,7 @@ def test_worker_trials(storage, monkeypatch):
         ]
     )
 
-    assert len(list(storage.fetch_trials(uid=exp_id))) == 6
+    assert n_completed() == 6
 
 
 @pytest.mark.usefixtures("storage")
