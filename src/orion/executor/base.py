@@ -2,14 +2,14 @@ from orion.core.utils import Factory
 
 
 class BaseExecutor:
-    def __init__(self, n_jobs, **kwargs):
-        self.n_jobs = n_jobs
+    def __init__(self, n_workers, **kwargs):
+        self.n_workers = n_workers
 
     def __getstate__(self):
-        return dict(n_jobs=self.n_jobs)
+        return dict(n_workers=self.n_workers)
 
     def __setstate__(self, state):
-        self.n_jobs = state["n_jobs"]
+        self.n_workers = state["n_workers"]
 
     def wait(self, futures):
         pass

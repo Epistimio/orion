@@ -1160,11 +1160,11 @@ class TestWorkon:
 
             monkeypatch.setattr(client, "_optimize", optimize)
             optimize.count = 0
-            with client.tmp_executor("joblib", n_jobs=5, backend="threading"):
+            with client.tmp_executor("joblib", n_workers=5, backend="threading"):
                 client.workon(foo, max_trials=5, n_workers=2)
 
             assert optimize.count == 2
             optimize.count = 0
-            with client.tmp_executor("joblib", n_jobs=5, backend="threading"):
+            with client.tmp_executor("joblib", n_workers=5, backend="threading"):
                 client.workon(foo, max_trials=5, n_workers=3)
             assert optimize.count == 3

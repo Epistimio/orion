@@ -199,6 +199,29 @@ def define_worker_config(config):
     worker_config = Configuration()
 
     worker_config.add_option(
+        "n_workers",
+        option_type=int,
+        default=1,
+        env_var="ORION_N_WORKERS",
+        help=("Number of workers to run in parallel."),
+    )
+
+    worker_config.add_option(
+        "executor",
+        option_type=str,
+        default="joblib",
+        env_var="ORION_EXECUTOR",
+        help=("TODO"),
+    )
+
+    worker_config.add_option(
+        "executor_configuration",
+        option_type=dict,
+        default={},
+        help="TODO",
+    )
+
+    worker_config.add_option(
         "heartbeat",
         option_type=int,
         default=120,

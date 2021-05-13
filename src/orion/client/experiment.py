@@ -86,7 +86,8 @@ class ExperimentClient:
         self.heartbeat = heartbeat
         self.executor = executor or Executor(
             orion.core.config.worker.executor,
-            orion.core.config.worker.executor_configuration,
+            n_workers=orion.core.config.worker.n_workers,
+            **orion.core.config.worker.executor_configuration,
         )
         self.plot = PlotAccessor(self)
 
@@ -614,7 +615,7 @@ class ExperimentClient:
     def workon(
         self,
         fct,
-        n_workers=1,
+        n_workers=None,
         max_trials=None,
         max_trials_per_worker=None,
         max_broken=None,
@@ -633,7 +634,7 @@ class ExperimentClient:
             parameter can be passed as ``**kwargs`` to `workon`. Function must return the final
             objective.
         n_workers: int, optional
-            Number of workers to run in parallel.
+            Number of workers to run in parallel. Defaults to value of global config.
         max_trials: int, optional
             Maximum number of trials to execute within ``workon``. If the experiment or algorithm
             reach status is_done before, the execution of ``workon`` terminates.
@@ -683,6 +684,9 @@ class ExperimentClient:
 
         """
         self._check_if_executable()
+
+        if n_workers is None:
+            n_workers = orion.core.config.worker.n_workers
 
         if max_trials is None:
             max_trials = self.max_trials

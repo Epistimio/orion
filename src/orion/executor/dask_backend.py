@@ -15,7 +15,8 @@ except ImportError:
 
 
 class Dask(BaseExecutor):
-    def __init__(self, n_jobs=-1, client=None, **config):
+    def __init__(self, n_workers=-1, client=None, **config):
+        super(Dask, self).__init__(n_workers=n_workers)
 
         if not HAS_DASK:
             raise ImportError("Dask must be installed to use Dask executor.")
@@ -27,9 +28,10 @@ class Dask(BaseExecutor):
         self.client = client
 
     def __getstate__(self):
-        return dict()
+        return super(Dask, self).__getstate__()
 
     def __setstate__(self, state):
+        super(Dask, self).__setstate__(state)
         self.client = get_client()
 
     @property

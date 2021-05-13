@@ -335,7 +335,7 @@ def workon(
         producer = Producer(experiment)
 
         experiment_client = ExperimentClient(experiment, producer)
-        experiment_client.workon(function, max_trials=max_trials)
+        experiment_client.workon(function, n_workers=1, max_trials=max_trials)
 
     finally:
         # Restore singletons

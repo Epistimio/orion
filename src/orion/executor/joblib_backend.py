@@ -4,15 +4,14 @@ import joblib
 
 
 class Joblib(BaseExecutor):
-    def __init__(self, n_jobs=-1, backend="loky", **config):
-        super(Joblib, self).__init__(n_jobs)
+    def __init__(self, n_workers=-1, backend="loky", **config):
+        super(Joblib, self).__init__(n_workers=n_workers)
         self.backend = backend
         self.config = config
 
         self.joblib_parallel = joblib.parallel_backend(
-            self.backend, n_jobs=self.n_jobs, **self.config
+            self.backend, n_jobs=self.n_workers, **self.config
         )
-        self.parallel = joblib.Parallel(n_jobs=self.n_jobs)
 
     def __getstate__(self):
         state = super(Joblib, self).__getstate__()
@@ -26,12 +25,11 @@ class Joblib(BaseExecutor):
         self.config = state["config"]
 
         self.joblib_parallel = joblib.parallel_backend(
-            self.backend, n_jobs=self.n_jobs, **self.config
+            self.backend, n_jobs=self.n_workers, **self.config
         )
-        self.parallel = joblib.Parallel(n_jobs=self.n_jobs)
 
     def wait(self, futures):
-        return self.parallel(futures)
+        return joblib.Parallel(n_jobs=self.n_workers)(futures)
 
     def submit(self, function, *args, **kwargs):
         return joblib.delayed(function)(*args, **kwargs)
