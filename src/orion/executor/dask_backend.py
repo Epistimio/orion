@@ -1,13 +1,7 @@
 from orion.executor.base import BaseExecutor
 
 try:
-    from dask.distributed import (
-        Client,
-        get_client,
-        get_worker,
-        rejoin,
-        secede,
-    )
+    from dask.distributed import Client, get_client, get_worker, rejoin, secede
 
     HAS_DASK = True
 except ImportError:

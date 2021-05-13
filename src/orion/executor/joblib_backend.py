@@ -1,6 +1,6 @@
-from orion.executor.base import BaseExecutor
-
 import joblib
+
+from orion.executor.base import BaseExecutor
 
 
 class Joblib(BaseExecutor):

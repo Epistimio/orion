@@ -6,12 +6,12 @@ Experiment wrapper client
 
 Wraps the core Experiment object to provide further functionalities for the user
 """
-from contextlib import contextmanager
 import atexit
 import functools
 import inspect
 import logging
 import traceback
+from contextlib import contextmanager
 
 import orion.core
 import orion.core.utils.format_trials as format_trials
@@ -27,10 +27,9 @@ from orion.core.utils.exceptions import (
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
+from orion.executor.base import Executor
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
-
-from orion.executor.base import Executor
 
 log = logging.getLogger(__name__)
 
