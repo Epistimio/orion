@@ -6,8 +6,6 @@ Experiment wrapper client
 
 Wraps the core Experiment object to provide further functionalities for the user
 """
-import atexit
-import functools
 import inspect
 import logging
 import traceback
@@ -603,6 +601,17 @@ class ExperimentClient:
 
     @contextmanager
     def tmp_executor(self, executor, **config):
+        """Temporarily change the executor backend of the experiment client.
+
+        Parameters
+        ----------
+        executor: str or :class:`orion.executor.base.Executor`
+            The executor to use. If it is a ``str``, the provided ``config`` will be used
+            to create the executor with ``Executor(executor, **config)``.
+        **config:
+            Configuration to use if ``executor`` is a ``str``.
+
+        """
         if isinstance(executor, str):
             executor = Executor(executor, **config)
         old_executor = self.executor

@@ -203,7 +203,11 @@ def define_worker_config(config):
         option_type=int,
         default=1,
         env_var="ORION_N_WORKERS",
-        help=("Number of workers to run in parallel."),
+        help=(
+            "Number of workers to run in parallel. "
+            "It is possible to run many ``orion hunt`` in parallel, and each will spawn "
+            "``n_workers``."
+        ),
     )
 
     worker_config.add_option(
@@ -211,14 +215,18 @@ def define_worker_config(config):
         option_type=str,
         default="joblib",
         env_var="ORION_EXECUTOR",
-        help=("TODO"),
+        help="The executor backend used to parallelize orion workers.",
     )
 
     worker_config.add_option(
         "executor_configuration",
         option_type=dict,
         default={},
-        help="TODO",
+        help=(
+            "The configuration of the executor. See "
+            "https://orion.readthedocs.io/en/stable/code/executor.html for documentation "
+            "of executors configuration."
+        ),
     )
 
     worker_config.add_option(
