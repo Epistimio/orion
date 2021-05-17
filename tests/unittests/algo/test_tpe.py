@@ -735,6 +735,26 @@ class TestTPE(BaseAlgoTests):
         else:
             assert len(points) == 1
 
+    def test_thin_real_space(self, monkeypatch):
+        algo = self.create_algo()
+        self.force_observe(N_INIT + 1, algo)
+
+        original_sample = GMMSampler.sample
+
+        low = 0.5
+        high = 0.50001
+
+        def sample(self, num):
+            self.low = low
+            self.high = high
+            return original_sample(self, num)
+
+        monkeypatch.setattr(GMMSampler, "sample", sample)
+        with pytest.raises(RuntimeError) as exc:
+            algo.suggest(1)
+
+        assert exc.match(f"Failed to sample in interval \({low}, {high}\)")
+
     def test_int_data(self, mocker, num, attr):
         if num > 0:
             pytest.skip("See https://github.com/Epistimio/orion/issues/600")
