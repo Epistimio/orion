@@ -406,8 +406,7 @@ class TPE(BaseAlgorithm):
 
         for j in range(shape_size):
             new_point = sampler(dimension, below_points[j], above_points[j])
-            if new_point is not None:
-                points.append(new_point)
+            points.append(new_point)
 
         return points
 
@@ -464,17 +463,14 @@ class TPE(BaseAlgorithm):
         )
 
         candidate_points = gmm_sampler_below.sample(self.n_ei_candidates)
-        if candidate_points:
-            lik_blow = gmm_sampler_below.get_loglikelis(candidate_points)
-            lik_above = gmm_sampler_above.get_loglikelis(candidate_points)
-            new_point = compute_max_ei_point(candidate_points, lik_blow, lik_above)
+        lik_blow = gmm_sampler_below.get_loglikelis(candidate_points)
+        lik_above = gmm_sampler_above.get_loglikelis(candidate_points)
+        new_point = compute_max_ei_point(candidate_points, lik_blow, lik_above)
 
-            if is_log:
-                new_point = numpy.exp(new_point)
+        if is_log:
+            new_point = numpy.exp(new_point)
 
-            return new_point
-
-        return None
+        return new_point
 
     def _sample_int_point(self, dimension, below_points, above_points):
         """Sample one value for integer dimension based on the observed good and bad points"""
@@ -487,17 +483,14 @@ class TPE(BaseAlgorithm):
         sampler_below = CategoricalSampler(self, below_points, choices)
         candidate_points = sampler_below.sample(self.n_ei_candidates)
 
-        if list(candidate_points):
-            sampler_above = CategoricalSampler(self, above_points, choices)
+        sampler_above = CategoricalSampler(self, above_points, choices)
 
-            lik_below = sampler_below.get_loglikelis(candidate_points)
-            lik_above = sampler_above.get_loglikelis(candidate_points)
+        lik_below = sampler_below.get_loglikelis(candidate_points)
+        lik_above = sampler_above.get_loglikelis(candidate_points)
 
-            new_point = compute_max_ei_point(candidate_points, lik_below, lik_above)
-            new_point = new_point + low
-            return new_point
-
-        return None
+        new_point = compute_max_ei_point(candidate_points, lik_below, lik_above)
+        new_point = new_point + low
+        return new_point
 
     def _sample_categorical_point(self, dimension, below_points, above_points):
         """Sample one value for categorical dimension based on the observed good and bad points"""
@@ -509,19 +502,15 @@ class TPE(BaseAlgorithm):
         sampler_below = CategoricalSampler(self, below_points, choices)
         candidate_points = sampler_below.sample(self.n_ei_candidates)
 
-        if list(candidate_points):
-            sampler_above = CategoricalSampler(self, above_points, choices)
+        sampler_above = CategoricalSampler(self, above_points, choices)
 
-            lik_below = sampler_below.get_loglikelis(candidate_points)
-            lik_above = sampler_above.get_loglikelis(candidate_points)
+        lik_below = sampler_below.get_loglikelis(candidate_points)
+        lik_above = sampler_above.get_loglikelis(candidate_points)
 
-            new_point_index = compute_max_ei_point(
-                candidate_points, lik_below, lik_above
-            )
-            new_point = choices[new_point_index]
+        new_point_index = compute_max_ei_point(candidate_points, lik_below, lik_above)
+        new_point = choices[new_point_index]
 
-            return new_point
-        return None
+        return new_point
 
     def split_trials(self):
         """Split the observed trials into good and bad ones based on the ratio `gamma``"""
@@ -586,13 +575,20 @@ class GMMSampler:
         for mu, sigma in zip(self.mus, self.sigmas):
             self.pdfs.append(norm(mu, sigma))
 
-    def sample(self, num=1):
+    def sample(self, num=1, attempts=10):
         """Sample required number of points"""
         point = []
         for _ in range(num):
             pdf = numpy.argmax(self.tpe.rng.multinomial(1, self.weights))
-            new_points = self.pdfs[pdf].rvs(size=5, random_state=self.tpe.rng)
-            for pt in new_points:
+            new_points = list(
+                self.pdfs[pdf].rvs(size=attempts, random_state=self.tpe.rng)
+            )
+            while True:
+                if not new_points:
+                    raise RuntimeError(
+                        f"Failed to sample in interval ({self.low}, {self.high})"
+                    )
+                pt = new_points.pop(0)
                 if self.low <= pt < self.high:
                     point.append(pt)
                     break

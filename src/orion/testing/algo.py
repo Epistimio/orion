@@ -538,9 +538,9 @@ class BaseAlgoTests:
             num,
             attr,
             {  # Add 3 dims so that there exists many possible trials for the test
-                "x": "choices(['a', 'b', 'c', 'd'])",
-                "y": "choices(['a', 'b', 'c', 'd'])",
-                "z": "choices(['a', 'b', 'c', 'd'])",
+                "x": "choices(['a', 0.2, 1, None])",
+                "y": "choices(['a', 0.2, 1, None])",
+                "z": "choices(['a', 0.2, 1, None])",
             },
         )
 
