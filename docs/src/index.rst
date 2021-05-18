@@ -34,7 +34,6 @@
    auto_tutorials/code_1_python_api
    tutorials/pytorch-mnist
    auto_tutorials/code_2_hyperband_checkpoint
-   auto_tutorials/code_3_benchmark
    auto_tutorials/code_4_parallelism
    tutorials/cluster
    tutorials/pytorch_a2c_ppo
