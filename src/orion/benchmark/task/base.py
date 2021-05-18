@@ -24,7 +24,7 @@ class BaseTask(ABC):
     """
 
     def __init__(self, max_trials, **kwargs):
-        self.trials_num = max_trials
+        self._max_trials = max_trials
         self._param_names = kwargs
         self._param_names["max_trials"] = max_trials
 
@@ -46,7 +46,7 @@ class BaseTask(ABC):
     @property
     def max_trials(self):
         """Return the max number of trials to run for the"""
-        return self.trials_num
+        return self._max_trials
 
     @abstractmethod
     def get_search_space(self):
