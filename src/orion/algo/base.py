@@ -116,8 +116,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
                 if isinstance(subalgo_kwargs, dict):
                     param = OptimizationAlgorithm(subalgo_type, space, **subalgo_kwargs)
             elif (
-                isinstance(param, str)
-                and param.lower() in OptimizationAlgorithm.typenames
+                isinstance(param, str) and param.lower() in OptimizationAlgorithm.types
             ):
                 # pylint: disable=too-many-function-args
                 param = OptimizationAlgorithm(param, space)

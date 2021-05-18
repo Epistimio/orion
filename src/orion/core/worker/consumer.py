@@ -10,7 +10,6 @@ import copy
 import json
 import logging
 import os
-import signal
 import subprocess
 import tempfile
 
@@ -26,12 +25,6 @@ from orion.core.utils.exceptions import (
 from orion.core.utils.working_dir import WorkingDir
 
 log = logging.getLogger(__name__)
-
-
-# pylint: disable = unused-argument
-def _handler(signum, frame):
-    log.error("Oríon has been interrupted.")
-    raise KeyboardInterrupt
 
 
 class ExecutionError(Exception):
@@ -128,8 +121,6 @@ class Consumer(object):
             True if the trial was successfully executed. False if the trial is broken.
 
         """
-        signal.signal(signal.SIGTERM, _handler)
-
         log.debug("Creating new directory at '%s':", self.working_dir)
         temp_dir = not bool(self.experiment.working_dir)
         prefix = self.experiment.name + "_"

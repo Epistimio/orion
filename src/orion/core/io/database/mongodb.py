@@ -130,7 +130,6 @@ class MongoDB(AbstractDB):
 
     def __setstate__(self, state):
         for key in ["host", "name", "port", "username", "password", "options"]:
-            print(key, state[key])
             setattr(self, key, state[key])
         self.uri = None
         self.initiate_connection()

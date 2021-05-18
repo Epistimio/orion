@@ -64,6 +64,7 @@
    code/benchmark
    code/client
    code/core
+   code/executor
    code/plotting
    code/storage
    code/testing

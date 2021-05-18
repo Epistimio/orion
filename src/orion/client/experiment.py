@@ -9,8 +9,7 @@ Wraps the core Experiment object to provide further functionalities for the user
 import inspect
 import logging
 import traceback
-
-from joblib import Parallel, delayed
+from contextlib import contextmanager
 
 import orion.core
 import orion.core.utils.format_trials as format_trials
@@ -26,6 +25,7 @@ from orion.core.utils.exceptions import (
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
+from orion.executor.base import Executor
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
 
@@ -74,13 +74,18 @@ class ExperimentClient:
 
     """
 
-    def __init__(self, experiment, producer, heartbeat=None):
+    def __init__(self, experiment, producer, executor=None, heartbeat=None):
         self._experiment = experiment
         self._producer = producer
         self._pacemakers = {}
         if heartbeat is None:
             heartbeat = orion.core.config.worker.heartbeat
         self.heartbeat = heartbeat
+        self.executor = executor or Executor(
+            orion.core.config.worker.executor,
+            n_workers=orion.core.config.worker.n_workers,
+            **orion.core.config.worker.executor_configuration,
+        )
         self.plot = PlotAccessor(self)
 
     ###
@@ -594,10 +599,31 @@ class ExperimentClient:
         finally:
             self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved)
 
+    @contextmanager
+    def tmp_executor(self, executor, **config):
+        """Temporarily change the executor backend of the experiment client.
+
+        Parameters
+        ----------
+        executor: str or :class:`orion.executor.base.Executor`
+            The executor to use. If it is a ``str``, the provided ``config`` will be used
+            to create the executor with ``Executor(executor, **config)``.
+        **config:
+            Configuration to use if ``executor`` is a ``str``.
+
+        """
+        if isinstance(executor, str):
+            executor = Executor(executor, **config)
+        old_executor = self.executor
+        self.executor = executor
+        with executor:
+            yield self
+        self.executor = old_executor
+
     def workon(
         self,
         fct,
-        n_workers=1,
+        n_workers=None,
         max_trials=None,
         max_trials_per_worker=None,
         max_broken=None,
@@ -616,7 +642,7 @@ class ExperimentClient:
             parameter can be passed as ``**kwargs`` to `workon`. Function must return the final
             objective.
         n_workers: int, optional
-            Number of workers to run in parallel.
+            Number of workers to run in parallel. Defaults to value of global config.
         max_trials: int, optional
             Maximum number of trials to execute within ``workon``. If the experiment or algorithm
             reach status is_done before, the execution of ``workon`` terminates.
@@ -667,6 +693,9 @@ class ExperimentClient:
         """
         self._check_if_executable()
 
+        if n_workers is None:
+            n_workers = orion.core.config.worker.n_workers
+
         if max_trials is None:
             max_trials = self.max_trials
 
@@ -682,18 +711,18 @@ class ExperimentClient:
             self._experiment.max_trials = max_trials
             self._experiment.algorithms.algorithm.max_trials = max_trials
 
-        with Parallel(n_jobs=n_workers) as parallel:
-            trials = parallel(
-                delayed(self._optimize)(
-                    fct,
-                    max_trials_per_worker,
-                    max_broken,
-                    trial_arg,
-                    on_error,
-                    **kwargs,
-                )
-                for _ in range(n_workers)
+        trials = self.executor.wait(
+            self.executor.submit(
+                self._optimize,
+                fct,
+                max_trials_per_worker,
+                max_broken,
+                trial_arg,
+                on_error,
+                **kwargs,
             )
+            for _ in range(n_workers)
+        )
 
         return sum(trials)
 
@@ -712,7 +741,9 @@ class ExperimentClient:
                         kwargs[trial_arg] = trial
 
                     try:
-                        results = fct(**unflatten(kwargs))
+                        results = self.executor.wait(
+                            [self.executor.submit(fct, **unflatten(kwargs))]
+                        )[0]
                         self.observe(trial, results=results)
                     except (KeyboardInterrupt, InvalidResult):
                         raise

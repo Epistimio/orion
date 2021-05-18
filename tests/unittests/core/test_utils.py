@@ -41,8 +41,9 @@ def test_factory_subclasses_detection():
     assert type(MyFactory(of_type="AA_AB")) is AA_AB
 
     # Test if there is duplicates
-    assert set(MyFactory.types) == set((A, B, AA, AB, AAA, AA_AB))
-    assert len(MyFactory.types) == len(set(MyFactory.types))
+    assert MyFactory.types == {
+        cls.__name__.lower(): cls for cls in [A, B, AA, AB, AAA, AA_AB]
+    }
 
     with pytest.raises(NotImplementedError) as exc_info:
         MyFactory(of_type="random")

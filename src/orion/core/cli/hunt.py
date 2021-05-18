@@ -9,6 +9,7 @@ Gets an experiment and iterates over it until one of the exit conditions is met
 """
 
 import logging
+import signal
 
 import orion.core
 import orion.core.io.experiment_builder as experiment_builder
@@ -110,9 +111,14 @@ orion status --name {experiment.name} --version {experiment.version} --all
 
 """
 
+# pylint: disable = unused-argument
+def _handler(signum, frame):
+    log.error("Oríon has been interrupted.")
+    raise KeyboardInterrupt
+
 
 # pylint:disable=unused-argument
-def on_error(experiment_client, trial, error, worker_broken_trials):
+def on_error(client, trial, error, worker_broken_trials):
     """If the script is not executable, don't waste time and raise right away"""
     if isinstance(error, (InexecutableUserScript, MissingResultFile)):
         raise error
@@ -120,8 +126,10 @@ def on_error(experiment_client, trial, error, worker_broken_trials):
     return True
 
 
+# pylint:disable=too-many-arguments
 def workon(
     experiment,
+    n_workers=None,
     max_trials=None,
     max_broken=None,
     max_idle_time=None,
@@ -129,6 +137,8 @@ def workon(
     user_script_config=None,
     interrupt_signal_code=None,
     ignore_code_changes=None,
+    executor=None,
+    executor_configuration=None,
 ):
     """Try to find solution to the search problem defined in `experiment`."""
     producer = Producer(experiment, max_idle_time)
@@ -139,28 +149,36 @@ def workon(
         ignore_code_changes,
     )
 
-    experiment_client = ExperimentClient(experiment, producer, heartbeat=heartbeat)
+    client = ExperimentClient(experiment, producer, heartbeat=heartbeat)
+
+    if executor is None:
+        executor = orion.core.config.worker.executor
+
+    if executor_configuration is None:
+        executor_configuration = orion.core.config.worker.executor_configuration
 
     log.debug("Starting workers")
-    try:
-        experiment_client.workon(
-            consumer,
-            max_trials_per_worker=max_trials,
-            max_broken=max_broken,
-            trial_arg="trial",
-            on_error=on_error,
-        )
-    except BrokenExperiment as e:
-        print(e)
+    with client.tmp_executor(executor, n_workers=n_workers, **executor_configuration):
+        try:
+            client.workon(
+                consumer,
+                n_workers=n_workers,
+                max_trials_per_worker=max_trials,
+                max_broken=max_broken,
+                trial_arg="trial",
+                on_error=on_error,
+            )
+        except BrokenExperiment as e:
+            print(e)
 
-    if experiment.is_done:
+    if client.is_done:
         print("Search finished successfully")
 
-    print("\n" + format_stats(experiment))
+    print("\n" + format_stats(client))
 
-    print("\n" + COMPLETION_MESSAGE.format(experiment=experiment))
+    print("\n" + COMPLETION_MESSAGE.format(experiment=client))
     if not experiment.is_done:
-        print(NONCOMPLETED_MESSAGE.format(experiment=experiment))
+        print(NONCOMPLETED_MESSAGE.format(experiment=client))
 
 
 def main(args):
@@ -177,6 +195,8 @@ def main(args):
     worker_config = orion.core.config.worker.to_dict()
     if config.get("worker"):
         worker_config.update(config.get("worker"))
+
+    signal.signal(signal.SIGTERM, _handler)
 
     workon(
         experiment,

@@ -536,6 +536,9 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
     config = {
         "worker": {
+            "n_workers": 2,
+            "executor": "dask",
+            "executor_configuration": {"threads_per_worker": 1},
             "heartbeat": 30,
             "max_trials": 10,
             "max_broken": 5,
@@ -546,6 +549,8 @@ class TestWorkerConfig(ConfigurationTestSuite):
     }
 
     env_vars = {
+        "ORION_N_WORKERS": 3,
+        "ORION_EXECUTOR": "joblib",
         "ORION_HEARTBEAT": 40,
         "ORION_WORKER_MAX_TRIALS": 20,
         "ORION_WORKER_MAX_BROKEN": 6,
@@ -556,6 +561,9 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
     local = {
         "worker": {
+            "n_workers": 4,
+            "executor": "dask",
+            "executor_configuration": {"threads_per_worker": 2},
             "heartbeat": 50,
             "max_trials": 30,
             "max_broken": 7,
@@ -566,8 +574,10 @@ class TestWorkerConfig(ConfigurationTestSuite):
     }
 
     cmdargs = {
+        "n-workers": 1,
+        "executor": "dask",
         "heartbeat": 70,
-        "worker-max-trials": 40,
+        "worker-max-trials": 1,
         "worker-max-broken": 8,
         "max-idle-time": 18,
         "interrupt-signal-code": 134,
@@ -644,6 +654,12 @@ class TestWorkerConfig(ConfigurationTestSuite):
         assert self.producer.max_idle_time == config["max_idle_time"]
 
     def _check_workon(self, config):
+        assert self.workon_kwargs["n_workers"] == config["n_workers"]
+        assert self.workon_kwargs["executor"] == config["executor"]
+        assert (
+            self.workon_kwargs["executor_configuration"]
+            == config["executor_configuration"]
+        )
         assert self.workon_kwargs["max_trials"] == config["max_trials"]
         assert self.workon_kwargs["max_broken"] == config["max_broken"]
 
@@ -661,6 +677,9 @@ class TestWorkerConfig(ConfigurationTestSuite):
     def check_env_var_config(self, tmp_path, monkeypatch):
         """Check that env vars overrides global configuration"""
         env_var_config = {
+            "n_workers": self.env_vars["ORION_N_WORKERS"],
+            "executor": self.env_vars["ORION_EXECUTOR"],
+            "executor_configuration": self.config["worker"]["executor_configuration"],
             "heartbeat": self.env_vars["ORION_HEARTBEAT"],
             "max_trials": self.env_vars["ORION_WORKER_MAX_TRIALS"],
             "max_broken": self.env_vars["ORION_WORKER_MAX_BROKEN"],
@@ -670,6 +689,10 @@ class TestWorkerConfig(ConfigurationTestSuite):
         }
 
         assert orion.core.config.to_dict()["worker"] == env_var_config
+
+        # Override executor configuration otherwise joblib will fail.
+        orion.core.config.worker.executor_configuration = {}
+        env_var_config["executor_configuration"] = {}
 
         self._mock(monkeypatch)
 
@@ -686,6 +709,9 @@ class TestWorkerConfig(ConfigurationTestSuite):
         """Check that local configuration overrides global/envvars configuration"""
         self._mock(monkeypatch)
 
+        # Override executor so that executor and configuration are coherent in global config
+        os.environ["ORION_EXECUTOR"] = "dask"
+
         command = f"hunt --exp-max-trials 0 -n test -c {conf_file} python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
@@ -694,6 +720,9 @@ class TestWorkerConfig(ConfigurationTestSuite):
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """Check that cmdargs configuration overrides global/envvars/local configuration"""
         config = {
+            "n_workers": self.cmdargs["n-workers"],
+            "executor": self.cmdargs["executor"],
+            "executor_configuration": {"threads_per_worker": 2},
             "heartbeat": self.cmdargs["heartbeat"],
             "max_trials": self.cmdargs["worker-max-trials"],
             "max_broken": self.cmdargs["worker-max-broken"],
@@ -703,6 +732,9 @@ class TestWorkerConfig(ConfigurationTestSuite):
         }
 
         self._mock(monkeypatch)
+
+        # Override executor so that executor and configuration are coherent in global config
+        os.environ["ORION_EXECUTOR"] = "dask"
 
         command = f"hunt --worker-max-trials 0 -c {conf_file} -n cmd-test"
         command += " " + " ".join(
@@ -801,7 +833,7 @@ class TestEVCConfig(ConfigurationTestSuite):
         command = self._check_cli_change(
             name, command, version=1, change_type="noeffect"
         )
-        command = self._check_non_monitored_arguments(
+        self._check_non_monitored_arguments(
             name, command, version=2, non_monitored_arguments=["test", "one"]
         )
         self._check_script_config_change(

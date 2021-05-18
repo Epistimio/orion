@@ -305,9 +305,9 @@ def test_workon():
     """Test scenario having a configured experiment already setup."""
     name = "voici_voila"
     config = {"name": name}
-    config["algorithms"] = {"gradient_descent": {"learning_rate": 0.1}}
+    config["algorithms"] = {"random": {"seed": 1}}
     config["pool_size"] = 1
-    config["max_trials"] = 20
+    config["max_trials"] = 50
     config["exp_max_broken"] = 5
     config["user_args"] = [
         os.path.abspath(os.path.join(os.path.dirname(__file__), "black_box.py")),
@@ -317,7 +317,19 @@ def test_workon():
     with OrionState():
         experiment = experiment_builder.build_from_args(config)
 
-        workon(experiment, 20, 20, 20, 20, 20)
+        workon(
+            experiment,
+            n_workers=2,
+            max_trials=10,
+            max_broken=5,
+            max_idle_time=20,
+            heartbeat=20,
+            user_script_config="config",
+            interrupt_signal_code=120,
+            ignore_code_changes=True,
+            executor="joblib",
+            executor_configuration={"backend": "threading"},
+        )
 
         storage = get_storage()
 
@@ -327,34 +339,23 @@ def test_workon():
         assert "_id" in exp
         assert exp["name"] == name
         assert exp["pool_size"] == 1
-        assert exp["max_trials"] == 20
+        assert exp["max_trials"] == 50
         assert exp["max_broken"] == 5
-        assert exp["algorithms"] == {
-            "gradient_descent": {"learning_rate": 0.1, "dx_tolerance": 1e-5}
-        }
+        assert exp["algorithms"] == {"random": {"seed": 1}}
         assert "user" in exp["metadata"]
         assert "datetime" in exp["metadata"]
         assert "user_script" in exp["metadata"]
         assert exp["metadata"]["user_args"] == config["user_args"]
 
-        trials = list(storage.fetch_trials(experiment))
-        assert len(trials) <= 15
+        trials = experiment.fetch_trials_by_status("completed")
+        assert len(trials) <= 22
         trials = list(sorted(trials, key=lambda trial: trial.submit_time))
         assert trials[-1].status == "completed"
-        for result in trials[-1].results:
-            assert result.type != "constraint"
-            if result.type == "objective":
-                assert abs(result.value - 23.4) < 1e-6
-                assert result.name == "example_objective"
-            elif result.type == "gradient":
-                res = numpy.asarray(result.value)
-                assert 0.1 * numpy.sqrt(res.dot(res)) < 1e-4
-                assert result.name == "example_gradient"
         params = trials[-1].params
         assert len(params) == 1
         px = params["/x"]
         assert isinstance(px, float)
-        assert (px - 34.56789) < 1e-4
+        assert (px - 34.56789) < 5
 
 
 def test_stress_unique_folder_creation(storage, monkeypatch, tmpdir, capfd):
