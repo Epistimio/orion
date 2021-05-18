@@ -8,7 +8,7 @@ Regret curves
    Conveys how quickly the algorithm found the best hyperparameters.
     
 The regret is the difference between the achieved objective and the optimal objective.
-Plotted as a time serie, it shows how fast an optimization algorithm approaches the best
+Plotted as a time series, it shows how fast an optimization algorithm approaches the best
 objective. An equivalent way to visualize it is using the cumulative minimums instead of the
 differences. Oríon plots the cumulative minimums so that the objective can easily be read
 from the y-axis.

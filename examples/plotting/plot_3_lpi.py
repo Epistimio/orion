@@ -39,7 +39,7 @@ fig
 #%%
 # On this plot the x-axis shows the different hyperparameters while the y-axis gives the
 # local parameter importance.
-# The error bars represents the standard deviation of the LPI based on 10 runs. Remember
+# The error bars represent the standard deviation of the LPI based on 10 runs. Remember
 # that the LPI requires the training of a regression model. The initial state of this model can
 # greatly influence the results. This is why the computation of the LPI is done multiple times
 # (10 times by default) using different random seeds. Here is an example
@@ -51,7 +51,7 @@ experiment.plot.lpi(n_points=10, n_runs=5, model_kwargs=dict(random_state=1))
 #%%
 # We can see that the learning rate had a larger impact than the dropout in achieving the best
 # objective.
-# A search space of only 2 dimensions is easy to analyse visualy however so the LPI
+# A search space of only 2 dimensions is easy to analyse visually however so the LPI
 # has little additional value in this example. We need to use an example with a larger search space
 # to better show to utility of the LPI. We will load results from tutorial
 # :ref:`sphx_glr_auto_tutorials_code_2_hyperband_checkpoint.py` for this.
@@ -70,7 +70,7 @@ experiment.plot.lpi()
 # non-important. It may be important, but it is not important to optimize it within this narrow
 # search space. Another related issue, is that if one hyperparameter have a dramatic effect, it will
 # lead to a variance so large that the other hyperparameters will seem unrelevant in comparison.
-# This is what we observe here with the learning rate. If we branche from the experiment and define
+# This is what we observe here with the learning rate. If we branch from the experiment and define
 # a narrowed prior for the learning rate, we will see that it becomes an unimportant
 # hyperparameter.
 # See documentation on :ref:`EVC system` for more information on branching, or
@@ -110,9 +110,9 @@ experiment.plot.lpi()
 # Logarithmic scale
 # ~~~~~~~~~~~~~~~~~
 #
-# Dimensions with a logarithmic prior :ref:`search-space-loguniform` are linearized before being
-# passed to the regression model (using log(dim) instead of dim directly). This means the model is
-# trained and will be making predictions in the linearized space.
+# Dimensions with a logarithmic prior :ref:`search-space-prior-loguniform` are linearized before
+# being passed to the regression model (using log(dim) instead of dim directly). This means the
+# model is trained and will be making predictions in the linearized space.
 #
 # Dimension with shape
 # ~~~~~~~~~~~~~~~~~~~~

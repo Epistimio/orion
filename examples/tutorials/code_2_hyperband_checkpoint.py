@@ -31,7 +31,7 @@ following template.
     orion hunt -n <exp name>
         ./your_script.sh --checkpoint '{experiment.working_dir}/{trial.hash_params}'
 
-Your script it reponsible to take this checkpoint path, resume from checkpoints or same
+Your script is reponsible to take this checkpoint path, resume from checkpoints or same
 checkpoints.
 We will demonstrate below how this can be done with PyTorch, but using Oríon's Python API.
 

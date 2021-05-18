@@ -1,3 +1,5 @@
+.. _search-space:
+
 ************
 Search Space
 ************
@@ -6,12 +8,16 @@ The search space is defined by the name of the hyperparameters to optimize and t
 distribution priors. These priors are used by the optimization algorithms to sample values or adjust
 the exploration.
 
+.. _search-space-priors:
+
 Priors
 ======
 
 We support all of `scipy distributions`_ out of the box. With the exception of the functions
 outlined below, every distribution in ``scipy.stats`` can be used using the same original function
 signature.
+
+.. _search-space-prior-uniform:
 
 ``uniform(low, high)``
 ----------------------
@@ -20,20 +26,28 @@ The uniform distribution is redefining scipy's function signature as
 ``uniform(low, high)`` instead ``uniform(low, interval)``. This is to uniformize the interface with
 numpy and python's builtin ``random.uniform``.
 
+.. _search-space-prior-loguniform:
+
 ``loguniform(low, high)``
 -------------------------
 
 A logarithmic version of the uniform distribution.
+
+.. _search-space-prior-normal:
 
 ``normal(loc, scale)``
 ----------------------
 
 A wrapper for ``scipy.stats.norm``.
 
+.. _search-space-prior-gaussian:
+
 ``gaussian(loc, scale)``
 ------------------------
 
 An additional wrapper for ``scipy.stats.norm``.
+
+.. _search-space-prior-categorical:
 
 ``choices(options)``
 --------------------
@@ -45,7 +59,7 @@ To give different probabilities: ``choices({'likely': 0.8, 'unlikely': 0.2, 'imp
 You can pass strings, integers and floats, and all mixed together if needed:
 ``choices([1.0, 2, 'three'])``.
 
-.. _prior-fidelity:
+.. _search-space-prior-fidelity:
 
 ``fidelity(low, high, base=2)``
 -------------------------------
@@ -100,10 +114,12 @@ Fidelity
 --------
 
 Special placeholder to represent a fidelity dimension. Only the prior
-:ref:`prior-fidelity` is casted to :class:`Fidelity`.
+:ref:`search-space-prior-fidelity` is casted to :class:`Fidelity`.
 
 Special arguments
 =================
+
+.. _search-space-discrete:
 
 ``discrete``
 ------------
@@ -111,6 +127,8 @@ Special arguments
 ex: ``uniform(0, 10, discrete=True)``
 
 Argument to cast a continuous distribution into :ref:`integer-dim`. Defaults to ``False``.
+
+.. _search-space-default:
 
 ``default_value``
 -----------------
@@ -122,6 +140,8 @@ without specifing this hyperparameter, assigning it the default value. This is a
 using the :ref:`EVC system`, so that experiments where an hyperparameter is deleted or added can
 adapt trials from other experiments by using the default value.
 
+.. _search-space-precision:
+
 ``precision``
 -------------
 
@@ -129,6 +149,9 @@ ex: ``loguniform(1e-5, 1e-2, precision=2)``
 
 Argument to sample a continuous distribution up to the requested precision. Defaults to ``4``.
 The above example would sample values such as 6.7e-4 or 2.9e-3 but not 6.789e-4.
+
+
+.. _search-space-shape:
 
 ``shape``
 ---------

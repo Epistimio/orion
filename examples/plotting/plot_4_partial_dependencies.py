@@ -138,9 +138,9 @@ fig
 # Logarithmic scale
 # ~~~~~~~~~~~~~~~~~
 #
-# Dimensions with a logarithmic prior :ref:`search-space-loguniform` are linearized before being
-# passed to the regression model (using log(dim) instead of dim directly). This means the model is
-# trained and will be making predictions in the linearized space. The data is presented in
+# Dimensions with a logarithmic prior :ref:`search-space-prior-loguniform` are linearized before
+# being passed to the regression model (using log(dim) instead of dim directly). This means the
+# model is trained and will be making predictions in the linearized space. The data is presented in
 # logarithmic scale to the user, with the axis adjusted to log scale as well.
 #
 # Fidelity

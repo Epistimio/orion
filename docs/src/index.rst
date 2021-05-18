@@ -52,6 +52,7 @@
    :caption: API Reference
 
    code/algo
+   code/analysis
    code/benchmark
    code/client
    code/core
