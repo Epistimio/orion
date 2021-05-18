@@ -1,20 +1,15 @@
-*************
-Visualization
-*************
+"""
+============
+Command-line
+============
 
-.. contents::
-   :depth: 2
-   :local:
-
-Orion uses plotly to generate reports for experiments.
-This section refers to the use of the `orion plot ...` subcommand.
+This section refers to the use of the ``orion plot ...`` subcommand.
 
 For details about the use of the web api giving
 similar plots, refer to the documentation :doc:`/user/web_api`.
 
-=====
 Usage
-=====
+*****
 
 The arguments expected by the "plot" subcommand are as follows
 
@@ -56,9 +51,9 @@ The arguments expected by the "plot" subcommand are as follows
                            user provided orion configuration file
 
 
-========================
+
 More about the arguments
-========================
+************************
 
 The `kind` positional argument is the only mandatory argument.
 Assuming that the user identified the experiment in the usual
@@ -67,7 +62,6 @@ is to generate the correct `kind` of plot, and to save it
 as a "png" file in the current directory and with a filename
 automatically formatted as "{experiment.name}_{kind}.png".
 
-----
 kind
 ----
 
@@ -77,7 +71,6 @@ The choice is between 'lpi', 'partial_dependencies', 'parallel_coordinates'
 or 'regret'.
 
 
-----
 type
 ----
 
@@ -90,7 +83,6 @@ is saved without rendering it to an image.
 
 The accepted values of ``type`` are 'png', 'jpg', 'jpeg', 'webp', 'svg', 'pdf', 'html' and 'json'.
 
-------
 output
 ------
 
@@ -104,7 +96,6 @@ the file extension in the ``output``.
 For example, with ``--output=../myplot.jpg``, the results will be saved
 in the parent directory and the ``type`` will be 'jpg'.
 
------
 scale
 -----
 
@@ -114,5 +105,6 @@ This applies particularly to 'jpg' and 'png', but it does not affect 'json' or '
 
 The reference value of ``scale`` is 1.0.
 With ``--scale 2.0``, the height and width are going to be doubled.
+"""
 
-
+# sphinx_gallery_thumbnail_path = '_static/cmdline.png'
