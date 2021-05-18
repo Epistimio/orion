@@ -137,7 +137,7 @@ def mock_space_iterate(monkeypatch):
 
 
 @contextmanager
-def create_experiment(exp_config=None, trial_config=None, statuses=None):
+def create_experiment(exp_config=None, trial_config=None, statuses=None, knowledge_base=None):
     """Context manager for the creation of an ExperimentClient and storage init"""
     if exp_config is None:
         raise ValueError("Parameter 'exp_config' is missing")
@@ -155,7 +155,7 @@ def create_experiment(exp_config=None, trial_config=None, statuses=None):
         experiment = experiment_builder.build(name=exp_config["name"])
         if cfg.trials:
             experiment._id = cfg.trials[0]["experiment"]
-        client = ExperimentClient(experiment, Producer(experiment))
+        client = ExperimentClient(experiment, Producer(experiment, knowledge_base=knowledge_base))
         yield cfg, experiment, client
 
     client.close()

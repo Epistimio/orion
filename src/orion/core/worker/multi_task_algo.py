@@ -365,7 +365,8 @@ class MultiTaskAlgo(AlgoWrapper):
         )
         trials_from_other_tasks = total_trials - trials_from_target_task
         log.info(
-            f"Trials from target task: {trials_from_target_task}, trials from other tasks: {trials_from_other_tasks}"
+            f"Trials from target task: {trials_from_target_task}, "
+            f"trials from other tasks: {trials_from_other_tasks} "
         )
 
         if trials_from_target_task >= self.space.cardinality:
