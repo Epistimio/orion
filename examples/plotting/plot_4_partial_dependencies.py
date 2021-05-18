@@ -3,7 +3,7 @@
 Partial Dependencies
 ====================
 
-.. hint:: 
+.. hint::
 
    Conveys a broad overview of the search space and what has been explored during the experiment.
    Helps identifying best optimal regions of the space.
@@ -20,7 +20,7 @@ of the regression model on all points of the group, with the hyperparameter of i
 value of the grid. For instance, for a 1-D grid of `g` points and a group of `n` points, we compute
 `g * n` predictions.
 
-For a search space of `d` hyperparameters, the partial dependency plot is organized as a matrix of 
+For a search space of `d` hyperparameters, the partial dependency plot is organized as a matrix of
 `(d, d)` subplots. The subplots on the diagonal show the partial dependency of each hyperparameters
 separately, while the subplots below the diagonal show the partial dependency between two
 hyperparameters. Let's look at a simple example to make it more concrete.

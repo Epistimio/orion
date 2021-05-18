@@ -8,7 +8,7 @@ Local Parameter Importance
    Conveys a very compact measure of the importance of the different hyperparameters
    to achieve the best objective found so far.
 
-The local parameter importance measures the variance of the results when 
+The local parameter importance measures the variance of the results when
 varying one hyperparameter and keeping all other fixes [Biedenkapp2018]_.
 
 Given a best set of hyperparameters, we separately build a grid
