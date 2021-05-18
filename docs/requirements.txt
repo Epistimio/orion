@@ -7,3 +7,4 @@ numpydoc
 plotly
 matplotlib
 kaleido
+dask[complete]

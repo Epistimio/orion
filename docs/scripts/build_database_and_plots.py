@@ -29,6 +29,13 @@ custom_plots = {
             "params": ["gamma", "learning_rate"],
         },
     },
+    "dask": {
+        "name": "params",
+        "kwargs": {
+            "kind": "partial_dependencies",
+            "params": ["C", "gamma"],
+        },
+    },
 }
 
 # CP base db to database.pkl (overwrite database.pkl)

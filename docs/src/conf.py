@@ -262,9 +262,12 @@ intersphinx_mapping = {
 extlinks = {
     "scipy.stats": (
         "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.%s.html",
-        "test ",
+        "scipy.stats",
     ),
-    "plotly": ("https://plotly.com/python-api-reference/plotly.%s", "test "),
+    "plotly": (
+        "https://plotly.com/python-api-reference/generated/plotly.%s",
+        "plotly.",
+    ),
 }
 
 
