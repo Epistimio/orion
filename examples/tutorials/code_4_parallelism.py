@@ -5,8 +5,8 @@
 Scaling workers
 ***************
 
-This tutorial shows simple examples to use the different backends of Oríon to scale workers.
-
+This tutorial shows simple examples to use the different backends of Oríon to scale execution to
+multiple workers in parallel.
 The parallelization of Oríon workers is explained in more details in section :ref:`parallelism`.
 
 We will start with a basic example using scikit-learn.
@@ -40,8 +40,8 @@ def main(C, gamma, tol, class_weight, joblib_backend="loky"):
 #%%
 # We create a ``main()`` function that takes as arguments the hyperparameters for an SVM for
 # classification. We add the argument ``joblib_backend`` so that we can control which backend
-# is used to do the cross-validation. By default we will use ``loky`` for multi-processing.
-# We load the dataset ``digits`` and divide it in features ``X`` and targets ``y``.#
+# is used to paralellize the cross-validation. By default we will use ``loky`` for multi-processing.
+# We load the dataset ``digits`` and divide it in features ``X`` and targets ``y``.
 # We then create the model with the given hyperparameter values.
 # We use ``joblib.parallel_backend`` to execute the cross-validation on 5 folds in parallel
 # for more effiency. Finaly we compute the average accuracy, and convert it to test error
@@ -49,9 +49,6 @@ def main(C, gamma, tol, class_weight, joblib_backend="loky"):
 # The results is returned in the format required by Oríon.
 #
 # We will now create an experiment with Oríon to optimize this function.
-
-from orion.client import build_experiment
-
 
 # Specify the database where the experiments are stored. We use a local PickleDB here.
 storage = {
@@ -64,9 +61,9 @@ storage = {
 
 # Specify optimization space for the SVM
 space = {
-    "C": "loguniform(1e-6, 1e6, precision=None)",
-    "gamma": "loguniform(1e-8, 1e8, precision=None)",
-    "tol": "loguniform(1e-4, 1e-1, precision=None)",
+    "C": "loguniform(1e-6, 1e6)",
+    "gamma": "loguniform(1e-8, 1e8)",
+    "tol": "loguniform(1e-4, 1e-1)",
     "class_weight": "choices([None, 'balanced'])",
 }
 
@@ -75,8 +72,12 @@ space = {
 # Joblib
 # ------
 #
+# `Joblib`_ is a lightweight library for task parallel execution in Python. It is the default
+# backend used by Oríon to spawn multiple workers.
+#
 # We first build the experiment and limit it to 200 trials.
-# We will use this experiment
+
+from orion.client import build_experiment
 
 experiment = build_experiment(
     name="joblib_example",
@@ -95,7 +96,7 @@ experiment = build_experiment(
 experiment.workon(main, n_workers=4)
 
 #%%
-# Voilà.
+# It is as simple as this.
 #
 # The experiment backend is by default the one configured in the global configuration
 # (:ref:`config_worker_executor` and :ref:`config_worker_executor_configuration`).
@@ -105,8 +106,8 @@ experiment.workon(main, n_workers=4)
 # like the following.
 
 
-with experiment.tmp_executor("joblib", n_workers=12):
-    experiment.workon(main, n_workers=6)
+with experiment.tmp_executor("joblib", n_workers=10):
+    experiment.workon(main, n_workers=2)
 
 #%%
 # Note that you must specify ``n_workers`` for both the backend and for
@@ -116,11 +117,14 @@ with experiment.tmp_executor("joblib", n_workers=12):
 # For :meth:`ExperimentClient.workon() <orion.client.experiment.ExperimentClient.workon>`,
 # it is the number of
 # Orion workers to run in parallel. You may want to have more backend workers than
-# Oríon workers is for instance your task is also parallelizing tasks. You can
+# Oríon workers if for instance your task is also parallelizing tasks. You can
 # see such an example here, because we are parallelizing the cross-validation inside
-# the function Oríon is optimizating.
-
-#%%
+# the function Oríon is optimizing. Each worker will create 5 tasks that can be run in parallel.
+#
+# .. _Joblib: https://joblib.readthedocs.io/en/latest/
+#
+# .. _parallel_backend(): https://joblib.readthedocs.io/en/latest/parallel.html#joblib.parallel_backend
+#
 # Dask
 # ----
 #
@@ -141,5 +145,5 @@ experiment = build_experiment(
 )
 
 if __name__ == "__main__":
-    with experiment.tmp_executor("dask", n_workers=12):
-        experiment.workon(main, n_workers=6, joblib_backend="dask")
+    with experiment.tmp_executor("dask", n_workers=10):
+        experiment.workon(main, n_workers=2, joblib_backend="dask")
