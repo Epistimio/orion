@@ -10,9 +10,9 @@ import yaml
 
 import orion.core
 import orion.core.cli
+import orion.core.cli.hunt
 import orion.core.evc.conflicts
 import orion.core.io.resolve_config
-import orion.core.worker
 from orion.client import get_experiment
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
@@ -179,7 +179,7 @@ class TestStorage(ConfigurationTestSuite):
         storage = get_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == "here.pkl"
+        assert storage._db.host == os.path.abspath("here.pkl")
 
     def check_env_var_config(self, tmp_path, monkeypatch):
         """Check that env vars overrides global configuration"""
@@ -204,7 +204,7 @@ class TestStorage(ConfigurationTestSuite):
         storage = get_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == self.env_vars["ORION_DB_ADDRESS"]
+        assert storage._db.host == os.path.abspath(self.env_vars["ORION_DB_ADDRESS"])
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
@@ -233,7 +233,7 @@ class TestStorage(ConfigurationTestSuite):
         storage = get_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == "local.pkl"
+        assert storage._db.host == os.path.abspath("local.pkl")
 
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """No Storage config in cmdline, no test"""
@@ -280,7 +280,7 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         storage = get_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == "dbhere.pkl"
+        assert storage._db.host == os.path.abspath("dbhere.pkl")
 
     def check_env_var_config(self, tmp_path, monkeypatch):
         """Check that env vars overrides global configuration"""
@@ -302,7 +302,7 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         storage = get_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == self.env_vars["ORION_DB_ADDRESS"]
+        assert storage._db.host == os.path.abspath(self.env_vars["ORION_DB_ADDRESS"])
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
@@ -328,7 +328,7 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         storage = get_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == "dblocal.pkl"
+        assert storage._db.host == os.path.abspath("dblocal.pkl")
 
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """No Storage config in cmdline, no test"""
@@ -536,6 +536,9 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
     config = {
         "worker": {
+            "n_workers": 2,
+            "executor": "dask",
+            "executor_configuration": {"threads_per_worker": 1},
             "heartbeat": 30,
             "max_trials": 10,
             "max_broken": 5,
@@ -546,6 +549,8 @@ class TestWorkerConfig(ConfigurationTestSuite):
     }
 
     env_vars = {
+        "ORION_N_WORKERS": 3,
+        "ORION_EXECUTOR": "joblib",
         "ORION_HEARTBEAT": 40,
         "ORION_WORKER_MAX_TRIALS": 20,
         "ORION_WORKER_MAX_BROKEN": 6,
@@ -556,6 +561,9 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
     local = {
         "worker": {
+            "n_workers": 4,
+            "executor": "dask",
+            "executor_configuration": {"threads_per_worker": 2},
             "heartbeat": 50,
             "max_trials": 30,
             "max_broken": 7,
@@ -566,8 +574,10 @@ class TestWorkerConfig(ConfigurationTestSuite):
     }
 
     cmdargs = {
+        "n-workers": 1,
+        "executor": "dask",
         "heartbeat": 70,
-        "worker-max-trials": 40,
+        "worker-max-trials": 1,
         "worker-max-broken": 8,
         "max-idle-time": 18,
         "interrupt-signal-code": 134,
@@ -578,28 +588,44 @@ class TestWorkerConfig(ConfigurationTestSuite):
         """Check that defaults are different than testing configuration"""
         assert orion.core.config.to_dict()["worker"] != self.config["worker"]
 
+    def _mock(self, monkeypatch):
+        self._mock_exp_client(monkeypatch)
+        self._mock_consumer(monkeypatch)
+        self._mock_producer(monkeypatch)
+        self._mock_workon(monkeypatch)
+
+    def _mock_exp_client(self, monkeypatch):
+        self.exp_client = None
+        old_init = orion.client.experiment.ExperimentClient.__init__
+
+        def init(c_self, *args, **kwargs):
+            old_init(c_self, *args, **kwargs)
+            self.exp_client = c_self
+
+        monkeypatch.setattr(orion.client.experiment.ExperimentClient, "__init__", init)
+
     def _mock_consumer(self, monkeypatch):
         self.consumer = None
-        old_init = orion.core.worker.Consumer.__init__
+        old_init = orion.core.cli.hunt.Consumer.__init__
 
         def init(c_self, *args, **kwargs):
             old_init(c_self, *args, **kwargs)
             self.consumer = c_self
 
-        monkeypatch.setattr(orion.core.worker.Consumer, "__init__", init)
+        monkeypatch.setattr(orion.core.cli.hunt.Consumer, "__init__", init)
 
     def _mock_producer(self, monkeypatch):
         self.producer = None
-        old_init = orion.core.worker.Producer.__init__
+        old_init = orion.core.cli.hunt.Producer.__init__
 
         def init(p_self, *args, **kwargs):
             old_init(p_self, *args, **kwargs)
             self.producer = p_self
 
-        monkeypatch.setattr(orion.core.worker.Producer, "__init__", init)
+        monkeypatch.setattr(orion.core.cli.hunt.Producer, "__init__", init)
 
     def _mock_workon(self, monkeypatch):
-        workon = orion.core.worker.workon
+        workon = orion.core.cli.hunt.workon
 
         self.workon_kwargs = None
 
@@ -609,8 +635,16 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
         monkeypatch.setattr("orion.core.cli.hunt.workon", mocked_workon)
 
+    def _check_mocks(self, config):
+        self._check_exp_client(config)
+        self._check_consumer(config)
+        self._check_producer(config)
+        self._check_workon(config)
+
+    def _check_exp_client(self, config):
+        assert self.exp_client.heartbeat == config["heartbeat"]
+
     def _check_consumer(self, config):
-        assert self.consumer.heartbeat == config["heartbeat"]
         assert (
             self.consumer.template_builder.config_prefix == config["user_script_config"]
         )
@@ -620,6 +654,12 @@ class TestWorkerConfig(ConfigurationTestSuite):
         assert self.producer.max_idle_time == config["max_idle_time"]
 
     def _check_workon(self, config):
+        assert self.workon_kwargs["n_workers"] == config["n_workers"]
+        assert self.workon_kwargs["executor"] == config["executor"]
+        assert (
+            self.workon_kwargs["executor_configuration"]
+            == config["executor_configuration"]
+        )
         assert self.workon_kwargs["max_trials"] == config["max_trials"]
         assert self.workon_kwargs["max_broken"] == config["max_broken"]
 
@@ -627,20 +667,19 @@ class TestWorkerConfig(ConfigurationTestSuite):
         """Check that global configuration is set properly"""
         assert orion.core.config.to_dict()["worker"] == self.config["worker"]
 
-        self._mock_consumer(monkeypatch)
-        self._mock_producer(monkeypatch)
-        self._mock_workon(monkeypatch)
+        self._mock(monkeypatch)
 
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        self._check_consumer(self.config["worker"])
-        self._check_producer(self.config["worker"])
-        self._check_workon(self.config["worker"])
+        self._check_mocks(self.config["worker"])
 
     def check_env_var_config(self, tmp_path, monkeypatch):
         """Check that env vars overrides global configuration"""
         env_var_config = {
+            "n_workers": self.env_vars["ORION_N_WORKERS"],
+            "executor": self.env_vars["ORION_EXECUTOR"],
+            "executor_configuration": self.config["worker"]["executor_configuration"],
             "heartbeat": self.env_vars["ORION_HEARTBEAT"],
             "max_trials": self.env_vars["ORION_WORKER_MAX_TRIALS"],
             "max_broken": self.env_vars["ORION_WORKER_MAX_BROKEN"],
@@ -651,16 +690,16 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
         assert orion.core.config.to_dict()["worker"] == env_var_config
 
-        self._mock_consumer(monkeypatch)
-        self._mock_producer(monkeypatch)
-        self._mock_workon(monkeypatch)
+        # Override executor configuration otherwise joblib will fail.
+        orion.core.config.worker.executor_configuration = {}
+        env_var_config["executor_configuration"] = {}
+
+        self._mock(monkeypatch)
 
         command = f"hunt --exp-max-trials 0 -n test python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        self._check_consumer(env_var_config)
-        self._check_producer(env_var_config)
-        self._check_workon(env_var_config)
+        self._check_mocks(env_var_config)
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
@@ -668,20 +707,22 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
     def check_local_config(self, tmp_path, conf_file, monkeypatch):
         """Check that local configuration overrides global/envvars configuration"""
-        self._mock_consumer(monkeypatch)
-        self._mock_producer(monkeypatch)
-        self._mock_workon(monkeypatch)
+        self._mock(monkeypatch)
+
+        # Override executor so that executor and configuration are coherent in global config
+        os.environ["ORION_EXECUTOR"] = "dask"
 
         command = f"hunt --exp-max-trials 0 -n test -c {conf_file} python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        self._check_consumer(self.local["worker"])
-        self._check_producer(self.local["worker"])
-        self._check_workon(self.local["worker"])
+        self._check_mocks(self.local["worker"])
 
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """Check that cmdargs configuration overrides global/envvars/local configuration"""
         config = {
+            "n_workers": self.cmdargs["n-workers"],
+            "executor": self.cmdargs["executor"],
+            "executor_configuration": {"threads_per_worker": 2},
             "heartbeat": self.cmdargs["heartbeat"],
             "max_trials": self.cmdargs["worker-max-trials"],
             "max_broken": self.cmdargs["worker-max-broken"],
@@ -690,9 +731,10 @@ class TestWorkerConfig(ConfigurationTestSuite):
             "user_script_config": self.cmdargs["user-script-config"],
         }
 
-        self._mock_consumer(monkeypatch)
-        self._mock_producer(monkeypatch)
-        self._mock_workon(monkeypatch)
+        self._mock(monkeypatch)
+
+        # Override executor so that executor and configuration are coherent in global config
+        os.environ["ORION_EXECUTOR"] = "dask"
 
         command = f"hunt --worker-max-trials 0 -c {conf_file} -n cmd-test"
         command += " " + " ".join(
@@ -701,9 +743,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
         command += f" python {script} -x~uniform(0,1)"
         orion.core.cli.main(command.split(" "))
 
-        self._check_consumer(config)
-        self._check_producer(config)
-        self._check_workon(config)
+        self._check_mocks(config)
 
 
 class TestEVCConfig(ConfigurationTestSuite):
@@ -764,13 +804,13 @@ class TestEVCConfig(ConfigurationTestSuite):
 
     def _mock_consumer(self, monkeypatch):
         self.consumer = None
-        old_init = orion.core.worker.Consumer.__init__
+        old_init = orion.core.cli.hunt.Consumer.__init__
 
         def init(c_self, *args, **kwargs):
             old_init(c_self, *args, **kwargs)
             self.consumer = c_self
 
-        monkeypatch.setattr(orion.core.worker.Consumer, "__init__", init)
+        monkeypatch.setattr(orion.core.cli.hunt.Consumer, "__init__", init)
 
     def _check_consumer(self, config):
         assert self.consumer.ignore_code_changes == config["ignore_code_changes"]
@@ -793,7 +833,7 @@ class TestEVCConfig(ConfigurationTestSuite):
         command = self._check_cli_change(
             name, command, version=1, change_type="noeffect"
         )
-        command = self._check_non_monitored_arguments(
+        self._check_non_monitored_arguments(
             name, command, version=2, non_monitored_arguments=["test", "one"]
         )
         self._check_script_config_change(

@@ -104,6 +104,9 @@ Full Example of Global Configuration
         working_dir:
 
     worker:
+        n_workers: 1
+        executor: joblib
+        executor_configuration: {}
         heartbeat: 120
         interrupt_signal_code: 130
         max_broken: 10
@@ -372,6 +375,9 @@ Worker
 .. code-block:: yaml
 
     worker:
+        n_workers: 1
+        executor: joblib
+        executor_configuration: {}
         heartbeat: 120
         interrupt_signal_code: 130
         max_broken: 10
@@ -379,6 +385,44 @@ Worker
         max_trials: 1000000000
         user_script_config: config
 
+
+
+.. _config_worker_n_workers:
+
+n_workers
+~~~~~~~~~
+
+:Type: int
+:Default: 1
+:Env var: ORION_N_WORKERS
+:Description:
+    Number of workers to run in parallel.
+    It is possible to run many `orion hunt` in parallel, and each will spawn
+    ``n_workers``.
+
+
+.. _config_worker_executor:
+
+executor
+~~~~~~~~
+
+:Type: str
+:Default: joblib
+:Env var: ORION_EXECUTOR
+:Description:
+    The executor backend used to parallelize orion workers.
+
+
+.. _config_worker_executor_configuration:
+
+executor_configuration
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Type: str
+:Default: {}
+:Description:
+    The configuration of the executor. See :py:mod:`orion.executor` for documentation
+    of executors configuration.
 
 
 .. _config_worker_heartbeat:

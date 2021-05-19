@@ -17,7 +17,7 @@ from orion.core.utils.exceptions import NoConfigurationError
 from orion.core.utils.singleton import SingletonNotInstantiatedError, update_singletons
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
-from orion.testing import OrionState
+from orion.testing.state import OrionState
 
 
 class DummyTask:
@@ -62,6 +62,17 @@ class TestCreateBenchmark:
             assert isinstance(storage, Legacy)
             assert isinstance(storage._db, PickledDB)
             assert storage._db.host == host
+
+    def test_create_benchmark_with_storage(self, benchmark_config_py):
+        """Test benchmark instance has the storage configurations"""
+
+        config = copy.deepcopy(benchmark_config_py)
+        storage = {"type": "legacy", "database": {"type": "EphemeralDB"}}
+        with OrionState(storage=storage):
+            config["storage"] = storage
+            bm = get_or_create_benchmark(**config)
+
+            assert bm.storage_config == config["storage"]
 
     def test_create_benchmark_bad_storage(self, benchmark_config_py):
         """Test error message if storage is not configured properly"""

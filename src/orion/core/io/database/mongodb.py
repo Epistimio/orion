@@ -121,6 +121,19 @@ class MongoDB(AbstractDB):
             authSource=name,
         )
 
+    def __getstate__(self):
+        state = dict()
+        for key in ["host", "name", "port", "username", "password", "options"]:
+            state[key] = getattr(self, key)
+
+        return state
+
+    def __setstate__(self, state):
+        for key in ["host", "name", "port", "username", "password", "options"]:
+            setattr(self, key, state[key])
+        self.uri = None
+        self.initiate_connection()
+
     @mongodb_exception_wrapper
     def initiate_connection(self):
         """Connect to database, unless MongoDB `is_connected`.

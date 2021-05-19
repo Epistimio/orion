@@ -503,6 +503,30 @@ class TestWorkon:
         assert experiment2.name == "voici"
         assert len(experiment2.fetch_trials()) == 1
 
+    def test_workon_with_parallel_backend(self):
+        """Test there is no impact of joblib parallel for workon function"""
+
+        def foo(x):
+            return [dict(name="result", type="objective", value=x * 2)]
+
+        import joblib
+
+        with joblib.parallel_backend("loky"):
+            experiment = workon(
+                foo, space={"x": "uniform(0, 10)"}, max_trials=5, name="voici"
+            )
+
+        assert experiment.name == "voici"
+        assert len(experiment.fetch_trials()) == 5
+
+        with joblib.parallel_backend("loky", n_jobs=-1):
+            experiment = workon(
+                foo, space={"x": "uniform(0, 10)"}, max_trials=3, name="voici"
+            )
+
+        assert experiment.name == "voici"
+        assert len(experiment.fetch_trials()) == 3
+
 
 class TestGetExperiment:
     """Test :meth:`orion.client.get_experiment`"""

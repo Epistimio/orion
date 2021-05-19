@@ -4,6 +4,7 @@
 import copy
 import json
 import logging
+import os
 import tempfile
 
 import pytest
@@ -93,7 +94,7 @@ def test_setup_database_custom():
     setup_database({"type": "pickleddb", "host": "test.pkl"})
     database = Database()
     assert isinstance(database, PickledDB)
-    assert database.host == "test.pkl"
+    assert database.host == os.path.abspath("test.pkl")
 
 
 def test_setup_database_bad_override():
@@ -165,65 +166,3 @@ class TestLegacyStorage:
             trial.results = results
             with pytest.raises(FailedUpdate):
                 storage.push_trial_results(trial)
-
-    def retrieve_result(self, storage, generated_result):
-        """Test retrieve result"""
-        results_file = tempfile.NamedTemporaryFile(
-            mode="w", prefix="results_", suffix=".log", dir=".", delete=True
-        )
-
-        # Generate fake result
-        json.dump([generated_result], results_file)
-        results_file.flush()
-
-        # --
-        with OrionState(experiments=[], trials=[], storage=storage) as cfg:
-            storage = cfg.storage()
-
-            trial = Trial(**base_trial)
-            trial = storage.retrieve_result(trial, results_file)
-
-            results = trial.results
-
-            assert len(results) == 1
-            assert results[0].to_dict() == generated_result
-
-        results_file.close()
-
-    def test_retrieve_result(self, storage=None):
-        """Test retrieve result"""
-        self.retrieve_result(
-            storage, generated_result={"name": "loss", "type": "objective", "value": 2}
-        )
-
-    def test_retrieve_result_incorrect_value(self, storage=None):
-        """Test retrieve result"""
-        with pytest.raises(ValueError) as exec:
-            self.retrieve_result(
-                storage,
-                generated_result={
-                    "name": "loss",
-                    "type": "objective_unsupported_type",
-                    "value": 2,
-                },
-            )
-
-        assert exec.match(r"Given type, objective_unsupported_type")
-
-    def test_retrieve_result_nofile(self, storage=None):
-        """Test retrieve result"""
-        results_file = tempfile.NamedTemporaryFile(
-            mode="w", prefix="results_", suffix=".log", dir=".", delete=True
-        )
-
-        with OrionState(experiments=[], trials=[], storage=storage) as cfg:
-            storage = cfg.storage()
-
-            trial = Trial(**base_trial)
-
-            with pytest.raises(MissingResultFile) as exec:
-                storage.retrieve_result(trial, results_file)
-
-        results_file.close()
-
-        assert exec.match(r"Cannot parse result file")

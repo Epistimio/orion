@@ -6,6 +6,7 @@ import os
 import pytest
 
 import orion.core.cli
+from orion.core.utils.exceptions import InvalidResult
 from orion.core.worker.consumer import Consumer
 
 
@@ -20,8 +21,10 @@ def test_interrupt(storage, monkeypatch, capsys):
             "hunt",
             "--config",
             "./orion_config.yaml",
+            "--exp-max-trials",
+            "1",
             "--worker-trials",
-            "2",
+            "1",
             "python",
             "black_box.py",
             "interrupt_trial",
@@ -65,6 +68,10 @@ def test_interrupt_diff_code(storage, monkeypatch, capsys):
                 "hunt",
                 "--config",
                 "./orion_config.yaml",
+                "--worker-max-broken",
+                "2",
+                "--exp-max-trials",
+                "2",
                 "--worker-trials",
                 "2",
                 "python",
@@ -89,8 +96,10 @@ def test_interrupt_diff_code(storage, monkeypatch, capsys):
             "hunt",
             "--config",
             "./orion_config.yaml",
+            "--exp-max-trial",
+            "1",
             "--worker-trials",
-            "2",
+            "1",
             "python",
             "black_box.py",
             "interrupt_trial",
@@ -131,6 +140,8 @@ def test_report_no_name(storage, monkeypatch, fct):
             "hunt",
             "--config",
             "./orion_config.yaml",
+            "--exp-max-trials",
+            "2",
             "--worker-trials",
             "2",
             "python",
@@ -165,6 +176,8 @@ def test_report_with_name(storage, monkeypatch, fct):
             "hunt",
             "--config",
             "./orion_config.yaml",
+            "--exp-max-trials",
+            "2",
             "--worker-trials",
             "2",
             "python",
@@ -196,12 +209,14 @@ def test_report_with_bad_objective(storage, monkeypatch, fct):
 
     user_args = ["-x~uniform(-50, 50, precision=5)"]
 
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(InvalidResult) as exc:
         orion.core.cli.main(
             [
                 "hunt",
                 "--config",
                 "./orion_config.yaml",
+                "--exp-max-trials",
+                "2",
                 "--worker-trials",
                 "2",
                 "python",
@@ -227,6 +242,8 @@ def test_report_with_bad_trial_no_objective(storage, monkeypatch):
             "hunt",
             "--config",
             "./orion_config.yaml",
+            "--exp-max-trials",
+            "2",
             "--worker-trials",
             "2",
             "python",
@@ -258,6 +275,8 @@ def test_report_with_bad_trial_with_data(storage, monkeypatch):
             "hunt",
             "--config",
             "./orion_config.yaml",
+            "--exp-max-trials",
+            "2",
             "--worker-trials",
             "2",
             "python",
@@ -295,6 +314,8 @@ def test_no_report(storage, monkeypatch, capsys):
             "hunt",
             "--config",
             "./orion_config.yaml",
+            "--exp-max-trials",
+            "2",
             "--worker-trials",
             "2",
             "python",

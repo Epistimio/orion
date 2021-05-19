@@ -42,18 +42,21 @@ import orion.core as orion  # noqa
 # If your documentation needs a minimal Sphinx version, state it here.
 # needs_sphinx = '1.0'
 
-extensions = [  # Extensions must be sorted alphabetically to ease maintenance and merges.
-    "numpydoc",
-    "sphinxcontrib.httpdomain",  # Documentation directives for the REST API.
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx.ext.coverage",
-    "sphinx.ext.doctest",
-    "sphinx.ext.extlinks",
-    "sphinx.ext.todo",
-    "sphinx.ext.viewcode",
-    "sphinx.ext.intersphinx",
-]
+extensions = (
+    [  # Extensions must be sorted alphabetically to ease maintenance and merges.
+        "numpydoc",
+        "sphinxcontrib.httpdomain",  # Documentation directives for the REST API.
+        "sphinx_gallery.gen_gallery",
+        "sphinx.ext.autodoc",
+        "sphinx.ext.autosummary",
+        "sphinx.ext.coverage",
+        "sphinx.ext.doctest",
+        "sphinx.ext.extlinks",
+        "sphinx.ext.todo",
+        "sphinx.ext.viewcode",
+        "sphinx.ext.intersphinx",
+    ]
+)
 
 # General information about the project.
 project = u"orion"
@@ -92,7 +95,12 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ["_build", "_templates", "**/pptree.py"]
+exclude_patterns = [
+    "_build",
+    "_templates",
+    "**/pptree.py",
+    "user/visualizations.rst",
+]
 
 # The name of the Pygments (syntax highlighting) style to use.
 highlight_language = "python3"
@@ -209,6 +217,37 @@ texinfo_documents = [
 
 autodoc_mock_imports = ["_version", "utils._appdirs"]
 
+# -- Gallery configuration -----------------------------------------------
+
+import plotly.io as pio
+
+pio.renderers.default = "sphinx_gallery"
+
+from plotly.io._sg_scraper import plotly_sg_scraper
+
+image_scrapers = (
+    "matplotlib",
+    plotly_sg_scraper,
+)
+
+import sphinx_gallery.sorting
+
+sphinx_gallery_conf = {
+    # "doc_module": ("plotly",),
+    "backreferences_dir": "gen_modules/backreferences",
+    "reference_url": {
+        "sphinx_gallery": None,
+    },
+    "examples_dirs": ["../../examples/plotting", "../../examples/tutorials"],
+    "gallery_dirs": ["auto_examples", "auto_tutorials"],
+    "image_scrapers": image_scrapers,
+    # "compress_images": ("images", "thumbnails"),
+    "filename_pattern": "/plot_",
+    "matplotlib_animations": True,
+    "ignore_pattern": "python_example.py",
+    "within_subsection_order": sphinx_gallery.sorting.FileNameSortKey,
+    "remove_config_comments": True,
+}
 
 # -- intersphinx configuration ------------------------------------------
 
@@ -223,9 +262,12 @@ intersphinx_mapping = {
 extlinks = {
     "scipy.stats": (
         "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.%s.html",
-        "test ",
+        "scipy.stats",
     ),
-    "plotly": ("https://plotly.com/python-api-reference/plotly.%s", "test "),
+    "plotly": (
+        "https://plotly.com/python-api-reference/generated/plotly.%s",
+        "plotly.",
+    ),
 }
 
 
@@ -261,7 +303,8 @@ nitpick_ignore = [("py:obj", attr) for attr in ignore_algo_attr]
 ################################################################################
 
 # sphinx.ext.autosummary will automatically be loaded as well. So:
-autosummary_generate = glob.glob("reference/*.rst")
+# autosummary_generate = True
+# autosummary_generate = glob.glob("reference/*.rst")
 
 # Generate ``plot::`` for ``Examples`` sections which contain matplotlib
 numpydoc_use_plots = False
@@ -273,3 +316,20 @@ numpydoc_class_members_toctree = False
 
 
 numpydoc_show_inherited_class_members = False
+
+
+################################################################################
+#                             Auto Doc Extension                               #
+################################################################################
+
+# Avoid skipping __call__. This was an issue for Consumer class.
+
+
+def skip(app, what, name, obj, would_skip, options):
+    if name == "__call__":
+        return False
+    return would_skip
+
+
+def setup(app):
+    app.connect("autodoc-skip-member", skip)

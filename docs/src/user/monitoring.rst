@@ -25,8 +25,10 @@ Library API
 .. _library-api-evc-results:
 .. include:: library/evc_results.rst
 
+
+.. _web-api:
+
 Web API
 ========
 
-.. _web-api:
 .. include:: web_api.rst

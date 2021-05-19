@@ -266,6 +266,12 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
 
     # Test worker subconfig
     worker_config = config.pop("worker")
+    assert worker_config.pop("n_workers") == orion.core.config.worker.n_workers
+    assert worker_config.pop("executor") == orion.core.config.worker.executor
+    assert (
+        worker_config.pop("executor_configuration")
+        == orion.core.config.worker.executor_configuration
+    )
     assert worker_config.pop("heartbeat") == orion.core.config.worker.heartbeat
     assert worker_config.pop("max_trials") == orion.core.config.worker.max_trials
     assert worker_config.pop("max_broken") == orion.core.config.worker.max_broken

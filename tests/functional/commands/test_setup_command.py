@@ -120,7 +120,7 @@ def test_invalid_database(monkeypatch, tmp_path, capsys):
     for invalid_db_name in invalid_db_names:
         assert (
             "Unexpected value: {}. Must be one of: {}\n".format(
-                invalid_db_name, ", ".join(Database.typenames)
+                invalid_db_name, ", ".join(sorted(Database.types.keys()))
             )
             in captured_output
         )

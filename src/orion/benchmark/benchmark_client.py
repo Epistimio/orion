@@ -66,7 +66,7 @@ def get_or_create_benchmark(
             "algorithms and targets space was not defined.".format(name)
         )
 
-    benchmark = _create_benchmark(name, algorithms, targets)
+    benchmark = _create_benchmark(name, algorithms, targets, storage=storage)
 
     if input_configure and input_benchmark.configuration != benchmark.configuration:
         logger.warn(
@@ -126,9 +126,9 @@ def _resolve_db_config(db_config):
     return benchmark_id, algorithms, targets
 
 
-def _create_benchmark(name, algorithms, targets):
+def _create_benchmark(name, algorithms, targets, storage):
 
-    benchmark = Benchmark(name, algorithms, targets)
+    benchmark = Benchmark(name, algorithms, targets, storage)
     benchmark.setup_studies()
 
     return benchmark

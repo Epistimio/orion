@@ -31,7 +31,7 @@ def infer_converter_from_file_type(config_path, regex=None, default_keyword=""):
     converter.
     """
     _, ext_type = os.path.splitext(os.path.abspath(config_path))
-    for klass in Converter.types:
+    for klass in Converter.types.values():
         if ext_type in klass.file_extensions:
             return klass()
 

@@ -1,3 +1,5 @@
+.. _parallelism:
+
 ****************
 Parallel Workers
 ****************
@@ -32,3 +34,43 @@ were already completed by other workers.
   :alt: Multiple workers are synchronized while creating a new trial.
   :align: center
   :figclass: align-center
+
+
+Executor backends
+=================
+
+It is also possible to execute multiple workers using the argument ``--n-workers`` in commandline
+or ``experiment.workon(n_workers)`` using the python API. The workers will work together
+using the same mechanisms explained above, but an
+:class:`orion.executor.base.Executor` backend will be used in addition
+to spawn the workers and maintain them alive. The default backend is :ref:`executor-joblib`.
+
+You can configure it
+via a global or a local configuration file (:ref:`config_worker_executor_configuration`)
+or by passing it as an argument to :py:meth:`orion.client.experiment.ExperimentClient.tmp_executor`.
+
+.. _executor-joblib:
+
+Joblib
+------
+
+`Joblib`_ is a lightweight library for task parallel execution in Python. We use the ``loky``
+backend of joblib by default to spawn workers on different processes.
+The joblib backend is configured using `parallel_backend()`_.
+
+See documentation at `parallel_backend()`_ for information on possible arguments.
+
+.. _Joblib: https://joblib.readthedocs.io/en/latest/
+
+.. _parallel_backend(): https://joblib.readthedocs.io/en/latest/parallel.html#joblib.parallel_backend
+
+Dask
+----
+
+It is possible to use dask with the joblib backend. Joblib can be configured to use Dask as
+explained
+`here <https://joblib.readthedocs.io/en/latest/auto_examples/parallel/distributed_backend_simple.html>`__.
+For more control over Dask, you should prefer using Dask executor backend directly.
+The executor configuration is used to create the Dask Client. See Dask's documentation
+`here <https://distributed.dask.org/en/latest/api.html#distributed.Client>`__ for
+more information on possible arguments.

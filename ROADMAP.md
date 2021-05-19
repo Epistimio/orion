@@ -1,17 +1,13 @@
 # Roadmap
-Last update December 3rd, 2020
+Last update May 19th, 2021
 
 ## Next releases - Short-Term
 
-### v0.1.15
+### v0.1.16
 
 #### Quick release for bug fixes
 
 ### v0.2
-#### Native Multi-Processing support
-
-Added support for parallelism with auto-scaling. No more need to launch multiple workers 
-(though still supported) for parallelism, simply pass `--n-workers` or `workon(n_workers)`.
 
 #### Generic `Optimizer` interface supporting various types of algorithms
 

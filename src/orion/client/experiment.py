@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=too-many-lines
 """
 Experiment wrapper client
 =========================
 
 Wraps the core Experiment object to provide further functionalities for the user
 """
-import atexit
-import functools
 import inspect
 import logging
-import sys
+import traceback
+from contextlib import contextmanager
 
-from numpy import inf as infinity
-
+import orion.core
 import orion.core.utils.format_trials as format_trials
-import orion.core.worker
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
     BrokenExperiment,
+    CompletedExperiment,
+    InvalidResult,
     SampleTimeout,
     UnsupportedOperation,
     WaitingForTrials,
@@ -25,27 +25,37 @@ from orion.core.utils.exceptions import (
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
+from orion.executor.base import Executor
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
 
 log = logging.getLogger(__name__)
 
 
-def set_broken_trials(client):
-    """Release all trials with status broken if the process exits without releasing them."""
-    if sys.exc_info()[0] is KeyboardInterrupt:
-        status = "interrupted"
-    else:
-        status = "broken"
+def reserve_trial(experiment, producer, _depth=1):
+    """Reserve a new trial, or produce and reserve a trial if none are available."""
+    log.debug("Trying to reserve a new trial to evaluate.")
+    trial = experiment.reserve_trial()
 
-    for trial_id in list(client._pacemakers.keys()):  # pylint: disable=protected-access
-        trial = client.get_trial(uid=trial_id)
-        if trial is None:
-            log.warning(
-                "Trial {} was not found in storage, could not set status to `broken`."
+    if trial is None and not producer.is_done:
+
+        if _depth > 10:
+            raise WaitingForTrials(
+                "No trials are available at the moment "
+                "wait for current trials to finish"
             )
-            continue
-        client.release(trial, status=status)
+
+        log.debug("#### Failed to pull a new trial from database.")
+
+        log.debug("#### Fetch most recent completed trials and update algorithm.")
+        producer.update()
+
+        log.debug("#### Produce new trials.")
+        producer.produce()
+
+        return reserve_trial(experiment, producer, _depth=_depth + 1)
+
+    return trial
 
 
 # pylint: disable=too-many-public-methods
@@ -64,16 +74,19 @@ class ExperimentClient:
 
     """
 
-    def __init__(self, experiment, producer, heartbeat=None):
+    def __init__(self, experiment, producer, executor=None, heartbeat=None):
         self._experiment = experiment
         self._producer = producer
         self._pacemakers = {}
-        self.set_broken_trials = functools.partial(set_broken_trials, client=self)
         if heartbeat is None:
             heartbeat = orion.core.config.worker.heartbeat
         self.heartbeat = heartbeat
+        self.executor = executor or Executor(
+            orion.core.config.worker.executor,
+            n_workers=orion.core.config.worker.n_workers,
+            **orion.core.config.worker.executor_configuration,
+        )
         self.plot = PlotAccessor(self)
-        atexit.register(self.set_broken_trials)
 
     ###
     # Attributes
@@ -489,9 +502,8 @@ class ExperimentClient:
 
         Returns
         -------
-        `orior.core.worker.trial.Trial` or None
-            Reserved trial for execution. Will return None if experiment is done.
-            of if the algorithm cannot suggest until other trials complete.
+        `orior.core.worker.trial.Trial`
+            Reserved trial for execution.
 
         Raises
         ------
@@ -504,7 +516,10 @@ class ExperimentClient:
             This is determined by ``max_broken`` in the configuration of the experiment.
 
         :class:`orion.core.utils.exceptions.SampleTimeout`
-            if the algorithm of the experiment could not sample new unique points.
+            if the algorithm of the experiment could not sample new unique trials.
+
+        :class:`orion.core.utils.exceptions.CompletedExperiment`
+            if the experiment was completed and algorithm could not sample new trials.
 
         :class:`orion.core.utils.exceptions.UnsupportedOperation`
             If the experiment was not loaded in executable mode.
@@ -516,28 +531,23 @@ class ExperimentClient:
             raise BrokenExperiment("Trials failed too many times")
 
         if self.is_done:
-            return None
+            raise CompletedExperiment("Experiment is done, cannot sample more trials.")
 
         try:
-            trial = orion.core.worker.reserve_trial(self._experiment, self._producer)
+            trial = reserve_trial(self._experiment, self._producer)
 
-        except WaitingForTrials as e:
+        except (WaitingForTrials, SampleTimeout) as e:
             if self.is_broken:
                 raise BrokenExperiment("Trials failed too many times") from e
 
             raise e
 
-        except SampleTimeout as e:
-            if self.is_broken:
-                raise BrokenExperiment("Trials failed too many times") from e
-
-            raise e
-
+        # This is to handle cases where experiment was completed during call to `reserve_trial`
         if trial is None:
-            return trial
-        else:
-            self._maintain_reservation(trial)
-            return TrialCM(self, trial)
+            raise CompletedExperiment("Producer is done, cannot sample more trials.")
+
+        self._maintain_reservation(trial)
+        return TrialCM(self, trial)
 
     def observe(self, trial, results):
         """Observe trial results
@@ -589,7 +599,38 @@ class ExperimentClient:
         finally:
             self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved)
 
-    def workon(self, fct, max_trials=infinity, **kwargs):
+    @contextmanager
+    def tmp_executor(self, executor, **config):
+        """Temporarily change the executor backend of the experiment client.
+
+        Parameters
+        ----------
+        executor: str or :class:`orion.executor.base.Executor`
+            The executor to use. If it is a ``str``, the provided ``config`` will be used
+            to create the executor with ``Executor(executor, **config)``.
+        **config:
+            Configuration to use if ``executor`` is a ``str``.
+
+        """
+        if isinstance(executor, str):
+            executor = Executor(executor, **config)
+        old_executor = self.executor
+        self.executor = executor
+        with executor:
+            yield self
+        self.executor = old_executor
+
+    def workon(
+        self,
+        fct,
+        n_workers=None,
+        max_trials=None,
+        max_trials_per_worker=None,
+        max_broken=None,
+        trial_arg=None,
+        on_error=None,
+        **kwargs,
+    ):
         """Optimize a given function
 
         Experiment must be in executable ('x') mode.
@@ -600,39 +641,138 @@ class ExperimentClient:
             Function to optimize. Must take arguments provided by trial.params. Additional constant
             parameter can be passed as ``**kwargs`` to `workon`. Function must return the final
             objective.
+        n_workers: int, optional
+            Number of workers to run in parallel. Defaults to value of global config.
         max_trials: int, optional
-            Maximum number of trials to execute within `workon`. If the experiment or algorithm
-            reach status is_done before, the execution of `workon` terminates.
+            Maximum number of trials to execute within ``workon``. If the experiment or algorithm
+            reach status is_done before, the execution of ``workon`` terminates.
+            Defaults to experiment's max trial. If ``max_trials`` is larger than
+            ``experiment.max_trials``, the experiment will stop when reaching
+            ``experiment.max_trials``.
+        max_trials_per_worker: int, optional
+            Maximum number of trials to execute within each worker. ``max_trials`` and
+            ``experiment.max_trials`` have precedence. Defaults to global config.
+        max_broken: int, optional
+            Maximum number of broken trials to accept during `workon`. When this threshold is
+            reached the function will raise :class:`orion.core.utils.exceptions.BrokenExperiment`.
+            Defaults to value of global config.
+        trial_arg: str, optional
+            The function ``fct`` may support receiving the trial as an argument. This argument name
+            can be specified with ``trial_arg``. If not defined (``None``), then only the
+            hyperparameters will be passed to `fct`.
+        on_error: callable, optional
+            Callback that is executed if an error occur during the execution of ``fct``.
+            The signature of the callback must be
+            ``foo(ExperimentClient, Trial, Error, nb_of_worker_broken_trials)``.
+            If the callblack returns False, the error will be ignored, otherwise it is counted
+            for the threshold `max_broken`. In case of critical errors, you may also directly
+            raise an error and force break out of ``workon``.
         **kwargs
             Constant argument to pass to `fct` in addition to trial.params. If values in kwargs are
             present in trial.params, the latter takes precedence.
 
         Raises
         ------
-        `ValueError`
-             If results returned by `fct` have invalid format
-        `orion.core.utils.exceptions.UnsupportedOperation`
+        :class:`orion.core.utils.exceptions.InvalidResult`
+             If results returned by `fct` have invalid format.
+
+        :class:`orion.core.utils.exceptions.WaitingForTrials`
+            if the experiment is not completed and algorithm needs to wait for some
+            trials to complete before it can suggest new trials.
+
+        :class:`orion.core.utils.exceptions.BrokenExperiment`
+            if too many trials failed to run and the experiment cannot continue.
+            This is determined by ``max_broken`` in the configuration of the experiment.
+
+        :class:`orion.core.utils.exceptions.SampleTimeout`
+            if the algorithm of the experiment could not sample new unique points.
+
+        :class:`orion.core.utils.exceptions.UnsupportedOperation`
             If the experiment was not loaded in executable mode.
 
         """
         self._check_if_executable()
 
+        if n_workers is None:
+            n_workers = orion.core.config.worker.n_workers
+
+        if max_trials is None:
+            max_trials = self.max_trials
+
+        if max_trials_per_worker is None:
+            max_trials_per_worker = orion.core.config.worker.max_trials
+
+        if max_broken is None:
+            max_broken = orion.core.config.worker.max_broken
+
+        # Use worker's max_trials inside `exp.is_done` to reduce chance of
+        # race condition for trials creation
+        if self.max_trials > max_trials:
+            self._experiment.max_trials = max_trials
+            self._experiment.algorithms.algorithm.max_trials = max_trials
+
+        trials = self.executor.wait(
+            self.executor.submit(
+                self._optimize,
+                fct,
+                max_trials_per_worker,
+                max_broken,
+                trial_arg,
+                on_error,
+                **kwargs,
+            )
+            for _ in range(n_workers)
+        )
+
+        return sum(trials)
+
+    def _optimize(self, fct, max_trials, max_broken, trial_arg, on_error, **kwargs):
+        worker_broken_trials = 0
         trials = 0
         kwargs = flatten(kwargs)
-        while not self.is_done and trials < max_trials:
-            trial = self.suggest()
-            if trial is None:
-                log.warning("Algorithm could not sample new points")
-                return trials
-            kwargs.update(flatten(trial.params))
-            results = fct(**unflatten(kwargs))
-            self.observe(trial, results=results)
+        max_trials = min(max_trials, self.max_trials)
+        while not self.is_done and trials - worker_broken_trials < max_trials:
+            try:
+                with self.suggest() as trial:
+
+                    kwargs.update(flatten(trial.params))
+
+                    if trial_arg:
+                        kwargs[trial_arg] = trial
+
+                    try:
+                        results = self.executor.wait(
+                            [self.executor.submit(fct, **unflatten(kwargs))]
+                        )[0]
+                        self.observe(trial, results=results)
+                    except (KeyboardInterrupt, InvalidResult):
+                        raise
+                    except BaseException as e:
+                        if on_error is None or on_error(
+                            self, trial, e, worker_broken_trials
+                        ):
+                            log.error(traceback.format_exc())
+                            worker_broken_trials += 1
+                        else:
+                            log.error(str(e))
+                            log.debug(traceback.format_exc())
+
+                        if worker_broken_trials >= max_broken:
+                            raise BrokenExperiment(
+                                "Worker has reached broken trials threshold"
+                            )
+                        else:
+                            self.release(trial, status="broken")
+            except CompletedExperiment as e:
+                log.warning(e)
+                break
+
             trials += 1
 
         return trials
 
     def close(self):
-        """Verify that no reserved trials are remaining and unregister atexit().
+        """Verify that no reserved trials are remaining.
 
         Experiment must be in executable ('x') mode.
 
@@ -650,8 +790,6 @@ class ExperimentClient:
                 "closing the client, using "
                 "client.release(trial).".format(self._pacemakers.keys())
             )
-
-        atexit.unregister(self.set_broken_trials)
 
     ###
     # Private

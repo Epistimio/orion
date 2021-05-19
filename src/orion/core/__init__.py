@@ -134,7 +134,7 @@ def define_experiment_config(config):
     experiment_config.add_option(
         "max_trials",
         option_type=int,
-        default=int(10e8),
+        default=1000,
         env_var="ORION_EXP_MAX_TRIALS",
         help="number of trials to be completed for the experiment. This value "
         "will be saved within the experiment configuration and reused "
@@ -144,7 +144,7 @@ def define_experiment_config(config):
     experiment_config.add_option(
         "worker_trials",
         option_type=int,
-        default=int(10e8),
+        default=1000,
         deprecate=dict(
             version="v0.3",
             alternative="worker.max_trials",
@@ -197,6 +197,37 @@ def define_experiment_config(config):
 def define_worker_config(config):
     """Create and define the fields of the worker configuration."""
     worker_config = Configuration()
+
+    worker_config.add_option(
+        "n_workers",
+        option_type=int,
+        default=1,
+        env_var="ORION_N_WORKERS",
+        help=(
+            "Number of workers to run in parallel. "
+            "It is possible to run many ``orion hunt`` in parallel, and each will spawn "
+            "``n_workers``."
+        ),
+    )
+
+    worker_config.add_option(
+        "executor",
+        option_type=str,
+        default="joblib",
+        env_var="ORION_EXECUTOR",
+        help="The executor backend used to parallelize orion workers.",
+    )
+
+    worker_config.add_option(
+        "executor_configuration",
+        option_type=dict,
+        default={},
+        help=(
+            "The configuration of the executor. See "
+            "https://orion.readthedocs.io/en/stable/code/executor.html for documentation "
+            "of executors configuration."
+        ),
+    )
 
     worker_config.add_option(
         "heartbeat",
