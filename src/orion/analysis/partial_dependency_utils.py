@@ -22,7 +22,8 @@ def partial_dependency(
     **kwargs
 ):
     """
-    Calculates the partial dependency of parameters in a collection of :class:`Trial`.
+    Calculates the partial dependency of parameters in a collection of
+    :class:`orion.core.worker.trial.Trial`.
 
     Parameters
     ----------

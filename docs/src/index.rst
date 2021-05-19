@@ -19,7 +19,7 @@
    user/algorithms
    user/searchspace
    user/monitoring
-   user/viz
+   auto_examples/index
    user/benchmark
    user/evc
    user/storage
@@ -31,9 +31,11 @@
    :maxdepth: 1
 
    tutorials/scikit-learn
+   auto_tutorials/code_1_python_api
    tutorials/pytorch-mnist
+   auto_tutorials/code_2_hyperband_checkpoint
+   auto_tutorials/code_4_parallelism
    tutorials/cluster
-   tutorials/pytorch_cifar
    tutorials/pytorch_a2c_ppo
 
 .. toctree::
@@ -43,6 +45,20 @@
    plugins/base
    plugins/install
    plugins/algorithms
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
+
+   code/algo
+   code/analysis
+   code/benchmark
+   code/client
+   code/core
+   code/executor
+   code/plotting
+   code/storage
+   code/testing
 
 .. toctree::
    :caption: Developer Guide
@@ -55,18 +71,5 @@
    developer/documenting
    developer/ci
    developer/release
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Code Reference
-
-   code/algo
-   code/benchmark
-   code/client
-   code/core
-   code/executor
-   code/plotting
-   code/storage
-   code/testing
 
 .. Don't fetch reference/viz

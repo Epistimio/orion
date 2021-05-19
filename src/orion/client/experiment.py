@@ -656,7 +656,7 @@ class ExperimentClient:
             Maximum number of broken trials to accept during `workon`. When this threshold is
             reached the function will raise :class:`orion.core.utils.exceptions.BrokenExperiment`.
             Defaults to value of global config.
-        trial_alg: str, optional
+        trial_arg: str, optional
             The function ``fct`` may support receiving the trial as an argument. This argument name
             can be specified with ``trial_arg``. If not defined (``None``), then only the
             hyperparameters will be passed to `fct`.

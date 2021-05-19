@@ -5,6 +5,7 @@
 import copy
 import datetime
 import logging
+import os
 import pickle
 import time
 
@@ -158,7 +159,7 @@ def test_setup_storage_custom():
     storage = Storage()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
-    assert storage._db.host == "test.pkl"
+    assert storage._db.host == os.path.abspath("test.pkl")
 
 
 def test_setup_storage_custom_type_missing():
@@ -168,7 +169,7 @@ def test_setup_storage_custom_type_missing():
     storage = Storage()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
-    assert storage._db.host == "test.pkl"
+    assert storage._db.host == os.path.abspath("test.pkl")
 
 
 @pytest.mark.usefixtures("setup_pickleddb_database")

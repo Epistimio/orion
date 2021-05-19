@@ -80,7 +80,7 @@ worker needed. Indeed, Oríon doesn't uses a master / worker approach. The synch
 the database: each worker will separately generate a new trial based on the state of the experiment
 stored in the database.
 
-Make sure to visit :doc:`/user/parallel` to learn more about it and check out the tutorial to run
+Make sure to visit :ref:`parallelism` to learn more about it and check out the tutorial to run
 Oríon in :doc:`HPC environments </tutorials/cluster>`.
 
 Search Space

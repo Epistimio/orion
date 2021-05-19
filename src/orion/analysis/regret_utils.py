@@ -9,8 +9,8 @@ import pandas as pd
 
 def regret(trials, names=("best", "best_id")):
     """
-    Calculates the regret for a collection of :class:`Trial`. The regret is calculated sequentially
-    from the order of the collection.
+    Calculates the regret for a collection of :class:`orion.core.worker.trial.Trial`. The regret is
+    calculated sequentially from the order of the collection.
 
     Parameters
     ----------

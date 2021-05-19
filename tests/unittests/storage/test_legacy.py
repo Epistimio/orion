@@ -4,6 +4,7 @@
 import copy
 import json
 import logging
+import os
 import tempfile
 
 import pytest
@@ -93,7 +94,7 @@ def test_setup_database_custom():
     setup_database({"type": "pickleddb", "host": "test.pkl"})
     database = Database()
     assert isinstance(database, PickledDB)
-    assert database.host == "test.pkl"
+    assert database.host == os.path.abspath("test.pkl")
 
 
 def test_setup_database_bad_override():
