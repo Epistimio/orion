@@ -179,7 +179,7 @@ class TestStorage(ConfigurationTestSuite):
         storage = get_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == "here.pkl"
+        assert storage._db.host == os.path.abspath("here.pkl")
 
     def check_env_var_config(self, tmp_path, monkeypatch):
         """Check that env vars overrides global configuration"""
@@ -204,7 +204,7 @@ class TestStorage(ConfigurationTestSuite):
         storage = get_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == self.env_vars["ORION_DB_ADDRESS"]
+        assert storage._db.host == os.path.abspath(self.env_vars["ORION_DB_ADDRESS"])
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
@@ -233,7 +233,7 @@ class TestStorage(ConfigurationTestSuite):
         storage = get_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == "local.pkl"
+        assert storage._db.host == os.path.abspath("local.pkl")
 
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """No Storage config in cmdline, no test"""
@@ -280,7 +280,7 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         storage = get_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == "dbhere.pkl"
+        assert storage._db.host == os.path.abspath("dbhere.pkl")
 
     def check_env_var_config(self, tmp_path, monkeypatch):
         """Check that env vars overrides global configuration"""
@@ -302,7 +302,7 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         storage = get_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == self.env_vars["ORION_DB_ADDRESS"]
+        assert storage._db.host == os.path.abspath(self.env_vars["ORION_DB_ADDRESS"])
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
@@ -328,7 +328,7 @@ class TestDatabaseDeprecated(ConfigurationTestSuite):
         storage = get_storage()
         assert isinstance(storage, Legacy)
         assert isinstance(storage._db, PickledDB)
-        assert storage._db.host == "dblocal.pkl"
+        assert storage._db.host == os.path.abspath("dblocal.pkl")
 
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """No Storage config in cmdline, no test"""
