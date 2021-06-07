@@ -755,11 +755,6 @@ class TestTPE(BaseAlgoTests):
 
         assert exc.match(f"Failed to sample in interval \({low}, {high}\)")
 
-    def test_int_data(self, mocker, num, attr):
-        if num > 0:
-            pytest.skip("See https://github.com/Epistimio/orion/issues/600")
-        super(TestTPE, self).test_int_data(mocker, num, attr)
-
     def test_is_done_cardinality(self):
         # TODO: Support correctly loguniform(discrete=True)
         #       See https://github.com/Epistimio/orion/issues/566
