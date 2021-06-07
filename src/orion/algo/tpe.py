@@ -475,7 +475,7 @@ class TPE(BaseAlgorithm):
     def _sample_int_point(self, dimension, below_points, above_points):
         """Sample one value for integer dimension based on the observed good and bad points"""
         low, high = dimension.interval()
-        choices = range(low, high)
+        choices = range(low, high + 1)
 
         below_points = numpy.array(below_points).astype(int) - low
         above_points = numpy.array(above_points).astype(int) - low
@@ -589,7 +589,7 @@ class GMMSampler:
                         f"Failed to sample in interval ({self.low}, {self.high})"
                     )
                 pt = new_points.pop(0)
-                if self.low <= pt < self.high:
+                if self.low <= pt <= self.high:
                     point.append(pt)
                     break
 
