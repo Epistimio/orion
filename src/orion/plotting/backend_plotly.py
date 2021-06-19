@@ -173,12 +173,11 @@ def rankings(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
         ):
             competitions = []
             remaining = True
-            i = 0
             n_competitions = len(next(iter(experiments.values())))
             for ith_competition in range(n_competitions):
                 competition = {}
                 for name in experiments.keys():
-                    competition[name] = experiments[name][i]
+                    competition[name] = experiments[name][ith_competition]
                 competitions.append(competition)
         elif isinstance(experiments, dict):
             competitions = experiments
@@ -636,7 +635,7 @@ def regrets(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
             name=name,
         )
         if "best_var" in exp_data:
-            dy = exp_data["best_var"]
+            dy = numpy.sqrt(exp_data["best_var"])
             fig.add_scatter(
                 x=list(x) + list(x)[::-1],
                 y=list(y - dy) + list(y + dy)[::-1],
