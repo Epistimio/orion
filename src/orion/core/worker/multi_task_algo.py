@@ -364,7 +364,7 @@ class MultiTaskAlgo(AlgoWrapper):
             for point, result in self.unwrapped._trials_info.values()
         )
         trials_from_other_tasks = total_trials - trials_from_target_task
-        log.info(
+        log.debug(
             f"Trials from target task: {trials_from_target_task}, "
             f"trials from other tasks: {trials_from_other_tasks} "
         )

@@ -244,6 +244,11 @@ def warm_start_comparison_figure(
                 ),
                 points="all",
             )
+            
+            fig.update_layout(
+                font={"size": 18}
+            )
+            
             figures.append(fig)
 
     return figures
