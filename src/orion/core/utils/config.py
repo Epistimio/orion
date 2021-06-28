@@ -111,7 +111,7 @@ class StorageConfig(Config):
 class Refers(Config):
     parent_id: Optional[str]
     root_id: int
-    adapter: List
+    adapter: List[Any]
 
 
 @dataclass(unsafe_hash=True)

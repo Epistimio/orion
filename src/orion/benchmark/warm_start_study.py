@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from orion.algo.base import BaseAlgorithm
-from orion.client import ExperimentClient, create_experiment
+from orion.client import ExperimentClient, create_experiment, build_experiment
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.multi_task_algo import AbstractKnowledgeBase
 from orion.core.worker.producer import Producer
@@ -70,7 +70,7 @@ class WarmStartStudy(Study):
 
     def __init__(
         self,
-        benchmark: Benchmark,
+        benchmark: Benchmark,  # TODO: Remove this parameter.
         algorithms: List[Union[str, Dict]],
         assessment: BaseAssess,
         source_tasks: List[BaseTask],
@@ -78,6 +78,7 @@ class WarmStartStudy(Study):
         target_task_index: int,
         knowledge_base_type: Type[AbstractKnowledgeBase],
         warm_start_seed: int = None,
+        storage: Dict = None,
         debug: bool = True,
     ):
         """
@@ -105,6 +106,9 @@ class WarmStartStudy(Study):
             algorithms=algorithms,
             assessment=assessment,
             task=target_task,
+            # TODO: Add this argument to Study rather than fetching it through the
+            # benchmark.
+            # storage=storage,
         )
         # NOTE: Bypassing the '_StudyAlgorithm' wrapper from Study.
         # self.algorithms: List[Study._StudyAlgorithm]
@@ -112,6 +116,7 @@ class WarmStartStudy(Study):
         self.assessment: WarmStartEfficiency
         self.task: BaseTask
         self.benchmark: Benchmark
+        self.storage = storage
         self.assess_name = type(self.assessment).__name__
         self.task_name = type(self.task).__name__
         self.source_tasks: List[BaseTask]
@@ -202,12 +207,13 @@ class WarmStartStudy(Study):
                     + task_repetition_index
                     + source_task_index
                 )
-                dummy_warm_start_experiment = create_experiment(
+                dummy_warm_start_experiment = build_experiment(
                     name=dummy_warm_start_exp_name,
                     space=source_task.get_search_space(),
                     algorithms={"random": {"seed": seed}},
                     max_trials=source_task.max_trials,
                     debug=self.debug,
+                    storage=self.storage,
                 )
                 dummy_warm_start_experiments.append(dummy_warm_start_experiment)
                 warm_start_kb.add_experiment(dummy_warm_start_experiment)
@@ -231,12 +237,13 @@ class WarmStartStudy(Study):
                 ]
             )
             seed = (self.warm_start_seed or 0) + task_repetition_index
-            dummy_hot_start_experiment = create_experiment(
+            dummy_hot_start_experiment = build_experiment(
                 name=dummy_hot_start_exp_name,
                 space=self.target_task.get_search_space(),
                 algorithms={"random": {"seed": seed}},
                 max_trials=n_hot_start_trials,
-                debug=True,
+                storage=self.storage,
+                debug=self.debug,
             )
             hot_start_kb.add_experiment(dummy_hot_start_experiment)
             assert hot_start_kb.n_stored_experiments == 1
@@ -266,6 +273,23 @@ class WarmStartStudy(Study):
         self.warm_start_experiments.clear()
         self.hot_start_experiments.clear()
 
+    def algo_names(self) -> List[str]:
+        """ Returns a list of unique names for each algo in self.algorithms. """
+        base_algo_names = [get_algorithm_name(algo) for algo in self.algorithms]
+        import collections
+
+        # TODO: What to do when there are collisions between algo names?
+        # tpe_0, tpe_1, tpe_2 for instance.
+        names: List[str] = []
+        n_algos_with_given_base_name = collections.Counter(base_algo_names)
+        n_algos_with_that_name_in_algo_names = collections.defaultdict(int)
+        for i, base_algo_name in enumerate(base_algo_names):
+            n_present = n_algos_with_that_name_in_algo_names[base_algo_name]
+            algo_name = base_algo_name + (f"_{n_present}" if n_present > 0 else "")
+            names.append(algo_name)
+            n_algos_with_that_name_in_algo_names[base_algo_name] += 1
+        return names
+
     def setup_experiments(self):
         """Setup experiments to run of the study"""
         repetitions = self.assessment.task_num
@@ -283,13 +307,17 @@ class WarmStartStudy(Study):
         self.warm_start_experiments = [[] for _ in self.algorithms]
         self.hot_start_experiments = [[] for _ in self.algorithms]
 
-        for algo_index, algorithm in enumerate(self.algorithms):
+        algo_names = self.algo_names()
+        for algo_index, (algo_name, algorithm) in enumerate(
+            zip(algo_names, self.algorithms)
+        ):
             # Create the Cold / Warm / Hot Experiments, using the corresponding
             # knowledge bases created above.
             for repetition_id, warm_start_kb, hot_start_kb in zip(
                 range(repetitions), self.warm_start_kbs, self.hot_start_kbs
             ):
                 algo_name = get_algorithm_name(algorithm)
+
                 base_experiment_name = "_".join(
                     [
                         self.benchmark.name,
@@ -302,7 +330,7 @@ class WarmStartStudy(Study):
                 )
 
                 logger.info("Creating the cold start experiment.")
-                cold_start_experiment = create_experiment(
+                cold_start_experiment = build_experiment(
                     name=f"{base_experiment_name}_cold",
                     space=self.target_task.get_search_space(),
                     algorithms=algorithm,
@@ -311,10 +339,11 @@ class WarmStartStudy(Study):
                     # MultiTaskAlgo wrapper will be enabled, and there will be an unused
                     # task-id dimension which might reduce the performance of the algo.
                     knowledge_base=None,
+                    storage=self.storage,
                     debug=self.debug,
                 )
                 logger.info("Creating the warm start experiment.")
-                warm_start_experiment = create_experiment(
+                warm_start_experiment = build_experiment(
                     name=f"{base_experiment_name}_warm",
                     space=self.target_task.get_search_space(),
                     algorithms=algorithm,
@@ -322,15 +351,17 @@ class WarmStartStudy(Study):
                     # algorithms=algorithm.experiment_algorithm,
                     max_trials=self.target_task.max_trials,
                     knowledge_base=warm_start_kb,
+                    storage=self.storage,
                     debug=self.debug,
                 )
                 logger.info("Creating the hot start experiment.")
-                hot_start_experiment = create_experiment(
+                hot_start_experiment = build_experiment(
                     name=f"{base_experiment_name}_hot",
                     space=self.target_task.get_search_space(),
                     algorithms=algorithm,
                     max_trials=self.target_task.max_trials,
                     knowledge_base=hot_start_kb,
+                    storage=self.storage,
                     debug=self.debug,
                 )
 

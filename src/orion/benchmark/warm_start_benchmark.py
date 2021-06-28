@@ -81,7 +81,8 @@ class WarmStartBenchmark(Benchmark):
                 target_task=target_task,
                 target_task_index=index,
                 knowledge_base_type=self.knowledge_base_type,
-                # warm_start_seed=123,  # TODO: Vary this?
+                warm_start_seed=123,  # TODO: Vary this?
+                storage=self.storage_config,  # TODO: Maybe rename this to `storage`?
                 debug=self.debug,
             )
             study.setup_experiments()
@@ -172,13 +173,13 @@ class WarmStartTaskCorrelationBenchmark(WarmStartBenchmark):
         self.results_df: Optional[pd.DataFrame] = None
 
     def analysis(self):
-        # TODO: Remove redundant plots
         base_figures = super().analysis()
         # WIP: If all the target tasks are the same, then add a figure that compares
         # the warm-start efficiency vs the correlation between the source and target
         # tasks.
         figure_titles: List[str] = [fig.layout.title.text for fig in base_figures]
         figures_dict: Dict[str, go.Figure] = dict(zip(figure_titles, base_figures))
+        # TODO: Remove redundant plots, but keep some of them?
 
         figures: List[plotly.graph_objects.Figure] = []
         target_task = self.target_tasks[0]

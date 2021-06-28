@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Tuple, Union, Any
 import numpy as np
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
-
+from orion.core.worker.trial import Trial
 
 Point = Union[Tuple, List[float], np.ndarray]
 
