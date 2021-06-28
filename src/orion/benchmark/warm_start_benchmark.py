@@ -41,8 +41,11 @@ class WarmStartBenchmark(Benchmark):
         source_tasks: List[Union[BaseTask, List[BaseTask]]],
         target_tasks: List[BaseTask],
         knowledge_base_type: Type[AbstractKnowledgeBase],
+        repetitions: int = 5,
+        debug: bool = False,
+        storage: Dict = None,
     ):
-        super().__init__(name, algorithms, targets)
+        super().__init__(name, algorithms, targets=[], storage=storage)
         self.knowledge_base_type = knowledge_base_type
         self.source_tasks: List[List[BaseTask]] = [
             source_task if isinstance(source_task, list) else [source_task]
@@ -51,7 +54,8 @@ class WarmStartBenchmark(Benchmark):
         self.target_tasks: List[BaseTask] = target_tasks if isinstance(
             target_tasks, list
         ) else [target_tasks]
-
+        self.repetitions = repetitions
+        self.debug = debug
         # Dict mapping from algorithm name to a list of WarmStartStudies, one for each
         # (source_task(s), target_task) pair.
         # self.studies_dict: Dict[str, List[WarmStartStudy]] = {}
@@ -75,7 +79,7 @@ class WarmStartBenchmark(Benchmark):
                 target_task=target_task,
                 knowledge_base_type=self.knowledge_base_type,
                 warm_start_seed=123,  # TODO: Vary this?
-                target_task_index=index,
+                # target_task_index=index,
                 debug=self.debug,
             )
             study.setup_experiments()

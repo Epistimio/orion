@@ -337,7 +337,7 @@ class WarmStartStudy(Study):
                 self.warm_start_experiments[algo_index].append(warm_start_experiment)
                 self.hot_start_experiments[algo_index].append(hot_start_experiment)
 
-    def execute(self):
+    def execute(self, n_workers: int = 1):
         """Execute all the experiments of the study"""
         # Actually fill the knowledge bases, by calling `workon` on the source
         # experiments, which are already registered in the corresponding knowledge base.
@@ -349,7 +349,9 @@ class WarmStartStudy(Study):
                     f"Sampling a maximum of {source_task.max_trials} trials for the "
                     f"dummy 'hot-start' experiment {dummy_experiment.name}"
                 )
-                dummy_experiment.workon(source_task, max_trials=source_task.max_trials)
+                dummy_experiment.workon(
+                    source_task, max_trials=source_task.max_trials, n_workers=n_workers
+                )
 
         for dummy_experiment in self.dummy_hot_experiments:
             # Use the same total number of points as warm-starting, but from the target
@@ -359,7 +361,9 @@ class WarmStartStudy(Study):
                 f"Sampling a maximum of {hot_start_trials} trials for the dummy "
                 f"'hot-start' experiment {dummy_experiment.name}"
             )
-            dummy_experiment.workon(self.target_task, max_trials=hot_start_trials)
+            dummy_experiment.workon(
+                self.target_task, max_trials=hot_start_trials, n_workers=n_workers
+            )
 
         # Run the main experiments:
         for algo_index, algorithm in enumerate(self.algorithms):
@@ -369,13 +373,25 @@ class WarmStartStudy(Study):
                 hot_start_exp = self.hot_start_experiments[algo_index][run_id]
                 # Actually run the cold / warm / hot experiments.
                 logger.info("Starting cold start experiment.")
-                cold_start_exp.workon(self.target_task, self.target_task.max_trials)
+                cold_start_exp.workon(
+                    self.target_task,
+                    max_trials=self.target_task.max_trials,
+                    n_workers=n_workers,
+                )
 
                 logger.info("Starting warm start experiment.")
-                warm_start_exp.workon(self.target_task, self.target_task.max_trials)
+                warm_start_exp.workon(
+                    self.target_task,
+                    max_trials=self.target_task.max_trials,
+                    n_workers=n_workers,
+                )
 
                 logger.info("Starting hot start experiment.")
-                hot_start_exp.workon(self.target_task, self.target_task.max_trials)
+                hot_start_exp.workon(
+                    self.target_task,
+                    max_trials=self.target_task.max_trials,
+                    n_workers=n_workers,
+                )
 
     def status(self):
         """Return status of the study"""

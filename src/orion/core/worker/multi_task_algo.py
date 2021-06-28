@@ -436,6 +436,7 @@ class MultiTaskAlgo(AlgoWrapper):
         return trial.params["task_id"] != 0
 
     @get_task_id.register(tuple)
+    @get_task_id.register(list)
     @get_task_id.register(np.ndarray)
     def get_task_id_from_point(self, point: Union[tuple, np.ndarray]) -> int:
         # TODO: Bug in tuple_to_trial? I'm getting point = (0, 1.23, 4.56) instead of

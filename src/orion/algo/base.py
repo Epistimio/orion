@@ -323,7 +323,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
 
         trial_id = self.get_id(point)
         return (
-            trial_id in self._trials_info and self._trials_info[trial_id][1] is not None
+            trial_id in self.unwrapped._trials_info and self.unwrapped._trials_info[trial_id][1] is not None
         )
 
     @property
