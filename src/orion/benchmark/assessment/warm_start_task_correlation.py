@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Tuple, Union, Sequence
 
 import orion.analysis
 import pandas as pd
@@ -28,14 +28,19 @@ def _create_results_df(
     cold_start_experiments_per_task: List[List[ExperimentClient]],
     warm_start_experiments_per_task: List[List[ExperimentClient]],
     hot_start_experiments_per_task: List[List[ExperimentClient]],
+    task_similarities: List[float] = None,
     with_evc_tree: bool = False,
 ) -> pd.DataFrame:
     import orion.analysis
     import pandas as pd
 
-    task_similarities = [
+    task_similarities = task_similarities or [
         source_task.similarity(target_task) for source_task in source_tasks
     ]
+    # # TODO: Debugging
+    # task_similarities = [
+    #     source_task.similarity(target_task) for source_task in source_tasks
+    # ]
     task_strings = [str(source_task) for source_task in source_tasks]
 
     def make_stacked_dataframe(
@@ -92,11 +97,14 @@ def _create_results_df(
         {"cold": cold_start_df, "warm": warm_start_df, "hot": hot_start_df,},
         names=["warm_start_type", "task_id", "experiment_id", "trial_index"],
     )
-    df["task_correlation"] = -1.0 * np.ones(len(df))
+    # df["task_correlation"] = -1.0 * np.ones(len(df))
     # TODO:
+    df: pd.DataFrame
+    task_ids = df.index.get_level_values("task_id")
+    task_correlations: List[float] = - np.ones(len(df))
     for i, task_correlation_factor in enumerate(task_similarities):
-        df[df.index.get_level_values("task_id") == i] = task_correlation_factor
-    # assert False, df["task_correlation"]
+        task_correlations[task_ids == i] = task_correlation_factor
+    df["task_correlation"] = task_correlations
     # for task_index, task_dataframe in dataframes.items():
     #     [task_similarities[task_index]] * len(task_dataframe)
 
@@ -113,6 +121,7 @@ def warm_start_task_correlation_figure(
     df: pd.DataFrame = None,
     target_task: BaseTask = None,
     source_tasks: List[BaseTask] = None,
+    task_similarities: Sequence[float] = None,
     cold_start_experiments_per_task: List[List[ExperimentClient]] = None,
     warm_start_experiments_per_task: List[List[ExperimentClient]] = None,
     hot_start_experiments_per_task: List[List[ExperimentClient]] = None,
@@ -123,18 +132,20 @@ def warm_start_task_correlation_figure(
     plots the 'warm start efficiency' (what that means exactly is still TBD) vs the
     correlation coefficient.
     """
+
+    # TODO: Add random search as a line between the hot and cold, since it should also
+    # improve simply because of having more points.
+
     # import dash
     # import dash_core_components as dcc
     # import dash_html_components as html
     # from dash.dependencies import Input, Output
     # import plotly.express as px
     # import plotly.express as px
-
     # df = px.data.tips()
     # df = TODO
     import orion.analysis
     import pandas as pd
-
     if df is None:
         df = _create_results_df(
             target_task=target_task,
@@ -142,6 +153,7 @@ def warm_start_task_correlation_figure(
             cold_start_experiments_per_task=cold_start_experiments_per_task,
             warm_start_experiments_per_task=warm_start_experiments_per_task,
             hot_start_experiments_per_task=hot_start_experiments_per_task,
+            task_similarities=task_similarities,
             with_evc_tree=with_evc_tree,
         )
     assert df.index.names == [
@@ -260,7 +272,8 @@ def warm_start_task_correlation_figure(
     # plot_df = pd.concat([plot_df, plot_df.index.to_frame()], axis="columns")
     plot_df["task_id"] = plot_df.index.get_level_values("task_id")
     plot_df["warm_start_type"] = plot_df.index.get_level_values("warm_start_type")
-    plot_df["source_task"] = [str(source_tasks[task_id]) for task_id in plot_df["task_id"]]
+    if source_tasks:
+        plot_df["source_task"] = [str(source_tasks[task_id]) for task_id in plot_df["task_id"]]
     plot_df["target_task"] = [str(target_task) for _ in range(len(plot_df))]
 
     figures = []
@@ -283,7 +296,7 @@ def warm_start_task_correlation_figure(
                 f"{column_name}_min",
                 f"{column_name}_max",
                 f"{column_name}_std",
-                "source_task",
+                # "source_task",
                 "target_task",
             ],
             color_discrete_map=color_dict,

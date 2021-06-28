@@ -75,6 +75,7 @@ class WarmStartStudy(Study):
         assessment: BaseAssess,
         source_tasks: List[BaseTask],
         target_task: BaseTask,
+        target_task_index: int,
         knowledge_base_type: Type[AbstractKnowledgeBase],
         warm_start_seed: int = None,
         debug: bool = True,
@@ -108,7 +109,7 @@ class WarmStartStudy(Study):
         # NOTE: Bypassing the '_StudyAlgorithm' wrapper from Study.
         # self.algorithms: List[Study._StudyAlgorithm]
         self.algorithms: List[Union[str, Dict[str, Any]]] = algorithms
-        self.assessment: BaseAssess
+        self.assessment: WarmStartEfficiency
         self.task: BaseTask
         self.benchmark: Benchmark
         self.assess_name = type(self.assessment).__name__
@@ -126,6 +127,7 @@ class WarmStartStudy(Study):
         self.target_task_name: str = getattr(
             self.target_task, "name", type(self.target_task).__name__
         )
+        self.target_task_index: int = target_task_index
         # Number of repetitions to perform for each algo / task combination.
         # Each repetition will use a different seed for the warm-start trials.
         # TODO: Also use a different seed for the algo?
@@ -182,28 +184,30 @@ class WarmStartStudy(Study):
                 source_task_name = getattr(
                     source_task, "name", type(source_task).__name__
                 )
-                dummy_hot_start_exp_name = "_".join(
+                dummy_warm_start_exp_name = "_".join(
                     [
                         self.benchmark.name,
                         self.assess_name,
                         source_task_name,
+                        f"task{self.target_task_index}",
                         str(task_repetition_index),
                         "dummy_warm",
                     ]
                 )
                 # Use a different seed for the sampling of the warm-start trials for
                 # each repetition.
+                # TODO: The seeding for each target task will be the same, is that ok?
                 seed = (
                     (self.warm_start_seed or 0)
                     + task_repetition_index
                     + source_task_index
                 )
                 dummy_warm_start_experiment = create_experiment(
-                    name=dummy_hot_start_exp_name,
+                    name=dummy_warm_start_exp_name,
                     space=source_task.get_search_space(),
                     algorithms={"random": {"seed": seed}},
                     max_trials=source_task.max_trials,
-                    debug=True,
+                    debug=self.debug,
                 )
                 dummy_warm_start_experiments.append(dummy_warm_start_experiment)
                 warm_start_kb.add_experiment(dummy_warm_start_experiment)
@@ -220,7 +224,8 @@ class WarmStartStudy(Study):
                 [
                     self.benchmark.name,
                     self.assess_name,
-                    self.target_task_name,
+                    source_task_name,
+                    f"task{self.target_task_name}",
                     str(task_repetition_index),
                     "dummy_hot",
                 ]
@@ -242,10 +247,6 @@ class WarmStartStudy(Study):
             # self.cold_start_kbs.append(cold_start_kb)
             self.warm_start_kbs.append(warm_start_kb)
             self.hot_start_kbs.append(hot_start_kb)
-
-    def _fill_knowledge_bases(self) -> None:
-        """
-        """
 
     def _clear(self) -> None:
         # Clear everything, for no real reason (this shouldn't really be used twice
@@ -288,13 +289,15 @@ class WarmStartStudy(Study):
             for repetition_id, warm_start_kb, hot_start_kb in zip(
                 range(repetitions), self.warm_start_kbs, self.hot_start_kbs
             ):
+                algo_name = get_algorithm_name(algorithm)
                 base_experiment_name = "_".join(
                     [
                         self.benchmark.name,
                         self.assess_name,
                         target_task_name,
+                        f"task{self.target_task_index}",
                         str(repetition_id),
-                        str(algo_index),
+                        algo_name,
                     ]
                 )
 
@@ -303,14 +306,12 @@ class WarmStartStudy(Study):
                     name=f"{base_experiment_name}_cold",
                     space=self.target_task.get_search_space(),
                     algorithms=algorithm,
-                    # # Huuh? Why isn't this just `algorithm`?
-                    # algorithms=algorithm.experiment_algorithm,
                     max_trials=self.target_task.max_trials,
                     # TODO: Passing None here, because if we pass an empty KB, the
                     # MultiTaskAlgo wrapper will be enabled, and there will be an unused
                     # task-id dimension which might reduce the performance of the algo.
                     knowledge_base=None,
-                    debug=self.debug,  # ? TODO: Should we set the debug flag?
+                    debug=self.debug,
                 )
                 logger.info("Creating the warm start experiment.")
                 warm_start_experiment = create_experiment(
@@ -323,7 +324,7 @@ class WarmStartStudy(Study):
                     knowledge_base=warm_start_kb,
                     debug=self.debug,
                 )
-                logger.info(f"Creating the hot start experiment.")
+                logger.info("Creating the hot start experiment.")
                 hot_start_experiment = create_experiment(
                     name=f"{base_experiment_name}_hot",
                     space=self.target_task.get_search_space(),
@@ -347,7 +348,7 @@ class WarmStartStudy(Study):
             ):
                 logger.info(
                     f"Sampling a maximum of {source_task.max_trials} trials for the "
-                    f"dummy 'hot-start' experiment {dummy_experiment.name}"
+                    f"dummy 'warm-start' experiment {dummy_experiment.name}"
                 )
                 dummy_experiment.workon(
                     source_task, max_trials=source_task.max_trials, n_workers=n_workers
@@ -373,6 +374,7 @@ class WarmStartStudy(Study):
                 hot_start_exp = self.hot_start_experiments[algo_index][run_id]
                 # Actually run the cold / warm / hot experiments.
                 logger.info("Starting cold start experiment.")
+                # assert not cold_start_exp.is_done
                 cold_start_exp.workon(
                     self.target_task,
                     max_trials=self.target_task.max_trials,
@@ -380,6 +382,7 @@ class WarmStartStudy(Study):
                 )
 
                 logger.info("Starting warm start experiment.")
+                # assert not warm_start_exp.is_done
                 warm_start_exp.workon(
                     self.target_task,
                     max_trials=self.target_task.max_trials,
@@ -387,6 +390,7 @@ class WarmStartStudy(Study):
                 )
 
                 logger.info("Starting hot start experiment.")
+                # assert not hot_start_exp.is_done
                 hot_start_exp.workon(
                     self.target_task,
                     max_trials=self.target_task.max_trials,
@@ -425,7 +429,12 @@ class WarmStartStudy(Study):
         """Return assessment figure"""
         assert isinstance(self.assessment, WarmStartEfficiency)
         experiment_infos = {}
-        for i, _ in enumerate(self.algorithms):
+        algo_names = [get_algorithm_name(algo) for algo in self.algorithms]
+        if len(set(algo_names)) == len(self.algorithms):
+            keys = algo_names
+        else:
+            keys = list(map(str, range(len(self.algorithms))))
+        for i, (key, algorithm) in enumerate(zip(keys, self.algorithms)):
             tuples = list(
                 zip(
                     self.cold_start_experiments[i],
@@ -433,7 +442,7 @@ class WarmStartStudy(Study):
                     self.hot_start_experiments[i],
                 )
             )
-            experiment_infos[i] = tuples
+            experiment_infos[key] = tuples
         return self.assessment.analysis(self.task_name, experiment_infos)
 
     def __repr__(self):

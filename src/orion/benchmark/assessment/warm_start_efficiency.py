@@ -46,10 +46,9 @@ class WarmStartEfficiency(BaseAssess):
         # addition to by algorithm
         all_plots = []
         experiments_dict: Dict[str, Dict[str, List[ExperimentClient]]] = {}
+
         for algo_index, list_of_exp_tuples in experiments.items():
-
             algo_experiments = defaultdict(list)
-
             for repetition_index, experiment_tuple in enumerate(list_of_exp_tuples):
                 for stage, exp in zip(["cold", "warm", "hot"], experiment_tuple):
                     algorithm_name = list(exp.configuration["algorithms"].keys())[0]
