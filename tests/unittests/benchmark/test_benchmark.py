@@ -233,6 +233,8 @@ class TestStudy:
             name = "benchmark007_AverageResult_RosenBrock_0_0"
             experiment = experiment_builder.build(name)
 
+            assert len(experiment.fetch_trials()) == study.task.max_trials
+
             assert experiment is not None
 
     @pytest.mark.usefixtures("version_XYZ")
