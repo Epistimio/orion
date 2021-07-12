@@ -320,10 +320,9 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
             True if the point's objective was observed by the algo, False otherwise.
 
         """
-
         trial_id = self.get_id(point)
         return (
-            trial_id in self.unwrapped._trials_info and self.unwrapped._trials_info[trial_id][1] is not None
+            trial_id in self._trials_info and self._trials_info[trial_id][1] is not None
         )
 
     @property
@@ -339,9 +338,9 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         same way it would if it were observing regular points. For example, the number
         of "used" trials shouldn't increase, etc.
 
-        Algorithm subclasses should extend this method in order to prevent their state
-        from being adversely affected by the default warm-starting behaviour, which is
-        to observe points from other experiments with an additional `task_id` dimension.
+        New Algorithms or Algo wrappers can implement this method to control how the
+        state of the algo is affected by observing trials from other tasks than the
+        current (target) task.
         """
         yield
 

@@ -53,6 +53,14 @@ class Producer(object):
             max_idle_time = orion.core.config.worker.max_idle_time
         self.max_idle_time = max_idle_time
         self.strategy = experiment.producer["strategy"]
+        """ # BUG: self.strategy is a dict, and some things below don't like it:
+        File "/home/fabrice/repos/orion/src/orion/core/worker/producer.py", line 258, in _update_algorithm
+            self.strategy.observe(points, results)
+        AttributeError: 'dict' object has no attribute 'observe'
+        """
+        if isinstance(self.strategy, dict):
+            from orion.core.io.experiment_builder import _instantiate_strategy
+            self.strategy = _instantiate_strategy(self.strategy)
         self.naive_algorithm = None
         # TODO: Move trials_history into PrimaryAlgo during the refactoring of Algorithm with
         #       Strategist and Scheduler.

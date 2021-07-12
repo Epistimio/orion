@@ -329,7 +329,7 @@ class WarmStartStudy(Study):
                     ]
                 )
 
-                logger.info("Creating the cold start experiment.")
+                logger.debug("Creating the cold start experiment.")
                 cold_start_experiment = build_experiment(
                     name=f"{base_experiment_name}_cold",
                     space=self.target_task.get_search_space(),
@@ -342,7 +342,7 @@ class WarmStartStudy(Study):
                     storage=self.storage,
                     debug=self.debug,
                 )
-                logger.info("Creating the warm start experiment.")
+                logger.debug("Creating the warm start experiment.")
                 warm_start_experiment = build_experiment(
                     name=f"{base_experiment_name}_warm",
                     space=self.target_task.get_search_space(),
@@ -354,7 +354,7 @@ class WarmStartStudy(Study):
                     storage=self.storage,
                     debug=self.debug,
                 )
-                logger.info("Creating the hot start experiment.")
+                logger.debug("Creating the hot start experiment.")
                 hot_start_experiment = build_experiment(
                     name=f"{base_experiment_name}_hot",
                     space=self.target_task.get_search_space(),

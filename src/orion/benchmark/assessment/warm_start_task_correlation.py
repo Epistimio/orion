@@ -314,13 +314,13 @@ def warm_start_task_correlation_figure(
                 # in zip(task_similarities_df.values, source_tasks)
             }
         )
-        fig.update_layout(
-             font=dict(
-                # family="Courier New, monospace",
-                size=18,
-                # color="RebeccaPurple"
-            )
-        )
+        # fig.update_layout(
+        #      font=dict(
+        #         # family="Courier New, monospace",
+        #         size=18,
+        #         # color="RebeccaPurple"
+        #     )
+        # )
 
         figures.append(fig)
     return figures

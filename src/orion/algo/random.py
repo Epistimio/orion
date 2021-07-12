@@ -7,7 +7,7 @@ Draw and deliver samples from prior defined in problem's domain.
 
 """
 import numpy
-
+from contextlib import contextmanager
 from orion.algo.base import BaseAlgorithm
 
 
@@ -64,3 +64,16 @@ class Random(BaseAlgorithm):
                 points.append(new_point)
 
         return points
+
+
+    @contextmanager
+    def warm_start_mode(self):
+        # NOTE: The Random algorithm just discards any points observed while in
+        # 'warm-start mode':
+        backup = self._trials_info
+        self._trials_info = self._trials_info.copy()
+        n_before = self.n_observed
+        yield
+        self._trials_info = backup
+        n_after = self.n_observed
+        assert n_before == n_after

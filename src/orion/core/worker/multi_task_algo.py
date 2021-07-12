@@ -7,6 +7,7 @@ import warnings
 from abc import ABC, abstractmethod
 from logging import getLogger
 from typing import Any, Dict, List, Mapping, Optional, Tuple, Type, Union
+from contextlib import contextmanager
 
 import numpy as np
 from orion.algo.base import BaseAlgorithm, infer_trial_id
@@ -23,7 +24,7 @@ try:
 except ImportError:
     from singledispatchmethod import singledispatchmethod
 
-from .algo_wrapper import AlgoWrapper, Point
+from .algo_wrapper import AlgoWrapper, Point, Results
 
 
 log = getLogger(__file__)
@@ -62,14 +63,41 @@ class WarmStarteable(ABC):
     #     pass
 
 
-def is_warm_starteable(
-    algo_or_config: Union[BaseAlgorithm, Type[BaseAlgorithm], Dict[str, Any]]
+import pkg_resources
+from pkg_resources import EntryPoint
+from orion.algo.base import OptimizationAlgorithm
+from functools import lru_cache
+from functools import singledispatch
+
+
+@lru_cache()
+def get_all_algos() -> Dict[str, Type[OptimizationAlgorithm]]:
+    """ Retrieve a dictionary mapping from name to algorithm class.
+    
+    NOTE: Caching this because it's relatively expensive to perform, and because the
+    available algos can't possibly change over the course of a run (as far as I can tell).
+    """
+    algos = {}
+    for entry_point in pkg_resources.iter_entry_points("OptimizationAlgorithm"):
+        entry_point: EntryPoint
+        algo_class = entry_point.load()
+        log.debug(
+            f"Found a {entry_point.name} from distribution: "
+            f"{entry_point.dist.project_name}={entry_point.dist.version}"
+        )
+        algos[entry_point.name] = algo_class
+    return algos
+
+
+@singledispatch
+def is_warmstarteable(
+    algo: Union[BaseAlgorithm, Type[BaseAlgorithm], Dict[str, Any]]
 ) -> bool:
     """Returns wether the given algo, algo type, or algo config, supports warm-starting.
 
     Parameters
     ----------
-    algo_or_config : Union[BaseAlgorithm, Type[BaseAlgorithm], Dict[str, Any]]
+    algo : Union[BaseAlgorithm, Type[BaseAlgorithm], Dict[str, Any]]
         Algorithm instance, type of algorithm, or algorithm configuration dictionary.
 
     Returns
@@ -77,20 +105,45 @@ def is_warm_starteable(
     bool
         Wether the input is or describes a warm-starteable algorithm.
     """
-    available_algos = {
-        c.__name__.lower(): c for c in list(BaseAlgorithm.__subclasses__())
-    }
-    if inspect.isclass(algo_or_config):
-        return issubclass(algo_or_config, WarmStarteable)
-    if isinstance(algo_or_config, str):
-        algo_type = available_algos.get(algo_or_config.lower())
-        return algo_type is not None and issubclass(algo_type, WarmStarteable)
-    if isinstance(algo_or_config, dict):
-        first_key = list(algo_or_config)[0]
-        return len(algo_or_config) == 1 and is_warm_starteable(first_key)
-    return isinstance(
-        getattr(algo_or_config, "unwrapped", algo_or_config), WarmStarteable
-    )
+    return False
+
+
+@is_warmstarteable.register(type)
+def _(algo: Type[BaseAlgorithm]) -> bool:
+    return issubclass(algo, WarmStarteable)
+
+
+@is_warmstarteable.register(BaseAlgorithm)
+def _(algo: BaseAlgorithm) -> bool:
+    return isinstance(algo, WarmStarteable)
+
+
+@is_warmstarteable.register(AlgoWrapper)
+def _(algo: AlgoWrapper) -> bool:
+    # NOTE: Not directing directly to algo.unwrapped, because there might eventually be
+    # a Wrapper that makes an algo WarmStarteable. Recurse down the chain of wrappers
+    # instead.
+    return is_warmstarteable(algo.algorithm)
+
+
+@is_warmstarteable.register(str)
+def _(algo: str) -> bool:
+    available_algos = get_all_algos()
+    if algo not in available_algos and algo.lower() not in available_algos:
+        raise RuntimeError(
+            f"Can't tell if algo '{algo}'' is warm-starteable, since there are no "
+            f"algos registered with that name!\n"
+            f"Available algos: {list(available_algos.keys())}"
+        )
+    algo_type = available_algos.get(algo, available_algos.get(algo.lower()))
+    assert algo_type is not None
+    return inspect.isclass(algo_type) and issubclass(algo_type, WarmStarteable)
+
+
+@is_warmstarteable.register(dict)
+def _(algo: Dict[str, Any]) -> bool:
+    first_key = list(algo)[0]
+    return len(algo) == 1 and is_warmstarteable(first_key)
 
 
 class MultiTaskAlgo(AlgoWrapper):
@@ -103,13 +156,13 @@ class MultiTaskAlgo(AlgoWrapper):
         algorithm_config: Dict,
         knowledge_base: AbstractKnowledgeBase,
     ):
-        log.info(
+        log.debug(
             f"Creating a MultiTaskAlgo wrapper: space {space}, algo config: {algorithm_config}"
         )
         self.knowledge_base = knowledge_base
         self._enabled: bool
-        if is_warm_starteable(algorithm_config):
-            log.info(
+        if is_warmstarteable(algorithm_config):
+            log.debug(
                 "Chosen algorithm is warm-starteable, disabling this multi-task wrapper."
             )
             self.algorithm = PrimaryAlgo(space=space, algorithm_config=algorithm_config)
@@ -117,7 +170,7 @@ class MultiTaskAlgo(AlgoWrapper):
             self._enabled = False
             return  # Return, just to indicate we don't do the other modifications below.
         else:
-            log.info(
+            log.debug(
                 "Chosen algorithm is NOT warm-starteable, enabling this multi-task wrapper."
             )
             self._enabled = True
@@ -221,7 +274,7 @@ class MultiTaskAlgo(AlgoWrapper):
             experiment config) to the list of Trials associated with that experiment.
         """
         # Being asked to warm-start the algorithm.
-        if is_warm_starteable(self.algorithm):
+        if is_warmstarteable(self.algorithm):
             log.debug(f"Warm starting the algo with trials {warm_start_trials}")
             self.algorithm.warm_start(warm_start_trials)
             log.info("Algorithm was successfully warm-started, returning.")
@@ -350,6 +403,40 @@ class MultiTaskAlgo(AlgoWrapper):
         )
 
     @property
+    def n_suggested(self):
+        """Number of trials suggested by the algorithm **in the target task**"""
+        return len(self.trials_from_target_task)
+
+    @property
+    def n_observed(self):
+        """Number of completed trials observed by the algorithm"""
+        return len(self.trials_from_target_task)
+
+    def set_state(self, state_dict):
+        """Reset the state of the algorithm based on the given state_dict
+
+        :param state_dict: Dictionary representing state of an algorithm
+        """
+        trials_info = state_dict.get("_trials_info")
+        self.unwrapped._trials_info = trials_info
+
+    @property
+    def trials_from_target_task(self) -> Dict[str, Tuple[Tuple[float, ...], Results]]:
+        return {
+            k: (point, results)
+            for k, (point, results) in self.unwrapped._trials_info.items()
+            if self.get_task_id(point) == 0
+        }
+
+    @property
+    def trials_from_other_tasks(self) -> Dict[str, Tuple[Tuple[float, ...], Results]]:
+        return {
+            k: (point, results)
+            for k, (point, results) in self.unwrapped._trials_info.items()
+            if self.get_task_id(point) != 0
+        }
+
+    @property
     def is_done(self):
         """Return True, if an algorithm holds that there can be no further improvement.
         By default, the cardinality of the specified search space will be used to check
@@ -368,14 +455,28 @@ class MultiTaskAlgo(AlgoWrapper):
             f"Trials from target task: {trials_from_target_task}, "
             f"trials from other tasks: {trials_from_other_tasks} "
         )
+        log.debug(f"self.n_observed: {self.n_observed}")
+        log.debug(f"self.n_observed: {self.n_suggested}")
+        log.debug(f"wrapped algo.is_done: {self.algorithm.is_done}")
 
         if trials_from_target_task >= self.space.cardinality:
             return True
 
-        if trials_from_target_task >= getattr(self, "max_trials", float("inf")):
+        max_trials = getattr(self, "max_trials", float("inf"))
+        if trials_from_target_task >= max_trials:
             return True
 
         return False
+
+    @contextmanager
+    def in_task(self, task_id: int):
+        """ Contextmanager that temporarily changes the value of `self.current_task_id`
+        to `task_id` and restores the original value after exiting the with block.
+        """
+        previous_task_id = self.current_task_id
+        self.current_task_id = task_id
+        yield
+        self.current_task_id = previous_task_id
 
     @singledispatchmethod
     def _add_task_id(self, point: Any, task_id: int) -> Any:
