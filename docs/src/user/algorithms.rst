@@ -359,7 +359,7 @@ links to full plugins documentation.
 Scikit-Optimize
 ---------------
 
-This package is a plugin providing a wrapper for 
+This package is a plugin providing a wrapper for
 `skopt <https://scikit-optimize.github.io>`__ optimizers.
 
 For more information, you can find the documentation at
@@ -371,7 +371,7 @@ For more information, you can find the documentation at
 Robust Bayesian Optimization
 ----------------------------
 
-This package is a plugin providing a wrapper for 
+This package is a plugin providing a wrapper for
 `RoBO <https://github.com/automl/robo>`__ optimizers.
 
 You will find in this plugin many models for Bayesian Optimization:
