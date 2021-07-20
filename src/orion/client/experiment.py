@@ -723,10 +723,10 @@ class ExperimentClient:
             self.executor.submit(
                 self._optimize,
                 fct,
-                max_trials_per_worker,
-                max_broken,
-                trial_arg,
-                on_error,
+                max_trials=max_trials_per_worker,
+                max_broken=max_broken,
+                trial_arg=trial_arg,
+                on_error=on_error,
                 **kwargs,
             )
             for _ in range(n_workers)
