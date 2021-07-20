@@ -137,8 +137,10 @@ class Hyperband(BaseAlgorithm):
         Seed for the random number generator used to sample new trials.
         Default: ``None``
     repetitions: int
-        Number of execution of Hyperband. Default is numpy.inf which means to
-        run Hyperband until no new trials can be suggested.
+        Number of executions for Hyperband. A single execution of Hyperband takes a finite budget of
+        ``(log(R)/log(eta) + 1) * (log(R)/log(eta) + 1) * R``, and ``repetitions`` allows you to run
+        multiple executions of Hyperband. Default is ``numpy.inf`` which means to run Hyperband
+        until no new trials can be suggested.
 
     """
 
