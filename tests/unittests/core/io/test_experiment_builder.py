@@ -571,7 +571,9 @@ class TestExperimentVersioning(object):
         parent_version_config.pop("version")
         with OrionState(experiments=[parent_version_config]):
             exp = experiment_builder.build(
-                name=parent_version_config["name"], space={"y": "uniform(0, 10)"}
+                name=parent_version_config["name"],
+                space={"y": "uniform(0, 10)"},
+                branching={"enable": True},
             )
 
         assert exp.version == 2
@@ -854,7 +856,7 @@ class TestBuild(object):
             child_name = "child"
 
             child = experiment_builder.build(
-                name=name, branching={"branch_to": child_name}
+                name=name, branching={"branch_to": child_name, "enable": True}
             )
 
             assert child.name == child_name
@@ -864,7 +866,7 @@ class TestBuild(object):
             child_name = "child2"
 
             child = experiment_builder.build(
-                name=child_name, branching={"branch_from": name}
+                name=child_name, branching={"branch_from": name, "enable": True}
             )
 
             assert child.name == child_name
@@ -878,14 +880,19 @@ class TestBuild(object):
 
         with OrionState(experiments=[], trials=[]):
             parent = experiment_builder.build(name=name, space=space)
-            child = experiment_builder.build(name=name, space={"x": "loguniform(1,10)"})
+            child = experiment_builder.build(
+                name=name, space={"x": "loguniform(1,10)"}, branching={"enable": True}
+            )
             assert child.name == parent.name
             assert parent.version == 1
             assert child.version == 2
 
             with pytest.raises(BranchingEvent) as exc_info:
                 experiment_builder.build(
-                    name=name, version=1, space={"x": "loguniform(1,10)"}
+                    name=name,
+                    version=1,
+                    space={"x": "loguniform(1,10)"},
+                    branching={"enable": True},
                 )
             assert "Configuration is different and generates a branching" in str(
                 exc_info.value
@@ -900,7 +907,9 @@ class TestBuild(object):
 
         with OrionState(experiments=[], trials=[]):
             parent = experiment_builder.build(name, space=space)
-            child = experiment_builder.build(name=name, space={"x": "loguniform(1,10)"})
+            child = experiment_builder.build(
+                name=name, space={"x": "loguniform(1,10)"}, branching={"enable": True}
+            )
             assert child.name == parent.name
             assert parent.version == 1
             assert child.version == 2
@@ -939,7 +948,11 @@ class TestBuild(object):
             )
 
             with pytest.raises(RaceCondition) as exc_info:
-                experiment_builder.build(name=name, space={"x": "loguniform(1,10)"})
+                experiment_builder.build(
+                    name=name,
+                    space={"x": "loguniform(1,10)"},
+                    branching={"enable": True},
+                )
             assert "There was likely a race condition during version" in str(
                 exc_info.value
             )
@@ -968,7 +981,11 @@ class TestBuild(object):
             )
 
             with pytest.raises(RaceCondition) as exc_info:
-                experiment_builder.build(name=name, space={"x": "loguniform(1,10)"})
+                experiment_builder.build(
+                    name=name,
+                    space={"x": "loguniform(1,10)"},
+                    branching={"enable": True},
+                )
             assert "There was a race condition during branching." in str(exc_info.value)
 
     def test_race_condition_w_version(self, monkeypatch):
@@ -985,7 +1002,9 @@ class TestBuild(object):
 
         with OrionState(experiments=[], trials=[]):
             parent = experiment_builder.build(name, space=space)
-            child = experiment_builder.build(name=name, space={"x": "loguniform(1,10)"})
+            child = experiment_builder.build(
+                name=name, space={"x": "loguniform(1,10)"}, branching={"enable": True}
+            )
             assert child.name == parent.name
             assert parent.version == 1
             assert child.version == 2
@@ -1025,7 +1044,10 @@ class TestBuild(object):
 
             with pytest.raises(BranchingEvent) as exc_info:
                 experiment_builder.build(
-                    name=name, version=1, space={"x": "loguniform(1,10)"}
+                    name=name,
+                    version=1,
+                    space={"x": "loguniform(1,10)"},
+                    branching={"enable": True},
                 )
             assert "Configuration is different and generates" in str(exc_info.value)
 
@@ -1054,7 +1076,10 @@ class TestBuild(object):
 
             with pytest.raises(RaceCondition) as exc_info:
                 experiment_builder.build(
-                    name=name, version=1, space={"x": "loguniform(1,10)"}
+                    name=name,
+                    version=1,
+                    space={"x": "loguniform(1,10)"},
+                    branching={"enable": True},
                 )
             assert "There was a race condition during branching." in str(exc_info.value)
 

@@ -266,7 +266,9 @@ class TestCreateExperiment:
         """Test creating a differing experiment that cause branching."""
         with OrionState(experiments=[config]):
             experiment = create_experiment(
-                config["name"], space={"y": "uniform(0, 10)"}
+                config["name"],
+                space={"y": "uniform(0, 10)"},
+                branching={"enable": True},
             )
 
             assert experiment.name == config["name"]
@@ -289,7 +291,11 @@ class TestCreateExperiment:
         """
         with OrionState(experiments=[config]):
             parent = create_experiment(config["name"])
-            child = create_experiment(config["name"], space={"y": "uniform(0, 10)"})
+            child = create_experiment(
+                config["name"],
+                space={"y": "uniform(0, 10)"},
+                branching={"enable": True},
+            )
 
             def insert_race_condition(self, query):
                 is_auto_version_query = query == {
@@ -315,7 +321,9 @@ class TestCreateExperiment:
             )
 
             experiment = create_experiment(
-                config["name"], space={"y": "uniform(0, 10)"}
+                config["name"],
+                space={"y": "uniform(0, 10)"},
+                branching={"enable": True},
             )
 
             assert insert_race_condition.count == 1
@@ -326,7 +334,11 @@ class TestCreateExperiment:
         """Test that two or more race condition leads to raise"""
         with OrionState(experiments=[config]):
             parent = create_experiment(config["name"])
-            child = create_experiment(config["name"], space={"y": "uniform(0, 10)"})
+            child = create_experiment(
+                config["name"],
+                space={"y": "uniform(0, 10)"},
+                branching={"enable": True},
+            )
 
             def insert_race_condition(self, query):
                 is_auto_version_query = query == {
@@ -350,7 +362,11 @@ class TestCreateExperiment:
             )
 
             with pytest.raises(RaceCondition) as exc:
-                create_experiment(config["name"], space={"y": "uniform(0, 10)"})
+                create_experiment(
+                    config["name"],
+                    space={"y": "uniform(0, 10)"},
+                    branching={"enable": True},
+                )
 
             assert insert_race_condition.count == 2
             assert "There was a race condition during branching and new version" in str(
@@ -361,10 +377,17 @@ class TestCreateExperiment:
         """Test creating a differing experiment that cause branching."""
         new_space = {"y": "uniform(0, 10)"}
         with OrionState(experiments=[config]):
-            create_experiment(config["name"], space=new_space)
+            create_experiment(
+                config["name"], space=new_space, branching={"enable": True}
+            )
 
             with pytest.raises(BranchingEvent) as exc:
-                create_experiment(config["name"], version=1, space=new_space)
+                create_experiment(
+                    config["name"],
+                    version=1,
+                    space=new_space,
+                    branching={"enable": True},
+                )
 
             assert "Configuration is different and generates" in str(exc.value)
 

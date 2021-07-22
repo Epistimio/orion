@@ -755,7 +755,7 @@ class TestRankings:
             experiment,
         ):
             child = orion.client.create_experiment(
-                experiment.name, branching={"branch_to": "child"}
+                experiment.name, branching={"branch_to": "child", "enable": True}
             )
 
             plot = rankings([experiment, child])
@@ -774,7 +774,8 @@ class TestRankings:
             experiment,
         ):
             child = orion.client.create_experiment(
-                experiment.name, branching={"branch_to": experiment.name}
+                experiment.name,
+                branching={"branch_to": experiment.name, "enable": True},
             )
             assert child.name == experiment.name
             assert child.version == experiment.version + 1
@@ -962,7 +963,7 @@ class TestRegrets:
             experiment,
         ):
             child = orion.client.create_experiment(
-                experiment.name, branching={"branch_to": "child"}
+                experiment.name, branching={"branch_to": "child", "enable": True}
             )
 
             plot = regrets([experiment, child])
@@ -981,7 +982,8 @@ class TestRegrets:
             experiment,
         ):
             child = orion.client.create_experiment(
-                experiment.name, branching={"branch_to": experiment.name}
+                experiment.name,
+                branching={"branch_to": experiment.name, "enable": True},
             )
             assert child.name == experiment.name
             assert child.version == experiment.version + 1

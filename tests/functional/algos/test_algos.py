@@ -217,7 +217,7 @@ def test_with_evc(algorithm):
             space=space_with_fidelity,
             algorithms=algorithm,
             max_trials=30,
-            branching={"branch_from": "exp"},
+            branching={"branch_from": "exp", "enable": True},
         )
 
         assert exp.version == 2
