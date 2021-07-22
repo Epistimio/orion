@@ -35,6 +35,36 @@ def init_full_x(setup_pickleddb_database, monkeypatch):
 
 
 @pytest.fixture
+def init_no_evc(monkeypatch):
+    """Add y dimension but overwrite original"""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    name = "full_x"
+    branch = "wont_exist"
+    orion.core.cli.main(
+        (
+            "hunt --init-only -n {branch} --branch-from {name} --cli-change-type noeffect "
+            "./black_box_with_y.py "
+            "-x~uniform(-10,10) "
+            "-y~+uniform(-10,10,default_value=1)"
+        )
+        .format(name=name, branch=branch)
+        .split(" ")
+    )
+    orion.core.cli.main(
+        "insert -n {name} script -x=1 -y=1".format(name=name).split(" ")
+    )
+    orion.core.cli.main(
+        "insert -n {name} script -x=-1 -y=1".format(name=name).split(" ")
+    )
+    orion.core.cli.main(
+        "insert -n {name} script -x=1 -y=-1".format(name=name).split(" ")
+    )
+    orion.core.cli.main(
+        "insert -n {name} script -x=-1 -y=-1".format(name=name).split(" ")
+    )
+
+
+@pytest.fixture
 def init_full_x_full_y(init_full_x):
     """Add y dimension to original"""
     name = "full_x"
@@ -422,9 +452,31 @@ def test_init(init_full_x):
     experiment = experiment_builder.load(name="full_x")
 
     assert experiment.refers["adapter"].configuration == []
+    assert experiment.space.configuration == {"/x": "uniform(-10, 10)"}
 
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((("/x", 0),),)
+
+
+def test_no_evc_overwrite(setup_pickleddb_database, init_no_evc):
+    """Test that the experiment config is overwritten if --enable-evc is not passed"""
+    storage = get_storage()
+    assert len(get_storage().fetch_experiments({})) == 1
+    experiment = experiment_builder.load(name="full_x")
+
+    assert experiment.refers["adapter"].configuration == []
+    assert experiment.space.configuration == {
+        "/x": "uniform(-10, 10)",
+        "/y": "uniform(-10, 10, default_value=1)",
+    }
+
+    pairs = get_name_value_pairs(experiment.fetch_trials())
+    assert pairs == (
+        (("/x", 1), ("/y", 1)),
+        (("/x", -1), ("/y", 1)),
+        (("/x", 1), ("/y", -1)),
+        (("/x", -1), ("/y", -1)),
+    )
 
 
 def test_full_x_full_y(init_full_x_full_y):
