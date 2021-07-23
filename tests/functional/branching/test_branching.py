@@ -3,9 +3,9 @@
 """Perform a functional test for branching."""
 
 import os
-import yaml
 
 import pytest
+import yaml
 
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
