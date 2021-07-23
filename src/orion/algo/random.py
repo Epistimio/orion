@@ -12,15 +12,19 @@ from orion.algo.base import BaseAlgorithm
 
 
 class Random(BaseAlgorithm):
-    """Implement a algorithm that samples randomly from the problem's space."""
+    """An algorithm that samples randomly from the problem's space.
+
+    Parameters
+    ----------
+    space: `orion.algo.space.Space`
+        Optimisation space with priors for each dimension.
+    seed: None, int or sequence of int
+        Seed for the random number generator used to sample new trials.
+        Default: ``None``
+
+    """
 
     def __init__(self, space, seed=None):
-        """Random sampler takes no other hyperparameter than the problem's space
-        itself.
-
-        :param space: `orion.algo.space.Space` of optimization.
-        :param seed: Integer seed for the random number generator.
-        """
         super(Random, self).__init__(space, seed=seed)
 
     def seed_rng(self, seed):

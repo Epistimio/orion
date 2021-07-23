@@ -56,9 +56,10 @@ Configuration
                 seed: null
 
 
-``seed``
+.. autoclass:: orion.algo.random.Random
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng
 
-Seed for the random number generator used to sample new trials. Default is ``None``.
 
 .. _grid-search:
 
@@ -95,11 +96,12 @@ Configuration
                 n_values: 100
 
 
-``n_values``
+.. autoclass:: orion.algo.gridsearch.GridSearch
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration, requires_dist, requires_type, build_grid
 
-Number of different values to use for each dimensions to build the grid. Can be either
-1. An integer. The same number will be used for all dimensions
-2. A dictionary many dimension names to integers. Each dimension will have its own number of values.
+
 
 .. _hyperband-algorithm:
 
@@ -152,16 +154,13 @@ Configuration
    algorithms. See :ref:`StubParallelStrategy` for more information.
 
 
-``seed``
+.. autoclass:: orion.algo.hyperband.Hyperband
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration, sample_from_bracket, append_brackets, create_bracket,
+                     create_brackets, promote, register_samples, sample, seed_brackets,
+                     executed_times
 
-Seed for the random number generator used to sample new trials. Default is ``None``.
-
-``repetitions``
-
-Number of executions for Hyperband. A single execution of Hyperband takes a finite
-budget of ``(log(R)/log(eta) + 1) * (log(R)/log(eta) + 1) * R``, and ``repetitions`` allows you
-to run multiple executions of Hyperband. Default is ``numpy.inf`` which means to run Hyperband
-until no new trials can be suggested.
 
 
 .. _ASHA:
@@ -220,36 +219,19 @@ Configuration
    Notice the additional ``strategy`` in configuration which is not mandatory for most other
    algorithms. See :ref:`StubParallelStrategy` for more information.
 
+.. autoclass:: orion.algo.asha.ASHA
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration, sample_from_bracket, append_brackets, create_bracket,
+                     create_brackets, promote, register_samples, sample, seed_brackets,
+                     executed_times, compute_bracket_idx
 
-``seed``
-
-Seed for the random number generator used to sample new trials. Default is ``None``.
-
-
-``num_rungs``
-
-Number of rungs for the largest bracket. If not defined, it will be equal to ``(base + 1)`` of the
-fidelity dimension. In the original paper,
-``num_rungs == log(fidelity.high/fidelity.low) / log(fidelity.base) + 1``.
-
-``num_brackets``
-
-Using a grace period that is too small may bias ASHA too strongly towards fast
-converging trials that do not lead to best results at convergence (stragglers).
-To overcome this, you can increase the number of brackets, which increases the amount of resources
-required for optimisation but decreases the bias towards stragglers. Default is 1.
-
-
-``repetitions``
-
-Number of execution of ASHA. Default is ``numpy.inf`` which means to
-run ASHA until no new trials can be suggested.
 
 
 .. _tpe-algorithm:
 
 TPE
----------
+---
 
 `Tree-structured Parzen Estimator`_ (TPE) algorithm is one of Sequential Model-Based
 Global Optimization (SMBO) algorithms, which will build models to propose new points based
@@ -291,35 +273,12 @@ Configuration
                 full_weight_num: 25
 
 
-``seed``
+.. autoclass:: orion.algo.tpe.TPE
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration, sample_one_dimension, split_trials, requires_type
 
-Seed to sample initial points and candidates points. Default is ``None``.
 
-``n_initial_points``
-
-Number of initial points randomly sampled. Default is ``20``.
-
-``n_ei_candidates``
-
-Number of candidates points sampled for ei compute. Default is ``24``.
-
-``gamma``
-
-Ratio to split the observed trials into good and bad distributions. Default is ``0.25``.
-
-``equal_weight``
-
-True to set equal weights for observed points. Default is ``False``.
-
-``prior_weight``
-
-The weight given to the prior point of the input space. Default is ``1.0``.
-
-``full_weight_num``
-
-The number of the most recent trials which get the full weight where the others will be
-applied with a linear ramp from 0 to 1.0. It will only take effect if ``equal_weight``
-is ``False``. Default is ``25``.
 
 .. _evolution-es algorithm:
 
@@ -382,116 +341,48 @@ Configuration
 
         strategy: StubParallelStrategy
 
-``seed``
 
-Seed for the random number generator used to sample new trials. Default is ``None``.
-
-``repetitions``
-
-Number of executions for Hyperband. A single execution of Hyperband takes a finite
-budget of ``(log(R)/log(eta) + 1) * (log(R)/log(eta) + 1) * R``, and ``repetitions`` allows you
-to run multiple executions of Hyperband. Default is ``numpy.inf`` which means to run Hyperband
-until no new trials can be suggested.
-
-``nums_population``
-
-Number of population for EvolutionES. Larger number of population often gets better performance
-but causes more computation. So there is a trade-off according to
-the search space and required budget of your problems.
-
-``mutate``
-
-In the mutate part, one can define the customized mutate function with its mutate factors,
-such as multiply factor (times/divides by a multiply factor) and add factor
-(add/subtract by a multiply factor). We support the default mutate function.
+.. autoclass:: orion.algo.evolution_es.EvolutionES
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     requires_dist, requires_type
 
 
 Algorithm Plugins
 =================
 
-.. _scikit-bayesopt:
+Plugins documentation is hosted separately. See short documentations below to find
+links to full plugins documentation.
 
-Scikit Bayesian Optimizer
--------------------------
+.. _skopt-plugin:
 
-``orion.algo.skopt`` provides a wrapper for `Bayesian optimizer`_ using Gaussian process implemented
-in `scikit optimize`_.
+Scikit-Optimize
+---------------
 
-.. _scikit optimize: https://scikit-optimize.github.io/
-.. _bayesian optimizer: https://scikit-optimize.github.io/#skopt.Optimizer
+This package is a plugin providing a wrapper for
+`skopt <https://scikit-optimize.github.io>`__ optimizers.
 
-Installation
-~~~~~~~~~~~~
+For more information, you can find the documentation at
+`orionalgoskopt.readthedocs.io <https://orionalgoskopt.readthedocs.io>`__.
 
-.. code-block:: sh
 
-   pip install orion.algo.skopt
+.. _robo-plugin:
 
-Configuration
-~~~~~~~~~~~~~
+Robust Bayesian Optimization
+----------------------------
 
-.. code-block:: yaml
+This package is a plugin providing a wrapper for
+`RoBO <https://github.com/automl/robo>`__ optimizers.
 
-    experiment:
-        algorithms:
-            BayesianOptimizer:
-                seed: null
-                n_initial_points: 10
-                acq_func: gp_hedge
-                alpha: 1.0e-10
-                n_restarts_optimizer: 0
-                noise: "gaussian"
-                normalize_y: False
+You will find in this plugin many models for Bayesian Optimization:
+`Gaussian Process <https://epistimio.github.io/orion.algo.robo/usage.html#robo-gaussian-process>`__,
+`Gaussian Process with MCMC <https://epistimio.github.io/orion.algo.robo/usage.html#robo-gaussian-process-with-mcmc>`__,
+`Random Forest <https://epistimio.github.io/orion.algo.robo/usage.html#robo-random-forest>`__,
+`DNGO <https://epistimio.github.io/orion.algo.robo/usage.html#robo-dngo>`__ and
+`BOHAMIANN <https://epistimio.github.io/orion.algo.robo/usage.html#robo-bohamiann>`__.
 
-``seed``
-
-``n_initial_points``
-
-Number of evaluations of ``func`` with initialization points
-before approximating it with ``base_estimator``. Points provided as
-``x0`` count as initialization points. If len(x0) < n_initial_points
-additional points are sampled at random.
-
-``acq_func``
-
-Function to minimize over the posterior distribution. Can be:
-``["LCB", "EI", "PI", "gp_hedge", "EIps", "PIps"]``. Check skopt
-docs for details.
-
-``alpha``
-
-Value added to the diagonal of the kernel matrix during fitting.
-Larger values correspond to increased noise level in the observations
-and reduce potential numerical issues during fitting. If an array is
-passed, it must have the same number of entries as the data used for
-fitting and is used as datapoint-dependent noise level. Note that this
-is equivalent to adding a WhiteKernel with c=alpha. Allowing to specify
-the noise level directly as a parameter is mainly for convenience and
-for consistency with Ridge.
-
-``n_restarts_optimizer``
-
-The number of restarts of the optimizer for finding the kernel's
-parameters which maximize the log-marginal likelihood. The first run
-of the optimizer is performed from the kernel's initial parameters,
-the remaining ones (if any) from thetas sampled log-uniform randomly
-from the space of allowed theta-values. If greater than 0, all bounds
-must be finite. Note that n_restarts_optimizer == 0 implies that one
-run is performed.
-
-``noise``
-
-If set to "gaussian", then it is assumed that y is a noisy estimate of f(x) where the
-noise is gaussian.
-
-``normalize_y``
-
-Whether the target values y are normalized, i.e., the mean of the
-observed target values become zero. This parameter should be set to
-True if the target values' mean is expected to differ considerable from
-zero. When enabled, the normalization effectively modifies the GP's
-prior based on the data, which contradicts the likelihood principle;
-normalization is thus disabled per default.
+For more information, you can find the documentation at
+`epistimio.github.io/orion.algo.robo <https://epistimio.github.io/orion.algo.robo>`__.
 
 .. _parallel-strategies:
 

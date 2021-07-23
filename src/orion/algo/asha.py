@@ -102,10 +102,10 @@ class ASHA(Hyperband):
         Seed for the random number generator used to sample new trials.
         Default: ``None``
     num_rungs: int, optional
-        Number of rungs for the largest bracket. If not defined, it will be equal to (base + 1) of
-        the fidelity dimension. In the original paper,
-        num_rungs == log(fidelity.high/fidelity.low) / log(fidelity.base) + 1.
-        Default: log(fidelity.high/fidelity.low) / log(fidelity.base) + 1
+        Number of rungs for the largest bracket. If not defined, it will be equal to ``(base + 1)``
+        of the fidelity dimension. In the original paper,
+        ``num_rungs == log(fidelity.high/fidelity.low) / log(fidelity.base) + 1``.
+        Default: ``log(fidelity.high/fidelity.low) / log(fidelity.base) + 1``
     num_brackets: int
         Using a grace period that is too small may bias ASHA too strongly towards
         fast converging trials that do not lead to best results at convergence (stagglers). To
