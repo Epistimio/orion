@@ -3,6 +3,7 @@
 """Perform a functional test for branching."""
 
 import os
+import yaml
 
 import pytest
 
@@ -339,6 +340,37 @@ def init_full_x_ignore_cli(init_full_x):
     )
     orion.core.cli.main("insert -n {name} script -x=1.2".format(name=name).split(" "))
     orion.core.cli.main("insert -n {name} script -x=-1.2".format(name=name).split(" "))
+
+
+@pytest.fixture
+def init_full_x_new_config(init_full_x, tmp_path):
+    """Add configuration script"""
+    name = "full_x"
+    branch = "full_x_new_config"
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        yaml.dump(
+            {"new_arg": "some-value", "y": "orion~uniform(-10, 10, default_value=0)"}
+        )
+    )
+
+    orion.core.cli.main(
+        (
+            "hunt --init-only -n {branch} --branch-from {name} "
+            "--cli-change-type noeffect "
+            "--config-change-type unsure "
+            "./black_box_new.py -x~uniform(-10,10) --config {config_file}"
+        )
+        .format(name=name, branch=branch, config_file=config_file)
+        .split(" ")
+    )
+    orion.core.cli.main(
+        "insert -n {branch} script -x=1.2 -y=2".format(branch=branch).split(" ")
+    )
+    orion.core.cli.main(
+        "insert -n {branch} script -x=-1.2 -y=3".format(branch=branch).split(" ")
+    )
 
 
 @pytest.fixture
@@ -908,16 +940,15 @@ def test_no_cli_no_branching():
 
 def test_new_script(init_full_x, monkeypatch):
     """Test that experiment can branch with new script path even if previous is not present"""
-    # Mess with DB to change script path
 
     name = "full_x"
     experiment = experiment_builder.load(name=name)
 
+    # Mess with DB to change script path
     metadata = experiment.metadata
     metadata["user_script"] = "oh_oh_idontexist.py"
     metadata["user_args"][0] = "oh_oh_idontexist.py"
     metadata["parser"]["parser"]["arguments"][0][1] = "oh_oh_idontexist.py"
-
     get_storage().update_experiment(experiment, metadata=metadata)
 
     orion.core.cli.main(
@@ -934,6 +965,109 @@ def test_new_script(init_full_x, monkeypatch):
 
     assert new_experiment.refers["adapter"].configuration == [
         {"change_type": "break", "of_type": "commandlinechange"}
+    ]
+
+
+def test_new_config(init_full_x_new_config, monkeypatch):
+    """Test experiment branching with new config"""
+    experiment = experiment_builder.load(name="full_x_new_config")
+
+    assert experiment.refers["adapter"].configuration == [
+        {"change_type": "noeffect", "of_type": "commandlinechange"},
+        {
+            "of_type": "dimensionaddition",
+            "param": {"name": "/y", "type": "real", "value": 0},
+        },
+        {"change_type": "unsure", "of_type": "scriptconfigchange"},
+    ]
+
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 3
+    assert len(experiment.fetch_trials()) == 2
+
+
+def test_missing_config(init_full_x_new_config, monkeypatch):
+    """Test that experiment can branch with new config if previous is not present"""
+    name = "full_x_new_config"
+    experiment = experiment_builder.load(name=name)
+
+    # Mess with DB to change config path
+    metadata = experiment.metadata
+    bad_config_file = "ho_ho_idontexist.yaml"
+    config_file = metadata["parser"]["file_config_path"]
+    metadata["parser"]["file_config_path"] = bad_config_file
+    metadata["parser"]["parser"]["arguments"][2][1] = bad_config_file
+    metadata["user_args"][3] = bad_config_file
+    get_storage().update_experiment(experiment, metadata=metadata)
+
+    orion.core.cli.main(
+        (
+            "hunt --init-only -n {name} "
+            "--cli-change-type noeffect "
+            "--config-change-type unsure "
+            "./black_box_new.py -x~uniform(-10,10) --config {config_file}"
+        )
+        .format(name=name, config_file=config_file)
+        .split(" ")
+    )
+
+    new_experiment = experiment_builder.load(name=name)
+    assert new_experiment.version == experiment.version + 1
+
+    assert new_experiment.refers["adapter"].configuration == [
+        {"change_type": "noeffect", "of_type": "commandlinechange"}
+    ]
+
+
+def test_missing_and_new_config(init_full_x_new_config, monkeypatch):
+    """Test that experiment can branch with new config if previous is not present, with correct
+    diff.
+    """
+    name = "full_x_new_config"
+    experiment = experiment_builder.load(name=name)
+
+    # Mess with DB to change config path
+    metadata = experiment.metadata
+    bad_config_file = "ho_ho_idontexist.yaml"
+    config_file = metadata["parser"]["file_config_path"]
+    metadata["parser"]["file_config_path"] = bad_config_file
+    metadata["parser"]["parser"]["arguments"][2][1] = bad_config_file
+    metadata["user_args"][3] = bad_config_file
+
+    with open(config_file, "w") as f:
+        f.write(
+            yaml.dump(
+                {
+                    "new_arg": "some-new-value",
+                    "y": "orion~uniform(-10, 20, default_value=0)",
+                }
+            )
+        )
+
+    get_storage().update_experiment(experiment, metadata=metadata)
+
+    orion.core.cli.main(
+        (
+            "hunt --init-only -n {name} "
+            "--cli-change-type noeffect "
+            "--config-change-type unsure "
+            "./black_box_new.py -x~uniform(-10,10) --config {config_file}"
+        )
+        .format(name=name, config_file=config_file)
+        .split(" ")
+    )
+
+    new_experiment = experiment_builder.load(name=name)
+    assert new_experiment.version == experiment.version + 1
+
+    assert new_experiment.refers["adapter"].configuration == [
+        {
+            "name": "/y",
+            "new_prior": "uniform(-10, 20, default_value=0)",
+            "of_type": "dimensionpriorchange",
+            "old_prior": "uniform(-10, 10, default_value=0)",
+        },
+        {"change_type": "noeffect", "of_type": "commandlinechange"},
+        {"change_type": "unsure", "of_type": "scriptconfigchange"},
     ]
 
 
