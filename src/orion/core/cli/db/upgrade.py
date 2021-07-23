@@ -12,7 +12,6 @@ import logging
 import sys
 
 import orion.core.io.experiment_builder as experiment_builder
-import orion.core.utils.backward as backward
 from orion.core.io.database.ephemeraldb import EphemeralCollection
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
