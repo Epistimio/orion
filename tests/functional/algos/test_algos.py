@@ -277,7 +277,7 @@ def test_parallel_workers(algorithm):
             name=name,
             space=space_with_fidelity,
             algorithms=algorithm,
-            branching={"branch_from": name},
+            branching={"branch_from": name, "enable": True},
         )
 
         assert exp.version == 2
