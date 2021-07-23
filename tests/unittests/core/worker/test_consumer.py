@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.consumer`."""
+import logging
 import os
 import signal
 import subprocess
@@ -69,16 +70,15 @@ def test_trial_working_dir_is_changed(config):
     assert trial.working_dir == con.working_dir + "/exp_" + trial.id
 
 
-@pytest.mark.usefixtures("storage")
-def test_code_changed(config, monkeypatch):
-    """Check that trial has its working_dir attribute changed."""
+def setup_code_change_mock(config, monkeypatch, ignore_code_changes):
+    """Mock create experiment and trials, and infer_versioning_metadata"""
     exp = experiment_builder.build(**config)
 
     trial = tuple_to_trial((1.0,), exp.space)
 
     exp.register_trial(trial, status="reserved")
 
-    con = Consumer(exp)
+    con = Consumer(exp, ignore_code_changes=ignore_code_changes)
 
     def code_changed(user_script):
         return dict(
@@ -90,6 +90,26 @@ def test_code_changed(config, monkeypatch):
         )
 
     monkeypatch.setattr(consumer, "infer_versioning_metadata", code_changed)
+
+    return con, trial
+
+
+@pytest.mark.usefixtures("storage")
+def test_code_changed_evc_disabled(config, monkeypatch, caplog):
+    """Check that trial has its working_dir attribute changed."""
+
+    con, trial = setup_code_change_mock(config, monkeypatch, ignore_code_changes=True)
+
+    with caplog.at_level(logging.WARNING):
+        con.consume(trial)
+        assert "Code changed between execution of 2 trials" in caplog.text
+
+
+@pytest.mark.usefixtures("storage")
+def test_code_changed_evc_enabled(config, monkeypatch):
+    """Check that trial has its working_dir attribute changed."""
+
+    con, trial = setup_code_change_mock(config, monkeypatch, ignore_code_changes=False)
 
     with pytest.raises(BranchingEvent) as exc:
         con(trial)

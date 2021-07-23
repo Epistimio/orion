@@ -1169,9 +1169,15 @@ class CodeConflict(Conflict):
         old_hash_commit = old_config["metadata"].get("VCS", None)
         new_hash_commit = new_config["metadata"].get("VCS")
 
-        ignore_code_changes = branching_config is not None and branching_config.get(
-            "ignore_code_changes", False
-        )
+        # Will be overriden by global config if not set in branching_config
+        ignore_code_changes = None
+        # Try using user defined ignore_code_changes
+        if branching_config is not None:
+            ignore_code_changes = branching_config.get("ignore_code_changes", None)
+        # Otherwise use global conf's ignore_code_changes
+        if ignore_code_changes is None:
+            ignore_code_changes = orion.core.config.evc.ignore_code_changes
+
         if ignore_code_changes:
             log.debug("Ignoring code changes")
         if (

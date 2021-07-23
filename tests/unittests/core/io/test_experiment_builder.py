@@ -3,6 +3,7 @@
 """Example usage and tests for :mod:`orion.core.io.experiment_builder`."""
 import copy
 import datetime
+import logging
 
 import pytest
 
@@ -565,6 +566,34 @@ class TestExperimentVersioning(object):
             )
 
         assert exp.version == 1
+
+    def test_experiment_overwritten_evc_disabled(self, parent_version_config, caplog):
+        """Build an existing experiment with different config, overwritting previous config."""
+        parent_version_config.pop("version")
+        with OrionState(experiments=[parent_version_config]):
+
+            exp = experiment_builder.load(name=parent_version_config["name"])
+            assert exp.version == 1
+            assert exp.configuration["algorithms"] == {"random": {"seed": None}}
+
+            with caplog.at_level(logging.WARNING):
+
+                exp = experiment_builder.build(
+                    name=parent_version_config["name"], algorithms="gradient_descent"
+                )
+                assert "Running experiment in a different state" in caplog.text
+
+            assert exp.version == 1
+            assert list(exp.configuration["algorithms"].keys())[0] == "gradient_descent"
+
+            caplog.clear()
+            with caplog.at_level(logging.WARNING):
+
+                exp = experiment_builder.load(name=parent_version_config["name"])
+                assert "Running experiment in a different state" not in caplog.text
+
+            assert exp.version == 1
+            assert list(exp.configuration["algorithms"].keys())[0] == "gradient_descent"
 
     def test_backward_compatibility_no_version(self, parent_version_config):
         """Branch from parent that has no version field."""

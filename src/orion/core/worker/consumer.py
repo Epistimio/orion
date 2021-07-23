@@ -89,6 +89,7 @@ class Consumer(object):
         if interrupt_signal_code is None:
             interrupt_signal_code = orion.core.config.worker.interrupt_signal_code
 
+        # NOTE: If ignore_code_changes is None, we can assume EVC is enabled.
         if ignore_code_changes is None:
             ignore_code_changes = orion.core.config.evc.ignore_code_changes
 
@@ -235,9 +236,6 @@ class Consumer(object):
         return results_file
 
     def _validate_code_version(self):
-        if self.ignore_code_changes:
-            return
-
         old_config = self.experiment.configuration
         new_config = copy.deepcopy(old_config)
         new_config["metadata"]["VCS"] = infer_versioning_metadata(
@@ -248,9 +246,16 @@ class Consumer(object):
         from orion.core.evc.conflicts import CodeConflict
 
         conflicts = list(CodeConflict.detect(old_config, new_config))
-        if conflicts:
+        if conflicts and not self.ignore_code_changes:
             raise BranchingEvent(
                 f"Code changed between execution of 2 trials:\n{conflicts[0]}"
+            )
+        elif conflicts:
+            log.warning(
+                "Code changed between execution of 2 trials. Enable EVC with option "
+                "`ignore_code_changes` set to False to raise an error when trials are executed "
+                "with different versions. For more information, see documentation at "
+                "https://orion.readthedocs.io/en/stable/user/config.html#experiment-version-control"
             )
 
     # pylint: disable = no-self-use
