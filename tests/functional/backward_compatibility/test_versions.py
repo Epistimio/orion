@@ -244,7 +244,6 @@ class TestBackwardCompatibility:
 
         experiments = storage.fetch_experiments({})
         assert "version" in experiments[0]
-        assert "priors" in experiments[0]["metadata"]
 
     def test_db_test(self):
         """Verify db test command"""
