@@ -101,7 +101,7 @@ def test_code_changed_evc_disabled(config, monkeypatch, caplog):
     con, trial = setup_code_change_mock(config, monkeypatch, ignore_code_changes=True)
 
     with caplog.at_level(logging.WARNING):
-        con.consume(trial)
+        con(trial)
         assert "Code changed between execution of 2 trials" in caplog.text
 
 
