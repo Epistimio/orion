@@ -1318,7 +1318,7 @@ class CommandLineConflict(Conflict):
         log.debug("User script config: %s", user_script_config)
         log.debug("Non monitored arguments: %s", non_monitored_arguments)
 
-        parser = OrionCmdlineParser(user_script_config)
+        parser = OrionCmdlineParser(user_script_config, allow_non_existing_files=True)
         parser.set_state_dict(config["metadata"]["parser"])
         priors = parser.priors_to_normal()
         nameless_keys = set(parser.parser.arguments.keys()) - set(priors.keys())
@@ -1478,7 +1478,7 @@ class ScriptConfigConflict(Conflict):
         if user_script_config is None:
             user_script_config = orion.core.config.worker.user_script_config
 
-        parser = OrionCmdlineParser(user_script_config)
+        parser = OrionCmdlineParser(user_script_config, allow_non_existing_files=True)
         parser.set_state_dict(config["metadata"]["parser"])
 
         nameless_config = dict(
