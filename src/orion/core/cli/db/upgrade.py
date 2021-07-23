@@ -12,7 +12,6 @@ import logging
 import sys
 
 import orion.core.io.experiment_builder as experiment_builder
-import orion.core.utils.backward as backward
 from orion.core.io.database.ephemeraldb import EphemeralCollection
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
@@ -126,18 +125,12 @@ def upgrade_documents(storage):
     """Upgrade scheme of the documents"""
     for experiment in storage.fetch_experiments({}):
         add_version(experiment)
-        add_space(experiment)
         storage.update_experiment(uid=experiment.pop("_id"), **experiment)
 
 
 def add_version(experiment):
     """Add version 1 if not present"""
     experiment.setdefault("version", 1)
-
-
-def add_space(experiment):
-    """Add space to metadata if not present"""
-    backward.populate_space(experiment)
 
 
 def update_indexes(database):
