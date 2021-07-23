@@ -405,7 +405,7 @@ def init_full_x_new_config(init_full_x, tmp_path):
 
     orion.core.cli.main(
         (
-            "hunt --init-only -n {branch} --branch-from {name} "
+            "hunt --enable-evc --init-only -n {branch} --branch-from {name} "
             "--cli-change-type noeffect "
             "--config-change-type unsure "
             "./black_box_new.py -x~uniform(-10,10) --config {config_file}"
@@ -1033,7 +1033,7 @@ def test_new_script(init_full_x, monkeypatch):
 
     orion.core.cli.main(
         (
-            "hunt --init-only -n {name} --config orion_config.yaml ./black_box.py "
+            "hunt --enable-evc --init-only -n {name} --config orion_config.yaml ./black_box.py "
             "-x~uniform(-10,10) --some-new args"
         )
         .format(name=name)
@@ -1081,7 +1081,7 @@ def test_missing_config(init_full_x_new_config, monkeypatch):
 
     orion.core.cli.main(
         (
-            "hunt --init-only -n {name} "
+            "hunt --enable-evc --init-only -n {name} "
             "--cli-change-type noeffect "
             "--config-change-type unsure "
             "./black_box_new.py -x~uniform(-10,10) --config {config_file}"
@@ -1127,7 +1127,7 @@ def test_missing_and_new_config(init_full_x_new_config, monkeypatch):
 
     orion.core.cli.main(
         (
-            "hunt --init-only -n {name} "
+            "hunt --enable-evc --init-only -n {name} "
             "--cli-change-type noeffect "
             "--config-change-type unsure "
             "./black_box_new.py -x~uniform(-10,10) --config {config_file}"
