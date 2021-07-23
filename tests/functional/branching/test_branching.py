@@ -295,7 +295,7 @@ def init_full_x_new_algo(init_full_x):
 
 @pytest.fixture
 def init_full_x_new_cli(init_full_x):
-    """Remove z from full x full z and give a default value of 4"""
+    """Change commandline call"""
     name = "full_x"
     branch = "full_x_new_cli"
     orion.core.cli.main(
@@ -904,6 +904,37 @@ def test_no_cli_no_branching():
         .split(" ")
     )
     assert error_code == 0
+
+
+def test_new_script(init_full_x, monkeypatch):
+    """Test that experiment can branch with new script path even if previous is not present"""
+    # Mess with DB to change script path
+
+    name = "full_x"
+    experiment = experiment_builder.load(name=name)
+
+    metadata = experiment.metadata
+    metadata["user_script"] = "oh_oh_idontexist.py"
+    metadata["user_args"][0] = "oh_oh_idontexist.py"
+    metadata["parser"]["parser"]["arguments"][0][1] = "oh_oh_idontexist.py"
+
+    get_storage().update_experiment(experiment, metadata=metadata)
+
+    orion.core.cli.main(
+        (
+            "hunt --init-only -n {name} --config orion_config.yaml ./black_box.py "
+            "-x~uniform(-10,10) --some-new args"
+        )
+        .format(name=name)
+        .split(" ")
+    )
+
+    new_experiment = experiment_builder.load(name=name)
+    assert new_experiment.version == experiment.version + 1
+
+    assert new_experiment.refers["adapter"].configuration == [
+        {"change_type": "break", "of_type": "commandlinechange"}
+    ]
 
 
 def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
