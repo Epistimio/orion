@@ -428,6 +428,22 @@ def test_fetch_all_trials():
         assert trials == cfg.trials
 
 
+def test_fetch_pending_trials():
+    """Fetch a list of the trials that are pending
+
+    trials.status in ['new', 'interrupted', 'suspended']
+    """
+    pending_stati = ["new", "interrupted", "suspended"]
+    stati = pending_stati + ["completed", "broken", "reserved"]
+    with OrionState(trials=generate_trials(stati)) as cfg:
+        exp = Experiment("supernaekei", mode="x")
+        exp._id = cfg.trials[0]["experiment"]
+
+        trials = exp.fetch_pending_trials()
+        assert len(trials) == 3
+        assert set(trial.status for trial in trials) == set(pending_stati)
+
+
 def test_fetch_non_completed_trials():
     """Fetch a list of the trials that are not completed
 
