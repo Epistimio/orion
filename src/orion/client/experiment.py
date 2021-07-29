@@ -297,9 +297,9 @@ class ExperimentClient:
     def fetch_pending_trials(self, with_evc_tree=False):
         """Fetch all trials with status new, interrupted or suspended
 
-        Trials are sorted based on `Trial.submit_time`
+        Trials are sorted based on ``Trial.submit_time``
 
-        :return: list of `Trial` objects
+        :return: list of :class:`orion.core.worker.trial.Trial` objects
         """
         return self._experiment.fetch_pending_trials(with_evc_tree=with_evc_tree)
 
