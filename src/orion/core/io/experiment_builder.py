@@ -200,28 +200,14 @@ def build(name, version=None, branching=None, **config):
 
     conflicts = _get_conflicts(experiment, branching)
     must_branch = len(conflicts.get()) > 1 or branching.get("branch_to")
-    if must_branch:
-        if len(conflicts.get()) > 1:
-            log.debug("Experiment must branch because of conflicts")
-        else:
-            assert branching.get("branch_to")
-            log.debug("Experiment branching forced with ``branch_to``")
-        branched_experiment = _branch_experiment(
-            experiment, conflicts, version, branching
-        )
-        log.debug("Now attempting registration of branched experiment in DB.")
-        try:
-            _register_experiment(branched_experiment)
-            log.debug("Branched experiment successfully registered in DB.")
-        except DuplicateKeyError as e:
-            log.debug(
-                "Experiment registration failed. This is likely due to a race condition "
-                "during branching. Now rolling back and re-attempting building "
-                "the branched experiment."
-            )
-            raise RaceCondition("There was a race condition during branching.") from e
 
-        return branched_experiment
+    if must_branch and branching.get("enable", orion.core.config.evc.enable):
+        return _attempt_branching(conflicts, experiment, version, branching)
+    else:
+        log.warning(
+            "Running experiment in a different state:\n%s",
+            _get_branching_status_string(conflicts, branching),
+        )
 
     log.debug("No branching required.")
 
@@ -609,6 +595,36 @@ def _update_experiment(experiment):
     log.debug("Experiment configuration successfully updated in DB.")
 
 
+def _attempt_branching(conflicts, experiment, version, branching):
+    if len(conflicts.get()) > 1:
+        log.debug("Experiment must branch because of conflicts")
+    else:
+        assert branching.get("branch_to")
+        log.debug("Experiment branching forced with ``branch_to``")
+    branched_experiment = _branch_experiment(experiment, conflicts, version, branching)
+    log.debug("Now attempting registration of branched experiment in DB.")
+    try:
+        _register_experiment(branched_experiment)
+        log.debug("Branched experiment successfully registered in DB.")
+    except DuplicateKeyError as e:
+        log.debug(
+            "Experiment registration failed. This is likely due to a race condition "
+            "during branching. Now rolling back and re-attempting building "
+            "the branched experiment."
+        )
+        raise RaceCondition("There was a race condition during branching.") from e
+
+    return branched_experiment
+
+
+def _get_branching_status_string(conflicts, branching_arguments):
+    experiment_brancher = ExperimentBranchBuilder(
+        conflicts, enabled=False, **branching_arguments
+    )
+    branching_prompt = BranchingPrompt(experiment_brancher)
+    return branching_prompt.get_status()
+
+
 def _branch_experiment(experiment, conflicts, version, branching_arguments):
     """Create a new branch experiment with adapters for the given conflicts"""
     experiment_brancher = ExperimentBranchBuilder(conflicts, **branching_arguments)
@@ -720,6 +736,7 @@ def build_from_args(cmdargs):
         :func:`orion.core.io.experiment_builder.build` for more information on experiment creation.
 
     """
+
     cmd_config = get_cmd_config(cmdargs)
 
     if "name" not in cmd_config:

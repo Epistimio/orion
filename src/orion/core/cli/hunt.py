@@ -198,8 +198,10 @@ def main(args):
 
     signal.signal(signal.SIGTERM, _handler)
 
-    workon(
-        experiment,
-        ignore_code_changes=config["branching"].get("ignore_code_changes"),
-        **worker_config
-    )
+    # If EVC is not enabled, we force Consumer to ignore code changes.
+    if not config["branching"].get("enable", orion.core.config.evc.enable):
+        ignore_code_changes = True
+    else:
+        ignore_code_changes = config["branching"].get("ignore_code_changes")
+
+    workon(experiment, ignore_code_changes=ignore_code_changes, **worker_config)

@@ -179,6 +179,7 @@ def two_experiments(monkeypatch, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_double_exp",
             "--branch-to",
@@ -239,6 +240,7 @@ def three_experiments_family(two_experiments, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_double_exp",
             "--branch-to",
@@ -274,6 +276,7 @@ def three_experiments_family_branch(two_experiments, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_double_exp_child",
             "--branch-to",
@@ -317,6 +320,7 @@ def two_experiments_same_name(one_experiment, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_single_exp",
             "./black_box.py",
@@ -336,6 +340,7 @@ def three_experiments_family_same_name(two_experiments_same_name, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_single_exp",
             "-v",
@@ -359,6 +364,7 @@ def three_experiments_branch_same_name(two_experiments_same_name, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_single_exp",
             "-b",
@@ -379,6 +385,7 @@ def three_experiments_same_name(two_experiments_same_name, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_single_exp",
             "./black_box.py",
@@ -397,6 +404,7 @@ def three_experiments_same_name_with_trials(two_experiments_same_name, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_single_exp",
             "./black_box.py",

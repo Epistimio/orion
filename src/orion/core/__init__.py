@@ -301,6 +301,14 @@ def define_evc_config(config):
     #       After this, the cmdline parser should be built based on config.
 
     evc_config.add_option(
+        "enable",
+        option_type=bool,
+        default=False,
+        env_var="ORION_EVC_ENABLE",
+        help="Enable the Experiment Version Control. Defaults to False.",
+    )
+
+    evc_config.add_option(
         "auto_resolution",
         option_type=bool,
         default=True,

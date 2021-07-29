@@ -55,7 +55,8 @@ def add_experiment(**kwargs):
     """Adds experiment to the dummy orion instance"""
     base_experiment.update(copy.deepcopy(kwargs))
     experiment_builder.build(
-        branching=dict(branch_from=base_experiment["name"]), **base_experiment
+        branching=dict(branch_from=base_experiment["name"], enable=True),
+        **base_experiment
     )
 
 
