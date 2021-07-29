@@ -59,7 +59,7 @@ def add_experiment(**kwargs):
     )
 
 
-def add_trial(experiment: int, status: str = None, **kwargs):
+def add_trial(experiment: int, status: str = None, value=10, **kwargs):
     """
     Add trials to the dummy orion instance
 
@@ -79,6 +79,7 @@ def add_trial(experiment: int, status: str = None, **kwargs):
     kwargs["status"] = status
 
     base_trial.update(copy.deepcopy(kwargs))
+    base_trial["params"][0]["value"] = value
     get_storage().register_trial(Trial(**base_trial))
 
 
@@ -180,9 +181,10 @@ class TestTrialCollection:
         add_experiment(name="a", version=2, _id=2)
         add_experiment(name="a", version=3, _id=3)
 
-        add_trial(experiment=1, id_override="00")
-        add_trial(experiment=2, id_override="01")
-        add_trial(experiment=3, id_override="02")
+        # Specify values to avoid duplicates
+        add_trial(experiment=1, id_override="00", value=1)
+        add_trial(experiment=2, id_override="01", value=2)
+        add_trial(experiment=3, id_override="02", value=3)
 
         # Happy case default
         response = client.simulate_get("/trials/a?ancestors=true")
@@ -255,10 +257,10 @@ class TestTrialCollection:
         add_experiment(name="a", version=2, _id=3)
         add_experiment(name="a", version=3, _id=4)
 
-        add_trial(experiment=1, id_override="00", status="completed")
-        add_trial(experiment=3, id_override="01", status="broken")
-        add_trial(experiment=3, id_override="02", status="completed")
-        add_trial(experiment=2, id_override="03", status="completed")
+        add_trial(experiment=1, id_override="00", value=1, status="completed")
+        add_trial(experiment=3, id_override="01", value=2, status="broken")
+        add_trial(experiment=3, id_override="02", value=3, status="completed")
+        add_trial(experiment=2, id_override="03", value=4, status="completed")
 
         response = client.simulate_get(
             "/trials/a?ancestors=true&version=2&status=completed"
