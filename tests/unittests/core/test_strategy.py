@@ -52,6 +52,7 @@ strategies = [
 def test_handle_corrupted_trials(caplog, strategy, corrupted_trial):
     """Verify that corrupted trials are handled properly"""
     with caplog.at_level(logging.WARNING, logger="orion.core.worker.strategy"):
+        Strategy(strategy).observe([corrupted_trial], [{"objective": 1}])
         lie = Strategy(strategy).lie(corrupted_trial)
 
     match = "Trial `{}` has an objective but status is not completed".format(
@@ -64,9 +65,10 @@ def test_handle_corrupted_trials(caplog, strategy, corrupted_trial):
 
 
 @pytest.mark.parametrize("strategy", strategies)
-def test_handle_uncorrupted_trials(caplog, strategy, incomplete_trial):
+def test_handle_uncompleted_trials(caplog, strategy, incomplete_trial):
     """Verify that no warning is logged if trial is valid"""
     with caplog.at_level(logging.WARNING, logger="orion.core.worker.strategy"):
+        Strategy(strategy).observe([incomplete_trial], [{"objective": None}])
         Strategy(strategy).lie(incomplete_trial)
 
     assert "Trial `{}` has an objective but status is not completed" not in caplog.text

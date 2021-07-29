@@ -142,9 +142,11 @@ class MaxParallelStrategy(BaseParallelStrategy):
     def observe(self, points, results):
         """See BaseParallelStrategy.observe"""
         super(MaxParallelStrategy, self).observe(points, results)
-        self.max_result = max(
+        results = [
             result["objective"] for result in results if result["objective"] is not None
-        )
+        ]
+        if results:
+            self.max_result = max(results)
 
     def lie(self, trial):
         """See BaseParallelStrategy.lie"""
@@ -175,9 +177,10 @@ class MeanParallelStrategy(BaseParallelStrategy):
         objective_values = [
             result["objective"] for result in results if result["objective"] is not None
         ]
-        self.mean_result = sum(value for value in objective_values) / float(
-            len(objective_values)
-        )
+        if objective_values:
+            self.mean_result = sum(value for value in objective_values) / float(
+                len(objective_values)
+            )
 
     def lie(self, trial):
         """See BaseParallelStrategy.lie"""
