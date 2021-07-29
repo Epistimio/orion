@@ -355,7 +355,7 @@ def test_workon():
         assert len(params) == 1
         px = params["/x"]
         assert isinstance(px, float)
-        assert (px - 34.56789) < 5
+        assert (px - 34.56789) < 10
 
 
 def test_stress_unique_folder_creation(storage, monkeypatch, tmpdir, capfd):
