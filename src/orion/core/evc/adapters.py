@@ -33,6 +33,7 @@ Adapters can be build using the factory class `Adapter(**kwargs)` or using
 import copy
 from abc import ABCMeta, abstractmethod
 
+from orion.algo.space import Dimension
 from orion.core.io.space_builder import DimensionBuilder
 from orion.core.utils import Factory
 from orion.core.worker.trial import Trial
@@ -278,6 +279,9 @@ class DimensionAddition(BaseAdapter):
 
             :meth:`orion.core.evc.adapters.BaseAdapter.forward`
         """
+        if self.param.value is Dimension.NO_DEFAULT_VALUE:
+            return []
+
         adapted_trials = []
 
         for trial in trials:

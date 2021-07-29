@@ -14,6 +14,7 @@ Helper functions are provided to fetch trials keeping the tree structure. Those 
 analyzing an EVC tree.
 
 """
+import functools
 import logging
 
 from orion.core.evc.tree import TreeNode
@@ -192,10 +193,11 @@ class ExperimentNode(TreeNode):
         children_trials.set_parent(parent_trials)
 
         adapt_trials(children_trials)
+
         return sum([node.item["trials"] for node in children_trials.root], [])
 
 
-def _adapt_parent_trials(node, parent_trials_node):
+def _adapt_parent_trials(node, parent_trials_node, ids):
     """Adapt trials from the parent recursively
 
     .. note::
@@ -203,10 +205,28 @@ def _adapt_parent_trials(node, parent_trials_node):
         To call with node.map(fct, node.parent) to connect with parents
 
     """
+    # Ids from children are passed to prioritized them if they are also present in parent nodes.
+    node_ids = (
+        set(
+            trial.compute_trial_hash(trial, ignore_lie=True, ignore_experiment=True)
+            for trial in node.item["trials"]
+        )
+        | ids
+    )
     if parent_trials_node is not None:
         adapter = node.item["experiment"].refers["adapter"]
         for parent in parent_trials_node.root:
             parent.item["trials"] = adapter.forward(parent.item["trials"])
+
+            # if trial is in current exp, filter out
+            parent.item["trials"] = [
+                trial
+                for trial in parent.item["trials"]
+                if trial.compute_trial_hash(
+                    trial, ignore_lie=True, ignore_experiment=True
+                )
+                not in node_ids
+            ]
 
     return node.item, parent_trials_node
 
@@ -219,15 +239,38 @@ def _adapt_children_trials(node, children_trials_nodes):
         To call with node.map(fct, node.children) to connect with children
 
     """
+    ids = set(
+        trial.compute_trial_hash(trial, ignore_lie=True, ignore_experiment=True)
+        for trial in node.item["trials"]
+    )
+
     for child in children_trials_nodes:
         adapter = child.item["experiment"].refers["adapter"]
         for subchild in child:  # Includes child itself
             subchild.item["trials"] = adapter.backward(subchild.item["trials"])
+
+            # if trial is in current node, filter out
+            subchild.item["trials"] = [
+                trial
+                for trial in subchild.item["trials"]
+                if trial.compute_trial_hash(
+                    trial, ignore_lie=True, ignore_experiment=True
+                )
+                not in ids
+            ]
 
     return node.item, children_trials_nodes
 
 
 def adapt_trials(trials_tree):
     """Adapt trials recursively so that they are all compatible with current experiment."""
-    trials_tree.map(_adapt_parent_trials, trials_tree.parent)
     trials_tree.map(_adapt_children_trials, trials_tree.children)
+    ids = set()
+    for child in trials_tree.children:
+        for trial in child.item["trials"]:
+            ids.add(
+                trial.compute_trial_hash(trial, ignore_lie=True, ignore_experiment=True)
+            )
+    trials_tree.map(
+        functools.partial(_adapt_parent_trials, ids=ids), trials_tree.parent
+    )
