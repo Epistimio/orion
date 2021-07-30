@@ -14,7 +14,6 @@ from orion.testing.evc import (
     disable_duplication,
 )
 
-
 ROOT_SPACE_WITH_DEFAULTS = {
     "x": "uniform(0, 100, default_value=0)",
     "y": "uniform(0, 100,  default_value=2)",

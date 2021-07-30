@@ -17,8 +17,6 @@ def disable_duplication(monkeypatch):
         yield
 
 
-
-
 def generate_trials(exp, trials):
     """Generate trials for each item in trials.
 

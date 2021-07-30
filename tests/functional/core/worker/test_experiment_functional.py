@@ -10,7 +10,7 @@ from orion.testing.evc import (
     build_child_experiment,
     build_grand_child_experiment,
     build_root_experiment,
-    disable_duplication
+    disable_duplication,
 )
 
 
@@ -30,7 +30,6 @@ def generate_trials_list(level, stati=Trial.allowed_stati):
 
 
 status = []
-
 
 
 def build_evc_tree(levels):
