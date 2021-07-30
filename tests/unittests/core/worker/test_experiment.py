@@ -587,6 +587,7 @@ def test_experiment_pickleable():
 read_only_methods = [
     "algorithms",
     "configuration",
+    "fetch_pending_trials",
     "fetch_noncompleted_trials",
     "fetch_trials",
     "fetch_trials_by_status",
@@ -614,6 +615,7 @@ read_write_only_methods = [
     "register_trial",
     "set_trial_status",
     "update_completed_trial",
+    "duplicate_pending_trials",
 ]
 execute_only_methods = [
     "reserve_trial",
