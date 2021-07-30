@@ -1,6 +1,22 @@
+import contextlib
 import copy
 
 from orion.client import build_experiment, get_experiment
+
+
+@contextlib.contextmanager
+def disable_duplication(monkeypatch):
+    def stub(self):
+        pass
+
+    with monkeypatch.context() as m:
+        m.setattr(
+            "orion.core.worker.experiment.Experiment.duplicate_pending_trials", stub
+        )
+
+        yield
+
+
 
 
 def generate_trials(exp, trials):

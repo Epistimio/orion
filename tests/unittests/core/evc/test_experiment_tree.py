@@ -7,62 +7,12 @@ import pytest
 from orion.client import build_experiment, get_experiment
 from orion.core.evc.adapters import Adapter, CodeChange
 from orion.core.evc.experiment import ExperimentNode
-
-
-def generate_trials(exp, params):
-    """Generate trials for each item in params.
-
-    Items of params can be either dictionary of valid hyperparameters based on exp.space or `None`.
-    For items that are `None`, trials are suggested with exp.suggest().
-    """
-    for trial_params in params:
-        if trial_params is None:
-            with exp.suggest() as trial:
-                # Releases suggested trial when leaving with-clause.
-                pass
-        else:
-            exp.insert(params=trial_params)
-
-
-def build_root_experiment(space=None, trials=None):
-    """Build a root experiment and generate trials."""
-    if space is None:
-        space = {"x": "uniform(0, 100)", "y": "uniform(0, 100)", "z": "uniform(0, 100)"}
-    if trials is None:
-        trials = [{"x": i, "y": i * 2, "z": i ** 2} for i in range(4)]
-
-    root = build_experiment(name="root", max_trials=len(trials), space=space)
-
-    generate_trials(root, trials)
-
-
-def build_child_experiment(space=None, trials=None, name="child", parent="root"):
-    """Build a child experiment by branching from `parent` and generate trials."""
-    if trials is None:
-        trials = [None for i in range(6)]
-
-    max_trials = get_experiment(parent).max_trials + len(trials)
-
-    child = build_experiment(
-        name=name,
-        space=space,
-        max_trials=max_trials,
-        branching={"branch_from": parent, "enable": True},
-    )
-    assert child.name == name
-    assert child.version == 1
-
-    generate_trials(child, trials)
-
-
-def build_grand_child_experiment(space=None, trials=None):
-    """Build a grand-child experiment by branching from `child` and generate trials."""
-    if trials is None:
-        trials = [None for i in range(5)]
-
-    build_child_experiment(
-        space=space, trials=trials, name="grand-child", parent="child"
-    )
+from orion.testing.evc import (
+    build_child_experiment,
+    build_grand_child_experiment,
+    build_root_experiment,
+    disable_duplication,
+)
 
 
 ROOT_SPACE_WITH_DEFAULTS = {
@@ -590,10 +540,13 @@ parametrization = {
     list(parametrization.values()),
     ids=list(parametrization.keys()),
 )
-def test_evc_fetch_adapters(storage, root, child, grand_child, test_kwargs):
+def test_evc_fetch_adapters(
+    monkeypatch, storage, root, child, grand_child, test_kwargs
+):
     """Test the recursive fetch of trials in the EVC tree."""
-    build_root_experiment(**root)
-    build_child_experiment(**child)
-    if grand_child is not None:
-        build_grand_child_experiment(**grand_child)
+    with disable_duplication(monkeypatch):
+        build_root_experiment(**root)
+        build_child_experiment(**child)
+        if grand_child is not None:
+            build_grand_child_experiment(**grand_child)
     generic_tree_test(**test_kwargs)

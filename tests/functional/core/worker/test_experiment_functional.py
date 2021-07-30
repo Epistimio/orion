@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of functional tests for :mod:`orion.core.worker.experiment`."""
-import contextlib
 import logging
 
 from orion.client import build_experiment, get_experiment
@@ -11,6 +10,7 @@ from orion.testing.evc import (
     build_child_experiment,
     build_grand_child_experiment,
     build_root_experiment,
+    disable_duplication
 )
 
 
@@ -31,18 +31,6 @@ def generate_trials_list(level, stati=Trial.allowed_stati):
 
 status = []
 
-
-@contextlib.contextmanager
-def disable_duplication(monkeypatch):
-    def stub(self):
-        pass
-
-    with monkeypatch.context() as m:
-        m.setattr(
-            "orion.core.worker.experiment.Experiment.duplicate_pending_trials", stub
-        )
-
-        yield
 
 
 def build_evc_tree(levels):
