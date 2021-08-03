@@ -83,6 +83,7 @@ def get_or_create_benchmark(
         targets=targets,
         storage=storage,
         knowledge_base_type=knowledge_base_type,
+        debug=debug,
     )
 
     if input_configure and input_benchmark.configuration != benchmark.configuration:
@@ -156,6 +157,7 @@ def _create_benchmark(
     targets: List[TargetsDict],
     storage: Dict,
     knowledge_base_type: Type[AbstractKnowledgeBase] = None,
+    debug: bool = False,
 ):
     if knowledge_base_type:
         benchmark = WarmStartBenchmark(
@@ -164,10 +166,11 @@ def _create_benchmark(
             targets=targets,
             storage=storage,
             knowledge_base_type=knowledge_base_type,
+            debug=debug,
         )
     else:
         benchmark = Benchmark(
-            name=name, algorithms=algorithms, storage=storage, targets=targets
+            name=name, algorithms=algorithms, storage=storage, targets=targets, debug=debug,
         )
     benchmark.setup_studies()
 

@@ -123,15 +123,13 @@ class WarmStartBenchmark(Benchmark):
     def analysis(self):
         """Return all the assessment figures"""
         figures = []
-        # TODO: Figure out a better place to call this! (Need to create a figure using
-        # the results of multiple studies).
-        assert all(isinstance(study, WarmStartStudy) for study in self.studies)
         for study in self.studies:
-            figure = study.analysis()
-            if isinstance(figure, list):
-                figures.extend(figure)
+            # Figure(s)
+            figure_s = study.analysis()
+            if isinstance(figure_s, list):
+                figures.extend(figure_s)
             else:
-                figures.append(figure)
+                figures.append(figure_s)
         return figures
 
 

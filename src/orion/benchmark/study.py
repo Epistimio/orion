@@ -9,7 +9,7 @@ import itertools
 
 from tabulate import tabulate
 
-from orion.client import create_experiment
+from orion.client import build_experiment
 
 
 class Study:
@@ -73,7 +73,7 @@ class Study:
         def is_deterministic(self):
             return self.deterministic
 
-    def __init__(self, benchmark, algorithms, assessment, task):
+    def __init__(self, benchmark, algorithms, assessment, task, debug: bool = False):
         self.algorithms = self._build_benchmark_algorithms(algorithms)
         self.assessment = assessment
         self.task = task
@@ -82,6 +82,7 @@ class Study:
         self.assess_name = type(self.assessment).__name__
         self.task_name = type(self.task).__name__
         self.experiments_info = []
+        self.debug = debug
 
     def _build_benchmark_algorithms(self, algorithms):
         benchmark_algorithms = list()
@@ -114,12 +115,13 @@ class Study:
                     ]
                 )
 
-                experiment = create_experiment(
+                experiment = build_experiment(
                     experiment_name,
                     space=space,
                     algorithms=algorithm.experiment_algorithm,
                     max_trials=max_trials,
                     storage=self.benchmark.storage_config,
+                    debug=self.debug,
                 )
                 self.experiments_info.append((task_index, experiment))
 
@@ -129,7 +131,7 @@ class Study:
 
         for _, experiment in self.experiments_info:
             # TODO: it is a blocking call
-            experiment.workon(self.task, max_trials, n_workers)
+            experiment.workon(self.task, max_trials=max_trials, n_workers=n_workers)
 
     def status(self):
         """Return status of the study"""

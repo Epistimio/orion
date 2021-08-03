@@ -49,14 +49,14 @@ class Benchmark:
         Configuration of the storage backend.
     """
 
-    def __init__(self, name, algorithms, targets, storage=None):
+    def __init__(self, name, algorithms, targets, storage=None, debug: bool=False):
         self._id = None
         self.name = name
         self.algorithms = algorithms
         self.targets = targets
         self.metadata = {}
         self.storage_config = storage
-
+        self.debug = debug
         self.studies = []
 
     def setup_studies(self):
@@ -69,7 +69,7 @@ class Benchmark:
             tasks = target["task"]
 
             for assess, task in itertools.product(*[assessments, tasks]):
-                study = Study(self, self.algorithms, assess, task)
+                study = Study(benchmark=self, algorithms=self.algorithms, assessment=assess, task=task)
                 study.setup_experiments()
                 self.studies.append(study)
 
