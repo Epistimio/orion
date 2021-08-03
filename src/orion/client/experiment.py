@@ -590,7 +590,9 @@ class ExperimentClient:
 
         """
         self._check_if_executable()
-
+        if not isinstance(results, list):
+            objective = results
+            results = [dict(name="default", type="objective", value=objective)]
         trial.results += [Trial.Result(**result) for result in results]
         raise_if_unreserved = True
         try:
