@@ -5,18 +5,13 @@ from dataclasses import dataclass
 from typing import ClassVar, Dict, Type, Union
 
 import numpy as np
-import sklearn
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score
-from sklearn.pipeline import Pipeline, make_pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
-from warmstart.hyperparameters import HyperParameters, categorical, uniform
-from warmstart.tasks import Task
-from warmstart.utils import compute_identity
+from simple_parsing.helpers.hparams import HyperParameters, categorical, uniform
 
 import openml
-from openml.flows import OpenMLFlow, get_flow
 
 from .openml_task import OpenMLTask, OpenMLTaskHParams
 

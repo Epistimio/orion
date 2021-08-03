@@ -1,6 +1,6 @@
-from .quadratics import QuadraticsTask, QuadraticsTaskHParams
+from .quadratics import QuadraticsTask
 from .task import Task
-from warmstart.distance import distance, similarity
+from orion.benchmark.task.utils import distance, similarity
 from typing import ClassVar, Type
 import numpy as np
 import pytest
@@ -26,7 +26,7 @@ class TestQuadraticsTask:
         assert task_b != task_c
 
     @pytest.mark.parametrize(
-        "task_a_kwargs, task_b_kwargs, distance",
+        "task_a_kwargs, task_b_kwargs, expected_distance",
         [
             (dict(a2=0, a1=1.2, a0=0), dict(a2=0, a1=1.2, a0=0), 0.0),
             (dict(a2=0, a1=1.2, a0=0), dict(a2=0, a1=0.8, a0=0), 0.4),
@@ -39,15 +39,15 @@ class TestQuadraticsTask:
         ],
     )
     def test_distances_between_tasks(
-        self, task_a_kwargs: dict, task_b_kwargs: dict, distance: float
+        self, task_a_kwargs: dict, task_b_kwargs: dict, expected_distance: float
     ):
         task_a = self.task(**task_a_kwargs)
         task_b = self.task(**task_b_kwargs)
-        actual_distance = task_a.distance_to(task_b)
-        assert np.isclose(actual_distance, distance)
+        actual_distance = distance(task_a, task_b)
+        assert np.isclose(actual_distance, expected_distance)
 
     @pytest.mark.parametrize(
-        "task_a_kwargs, task_b_kwargs, similarity",
+        "task_a_kwargs, task_b_kwargs, expected_similarity",
         [
             (dict(a2=0, a1=1.2, a0=0), dict(a2=0, a1=1.2, a0=0), 1.0),
             # TODO: The resulting similarity value for these is a bit arbitrary:
@@ -59,12 +59,12 @@ class TestQuadraticsTask:
         ],
     )
     def test_similarity_between_tasks(
-        self, task_a_kwargs: dict, task_b_kwargs: dict, similarity: float
+        self, task_a_kwargs: dict, task_b_kwargs: dict, expected_similarity: float
     ):
         task_a = self.task(**task_a_kwargs)
         task_b = self.task(**task_b_kwargs)
-        actual_similarity = task_a.similarity(task_b)
-        assert np.isclose(actual_similarity, similarity)
+        actual_similarity = similarity(task_a, task_b)
+        assert np.isclose(actual_similarity, expected_similarity)
 
     MAX_DIST = distance(task.task_low(), task.task_high())
 

@@ -2,19 +2,15 @@
 supplementary material.
 """
 from dataclasses import dataclass
-from typing import ClassVar, Dict, List, Type, Union
+from typing import ClassVar, Dict, Type, Union
 
 import numpy as np
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score
-from sklearn.pipeline import Pipeline, make_pipeline
-from sklearn.preprocessing import StandardScaler
-from warmstart.hyperparameters import HyperParameters, categorical, uniform
-from warmstart.tasks import Task
-from warmstart.utils import compute_identity
+from sklearn.pipeline import make_pipeline
+from simple_parsing.helpers.hparams import HyperParameters, categorical, uniform
 
 import openml
-from openml.flows import OpenMLFlow, get_flow
 
 from .openml_task import OpenMLTask, OpenMLTaskHParams
 
@@ -116,10 +112,6 @@ class XGBoostTask(OpenMLTask):
             raise NotImplementedError(hp)
         assert isinstance(hparams, self.hparams)
         hparams: XGBoostTaskHParams
-        from sklearn.ensemble import (
-            GradientBoostingClassifier,
-            GradientBoostingRegressor,
-        )
         from sklearn.preprocessing import StandardScaler
 
         # Corresponding values for XGBClassifier from xgboost package:

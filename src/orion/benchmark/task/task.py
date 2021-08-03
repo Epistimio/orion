@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
-from collections import OrderedDict
-from dataclasses import asdict, dataclass, is_dataclass
+from dataclasses import asdict, is_dataclass
 from typing import (
     Any,
     ClassVar,
@@ -22,8 +21,9 @@ from orion.benchmark.task.base import BaseTask
 from simple_parsing import Serializable
 from torch import Tensor
 from torch.utils.data import TensorDataset
-from warmstart.hyperparameters import HyperParameters
-from warmstart.utils import dict_union, get_logger
+from simple_parsing.helpers.hparams import HyperParameters
+from orion.benchmark.task.utils import dict_union
+from logging import getLogger as get_logger
 
 
 HParams = TypeVar("HParams", bound=HyperParameters)

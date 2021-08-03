@@ -9,11 +9,9 @@ import pandas as pd
 from sklearn.metrics import accuracy_score
 from torch.utils.data import Dataset
 from orion.benchmark.task.task import Task
-from warmstart.utils import compute_identity
-from simple_parsing.helpers.hparams import HyperParameters, categorical, uniform
+from simple_parsing.helpers.hparams import HyperParameters
 from logging import getLogger as get_logger
 import openml
-from openml.flows import OpenMLFlow, get_flow
 
 logger = get_logger(__name__)
 
@@ -191,7 +189,7 @@ class OpenMLTask(Task, ABC):
     @property
     def hash(self) -> str:
         # TODO: Return a unique "hash"/id/key for this task
-        from warmstart.utils import compute_identity
+        from orion.benchmark.task.utils import compute_identity
         from dataclasses import is_dataclass, asdict
 
         if is_dataclass(self):

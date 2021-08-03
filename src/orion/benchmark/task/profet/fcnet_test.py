@@ -1,14 +1,16 @@
+import os
 from pathlib import Path
+
 import pytest
+
 from .fcnet import FcNetTask
+from .profet_task import MetaModelTrainingConfig
 
-input_path: Path = Path("profet_data/data")
 
-
-@pytest.mark.skipif(not input_path.exists(), reason="test requires profet data")
-def test_kwargs_fix_dimension_fcnet():
-    # TODO: Test that setting 'kwargs' actually fixes a dimension.
-    task = FcNetTask(input_path=input_path, batch_size=53)
+@pytest.mark.skip(reason="Take WAY too long to run.")
+def test_kwargs_fix_dimension_fcnet(profet_train_config: MetaModelTrainingConfig):
+    """ Test that setting 'kwargs' actually fixes a dimension. """
+    task = FcNetTask(batch_size=53, train_config=profet_train_config)
     xs = task.sample()
     assert len(xs) == 1
     x = xs[0]

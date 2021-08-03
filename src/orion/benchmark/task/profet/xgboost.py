@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import ClassVar, Type
 
-from warmstart import HyperParameters, loguniform, uniform
+from simple_parsing.helpers.hparams import HyperParameters, loguniform, uniform
 
 from .profet_task import ProfetTask
 
@@ -21,8 +21,8 @@ class XgBoostTaskHParams(HyperParameters):
 class XgBoostTask(ProfetTask):
     """ Simulated Task consisting in fitting a Extreme-Gradient Boosting predictor.
     """
-
-    def __init__(self, input_path, benchmark="xgboost", **kwargs):
-        super().__init__(input_path, benchmark="xgboost", **kwargs)
-
     hparams: ClassVar[Type[XgBoostTaskHParams]] = XgBoostTaskHParams
+
+    def __init__(self, *args, benchmark="xgboost", **kwargs):
+        super().__init__(*args, benchmark="xgboost", **kwargs)
+

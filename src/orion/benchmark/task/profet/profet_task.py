@@ -1,18 +1,11 @@
-import argparse
-import base64
 import functools
 import hashlib
 import json
 import os
 import pickle
-import sys
-import tarfile
-import zlib
-from collections import OrderedDict
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Tuple, Union
-from urllib.request import urlretrieve
+from typing import Callable, Dict, Optional, Tuple, Union
 
 import GPy
 import numpy as np
@@ -26,12 +19,11 @@ from emukit.examples.profet.meta_benchmarks.meta_forrester import (
     get_architecture_forrester,
 )
 from emukit.examples.profet.train_meta_model import download_data
-
+from dataclasses import is_dataclass, asdict, dataclass
 
 # sys.path.extend([".", ".."])
 from logging import getLogger as get_logger
-from warmstart.tasks import Task
-from warmstart.utils import dict_union
+from orion.benchmark.task.task import Task, compute_identity
 
 logger = get_logger(__name__)
 
@@ -44,7 +36,7 @@ spaces: Dict[str, Dict[str, str]] = dict(
         # supposed to be.
         # alpha='uniform(0, 1)',
         # beta='uniform(0, 1)'
-        x="uniform(0, 1)",
+        x="uniform(0, 1, discrete=False)",
     ),
     svm=dict(
         C="loguniform(np.exp(-10), np.exp(10))",
@@ -60,7 +52,7 @@ spaces: Dict[str, Dict[str, str]] = dict(
     ),
     xgboost=dict(
         learning_rate="loguniform(1e-6, 1e-1)",
-        gamma="uniform(0, 2)",
+        gamma="uniform(0, 2, discrete=False)",
         l1_regularization="loguniform(1e-5, 1e3)",
         l2_regularization="loguniform(1e-5, 1e3)",
         nb_estimators="uniform(10, 500, discrete=True)",
@@ -203,26 +195,33 @@ def get_training_data(
     return X_train, Y_train, C_train
 
 
+@dataclass
+class MetaModelTrainingConfig:
+    n_samples: int = 1
+    # TODO: Maybe could reduce this a bit to make the task generation faster?
+    num_burnin_steps: int = 50000
+    num_steps: Optional[int] = None
+    mcmc_thining: int = 100
+    lr: float = 1e-2
+    batch_size: int = 5
+
+    def __post_init__(self):
+        if self.num_steps is None:
+            self.num_steps = 100 * self.n_samples + 1
+    
+
+
 def get_meta_model(
     X_train: np.ndarray,
     Y_train: np.ndarray,
     C_train: np.ndarray,
     get_architecture: Callable,
-    normalize_targets: bool = False,
+    config: MetaModelTrainingConfig = None,
     hidden_space: int = 5,
     with_cost: bool = False,
+    normalize_targets: bool = False,
 ) -> Tuple[Bohamiann, Optional[Bohamiann]]:
-    # TODO
-    n_samples = 1
-    # TODO: Maybe could reduce this a bit to make the task generation faster?
-    num_burnin_steps = 50000
-    num_steps = n_samples + 1
-    num_steps = 100 * n_samples + 1
-    mcmc_thining = 100
-    normalize_targets = True
-
-    lr = 1e-2
-    batch_size = 5
+    config = config or MetaModelTrainingConfig()
 
     model_objective = Bohamiann(
         get_network=get_architecture,
@@ -233,12 +232,12 @@ def get_meta_model(
     model_objective.train(
         X_train,
         Y_train,
-        num_steps=num_steps + num_burnin_steps,
-        num_burn_in_steps=num_burnin_steps,
-        keep_every=mcmc_thining,
-        lr=lr,
+        num_steps=config.num_steps + config.num_burnin_steps,
+        num_burn_in_steps=config.num_burnin_steps,
+        keep_every=config.mcmc_thining,
+        lr=config.lr,
         verbose=True,
-        batch_size=batch_size,
+        batch_size=config.batch_size,
     )
 
     if with_cost:
@@ -249,12 +248,12 @@ def get_meta_model(
         model_cost.train(
             X_train,
             C_train,
-            num_steps=num_steps + num_burnin_steps,
-            num_burn_in_steps=num_burnin_steps,
-            keep_every=mcmc_thining,
-            lr=lr,
+            num_steps=config.num_steps + config.num_burnin_steps,
+            num_burn_in_steps=config.num_burnin_steps,
+            keep_every=config.mcmc_thining,
+            lr=config.lr,
             verbose=True,
-            batch_size=batch_size,
+            batch_size=config.batch_size,
         )
     else:
         model_cost = None
@@ -273,8 +272,9 @@ def get_network(model: Bohamiann, size: int, idx: int = 0) -> nn.Module:
 
 
 def get_task_network(
-    input_path: Union[Path, str], benchmark: str, rng, task_idx=None
+    input_path: Union[Path, str], benchmark: str, rng, task_idx=None, config: MetaModelTrainingConfig = None,
 ) -> Tuple[nn.Module, np.ndarray]:
+    config = config or MetaModelTrainingConfig()
 
     X, Y, C = load_data(input_path, benchmark)
 
@@ -291,7 +291,6 @@ def get_task_network(
         log_C=log_cost[benchmark],
         log_Y=log_target[benchmark],
     )
-
     model_objective, model_cost = get_meta_model(
         X_train,
         Y_train,
@@ -300,6 +299,7 @@ def get_task_network(
         normalize_targets=normalize_targets[benchmark],
         hidden_space=hidden_space[benchmark],
         with_cost=False,
+        config=config,
     )
 
     net = get_network(model_objective, X_train.shape[1])
@@ -380,6 +380,7 @@ class ProfetTask(Task):
         seed: int = 1,
         checkpoint_dir: Union[Path, str] = None,
         max_trials: int = 100,
+        train_config: MetaModelTrainingConfig = None,
         **kwargs,
     ):
         if rng is None:
@@ -395,8 +396,9 @@ class ProfetTask(Task):
         self.benchmark = benchmark
         self.task_idx = task_idx
         if not input_dir:
-            input_dir = Path(os.environ.get("DATA_DIR") / "profet")
-        input_dir = Path(input_dir)
+            input_dir = Path(os.environ.get("DATA_DIR")) / "profet"
+        else:
+            input_dir = Path(input_dir)
 
         if checkpoint_dir is None:
             checkpoint_dir = input_dir / "checkpoints"
@@ -412,6 +414,10 @@ class ProfetTask(Task):
 
         checkpoint_file = Path(checkpoint_dir) / filename
         logger.debug(f"Checkpoint file for this task: {checkpoint_file}")
+        
+        # The config for the training of the meta-model.
+        # TODO: This should probably be a part of the hash for the "id" of the task!
+        self.train_config = train_config
 
         if os.path.exists(checkpoint_file):
             self.net, self.h = load_task_network(checkpoint_file)
@@ -421,14 +427,12 @@ class ProfetTask(Task):
             )
             checkpoint_file.parent.mkdir(exist_ok=True, parents=True)
             # Need to re-train the meta-model and sample this task.
-            self.net, self.h = get_task_network(input_dir, benchmark, rng, task_idx)
+            self.net, self.h = get_task_network(input_dir, benchmark, rng, task_idx, config=train_config)
             save_task_network(checkpoint_file, benchmark, self.net, self.h)
 
     @property
     def hash(self) -> str:
         # TODO: Return a unique "hash"/id/key for this task
-        from warmstart.utils import compute_identity
-        from dataclasses import is_dataclass, asdict
 
         if is_dataclass(self):
             return compute_identity(**asdict(self))

@@ -34,7 +34,6 @@ class BaseTask(ABC):
         Define the black box function to optimize, the function will expect hyper-parameters to
         search and return objective values of trial with the hyper-parameters.
         """
-        pass
 
     def __call__(self, *args, **kwargs):
         """
@@ -51,7 +50,6 @@ class BaseTask(ABC):
     @abstractmethod
     def get_search_space(self):
         """Return the search space for the task objective function"""
-        pass
 
     @property
     def configuration(self):
@@ -63,4 +61,3 @@ class BaseTask(ABC):
 class BenchmarkTask(BaseTask, metaclass=Factory):
     """Class used to inject dependency on an task implementation."""
 
-    pass

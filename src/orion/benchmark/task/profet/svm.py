@@ -3,7 +3,7 @@ from typing import ClassVar, Type
 
 import numpy as np
 
-from warmstart import HyperParameters, loguniform, uniform
+from simple_parsing.helpers.hparams import HyperParameters, loguniform
 
 from .profet_task import ProfetTask
 
@@ -19,5 +19,5 @@ class SvmTask(ProfetTask):
 
     hparams: ClassVar[Type[SvmTaskHParams]] = SvmTaskHParams
 
-    def __init__(self, input_path="profet_outputs", benchmark="svm", **kwargs):
-        super().__init__(input_path, benchmark="svm", **kwargs)
+    def __init__(self, *args, benchmark="svm", **kwargs):
+        super().__init__(*args, benchmark="svm", **kwargs)

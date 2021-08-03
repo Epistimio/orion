@@ -3,17 +3,16 @@
 [1] [Scalable HyperParameter Transfer Learning](
     https://papers.nips.cc/paper/7917-scalable-hyperparameter-transfer-learning)
 """
+from functools import partial
 from typing import ClassVar, Type, Union, List, Dict, Any, Tuple, Dict
 import numpy as np
-import copy
 import math
 from dataclasses import dataclass, fields, replace
-from warmstart.hyperparameters import HyperParameters, uniform
-from warmstart.utils import compute_identity
-from warmstart.tasks import Task
-from warmstart.distance import similarity, distance
+from simple_parsing.helpers.hparams import HyperParameters, uniform
+from orion.benchmark.task.task import Task, compute_identity
 
-from warmstart.utils import compute_identity
+from orion.benchmark.task.utils import similarity, distance
+
 from logging import getLogger as get_logger
 from dataclasses import is_dataclass, asdict
 
@@ -24,12 +23,11 @@ logger = get_logger(__name__)
 class QuadraticsTaskHParams(HyperParameters):
     # TODO: In the paper, section 4.2, the function is defined over R^3, but I'm
     # limiting the bounds to this for now since the y can be enormous otherwise.
-    x0: float = uniform(-100., 100.)
-    x1: float = uniform(-100., 100.)
-    x2: float = uniform(-100., 100.)
+    x0: float = uniform(-100., 100., discrete=False)
+    x1: float = uniform(-100., 100., discrete=False)
+    x2: float = uniform(-100., 100., discrete=False)
 
 
-from dataclasses import InitVar
 from typing import Optional
 from dataclasses import field
 
@@ -223,7 +221,7 @@ class QuadraticsTask(Task, HyperParameters):
         task_high = QuadraticsTask.task_high()
         if correlation_coefficient == 0.0:
             # Return the "furthest" task between the 'low' and the 'high' tasks.
-            furthest_task = max(task_low, task_high, key=self.distance_to)
+            furthest_task = max(task_low, task_high, key=partial(distance, self))
             kwargs.setdefault("seed", self.seed)
             furthest_task_with_given_attributes = replace(furthest_task, **kwargs)
             return furthest_task_with_given_attributes
@@ -346,7 +344,6 @@ class QuadraticsTask(Task, HyperParameters):
         # r, p_value = pearsonr()
 
 
-from scipy.stats import pearsonr, spearmanr
 
 
 @similarity.register
@@ -492,7 +489,7 @@ class QuadraticsTaskWithContext(QuadraticsTask):
     @property
     def hash(self) -> str:
         # TODO: Return a unique "hash"/id/key for this task
-        from warmstart.utils import compute_identity
+        from orion.benchmark.task.utils import compute_identity
         from dataclasses import is_dataclass, asdict
 
         if is_dataclass(self):

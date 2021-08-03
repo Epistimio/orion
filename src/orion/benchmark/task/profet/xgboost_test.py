@@ -1,14 +1,13 @@
 from pathlib import Path
 import pytest
 from .xgboost import XgBoostTask
+from .profet_task import MetaModelTrainingConfig
 
-input_path: Path = Path("profet_data/data")
 
-
-@pytest.mark.skipif(not input_path.exists(), reason="test requires profet data")
-def test_kwargs_fix_dimension_xgboost():
+@pytest.mark.skip(reason="Take WAY too long to run.")
+def test_kwargs_fix_dimension_xgboost(profet_train_config: MetaModelTrainingConfig):
     # TODO: Test that setting 'kwargs' actually fixes a dimension.
-    task = XgBoostTask(input_path=input_path, benchmark="xgboost", nb_estimators=251,)
+    task = XgBoostTask(benchmark="xgboost", nb_estimators=251,)
     points = task.sample()
     assert len(points) == 1
     x = points[0]

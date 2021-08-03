@@ -1,17 +1,15 @@
 import math
-from dataclasses import Field
 from typing import Dict, Any
 
 import numpy as np
-import pytest
 
-from warmstart.utils import dict_intersection, dict_union
+from orion.benchmark.task.utils import dict_intersection
 
 from .profet.fcnet import FcNetTaskHParams
 from .profet.forrester import ForresterTaskHParams
 from .profet.svm import SvmTaskHParams
 from .profet.xgboost import XgBoostTaskHParams
-from .profet.profet_task import ProfetTask, spaces
+from .profet.profet_task import spaces
 
 # Since the floats in the 'space strings' generated from the HyperParameters
 # class might be string-formatted slightly differently than those specified in
@@ -36,10 +34,10 @@ mock_locals = dict(
 
 def assert_orion_space_strings_are_equivalent(space1: Dict, space2: Dict) -> bool:
     assert space1.keys() == space2.keys()
-    for _, (v1, v2) in dict_intersection(space1, space2):
+    for n, (v1, v2) in dict_intersection(space1, space2):
         f1: Dict = eval(v1, None, mock_locals)
         f2: Dict = eval(v2, None, mock_locals)
-        assert f1 == f2
+        assert f1 == f2, n
 
 
 def test_orion_space_strings_match_svm():

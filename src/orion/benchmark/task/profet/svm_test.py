@@ -1,14 +1,12 @@
 from pathlib import Path
 import pytest
 from .svm import SvmTask
+from .profet_task import MetaModelTrainingConfig
 
-input_path: Path = Path("profet_data/data")
-
-
-@pytest.mark.skipif(not input_path.exists(), reason="test requires profet data")
-def test_kwargs_fix_dimension_svm():
+@pytest.mark.skip(reason="Take WAY too long to run.")
+def test_kwargs_fix_dimension_svm(profet_train_config: MetaModelTrainingConfig):
     # TODO: Test that setting 'kwargs' actually fixes a dimension.
-    task = SvmTask(input_path=input_path, gamma=0.123)
+    task = SvmTask(gamma=0.123, get_task_network_kwargs={})
     xs = task.sample()
     assert len(xs) == 1
     x = xs[0]

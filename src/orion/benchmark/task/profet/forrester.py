@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import ClassVar, Type
 
-from warmstart import HyperParameters, loguniform, uniform
+from simple_parsing.helpers.hparams import HyperParameters, uniform
 from logging import getLogger as get_logger
 
 from .profet_task import ProfetTask
@@ -19,8 +19,8 @@ class ForresterTask(ProfetTask):
 
     hparams: ClassVar[Type[ForresterTaskHParams]] = ForresterTaskHParams
 
-    def __init__(self, input_path, benchmark="forrester", **kwargs):
-        super().__init__(input_path, benchmark="forrester", **kwargs)
+    def __init__(self, *args, benchmark="forrester", **kwargs):
+        super().__init__(*args, benchmark="forrester", **kwargs)
 
     def __call__(self, hp, **kwargs):
         logger.debug(

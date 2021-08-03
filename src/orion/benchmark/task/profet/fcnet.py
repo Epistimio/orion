@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import ClassVar, Type
 
-from warmstart import HyperParameters, loguniform, uniform
+from simple_parsing.helpers.hparams import HyperParameters, loguniform, uniform
 
 from .profet_task import ProfetTask
 
@@ -21,5 +21,5 @@ class FcNetTask(ProfetTask):
 
     hparams: ClassVar[Type[FcNetTaskHParams]] = FcNetTaskHParams
 
-    def __init__(self, input_path, benchmark="fcnet", task_idx: int = None, **kwargs):
-        super().__init__(input_path, benchmark="fcnet", task_idx=task_idx, **kwargs)
+    def __init__(self, *args, benchmark="fcnet", **kwargs):
+        super().__init__(*args, benchmark="fcnet", **kwargs)
