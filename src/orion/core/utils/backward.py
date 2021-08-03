@@ -143,7 +143,8 @@ def get_algo_requirements(algorithm):
         return requirements
     if isinstance(algorithm, str):
         # TODO: Confusing error when passed an unknown algo!
-        assert False, algorithm
+        from orion.core.worker.multi_task_algo import get_all_algos
+        algorithm = get_all_algos()[algorithm]
     return dict(
         type_requirement=algorithm.requires_type,
         shape_requirement=algorithm.requires_shape,
