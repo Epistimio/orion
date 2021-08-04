@@ -272,7 +272,11 @@ def get_network(model: Bohamiann, size: int, idx: int = 0) -> nn.Module:
 
 
 def get_task_network(
-    input_path: Union[Path, str], benchmark: str, rng, task_idx=None, config: MetaModelTrainingConfig = None,
+    input_path: Union[Path, str],
+    benchmark: str,
+    rng,
+    task_idx=None,
+    config: MetaModelTrainingConfig = None,
 ) -> Tuple[nn.Module, np.ndarray]:
     config = config or MetaModelTrainingConfig()
 
@@ -403,18 +407,21 @@ class ProfetTask(Task):
         if checkpoint_dir is None:
             checkpoint_dir = input_dir / "checkpoints"
 
-        task_hash = compute_identity(
+        task_hash_params = dict(
             benchmark=benchmark,
             # NOTE: Keeping task_idx as the key, to hopefully preserve previous pickle files
             task_idx=task_id,
             rng=rng,
             seed=seed,
+            **asdict(train_config),
         )
+        task_hash = compute_identity(**task_hash_params)
+
         filename = f"{task_hash}.pkl"
 
         checkpoint_file = Path(checkpoint_dir) / filename
         logger.debug(f"Checkpoint file for this task: {checkpoint_file}")
-        
+
         # The config for the training of the meta-model.
         # TODO: This should probably be a part of the hash for the "id" of the task!
         self.train_config = train_config
@@ -425,9 +432,13 @@ class ProfetTask(Task):
             logger.info(
                 f"Checkpoint file {checkpoint_file} doesn't exist: re-training the meta-model."
             )
+            logger.debug(f"Task hash params: {task_hash_params}")
+
             checkpoint_file.parent.mkdir(exist_ok=True, parents=True)
             # Need to re-train the meta-model and sample this task.
-            self.net, self.h = get_task_network(input_dir, benchmark, rng, task_idx, config=train_config)
+            self.net, self.h = get_task_network(
+                input_dir, benchmark, rng, task_idx, config=train_config
+            )
             save_task_network(checkpoint_file, benchmark, self.net, self.h)
 
     @property

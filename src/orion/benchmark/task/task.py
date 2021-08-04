@@ -54,11 +54,11 @@ class Task(BaseTask, Generic[HParams], ABC):
 
     def __init__(
         self,
+        max_trials: int = 100,
         task_id: int = 0,
         rng: np.random.RandomState = None,
         seed: int = None,
         fixed_dims: Dict[str, Any] = None,
-        max_trials: int = 100,
     ):
         super().__init__(max_trials=max_trials)
         self.task_id = task_id
