@@ -202,6 +202,8 @@ class DimensionBuilder(object):
 
         prior, arg_string = re.findall(r"([a-z][a-z0-9_]*)\((.*)\)", expression)[0]
         globals_ = {"__builtins__": {}}
+        import numpy as np
+        globals_["np"] = np
         try:
             dimension = eval("self." + expression, globals_, {"self": self})
 
