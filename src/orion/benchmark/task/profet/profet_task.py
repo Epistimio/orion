@@ -275,7 +275,7 @@ def get_task_network(
     input_path: Union[Path, str],
     benchmark: str,
     rng,
-    task_idx=None,
+    task_id=None,
     config: MetaModelTrainingConfig = None,
 ) -> Tuple[nn.Module, np.ndarray]:
     config = config or MetaModelTrainingConfig()
@@ -308,10 +308,10 @@ def get_task_network(
 
     net = get_network(model_objective, X_train.shape[1])
 
-    if task_idx is None:
-        task_idx = rng.randint(Y.shape[0])
+    if task_id is None:
+        task_id = rng.randint(Y.shape[0])
 
-    h = task_features_mean[task_idx] + task_features_std[task_idx] * rng.randn(
+    h = task_features_mean[task_id] + task_features_std[task_id] * rng.randn(
         hidden_space[benchmark]
     )
 
@@ -377,8 +377,7 @@ class ProfetTask(Task):
     def __init__(
         self,
         benchmark: str,
-        task_id=None,
-        task_idx=None,
+        task_id: Optional[int]=0,
         input_dir: Union[Path, str] = None,
         rng: np.random.RandomState = None,
         seed: int = 1,
@@ -389,7 +388,7 @@ class ProfetTask(Task):
     ):
         if rng is None:
             rng = np.random.RandomState(seed)
-        task_id = task_id if task_id is not None else task_idx
+        task_id = task_id or 0
         super().__init__(
             task_id=task_id,
             rng=rng,
@@ -398,7 +397,6 @@ class ProfetTask(Task):
             fixed_dims=kwargs,
         )
         self.benchmark = benchmark
-        self.task_idx = task_idx
         if not input_dir:
             input_dir = Path(os.environ.get("DATA_DIR")) / "profet"
         else:
@@ -409,8 +407,7 @@ class ProfetTask(Task):
 
         task_hash_params = dict(
             benchmark=benchmark,
-            # NOTE: Keeping task_idx as the key, to hopefully preserve previous pickle files
-            task_idx=task_id,
+            task_id=task_id,
             rng=rng,
             seed=seed,
             **asdict(train_config),
@@ -432,12 +429,14 @@ class ProfetTask(Task):
             logger.info(
                 f"Checkpoint file {checkpoint_file} doesn't exist: re-training the meta-model."
             )
-            logger.debug(f"Task hash params: {task_hash_params}")
+            # TODO: Figure out where/how to set the logger config.
+            logger.info(f"Task hash params: {task_hash_params}")
+            print(f"Task hash params:", json.dumps({k: str(v) for k, v in task_hash_params.items()}, indent="\t"))
 
             checkpoint_file.parent.mkdir(exist_ok=True, parents=True)
             # Need to re-train the meta-model and sample this task.
             self.net, self.h = get_task_network(
-                input_dir, benchmark, rng, task_idx, config=train_config
+                input_dir, benchmark, rng, task_id, config=train_config
             )
             save_task_network(checkpoint_file, benchmark, self.net, self.h)
 
