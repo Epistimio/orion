@@ -38,11 +38,11 @@ class BirdLike(BaseTask):
 def test_simple():
     """Test a end 2 end exucution of benchmark"""
     task_num = 2
-    trial_num = 10
+    max_trials = 10
     assessments = [AverageResult(task_num), AverageRank(task_num)]
     tasks = [
-        Branin(trial_num),
-        BirdLike(trial_num),
+        Branin(max_trials),
+        BirdLike(max_trials),
     ]
 
     benchmark = get_or_create_benchmark(
