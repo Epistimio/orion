@@ -511,7 +511,15 @@ class ProfetTask(Task):
         var = np.exp(out[0, 1]).numpy()
 
         # TODO: Verify the validity of the results.
-        return self.rng.normal(mean, var, size=1)
+        y_pred = self.rng.normal(mean, var, size=1)
+        name = (
+            "profet"
+            + "."
+            + type(self).__name__.lower()
+            + (f"_{self.task_id}" if self.task_id is not None else "")
+        )
+        # TODO: Should we also return a 'gradient' results, since we could?
+        return [dict(name=name, type="objective", value=float(y_pred))]
 
 
 def main():
