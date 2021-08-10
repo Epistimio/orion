@@ -7,51 +7,34 @@ from typing import List, Type
 import numpy as np
 import pandas as pd
 import plotly
-from simple_parsing.helpers import choice
-
-# from warmstart.new_knowledge_base import KnowledgeBase
-from warmstart.tasks.profet import SvmTask
-from warmstart.tasks.quadratics import QuadraticsTask
-from warmstart.tasks.task import Task
-
+from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.assessment.warm_start_task_correlation import (
     warm_start_task_correlation_figure,
 )
-from orion.benchmark.warm_start_benchmark import WarmStartTaskCorrelationBenchmark
-
-# NOTE: Hot-start case current has the source points with different task id, but same
-# objective function as the target task. We can't set the task id to 0 in the source
-# points, otherwise not enough points will get sampled from the algo.
 from orion.benchmark.benchmark_client import get_or_create_benchmark
-
-from orion.benchmark.assessment import AverageResult, AverageRank
-
-from orion.benchmark.task import RosenBrock, EggHolder, CarromTable
+from orion.benchmark.task import BaseTask, CarromTable, EggHolder, RosenBrock
+from orion.benchmark.task.profet import FcNetTask, ForresterTask, SvmTask, XgBoostTask
+from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig, ProfetTask
 from orion.benchmark.task.quadratics import QuadraticsTask
-from orion.benchmark.task.profet import SvmTask, FcNetTask, ForresterTask, XgBoostTask
-from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig
-
-import logging
-from logging import getLogger as get_logger
-
-# orion_logger = get_logger("orion")
-# orion_logger.setLevel(logging.ERROR)
+from orion.benchmark.task.task import Task
+from orion.benchmark.warm_start_benchmark import WarmStartTaskCorrelationBenchmark
+from simple_parsing.helpers import choice, list_field
 
 logger = get_logger("orion.benchmark.task")
 logger.setLevel(logging.INFO)
 
-from orion.benchmark.task.profet import XgBoostTask, FcNetTask, SvmTask, ForresterTask
-
+from orion.benchmark.task.profet import FcNetTask, ForresterTask, SvmTask, XgBoostTask
 
 # BUG: #629 (https://github.com/Epistimio/orion/issues/629)
 from orion.core.worker.primary_algo import PrimaryAlgo
 from orion.testing.space import build_space
-_ = PrimaryAlgo(space=build_space(), algorithm_config="random") 
+_ = PrimaryAlgo(space=build_space(), algorithm_config="random")
 
 
 @dataclass
 class ProfetExperimentConfig:
     """ Configuration option for the demo of the Profet tasks. """
+
     # The type of Profet task to create.
     task_type: Type[Task] = choice(
         {
@@ -66,6 +49,8 @@ class ProfetExperimentConfig:
     name: str = "profet"
     # Configuration options for the training of the meta-model used in the Profet tasks.
     profet_train_config: MetaModelTrainingConfig = MetaModelTrainingConfig()
+
+    algorithms: List[str] = list_field("robo_gp", "robo_ablr", "robo_dngo")
     
     # Number of repetitions for each experiment
     n_repetitions: int = 3
@@ -84,7 +69,6 @@ class ProfetExperimentConfig:
     # Path to the folder where figures are to be saved.
     figures_dir: Path = Path("figures")
 
-
     def __post_init__(self):
         simple_parsing_logger = get_logger("simple_parsing")
         if not self.debug:
@@ -92,29 +76,24 @@ class ProfetExperimentConfig:
 
 
 def main(config: ProfetExperimentConfig):
-    task = config.task_type(
-        task_id=0,
-        max_trials=config.max_trials,
-        seed=config.seed,
-        train_config=config.profet_train_config,
-    )
+    if issubclass(config.task_type, ProfetTask):
+        task = config.task_type(
+            task_id=0,
+            max_trials=config.max_trials,
+            seed=config.seed,
+            train_config=config.profet_train_config,
+        )
+    else:
+        task = config.task_type(max_trials=config.max_trials)
 
     benchmark = get_or_create_benchmark(
         name=config.name,
-        algorithms=["robo_gp", "robo_ablr", "robo_dngo"],
+        algorithms=config.algorithms,
         targets=[
             {
                 "assess": [AverageResult(config.n_repetitions)],
                 "task": [
                     task,
-                    # QuadraticsTask(25),
-                    # RosenBrock(25, dim=3),
-                    # EggHolder(20, dim=4),
-                    # CarromTable(20),
-                    # SvmTask(max_trials=config.max_trials, train_config=train_config),
-                    # FcNetTask(max_trials=30, train_config=train_config),
-                    # ForresterTask(max_trials=30, train_config=train_config),
-                    # XgBoostTask(max_trials=30, train_config=train_config),
                 ],
             }
         ],
@@ -180,6 +159,7 @@ def main(config: ProfetExperimentConfig):
 
 if __name__ == "__main__":
     from simple_parsing import ArgumentParser
+
     parser = ArgumentParser(__doc__)
     parser.add_arguments(ProfetExperimentConfig, "config")
     args = parser.parse_args()

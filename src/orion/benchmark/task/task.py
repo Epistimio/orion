@@ -45,6 +45,8 @@ class Domain(NamedTuple):
 
 class Task(BaseTask, Generic[HParams], ABC):
     """ Simple ABC for a 'Task'.
+    
+    TODO: Ported this from the HPO-Warm-Start repo, could perhaps merge it into BaseTask
 
     Can evaluate dataclasses and dicts, and can have some input dimensions be fixed by
     passing them as keyword arguments to the constructor.

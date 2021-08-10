@@ -233,13 +233,13 @@ def get_meta_model(
         normalize_output=normalize_targets,
     )
     print("Training Bohamiann objective model.")
-    print(X_train.shape, Y_train.shape, config, config.batch_size)
     # TODO: With the FcNet task, the dataset has size 8_100_000, which takes a LOT of
     # memory to run!
     if config.max_samples is not None:
         print(f"Limiting the dataset to a maximum of {config.max_samples} samples.")
         X_train = X_train[:config.max_samples, ...]
         Y_train = Y_train[:config.max_samples, ...]
+    print(X_train.shape, Y_train.shape, config, config.batch_size)
     model_objective.train(
         X_train,
         Y_train,
