@@ -204,6 +204,10 @@ class MetaModelTrainingConfig:
     mcmc_thining: int = 100
     lr: float = 1e-2
     batch_size: int = 5
+    # Maximum number of samples to use when training the meta-model. This can be useful
+    # if the dataset is large (e.g. FCNet task) and you don't have crazy amounts of
+    # memory. 
+    max_samples: Optional[int] = None
 
     def __post_init__(self):
         if self.num_steps is None:
@@ -229,6 +233,13 @@ def get_meta_model(
         normalize_output=normalize_targets,
     )
     print("Training Bohamiann objective model.")
+    print(X_train.shape, Y_train.shape, config, config.batch_size)
+    # TODO: With the FcNet task, the dataset has size 8_100_000, which takes a LOT of
+    # memory to run!
+    if config.max_samples is not None:
+        print(f"Limiting the dataset to a maximum of {config.max_samples} samples.")
+        X_train = X_train[:config.max_samples, ...]
+        Y_train = Y_train[:config.max_samples, ...]
     model_objective.train(
         X_train,
         Y_train,
@@ -404,13 +415,14 @@ class ProfetTask(Task):
 
         if checkpoint_dir is None:
             checkpoint_dir = input_dir / "checkpoints"
-
+        # TODO: Save the train config in the `configuration` of the task.
+        self.train_config = train_config or MetaModelTrainingConfig()
         task_hash_params = dict(
             benchmark=benchmark,
             task_id=task_id,
             rng=rng,
             seed=seed,
-            **asdict(train_config),
+            **asdict(self.train_config),
         )
         task_hash = compute_identity(**task_hash_params)
 

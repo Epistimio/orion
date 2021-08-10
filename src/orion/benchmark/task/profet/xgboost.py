@@ -9,7 +9,7 @@ from .profet_task import ProfetTask
 @dataclass
 class XgBoostTaskHParams(HyperParameters):
     learning_rate: float = loguniform(1e-6, 1e-1)
-    gamma: float = uniform(0, 2)
+    gamma: float = uniform(0., 2.)
     l1_regularization: float = loguniform(1e-5, 1e3)
     l2_regularization: float = loguniform(1e-5, 1e3)
     nb_estimators: int = uniform(10, 500, discrete=True)

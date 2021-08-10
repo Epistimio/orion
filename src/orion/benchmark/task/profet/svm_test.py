@@ -6,7 +6,7 @@ from .profet_task import MetaModelTrainingConfig
 @pytest.mark.skip(reason="Take WAY too long to run.")
 def test_kwargs_fix_dimension_svm(profet_train_config: MetaModelTrainingConfig):
     # TODO: Test that setting 'kwargs' actually fixes a dimension.
-    task = SvmTask(gamma=0.123, get_task_network_kwargs={})
+    task = SvmTask(gamma=0.123, train_config=profet_train_config)
     xs = task.sample()
     assert len(xs) == 1
     x = xs[0]
