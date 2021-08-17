@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_or_create_benchmark(
-    name, algorithms=None, targets=None, storage=None, debug=False
+    name, algorithms=None, targets=None, storage=None, executor=None, debug=False
 ):
     """
     Create or get a benchmark object.
@@ -38,6 +38,8 @@ def get_or_create_benchmark(
             Task objects
     storage: dict, optional
         Configuration of the storage backend.
+    executor: `orion.executor.base.Executor`, optional
+        Executor to run the benchmark experiments
     debug: bool, optional
         If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
         Defaults to False.
@@ -66,7 +68,9 @@ def get_or_create_benchmark(
             "algorithms and targets space was not defined.".format(name)
         )
 
-    benchmark = _create_benchmark(name, algorithms, targets, storage=storage)
+    benchmark = _create_benchmark(
+        name, algorithms, targets, storage=storage, executor=executor
+    )
 
     if input_configure and input_benchmark.configuration != benchmark.configuration:
         logger.warn(
@@ -84,7 +88,7 @@ def get_or_create_benchmark(
                 "Benchmark registration failed. This is likely due to a race condition. "
                 "Now rolling back and re-attempting building it."
             )
-            get_or_create_benchmark(name, algorithms, targets, storage, debug)
+            get_or_create_benchmark(name, algorithms, targets, storage, executor, debug)
 
     return benchmark
 
@@ -126,9 +130,9 @@ def _resolve_db_config(db_config):
     return benchmark_id, algorithms, targets
 
 
-def _create_benchmark(name, algorithms, targets, storage):
+def _create_benchmark(name, algorithms, targets, storage, executor):
 
-    benchmark = Benchmark(name, algorithms, targets, storage)
+    benchmark = Benchmark(name, algorithms, targets, storage, executor)
     benchmark.setup_studies()
 
     return benchmark

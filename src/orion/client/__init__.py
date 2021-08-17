@@ -55,6 +55,7 @@ def build_experiment(
     heartbeat=None,
     working_dir=None,
     debug=False,
+    executor=None,
 ):
     """Build an experiment to be executable
 
@@ -240,7 +241,7 @@ def build_experiment(
 
     producer = Producer(experiment, max_idle_time)
 
-    return ExperimentClient(experiment, producer, heartbeat)
+    return ExperimentClient(experiment, producer, executor, heartbeat)
 
 
 def get_experiment(name, version=None, mode="r", storage=None):
