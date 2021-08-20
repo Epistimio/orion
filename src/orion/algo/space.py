@@ -35,7 +35,6 @@ import numbers
 import numpy
 from scipy.stats import distributions
 
-
 from orion.core.utils import float_to_digits_list
 from orion.core.utils.points import flatten_dims, regroup_dims
 
