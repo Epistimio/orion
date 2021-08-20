@@ -25,6 +25,25 @@ def nesteddict():
     return defaultdict(nesteddict)
 
 
+def float_to_digits_list(number):
+    """Convert a float into a list of digits, without conserving exponant"""
+    # Get rid of scientific-format exponant
+    str_number = str(number)
+    str_number = str_number.split("e")[0]
+
+    res = [int(ele) for ele in str_number if ele.isdigit()]
+
+    # Remove trailing 0s in front
+    while len(res) > 1 and res[0] == 0:
+        res.pop(0)
+
+    # Remove training 0s at end
+    while len(res) > 1 and res[-1] == 0:
+        res.pop(-1)
+
+    return res
+
+
 def get_all_subclasses(parent):
     """Get set of subclasses recursively"""
     subclasses = set()

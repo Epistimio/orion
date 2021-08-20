@@ -1095,11 +1095,15 @@ class TestReshapedSpace(object):
     def test_cardinality(self, dim2):
         """Check cardinality of reshaped space"""
         space = Space()
-        space.register(Real("yolo0", "uniform", 0, 2, shape=(2, 2)))
+        space.register(Real("yolo0", "reciprocal", 0.1, 1, precision=1, shape=(2, 2)))
         space.register(dim2)
 
         rspace = build_required_space(space, shape_requirement="flattened")
-        assert rspace.cardinality == numpy.inf
+        assert rspace.cardinality == (10 ** (2 * 2)) * 4
+
+        space = Space()
+        space.register(Real("yolo0", "uniform", 0, 2, shape=(2, 2)))
+        space.register(dim2)
 
         rspace = build_required_space(
             space, type_requirement="integer", shape_requirement="flattened"

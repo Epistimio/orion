@@ -35,6 +35,8 @@ import numbers
 import numpy
 from scipy.stats import distributions
 
+
+from orion.core.utils import float_to_digits_list
 from orion.core.utils.points import flatten_dims, regroup_dims
 
 logger = logging.getLogger(__name__)
@@ -319,7 +321,7 @@ class Dimension:
         _, _, _, size = self.prior._parse_args_rvs(
             *self._args,  # pylint:disable=protected-access
             size=self._shape,
-            **self._kwargs
+            **self._kwargs,
         )
         return size
 
@@ -470,14 +472,61 @@ class Real(Dimension):
         return casted_point
 
     @staticmethod
-    def get_cardinality(shape, interval):
+    def get_cardinality(shape, interval, precision, prior_name):
         """Return the number of all the possible points based and shape and interval"""
-        return numpy.inf
+        if precision is None or prior_name not in ["loguniform", "reciprocal"]:
+            return numpy.inf
+
+        # If loguniform, compute every possible combinations based on precision
+        # for each orders of magnitude.
+
+        def format_number(number):
+            """Turn number into an array of digits, the size of the precision"""
+
+            formated_number = numpy.zeros(precision)
+            digits_list = float_to_digits_list(number)
+            lenght = min(len(digits_list), precision)
+            formated_number[:lenght] = digits_list[:lenght]
+
+            return formated_number
+
+        min_number = format_number(interval[0])
+        max_number = format_number(interval[1])
+
+        # Compute the number of orders of magnitude spanned by lower and upper bounds
+        # (if lower and upper bounds on same order of magnitude, span is equal to 1)
+        lower_order = numpy.floor(numpy.log10(numpy.abs(interval[0])))
+        upper_order = numpy.floor(numpy.log10(numpy.abs(interval[1])))
+        order_span = upper_order - lower_order + 1
+
+        # Total number of possibilities for an order of magnitude
+        full_cardinality = 9 * 10 ** (precision - 1)
+
+        def num_below(number):
+
+            return (
+                numpy.clip(number, a_min=0, a_max=9)
+                * 10 ** numpy.arange(precision - 1, -1, -1)
+            ).sum()
+
+        # Number of values out of lower bound on lowest order of magnitude
+        cardinality_below = num_below(min_number)
+        # Number of values out of upper bound on highest order of magnitude.
+        # Remove 1 to be inclusive.
+        cardinality_above = full_cardinality - num_below(max_number) - 1
+
+        # Full cardinality on all orders of magnitude, minus those out of bounds.
+        cardinality = (
+            full_cardinality * order_span - cardinality_below - cardinality_above
+        )
+        return int(cardinality) ** int(numpy.prod(shape) if shape else 1)
 
     @property
     def cardinality(self):
         """Return the number of all the possible points from Integer `Dimension`"""
-        return Real.get_cardinality(self.shape, self.interval())
+        return Real.get_cardinality(
+            self.shape, self.interval(), self.precision, self._prior_name
+        )
 
 
 class _Discrete(Dimension):
