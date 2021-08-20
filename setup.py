@@ -59,6 +59,7 @@ setup_args = dict(
             "legacy = orion.storage.legacy:Legacy",
         ],
         "Executor": [
+            "singleexecutor = orion.executor.single_backend:SingleExecutor",
             "joblib = orion.executor.joblib_backend:Joblib",
             "dask = orion.executor.dask_backend:Dask",
         ],
