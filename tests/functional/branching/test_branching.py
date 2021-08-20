@@ -831,15 +831,15 @@ def test_run_entire_full_x_full_y(init_entire):
 
     orion.core.cli.main(
         (
-            "-vv hunt --max-trials 20 --pool-size 1 -n full_x_full_y "
+            "-vv hunt --max-trials 30 --pool-size 1 -n full_x_full_y "
             "./black_box_with_y.py "
             "-x~uniform(-10,10) "
             "-y~uniform(-10,10,default_value=1)"
         ).split(" ")
     )
 
-    assert len(experiment.fetch_trials(with_evc_tree=True)) == 39
-    assert len(experiment.fetch_trials()) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 30
+    assert len(experiment.fetch_trials(with_evc_tree=False)) == 30
 
 
 def test_run_entire_full_x_full_y_no_args(init_entire):
@@ -850,11 +850,11 @@ def test_run_entire_full_x_full_y_no_args(init_entire):
     assert len(experiment.fetch_trials()) == 4
 
     orion.core.cli.main(
-        ("-vv hunt --max-trials 20 --pool-size 1 -n full_x_full_y").split(" ")
+        ("-vv hunt --max-trials 30 --pool-size 1 -n full_x_full_y").split(" ")
     )
 
-    assert len(experiment.fetch_trials(with_evc_tree=True)) == 39
-    assert len(experiment.fetch_trials()) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 30
+    assert len(experiment.fetch_trials(with_evc_tree=False)) == 30
 
 
 def test_new_algo(init_full_x_new_algo):
@@ -872,8 +872,8 @@ def test_new_algo(init_full_x_new_algo):
         ("-vv hunt --max-trials 20 --pool-size 1 -n full_x_new_algo").split(" ")
     )
 
-    assert len(experiment.fetch_trials(with_evc_tree=True)) == 21
-    assert len(experiment.fetch_trials()) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=False)) == 20
 
 
 def test_new_algo_not_resolved(init_full_x, capsys):
@@ -1002,8 +1002,8 @@ def test_new_cli(init_full_x_new_cli):
         ("-vv hunt --max-trials 20 --pool-size 1 -n full_x_new_cli").split(" ")
     )
 
-    assert len(experiment.fetch_trials(with_evc_tree=True)) == 21
-    assert len(experiment.fetch_trials()) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=False)) == 20
 
 
 @pytest.mark.usefixtures("init_full_x")

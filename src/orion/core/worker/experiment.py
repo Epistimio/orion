@@ -16,6 +16,7 @@ import pandas
 
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.experiment import ExperimentNode
+from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.utils.flatten import flatten
 from orion.core.utils.singleton import update_singletons
@@ -240,6 +241,8 @@ class Experiment:
 
         self.fix_lost_trials()
 
+        self.duplicate_pending_trials()
+
         selected_trial = self._storage.reserve_trial(self)
         log.debug("reserved trial (trial: %s)", selected_trial)
         return selected_trial
@@ -264,6 +267,43 @@ class Experiment:
                 log.debug("success")
             except FailedUpdate:
                 log.debug("failed")
+
+    def duplicate_pending_trials(self):
+        """Find pending trials in EVC and duplicate them in current experiment.
+
+        An experiment cannot execute trials from parent experiments otherwise some trials
+        may have been executed in different environements of different experiment although they
+        belong to the same experiment. Instead, trials that are pending in parent and child
+        experiment are copied over to current experiment so that it can be reserved and executed.
+        The parent or child experiment will only see their original copy of the trial, and
+        the current experiment will only see the new copy of the trial.
+        """
+        self._check_if_writable()
+        evc_pending_trials = self._select_evc_call(
+            with_evc_tree=True, function="fetch_pending_trials"
+        )
+        exp_pending_trials = self._select_evc_call(
+            with_evc_tree=False, function="fetch_pending_trials"
+        )
+
+        exp_trials_ids = set(
+            trial.compute_trial_hash(trial, ignore_experiment=True)
+            for trial in exp_pending_trials
+        )
+
+        for trial in evc_pending_trials:
+            if (
+                trial.compute_trial_hash(trial, ignore_experiment=True)
+                in exp_trials_ids
+            ):
+                continue
+
+            trial.experiment = self.id
+            # Danger danger, race conditions!
+            try:
+                self._storage.register_trial(trial)
+            except DuplicateKeyError:
+                log.debug("Race condition while trying to duplicate trial %s", trial.id)
 
     # pylint:disable=unused-argument
     def update_completed_trial(self, trial, results_file=None):
@@ -353,6 +393,15 @@ class Experiment:
         :return: list of `Trial` objects
         """
         return self._select_evc_call(with_evc_tree, "fetch_trials_by_status", status)
+
+    def fetch_pending_trials(self, with_evc_tree=False):
+        """Fetch all trials with status new, interrupted or suspended
+
+        Trials are sorted based on `Trial.submit_time`
+
+        :return: list of `Trial` objects
+        """
+        return self._select_evc_call(with_evc_tree, "fetch_pending_trials")
 
     def fetch_noncompleted_trials(self, with_evc_tree=False):
         """Fetch non-completed trials of this `Experiment` instance.
