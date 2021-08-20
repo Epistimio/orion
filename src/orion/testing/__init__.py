@@ -8,6 +8,7 @@ Common testing support module providing defaults, functions and mocks.
 """
 # pylint: disable=protected-access
 
+import contextlib
 import copy
 import datetime
 import os
@@ -168,6 +169,15 @@ class MockDatetime(datetime.datetime):
     def utcnow(cls):
         """Return our random/fixed datetime"""
         return default_datetime()
+
+
+@contextlib.contextmanager
+def mocked_datetime(monkeypatch):
+    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
+    with monkeypatch.context() as m:
+        m.setattr(datetime, "datetime", MockDatetime)
+
+        yield
 
 
 class AssertNewFile:

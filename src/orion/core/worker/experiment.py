@@ -247,7 +247,7 @@ class Experiment:
         log.debug("reserved trial (trial: %s)", selected_trial)
         return selected_trial
 
-    def fix_lost_trials(self):
+    def fix_lost_trials(self, with_evc_tree=True):
         """Find lost trials and set them to interrupted.
 
         A lost trial is defined as a trial whose heartbeat as not been updated since two times
@@ -257,7 +257,18 @@ class Experiment:
 
         """
         self._check_if_writable()
-        trials = self._storage.fetch_lost_trials(self)
+
+        if self._node is not None and with_evc_tree:
+            for experiment in self._node.root:
+                if experiment.item is self:
+                    continue
+
+                # Ugly hack to allow resetting parent's lost trials.
+                experiment.item._mode = "w"
+                experiment.item.fix_lost_trials(with_evc_tree=False)
+                experiment.item._mode = "r"
+
+        trials = self.fetch_lost_trials(with_evc_tree=False)
 
         for trial in trials:
             log.debug("Setting lost trial %s status to interrupted...", trial.id)
@@ -402,6 +413,15 @@ class Experiment:
         :return: list of `Trial` objects
         """
         return self._select_evc_call(with_evc_tree, "fetch_pending_trials")
+
+    def fetch_lost_trials(self, with_evc_tree=False):
+        """Fetch all reserved trials that are lost (old heartbeat)
+
+        Trials are sorted based on `Trial.submit_time`
+
+        :return: list of `Trial` objects
+        """
+        return self._select_evc_call(with_evc_tree, "fetch_lost_trials")
 
     def fetch_noncompleted_trials(self, with_evc_tree=False):
         """Fetch non-completed trials of this `Experiment` instance.
