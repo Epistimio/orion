@@ -547,7 +547,9 @@ def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
     assert exp.algorithms.configuration == new_config["algorithms"]
 
 
-@pytest.mark.usefixtures("with_user_tsirif", "version_XYZ")
+@pytest.mark.usefixtures(
+    "with_user_tsirif", "version_XYZ", "mock_infer_versioning_metadata"
+)
 class TestExperimentVersioning(object):
     """Create new Experiment with auto-versioning."""
 
@@ -572,7 +574,11 @@ class TestExperimentVersioning(object):
         parent_version_config.pop("version")
         with OrionState(experiments=[parent_version_config]):
 
-            exp = experiment_builder.load(name=parent_version_config["name"])
+            with caplog.at_level(logging.WARNING):
+
+                exp = experiment_builder.build(name=parent_version_config["name"])
+                assert "Running experiment in a different state" not in caplog.text
+
             assert exp.version == 1
             assert exp.configuration["algorithms"] == {"random": {"seed": None}}
 
