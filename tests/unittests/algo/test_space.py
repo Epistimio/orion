@@ -317,6 +317,50 @@ class TestReal(object):
         dim = Real("yolo", "uniform", -3, 4)
         assert np.all(dim.cast(np.array(["1", "2"])) == np.array([1.0, 2.0]))
 
+    def test_basic_cardinality(self):
+        """Brute force test for a simple cardinality use case"""
+        dim = Real("yolo", "reciprocal", 0.043, 2.3, precision=2)
+        order_0012 = np.arange(43, 99 + 1)
+        order_010 = np.arange(10, 99 + 1)
+        order_23 = np.arange(10, 23 + 1)
+        assert dim.cardinality == sum(map(len, [order_0012, order_010, order_23]))
+
+    @pytest.mark.parametrize(
+        "prior_name,min_bound,max_bound,precision,cardinality",
+        [
+            ("uniform", 0, 10, 2, np.inf),
+            ("reciprocal", 1e-10, 1e-2, None, np.inf),
+            ("reciprocal", 0.1, 1, 2, 90 + 1),
+            ("reciprocal", 0.1, 1.2, 2, 90 + 2 + 1),
+            ("reciprocal", 0.1, 1.25, 2, 90 + 2 + 1),
+            ("reciprocal", 1e-4, 1e-2, 2, 90 * 2 + 1),
+            ("reciprocal", 1e-5, 1e-2, 2, 90 + 90 * 2 + 1),
+            ("reciprocal", 5.234e-3, 1.5908e-2, 2, (90 - 52) + 15 + 1),
+            ("reciprocal", 5.234e-3, 1.5908e-2, 4, (9 * 10 ** 3 - 5234) + 1590 + 1),
+            (
+                "reciprocal",
+                5.234e-5,
+                1.5908e-2,
+                4,
+                (9 * 10 ** 3 * 3 - 5234) + 1590 + 1,
+            ),
+            ("uniform", 1e-5, 1e-2, 2, np.inf),
+            ("uniform", -3, 4, 3, np.inf),
+        ],
+    )
+    def test_cardinality(
+        self, prior_name, min_bound, max_bound, precision, cardinality
+    ):
+        """Check whether cardinality is correct"""
+        dim = Real(
+            "yolo", prior_name, min_bound, max_bound, precision=precision, shape=None
+        )
+        assert dim.cardinality == cardinality
+        dim = Real(
+            "yolo", prior_name, min_bound, max_bound, precision=precision, shape=(2, 3)
+        )
+        assert dim.cardinality == cardinality ** (2 * 3)
+
 
 class TestInteger(object):
     """Test methods of a `Integer` object."""
