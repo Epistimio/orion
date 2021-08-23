@@ -151,10 +151,6 @@ class ExperimentNode(TreeNode):
         """See :meth:`orion.core.evc.experiment.ExperimentNode.recurvise_fetch`"""
         return self.recurvise_fetch("fetch_pending_trials")
 
-    def fetch_lost_trials(self):
-        """See :meth:`orion.core.evc.experiment.ExperimentNode.recurvise_fetch`"""
-        return self.recurvise_fetch("fetch_lost_trials")
-
     def fetch_noncompleted_trials(self):
         """See :meth:`orion.core.evc.experiment.ExperimentNode.recurvise_fetch`"""
         return self.recurvise_fetch("fetch_noncompleted_trials")
