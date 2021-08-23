@@ -203,7 +203,7 @@ def build(name, version=None, branching=None, **config):
 
     if must_branch and branching.get("enable", orion.core.config.evc.enable):
         return _attempt_branching(conflicts, experiment, version, branching)
-    else:
+    elif must_branch:
         log.warning(
             "Running experiment in a different state:\n%s",
             _get_branching_status_string(conflicts, branching),
