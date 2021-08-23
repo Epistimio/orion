@@ -6,17 +6,13 @@ import logging
 from orion.client import build_experiment, get_experiment
 from orion.core.io.database import DuplicateKeyError
 from orion.core.worker.trial import Trial
+from orion.testing import mocked_datetime
 from orion.testing.evc import (
     build_child_experiment,
     build_grand_child_experiment,
     build_root_experiment,
     disable_duplication,
 )
-
-
-def test_fix_lost_trials_in_evc():
-    pass
-
 
 SPACE = {"x": "uniform(0, 100)"}
 N_PENDING = 3  # new, interrupted and suspended
@@ -145,3 +141,25 @@ def test_duplicate_race_conditions(storage, monkeypatch, caplog):
         experiment._experiment.duplicate_pending_trials()
 
         assert "Race condition while trying to duplicate trial" in caplog.text
+
+
+def test_fix_lost_trials_in_evc(storage, monkeypatch):
+    """Test that lost trials from parents can be fixed as well.
+
+    `fix_lost_trials` is tested more carefully in experiment's unit-tests (without the EVC).
+    """
+    with disable_duplication(monkeypatch), mocked_datetime(monkeypatch):
+        build_evc_tree(list(range(5)))
+
+    for exp_name in ["root", "parent", "experiment", "child", "grand-child"]:
+        exp = get_experiment(name=exp_name)
+        assert len(exp.fetch_trials(with_evc_tree=False)) == len(Trial.allowed_stati)
+        assert len(exp.fetch_trials_by_status("reserved", with_evc_tree=False)) == 1
+
+    experiment = build_experiment(name="experiment")
+    experiment._experiment.fix_lost_trials()
+
+    for exp_name in ["root", "parent", "experiment", "child", "grand-child"]:
+        exp = get_experiment(name=exp_name)
+        assert len(exp.fetch_trials(with_evc_tree=False)) == len(Trial.allowed_stati)
+        assert len(exp.fetch_trials_by_status("reserved", with_evc_tree=False)) == 0

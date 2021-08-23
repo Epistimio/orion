@@ -38,10 +38,11 @@ def generate_trials(exp, trials):
                 pass
 
         if status is not None:
-            print(status)
-            exp._experiment._storage.set_trial_status(trial, status)
-
-        print([trial.status for trial in exp.fetch_trials()])
+            exp._experiment._storage.set_trial_status(
+                trial,
+                status,
+                heartbeat=trial.submit_time if status == "reserved" else None,
+            )
 
 
 def build_root_experiment(space=None, trials=None):

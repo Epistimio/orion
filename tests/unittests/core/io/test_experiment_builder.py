@@ -323,20 +323,20 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
 
         exp = experiment_builder.build_from_args(cmdargs)
 
-    assert exp.name == cmdargs["name"]
-    assert exp.configuration["refers"] == {
-        "adapter": [],
-        "parent_id": None,
-        "root_id": exp._id,
-    }
-    assert exp.metadata["datetime"] == random_dt
-    assert exp.metadata["user"] == "dendi"
-    assert exp.metadata["user_script"] == cmdargs["user_args"][0]
-    assert exp.metadata["user_args"] == cmdargs["user_args"]
-    assert exp.pool_size == 1
-    assert exp.max_trials == 100
-    assert exp.max_broken == 5
-    assert exp.algorithms.configuration == {"random": {"seed": None}}
+        assert exp.name == cmdargs["name"]
+        assert exp.configuration["refers"] == {
+            "adapter": [],
+            "parent_id": None,
+            "root_id": exp._id,
+        }
+        assert exp.metadata["datetime"] == random_dt
+        assert exp.metadata["user"] == "dendi"
+        assert exp.metadata["user_script"] == cmdargs["user_args"][0]
+        assert exp.metadata["user_args"] == cmdargs["user_args"]
+        assert exp.pool_size == 1
+        assert exp.max_trials == 100
+        assert exp.max_broken == 5
+        assert exp.algorithms.configuration == {"random": {"seed": None}}
 
 
 @pytest.mark.usefixtures(
@@ -454,22 +454,22 @@ def test_build_no_hit(config_file, random_dt, script_path):
             name, space=space, max_trials=max_trials, max_broken=max_broken
         )
 
-    assert exp.name == name
-    assert exp.configuration["refers"] == {
-        "adapter": [],
-        "parent_id": None,
-        "root_id": exp._id,
-    }
-    assert exp.metadata == {
-        "datetime": random_dt,
-        "user": "tsirif",
-        "orion_version": "XYZ",
-    }
-    assert exp.configuration["space"] == space
-    assert exp.max_trials == max_trials
-    assert exp.max_broken == max_broken
-    assert not exp.is_done
-    assert exp.algorithms.configuration == {"random": {"seed": None}}
+        assert exp.name == name
+        assert exp.configuration["refers"] == {
+            "adapter": [],
+            "parent_id": None,
+            "root_id": exp._id,
+        }
+        assert exp.metadata == {
+            "datetime": random_dt,
+            "user": "tsirif",
+            "orion_version": "XYZ",
+        }
+        assert exp.configuration["space"] == space
+        assert exp.max_trials == max_trials
+        assert exp.max_broken == max_broken
+        assert not exp.is_done
+        assert exp.algorithms.configuration == {"random": {"seed": None}}
 
 
 def test_build_no_commandline_config():
