@@ -4,7 +4,7 @@
 
 import pytest
 
-from orion.core.utils import Factory
+from orion.core.utils import Factory, float_to_digits_list
 
 
 def test_factory_subclasses_detection():
@@ -55,3 +55,21 @@ def test_factory_subclasses_detection():
         pass
 
     assert type(MyFactory(of_type="random")) is Random
+
+
+@pytest.mark.parametrize(
+    "number,digits_list",
+    [
+        (float("inf"), []),
+        (0.0, [0]),
+        (0.00001, [1]),
+        (12.0, [1, 2]),
+        (123000.0, [1, 2, 3]),
+        (10.0001, [1, 0, 0, 0, 0, 1]),
+        (1e-50, [1]),
+        (5.32156e-3, [5, 3, 2, 1, 5, 6]),
+    ],
+)
+def test_float_to_digits_list(number, digits_list):
+    """Test that floats are correctly converted to list of digits"""
+    assert float_to_digits_list(number) == digits_list

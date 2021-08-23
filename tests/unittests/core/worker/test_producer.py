@@ -625,7 +625,9 @@ def test_original_seeding(producer):
 def test_evc(monkeypatch, producer):
     """Verify that producer is using available trials from EVC"""
     experiment = producer.experiment
-    new_experiment = build(experiment.name, algorithms="random")
+    new_experiment = build(
+        experiment.name, algorithms="random", branching={"enable": True}
+    )
 
     # Replace parent with hacked exp, otherwise parent ID does not match trials in DB
     # and fetch_trials() won't return anything.
@@ -652,7 +654,9 @@ def test_evc(monkeypatch, producer):
 def test_evc_duplicates(monkeypatch, producer):
     """Verify that producer wont register samples that are available in parent experiment"""
     experiment = producer.experiment
-    new_experiment = build(experiment.name, algorithms="random")
+    new_experiment = build(
+        experiment.name, algorithms="random", branching={"enable": True}
+    )
 
     # Replace parent with hacked exp, otherwise parent ID does not match trials in DB
     # and fetch_trials() won't return anything.

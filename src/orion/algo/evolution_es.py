@@ -100,6 +100,17 @@ class EvolutionES(Hyperband):
     repetitions: int
         Number of execution of Hyperband. Default is numpy.inf which means to
         run Hyperband until no new trials can be suggested.
+    nums_population: int
+        Number of population for EvolutionES. Larger number of population often gets better
+        performance but causes more computation. So there is a trade-off according to the search
+        space and required budget of your problems.
+        Default: 20
+    mutate: str or None, optional
+        In the mutate part, one can define the customized mutate function with its mutate factors,
+        such as multiply factor (times/divides by a multiply factor) and add factor
+        (add/subtract by a multiply factor). The function must be defined by
+        an importable string. If None, default
+        mutate function is used: ``orion.algo.mutate_functions.default_mutate``.
 
     """
 

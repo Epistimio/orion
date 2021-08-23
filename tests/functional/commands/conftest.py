@@ -179,6 +179,7 @@ def two_experiments(monkeypatch, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_double_exp",
             "--branch-to",
@@ -204,7 +205,7 @@ def family_with_trials(two_experiments):
         x["value"] = x_value
         y["value"] = x_value
         trial = Trial(experiment=exp.id, params=[x], status=status)
-        x["value"] = x_value
+        x["value"] = x_value + 0.5  # To avoid duplicates
         trial2 = Trial(experiment=exp2.id, params=[x, y], status=status)
         x_value += 1
         Database().write("trials", trial.to_dict())
@@ -239,6 +240,7 @@ def three_experiments_family(two_experiments, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_double_exp",
             "--branch-to",
@@ -260,7 +262,7 @@ def three_family_with_trials(three_experiments_family, family_with_trials):
 
     x_value = 0
     for status in Trial.allowed_stati:
-        x["value"] = x_value
+        x["value"] = x_value + 0.75  # To avoid duplicates
         z["value"] = x_value * 100
         trial = Trial(experiment=exp.id, params=[x, z], status=status)
         x_value += 1
@@ -274,6 +276,7 @@ def three_experiments_family_branch(two_experiments, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_double_exp_child",
             "--branch-to",
@@ -302,7 +305,7 @@ def three_family_branch_with_trials(
 
     x_value = 0
     for status in Trial.allowed_stati:
-        x["value"] = x_value
+        x["value"] = x_value + 0.25  # To avoid duplicates
         y["value"] = x_value * 10
         z["value"] = x_value * 100
         trial = Trial(experiment=exp.id, params=[x, y, z], status=status)
@@ -317,6 +320,7 @@ def two_experiments_same_name(one_experiment, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_single_exp",
             "./black_box.py",
@@ -336,6 +340,7 @@ def three_experiments_family_same_name(two_experiments_same_name, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_single_exp",
             "-v",
@@ -359,6 +364,7 @@ def three_experiments_branch_same_name(two_experiments_same_name, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_single_exp",
             "-b",
@@ -379,6 +385,7 @@ def three_experiments_same_name(two_experiments_same_name, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_single_exp",
             "./black_box.py",
@@ -397,6 +404,7 @@ def three_experiments_same_name_with_trials(two_experiments_same_name, storage):
         [
             "hunt",
             "--init-only",
+            "--enable-evc",
             "-n",
             "test_single_exp",
             "./black_box.py",
@@ -416,7 +424,7 @@ def three_experiments_same_name_with_trials(two_experiments_same_name, storage):
     z = {"name": "/z", "type": "real"}
     x_value = 0
     for status in Trial.allowed_stati:
-        x["value"] = x_value
+        x["value"] = x_value + 0.1  # To avoid duplicates
         y["value"] = x_value * 10
         z["value"] = x_value * 100
         trial = Trial(experiment=exp.id, params=[x], status=status)

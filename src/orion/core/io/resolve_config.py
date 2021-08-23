@@ -100,13 +100,9 @@ def fetch_config_from_cmdargs(cmdargs):
         cmdargs_config["worker.max_trials"] = cmdargs.pop("worker_trials")
 
     mappings = dict(
-        experiment=dict(exp_max_broken="max_broken", exp_max_trials="max_trials"),
-        worker=dict(worker_max_broken="max_broken", worker_max_trials="max_trials"),
-    )
-
-    mappings = dict(
         experiment=dict(max_broken="exp_max_broken", max_trials="exp_max_trials"),
         worker=dict(max_broken="worker_max_broken", max_trials="worker_max_trials"),
+        evc=dict(enable="enable_evc"),
     )
 
     global_config = orion.core.config.to_dict()

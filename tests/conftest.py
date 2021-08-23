@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Common fixtures and utils for unittests and functional tests."""
+import datetime
 import getpass
 import os
 import tempfile
@@ -21,7 +22,7 @@ from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
 from orion.storage.base import Storage, get_storage, setup_storage
 from orion.storage.legacy import Legacy
-from orion.testing import OrionState
+from orion.testing import OrionState, mocked_datetime
 
 # So that assert messages show up in tests defined outside testing suite.
 pytest.register_assert_rewrite("orion.testing")
@@ -390,3 +391,10 @@ def storage(setup_pickleddb_database):
 def with_user_userxyz(monkeypatch):
     """Make ``getpass.getuser()`` return ``'userxyz'``."""
     monkeypatch.setattr(getpass, "getuser", lambda: "userxyz")
+
+
+@pytest.fixture()
+def random_dt(monkeypatch):
+    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
+    with mocked_datetime(monkeypatch) as datetime:
+        yield datetime.utcnow()

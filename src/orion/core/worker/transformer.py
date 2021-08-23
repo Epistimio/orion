@@ -690,16 +690,12 @@ class TransformedDimension(object):
     @property
     def cardinality(self):
         """Wrap original :class:`orion.algo.space.Dimension` capacity"""
-        if self.type == "real":
-            return Real.get_cardinality(self.shape, self.interval())
-        elif self.type == "integer":
+        # May be a discretized real, must reduce cardinality
+        if self.type == "integer":
             return Integer.get_cardinality(self.shape, self.interval())
-        elif self.type == "categorical":
-            return Categorical.get_cardinality(self.shape, self.interval())
-        elif self.type == "fidelity":
-            return Fidelity.get_cardinality(self.shape, self.interval())
-        else:
-            raise RuntimeError(f"No cardinality can be computed for type `{self.type}`")
+
+        # Else we don't care what transformation is.
+        return self.original_dimension.cardinality
 
 
 class ReshapedDimension(TransformedDimension):

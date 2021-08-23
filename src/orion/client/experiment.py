@@ -294,6 +294,15 @@ class ExperimentClient:
             status, with_evc_tree=with_evc_tree
         )
 
+    def fetch_pending_trials(self, with_evc_tree=False):
+        """Fetch all trials with status new, interrupted or suspended
+
+        Trials are sorted based on ``Trial.submit_time``
+
+        :return: list of :class:`orion.core.worker.trial.Trial` objects
+        """
+        return self._experiment.fetch_pending_trials(with_evc_tree=with_evc_tree)
+
     def fetch_noncompleted_trials(self, with_evc_tree=False):
         """Fetch non-completed trials of this `Experiment` instance.
 

@@ -328,7 +328,7 @@ class Study:
 
         for _, experiment in self.experiments_info:
             # TODO: it is a blocking call
-            experiment.workon(self.task, max_trials, n_workers)
+            experiment.workon(self.task, n_workers=n_workers, max_trials=max_trials)
 
     def status(self):
         """Return status of the study"""

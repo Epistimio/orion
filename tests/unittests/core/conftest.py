@@ -15,7 +15,7 @@ from orion.core.evc import conflicts
 from orion.core.io.convert import JSONConverter, YAMLConverter
 from orion.core.io.space_builder import DimensionBuilder
 from orion.core.worker.trial import Trial
-from orion.testing import MockDatetime, default_datetime
+from orion.testing import MockDatetime
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 YAML_SAMPLE = os.path.join(TEST_DIR, "sample_config.yml")
@@ -147,13 +147,6 @@ def with_user_bouthilx(monkeypatch):
 def with_user_dendi(monkeypatch):
     """Make ``getpass.getuser()`` return ``'dendi'``."""
     monkeypatch.setattr(getpass, "getuser", lambda: "dendi")
-
-
-@pytest.fixture()
-def random_dt(monkeypatch):
-    """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    monkeypatch.setattr(datetime, "datetime", MockDatetime)
-    return default_datetime()
 
 
 dendi_exp_config = dict(

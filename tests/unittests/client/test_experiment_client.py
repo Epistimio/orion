@@ -104,6 +104,12 @@ def test_experiment_fetch_trials_by_status():
         )
 
 
+def test_experiment_fetch_pending_trials():
+    """Test compliance of client and experiment `fetch_pending_trials()`"""
+    with create_experiment(config, base_trial) as (cfg, experiment, client):
+        compare_trials(experiment.fetch_pending_trials(), client.fetch_pending_trials())
+
+
 def test_experiment_fetch_non_completed_trials():
     """Test compliance of client and experiment `fetch_noncompleted_trials()`"""
     with create_experiment(config, base_trial) as (cfg, experiment, client):

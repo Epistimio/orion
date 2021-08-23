@@ -3,6 +3,8 @@ import copy
 import datetime
 import os
 import random
+import shutil
+import tempfile
 from contextlib import contextmanager
 
 import pytest
@@ -23,6 +25,30 @@ from orion.testing.state import OrionState
 script = os.path.join(
     os.path.abspath(os.path.dirname(__file__)), "..", "demo", "black_box.py"
 )
+
+
+def with_storage_fork(func):
+    """Copy PickledDB to a tmp adress and work in the tmp path within the func execution.
+
+    Functions decorated with this decorator should only be called after the storage has been
+    initialized.
+    """
+
+    def call(*args, **kwargs):
+
+        with tempfile.NamedTemporaryFile(delete=True) as tmp_file:
+            storage = get_storage()
+            old_path = storage._db.host
+            storage._db.host = tmp_file.name
+            shutil.copyfile(old_path, tmp_file.name)
+
+            rval = func(*args, **kwargs)
+
+            storage._db.host = old_path
+
+        return rval
+
+    return call
 
 
 class ConfigurationTestSuite:
@@ -113,7 +139,7 @@ class ConfigurationTestSuite:
         with self.setup_db_config(tmp_path):
             self.check_db_config()
 
-    @pytest.mark.usefixtures("with_user_userxyz")
+    @pytest.mark.usefixtures("with_user_userxyz", "version_XYZ")
     def test_local_config(self, tmp_path, monkeypatch):
         """Test that local config overrides db/global config"""
         update_singletons()
@@ -513,7 +539,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
 
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """Check that cmdargs configuration overrides global/envvars/local configuration"""
-        command = f"hunt --worker-max-trials 0 -c {conf_file} --branch-from test-name"
+        command = f"hunt --worker-max-trials 0 -c {conf_file} --branch-from test-name --enable-evc"
         command += " " + " ".join(
             "--{} {}".format(name, value) for name, value in self.cmdargs.items()
         )
@@ -751,6 +777,7 @@ class TestEVCConfig(ConfigurationTestSuite):
 
     config = {
         "evc": {
+            "enable": False,
             "auto_resolution": False,
             "manual_resolution": True,
             "non_monitored_arguments": ["test", "one"],
@@ -764,6 +791,7 @@ class TestEVCConfig(ConfigurationTestSuite):
     }
 
     env_vars = {
+        "ORION_EVC_ENABLE": "true",
         "ORION_EVC_MANUAL_RESOLUTION": "",
         "ORION_EVC_NON_MONITORED_ARGUMENTS": "test:two:others",
         "ORION_EVC_IGNORE_CODE_CHANGES": "",
@@ -776,9 +804,10 @@ class TestEVCConfig(ConfigurationTestSuite):
 
     local = {
         "evc": {
+            "enable": False,
             "manual_resolution": True,
             "non_monitored_arguments": ["test", "local"],
-            "ignore_code_changes": True,
+            "ignore_code_changes": False,
             "algorithm_change": True,
             "code_change_type": "break",
             "cli_change_type": "break",
@@ -788,9 +817,10 @@ class TestEVCConfig(ConfigurationTestSuite):
     }
 
     cmdargs = {
+        "enable-evc": True,
         "manual-resolution": False,
         "non-monitored-arguments": "test:cmdargs",
-        "ignore-code-changes": False,
+        "ignore-code-changes": True,
         "algorithm-change": False,
         "code-change-type": "noeffect",
         "cli-change-type": "unsure",
@@ -820,37 +850,54 @@ class TestEVCConfig(ConfigurationTestSuite):
         assert orion.core.config.to_dict()["evc"] == self.config["evc"]
 
         name = "global-test"
-        command = (
-            f"hunt --worker-max-trials 0 -n {name} python {script} -x~uniform(0,1)"
-        )
+        command = f"hunt --enable-evc --worker-max-trials 0 -n {name} python {script} -x~uniform(0,1)"
         assert orion.core.cli.main(command.split(" ")) == 0
 
-        # Test that manual_resolution is True and it branches when changing cli
+        # Test that manual_resolution is True and it branches when changing cli (thus crash)
         assert orion.core.cli.main(f"{command} --cli-change ".split(" ")) == 1
 
         command = "hunt --auto-resolution " + command[5:]
 
-        command = self._check_cli_change(
-            name, command, version=1, change_type="noeffect"
-        )
+        self._check_enable(name, command.replace(" --enable-evc", ""), enabled=False)
+
+        self._check_cli_change(name, command, change_type="noeffect")
+
         self._check_non_monitored_arguments(
-            name, command, version=2, non_monitored_arguments=["test", "one"]
+            name, command, non_monitored_arguments=["test", "one"]
         )
+
         self._check_script_config_change(
-            tmp_path, name, command, version=2, change_type="noeffect"
+            tmp_path, name, command, change_type="noeffect"
         )
-        self._check_code_change(
-            monkeypatch,
-            name,
-            command,
-            version=3,
-            mock_ignore_code_changes=None,
-            ignore_code_changes=self.config["evc"]["ignore_code_changes"],
-            change_type=self.config["evc"]["code_change_type"],
-        )
+
+        # EVC not enabled, code change should be ignored even if option is set to True
+        assert self.config["evc"]["enable"] is False
+        with monkeypatch.context() as m:
+            self._check_code_change(
+                m,
+                name,
+                command.replace("--enable-evc ", ""),
+                mock_ignore_code_changes=True,
+                ignore_code_changes=True,
+                change_type=self.config["evc"]["code_change_type"],
+                enable_evc=False,
+            )
+
+        # EVC is enabled, option should be honored
+        with monkeypatch.context() as m:
+            self._check_code_change(
+                m,
+                name,
+                command,
+                mock_ignore_code_changes=None,
+                ignore_code_changes=self.config["evc"]["ignore_code_changes"],
+                change_type=self.config["evc"]["code_change_type"],
+                enable_evc=True,
+            )
 
     def check_env_var_config(self, tmp_path, monkeypatch):
         """Check that env vars overrides global configuration"""
+        assert orion.core.config.evc.enable
         assert not orion.core.config.evc.manual_resolution
         assert not orion.core.config.evc.ignore_code_changes
         assert not orion.core.config.evc.algorithm_change
@@ -870,24 +917,42 @@ class TestEVCConfig(ConfigurationTestSuite):
         )
         assert orion.core.cli.main(command.split(" ")) == 0
 
-        # TODO: Anything to test still???
-        command = self._check_cli_change(name, command, version=1, change_type="unsure")
-        command = self._check_non_monitored_arguments(
-            name, command, version=2, non_monitored_arguments=["test", "two", "others"]
-        )
-        self._check_script_config_change(
-            tmp_path, name, command, version=2, change_type="unsure"
-        )
+        self._check_enable(name, command, enabled=True)
 
-        self._check_code_change(
-            monkeypatch,
-            name,
-            command,
-            version=3,
-            mock_ignore_code_changes=None,
-            ignore_code_changes=bool(self.env_vars["ORION_EVC_IGNORE_CODE_CHANGES"]),
-            change_type=self.env_vars["ORION_EVC_CODE_CHANGE"],
+        self._check_cli_change(name, command, change_type="unsure")
+        self._check_non_monitored_arguments(
+            name, command, non_monitored_arguments=["test", "two", "others"]
         )
+        self._check_script_config_change(tmp_path, name, command, change_type="unsure")
+
+        # Enable EVC, ignore_code_changes is False
+        with monkeypatch.context() as m:
+            self._check_code_change(
+                m,
+                name,
+                command,
+                mock_ignore_code_changes=None,
+                ignore_code_changes=bool(
+                    self.env_vars["ORION_EVC_IGNORE_CODE_CHANGES"]
+                ),
+                change_type=self.env_vars["ORION_EVC_CODE_CHANGE"],
+                enable_evc=True,
+            )
+
+        # Disable EVC, ignore_code_changes is True for Consumer
+        os.environ["ORION_EVC_ENABLE"] = ""
+        with monkeypatch.context() as m:
+            self._check_code_change(
+                m,
+                name,
+                command,
+                mock_ignore_code_changes=None,
+                ignore_code_changes=bool(
+                    self.env_vars["ORION_EVC_IGNORE_CODE_CHANGES"]
+                ),
+                change_type=self.env_vars["ORION_EVC_CODE_CHANGE"],
+                enable_evc=False,
+            )
 
     def check_db_config(self):
         """No Storage config in DB, no test"""
@@ -897,7 +962,7 @@ class TestEVCConfig(ConfigurationTestSuite):
         """Check that local configuration overrides global/envvars configuration"""
         name = "local-test"
         command = (
-            f"hunt --worker-max-trials 0 -n {name} -c {conf_file} "
+            f"hunt --enable-evc --worker-max-trials 0 -n {name} -c {conf_file} "
             f"python {script} -x~uniform(0,1)"
         )
 
@@ -908,61 +973,75 @@ class TestEVCConfig(ConfigurationTestSuite):
 
         command = "hunt --auto-resolution " + command[5:]
 
-        command = self._check_cli_change(
-            name, command, version=1, change_type=self.local["evc"]["cli_change_type"]
+        self._check_enable(name, command.replace(" --enable-evc", ""), enabled=False)
+
+        self._check_cli_change(
+            name, command, change_type=self.local["evc"]["cli_change_type"]
         )
-        command = self._check_non_monitored_arguments(
+        self._check_non_monitored_arguments(
             name,
             command,
-            version=2,
             non_monitored_arguments=self.local["evc"]["non_monitored_arguments"],
         )
         self._check_script_config_change(
             tmp_path,
             name,
             command,
-            version=2,
             change_type=self.local["evc"]["config_change_type"],
         )
-        self._check_code_change(
-            monkeypatch,
-            name,
-            command,
-            version=3,
-            mock_ignore_code_changes=True,
-            ignore_code_changes=self.local["evc"]["ignore_code_changes"],
-            change_type=self.local["evc"]["code_change_type"],
-        )
+
+        # enabled evc, ignore code changes so to True
+        with monkeypatch.context() as m:
+            self._check_code_change(
+                m,
+                name,
+                command,
+                mock_ignore_code_changes=False,
+                ignore_code_changes=self.local["evc"]["ignore_code_changes"],
+                change_type=self.local["evc"]["code_change_type"],
+                enable_evc=True,
+            )
+
+        # disabled evc, ignore code changes so to True
+        with monkeypatch.context() as m:
+            self._check_code_change(
+                m,
+                name,
+                command.replace("--enable-evc ", ""),
+                mock_ignore_code_changes=False,
+                ignore_code_changes=self.local["evc"]["ignore_code_changes"],
+                change_type=self.local["evc"]["code_change_type"],
+                enable_evc=False,
+            )
 
     def check_cmd_args_config(self, tmp_path, conf_file, monkeypatch):
         """Check that cmdargs configuration overrides global/envvars/local configuration"""
         name = "cmd-test"
         command = (
             f"hunt --worker-max-trials 0 -c {conf_file} -n {name} "
+            "--enable-evc "
             "--auto-resolution "
-            "--non-monitored-arguments test:cmdargs "
-            "--code-change-type noeffect "
-            "--cli-change-type unsure "
-            "--config-change-type break "
             f"python {script} -x~uniform(0,1)"
         )
         assert orion.core.cli.main(command.split(" ")) == 0
 
-        command = self._check_cli_change(
-            name, command, version=1, change_type=self.cmdargs["cli-change-type"]
-        )
-        command = self._check_non_monitored_arguments(
+        self._check_enable(name, command, enabled=True)
+
+        self._check_cli_change(
             name,
-            command,
-            version=2,
+            command="hunt --cli-change-type unsure " + command[5:],
+            change_type=self.cmdargs["cli-change-type"],
+        )
+        self._check_non_monitored_arguments(
+            name,
+            command="hunt --non-monitored-arguments test:cmdargs " + command[5:],
             non_monitored_arguments=self.cmdargs["non-monitored-arguments"].split(":"),
         )
 
         self._check_script_config_change(
             tmp_path,
             name,
-            command,
-            version=2,
+            command="hunt --config-change-type break " + command[5:],
             change_type=self.cmdargs["config-change-type"],
         )
 
@@ -977,68 +1056,95 @@ class TestEVCConfig(ConfigurationTestSuite):
         monkeypatch.setattr(orion.core.io.resolve_config, "fetch_config", mock_local)
 
         # Check that ignore_code_changes is rightly False
-        self._check_code_change(
-            monkeypatch,
-            name,
-            command,
-            version=3,
-            mock_ignore_code_changes=False,
-            ignore_code_changes=False,
-            change_type=self.cmdargs["code-change-type"],
-        )
+        with monkeypatch.context() as m:
+            self._check_code_change(
+                m,
+                name,
+                command="hunt --code-change-type noeffect " + command[5:],
+                mock_ignore_code_changes=False,
+                ignore_code_changes=False,
+                change_type=self.cmdargs["code-change-type"],
+                enable_evc=True,
+            )
 
-        command = "hunt --ignore-code-changes " + command[5:]
+        # Check that ignore_code_changes is now True because --ignore-code-changes was added
+        with monkeypatch.context() as m:
+            self._check_code_change(
+                m,
+                name,
+                command="hunt --ignore-code-changes --code-change-type noeffect "
+                + command[5:],
+                mock_ignore_code_changes=True,
+                ignore_code_changes=True,
+                change_type=self.cmdargs["code-change-type"],
+                enable_evc=True,
+            )
 
-        # Check that ignore_code_changes is now True
-        self._check_code_change(
-            monkeypatch,
-            name,
-            command,
-            version=4,
-            mock_ignore_code_changes=True,
-            ignore_code_changes=True,
-            change_type=self.cmdargs["code-change-type"],
-        )
+        # Check that ignore_code_changes is forced to True in consumer
+        # even if --ignore-code-changes is not passed
+        with monkeypatch.context() as m:
+            self._check_code_change(
+                m,
+                name,
+                command.replace("--enable-evc ", ""),
+                mock_ignore_code_changes=False,
+                ignore_code_changes=False,
+                change_type=self.cmdargs["code-change-type"],
+                enable_evc=False,
+            )
 
-    def _check_cli_change(self, name, command, version, change_type):
-        command += " --cli-change"
+    @with_storage_fork
+    def _check_enable(self, name, command, enabled):
+        command += " --cli-change "
+        experiment = get_experiment(name)
+        if enabled:
+            assert orion.core.cli.main(command.split(" ")) == 0
+            assert get_experiment(name).version == experiment.version + 1
+        else:
+            assert orion.core.cli.main(command.split(" ")) == 0
+            assert get_experiment(name).version == experiment.version
 
+    @with_storage_fork
+    def _check_cli_change(self, name, command, change_type):
+        command += " --cli-change "
+
+        experiment = get_experiment(name)
         # Test that manual_resolution is False and it branches when changing cli
         assert orion.core.cli.main(command.split(" ")) == 0
 
-        experiment = get_experiment(name, version=version + 1)
-        assert experiment.version == version + 1
-        assert experiment.refers["adapter"].configuration[0] == {
+        new_experiment = get_experiment(name)
+
+        assert new_experiment.version == experiment.version + 1
+        assert new_experiment.refers["adapter"].configuration[0] == {
             "of_type": "commandlinechange",
             "change_type": change_type,
         }
 
-        return command
-
-    def _check_non_monitored_arguments(
-        self, name, command, version, non_monitored_arguments
-    ):
+    @with_storage_fork
+    def _check_non_monitored_arguments(self, name, command, non_monitored_arguments):
         for argument in non_monitored_arguments:
             command += f" --{argument} "
 
+        experiment = get_experiment(name)
         # Test that cli change with non-monitored args do not cause branching
         assert orion.core.cli.main(command.split(" ")) == 0
 
-        experiment = get_experiment(name, version=version + 1)
-        assert experiment.version == version
+        assert get_experiment(name).version == experiment.version
 
-        return command
-
+    @with_storage_fork
     def _check_code_change(
         self,
         monkeypatch,
         name,
         command,
-        version,
         mock_ignore_code_changes,
         ignore_code_changes,
         change_type,
+        enable_evc,
     ):
+        """Check if code changes are correctly ignored during experiment build and by consumer
+        between two trial executions.
+        """
 
         # Test that code change is handled with 'no-effect'
         def fixed_dictionary(user_script):
@@ -1064,27 +1170,40 @@ class TestEVCConfig(ConfigurationTestSuite):
                 assert (
                     branching_config["ignore_code_changes"] is mock_ignore_code_changes
                 )
-                branching_config["ignore_code_changes"] = False
+            # branching_config["ignore_code_changes"] = False
             return detect(old_config, new_config, branching_config)
 
         monkeypatch.setattr(
             orion.core.evc.conflicts.CodeConflict, "detect", mock_detect
         )
+
+        experiment = get_experiment(name)
+
         assert orion.core.cli.main(command.split(" ")) == 0
-        self._check_consumer({"ignore_code_changes": ignore_code_changes})
+        self._check_consumer(
+            {
+                "ignore_code_changes": (
+                    (enable_evc and ignore_code_changes) or not enable_evc
+                )
+            }
+        )
 
-        experiment = get_experiment(name, version=version + 1)
-        assert experiment.version == version + 1
-        assert experiment.refers["adapter"].configuration[0] == {
-            "of_type": "codechange",
-            "change_type": change_type,
-        }
+        new_experiment = get_experiment(name)
+        if enable_evc and not ignore_code_changes:
+            assert new_experiment.version == experiment.version + 1
+            assert new_experiment.refers["adapter"].configuration[0] == {
+                "of_type": "codechange",
+                "change_type": change_type,
+            }
+        elif enable_evc:  # But code change ignored, so no branching event.
+            assert new_experiment.version == experiment.version
+        else:
+            assert new_experiment.version == experiment.version
 
-        monkeypatch.undo()
+    @with_storage_fork
+    def _check_script_config_change(self, tmp_path, name, command, change_type):
 
-    def _check_script_config_change(
-        self, tmp_path, name, command, version, change_type
-    ):
+        experiment = get_experiment(name)
 
         # Test that config change is handled with 'break'
         with self.setup_user_script_config(tmp_path) as user_script_config:
@@ -1092,11 +1211,11 @@ class TestEVCConfig(ConfigurationTestSuite):
             command += f" --config {user_script_config}"
             assert orion.core.cli.main(command.split(" ")) == 0
 
-        experiment = get_experiment(name, version=version + 1)
-        assert experiment.version == version + 1
-        print(experiment.refers["adapter"].configuration)
-        assert len(experiment.refers["adapter"].configuration) == 2
-        assert experiment.refers["adapter"].configuration[1] == {
+        new_experiment = get_experiment(name)
+
+        assert new_experiment.version == experiment.version + 1
+        assert len(new_experiment.refers["adapter"].configuration) == 2
+        assert new_experiment.refers["adapter"].configuration[1] == {
             "of_type": "scriptconfigchange",
             "change_type": change_type,
         }

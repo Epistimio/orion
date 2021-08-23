@@ -289,6 +289,7 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
 
     # Test evc subconfig
     evc_config = config.pop("evc")
+    assert evc_config.pop("enable") is orion.core.config.evc.enable
     assert evc_config.pop("auto_resolution") == orion.core.config.evc.auto_resolution
     assert (
         evc_config.pop("manual_resolution") == orion.core.config.evc.manual_resolution

@@ -5,6 +5,7 @@
 import os
 
 import pytest
+import yaml
 
 import orion.core.cli
 import orion.core.io.experiment_builder as experiment_builder
@@ -34,6 +35,36 @@ def init_full_x(setup_pickleddb_database, monkeypatch):
 
 
 @pytest.fixture
+def init_no_evc(monkeypatch):
+    """Add y dimension but overwrite original"""
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+    name = "full_x"
+    branch = "wont_exist"
+    orion.core.cli.main(
+        (
+            "hunt --init-only -n {branch} --branch-from {name} --cli-change-type noeffect "
+            "./black_box_with_y.py "
+            "-x~uniform(-10,10) "
+            "-y~+uniform(-10,10,default_value=1)"
+        )
+        .format(name=name, branch=branch)
+        .split(" ")
+    )
+    orion.core.cli.main(
+        "insert -n {name} script -x=1 -y=1".format(name=name).split(" ")
+    )
+    orion.core.cli.main(
+        "insert -n {name} script -x=-1 -y=1".format(name=name).split(" ")
+    )
+    orion.core.cli.main(
+        "insert -n {name} script -x=1 -y=-1".format(name=name).split(" ")
+    )
+    orion.core.cli.main(
+        "insert -n {name} script -x=-1 -y=-1".format(name=name).split(" ")
+    )
+
+
+@pytest.fixture
 def init_full_x_full_y(init_full_x):
     """Add y dimension to original"""
     name = "full_x"
@@ -41,6 +72,7 @@ def init_full_x_full_y(init_full_x):
     orion.core.cli.main(
         (
             "hunt --init-only -n {branch} --branch-from {name} --cli-change-type noeffect "
+            "--enable-evc "
             "./black_box_with_y.py "
             "-x~uniform(-10,10) "
             "-y~+uniform(-10,10,default_value=1)"
@@ -69,7 +101,9 @@ def init_half_x_full_y(init_full_x_full_y):
     branch = "half_x_full_y"
     orion.core.cli.main(
         (
-            "hunt --init-only -n {branch} --branch-from {name} ./black_box_with_y.py "
+            "hunt --init-only -n {branch} --branch-from {name} "
+            "--enable-evc "
+            "./black_box_with_y.py "
             "-x~+uniform(0,10) "
             "-y~uniform(-10,10,default_value=1)"
         )
@@ -91,7 +125,9 @@ def init_full_x_half_y(init_full_x_full_y):
     branch = "full_x_half_y"
     orion.core.cli.main(
         (
-            "hunt --init-only -n {branch} --branch-from {name} ./black_box_with_y.py "
+            "hunt --init-only -n {branch} --branch-from {name} "
+            "--enable-evc "
+            "./black_box_with_y.py "
             "-x~uniform(-10,10) "
             "-y~+uniform(0,10,default_value=1)"
         )
@@ -114,6 +150,7 @@ def init_full_x_rename_y_z(init_full_x_full_y):
     orion.core.cli.main(
         (
             "hunt --init-only -n {branch} --branch-from {name} --cli-change-type noeffect "
+            "--enable-evc "
             "./black_box_with_z.py -x~uniform(-10,10) -y~>z -z~uniform(-10,10,default_value=1)"
         )
         .format(name=name, branch=branch)
@@ -141,6 +178,7 @@ def init_full_x_rename_half_y_half_z(init_full_x_half_y):
     orion.core.cli.main(
         (
             "hunt --init-only -n {branch} --branch-from {name} --cli-change-type noeffect "
+            "--enable-evc "
             "./black_box_with_z.py -x~uniform(-10,10) -y~>z -z~uniform(0,10,default_value=1)"
         )
         .format(name=name, branch=branch)
@@ -162,6 +200,7 @@ def init_full_x_rename_half_y_full_z(init_full_x_half_y):
     orion.core.cli.main(
         (
             "hunt --init-only -n {branch} --branch-from {name} --cli-change-type noeffect "
+            "--enable-evc "
             "./black_box_with_z.py "
             "-x~uniform(-10,10) -y~>z "
             "-z~+uniform(-10,10,default_value=1)"
@@ -191,6 +230,7 @@ def init_full_x_remove_y(init_full_x_full_y):
     orion.core.cli.main(
         (
             "hunt --init-only -n {branch} --branch-from {name} --cli-change-type noeffect "
+            "--enable-evc "
             "./black_box.py "
             "-x~uniform(-10,10) -y~-"
         )
@@ -213,6 +253,7 @@ def init_full_x_full_y_add_z_remove_y(init_full_x_full_y):
     orion.core.cli.main(
         (
             "hunt --init-only -n {branch} --branch-from {name} --cli-change-type noeffect "
+            "--enable-evc "
             "./black_box.py -x~uniform(-10,10) "
             "-z~uniform(-20,10,default_value=0)"
         )
@@ -235,6 +276,7 @@ def init_full_x_remove_z(init_full_x_rename_y_z):
     orion.core.cli.main(
         (
             "hunt --init-only -n {branch} --branch-from {name} --cli-change-type noeffect "
+            "--enable-evc "
             "./black_box.py "
             "-x~uniform(-10,10) -z~-"
         )
@@ -257,6 +299,7 @@ def init_full_x_remove_z_default_4(init_full_x_rename_y_z):
     orion.core.cli.main(
         (
             "hunt --init-only -n {branch} --branch-from {name} --cli-change-type noeffect "
+            "--enable-evc "
             "./black_box.py "
             "-x~uniform(-10,10) -z~-4"
         )
@@ -280,6 +323,7 @@ def init_full_x_new_algo(init_full_x):
         (
             "hunt --init-only -n {branch} --branch-from {name} "
             "--algorithm-change --config new_algo_config.yaml "
+            "--enable-evc "
             "./black_box.py -x~uniform(-10,10)"
         )
         .format(name=name, branch=branch)
@@ -295,12 +339,13 @@ def init_full_x_new_algo(init_full_x):
 
 @pytest.fixture
 def init_full_x_new_cli(init_full_x):
-    """Remove z from full x full z and give a default value of 4"""
+    """Change commandline call"""
     name = "full_x"
     branch = "full_x_new_cli"
     orion.core.cli.main(
         (
             "hunt --init-only -n {branch} --branch-from {name} --cli-change-type noeffect "
+            "--enable-evc "
             "./black_box_new.py -x~uniform(-10,10) --a-new argument"
         )
         .format(name=name, branch=branch)
@@ -320,7 +365,9 @@ def init_full_x_ignore_cli(init_full_x):
     name = "full_x_with_new_opt"
     orion.core.cli.main(
         (
-            "hunt --init-only -n {name} --config orion_config.yaml ./black_box_new.py "
+            "hunt --init-only -n {name} --config orion_config.yaml "
+            "--enable-evc "
+            "./black_box_new.py "
             "-x~uniform(-10,10)"
         )
         .format(name=name)
@@ -331,7 +378,9 @@ def init_full_x_ignore_cli(init_full_x):
     orion.core.cli.main(
         (
             "hunt --init-only -n {name} --non-monitored-arguments a-new "
-            "--config orion_config.yaml ./black_box_new.py "
+            "--config orion_config.yaml "
+            "--enable-evc "
+            "./black_box_new.py "
             "-x~uniform(-10,10) --a-new argument"
         )
         .format(name=name)
@@ -339,6 +388,37 @@ def init_full_x_ignore_cli(init_full_x):
     )
     orion.core.cli.main("insert -n {name} script -x=1.2".format(name=name).split(" "))
     orion.core.cli.main("insert -n {name} script -x=-1.2".format(name=name).split(" "))
+
+
+@pytest.fixture
+def init_full_x_new_config(init_full_x, tmp_path):
+    """Add configuration script"""
+    name = "full_x"
+    branch = "full_x_new_config"
+
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        yaml.dump(
+            {"new_arg": "some-value", "y": "orion~uniform(-10, 10, default_value=0)"}
+        )
+    )
+
+    orion.core.cli.main(
+        (
+            "hunt --enable-evc --init-only -n {branch} --branch-from {name} "
+            "--cli-change-type noeffect "
+            "--config-change-type unsure "
+            "./black_box_new.py -x~uniform(-10,10) --config {config_file}"
+        )
+        .format(name=name, branch=branch, config_file=config_file)
+        .split(" ")
+    )
+    orion.core.cli.main(
+        "insert -n {branch} script -x=1.2 -y=2".format(branch=branch).split(" ")
+    )
+    orion.core.cli.main(
+        "insert -n {branch} script -x=-1.2 -y=3".format(branch=branch).split(" ")
+    )
 
 
 @pytest.fixture
@@ -372,9 +452,31 @@ def test_init(init_full_x):
     experiment = experiment_builder.load(name="full_x")
 
     assert experiment.refers["adapter"].configuration == []
+    assert experiment.space.configuration == {"/x": "uniform(-10, 10)"}
 
     pairs = get_name_value_pairs(experiment.fetch_trials())
     assert pairs == ((("/x", 0),),)
+
+
+def test_no_evc_overwrite(setup_pickleddb_database, init_no_evc):
+    """Test that the experiment config is overwritten if --enable-evc is not passed"""
+    storage = get_storage()
+    assert len(get_storage().fetch_experiments({})) == 1
+    experiment = experiment_builder.load(name="full_x")
+
+    assert experiment.refers["adapter"].configuration == []
+    assert experiment.space.configuration == {
+        "/x": "uniform(-10, 10)",
+        "/y": "uniform(-10, 10, default_value=1)",
+    }
+
+    pairs = get_name_value_pairs(experiment.fetch_trials())
+    assert pairs == (
+        (("/x", 1), ("/y", 1)),
+        (("/x", -1), ("/y", 1)),
+        (("/x", 1), ("/y", -1)),
+        (("/x", -1), ("/y", -1)),
+    )
 
 
 def test_full_x_full_y(init_full_x_full_y):
@@ -729,15 +831,15 @@ def test_run_entire_full_x_full_y(init_entire):
 
     orion.core.cli.main(
         (
-            "-vv hunt --max-trials 20 --pool-size 1 -n full_x_full_y "
+            "-vv hunt --max-trials 30 --pool-size 1 -n full_x_full_y "
             "./black_box_with_y.py "
             "-x~uniform(-10,10) "
             "-y~uniform(-10,10,default_value=1)"
         ).split(" ")
     )
 
-    assert len(experiment.fetch_trials(with_evc_tree=True)) == 39
-    assert len(experiment.fetch_trials()) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 30
+    assert len(experiment.fetch_trials(with_evc_tree=False)) == 30
 
 
 def test_run_entire_full_x_full_y_no_args(init_entire):
@@ -748,11 +850,11 @@ def test_run_entire_full_x_full_y_no_args(init_entire):
     assert len(experiment.fetch_trials()) == 4
 
     orion.core.cli.main(
-        ("-vv hunt --max-trials 20 --pool-size 1 -n full_x_full_y").split(" ")
+        ("-vv hunt --max-trials 30 --pool-size 1 -n full_x_full_y").split(" ")
     )
 
-    assert len(experiment.fetch_trials(with_evc_tree=True)) == 39
-    assert len(experiment.fetch_trials()) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 30
+    assert len(experiment.fetch_trials(with_evc_tree=False)) == 30
 
 
 def test_new_algo(init_full_x_new_algo):
@@ -770,8 +872,8 @@ def test_new_algo(init_full_x_new_algo):
         ("-vv hunt --max-trials 20 --pool-size 1 -n full_x_new_algo").split(" ")
     )
 
-    assert len(experiment.fetch_trials(with_evc_tree=True)) == 21
-    assert len(experiment.fetch_trials()) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=False)) == 20
 
 
 def test_new_algo_not_resolved(init_full_x, capsys):
@@ -781,7 +883,9 @@ def test_new_algo_not_resolved(init_full_x, capsys):
     error_code = orion.core.cli.main(
         (
             "hunt --init-only -n {branch} --branch-from {name} --config new_algo_config.yaml "
-            "--manual-resolution ./black_box.py -x~uniform(-10,10)"
+            "--manual-resolution "
+            "--enable-evc "
+            "./black_box.py -x~uniform(-10,10)"
         )
         .format(name=name, branch=branch)
         .split(" ")
@@ -800,7 +904,9 @@ def test_ignore_cli(init_full_x_ignore_cli):
     orion.core.cli.main(
         (
             "hunt --init-only -n {name} --non-monitored-arguments a-new "
-            "--manual-resolution ./black_box.py -x~uniform(-10,10)"
+            "--manual-resolution "
+            "--enable-evc "
+            "./black_box.py -x~uniform(-10,10)"
         )
         .format(name=name)
         .split(" ")
@@ -814,7 +920,9 @@ def test_new_code_triggers_code_conflict(capsys):
     error_code = orion.core.cli.main(
         (
             "hunt --init-only -n {name} "
-            "--manual-resolution ./black_box.py -x~uniform(-10,10)"
+            "--manual-resolution "
+            "--enable-evc "
+            "./black_box.py -x~uniform(-10,10)"
         )
         .format(name=name)
         .split(" ")
@@ -832,7 +940,7 @@ def test_new_code_triggers_code_conflict_with_name_only(capsys):
     """Test that a different git hash is generating a child, even if cmdline is not passed"""
     name = "full_x"
     error_code = orion.core.cli.main(
-        ("hunt --init-only -n {name} " "--manual-resolution")
+        ("hunt --init-only -n {name} --manual-resolution --enable-evc")
         .format(name=name)
         .split(" ")
     )
@@ -852,7 +960,9 @@ def test_new_code_ignores_code_conflict():
     error_code = orion.core.cli.main(
         (
             "hunt --worker-max-trials 2 -n {name} --ignore-code-changes "
-            "--manual-resolution ./black_box.py -x~uniform(-10,10)"
+            "--manual-resolution "
+            "--enable-evc "
+            "./black_box.py -x~uniform(-10,10)"
         )
         .format(name=name)
         .split(" ")
@@ -865,7 +975,9 @@ def test_new_orion_version_triggers_conflict(capsys):
     """Test that a different git hash is generating a child"""
     name = "full_x"
     error_code = orion.core.cli.main(
-        ("hunt --init-only -n {name} --manual-resolution").format(name=name).split(" ")
+        ("hunt --init-only -n {name} --manual-resolution --enable-evc")
+        .format(name=name)
+        .split(" ")
     )
     assert error_code == 1
 
@@ -890,8 +1002,8 @@ def test_new_cli(init_full_x_new_cli):
         ("-vv hunt --max-trials 20 --pool-size 1 -n full_x_new_cli").split(" ")
     )
 
-    assert len(experiment.fetch_trials(with_evc_tree=True)) == 21
-    assert len(experiment.fetch_trials()) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 20
+    assert len(experiment.fetch_trials(with_evc_tree=False)) == 20
 
 
 @pytest.mark.usefixtures("init_full_x")
@@ -899,11 +1011,144 @@ def test_no_cli_no_branching():
     """Test that no branching occurs when using same code and not passing cmdline"""
     name = "full_x"
     error_code = orion.core.cli.main(
-        ("hunt --init-only -n {name} " "--manual-resolution")
+        ("hunt --init-only -n {name} --manual-resolution --enable-evc")
         .format(name=name)
         .split(" ")
     )
     assert error_code == 0
+
+
+def test_new_script(init_full_x, monkeypatch):
+    """Test that experiment can branch with new script path even if previous is not present"""
+
+    name = "full_x"
+    experiment = experiment_builder.load(name=name)
+
+    # Mess with DB to change script path
+    metadata = experiment.metadata
+    metadata["user_script"] = "oh_oh_idontexist.py"
+    metadata["user_args"][0] = "oh_oh_idontexist.py"
+    metadata["parser"]["parser"]["arguments"][0][1] = "oh_oh_idontexist.py"
+    get_storage().update_experiment(experiment, metadata=metadata)
+
+    orion.core.cli.main(
+        (
+            "hunt --enable-evc --init-only -n {name} --config orion_config.yaml ./black_box.py "
+            "-x~uniform(-10,10) --some-new args"
+        )
+        .format(name=name)
+        .split(" ")
+    )
+
+    new_experiment = experiment_builder.load(name=name)
+    assert new_experiment.version == experiment.version + 1
+
+    assert new_experiment.refers["adapter"].configuration == [
+        {"change_type": "break", "of_type": "commandlinechange"}
+    ]
+
+
+def test_new_config(init_full_x_new_config, monkeypatch):
+    """Test experiment branching with new config"""
+    experiment = experiment_builder.load(name="full_x_new_config")
+
+    assert experiment.refers["adapter"].configuration == [
+        {"change_type": "noeffect", "of_type": "commandlinechange"},
+        {
+            "of_type": "dimensionaddition",
+            "param": {"name": "/y", "type": "real", "value": 0},
+        },
+        {"change_type": "unsure", "of_type": "scriptconfigchange"},
+    ]
+
+    assert len(experiment.fetch_trials(with_evc_tree=True)) == 3
+    assert len(experiment.fetch_trials()) == 2
+
+
+def test_missing_config(init_full_x_new_config, monkeypatch):
+    """Test that experiment can branch with new config if previous is not present"""
+    name = "full_x_new_config"
+    experiment = experiment_builder.load(name=name)
+
+    # Mess with DB to change config path
+    metadata = experiment.metadata
+    bad_config_file = "ho_ho_idontexist.yaml"
+    config_file = metadata["parser"]["file_config_path"]
+    metadata["parser"]["file_config_path"] = bad_config_file
+    metadata["parser"]["parser"]["arguments"][2][1] = bad_config_file
+    metadata["user_args"][3] = bad_config_file
+    get_storage().update_experiment(experiment, metadata=metadata)
+
+    orion.core.cli.main(
+        (
+            "hunt --enable-evc --init-only -n {name} "
+            "--cli-change-type noeffect "
+            "--config-change-type unsure "
+            "./black_box_new.py -x~uniform(-10,10) --config {config_file}"
+        )
+        .format(name=name, config_file=config_file)
+        .split(" ")
+    )
+
+    new_experiment = experiment_builder.load(name=name)
+    assert new_experiment.version == experiment.version + 1
+
+    assert new_experiment.refers["adapter"].configuration == [
+        {"change_type": "noeffect", "of_type": "commandlinechange"}
+    ]
+
+
+def test_missing_and_new_config(init_full_x_new_config, monkeypatch):
+    """Test that experiment can branch with new config if previous is not present, with correct
+    diff.
+    """
+    name = "full_x_new_config"
+    experiment = experiment_builder.load(name=name)
+
+    # Mess with DB to change config path
+    metadata = experiment.metadata
+    bad_config_file = "ho_ho_idontexist.yaml"
+    config_file = metadata["parser"]["file_config_path"]
+    metadata["parser"]["file_config_path"] = bad_config_file
+    metadata["parser"]["parser"]["arguments"][2][1] = bad_config_file
+    metadata["user_args"][3] = bad_config_file
+
+    with open(config_file, "w") as f:
+        f.write(
+            yaml.dump(
+                {
+                    "new_arg": "some-new-value",
+                    "y": "orion~uniform(-10, 20, default_value=0)",
+                }
+            )
+        )
+
+    get_storage().update_experiment(experiment, metadata=metadata)
+
+    orion.core.cli.main(
+        (
+            "hunt --enable-evc --init-only -n {name} "
+            "--cli-change-type noeffect "
+            "--config-change-type unsure "
+            "./black_box_new.py -x~uniform(-10,10) --config {config_file}"
+        )
+        .format(name=name, config_file=config_file)
+        .split(" ")
+    )
+
+    new_experiment = experiment_builder.load(name=name)
+    assert new_experiment.version == experiment.version + 1
+
+    assert new_experiment.refers["adapter"].configuration == [
+        {
+            "name": "/y",
+            "new_prior": "uniform(-10, 20, default_value=0)",
+            "of_type": "dimensionpriorchange",
+            "old_prior": "uniform(-10, 10, default_value=0)",
+        },
+        {"change_type": "noeffect", "of_type": "commandlinechange"},
+        {"change_type": "unsure", "of_type": "scriptconfigchange"},
+    ]
 
 
 def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
@@ -917,7 +1162,9 @@ def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
     # experiment
     orion.core.cli.main(
         (
-            "hunt --init-only -n {branch} --branch-from {name} ./black_box_with_y.py "
+            "hunt --init-only -n {branch} --branch-from {name} "
+            "--enable-evc "
+            "./black_box_with_y.py "
             "-x~uniform(0,10) "
             "-w~choices(['a','b'])"
         )
@@ -956,7 +1203,9 @@ def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
     # experiment
     orion.core.cli.main(
         (
-            "hunt --init-only -n {branch} --branch-from {name} ./black_box_with_y.py "
+            "hunt --init-only -n {branch} --branch-from {name} "
+            "--enable-evc "
+            "./black_box_with_y.py "
             "-x~uniform(0,10) "
             "-w~fidelity(1,10)"
         )
@@ -991,14 +1240,18 @@ def test_init_w_version_from_parent_w_children(
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
         "hunt --init-only -n experiment --config orion_config.yaml "
+        "--enable-evc "
         "./black_box.py -x~normal(0,1)"
     )
     execute(
-        "hunt --init-only -n experiment ./black_box.py -x~normal(0,1) -y~+normal(0,1)"
+        "hunt --init-only -n experiment "
+        "--enable-evc "
+        "./black_box.py -x~normal(0,1) -y~+normal(0,1)"
     )
 
     execute(
         "hunt --init-only -n experiment -v 1 "
+        "--enable-evc "
         "./black_box.py -x~normal(0,1) -y~+normal(0,1) -z~normal(0,1)",
         assert_code=1,
     )
@@ -1014,13 +1267,18 @@ def test_init_w_version_from_exp_wout_child(setup_pickleddb_database, monkeypatc
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
         "hunt --init-only -n experiment --config orion_config.yaml "
+        "--enable-evc "
         "./black_box.py -x~normal(0,1)"
     )
     execute(
-        "hunt --init-only -n experiment ./black_box.py -x~normal(0,1) -y~+normal(0,1)"
+        "hunt --init-only -n experiment "
+        "--enable-evc "
+        "./black_box.py -x~normal(0,1) -y~+normal(0,1)"
     )
     execute(
-        "hunt --init-only -n experiment -v 2 ./black_box.py "
+        "hunt --init-only -n experiment -v 2 "
+        "--enable-evc "
+        "./black_box.py "
         "-x~normal(0,1) -y~+normal(0,1) -z~+normal(0,1)"
     )
 
@@ -1033,13 +1291,18 @@ def test_init_w_version_gt_max(setup_pickleddb_database, monkeypatch):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
         "hunt --init-only -n experiment --config orion_config.yaml "
+        "--enable-evc "
         "./black_box.py -x~normal(0,1)"
     )
     execute(
-        "hunt --init-only -n experiment ./black_box.py -x~normal(0,1) -y~+normal(0,1)"
+        "hunt --init-only -n experiment "
+        "--enable-evc "
+        "./black_box.py -x~normal(0,1) -y~+normal(0,1)"
     )
     execute(
-        "hunt --init-only -n experiment -v 2000 ./black_box.py "
+        "hunt --init-only -n experiment -v 2000 "
+        "--enable-evc "
+        "./black_box.py "
         "-x~normal(0,1) -y~+normal(0,1) -z~+normal(0,1)"
     )
 
@@ -1052,14 +1315,18 @@ def test_init_check_increment_w_children(setup_pickleddb_database, monkeypatch):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
         "hunt --init-only -n experiment --config orion_config.yaml "
+        "--enable-evc "
         "./black_box.py -x~normal(0,1)"
     )
     execute(
-        "hunt --init-only -n experiment --branch-to experiment_2 ./black_box.py "
+        "hunt --init-only -n experiment --branch-to experiment_2 "
+        "--enable-evc "
+        "./black_box.py "
         "-x~normal(0,1) -y~+normal(0,1)"
     )
     execute(
-        "hunt --init-only -n experiment ./black_box.py -x~normal(0,1) -z~+normal(0,1)"
+        "hunt --init-only -n experiment --enable-evc "
+        "./black_box.py -x~normal(0,1) -z~+normal(0,1)"
     )
 
     exp = get_storage().fetch_experiments({"name": "experiment", "version": 2})
@@ -1071,13 +1338,18 @@ def test_branch_from_selected_version(setup_pickleddb_database, monkeypatch):
     monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
     execute(
         "hunt --init-only -n experiment --config orion_config.yaml "
+        "--enable-evc "
         "./black_box.py -x~normal(0,1)"
     )
     execute(
-        "hunt --init-only -n experiment ./black_box.py -x~normal(0,1) -y~+normal(0,1)"
+        "hunt --init-only -n experiment "
+        "--enable-evc "
+        "./black_box.py -x~normal(0,1) -y~+normal(0,1)"
     )
     execute(
-        "hunt --init-only -n experiment --version 1 -b experiment_2 ./black_box.py "
+        "hunt --init-only -n experiment --version 1 -b experiment_2 "
+        "--enable-evc "
+        "./black_box.py "
         "-x~normal(0,1) -z~+normal(0,1)"
     )
 

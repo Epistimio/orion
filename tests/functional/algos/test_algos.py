@@ -132,6 +132,14 @@ def test_cardinality_stop(algorithm):
     assert len(trials) == 16
     assert trials[-1].status == "completed"
 
+    discrete_space["x"] = "loguniform(0.1, 1, precision=1)"
+    exp = workon(rosenbrock, discrete_space, algorithms=algorithm, max_trials=30)
+    print(exp.space.cardinality)
+
+    trials = exp.fetch_trials()
+    assert len(trials) == 10
+    assert trials[-1].status == "completed"
+
 
 @pytest.mark.parametrize(
     "algorithm", algorithm_configs.values(), ids=list(algorithm_configs.keys())
@@ -217,7 +225,7 @@ def test_with_evc(algorithm):
             space=space_with_fidelity,
             algorithms=algorithm,
             max_trials=30,
-            branching={"branch_from": "exp"},
+            branching={"branch_from": "exp", "enable": True},
         )
 
         assert exp.version == 2
@@ -277,7 +285,7 @@ def test_parallel_workers(algorithm):
             name=name,
             space=space_with_fidelity,
             algorithms=algorithm,
-            branching={"branch_from": name},
+            branching={"branch_from": name, "enable": True},
         )
 
         assert exp.version == 2
