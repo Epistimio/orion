@@ -396,5 +396,5 @@ def with_user_userxyz(monkeypatch):
 @pytest.fixture()
 def random_dt(monkeypatch):
     """Make ``datetime.datetime.utcnow()`` return an arbitrary date."""
-    with mocked_datetime(monkeypatch):
-        yield
+    with mocked_datetime(monkeypatch) as datetime:
+        yield datetime.utcnow()

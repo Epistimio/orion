@@ -177,7 +177,7 @@ def mocked_datetime(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr(datetime, "datetime", MockDatetime)
 
-        yield
+        yield MockDatetime
 
 
 class AssertNewFile:
