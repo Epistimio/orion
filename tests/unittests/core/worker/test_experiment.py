@@ -587,7 +587,7 @@ def test_experiment_pickleable():
 read_only_methods = [
     "algorithms",
     "configuration",
-    'fetch_lost_trials',
+    "fetch_lost_trials",
     "fetch_pending_trials",
     "fetch_noncompleted_trials",
     "fetch_trials",
