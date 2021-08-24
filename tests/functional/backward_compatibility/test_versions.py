@@ -41,11 +41,8 @@ def get_evc_argument(version):
     Before v0.1.16 EVC was enabled by default. Starting from v0.1.16 it must be enabled with
     --enable-evc.
     """
-    return (
-        "--enable-evc"
-        if (version.split(".")[1] > "1" or version.split(".")[2] >= "16")
-        else ""
-    )
+    major, minor, patch = list(map(int, version.split(".")))
+    return "--enable-evc" if (major > 0 or minor > 1 or patch > 15) else ""
 
 
 def has_python_api(version):
