@@ -5,9 +5,9 @@ import copy
 import datetime
 import getpass
 import os
-import yaml
 
 import pytest
+import yaml
 
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
