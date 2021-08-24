@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests resolutions in :mod:`orion.core.evc.conflicts`."""
-
 import pytest
 
 from orion.algo.space import Dimension
 from orion.core.evc import adapters, conflicts
+from orion.testing.evc import add_default_config_for_missing
 
 
 @pytest.fixture
@@ -19,14 +19,6 @@ def change_dimension_resolution(changed_dimension_conflict):
     """Create a resolution for a changed prior"""
     return changed_dimension_conflict.ChangeDimensionResolution(
         changed_dimension_conflict
-    )
-
-
-@pytest.fixture
-def remove_dimension_resolution(missing_dimension_conflict):
-    """Create a resolution to remove a missing dimension"""
-    return missing_dimension_conflict.RemoveDimensionResolution(
-        missing_dimension_conflict, default_value=0
     )
 
 
@@ -224,51 +216,65 @@ class TestChangeDimensionResolution(object):
         assert changed_dimension_conflict.resolution is None
 
 
+@pytest.mark.parametrize(
+    "dimension_conflict",
+    [
+        pytest.lazy_fixture("missing_dimension_conflict"),
+        pytest.lazy_fixture("missing_dimension_from_config_conflict"),
+    ],
+)
 class TestRemoveDimensionResolution(object):
     """Test methods for resolution of missing dimensions"""
 
-    def test_prefix(self, missing_dimension_conflict):
+    def test_prefix(self, dimension_conflict):
         """Verify prefix of resolution with corresponding marker"""
-        resolution = missing_dimension_conflict.RemoveDimensionResolution(
-            missing_dimension_conflict
-        )
-        assert resolution.prefix == "missing~-"
+        resolution = dimension_conflict.RemoveDimensionResolution(dimension_conflict)
+        assert resolution.prefix == f"{dimension_conflict.dimension.name}~-"
 
-    def test_repr_no_default(self, missing_dimension_conflict):
+    def test_repr_no_default(self, dimension_conflict):
         """Verify resolution representation for user interface, without default value"""
-        resolution = missing_dimension_conflict.RemoveDimensionResolution(
-            missing_dimension_conflict
-        )
-        assert repr(resolution) == "missing~-"
+        resolution = dimension_conflict.RemoveDimensionResolution(dimension_conflict)
+        assert repr(resolution) == f"{dimension_conflict.dimension.name}~-"
 
-    def test_repr_default_from_dim(self, missing_dimension_with_default_conflict):
+    def test_repr_default_from_dim(self, dimension_conflict):
         """Verify resolution representation for user interface, with default value from dimension"""
+        missing_dimension_with_default_conflict = add_default_config_for_missing(
+            dimension_conflict, 0.0
+        )
+
         resolution = missing_dimension_with_default_conflict.RemoveDimensionResolution(
             missing_dimension_with_default_conflict
         )
-        assert repr(resolution) == "missing~-0.0"
+        assert repr(resolution) == f"{dimension_conflict.dimension.name}~-0.0"
 
-    def test_repr_default(
-        self, missing_dimension_conflict, missing_dimension_with_default_conflict
-    ):
+    def test_repr_default(self, dimension_conflict):
         """Verify resolution representation for user interface, with default provided by user"""
+        missing_dimension_with_default_conflict = add_default_config_for_missing(
+            dimension_conflict, 0.0
+        )
         default_value = 1.2
-        resolution = missing_dimension_conflict.RemoveDimensionResolution(
+        resolution = dimension_conflict.RemoveDimensionResolution(
             missing_dimension_with_default_conflict, default_value=default_value
         )
-        assert repr(resolution) == "missing~-{}".format(default_value)
-
-        resolution = missing_dimension_conflict.RemoveDimensionResolution(
-            missing_dimension_conflict, default_value=default_value
+        assert (
+            repr(resolution) == f"{dimension_conflict.dimension.name}~-{default_value}"
         )
-        assert repr(resolution) == "missing~-{}".format(default_value)
 
-    def test_adapters_without_default(self, missing_dimension_conflict):
+        resolution = dimension_conflict.RemoveDimensionResolution(
+            dimension_conflict, default_value=default_value
+        )
+        assert (
+            repr(resolution) == f"{dimension_conflict.dimension.name}~-{default_value}"
+        )
+
+    def test_adapters_without_default(self, dimension_conflict):
         """Verify adapters without default value"""
-        param = {"name": "missing", "type": "real", "value": Dimension.NO_DEFAULT_VALUE}
-        resolution = missing_dimension_conflict.RemoveDimensionResolution(
-            missing_dimension_conflict
-        )
+        param = {
+            "name": dimension_conflict.dimension.name,
+            "type": "real",
+            "value": Dimension.NO_DEFAULT_VALUE,
+        }
+        resolution = dimension_conflict.RemoveDimensionResolution(dimension_conflict)
         resolution_adapters = resolution.get_adapters()
         assert len(resolution_adapters) == 1
         assert (
@@ -276,11 +282,15 @@ class TestRemoveDimensionResolution(object):
             == adapters.DimensionDeletion(param).configuration
         )
 
-    def test_adapters_with_default(self, missing_dimension_conflict):
+    def test_adapters_with_default(self, dimension_conflict):
         """Verify adapters with default value"""
-        param = {"name": "missing", "type": "real", "value": 1.2}
-        resolution = missing_dimension_conflict.RemoveDimensionResolution(
-            missing_dimension_conflict, default_value=1.2
+        param = {
+            "name": dimension_conflict.dimension.name,
+            "type": "real",
+            "value": 1.2,
+        }
+        resolution = dimension_conflict.RemoveDimensionResolution(
+            dimension_conflict, default_value=1.2
         )
         resolution_adapters = resolution.get_adapters()
         assert len(resolution_adapters) == 1
@@ -289,12 +299,15 @@ class TestRemoveDimensionResolution(object):
             == adapters.DimensionDeletion(param).configuration
         )
 
-    def test_revert(self, missing_dimension_conflict, remove_dimension_resolution):
+    def test_revert(self, dimension_conflict):
         """Verify reverting resolution set conflict to unresolved"""
-        assert missing_dimension_conflict.is_resolved
+        remove_dimension_resolution = dimension_conflict.RemoveDimensionResolution(
+            dimension_conflict, default_value=0
+        )
+        assert dimension_conflict.is_resolved
         assert remove_dimension_resolution.revert() == []
-        assert not missing_dimension_conflict.is_resolved
-        assert missing_dimension_conflict.resolution is None
+        assert not dimension_conflict.is_resolved
+        assert dimension_conflict.resolution is None
 
 
 class TestRenameDimensionResolution(object):
