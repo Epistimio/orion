@@ -356,6 +356,7 @@ def new_config_with_script_conf(new_config, tmp_path):
     config_path = tmp_path / "new_config.yaml"
     with open(config_path, "w") as f:
         yaml.dump({"config-hp": "uniform(0, 5)", "dropped": {"hp": "value"}}, f)
+
     new_config["metadata"]["user_args"] += ["--config", str(config_path)]
 
     backward.populate_space(new_config, force_update=True)
