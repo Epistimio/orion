@@ -43,6 +43,7 @@ def main(args):
 
     if args["name"]:
         query["name"] = args["name"]
+        query["version"] = args.get("version", None) or 1
 
     experiments = get_storage().fetch_experiments(query)
 
