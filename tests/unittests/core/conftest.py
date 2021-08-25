@@ -335,6 +335,8 @@ def new_config():
 def old_config_with_script_conf(old_config, tmp_path):
     """Generate a old experiment configuration with a config file"""
 
+    old_config = copy.deepcopy(old_config)
+
     config_path = tmp_path / "old_config.yaml"
     with open(config_path, "w") as f:
         yaml.dump({"config-hp": "uniform(0, 10)", "dropped": "uniform(-1, 5)"}, f)
@@ -348,6 +350,8 @@ def old_config_with_script_conf(old_config, tmp_path):
 @pytest.fixture
 def new_config_with_script_conf(new_config, tmp_path):
     """Generate a new experiment configuration with a different config file"""
+
+    new_config = copy.deepcopy(new_config)
 
     config_path = tmp_path / "new_config.yaml"
     with open(config_path, "w") as f:
