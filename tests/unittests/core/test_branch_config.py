@@ -750,7 +750,9 @@ class TestResolutionsWithMarkers(object):
 
     def test_add_new_default(self, parent_config, new_config_with_w):
         """Test if new dimension conflict is automatically resolved"""
-        new_config_with_w["metadata"]["user_args"][-1] = "-w_d~+normal(0,1,default_value=0)"
+        new_config_with_w["metadata"]["user_args"][
+            -1
+        ] = "-w_d~+normal(0,1,default_value=0)"
         backward.populate_space(new_config_with_w)
         conflicts = detect_conflicts(parent_config, new_config_with_w)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
@@ -766,7 +768,9 @@ class TestResolutionsWithMarkers(object):
 
     def test_add_bad_default(self, parent_config, new_config_with_w):
         """Test if new dimension conflict raises an error if marked with invalid default value"""
-        new_config_with_w["metadata"]["user_args"][-1] = "-w_d~+normal(0,1,default_value='a')"
+        new_config_with_w["metadata"]["user_args"][
+            -1
+        ] = "-w_d~+normal(0,1,default_value='a')"
         backward.populate_space(new_config_with_w)
         with pytest.raises(TypeError) as exc:
             detect_conflicts(parent_config, new_config_with_w)
