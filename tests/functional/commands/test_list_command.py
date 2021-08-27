@@ -192,3 +192,46 @@ def test_exp_family_branch_same_name(
                                       └test_single_exp_child-v1
 """
     )
+
+
+def test_exp_family_branch_same_name_with_name_query(
+    three_experiments_branch_same_name, monkeypatch, capsys
+):
+    """Test that two experiments with the same name and different versions are correctly printed
+    when name is queried
+    """
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+    orion.core.cli.main(["list", "--name", "test_single_exp"])
+
+    captured = capsys.readouterr().out
+
+    assert (
+        captured
+        == """\
+ test_single_exp-v1┐
+                   └test_single_exp-v2┐
+                                      └test_single_exp_child-v1
+"""
+    )
+
+
+def test_exp_family_branch_same_name_with_name_version_query(
+    three_experiments_branch_same_name, monkeypatch, capsys
+):
+    """Test that two experiments with the same name and different versions are correctly printed
+    when name and version is queried
+    """
+    monkeypatch.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+    orion.core.cli.main(["list", "--name", "test_single_exp", "--version", "2"])
+
+    captured = capsys.readouterr().out
+
+    assert (
+        captured
+        == """\
+ test_single_exp-v2┐
+                   └test_single_exp_child-v1
+"""
+    )
