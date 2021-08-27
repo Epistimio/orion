@@ -35,6 +35,16 @@ def get_branch_argument(version):
     return "--branch" if version in ["0.1.6", "0.1.7"] else "--branch-to"
 
 
+def get_evc_argument(version):
+    """Get argument to enable EVC
+
+    Before v0.1.16 EVC was enabled by default. Starting from v0.1.16 it must be enabled with
+    --enable-evc.
+    """
+    major, minor, patch = list(map(int, version.split(".")))
+    return "--enable-evc" if (major > 0 or minor > 1 or patch > 15) else ""
+
+
 def has_python_api(version):
     """Whether the python api exist in given version"""
     return not version in ["0.1.6", "0.1.7"]
@@ -134,6 +144,7 @@ def fill_from_cmdline_api(orion_script, version):
                     "init_only",
                     "--name",
                     "init-cmdline",
+                    get_evc_argument(version),
                     get_branch_argument(version),
                     "init-cmdline-branch-old",
                     "--config",
@@ -170,6 +181,7 @@ def fill_from_cmdline_api(orion_script, version):
                     "hunt",
                     "--name",
                     "hunt-cmdline",
+                    get_evc_argument(version),
                     get_branch_argument(version),
                     "hunt-cmdline-branch-old",
                     "--config",

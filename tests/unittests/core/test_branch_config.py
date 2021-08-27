@@ -113,7 +113,7 @@ def missing_config(child_config):
 
 
 @pytest.fixture
-def new_config(child_config):
+def new_config_with_w(child_config):
     """Create a child config with a new dimension"""
     child_config["metadata"]["user_args"].append("-w_d~normal(0,1)")
     backward.populate_space(child_config)
@@ -270,9 +270,9 @@ class TestConflictDetection(object):
         assert conflict.dimension.name == "/x"
         assert isinstance(conflict, MissingDimensionConflict)
 
-    def test_new_dim_conflict(self, parent_config, new_config):
+    def test_new_dim_conflict(self, parent_config, new_config_with_w):
         """Test if new dimension is currently detected"""
-        conflicts = detect_conflicts(parent_config, new_config)
+        conflicts = detect_conflicts(parent_config, new_config_with_w)
 
         assert len(conflicts.get()) == 2
         conflict = conflicts.get()[1]
@@ -400,11 +400,11 @@ class TestConflictDetection(object):
 class TestResolutions(object):
     """Test resolution of conflicts"""
 
-    def test_add_single_hit(self, parent_config, new_config):
+    def test_add_single_hit(self, parent_config, new_config_with_w):
         """Test if adding a dimension only touches the correct status"""
-        del new_config["metadata"]["user_args"][2]
-        backward.populate_space(new_config)
-        conflicts = detect_conflicts(parent_config, new_config)
+        del new_config_with_w["metadata"]["user_args"][2]
+        backward.populate_space(new_config_with_w)
+        conflicts = detect_conflicts(parent_config, new_config_with_w)
         branch_builder = ExperimentBranchBuilder(conflicts, manual_resolution=True)
         branch_builder.add_dimension("w_d")
 
@@ -413,9 +413,9 @@ class TestResolutions(object):
         assert conflicts.get([NewDimensionConflict])[0].is_resolved
         assert not conflicts.get([MissingDimensionConflict])[0].is_resolved
 
-    def test_add_new(self, parent_config, new_config):
+    def test_add_new(self, parent_config, new_config_with_w):
         """Test if adding a new dimension solves the conflict"""
-        conflicts = detect_conflicts(parent_config, new_config)
+        conflicts = detect_conflicts(parent_config, new_config_with_w)
         branch_builder = ExperimentBranchBuilder(conflicts, manual_resolution=True)
         branch_builder.add_dimension("w_d")
 
@@ -517,9 +517,9 @@ class TestResolutions(object):
             == "/w_d"
         )
 
-    def test_reset_dimension(self, parent_config, new_config):
+    def test_reset_dimension(self, parent_config, new_config_with_w):
         """Test if resetting a dimension unsolves the conflict"""
-        conflicts = detect_conflicts(parent_config, new_config)
+        conflicts = detect_conflicts(parent_config, new_config_with_w)
         branch_builder = ExperimentBranchBuilder(conflicts, manual_resolution=True)
 
         branch_builder.add_dimension("w_d")
@@ -734,10 +734,10 @@ class TestResolutions(object):
 class TestResolutionsWithMarkers(object):
     """Test resolution of conflicts with markers"""
 
-    def test_add_new(self, parent_config, new_config):
+    def test_add_new(self, parent_config, new_config_with_w):
         """Test if new dimension conflict is automatically resolved"""
-        new_config["metadata"]["user_args"][-1] = "-w_d~+normal(0,1)"
-        conflicts = detect_conflicts(parent_config, new_config)
+        new_config_with_w["metadata"]["user_args"][-1] = "-w_d~+normal(0,1)"
+        conflicts = detect_conflicts(parent_config, new_config_with_w)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
 
         assert len(conflicts.get()) == 2
@@ -748,11 +748,13 @@ class TestResolutionsWithMarkers(object):
         assert conflict.is_resolved
         assert isinstance(conflict.resolution, conflict.AddDimensionResolution)
 
-    def test_add_new_default(self, parent_config, new_config):
+    def test_add_new_default(self, parent_config, new_config_with_w):
         """Test if new dimension conflict is automatically resolved"""
-        new_config["metadata"]["user_args"][-1] = "-w_d~+normal(0,1,default_value=0)"
-        backward.populate_space(new_config)
-        conflicts = detect_conflicts(parent_config, new_config)
+        new_config_with_w["metadata"]["user_args"][
+            -1
+        ] = "-w_d~+normal(0,1,default_value=0)"
+        backward.populate_space(new_config_with_w)
+        conflicts = detect_conflicts(parent_config, new_config_with_w)
         ExperimentBranchBuilder(conflicts, manual_resolution=True)
 
         assert len(conflicts.get()) == 2
@@ -764,12 +766,14 @@ class TestResolutionsWithMarkers(object):
         assert isinstance(conflict.resolution, conflict.AddDimensionResolution)
         assert conflict.resolution.default_value == 0.0
 
-    def test_add_bad_default(self, parent_config, new_config):
+    def test_add_bad_default(self, parent_config, new_config_with_w):
         """Test if new dimension conflict raises an error if marked with invalid default value"""
-        new_config["metadata"]["user_args"][-1] = "-w_d~+normal(0,1,default_value='a')"
-        backward.populate_space(new_config)
+        new_config_with_w["metadata"]["user_args"][
+            -1
+        ] = "-w_d~+normal(0,1,default_value='a')"
+        backward.populate_space(new_config_with_w)
         with pytest.raises(TypeError) as exc:
-            detect_conflicts(parent_config, new_config)
+            detect_conflicts(parent_config, new_config_with_w)
         assert "Parameter '/w_d': Incorrect arguments." in str(exc.value)
 
     def test_add_changed(self, parent_config, changed_config):

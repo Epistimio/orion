@@ -7,6 +7,7 @@ import getpass
 import os
 
 import pytest
+import yaml
 
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
@@ -331,6 +332,39 @@ def new_config():
 
 
 @pytest.fixture
+def old_config_with_script_conf(old_config, tmp_path):
+    """Generate a old experiment configuration with a config file"""
+
+    old_config = copy.deepcopy(old_config)
+
+    config_path = tmp_path / "old_config.yaml"
+    with open(config_path, "w") as f:
+        yaml.dump({"config-hp": "uniform(0, 10)", "dropped": "uniform(-1, 5)"}, f)
+    old_config["metadata"]["user_args"] += ["--config", str(config_path)]
+
+    backward.populate_space(old_config, force_update=True)
+
+    return old_config
+
+
+@pytest.fixture
+def new_config_with_script_conf(new_config, tmp_path):
+    """Generate a new experiment configuration with a different config file"""
+
+    new_config = copy.deepcopy(new_config)
+
+    config_path = tmp_path / "new_config.yaml"
+    with open(config_path, "w") as f:
+        yaml.dump({"config-hp": "uniform(0, 5)", "dropped": {"hp": "value"}}, f)
+
+    new_config["metadata"]["user_args"] += ["--config", str(config_path)]
+
+    backward.populate_space(new_config, force_update=True)
+
+    return new_config
+
+
+@pytest.fixture
 def old_config(storage):
     """Generate an old experiment configuration"""
     user_script = "tests/functional/demo/black_box.py"
@@ -412,6 +446,19 @@ def missing_dimension_conflict(old_config, new_config):
 
 
 @pytest.fixture
+def missing_dimension_from_config_conflict(
+    old_config_with_script_conf, new_config_with_script_conf
+):
+    """Generate a missing dimension conflict in the config file"""
+    name = "dropped"
+    prior = "uniform(-1, 5)"
+    dimension = DimensionBuilder().build(name, prior)
+    return conflicts.MissingDimensionConflict(
+        old_config_with_script_conf, new_config_with_script_conf, dimension, prior
+    )
+
+
+@pytest.fixture
 def missing_dimension_with_default_conflict(old_config, new_config):
     """Generate a missing dimension conflict with a default value"""
     name = "missing"
@@ -444,14 +491,16 @@ def cli_conflict(old_config, new_config):
     new_config = copy.deepcopy(new_config)
     new_config["metadata"]["user_args"].append("--some-new=args")
     new_config["metadata"]["user_args"].append("--bool-arg")
-    backward.populate_space(new_config)
+    backward.populate_space(new_config, force_update=True)
     return conflicts.CommandLineConflict(old_config, new_config)
 
 
 @pytest.fixture
-def config_conflict(old_config, new_config):
+def config_conflict(old_config_with_script_conf, new_config_with_script_conf):
     """Generate a script config conflict"""
-    return conflicts.ScriptConfigConflict(old_config, new_config)
+    return conflicts.ScriptConfigConflict(
+        old_config_with_script_conf, new_config_with_script_conf
+    )
 
 
 @pytest.fixture

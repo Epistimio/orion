@@ -83,10 +83,13 @@ def _build_extended_user_args(config):
     parser = OrionCmdlineParser()
     parser.set_state_dict(config["metadata"]["parser"])
 
-    return user_args + [
-        standard_param_name(key) + value
-        for key, value in parser.config_file_data.items()
-    ]
+    for key, value in parser.config_file_data.items():
+        if not isinstance(value, str) or "~" not in value:
+            continue
+
+        user_args.append(standard_param_name(key) + value)
+
+    return user_args
 
 
 def _build_space(config):

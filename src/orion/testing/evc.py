@@ -2,6 +2,7 @@ import contextlib
 import copy
 
 from orion.client import build_experiment, get_experiment
+from orion.core.io.space_builder import DimensionBuilder
 
 
 @contextlib.contextmanager
@@ -84,3 +85,15 @@ def build_grand_child_experiment(space=None, trials=None):
     build_child_experiment(
         space=space, trials=trials, name="grand-child", parent="child"
     )
+
+
+def add_default_config_for_missing(conflict, value):
+    """Create a missing dimension conflict with a default value for the prior"""
+    conflict_with_default = copy.deepcopy(conflict)
+    conflict_with_default.prior = (
+        conflict_with_default.prior[:-1] + f", default_value={value})"
+    )
+    conflict_with_default.dimension = DimensionBuilder().build(
+        conflict_with_default.dimension.name, conflict_with_default.prior
+    )
+    return conflict_with_default
