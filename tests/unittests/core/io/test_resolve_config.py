@@ -617,6 +617,31 @@ def repo():
     os.chdir("orion")
 
 
+@pytest.fixture
+def invalid_repo():
+    """Create a dummy invalid repo for the tests."""
+    os.chdir("../")
+    os.makedirs("dummy_orion")
+    os.chdir("dummy_orion")
+    repo = git.Repo.init(".")
+    with open("README.md", "w+") as f:
+        f.write("dummy content")
+    # No commit, no branch, blank...
+    yield repo
+    os.chdir("../")
+    shutil.rmtree("dummy_orion")
+    os.chdir("orion")
+
+
+def test_infer_version_on_invalid_head(invalid_repo, caplog):
+    """Test that repo is ignored if repo has an invalid HEAD state."""
+
+    with caplog.at_level(logging.WARNING):
+        assert resolve_config.infer_versioning_metadata(".git") == {}
+
+    assert "dummy_orion has an invalid HEAD." in caplog.text
+
+
 def test_infer_versioning_metadata_on_clean_repo(repo):
     """
     Test how `infer_versioning_metadata` fills its different fields

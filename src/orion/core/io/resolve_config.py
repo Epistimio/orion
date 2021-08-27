@@ -411,6 +411,13 @@ def infer_versioning_metadata(user_script):
     git_repo = fetch_user_repo(user_script)
     if not git_repo:
         return {}
+    if not git_repo.head.is_valid():
+        logging.warning(
+            f"Repository at {git_repo.git.rev_parse('--show-toplevel')} has an invalid HEAD. "
+            "No commits maybe?"
+        )
+        return {}
+
     vcs = {}
     vcs["type"] = "git"
     vcs["is_dirty"] = git_repo.is_dirty()
