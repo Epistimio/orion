@@ -6,6 +6,7 @@ Base definition of Task
 """
 
 from abc import ABC, abstractmethod
+from typing import Any, Dict, List
 
 from orion.core.utils import Factory
 
@@ -29,7 +30,7 @@ class BaseTask(ABC):
         self._param_names["max_trials"] = max_trials
 
     @abstractmethod
-    def call(self, *args, **kwargs):
+    def call(self, *args, **kwargs) -> List[Dict]:
         """
         Define the black box function to optimize, the function will expect hyper-parameters to
         search and return objective values of trial with the hyper-parameters.
@@ -43,21 +44,16 @@ class BaseTask(ABC):
         return self.call(*args, **kwargs)
 
     @property
-    def max_trials(self):
-        """Return the max number of trials to run for the"""
-        return self._max_trials
-
-    @property
-    def trial_num(self) -> int:
-        # TODO: Deprecate this:
+    def max_trials(self) -> int:
+        """Return the max number of trials to run for the task. """
         return self._max_trials
 
     @abstractmethod
-    def get_search_space(self):
+    def get_search_space(self) -> Dict[str, str]:
         """Return the search space for the task objective function"""
 
     @property
-    def configuration(self):
+    def configuration(self) -> Dict[str, Any]:
         """Return the configuration of the task."""
         return {self.__class__.__qualname__: self._param_names}
 
@@ -65,4 +61,3 @@ class BaseTask(ABC):
 # pylint: disable=too-few-public-methods,abstract-method
 class BenchmarkTask(BaseTask, metaclass=Factory):
     """Class used to inject dependency on an task implementation."""
-
