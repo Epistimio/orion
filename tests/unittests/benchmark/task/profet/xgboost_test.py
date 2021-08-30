@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
-from .xgboost import XgBoostTask
-from .profet_task import MetaModelTrainingConfig
+from orion.benchmark.task.profet.xgboost import XgBoostTask
+from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig
 
 
 @pytest.mark.skip(reason="Take WAY too long to run.")
