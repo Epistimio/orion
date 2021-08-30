@@ -30,7 +30,7 @@ class BaseTask(ABC):
         self._param_names["max_trials"] = max_trials
 
     @abstractmethod
-    def call(self, *args, **kwargs) -> List[Dict]:
+    def call(self, x) -> List[Dict]:
         """
         Define the black box function to optimize, the function will expect hyper-parameters to
         search and return objective values of trial with the hyper-parameters.
@@ -56,6 +56,11 @@ class BaseTask(ABC):
     def configuration(self) -> Dict[str, Any]:
         """Return the configuration of the task."""
         return {self.__class__.__qualname__: self._param_names}
+
+    @property
+    def unwrapped(self) -> "BaseTask":
+        """ Returns the 'unwrapped' task, in this case, `self`. """
+        return self
 
 
 # pylint: disable=too-few-public-methods,abstract-method
