@@ -693,9 +693,15 @@ class ExperimentClient:
         """
         self._check_if_executable()
 
-        # TODO: should this n_workers always be smaller than executor configured n_workers?
         if n_workers is None:
             n_workers = self.executor.n_workers
+        else:
+            if n_workers > self.executor.n_workers:
+                log.warning(
+                    "The required number of workers %s is bigger than exuecutor configured %s",
+                    str(n_workers),
+                    str(self.executor.n_workers),
+                )
 
         if max_trials is None:
             max_trials = self.max_trials
