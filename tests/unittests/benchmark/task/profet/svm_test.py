@@ -1,7 +1,8 @@
-from pathlib import Path
 import pytest
-from .svm import SvmTask
-from .profet_task import MetaModelTrainingConfig
+
+from orion.benchmark.task.profet.svm import SvmTask
+from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig
+
 
 @pytest.mark.skip(reason="Take WAY too long to run.")
 def test_kwargs_fix_dimension_svm(profet_train_config: MetaModelTrainingConfig):

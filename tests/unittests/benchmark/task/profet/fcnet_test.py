@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from .fcnet import FcNetTask
-from .profet_task import MetaModelTrainingConfig
+from orion.benchmark.task.profet.fcnet import FcNetTask
+from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig
 
 
 @pytest.mark.skip(reason="Take WAY too long to run.")
