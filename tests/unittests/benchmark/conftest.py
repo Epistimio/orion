@@ -121,13 +121,3 @@ def study_experiments_config(
     )
 
     return config
-
-
-@pytest.fixture(scope="session")
-def profet_train_config():
-    """ Fixture that provides a configuration object for the Profet algorithm for testing. """
-    # TODO: Figure out a good set of values that makes the training of the meta-model faster.
-    quick_train_config = MetaModelTrainingConfig(
-        num_burnin_steps=100,
-    )
-    return quick_train_config 

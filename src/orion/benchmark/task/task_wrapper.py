@@ -13,10 +13,11 @@ import copy
 
 import numpy as np
 from orion.algo.space import Dimension, Space
+from orion.analysis.base import flatten_params
 from orion.benchmark.task.base import BaseTask
 from logging import getLogger as get_logger
 
-from orion.core.utils.points import regroup_dims
+from orion.core.utils.points import flatten_dims, regroup_dims
 from orion.core.utils.format_trials import dict_to_trial
 
 from orion.core.io.space_builder import SpaceBuilder
@@ -127,7 +128,14 @@ def array_to_trial(array: np.ndarray, space: Space) -> Trial:
 def trial_to_array(trial: Trial, space: Space) -> np.ndarray:
     # TODO: Not sure if `trial_to_tuple` reconstructs entries with the right shapes as well.
     point_tuple = trial_to_tuple(trial, space)
-    return np.array(point_tuple)
+    flattened_point = flatten_dims(point_tuple, space)
+    return np.array(flattened_point)
+
+
+def params_to_array(params: Dict, space: Space) -> np.ndarray:
+    trial = dict_to_trial(params, space=space)
+    array = trial_to_array(trial, space=space)
+    return array
 
 
 class FixTaskDimensionsWrapper(TaskWrapper[TaskType]):
