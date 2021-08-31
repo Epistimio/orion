@@ -6,7 +6,7 @@ REAL_PROFET_DATA_DIR: Path = Path("profet_data")
 
 requires_profet_data = pytest.mark.skipif(
     not REAL_PROFET_DATA_DIR.exists(),
-    reason="Need to have the real profet data downloaded to run this test."
+    reason="Need to have the real profet data downloaded to run this test.",
 )
 
 
@@ -21,8 +21,7 @@ def profet_train_config():
         max_iters=10,
         n_samples_task=20,
     )
-    return quick_train_config 
-
+    return quick_train_config
 
 
 @pytest.fixture(scope="session")

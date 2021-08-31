@@ -30,11 +30,11 @@ class FcNetTaskHParams:
     dropout_rate_l2: float
 
 
-class FcNetTask(ProfetTask):
+class FcNetTask(ProfetTask[FcNetTaskHParams]):
     """ Simulated Task consisting in training a fully-connected network. """
 
     def __init__(self, *args, benchmark="fcnet", **kwargs):
-        super().__init__(*args, benchmark="fcnet", **kwargs)
+        super().__init__(*args, benchmark=benchmark, **kwargs)
 
     def get_search_space(self) -> Dict[str, str]:
         return dict(

@@ -35,7 +35,7 @@ class ForresterTaskHParams:
     x: float
 
 
-class ForresterTask(ProfetTask):
+class ForresterTask(ProfetTask[ForresterTaskHParams]):
     """ Simulated Task consisting in training a Random Forrest predictor. """
 
     def __init__(self, *args, benchmark="forrester", **kwargs):

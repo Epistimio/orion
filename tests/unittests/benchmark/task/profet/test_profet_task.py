@@ -4,7 +4,12 @@ from typing import ClassVar, Type
 import pytest
 
 from orion.benchmark.task.base import BaseTask
-from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig, ProfetTask, download_data, load_data
+from orion.benchmark.task.profet.profet_task import (
+    MetaModelTrainingConfig,
+    ProfetTask,
+    download_data,
+    load_data,
+)
 from typing import Dict, Tuple
 import numpy as np
 
@@ -19,22 +24,22 @@ shapes: Dict[str, Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[int, ...]]] = {
     "xgboost": ((800, 8), (11, 800), (11, 800)),
 }
 y_min: Dict[str, float] = {
-    "fcnet": 0.,
+    "fcnet": 0.0,
     "forrester": -18.049155413936802,
-    "svm": 0.,
-    "xgboost": 0.,
+    "svm": 0.0,
+    "xgboost": 0.0,
 }
 y_max: Dict[str, float] = {
-    "fcnet": 1.,
+    "fcnet": 1.0,
     "forrester": 14718.31848526001,
-    "svm": 1.,
+    "svm": 1.0,
     "xgboost": 3991387.335843141,
 }
 c_min: Dict[str, float] = {
-    "fcnet": 0.,
+    "fcnet": 0.0,
     "forrester": -18.049155413936802,
-    "svm": 0.,
-    "xgboost": 0.,
+    "svm": 0.0,
+    "xgboost": 0.0,
 }
 c_max: Dict[str, float] = {
     "fcnet": 14718.31848526001,
@@ -43,14 +48,15 @@ c_max: Dict[str, float] = {
     "xgboost": 5485.541382551193,
 }
 
+
 @pytest.fixture(autouse=True)
 def load_fake_data(monkeypatch, tmp_path_factory):
     """ Fixture that prevents attempts to download the true Profet datasets, and instead generates
     random data with the same shape.
     """
-    
 
     import orion.benchmark.task.profet.profet_task
+
     real_load_data = orion.benchmark.task.profet.profet_task.load_data
 
     def _load_data(path: Path, benchmark: str):
@@ -59,7 +65,9 @@ def load_fake_data(monkeypatch, tmp_path_factory):
             logger.info(f"Testing using the real Profet datasets.")
             return real_load_data(path, benchmark=benchmark)
         # Generate fake datasets.
-        logger.info(f"Warning: Using random data instead of the actual profet training data.")
+        logger.info(
+            f"Warning: Using random data instead of the actual profet training data."
+        )
         x_shape, y_shape, c_shape = shapes[benchmark]
         X = np.random.rand(*x_shape)
         min_y = y_min[benchmark]
@@ -70,7 +78,9 @@ def load_fake_data(monkeypatch, tmp_path_factory):
         C = np.random.rand(*c_shape) * (max_c - min_c) + min_c
         return X, Y, C
 
-    monkeypatch.setattr(orion.benchmark.task.profet.profet_task, "load_data", _load_data)
+    monkeypatch.setattr(
+        orion.benchmark.task.profet.profet_task, "load_data", _load_data
+    )
     monkeypatch.setitem(globals(), "load_data", _load_data)
 
 
@@ -97,7 +107,7 @@ def test_download_fake_datasets(tmp_path_factory, benchmark: str, load_fake_data
 
     assert 0 <= real_x.min() and 0 <= fake_x.min()
     assert real_x.max() <= 1 and fake_x.max() <= 1
-    
+
     min_y, max_y = y_min[benchmark], y_max[benchmark]
     assert min_y <= real_y.min() and min_y <= fake_y.min()
     assert real_y.max() <= max_y and fake_y.max() <= max_y
@@ -127,25 +137,10 @@ class ProfetTaskTests:
         max_trials = 123
         task_id = 0
         seed = 123
-        
+
         checkpoint_dir: Path = tmp_path_factory.mktemp("checkpoints")
         # Directory should be empty.
         assert len(list(checkpoint_dir.iterdir())) == 0
-        
-        task = self.Task(
-            max_trials=max_trials,
-            task_id=task_id,
-            train_config=profet_train_config,
-            seed=seed,
-            input_dir=profet_input_dir,
-            checkpoint_dir=checkpoint_dir,
-        )
-        assert task.max_trials == max_trials
-        assert task.seed == seed
-        assert task.task_id == task_id
-        
-        # Directory should have one file (the trained model).
-        assert len(list(checkpoint_dir.iterdir())) == 1
 
         task = self.Task(
             max_trials=max_trials,
@@ -162,3 +157,23 @@ class ProfetTaskTests:
         # Directory should have one file (the trained model).
         assert len(list(checkpoint_dir.iterdir())) == 1
 
+        task = self.Task(
+            max_trials=max_trials,
+            task_id=task_id,
+            train_config=profet_train_config,
+            seed=seed,
+            input_dir=profet_input_dir,
+            checkpoint_dir=checkpoint_dir,
+        )
+        assert task.max_trials == max_trials
+        assert task.seed == seed
+        assert task.task_id == task_id
+
+        # Directory should have one file (the trained model).
+        assert len(list(checkpoint_dir.iterdir())) == 1
+
+    def test_configuration(self):
+        assert False, "TODO: Test the configuration dict."
+
+    def test_call(self):
+        assert False, "TODO: Test the `call` method by passing it a dict."
