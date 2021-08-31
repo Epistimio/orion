@@ -22,6 +22,7 @@ from orion.benchmark.task.profet.profet_task import ProfetTask
 class FcNetTaskHParams:
     """ Hyper-Parameters of a Simulated Task consisting in training a fully-connected network.
     """
+
     learning_rate: float
     batch_size: int
     units_layer1: int
@@ -38,10 +39,10 @@ class FcNetTask(ProfetTask[FcNetTaskHParams]):
 
     def get_search_space(self) -> Dict[str, str]:
         return dict(
-        learning_rate="loguniform(1e-6, 1e-1)",
-        batch_size="loguniform(8, 128, discrete=True)",
-        units_layer1="loguniform(16, 512, discrete=True)",
-        units_layer2="loguniform(16, 512, discrete=True)",
-        dropout_rate_l1="uniform(0, 0.99)",
-        dropout_rate_l2="uniform(0, 0.99)",
-    )
+            learning_rate="loguniform(1e-6, 1e-1)",
+            batch_size="loguniform(8, 128, discrete=True)",
+            units_layer1="loguniform(16, 512, discrete=True)",
+            units_layer2="loguniform(16, 512, discrete=True)",
+            dropout_rate_l1="uniform(0, 0.99)",
+            dropout_rate_l2="uniform(0, 0.99)",
+        )

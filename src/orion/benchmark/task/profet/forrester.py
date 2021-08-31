@@ -27,6 +27,7 @@ logger = get_logger(__name__)
 class ForresterTaskHParams:
     """ Hyper-Parameters of a Simulated Task consisting in training a Random Forrest predictor.
     """
+
     # TODO (@lebrice): This space is supposedly not correct. Need to look at
     # the profet paper in a bit more detail to check what the 'x' range is
     # supposed to be.

@@ -35,5 +35,6 @@ class SvmTask(ProfetTask[SvmTaskHParams]):
 
     def get_search_space(self) -> Dict[str, str]:
         return dict(
-            C="loguniform(np.exp(-10), np.exp(10))", gamma="loguniform(np.exp(-10), np.exp(10))",
+            C="loguniform(np.exp(-10), np.exp(10))",
+            gamma="loguniform(np.exp(-10), np.exp(10))",
         )

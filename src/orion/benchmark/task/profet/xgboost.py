@@ -23,6 +23,7 @@ from .profet_task import ProfetTask
 @dataclass
 class XgBoostTaskHParams:
     """ Inputs to the XgBoost task. """
+
     learning_rate: float
     gamma: float
     l1_regularization: float
