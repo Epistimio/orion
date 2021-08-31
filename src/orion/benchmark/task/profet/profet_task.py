@@ -162,7 +162,6 @@ def get_task_network(
         C_train,
         get_architecture[benchmark],
         normalize_targets=normalize_targets[benchmark],
-        hidden_space=hidden_space[benchmark],
         with_cost=False,
         config=config,
     )
@@ -645,9 +644,6 @@ class ProfetTask(BaseTask, Generic[InputType]):
             x = asdict(x)
 
         logger.debug(f"received x={x}")
-        # TODO: We don't use `self.space` here, because that attribute is
-        # truncated whenever a value if fixed with `kwargs`.
-        # NOTE: We assume here that keys are in order of insertion.
         x_np = params_to_array(x, space=self._space)
 
         x_tensor = torch.as_tensor(x_np, dtype=torch.float32, device=self.device)
@@ -655,24 +651,22 @@ class ProfetTask(BaseTask, Generic[InputType]):
             x_tensor.requires_grad_(True)
 
         p_tensor = torch.cat([x_tensor, self.h_tensor])[None, :]
-        # p = np.concatenate((x_np, self.h))[None, :]
 
         # TODO: Bug when using forrester task:
         # RuntimeError: size mismatch, m1: [1 x 4], m2: [3 x 100]
-        # p_tensor = torch.as_tensor(p, dtype=torch.float32)
         out = self.net(p_tensor)
+        # TODO: Double-check that the std is indeed in log form.
+        y_mean, y_log_std = out[0, 0], out[0, 1]
+        y_std = torch.exp(y_log_std)
 
-        # TODO: Use a distribution, and use `rsample()`, so that we can also return the gradients if
-        # need be.
-        y_dist = Normal(loc=out[0, 0], scale=torch.exp(out[0, 1]))
+        # NOTE: Here we create a distribution over `y`, and use `rsample()`, so that we get can also
+        # return the gradients if need be.
+        y_dist = Normal(loc=y_mean, scale=y_std)
         y_sample = y_dist.rsample()
 
         results: List[Dict] = []
 
-        # TODO: Verify the validity of the results.
-        # mean = out[0, 0].numpy()
-        # var = np.exp(out[0, 1]).numpy()
-        # y_sample = self.rng.normal(mean, var, size=1)
+        # TODO: Verify the validity of the results against the train dataset?
         name = (
             "profet"
             + "."
@@ -682,6 +676,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
         results.append(dict(name=name, type="objective", value=float(y_sample)))
 
         if with_grad:
+            y_sample.backward()
             results.append(
                 dict(name=name, type="gradient", value=x_tensor.grad.cpu().numpy())
             )

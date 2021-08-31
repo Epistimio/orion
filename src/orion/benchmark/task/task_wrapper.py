@@ -139,7 +139,7 @@ def params_to_array(params: Dict, space: Space) -> np.ndarray:
 
 
 class FixTaskDimensionsWrapper(TaskWrapper[TaskType]):
-    """ Wrapper around a Task that fixes some of it's input dimensions to a given fixed value.
+    """ Wrapper around a Task that fixes the values of some of its input dimensions.
     """
     def __init__(self, task: TaskType, fixed_dims: Dict[str, Any], max_trials: int = None):
         """ Wraps the provided task, fixing the dimensions in `fixed_dims`. """

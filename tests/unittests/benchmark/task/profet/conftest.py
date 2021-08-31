@@ -32,4 +32,6 @@ def profet_checkpoint_dir(tmp_path_factory):
 @pytest.fixture(scope="session")
 def profet_input_dir(tmp_path_factory):
     # TODO: Return the `input_dir` to use for the Profet algorithm.
-    return "profet_data"
+    if REAL_PROFET_DATA_DIR.exists():
+        return REAL_PROFET_DATA_DIR
+    return tmp_path_factory.mktemp("profet_data")

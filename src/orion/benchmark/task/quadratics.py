@@ -49,31 +49,20 @@ class QuadraticsTask(BaseTask):
 
     def with_context(self) -> "QuadraticsTaskWithContext":
         return QuadraticsTaskWithContext(
-            max_trials=self.max_trials,
-            a2=self.a2,
-            a1=self.a1,
-            a0=self.a0,
-            seed=self.seed,
+            max_trials=self.max_trials, a2=self.a2, a1=self.a1, a0=self.a0, seed=self.seed,
         )
 
     def __repr__(self) -> str:
         return f"QuadraticsTask(max_trials={self.max_trials}, a0={self.a0}, a1={self.a1}, a2={self.a2}, seed={self.seed})"
 
     def call(self, x: np.ndarray) -> np.ndarray:
-        if x.shape[-1] > 3:
-            # Discard any 'extra' values.
-            # NOTE: This is only really used in the 'with context' version of
-            # this task below.
-            x = x[..., :3]
-
-        assert x.shape == (3,)
+        if x.shape != (3,):
+            raise ValueError(
+                f"Expected inputs to have shape (3,), but got shape {x.shape} instead."
+            )
         y = 0.5 * self.a2 * (x ** 2).sum() + self.a1 * x.sum() + self.a0
+        # NOTE: We could also easily give back the gradient.
         return y
-
-    def gradient(self, x: np.ndarray) -> float:
-        # NOTE: Unused, but we could also give back the gradient.
-        assert x.shape[-1] == 3
-        return self.a2 * x.sum(-1) + self.a1
 
 
 @dataclass
@@ -110,11 +99,12 @@ class QuadraticsTaskWithContext(QuadraticsTask):
         return np.asfarray([self.a2, self.a1, self.a0])
 
     def call(self, x: np.ndarray) -> np.ndarray:
-        if x.shape[-1] > 3:
-            # Discard any 'extra' values.
-            # NOTE: This is only really used in the 'with context' version of
-            # this task below.
-            x = x[..., :3]
+        if x.shape[-1] != 6:
+            raise ValueError(
+                f"Expected inputs to have shape (6,), but got shape {x.shape} instead."
+            )
+        # Discard the 'extra' values.
+        x = x[..., :3]
         return super().call(x=x)
 
     def get_search_space(self) -> Dict[str, str]:
