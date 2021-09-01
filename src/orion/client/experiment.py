@@ -698,7 +698,7 @@ class ExperimentClient:
         else:
             if n_workers > self.executor.n_workers:
                 log.warning(
-                    "The required number of workers %s is bigger than exuecutor configured %s",
+                    "The required number of workers %s is bigger than executor configuration %s",
                     str(n_workers),
                     str(self.executor.n_workers),
                 )
