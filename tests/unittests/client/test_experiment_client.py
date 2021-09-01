@@ -18,6 +18,7 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.worker.trial import Trial
 from orion.executor.base import Executor
+from orion.executor.joblib_backend import Joblib
 from orion.storage.base import get_storage
 from orion.testing import create_experiment, mock_space_iterate
 
@@ -1174,3 +1175,9 @@ class TestWorkon:
             with client.tmp_executor("joblib", n_workers=5, backend="threading"):
                 client.workon(foo, max_trials=5, n_workers=3)
             assert optimize.count == 3
+
+            optimize.count = 0
+            executor = Joblib(n_workers=5, backend="threading")
+            client.executor = executor
+            client.workon(foo, max_trials=5, n_workers=4)
+            assert optimize.count == 4

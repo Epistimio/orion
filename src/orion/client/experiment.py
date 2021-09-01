@@ -703,7 +703,14 @@ class ExperimentClient:
         self._check_if_executable()
 
         if n_workers is None:
-            n_workers = orion.core.config.worker.n_workers
+            n_workers = self.executor.n_workers
+        else:
+            if n_workers > self.executor.n_workers:
+                log.warning(
+                    "The required number of workers %s is bigger than executor configuration %s",
+                    str(n_workers),
+                    str(self.executor.n_workers),
+                )
 
         if max_trials is None:
             max_trials = self.max_trials
