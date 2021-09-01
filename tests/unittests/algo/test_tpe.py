@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.tpe`."""
 import itertools
+import timeit
 
 import numpy
 import pytest
@@ -330,6 +331,27 @@ class TestGMMSampler:
         assert numpy.all(hist[0].argsort() == numpy.array(weights).argsort())
         assert numpy.all(points >= -11)
         assert numpy.all(points < 9)
+
+    def test_sample_narrow_space(self, tpe):
+        """Test that sampling in a narrow space does not fail to fast"""
+        mus = numpy.ones(12) * 0.5
+        sigmas = [0.5] * 12
+
+        times = []
+        for bounds in [(0.4, 0.6), (0.49, 0.51), (0.499, 0.501), (0.49999, 0.50001)]:
+            gmm_sampler = GMMSampler(tpe, mus, sigmas, *bounds)
+            times.append(timeit.timeit(lambda: gmm_sampler.sample(2), number=100))
+
+        # Test that easy sampling takes less time.
+        assert sorted(times) == times
+
+        gmm_sampler = GMMSampler(
+            tpe, mus, sigmas, 0.05, 0.04, attempts_factor=1, max_attempts=10
+        )
+        with pytest.raises(RuntimeError) as exc:
+            gmm_sampler.sample(1, attempts=10)
+
+        assert exc.match("Failed to sample in interval")
 
     def test_get_loglikelis(self):
         """Test to get log likelis of points"""
