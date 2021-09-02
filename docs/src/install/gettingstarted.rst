@@ -62,9 +62,10 @@ the values for the ``lr`` hyper-parameter in a log uniform distribution between 
 trial will be stored in the database that you configured during the installation process (which can
 be in-memory, a file, or a local or remote MongoDB instance).
 
-Additionally, the experiments are versioned -- think of it as a git for scientific experimentation
--- enabling you to keep track of all your trials with their parameters. This guarantees that you can
-reproduce or trace back the steps in your work for free.
+Additionally, the experiments can be versioned -- think of it as a git for scientific
+experimentation -- enabling you to keep track of all your trials with their parameters. This
+guarantees that you can reproduce or trace back the steps in your work for free. See configuration
+options for the :ref:`config_evc` to enable the versionning of the experiments.
 
 You can fine-tune the distribution and algorithm with many options either with more arguments or by
 using a configuration file. Learn more at :doc:`/user/api`.

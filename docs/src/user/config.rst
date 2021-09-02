@@ -520,6 +520,7 @@ Experiment Version Control
 .. code-block:: yaml
 
     evc:
+        enable: False
         algorithm_change: False
         auto_resolution: True
         cli_change_type: break
@@ -530,6 +531,25 @@ Experiment Version Control
         manual_resolution: False
         non_monitored_arguments: []
 
+
+.. _config_evc_enable:
+
+enable
+~~~~~~~~~~~~~~~
+
+.. note::
+
+   New in version v0.1.16. Previously the EVC was always enabled. It is now disable by default
+   and can be enabled using this option.
+
+:Type: bool
+:Default: False
+:Env var: ORION_EVC_ENABLE
+:Description:
+    Enable the Experiment Version Control. Defaults to False. When disabled, running
+    an experiment different from an earlier one but sharing the same name will have the
+    effect of overwriting the previous one in the database. Trials of the previous experiment
+    will still point to the experiment but may be incoherent with the new search space.
 
 
 .. _config_evc_auto_resolution:
