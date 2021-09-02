@@ -764,12 +764,14 @@ class TestTPE(BaseAlgoTests):
         original_sample = GMMSampler.sample
 
         low = 0.5
-        high = 0.50001
+        high = 0.5000001
 
-        def sample(self, num):
+        def sample(self, num, attempts=None):
+            self.attempts_factor = 1
+            self.max_attempts = 10
             self.low = low
             self.high = high
-            return original_sample(self, num)
+            return original_sample(self, num, attempts=attempts)
 
         monkeypatch.setattr(GMMSampler, "sample", sample)
         with pytest.raises(RuntimeError) as exc:

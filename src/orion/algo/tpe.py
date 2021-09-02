@@ -617,7 +617,7 @@ class GMMSampler:
 
                 if any(valid_points):
                     index = numpy.argmax(valid_points)
-                    point.append(new_points[index])
+                    point.append(float(new_points[index]))
                     break
 
                 index = None
@@ -629,7 +629,7 @@ class GMMSampler:
                 )
             elif index is None:
                 point.append(
-                    self.sample(num=1, attempts=attempts * self.attempts_factor)
+                    self.sample(num=1, attempts=attempts * self.attempts_factor)[0]
                 )
 
         return point
