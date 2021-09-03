@@ -612,7 +612,12 @@ def _attempt_branching(conflicts, experiment, version, branching):
             "during branching. Now rolling back and re-attempting building "
             "the branched experiment."
         )
-        raise RaceCondition("There was a race condition during branching.") from e
+        raise RaceCondition(
+            "There was a race condition during branching. This error can "
+            "also occur if you try branching from a specific version that already "
+            "has a child experiment with the same name. Change the name of the new "
+            "experiment and use `branch-from` to specify the parent experiment."
+        ) from e
 
     return branched_experiment
 
