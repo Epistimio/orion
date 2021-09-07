@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 
 import pytest
 from orion.benchmark.task.base import BaseTask
-from orion.benchmark.task.task_wrapper import FixTaskDimensionsWrapper
+from orion.benchmark.task.task_wrapper import FixTaskDimensionsWrapper, TaskWrapper
 from orion.core.io.space_builder import SpaceBuilder
 
 
@@ -27,7 +27,11 @@ class DumbTask(BaseTask):
 
     @property
     def configuration(self) -> Dict[str, Any]:
-        return dict(max_trials=self.max_trials, seed=self.seed, a=self.a, b=self.b, c=self.c,)
+        return {
+            type(self).__qualname__: dict(
+                max_trials=self.max_trials, seed=self.seed, a=self.a, b=self.b, c=self.c,
+            )
+        }
 
 
 class TestFixDimensionsWrapper:
@@ -60,12 +64,24 @@ class TestFixDimensionsWrapper:
             assert sample["c"] == 1.0
 
     def test_configuration(self):
+        """ Test that the configuration dict contains the config of the wrapped task. """
         task = DumbTask(max_trials=10, a=5, b=4, c=3)
         task_config = task.configuration
-        # TODO: Should this work if a dict is passed instead of a Task object?
-        wrapped_task = FixTaskDimensionsWrapper(task, max_trials=123, fixed_dims={"c": 1})
-        assert wrapped_task.configuration == {
-            "task": task_config,
-            "max_trials": 123,
-            "fixed_dims": {"c": 1},
+        wrapper = FixTaskDimensionsWrapper(task, max_trials=123, fixed_dims={"c": 1})
+
+        from orion.benchmark.benchmark_client import _get_task
+
+        assert wrapper.configuration == {
+            FixTaskDimensionsWrapper.__qualname__: {                
+                "task": task_config,
+                "max_trials": 123,
+                "fixed_dims": {"c": 1},
+            }
         }
+
+        # Test de-serializing a configuration dict for a task wrapper into a wrapper
+        name, config_dict = wrapper.configuration.copy().popitem()
+        new_wrapper = _get_task(
+            name=name, **config_dict
+        )
+        assert new_wrapper.configuration == wrapper.configuration

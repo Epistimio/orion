@@ -12,7 +12,7 @@ import copy
 
 import numpy as np
 from orion.algo.space import Dimension, Space
-from orion.benchmark.task.base import BaseTask
+from orion.benchmark.task.base import BaseTask, BenchmarkTask
 from logging import getLogger as get_logger
 
 from orion.core.utils.points import flatten_dims, regroup_dims
@@ -38,6 +38,14 @@ class TaskWrapper(BaseTask, Generic[TaskType], ABC):
     def __init__(self, task: TaskType, max_trials: int = None):
         # TODO: Should Wrappers pass the `task` as an argument to the super() constructor?
         # When/How are these objects deserialized?
+        if isinstance(task, dict):
+            if len(task) != 1:
+                raise ValueError(
+                    f"Expected task configuration dict to have only one key (the task name), but "
+                    f"got {task} instead."
+                )
+            task_name, task_config = task.popitem()
+            task = BenchmarkTask(of_type=task_name, **task_config)
         super().__init__(max_trials=max_trials or task.max_trials)
         self.task: TaskType = task
 
@@ -57,53 +65,14 @@ class TaskWrapper(BaseTask, Generic[TaskType], ABC):
         """Return the configuration of the task wrapper (including the wrapped task's configuration).
         """
         return {
-            "task": self.task.configuration,
-            "max_trials": self.max_trials,
+            type(self).__qualname__: {
+                "task": self.task.configuration,
+                "max_trials": self.max_trials,
+            }
         }
 
 
 HParamsType = TypeVar("HParamsType")
-
-
-class AcceptDataclassesWrapper(TaskWrapper, Generic[TaskType, HParamsType]):
-    """ Wrapper around a task, makes it so that task can accept dataclasses as well as dicts.
-
-    Can evaluate dataclasses rather than just dicts.
-    """
-
-    def call(self, x: Union[HParamsType, Any]) -> List[Dict]:
-        """Evaluates the given samples and returns the performance.
-
-        Args:
-            hp (Union[HyperParameters, Dict, np.ndarray], optional):
-                Either a Hyperparameter dataclass, a dictionary, or a numpy
-                array containing the values for each dimension. Defaults to
-                None.
-
-        Returns:
-            List[Dict] The performances of the hyperparameter on the sampled
-            task.
-        """
-        if is_dataclass(x):
-            x = asdict(x)
-        return self.task.call(x)
-
-
-class CanReturnFloatWrapper(TaskWrapper[TaskType]):
-    """ Wrapper that allows tasks to simply return floats rather than `Results` objects. """
-
-    def __init__(self, task: TaskType, max_trials: int = None):
-        super().__init__(task=task, max_trials=max_trials)
-
-    def call(self, x: Any) -> List[Dict]:
-        y: Union[float, List[Dict]] = super().call(x)
-        if isinstance(y, (float, np.ndarray)):
-            y = float(y)
-            # TODO: Should we check for a `name` attribute?
-            task_name = getattr(self.unwrapped, "name", type(self.unwrapped).__name__.lower())
-            results = [dict(name=task_name, type="objective", value=y)]
-            return results
-        return y
 
 
 class FixTaskDimensionsWrapper(TaskWrapper[TaskType]):
@@ -191,5 +160,5 @@ class FixTaskDimensionsWrapper(TaskWrapper[TaskType]):
         """Return the configuration of the task wrapper.
         """
         config = super().configuration
-        config["fixed_dims"] = self.fixed_dims
+        config[type(self).__qualname__]["fixed_dims"] = self.fixed_dims.copy()
         return config
