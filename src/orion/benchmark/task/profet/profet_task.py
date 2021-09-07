@@ -26,7 +26,6 @@ import torch
 from GPy.models import BayesianGPLVM
 from pybnn.bohamiann import Bohamiann
 from torch import nn
-from torch._C import is_anomaly_enabled
 from torch.distributions import Normal
 
 from emukit.examples.profet.meta_benchmarks.architecture import get_default_architecture

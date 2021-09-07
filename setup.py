@@ -86,7 +86,11 @@ setup_args = dict(
     ],
     tests_require=tests_require,
     setup_requires=["setuptools", "appdirs", "pytest-runner"],
-    extras_require=dict(test=tests_require, dask=["dask[complete]"]),
+    extras_require={
+        "test": tests_require,
+        "dask": ["dask[complete]"],
+        "profet": ["emukit", "GPy", "torch", "pybnn"],
+    },
     # "Zipped eggs don't play nicely with namespace packaging"
     # from https://github.com/pypa/sample-namespace-packages
     zip_safe=False,
