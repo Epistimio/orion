@@ -56,18 +56,11 @@ class TaskWrapper(BaseTask, Generic[TaskType], ABC):
 
     @property
     def configuration(self) -> Dict[str, Any]:
-        """Return the configuration of the task."""
-        # TODO: Figure this out (see above TODO about passing `task` to the constructor.
-        # return {self.__class__.__qualname__: {"task": self.task.configuration}}
-        # IDEA: Maybe use something like this to get the configuration from the signature?
-        from inspect import signature, Signature
-
-        init_signature: Signature = signature(type(self).__init__)
+        """Return the configuration of the task wrapper (including the wrapped task's configuration).
+        """
         return {
-            self.__class__.__qualname__: {
-                name: getattr(self, name, parameter.default)
-                for name, parameter in init_signature.parameters.items()
-            }
+            "task": self.task.configuration,
+            "max_trials": self.max_trials,
         }
 
 
@@ -141,12 +134,21 @@ def params_to_array(params: Dict, space: Space) -> np.ndarray:
 class FixTaskDimensionsWrapper(TaskWrapper[TaskType]):
     """ Wrapper around a Task that fixes the values of some of its input dimensions.
     """
+
     def __init__(self, task: TaskType, fixed_dims: Dict[str, Any], max_trials: int = None):
         """ Wraps the provided task, fixing the dimensions in `fixed_dims`. """
         super().__init__(task=task, max_trials=max_trials)
         self.fixed_dims = fixed_dims
         # The whole space, from the wrapped task.
         self._full_space: Space = SpaceBuilder().build(self.task.get_search_space())
+
+        for dimension_name in fixed_dims:
+            if dimension_name not in self._full_space:
+                raise ValueError(
+                    f"Can't fix dimension '{dimension_name}' because it isn't in the task's space: "
+                    f"{self._full_space}."
+                )
+
         # The part of the space that can be modified.
         self._space: Space = SpaceBuilder().build(self.get_search_space())
 
@@ -167,7 +169,7 @@ class FixTaskDimensionsWrapper(TaskWrapper[TaskType]):
         trial_was_modified = False
         for name, fixed_value in self.fixed_dims.items():
             params = trial.params
-            
+
             if name not in params:
                 # The trial doesn't have one of the values we want fixed: Set it in the trial.
                 dim: Dimension = self._full_space[name]
@@ -187,9 +189,8 @@ class FixTaskDimensionsWrapper(TaskWrapper[TaskType]):
 
         if not trial_was_modified:
             # Can return `x` directly, since we didn't end up modifying it.
-            return x
-
-        if isinstance(x, np.ndarray):
+            new_x = x
+        elif isinstance(x, np.ndarray):
             new_x = trial_to_array(trial, space=self._space)
         elif isinstance(x, dict):
             new_x = trial.params
@@ -206,3 +207,11 @@ class FixTaskDimensionsWrapper(TaskWrapper[TaskType]):
         for dimension_name in self.fixed_dims.keys():
             modified_space.pop(dimension_name)
         return modified_space
+
+    @property
+    def configuration(self) -> Dict[str, Any]:
+        """Return the configuration of the task wrapper.
+        """
+        config = super().configuration
+        config["fixed_dims"] = self.fixed_dims
+        return config
