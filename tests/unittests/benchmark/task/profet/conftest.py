@@ -24,8 +24,10 @@ def profet_train_config():
     return quick_train_config
 
 
+
+
 @pytest.fixture(scope="session")
-def profet_checkpoint_dir(tmp_path_factory):
+def checkpoint_dir(tmp_path_factory):
     return tmp_path_factory.mktemp("checkpoint_dir")
 
 

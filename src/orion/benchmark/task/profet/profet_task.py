@@ -16,32 +16,33 @@ import hashlib
 import json
 import os
 import pickle
+import warnings
+from contextlib import contextmanager
 from copy import deepcopy
+from dataclasses import asdict, dataclass, is_dataclass
+from logging import getLogger as get_logger
 from pathlib import Path
-from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, TypeVar, Union
+from typing import Callable, Dict, Generic, List, Optional, Tuple, TypeVar, Union
 
 import GPy
 import numpy as np
 import torch
+from emukit.examples.profet.meta_benchmarks.architecture import get_default_architecture
+from emukit.examples.profet.meta_benchmarks.meta_forrester import get_architecture_forrester
+from emukit.examples.profet.train_meta_model import download_data
 from GPy.models import BayesianGPLVM
+from numpy.random import RandomState
 from pybnn.bohamiann import Bohamiann
 from torch import nn
 from torch.distributions import Normal
+from torch.functional import Tensor
 
-from emukit.examples.profet.meta_benchmarks.architecture import get_default_architecture
-from emukit.examples.profet.meta_benchmarks.meta_forrester import (
-    get_architecture_forrester,
-)
-from emukit.examples.profet.train_meta_model import download_data
-from dataclasses import is_dataclass, asdict, dataclass
-
-from logging import getLogger as get_logger
 from orion.algo.space import Space
 from orion.benchmark.task.base import BaseTask
-from orion.benchmark.task.task_wrapper import params_to_array, trial_to_array
 from orion.core.io.space_builder import SpaceBuilder
-from orion.core.utils.format_trials import dict_to_trial
-
+from orion.core.utils.format_trials import dict_to_trial, trial_to_tuple
+from orion.core.utils.points import flatten_dims
+from orion.core.worker.trial import Trial
 
 logger = get_logger(__name__)
 
@@ -63,15 +64,11 @@ NAMES: Dict[str, str] = dict(
 
 hidden_space: Dict[str, int] = dict(forrester=2, fcnet=5, svm=5, xgboost=5)
 
-normalize_targets: Dict[str, bool] = dict(
-    forrester=True, fcnet=False, svm=False, xgboost=True
-)
+normalize_targets: Dict[str, bool] = dict(forrester=True, fcnet=False, svm=False, xgboost=True)
 
 log_cost: Dict[str, bool] = dict(forrester=False, fcnet=True, svm=True, xgboost=True)
 
-log_target: Dict[str, bool] = dict(
-    forrester=False, fcnet=False, svm=False, xgboost=True
-)
+log_target: Dict[str, bool] = dict(forrester=False, fcnet=False, svm=False, xgboost=True)
 
 
 @dataclass
@@ -199,9 +196,7 @@ def load_data(
         download_data(input_path)
         logger.info(f"Download finished.")
         if not file.exists():
-            raise RuntimeError(
-                f"Download finished, but file {file} still doesn't exist!"
-            )
+            raise RuntimeError(f"Download finished, but file {file} still doesn't exist!")
     res = json.load(open(file, "r"))
     X, Y, C = np.array(res["X"]), np.array(res["Y"]), np.array(res["C"])
     if len(X.shape) == 1:
@@ -210,9 +205,7 @@ def load_data(
     return X, Y, C
 
 
-def normalize_Y(
-    Y: np.ndarray, indexD: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def normalize_Y(Y: np.ndarray, indexD: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Normalize the Y array and return its mean and standard deviations.
 
     Parameters
@@ -281,16 +274,11 @@ def get_features(
     kern = GPy.kern.Matern52(Q_h, ARD=True)
 
     m_lvm = BayesianGPLVM(
-        Y_norm.reshape(n_tasks, n_configs),
-        Q_h,
-        kernel=kern,
-        num_inducing=n_inducing_lvm,
+        Y_norm.reshape(n_tasks, n_configs), Q_h, kernel=kern, num_inducing=n_inducing_lvm,
     )
     m_lvm.optimize(max_iters=max_iters, messages=display_messages)
 
-    ls = np.array(
-        [m_lvm.kern.lengthscale[i] for i in range(m_lvm.kern.lengthscale.shape[0])]
-    )
+    ls = np.array([m_lvm.kern.lengthscale[i] for i in range(m_lvm.kern.lengthscale.shape[0])])
 
     # generate data to train the multi-task model
     task_features_mean = np.array(m_lvm.X.mean / ls)
@@ -402,17 +390,13 @@ def get_meta_model(
     """
 
     objective_model = Bohamiann(
-        get_network=get_architecture,
-        print_every_n_steps=1000,
-        normalize_output=normalize_targets,
+        get_network=get_architecture, print_every_n_steps=1000, normalize_output=normalize_targets,
     )
     logger.info("Training Bohamiann objective model.")
     # TODO: With the FcNet task, the dataset has size 8_100_000, which takes a LOT of
     # memory to run!
     if config.max_samples is not None:
-        logger.info(
-            f"Limiting the dataset to a maximum of {config.max_samples} samples."
-        )
+        logger.info(f"Limiting the dataset to a maximum of {config.max_samples} samples.")
         X_train = X_train[: config.max_samples, ...]
         Y_train = Y_train[: config.max_samples, ...]
         C_train = C_train[: config.max_samples, ...]
@@ -432,9 +416,7 @@ def get_meta_model(
     )
 
     if with_cost:
-        cost_model = Bohamiann(
-            get_network=get_default_architecture, print_every_n_steps=1000
-        )
+        cost_model = Bohamiann(get_network=get_default_architecture, print_every_n_steps=1000)
         logger.info("Training Bohamiann cost model.")
         cost_model.train(
             X_train,
@@ -478,9 +460,7 @@ def get_network(model: Bohamiann, size: int, idx: int = 0) -> nn.Module:
     return net
 
 
-def load_task_network(
-    checkpoint_file: Union[str, Path]
-) -> Tuple[nn.Module, np.ndarray]:
+def load_task_network(checkpoint_file: Union[str, Path]) -> Tuple[nn.Module, np.ndarray]:
     """Load the result of the `get_task_network` function stored in the pickle file.
     
     Parameters
@@ -600,97 +580,199 @@ class ProfetTask(BaseTask, Generic[InputType]):
 
         filename = f"{task_hash}.pkl"
 
-        checkpoint_file = self.checkpoint_dir / filename
-        logger.info(f"Checkpoint file for this task: {checkpoint_file}")
+        self.checkpoint_file = self.checkpoint_dir / filename
+        logger.info(f"Checkpoint file for this task: {self.checkpoint_file}")
 
         self.device: torch.device
         if isinstance(device, torch.device):
             self.device = device
         else:
-            self.device = torch.device(
-                device or ("cuda" if torch.cuda.is_available() else "cpu")
-            )
+            self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
 
-        if os.path.exists(checkpoint_file):
-            logger.info(
-                f"Model has already been trained: loading it from file {checkpoint_file}."
-            )
-            self.net, self.h = load_task_network(checkpoint_file)
-        else:
-            logger.info(
-                f"Checkpoint file {checkpoint_file} doesn't exist: re-training the model."
-            )
-            logger.info(f"Task hash params: {task_hash_params}")
+        # TODO: Save those in the configuration dict?
+        self._np_rng: Optional[np.random.RandomState] = None
+        self._torch_rng_state: Optional[Tensor] = None
+        with self.seed_randomness():
+            if os.path.exists(self.checkpoint_file):
+                logger.info(
+                    f"Model has already been trained: loading it from file {self.checkpoint_file}."
+                )
+                self.net, self.h = load_task_network(self.checkpoint_file)
+            else:
+                logger.info(
+                    f"Checkpoint file {self.checkpoint_file} doesn't exist: re-training the model."
+                )
+                logger.info(f"Task hash params: {task_hash_params}")
 
-            checkpoint_file.parent.mkdir(exist_ok=True, parents=True)
-            # Need to re-train the meta-model and sample this task.
-            self.net, self.h = get_task_network(
-                self.input_dir,
-                benchmark,
-                seed=seed,
-                task_id=task_id,
-                config=train_config,
-            )
-            save_task_network(checkpoint_file, benchmark, self.net, self.h)
+                self.checkpoint_file.parent.mkdir(exist_ok=True, parents=True)
+                # Need to re-train the meta-model and sample this task.
+                self.net, self.h = get_task_network(
+                    self.input_dir,
+                    self.benchmark,
+                    seed=self.seed,
+                    task_id=self.task_id,
+                    config=self.train_config,
+                )
+                save_task_network(self.checkpoint_file, self.benchmark, self.net, self.h)
 
         self.net = self.net.to(device=self.device)
+        self.net.eval()
         self.h_tensor = torch.as_tensor(self.h, dtype=torch.float32, device=self.device)
 
-        self._space = SpaceBuilder().build(self.get_search_space())
+        self._space: Space = SpaceBuilder().build(self.get_search_space())
+        # IDEA: Could 'hack' the `sample` function of this Space instance so it always uses our
+        # numpy rng state.
+        # _original_sample = self._space.sample
 
-    def call(self, x: Union[InputType, Dict], with_grad: bool = False) -> List[Dict]:
+        # def seeded_sample(_, n_samples: int = 1, seed=None):
+        #     nonlocal self
+        #     if seed is None:
+        #         seed = self._np_rng
+        #     return _original_sample(n_samples=n_samples, seed=seed)
+
+        # self._space.sample = seeded_sample
+
+        self.name = f"profet.{type(self).__qualname__.lower()}_{self.task_id}"
+
+    @contextmanager
+    def seed_randomness(self):
+        """ Context manager used to seed the portions of the code that use randomness, without
+        affecting the global state.
+        """
+        devices = [] if self.device.type == "cpu" else [self.device]
+        if self._np_rng is None:
+            # Initialize the numpy random state.
+            self._np_rng = RandomState(seed=self.seed)
+
+        start_np_state = np.random.get_state()
+        # Temporarily set the global random state to that of our RNG.
+        np.random.set_state(self._np_rng.get_state())
+
+        # Need to do this when it comes to the torch random state, since `torch.distributions` uses
+        # the global state when sampling, and there are no ways of passing a seed to a distribution.
+        with torch.random.fork_rng(devices=devices):
+            if self._torch_rng_state is None:
+                torch.random.manual_seed(self.seed)
+            else:
+                torch.random.set_rng_state(self._torch_rng_state)
+
+            # Yield, which probably executes a few lines with randomness.
+            yield
+
+            # Update the torch random state.
+            self._torch_rng_state = torch.random.get_rng_state()
+
+        # NOTE: Re-creating a RandomState object and setting the state, since I don't know how to
+        # get the 'global' RandomState object.
+        self._np_rng = RandomState(seed=self.seed)
+        self._np_rng.set_state(np.random.get_state())
+
+        np.random.set_state(start_np_state)
+
+    def call(self, x: Union[InputType, Trial, Dict, Tuple], with_grad: bool = False) -> List[Dict]:
+        """ Get the value of the sampled objective function at the given point (hyper-parameters).
+
+        If `with_grad` is passed, also returns the gradient of the objective function with respect
+        to the inputs.
+
+        Parameters
+        ----------
+        x : Union[InputType, Trial, Dict, Tuple]
+            Either a Trial, a dataclass, a dict, or a tuple, that is a point from this tasks' space.
+        with_grad : bool, optional
+            Wether to also compute the gradients with respect to the inputs, by default False.
+
+        Returns
+        -------
+        List[Dict]
+            Result dictionaries: objective and optionally gradient.
+
+        Raises
+        ------
+        ValueError
+            If the input isn't of a supported type.
+        """
+        logger.debug(f"received x={x}")
         if is_dataclass(x):
             x = asdict(x)
+        elif isinstance(x, Trial):
+            x = x.params
+        elif isinstance(x, tuple) and len(x) == len(self._space):
+            x = dict(zip(self._space.keys(), x))
+        elif isinstance(x, dict):
+            # NOTE: Passing ndarrays and tensors is useful for testing, but this task now probably
+            # accepts too many types of inputs.
+            x = x
+        elif isinstance(x, (np.ndarray, Tensor)):
+            if x not in self._space:
+                warnings.warn(
+                    RuntimeWarning(
+                        f"Point {x} isn't a valid point of the space {self._space}, but will still "
+                        f"be passed to the task's model."
+                    )
+                )
+        else:
+            raise ValueError(
+                f"Expected `x` to be a dataclass, a Trial, a dict, or a tuple of length "
+                f"{len(self._space)}, but got {x} instead."
+            )
 
-        logger.debug(f"received x={x}")
-        x_np = params_to_array(x, space=self._space)
+        if isinstance(x, dict):
+            # A bit of gymnastics to convert the params Dict into a numpy array.
+            trial = dict_to_trial(x, self._space)
+            point_tuple = trial_to_tuple(trial, self._space)
+            flattened_point = flatten_dims(point_tuple, self._space)
+            x = np.array(flattened_point)
 
-        x_tensor = torch.as_tensor(x_np, dtype=torch.float32, device=self.device)
+        if isinstance(x, np.ndarray):
+            x = torch.as_tensor(x, dtype=torch.float32, device=self.device)
+
+        assert isinstance(x, Tensor)  # Just to keep the type checker happy: this is always true.
+        x_tensor: Tensor = x
         if with_grad:
             x_tensor.requires_grad_(True)
 
-        p_tensor = torch.cat([x_tensor, self.h_tensor])[None, :]
+        x_tensor = x_tensor.type_as(self.h_tensor)
+        p_tensor = torch.cat([x_tensor, self.h_tensor])
+        p_tensor = torch.atleast_2d(p_tensor)
 
-        # TODO: Bug when using forrester task:
-        # RuntimeError: size mismatch, m1: [1 x 4], m2: [3 x 100]
-        out = self.net(p_tensor)
-        # TODO: Double-check that the std is indeed in log form.
-        y_mean, y_log_std = out[0, 0], out[0, 1]
-        y_std = torch.exp(y_log_std)
+        with self.seed_randomness():
+            # TODO: Bug when using forrester task:
+            # RuntimeError: size mismatch, m1: [1 x 4], m2: [3 x 100]
+            out = self.net(p_tensor)
+            # TODO: Double-check that the std is indeed in log form.
+            y_mean, y_log_std = out[0, 0], out[0, 1]
+            y_std = torch.exp(y_log_std)
 
-        # NOTE: Here we create a distribution over `y`, and use `rsample()`, so that we get can also
-        # return the gradients if need be.
-        y_dist = Normal(loc=y_mean, scale=y_std)
-        y_sample = y_dist.rsample()
+            # NOTE: Here we create a distribution over `y`, and use `rsample()`, so that we get can also
+            # return the gradients if need be.
+            y_dist = Normal(loc=y_mean, scale=y_std)
+
+            y_sample = y_dist.rsample()
+            logger.debug(f"y_sample: {y_sample}")
 
         results: List[Dict] = []
 
-        # TODO: Verify the validity of the results against the train dataset?
-        name = (
-            "profet"
-            + "."
-            + type(self).__name__.lower()
-            + (f"_{self.task_id}" if self.task_id is not None else "")
-        )
-        results.append(dict(name=name, type="objective", value=float(y_sample)))
+        results.append(dict(name=self.name, type="objective", value=float(y_sample)))
 
         if with_grad:
+            self.net.zero_grad()
             y_sample.backward()
-            results.append(
-                dict(name=name, type="gradient", value=x_tensor.grad.cpu().numpy())
-            )
+            results.append(dict(name=self.name, type="gradient", value=x_tensor.grad.cpu().numpy()))
 
         return results
 
     @property
     def configuration(self):
         """Return the configuration of the task."""
+        # TODO: Still not sure I understand
         return {
-            self.__class__.__qualname__: self._param_names,
-            "max_trials": self.max_trials,
-            "task_id": self.task_id,
-            "seed": self.seed,
-            "input_dir": self.input_dir,
-            "checkpoint_dir": self.checkpoint_dir,
-            "train_config": self.train_config,
+            self.__class__.__qualname__: {
+                "max_trials": self.max_trials,
+                "task_id": self.task_id,
+                "seed": self.seed,
+                "input_dir": self.input_dir,
+                "checkpoint_dir": self.checkpoint_dir,
+                "train_config": self.train_config,
+            }
         }

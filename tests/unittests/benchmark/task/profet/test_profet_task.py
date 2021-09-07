@@ -10,8 +10,10 @@ from orion.benchmark.task.profet.profet_task import (
     download_data,
     load_data,
 )
+from orion.algo.space import _Discrete
 from typing import Dict, Tuple
 import numpy as np
+import torch
 
 from logging import getLogger as get_logger
 from .conftest import REAL_PROFET_DATA_DIR, requires_profet_data
@@ -65,9 +67,7 @@ def load_fake_data(monkeypatch, tmp_path_factory):
             logger.info(f"Testing using the real Profet datasets.")
             return real_load_data(path, benchmark=benchmark)
         # Generate fake datasets.
-        logger.info(
-            f"Warning: Using random data instead of the actual profet training data."
-        )
+        logger.info(f"Warning: Using random data instead of the actual profet training data.")
         x_shape, y_shape, c_shape = shapes[benchmark]
         X = np.random.rand(*x_shape)
         min_y = y_min[benchmark]
@@ -78,9 +78,8 @@ def load_fake_data(monkeypatch, tmp_path_factory):
         C = np.random.rand(*c_shape) * (max_c - min_c) + min_c
         return X, Y, C
 
-    monkeypatch.setattr(
-        orion.benchmark.task.profet.profet_task, "load_data", _load_data
-    )
+    monkeypatch.setattr(orion.benchmark.task.profet.profet_task, "load_data", _load_data)
+    # NOTE: Need to set the item in the globals because it might already have been imported.
     monkeypatch.setitem(globals(), "load_data", _load_data)
 
 
@@ -172,8 +171,205 @@ class ProfetTaskTests:
         # Directory should have one file (the trained model).
         assert len(list(checkpoint_dir.iterdir())) == 1
 
-    def test_configuration(self):
-        assert False, "TODO: Test the configuration dict."
+    def test_configuration(
+        self,
+        profet_train_config: MetaModelTrainingConfig,
+        profet_input_dir: Path,
+        checkpoint_dir: Path,
+    ):
+        """ Test that tasks have a proper configuration and that they can be created from it.
+        """
+        task_id = 0
+        kwargs = dict(
+            max_trials=10,
+            task_id=task_id,
+            train_config=profet_train_config,
+            seed=123,
+            input_dir=profet_input_dir,
+            checkpoint_dir=checkpoint_dir,
+        )
+        first_task = self.Task(
+            **kwargs
+        )
+        configuration = first_task.configuration
+        assert len(configuration.keys()) == 1
+        key, config_dict = configuration.popitem()
+        assert key == self.Task.__qualname__
+        
+        for key, value in kwargs.items():
+            assert key in config_dict
+            assert config_dict[key] == value
 
-    def test_call(self):
-        assert False, "TODO: Test the `call` method by passing it a dict."
+        # NOTE: This 'name' is the qualname of the class, which is used by the Factory metaclass'
+        # `__call__` method.
+        name = self.Task.__qualname__
+        from orion.benchmark.benchmark_client import _get_task
+        second_task = _get_task(name=name, **config_dict)
+        assert second_task.configuration == first_task.configuration        
+        
+
+    @pytest.mark.xfail(
+        reason="TODO: Not sure how to modify the `space.sample` for a particular space instance "
+        "without changing the 'global' RNG."
+    )
+    def test_space_sample_is_reproducible(
+        self,
+        profet_train_config: MetaModelTrainingConfig,
+        profet_input_dir: Path,
+        checkpoint_dir: Path,
+    ):
+        task = self.Task(
+            max_trials=10,
+            train_config=profet_train_config,
+            seed=123,
+            input_dir=profet_input_dir,
+            checkpoint_dir=checkpoint_dir,
+        )
+        points = task._space.sample(10)
+        assert len(set(points)) == 10
+
+        # Create a new task:
+        second_task = self.Task(
+            max_trials=10,
+            train_config=profet_train_config,
+            seed=123,
+            input_dir=profet_input_dir,
+            checkpoint_dir=checkpoint_dir,
+        )
+        assert second_task._space.sample(10) == points
+    
+    def test_call_is_reproducible(
+        self,
+        profet_train_config: MetaModelTrainingConfig,
+        profet_input_dir: Path,
+        checkpoint_dir: Path,
+    ):
+        """ Two tasks created with the same args, given the same point, should produce the same
+        results.
+        """
+        task_id = 0
+        first_task = self.Task(
+            max_trials=10,
+            task_id=task_id,
+            train_config=profet_train_config,
+            seed=123,
+            input_dir=profet_input_dir,
+            checkpoint_dir=checkpoint_dir,
+        )
+
+        point = first_task._space.sample(1, seed=first_task.seed)[0]
+
+        second_task = self.Task(
+            max_trials=10,
+            task_id=task_id,
+            train_config=profet_train_config,
+            seed=123,
+            input_dir=profet_input_dir,
+            checkpoint_dir=checkpoint_dir,
+        )
+
+        results = second_task(point)
+
+        assert len(results) == 1
+        assert results[0]["type"] == "objective"
+        first_objective = results[0]["value"]
+        second_results = second_task(point)
+        second_objective = second_results[0]["value"]
+
+        assert second_objective == first_objective
+
+    def test_call_twice_with_same_task_gives_same_result(
+        self,
+        profet_train_config: MetaModelTrainingConfig,
+        profet_input_dir: Path,
+        checkpoint_dir: Path,
+    ):
+        """ When using the same task and different values for the same point, the results should
+        be identical.
+        """
+        task_id = 0
+        task = self.Task(
+            max_trials=10,
+            task_id=task_id,
+            train_config=profet_train_config,
+            seed=123,
+            input_dir=profet_input_dir,
+            checkpoint_dir=checkpoint_dir,
+        )
+
+        point = task._space.sample(1, seed=task.seed)[0]
+
+        first_results = task(point)
+        assert len(first_results) == 1
+        assert first_results[0]["type"] == "objective"
+        first_objective = first_results[0]["value"]
+
+        # Pass the same point under different forms and check that the results are exactly the same.
+        for second_point in [point, tuple(point), dict(zip(task._space.keys(), point))]:
+            second_results = task(second_point)
+            assert second_results[0]["name"] == first_results[0]["name"]
+            assert second_results[0]["type"] == first_results[0]["type"]
+            second_objective = second_results[0]["value"]
+
+            # TODO: Not sure why, but the two values are very close, but different!
+            assert np.isclose(first_objective, second_objective)
+
+    def test_call_with_gradients(
+        self,
+        profet_train_config: MetaModelTrainingConfig,
+        profet_input_dir: Path,
+        checkpoint_dir: Path,
+    ):
+        """ Test that calling the task with the `with_grad` returns the gradient at that point. """
+        task = self.Task(
+            max_trials=10,
+            task_id=0,
+            train_config=profet_train_config,
+            seed=123,
+            input_dir=profet_input_dir,
+            checkpoint_dir=checkpoint_dir,
+        )
+
+        point_tuple = task._space.sample(1)[0]
+        point_dict = dict(zip(task._space.keys(), point_tuple))
+        results = task(point_dict, with_grad=True)
+
+        assert results[0]["type"] == "objective"
+        first_objective = results[0]["value"]
+        assert results[1]["type"] == "gradient"
+        first_gradient = results[1]["value"]
+
+        # TODO: Check if this testing logic makes sense, and the last condition isn't yet working.
+        step_size = 1.0
+
+        second_point_array = np.array(point_tuple) - step_size * np.array(first_gradient)
+
+        if any(isinstance(dim, _Discrete) for dim in task._space.values()):
+            # NOTE: Some dimensions don't quite work here because they are discrete: we can't really
+            # use a point that has batch_size = 12.04 for example.
+            assert second_point_array not in task._space
+
+        if second_point_array not in task._space:
+            with pytest.warns(
+                RuntimeWarning, match="isn't a valid point of the space"
+            ):
+                # NOTE: Bypassing the conversion that would normally happen in `dict_to_trial` for tuple
+                # inputs when a Tensor is passed directly to the task. When the point doesn't fit the
+                # space exactly, a RuntimeWarning is raised.
+                second_results = task(torch.as_tensor(second_point_array))
+        else:
+            # Check that no warnings are raised if the point is in the space of the task.
+            with pytest.warns(None) as record:
+                second_results = task(second_point_array)
+            assert len(record) == 0, [m.message for m in record.list]
+
+        second_objective = second_results[0]["value"]
+
+        # NOTE: (@lebrice): Expected this to work, but I might be a bit rusty.
+        # assert np.isclose(improvement, step_size)
+
+        # This check sort-of works, at least.
+        # NOTE: Lower is better here, hence the order.
+        improvement = first_objective - second_objective
+        # NOTE: For the SVM task, the improvement is sometimes just zero.
+        assert improvement >= 0.0
