@@ -1,3 +1,10 @@
+""" Example script for using tasks from the Profet algorithm.
+
+This can be called like so:
+```console
+python examples/benchmark/profet_benchmark.py --task_type svm
+```
+"""
 import logging
 from dataclasses import dataclass
 from logging import getLogger as get_logger
@@ -13,7 +20,13 @@ from orion.benchmark.task import BaseTask, CarromTable, EggHolder, RosenBrock
 from orion.benchmark.task.profet import FcNetTask, ForresterTask, SvmTask, XgBoostTask
 from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig, ProfetTask
 from orion.benchmark.task.quadratics import QuadraticsTask
-from simple_parsing.helpers import choice, list_field
+try:
+    from simple_parsing.helpers import choice, list_field
+except ImportError as exc:
+    raise RuntimeError(
+        "Need simple-parsing to be installed to run this example.\n"
+        "You can install it using `pip install simple-parsing`."
+    ) from exc
 
 logger = get_logger("orion.benchmark.task")
 logger.setLevel(logging.INFO)
@@ -80,6 +93,7 @@ def main(config: ProfetExperimentConfig):
             seed=config.seed,
         )
     else:
+        # NOTE: This doesn't normally happen when using this from the command-line.
         task = config.task_type(max_trials=config.max_trials)
 
     benchmark = get_or_create_benchmark(
