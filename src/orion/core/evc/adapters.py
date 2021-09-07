@@ -31,12 +31,16 @@ Adapters can be build using the factory class `Adapter(**kwargs)` or using
 
 """
 import copy
+import logging
 from abc import ABCMeta, abstractmethod
 
 from orion.algo.space import Dimension
 from orion.core.io.space_builder import DimensionBuilder
 from orion.core.utils import Factory
 from orion.core.worker.trial import Trial
+
+
+log = logging.getLogger(__name__)
 
 
 class BaseAdapter(object, metaclass=ABCMeta):
@@ -447,8 +451,9 @@ class DimensionPriorChange(BaseAdapter):
         self.new_dimension = DimensionBuilder().build("new", new_prior)
 
         if self.old_dimension.shape != self.new_dimension.shape:
-            raise NotImplementedError(
-                "Oríon does not support yet adaptations on prior " "shape changes."
+            log.warning(
+                "Oríon does not support yet adaptations on prior shape changes. All trials "
+                "of different shapes will be ignored."
             )
 
     def forward(self, trials):

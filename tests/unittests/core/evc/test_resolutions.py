@@ -23,6 +23,14 @@ def change_dimension_resolution(changed_dimension_conflict):
 
 
 @pytest.fixture
+def change_dimension_shape_resolution(changed_dimension_shape_conflict):
+    """Create a resolution for a changed shape prior"""
+    return changed_dimension_conflict.ChangeDimensionResolution(
+        changed_dimension_shape_conflict
+    )
+
+
+@pytest.fixture
 def rename_dimension_resolution(missing_dimension_conflict, new_dimension_conflict):
     """Create a resolution to rename a missing dimension to a new dimension"""
     return missing_dimension_conflict.RenameDimensionResolution(
@@ -201,6 +209,19 @@ class TestChangeDimensionResolution(object):
         name = "changed"
         old_prior = "uniform(-10, 10)"
         new_prior = "normal(0, 2)"
+        resolution_adapters = change_dimension_resolution.get_adapters()
+        print(resolution_adapters[0].configuration)
+        assert len(resolution_adapters) == 1
+        assert (
+            resolution_adapters[0].configuration
+            == adapters.DimensionPriorChange(name, old_prior, new_prior).configuration
+        )
+
+    def test_adapters_shape(self, change_dimension_shape_resolution):
+        """Verify adapters with old and new priors of different shapes"""
+        name = "changed"
+        old_prior = "uniform(-10, 10, shape=2)"
+        new_prior = "normal(0, 2, shape=3)"
         resolution_adapters = change_dimension_resolution.get_adapters()
         assert len(resolution_adapters) == 1
         assert (
