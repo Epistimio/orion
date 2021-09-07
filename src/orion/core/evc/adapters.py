@@ -39,7 +39,6 @@ from orion.core.io.space_builder import DimensionBuilder
 from orion.core.utils import Factory
 from orion.core.worker.trial import Trial
 
-
 log = logging.getLogger(__name__)
 
 
