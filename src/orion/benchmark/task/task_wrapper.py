@@ -5,7 +5,6 @@ from typing import (
     Dict,
     Generic,
     List,
-    Tuple,
     TypeVar,
     Union,
 )
@@ -13,7 +12,6 @@ import copy
 
 import numpy as np
 from orion.algo.space import Dimension, Space
-from orion.analysis.base import flatten_params
 from orion.benchmark.task.base import BaseTask
 from logging import getLogger as get_logger
 
@@ -108,29 +106,6 @@ class CanReturnFloatWrapper(TaskWrapper[TaskType]):
         return y
 
 
-def array_to_trial(array: np.ndarray, space: Space) -> Trial:
-    if array.ndim > 1:
-        # remove the size-1 dims.
-        array = np.squeeze(array)
-    assert array.ndim == 1, "Assuming Points are 1-dimensional arrays for now."
-    point_tuple: Tuple[Union[float, Tuple[float, ...]], ...] = regroup_dims(array, space=space)
-    trial: Trial = tuple_to_trial(point_tuple, space=space)
-    return trial
-
-
-def trial_to_array(trial: Trial, space: Space) -> np.ndarray:
-    # TODO: Not sure if `trial_to_tuple` reconstructs entries with the right shapes as well.
-    point_tuple = trial_to_tuple(trial, space)
-    flattened_point = flatten_dims(point_tuple, space)
-    return np.array(flattened_point)
-
-
-def params_to_array(params: Dict, space: Space) -> np.ndarray:
-    trial = dict_to_trial(params, space=space)
-    array = trial_to_array(trial, space=space)
-    return array
-
-
 class FixTaskDimensionsWrapper(TaskWrapper[TaskType]):
     """ Wrapper around a Task that fixes the values of some of its input dimensions.
     """
@@ -156,7 +131,8 @@ class FixTaskDimensionsWrapper(TaskWrapper[TaskType]):
         """ Calls the wrapped task, adding/changing some dimensions in `x` if necessary. """
         trial: Trial
         if isinstance(x, np.ndarray):
-            trial = array_to_trial(x, space=self._full_space)
+            point_tuple = regroup_dims(x, space=self._full_space)
+            trial = tuple_to_trial(point_tuple, space=self._full_space)
         elif isinstance(x, dict):
             trial = dict_to_trial(x, space=self._full_space)
         elif isinstance(x, Trial):
@@ -191,7 +167,9 @@ class FixTaskDimensionsWrapper(TaskWrapper[TaskType]):
             # Can return `x` directly, since we didn't end up modifying it.
             new_x = x
         elif isinstance(x, np.ndarray):
-            new_x = trial_to_array(trial, space=self._space)
+            point_tuple = trial_to_tuple(trial, self._space)
+            flattened_point = flatten_dims(point_tuple, self._space)
+            new_x = np.array(flattened_point)
         elif isinstance(x, dict):
             new_x = trial.params
         elif isinstance(x, Trial):
