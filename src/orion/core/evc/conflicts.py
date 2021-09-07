@@ -1486,7 +1486,7 @@ class ScriptConfigConflict(Conflict):
         if "parser" not in config["metadata"]:
             return ""
 
-        user_script_config =(
+        user_script_config = (
             config.get("metadata", {}).get("parser", {}).get("config_prefix")
         )
         if not user_script_config:
