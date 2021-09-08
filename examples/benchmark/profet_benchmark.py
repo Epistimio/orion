@@ -10,34 +10,27 @@ from dataclasses import dataclass
 from logging import getLogger as get_logger
 from pathlib import Path
 from typing import List, Type
+from orion.algo.base import OptimizationAlgorithm
 
-import numpy as np
-import pandas as pd
-import plotly
-from orion.benchmark.assessment import AverageRank, AverageResult
+from orion.benchmark.assessment import AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
-from orion.benchmark.task import BaseTask, CarromTable, EggHolder, RosenBrock
 from orion.benchmark.task.profet import FcNetTask, ForresterTask, SvmTask, XgBoostTask
 from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig, ProfetTask
-from orion.benchmark.task.quadratics import QuadraticsTask
+
 try:
-    from simple_parsing.helpers import choice, list_field
+    from simple_parsing.helpers import choice
 except ImportError as exc:
     raise RuntimeError(
         "Need simple-parsing to be installed to run this example.\n"
         "You can install it using `pip install simple-parsing`."
     ) from exc
 
-logger = get_logger("orion.benchmark.task")
-logger.setLevel(logging.INFO)
+logger = get_logger("orion")
+logger.setLevel(logging.DEBUG)
 
 from orion.benchmark.task.profet import FcNetTask, ForresterTask, SvmTask, XgBoostTask
 
-# BUG: #629 (https://github.com/Epistimio/orion/issues/629)
-from orion.core.worker.primary_algo import PrimaryAlgo
-from orion.testing.space import build_space
-
-_ = PrimaryAlgo(space=build_space(), algorithm_config="random")
+algos_available = set(OptimizationAlgorithm.types.keys()) - {"primaryalgo"}
 
 
 @dataclass
@@ -45,8 +38,8 @@ class ProfetExperimentConfig:
     """ Configuration option for the demo of the Profet tasks. """
 
     # The type of Profet task to create.
-    task_type: Type[BaseTask] = choice(
-        {"svm": SvmTask, "fcnet": FcNetTask, "xgboost": XgBoostTask, "forrester": ForresterTask,}
+    task_type: Type[BaseTask] = choice(  # type: ignore
+        {"svm": SvmTask, "fcnet": FcNetTask, "xgboost": XgBoostTask, "forrester": ForresterTask}
     )
 
     # Name of the experiment.
@@ -54,19 +47,19 @@ class ProfetExperimentConfig:
     # Configuration options for the training of the meta-model used in the Profet tasks.
     profet_train_config: MetaModelTrainingConfig = MetaModelTrainingConfig()
 
-    algorithms: List[str] = list_field("robo_gp", "robo_ablr", "robo_dngo")
+    algorithms: List[str] = choice(*algos_available, default_factory=["random", "tpe"].copy)
 
     # Number of repetitions for each experiment
-    n_repetitions: int = 3
+    n_repetitions: int = 10
     # Optimization budget (max number of trials) for optimizing the task.
-    max_trials: int = 25
+    max_trials: int = 50
     # Run in debug mode:
     # - No presistent storage
     # - More verbose logging
+    # (@TODO: This isn't technically correct: Benchmarks don't support the `debug` flag in
+    # `develop` but that feature is to be added by the long-standing warm-start PR.
     debug: bool = False
     # Random seed.
-    # TODO: Not currently passed to the Benchmark, only used to create the target task
-    # (and the source task too I think?)
     seed: int = 123
     # Path to the pickledb file to use for the `storage` argument of the benchmark.
     storage_pickle_path: Path = Path("profet.pkl")
@@ -95,6 +88,8 @@ def main(config: ProfetExperimentConfig):
     else:
         # NOTE: This doesn't normally happen when using this from the command-line.
         task = config.task_type(max_trials=config.max_trials)
+
+    print(f"Storage file used: {config.storage_pickle_path}")
 
     benchmark = get_or_create_benchmark(
         name=config.name,
