@@ -629,6 +629,30 @@ class TestCategorical(object):
             dim.cast(sample)
         assert "Invalid category: asdfa" in str(exc.value)
 
+    def test_get_prior_string_list(self):
+        """Test that prior string can be rebuilt with list of choices."""
+        categories = list(range(10))
+        categories[0] = "asdfa"
+        categories[2] = "lalala"
+        dim = Categorical(
+            "yolo", categories, shape=2, default_value=["asdfa", "lalala"]
+        )
+        assert dim.get_prior_string() == (
+            "choices(['asdfa', 1, 'lalala', 3, 4, 5, 6, 7, 8, 9], "
+            "shape=2, default_value=['asdfa', 'lalala'])"
+        )
+
+    def test_get_prior_string_dict(self):
+        """Test that prior string can be rebuilt with dict of choices."""
+        categories = {"asdfa": 0.1, 2: 0.2, 3: 0.3, "lalala": 0.4}
+        dim = Categorical(
+            "yolo", categories, shape=2, default_value=["asdfa", "lalala"]
+        )
+        assert dim.get_prior_string() == (
+            "choices({'asdfa': 0.10, 2: 0.20, 3: 0.30, 'lalala': 0.40}, "
+            "shape=2, default_value=['asdfa', 'lalala'])"
+        )
+
 
 class TestFidelity(object):
     """Test methods of a Fidelity object."""

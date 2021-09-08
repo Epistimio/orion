@@ -437,6 +437,18 @@ def changed_dimension_conflict(old_config, new_config):
 
 
 @pytest.fixture
+def changed_dimension_shape_conflict(old_config, new_config):
+    """Generate a changed shape dimension conflict"""
+    name = "changed_shape"
+    old_prior = "uniform(-10, 10)"
+    new_prior = "uniform(-10, 10, shape=2)"
+    dimension = DimensionBuilder().build(name, old_prior)
+    return conflicts.ChangedDimensionConflict(
+        old_config, new_config, dimension, old_prior, new_prior
+    )
+
+
+@pytest.fixture
 def missing_dimension_conflict(old_config, new_config):
     """Generate a missing dimension conflict"""
     name = "missing"
