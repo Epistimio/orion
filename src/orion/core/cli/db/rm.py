@@ -32,7 +32,7 @@ To proceed, type again the name of the experiment: """
 
 
 TRIALS_RM_MESSAGE = """
-Matching trials({}) of all experiments above will be deleted.
+Matching trials ({}) of all experiments above will be deleted.
 To select a specific version use --version <VERSION>.
 Note that trials of all children of a given version will be deleted.
 
