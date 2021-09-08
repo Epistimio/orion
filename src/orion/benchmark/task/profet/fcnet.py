@@ -14,14 +14,14 @@ The task is created using the Profet algorithm:
 ```
 """
 from dataclasses import dataclass
-from typing import Dict
-from orion.benchmark.task.profet.profet_task import ProfetTask
+from pathlib import Path
+from typing import Dict, Union
+from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig, ProfetTask
 
 
 @dataclass
 class FcNetTaskHParams:
-    """ Hyper-Parameters of a Simulated Task consisting in training a fully-connected network.
-    """
+    """Hyper-Parameters of a Simulated Task consisting in training a fully-connected network."""
 
     learning_rate: float
     batch_size: int
@@ -32,10 +32,29 @@ class FcNetTaskHParams:
 
 
 class FcNetTask(ProfetTask[FcNetTaskHParams]):
-    """ Simulated Task consisting in training a fully-connected network. """
+    """Simulated Task consisting in training a fully-connected network."""
 
-    def __init__(self, *args, benchmark="fcnet", **kwargs):
-        super().__init__(*args, benchmark=benchmark, **kwargs)
+    def __init__(
+        self,
+        max_trials: int = 100,
+        task_id: int = 0,
+        seed: int = 123,
+        input_dir: Union[Path, str] = None,
+        checkpoint_dir: Union[Path, str] = None,
+        train_config: MetaModelTrainingConfig = None,
+        device: Union[torch.device, str] = None,
+        benchmark: str = "fcnet",
+    ):
+        super().__init__(
+            max_trials=max_trials,
+            task_id=task_id,
+            seed=seed,
+            input_dir=input_dir,
+            checkpoint_dir=checkpoint_dir,
+            train_config=train_config,
+            device=device,
+            benchmark=benchmark,
+        )
 
     def get_search_space(self) -> Dict[str, str]:
         return dict(

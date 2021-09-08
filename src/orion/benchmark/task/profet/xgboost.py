@@ -14,15 +14,17 @@ The task is created using the Profet algorithm:
 ```
 """
 from dataclasses import dataclass
-from typing import Dict
+from logging import getLogger as get_logger
+from pathlib import Path
+from typing import Dict, Union
 
-
-from .profet_task import ProfetTask
+import torch
+from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig, ProfetTask
 
 
 @dataclass
 class XgBoostTaskHParams:
-    """ Inputs to the XgBoost task. """
+    """Inputs to the XgBoost task."""
 
     learning_rate: float
     gamma: float
@@ -35,11 +37,29 @@ class XgBoostTaskHParams:
 
 
 class XgBoostTask(ProfetTask[XgBoostTaskHParams]):
-    """ Simulated Task consisting in fitting a Extreme-Gradient Boosting predictor.
-    """
+    """Simulated Task consisting in fitting a Extreme-Gradient Boosting predictor."""
 
-    def __init__(self, *args, benchmark="xgboost", **kwargs):
-        super().__init__(*args, benchmark=benchmark, **kwargs)
+    def __init__(
+        self,
+        max_trials: int = 100,
+        task_id: int = 0,
+        seed: int = 123,
+        input_dir: Union[Path, str] = None,
+        checkpoint_dir: Union[Path, str] = None,
+        train_config: MetaModelTrainingConfig = None,
+        device: Union[torch.device, str] = None,
+        benchmark: str = "xgboost",
+    ):
+        super().__init__(
+            max_trials=max_trials,
+            task_id=task_id,
+            seed=seed,
+            input_dir=input_dir,
+            checkpoint_dir=checkpoint_dir,
+            train_config=train_config,
+            device=device,
+            benchmark=benchmark,
+        )
 
     def get_search_space(self) -> Dict[str, str]:
         return dict(
