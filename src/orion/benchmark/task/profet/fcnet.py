@@ -16,6 +16,8 @@ The task is created using the Profet algorithm:
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Union
+
+import torch
 from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig, ProfetTask
 
 
