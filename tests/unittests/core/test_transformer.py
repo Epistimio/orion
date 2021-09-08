@@ -96,9 +96,10 @@ class TestReverse(object):
     def test_reverse(self):
         """Check if it reverses `transform` properly, if possible."""
         t = Reverse(Quantize())
-        assert t.reverse(8.6) == 8
+        assert t.reverse(8.6) == 9
+        assert t.reverse(8.4) == 8
         assert t.reverse(5.3) == 5
-        assert numpy.all(t.reverse([8.6, 5.3]) == numpy.array([8, 5], dtype=int))
+        assert numpy.all(t.reverse([8.6, 5.3]) == numpy.array([9, 5], dtype=int))
 
     def test_infer_target_shape(self):
         """Check if it infers the shape of a transformed `Dimension`."""
@@ -302,9 +303,10 @@ class TestQuantize(object):
     def test_transform(self):
         """Check if it transforms properly."""
         t = Quantize()
-        assert t.transform(8.6) == 8
+        assert t.transform(8.6) == 9
+        assert t.transform(8.4) == 8
         assert t.transform(5.3) == 5
-        assert numpy.all(t.transform([8.6, 5.3]) == numpy.array([8, 5], dtype=int))
+        assert numpy.all(t.transform([8.6, 5.3]) == numpy.array([9, 5], dtype=int))
 
     def test_reverse(self):
         """Check if it reverses `transform` properly, if possible."""
@@ -706,9 +708,9 @@ class TestTransformedDimension(object):
 
     def test_transform(self, tdim):
         """Check method `transform`."""
-        assert tdim.transform(8.6) == 8
+        assert tdim.transform(8.4) == 8
         assert tdim.transform(5.3) == 5
-        assert numpy.all(tdim.transform([8.6, 5.3]) == numpy.array([8, 5], dtype=int))
+        assert numpy.all(tdim.transform([8.6, 5.3]) == numpy.array([9, 5], dtype=int))
 
     def test_reverse(self, tdim):
         """Check method `reverse`."""
@@ -1224,7 +1226,7 @@ Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), def
         assert tspace[1].type == "categorical"
         assert tspace[2].type == "integer"
         assert tspace[3].type == "real"
-        assert tspace[4].type == "integer"
+        assert tspace[4].type == "real"
         assert (
             str(tspace)
             == """\
@@ -1232,7 +1234,7 @@ Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), def
        Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None),
        Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None),
        Linearize(Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None))),
-       Quantize(Linearize(ReverseQuantize(Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None))))])\
+       Linearize(ReverseQuantize(Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)))])\
 """
         )  # noqa
 
@@ -1311,10 +1313,13 @@ def test_quantization_does_not_violate_bounds():
     assert 10 in dim
     # but be careful, because upper bound is inclusive
     assert 11.5 not in tdim
-    assert 10.6 in tdim
+    # rounded to 11
+    assert 10.6 not in tdim
+    # rounded to 10
+    assert 10.4 in tdim
     assert tdim.reverse(9.6) in dim
-    # solution is to quantize with 'floor' instead of 'round'
-    assert tdim.reverse(9.6) == 9
+    assert tdim.reverse(9.6) == 10
+    assert tdim.reverse(9.4) == 9
 
 
 def test_precision_with_linear(space, logdim, logintdim):
