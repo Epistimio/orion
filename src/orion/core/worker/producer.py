@@ -59,11 +59,6 @@ class Producer(object):
         self.num_trials = 0
         self.num_broken = 0
 
-    @property
-    def pool_size(self):
-        """Pool-size of the experiment"""
-        return self.experiment.pool_size
-
     def backoff(self):
         """Wait some time and update algorithm."""
         waiting_time = max(0, random.gauss(1, 0.2))
@@ -90,25 +85,32 @@ class Producer(object):
             self.naive_algorithm is not None and self.naive_algorithm.is_done
         )
 
-    def suggest(self):
+    def suggest(self, pool_size):
         """Try suggesting new points with the naive algorithm"""
         num_pending = self.num_trials - self.num_broken
         num = max(self.experiment.max_trials - num_pending, 1)
-        return self.naive_algorithm.suggest(num)
+        return self.naive_algorithm.suggest(min(num, pool_size))
 
-    def produce(self):
+    def produce(self, pool_size):
         """Create and register new trials."""
         sampled_points = 0
-
         # reset the number of time we failed to sample points
         self.failure_count = 0
         start = time.time()
 
-        while sampled_points < self.pool_size and not self.is_done:
+        # This number (self.num_trials) is based on most recent algo state update so it is not
+        # sensitive to race-conditions. If another worker started suggesting points in between, the
+        # value of self.num_trials will not count it and thus the current producer will count new
+        # points of other producer as part of the current pool samples.
+        while (
+            len(self.experiment.fetch_trials(with_evc_tree=True)) - self.num_trials
+            < pool_size
+            and not self.is_done
+        ):
             self._sample_guard(start)
 
             log.debug("### Algorithm suggests new points.")
-            new_points = self.suggest()
+            new_points = self.suggest(pool_size)
 
             # Sync state of original algo so that state continues evolving.
             self.algorithm.set_state(self.naive_algorithm.state_dict)

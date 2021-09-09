@@ -44,6 +44,12 @@ def generate_trials(exp, trials):
                 status,
                 heartbeat=trial.submit_time if status == "reserved" else None,
             )
+        else:
+            exp._experiment._storage.set_trial_status(
+                trial,
+                "reserved",
+                heartbeat=trial.submit_time,
+            )
 
 
 def build_root_experiment(space=None, trials=None):

@@ -37,7 +37,6 @@ config = dict(
         },
     },
     version=1,
-    pool_size=1,
     max_trials=10,
     max_broken=5,
     working_dir="",
@@ -674,7 +673,7 @@ class TestSuggest:
                 """Experiment is done"""
                 return True
 
-            def set_is_done():
+            def set_is_done(pool_size):
                 """Set is_done while algo is trying to suggest"""
                 monkeypatch.setattr(experiment.__class__, "is_done", property(is_done))
 
@@ -703,7 +702,7 @@ class TestSuggest:
                 """Experiment is broken"""
                 return True
 
-            def set_is_broken():
+            def set_is_broken(pool_size):
                 """Set is_broken while algo is trying to suggest"""
                 monkeypatch.setattr(
                     experiment.__class__, "is_broken", property(is_broken)

@@ -32,7 +32,7 @@ from orion.storage.base import FailedUpdate
 log = logging.getLogger(__name__)
 
 
-def reserve_trial(experiment, producer, _depth=1):
+def reserve_trial(experiment, producer, pool_size, _depth=1):
     """Reserve a new trial, or produce and reserve a trial if none are available."""
     log.debug("Trying to reserve a new trial to evaluate.")
     trial = experiment.reserve_trial()
@@ -51,9 +51,9 @@ def reserve_trial(experiment, producer, _depth=1):
         producer.update()
 
         log.debug("#### Produce new trials.")
-        producer.produce()
+        producer.produce(pool_size)
 
-        return reserve_trial(experiment, producer, _depth=_depth + 1)
+        return reserve_trial(experiment, producer, pool_size, _depth=_depth + 1)
 
     return trial
 
@@ -500,7 +500,7 @@ class ExperimentClient:
         finally:
             self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved)
 
-    def suggest(self):
+    def suggest(self, pool_size=0):
         """Suggest a trial to execute.
 
         Experiment must be in executable ('x') mode.
@@ -508,6 +508,16 @@ class ExperimentClient:
         If any trial is available (new or interrupted), it selects one and reserves it.
         Otherwise, the algorithm is used to generate a new trial that is registered in storage and
         reserved.
+
+        Parameters
+        ----------
+        pool_size: int, optional
+            Number of trials to sample at a time. If 0, default to global config if defined,
+            else 1.  Increase it to improve the sampling speed if workers spend too much time
+            waiting for algorithms to sample points. An algorithm will try sampling `pool-size`
+            trials but may return less. Note: The method will still return only 1 trial even though
+            if the pool size is larger than 1. This is because atomic reservation of trials
+            can only be done one at a time.
 
         Returns
         -------
@@ -535,6 +545,10 @@ class ExperimentClient:
 
         """
         self._check_if_executable()
+        if not pool_size:
+            pool_size = orion.core.config.worker.pool_size
+        if not pool_size:
+            pool_size = 1
 
         if self.is_broken:
             raise BrokenExperiment("Trials failed too many times")
@@ -543,7 +557,7 @@ class ExperimentClient:
             raise CompletedExperiment("Experiment is done, cannot sample more trials.")
 
         try:
-            trial = reserve_trial(self._experiment, self._producer)
+            trial = reserve_trial(self._experiment, self._producer, pool_size)
 
         except (WaitingForTrials, SampleTimeout) as e:
             if self.is_broken:
@@ -633,6 +647,7 @@ class ExperimentClient:
         self,
         fct,
         n_workers=None,
+        pool_size=0,
         max_trials=None,
         max_trials_per_worker=None,
         max_broken=None,
@@ -652,6 +667,11 @@ class ExperimentClient:
             objective.
         n_workers: int, optional
             Number of workers to run in parallel. Defaults to value of global config.
+        pool_size: int, optional
+            Number of trials to sample at a time. If 0, defaults to `n_workers` or value of global
+            config if defined.  Increase it to improve the sampling speed if workers spend too much
+            time waiting for algorithms to sample points. An algorithm will try sampling
+            `pool-size` trials but may return less.
         max_trials: int, optional
             Maximum number of trials to execute within ``workon``. If the experiment or algorithm
             reach status is_done before, the execution of ``workon`` terminates.
@@ -712,6 +732,11 @@ class ExperimentClient:
                     str(self.executor.n_workers),
                 )
 
+        if not pool_size:
+            pool_size = orion.core.config.worker.pool_size
+        if not pool_size:
+            pool_size = n_workers
+
         if max_trials is None:
             max_trials = self.max_trials
 
@@ -731,6 +756,7 @@ class ExperimentClient:
             self.executor.submit(
                 self._optimize,
                 fct,
+                pool_size,
                 max_trials_per_worker,
                 max_broken,
                 trial_arg,
@@ -742,14 +768,16 @@ class ExperimentClient:
 
         return sum(trials)
 
-    def _optimize(self, fct, max_trials, max_broken, trial_arg, on_error, **kwargs):
+    def _optimize(
+        self, fct, pool_size, max_trials, max_broken, trial_arg, on_error, **kwargs
+    ):
         worker_broken_trials = 0
         trials = 0
         kwargs = flatten(kwargs)
         max_trials = min(max_trials, self.max_trials)
         while not self.is_done and trials - worker_broken_trials < max_trials:
             try:
-                with self.suggest() as trial:
+                with self.suggest(pool_size=pool_size) as trial:
 
                     kwargs.update(flatten(trial.params))
 

@@ -130,6 +130,7 @@ def on_error(client, trial, error, worker_broken_trials):
 def workon(
     experiment,
     n_workers=None,
+    pool_size=None,
     max_trials=None,
     max_broken=None,
     max_idle_time=None,
@@ -163,6 +164,7 @@ def workon(
             client.workon(
                 consumer,
                 n_workers=n_workers,
+                pool_size=pool_size,
                 max_trials_per_worker=max_trials,
                 max_broken=max_broken,
                 trial_arg="trial",

@@ -97,7 +97,6 @@ Full Example of Global Configuration
                 seed: None
         max_broken: 3
         max_trials: 1000000000
-        pool_size: 1
         strategy:
             MaxParallelStrategy
         worker_trials: 1000000000
@@ -105,6 +104,7 @@ Full Example of Global Configuration
 
     worker:
         n_workers: 1
+        pool_size: 0
         executor: joblib
         executor_configuration: {}
         heartbeat: 120
@@ -211,7 +211,6 @@ Experiment
                 seed: None
         max_broken: 3
         max_trials: 1000000000
-        pool_size: 1
         strategy:
             MaxParallelStrategy
         worker_trials: 1000000000
@@ -322,22 +321,6 @@ working_dir
 
 
 
-.. _config_experiment_pool_size:
-
-pool_size
-~~~~~~~~~
-
-.. warning::
-
-   **DEPRECATED.** This argument will be removed in v0.3.
-
-:Type: int
-:Default: 1
-:Env var:
-:Description:
-    (DEPRECATED) This argument will be removed in v0.3.
-
-
 .. _config_experiment_algorithms:
 
 algorithms
@@ -376,6 +359,7 @@ Worker
 
     worker:
         n_workers: 1
+        pool_size: 0
         executor: joblib
         executor_configuration: {}
         heartbeat: 120
@@ -399,6 +383,20 @@ n_workers
     Number of workers to run in parallel.
     It is possible to run many `orion hunt` in parallel, and each will spawn
     ``n_workers``.
+
+.. _config_worker_pool_size:
+
+pool_size
+~~~~~~~~~
+
+:Type: int
+:Default: 0
+:Env var:
+:Description:
+    Number of trials to sample at a time. If 0, default to number of workers.
+    Increase it to improve the sampling speed if workers spend too much time
+    waiting for algorithms to sample points. An algorithm will try sampling `pool-size`
+    trials but may return less.
 
 
 .. _config_worker_executor:

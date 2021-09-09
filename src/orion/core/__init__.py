@@ -170,14 +170,6 @@ def define_experiment_config(config):
     )
 
     experiment_config.add_option(
-        "pool_size",
-        option_type=int,
-        default=1,
-        deprecate=dict(version="v0.3", alternative=None, name="experiment.pool_size"),
-        help="This argument will be removed in v0.3.",
-    )
-
-    experiment_config.add_option(
         "algorithms",
         option_type=dict,
         default={"random": {"seed": None}},
@@ -207,6 +199,20 @@ def define_worker_config(config):
             "Number of workers to run in parallel. "
             "It is possible to run many ``orion hunt`` in parallel, and each will spawn "
             "``n_workers``."
+        ),
+    )
+
+    worker_config.add_option(
+        "pool_size",
+        option_type=int,
+        default=0,
+        env_var="ORION_POOL_SIZE",
+        help=(
+            "Number of trials to sample at a time. "
+            "If 0, will default to number of executor workers. "
+            "Increase it to improve the sampling speed if workers spend too much time "
+            "waiting for algorithms to sample points. An algorithm will try sampling "
+            "`pool-size` trials but may return less."
         ),
     )
 
