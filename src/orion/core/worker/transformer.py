@@ -66,9 +66,8 @@ def _(dim, type_requirement, dist_requirement):
     transformers = []
     if dist_requirement == "linear" and dim.prior_name[4:] in NON_LINEAR:
         transformers.extend([Reverse(Quantize()), Linearize()])
-        # Turn back to integer because Linearize outputs real
-        if type_requirement != "real":
-            transformers.extend([Quantize()])
+        # NOTE: we do not turn back to integer even though linearize outputs real
+        #       otherwise the mapping from exp(int) to int squashes out lots of possible values.
     elif type_requirement == "real":
         transformers.append(Reverse(Quantize()))
 
@@ -84,6 +83,8 @@ def _(dim, type_requirement, dist_requirement):
     if dist_requirement == "linear" and dim.prior_name in NON_LINEAR:
         transformers.append(Linearize())
     elif type_requirement == "integer":
+        # NOTE: This may cause out-of-bound errors for rounded reals. Not fixed for now
+        #       because there are no foreseeable algorithms that may require integer type.
         transformers.append(Quantize())
 
     return transformers
@@ -404,8 +405,8 @@ class Quantize(Transformer):
     target_type = "integer"
 
     def transform(self, point):
-        """Cast `point` to the floor and then to integers, as numpy arrays."""
-        quantized = numpy.floor(numpy.asarray(point)).astype(int)
+        """Round `point` and then cast to integers, as numpy arrays."""
+        quantized = numpy.round(numpy.asarray(point)).astype(int)
 
         if numpy.any(numpy.isinf(point)):
             isinf = int(numpy.isinf(point))

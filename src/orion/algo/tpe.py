@@ -412,7 +412,7 @@ class TPE(BaseAlgorithm):
 
     def _sample_real_dimension(self, dimension, shape_size, below_points, above_points):
         """Sample values for real dimension"""
-        if dimension.prior_name in ["uniform", "reciprocal"]:
+        if any(map(dimension.prior_name.endswith, ["uniform", "reciprocal"])):
             return self.sample_one_dimension(
                 dimension,
                 shape_size,
@@ -421,7 +421,9 @@ class TPE(BaseAlgorithm):
                 self._sample_real_point,
             )
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(
+                f"Prior {dimension.prior_name} is not supported for real values"
+            )
 
     def _sample_loguniform_real_point(self, dimension, below_points, above_points):
         """Sample one value for real dimension in a loguniform way"""

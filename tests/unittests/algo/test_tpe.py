@@ -803,5 +803,28 @@ class TestTPE(BaseAlgoTests):
 
         assert algo.is_done
 
+    def test_log_integer(self, monkeypatch):
+        """Verify that log integer dimensions do not go out of bound."""
+        RANGE = 100
+        algo = self.create_algo(
+            space=self.create_space({"x": f"loguniform(1, {RANGE}, discrete=True)"}),
+        )
+        algo.algorithm.max_trials = RANGE * 2
+
+        values = set(range(1, RANGE + 1))
+
+        # Mock sampling so that it quickly samples all possible integers in given bounds
+        def sample(self, n_samples=1, seed=None):
+            return [(numpy.log(values.pop()),) for _ in range(n_samples)]
+
+        def _suggest_random(self, num):
+            return self._suggest(num, sample)
+
+        monkeypatch.setattr("orion.algo.tpe.TPE._suggest_random", _suggest_random)
+        monkeypatch.setattr("orion.algo.tpe.TPE._suggest_bo", _suggest_random)
+        self.force_observe(RANGE, algo)
+        assert algo.n_observed == RANGE
+        assert algo.n_suggested == RANGE
+
 
 TestTPE.set_phases([("random", 0, "space.sample"), ("bo", N_INIT + 1, "_suggest_bo")])
