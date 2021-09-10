@@ -643,6 +643,7 @@ class ExperimentClient:
             yield self
         self.executor = old_executor
 
+    # pylint:disable=too-many-arguments
     def workon(
         self,
         fct,
