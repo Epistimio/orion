@@ -134,7 +134,7 @@ def define_experiment_config(config):
     experiment_config.add_option(
         "max_trials",
         option_type=int,
-        default=1000,
+        default=int(10e8),
         env_var="ORION_EXP_MAX_TRIALS",
         help="number of trials to be completed for the experiment. This value "
         "will be saved within the experiment configuration and reused "
@@ -144,7 +144,7 @@ def define_experiment_config(config):
     experiment_config.add_option(
         "worker_trials",
         option_type=int,
-        default=1000,
+        default=int(10e8),
         deprecate=dict(
             version="v0.3",
             alternative="worker.max_trials",
