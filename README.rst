@@ -129,7 +129,7 @@ If you use Oríon for published work, please cite our work using the following b
                      Dendi Suhubdy and
                      Reyhane Askari and
                      Michael Noukhovitch and
-                     Chao Xua and
+                     Chao Xue and
                      Satya Ortiz-Gagné and
                      Olivier Breuleux and
                      Arnaud Bergeron and
@@ -145,7 +145,7 @@ If you use Oríon for published work, please cite our work using the following b
      month        = may,
      year         = 2021,
      publisher    = {Zenodo},
-     version      = {v0.1.15},
+     version      = {v0.1.17},
      doi          = {10.5281/zenodo.3478592},
      url          = {https://doi.org/10.5281/zenodo.3478592}
    }
