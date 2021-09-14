@@ -395,7 +395,7 @@ pool_size
 :Description:
     Number of trials to sample at a time. If 0, default to number of workers.
     Increase it to improve the sampling speed if workers spend too much time
-    waiting for algorithms to sample points. An algorithm will try sampling `pool-size`
+    waiting for algorithms to sample points. An algorithm will try sampling `pool_size`
     trials but may return less.
 
 
