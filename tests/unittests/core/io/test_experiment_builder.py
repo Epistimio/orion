@@ -112,7 +112,6 @@ def new_config(random_dt, script_path):
             },
         },
         version=1,
-        pool_size=10,
         max_trials=1000,
         max_broken=5,
         working_dir="",
@@ -192,7 +191,6 @@ def test_get_cmd_config(config_file):
     assert local_config["max_trials"] == 100
     assert local_config["max_broken"] == 5
     assert local_config["name"] == "voila_voici"
-    assert local_config["pool_size"] == 1
     assert local_config["storage"] == {
         "database": {
             "host": "mongodb://user:pass@localhost",
@@ -216,7 +214,6 @@ def test_get_cmd_config_from_incomplete_config(incomplete_config_file):
     assert "algorithms" not in local_config
     assert "max_trials" not in local_config
     assert "max_broken" not in local_config
-    assert "pool_size" not in local_config
     assert "name" not in local_config["storage"]["database"]
     assert (
         local_config["storage"]["database"]["host"] == "mongodb://user:pass@localhost"
@@ -243,7 +240,6 @@ def test_fetch_config_from_db_hit(new_config):
     assert db_config["name"] == new_config["name"]
     assert db_config["refers"] == new_config["refers"]
     assert db_config["metadata"] == new_config["metadata"]
-    assert db_config["pool_size"] == new_config["pool_size"]
     assert db_config["max_trials"] == new_config["max_trials"]
     assert db_config["max_broken"] == new_config["max_broken"]
     assert db_config["algorithms"] == new_config["algorithms"]
@@ -275,7 +271,6 @@ def test_get_from_args_hit(config_file, random_dt, new_config):
     assert exp_view.name == new_config["name"]
     assert exp_view.configuration["refers"] == new_config["refers"]
     assert exp_view.metadata == new_config["metadata"]
-    assert exp_view.pool_size == new_config["pool_size"]
     assert exp_view.max_trials == new_config["max_trials"]
     assert exp_view.max_broken == new_config["max_broken"]
     assert exp_view.algorithms.configuration == new_config["algorithms"]
@@ -299,7 +294,6 @@ def test_get_from_args_hit_no_conf_file(config_file, random_dt, new_config):
     assert exp_view.name == new_config["name"]
     assert exp_view.configuration["refers"] == new_config["refers"]
     assert exp_view.metadata == new_config["metadata"]
-    assert exp_view.pool_size == new_config["pool_size"]
     assert exp_view.max_trials == new_config["max_trials"]
     assert exp_view.max_broken == new_config["max_broken"]
     assert exp_view.algorithms.configuration == new_config["algorithms"]
@@ -333,7 +327,6 @@ def test_build_from_args_no_hit(config_file, random_dt, script_path, new_config)
         assert exp.metadata["user"] == "dendi"
         assert exp.metadata["user_script"] == cmdargs["user_args"][0]
         assert exp.metadata["user_args"] == cmdargs["user_args"]
-        assert exp.pool_size == 1
         assert exp.max_trials == 100
         assert exp.max_broken == 5
         assert exp.algorithms.configuration == {"random": {"seed": None}}
@@ -715,7 +708,6 @@ class TestBuild(object):
         assert exp.name == new_config["name"]
         assert exp.configuration["refers"] == new_config["refers"]
         assert exp.metadata == new_config["metadata"]
-        assert exp.pool_size == new_config["pool_size"]
         assert exp.max_trials == new_config["max_trials"]
         assert exp.max_broken == new_config["max_broken"]
         assert exp.working_dir == new_config["working_dir"]

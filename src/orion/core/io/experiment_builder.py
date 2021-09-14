@@ -379,11 +379,6 @@ def create_experiment(name, version, mode, space, **kwargs):
     """
     experiment = Experiment(name=name, version=version, mode=mode)
     experiment._id = kwargs.get("_id", None)  # pylint:disable=protected-access
-    experiment.pool_size = kwargs.get("pool_size")
-    if experiment.pool_size is None:
-        experiment.pool_size = orion.core.config.experiment.get(
-            "pool_size", deprecated="ignore"
-        )
     experiment.max_trials = kwargs.get(
         "max_trials", orion.core.config.experiment.max_trials
     )

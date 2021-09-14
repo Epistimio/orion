@@ -113,7 +113,6 @@ def test_fetch_config_from_cmdargs():
         "worker_trials": "worker_trials",
         "exp_max_broken": "exp_max_broken",
         "working_dir": "working_dir",
-        "pool_size": "pool_size",
         "max_trials": "max_trials",
         "heartbeat": "heartbeat",
         "worker_max_trials": "worker_max_trials",
@@ -144,7 +143,6 @@ def test_fetch_config_from_cmdargs():
     assert exp_config.pop("max_trials") == "exp_max_trials"
     assert exp_config.pop("max_broken") == "exp_max_broken"
     assert exp_config.pop("working_dir") == "working_dir"
-    assert exp_config.pop("pool_size") == "pool_size"
 
     assert exp_config == {}
 
@@ -222,7 +220,6 @@ def test_fetch_config(config_file):
         "max_trials": 100,
         "max_broken": 5,
         "name": "voila_voici",
-        "pool_size": 1,
         "algorithms": "random",
         "strategy": "NoParallelStrategy",
     }
@@ -258,7 +255,6 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
     assert exp_config.pop("max_trials") == orion.core.config.experiment.max_trials
     assert exp_config.pop("max_broken") == orion.core.config.experiment.max_broken
     assert exp_config.pop("working_dir") == orion.core.config.experiment.working_dir
-    assert exp_config.pop("pool_size") == orion.core.config.experiment.pool_size
     assert exp_config.pop("algorithms") == orion.core.config.experiment.algorithms
     assert exp_config.pop("strategy") == orion.core.config.experiment.strategy
 
@@ -267,6 +263,7 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
     # Test worker subconfig
     worker_config = config.pop("worker")
     assert worker_config.pop("n_workers") == orion.core.config.worker.n_workers
+    assert worker_config.pop("pool_size") == orion.core.config.worker.pool_size
     assert worker_config.pop("executor") == orion.core.config.worker.executor
     assert (
         worker_config.pop("executor_configuration")
