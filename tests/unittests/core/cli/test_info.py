@@ -398,7 +398,6 @@ executing.sh --some random --command line arguments
 def test_format_config(monkeypatch):
     """Test config section formatting"""
     experiment = DummyExperiment()
-    experiment.pool_size = 10
     experiment.max_trials = 100
     experiment.max_broken = 5
     experiment.working_dir = "working_dir"
@@ -407,7 +406,6 @@ def test_format_config(monkeypatch):
         == """\
 Config
 ======
-pool size: 10
 max trials: 100
 max broken: 5
 working dir: working_dir
@@ -608,7 +606,6 @@ def test_format_info(algorithm_dict, dummy_trial):
     experiment.name = "test"
     experiment.version = 1
     experiment.metadata = {"user_args": commandline}
-    experiment.pool_size = 10
     experiment.max_trials = 100
     experiment.max_broken = 5
     experiment.working_dir = "working_dir"
@@ -678,7 +675,6 @@ executing.sh --some~choices(["random", "or", "not"]) --command~uniform(0, 1)
 
 Config
 ======
-pool size: 10
 max trials: 100
 max broken: 5
 working dir: working_dir

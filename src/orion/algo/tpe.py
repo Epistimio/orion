@@ -412,7 +412,7 @@ class TPE(BaseAlgorithm):
 
     def _sample_real_dimension(self, dimension, shape_size, below_points, above_points):
         """Sample values for real dimension"""
-        if dimension.prior_name in ["uniform", "reciprocal"]:
+        if any(map(dimension.prior_name.endswith, ["uniform", "reciprocal"])):
             return self.sample_one_dimension(
                 dimension,
                 shape_size,
@@ -421,7 +421,9 @@ class TPE(BaseAlgorithm):
                 self._sample_real_point,
             )
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(
+                f"Prior {dimension.prior_name} is not supported for real values"
+            )
 
     def _sample_loguniform_real_point(self, dimension, below_points, above_points):
         """Sample one value for real dimension in a loguniform way"""
@@ -555,10 +557,31 @@ class GMMSampler:
     weights: list
         Weights for each Gaussian components in the GMM
         Default: ``None``
+    base_attempts: int, optional
+        Base number of attempts to sample points within `low` and `high` bounds.
+        Defaults to 10.
+    attempts_factor: int, optional
+        If sampling always falls out of bound try again with `attempts` * `attempts_factor`.
+        Defaults to 10.
+    max_attempts: int, optional
+        If sampling always falls out of bound try again with `attempts` * `attempts_factor`
+        up to `max_attempts` (inclusive).
+        Defaults to 10000.
 
     """
 
-    def __init__(self, tpe, mus, sigmas, low, high, weights=None):
+    def __init__(
+        self,
+        tpe,
+        mus,
+        sigmas,
+        low,
+        high,
+        weights=None,
+        base_attempts=10,
+        attempts_factor=10,
+        max_attempts=10000,
+    ):
         self.tpe = tpe
 
         self.mus = mus
@@ -566,6 +589,10 @@ class GMMSampler:
         self.low = low
         self.high = high
         self.weights = weights if weights is not None else len(mus) * [1.0 / len(mus)]
+
+        self.base_attempts = base_attempts
+        self.attempts_factor = attempts_factor
+        self.max_attempts = max_attempts
 
         self.pdfs = []
         self._build_mixture()
@@ -575,23 +602,37 @@ class GMMSampler:
         for mu, sigma in zip(self.mus, self.sigmas):
             self.pdfs.append(norm(mu, sigma))
 
-    def sample(self, num=1, attempts=10):
+    def sample(self, num=1, attempts=None):
         """Sample required number of points"""
+        if attempts is None:
+            attempts = self.base_attempts
+
         point = []
         for _ in range(num):
             pdf = numpy.argmax(self.tpe.rng.multinomial(1, self.weights))
-            new_points = list(
-                self.pdfs[pdf].rvs(size=attempts, random_state=self.tpe.rng)
-            )
-            while True:
-                if not new_points:
-                    raise RuntimeError(
-                        f"Failed to sample in interval ({self.low}, {self.high})"
-                    )
-                pt = new_points.pop(0)
-                if self.low <= pt <= self.high:
-                    point.append(pt)
+            attempts_tried = 0
+            while attempts_tried < attempts:
+                new_points = self.pdfs[pdf].rvs(
+                    size=attempts, random_state=self.tpe.rng
+                )
+                valid_points = (self.low <= new_points) * (self.high >= new_points)
+
+                if any(valid_points):
+                    index = numpy.argmax(valid_points)
+                    point.append(float(new_points[index]))
                     break
+
+                index = None
+                attempts_tried += 1
+
+            if index is None and attempts >= self.max_attempts:
+                raise RuntimeError(
+                    f"Failed to sample in interval ({self.low}, {self.high})"
+                )
+            elif index is None:
+                point.append(
+                    self.sample(num=1, attempts=attempts * self.attempts_factor)[0]
+                )
 
         return point
 

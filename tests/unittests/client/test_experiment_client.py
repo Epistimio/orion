@@ -18,6 +18,7 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.worker.trial import Trial
 from orion.executor.base import Executor
+from orion.executor.joblib_backend import Joblib
 from orion.storage.base import get_storage
 from orion.testing import create_experiment, mock_space_iterate
 
@@ -36,7 +37,6 @@ config = dict(
         },
     },
     version=1,
-    pool_size=1,
     max_trials=10,
     max_broken=5,
     working_dir="",
@@ -673,7 +673,7 @@ class TestSuggest:
                 """Experiment is done"""
                 return True
 
-            def set_is_done():
+            def set_is_done(pool_size):
                 """Set is_done while algo is trying to suggest"""
                 monkeypatch.setattr(experiment.__class__, "is_done", property(is_done))
 
@@ -702,7 +702,7 @@ class TestSuggest:
                 """Experiment is broken"""
                 return True
 
-            def set_is_broken():
+            def set_is_broken(pool_size):
                 """Set is_broken while algo is trying to suggest"""
                 monkeypatch.setattr(
                     experiment.__class__, "is_broken", property(is_broken)
@@ -1174,3 +1174,9 @@ class TestWorkon:
             with client.tmp_executor("joblib", n_workers=5, backend="threading"):
                 client.workon(foo, max_trials=5, n_workers=3)
             assert optimize.count == 3
+
+            optimize.count = 0
+            executor = Joblib(n_workers=5, backend="threading")
+            client.executor = executor
+            client.workon(foo, max_trials=5, n_workers=4)
+            assert optimize.count == 4

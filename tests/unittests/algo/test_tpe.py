@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.algo.tpe`."""
 import itertools
+import timeit
 
 import numpy
 import pytest
@@ -330,6 +331,27 @@ class TestGMMSampler:
         assert numpy.all(hist[0].argsort() == numpy.array(weights).argsort())
         assert numpy.all(points >= -11)
         assert numpy.all(points < 9)
+
+    def test_sample_narrow_space(self, tpe):
+        """Test that sampling in a narrow space does not fail to fast"""
+        mus = numpy.ones(12) * 0.5
+        sigmas = [0.5] * 12
+
+        times = []
+        for bounds in [(0.4, 0.6), (0.49, 0.51), (0.499, 0.501), (0.49999, 0.50001)]:
+            gmm_sampler = GMMSampler(tpe, mus, sigmas, *bounds)
+            times.append(timeit.timeit(lambda: gmm_sampler.sample(2), number=100))
+
+        # Test that easy sampling takes less time.
+        assert sorted(times) == times
+
+        gmm_sampler = GMMSampler(
+            tpe, mus, sigmas, 0.05, 0.04, attempts_factor=1, max_attempts=10
+        )
+        with pytest.raises(RuntimeError) as exc:
+            gmm_sampler.sample(1, attempts=10)
+
+        assert exc.match("Failed to sample in interval")
 
     def test_get_loglikelis(self):
         """Test to get log likelis of points"""
@@ -742,12 +764,14 @@ class TestTPE(BaseAlgoTests):
         original_sample = GMMSampler.sample
 
         low = 0.5
-        high = 0.50001
+        high = 0.5000001
 
-        def sample(self, num):
+        def sample(self, num, attempts=None):
+            self.attempts_factor = 1
+            self.max_attempts = 10
             self.low = low
             self.high = high
-            return original_sample(self, num)
+            return original_sample(self, num, attempts=attempts)
 
         monkeypatch.setattr(GMMSampler, "sample", sample)
         with pytest.raises(RuntimeError) as exc:
@@ -778,6 +802,29 @@ class TestTPE(BaseAlgoTests):
         assert i + 1 == space.cardinality
 
         assert algo.is_done
+
+    def test_log_integer(self, monkeypatch):
+        """Verify that log integer dimensions do not go out of bound."""
+        RANGE = 100
+        algo = self.create_algo(
+            space=self.create_space({"x": f"loguniform(1, {RANGE}, discrete=True)"}),
+        )
+        algo.algorithm.max_trials = RANGE * 2
+
+        values = set(range(1, RANGE + 1))
+
+        # Mock sampling so that it quickly samples all possible integers in given bounds
+        def sample(self, n_samples=1, seed=None):
+            return [(numpy.log(values.pop()),) for _ in range(n_samples)]
+
+        def _suggest_random(self, num):
+            return self._suggest(num, sample)
+
+        monkeypatch.setattr("orion.algo.tpe.TPE._suggest_random", _suggest_random)
+        monkeypatch.setattr("orion.algo.tpe.TPE._suggest_bo", _suggest_random)
+        self.force_observe(RANGE, algo)
+        assert algo.n_observed == RANGE
+        assert algo.n_suggested == RANGE
 
 
 TestTPE.set_phases([("random", 0, "space.sample"), ("bo", N_INIT + 1, "_suggest_bo")])

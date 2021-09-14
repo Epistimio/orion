@@ -9,7 +9,9 @@ import itertools
 
 from tabulate import tabulate
 
+import orion.core
 from orion.client import create_experiment
+from orion.executor.base import Executor
 
 
 class Benchmark:
@@ -49,15 +51,22 @@ class Benchmark:
 
     storage: dict, optional
         Configuration of the storage backend.
+    executor: `orion.executor.base.Executor`, optional
+        Executor to run the benchmark experiments
     """
 
-    def __init__(self, name, algorithms, targets, storage=None):
+    def __init__(self, name, algorithms, targets, storage=None, executor=None):
         self._id = None
         self.name = name
         self.algorithms = algorithms
         self.targets = targets
         self.metadata = {}
         self.storage_config = storage
+        self.executor = executor or Executor(
+            orion.core.config.worker.executor,
+            n_workers=orion.core.config.worker.n_workers,
+            **orion.core.config.worker.executor_configuration,
+        )
 
         self.studies = []
 
@@ -319,6 +328,7 @@ class Study:
                     algorithms=algorithm.experiment_algorithm,
                     max_trials=max_trials,
                     storage=self.benchmark.storage_config,
+                    executor=self.benchmark.executor,
                 )
                 self.experiments_info.append((task_index, experiment))
 

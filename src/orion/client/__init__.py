@@ -55,6 +55,7 @@ def build_experiment(
     heartbeat=None,
     working_dir=None,
     debug=False,
+    executor=None,
 ):
     """Build an experiment to be executable
 
@@ -176,6 +177,8 @@ def build_experiment(
         config_change_type: str, optional
             How to resolve config change automatically. Must be one of 'noeffect', 'unsure' or
             'break'.  Defaults to 'break'.
+    executor: `orion.executor.base.Executor`, optional
+        Executor to run the experiment
 
     Raises
     ------
@@ -240,7 +243,7 @@ def build_experiment(
 
     producer = Producer(experiment, max_idle_time)
 
-    return ExperimentClient(experiment, producer, heartbeat)
+    return ExperimentClient(experiment, producer, executor, heartbeat)
 
 
 def get_experiment(name, version=None, mode="r", storage=None):

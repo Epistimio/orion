@@ -147,28 +147,44 @@ def generic_tree_test(
 
     assert len(list(exp_node.root)) == num_nodes
 
+    print("In node")
+    for trial in experiment.fetch_trials():
+        print(trial)
     assert len(experiment.fetch_trials()) == node_trials
     if parent_name:
+        print("In parent")
+        for trial in exp_node.parent.item.fetch_trials():
+            print(trial)
         assert len(exp_node.parent.item.fetch_trials()) == parent_trials
     if grand_parent_name:
+        print("In grand-parent")
+        for trial in exp_node.parent.parent.item.fetch_trials():
+            print(trial)
         assert len(exp_node.parent.parent.item.fetch_trials()) == grand_parent_trials
 
     if children_names:
+        print("In children")
+        for trial in exp_node.children[0].item.fetch_trials():
+            print(trial)
         assert [
             len(child.item.fetch_trials()) for child in exp_node.children
         ] == children_trials
 
     if grand_children_names:
         grand_children = sum([child.children for child in exp_node.children], [])
+        all_trials = sum(
+            [child_node.item.fetch_trials() for child_node in grand_children], []
+        )
+        print("In grand-children")
+        for trial in all_trials:
+            print(trial)
         assert [
             len(child.item.fetch_trials()) for child in grand_children
         ] == grand_children_trials
 
+    print("with evc")
     for trial in experiment.fetch_trials(with_evc_tree=True):
-        print(
-            trial,
-            trial.compute_trial_hash(trial, ignore_lie=True, ignore_experiment=True),
-        )
+        print(trial)
 
     assert len(experiment.fetch_trials(with_evc_tree=True)) == total_trials
 
@@ -328,9 +344,9 @@ parametrization = {
         dict(
             experiment_name="child",
             parent_name="root",
-            node_trials=9,
+            node_trials=6,
             parent_trials=4,
-            total_trials=10,
+            total_trials=7,
         ),
     ),
     "deletion-with-default-backward": (
@@ -341,8 +357,8 @@ parametrization = {
             experiment_name="root",
             children_names=["child"],
             node_trials=4,
-            children_trials=[9],
-            total_trials=13,
+            children_trials=[6],
+            total_trials=10,
         ),
     ),
     "deletion-without-default-forward": (
@@ -352,9 +368,9 @@ parametrization = {
         dict(
             experiment_name="child",
             parent_name="root",
-            node_trials=10,
+            node_trials=6,
             parent_trials=4,
-            total_trials=10,
+            total_trials=6,
         ),
     ),
     "deletion-without-default-backward": (
@@ -365,7 +381,7 @@ parametrization = {
             experiment_name="root",
             children_names=["child"],
             node_trials=4,
-            children_trials=[10],
+            children_trials=[6],
             total_trials=4,
         ),
     ),
@@ -377,10 +393,10 @@ parametrization = {
             experiment_name="grand-child",
             parent_name="child",
             grand_parent_name="root",
-            node_trials=15,
+            node_trials=5,
             parent_trials=6,
             grand_parent_trials=4,
-            total_trials=15,
+            total_trials=5,
         ),
     ),
     "deletion-with-default-forward-backward": (
@@ -393,8 +409,8 @@ parametrization = {
             children_names=["grand-child"],
             node_trials=6,
             parent_trials=4,
-            children_trials=[15],
-            total_trials=6 + 1 + 15,
+            children_trials=[5],
+            total_trials=6 + 1 + 5,
         ),
     ),
     "deletion-with-default-backward-backward": (
@@ -407,8 +423,8 @@ parametrization = {
             grand_children_names=["grand-child"],
             node_trials=4,
             children_trials=[6],
-            grand_children_trials=[15],
-            total_trials=4 + 6 + 15,
+            grand_children_trials=[5],
+            total_trials=4 + 6 + 5,
         ),
     ),
     "deletion-without-default-forward-forward": (
@@ -419,10 +435,10 @@ parametrization = {
             experiment_name="grand-child",
             parent_name="child",
             grand_parent_name="root",
-            node_trials=15,
+            node_trials=5,
             parent_trials=6,
             grand_parent_trials=4,
-            total_trials=15,
+            total_trials=5,
         ),
     ),
     "deletion-without-default-forward-backward": (
@@ -435,7 +451,7 @@ parametrization = {
             children_names=["grand-child"],
             node_trials=6,
             parent_trials=4,
-            children_trials=[15],
+            children_trials=[5],
             total_trials=6,
         ),
     ),
@@ -449,7 +465,7 @@ parametrization = {
             grand_children_names=["grand-child"],
             node_trials=4,
             children_trials=[6],
-            grand_children_trials=[15],
+            grand_children_trials=[5],
             total_trials=4,
         ),
     ),

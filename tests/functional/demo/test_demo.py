@@ -41,7 +41,6 @@ def test_demo_with_default_algo_cli_config_only(storage, monkeypatch):
     exp = exp[0]
     assert "_id" in exp
     assert exp["name"] == "default_algo"
-    assert exp["pool_size"] == 1
     assert exp["max_trials"] == 5
     assert exp["max_broken"] == 3
     assert exp["algorithms"] == {"random": {"seed": None}}
@@ -84,7 +83,6 @@ def test_demo(storage, monkeypatch):
     assert "_id" in exp
     exp_id = exp["_id"]
     assert exp["name"] == "voila_voici"
-    assert exp["pool_size"] == 1
     assert exp["max_trials"] == 20
     assert exp["max_broken"] == 5
     assert exp["algorithms"] == {
@@ -135,7 +133,6 @@ def test_demo_with_script_config(storage, monkeypatch):
     assert "_id" in exp
     exp_id = exp["_id"]
     assert exp["name"] == "voila_voici"
-    assert exp["pool_size"] == 1
     assert exp["max_trials"] == 20
     assert exp["max_broken"] == 5
     assert exp["algorithms"] == {
@@ -192,7 +189,6 @@ def test_demo_with_python_and_script(storage, monkeypatch):
     assert "_id" in exp
     exp_id = exp["_id"]
     assert exp["name"] == "voila_voici"
-    assert exp["pool_size"] == 1
     assert exp["max_trials"] == 20
     assert exp["max_broken"] == 5
     assert exp["algorithms"] == {
@@ -279,7 +275,6 @@ def test_demo_four_workers(storage, monkeypatch):
     assert "_id" in exp
     exp_id = exp["_id"]
     assert exp["name"] == "four_workers_demo"
-    assert exp["pool_size"] == 2
     assert exp["max_trials"] == 20
     assert exp["max_broken"] == 5
     assert exp["algorithms"] == {"random": {"seed": 2}}
@@ -306,7 +301,6 @@ def test_workon():
     name = "voici_voila"
     config = {"name": name}
     config["algorithms"] = {"random": {"seed": 1}}
-    config["pool_size"] = 1
     config["max_trials"] = 50
     config["exp_max_broken"] = 5
     config["user_args"] = [
@@ -338,7 +332,6 @@ def test_workon():
         exp = exp[0]
         assert "_id" in exp
         assert exp["name"] == name
-        assert exp["pool_size"] == 1
         assert exp["max_trials"] == 50
         assert exp["max_broken"] == 5
         assert exp["algorithms"] == {"random": {"seed": 1}}
@@ -370,7 +363,6 @@ def test_stress_unique_folder_creation(storage, monkeypatch, tmpdir, capfd):
         [
             "hunt",
             "--max-trials={}".format(how_many),
-            "--pool-size=1",
             "--name=lalala",
             "--config",
             "./stress_gradient.yaml",
@@ -570,8 +562,6 @@ def test_run_with_parallel_strategy(storage, monkeypatch, strategy):
             "hunt",
             "--max-trials",
             "20",
-            "--pool-size",
-            "1",
             "--config",
             config_file,
             "./black_box.py",
@@ -602,8 +592,6 @@ def test_worker_trials(storage, monkeypatch):
             "hunt",
             "--config",
             "./orion_config_random.yaml",
-            "--pool-size",
-            "1",
             "--worker-trials",
             "0",
             "./black_box.py",
@@ -720,7 +708,6 @@ def test_demo_with_nondefault_config_keyword(storage, monkeypatch):
     assert "_id" in exp
     exp_id = exp["_id"]
     assert exp["name"] == "voila_voici"
-    assert exp["pool_size"] == 1
     assert exp["max_trials"] == 20
     assert exp["algorithms"] == {
         "gradient_descent": {"learning_rate": 0.1, "dx_tolerance": 1e-5}

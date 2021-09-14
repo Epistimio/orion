@@ -134,7 +134,7 @@ def define_experiment_config(config):
     experiment_config.add_option(
         "max_trials",
         option_type=int,
-        default=1000,
+        default=int(10e8),
         env_var="ORION_EXP_MAX_TRIALS",
         help="number of trials to be completed for the experiment. This value "
         "will be saved within the experiment configuration and reused "
@@ -144,7 +144,7 @@ def define_experiment_config(config):
     experiment_config.add_option(
         "worker_trials",
         option_type=int,
-        default=1000,
+        default=int(10e8),
         deprecate=dict(
             version="v0.3",
             alternative="worker.max_trials",
@@ -167,14 +167,6 @@ def define_experiment_config(config):
         default="",
         env_var="ORION_WORKING_DIR",
         help="Set working directory for running experiment.",
-    )
-
-    experiment_config.add_option(
-        "pool_size",
-        option_type=int,
-        default=1,
-        deprecate=dict(version="v0.3", alternative=None, name="experiment.pool_size"),
-        help="This argument will be removed in v0.3.",
     )
 
     experiment_config.add_option(
@@ -207,6 +199,20 @@ def define_worker_config(config):
             "Number of workers to run in parallel. "
             "It is possible to run many ``orion hunt`` in parallel, and each will spawn "
             "``n_workers``."
+        ),
+    )
+
+    worker_config.add_option(
+        "pool_size",
+        option_type=int,
+        default=0,
+        env_var="ORION_POOL_SIZE",
+        help=(
+            "Number of trials to sample at a time. "
+            "If 0, will default to number of executor workers. "
+            "Increase it to improve the sampling speed if workers spend too much time "
+            "waiting for algorithms to sample points. An algorithm will try sampling "
+            "`pool-size` trials but may return less."
         ),
     )
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.evc.adapters`."""
+import logging
 
 import pytest
 
@@ -36,6 +37,12 @@ def small_prior():
 def large_prior():
     """Give string format of large uniform distribution prior"""
     return "uniform(0, 1000)"
+
+
+@pytest.fixture
+def prior_with_shape():
+    """Give string format of uniform distribution prior with shape"""
+    return "uniform(0, 10, shape=10)"
 
 
 @pytest.fixture
@@ -87,8 +94,13 @@ def trials(
         if isinstance(name, str) and name.endswith("_prior")
     )
 
+    return generate_trials(priors, N_TRIALS)
+
+
+def generate_trials(priors, n_trials):
+    """Generate trials by sampling from priors. Each trial has one param per prior."""
     trials = []
-    for _ in range(N_TRIALS):
+    for _ in range(n_trials):
         params = []
         for name, prior in priors.items():
             dimension = DimensionBuilder().build(name, prior)
@@ -527,6 +539,44 @@ class TestDimensionPriorChangeForwardBackward(object):
         dimension_prior_change_adapter = DimensionPriorChange(
             "small_prior", disjoint_prior, small_prior
         )
+
+        adapted_trials = dimension_prior_change_adapter.backward(trials)
+
+        assert len(adapted_trials) == 0
+
+    def test_dimension_prior_change_forward_different_shapes(
+        self, small_prior, prior_with_shape, trials, caplog
+    ):
+        """Test :meth:`orion.core.evc.adapters.DimensionPriorChange.forward`
+        with priors of different shapes
+        """
+        with caplog.at_level(logging.WARNING):
+            dimension_prior_change_adapter = DimensionPriorChange(
+                "small_prior", small_prior, prior_with_shape
+            )
+
+        assert (
+            "Oríon does not support yet adaptations on prior shape changes"
+            in caplog.records[0].msg
+        )
+
+        trials = generate_trials({"small_prior": small_prior}, 10)
+
+        adapted_trials = dimension_prior_change_adapter.forward(trials)
+
+        assert len(adapted_trials) == 0
+
+    def test_dimension_prior_change_backward_different_shapes(
+        self, small_prior, prior_with_shape, trials
+    ):
+        """Test :meth:`orion.core.evc.adapters.DimensionPriorChange.backward`
+        with priors of different shapes
+        """
+        dimension_prior_change_adapter = DimensionPriorChange(
+            "small_prior", small_prior, prior_with_shape
+        )
+
+        trials = generate_trials({"small_prior": prior_with_shape}, 10)
 
         adapted_trials = dimension_prior_change_adapter.backward(trials)
 

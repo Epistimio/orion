@@ -787,6 +787,8 @@ class Categorical(Dimension):
 
         args = [prior]
 
+        if self._shape is not None:
+            args += ["shape={}".format(self._shape)]
         if self.default_value is not self.NO_DEFAULT_VALUE:
             args += ["default_value={}".format(repr(self.default_value))]
 

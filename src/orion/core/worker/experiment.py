@@ -45,8 +45,6 @@ class Experiment:
         Current version of this experiment.
     metadata : dict
        Contains managerial information about this `Experiment`.
-    pool_size : int
-       How many workers can participate asynchronously in this `Experiment`.
     max_trials : int
        How many trials must be evaluated, before considering this `Experiment` done.
        This attribute can be updated if the rest of the experiment configuration
@@ -90,7 +88,6 @@ class Experiment:
         "name",
         "refers",
         "metadata",
-        "pool_size",
         "max_trials",
         "max_broken",
         "version",
@@ -103,7 +100,7 @@ class Experiment:
         "_node",
         "_mode",
     )
-    non_branching_attrs = ("pool_size", "max_trials", "max_broken")
+    non_branching_attrs = ("max_trials", "max_broken")
 
     def __init__(self, name, version=None, mode="r"):
         self._id = None
@@ -113,7 +110,6 @@ class Experiment:
         self._node = None
         self.refers = {}
         self.metadata = {}
-        self.pool_size = None
         self.max_trials = None
         self.max_broken = None
         self.space = None

@@ -2,5 +2,6 @@ pytest >= 3.6.0
 pytest-xdist
 pytest-timeout
 pytest-mock
+pytest-lazy-fixture
 git+git://github.com/Delaunay/track
 dask[complete]

@@ -633,6 +633,7 @@ def regrets(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
             mode="lines",
             line=dict(color=px.colors.qualitative.G10[i]),
             name=name,
+            legendgroup=name,
         )
         if "best_var" in exp_data:
             dy = numpy.sqrt(exp_data["best_var"])
@@ -643,6 +644,7 @@ def regrets(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
                 showlegend=False,
                 line=dict(color=px.colors.qualitative.G10[i]),
                 name=name,
+                legendgroup=name,
             )
 
     fig.update_layout(

@@ -369,7 +369,6 @@ class TestExperimentConfig(ConfigurationTestSuite):
             "max_trials": 10,
             "max_broken": 5,
             "working_dir": "here",
-            "pool_size": 2,
             "worker_trials": 5,
             "algorithms": {"aa": {"b": "c", "d": {"e": "f"}}},
             "strategy": {"sa": {"c": "d", "e": {"f": "g"}}},
@@ -563,6 +562,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
     config = {
         "worker": {
             "n_workers": 2,
+            "pool_size": 2,
             "executor": "dask",
             "executor_configuration": {"threads_per_worker": 1},
             "heartbeat": 30,
@@ -576,6 +576,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
     env_vars = {
         "ORION_N_WORKERS": 3,
+        "ORION_POOL_SIZE": 1,
         "ORION_EXECUTOR": "joblib",
         "ORION_HEARTBEAT": 40,
         "ORION_WORKER_MAX_TRIALS": 20,
@@ -588,6 +589,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
     local = {
         "worker": {
             "n_workers": 4,
+            "pool_size": 5,
             "executor": "dask",
             "executor_configuration": {"threads_per_worker": 2},
             "heartbeat": 50,
@@ -601,6 +603,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
 
     cmdargs = {
         "n-workers": 1,
+        "pool-size": 6,
         "executor": "dask",
         "heartbeat": 70,
         "worker-max-trials": 1,
@@ -704,6 +707,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
         """Check that env vars overrides global configuration"""
         env_var_config = {
             "n_workers": self.env_vars["ORION_N_WORKERS"],
+            "pool_size": self.env_vars["ORION_POOL_SIZE"],
             "executor": self.env_vars["ORION_EXECUTOR"],
             "executor_configuration": self.config["worker"]["executor_configuration"],
             "heartbeat": self.env_vars["ORION_HEARTBEAT"],
