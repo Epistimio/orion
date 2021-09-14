@@ -514,7 +514,7 @@ class ExperimentClient:
         pool_size: int, optional
             Number of trials to sample at a time. If 0, default to global config if defined,
             else 1.  Increase it to improve the sampling speed if workers spend too much time
-            waiting for algorithms to sample points. An algorithm will try sampling `pool-size`
+            waiting for algorithms to sample points. An algorithm will try sampling `pool_size`
             trials but may return less. Note: The method will still return only 1 trial even though
             if the pool size is larger than 1. This is because atomic reservation of trials
             can only be done one at a time.
@@ -672,7 +672,7 @@ class ExperimentClient:
             Number of trials to sample at a time. If 0, defaults to `n_workers` or value of global
             config if defined.  Increase it to improve the sampling speed if workers spend too much
             time waiting for algorithms to sample points. An algorithm will try sampling
-            `pool-size` trials but may return less.
+            `pool_size` trials but may return less.
         max_trials: int, optional
             Maximum number of trials to execute within ``workon``. If the experiment or algorithm
             reach status is_done before, the execution of ``workon`` terminates.
