@@ -62,7 +62,7 @@ class ProfetTaskTests:
         profet_input_dir: Path,
         tmp_path_factory,
     ):
-        """ TODO: Test that when instantiating multiple tasks with the same arguments, the
+        """ Tests that when instantiating multiple tasks with the same arguments, the
         meta-model is trained only once.
         """
         max_trials = 123
@@ -138,6 +138,43 @@ class ProfetTaskTests:
         second_task = _get_task(name=name, **config_dict)
         assert second_task.configuration == first_task.configuration
 
+    def test_sanity_check(
+        self,
+        profet_train_config: MetaModelTrainingConfig,
+        profet_input_dir: Path,
+        checkpoint_dir: Path,
+    ):
+        """ Tests that two tasks with different arguments give different results. """
+        task_id = 0
+        first_task_kwargs = dict(
+            max_trials=10,
+            task_id=task_id,
+            train_config=profet_train_config,
+            seed=123,
+            input_dir=profet_input_dir,
+            checkpoint_dir=checkpoint_dir,
+        )
+        
+        first_task = self.Task(**first_task_kwargs)
+        first_point = first_task._space.sample(1, seed=first_task.seed)[0]
+        first_results = first_task(first_point)
+        assert len(first_results) == 1
+        assert first_results[0]["type"] == "objective"
+        first_objective = first_results[0]["value"]
+
+        second_task_kwargs = first_task_kwargs.copy()
+        second_task_kwargs["seed"] += 456
+
+        second_task = self.Task(**second_task_kwargs)
+        second_point = second_task._space.sample(1, seed=second_task.seed)[0]
+        second_results = second_task(second_point)
+        assert len(second_results) == 1
+        assert second_results[0]["type"] == "objective"
+        second_objective = second_results[0]["value"]
+
+        assert first_point != second_point
+        assert first_objective != second_objective
+
     def test_call_is_reproducible(
         self,
         profet_train_config: MetaModelTrainingConfig,
@@ -148,14 +185,15 @@ class ProfetTaskTests:
         results.
         """
         task_id = 0
-        first_task = self.Task(
+        task_kwargs = dict(
             max_trials=10,
             task_id=task_id,
             train_config=profet_train_config,
             seed=123,
             input_dir=profet_input_dir,
-            checkpoint_dir=checkpoint_dir,
+            checkpoint_dir=checkpoint_dir,            
         )
+        first_task = self.Task(**task_kwargs)
 
         first_point = first_task._space.sample(1, seed=first_task.seed)[0]
         first_results = first_task(first_point)
@@ -163,15 +201,8 @@ class ProfetTaskTests:
         assert first_results[0]["type"] == "objective"
         first_objective = first_results[0]["value"]
 
-        second_task = self.Task(
-            max_trials=10,
-            task_id=task_id,
-            train_config=profet_train_config,
-            seed=123,
-            input_dir=profet_input_dir,
-            checkpoint_dir=checkpoint_dir,
-        )
-        second_point = second_task._space.sample(1, seed=first_task.seed)[0]
+        second_task = self.Task(**task_kwargs)
+        second_point = second_task._space.sample(1, seed=second_task.seed)[0]
         second_results = second_task(second_point)
         assert len(second_results) == 1
         assert second_results[0]["type"] == "objective"
