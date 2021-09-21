@@ -138,36 +138,6 @@ class ProfetTaskTests:
         second_task = _get_task(name=name, **config_dict)
         assert second_task.configuration == first_task.configuration
 
-    @pytest.mark.xfail(
-        reason="TODO: Not sure how to modify the `space.sample` for a particular space instance "
-        "without changing the 'global' RNG."
-    )
-    def test_space_sample_is_reproducible(
-        self,
-        profet_train_config: MetaModelTrainingConfig,
-        profet_input_dir: Path,
-        checkpoint_dir: Path,
-    ):
-        task = self.Task(
-            max_trials=10,
-            train_config=profet_train_config,
-            seed=123,
-            input_dir=profet_input_dir,
-            checkpoint_dir=checkpoint_dir,
-        )
-        points = task._space.sample(10)
-        assert len(set(points)) == 10
-
-        # Create a new task:
-        second_task = self.Task(
-            max_trials=10,
-            train_config=profet_train_config,
-            seed=123,
-            input_dir=profet_input_dir,
-            checkpoint_dir=checkpoint_dir,
-        )
-        assert second_task._space.sample(10) == points
-
     def test_call_is_reproducible(
         self,
         profet_train_config: MetaModelTrainingConfig,

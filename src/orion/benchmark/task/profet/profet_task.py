@@ -749,10 +749,10 @@ class ProfetTask(BaseTask, Generic[InputType]):
 
         assert isinstance(x, Tensor)  # Just to keep the type checker happy: this is always true.
         x_tensor: Tensor = x
-        if with_grad:
-            x_tensor.requires_grad_(True)
 
         x_tensor = x_tensor.type_as(self.h_tensor)
+        if with_grad:
+            x_tensor = x_tensor.requires_grad_(True)
         p_tensor = torch.cat([x_tensor, self.h_tensor])
         p_tensor = torch.atleast_2d(p_tensor)
 
