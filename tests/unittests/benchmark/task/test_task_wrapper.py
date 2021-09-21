@@ -20,8 +20,8 @@ class DumbTask(BaseTask):
     def get_search_space(self) -> Dict[str, str]:
         return {
             "a": "uniform(0, 10, discrete=True)",
-            "b": "uniform(0, 10, discrete=True)",
-            "c": "uniform(0, 10, discrete=True)",
+            "b": "uniform(0, 11, discrete=True)",
+            "c": "uniform(0, 12, discrete=True)",
         }
 
     @property
