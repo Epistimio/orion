@@ -1,15 +1,9 @@
 """ Base class for Tasks that are generated using the Profet algorithm.
 
-```
-@misc{klein2019metasurrogate,
-      title={Meta-Surrogate Benchmarking for Hyperparameter Optimization}, 
-      author={Aaron Klein and Zhenwen Dai and Frank Hutter and Neil Lawrence and Javier Gonzalez},
-      year={2019},
-      eprint={1905.12982},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
-}
-```
+For more information on Profet, see original paper at https://arxiv.org/abs/1905.12982.
+
+Klein, Aaron, Zhenwen Dai, Frank Hutter, Neil Lawrence, and Javier Gonzalez. "Meta-surrogate benchmarking for 
+hyperparameter optimization." Advances in Neural Information Processing Systems 32 (2019): 6270-6280.
 """
 import functools
 import hashlib
@@ -28,9 +22,7 @@ import GPy
 import numpy as np
 import torch
 from emukit.examples.profet.meta_benchmarks.architecture import get_default_architecture
-from emukit.examples.profet.meta_benchmarks.meta_forrester import (
-    get_architecture_forrester,
-)
+from emukit.examples.profet.meta_benchmarks.meta_forrester import get_architecture_forrester
 from emukit.examples.profet.train_meta_model import download_data
 from GPy.models import BayesianGPLVM
 from numpy.random import RandomState
@@ -68,15 +60,11 @@ NAMES: Dict[str, str] = dict(
 
 hidden_space: Dict[str, int] = dict(forrester=2, fcnet=5, svm=5, xgboost=5)
 
-normalize_targets: Dict[str, bool] = dict(
-    forrester=True, fcnet=False, svm=False, xgboost=True
-)
+normalize_targets: Dict[str, bool] = dict(forrester=True, fcnet=False, svm=False, xgboost=True)
 
 log_cost: Dict[str, bool] = dict(forrester=False, fcnet=True, svm=True, xgboost=True)
 
-log_target: Dict[str, bool] = dict(
-    forrester=False, fcnet=False, svm=False, xgboost=True
-)
+log_target: Dict[str, bool] = dict(forrester=False, fcnet=False, svm=False, xgboost=True)
 
 
 @dataclass
@@ -84,7 +72,6 @@ class MetaModelTrainingConfig:
     """Configuration options for the training of the Profet meta-model."""
 
     n_samples: int = 1
-    # TODO: Maybe could reduce this a bit to make the task generation faster?
     num_burnin_steps: int = 50000
     num_steps: int = 0
     mcmc_thining: int = 100
@@ -204,9 +191,7 @@ def load_data(
         download_data(input_path)
         logger.info(f"Download finished.")
         if not file.exists():
-            raise RuntimeError(
-                f"Download finished, but file {file} still doesn't exist!"
-            )
+            raise RuntimeError(f"Download finished, but file {file} still doesn't exist!")
     res = json.load(open(file, "r"))
     X, Y, C = np.array(res["X"]), np.array(res["Y"]), np.array(res["C"])
     if len(X.shape) == 1:
@@ -215,9 +200,7 @@ def load_data(
     return X, Y, C
 
 
-def normalize_Y(
-    Y: np.ndarray, indexD: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def normalize_Y(Y: np.ndarray, indexD: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Normalize the Y array and return its mean and standard deviations.
 
     Parameters
@@ -225,7 +208,7 @@ def normalize_Y(
     Y : np.ndarray
         Labels from the datasets.
     indexD : np.ndarray
-        TODO: Not sure what this argument represents.
+        NOTE: Not sure what this argument represents.
 
     Returns
     -------
@@ -286,16 +269,11 @@ def get_features(
     kern = GPy.kern.Matern52(Q_h, ARD=True)
 
     m_lvm = BayesianGPLVM(
-        Y_norm.reshape(n_tasks, n_configs),
-        Q_h,
-        kernel=kern,
-        num_inducing=n_inducing_lvm,
+        Y_norm.reshape(n_tasks, n_configs), Q_h, kernel=kern, num_inducing=n_inducing_lvm,
     )
     m_lvm.optimize(max_iters=max_iters, messages=display_messages)
 
-    ls = np.array(
-        [m_lvm.kern.lengthscale[i] for i in range(m_lvm.kern.lengthscale.shape[0])]
-    )
+    ls = np.array([m_lvm.kern.lengthscale[i] for i in range(m_lvm.kern.lengthscale.shape[0])])
 
     # generate data to train the multi-task model
     task_features_mean = np.array(m_lvm.X.mean / ls)
@@ -407,17 +385,13 @@ def get_meta_model(
     """
 
     objective_model = Bohamiann(
-        get_network=get_architecture,
-        print_every_n_steps=1000,
-        normalize_output=normalize_targets,
+        get_network=get_architecture, print_every_n_steps=1000, normalize_output=normalize_targets,
     )
     logger.info("Training Bohamiann objective model.")
-    # TODO: With the FcNet task, the dataset has size 8_100_000, which takes a LOT of
+    # NOTE: With the FcNet task, the dataset has size 8_100_000, which takes a LOT of
     # memory to run!
     if config.max_samples is not None:
-        logger.info(
-            f"Limiting the dataset to a maximum of {config.max_samples} samples."
-        )
+        logger.info(f"Limiting the dataset to a maximum of {config.max_samples} samples.")
         X_train = X_train[: config.max_samples, ...]
         Y_train = Y_train[: config.max_samples, ...]
         C_train = C_train[: config.max_samples, ...]
@@ -437,9 +411,7 @@ def get_meta_model(
     )
 
     if with_cost:
-        cost_model = Bohamiann(
-            get_network=get_default_architecture, print_every_n_steps=1000
-        )
+        cost_model = Bohamiann(get_network=get_default_architecture, print_every_n_steps=1000)
         logger.info("Training Bohamiann cost model.")
         cost_model.train(
             X_train,
@@ -483,9 +455,7 @@ def get_network(model: Bohamiann, size: int, idx: int = 0) -> nn.Module:
     return net
 
 
-def load_task_network(
-    checkpoint_file: Union[str, Path]
-) -> Tuple[nn.Module, np.ndarray]:
+def load_task_network(checkpoint_file: Union[str, Path]) -> Tuple[nn.Module, np.ndarray]:
     """Load the result of the `get_task_network` function stored in the pickle file.
 
     Parameters
@@ -509,10 +479,22 @@ def load_task_network(
     return network, h
 
 
-
 def save_task_network(
     checkpoint_file: Union[str, Path], benchmark: str, network: nn.Module, h: np.ndarray
 ) -> None:
+    """Save the meta-model for the task at the given path. 
+
+    Parameters
+    ----------
+    checkpoint_file : Union[str, Path]
+        Path where the model should be saved
+    benchmark : str
+        The name of the benchmark
+    network : nn.Module
+        The network
+    h : np.ndarray
+        The embedding vector
+    """
     checkpoint_file = Path(checkpoint_file)
     state = dict(
         benchmark=benchmark,
@@ -546,6 +528,33 @@ InputType = TypeVar("InputType")
 
 
 class ProfetTask(BaseTask, Generic[InputType]):
+    """Base class for Tasks that are generated using the Profet algorithm.
+
+    For more information on Profet, see original paper at https://arxiv.org/abs/1905.12982.
+
+    Klein, Aaron, Zhenwen Dai, Frank Hutter, Neil Lawrence, and Javier Gonzalez. "Meta-surrogate benchmarking for 
+    hyperparameter optimization." Advances in Neural Information Processing Systems 32 (2019): 6270-6280.
+    
+    Parameters
+    ----------
+    benchmark : str
+        Name of the benchmark.
+    max_trials : int, optional
+        Max number of trials to run, by default 100
+    task_id : int, optional
+        Task index, by default 0
+    seed : int, optional
+        Random seed, by default 123
+    input_dir : Union[Path, str], optional
+        Input directory containing the data used to train the meta-model, by default None.
+    checkpoint_dir : Union[Path, str], optional
+        Directory used to save/load trained meta-models, by default None.
+    train_config : MetaModelTrainingConfig, optional
+        Configuration options for the training of the meta-model, by default None
+    device : Union[torch.device, str], optional
+        The device to use for training, by default None.
+    """
+
     def __init__(
         self,
         benchmark: str,
@@ -565,7 +574,6 @@ class ProfetTask(BaseTask, Generic[InputType]):
         self.checkpoint_dir = Path(checkpoint_dir or self.input_dir / "checkpoints")
         # The config for the training of the meta-model.
         # NOTE: the train config is used to determine the hash of the task.
-        # TODO: Also save the train_config in the `configuration` of the task.
         self.train_config = train_config or MetaModelTrainingConfig()
 
         # The parameters that have an influence over the training of the meta-model are used to
@@ -588,9 +596,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
         if isinstance(device, torch.device):
             self.device = device
         else:
-            self.device = torch.device(
-                device or ("cuda" if torch.cuda.is_available() else "cpu")
-            )
+            self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
 
         # TODO: Save those in the configuration dict?
         self._np_rng: Optional[np.random.RandomState] = None
@@ -616,9 +622,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
                     task_id=self.task_id,
                     config=self.train_config,
                 )
-                save_task_network(
-                    self.checkpoint_file, self.benchmark, self.net, self.h
-                )
+                save_task_network(self.checkpoint_file, self.benchmark, self.net, self.h)
 
         self.net = self.net.to(device=self.device)
         self.net.eval()
@@ -675,10 +679,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
         np.random.set_state(start_np_state)
 
     def call(
-        self,
-        x: Union[InputType, Trial, Dict, Tuple] = None,
-        with_grad: bool = False,
-        **kwargs,
+        self, x: Union[InputType, Trial, Dict, Tuple] = None, with_grad: bool = False, **kwargs,
     ) -> List[Dict]:
         """Get the value of the sampled objective function at the given point (hyper-parameters).
 
@@ -740,9 +741,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
         if isinstance(x, np.ndarray):
             x = torch.as_tensor(x, dtype=torch.float32, device=self.device)
 
-        assert isinstance(
-            x, Tensor
-        )  # Just to keep the type checker happy: this is always true.
+        assert isinstance(x, Tensor)  # Just to keep the type checker happy: this is always true.
         x_tensor: Tensor = x
         if with_grad:
             x_tensor.requires_grad_(True)
@@ -773,16 +772,14 @@ class ProfetTask(BaseTask, Generic[InputType]):
         if with_grad:
             self.net.zero_grad()
             y_sample.backward()
-            results.append(
-                dict(name=self.name, type="gradient", value=x_tensor.grad.cpu().numpy())
-            )
+            results.append(dict(name=self.name, type="gradient", value=x_tensor.grad.cpu().numpy()))
 
         return results
 
     @property
     def configuration(self):
         """Return the configuration of the task."""
-        # TODO: Still not sure I understand
+        # TODO: Still not sure I understand how this mess works.
         return {
             self.__class__.__qualname__: {
                 "max_trials": self.max_trials,
