@@ -23,8 +23,6 @@ requires_profet_data = pytest.mark.skipif(
 @pytest.fixture(scope="session")
 def profet_train_config():
     """ Fixture that provides a configuration object for the Profet algorithm for testing. """
-    # TODO: Figure out a good set of values that makes the training of the meta-model really fast,
-    # or use a monkeypatch fixture to make training super quick to run somehow.
     quick_train_config = MetaModelTrainingConfig(
         num_burnin_steps=10,
         # num_steps=10,
