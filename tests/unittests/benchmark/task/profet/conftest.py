@@ -117,7 +117,7 @@ def load_fake_data(
     real_load_data = orion.benchmark.task.profet.profet_task.load_data
 
     def _load_data(path: Path, benchmark: str):
-        if use_real_data:
+        if use_real_data and path == REAL_PROFET_DATA_DIR:
             # Return real datasets.
             logger.info(f"Testing using the real Profet datasets.")
             return real_load_data(REAL_PROFET_DATA_DIR, benchmark=benchmark)

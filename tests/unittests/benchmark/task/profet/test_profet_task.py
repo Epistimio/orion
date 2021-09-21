@@ -4,15 +4,12 @@ from pathlib import Path
 from typing import ClassVar, Type
 
 import numpy as np
-from numpy.lib.npyio import load
 import pytest
 import torch
 from orion.algo.space import _Discrete
 from orion.benchmark.task.profet.profet_task import (
     MetaModelTrainingConfig,
     ProfetTask,
-    download_data,
-    load_data,
 )
 
 from .conftest import REAL_PROFET_DATA_DIR, y_min, y_max, c_min, c_max
@@ -21,11 +18,11 @@ from .conftest import REAL_PROFET_DATA_DIR, y_min, y_max, c_min, c_max
 logger = get_logger(__name__)
 
 
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(15)
 @pytest.mark.parametrize("benchmark", ["fcnet", "forrester", "svm", "xgboost"])
-def test_download_fake_datasets(tmp_path_factory, benchmark: str):
-    # TODO: Downloading the data takes a VERY long time, even though the datasets are relatively
-    # small! Would it be alright to store those datasets somewhere?
+def test_download_fake_datasets(tmp_path_factory, benchmark: str, load_fake_data):
+    from orion.benchmark.task.profet.profet_task import load_data
+
     real_input_dir: Path = REAL_PROFET_DATA_DIR
     real_x, real_y, real_c = load_data(real_input_dir, benchmark=benchmark)
 
@@ -190,7 +187,11 @@ class ProfetTaskTests:
             checkpoint_dir=checkpoint_dir,
         )
 
-        point = first_task._space.sample(1, seed=first_task.seed)[0]
+        first_point = first_task._space.sample(1, seed=first_task.seed)[0]
+        first_results = first_task(first_point)
+        assert len(first_results) == 1
+        assert first_results[0]["type"] == "objective"
+        first_objective = first_results[0]["value"]
 
         second_task = self.Task(
             max_trials=10,
@@ -200,13 +201,10 @@ class ProfetTaskTests:
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
-
-        results = second_task(point)
-
-        assert len(results) == 1
-        assert results[0]["type"] == "objective"
-        first_objective = results[0]["value"]
-        second_results = second_task(point)
+        second_point = second_task._space.sample(1, seed=first_task.seed)[0]
+        second_results = second_task(second_point)
+        assert len(second_results) == 1
+        assert second_results[0]["type"] == "objective"
         second_objective = second_results[0]["value"]
 
         assert second_objective == first_objective
