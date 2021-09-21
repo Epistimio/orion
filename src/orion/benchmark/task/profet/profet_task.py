@@ -553,6 +553,9 @@ class ProfetTask(BaseTask, Generic[InputType]):
         Configuration options for the training of the meta-model, by default None
     device : Union[torch.device, str], optional
         The device to use for training, by default None.
+    with_grad : bool, optional
+        Wether the task should also return the gradients of the objective function with respect to
+        the inputs. Defaults to `False`.
     """
 
     def __init__(
@@ -565,6 +568,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
         checkpoint_dir: Union[Path, str] = None,
         train_config: MetaModelTrainingConfig = None,
         device: Union[torch.device, str] = None,
+        with_grad: bool = False,
     ):
         super().__init__(max_trials=max_trials)
         self.benchmark = benchmark
@@ -575,7 +579,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
         # The config for the training of the meta-model.
         # NOTE: the train config is used to determine the hash of the task.
         self.train_config = train_config or MetaModelTrainingConfig()
-
+        self.with_grad = with_grad
         # The parameters that have an influence over the training of the meta-model are used to
         # create the filename where the model will be saved.
         task_hash_params = dict(
@@ -678,7 +682,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
         np.random.set_state(start_np_state)
 
     def call(
-        self, x: Union[InputType, Trial, Dict, Tuple] = None, with_grad: bool = False, **kwargs,
+        self, x: Union[InputType, Trial, Dict, Tuple] = None, with_grad: bool = None, **kwargs,
     ) -> List[Dict]:
         """Get the value of the sampled objective function at the given point (hyper-parameters).
 
@@ -705,6 +709,9 @@ class ProfetTask(BaseTask, Generic[InputType]):
         logger.debug(f"received x={x}")
         if x is None and kwargs:
             x = kwargs
+
+        if with_grad is None:
+            with_grad = self.with_grad
 
         if is_dataclass(x):
             x = asdict(x)

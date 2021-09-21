@@ -38,6 +38,7 @@ class FcNetTask(ProfetTask[FcNetTaskHParams]):
         checkpoint_dir: Union[Path, str] = None,
         train_config: MetaModelTrainingConfig = None,
         device: Union[torch.device, str] = None,
+        with_grad: bool = False,
         benchmark: str = "fcnet",
     ):
         super().__init__(
@@ -48,6 +49,7 @@ class FcNetTask(ProfetTask[FcNetTaskHParams]):
             checkpoint_dir=checkpoint_dir,
             train_config=train_config,
             device=device,
+            with_grad=with_grad,
             benchmark=benchmark,
         )
 

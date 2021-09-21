@@ -245,11 +245,13 @@ class ProfetTaskTests:
             # TODO: Not sure why, but the two values are very close, but different!
             assert np.isclose(first_objective, second_objective)
 
+    @pytest.mark.parametrize("step_size", [1.0, 1e-2, 1e-5])
     def test_call_with_gradients(
         self,
         profet_train_config: MetaModelTrainingConfig,
         profet_input_dir: Path,
         checkpoint_dir: Path,
+        step_size: float,
     ):
         """ Test that calling the task with the `with_grad` returns the gradient at that point. """
         task = self.Task(
@@ -259,6 +261,7 @@ class ProfetTaskTests:
             seed=123,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
+            with_grad=True,
         )
 
         point_tuple = task._space.sample(1)[0]
@@ -269,9 +272,6 @@ class ProfetTaskTests:
         first_objective = results[0]["value"]
         assert results[1]["type"] == "gradient"
         first_gradient = results[1]["value"]
-
-        # TODO: Check if this testing logic makes sense, and the last condition isn't yet working.
-        step_size = 1.0
 
         second_point_array = np.array(point_tuple) - step_size * np.array(first_gradient)
 
