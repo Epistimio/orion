@@ -15,14 +15,31 @@ logger = get_logger(__name__)
 
 @dataclass
 class QuadraticsTaskHParams:
-    # NOTE: In the paper, section 4.2, the function is defined over R^3, but I'm
-    # limiting the bounds to [-100,100] for now since otherwise y can be enormous.
+    """ Hyper-parameters of the Quadratics task. """
     x0: float
     x1: float
     x2: float
 
 
 class QuadraticsTask(BaseTask):
+    """ Simple task consisting of a quadratic with three coefficients, as described in ABLR.
+    
+    NOTE: In the paper, section 4.2, the function is defined over R^3, but here
+    the bounds are limited to [-100,100] for now since otherwise y can be enormous.
+
+    Parameters
+    ----------
+    max_trials : int
+        Maximum number of tr
+    a2 : float, optional
+        a2 coefficient, by default None, in which case it is sampled in the [0.1, 10.0] interval.
+    a1 : float, optional
+        a1 coefficient, by default None, in which case it is sampled in the [0.1, 10.0] interval.
+    a0 : float, optional
+        a0 coefficient, by default None, in which case it is sampled in the [0.1, 10.0] interval.
+    seed : int, optional
+        Random seed, by default None
+    """
     def __init__(
         self,
         max_trials: int,
@@ -48,6 +65,14 @@ class QuadraticsTask(BaseTask):
         )
 
     def with_context(self) -> "QuadraticsTaskWithContext":
+        """Returns a quadratics task that also includes the task coefficients in its trials.
+
+        Returns
+        -------
+        QuadraticsTaskWithContext
+            A task with the same coefficients but whose space also contains the quadratic
+            coefficients.
+        """
         return QuadraticsTaskWithContext(
             max_trials=self.max_trials, a2=self.a2, a1=self.a1, a0=self.a0, seed=self.seed,
         )
