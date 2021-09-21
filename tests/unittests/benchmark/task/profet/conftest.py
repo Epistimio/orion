@@ -1,6 +1,16 @@
+from logging import getLogger as get_logger
 from pathlib import Path
+from typing import Dict, Tuple
+
+import numpy as np
+import orion.benchmark.task.profet.profet_task
 import pytest
-from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig, NAMES
+from _pytest.fixtures import SubRequest
+from _pytest.monkeypatch import MonkeyPatch
+from _pytest.tmpdir import TempPathFactory
+from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig
+
+logger = get_logger(__name__)
 
 REAL_PROFET_DATA_DIR: Path = Path("profet_data")
 
@@ -24,8 +34,6 @@ def profet_train_config():
     return quick_train_config
 
 
-
-
 @pytest.fixture(scope="session")
 def checkpoint_dir(tmp_path_factory):
     return tmp_path_factory.mktemp("checkpoint_dir")
@@ -33,7 +41,99 @@ def checkpoint_dir(tmp_path_factory):
 
 @pytest.fixture(scope="session")
 def profet_input_dir(tmp_path_factory):
-    # TODO: Return the `input_dir` to use for the Profet algorithm.
+    # Returns the `input_dir` to use for the Profet algorithm.
     if REAL_PROFET_DATA_DIR.exists():
         return REAL_PROFET_DATA_DIR
     return tmp_path_factory.mktemp("profet_data")
+
+
+from logging import getLogger as get_logger
+from pathlib import Path
+from typing import ClassVar, Dict, Tuple, Type
+
+import numpy as np
+import orion.benchmark.task.profet.profet_task
+import pytest
+import torch
+from numpy.lib.npyio import load
+from orion.algo.space import _Discrete
+from orion.benchmark.task.profet.profet_task import (
+    MetaModelTrainingConfig,
+    ProfetTask,
+    download_data,
+    load_data,
+)
+
+from .conftest import REAL_PROFET_DATA_DIR, requires_profet_data
+
+logger = get_logger(__name__)
+shapes: Dict[str, Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[int, ...]]] = {
+    "fcnet": ((600, 6), (27, 600), (27, 600)),
+    "forrester": ((10, 1), (9, 10), (9, 10)),
+    "svm": ((200, 2), (26, 200), (26, 200)),
+    "xgboost": ((800, 8), (11, 800), (11, 800)),
+}
+y_min: Dict[str, float] = {
+    "fcnet": 0.0,
+    "forrester": -18.049155413936802,
+    "svm": 0.0,
+    "xgboost": 0.0,
+}
+y_max: Dict[str, float] = {
+    "fcnet": 1.0,
+    "forrester": 14718.31848526001,
+    "svm": 1.0,
+    "xgboost": 3991387.335843141,
+}
+c_min: Dict[str, float] = {
+    "fcnet": 0.0,
+    "forrester": -18.049155413936802,
+    "svm": 0.0,
+    "xgboost": 0.0,
+}
+c_max: Dict[str, float] = {
+    "fcnet": 14718.31848526001,
+    "forrester": 14718.31848526001,
+    "svm": 697154.4010462761,
+    "xgboost": 5485.541382551193,
+}
+
+
+@pytest.fixture(autouse=True, params=[True, False])
+def load_fake_data(
+    monkeypatch: MonkeyPatch, request: SubRequest, tmp_path_factory: TempPathFactory
+):
+    """ Fixture that prevents attempts to download the true Profet datasets, and instead generates
+    random data with the same shape.
+    """
+    use_real_data: bool = request.param
+
+    if use_real_data and not REAL_PROFET_DATA_DIR.exists():
+        pytest.skip(
+            f"profet data wasn't downloaded to directory "
+            f"'{REAL_PROFET_DATA_DIR}' doesn't exist."
+        )
+
+    real_load_data = orion.benchmark.task.profet.profet_task.load_data
+
+    def _load_data(path: Path, benchmark: str):
+        if use_real_data:
+            # Return real datasets.
+            logger.info(f"Testing using the real Profet datasets.")
+            return real_load_data(REAL_PROFET_DATA_DIR, benchmark=benchmark)
+        # Generate fake datasets.
+        logger.info(f"Warning: Using random data instead of the actual profet training data.")
+        x_shape, y_shape, c_shape = shapes[benchmark]
+        X = np.random.rand(*x_shape)
+        min_y = y_min[benchmark]
+        max_y = y_max[benchmark]
+        Y = np.random.rand(*y_shape) * (max_y - min_y) + min_y
+        min_c = c_min[benchmark]
+        max_c = c_max[benchmark]
+        C = np.random.rand(*c_shape) * (max_c - min_c) + min_c
+        return X, Y, C
+
+    monkeypatch.setattr(orion.benchmark.task.profet.profet_task, "load_data", _load_data)
+    # NOTE: Need to set the item in the globals because it might already have been imported.
+    monkeypatch.setitem(globals(), "load_data", _load_data)
+

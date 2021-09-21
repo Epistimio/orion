@@ -1,92 +1,29 @@
 """ Utilities used to test the different subclasses of the ProfetTask. """
+from logging import getLogger as get_logger
 from pathlib import Path
 from typing import ClassVar, Type
-import pytest
 
-from orion.benchmark.task.base import BaseTask
+import numpy as np
+from numpy.lib.npyio import load
+import pytest
+import torch
+from orion.algo.space import _Discrete
 from orion.benchmark.task.profet.profet_task import (
     MetaModelTrainingConfig,
     ProfetTask,
     download_data,
     load_data,
 )
-from orion.algo.space import _Discrete
-from typing import Dict, Tuple
-import numpy as np
-import torch
 
-from logging import getLogger as get_logger
-from .conftest import REAL_PROFET_DATA_DIR, requires_profet_data
+from .conftest import REAL_PROFET_DATA_DIR, y_min, y_max, c_min, c_max
+
 
 logger = get_logger(__name__)
-shapes: Dict[str, Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[int, ...]]] = {
-    "fcnet": ((600, 6), (27, 600), (27, 600)),
-    "forrester": ((10, 1), (9, 10), (9, 10)),
-    "svm": ((200, 2), (26, 200), (26, 200)),
-    "xgboost": ((800, 8), (11, 800), (11, 800)),
-}
-y_min: Dict[str, float] = {
-    "fcnet": 0.0,
-    "forrester": -18.049155413936802,
-    "svm": 0.0,
-    "xgboost": 0.0,
-}
-y_max: Dict[str, float] = {
-    "fcnet": 1.0,
-    "forrester": 14718.31848526001,
-    "svm": 1.0,
-    "xgboost": 3991387.335843141,
-}
-c_min: Dict[str, float] = {
-    "fcnet": 0.0,
-    "forrester": -18.049155413936802,
-    "svm": 0.0,
-    "xgboost": 0.0,
-}
-c_max: Dict[str, float] = {
-    "fcnet": 14718.31848526001,
-    "forrester": 14718.31848526001,
-    "svm": 697154.4010462761,
-    "xgboost": 5485.541382551193,
-}
-
-
-@pytest.fixture(autouse=True)
-def load_fake_data(monkeypatch, tmp_path_factory):
-    """ Fixture that prevents attempts to download the true Profet datasets, and instead generates
-    random data with the same shape.
-    """
-
-    import orion.benchmark.task.profet.profet_task
-
-    real_load_data = orion.benchmark.task.profet.profet_task.load_data
-
-    def _load_data(path: Path, benchmark: str):
-        if path == REAL_PROFET_DATA_DIR and REAL_PROFET_DATA_DIR.exists():
-            # Return real datasets.
-            logger.info(f"Testing using the real Profet datasets.")
-            return real_load_data(path, benchmark=benchmark)
-        # Generate fake datasets.
-        logger.info(f"Warning: Using random data instead of the actual profet training data.")
-        x_shape, y_shape, c_shape = shapes[benchmark]
-        X = np.random.rand(*x_shape)
-        min_y = y_min[benchmark]
-        max_y = y_max[benchmark]
-        Y = np.random.rand(*y_shape) * (max_y - min_y) + min_y
-        min_c = c_min[benchmark]
-        max_c = c_max[benchmark]
-        C = np.random.rand(*c_shape) * (max_c - min_c) + min_c
-        return X, Y, C
-
-    monkeypatch.setattr(orion.benchmark.task.profet.profet_task, "load_data", _load_data)
-    # NOTE: Need to set the item in the globals because it might already have been imported.
-    monkeypatch.setitem(globals(), "load_data", _load_data)
 
 
 @pytest.mark.timeout(10)
-@requires_profet_data
 @pytest.mark.parametrize("benchmark", ["fcnet", "forrester", "svm", "xgboost"])
-def test_download_fake_datasets(tmp_path_factory, benchmark: str, load_fake_data):
+def test_download_fake_datasets(tmp_path_factory, benchmark: str):
     # TODO: Downloading the data takes a VERY long time, even though the datasets are relatively
     # small! Would it be alright to store those datasets somewhere?
     real_input_dir: Path = REAL_PROFET_DATA_DIR
@@ -94,8 +31,6 @@ def test_download_fake_datasets(tmp_path_factory, benchmark: str, load_fake_data
 
     fake_input_dir: Path = tmp_path_factory.mktemp("profet_data")
     fake_x, fake_y, fake_c = load_data(fake_input_dir, benchmark=benchmark)
-    # assert False, (x.dtype, y.dtype, c.dtype)
-    # assert False, (x.dtype, y.dtype, c.dtype)
     assert real_x.shape == fake_x.shape
     assert real_y.shape == fake_y.shape
     assert real_c.shape == fake_c.shape
@@ -188,14 +123,12 @@ class ProfetTaskTests:
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
-        first_task = self.Task(
-            **kwargs
-        )
+        first_task = self.Task(**kwargs)
         configuration = first_task.configuration
         assert len(configuration.keys()) == 1
         key, config_dict = configuration.popitem()
         assert key == self.Task.__qualname__
-        
+
         for key, value in kwargs.items():
             assert key in config_dict
             assert config_dict[key] == value
@@ -204,9 +137,9 @@ class ProfetTaskTests:
         # `__call__` method.
         name = self.Task.__qualname__
         from orion.benchmark.benchmark_client import _get_task
+
         second_task = _get_task(name=name, **config_dict)
-        assert second_task.configuration == first_task.configuration        
-        
+        assert second_task.configuration == first_task.configuration
 
     @pytest.mark.xfail(
         reason="TODO: Not sure how to modify the `space.sample` for a particular space instance "
@@ -237,7 +170,7 @@ class ProfetTaskTests:
             checkpoint_dir=checkpoint_dir,
         )
         assert second_task._space.sample(10) == points
-    
+
     def test_call_is_reproducible(
         self,
         profet_train_config: MetaModelTrainingConfig,
@@ -350,9 +283,7 @@ class ProfetTaskTests:
             assert second_point_array not in task._space
 
         if second_point_array not in task._space:
-            with pytest.warns(
-                RuntimeWarning, match="isn't a valid point of the space"
-            ):
+            with pytest.warns(RuntimeWarning, match="isn't a valid point of the space"):
                 # NOTE: Bypassing the conversion that would normally happen in `dict_to_trial` for tuple
                 # inputs when a Tensor is passed directly to the task. When the point doesn't fit the
                 # space exactly, a RuntimeWarning is raised.
