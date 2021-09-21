@@ -33,6 +33,14 @@ class TaskWrapper(BaseTask, Generic[TaskType], ABC):
     """ ABC for a Wrapper around a Task.
 
     Wrappers could be used to modify the search space, trials, or the results of the task.
+    
+    Parameters
+    ----------
+    task : TaskType
+        A task to wrap.
+    max_trials : int, optional
+        Maximum number of trials. By default None, in which case the max trials is the same as that
+        of the wrapped task.
     """
 
     def __init__(self, task: TaskType, max_trials: int = None):
@@ -77,10 +85,19 @@ HParamsType = TypeVar("HParamsType")
 
 class FixTaskDimensionsWrapper(TaskWrapper[TaskType]):
     """ Wrapper around a Task that fixes the values of some of its input dimensions.
+
+    Parameters
+    ----------
+    task : TaskType
+        A task to wrap.
+    fixed_dims : Dict[str, Any]
+        Dictionary mapping from the name of a dimension of the task space to the value that
+        dimension should be fixed at.
+    max_trials : int, optional
+        Maximum number of trials, by default None
     """
 
     def __init__(self, task: TaskType, fixed_dims: Dict[str, Any], max_trials: int = None):
-        """ Wraps the provided task, fixing the dimensions in `fixed_dims`. """
         super().__init__(task=task, max_trials=max_trials)
         self.fixed_dims = fixed_dims
         # The whole space, from the wrapped task.
