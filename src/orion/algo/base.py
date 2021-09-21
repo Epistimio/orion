@@ -105,7 +105,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
             kwargs,
         )
         self._trials_info = {}  # Stores Unique Trial -> Result
-        self._warm_start_trials = {}  # Stores unique warm-star trials and their results
+        self._warm_start_trials = {}  # Stores unique warm-start trials and their results
         self._space = space
         self._param_names = list(kwargs.keys())
         # Instantiate tunable parameters of an algorithm

@@ -55,7 +55,7 @@ def build_experiment(
     heartbeat=None,
     working_dir=None,
     debug=False,
-    knowledge_base: "KnowledgeBase" = None,
+    knowledge_base = None,
 ):
     """Build an experiment to be executable
 
