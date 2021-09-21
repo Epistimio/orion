@@ -65,4 +65,4 @@ class BaseTask(ABC):
 
 # pylint: disable=too-few-public-methods,abstract-method
 class BenchmarkTask(BaseTask, metaclass=Factory):
-    """Class used to inject dependency on an task implementation."""
+    """Class used to inject dependency on a task implementation."""
