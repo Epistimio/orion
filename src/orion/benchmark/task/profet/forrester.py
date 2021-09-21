@@ -1,17 +1,10 @@
 """ Simulated Task consisting in training a Random Forrest predictor.
 
-The task is created using the Profet algorithm:
+The task is created using the Profet algorithm. 
+For more information on Profet, see original paper at https://arxiv.org/abs/1905.12982.
 
-```
-@misc{klein2019metasurrogate,
-      title={Meta-Surrogate Benchmarking for Hyperparameter Optimization}, 
-      author={Aaron Klein and Zhenwen Dai and Frank Hutter and Neil Lawrence and Javier Gonzalez},
-      year={2019},
-      eprint={1905.12982},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
-}
-```
+Klein, Aaron, Zhenwen Dai, Frank Hutter, Neil Lawrence, and Javier Gonzalez. "Meta-surrogate benchmarking for 
+hyperparameter optimization." Advances in Neural Information Processing Systems 32 (2019): 6270-6280.
 """
 from dataclasses import dataclass
 from logging import getLogger as get_logger
@@ -28,9 +21,7 @@ logger = get_logger(__name__)
 class ForresterTaskHParams:
     """Hyper-Parameters of a Simulated Task consisting in training a Random Forrest predictor."""
 
-    # TODO (@lebrice): This space is supposedly not correct. Need to look at
-    # the profet paper in a bit more detail to check what the 'x' range is
-    # supposed to be.
+    # NOTE: (@lebrice) This space is difference in OpenML:
     # alpha='uniform(0, 1)',
     # beta='uniform(0, 1)'
     x: float
