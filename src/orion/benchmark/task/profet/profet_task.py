@@ -598,7 +598,6 @@ class ProfetTask(BaseTask, Generic[InputType]):
         else:
             self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
 
-        # TODO: Save those in the configuration dict?
         self._np_rng: Optional[np.random.RandomState] = None
         self._torch_rng_state: Optional[Tensor] = None
         with self.seed_randomness():
