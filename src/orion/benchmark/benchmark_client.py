@@ -6,31 +6,20 @@ Benchmark client
 """
 import datetime
 import logging
-from typing import Any, Dict, List, Type, Union
 
 from orion.benchmark import Benchmark, Study
-from orion.benchmark.assessment.base import BaseAssess, BenchmarkAssessment
-from orion.benchmark.task.base import BaseTask, BenchmarkTask
-from orion.benchmark.warm_start_benchmark import WarmStartBenchmark
+from orion.benchmark.assessment.base import BenchmarkAssessment
+from orion.benchmark.task.base import BenchmarkTask
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import NoConfigurationError
-from orion.core.worker.knowledge_base import AbstractKnowledgeBase
 from orion.storage.base import get_storage, setup_storage
 
 logger = logging.getLogger(__name__)
 
 
-TargetsDict = Dict[str, Union[List[BaseAssess], List[BaseTask]]]
-
-
 def get_or_create_benchmark(
-    name: str,
-    algorithms: List[Union[str, Dict[str, Any]]] = None,
-    targets: List[TargetsDict] = None,
-    storage: Dict = None,
-    debug: bool = False,
-    knowledge_base_type: Type[AbstractKnowledgeBase] = None,
-) -> Benchmark:
+    name, algorithms=None, targets=None, storage=None, executor=None, debug=False
+):
     """
     Create or get a benchmark object.
 
@@ -49,6 +38,8 @@ def get_or_create_benchmark(
             Task objects
     storage: dict, optional
         Configuration of the storage backend.
+    executor: `orion.executor.base.Executor`, optional
+        Executor to run the benchmark experiments
     debug: bool, optional
         If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
         Defaults to False.
@@ -78,16 +69,11 @@ def get_or_create_benchmark(
         )
 
     benchmark = _create_benchmark(
-        name=name,
-        algorithms=algorithms,
-        targets=targets,
-        storage=storage,
-        knowledge_base_type=knowledge_base_type,
-        debug=debug,
+        name, algorithms, targets, storage=storage, executor=executor
     )
 
     if input_configure and input_benchmark.configuration != benchmark.configuration:
-        logger.warning(
+        logger.warn(
             "Benchmark with same name is found but has different configuration, "
             "which will be used for this creation.\n{}".format(benchmark.configuration)
         )
@@ -102,23 +88,16 @@ def get_or_create_benchmark(
                 "Benchmark registration failed. This is likely due to a race condition. "
                 "Now rolling back and re-attempting building it."
             )
-            get_or_create_benchmark(
-                name=name,
-                algorithms=algorithms,
-                targets=targets,
-                storage=storage,
-                debug=debug,
-                knowledge_base_type=knowledge_base_type,
-            )
+            get_or_create_benchmark(name, algorithms, targets, storage, executor, debug)
 
     return benchmark
 
 
-def _get_task(name: str, **kwargs) -> BenchmarkTask:
+def _get_task(name, **kwargs):
     return BenchmarkTask(of_type=name, **kwargs)
 
 
-def _get_assessment(name: str, **kwargs) -> BenchmarkAssessment:
+def _get_assessment(name, **kwargs):
     return BenchmarkAssessment(of_type=name, **kwargs)
 
 
@@ -151,27 +130,9 @@ def _resolve_db_config(db_config):
     return benchmark_id, algorithms, targets
 
 
-def _create_benchmark(
-    name: str,
-    algorithms: List[Union[str, Dict[str, Any]]],
-    targets: List[TargetsDict],
-    storage: Dict,
-    knowledge_base_type: Type[AbstractKnowledgeBase] = None,
-    debug: bool = False,
-):
-    if knowledge_base_type:
-        benchmark = WarmStartBenchmark(
-            name=name,
-            algorithms=algorithms,
-            targets=targets,
-            storage=storage,
-            knowledge_base_type=knowledge_base_type,
-            debug=debug,
-        )
-    else:
-        benchmark = Benchmark(
-            name=name, algorithms=algorithms, storage=storage, targets=targets, debug=debug,
-        )
+def _create_benchmark(name, algorithms, targets, storage, executor):
+
+    benchmark = Benchmark(name, algorithms, targets, storage, executor)
     benchmark.setup_studies()
 
     return benchmark
