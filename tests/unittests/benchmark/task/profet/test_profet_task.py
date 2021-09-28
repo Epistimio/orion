@@ -51,8 +51,6 @@ def test_download_fake_datasets(tmp_path_factory, benchmark: str, load_fake_data
 class ProfetTaskTests:
     """ Base class for testing Profet tasks. """
 
-    # TODO: What would be a good set of tests for the profet tasks?
-
     Task: ClassVar[Type[ProfetTask]]
 
     @pytest.mark.timeout(30)
