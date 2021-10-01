@@ -718,6 +718,7 @@ class TestTPE(BaseAlgoTests):
         "equal_weight": True,
         "prior_weight": 0.8,
         "full_weight_num": 10,
+        "max_retry": 100,
     }
 
     def test_suggest_init(self, mocker):
