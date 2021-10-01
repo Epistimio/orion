@@ -28,6 +28,7 @@ from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.executor.base import Executor
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
+from orion.ext.extensions import OrionExtensionManager
 
 log = logging.getLogger(__name__)
 
@@ -87,6 +88,7 @@ class ExperimentClient:
             **orion.core.config.worker.executor_configuration,
         )
         self.plot = PlotAccessor(self)
+        self.extensions = OrionExtensionManager()
 
     ###
     # Attributes
@@ -753,6 +755,7 @@ class ExperimentClient:
             self._experiment.max_trials = max_trials
             self._experiment.algorithms.algorithm.max_trials = max_trials
 
+        self.extensions.start_experiment.broadcast(self)
         trials = self.executor.wait(
             self.executor.submit(
                 self._optimize,
@@ -766,7 +769,7 @@ class ExperimentClient:
             )
             for _ in range(n_workers)
         )
-
+        self.extensions.end_experiment.broadcast(self)
         return sum(trials)
 
     def _optimize(
@@ -786,13 +789,16 @@ class ExperimentClient:
                         kwargs[trial_arg] = trial
 
                     try:
+                        self.extensions.start_trial.broadcast(trial)
                         results = self.executor.wait(
                             [self.executor.submit(fct, **unflatten(kwargs))]
                         )[0]
                         self.observe(trial, results=results)
+                        self.extensions.end_trial.broadcast(trial)
                     except (KeyboardInterrupt, InvalidResult):
                         raise
                     except BaseException as e:
+                        self.extensions.error(e)
                         if on_error is None or on_error(
                             self, trial, e, worker_broken_trials
                         ):

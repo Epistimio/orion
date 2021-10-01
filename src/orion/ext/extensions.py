@@ -27,6 +27,7 @@ class EventDelegate:
         self.manager = None
 
     def remove(self, function) -> bool:
+        """Remove an event handler from the handler list"""
         try:
             self.handlers.remove(function)
             return True
@@ -34,9 +35,11 @@ class EventDelegate:
             return False
 
     def add(self, function):
+        """Add an event handler to our handler list"""
         self.handlers.append(function)
 
     def broadcast(self, *args, **kwargs):
+        """Broadcast and event to all our handlers"""
         if not self.deferred:
             self._execute(args, kwargs)
             return
@@ -52,8 +55,7 @@ class EventDelegate:
                     self.manager.broadcast(self.name, fun, err, args=(args, kwargs))
 
     def execute(self):
-        self.bad_handlers = []
-
+        """Execute all our deferred handlers if any"""
         for args, kwargs in self.deferred_calls:
             self._execute(args, kwargs)
 
@@ -70,6 +72,11 @@ class OrionExtensionManager:
         self._get_event('end_trial')
         self._get_event('end_experiment')
 
+    def __getattribute__(self, name):
+        if name not in ('register', 'unregister'):
+            return self._get_event(name)
+       
+        return super().__getattribute__(name)
 
     def _get_event(self, key):
         """Retrieve or generate a new event delegate"""
@@ -79,7 +86,7 @@ class OrionExtensionManager:
             delegate = EventDelegate(key)
             delegate.manager = self
             self._events[key] = delegate
-        
+
         return delegate
 
     def register(self, ext):
@@ -91,7 +98,7 @@ class OrionExtensionManager:
     def unregister(self, ext):
         """Remove an extensions if it was already registered"""
         for name, delegate in self._events.items():
-             if hasattr(ext, name):
+            if hasattr(ext, name):
                 delegate.remove(getattr(ext, name))
 
 
@@ -99,14 +106,22 @@ class OrionExtension:
     """Base orion extension interface you need to implement"""
 
     def error(self, *args, **kwargs):
+        """Called when a error occur during the optimization process"""
         return
 
     def start_experiment(self, *args, **kwargs):
+        """Called at the begin of the optimization process before the worker starts"""
         return
 
     def new_trial(self, *args, **kwargs):
+        """Called when the trial starts with a new configuration"""
+        return
+
+    def end_trial(self, *args, **kwargs):
+        """Called when the trial finished"""
         return
 
     def end_experiment(self, *args, **kwargs):
+        """Called at the end of the optimization process after the worker exits"""
         return
 
