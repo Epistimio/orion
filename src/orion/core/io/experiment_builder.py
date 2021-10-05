@@ -98,7 +98,7 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.primary_algo import PrimaryAlgo
-from orion.core.worker.strategy import Strategy
+from orion.core.worker.strategy import strategy_factory
 from orion.storage.base import get_storage, setup_storage
 
 log = logging.getLogger(__name__)
@@ -539,7 +539,7 @@ def _instantiate_strategy(config=None, ignore_unavailable=False):
         strategy_type, config = next(iter(config.items()))
 
     try:
-        strategy = Strategy(of_type=strategy_type, **config)
+        strategy = strategy_factory.create(strategy_type, **config)
     except NotImplementedError as e:
         if not ignore_unavailable:
             raise e

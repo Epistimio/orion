@@ -9,8 +9,8 @@ from orion.core.worker.strategy import (
     MaxParallelStrategy,
     MeanParallelStrategy,
     NoParallelStrategy,
-    Strategy,
     StubParallelStrategy,
+    strategy_factory,
 )
 from orion.core.worker.trial import Trial
 
@@ -52,8 +52,8 @@ strategies = [
 def test_handle_corrupted_trials(caplog, strategy, corrupted_trial):
     """Verify that corrupted trials are handled properly"""
     with caplog.at_level(logging.WARNING, logger="orion.core.worker.strategy"):
-        Strategy(strategy).observe([corrupted_trial], [{"objective": 1}])
-        lie = Strategy(strategy).lie(corrupted_trial)
+        strategy_factory.create(strategy).observe([corrupted_trial], [{"objective": 1}])
+        lie = strategy_factory.create(strategy).lie(corrupted_trial)
 
     match = "Trial `{}` has an objective but status is not completed".format(
         corrupted_trial.id
@@ -68,8 +68,10 @@ def test_handle_corrupted_trials(caplog, strategy, corrupted_trial):
 def test_handle_uncompleted_trials(caplog, strategy, incomplete_trial):
     """Verify that no warning is logged if trial is valid"""
     with caplog.at_level(logging.WARNING, logger="orion.core.worker.strategy"):
-        Strategy(strategy).observe([incomplete_trial], [{"objective": None}])
-        Strategy(strategy).lie(incomplete_trial)
+        strategy_factory.create(strategy).observe(
+            [incomplete_trial], [{"objective": None}]
+        )
+        strategy_factory.create(strategy).lie(incomplete_trial)
 
     assert "Trial `{}` has an objective but status is not completed" not in caplog.text
 
@@ -79,12 +81,12 @@ class TestStrategyFactory:
 
     def test_create_noparallel(self):
         """Test creating a NoParallelStrategy class"""
-        strategy = Strategy("NoParallelStrategy")
+        strategy = strategy_factory.create("NoParallelStrategy")
         assert isinstance(strategy, NoParallelStrategy)
 
     def test_create_meanparallel(self):
         """Test creating a MeanParallelStrategy class"""
-        strategy = Strategy("MeanParallelStrategy")
+        strategy = strategy_factory.create("MeanParallelStrategy")
         assert isinstance(strategy, MeanParallelStrategy)
 
 

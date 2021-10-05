@@ -1150,7 +1150,7 @@ def test_load_unavailable_strategy(strategy_unavailable_config, capsys):
 
         with pytest.raises(NotImplementedError) as exc:
             experiment_builder.build("supernaekei")
-        exc.match("Could not find implementation of BaseParallelStrategy")
+        exc.match("Could not find implementation of ParallelStrategy")
 
 
 class TestInitExperimentReadWrite(object):
