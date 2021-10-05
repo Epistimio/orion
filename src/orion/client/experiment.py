@@ -26,9 +26,9 @@ from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.executor.base import Executor
+from orion.ext.extensions import OrionExtensionManager
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
-from orion.ext.extensions import OrionExtensionManager
 
 log = logging.getLogger(__name__)
 
@@ -772,37 +772,6 @@ class ExperimentClient:
 
         return sum(trials)
 
-    def _optimize_trial(self, fct, trial, trial_arg, kwargs, worker_broken_trials, max_broken, on_error):
-        kwargs.update(flatten(trial.params))
-
-        if trial_arg:
-            kwargs[trial_arg] = trial
-
-        try:
-            with self.extensions.trial(trial):
-                results = self.executor.wait(
-                    [self.executor.submit(fct, **unflatten(kwargs))]
-                )[0]
-                self.observe(trial, results=results)
-        except (KeyboardInterrupt, InvalidResult):
-            raise
-        except BaseException as e:
-            if on_error is None or on_error(self, trial, e, worker_broken_trials):
-                log.error(traceback.format_exc())
-                worker_broken_trials += 1
-            else:
-                log.error(str(e))
-                log.debug(traceback.format_exc())
-
-            if worker_broken_trials >= max_broken:
-                raise BrokenExperiment(
-                    "Worker has reached broken trials threshold"
-                )
-            else:
-                self.release(trial, status="broken")
-
-        return worker_broken_trials
-
     def _optimize(
         self, fct, pool_size, max_trials, max_broken, trial_arg, on_error, **kwargs
     ):
@@ -812,24 +781,44 @@ class ExperimentClient:
         max_trials = min(max_trials, self.max_trials)
 
         while not self.is_done and trials - worker_broken_trials < max_trials:
-                try:
-                    with self.suggest(pool_size=pool_size) as trial:
+            try:
+                with self.suggest(pool_size=pool_size) as trial:
 
-                        worker_broken_trials = self._optimize_trial(
-                            fct,
-                            trial,
-                            trial_arg,
-                            kwargs,
-                            worker_broken_trials,
-                            max_broken,
-                            on_error
-                        )
+                    kwargs.update(flatten(trial.params))
 
-                except CompletedExperiment as e:
-                    log.warning(e)
-                    break
+                    if trial_arg:
+                        kwargs[trial_arg] = trial
 
-                trials += 1
+                    try:
+                        with self.extensions.trial(trial):
+                            results = self.executor.wait(
+                                [self.executor.submit(fct, **unflatten(kwargs))]
+                            )[0]
+                            self.observe(trial, results=results)
+                    except (KeyboardInterrupt, InvalidResult):
+                        raise
+                    except BaseException as e:
+                        if on_error is None or on_error(
+                            self, trial, e, worker_broken_trials
+                        ):
+                            log.error(traceback.format_exc())
+                            worker_broken_trials += 1
+                        else:
+                            log.error(str(e))
+                            log.debug(traceback.format_exc())
+
+                        if worker_broken_trials >= max_broken:
+                            raise BrokenExperiment(
+                                "Worker has reached broken trials threshold"
+                            )
+                        else:
+                            self.release(trial, status="broken")
+
+            except CompletedExperiment as e:
+                log.warning(e)
+                break
+
+            trials += 1
 
         return trials
 
