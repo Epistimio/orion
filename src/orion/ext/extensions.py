@@ -14,6 +14,7 @@ class EventDelegate:
         if false events are triggered as soon as broadcast is called
         if true the events will need to be triggered manually
     """
+
     def __init__(self, name, deferred=False) -> None:
         self.handlers = []
         self.deferred_calls = []
@@ -48,7 +49,9 @@ class EventDelegate:
                 fun(*args, **kwargs)
             except Exception as err:
                 if self.manager:
-                    self.manager.on_extension_error.broadcast(self.name, fun, err, args=(args, kwargs))
+                    self.manager.on_extension_error.broadcast(
+                        self.name, fun, err, args=(args, kwargs)
+                    )
 
     def execute(self):
         """Execute all our deferred handlers if any"""
@@ -86,17 +89,17 @@ class OrionExtensionManager:
 
     def __init__(self):
         self._events = {}
-        self._get_event('on_extension_error')
+        self._get_event("on_extension_error")
 
         # -- Trials
-        self._get_event('new_trial')
-        self._get_event('on_trial_error')
-        self._get_event('end_trial')
+        self._get_event("new_trial")
+        self._get_event("on_trial_error")
+        self._get_event("end_trial")
 
         # -- Experiments
-        self._get_event('start_experiment')
-        self._get_event('on_experiment_error')
-        self._get_event('end_experiment')
+        self._get_event("start_experiment")
+        self._get_event("on_experiment_error")
+        self._get_event("end_experiment")
 
     def experiment(self, *args, **kwargs):
         """Initialize a context manager that will call start/error/end events automatically"""
@@ -111,11 +114,7 @@ class OrionExtensionManager:
     def trial(self, *args, **kwargs):
         """Initialize a context manager that will call start/error/end events automatically"""
         return _DelegateStartEnd(
-            self.new_trial,
-            self.on_trial_error,
-            self.end_trial,
-            *args,
-            **kwargs
+            self.new_trial, self.on_trial_error, self.end_trial, *args, **kwargs
         )
 
     def __getattr__(self, name):
@@ -183,7 +182,9 @@ class OrionExtension:
         """
         return
 
-    def on_trial_error(self, trial, exception_type, exception_value, exception_traceback):
+    def on_trial_error(
+        self, trial, exception_type, exception_value, exception_traceback
+    ):
         """Called when a error occur during the optimization process"""
         return
 
@@ -195,7 +196,9 @@ class OrionExtension:
         """Called when the trial finished"""
         return
 
-    def on_experiment_error(self, experiment, exception_type, exception_value, exception_traceback):
+    def on_experiment_error(
+        self, experiment, exception_type, exception_value, exception_traceback
+    ):
         """Called when a error occur during the optimization process"""
         return
 
@@ -206,4 +209,3 @@ class OrionExtension:
     def end_experiment(self, experiment):
         """Called at the end of the optimization process after the worker exits"""
         return
-
