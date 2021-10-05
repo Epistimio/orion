@@ -8,7 +8,7 @@ import functools
 import pymongo
 
 from orion.core.io.database import (
-    AbstractDB,
+    Database,
     DatabaseError,
     DatabaseTimeout,
     DuplicateKeyError,
@@ -76,7 +76,7 @@ def mongodb_exception_wrapper(method):
 
 
 # pylint: disable=too-many-public-methods
-class MongoDB(AbstractDB):
+class MongoDB(Database):
     """Wrap MongoDB with three primary methods `read`, `write`, `remove`.
 
     Attributes
@@ -88,7 +88,7 @@ class MongoDB(AbstractDB):
     Information on MongoDB `connection string
     <https://docs.mongodb.com/manual/reference/connection-string/>`_.
 
-    .. seealso:: :class:`orion.core.io.database.AbstractDB` for more on attributes.
+    .. seealso:: :class:`orion.core.io.database.Database` for more on attributes.
 
     """
 
@@ -101,7 +101,7 @@ class MongoDB(AbstractDB):
         password=None,
         serverSelectionTimeoutMS=5000,
     ):
-        """Init method, see attributes of :class:`AbstractDB`."""
+        """Init method, see attributes of :class:`Database`."""
         if host == "":
             host = "localhost"
         self.uri = None
@@ -186,7 +186,7 @@ class MongoDB(AbstractDB):
     def ensure_index(self, collection_name, keys, unique=False):
         """Create given indexes if they do not already exist in database.
 
-        .. seealso:: :meth:`orion.core.io.database.AbstractDB.ensure_index` for argument
+        .. seealso:: :meth:`orion.core.io.database.Database.ensure_index` for argument
             documentation.
 
         """
@@ -225,7 +225,7 @@ class MongoDB(AbstractDB):
         return converted_keys
 
     def _convert_sort_order(self, sort_order):
-        """Convert generic `AbstractDB` sort orders to MongoDB ones."""
+        """Convert generic `Database` sort orders to MongoDB ones."""
         if sort_order is self.ASCENDING:
             return pymongo.ASCENDING
         elif sort_order is self.DESCENDING:
@@ -237,7 +237,7 @@ class MongoDB(AbstractDB):
     def write(self, collection_name, data, query=None):
         """Write new information to a collection. Perform insert or update.
 
-        .. seealso:: :meth:`orion.core.io.database.AbstractDB.write` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.Database.write` for argument documentation.
 
         """
         dbcollection = self._db[collection_name]
@@ -261,7 +261,7 @@ class MongoDB(AbstractDB):
     def read(self, collection_name, query=None, selection=None):
         """Read a collection and return a value according to the query.
 
-        .. seealso:: :meth:`orion.core.io.database.AbstractDB.read` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.Database.read` for argument documentation.
 
         """
         dbcollection = self._db[collection_name]
@@ -277,7 +277,7 @@ class MongoDB(AbstractDB):
 
         Returns the updated document, or None if nothing found.
 
-        .. seealso:: :meth:`orion.core.io.database.AbstractDB.read_and_write` for
+        .. seealso:: :meth:`orion.core.io.database.Database.read_and_write` for
                      argument documentation.
 
         """
@@ -297,7 +297,7 @@ class MongoDB(AbstractDB):
     def count(self, collection_name, query=None):
         """Count the number of documents in a collection which match the `query`.
 
-        .. seealso:: :meth:`orion.core.io.database.AbstractDB.count` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.Database.count` for argument documentation.
 
         """
         dbcollection = self._db[collection_name]
@@ -311,7 +311,7 @@ class MongoDB(AbstractDB):
     def remove(self, collection_name, query):
         """Delete from a collection document[s] which match the `query`.
 
-        .. seealso:: :meth:`orion.core.io.database.AbstractDB.remove` for argument documentation.
+        .. seealso:: :meth:`orion.core.io.database.Database.remove` for argument documentation.
 
         """
         dbcollection = self._db[collection_name]
@@ -350,7 +350,7 @@ class MongoDB(AbstractDB):
     def get_defaults(cls):
         """Get database arguments needed to create a database instance.
 
-        .. seealso:: :meth:`orion.core.io.database.AbstractDB.get_defaults`
+        .. seealso:: :meth:`orion.core.io.database.Database.get_defaults`
                      for argument documentation.
 
         """

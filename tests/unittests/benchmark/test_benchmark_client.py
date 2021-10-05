@@ -88,9 +88,8 @@ class TestCreateBenchmark:
             }
             get_or_create_benchmark(**benchmark_config_py)
 
-        assert (
-            "Could not find implementation of AbstractDB, type = 'idontexist'"
-            in str(exc.value)
+        assert "Could not find implementation of Database, type = 'idontexist'" in str(
+            exc.value
         )
 
     def test_create_experiment_debug_mode(self, tmp_path, benchmark_config_py):

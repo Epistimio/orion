@@ -81,8 +81,9 @@ def update_singletons(values=None):
 
     updated_singletons = {}
     for singleton in singletons:
-        updated_singletons[singleton] = singleton.instance
-        singleton.instance = values.get(singleton, None)
+        name = singleton.base.__name__.lower()
+        updated_singletons[name] = singleton.instance
+        singleton.instance = values.get(name, None)
 
     return updated_singletons
 

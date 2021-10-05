@@ -8,7 +8,7 @@ import yaml
 
 import orion.core
 import orion.core.cli
-from orion.core.io.database import Database
+from orion.core.io.database import database_factory
 
 
 class _mock_input:
@@ -120,7 +120,8 @@ def test_invalid_database(monkeypatch, tmp_path, capsys):
     for invalid_db_name in invalid_db_names:
         assert (
             "Unexpected value: {}. Must be one of: {}\n".format(
-                invalid_db_name, ", ".join(sorted(Database.types.keys()))
+                invalid_db_name,
+                ", ".join(sorted(database_factory.get_classes().keys())),
             )
             in captured_output
         )

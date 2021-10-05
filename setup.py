@@ -54,7 +54,7 @@ setup_args = dict(
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
         ],
-        "Storage": [
+        "BaseStorageProtocol": [
             "track = orion.storage.track:Track",
             "legacy = orion.storage.legacy:Legacy",
         ],

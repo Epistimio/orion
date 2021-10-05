@@ -574,6 +574,8 @@ def test_experiment_pickleable():
 
         assert len(exp_trials) > 0
 
+        from orion.storage.base import storage_factory
+
         exp_bytes = pickle.dumps(exp)
 
         new_exp = pickle.loads(exp_bytes)

@@ -9,7 +9,7 @@ import tempfile
 
 import pytest
 
-from orion.core.io.database import Database
+from orion.core.io.database import database_factory
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.exceptions import MissingResultFile
 from orion.core.utils.singleton import (
@@ -75,7 +75,7 @@ def test_setup_database_default(monkeypatch):
     """Test that database is setup using default config"""
     update_singletons()
     setup_database()
-    database = Database()
+    database = database_factory.create()
     assert isinstance(database, PickledDB)
 
 
@@ -92,7 +92,7 @@ def test_setup_database_custom():
     """Test setup with local configuration"""
     update_singletons()
     setup_database({"type": "pickleddb", "host": "test.pkl"})
-    database = Database()
+    database = database_factory.create()
     assert isinstance(database, PickledDB)
     assert database.host == os.path.abspath("test.pkl")
 
@@ -101,7 +101,7 @@ def test_setup_database_bad_override():
     """Test setup with different type than existing singleton"""
     update_singletons()
     setup_database({"type": "pickleddb", "host": "test.pkl"})
-    database = Database()
+    database = database_factory.create()
     assert isinstance(database, PickledDB)
     with pytest.raises(SingletonAlreadyInstantiatedError) as exc:
         setup_database({"type": "mongodb"})
@@ -109,12 +109,11 @@ def test_setup_database_bad_override():
     assert exc.match("A singleton instance of \(type: Database\)")
 
 
-@pytest.mark.xfail(reason="Fix this when introducing #135 in v0.2.0")
 def test_setup_database_bad_config_override():
     """Test setup with different config than existing singleton"""
     update_singletons()
     setup_database({"type": "pickleddb", "host": "test.pkl"})
-    database = Database()
+    database = database_factory.create()
     assert isinstance(database, PickledDB)
     with pytest.raises(SingletonAlreadyInstantiatedError):
         setup_database({"type": "pickleddb", "host": "other.pkl"})
