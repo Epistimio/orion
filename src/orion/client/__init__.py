@@ -177,7 +177,7 @@ def build_experiment(
         config_change_type: str, optional
             How to resolve config change automatically. Must be one of 'noeffect', 'unsure' or
             'break'.  Defaults to 'break'.
-    executor: `orion.executor.base.Executor`, optional
+    executor: `orion.executor.base.BaseExecutor`, optional
         Executor to run the experiment
 
     Raises

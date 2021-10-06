@@ -38,7 +38,7 @@ def get_or_create_benchmark(
             Task objects
     storage: dict, optional
         Configuration of the storage backend.
-    executor: `orion.executor.base.Executor`, optional
+    executor: `orion.executor.base.BaseExecutor`, optional
         Executor to run the benchmark experiments
     debug: bool, optional
         If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
