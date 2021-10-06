@@ -5,6 +5,11 @@ Benchmark Assessments definition
 
 from .averagerank import AverageRank
 from .averageresult import AverageResult
-from .base import BaseAssess
+from .base import BenchmarkAssessment, bench_assessment_factory
 
-__all__ = ["BaseAssess", "AverageRank", "AverageResult"]
+__all__ = [
+    "bench_assessment_factory",
+    "BenchmarkAssessment",
+    "AverageRank",
+    "AverageResult",
+]

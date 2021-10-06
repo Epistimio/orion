@@ -6,11 +6,11 @@ Average Rank Assessment
 """
 from collections import defaultdict
 
-from orion.benchmark.assessment.base import BaseAssess
+from orion.benchmark.assessment.base import BenchmarkAssessment
 from orion.plotting.base import regrets
 
 
-class AverageResult(BaseAssess):
+class AverageResult(BenchmarkAssessment):
     """
     Evaluate the average performance (objective value) for each search algorithm
     at different time steps (trial number).

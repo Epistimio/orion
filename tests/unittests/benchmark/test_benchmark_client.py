@@ -239,7 +239,9 @@ class TestCreateBenchmark:
         with OrionState(benchmarks=cfg_invalid_assess):
             with pytest.raises(NotImplementedError) as exc:
                 get_or_create_benchmark(benchmark_config["name"])
-            assert "Could not find implementation of BaseAssess" in str(exc.value)
+            assert "Could not find implementation of BenchmarkAssessment" in str(
+                exc.value
+            )
 
         cfg_invalid_task = copy.deepcopy(benchmark_config)
         cfg_invalid_task["targets"][0]["task"]["idontexist"] = {"max_trials": 2}
@@ -247,7 +249,7 @@ class TestCreateBenchmark:
         with OrionState(benchmarks=cfg_invalid_task):
             with pytest.raises(NotImplementedError) as exc:
                 get_or_create_benchmark(benchmark_config["name"])
-            assert "Could not find implementation of BaseTask" in str(exc.value)
+            assert "Could not find implementation of BenchmarkTask" in str(exc.value)
 
     def test_create_with_not_exist_targets_parameters(self, benchmark_config):
         """Test creation with not existing assessment parameters"""
