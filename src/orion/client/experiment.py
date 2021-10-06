@@ -29,7 +29,6 @@ from orion.executor.base import Executor
 from orion.ext.extensions import OrionExtensionManager
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
-from orion.ext.extensions import OrionExtensionManager
 
 log = logging.getLogger(__name__)
 

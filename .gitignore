@@ -80,3 +80,5 @@ target/
 
 # Notebooks
 tests/**.ipynb
+dask-worker-space/
+tests/functional/commands/*.json
