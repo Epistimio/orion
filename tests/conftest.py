@@ -13,7 +13,7 @@ from pymongo import MongoClient
 
 import orion.core
 import orion.core.utils.backward as backward
-from orion.algo.base import BaseAlgorithm, OptimizationAlgorithm
+from orion.algo.base import BaseAlgorithm
 from orion.core.io import resolve_config
 from orion.core.io.database import database_factory
 from orion.core.io.database.mongodb import MongoDB

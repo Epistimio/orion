@@ -493,7 +493,7 @@ class TestGenericASHA(BaseAlgoTests):
         "num_brackets": 2,
         "repetitions": 3,
     }
-    space = {"x": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
+    space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
 
     def test_suggest_n(self, mocker, num, attr):
         algo = self.create_algo()

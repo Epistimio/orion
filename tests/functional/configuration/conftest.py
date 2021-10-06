@@ -1,5 +1,5 @@
 """Common fixtures and utils for configuration tests."""
-from orion.algo.base import BaseAlgorithm, OptimizationAlgorithm
+from orion.algo.base import BaseAlgorithm
 from orion.core.worker.strategy import ParallelStrategy, strategy_factory
 
 

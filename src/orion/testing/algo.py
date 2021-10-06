@@ -17,7 +17,7 @@ from orion.algo.random import Random
 from orion.algo.tpe import TPE
 from orion.benchmark.task.branin import Branin
 from orion.core.io.space_builder import SpaceBuilder
-from orion.core.worker.primary_algo import PrimaryAlgo
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.testing.space import build_space
 
 algorithms = {
@@ -108,9 +108,9 @@ class BaseAlgoTests:
     This test-suite covers all typical cases for HPO algorithms. To use it for a new algorithm,
     the class inheriting from this one must redefine the attributes ``algo_name`` with
     the name of the algorithm used to create it with the algorithm factory
-    ``orion.core.worker.primary_algo.PrimaryAlgo`` and ``config`` with a base configuration for the
-    algorithm that contains all its arguments. The base space can be redefine if needed
-    with the attribute ``space``.
+    ``orion.core.worker.primary_algo.SpaceTransformAlgoWrapper`` and ``config`` with a base
+    configuration for the algorithm that contains all its arguments. The base space can be redefine
+    if needed with the attribute ``space``.
 
     Many algorithms have different phases that should be tested. For instance
     TPE have a first phase of random search and a second of Bayesian Optimization.
@@ -169,9 +169,10 @@ class BaseAlgoTests:
         """
         config = copy.deepcopy(config or self.config)
         config.update(kwargs)
-        algo = PrimaryAlgo(
+        algo = SpaceTransformAlgoWrapper(
+            orion.algo.base.algo_factory.get_class(self.algo_name),
             space or self.create_space(),
-            {self.algo_name: config},
+            **config,
         )
         algo.algorithm.max_trials = self.max_trials
         return algo
@@ -210,7 +211,7 @@ class BaseAlgoTests:
         ----------
         points: list of points
             Trials formatted as tuples of values
-        algo: ``orion.algo.base.OptimizationAlgorithm``
+        algo: ``orion.algo.base.BaseAlgorithm``
             The algorithm used to observe points.
         objective: int, optional
             The base objective for the trials. All objectives
@@ -235,7 +236,7 @@ class BaseAlgoTests:
         ----------
         num: int
             Number of trials to suggest and observe.
-        algo: ``orion.algo.base.OptimizationAlgorithm``
+        algo: ``orion.algo.base.BaseAlgorithm``
             The algorithm that must suggest and observe.
 
         Raises
@@ -277,7 +278,7 @@ class BaseAlgoTests:
             Mocker from ``pytest_mock``. Should be given by fixtures of the tests.
         num: int
             Number of trials to suggest and observe
-        algo: ``orion.algo.base.OptimizationAlgorithm``
+        algo: ``orion.algo.base.BaseAlgorithm``
             The algorithm to test
         attribute: str
             The algorithm attribute or method to mock. The path is respective to the
@@ -300,7 +301,7 @@ class BaseAlgoTests:
             Object mocked by ``BaseAlgoTests.spy_phase``.
         num: int
             number of points of the phase.
-        algo: ``orion.algo.base.OptimizationAlgorithm``
+        algo: ``orion.algo.base.BaseAlgorithm``
             The algorithm being tested.
         """
         pass
@@ -317,7 +318,7 @@ class BaseAlgoTests:
             Mocker from ``pytest_mock``. Should be given by fixtures of the tests.
         num: int
             Number of trials to suggest and observe
-        algo: ``orion.algo.base.OptimizationAlgorithm``
+        algo: ``orion.algo.base.BaseAlgorithm``
             The algorithm to test
         attribute: str
             The algorithm attribute or method to mock. The path is respective to the
@@ -350,28 +351,32 @@ class BaseAlgoTests:
 
         algo = self.create_algo(space=space)
 
-        assert algo.get_id(["is here", 1]) == algo.get_id(["is here", 1])
-        assert algo.get_id(["is here", 1]) != algo.get_id(["is here", 2])
-        assert algo.get_id(["matters", 1]) != algo.get_id(["is here", 1])
+        assert algo.get_id([1, 1, 1]) == algo.get_id([1, 1, 1])
+        assert algo.get_id([1, 1, 1]) != algo.get_id([1, 2, 2])
+        assert algo.get_id([1, 1, 1]) != algo.get_id([2, 1, 1])
 
-        assert algo.get_id(["is here", 1], ignore_fidelity=False) == algo.get_id(
-            ["is here", 1], ignore_fidelity=False
+        assert algo.get_id([1, 1, 1], ignore_fidelity=False) == algo.get_id(
+            [1, 1, 1], ignore_fidelity=False
         )
-        assert algo.get_id(["is here", 1], ignore_fidelity=False) != algo.get_id(
-            ["is here", 2], ignore_fidelity=False
+        # Fidelity changes id
+        assert algo.get_id([1, 1, 1], ignore_fidelity=False) != algo.get_id(
+            [2, 1, 1], ignore_fidelity=False
         )
-        assert algo.get_id(["matters", 1], ignore_fidelity=False) != algo.get_id(
-            ["is here", 1], ignore_fidelity=False
+        # Non-fidelity changes id
+        assert algo.get_id([1, 1, 1], ignore_fidelity=False) != algo.get_id(
+            [1, 1, 2], ignore_fidelity=False
         )
 
-        assert algo.get_id(["is here", 1], ignore_fidelity=True) == algo.get_id(
-            ["is here", 1], ignore_fidelity=True
+        assert algo.get_id([1, 1, 1], ignore_fidelity=True) == algo.get_id(
+            [1, 1, 1], ignore_fidelity=True
         )
-        assert algo.get_id(["is here", 1], ignore_fidelity=True) != algo.get_id(
-            ["is here", 2], ignore_fidelity=True
+        # Fidelity does not change id
+        assert algo.get_id([1, 1, 1], ignore_fidelity=True) == algo.get_id(
+            [2, 1, 1], ignore_fidelity=True
         )
-        assert algo.get_id(["whatever", 1], ignore_fidelity=True) == algo.get_id(
-            ["is here", 1], ignore_fidelity=True
+        # Non-fidelity still changes id
+        assert algo.get_id([1, 1, 1], ignore_fidelity=True) != algo.get_id(
+            [1, 1, 2], ignore_fidelity=True
         )
 
     @phase

@@ -82,6 +82,7 @@ import sys
 
 import orion.core
 import orion.core.utils.backward as backward
+from orion.algo.base import algo_factory
 from orion.algo.space import Space
 from orion.core.evc.adapters import Adapter
 from orion.core.evc.conflicts import ExperimentNameConflict, detect_conflicts
@@ -97,7 +98,7 @@ from orion.core.utils.exceptions import (
     RaceCondition,
 )
 from orion.core.worker.experiment import Experiment
-from orion.core.worker.primary_algo import PrimaryAlgo
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.strategy import strategy_factory
 from orion.storage.base import get_storage, setup_storage
 
@@ -495,14 +496,18 @@ def _instantiate_algo(space, max_trials, config=None, ignore_unavailable=False):
         (orion.core.config.experiment.algorithms).
     ignore_unavailable: bool, optional
         If True and algorithm is not available (plugin not installed), return the configuration.
-        Otherwise, raise Factory error from PrimaryAlgo
+        Otherwise, raise Factory error.
 
     """
     if not config:
         config = orion.core.config.experiment.algorithms
 
     try:
-        algo = PrimaryAlgo(space, config)
+        backported_config = backward.port_algo_config(config)
+        algo_constructor = algo_factory.get_class(backported_config.pop("of_type"))
+        algo = SpaceTransformAlgoWrapper(
+            algo_constructor, space=space, **backported_config
+        )
         algo.algorithm.max_trials = max_trials
     except NotImplementedError as e:
         if not ignore_unavailable:
@@ -524,7 +529,7 @@ def _instantiate_strategy(config=None, ignore_unavailable=False):
         (orion.core.config.producer.strategy).
     ignore_unavailable: bool, optional
         If True and algorithm is not available (plugin not installed), return the configuration.
-        Otherwise, raise Factory error from PrimaryAlgo
+        Otherwise, raise Factory error.
 
 
     """

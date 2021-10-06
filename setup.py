@@ -46,7 +46,7 @@ setup_args = dict(
         "console_scripts": [
             "orion = orion.core.cli:main",
         ],
-        "OptimizationAlgorithm": [
+        "BaseAlgorithm": [
             "random = orion.algo.random:Random",
             "gridsearch = orion.algo.gridsearch:GridSearch",
             "asha = orion.algo.asha:ASHA",

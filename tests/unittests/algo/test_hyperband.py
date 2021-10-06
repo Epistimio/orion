@@ -754,7 +754,7 @@ class TestGenericHyperband(BaseAlgoTests):
         "seed": 123456,
         "repetitions": 3,
     }
-    space = {"x": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
+    space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
 
     @phase
     def test_suggest_lots(self, mocker, num, attr):

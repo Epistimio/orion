@@ -7,12 +7,11 @@ Performs checks and organizes required transformations of points.
 
 """
 import orion.core.utils.backward as backward
-from orion.algo.base import BaseAlgorithm
 from orion.core.worker.transformer import build_required_space
 
 
 # pylint: disable=too-many-public-methods
-class PrimaryAlgo(BaseAlgorithm):
+class SpaceTransformAlgoWrapper:
     """Perform checks on points and transformations. Wrap the primary algorithm.
 
     1. Checks requirements on the parameter space from algorithms and create the
@@ -20,24 +19,22 @@ class PrimaryAlgo(BaseAlgorithm):
     of the primary algorithm.
     2. Checks whether incoming and outcoming points are compliant with a space.
 
+    Parameters
+    ----------
+    algo_constructor: Child class of `BaseAlgorithm`
+        Class constructor to build the algorithm object.
+    space : `orion.algo.space.Space`
+       The original definition of a problem's parameters space.
+    algorithm_config : dict
+       Configuration for the algorithm.
+
     """
 
-    def __init__(self, space, algorithm_config):
-        """
-        Initialize the primary algorithm.
-
-        Parameters
-        ----------
-        space : `orion.algo.space.Space`
-           The original definition of a problem's parameters space.
-        algorithm_config : dict
-           Configuration for the algorithm.
-
-        """
-        self.algorithm = None
-        super(PrimaryAlgo, self).__init__(space, algorithm=algorithm_config)
-        requirements = backward.get_algo_requirements(self.algorithm)
-        self.transformed_space = build_required_space(self.space, **requirements)
+    def __init__(self, algo_constructor, space, **algorithm_config):
+        self._space = space
+        requirements = backward.get_algo_requirements(algo_constructor)
+        self.transformed_space = build_required_space(space, **requirements)
+        self.algorithm = algo_constructor(space, **algorithm_config)
         self.algorithm.space = self.transformed_space
 
     def seed_rng(self, seed):
@@ -175,3 +172,17 @@ Space: {}""".format(
         .. note:: Redefining property here without setter, denies base class' setter.
         """
         return self._space
+
+    def get_id(self, point, ignore_fidelity=False):
+        """Compute a unique hash for a point based on params"""
+        return self.algorithm.get_id(
+            self.transformed_space.transform(point), ignore_fidelity=ignore_fidelity
+        )
+
+    @property
+    def fidelity_index(self):
+        """Compute the index of the point where fidelity is.
+
+        Returns None if there is no fidelity dimension.
+        """
+        return self.algorithm.fidelity_index
