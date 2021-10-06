@@ -26,6 +26,7 @@ from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.executor.base import Executor
+from orion.ext.extensions import OrionExtensionManager
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
 from orion.ext.extensions import OrionExtensionManager
@@ -755,21 +756,21 @@ class ExperimentClient:
             self._experiment.max_trials = max_trials
             self._experiment.algorithms.algorithm.max_trials = max_trials
 
-        self.extensions.start_experiment.broadcast(self)
-        trials = self.executor.wait(
-            self.executor.submit(
-                self._optimize,
-                fct,
-                pool_size,
-                max_trials_per_worker,
-                max_broken,
-                trial_arg,
-                on_error,
-                **kwargs,
+        with self.extensions.experiment(self._experiment):
+            trials = self.executor.wait(
+                self.executor.submit(
+                    self._optimize,
+                    fct,
+                    pool_size,
+                    max_trials_per_worker,
+                    max_broken,
+                    trial_arg,
+                    on_error,
+                    **kwargs,
+                )
+                for _ in range(n_workers)
             )
-            for _ in range(n_workers)
-        )
-        self.extensions.end_experiment.broadcast(self)
+
         return sum(trials)
 
     def _optimize(
@@ -779,6 +780,7 @@ class ExperimentClient:
         trials = 0
         kwargs = flatten(kwargs)
         max_trials = min(max_trials, self.max_trials)
+
         while not self.is_done and trials - worker_broken_trials < max_trials:
             try:
                 with self.suggest(pool_size=pool_size) as trial:
@@ -789,12 +791,11 @@ class ExperimentClient:
                         kwargs[trial_arg] = trial
 
                     try:
-                        self.extensions.start_trial.broadcast(trial)
-                        results = self.executor.wait(
-                            [self.executor.submit(fct, **unflatten(kwargs))]
-                        )[0]
-                        self.observe(trial, results=results)
-                        self.extensions.end_trial.broadcast(trial)
+                        with self.extensions.trial(trial):
+                            results = self.executor.wait(
+                                [self.executor.submit(fct, **unflatten(kwargs))]
+                            )[0]
+                            self.observe(trial, results=results)
                     except (KeyboardInterrupt, InvalidResult):
                         raise
                     except BaseException as e:
@@ -814,6 +815,7 @@ class ExperimentClient:
                             )
                         else:
                             self.release(trial, status="broken")
+
             except CompletedExperiment as e:
                 log.warning(e)
                 break
