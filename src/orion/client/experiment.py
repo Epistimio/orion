@@ -798,7 +798,6 @@ class ExperimentClient:
                     except (KeyboardInterrupt, InvalidResult):
                         raise
                     except BaseException as e:
-                        self.extensions.error(e)
                         if on_error is None or on_error(
                             self, trial, e, worker_broken_trials
                         ):
