@@ -84,7 +84,7 @@ import orion.core
 import orion.core.utils.backward as backward
 from orion.algo.base import algo_factory
 from orion.algo.space import Space
-from orion.core.evc.adapters import Adapter
+from orion.core.evc.adapters import BaseAdapter
 from orion.core.evc.conflicts import ExperimentNameConflict, detect_conflicts
 from orion.core.io import resolve_config
 from orion.core.io.database import DuplicateKeyError
@@ -466,7 +466,7 @@ def _instantiate_adapters(config):
          List of adapter configurations to build a CompositeAdapter for the EVC.
 
     """
-    return Adapter.build(config)
+    return BaseAdapter.build(config)
 
 
 def _instantiate_space(config):
