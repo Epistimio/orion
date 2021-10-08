@@ -238,7 +238,7 @@ class TestConnection(object):
     def test_singleton(self):
         """Test that MongoDB class is a singleton."""
         orion_db = database_factory.create(
-            of_type='mongodb',
+            of_type="mongodb",
             host="mongodb://localhost",
             port=27017,
             name="orion_test",
