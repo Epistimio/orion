@@ -101,12 +101,17 @@ class OrionExtensionManager:
         self._get_event("on_experiment_error")
         self._get_event("end_experiment")
 
+    @property
+    def on_extension_error(self):
+        """Called when an extension is throwing an exception"""
+        return self._get_event("on_extension_error")
+
     def experiment(self, *args, **kwargs):
         """Initialize a context manager that will call start/error/end events automatically"""
         return _DelegateStartEnd(
-            self.start_experiment,
-            self.on_experiment_error,
-            self.end_experiment,
+            self._get_event("start_experiment"),
+            self._get_event("on_experiment_error"),
+            self._get_event("end_experiment"),
             *args,
             **kwargs
         )
@@ -114,12 +119,15 @@ class OrionExtensionManager:
     def trial(self, *args, **kwargs):
         """Initialize a context manager that will call start/error/end events automatically"""
         return _DelegateStartEnd(
-            self.new_trial, self.on_trial_error, self.end_trial, *args, **kwargs
+            self._get_event("new_trial"),
+            self._get_event("on_trial_error"),
+            self._get_event("end_trial"),
+            *args,
+            **kwargs
         )
 
-    def __getattr__(self, name):
-        if name in self._events:
-            return self._get_event(name)
+    def broadcast(self, name, *args, **kwargs):
+        return self._get_event(name).broadcast(*args, **kwargs)
 
     def _get_event(self, key):
         """Retrieve or generate a new event delegate"""
