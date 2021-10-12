@@ -9,6 +9,7 @@ Client helper functions
    client/cli
    client/experiment
    client/manual
+   client/extensions
 
 .. automodule:: orion.client
    :members:

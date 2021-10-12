@@ -73,6 +73,11 @@ class ExperimentClient:
     producer: `orion.core.worker.producer.Producer`
         Producer object used to produce new trials.
 
+    Notes
+    -----
+
+    Users can write generic extensions to ExperimentClient through
+    `orion.client.experiment.OrionExtension`.
     """
 
     def __init__(self, experiment, producer, executor=None, heartbeat=None):
@@ -322,6 +327,16 @@ class ExperimentClient:
     ###
     # Actions
     ###
+    def register_extension(self, ext):
+        """Register a third party extension
+
+        Parameters
+        ----------
+        ext: OrionExtension
+            object that implements the OrionExtension interface
+
+        """
+        return self.extensions.register(ext)
 
     # pylint: disable=unused-argument
     def insert(self, params, results=None, reserve=False):

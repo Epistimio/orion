@@ -21,6 +21,7 @@ packages = [  # Packages must be sorted alphabetically to ease maintenance and m
     "orion.client",
     "orion.core",
     "orion.executor",
+    "orion.ext",
     "orion.plotting",
     "orion.serving",
     "orion.storage",
