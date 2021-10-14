@@ -244,7 +244,7 @@ class ProfetTaskTests:
             # NOTE: Not sure why, but the two values are very close, but different!
             assert np.isclose(first_objective, second_objective)
 
-    @pytest.mark.parametrize("step_size", [1.0, 1e-2, 1e-5])
+    @pytest.mark.parametrize("step_size", [1e-2, 1e-5])
     def test_call_with_gradients(
         self,
         profet_train_config: MetaModelTrainingConfig,
@@ -293,7 +293,8 @@ class ProfetTaskTests:
 
         second_objective = second_results[0]["value"]
 
-        # NOTE: (@lebrice): Expected this to work, but I might be a bit rusty.
+        # NOTE: (@lebrice): Expected this to work for really small step sizes. Using simpler check
+        # below instead.
         # assert np.isclose(improvement, step_size)
 
         # This check sort-of works, at least.
