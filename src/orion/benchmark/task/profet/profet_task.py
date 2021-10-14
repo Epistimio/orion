@@ -757,8 +757,6 @@ class ProfetTask(BaseTask, Generic[InputType]):
         p_tensor = torch.atleast_2d(p_tensor)
 
         with self.seed_randomness():
-            # TODO: Bug when using forrester task:
-            # RuntimeError: size mismatch, m1: [1 x 4], m2: [3 x 100]
             out = self.net(p_tensor)
             # TODO: Double-check that the std is indeed in log form.
             y_mean, y_log_std = out[0, 0], out[0, 1]
