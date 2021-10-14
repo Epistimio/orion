@@ -564,7 +564,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
         max_trials: int = 100,
         task_id: int = 0,
         seed: int = 123,
-        input_dir: Union[Path, str] = None,
+        input_dir: Union[Path, str] = "profet_data",
         checkpoint_dir: Union[Path, str] = None,
         train_config: MetaModelTrainingConfig = None,
         device: Union[torch.device, str] = None,
@@ -574,7 +574,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
         self.benchmark = benchmark
         self.task_id = task_id
         self.seed = seed
-        self.input_dir = Path(input_dir if input_dir else "profet_data")
+        self.input_dir = Path(input_dir)
         self.checkpoint_dir = Path(checkpoint_dir or self.input_dir / "checkpoints")
         # The config for the training of the meta-model.
         # NOTE: the train config is used to determine the hash of the task.

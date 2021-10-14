@@ -241,7 +241,7 @@ class ProfetTaskTests:
             assert second_results[0]["type"] == first_results[0]["type"]
             second_objective = second_results[0]["value"]
 
-            # TODO: Not sure why, but the two values are very close, but different!
+            # NOTE: Not sure why, but the two values are very close, but different!
             assert np.isclose(first_objective, second_objective)
 
     @pytest.mark.parametrize("step_size", [1.0, 1e-2, 1e-5])
