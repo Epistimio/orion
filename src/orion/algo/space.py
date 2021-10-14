@@ -35,7 +35,7 @@ import numbers
 import numpy
 from scipy.stats import distributions
 
-from orion.core.utils import float_to_digits_list
+from orion.core.utils import float_to_digits_list, format_trials
 from orion.core.utils.points import flatten_dims, regroup_dims
 
 logger = logging.getLogger(__name__)
@@ -966,16 +966,14 @@ class Space(dict):
 
         Returns
         -------
-        points : list of tuples of array-likes
-           Each element is a separate sample of this space, a list containing
-           values associated with the corresponding dimension. Values are in the
-           same order as the contained dimensions. Their shape is determined
-           by ``dimension.shape``.
+        trials: list of `orion.core.worker.trial.Trial`
+           Each element is a separate sample of this space, a trial containing
+           values associated with the corresponding dimension.
 
         """
         rng = check_random_state(seed)
         samples = [dim.sample(n_samples, rng) for dim in self.values()]
-        return list(zip(*samples))
+        return [format_trials.tuple_to_trial(point, self) for point in zip(*samples)]
 
     def interval(self, alpha=1.0):
         """Return a list with the intervals for each contained dimension."""
@@ -1018,36 +1016,28 @@ class Space(dict):
             )
         super(Space, self).__setitem__(key, value)
 
-    def __contains__(self, value):
-        """Check whether `value` is within the bounds of the space.
+    def __contains__(self, key_or_trial):
+        """Check whether `trial` is within the bounds of the space.
         Or check if a name for a dimension is registered in this space.
 
         Parameters
         ----------
-        value: list
-            List of values associated with the dimensions contained or a string indicating a
-            dimension's name.
-
+        key_or_trial: str or `orion.core.worker.trial.Trial`
+            If str, test if the string is a dimension part of the search space.
+            If a Trial, test if trial's hyperparameters fit the current search space.
         """
-        if isinstance(value, str):
-            return super(Space, self).__contains__(value)
+        if isinstance(key_or_trial, str):
+            return super(Space, self).__contains__(key_or_trial)
 
-        try:
-            len(value)
-        except TypeError as exc:
-            raise TypeError(
-                "Can check only for dimension names or "
-                "for tuples with parameter values."
-            ) from exc
-
-        if not self:
-            return False
-
-        for component, dim in zip(value, self.values()):
-            if component not in dim:
+        trial = key_or_trial
+        keys = set(trial.params.keys())
+        for dim_name, dim in self.items():
+            if dim_name not in keys or trial.params[dim_name] not in dim:
                 return False
 
-        return True
+            keys.remove(dim_name)
+
+        return len(keys) == 0
 
     def __repr__(self):
         """Represent as a string the space and the dimensions it contains."""
