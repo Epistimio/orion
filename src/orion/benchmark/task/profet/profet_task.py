@@ -682,19 +682,17 @@ class ProfetTask(BaseTask, Generic[InputType]):
         np.random.set_state(start_np_state)
 
     def call(
-        self, x: Union[InputType, Trial, Dict, Tuple] = None, with_grad: bool = None, **kwargs,
+        self, x: Union[InputType, Trial, Dict, Tuple] = None, **kwargs,
     ) -> List[Dict]:
         """Get the value of the sampled objective function at the given point (hyper-parameters).
 
-        If `with_grad` is passed, also returns the gradient of the objective function with respect
+        If `self.with_grad` is set, also returns the gradient of the objective function with respect
         to the inputs.
 
         Parameters
         ----------
         x : Union[InputType, Trial, Dict, Tuple]
             Either a Trial, a dataclass, a dict, or a tuple, that is a point from this tasks' space.
-        with_grad : bool, optional
-            Wether to also compute the gradients with respect to the inputs, by default False.
 
         Returns
         -------
@@ -709,9 +707,6 @@ class ProfetTask(BaseTask, Generic[InputType]):
         logger.debug(f"received x={x}")
         if x is None and kwargs:
             x = kwargs
-
-        if with_grad is None:
-            with_grad = self.with_grad
 
         if is_dataclass(x):
             x = asdict(x)
@@ -751,7 +746,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
         x_tensor: Tensor = x
 
         x_tensor = x_tensor.type_as(self.h_tensor)
-        if with_grad:
+        if self.with_grad:
             x_tensor = x_tensor.requires_grad_(True)
         p_tensor = torch.cat([x_tensor, self.h_tensor])
         p_tensor = torch.atleast_2d(p_tensor)
@@ -773,7 +768,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
 
         results.append(dict(name=self.name, type="objective", value=float(y_sample)))
 
-        if with_grad:
+        if self.with_grad:
             self.net.zero_grad()
             y_sample.backward()
             results.append(dict(name=self.name, type="gradient", value=x_tensor.grad.cpu().numpy()))

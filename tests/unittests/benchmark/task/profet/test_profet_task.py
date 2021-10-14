@@ -286,7 +286,7 @@ class ProfetTaskTests:
 
         point_tuple = task._space.sample(1)[0]
         point_dict = dict(zip(task._space.keys(), point_tuple))
-        results = task(point_dict, with_grad=True)
+        results = task(point_dict)
 
         assert results[0]["type"] == "objective"
         first_objective = results[0]["value"]
