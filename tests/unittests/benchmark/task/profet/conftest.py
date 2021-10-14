@@ -14,10 +14,9 @@ logger = get_logger(__name__)
 
 REAL_PROFET_DATA_DIR: Path = Path("profet_data")
 
-requires_profet_data = pytest.mark.skipif(
-    not REAL_PROFET_DATA_DIR.exists(),
-    reason="Need to have the real profet data downloaded to run this test.",
-)
+
+def is_nonempty_dir(p: Path) -> bool:
+    return p.exists() and p.is_dir() and bool(list(p.iterdir()))
 
 
 @pytest.fixture(scope="session")
@@ -44,25 +43,6 @@ def profet_input_dir(tmp_path_factory):
         return REAL_PROFET_DATA_DIR
     return tmp_path_factory.mktemp("profet_data")
 
-
-from logging import getLogger as get_logger
-from pathlib import Path
-from typing import ClassVar, Dict, Tuple, Type
-
-import numpy as np
-import orion.benchmark.task.profet.profet_task
-import pytest
-import torch
-from numpy.lib.npyio import load
-from orion.algo.space import _Discrete
-from orion.benchmark.task.profet.profet_task import (
-    MetaModelTrainingConfig,
-    ProfetTask,
-    download_data,
-    load_data,
-)
-
-from .conftest import REAL_PROFET_DATA_DIR, requires_profet_data
 
 logger = get_logger(__name__)
 shapes: Dict[str, Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[int, ...]]] = {
@@ -97,16 +77,20 @@ c_max: Dict[str, float] = {
 }
 
 
-@pytest.fixture(autouse=True, params=[True, False])
-def load_fake_data(
+@pytest.fixture(autouse=True, params=[True, False], ids=["real_data", "fake_data"])
+def mock_load_data(
     monkeypatch: MonkeyPatch, request: SubRequest, tmp_path_factory: TempPathFactory
 ):
-    """ Fixture that prevents attempts to download the true Profet datasets, and instead generates
-    random data with the same shape.
+    """Fixture used in all the profet task tests that, when the real profet data isn't available,
+    modifies `load_data` so it doesn't attempt to download the data, and instead mocks it so that it
+    generates random data with the same shape and basic stats as the real datasets (shown above).
+
+    NOTE: This fixture is parametrized so that we also run the tests with the fake data, even when
+    the real data is available. 
     """
     use_real_data: bool = request.param
 
-    if use_real_data and not REAL_PROFET_DATA_DIR.exists():
+    if use_real_data and not is_nonempty_dir(REAL_PROFET_DATA_DIR):
         pytest.skip(
             f"profet data wasn't downloaded to directory "
             f"'{REAL_PROFET_DATA_DIR}' doesn't exist."
@@ -134,4 +118,3 @@ def load_fake_data(
     monkeypatch.setattr(orion.benchmark.task.profet.profet_task, "load_data", _load_data)
     # NOTE: Need to set the item in the globals because it might already have been imported.
     monkeypatch.setitem(globals(), "load_data", _load_data)
-
