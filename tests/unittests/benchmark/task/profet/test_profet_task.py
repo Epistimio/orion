@@ -53,6 +53,33 @@ class ProfetTaskTests:
 
     Task: ClassVar[Type[ProfetTask]]
 
+    
+    @pytest.mark.timeout(30)
+    def test_attributes(
+        self,
+        profet_train_config: MetaModelTrainingConfig,
+        profet_input_dir: Path,
+        tmp_path_factory,
+    ):
+        """ Simple test: Check that a task can be created and that its attributes are used and set
+        correctly.
+        """
+        max_trials = 123
+        task_id = 0
+        seed = 123
+        checkpoint_dir: Path = tmp_path_factory.mktemp("checkpoints")
+        task = self.Task(
+            max_trials=max_trials,
+            task_id=task_id,
+            train_config=profet_train_config,
+            seed=seed,
+            input_dir=profet_input_dir,
+            checkpoint_dir=checkpoint_dir,
+        )
+        assert task.max_trials == max_trials
+        assert task.seed == seed
+        assert task.task_id == task_id
+
     @pytest.mark.timeout(30)
     def test_instantiating_task(
         self,
@@ -79,11 +106,8 @@ class ProfetTaskTests:
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
-        assert task.max_trials == max_trials
-        assert task.seed == seed
-        assert task.task_id == task_id
 
-        # Directory should have one file (the trained model).
+        # Directory should have one file (the trained model checkpoint).
         assert len(list(checkpoint_dir.iterdir())) == 1
 
         task = self.Task(
@@ -94,11 +118,8 @@ class ProfetTaskTests:
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
-        assert task.max_trials == max_trials
-        assert task.seed == seed
-        assert task.task_id == task_id
 
-        # Directory should have one file (the trained model).
+        # Directory should *still* only have one file (the trained model checkpoint).
         assert len(list(checkpoint_dir.iterdir())) == 1
 
     def test_configuration(
