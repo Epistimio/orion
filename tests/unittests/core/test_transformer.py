@@ -9,6 +9,7 @@ import numpy
 import pytest
 
 from orion.algo.space import Categorical, Dimension, Integer, Real, Space
+from orion.core.utils import format_trials
 from orion.core.worker.transformer import (
     Compose,
     Enumerate,
@@ -22,8 +23,11 @@ from orion.core.worker.transformer import (
     Reverse,
     TransformedDimension,
     TransformedSpace,
+    TransformedTrial,
     View,
     build_required_space,
+    create_restored_trial,
+    create_transformed_trial,
 )
 
 
@@ -1038,20 +1042,24 @@ class TestReshapedSpace(object):
 
     def test_reverse(self, space, tspace, rspace, seed):
         """Check method `reverse`."""
-        ryo = (
-            numpy.zeros(tspace["yolo0"].shape).reshape(-1).tolist()
-            + numpy.zeros(tspace["yolo2"].shape).reshape(-1).tolist()
-            + [10]
+        ryo = format_trials.tuple_to_trial(
+            tuple(
+                numpy.zeros(tspace["yolo0"].shape).reshape(-1).tolist()
+                + numpy.zeros(tspace["yolo2"].shape).reshape(-1).tolist()
+                + [10]
+            ),
+            rspace,
         )
         yo = rspace.reverse(ryo)
         assert yo in space
 
     def test_contains(self, tspace, rspace, seed):
         """Check method `transform`."""
-        ryo = (
+        ryo = format_trials.tuple_to_trial(
             numpy.zeros(tspace["yolo0"].shape).reshape(-1).tolist()
             + numpy.zeros(tspace["yolo2"].shape).reshape(-1).tolist()
-            + [10]
+            + [10],
+            rspace,
         )
 
         assert ryo in rspace
@@ -1085,14 +1093,24 @@ class TestReshapedSpace(object):
             assert interval[i] == (0, 1)
         assert interval[-1] == (3, 10)
 
-    def test_reshape(self, rspace):
+    def test_reshape(self, space, rspace):
         """Verify that the dimension are reshaped properly, forward and backward"""
-        point = [numpy.arange(6).reshape(3, 2), "3", 10]
-        rpoint = point[0].reshape(-1).tolist() + [0.0, 0.0, 1.0, 0.0] + [10]
-        assert rspace.transform(point) == tuple(rpoint)
-        numpy.testing.assert_equal(rspace.reverse(rpoint)[0], point[0])
-        assert rspace.reverse(rpoint)[1] == point[1]
-        assert rspace.reverse(rpoint)[2] == point[2]
+        trial = format_trials.tuple_to_trial(
+            (numpy.arange(6).reshape(3, 2).tolist(), "3", 10), space
+        )
+
+        rtrial = format_trials.tuple_to_trial(
+            numpy.array(trial.params["yolo0"]).reshape(-1).tolist()
+            + [0.0, 0.0, 1.0, 0.0]
+            + [10],
+            rspace,
+        )
+        assert rspace.transform(trial).params == rtrial.params
+        numpy.testing.assert_equal(
+            rspace.reverse(rtrial).params["yolo0"], trial.params["yolo0"]
+        )
+        assert rspace.reverse(rtrial).params["yolo2"] == trial.params["yolo2"]
+        assert rspace.reverse(rtrial).params["yolo3"] == trial.params["yolo3"]
 
     def test_cardinality(self, dim2):
         """Check cardinality of reshaped space"""
@@ -1333,40 +1351,136 @@ def test_precision_with_linear(space, logdim, logintdim):
     space["yolo5"].precision = 5
 
     # Create a point
-    point = list(space.sample(1)[0])
+    trial = space.sample(1)[0]
     real_index = list(space.keys()).index("yolo0")
     logreal_index = list(space.keys()).index("yolo4")
     logint_index = list(space.keys()).index("yolo5")
-    point[real_index] = 0.133333
-    point[logreal_index] = 0.1222222
-    point[logint_index] = 2
+    trial._params[real_index].value = 0.133333
+    trial._params[logreal_index].value = 0.1222222
+    trial._params[logint_index].value = 2
 
     # Check first without linearization
     tspace = build_required_space(space, type_requirement="numerical")
     # Check that transform is fine
-    tpoint = tspace.transform(point)
-    assert tpoint[real_index] == 0.133
-    assert tpoint[logreal_index] == 0.1222
-    assert tpoint[logint_index] == 2
+    ttrial = tspace.transform(trial)
+    assert ttrial.params["yolo0"] == 0.133
+    assert ttrial.params["yolo4"] == 0.1222
+    assert ttrial.params["yolo5"] == 2
 
     # Check that reserve does not break precision
-    rpoint = tspace.reverse(tpoint)
-    assert rpoint[real_index] == 0.133
-    assert rpoint[logreal_index] == 0.1222
-    assert rpoint[logint_index] == 2
+    rtrial = tspace.reverse(ttrial)
+    assert rtrial.params["yolo0"] == 0.133
+    assert rtrial.params["yolo4"] == 0.1222
+    assert rtrial.params["yolo5"] == 2
 
     # Check with linearization
     tspace = build_required_space(
         space, dist_requirement="linear", type_requirement="real"
     )
     # Check that transform is fine
-    tpoint = tspace.transform(point)
-    assert tpoint[real_index] == 0.133
-    assert tpoint[logreal_index] == numpy.log(0.1222)
-    assert tpoint[logint_index] == numpy.log(2)
+    ttrial = tspace.transform(trial)
+    assert ttrial.params["yolo0"] == 0.133
+    assert ttrial.params["yolo4"] == numpy.log(0.1222)
+    assert ttrial.params["yolo5"] == numpy.log(2)
 
     # Check that reserve does not break precision
-    rpoint = tspace.reverse(tpoint)
-    assert rpoint[real_index] == 0.133
-    assert rpoint[logreal_index] == 0.1222
-    assert rpoint[logint_index] == 2
+    rtrial = tspace.reverse(ttrial)
+    assert rtrial.params["yolo0"] == 0.133
+    assert rtrial.params["yolo4"] == 0.1222
+    assert rtrial.params["yolo5"] == 2
+
+
+class TestTransformedTrial:
+    def test_params_are_transformed(self, space, tspace):
+        trial = space.sample()[0]
+        ttrial = tspace.transform(trial)
+        assert isinstance(ttrial, TransformedTrial)
+        assert ttrial.params != trial.params
+        assert ttrial not in space
+        assert ttrial in tspace
+
+    def test_trial_attributes_conserved(self, space, tspace):
+        working_dir = "/new/working/dir"
+        status = "interrupted"
+        trial = space.sample()[0]
+        assert trial.working_dir != working_dir
+        trial.working_dir = working_dir
+        assert trial.status != status
+        trial.status = status
+        ttrial = tspace.transform(trial)
+        assert isinstance(ttrial, TransformedTrial)
+        assert ttrial.working_dir == working_dir
+        assert ttrial.status == status
+
+    def test_setters_accessible(self, space, tspace):
+        working_dir = "/new/working/dir"
+        status = "interrupted"
+        trial = space.sample()[0]
+        ttrial = tspace.transform(trial)
+
+        assert trial.working_dir != working_dir
+        assert trial.status != status
+
+        ttrial.working_dir = working_dir
+        ttrial.status = status
+
+        assert ttrial.working_dir == trial.working_dir == working_dir
+        assert ttrial.status == trial.status == status
+
+    def test_to_dict_is_transformed(self, space, tspace):
+        trial = space.sample()[0]
+        ttrial = tspace.transform(trial)
+
+        original_dict = trial.to_dict()
+        transformed_dict = ttrial.to_dict()
+
+        assert original_dict != transformed_dict
+
+        original_dict.pop("params")
+        transformed_dict.pop("params")
+
+        assert original_dict == transformed_dict
+
+        assert "_id" in original_dict
+
+
+def test_create_transformed_trial(space, tspace):
+    trial = space.sample()[0]
+    ttrial = tspace.transform(trial)
+
+    # Test that returns a TransformedTrial
+    transformed_trial = create_transformed_trial(
+        trial, format_trials.trial_to_tuple(ttrial, tspace), tspace
+    )
+    assert isinstance(transformed_trial, TransformedTrial)
+
+    # Test that point is converted properly
+    assert transformed_trial not in space
+    assert transformed_trial in tspace
+
+
+def test_create_restored_trial(space, rspace):
+    working_dir = "/new/working/dir"
+    status = "interrupted"
+
+    rtrial = rspace.sample()[0]
+    # Sampling a new point in original space instead of using reserve()
+    trial = space.sample()[0]
+    point = format_trials.trial_to_tuple(trial, space)
+
+    rtrial.working_dir = working_dir
+    rtrial.status = status
+
+    restored_trial = create_restored_trial(rtrial, point, space)
+
+    # Test that attributes are conserved
+    assert restored_trial.working_dir == working_dir
+    assert restored_trial.status == status
+
+    # Test params are updated
+    assert restored_trial.params != rtrial.params
+    assert restored_trial.params == trial.params
+
+    # Test that id is based on current params
+    assert restored_trial.id != rtrial.id
+    assert restored_trial.id == trial.id
