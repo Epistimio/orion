@@ -1,7 +1,7 @@
 from orion.executor.base import BaseExecutor
 
 try:
-    from dask.distributed import Client, get_client, get_worker, rejoin, secede
+    from dask.distributed import Client, get_client, get_worker, rejoin, secede, TimeoutError
 
     HAS_DASK = True
 except ImportError:
@@ -43,6 +43,41 @@ class Dask(BaseExecutor):
         if self.in_worker:
             rejoin()
         return results
+
+    def waitone(self, futures, timeout=0.01):
+        if len(futures) == 0:
+            return []
+
+        finished = []
+        tobe_removed = []
+
+        def add_result(fut, result):
+            finished.append(result)
+            tobe_removed.append(fut)
+
+        def check_withtimeout(fut):
+            try:
+                return fut.result(timeout)
+            except TimeoutError:
+                return None
+
+        while not finished:
+            # check with a timeout i.e wait for a bit & check results
+            result = check_withtimeout(futures[0])
+            if result:
+                add_result(futures[0], result)
+
+            for future in futures[1:]:
+                # check without waiting (first future already waited)
+                # the result is ready so timeout is ignored
+                if future.done():
+                    result = future.result(timeout)
+                    add_result(future, result)
+
+        for future in tobe_removed:
+            futures.remove(future)
+
+        return finished
 
     def submit(self, function, *args, **kwargs):
         return self.client.submit(function, *args, **kwargs, pure=False)

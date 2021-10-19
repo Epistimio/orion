@@ -42,6 +42,22 @@ class BaseExecutor:
         """
         pass
 
+    def waitone(self, futures):
+        """Wait for at least one future to complete, removes it from the list of pending futures
+        and return its result
+
+        Parameters
+        ----------
+        futures: `concurrent.futures.Futures` or equivalent interface
+            The objects returned by ``submit()`` of the executor.
+
+        Returns
+        -------
+        returns a list fo results
+
+        """
+        pass
+
     def submit(self, function, *args, **kwargs):
         """Submit work to the executor for asynchronous execution
 
