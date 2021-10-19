@@ -25,11 +25,6 @@ from orion.core.utils import GenericFactory
 log = logging.getLogger(__name__)
 
 
-def infer_trial_id(point):
-    """Compute a hashing of a point"""
-    return hashlib.md5(str(list(point)).encode("utf-8")).hexdigest()
-
-
 # pylint: disable=too-many-public-methods
 class BaseAlgorithm:
     """Base class describing what an algorithm can do.
@@ -166,8 +161,10 @@ class BaseAlgorithm:
 
         return trial
 
-    def get_id(self, point, ignore_fidelity=False):
-        """Compute a unique hash for a point based on params
+    def get_id(self, trial, ignore_fidelity=False):
+        """Return unique hash for a trials based on params
+
+        Deprecated and will be removed in v0.3.0. Use the trial hashing methods instead.
 
         Parameters
         ----------
@@ -179,14 +176,13 @@ class BaseAlgorithm:
         """
         # Apply transforms and reverse to see data as it would come from DB
         # (Some transformations looses some info. ex: Precision transformation)
-        point = list(self.format_trial(point))
+
+        trial = self.format_trial(trial)
 
         if ignore_fidelity:
-            non_fidelity_dims = point[0 : self.fidelity_index]
-            non_fidelity_dims.extend(point[self.fidelity_index + 1 :])
-            point = non_fidelity_dims
+            return trial.hash_params
 
-        return hashlib.md5(str(point).encode("utf-8")).hexdigest()
+        return trial.hash_name
 
     @property
     def fidelity_index(self):
@@ -218,8 +214,8 @@ class BaseAlgorithm:
 
         Returns
         -------
-        list of points or None
-            A list of lists representing points suggested by the algorithm. The algorithm may opt
+        list of trials or None
+            A list of trials representing values suggested by the algorithm. The algorithm may opt
             out if it cannot make a good suggestion at the moment (it may be waiting for other
             trials to complete), in which case it will return None.
 
@@ -231,13 +227,13 @@ class BaseAlgorithm:
         pass
 
     def observe(self, trials):
-        """Observe the `results` of the evaluation of the `points` in the
+        """Observe the `results` of the evaluation of the `trials` in the
         process defined in user's script.
 
         Parameters
         ----------
-        trials: list of tuples of array-likes
-           Points from a `orion.algo.space.Space`.
+        trials: list of ``orion.core.worker.trial.Trial``
+           Trials from a `orion.algo.space.Space`.
 
         """
         for trial in trials:
@@ -245,16 +241,17 @@ class BaseAlgorithm:
                 self.register(trial)
 
     def register(self, trial):
-        """Save the point as one suggested or observed by the algorithm
+        """Save the trial as one suggested or observed by the algorithm.
+
+        The trial objectives may change without the algorithm having actually observed it.
+        In order to detect this, we assign a tuple ``(trial and trial.objective)``
+        to the key ``trial.hash_name`` so that if the objective was not observed, we
+        will see that second item of the tuple is ``None``.
 
         Parameters
         ----------
-        point : array-likes
-           Point from a `orion.algo.space.Space`.
-        result : dict or None, optional
-           The result of an evaluation; partial information about the
-           black-box function at each point in `params`.
-           None is suggested and not yet completed.
+        trial: ``orion.core.worker.trial.Trial``
+           Trial from a `orion.algo.space.Space`.
 
         """
         self._trials_info[trial.hash_name] = (trial, trial.objective)
@@ -269,21 +266,21 @@ class BaseAlgorithm:
         """Number of completed trials observed by the algorithm"""
         return sum(bool(point[1] is not None) for point in self._trials_info.values())
 
-    def has_suggested(self, point):
+    def has_suggested(self, trial):
         """Whether the algorithm has suggested a given point.
 
         Parameters
         ----------
-        point : tuples of array-likes
-           Points from a `orion.algo.space.Space`.
+        trial: ``orion.core.worker.trial.Trial``
+           Trial from a `orion.algo.space.Space`.
 
         Returns
         -------
         bool
-            True if the point was suggested by the algo, False otherwise.
+            True if the trial was suggested by the algo, False otherwise.
 
         """
-        return point.hash_name in self._trials_info
+        return trial.hash_name in self._trials_info
 
     def has_observed(self, trial):
         """Whether the algorithm has observed a given point objective.
@@ -322,36 +319,48 @@ class BaseAlgorithm:
 
         return False
 
-    def score(self, point):  # pylint:disable=no-self-use,unused-argument
+    def score(self, trial):  # pylint:disable=no-self-use,unused-argument
         """Allow algorithm to evaluate `point` based on a prediction about
         this parameter set's performance.
 
         By default, return the same score any parameter (no preference).
 
-        :returns: A subjective measure of expected perfomance.
-        :rtype: float
+        Parameters
+        ----------
+        trial: ``orion.core.worker.trial.Trial``
+           Trial object to retrieve from the database
+
+        Returns
+        -------
+        A subjective measure of expected perfomance.
 
         """
         return 0
 
-    def judge(self, point, measurements):  # pylint:disable=no-self-use,unused-argument
+    def judge(self, trial, measurements):  # pylint:disable=no-self-use,unused-argument
         """Inform an algorithm about online `measurements` of a running trial.
-
-        :param point: A tuple which specifies the values of the (hyper)parameters
-           used to execute user's script with.
 
         This method is to be used as a callback in a client-server communication
         between user's script and a orion's worker using a `BaseAlgorithm`.
         Data returned from this method must be serializable and will be used as
         a response to the running environment. Default response is None.
 
-        .. note:: Calling algorithm to `judge` a `point` based on its online
-           `measurements` will effectively change a state in the algorithm (like
-           a reinforcement learning agent's hidden state or an automatic early
-           stopping mechanism's regression), which it may change the value of
-           the property `should_suspend`.
+        Parameters
+        ----------
+        trial: ``orion.core.worker.trial.Trial``
+           Trial object to retrieve from the database
 
-        :returns: None or a serializable dictionary containing named data
+        Notes:
+        ------
+
+        Calling algorithm to `judge` a `point` based on its online `measurements` will effectively
+        change a state in the algorithm (like a reinforcement learning agent's hidden state or an
+        automatic early stopping mechanism's regression), which it may change the value of the
+        property `should_suspend`.
+
+        Returns
+        -------
+        None or a serializable dictionary containing named data
 
         """
         return None
