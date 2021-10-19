@@ -13,6 +13,7 @@ import pprint
 
 import orion.core
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
+from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
 
@@ -171,3 +172,12 @@ def port_algo_config(config):
         config = {"of_type": config}
 
     return config
+
+
+def algo_observe(algo, trials, results):
+    for trial, result in zip(trials, results):
+        trial.results.append(
+            Trial.Result(name="objective", type="objective", value=result)
+        )
+
+    algo.observe(trials)

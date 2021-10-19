@@ -143,29 +143,28 @@ class BaseAlgorithm:
         """
         self._trials_info = state_dict.get("_trials_info")
 
-    def format_point(self, point):
-        """Format point based on space transformations
+    def format_trial(self, trial):
+        """Format trial based on space transformations
 
-        This will apply the reverse transformation on the point and then
+        This will apply the reverse transformation on the trial and then
         transform it again.
 
-        Some transformations are lossy and thus the points suggested by the algorithm could
-        be different when returned to `observe`. Using `format_point` makes it possible
-        for the algorithm to see the final version of the point after back and forth
-        transformations. This way it can recognise the point in `observe` and also
+        Some transformations are lossy and thus the trials suggested by the algorithm could
+        be different when returned to `observe`. Using `format_trial` makes it possible
+        for the algorithm to see the final version of the trial after back and forth
+        transformations. This way it can recognise the trial in `observe` and also
         avoid duplicates that would have gone unnoticed during suggestion.
 
         Parameters
         ----------
-        point : tuples of array-likes
-            Points from a `orion.algo.space.Space`.
+        trial : `orion.core.worker.trial.Trial`
+            Trial from a `orion.algo.space.Space`.
         """
 
-        point = tuple(point)
         if hasattr(self.space, "transform"):
-            point = self.space.transform(self.space.reverse(point))
+            trial = self.space.transform(self.space.reverse(trial))
 
-        return point
+        return trial
 
     def get_id(self, point, ignore_fidelity=False):
         """Compute a unique hash for a point based on params
@@ -180,7 +179,7 @@ class BaseAlgorithm:
         """
         # Apply transforms and reverse to see data as it would come from DB
         # (Some transformations looses some info. ex: Precision transformation)
-        point = list(self.format_point(point))
+        point = list(self.format_trial(point))
 
         if ignore_fidelity:
             non_fidelity_dims = point[0 : self.fidelity_index]
@@ -231,35 +230,21 @@ class BaseAlgorithm:
         """
         pass
 
-    def observe(self, points, results):
+    def observe(self, trials):
         """Observe the `results` of the evaluation of the `points` in the
         process defined in user's script.
 
         Parameters
         ----------
-        points : list of tuples of array-likes
+        trials: list of tuples of array-likes
            Points from a `orion.algo.space.Space`.
-        results : list of dicts
-           Contains the result of an evaluation; partial information about the
-           black-box function at each point in `params`.
-
-        Result
-        ------
-        objective : numeric
-           Evaluation of this problem's objective function.
-        gradient : 1D array-like, optional
-           Contains values of the derivatives of the `objective` function
-           with respect to `params`.
-        constraint : list of numeric, optional
-           List of constraints expression evaluation which must be greater
-           or equal to zero by the problem's definition.
 
         """
-        for point, result in zip(points, results):
-            if not self.has_observed(point):
-                self.register(point, result)
+        for trial in trials:
+            if not self.has_observed(trial):
+                self.register(trial)
 
-    def register(self, point, result=None):
+    def register(self, trial):
         """Save the point as one suggested or observed by the algorithm
 
         Parameters
@@ -272,7 +257,7 @@ class BaseAlgorithm:
            None is suggested and not yet completed.
 
         """
-        self._trials_info[self.get_id(point)] = (point, result)
+        self._trials_info[trial.hash_name] = (trial, trial.objective)
 
     @property
     def n_suggested(self):
@@ -298,28 +283,27 @@ class BaseAlgorithm:
             True if the point was suggested by the algo, False otherwise.
 
         """
-        return self.get_id(point) in self._trials_info
+        return point.hash_name in self._trials_info
 
-    def has_observed(self, point):
+    def has_observed(self, trial):
         """Whether the algorithm has observed a given point objective.
 
         This only counts observed completed trials.
 
         Parameters
         ----------
-        point : tuples of array-likes
-            Points from a `orion.algo.space.Space`.
+        trial: ``orion.core.worker.trial.Trial``
+           Trial object to retrieve from the database
 
         Returns
         -------
         bool
-            True if the point's objective was observed by the algo, False otherwise.
+            True if the trial's objective was observed by the algo, False otherwise.
 
         """
-
-        trial_id = self.get_id(point)
         return (
-            trial_id in self._trials_info and self._trials_info[trial_id][1] is not None
+            trial.hash_name in self._trials_info
+            and self._trials_info[trial.hash_name][1] is not None
         )
 
     @property
@@ -372,8 +356,7 @@ class BaseAlgorithm:
         """
         return None
 
-    @property
-    def should_suspend(self):
+    def should_suspend(self, trial):
         """Allow algorithm to decide whether a particular running trial is still
         worth to complete its evaluation, based on information provided by the
         `judge` method.
