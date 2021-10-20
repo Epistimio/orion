@@ -753,66 +753,67 @@ class ExperimentClient:
             self._experiment.max_trials = max_trials
             self._experiment.algorithms.algorithm.max_trials = max_trials
 
-        trials = self.executor.wait(
-            self.executor.submit(
-                self._optimize,
-                fct,
-                pool_size,
-                max_trials_per_worker,
-                max_broken,
-                trial_arg,
-                on_error,
-                **kwargs,
-            )
-            for _ in range(n_workers)
-        )
-
-        return sum(trials)
-
-    def _optimize(
-        self, fct, pool_size, max_trials, max_broken, trial_arg, on_error, **kwargs
-    ):
         worker_broken_trials = 0
         trials = 0
-        kwargs = flatten(kwargs)
-        max_trials = min(max_trials, self.max_trials)
-        while not self.is_done and trials - worker_broken_trials < max_trials:
+
+        # TODO: how to I fetch worker error ?
+        # this should be a job for waitone
+        futures = []
+        pending_trials = []
+        while not self.is_done and len(trials) - worker_broken_trials < max_trials:
+            # try to get more work
+            new_trials = self._suggest_trials(n_workers)
+
+            # Schedule new work
+            new_futures = [
+                self.executor.submit(trial, fct, trial_arg, **kwargs)
+                for trial in new_trials
+            ]
+
+            # we need to keep futures & pending_trials in sync
+            # so we can map results to their trials
+            futures.extend(new_futures)
+            pending_trials.extend(new_trials)
+
+            # only wait for at least one worker to finish
+            results = self.executor.waitone(futures)
+
+            # register the results
+            for i, result in results:
+                trial = pending_trials.pop(i)
+                self.observe(trial, result)
+                trials += 1
+
+        return trials
+
+    def _worker_trial(self, trial, fct, trial_arg, **kwargs):
+        """Execute a trial on a worker"""
+        with trial:
+            kwargs.update(flatten(trial.params))
+
+            if trial_arg:
+                kwargs[trial_arg] = trial
+
+            return fct(**unflatten(kwargs))
+
+    def _suggest_trials(self, count):
+        """Suggest a bunch of trials to be dispatched to the workers"""
+        trials = []
+        while True:
             try:
-                with self.suggest(pool_size=pool_size) as trial:
+                trial = self.suggest()
+                trials.append(trial)
 
-                    kwargs.update(flatten(trial.params))
+                if count is not None and len(trials) == count:
+                    break
 
-                    if trial_arg:
-                        kwargs[trial_arg] = trial
-
-                    try:
-                        results = self.executor.wait(
-                            [self.executor.submit(fct, **unflatten(kwargs))]
-                        )[0]
-                        self.observe(trial, results=results)
-                    except (KeyboardInterrupt, InvalidResult):
-                        raise
-                    except BaseException as e:
-                        if on_error is None or on_error(
-                            self, trial, e, worker_broken_trials
-                        ):
-                            log.error(traceback.format_exc())
-                            worker_broken_trials += 1
-                        else:
-                            log.error(str(e))
-                            log.debug(traceback.format_exc())
-
-                        if worker_broken_trials >= max_broken:
-                            raise BrokenExperiment(
-                                "Worker has reached broken trials threshold"
-                            )
-                        else:
-                            self.release(trial, status="broken")
-            except CompletedExperiment as e:
-                log.warning(e)
-                break
-
-            trials += 1
+            # non critical errors
+            except WaitingForTrials:
+                pass
+            except SampleTimeout:
+                pass
+            except CompletedExperiment:
+                pass
 
         return trials
 

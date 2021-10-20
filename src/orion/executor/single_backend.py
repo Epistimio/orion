@@ -32,11 +32,10 @@ class SingleExecutor(BaseExecutor):
         if len(futures) == 0:
             return []
 
-        fut = futures()
+        fut = futures.pop()
         result = fut()
-        futures.remove(fut)
 
-        return [result]
+        return [len(futures), result]
 
     def submit(self, function, *args, **kwargs):
         return functools.partial(function, *args, **kwargs)
