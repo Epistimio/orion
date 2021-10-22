@@ -12,7 +12,7 @@ class EventDelegate:
 
     deferred: bool
         if false events are triggered as soon as broadcast is called
-        if true the events will need to be triggered manually
+        If true, the events will need to be triggered manually.
     """
 
     def __init__(self, name, deferred=False) -> None:
