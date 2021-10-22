@@ -149,7 +149,7 @@ class OrionExtensionManager:
         Parameters
         ----------
         ext: ``OrionExtension``
-            object implementing :class`OrionExtension` methods
+            object implementing :class:`OrionExtension` methods
 
         Returns
         -------
