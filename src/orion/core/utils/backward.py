@@ -147,3 +147,27 @@ def get_algo_requirements(algorithm):
         shape_requirement=algorithm.requires_shape,
         dist_requirement=algorithm.requires_dist,
     )
+
+
+def port_algo_config(config):
+    """Convert algorithm configuration to be compliant with factory interface
+
+    Examples
+    --------
+    >>> port_algo_config('algo_name')
+    {'of_type': 'algo_name'}
+    >>> port_algo_config({'algo_name': {'some': 'args'}})
+    {'of_type': 'algo_name', 'some': 'args'}
+    >>> port_algo_config({'of_type': 'algo_name', 'some': 'args'})
+    {'of_type': 'algo_name', 'some': 'args'}
+
+    """
+    config = copy.deepcopy(config)
+    if isinstance(config, dict) and len(config) == 1:
+        algo_name, algo_config = next(iter(config.items()))
+        config = algo_config
+        config["of_type"] = algo_name
+    elif isinstance(config, str):
+        config = {"of_type": config}
+
+    return config

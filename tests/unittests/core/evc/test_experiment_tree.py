@@ -5,7 +5,7 @@
 import pytest
 
 from orion.client import build_experiment, get_experiment
-from orion.core.evc.adapters import Adapter, CodeChange
+from orion.core.evc.adapters import CodeChange
 from orion.core.evc.experiment import ExperimentNode
 from orion.testing.evc import (
     build_child_experiment,

@@ -50,7 +50,7 @@ class Producer(object):
         self.max_idle_time = max_idle_time
         self.strategy = experiment.producer["strategy"]
         self.naive_algorithm = None
-        # TODO: Move trials_history into PrimaryAlgo during the refactoring of Algorithm with
+        # TODO: Move trials_history into BaseAlgorithm during the refactoring of Algorithm with
         #       Strategist and Scheduler.
         self.trials_history = TrialsHistory()
         self.params_hashes = set()

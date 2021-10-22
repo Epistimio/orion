@@ -192,9 +192,8 @@ class TestCreateExperiment:
                 storage={"type": "legacy", "database": {"type": "idontexist"}},
             )
 
-        assert (
-            "Could not find implementation of AbstractDB, type = 'idontexist'"
-            in str(exc.value)
+        assert "Could not find implementation of Database, type = 'idontexist'" in str(
+            exc.value
         )
 
     def test_create_experiment_new_default(self):

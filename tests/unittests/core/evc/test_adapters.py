@@ -7,8 +7,8 @@ import pytest
 
 from orion.algo.space import Real
 from orion.core.evc.adapters import (
-    Adapter,
     AlgorithmChange,
+    BaseAdapter,
     CodeChange,
     CompositeAdapter,
     DimensionAddition,
@@ -310,8 +310,8 @@ class TestCompositeAdapterInit(object):
 
 
 def test_adapter_creation(dummy_param):
-    """Test initialization using :meth:`orion.core.evc.adapters.Adapter.build`"""
-    adapter = Adapter.build(
+    """Test initialization using :meth:`orion.core.evc.adapters.BaseAdapter.build`"""
+    adapter = BaseAdapter.build(
         [{"of_type": "DimensionAddition", "param": dummy_param.to_dict()}]
     )
 
@@ -854,7 +854,9 @@ def test_dimension_addition_configuration(dummy_param):
     assert configuration["of_type"] == "dimensionaddition"
     assert configuration["param"] == dummy_param.to_dict()
 
-    assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
+    assert (
+        BaseAdapter.build([configuration]).adapters[0].configuration[0] == configuration
+    )
 
 
 def test_dimension_deletion_configuration(dummy_param):
@@ -866,7 +868,9 @@ def test_dimension_deletion_configuration(dummy_param):
     assert configuration["of_type"] == "dimensiondeletion"
     assert configuration["param"] == dummy_param.to_dict()
 
-    assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
+    assert (
+        BaseAdapter.build([configuration]).adapters[0].configuration[0] == configuration
+    )
 
 
 def test_dimension_prior_change_configuration(small_prior, large_prior):
@@ -883,7 +887,9 @@ def test_dimension_prior_change_configuration(small_prior, large_prior):
     assert configuration["old_prior"] == small_prior
     assert configuration["new_prior"] == large_prior
 
-    assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
+    assert (
+        BaseAdapter.build([configuration]).adapters[0].configuration[0] == configuration
+    )
 
 
 def test_dimension_renaming_configuration():
@@ -898,7 +904,9 @@ def test_dimension_renaming_configuration():
     assert configuration["old_name"] == old_name
     assert configuration["new_name"] == new_name
 
-    assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
+    assert (
+        BaseAdapter.build([configuration]).adapters[0].configuration[0] == configuration
+    )
 
 
 def test_algorithm_change_configuration():
@@ -909,7 +917,9 @@ def test_algorithm_change_configuration():
 
     assert configuration["of_type"] == "algorithmchange"
 
-    assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
+    assert (
+        BaseAdapter.build([configuration]).adapters[0].configuration[0] == configuration
+    )
 
 
 def test_orion_version_change_configuration():
@@ -920,7 +930,9 @@ def test_orion_version_change_configuration():
 
     assert configuration["of_type"] == "orionversionchange"
 
-    assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
+    assert (
+        BaseAdapter.build([configuration]).adapters[0].configuration[0] == configuration
+    )
 
 
 def test_code_change_configuration():
@@ -932,7 +944,9 @@ def test_code_change_configuration():
     assert configuration["of_type"] == "codechange"
     assert configuration["change_type"] == CodeChange.UNSURE
 
-    assert Adapter.build([configuration]).adapters[0].configuration[0] == configuration
+    assert (
+        BaseAdapter.build([configuration]).adapters[0].configuration[0] == configuration
+    )
 
 
 def test_composite_configuration(dummy_param):
@@ -950,5 +964,11 @@ def test_composite_configuration(dummy_param):
     assert configuration[0] == dimension_addition_adapter.configuration[0]
     assert configuration[1] == dimension_deletion_adapter.configuration[0]
 
-    assert Adapter.build(configuration).adapters[0].configuration[0] == configuration[0]
-    assert Adapter.build(configuration).adapters[1].configuration[0] == configuration[1]
+    assert (
+        BaseAdapter.build(configuration).adapters[0].configuration[0]
+        == configuration[0]
+    )
+    assert (
+        BaseAdapter.build(configuration).adapters[1].configuration[0]
+        == configuration[1]
+    )

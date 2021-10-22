@@ -4,7 +4,14 @@ Base Search Algorithm
 =====================
 
 Formulation of a general search algorithm with respect to some objective.
-Algorithm implementations must inherit from `orion.algo.base.OptimizationAlgorithm`.
+Algorithm implementations must inherit from `orion.algo.base.BaseAlgorithm`.
+
+Algorithms can be created using `algo_factory.create()`.
+
+Examples
+--------
+>>> algo_factory.create('random', space, seed=1)
+>>> algo_factory.create('some_fancy_algo', space, **some_fancy_algo_config)
 
 """
 import copy
@@ -13,7 +20,7 @@ import logging
 from abc import ABCMeta, abstractmethod
 
 from orion.algo.space import Fidelity
-from orion.core.utils import Factory
+from orion.core.utils import GenericFactory
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +31,7 @@ def infer_trial_id(point):
 
 
 # pylint: disable=too-many-public-methods
-class BaseAlgorithm(object, metaclass=ABCMeta):
+class BaseAlgorithm:
     """Base class describing what an algorithm can do.
 
     Parameters
@@ -109,21 +116,11 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         self._param_names = list(kwargs.keys())
         # Instantiate tunable parameters of an algorithm
         for varname, param in kwargs.items():
-            # Check if tunable element is another algorithm
-            if isinstance(param, dict) and len(param) == 1:
-                subalgo_type = list(param)[0]
-                subalgo_kwargs = param[subalgo_type]
-                if isinstance(subalgo_kwargs, dict):
-                    param = OptimizationAlgorithm(subalgo_type, space, **subalgo_kwargs)
-            elif (
-                isinstance(param, str) and param.lower() in OptimizationAlgorithm.types
-            ):
-                # pylint: disable=too-many-function-args
-                param = OptimizationAlgorithm(param, space)
-            elif varname == "seed":
-                self.seed_rng(param)
-
             setattr(self, varname, param)
+
+        # TODO: move this inside an initialization function.
+        if hasattr(self, "seed"):
+            self.seed_rng(self.seed)
 
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
@@ -394,10 +391,7 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         for attrname in self._param_names:
             if attrname.startswith("_"):  # Do not log _space or others in conf
                 continue
-            attr = getattr(self, attrname)
-            if isinstance(attr, BaseAlgorithm):
-                attr = attr.configuration
-            dict_form[attrname] = attr
+            dict_form[attrname] = getattr(self, attrname)
 
         return {self.__class__.__name__.lower(): dict_form}
 
@@ -407,16 +401,9 @@ class BaseAlgorithm(object, metaclass=ABCMeta):
         return self._space
 
     @space.setter
-    def space(self, space_):
-        """Propagate changes in defined space to possibly nested algorithms."""
-        self._space = space_
-        for attr in self.__dict__.values():
-            if isinstance(attr, BaseAlgorithm):
-                attr.space = space_
+    def space(self, space):
+        """Set space."""
+        self._space = space
 
 
-# pylint: disable=too-few-public-methods,abstract-method
-class OptimizationAlgorithm(BaseAlgorithm, metaclass=Factory):
-    """Class used to inject dependency on an algorithm implementation."""
-
-    pass
+algo_factory = GenericFactory(BaseAlgorithm)

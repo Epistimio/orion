@@ -7,11 +7,11 @@ Average Rank Assessment
 
 from collections import defaultdict
 
-from orion.benchmark.assessment.base import BaseAssess
+from orion.benchmark.assessment.base import BenchmarkAssessment
 from orion.plotting.base import rankings
 
 
-class AverageRank(BaseAssess):
+class AverageRank(BenchmarkAssessment):
     """
     Evaluate the average performance (objective value) between different search algorithms from
     the rank perspective at different time steps (trial number).
