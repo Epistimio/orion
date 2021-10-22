@@ -130,7 +130,10 @@ class OrionExtensionManager:
         return self._get_event(name).broadcast(*args, **kwargs)
 
     def _get_event(self, key):
-        """Retrieve or generate a new event delegate"""
+        """Retrieve event delegate
+        
+        Will generate one if not defined already.
+        """
         delegate = self._events.get(key)
 
         if delegate is None:
