@@ -35,6 +35,9 @@ def retrieveone(self, timeout=0.01):
     results = []
     tobe_deleted = []
 
+    if self._output is None:
+        self._output = []
+
     while self._iterating or len(self._jobs) > 0:
         for job in self._jobs:
             results = _get_result(self, job, timeout)
@@ -43,7 +46,7 @@ def retrieveone(self, timeout=0.01):
             results.extend(results)
             tobe_deleted.append(job)
 
-        if self.results:
+        if results:
             break
 
     with self._lock:
@@ -86,13 +89,16 @@ class Joblib(BaseExecutor):
             self.backend, n_jobs=self.n_workers, **self.config
         )
 
-    def wait(self, futures):
+    def _exec(self, futures):
+        """Creates the joblib executor and returns the first set of results"""
         if self.executor is None:
             self.executor = joblib.Parallel(n_jobs=self.n_workers)
-            self.executor.retrieve = retrieveone
-            results = self.executor(futures)
-        else:
-            results = []
+            self.executor.retrieve = lambda: retrieveone(self.executor)
+            return self.executor(futures)
+        return []
+
+    def wait(self, futures):
+        results = self._exec(futures)
 
         with self.executor._backend.retrieval_context():
             while len(self.executor._jobs) > 0:
@@ -101,10 +107,10 @@ class Joblib(BaseExecutor):
         return results
 
     def waitone(self, futures):
-        if self.executor is None:
-            self.executor = joblib.Parallel(n_jobs=self.n_workers)
-            self.executor.retrieve = retrieveone
-            return self.executor(futures)
+        results = self._exec(futures)
+
+        if results:
+            return results
 
         with self.executor._backend.retrieval_context():
             while len(self.executor._jobs) > 0:
