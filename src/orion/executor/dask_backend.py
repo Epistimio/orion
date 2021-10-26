@@ -1,7 +1,14 @@
 from orion.executor.base import BaseExecutor
 
 try:
-    from dask.distributed import Client, get_client, get_worker, rejoin, secede, TimeoutError
+    from dask.distributed import (
+        Client,
+        get_client,
+        get_worker,
+        rejoin,
+        secede,
+        TimeoutError,
+    )
 
     HAS_DASK = True
 except ImportError:
@@ -65,14 +72,14 @@ class Dask(BaseExecutor):
             # check with a timeout i.e wait for a bit & check results
             result = check_withtimeout(futures[0])
             if result:
-                add_result(futures[0], result)
+                add_result(futures[0], (0, result))
 
-            for future in futures[1:]:
+            for i, future in enumerate(futures[1:]):
                 # check without waiting (first future already waited)
                 # the result is ready so timeout is ignored
                 if future.done():
                     result = future.result(timeout)
-                    add_result(future, result)
+                    add_result(future, (i + 1, result))
 
         for future in tobe_removed:
             futures.remove(future)

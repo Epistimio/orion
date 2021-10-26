@@ -4,9 +4,10 @@ import joblib
 
 from orion.executor.base import BaseExecutor
 
+
 def _get_result(self, job, timeout):
     try:
-        if getattr(self._backend, 'supports_timeout', False):
+        if getattr(self._backend, "supports_timeout", False):
             return job.get(timeout=timeout)
         else:
             return job.get()
@@ -23,13 +24,14 @@ def _get_result(self, job, timeout):
         # the exception we got back to the caller instead of returning
         # any result.
         backend = self._backend
-        if (backend is not None and hasattr(backend, 'abort_everything')):
+        if backend is not None and hasattr(backend, "abort_everything"):
             # If the backend is managed externally we need to make sure
             # to leave it in a working state to allow for future jobs
             # scheduling.
             ensure_ready = self._managed_backend
             backend.abort_everything(ensure_ready=ensure_ready)
         raise
+
 
 def retrieveone(self, timeout=0.01):
     results = []
@@ -39,11 +41,11 @@ def retrieveone(self, timeout=0.01):
         self._output = []
 
     while self._iterating or len(self._jobs) > 0:
-        for job in self._jobs:
+        for i, job in enumerate(self._jobs):
             results = _get_result(self, job, timeout)
 
             self._output.extend(results)
-            results.extend(results)
+            results.append((i, results[0]))
             tobe_deleted.append(job)
 
         if results:
@@ -63,6 +65,7 @@ class Joblib(BaseExecutor):
     -----
     The tasks are started when wait is called
     """
+
     def __init__(self, n_workers=-1, backend="loky", **config):
         super(Joblib, self).__init__(n_workers=n_workers)
         self.backend = backend
