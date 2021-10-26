@@ -766,15 +766,14 @@ class ExperimentClient:
         worker_broken_trials = 0
         trials = 0
 
-        # TODO: how to I fetch worker error ?
-        # this should be a job for waitone
         futures = []
         pending_trials = dict()
+        free_worker = n_workers
 
         while not self.is_done and trials - worker_broken_trials < max_trials:
             # try to get more work
             new_trials = []
-            if trials < max_trials and len(pending_trials) < max_trials:
+            if free_worker > 0:
                 # NB: suggest reserve the trial already
                 new_trials = self._suggest_trials(n_workers)
 
@@ -784,6 +783,7 @@ class ExperimentClient:
                 for trial in new_trials
             ]
 
+            free_worker -= len(new_futures)
             futures.extend(new_futures)
             for trial in new_trials:
                 pending_trials[trial.id] = trial
@@ -795,6 +795,8 @@ class ExperimentClient:
             except (KeyboardInterrupt, InvalidResult):
                 raise
             except BaseException as e:
+                free_worker -= 1
+
                 if on_error is None or on_error(
                     self, trial, e, worker_broken_trials
                 ):
@@ -817,6 +819,7 @@ class ExperimentClient:
                 # NB: observe release the trial already
                 self.observe(trial, result)
                 trials += 1
+                free_worker -= 1
 
         for _, trial in pending_trials.items():
             self.release(trial)
