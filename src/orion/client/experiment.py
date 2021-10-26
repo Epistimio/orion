@@ -792,11 +792,24 @@ class ExperimentClient:
             try:
                 results = self.executor.async_get(futures, timeout=0.01)
 
-            except KeyboardInterrupt:
-                pass
-            except BaseException as err:
-                print(err)
-                raise err
+            except (KeyboardInterrupt, InvalidResult):
+                raise
+            except BaseException as e:
+                if on_error is None or on_error(
+                    self, trial, e, worker_broken_trials
+                ):
+                    log.error(traceback.format_exc())
+                    worker_broken_trials += 1
+                else:
+                    log.error(str(e))
+                    log.debug(traceback.format_exc())
+
+                if worker_broken_trials >= max_broken:
+                    raise BrokenExperiment(
+                        "Worker has reached broken trials threshold"
+                    )
+                else:
+                    self.release(trial, status="broken")
 
             # register the results
             for trial_id, result in results:
