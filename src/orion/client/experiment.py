@@ -775,7 +775,7 @@ class ExperimentClient:
             new_trials = []
             if free_worker > 0:
                 # NB: suggest reserve the trial already
-                new_trials = self._suggest_trials(n_workers)
+                new_trials = self._suggest_trials(free_worker)
 
             # Schedule new work
             new_futures = [
