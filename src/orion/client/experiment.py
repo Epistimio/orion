@@ -759,42 +759,54 @@ class ExperimentClient:
         # TODO: how to I fetch worker error ?
         # this should be a job for waitone
         futures = []
-        pending_trials = []
-        while not self.is_done and len(trials) - worker_broken_trials < max_trials:
+        pending_trials = dict()
+
+        print()
+        while not self.is_done and trials - worker_broken_trials < max_trials:
             # try to get more work
-            new_trials = self._suggest_trials(n_workers)
+
+            new_trials = []
+            if trials < max_trials and len(pending_trials) < max_trials:
+                new_trials = self._suggest_trials(n_workers)
 
             # Schedule new work
             new_futures = [
-                self.executor.submit(trial, fct, trial_arg, **kwargs)
+                self.executor.submit(self._worker_trial, trial, fct, trial_arg, **kwargs)
                 for trial in new_trials
             ]
 
             # we need to keep futures & pending_trials in sync
             # so we can map results to their trials
             futures.extend(new_futures)
-            pending_trials.extend(new_trials)
+            for trial in new_trials:
+                pending_trials[trial.id] = trial
 
             # only wait for at least one worker to finish
+            old = len(futures)
             results = self.executor.waitone(futures)
+            nresults = len(results)
 
             # register the results
-            for i, result in results:
-                trial = pending_trials.pop(i)
+            for job_id, (trial_id, result) in results:
+                trial = pending_trials.pop(trial_id)
+                # observe release the trial already
                 self.observe(trial, result)
+                del futures[job_id]
                 trials += 1
+
+        for _, trial in pending_trials.items():
+            self.release(trial)
 
         return trials
 
     def _worker_trial(self, trial, fct, trial_arg, **kwargs):
         """Execute a trial on a worker"""
-        with trial:
-            kwargs.update(flatten(trial.params))
+        kwargs.update(flatten(trial.params))
 
-            if trial_arg:
-                kwargs[trial_arg] = trial
+        if trial_arg:
+            kwargs[trial_arg] = trial
 
-            return fct(**unflatten(kwargs))
+        return trial.id, fct(**unflatten(kwargs))
 
     def _suggest_trials(self, count):
         """Suggest a bunch of trials to be dispatched to the workers"""

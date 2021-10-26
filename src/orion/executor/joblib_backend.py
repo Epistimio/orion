@@ -36,17 +36,15 @@ def _get_result(self, job, timeout):
 def retrieveone(self, timeout=0.01):
     results = []
     tobe_deleted = []
-
-    if self._output is None:
-        self._output = []
+    self._output = []
 
     while self._iterating or len(self._jobs) > 0:
         for i, job in enumerate(self._jobs):
-            results = _get_result(self, job, timeout)
+            result = _get_result(self, job, timeout)
 
-            self._output.extend(results)
-            results.append((i, results[0]))
+            results.append((i, result[0]))
             tobe_deleted.append(job)
+            self._output.append((i, result[0]))
 
         if results:
             break
@@ -97,8 +95,8 @@ class Joblib(BaseExecutor):
         if self.executor is None:
             self.executor = joblib.Parallel(n_jobs=self.n_workers)
             self.executor.retrieve = lambda: retrieveone(self.executor)
-            return self.executor(futures)
-        return []
+
+        return self.executor(futures)
 
     def wait(self, futures):
         results = self._exec(futures)
@@ -116,8 +114,7 @@ class Joblib(BaseExecutor):
             return results
 
         with self.executor._backend.retrieval_context():
-            while len(self.executor._jobs) > 0:
-                return retrieveone(self.executor)
+            return retrieveone(self.executor)
 
     def submit(self, function, *args, **kwargs):
         return joblib.delayed(function)(*args, **kwargs)
