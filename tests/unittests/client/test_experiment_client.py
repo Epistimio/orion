@@ -828,6 +828,10 @@ class TestObserve:
             assert trial.status == "completed"  # Still completed after __exit__
 
 
+def foo(x):
+    return [dict(name="result", type="objective", value=x * 2)]
+
+
 @pytest.mark.usefixtures("version_XYZ")
 class TestWorkon:
     """Tests for ExperimentClient.workon"""
@@ -835,8 +839,6 @@ class TestWorkon:
     def test_workon(self):
         """Verify that workon processes properly"""
 
-        def foo(x):
-            return [dict(name="result", type="objective", value=x * 2)]
 
         with create_experiment(config, base_trial, statuses=[]) as (
             cfg,

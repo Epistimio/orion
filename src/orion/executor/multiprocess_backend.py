@@ -13,7 +13,6 @@ class Multiprocess(BaseExecutor):
 
     def __init__(self, n_workers, **kwargs):
         super().__init__(n_workers, **kwargs)
-        self.manager = Manager()
         self.pool = Pool(n_workers)
 
     def __getstate__(self):

@@ -32,6 +32,16 @@ from orion.storage.base import FailedUpdate
 log = logging.getLogger(__name__)
 
 
+def _worker_trial(trial, fct, trial_arg, **kwargs):
+    """Execute a trial on a worker"""
+    kwargs.update(flatten(trial.params))
+
+    if trial_arg:
+        kwargs[trial_arg] = trial
+
+    return trial.id, fct(**unflatten(kwargs))
+
+
 def reserve_trial(experiment, producer, pool_size, _depth=1):
     """Reserve a new trial, or produce and reserve a trial if none are available."""
     log.debug("Trying to reserve a new trial to evaluate.")
@@ -761,52 +771,44 @@ class ExperimentClient:
         futures = []
         pending_trials = dict()
 
-        print()
         while not self.is_done and trials - worker_broken_trials < max_trials:
             # try to get more work
-
             new_trials = []
             if trials < max_trials and len(pending_trials) < max_trials:
+                # NB: suggest reserve the trial already
                 new_trials = self._suggest_trials(n_workers)
 
             # Schedule new work
             new_futures = [
-                self.executor.submit(self._worker_trial, trial, fct, trial_arg, **kwargs)
+                self.executor.submit(_worker_trial, trial, fct, trial_arg, **kwargs)
                 for trial in new_trials
             ]
 
-            # we need to keep futures & pending_trials in sync
-            # so we can map results to their trials
             futures.extend(new_futures)
             for trial in new_trials:
                 pending_trials[trial.id] = trial
 
-            # only wait for at least one worker to finish
-            old = len(futures)
-            results = self.executor.waitone(futures)
-            nresults = len(results)
+            results = []
+            try:
+                results = self.executor.async_get(futures, timeout=0.01)
+
+            except KeyboardInterrupt:
+                pass
+            except BaseException as err:
+                print(err)
+                raise err
 
             # register the results
-            for job_id, (trial_id, result) in results:
+            for trial_id, result in results:
                 trial = pending_trials.pop(trial_id)
-                # observe release the trial already
+                # NB: observe release the trial already
                 self.observe(trial, result)
-                del futures[job_id]
                 trials += 1
 
         for _, trial in pending_trials.items():
             self.release(trial)
 
         return trials
-
-    def _worker_trial(self, trial, fct, trial_arg, **kwargs):
-        """Execute a trial on a worker"""
-        kwargs.update(flatten(trial.params))
-
-        if trial_arg:
-            kwargs[trial_arg] = trial
-
-        return trial.id, fct(**unflatten(kwargs))
 
     def _suggest_trials(self, count):
         """Suggest a bunch of trials to be dispatched to the workers"""
