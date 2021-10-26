@@ -42,14 +42,17 @@ class BaseExecutor:
         """
         pass
 
-    def waitone(self, futures):
-        """Wait for at least one future to complete, removes it from the list of pending futures
-        and return its result
+    def async_get(self, futures, timeout=None):
+        """Retrieve futures that completed, removes them from the list of pending futures
+        and return their results
 
         Parameters
         ----------
         futures: `concurrent.futures.Futures` or equivalent interface
             The objects returned by ``submit()`` of the executor.
+
+        timeout: int
+            time to wait before checking the other future
 
         Returns
         -------

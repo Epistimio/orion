@@ -20,6 +20,7 @@ class SingleExecutor(BaseExecutor):
     Notes
     -----
     The tasks are started when wait is called
+
     """
 
     def __init__(self, n_workers=1, **config):
@@ -28,14 +29,14 @@ class SingleExecutor(BaseExecutor):
     def wait(self, futures):
         return [future() for future in futures]
 
-    def waitone(self, futures, timeout=0.01):
+    def async_get(self, futures, timeout=0.01):
         if len(futures) == 0:
             return []
 
         fut = futures.pop()
         result = fut()
 
-        return [len(futures), result]
+        return [result]
 
     def submit(self, function, *args, **kwargs):
         return functools.partial(function, *args, **kwargs)

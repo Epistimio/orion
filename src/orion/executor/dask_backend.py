@@ -51,40 +51,33 @@ class Dask(BaseExecutor):
             rejoin()
         return results
 
-    def waitone(self, futures, timeout=0.01):
-        if len(futures) == 0:
-            return []
+    def async_get(self, futures, timeout=0.01):
+        results = []
+        tobe_deleted = []
+        tobe_raised = None
 
-        finished = []
-        tobe_removed = []
-
-        def add_result(fut, result):
-            finished.append(result)
-            tobe_removed.append(fut)
-
-        def check_withtimeout(fut):
+        for future in futures:
             try:
-                return fut.result(timeout)
+                result = future.result(timeout)
+                results.append(result)
+                tobe_deleted.append(future)
             except TimeoutError:
-                return None
+                pass
+            except Exception as err:
+                # delay the raising of the exception so we are allowed to remove
+                # the future that raised it
+                # it means once it is handled waitone will proceed as expected
+                tobe_raised = err
+                tobe_deleted = [future]
+                break
 
-        while not finished:
-            # check with a timeout i.e wait for a bit & check results
-            result = check_withtimeout(futures[0])
-            if result:
-                add_result(futures[0], (0, result))
-
-            for i, future in enumerate(futures[1:]):
-                # check without waiting (first future already waited)
-                # the result is ready so timeout is ignored
-                if future.done():
-                    result = future.result(timeout)
-                    add_result(future, (i + 1, result))
-
-        for future in tobe_removed:
+        for future in tobe_deleted:
             futures.remove(future)
 
-        return finished
+        if tobe_raised:
+            raise tobe_raised
+
+        return results
 
     def submit(self, function, *args, **kwargs):
         return self.client.submit(function, *args, **kwargs, pure=False)
