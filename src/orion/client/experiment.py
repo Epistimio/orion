@@ -763,17 +763,27 @@ class ExperimentClient:
             self._experiment.max_trials = max_trials
             self._experiment.algorithms.algorithm.max_trials = max_trials
 
+        return self._optimize(fct, n_workers, max_trials, max_broken, trial_arg, on_error, **kwargs)
+
+    def _optimize(
+        self, fct, pool_size, max_trials, max_broken, trial_arg, on_error, **kwargs
+    ):
+
         worker_broken_trials = 0
         trials = 0
 
         futures = []
         pending_trials = dict()
-        free_worker = n_workers
+        free_worker = pool_size
 
         while not self.is_done and trials - worker_broken_trials < max_trials:
+            # print(self.is_done, trials, worker_broken_trials, max_trials, pool_size, free_worker)
+
             # try to get more work
             new_trials = []
             if free_worker > 0:
+                # the producer does the job of limiting the number of new trials
+                # already no need to worry about it
                 # NB: suggest reserve the trial already
                 new_trials = self._suggest_trials(free_worker)
 
@@ -785,6 +795,7 @@ class ExperimentClient:
 
             free_worker -= len(new_futures)
             futures.extend(new_futures)
+
             for trial in new_trials:
                 pending_trials[trial.id] = trial
 
@@ -795,7 +806,7 @@ class ExperimentClient:
             except (KeyboardInterrupt, InvalidResult):
                 raise
             except BaseException as e:
-                free_worker -= 1
+                free_worker += 1
 
                 if on_error is None or on_error(
                     self, trial, e, worker_broken_trials
@@ -819,7 +830,7 @@ class ExperimentClient:
                 # NB: observe release the trial already
                 self.observe(trial, result)
                 trials += 1
-                free_worker -= 1
+                free_worker += 1
 
         for _, trial in pending_trials.items():
             self.release(trial)
@@ -839,11 +850,11 @@ class ExperimentClient:
 
             # non critical errors
             except WaitingForTrials:
-                pass
+                break
             except SampleTimeout:
-                pass
+                break
             except CompletedExperiment:
-                pass
+                break
 
         return trials
 

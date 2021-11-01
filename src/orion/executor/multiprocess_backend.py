@@ -1,11 +1,40 @@
+import cloudpickle
+
+import pickle
 import dataclasses
+from dataclasses import dataclass
+import uuid
 from multiprocessing import Pool, Manager
 from multiprocessing.pool import AsyncResult
 from queue import Empty
-import uuid
-from dataclasses import dataclass
 
 from orion.executor.base import BaseExecutor
+
+
+def _couldpickle_exec(payload):
+    function, args, kwargs = pickle.loads(payload)
+    result = function(*args, **kwargs)
+    return cloudpickle.dumps(result)
+
+
+class _Future:
+    """Wraps a python AsyncResult"""
+
+    def __init__(self, future):
+        self.future = future
+
+    def get(self, timeout=None):
+        r = self.future.get(timeout)
+        return pickle.loads(r)
+
+    def wait(self, timeout=None):
+        return self.future.wait(timeout)
+
+    def ready(self):
+        return self.future.ready()
+
+    def succesful(self):
+        return self.future.succesful()
 
 
 class Multiprocess(BaseExecutor):
@@ -31,7 +60,8 @@ class Multiprocess(BaseExecutor):
         return super().__exit__(exc_type, exc_value, traceback)
 
     def submit(self, function, *args, **kwargs) -> AsyncResult:
-        return self.pool.apply_async(function, args, kwargs)
+        payload = cloudpickle.dumps((function, args, kwargs))
+        return _Future(self.pool.apply_async(_couldpickle_exec, (payload,)))
 
     def wait(self, futures):
         return [
@@ -62,6 +92,7 @@ class Multiprocess(BaseExecutor):
                     # the future that raised it
                     # it means once it is handled waitone will proceed as expected
                     tobe_raised = err
+                    results = []
                     tobe_deleted = [future]
                     break
 
