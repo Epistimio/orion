@@ -786,13 +786,13 @@ class ExperimentClient:
                 except AlreadyReleased:
                     pass
 
-        while not self.is_done and trials - worker_broken_trials < max_trials_per_worker:
+        while pending_trials or (not self.is_done and trials - worker_broken_trials < max_trials_per_worker):
             ntrials = len(pending_trials) + trials
             remains = max_trials_per_worker - ntrials
 
             # try to get more work
             new_trials = []
-            if free_worker > 0 and remains > 0:
+            if (not self.is_done) and free_worker > 0 and remains > 0:
                 # the producer does the job of limiting the number of new trials
                 # already no need to worry about it
                 # NB: suggest reserve the trial already
@@ -844,8 +844,6 @@ class ExperimentClient:
                             "Worker has reached broken trials threshold"
                         )
 
-
-        release_all(pending_trials)
         return trials
 
     def _suggest_trials(self, count):
