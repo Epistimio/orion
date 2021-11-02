@@ -8,7 +8,7 @@ import pytest
 
 import orion.benchmark.benchmark_client as benchmark_client
 import orion.core
-from orion.benchmark.assessment import AverageResult
+from orion.benchmark.assessment import AverageResult, ParallelAdvantage
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task import CarromTable, RosenBrock
 from orion.core.io.database.ephemeraldb import EphemeralDB
@@ -316,7 +316,6 @@ class TestCreateBenchmark:
 
             assert bm1.configuration == benchmark_config
             assert bm1.executor.n_workers == orion.core.config.worker.n_workers
-            print("n=2")
             executor = Joblib(n_workers=2, backend="threading")
             config["executor"] = executor
             bm2 = get_or_create_benchmark(**config)
@@ -336,7 +335,6 @@ class TestCreateBenchmark:
             executor = Joblib(n_workers=5, backend="threading")
             config["executor"] = executor
             bm1 = get_or_create_benchmark(**config)
-
             client = bm1.studies[0].experiments_info[0][1]
             monkeypatch.setattr(client, "_optimize", optimize)
 
@@ -349,5 +347,58 @@ class TestCreateBenchmark:
             optimize.count = 0
             bm1.process(n_workers=3)
             assert optimize.count == 3
+            assert executor.n_workers == 5
+            assert orion.core.config.worker.n_workers != 3
+
+    def test_assesment_workers(self, benchmark_config_py, monkeypatch):
+        def optimize(*args, **kwargs):
+            optimize.count += 1
+            return 1
+
+        with OrionState():
+
+            config = dict(
+                name="bm00001",
+                algorithms=["random"],
+                targets=[
+                    {
+                        "assess": [
+                            ParallelAdvantage(
+                                executor="joblib",
+                                n_workers=[1, 2, 4],
+                                backend="threading",
+                            )
+                        ],
+                        "task": [RosenBrock(25, dim=3), CarromTable(20)],
+                    }
+                ],
+            )
+
+            executor = Joblib(n_workers=5, backend="threading")
+            config["executor"] = executor
+            bm1 = get_or_create_benchmark(**config)
+
+            client1 = bm1.studies[0].experiments_info[0][1]
+            monkeypatch.setattr(client1, "_optimize", optimize)
+
+            optimize.count = 0
+            bm1.process(n_workers=2)
+            assert optimize.count == 1
+            assert executor.n_workers == 5
+            assert orion.core.config.worker.n_workers != 2
+
+            client2 = bm1.studies[0].experiments_info[1][1]
+            monkeypatch.setattr(client2, "_optimize", optimize)
+            optimize.count = 0
+            bm1.process(n_workers=2)
+            assert optimize.count == 1 + 2
+            assert executor.n_workers == 5
+            assert orion.core.config.worker.n_workers != 3
+
+            optimize.count = 0
+            client3 = bm1.studies[0].experiments_info[2][1]
+            monkeypatch.setattr(client3, "_optimize", optimize)
+            bm1.process(n_workers=2)
+            assert optimize.count == 1 + 2 + 4
             assert executor.n_workers == 5
             assert orion.core.config.worker.n_workers != 3

@@ -240,6 +240,35 @@ def rankings(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
     )
 
 
+def parallel_advantage(experiments, with_evc_tree=True):
+    """
+    Make a plot to visualize the performance of running same experiment with different number of
+    workers.
+
+    The x-axis contain the worker number and the y-axis their respective best performance.
+
+    Parameters
+    ----------
+    experiments: dict
+        Dictionary of list of experiments with differnt number of numbers.
+
+    with_evc_tree: bool, optional
+        Fetch all trials from the EVC tree.
+        Default: True
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+
+    Raises
+    ------
+    ValueError
+        If no experiment is provided.
+
+    """
+    return backend.parallel_advantage(experiments, with_evc_tree=with_evc_tree)
+
+
 def regret(
     experiment, with_evc_tree=True, order_by="suggested", verbose_hover=True, **kwargs
 ):
@@ -348,6 +377,7 @@ PLOT_METHODS = {
     "regret": regret,
     "regrets": regrets,
     "rankings": rankings,
+    "parallel_advantage": parallel_advantage,
 }
 
 

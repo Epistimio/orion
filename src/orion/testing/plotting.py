@@ -63,6 +63,23 @@ def assert_regrets_plot(plot, names, balanced=10, with_avg=False):
                 assert len(trace.x) == balanced * 2
 
 
+def asset_parallel_advantage_plot(plot, names, n_experiments):
+    assert plot.layout.title.text == "Parallel Advantage"
+    assert plot.layout.xaxis.title.text == "Number of workers"
+    assert plot.layout.yaxis.title.text == "loss"
+
+    line_plots = plot.data
+
+    print(line_plots)
+    assert len(line_plots) == len(names)
+
+    for name, trace in zip(names, line_plots):
+        assert trace.type == "scatter"
+        assert trace.name == name
+        assert trace.mode == "lines+markers"
+        assert len(trace.x) == n_experiments
+
+
 def assert_rankings_plot(plot, names, balanced=10, with_avg=False):
     """Checks the layout of a rankings plot"""
     assert plot.layout.title.text == "Average Rankings"

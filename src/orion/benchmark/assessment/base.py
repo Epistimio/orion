@@ -25,12 +25,22 @@ class BaseAssess(ABC):
     def __init__(self, task_num, **kwargs):
         self.task_number = task_num
         self._param_names = kwargs
-        self._param_names["task_num"] = task_num
+
+        self._param_names["task_num"] = (
+            int(task_num / len(kwargs.get("n_workers")))
+            if kwargs.get("n_workers")
+            else task_num
+        )
 
     @property
     def task_num(self):
         """Return the task number to run for this assessment"""
         return self.task_number
+
+    def executor(self, task_index):
+        """Return an instance of `orion.executor.base.Executor` based on the index of tasks
+        that the assessment is asking to run."""
+        return None
 
     @abstractmethod
     def analysis(self, task, experiments):

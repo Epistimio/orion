@@ -11,6 +11,7 @@ from orion.analysis.partial_dependency_utils import partial_dependency_grid
 from orion.core.worker.experiment import Experiment
 from orion.plotting.base import (
     lpi,
+    parallel_advantage,
     parallel_coordinates,
     partial_dependencies,
     rankings,
@@ -25,6 +26,7 @@ from orion.testing.plotting import (
     assert_rankings_plot,
     assert_regret_plot,
     assert_regrets_plot,
+    asset_parallel_advantage_plot,
 )
 
 config = dict(
@@ -1057,3 +1059,111 @@ class TestRegrets:
         with create_experiment(config, trial_config) as (_, _, experiment):
             with pytest.raises(ValueError):
                 regrets([experiment], order_by="unsupported")
+
+
+@pytest.mark.usefixtures("version_XYZ")
+class TestParallelAdvantage:
+    """Tests the ``parallel_advantage()`` method provided by the plotly backend"""
+
+    def test_requires_argument(self):
+        """Tests that the experiment data are required."""
+        with pytest.raises(ValueError):
+            parallel_advantage(None)
+
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            with pytest.raises(ValueError):
+                parallel_advantage(experiment)
+
+    def test_returns_plotly_object(self, monkeypatch):
+        """Tests that the plotly backend returns a plotly object"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = parallel_advantage({"random": [experiment]})
+
+        assert type(plot) is plotly.graph_objects.Figure
+
+    def test_graph_layout(self, monkeypatch):
+        """Tests the layout of the plot"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = parallel_advantage({"random": [experiment] * 2})
+
+        asset_parallel_advantage_plot(plot, [f"random"], 2)
+
+    def test_list_of_experiments(self, monkeypatch):
+        """Tests the parallel_advantage with list of experiments"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            child = orion.client.create_experiment(
+                experiment.name, branching={"branch_to": "child", "enable": True}
+            )
+
+            plot = parallel_advantage({"random": [experiment, child]})
+
+        asset_parallel_advantage_plot(plot, ["random"], 2)
+
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            plot = parallel_advantage(
+                {"exp-1": [experiment] * 10, "exp-2": [experiment] * 10}
+            )
+
+        asset_parallel_advantage_plot(plot, ["exp-1", "exp-2"], 10)
+
+    def test_list_of_experiments_name_conflict(self, monkeypatch):
+        """Tests the parallel_advantage with list of experiments with the same name"""
+        mock_experiment_with_random_to_pandas(monkeypatch)
+        with create_experiment(config, trial_config, ["completed"]) as (
+            _,
+            _,
+            experiment,
+        ):
+            child = orion.client.create_experiment(
+                experiment.name,
+                branching={"branch_to": experiment.name, "enable": True},
+            )
+            assert child.name == experiment.name
+            assert child.version == experiment.version + 1
+            plot = parallel_advantage({"random": [experiment, child]})
+
+        asset_parallel_advantage_plot(plot, ["random"], 2)
+
+    def test_ignore_uncompleted_statuses(self, monkeypatch):
+        """Tests that uncompleted statuses are ignored"""
+        mock_experiment_with_random_to_pandas(
+            monkeypatch,
+            status=[
+                "completed",
+                "new",
+                "reserved",
+                "completed",
+                "broken",
+                "completed",
+                "interrupted",
+                "completed",
+            ],
+        )
+        with create_experiment(config, trial_config) as (_, _, experiment):
+            plot = parallel_advantage({"random": [experiment]})
+
+        asset_parallel_advantage_plot(plot, ["random"], 1)

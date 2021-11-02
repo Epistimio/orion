@@ -549,6 +549,75 @@ def regret(
     return fig
 
 
+def parallel_advantage(experiments, with_evc_tree=True):
+    """Plotly implementation of `orion.plotting.lpi`"""
+
+    def build_group():
+        exp_parallels = dict(names=list(), objective=list(), n_workers=list())
+        for name, group in experiments.items():
+            for experiment in group:
+
+                dfs = experiment.to_pandas(with_evc_tree=with_evc_tree)
+                dfs = dfs.loc[dfs["status"] == "completed"]
+
+                if not dfs.empty:
+                    dfs = dfs.sort_values("objective")
+                    exp_parallels["names"].append(name)
+                    exp_parallels["n_workers"].append(experiment.executor.n_workers)
+                    exp_parallels["objective"].append(dfs["objective"].tolist()[0])
+
+        df = pd.DataFrame(exp_parallels)
+
+        return df
+
+    def get_objective_name():
+        for _, group in experiments.items():
+            for experiment in group:
+                trials = experiment.fetch_trials_by_status("completed")
+                if trials:
+                    return trials[0].objective.name
+        return "objective"
+
+    if not experiments:
+        raise ValueError("Parameter 'experiment' is None")
+
+    if not bool(
+        isinstance(experiments, dict)
+        and isinstance(next(iter(experiments.values())), Iterable)
+    ):
+        raise ValueError(f"Parameter 'experiments' is not Dictionary")
+
+    df = build_group()
+    fig = go.Figure()
+
+    if df.empty:
+        return fig
+
+    names = set(df["names"])
+    for i, name in enumerate(sorted(names)):
+        parallel_data = df[df["names"] == name]
+        x = parallel_data["n_workers"]
+        y = parallel_data["objective"]
+
+        fig.add_scatter(
+            x=x,
+            y=y,
+            mode="lines+markers",
+            name=name,
+            customdata=list(zip(x, name)),
+            hovertemplate=_template_workers(name),
+        )
+
+    fig.update_layout(
+        title=f"Parallel Advantage",
+        xaxis_title=f"Number of workers",
+        yaxis_title=get_objective_name(),
+        hovermode="x",
+    )
+
+    return fig
+
+
 def regrets(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
     """Plotly implementation of `orion.plotting.regrets`"""
 
@@ -683,6 +752,13 @@ def _format_hyperparameters(hyperparameters, names):
         result += x
 
     return result
+
+
+def _template_workers(name):
+    template = "workers: %{x}<br>" "algorithm: " + name + "<br>" "objective: %{y}<br>"
+    template += "<extra></extra>"
+
+    return template
 
 
 def _template_trials(verbose_hover):

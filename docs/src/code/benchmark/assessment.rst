@@ -12,3 +12,4 @@ Assessment modules
    assessment/base
    assessment/averagerank
    assessment/averageresult
+   assessment/paralleladvantage
