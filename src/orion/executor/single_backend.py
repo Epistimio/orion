@@ -5,8 +5,37 @@ Executor without parallelism for debugging
 
 """
 import functools
+import traceback
 
-from orion.executor.base import BaseExecutor
+from orion.executor.base import BaseExecutor, AsyncResult, AsyncException
+
+
+class _Future:
+    """Wraps a partial function to act as a Future"""
+
+    def __init__(self, future):
+        self.future = future
+        self.result = None
+
+    def get(self, timeout=None):
+        if self.result:
+            return self.result
+
+        self.result = self.future()
+        return self.result
+
+    def wait(self, timeout=None):
+        self.future.get(timeout)
+        return
+
+    def ready(self):
+        return self.result is None
+
+    def successful(self):
+        if self.result is None:
+            raise ValueError()
+
+        return True
 
 
 class SingleExecutor(BaseExecutor):
@@ -33,10 +62,14 @@ class SingleExecutor(BaseExecutor):
         if len(futures) == 0:
             return []
 
-        fut = futures.pop()
-        result = fut()
+        results = []
+        try:
+            fut = futures.pop()
+            results.append(AsyncResult(fut, fut.get()))
+        except Exception as err:
+            results.append(AsyncException(fut, err, traceback.format_exc()))
 
-        return [result]
+        return results
 
     def submit(self, function, *args, **kwargs):
-        return functools.partial(function, *args, **kwargs)
+        return _Future(functools.partial(function, *args, **kwargs))

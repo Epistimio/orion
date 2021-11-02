@@ -10,6 +10,21 @@ Base executor class for the parallelisation of experiments.
 from orion.core.utils import Factory
 
 
+class AsyncResult:
+    """Result of an async computation"""
+    def __init__(self, future, v):
+        self.future = future
+        self.value = v
+
+
+class AsyncException:
+    """Exception raised by a remote worker during computation"""
+    def __init__(self, future, exception, traceback) -> None:
+        self.future = future
+        self.exception = exception
+        self.traceback = traceback
+
+
 class BaseExecutor:
     """Base executor class
 

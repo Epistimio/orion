@@ -1,5 +1,4 @@
-import cloudpickle
-
+import traceback
 import pickle
 import dataclasses
 from dataclasses import dataclass
@@ -8,7 +7,9 @@ from multiprocessing import Pool, Manager
 from multiprocessing.pool import AsyncResult
 from queue import Empty
 
-from orion.executor.base import BaseExecutor
+from orion.executor.base import BaseExecutor, AsyncResult, AsyncException
+
+import cloudpickle
 
 
 def _couldpickle_exec(payload):
@@ -76,7 +77,6 @@ class Multiprocess(BaseExecutor):
     def async_get(self, futures, timeout=None):
         results = []
         tobe_deleted = []
-        tobe_raised = None
 
         for future in futures:
             if timeout:
@@ -84,22 +84,13 @@ class Multiprocess(BaseExecutor):
 
             if future.ready():
                 try:
-                    results.append(future.get())
-                    tobe_deleted.append(future)
-
+                    results.append(AsyncResult(future, future.get()))
                 except Exception as err:
-                    # delay the raising of the exception so we are allowed to remove
-                    # the future that raised it
-                    # it means once it is handled waitone will proceed as expected
-                    tobe_raised = err
-                    results = []
-                    tobe_deleted = [future]
-                    break
+                    results.append(AsyncException(future, err, traceback.format_exc()))
+
+                tobe_deleted.append(future)
 
         for future in tobe_deleted:
             futures.remove(future)
-
-        if tobe_raised:
-            raise tobe_raised
 
         return results

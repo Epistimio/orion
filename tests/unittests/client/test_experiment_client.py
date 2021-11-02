@@ -7,6 +7,7 @@ import logging
 
 import joblib
 import pandas.testing
+from orion.client.experiment import AlreadyReleased
 import pytest
 
 import orion.core
@@ -428,7 +429,7 @@ class TestRelease:
         """Verify that unreserved trials cannot be released"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
             trial = client.get_trial(uid=cfg.trials[1]["_id"])
-            with pytest.raises(RuntimeError) as exc:
+            with pytest.raises(AlreadyReleased) as exc:
                 client.release(trial)
 
             assert "Trial {} was already released locally.".format(trial.id) == str(
@@ -447,7 +448,7 @@ class TestRelease:
             experiment.set_trial_status(trial, "interrupted")
             assert trial.status == "interrupted"
 
-            with pytest.raises(RuntimeError) as exc:
+            with pytest.raises(AlreadyReleased) as exc:
                 client.release(trial)
 
             assert "Trial {} was already released locally.".format(trial.id) == str(
@@ -850,10 +851,13 @@ def foo_error(x):
 
 
 def foo_maybe_error(x):
-    if len(client.fetch_trials()) < 5:
+    foo_maybe_error.count += 1
+    if foo_maybe_error.count < 5:
         raise RuntimeError()
 
     return [dict(name="result", type="objective", value=x * 2)]
+
+foo_maybe_error.count = 0
 
 
 def foo_trial_args(x, my_trial_arg_name):
@@ -1150,6 +1154,7 @@ class TestWorkon:
             with pytest.raises(NotImplementedError) as exc:
                 client.workon(foo_reraise, max_trials=5, max_broken=5, on_error=on_error)
 
+            print(exc)
             assert exc.match("Do not ignore this!")
 
     def test_parallel_workers(self, monkeypatch):

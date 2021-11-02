@@ -1,4 +1,7 @@
-from orion.executor.base import BaseExecutor
+from multiprocessing import TimeoutError as PyTimeoutError, Value
+import traceback
+
+from orion.executor.base import BaseExecutor, AsyncResult, AsyncException
 
 try:
     from dask.distributed import (
@@ -13,6 +16,34 @@ try:
     HAS_DASK = True
 except ImportError:
     HAS_DASK = False
+
+
+class _Future:
+    """Wraps a Dask Future"""
+
+    def __init__(self, future):
+        self.future = future
+
+    def get(self, timeout=None):
+        try:
+            return self.future.result(timeout)
+        except TimeoutError as e:
+            raise PyTimeoutError from e
+
+    def wait(self, timeout=None):
+        try:
+            self.future.result(timeout)
+        except TimeoutError:
+            pass
+
+    def ready(self):
+        return self.future.done()
+
+    def succesful(self):
+        if not self.future.done():
+            raise ValueError()
+
+        return self.future.exception() is None
 
 
 class Dask(BaseExecutor):
@@ -54,33 +85,26 @@ class Dask(BaseExecutor):
     def async_get(self, futures, timeout=0.01):
         results = []
         tobe_deleted = []
-        tobe_raised = None
 
         for future in futures:
-            try:
-                result = future.result(timeout)
-                results.append(result)
+            if timeout:
+                future.wait(timeout)
+
+            if future.ready():
+                try:
+                    results.append(AsyncResult(future, future.get()))
+                except Exception as err:
+                    results.append(AsyncException(future, err, traceback.format_exc()))
+
                 tobe_deleted.append(future)
-            except TimeoutError:
-                pass
-            except Exception as err:
-                # delay the raising of the exception so we are allowed to remove
-                # the future that raised it
-                # it means once it is handled waitone will proceed as expected
-                tobe_raised = err
-                tobe_deleted = [future]
-                break
 
         for future in tobe_deleted:
             futures.remove(future)
 
-        if tobe_raised:
-            raise tobe_raised
-
         return results
 
     def submit(self, function, *args, **kwargs):
-        return self.client.submit(function, *args, **kwargs, pure=False)
+        return _Future(self.client.submit(function, *args, **kwargs, pure=False))
 
     def __enter__(self):
         return self
