@@ -867,7 +867,7 @@ def foo_trial_args(x, my_trial_arg_name):
 
 
 def foo_on_error(x, q):
-    if not q.empty:
+    if not q.empty():
         raise q.get()()
 
     return [dict(name="result", type="objective", value=x * 2)]
@@ -1154,14 +1154,10 @@ class TestWorkon:
             with pytest.raises(NotImplementedError) as exc:
                 client.workon(foo_reraise, max_trials=5, max_broken=5, on_error=on_error)
 
-            print(exc)
             assert exc.match("Do not ignore this!")
 
     def test_parallel_workers(self, monkeypatch):
         """Test parallel execution with joblib"""
-
-        def optimize(*args, **kwargs):
-            return 1
 
         with create_experiment(exp_config=config, trial_config={}, statuses=[]) as (
             cfg,
@@ -1169,16 +1165,17 @@ class TestWorkon:
             client,
         ):
 
-            monkeypatch.setattr(client, "_optimize", optimize)
             with client.tmp_executor("joblib", n_workers=5, backend="threading"):
                 trials = client.workon(foo_1, max_trials=5, n_workers=2)
-            assert trials == 2
+
+            # max_trials is 5 but when we last checked, we were only at 4 tasks
+            # we sampled 2 more for each workers, to prevent idle time
+            # this means we can have additional completed trials.
+            # In the case of failures we can catch up we our backup trials
+            assert trials == 6
 
             with client.tmp_executor("joblib", n_workers=5, backend="threading"):
                 trials = client.workon(foo_1, max_trials=5, n_workers=3)
-            assert trials == 3
 
-            executor = Joblib(n_workers=5, backend="threading")
-            client.executor = executor
-            trials = client.workon(foo_1, max_trials=5, n_workers=4)
-            assert trials == 4
+            # we are already done
+            assert trials == 0

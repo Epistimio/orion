@@ -32,7 +32,7 @@ from orion.storage.base import FailedUpdate
 log = logging.getLogger(__name__)
 
 
-def _worker_trial(trial, fct, trial_arg, **kwargs):
+def _optimize(trial, fct, trial_arg, **kwargs):
     """Execute a trial on a worker"""
     kwargs.update(flatten(trial.params))
 
@@ -765,9 +765,9 @@ class ExperimentClient:
             self._experiment.max_trials = max_trials
             self._experiment.algorithms.algorithm.max_trials = max_trials
 
-        return self._optimize(fct, n_workers, max_trials_per_worker, max_broken, trial_arg, on_error, **kwargs)
+        return self._optimize_loop(fct, n_workers, max_trials_per_worker, max_broken, trial_arg, on_error, **kwargs)
 
-    def _optimize(
+    def _optimize_loop(
         self, fct, pool_size, max_trials_per_worker, max_broken, trial_arg, on_error, **kwargs
     ):
 
@@ -787,20 +787,21 @@ class ExperimentClient:
                     pass
 
         while not self.is_done and trials - worker_broken_trials < max_trials_per_worker:
-            # print(self.is_done, trials, worker_broken_trials, max_trials, pool_size, free_worker)
+            ntrials = len(pending_trials) + trials
+            remains = max_trials_per_worker - ntrials
 
             # try to get more work
             new_trials = []
-            if free_worker > 0:
+            if free_worker > 0 and remains > 0:
                 # the producer does the job of limiting the number of new trials
                 # already no need to worry about it
                 # NB: suggest reserve the trial already
-                new_trials = self._suggest_trials(free_worker)
+                new_trials = self._suggest_trials(min(free_worker, remains))
 
             # Schedule new work
             new_futures = []
             for trial in new_trials:
-                future = self.executor.submit(_worker_trial, trial, fct, trial_arg, **kwargs);
+                future = self.executor.submit(_optimize, trial, fct, trial_arg, **kwargs);
                 pending_trials[future] = trial
                 new_futures.append(future)
 
