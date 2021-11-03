@@ -369,7 +369,7 @@ class TestGenericEvolutionES(BaseAlgoTests):
         "max_retries": 1000,
         "mutate": None,
     }
-    space = {"x": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
+    space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=2)"}
 
     @pytest.mark.skip(reason="See https://github.com/Epistimio/orion/issues/598")
     def test_is_done_cardinality(self):

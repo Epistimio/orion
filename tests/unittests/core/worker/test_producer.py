@@ -18,13 +18,13 @@ class DumbParallelStrategy:
     """Mock object for parallel strategy"""
 
     def observe(self, points, results):
-        """See BaseParallelStrategy.observe"""
+        """See ParallelStrategy.observe"""
         self._observed_points = points
         self._observed_results = results
         self._value = None
 
     def lie(self, trial):
-        """See BaseParallelStrategy.lie"""
+        """See ParallelStrategy.lie"""
         if self._value:
             value = self._value
         else:

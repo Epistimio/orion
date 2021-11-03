@@ -19,6 +19,17 @@ class ParallelAdvantage(BaseAssess):
     Evaluate the average performance (objective value) for each search algorithm
     at different time steps (trial number).
     The performance (objective value) used for a trial will the best result until the trial.
+
+    Parameters
+    ----------
+    task_num: int
+        Only value 1 is valid.
+    executor: str
+        Name of orion worker exeuctor.
+    n_workers: list
+        List of intergers for number of workers for each experiment.
+    executor_config: dict
+        Parameters for the corresponding executor.
     """
 
     def __init__(

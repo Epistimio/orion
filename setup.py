@@ -46,7 +46,7 @@ setup_args = dict(
         "console_scripts": [
             "orion = orion.core.cli:main",
         ],
-        "OptimizationAlgorithm": [
+        "BaseAlgorithm": [
             "random = orion.algo.random:Random",
             "gridsearch = orion.algo.gridsearch:GridSearch",
             "asha = orion.algo.asha:ASHA",
@@ -54,11 +54,11 @@ setup_args = dict(
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
         ],
-        "Storage": [
+        "BaseStorageProtocol": [
             "track = orion.storage.track:Track",
             "legacy = orion.storage.legacy:Legacy",
         ],
-        "Executor": [
+        "BaseExecutor": [
             "singleexecutor = orion.executor.single_backend:SingleExecutor",
             "joblib = orion.executor.joblib_backend:Joblib",
             "dask = orion.executor.dask_backend:Dask",

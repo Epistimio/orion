@@ -4,7 +4,7 @@
 
 import pytest
 
-from orion.core.io.database import Database, ReadOnlyDB
+from orion.core.io.database import ReadOnlyDB, database_factory
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.singleton import (
     SingletonAlreadyInstantiatedError,
@@ -17,7 +17,7 @@ from orion.storage.base import get_storage
 class TestDatabaseFactory(object):
     """Test the creation of a determinate `Database` type, by a complete spefication
     of a database by-itself (this on which every `Database` acts on as part
-    of its being, attributes of an `AbstractDB`) and for-itself (what essentially
+    of its being, attributes of an `Database`) and for-itself (what essentially
     differentiates one concrete `Database` from one other).
 
     """
@@ -31,25 +31,24 @@ class TestDatabaseFactory(object):
         Type indeterminate <-> type abstracted from its property <-> No type
         """
         with pytest.raises(SingletonNotInstantiatedError):
-            Database()
+            database_factory.create()
 
     def test_notfound_type_first_call(self):
         """Raise when supplying not implemented wrapper name."""
         with pytest.raises(NotImplementedError) as exc_info:
-            Database("notfound")
+            database_factory.create("notfound")
 
-        assert "AbstractDB" in str(exc_info.value)
+        assert "Database" in str(exc_info.value)
 
     def test_instantiation_and_singleton(self):
         """Test create just one object, that object persists between calls."""
-        database = Database(of_type="PickledDB", name="orion_test")
+        database = database_factory.create(of_type="PickledDB", name="orion_test")
 
         assert isinstance(database, PickledDB)
-        assert database is PickledDB()
-        assert database is Database()
+        assert database is database_factory.create()
 
         with pytest.raises(SingletonAlreadyInstantiatedError):
-            Database("fire", [], {"it_matters": "it's singleton"})
+            database_factory.create("fire", [], {"it_matters": "it's singleton"})
 
 
 @pytest.mark.usefixtures("null_db_instances")

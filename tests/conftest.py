@@ -13,14 +13,14 @@ from pymongo import MongoClient
 
 import orion.core
 import orion.core.utils.backward as backward
-from orion.algo.base import BaseAlgorithm, OptimizationAlgorithm
+from orion.algo.base import BaseAlgorithm
 from orion.core.io import resolve_config
-from orion.core.io.database import Database
+from orion.core.io.database import database_factory
 from orion.core.io.database.mongodb import MongoDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.singleton import update_singletons
 from orion.core.worker.trial import Trial
-from orion.storage.base import Storage, get_storage, setup_storage
+from orion.storage.base import get_storage, setup_storage, storage_factory
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState, mocked_datetime
 
@@ -304,11 +304,8 @@ def clean_db(database, exp_config):
 @pytest.fixture()
 def null_db_instances():
     """Nullify singleton instance so that we can assure independent instantiation tests."""
-    Storage.instance = None
-    Legacy.instance = None
-    Database.instance = None
-    MongoDB.instance = None
-    PickledDB.instance = None
+    storage_factory.instance = None
+    database_factory.instance = None
 
 
 @pytest.fixture(scope="function")

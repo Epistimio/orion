@@ -7,10 +7,10 @@ Base definition of Assessment
 
 from abc import ABC, abstractmethod
 
-from orion.core.utils import Factory
+from orion.core.utils import GenericFactory
 
 
-class BaseAssess(ABC):
+class BenchmarkAssessment(ABC):
     """Base class describing what an assessment can do.
 
     Parameters
@@ -62,8 +62,4 @@ class BaseAssess(ABC):
         return {self.__class__.__qualname__: self._param_names}
 
 
-# pylint: disable=too-few-public-methods,abstract-method
-class BenchmarkAssessment(BaseAssess, metaclass=Factory):
-    """Class used to inject dependency on an assessment implementation."""
-
-    pass
+bench_assessment_factory = GenericFactory(BenchmarkAssessment)

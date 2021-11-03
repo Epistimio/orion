@@ -25,7 +25,7 @@ from orion.core.utils.exceptions import (
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
-from orion.executor.base import Executor
+from orion.executor.base import executor_factory
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
 
@@ -81,7 +81,7 @@ class ExperimentClient:
         if heartbeat is None:
             heartbeat = orion.core.config.worker.heartbeat
         self.heartbeat = heartbeat
-        self.executor = executor or Executor(
+        self.executor = executor or executor_factory.create(
             orion.core.config.worker.executor,
             n_workers=orion.core.config.worker.n_workers,
             **orion.core.config.worker.executor_configuration,
@@ -628,15 +628,15 @@ class ExperimentClient:
 
         Parameters
         ----------
-        executor: str or :class:`orion.executor.base.Executor`
+        executor: str or :class:`orion.executor.base.BaseExecutor`
             The executor to use. If it is a ``str``, the provided ``config`` will be used
-            to create the executor with ``Executor(executor, **config)``.
+            to create the executor with ``executor_factory.create(executor, **config)``.
         **config:
             Configuration to use if ``executor`` is a ``str``.
 
         """
         if isinstance(executor, str):
-            executor = Executor(executor, **config)
+            executor = executor_factory.create(executor, **config)
         old_executor = self.executor
         self.executor = executor
         with executor:
