@@ -7,12 +7,12 @@ Parallel Advantage Assessment
 
 from collections import defaultdict
 
-from orion.benchmark.assessment.base import BaseAssess
-from orion.executor.base import Executor
+from orion.benchmark.assessment.base import BenchmarkAssessment
+from orion.executor.base import executor_factory
 from orion.plotting.base import parallel_advantage
 
 
-class ParallelAdvantage(BaseAssess):
+class ParallelAdvantage(BenchmarkAssessment):
     """
     Evaluate the advantage to run experiment in multiple parallel workers.
 
@@ -71,7 +71,7 @@ class ParallelAdvantage(BaseAssess):
         # return self._viz_parallel(algorithm_groups)
 
     def executor(self, task_index):
-        return Executor(
+        return executor_factory.create(
             self.executor_name,
             n_workers=self.n_workers[task_index],
             **self.executor_config
