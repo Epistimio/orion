@@ -567,6 +567,8 @@ class View(Transformer):
 
     def transform(self, point):
         """Only return one element of the group"""
+        print(point, type(point))
+        print(self.index)
         return numpy.array(point)[self.index]
 
     def reverse(self, transformed_point, index=None):

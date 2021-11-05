@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# -*: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.transformer`."""
 import copy
 import itertools

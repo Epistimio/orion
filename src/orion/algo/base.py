@@ -174,15 +174,24 @@ class BaseAlgorithm:
             If True, the fidelity dimension is ignored when computing a unique hash for
             the trial. Defaults to False.
         """
+
+        # TODO: ******
+        # NOTE: The trial hash is based on experiment id. This should not matter for the
+        #       algorithms otherwise there will be a clash between trials sampled with current
+        #       experiment and trials sampled from parent ones in EVC.
+        # TODO: ******
+
         # Apply transforms and reverse to see data as it would come from DB
         # (Some transformations looses some info. ex: Precision transformation)
 
         trial = self.format_trial(trial)
 
-        if ignore_fidelity:
-            return trial.hash_params
-
-        return trial.hash_name
+        return trial.compute_trial_hash(
+            trial,
+            ignore_fidelity=ignore_fidelity,
+            ignore_experiment=True,
+            ignore_lie=True,
+        )
 
     @property
     def fidelity_index(self):
@@ -190,6 +199,8 @@ class BaseAlgorithm:
 
         Returns None if there is no fidelity dimension.
         """
+        # TODO: Should we return the fidelity key name instead now that we work with
+        #       trials instead of points?
 
         def _is_fidelity(dim):
             return dim.type == "fidelity"

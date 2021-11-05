@@ -116,3 +116,7 @@ def get_trial_results(trial):
 def standard_param_name(name):
     """Convert parameter name to namespace format"""
     return name.lstrip("/").lstrip("-").replace("-", "_")
+
+
+def update_params(trial, params):
+    """Convert params in Param objects and update trial"""
