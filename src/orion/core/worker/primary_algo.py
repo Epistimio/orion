@@ -200,7 +200,7 @@ class SpaceTransformAlgoWrapper:
         if space is None:
             space = self.space
 
-        if trial not in self.space:
+        if trial not in space:
             raise ValueError(
                 f"Trial {trial.id} not contained in space:"
                 f"\nParams: {trial.params}\nSpace: {space}"

@@ -5,8 +5,9 @@
 import pytest
 
 from orion.algo.base import algo_factory
-from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.utils import backward, format_trials
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
+from orion.core.worker.transformer import build_required_space
 
 
 @pytest.fixture()
@@ -27,11 +28,28 @@ class TestSpaceTransformAlgoWrapperWraps(object):
     """
 
     def test_verify_trial(self, palgo, space):
-        palgo._verify_trial(format_trials.tuple_to_trial((("asdfa", 2), 0, 3.5), space))
+        trial = format_trials.tuple_to_trial((["asdfa", 2], 0, 3.5), space)
+        palgo._verify_trial(trial)
+
         with pytest.raises(ValueError, match="not contained in space:"):
-            palgo._verify_trial(
-                format_trials.tuple_to_trial((("asdfa", 2), 10, 3.5), space)
-            )
+            invalid_trial = format_trials.tuple_to_trial((("asdfa", 2), 10, 3.5), space)
+            palgo._verify_trial(invalid_trial)
+
+        # transform space
+        tspace = build_required_space(
+            space, type_requirement="real", shape_requirement="flattened"
+        )
+        # transform point
+        ttrial = tspace.transform(trial)
+
+        ttrial in tspace
+
+        # Transformed point is not in original space
+        with pytest.raises(ValueError, match="not contained in space:"):
+            palgo._verify_trial(ttrial)
+
+        # Transformed point is in transformed space
+        palgo._verify_trial(ttrial, space=tspace)
 
     def test_init_and_configuration(self, dumbalgo, palgo, fixed_suggestion):
         """Check if initialization works."""
