@@ -1442,6 +1442,13 @@ class TestTransformedTrial:
 
         assert "_id" in original_dict
 
+    def test_copy(self, space, tspace):
+        trial = space.sample()[0]
+        ttrial = tspace.transform(trial)
+
+        assert copy.deepcopy(trial).to_dict() == trial.to_dict()
+        assert copy.deepcopy(ttrial).to_dict() == ttrial.to_dict()
+
 
 def test_create_transformed_trial(space, tspace):
     trial = space.sample()[0]

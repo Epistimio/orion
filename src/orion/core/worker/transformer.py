@@ -896,6 +896,9 @@ class TransformedTrial:
         """Parameters of the trial"""
         return unflatten({param.name: param.value for param in self._params})
 
+    def __deepcopy__(self, memo):
+        return TransformedTrial(copy.deepcopy(self.trial), copy.deepcopy(self._params))
+
     def to_dict(self):
         trial_dictionary = self.trial.to_dict()
         trial_dictionary["params"] = list(map(lambda x: x.to_dict(), self._params))
