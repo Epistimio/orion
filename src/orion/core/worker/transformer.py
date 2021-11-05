@@ -843,10 +843,12 @@ class ReshapedSpace(Space):
     def restore_shape(self, transformed_trial):
         """Restore shape."""
         transformed_point = format_trials.trial_to_tuple(transformed_trial, self)
-        point = []
+        original_keys = self._original_space.keys()
+        point = [None for _ in original_keys]
         for index, dim in enumerate(self.values()):
             if dim.first:
-                point.append(dim.reverse(transformed_point, index))
+                point_index = original_keys.index(dim.original_dimension.name)
+                point[point_index] = dim.reverse(transformed_point, index)
 
         return create_restored_trial(transformed_trial, point, self._original_space)
 
