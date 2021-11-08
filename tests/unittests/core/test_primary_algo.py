@@ -85,7 +85,7 @@ class TestSpaceTransformAlgoWrapperWraps(object):
 
     def test_observe(self, palgo, fixed_suggestion):
         """Observe wraps observations."""
-        backward.algo_observe(palgo, [fixed_suggestion], [5])
+        backward.algo_observe(palgo, [fixed_suggestion], [dict(objective=5)])
         palgo.observe([fixed_suggestion])
         assert palgo.algorithm._trials[0].trial == fixed_suggestion
 

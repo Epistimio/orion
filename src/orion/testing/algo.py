@@ -218,7 +218,9 @@ class BaseAlgoTests:
             The base objective for the trials. All objectives
             will have value ``objective + i``. Defaults to 0.
         """
-        backward.algo_observe(algo, trials, [objective + i for i in range(len(trials))])
+        backward.algo_observe(
+            algo, trials, [dict(objective=objective + i) for i in range(len(trials))]
+        )
 
     def get_num(self, num):
         """Force number of trials to suggest
@@ -249,6 +251,7 @@ class BaseAlgoTests:
         failed = 0
         MAX_FAILED = 5
         ids = set()
+
         while not algo.is_done and algo.n_observed < num and failed < MAX_FAILED:
             trials = algo.suggest(self.get_num(num - algo.n_observed))
             if len(trials) == 0:

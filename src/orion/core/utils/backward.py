@@ -175,9 +175,8 @@ def port_algo_config(config):
 
 
 def algo_observe(algo, trials, results):
-    for trial, result in zip(trials, results):
-        trial.results.append(
-            Trial.Result(name="objective", type="objective", value=result)
-        )
+    for trial, trial_results in zip(trials, results):
+        for name, trial_result in trial_results.items():
+            trial.results.append(Trial.Result(name=name, type=name, value=trial_result))
 
     algo.observe(trials)

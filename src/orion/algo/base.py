@@ -20,7 +20,7 @@ import logging
 from abc import ABCMeta, abstractmethod
 
 from orion.algo.space import Fidelity
-from orion.core.utils import GenericFactory
+from orion.core.utils import GenericFactory, format_trials
 
 log = logging.getLogger(__name__)
 
@@ -256,7 +256,7 @@ class BaseAlgorithm:
 
         The trial objectives may change without the algorithm having actually observed it.
         In order to detect this, we assign a tuple ``(trial and trial.objective)``
-        to the key ``trial.hash_name`` so that if the objective was not observed, we
+        to the key ``self.get_id(trial)`` so that if the objective was not observed, we
         will see that second item of the tuple is ``None``.
 
         Parameters
@@ -265,7 +265,10 @@ class BaseAlgorithm:
            Trial from a `orion.algo.space.Space`.
 
         """
-        self._trials_info[trial.hash_name] = (trial, trial.objective)
+        self._trials_info[self.get_id(trial)] = (
+            trial,
+            format_trials.get_trial_results(trial) if trial.objective else None,
+        )
 
     @property
     def n_suggested(self):
@@ -291,7 +294,7 @@ class BaseAlgorithm:
             True if the trial was suggested by the algo, False otherwise.
 
         """
-        return trial.hash_name in self._trials_info
+        return self.get_id(trial) in self._trials_info
 
     def has_observed(self, trial):
         """Whether the algorithm has observed a given point objective.
@@ -310,8 +313,8 @@ class BaseAlgorithm:
 
         """
         return (
-            trial.hash_name in self._trials_info
-            and self._trials_info[trial.hash_name][1] is not None
+            self.get_id(trial) in self._trials_info
+            and self._trials_info[self.get_id(trial)][1] is not None
         )
 
     @property
