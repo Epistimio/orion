@@ -506,6 +506,7 @@ class OneHotEncode(Transformer):
         .. note:: This reverse transformation possibly removes the last tensor dimension
            from `transformed_point`.
         """
+
         point_ = numpy.asarray(transformed_point)
         if self.num_cats == 2:
             return (point_ > 0.5).astype(int)
@@ -703,6 +704,16 @@ class TransformedDimension(object):
         # Else we don't care what transformation is.
         return self.original_dimension.cardinality
 
+    @property
+    def default_value(self):
+        if (
+            self.original_dimension.default_value
+            is self.original_dimension.NO_DEFAULT_VALUE
+        ):
+            return self.NO_DEFAULT_VALUE
+
+        return self.transform(self.original_dimension.default_value)
+
 
 class ReshapedDimension(TransformedDimension):
     """Duck-type :class:`orion.algo.space.Dimension` to mimic its functionality."""
@@ -721,7 +732,7 @@ class ReshapedDimension(TransformedDimension):
 
     def transform(self, point):
         """Expose `Transformer.transform` interface from underlying instance."""
-        return self.transformer.transform(point[self.index])
+        return self.transformer.transform(point)
 
     def reverse(self, transformed_point, index=None):
         """Expose `Transformer.reverse` interface from underlying instance."""
@@ -837,7 +848,10 @@ class ReshapedSpace(Space):
     def reshape(self, trial):
         """Reshape the point"""
         point = format_trials.trial_to_tuple(trial, self._original_space)
-        reshaped_point = tuple([dim.transform(point) for dim in self.values()])
+        reshaped_point = []
+        for dim in self.values():
+            reshaped_point.append(dim.transform(point[dim.index]))
+
         return create_transformed_trial(trial, reshaped_point, self)
 
     def restore_shape(self, transformed_trial):
