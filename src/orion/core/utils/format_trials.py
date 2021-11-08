@@ -51,15 +51,15 @@ def dict_to_trial(data, space):
             )
         value = data.get(name, dim.default_value)
 
-        if value not in dim:
-            error_msg = "Dimension {} value {} is outside of prior {}".format(
-                name, value, dim.get_prior_string()
-            )
-            raise ValueError(error_msg)
-
         params.append(dict(name=dim.name, type=dim.type, value=value))
-    assert len(params) == len(space)
-    return Trial(params=params)
+
+    trial = Trial(params=params)
+
+    if trial not in space:
+        error_msg = f"Parameters values {trial.params} are outside of space {space}"
+        raise ValueError(error_msg)
+
+    return trial
 
 
 def tuple_to_trial(data, space, status="new"):
