@@ -761,6 +761,34 @@ class TestSpace(object):
         assert format_trials.tuple_to_trial((("asdfa", 2), 0, 3.5), space) in space
         assert format_trials.tuple_to_trial((("asdfa", 2), 7, 3.5), space) not in space
 
+    def test_hierarchical_register_and_contain(self):
+        """Register hierarchical dimensions and check if points/name are in space."""
+        space = Space()
+
+        categories = {"asdfa": 0.1, 2: 0.2, 3: 0.3, 4: 0.4}
+        dim = Categorical("yolo.nested", categories, shape=2)
+        space.register(dim)
+        dim = Integer("yolo2.nested", "uniform", -3, 6)
+        space.register(dim)
+        dim = Real("yolo3", "norm", 0.9)
+        space.register(dim)
+
+        trial = Trial(
+            params=[
+                {"name": "yolo.nested", "value": ["asdfa", 2], "type": "categorical"},
+                {"name": "yolo2.nested", "value": 1, "type": "integer"},
+                {"name": "yolo3", "value": 0.5, "type": "real"},
+            ]
+        )
+
+        assert "yolo" in trial.params
+        assert "nested" in trial.params["yolo"]
+        assert "yolo2" in trial.params
+        assert "nested" in trial.params["yolo2"]
+        assert "yolo3" in trial.params
+
+        assert trial in space
+
     def test_sample(self):
         """Check whether sampling works correctly."""
         seed = 5

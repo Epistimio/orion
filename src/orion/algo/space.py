@@ -37,6 +37,7 @@ from scipy.stats import distributions
 
 from orion.core.utils import float_to_digits_list, format_trials
 from orion.core.utils.points import flatten_dims, regroup_dims
+from orion.core.utils.flatten import flatten
 
 logger = logging.getLogger(__name__)
 
@@ -1030,9 +1031,10 @@ class Space(dict):
             return super(Space, self).__contains__(key_or_trial)
 
         trial = key_or_trial
-        keys = set(trial.params.keys())
+        flattened_params = flatten(trial.params)
+        keys = set(flattened_params.keys())
         for dim_name, dim in self.items():
-            if dim_name not in keys or trial.params[dim_name] not in dim:
+            if dim_name not in keys or flattened_params[dim_name] not in dim:
                 return False
 
             keys.remove(dim_name)
