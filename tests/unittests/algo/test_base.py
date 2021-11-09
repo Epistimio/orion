@@ -68,7 +68,9 @@ def test_is_done_cardinality(monkeypatch, dumbalgo):
     algo = dumbalgo(space)
     algo.suggest(6)
     for i in range(1, 6):
-        backward.algo_observe(algo, [format_trials.tuple_to_trial((i,), space)], [dict(objective=3)])
+        backward.algo_observe(
+            algo, [format_trials.tuple_to_trial((i,), space)], [dict(objective=3)]
+        )
 
     assert len(algo.state_dict["_trials_info"]) == 5
     assert algo.is_done
@@ -79,7 +81,9 @@ def test_is_done_cardinality(monkeypatch, dumbalgo):
     algo = dumbalgo(space)
     algo.suggest(6)
     for i in range(1, 6):
-        backward.algo_observe(algo, [format_trials.tuple_to_trial((i,), space)], [dict(objective=3)])
+        backward.algo_observe(
+            algo, [format_trials.tuple_to_trial((i,), space)], [dict(objective=3)]
+        )
 
     assert len(algo.state_dict["_trials_info"]) == 5
     assert not algo.is_done
@@ -95,7 +99,9 @@ def test_is_done_max_trials(monkeypatch, dumbalgo):
     algo = dumbalgo(space)
     algo.suggest(5)
     for i in range(1, 5):
-        backward.algo_observe(algo, [format_trials.tuple_to_trial((i,), space)], [dict(objective=3)])
+        backward.algo_observe(
+            algo, [format_trials.tuple_to_trial((i,), space)], [dict(objective=3)]
+        )
 
     assert len(algo.state_dict["_trials_info"]) == 4
     assert not algo.is_done

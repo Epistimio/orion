@@ -195,7 +195,7 @@ class BaseAlgorithm:
 
     @property
     def fidelity_index(self):
-        """Compute the index of the point where fidelity is.
+        """Compute the dimension name of the space where fidelity is.
 
         Returns None if there is no fidelity dimension.
         """
@@ -205,11 +205,9 @@ class BaseAlgorithm:
         def _is_fidelity(dim):
             return dim.type == "fidelity"
 
-        fidelity_index = [
-            i for i, dim in enumerate(self.space.values()) if _is_fidelity(dim)
-        ]
-        if fidelity_index:
-            return fidelity_index[0]
+        fidelity_dim = [dim for dim in self.space.values() if _is_fidelity(dim)]
+        if fidelity_dim:
+            return fidelity_dim[0].name
 
         return None
 
