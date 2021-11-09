@@ -8,6 +8,15 @@ import pytest
 from orion.core.worker.trial import Trial
 
 
+@pytest.fixture
+def base_trial():
+    x = {"name": "/x", "value": [1, 2], "type": "real"}
+    y = {"name": "/y", "value": [1, 2], "type": "integer"}
+    objective = {"name": "objective", "value": 10, "type": "objective"}
+
+    return Trial(experiment=1, status="completed", params=[x, y], results=[objective])
+
+
 class TestTrial(object):
     """Test Trial object and class."""
 
@@ -365,3 +374,37 @@ class TestTrial(object):
         assert (
             trial.id == Trial(**bson.BSON.decode(bson.BSON.encode(trial.to_dict()))).id
         )
+
+    def test_branch_empty(self, base_trial):
+        """Test that branching with no args is only copying"""
+        branched_trial = base_trial.branch()
+        assert branched_trial.experiment is None
+        assert branched_trial is not base_trial
+        assert branched_trial.status == "new"
+        assert branched_trial.start_time is None
+        assert branched_trial.end_time is None
+        assert branched_trial.heartbeat is None
+        assert branched_trial.params == base_trial.params
+        assert branched_trial.objective is None
+
+    def test_branch_base_attr(self, base_trial):
+        """Test branching with base attributes (not params)"""
+        branched_trial = base_trial.branch(status="interrupted")
+        assert branched_trial.status != base_trial.status
+        assert branched_trial.status == "interrupted"
+        assert branched_trial.params == base_trial.params
+
+    def test_branch_params(self, base_trial):
+        """Test branching with params"""
+        branched_trial = base_trial.branch(status="interrupted", params={"/y": [3, 0]})
+        assert branched_trial.status != base_trial.status
+        assert branched_trial.status == "interrupted"
+        assert branched_trial.params != base_trial.params
+        assert branched_trial.params == {"/x": [1, 2], "/y": [3, 0]}
+
+    def test_branch_new_params(self, base_trial):
+        """Test branching with params that are not in base trial"""
+        with pytest.raises(
+            ValueError, match="Some parameters are not part of base trial: {'/z': 0}"
+        ):
+            base_trial.branch(params={"/z": 0})
