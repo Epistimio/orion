@@ -10,6 +10,14 @@ import pytest
 from orion.algo.asha import ASHA, ASHABracket, compute_budgets
 from orion.algo.space import Fidelity, Integer, Real, Space
 from orion.testing.algo import BaseAlgoTests
+from orion.testing.trial import create_trial
+
+from test_hyperband import (
+    compare_registered_trial,
+    create_rung_from_points,
+    create_trial_for_hb,
+    force_observe,
+)
 
 
 @pytest.fixture
@@ -53,57 +61,21 @@ def bracket(b_config, asha):
 @pytest.fixture
 def rung_0():
     """Create fake points and objectives for rung 0."""
-    points = np.linspace(0, 1, 9)
-    return dict(
-        n_trials=9,
-        resources=1,
-        results={
-            hashlib.md5(str([point]).encode("utf-8")).hexdigest(): (point, (1, point))
-            for point in points
-        },
-    )
+    return create_rung_from_points(np.linspace(0, 8, 9), n_trials=9, resources=1)
 
 
 @pytest.fixture
 def rung_1(rung_0):
     """Create fake points and objectives for rung 1."""
-    return dict(
-        n_trials=9,
-        resources=3,
-        results={
-            hashlib.md5(str([value[0]]).encode("utf-8")).hexdigest(): value
-            for value in map(
-                lambda v: (v[0], (3, v[0])), sorted(rung_0["results"].values())
-            )
-        },
-    )
+    points = [trial.params["lr"] for _, trial in sorted(rung_0["results"].values())[:3]]
+    return create_rung_from_points(points, n_trials=3, resources=3)
 
 
 @pytest.fixture
 def rung_2(rung_1):
     """Create fake points and objectives for rung 1."""
-    return dict(
-        n_trials=9,
-        resources=9,
-        results={
-            hashlib.md5(str([value[0]]).encode("utf-8")).hexdigest(): value
-            for value in map(
-                lambda v: (v[0], (9, v[0])), sorted(rung_1["results"].values())
-            )
-        },
-    )
-
-
-def force_observe(asha, point, results):
-
-    full_id = asha.get_id(point, ignore_fidelity=False)
-    asha.register(point, results)
-
-    bracket = asha._get_bracket(point)
-    id_wo_fidelity = asha.get_id(point, ignore_fidelity=True)
-    asha.trial_to_brackets[id_wo_fidelity] = bracket
-
-    asha.observe([point], [results])
+    points = [trial.params["lr"] for _, trial in sorted(rung_1["results"].values())[:1]]
+    return create_rung_from_points(points, n_trials=1, resources=9)
 
 
 def test_compute_budgets():
@@ -162,21 +134,21 @@ class TestASHABracket:
     def test_register(self, asha, bracket):
         """Check that a point is correctly registered inside a bracket."""
         bracket.asha = asha
-        point = (1, 0.0)
-        point_hash = hashlib.md5(str([0.0]).encode("utf-8")).hexdigest()
+        trial = create_trial_for_hb((1, 0.0), 0.0)
+        trial_id = asha.get_id(trial, ignore_fidelity=True)
 
-        bracket.register(point, 0.0)
+        bracket.register(trial)
 
         assert len(bracket.rungs[0])
-        assert point_hash in bracket.rungs[0]["results"]
-        assert (0.0, point) == bracket.rungs[0]["results"][point_hash]
+        assert trial_id in bracket.rungs[0]["results"]
+        assert (trial.objective.value, trial) == bracket.rungs[0]["results"][trial_id]
 
     def test_bad_register(self, asha, bracket):
         """Check that a non-valid point is not registered."""
         bracket.asha = asha
 
         with pytest.raises(IndexError) as ex:
-            bracket.register((55, 0.0), 0.0)
+            bracket.register(create_trial_for_hb((55, 0.0), 0.0))
 
         assert "Bad fidelity level 55" in str(ex.value)
 
@@ -187,19 +159,20 @@ class TestASHABracket:
 
         point = bracket.get_candidate(0)
 
-        assert point == (1, 0.0)
+        assert point.params == create_trial_for_hb((1, 0.0), 0.0).params
 
     def test_promotion_with_rung_1_hit(self, asha, bracket, rung_0):
         """Test that get_candidate gives us the next best thing if point is already in rung 1."""
-        point = (1, 0.0)
-        point_hash = hashlib.md5(str([0.0]).encode("utf-8")).hexdigest()
+        trial = create_trial_for_hb((1, 0.0), None)
         bracket.asha = asha
         bracket.rungs[0] = rung_0
-        bracket.rungs[1]["results"][point_hash] = (0.0, point)
+        bracket.rungs[1]["results"][asha.get_id(trial, ignore_fidelity=True)] = (
+            trial.objective.value,
+            trial,
+        )
 
-        point = bracket.get_candidate(0)
-
-        assert point == (1, 0.125)
+        trial = bracket.get_candidate(0)
+        assert trial.params == create_trial_for_hb((1, 1.0), 0.0).params
 
     def test_no_promotion_when_rung_full(self, asha, bracket, rung_0, rung_1):
         """Test that get_candidate returns `None` if rung 1 is full."""
@@ -254,13 +227,14 @@ class TestASHABracket:
         """Check if a valid modified candidate is returned by update_rungs."""
         bracket.asha = asha
         bracket.rungs[1] = rung_1
-        point_hash = hashlib.md5(str([0.0]).encode("utf-8")).hexdigest()
+        trial = create_trial_for_hb((3, 0.0), 0.0)
 
         candidate = bracket.promote(1)[0]
 
-        assert point_hash in bracket.rungs[1]["results"]
-        assert bracket.rungs[1]["results"][point_hash] == (0.0, (3, 0.0))
-        assert candidate[0] == 9
+        trial_id = asha.get_id(trial, ignore_fidelity=True)
+        assert trial_id in bracket.rungs[1]["results"]
+        assert bracket.rungs[1]["results"][trial_id][1].params == trial.params
+        assert candidate.params["epoch"] == 9
 
     def test_update_rungs_return_no_candidate(self, asha, bracket, rung_1):
         """Check if no candidate is returned by update_rungs."""
@@ -287,14 +261,15 @@ class TestASHA:
         asha.brackets = [bracket]
         bracket.asha = asha
         bracket.rungs = [rung_0, rung_1]
-        point = (1, 0.0)
-        point_hash = hashlib.md5(str([0.0]).encode("utf-8")).hexdigest()
+        trial = create_trial_for_hb((1, 0.0), 0.0)
+        trial_id = asha.get_id(trial, ignore_fidelity=True)
 
-        asha.observe([point], [{"objective": 0.0}])
+        asha.observe([trial])
 
         assert len(bracket.rungs[0])
-        assert point_hash in bracket.rungs[0]["results"]
-        assert (0.0, point) == bracket.rungs[0]["results"][point_hash]
+        assert trial_id in bracket.rungs[0]["results"]
+        assert bracket.rungs[0]["results"][trial_id][0] == 0.0
+        assert bracket.rungs[0]["results"][trial_id][1].params == trial.params
 
     def test_register_bracket_multi_fidelity(self, space, b_config):
         """Check that a point is registered inside the same bracket for diff fidelity."""
@@ -302,27 +277,29 @@ class TestASHA:
 
         value = 50
         fidelity = 1
-        point = (fidelity, value)
-        point_hash = hashlib.md5(str([value]).encode("utf-8")).hexdigest()
+        trial = create_trial_for_hb((fidelity, value), 0.0)
+        trial_id = asha.get_id(trial, ignore_fidelity=True)
 
-        force_observe(asha, point, {"objective": 0.0})
+        force_observe(asha, trial)
 
         bracket = asha.brackets[0]
 
         assert len(bracket.rungs[0])
-        assert point_hash in bracket.rungs[0]["results"]
-        assert (0.0, point) == bracket.rungs[0]["results"][point_hash]
+        assert trial_id in bracket.rungs[0]["results"]
+        assert bracket.rungs[0]["results"][trial_id][0] == 0.0
+        assert bracket.rungs[0]["results"][trial_id][1].params == trial.params
 
         fidelity = 3
-        point = [fidelity, value]
-        point_hash = hashlib.md5(str([value]).encode("utf-8")).hexdigest()
+        trial = create_trial_for_hb((fidelity, value), 0.0)
+        trial_id = asha.get_id(trial, ignore_fidelity=True)
 
-        force_observe(asha, point, {"objective": 0.0})
+        force_observe(asha, trial)
 
-        assert len(bracket.rungs[0])
-        assert point_hash in bracket.rungs[1]["results"]
-        assert (0.0, point) != bracket.rungs[0]["results"][point_hash]
-        assert (0.0, point) == bracket.rungs[1]["results"][point_hash]
+        assert len(bracket.rungs[1])
+        assert trial_id in bracket.rungs[1]["results"]
+        assert bracket.rungs[0]["results"][trial_id][1].params != trial.params
+        assert bracket.rungs[1]["results"][trial_id][0] == 0.0
+        assert bracket.rungs[1]["results"][trial_id][1].params == trial.params
 
     def test_register_next_bracket(self, space, b_config):
         """Check that a point is registered inside the good bracket when higher fidelity."""
@@ -330,29 +307,29 @@ class TestASHA:
 
         value = 50
         fidelity = 3
-        point = (fidelity, value)
-        point_hash = hashlib.md5(str([value]).encode("utf-8")).hexdigest()
+        trial = create_trial_for_hb((fidelity, value), 0.0)
+        trial_id = asha.get_id(trial, ignore_fidelity=True)
 
-        force_observe(asha, point, {"objective": 0.0})
+        force_observe(asha, trial)
 
         assert sum(len(rung["results"]) for rung in asha.brackets[0].rungs) == 0
         assert sum(len(rung["results"]) for rung in asha.brackets[1].rungs) == 1
         assert sum(len(rung["results"]) for rung in asha.brackets[2].rungs) == 0
-        assert point_hash in asha.brackets[1].rungs[0]["results"]
-        assert (0.0, point) == asha.brackets[1].rungs[0]["results"][point_hash]
+        assert trial_id in asha.brackets[1].rungs[0]["results"]
+        compare_registered_trial(asha.brackets[1].rungs[0]["results"][trial_id], trial)
 
         value = 51
         fidelity = 9
-        point = (fidelity, value)
-        point_hash = hashlib.md5(str([value]).encode("utf-8")).hexdigest()
+        trial = create_trial_for_hb((fidelity, value), 0.0)
+        trial_id = asha.get_id(trial, ignore_fidelity=True)
 
-        force_observe(asha, point, {"objective": 0.0})
+        force_observe(asha, trial)
 
         assert sum(len(rung["results"]) for rung in asha.brackets[0].rungs) == 0
         assert sum(len(rung["results"]) for rung in asha.brackets[1].rungs) == 1
         assert sum(len(rung["results"]) for rung in asha.brackets[2].rungs) == 1
-        assert point_hash in asha.brackets[2].rungs[0]["results"]
-        assert (0.0, point) == asha.brackets[2].rungs[0]["results"][point_hash]
+        assert trial_id in asha.brackets[2].rungs[0]["results"]
+        compare_registered_trial(asha.brackets[2].rungs[0]["results"][trial_id], trial)
 
     def test_register_invalid_fidelity(self, space, b_config):
         """Check that a point cannot registered if fidelity is invalid."""
@@ -360,12 +337,12 @@ class TestASHA:
 
         value = 50
         fidelity = 2
-        point = (fidelity, value)
+        trial = create_trial_for_hb((fidelity, value))
 
         with pytest.raises(ValueError) as ex:
-            force_observe(asha, point, {"objective": 0.0})
+            force_observe(asha, trial)
 
-        assert "No bracket found for point" in str(ex.value)
+        assert "No bracket found for trial" in str(ex.value)
 
     def test_register_not_sampled(self, space, b_config, caplog):
         """Check that a point cannot registered if not sampled."""
@@ -373,13 +350,13 @@ class TestASHA:
 
         value = 50
         fidelity = 2
-        point = (fidelity, value)
+        trial = create_trial_for_hb((fidelity, value))
 
         with caplog.at_level(logging.INFO, logger="orion.algo.hyperband"):
-            asha.observe([point], [{"objective": 0.0}])
+            asha.observe([trial])
 
         assert len(caplog.records) == 1
-        assert "Ignoring point" in caplog.records[0].msg
+        assert "Ignoring trial" in caplog.records[0].msg
 
     def test_register_corrupted_db(self, caplog, space, b_config):
         """Check that a point cannot registered if passed in order diff than fidelity."""
@@ -387,17 +364,17 @@ class TestASHA:
 
         value = 50
         fidelity = 3
-        point = (fidelity, value)
+        trial = create_trial_for_hb((fidelity, value))
 
-        force_observe(asha, point, {"objective": 0.0})
-        assert "Point registered to wrong bracket" not in caplog.text
+        force_observe(asha, trial)
+        assert "Trial registered to wrong bracket" not in caplog.text
 
         fidelity = 1
-        point = [fidelity, value]
+        trial = create_trial_for_hb((fidelity, value), objective=0.0)
 
         caplog.clear()
-        force_observe(asha, point, {"objective": 0.0})
-        assert "Point registered to wrong bracket" in caplog.text
+        force_observe(asha, trial)
+        assert "Trial registered to wrong bracket" in caplog.text
 
     def test_suggest_new(self, monkeypatch, asha, bracket, rung_0, rung_1, rung_2):
         """Test that a new point is sampled."""
@@ -405,13 +382,13 @@ class TestASHA:
         bracket.asha = asha
 
         def sample(num=1, seed=None):
-            return [("fidelity", 0.5)]
+            return [create_trial_for_hb(("fidelity", 0.5))]
 
         monkeypatch.setattr(asha.space, "sample", sample)
 
-        points = asha.suggest(1)
+        trials = asha.suggest(1)
 
-        assert points == [(1, 0.5)]
+        assert trials[0].params == {"epoch": 1, "lr": 0.5}
 
     def test_suggest_duplicates(
         self, monkeypatch, asha, bracket, rung_0, rung_1, rung_2
@@ -420,27 +397,28 @@ class TestASHA:
         asha.brackets = [bracket]
         bracket.asha = asha
 
-        duplicate_point = ("fidelity", 0.0)
-        new_point = ("fidelity", 0.5)
+        fidelity = 1
+        duplicate_trial = create_trial_for_hb((fidelity, 0.0))
+        new_trial = create_trial_for_hb((fidelity, 0.5))
 
-        duplicate_id_wo_fidelity = asha.get_id(duplicate_point, ignore_fidelity=True)
+        duplicate_id_wo_fidelity = asha.get_id(duplicate_trial, ignore_fidelity=True)
         bracket.rungs[0] = dict(
             n_trials=2,
             resources=1,
-            results={duplicate_id_wo_fidelity: (0.0, duplicate_point)},
+            results={duplicate_id_wo_fidelity: (0.0, duplicate_trial)},
         )
         asha.trial_to_brackets[duplicate_id_wo_fidelity] = bracket
 
-        asha.register(duplicate_point, 0.0)
+        asha.register(duplicate_trial)
 
-        points = [duplicate_point, new_point]
+        trials = [duplicate_trial, new_trial]
 
         def sample(num=1, seed=None):
-            return points
+            return trials
 
         monkeypatch.setattr(asha.space, "sample", sample)
 
-        assert asha.suggest(1)[0][1] == new_point[1]
+        assert asha.suggest(1)[0].params == new_trial.params
 
     def test_suggest_inf_duplicates(
         self, monkeypatch, asha, bracket, rung_0, rung_1, rung_2
@@ -449,11 +427,12 @@ class TestASHA:
         asha.brackets = [bracket]
         bracket.asha = asha
 
-        zhe_point = ("fidelity", 0.0)
-        asha.trial_to_brackets[asha.get_id(zhe_point, ignore_fidelity=True)] = bracket
+        fidelity = 1
+        zhe_trial = create_trial_for_hb((fidelity, 0.0))
+        asha.trial_to_brackets[asha.get_id(zhe_trial, ignore_fidelity=True)] = bracket
 
         def sample(num=1, seed=None):
-            return [zhe_point]
+            return [zhe_trial]
 
         monkeypatch.setattr(asha.space, "sample", sample)
 
@@ -467,10 +446,26 @@ class TestASHA:
 
         asha = ASHA(space)
         for i in range(6):
-            force_observe(asha, (1, i), {"objective": i})
+            force_observe(
+                asha,
+                create_trial(
+                    (1, i),
+                    names=("epoch", "yolo1"),
+                    types=("fidelity", "integer"),
+                    results={"objective": i},
+                ),
+            )
 
         for i in range(2):
-            force_observe(asha, (3, i), {"objective": i})
+            force_observe(
+                asha,
+                create_trial(
+                    (3, i),
+                    names=("epoch", "yolo1"),
+                    types=("fidelity", "integer"),
+                    results={"objective": i},
+                ),
+            )
 
         assert asha.suggest(1) == []
 
@@ -480,9 +475,9 @@ class TestASHA:
         bracket.asha = asha
         bracket.rungs[0] = rung_0
 
-        points = asha.suggest(1)
+        trials = asha.suggest(1)
 
-        assert points == [(3, 0.0)]
+        assert trials[0].params == {"epoch": 3, "lr": 0.0}
 
 
 class TestGenericASHA(BaseAlgoTests):
@@ -498,8 +493,8 @@ class TestGenericASHA(BaseAlgoTests):
     def test_suggest_n(self, mocker, num, attr):
         algo = self.create_algo()
         spy = self.spy_phase(mocker, num, algo, attr)
-        points = algo.suggest(5)
-        assert len(points) == 1
+        trials = algo.suggest(5)
+        assert len(trials) == 1
 
     @pytest.mark.skip(reason="See https://github.com/Epistimio/orion/issues/598")
     def test_is_done_cardinality(self):
@@ -518,15 +513,15 @@ class TestGenericASHA(BaseAlgoTests):
         for rung in range(algo.algorithm.num_rungs):
             assert not algo.is_done
 
-            points = []
+            trials = []
             while True:
                 assert not algo.is_done
                 n_sampled = len(algo.algorithm.sampled)
                 n_trials = len(algo.algorithm.trial_to_brackets)
-                new_points = algo.suggest(1)
-                if new_points is None:
+                new_trials = algo.suggest(1)
+                if new_trials is None:
                     break
-                points += new_points
+                trials += new_trials
                 if rung == 0:
                     assert len(algo.algorithm.sampled) == n_sampled + 1
                 else:
@@ -535,8 +530,8 @@ class TestGenericASHA(BaseAlgoTests):
 
             assert not algo.is_done
 
-            for i, point in enumerate(points):
-                algo.observe([point], [dict(objective=i)])
+            for i, trial in enumerate(trials):
+                algo.observe([trial], [dict(objective=i)])
 
         assert algo.is_done
 
@@ -549,11 +544,11 @@ class TestGenericASHA(BaseAlgoTests):
 
         objective = 0
         while not algo.is_done:
-            points = algo.suggest(1)
-            assert points is not None
-            if points:
-                self.observe_points(points, algo, objective)
-                objective += len(points)
+            trials = algo.suggest(1)
+            assert trials is not None
+            if trials:
+                self.observe_trials(trials, algo, objective)
+                objective += len(trials)
 
         # ASHA should ignore max trials.
         assert algo.n_observed > MAX_TRIALS

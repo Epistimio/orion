@@ -181,8 +181,8 @@ class EvolutionES(Hyperband):
         self.performance = state_dict["performance"]
         self.hurdles = state_dict["hurdles"]
 
-    def _get_bracket(self, point):
-        """Get the bracket of a point during observe"""
+    def _get_bracket(self, trial):
+        """Get the bracket of a trial during observe"""
         return self.brackets[0]
 
 

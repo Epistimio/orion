@@ -221,7 +221,6 @@ class TestHyperbandBracket:
         bracket.hyperband = hyperband
         bracket.rungs[1] = rung_1
         trial = create_trial_for_hb((3, 0.0), 0.0)
-        # point_hash = hashlib.md5(str([0.0]).encode("utf-8")).hexdigest()
 
         candidates = bracket.promote(1)
 
@@ -419,9 +418,7 @@ class TestHyperband:
         duplicate_id = hyperband.get_id(duplicate_trial, ignore_fidelity=True)
         bracket.rungs[0]["results"] = {duplicate_id: (0.0, duplicate_trial)}
 
-        hyperband.trial_to_brackets[
-            hyperband.get_id(duplicate_trial, ignore_fidelity=True)
-        ] = bracket
+        hyperband.trial_to_brackets[duplicate_id] = bracket
 
         trials = [duplicate_trial, new_trial]
 

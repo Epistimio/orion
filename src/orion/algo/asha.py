@@ -218,14 +218,20 @@ class ASHABracket(HyperbandBracket):
         return self.hyperband.sample_for_bracket(num, self)
 
     def get_candidate(self, rung_id):
-        """Get a candidate for promotion"""
+        """Get a candidate for promotion
+
+        Raises
+        ------
+        TypeError
+            If get_candidates is called before the entire rung is completed.
+        """
         rung = self.rungs[rung_id]["results"]
         next_rung = self.rungs[rung_id + 1]["results"]
 
         rung = list(
             sorted(
-                (objective, point)
-                for objective, point in rung.values()
+                (objective, trial)
+                for objective, trial in rung.values()
                 if objective is not None
             )
         )
@@ -233,16 +239,16 @@ class ASHABracket(HyperbandBracket):
         k = min(k, len(rung))
 
         for i in range(k):
-            point = rung[i][1]
-            _id = self.hyperband.get_id(point, ignore_fidelity=True)
+            trial = rung[i][1]
+            _id = self.hyperband.get_id(trial, ignore_fidelity=True)
             if _id not in next_rung:
-                return point
+                return trial
 
         return None
 
     @property
     def is_filled(self):
-        """ASHA's first rung can always sample new points"""
+        """ASHA's first rung can always sample new trials"""
         return False
 
     def is_ready(self, rung_id=None):
@@ -254,7 +260,7 @@ class ASHABracket(HyperbandBracket):
 
         The rungs are iterated over in reversed order, so that high rungs
         are prioritised for promotions. When a candidate is promoted, the loop is broken and
-        the method returns the promoted point.
+        the method returns the promoted trial.
 
         .. note ::
 
@@ -272,21 +278,25 @@ class ASHABracket(HyperbandBracket):
 
                 # pylint: disable=logging-format-interpolation
                 logger.debug(
-                    "Promoting {point} from rung {past_rung} with fidelity {past_fidelity} to "
+                    "Promoting {trial} from rung {past_rung} with fidelity {past_fidelity} to "
                     "rung {new_rung} with fidelity {new_fidelity}".format(
-                        point=candidate,
+                        trial=candidate,
                         past_rung=rung_id,
-                        past_fidelity=candidate[self.hyperband.fidelity_index],
+                        past_fidelity=candidate.params[self.hyperband.fidelity_index],
                         new_rung=rung_id + 1,
                         new_fidelity=self.rungs[rung_id + 1]["resources"],
                     )
                 )
 
-                candidate = list(copy.deepcopy(candidate))
-                candidate[self.hyperband.fidelity_index] = self.rungs[rung_id + 1][
-                    "resources"
-                ]
+                candidate = candidate.branch(
+                    status="new",
+                    params={
+                        self.hyperband.fidelity_index: self.rungs[rung_id + 1][
+                            "resources"
+                        ]
+                    },
+                )
 
-                return [tuple(candidate)]
+                return [candidate]
 
         return []
