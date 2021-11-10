@@ -55,24 +55,17 @@ class ParallelStrategy(object):
     def __init__(self, *args, **kwargs):
         pass
 
-    def observe(self, points, results):
+    def observe(self, trials):
         """Observe completed trials
 
         .. seealso:: `orion.algo.base.BaseAlgorithm.observe` method
 
         Parameters
         ----------
-        points: list of tuples of array-likes
-           Points from a `orion.algo.space.Space`.
-           Evaluated problem parameters by a consumer.
-        results: list of dict
-           Contains the result of an evaluation; partial information about the
-           black-box function at each point in `params`.
+        trials: list of ``orion.core.worker.trial.Trial``
+           Trials from a `orion.algo.space.Space`.
 
         """
-        # NOTE: In future points and results will be converted to trials for coherence with
-        # `Strategy.lie()` as well as for coherence with `Algorithm.observe` which will also be
-        # converted to expect trials instead of lists and dictionaries.
         raise NotImplementedError()
 
     # pylint: disable=no-self-use
@@ -112,7 +105,7 @@ class ParallelStrategy(object):
 class NoParallelStrategy(ParallelStrategy):
     """No parallel strategy"""
 
-    def observe(self, points, results):
+    def observe(self, trials):
         """See ParallelStrategy.observe"""
         pass
 
@@ -139,10 +132,10 @@ class MaxParallelStrategy(ParallelStrategy):
         """Provide the configuration of the strategy as a dictionary."""
         return {self.__class__.__name__: {"default_result": self.default_result}}
 
-    def observe(self, points, results):
+    def observe(self, trials):
         """See ParallelStrategy.observe"""
         results = [
-            result["objective"] for result in results if result["objective"] is not None
+            trial.objective.value for trial in trials if trial.objective is not None
         ]
         if results:
             self.max_result = max(results)
@@ -170,10 +163,10 @@ class MeanParallelStrategy(ParallelStrategy):
         """Provide the configuration of the strategy as a dictionary."""
         return {self.__class__.__name__: {"default_result": self.default_result}}
 
-    def observe(self, points, results):
+    def observe(self, trials):
         """See ParallelStrategy.observe"""
         objective_values = [
-            result["objective"] for result in results if result["objective"] is not None
+            trial.objective.value for trial in trials if trial.objective is not None
         ]
         if objective_values:
             self.mean_result = sum(value for value in objective_values) / float(
@@ -202,7 +195,7 @@ class StubParallelStrategy(ParallelStrategy):
         """Provide the configuration of the strategy as a dictionary."""
         return {self.__class__.__name__: {"stub_value": self.stub_value}}
 
-    def observe(self, points, results):
+    def observe(self, trials):
         """See ParallelStrategy.observe"""
         pass
 
