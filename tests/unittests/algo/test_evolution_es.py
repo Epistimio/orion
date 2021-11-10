@@ -12,6 +12,15 @@ from orion.algo.evolution_es import BracketEVES, EvolutionES, compute_budgets
 from orion.algo.space import Fidelity, Real, Space
 from orion.testing.algo import BaseAlgoTests
 
+from orion.testing.trial import create_trial
+
+from test_hyperband import (
+    compare_registered_trial,
+    create_rung_from_points,
+    create_trial_for_hb,
+    force_observe,
+)
+
 
 @pytest.fixture
 def space():
@@ -73,80 +82,79 @@ def evolution_customer_mutate(space1):
 @pytest.fixture
 def rung_0():
     """Create fake points and objectives for rung 0."""
-    points = np.linspace(0, 8, 9)
-    return dict(
-        n_trials=9,
-        resources=1,
-        results={
-            hashlib.md5(str([point]).encode("utf-8")).hexdigest(): (point, (1, point))
-            for point in points
-        },
-    )
+    return create_rung_from_points(np.linspace(0, 8, 9), n_trials=9, resources=1)
 
 
 @pytest.fixture
 def rung_1(rung_0):
     """Create fake points and objectives for rung 1."""
-    values = map(
-        lambda v: (v[0], (3, v[0])), list(sorted(rung_0["results"].values()))[:3]
-    )
-    return dict(
-        n_trials=3,
-        resources=3,
-        results={
-            hashlib.md5(str([value[0]]).encode("utf-8")).hexdigest(): value
-            for value in values
-        },
-    )
+    points = [trial.params["lr"] for _, trial in sorted(rung_0["results"].values())[:3]]
+    return create_rung_from_points(points, n_trials=3, resources=3)
 
 
 @pytest.fixture
 def rung_2(rung_1):
-    """Create fake points and objectives for rung 2."""
-    values = map(
-        lambda v: (v[0], (9, v[0])), list(sorted(rung_1["results"].values()))[:1]
-    )
-    return dict(
-        n_trials=1,
-        resources=9,
-        results={
-            hashlib.md5(str([value[0]]).encode("utf-8")).hexdigest(): value
-            for value in values
-        },
-    )
+    """Create fake points and objectives for rung 1."""
+    points = [trial.params["lr"] for _, trial in sorted(rung_1["results"].values())[:1]]
+    return create_rung_from_points(points, n_trials=1, resources=9)
 
 
 @pytest.fixture
-def rung_3():
+def rung_3(space1):
     """Create fake points and objectives for rung 3."""
     points = np.linspace(1, 4, 4)
+    keys = list(space1.keys())
+    types = [dim.type for dim in space1.values()]
+
+    results = {}
+    for point in points:
+        trial = create_trial(
+            (np.power(2, (point - 1)), 1.0 / point, 1.0 / (point * point)),
+            names=keys,
+            results={"objective": point},
+            types=types,
+        )
+        trial_hash = trial.compute_trial_hash(
+            trial,
+            ignore_fidelity=True,
+            ignore_experiment=True,
+        )
+        results[trial_hash] = (trial.objective.value, trial)
+
     return dict(
         n_trials=4,
         resources=1,
-        results={
-            hashlib.md5(str([point]).encode("utf-8")).hexdigest(): (
-                point,
-                (np.power(2, (point - 1)), 1.0 / point, 1.0 / (point * point)),
-            )
-            for point in points
-        },
+        results=results,
     )
 
 
 @pytest.fixture
-def rung_4():
+def rung_4(space1):
     """Create duplicated fake points and objectives for rung 4."""
     points = np.linspace(1, 4, 4)
+    keys = list(space1.keys())
+    types = [dim.type for dim in space1.values()]
+
+    results = {}
+    for point in points:
+        trial = create_trial(
+            (1, point // 2, point // 2),
+            names=keys,
+            results={"objective": point},
+            types=types,
+        )
+
+        trial_hash = trial.compute_trial_hash(
+            trial,
+            ignore_fidelity=True,
+            ignore_experiment=True,
+        )
+        results[trial_hash] = (trial.objective.value, trial)
+
     return dict(
         n_trials=4,
         resources=1,
-        results={
-            hashlib.md5(str([point]).encode("utf-8")).hexdigest(): (
-                point,
-                (1, point // 2, point // 2),
-            )
-            for point in points
-        },
+        results=results,
     )
 
 
@@ -175,12 +183,14 @@ def test_customized_mutate_population(space1, rung_3, budgets):
 
     red_team = [0, 2]
     blue_team = [1, 3]
-    for i in range(population_range):
-        for j in [1, 2]:
-            algo.brackets[0].eves.population[j][i] = list(rung_3["results"].values())[
-                i
-            ][1][j]
-        algo.brackets[0].eves.performance[i] = list(rung_3["results"].values())[i][0]
+    rung_trials = list(rung_3["results"].values())
+    for trial_index in range(population_range):
+        objective, trial = rung_trials[trial_index]
+        algo.performance[trial_index] = objective
+        for ith_dim in [1, 2]:
+            algo.population[ith_dim][trial_index] = trial.params[
+                algo.space[ith_dim].name
+            ]
 
     org_data = np.stack(
         (
@@ -239,14 +249,15 @@ class TestEvolutionES:
         bracket.hyperband = evolution
         bracket.eves = evolution
         bracket.rungs = [rung_0, rung_1]
-        point = (1, 0.0)
-        point_hash = hashlib.md5(str([0.0]).encode("utf-8")).hexdigest()
+        trial = create_trial_for_hb((1, 0.0), objective=0.0)
+        trial_id = evolution.get_id(trial, ignore_fidelity=True)
 
-        evolution.observe([point], [{"objective": 0.0}])
+        evolution.observe([trial])
 
         assert len(bracket.rungs[0])
-        assert point_hash in bracket.rungs[0]["results"]
-        assert (0.0, point) == bracket.rungs[0]["results"][point_hash]
+        assert trial_id in bracket.rungs[0]["results"]
+        assert bracket.rungs[0]["results"][trial_id][0] == 0.0
+        assert bracket.rungs[0]["results"][trial_id][1].params == trial.params
 
 
 class TestBracketEVES:
@@ -257,7 +268,7 @@ class TestBracketEVES:
         bracket.rungs[0] = rung_3
         rung, population_range, red_team, blue_team = bracket._get_teams(0)
         assert len(list(rung.values())) == 4
-        assert bracket.search_space_remove_fidelity == [1, 2]
+        assert bracket.search_space_without_fidelity == [1, 2]
         assert population_range == 4
         assert set(red_team).union(set(blue_team)) == {0, 1, 2, 3}
         assert set(red_team).intersection(set(blue_team)) == set()
@@ -267,12 +278,15 @@ class TestBracketEVES:
         red_team = [0, 2]
         blue_team = [1, 3]
         population_range = 4
-        for i in range(4):
-            for j in [1, 2]:
-                bracket.eves.population[j][i] = list(rung_3["results"].values())[i][1][
-                    j
+        rung_trials = list(rung_3["results"].values())
+        for trial_index in range(4):
+            objective, trial = rung_trials[trial_index]
+
+            bracket.eves.performance[trial_index] = objective
+            for ith_dim in [1, 2]:
+                bracket.eves.population[ith_dim][trial_index] = trial.params[
+                    bracket.eves.space[ith_dim].name
                 ]
-            bracket.eves.performance[i] = list(rung_3["results"].values())[i][0]
 
         org_data = np.stack(
             (
@@ -321,42 +335,55 @@ class TestBracketEVES:
         red_team = [0, 2]
         blue_team = [0, 2]  # no mutate occur at first.
         population_range = 4
-        for i in range(4):
-            for j in [1, 2]:
-                bracket.eves.population[j][i] = list(rung_4["results"].values())[i][1][
-                    j
+
+        rung_trials = list(rung_4["results"].values())
+        # Duplicate second item
+        rung_trials.insert(2, rung_trials[1])
+        for trial_index in range(4):
+            objective, trial = rung_trials[trial_index]
+
+            # bracket.eves.performance[trial_index] = objective
+            for ith_dim in [1, 2]:
+                bracket.eves.population[ith_dim][trial_index] = trial.params[
+                    bracket.eves.space[ith_dim].name
                 ]
-        points, nums_all_equal = bracket._mutate_population(
+
+        trials, nums_all_equal = bracket._mutate_population(
             red_team, blue_team, rung_4["results"], population_range, fidelity=2
         )
 
         # In this case, duplication will occur, and we can make it mutate one more time.
-        # The points 1 and 2 should be different, while one of nums_all_equal should be 1.
-        if points[1][1] != points[2][1]:
-            assert points[1][2] == points[2][2]
+        # The trials 1 and 2 should be different, while one of nums_all_equal should be 1.
+        if trials[1].params["lr"] != trials[2].params["lr"]:
+            assert trials[1].params["weight_decay"] == trials[2].params["weight_decay"]
         else:
-            assert points[1][2] != points[2][2]
+            assert trials[1].params["weight_decay"] != trials[2].params["weight_decay"]
 
         assert nums_all_equal[0] == 0
         assert nums_all_equal[1] == 0
         assert nums_all_equal[2] == 1
         assert nums_all_equal[3] == 0
 
-    def test_mutate_points(self, bracket, rung_3):
-        """Test that correct point is promoted."""
+    def test_mutate_trials(self, bracket, rung_3):
+        """Test that correct trial is promoted."""
         red_team = [0, 2]
         blue_team = [0, 2]
         population_range = 4
-        for i in range(4):
-            for j in [1, 2]:
-                bracket.eves.population[j][i] = list(rung_3["results"].values())[i][1][
-                    j
+        rung_trials = list(rung_3["results"].values())
+        for trial_index in range(4):
+            objective, trial = rung_trials[trial_index]
+
+            # bracket.eves.performance[trial_index] = objective
+            for ith_dim in [1, 2]:
+                bracket.eves.population[ith_dim][trial_index] = trial.params[
+                    bracket.eves.space[ith_dim].name
                 ]
-        points, nums_all_equal = bracket._mutate_population(
+
+        trials, nums_all_equal = bracket._mutate_population(
             red_team, blue_team, rung_3["results"], population_range, fidelity=2
         )
-        assert points[0] == (2, 1.0, 1.0)
-        assert points[1] == (2, 1.0 / 2, 1.0 / 4)
+        assert trials[0].params == {"epoch": 2, "lr": 1.0, "weight_decay": 1.0}
+        assert trials[1].params == {"epoch": 2, "lr": 1.0 / 2, "weight_decay": 1.0 / 4}
         assert (nums_all_equal == 0).all()
 
 
@@ -391,10 +418,10 @@ class TestGenericEvolutionES(BaseAlgoTests):
             assert not algo.is_done
             n_sampled = len(algo.algorithm.sampled)
             n_trials = len(algo.algorithm.trial_to_brackets)
-            points = algo.suggest()
-            if points is None:
+            trials = algo.suggest()
+            if trials is None:
                 break
-            assert len(algo.algorithm.sampled) == n_sampled + len(points)
+            assert len(algo.algorithm.sampled) == n_sampled + len(trials)
             assert len(algo.algorithm.trial_to_brackets) == space.cardinality
 
             # We reached max number of trials we can suggest before observing any.
@@ -402,8 +429,8 @@ class TestGenericEvolutionES(BaseAlgoTests):
 
             assert not algo.is_done
 
-            for i, point in enumerate(points):
-                algo.observe([point], [dict(objective=i)])
+            for i, trial in enumerate(trials):
+                backward.algo_observe(algo, [trial], [dict(objective=i)])
 
         assert algo.is_done
 
@@ -417,11 +444,11 @@ class TestGenericEvolutionES(BaseAlgoTests):
 
         objective = 0
         while not algo.is_done:
-            points = algo.suggest(num)
-            assert points
-            if points:
-                self.observe_points(points, algo, objective)
-                objective += len(points)
+            trials = algo.suggest(num)
+            assert trials
+            if trials:
+                self.observe_trials(trials, algo, objective)
+                objective += len(trials)
 
         # Hyperband should ignore max trials.
         assert algo.n_observed > MAX_TRIALS

@@ -538,7 +538,6 @@ class HyperbandBracket:
         )
 
     def _get_results(self, trial):
-        print(flatten(trial.params))
         fidelity = flatten(trial.params)[self.hyperband.fidelity_index]
         rungs = [
             rung["results"] for rung in self.rungs if rung["resources"] == fidelity
