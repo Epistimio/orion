@@ -792,7 +792,7 @@ class TransformedSpace(Space):
             dim.transform(trial.params[name]) for name, dim in self.items()
         )
 
-        return create_transformed_trial(trial, transformed_point, self)
+        return change_trial_params(trial, transformed_point, self)
 
     def reverse(self, transformed_trial):
         """Reverses transformation so that a point from this `TransformedSpace`
@@ -802,7 +802,7 @@ class TransformedSpace(Space):
             dim.reverse(transformed_trial.params[name]) for name, dim in self.items()
         )
 
-        return create_restored_trial(
+        return change_trial_params(
             transformed_trial,
             reversed_point,
             self,
@@ -852,7 +852,7 @@ class ReshapedSpace(Space):
         for dim in self.values():
             reshaped_point.append(dim.transform(point[dim.index]))
 
-        return create_transformed_trial(trial, reshaped_point, self)
+        return change_trial_params(trial, reshaped_point, self)
 
     def restore_shape(self, transformed_trial):
         """Restore shape."""
@@ -864,7 +864,7 @@ class ReshapedSpace(Space):
                 point_index = original_keys.index(dim.original_dimension.name)
                 point[point_index] = dim.reverse(transformed_point, index)
 
-        return create_restored_trial(transformed_trial, point, self._original_space)
+        return change_trial_params(transformed_trial, point, self._original_space)
 
     def sample(self, n_samples=1, seed=None):
         """Sample from the original dimension and forward transform them."""
@@ -893,56 +893,19 @@ class ReshapedSpace(Space):
         return self.original.cardinality
 
 
-class TransformedTrial:
-    """A trial with transformed params
-
-    All other attributes are kept as-is.
-
-    Original params are accessible through ``transformed_trial.trial.params``.
-    """
-
-    __slots__ = ["trial", "_params"]
-
-    def __init__(self, trial, params):
-        self.trial = trial
-        self._params = params
-
-    @property
-    def params(self):
-        """Parameters of the trial"""
-        return unflatten({param.name: param.value for param in self._params})
-
-    def __deepcopy__(self, memo):
-        return TransformedTrial(copy.deepcopy(self.trial), copy.deepcopy(self._params))
-
-    def to_dict(self):
-        trial_dictionary = self.trial.to_dict()
-        trial_dictionary["params"] = list(map(lambda x: x.to_dict(), self._params))
-
-        return trial_dictionary
-
-    def __getattr__(self, name):
-        return getattr(self.trial, name)
-
-    def __setattr__(self, name, value):
-        if name in self.__slots__:
-            return super(TransformedTrial, self).__setattr__(name, value)
-
-        return setattr(self.trial, name, value)
-
-
 def create_transformed_trial(trial, transformed_point, space):
     """Convert point into Trial.Param objects and return a TransformedTrial"""
     return TransformedTrial(
         trial, format_trials.tuple_to_trial(transformed_point, space)._params
     )
 
+    new_trial = copy.copy(trial)
+    new_trial._params = format_trials.tuple_to_trial(transformed_point, space)._params
+    return new_trial
 
-def create_restored_trial(trial, point, space):
+
+def change_trial_params(trial, point, space):
     """Convert params in Param objects and update trial"""
-    if isinstance(trial, TransformedTrial):
-        return create_restored_trial(trial.trial, point, space)
-
     new_trial = copy.copy(trial)
     new_trial._params = format_trials.tuple_to_trial(point, space)._params
     return new_trial

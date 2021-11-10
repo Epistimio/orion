@@ -164,7 +164,8 @@ class BaseAlgorithm:
     def get_id(self, trial, ignore_fidelity=False):
         """Return unique hash for a trials based on params
 
-        Deprecated and will be removed in v0.3.0. Use the trial hashing methods instead.
+        The trial is assumed to be in the transformed space if the algorithm is working in a
+        transformed space.
 
         Parameters
         ----------
@@ -184,7 +185,9 @@ class BaseAlgorithm:
         # Apply transforms and reverse to see data as it would come from DB
         # (Some transformations looses some info. ex: Precision transformation)
 
-        trial = self.format_trial(trial)
+        # Compute trial hash in the client-facing format.
+        if hasattr(self.space, "reverse"):
+            trial = self.space.reverse(trial)
 
         return trial.compute_trial_hash(
             trial,

@@ -22,11 +22,9 @@ from orion.core.worker.transformer import (
     Reverse,
     TransformedDimension,
     TransformedSpace,
-    TransformedTrial,
     View,
     build_required_space,
-    create_restored_trial,
-    create_transformed_trial,
+    change_trial_params,
 )
 
 
@@ -1407,83 +1405,7 @@ def test_precision_with_linear(space, logdim, logintdim):
     assert rtrial.params["yolo5"] == 2
 
 
-class TestTransformedTrial:
-    def test_params_are_transformed(self, space, tspace):
-        trial = space.sample()[0]
-        ttrial = tspace.transform(trial)
-        assert isinstance(ttrial, TransformedTrial)
-        assert ttrial.params != trial.params
-        assert ttrial not in space
-        assert ttrial in tspace
-
-    def test_trial_attributes_conserved(self, space, tspace):
-        working_dir = "/new/working/dir"
-        status = "interrupted"
-        trial = space.sample()[0]
-        assert trial.working_dir != working_dir
-        trial.working_dir = working_dir
-        assert trial.status != status
-        trial.status = status
-        ttrial = tspace.transform(trial)
-        assert isinstance(ttrial, TransformedTrial)
-        assert ttrial.working_dir == working_dir
-        assert ttrial.status == status
-
-    def test_setters_accessible(self, space, tspace):
-        working_dir = "/new/working/dir"
-        status = "interrupted"
-        trial = space.sample()[0]
-        ttrial = tspace.transform(trial)
-
-        assert trial.working_dir != working_dir
-        assert trial.status != status
-
-        ttrial.working_dir = working_dir
-        ttrial.status = status
-
-        assert ttrial.working_dir == trial.working_dir == working_dir
-        assert ttrial.status == trial.status == status
-
-    def test_to_dict_is_transformed(self, space, tspace):
-        trial = space.sample()[0]
-        ttrial = tspace.transform(trial)
-
-        original_dict = trial.to_dict()
-        transformed_dict = ttrial.to_dict()
-
-        assert original_dict != transformed_dict
-
-        original_dict.pop("params")
-        transformed_dict.pop("params")
-
-        assert original_dict == transformed_dict
-
-        assert "_id" in original_dict
-
-    def test_copy(self, space, tspace):
-        trial = space.sample()[0]
-        ttrial = tspace.transform(trial)
-
-        assert copy.deepcopy(trial).to_dict() == trial.to_dict()
-        assert copy.deepcopy(ttrial).to_dict() == ttrial.to_dict()
-
-
-def test_create_transformed_trial(space, tspace):
-    trial = space.sample()[0]
-    ttrial = tspace.transform(trial)
-
-    # Test that returns a TransformedTrial
-    transformed_trial = create_transformed_trial(
-        trial, format_trials.trial_to_tuple(ttrial, tspace), tspace
-    )
-    assert isinstance(transformed_trial, TransformedTrial)
-
-    # Test that point is converted properly
-    assert transformed_trial not in space
-    assert transformed_trial in tspace
-
-
-def test_create_restored_trial(space, rspace):
+def test_change_trial_params(space, rspace):
     working_dir = "/new/working/dir"
     status = "interrupted"
 
@@ -1495,7 +1417,7 @@ def test_create_restored_trial(space, rspace):
     rtrial.working_dir = working_dir
     rtrial.status = status
 
-    restored_trial = create_restored_trial(rtrial, point, space)
+    restored_trial = change_trial_params(rtrial, point, space)
 
     # Test that attributes are conserved
     assert restored_trial.working_dir == working_dir
