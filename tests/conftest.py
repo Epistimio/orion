@@ -90,7 +90,7 @@ class DumbAlgo(BaseAlgorithm):
         self._index = 0
         self._trials = []
         self._suggested = None
-        self._score_point = None
+        self._score_trial = None
         self._judge_trial = None
         self._measurements = None
         self.pool_size = 1
@@ -161,9 +161,9 @@ class DumbAlgo(BaseAlgorithm):
         super(DumbAlgo, self).observe(trials)
         self._trials += trials
 
-    def score(self, point):
+    def score(self, trial):
         """Log and return stab."""
-        self._score_point = point
+        self._score_trial = trial
         return self.scoring
 
     def judge(self, trial, measurements):

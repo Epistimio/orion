@@ -20,6 +20,7 @@ from orion.core.worker.trial import Trial
 from orion.executor.joblib_backend import Joblib
 from orion.storage.base import get_storage
 from orion.testing import create_experiment, mock_space_iterate
+from orion.core.utils import format_trials
 
 config = dict(
     name="supernaekei",
@@ -246,9 +247,8 @@ class TestInsert:
             with pytest.raises(ValueError) as exc:
                 client.insert(dict(x="bad bad bad"))
 
-            assert (
-                "Dimension x value bad bad bad is outside of prior uniform(0, 200)"
-                == str(exc.value)
+            assert "Parameters values {'x': 'bad bad bad'} are outside of space" in str(
+                exc.value
             )
             assert client._pacemakers == {}
 
@@ -561,25 +561,25 @@ class TestSuggest:
         mock_space_iterate(monkeypatch)
         new_value = 50.0
 
-        # algo will suggest once an already existing trial
-        def amnesia(num=1):
-            """Suggest a new value and then always suggest the same"""
-            if amnesia.count == 0:
-                value = [0]
-            else:
-                value = [new_value]
-
-            amnesia.count += 1
-
-            return [value]
-
-        amnesia.count = 0
-
         with create_experiment(config, base_trial, statuses=["completed"]) as (
             cfg,
             experiment,
             client,
         ):
+
+            # algo will suggest once an already existing trial
+            def amnesia(num=1):
+                """Suggest a new value and then always suggest the same"""
+                if amnesia.count == 0:
+                    value = [0]
+                else:
+                    value = [new_value]
+
+                amnesia.count += 1
+
+                return [format_trials.tuple_to_trial(value, experiment.space)]
+
+            amnesia.count = 0
 
             monkeypatch.setattr(experiment.algorithms, "suggest", amnesia)
 

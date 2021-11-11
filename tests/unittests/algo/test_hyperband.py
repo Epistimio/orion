@@ -38,7 +38,6 @@ def create_rung_from_points(points, n_trials, resources):
     return dict(n_trials=n_trials, resources=resources, results=results)
 
 
-
 def compare_registered_trial(registered_trial, trial):
     assert registered_trial[0] == trial.objective.value
     assert registered_trial[1].to_dict() == trial.to_dict()

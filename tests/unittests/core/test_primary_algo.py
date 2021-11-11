@@ -87,7 +87,7 @@ class TestSpaceTransformAlgoWrapperWraps(object):
         """Observe wraps observations."""
         backward.algo_observe(palgo, [fixed_suggestion], [dict(objective=5)])
         palgo.observe([fixed_suggestion])
-        assert palgo.algorithm._trials[0].trial == fixed_suggestion
+        assert palgo.algorithm._trials[0].params == fixed_suggestion.params
 
     def test_isdone(self, palgo):
         """Wrap isdone."""
@@ -105,13 +105,13 @@ class TestSpaceTransformAlgoWrapperWraps(object):
         """Wrap score."""
         palgo.algorithm.scoring = 60
         assert palgo.score(fixed_suggestion) == 60
-        assert palgo.algorithm._score_point.trial == fixed_suggestion
+        assert palgo.algorithm._score_trial.params == fixed_suggestion.params
 
     def test_judge(self, palgo, fixed_suggestion):
         """Wrap judge."""
         palgo.algorithm.judgement = "naedw"
         assert palgo.judge(fixed_suggestion, 8) == "naedw"
-        assert palgo.algorithm._judge_trial.trial is fixed_suggestion
+        assert palgo.algorithm._judge_trial.params == fixed_suggestion.params
         assert palgo.algorithm._measurements == 8
         with pytest.raises(ValueError, match="not contained in space"):
             del fixed_suggestion._params[-1]
