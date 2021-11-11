@@ -117,7 +117,7 @@ def reshape(space, shape_requirement):
     reshaped_space = ReshapedSpace(space)
 
     for dim_index, dim in enumerate(space.values()):
-        if not dim.shape or numpy.prod(dim.shape) == 1:
+        if not dim.shape:
             reshaped_space.register(
                 ReshapedDimension(
                     transformer=Identity(dim.type),
@@ -568,8 +568,6 @@ class View(Transformer):
 
     def transform(self, point):
         """Only return one element of the group"""
-        print(point, type(point))
-        print(self.index)
         return numpy.array(point)[self.index]
 
     def reverse(self, transformed_point, index=None):

@@ -685,7 +685,7 @@ def rdim2(dim2, rdims2):
 @pytest.fixture()
 def dim3():
     """Create an example of integer `Dimension`."""
-    return Integer("yolo3", "uniform", 3, 7)
+    return Integer("yolo3", "uniform", 3, 7, shape=(1,))
 
 
 @pytest.fixture()
@@ -698,7 +698,10 @@ def tdim3(dim3):
 def rdims3(tdim3):
     """Create an example of integer `Dimension`."""
     rdim3 = ReshapedDimension(
-        transformer=Identity(tdim3.type), original_dimension=tdim3, index=2
+        transformer=View(tdim3.shape, (0,), tdim3.type),
+        original_dimension=tdim3,
+        name="yolo3[0]",
+        index=2,
     )
 
     return {tdim3.name: rdim3}
@@ -1110,7 +1113,7 @@ class TestReshapedSpace(object):
     def test_reshape(self, space, rspace):
         """Verify that the dimension are reshaped properly, forward and backward"""
         trial = format_trials.tuple_to_trial(
-            (numpy.arange(6).reshape(3, 2).tolist(), "3", 10), space
+            (numpy.arange(6).reshape(3, 2).tolist(), "3", [10]), space
         )
 
         rtrial = format_trials.tuple_to_trial(
@@ -1184,7 +1187,7 @@ class TestRequiredSpaceBuilder(object):
             == """\
 Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
        Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2),
-       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None),
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None),
        Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None)),
        Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)])\
 """
@@ -1204,7 +1207,7 @@ Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), defa
             == """\
 Space([Quantize(Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None))),
        Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2)),
-       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None),
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None),
        Quantize(Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None))),
        Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)])\
 """
@@ -1224,7 +1227,7 @@ Space([Quantize(Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3,
             == """\
 Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
        OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2))),
-       ReverseQuantize(Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None)),
+       ReverseQuantize(Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None)),
        Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None)),
        ReverseQuantize(Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None))])\
 """
@@ -1244,7 +1247,7 @@ Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), defa
             == """\
 Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
        Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2)),
-       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None),
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None),
        Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None)),
        Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)])\
 """
@@ -1264,7 +1267,7 @@ Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), defa
             == """\
 Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
        Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2),
-       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None),
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None),
        Linearize(Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None))),
        Linearize(ReverseQuantize(Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)))])\
 """
@@ -1276,7 +1279,7 @@ Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), defa
 
         # 1 integer + 1 categorical + 1 * (3, 2) shapes
         assert len(tspace) == 1 + 1 + 3 * (3 * 2)
-        assert str(tspace).count("View") == 3 * (3 * 2)
+        assert str(tspace).count("View") == 3 * (3 * 2) + 1
 
         i = 0
 
@@ -1304,7 +1307,7 @@ Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), defa
 
         # 1 integer + 4 categorical + 1 * (3, 2) shapes
         assert len(tspace) == 1 + 4 + 3 * (3 * 2)
-        assert str(tspace).count("View") == 4 + 3 * (3 * 2)
+        assert str(tspace).count("View") == 4 + 3 * (3 * 2) + 1
 
     def test_capacity(self, space_each_type):
         """Check transformer space capacity"""
