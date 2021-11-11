@@ -706,6 +706,7 @@ class TransformedDimension(object):
 
     @property
     def default_value(self):
+        """Return the default value for this dimensions"""
         if (
             self.original_dimension.default_value
             is self.original_dimension.NO_DEFAULT_VALUE
@@ -894,19 +895,9 @@ class ReshapedSpace(Space):
         return self.original.cardinality
 
 
-def create_transformed_trial(trial, transformed_point, space):
-    """Convert point into Trial.Param objects and return a TransformedTrial"""
-    return TransformedTrial(
-        trial, format_trials.tuple_to_trial(transformed_point, space)._params
-    )
-
-    new_trial = copy.copy(trial)
-    new_trial._params = format_trials.tuple_to_trial(transformed_point, space)._params
-    return new_trial
-
-
 def change_trial_params(trial, point, space):
     """Convert params in Param objects and update trial"""
     new_trial = copy.copy(trial)
+    # pylint: disable=protected-access
     new_trial._params = format_trials.tuple_to_trial(point, space)._params
     return new_trial

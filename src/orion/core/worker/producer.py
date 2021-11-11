@@ -13,7 +13,6 @@ import time
 
 import orion.core
 from orion.core.io.database import DuplicateKeyError
-from orion.core.utils import format_trials
 from orion.core.utils.exceptions import SampleTimeout, WaitingForTrials
 from orion.core.worker.trial import Trial
 from orion.core.worker.trials_history import TrialsHistory
