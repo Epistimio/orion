@@ -10,7 +10,6 @@ from scipy.stats import norm
 
 from orion.algo.base import BaseAlgorithm
 from orion.core.utils import format_trials
-from orion.core.utils.points import flatten_dims, regroup_dims
 
 logger = logging.getLogger(__name__)
 

@@ -36,7 +36,6 @@ import numpy
 from scipy.stats import distributions
 
 from orion.core.utils import float_to_digits_list, format_trials
-from orion.core.utils.points import flatten_dims, regroup_dims
 from orion.core.utils.flatten import flatten
 
 logger = logging.getLogger(__name__)
@@ -1074,29 +1073,3 @@ class Space(dict):
         for dim in self.values():
             capacities *= dim.cardinality
         return capacities
-
-
-def pack_point(point, space):
-    """Take a list of points and pack it appropriately as a point from `space`.
-
-    This function is deprecated and will be removed in v0.2.0. Use
-    `orion.core.utils.points.regroup_dims` instead.
-    """
-    logger.warning(
-        "`pack_point` is deprecated and will be removed in v0.2.0. Use "
-        "`orion.core.utils.points.regroup_dims` instead."
-    )
-    return regroup_dims(point, space)
-
-
-def unpack_point(point, space):
-    """Flatten `point` in `space` and convert it to a 1D list.
-
-    This function is deprecated and will be removed in v0.2.0. Use
-    `orion.core.utils.points.flatten_dims` instead.
-    """
-    logger.warning(
-        "`unpack_point` is deprecated and will be removed in v0.2.0. Use "
-        "`orion.core.utils.points.regroup_dims` instead."
-    )
-    return flatten_dims(point, space)
