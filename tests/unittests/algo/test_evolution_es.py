@@ -7,19 +7,17 @@ import hashlib
 
 import numpy as np
 import pytest
-
-from orion.algo.evolution_es import BracketEVES, EvolutionES, compute_budgets
-from orion.algo.space import Fidelity, Real, Space
-from orion.testing.algo import BaseAlgoTests
-
-from orion.testing.trial import create_trial
-
 from test_hyperband import (
     compare_registered_trial,
     create_rung_from_points,
     create_trial_for_hb,
     force_observe,
 )
+
+from orion.algo.evolution_es import BracketEVES, EvolutionES, compute_budgets
+from orion.algo.space import Fidelity, Real, Space
+from orion.testing.algo import BaseAlgoTests
+from orion.testing.trial import create_trial
 
 
 @pytest.fixture

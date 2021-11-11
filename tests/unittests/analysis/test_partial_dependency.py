@@ -21,8 +21,8 @@ from orion.analysis.partial_dependency_utils import (
     reverse,
 )
 from orion.core.io.space_builder import SpaceBuilder
-from orion.core.worker.transformer import build_required_space
 from orion.core.utils import format_trials
+from orion.core.worker.transformer import build_required_space
 
 data = pd.DataFrame(
     data={

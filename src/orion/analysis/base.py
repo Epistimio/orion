@@ -14,8 +14,8 @@ from sklearn.ensemble import (
     RandomForestRegressor,
 )
 
-from orion.core.worker.transformer import build_required_space
 from orion.core.utils import format_trials
+from orion.core.worker.transformer import build_required_space
 
 _regressors_ = {
     "AdaBoostRegressor": AdaBoostRegressor,

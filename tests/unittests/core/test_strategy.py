@@ -5,6 +5,7 @@ import logging
 
 import pytest
 
+from orion.core.utils import backward
 from orion.core.worker.strategy import (
     MaxParallelStrategy,
     MeanParallelStrategy,
@@ -13,7 +14,6 @@ from orion.core.worker.strategy import (
     strategy_factory,
 )
 from orion.core.worker.trial import Trial
-from orion.core.utils import backward
 
 
 @pytest.fixture

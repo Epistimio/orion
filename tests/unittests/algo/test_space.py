@@ -19,8 +19,8 @@ from orion.algo.space import (
     Space,
     check_random_state,
 )
-from orion.core.worker.trial import Trial
 from orion.core.utils import format_trials
+from orion.core.worker.trial import Trial
 
 
 class TestCheckRandomState:

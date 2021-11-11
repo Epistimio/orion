@@ -11,6 +11,7 @@ import pytest
 
 import orion.core
 from orion.core.io.database import DuplicateKeyError
+from orion.core.utils import format_trials
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
@@ -20,7 +21,6 @@ from orion.core.worker.trial import Trial
 from orion.executor.joblib_backend import Joblib
 from orion.storage.base import get_storage
 from orion.testing import create_experiment, mock_space_iterate
-from orion.core.utils import format_trials
 
 config = dict(
     name="supernaekei",
