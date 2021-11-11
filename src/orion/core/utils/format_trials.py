@@ -72,7 +72,7 @@ def tuple_to_trial(data, space, status="new"):
     space: `orion.algo.space.Space`
         Definition of problem's domain.
     status: str, optional
-        Status of the trial. One of `orion.core.worker.trial.Trial.allowed_stati`.
+        Status of the trial. One of ``orion.core.worker.trial.Trial.allowed_stati``.
 
     Returns
     -------
