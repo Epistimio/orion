@@ -17,7 +17,6 @@ from contextlib import contextmanager
 import orion.algo.space
 import orion.core.io.experiment_builder as experiment_builder
 from orion.core.io.space_builder import SpaceBuilder
-from orion.core.utils.format_trials import tuple_to_trial
 from orion.core.worker.producer import Producer
 from orion.testing.state import OrionState
 
@@ -67,7 +66,7 @@ def generate_trials(trial_config, statuses, exp_config=None):
         if trial["status"] == "completed":
             trial["results"].append({"name": "loss", "type": "objective", "value": i})
 
-        trial_stub = tuple_to_trial(space.sample(seed=i)[0], space)
+        trial_stub = space.sample(seed=i)[0]
         trial["params"] = trial_stub.to_dict()["params"]
 
     return new_trials

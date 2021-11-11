@@ -85,11 +85,11 @@ class Producer(object):
             self.naive_algorithm is not None and self.naive_algorithm.is_done
         )
 
-    def suggest(self, pool_size):
-        """Try suggesting new points with the naive algorithm"""
+    def adjust_pool_size(self, pool_size):
+        """Limit pool size if it would overshoot over max_trials"""
         num_pending = self.num_trials - self.num_broken
         num = max(self.experiment.max_trials - num_pending, 1)
-        return self.naive_algorithm.suggest(min(num, pool_size))
+        return min(num, pool_size)
 
     def produce(self, pool_size):
         """Create and register new trials."""
@@ -104,13 +104,13 @@ class Producer(object):
         # points of other producer as part of the current pool samples.
         while (
             len(self.experiment.fetch_trials(with_evc_tree=True)) - self.num_trials
-            < pool_size
+            < self.adjust_pool_size(pool_size)
             and not self.is_done
         ):
             self._sample_guard(start)
 
             log.debug("### Algorithm suggests new points.")
-            new_points = self.suggest(pool_size)
+            new_points = self.naive_algorithm.suggest(self.adjust_pool_size(pool_size))
 
             # Sync state of original algo so that state continues evolving.
             self.algorithm.set_state(self.naive_algorithm.state_dict)
@@ -141,7 +141,7 @@ class Producer(object):
 
         return registered_trials
 
-    def register_trial(self, new_point):
+    def register_trial(self, new_trial):
         """Register a new set of sampled parameters into the DB
         guaranteeing their uniqueness
 
@@ -153,10 +153,6 @@ class Producer(object):
         """
         # FIXME: Relying on DB to guarantee uniqueness
         # when the trial history will be held by that algo we can move that logic out of the DB
-
-        log.debug("#### Convert point to `Trial` object.")
-        new_trial = format_trials.tuple_to_trial(new_point, self.space)
-
         try:
             self._prevalidate_trial(new_trial)
             new_trial.parents = self.naive_trials_history.children
@@ -206,27 +202,16 @@ class Producer(object):
         new_completed_trials = []
         for trial in completed_trials:
             # if trial not in self.trials_history:
-            if not self.algorithm.has_observed(
-                format_trials.trial_to_tuple(trial, self.space)
-            ):
+            if not self.algorithm.has_observed(trial):
                 new_completed_trials.append(trial)
 
         log.debug("### %s", new_completed_trials)
 
         if new_completed_trials:
-            log.debug("### Convert them to list of points and their results.")
-            points = list(
-                map(
-                    lambda trial: format_trials.trial_to_tuple(trial, self.space),
-                    new_completed_trials,
-                )
-            )
-            results = list(map(format_trials.get_trial_results, new_completed_trials))
-
             log.debug("### Observe them.")
             self.trials_history.update(new_completed_trials)
-            self.algorithm.observe(points, results)
-            self.strategy.observe(points, results)
+            self.algorithm.observe(new_completed_trials)
+            self.strategy.observe(new_completed_trials)
             self._update_params_hashes(new_completed_trials)
 
     def _produce_lies(self, incomplete_trials):
@@ -264,16 +249,7 @@ class Producer(object):
         lying_trials = self._produce_lies(incomplete_trials)
         log.debug("### %s", lying_trials)
         if lying_trials:
-            log.debug("### Convert them to list of points and their results.")
-            points = list(
-                map(
-                    lambda trial: format_trials.trial_to_tuple(trial, self.space),
-                    lying_trials,
-                )
-            )
-            results = list(map(format_trials.get_trial_results, lying_trials))
-
             log.debug("### Observe them.")
             self.naive_trials_history.update(lying_trials)
-            self.naive_algorithm.observe(points, results)
+            self.naive_algorithm.observe(lying_trials)
             self._update_params_hashes(lying_trials)

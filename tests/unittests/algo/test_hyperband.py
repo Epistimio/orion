@@ -11,7 +11,7 @@ import pytest
 from orion.algo.hyperband import Hyperband, HyperbandBracket, compute_budgets
 from orion.algo.space import Fidelity, Integer, Real, Space
 from orion.testing.algo import BaseAlgoTests, phase
-from orion.testing.trial import create_trial
+from orion.testing.trial import create_trial, compare_trials
 
 
 def create_trial_for_hb(point, objective=None):
@@ -37,9 +37,6 @@ def create_rung_from_points(points, n_trials, resources):
 
     return dict(n_trials=n_trials, resources=resources, results=results)
 
-
-def compare_trials(trials, other_trials):
-    assert [t.params for t in trials] == [t.params for t in other_trials]
 
 
 def compare_registered_trial(registered_trial, trial):
