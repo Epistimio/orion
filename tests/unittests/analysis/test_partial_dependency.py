@@ -22,6 +22,7 @@ from orion.analysis.partial_dependency_utils import (
 )
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.worker.transformer import build_required_space
+from orion.core.utils import format_trials
 
 data = pd.DataFrame(
     data={
@@ -165,7 +166,10 @@ def test_partial_dependency_grid(hspace):
 
     n_points = 5
     n_samples = 20
-    samples = flattened_space.sample(n_samples)
+    samples = [
+        format_trials.trial_to_tuple(trial, flattened_space)
+        for trial in flattened_space.sample(n_samples)
+    ]
     samples = pd.DataFrame(samples, columns=flattened_space.keys())
 
     params = ["x", "y[0]", "y[2]", "z"]

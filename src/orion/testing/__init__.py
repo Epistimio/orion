@@ -127,11 +127,13 @@ def mock_space_iterate(monkeypatch):
     sample = orion.algo.space.Space.sample
 
     def iterate(self, seed, *args, **kwargs):
-        """Return the points with seed value instead of sampling"""
-        points = []
-        for point in sample(self, seed=seed, *args, **kwargs):
-            points.append([seed] * len(point))
-        return points
+        """Return the trials with seed value instead of sampling"""
+        trials = []
+        for trial in sample(self, seed=seed, *args, **kwargs):
+            trials.append(
+                trial.branch(params={param: seed for param in trial.params.keys()})
+            )
+        return trials
 
     monkeypatch.setattr("orion.algo.space.Space.sample", iterate)
 

@@ -10,6 +10,7 @@ import pandas
 
 from orion.analysis.base import flatten_numpy, flatten_params, to_numpy, train_regressor
 from orion.core.worker.transformer import build_required_space
+from orion.core.utils import format_trials
 
 
 def partial_dependency(
@@ -79,7 +80,10 @@ def partial_dependency(
     data = flatten_numpy(data, flattened_space)
     model = train_regressor(model, data, **kwargs)
 
-    data = flattened_space.sample(n_samples)
+    data = [
+        format_trials.trial_to_tuple(trial, flattened_space)
+        for trial in flattened_space.sample(n_samples)
+    ]
     data = pandas.DataFrame(data, columns=flattened_space.keys())
 
     partial_dependencies = dict()

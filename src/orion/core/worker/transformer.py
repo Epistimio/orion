@@ -16,7 +16,7 @@ import numpy
 
 from orion.algo.space import Categorical, Dimension, Fidelity, Integer, Real, Space
 from orion.core.utils import format_trials
-from orion.core.utils.flatten import unflatten
+from orion.core.utils.flatten import flatten
 
 NON_LINEAR = ["loguniform", "reciprocal"]
 
@@ -789,7 +789,7 @@ class TransformedSpace(Space):
     def transform(self, trial):
         """Transform a point that was in the original space to be in this one."""
         transformed_point = tuple(
-            dim.transform(trial.params[name]) for name, dim in self.items()
+            dim.transform(flatten(trial.params)[name]) for name, dim in self.items()
         )
 
         return change_trial_params(trial, transformed_point, self)
@@ -799,7 +799,8 @@ class TransformedSpace(Space):
         to be in the original one.
         """
         reversed_point = tuple(
-            dim.reverse(transformed_trial.params[name]) for name, dim in self.items()
+            dim.reverse(flatten(transformed_trial.params)[name])
+            for name, dim in self.items()
         )
 
         return change_trial_params(
