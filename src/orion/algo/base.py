@@ -176,12 +176,6 @@ class BaseAlgorithm:
             the trial. Defaults to False.
         """
 
-        # TODO: ******
-        # NOTE: The trial hash is based on experiment id. This should not matter for the
-        #       algorithms otherwise there will be a clash between trials sampled with current
-        #       experiment and trials sampled from parent ones in EVC.
-        # TODO: ******
-
         # Apply transforms and reverse to see data as it would come from DB
         # (Some transformations looses some info. ex: Precision transformation)
 
@@ -202,8 +196,6 @@ class BaseAlgorithm:
 
         Returns None if there is no fidelity dimension.
         """
-        # TODO: Should we return the fidelity key name instead now that we work with
-        #       trials instead of points?
 
         def _is_fidelity(dim):
             return dim.type == "fidelity"

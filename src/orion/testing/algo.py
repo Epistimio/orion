@@ -261,8 +261,6 @@ class BaseAlgoTests:
                 if trial.hash_name in ids:
                     raise RuntimeError(f"algo suggested a duplicate: {trial}")
                 ids.add(trial.hash_name)
-            # TODO: Why would we need the line below?? Looks like duplicating the work above
-            # ids |= set(trial.hash_name for trial in trials)
             self.observe_trials(trials, algo, objective)
             objective += len(trials)
 
