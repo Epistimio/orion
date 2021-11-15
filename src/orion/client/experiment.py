@@ -768,27 +768,6 @@ class ExperimentClient:
 
         return runner.run()
 
-    def _suggest_trials(self, count):
-        """Suggest a bunch of trials to be dispatched to the workers"""
-        trials = []
-        while True:
-            try:
-                trial = self.suggest()
-                trials.append(trial)
-
-                if count is not None and len(trials) == count:
-                    break
-
-            # non critical errors
-            except WaitingForTrials:
-                break
-            except SampleTimeout:
-                break
-            except CompletedExperiment:
-                break
-
-        return trials
-
     def close(self):
         """Verify that no reserved trials are remaining.
 

@@ -1,9 +1,16 @@
 import logging
 
+from orion.core.utils.exceptions import (
+    BrokenExperiment,
+    CompletedExperiment,
+    InvalidResult,
+    SampleTimeout,
+    UnsupportedOperation,
+    WaitingForTrials,
+)
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import AlreadyReleased
 from orion.executor.base import AsyncException, AsyncResult, executor_factory
-from orion.core.utils.exceptions import BrokenExperiment, InvalidResult
 
 
 def _optimize(trial, fct, trial_arg, **kwargs):
@@ -78,7 +85,7 @@ class Runner:
             # Scatter the new trials to our free workers
             self.scatter(new_trials)
 
-            # Gather the results of the workers that has finished
+            # Gather the results of the workers that have finished
             self.gather()
 
         return self.trials
@@ -94,7 +101,7 @@ class Runner:
             # the producer does the job of limiting the number of new trials
             # already no need to worry about it
             # NB: suggest reserve the trial already
-            new_trials = self.client._suggest_trials(min(self.free_worker, remains))
+            new_trials = self._suggest_trials(min(self.free_worker, remains))
 
         return new_trials
 
@@ -155,3 +162,24 @@ class Runner:
                 self.client.release(trial)
             except AlreadyReleased:
                 pass
+
+    def _suggest_trials(self, count):
+        """Suggest a bunch of trials to be dispatched to the workers"""
+        trials = []
+        while True:
+            try:
+                trial = self.client.suggest()
+                trials.append(trial)
+
+                if count is not None and len(trials) == count:
+                    break
+
+            # non critical errors
+            except WaitingForTrials:
+                break
+            except SampleTimeout:
+                break
+            except CompletedExperiment:
+                break
+
+        return trials
