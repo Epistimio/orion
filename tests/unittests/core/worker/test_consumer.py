@@ -39,8 +39,9 @@ def config(exp_config):
 def test_trials_interrupted_sigterm(config, monkeypatch):
     """Check if a trial is set as interrupted when a signal is raised."""
 
+    # stop child from running to mock a keyboard interrupt
     def mock_popen(self, *args, **kwargs):
-        os.kill(os.getpid(), signal.SIGTERM)
+        self.terminate()
 
     exp = experiment_builder.build(**config)
 
@@ -49,6 +50,8 @@ def test_trials_interrupted_sigterm(config, monkeypatch):
     trial = tuple_to_trial((1.0,), exp.space)
 
     con = Consumer(exp)
+
+    monkeypatch.setattr(con, "_validate_code_version", lambda *args: 1)
 
     with pytest.raises(KeyboardInterrupt):
         con(trial)

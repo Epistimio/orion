@@ -764,6 +764,8 @@ class ExperimentClient:
             # try to get more work
             new_trials = self._suggest_trials(n_workers)
 
+            print("here")
+
             # Schedule new work
             new_futures = [
                 self.executor.submit(trial, fct, trial_arg, **kwargs)
