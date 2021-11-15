@@ -12,7 +12,7 @@ import logging
 
 import orion.core
 import orion.core.utils.backward as backward
-from orion.core.io.database import Database, OutdatedDatabaseError
+from orion.core.io.database import Database, OutdatedDatabaseError, database_factory
 from orion.core.utils.exceptions import MissingResultFile
 from orion.core.worker.trial import Trial, validate_status
 from orion.storage.base import (
@@ -42,7 +42,7 @@ def get_database():
     with the appropriate arguments for the chosen backend
 
     """
-    return Database()
+    return database_factory.create()
 
 
 def setup_database(config=None):
@@ -63,11 +63,7 @@ def setup_database(config=None):
     dbtype = db_opts.pop("type")
 
     log.debug("Creating %s database client with args: %s", dbtype, db_opts)
-    try:
-        Database(of_type=dbtype, **db_opts)
-    except ValueError:
-        if Database().__class__.__name__.lower() != dbtype.lower():
-            raise
+    return database_factory.create(dbtype, **db_opts)
 
 
 class Legacy(BaseStorageProtocol):
@@ -88,7 +84,7 @@ class Legacy(BaseStorageProtocol):
         if database is not None:
             setup_database(database)
 
-        self._db = Database()
+        self._db = database_factory.create()
 
         if setup:
             self._setup_db()

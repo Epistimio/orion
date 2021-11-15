@@ -14,7 +14,7 @@ import os
 import yaml
 
 import orion.core
-from orion.core.io.database import Database
+from orion.core.io.database import database_factory
 from orion.core.utils.terminal import ask_question
 
 log = logging.getLogger(__name__)
@@ -57,12 +57,12 @@ def main(*args):
     # Get database type.
     _type = ask_question(
         "Enter the database",
-        choice=sorted(Database.types.keys()),
+        choice=sorted(database_factory.get_classes().keys()),
         default="mongodb",
         ignore_case=True,
     ).lower()
     # Get database arguments.
-    db_class = Database.types[_type]
+    db_class = database_factory.get_classes()[_type]
     db_args = db_class.get_defaults()
     arg_vals = {}
     for arg_name, default_value in sorted(db_args.items()):

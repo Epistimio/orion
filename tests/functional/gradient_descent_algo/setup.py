@@ -15,7 +15,7 @@ setup_args = dict(
     package_dir={"": "src"},
     include_package_data=True,
     entry_points={
-        "OptimizationAlgorithm": [
+        "BaseAlgorithm": [
             "gradient_descent = orion.algo.gradient_descent:Gradient_Descent"
         ],
     },

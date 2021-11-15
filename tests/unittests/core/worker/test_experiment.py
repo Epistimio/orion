@@ -19,7 +19,7 @@ import orion.core.worker.experiment
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.exceptions import UnsupportedOperation
 from orion.core.worker.experiment import Experiment
-from orion.core.worker.primary_algo import PrimaryAlgo
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
 from orion.storage.base import get_storage
 from orion.testing import OrionState
@@ -172,9 +172,9 @@ def space():
 
 
 @pytest.fixture()
-def algorithm(space):
+def algorithm(dumbalgo, space):
     """Build a dumb algo object"""
-    return PrimaryAlgo(space, "dumbalgo")
+    return SpaceTransformAlgoWrapper(dumbalgo, space=space)
 
 
 class TestReserveTrial(object):
@@ -573,6 +573,8 @@ def test_experiment_pickleable():
         exp_trials = exp.fetch_trials()
 
         assert len(exp_trials) > 0
+
+        from orion.storage.base import storage_factory
 
         exp_bytes = pickle.dumps(exp)
 

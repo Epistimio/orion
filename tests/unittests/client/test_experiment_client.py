@@ -17,7 +17,6 @@ from orion.core.utils.exceptions import (
     SampleTimeout,
 )
 from orion.core.worker.trial import Trial
-from orion.executor.base import Executor
 from orion.executor.joblib_backend import Joblib
 from orion.storage.base import get_storage
 from orion.testing import create_experiment, mock_space_iterate

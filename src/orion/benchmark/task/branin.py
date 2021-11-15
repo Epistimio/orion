@@ -9,10 +9,10 @@ import math
 
 import numpy
 
-from orion.benchmark.task.base import BaseTask
+from orion.benchmark.task.base import BenchmarkTask
 
 
-class Branin(BaseTask):
+class Branin(BenchmarkTask):
     """`Branin function <http://infinity77.net/global_optimization/test_functions_nd_B.html#go_benchmark.Branin01>`_
     as benchmark task
     """

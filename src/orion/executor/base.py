@@ -7,7 +7,7 @@ Base executor class for the parallelisation of experiments.
 
 """
 
-from orion.core.utils import Factory
+from orion.core.utils import GenericFactory
 
 
 class BaseExecutor:
@@ -78,6 +78,4 @@ class BaseExecutor:
         pass
 
 
-# pylint: disable=too-few-public-methods,abstract-method
-class Executor(BaseExecutor, metaclass=Factory):
-    """Factory class to build Executors"""
+executor_factory = GenericFactory(BaseExecutor)

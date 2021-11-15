@@ -4,25 +4,23 @@
 
 import pytest
 
-from orion.core.worker.primary_algo import PrimaryAlgo
+from orion.algo.base import algo_factory
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 
 
 @pytest.fixture()
 def palgo(dumbalgo, space, fixed_suggestion):
-    """Set up a PrimaryAlgo with dumb configuration."""
+    """Set up a SpaceTransformAlgoWrapper with dumb configuration."""
     algo_config = {
-        "DumbAlgo": {
-            "value": fixed_suggestion,
-            "subone": {"DumbAlgo": dict(value=6, scoring=5)},
-        }
+        "value": fixed_suggestion,
     }
-    palgo = PrimaryAlgo(space, algo_config)
+    palgo = SpaceTransformAlgoWrapper(dumbalgo, space, **algo_config)
 
     return palgo
 
 
-class TestPrimaryAlgoWraps(object):
-    """Test if PrimaryAlgo is actually wrapping the configured algorithm.
+class TestSpaceTransformAlgoWrapperWraps(object):
+    """Test if SpaceTransformAlgoWrapper is actually wrapping the configured algorithm.
 
     Does not test for transformations.
     """
@@ -38,16 +36,6 @@ class TestPrimaryAlgoWraps(object):
                 "judgement": None,
                 "suspend": False,
                 "done": False,
-                "subone": {
-                    "dumbalgo": {
-                        "seed": None,
-                        "value": 6,
-                        "scoring": 5,
-                        "judgement": None,
-                        "suspend": False,
-                        "done": False,
-                    }
-                },
             }
         }
 
@@ -104,9 +92,3 @@ class TestPrimaryAlgoWraps(object):
         assert palgo.algorithm._measurements == 8
         with pytest.raises(AssertionError):
             palgo.judge((5,), 8)
-
-
-class TestPrimaryAlgoTransforms(object):
-    """Check if PrimaryAlgo appropriately transforms spaces and samples."""
-
-    pass
