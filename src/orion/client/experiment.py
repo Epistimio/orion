@@ -23,13 +23,23 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.utils.flatten import flatten, unflatten
-from orion.core.worker.trial import Trial, TrialCM
+from orion.core.worker.trial import Trial, TrialCM, AlreadyReleased
 from orion.core.worker.trial_pacemaker import TrialPacemaker
-from orion.executor.base import executor_factory
+from orion.executor.base import AsyncException, AsyncResult, executor_factory
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
 
 log = logging.getLogger(__name__)
+
+
+def _optimize(trial, fct, trial_arg, **kwargs):
+    """Execute a trial on a worker"""
+    kwargs.update(flatten(trial.params))
+
+    if trial_arg:
+        kwargs[trial_arg] = trial
+
+    return fct(**unflatten(kwargs))
 
 
 def reserve_trial(experiment, producer, pool_size, _depth=1):
@@ -469,6 +479,8 @@ class ExperimentClient:
         ------
         `RuntimeError`
             If reservation of the trial has been lost prior to releasing it.
+        `AlreadyReleased`
+            If reservation of trial was already released
         `ValueError`
             If the trial does not exist in storage.
         `orion.core.utils.exceptions.UnsupportedOperation`
@@ -488,7 +500,7 @@ class ExperimentClient:
                 ) from e
             if current_status != "reserved":
                 raise_if_unreserved = False
-                raise RuntimeError(
+                raise AlreadyReleased(
                     "Trial {} was already released locally.".format(trial.id)
                 ) from e
 
@@ -753,50 +765,107 @@ class ExperimentClient:
             self._experiment.max_trials = max_trials
             self._experiment.algorithms.algorithm.max_trials = max_trials
 
+        return self._optimize_loop(
+            fct,
+            n_workers,
+            max_trials_per_worker,
+            max_broken,
+            trial_arg,
+            on_error,
+            **kwargs,
+        )
+
+    def _optimize_loop(
+        self,
+        fct,
+        pool_size,
+        max_trials_per_worker,
+        max_broken,
+        trial_arg,
+        on_error,
+        **kwargs,
+    ):
+
         worker_broken_trials = 0
         trials = 0
 
-        # TODO: how to I fetch worker error ?
-        # this should be a job for waitone
         futures = []
-        pending_trials = []
-        while not self.is_done and len(trials) - worker_broken_trials < max_trials:
+        pending_trials = dict()
+        free_worker = pool_size
+
+        def release_all(pending_trials):
+            # Sanity check
+            for _, trial in pending_trials.items():
+                try:
+                    self.release(trial)
+                except AlreadyReleased:
+                    pass
+
+        while pending_trials or (
+            not self.is_done and trials - worker_broken_trials < max_trials_per_worker
+        ):
+            ntrials = len(pending_trials) + trials
+            remains = max_trials_per_worker - ntrials
+
             # try to get more work
-            new_trials = self._suggest_trials(n_workers)
+            new_trials = []
+            if (not self.is_done) and free_worker > 0 and remains > 0:
+                # the producer does the job of limiting the number of new trials
+                # already no need to worry about it
+                # NB: suggest reserve the trial already
+                new_trials = self._suggest_trials(min(free_worker, remains))
 
             print("here")
 
             # Schedule new work
-            new_futures = [
-                self.executor.submit(trial, fct, trial_arg, **kwargs)
-                for trial in new_trials
-            ]
+            new_futures = []
+            for trial in new_trials:
+                future = self.executor.submit(
+                    _optimize, trial, fct, trial_arg, **kwargs
+                )
+                pending_trials[future] = trial
+                new_futures.append(future)
 
-            # we need to keep futures & pending_trials in sync
-            # so we can map results to their trials
+            free_worker -= len(new_futures)
             futures.extend(new_futures)
-            pending_trials.extend(new_trials)
 
-            # only wait for at least one worker to finish
-            results = self.executor.waitone(futures)
+            results = []
+            try:
+                results = self.executor.async_get(futures, timeout=0.01)
+            except (KeyboardInterrupt, InvalidResult):
+                release_all(pending_trials)
+                raise
 
             # register the results
-            for i, result in results:
-                trial = pending_trials.pop(i)
-                self.observe(trial, result)
-                trials += 1
+            for result in results:
+                free_worker += 1
+                trial = pending_trials.pop(result.future)
+
+                if isinstance(result, AsyncResult):
+                    # NB: observe release the trial already
+                    self.observe(trial, result.value)
+                    trials += 1
+
+                if isinstance(result, AsyncException):
+                    exception = result.exception
+                    worker_broken_trials += 1
+                    self.release(trial, status="broken")
+
+                    if on_error is None or on_error(
+                        self, trial, exception, worker_broken_trials
+                    ):
+                        log.error(result.traceback)
+
+                    else:
+                        log.error(str(exception))
+                        log.debug(result.traceback)
+
+                    if worker_broken_trials >= max_broken:
+                        raise BrokenExperiment(
+                            "Worker has reached broken trials threshold"
+                        )
 
         return trials
-
-    def _worker_trial(self, trial, fct, trial_arg, **kwargs):
-        """Execute a trial on a worker"""
-        with trial:
-            kwargs.update(flatten(trial.params))
-
-            if trial_arg:
-                kwargs[trial_arg] = trial
-
-            return fct(**unflatten(kwargs))
 
     def _suggest_trials(self, count):
         """Suggest a bunch of trials to be dispatched to the workers"""
@@ -811,11 +880,11 @@ class ExperimentClient:
 
             # non critical errors
             except WaitingForTrials:
-                pass
+                break
             except SampleTimeout:
-                pass
+                break
             except CompletedExperiment:
-                pass
+                break
 
         return trials
 

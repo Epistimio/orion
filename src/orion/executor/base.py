@@ -10,6 +10,21 @@ Base executor class for the parallelisation of experiments.
 from orion.core.utils import GenericFactory
 
 
+class AsyncResult:
+    """Result of an async computation"""
+    def __init__(self, future, v):
+        self.future = future
+        self.value = v
+
+
+class AsyncException:
+    """Exception raised by a remote worker during computation"""
+    def __init__(self, future, exception, traceback) -> None:
+        self.future = future
+        self.exception = exception
+        self.traceback = traceback
+
+
 class BaseExecutor:
     """Base executor class
 
@@ -42,14 +57,17 @@ class BaseExecutor:
         """
         pass
 
-    def waitone(self, futures):
-        """Wait for at least one future to complete, removes it from the list of pending futures
-        and return its result
+    def async_get(self, futures, timeout=None):
+        """Retrieve futures that completed, removes them from the list of pending futures
+        and return their results
 
         Parameters
         ----------
         futures: `concurrent.futures.Futures` or equivalent interface
             The objects returned by ``submit()`` of the executor.
+
+        timeout: int
+            time to wait before checking the other future
 
         Returns
         -------

@@ -1,4 +1,7 @@
-from orion.executor.base import BaseExecutor
+from multiprocessing import TimeoutError as PyTimeoutError, Value
+import traceback
+
+from orion.executor.base import BaseExecutor, AsyncResult, AsyncException
 
 try:
     from dask.distributed import (
@@ -13,6 +16,34 @@ try:
     HAS_DASK = True
 except ImportError:
     HAS_DASK = False
+
+
+class _Future:
+    """Wraps a Dask Future"""
+
+    def __init__(self, future):
+        self.future = future
+
+    def get(self, timeout=None):
+        try:
+            return self.future.result(timeout)
+        except TimeoutError as e:
+            raise PyTimeoutError from e
+
+    def wait(self, timeout=None):
+        try:
+            self.future.result(timeout)
+        except TimeoutError:
+            pass
+
+    def ready(self):
+        return self.future.done()
+
+    def succesful(self):
+        if not self.future.done():
+            raise ValueError()
+
+        return self.future.exception() is None
 
 
 class Dask(BaseExecutor):
@@ -51,43 +82,29 @@ class Dask(BaseExecutor):
             rejoin()
         return results
 
-    def waitone(self, futures, timeout=0.01):
-        if len(futures) == 0:
-            return []
+    def async_get(self, futures, timeout=0.01):
+        results = []
+        tobe_deleted = []
 
-        finished = []
-        tobe_removed = []
+        for future in futures:
+            if timeout:
+                future.wait(timeout)
 
-        def add_result(fut, result):
-            finished.append(result)
-            tobe_removed.append(fut)
+            if future.ready():
+                try:
+                    results.append(AsyncResult(future, future.get()))
+                except Exception as err:
+                    results.append(AsyncException(future, err, traceback.format_exc()))
 
-        def check_withtimeout(fut):
-            try:
-                return fut.result(timeout)
-            except TimeoutError:
-                return None
+                tobe_deleted.append(future)
 
-        while not finished:
-            # check with a timeout i.e wait for a bit & check results
-            result = check_withtimeout(futures[0])
-            if result:
-                add_result(futures[0], (0, result))
-
-            for i, future in enumerate(futures[1:]):
-                # check without waiting (first future already waited)
-                # the result is ready so timeout is ignored
-                if future.done():
-                    result = future.result(timeout)
-                    add_result(future, (i + 1, result))
-
-        for future in tobe_removed:
+        for future in tobe_deleted:
             futures.remove(future)
 
-        return finished
+        return results
 
     def submit(self, function, *args, **kwargs):
-        return self.client.submit(function, *args, **kwargs, pure=False)
+        return _Future(self.client.submit(function, *args, **kwargs, pure=False))
 
     def __enter__(self):
         return self

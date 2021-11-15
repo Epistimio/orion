@@ -7,6 +7,7 @@ import logging
 
 import joblib
 import pandas.testing
+from orion.client.experiment import AlreadyReleased
 import pytest
 
 import orion.core
@@ -427,7 +428,7 @@ class TestRelease:
         """Verify that unreserved trials cannot be released"""
         with create_experiment(config, base_trial) as (cfg, experiment, client):
             trial = client.get_trial(uid=cfg.trials[1]["_id"])
-            with pytest.raises(RuntimeError) as exc:
+            with pytest.raises(AlreadyReleased) as exc:
                 client.release(trial)
 
             assert "Trial {} was already released locally.".format(trial.id) == str(
@@ -446,7 +447,7 @@ class TestRelease:
             experiment.set_trial_status(trial, "interrupted")
             assert trial.status == "interrupted"
 
-            with pytest.raises(RuntimeError) as exc:
+            with pytest.raises(AlreadyReleased) as exc:
                 client.release(trial)
 
             assert "Trial {} was already released locally.".format(trial.id) == str(
@@ -827,6 +828,54 @@ class TestObserve:
             assert trial.status == "completed"  # Still completed after __exit__
 
 
+def foo_1(x):
+    return [dict(name="result", type="objective", value=x * 2)]
+
+
+def foo_2(x, y):
+    return [dict(name="result", type="objective", value=x * 2 + y)]
+
+
+default_y = 2
+default_z = "voila"
+
+def foo_test_workon_hierarchical_partial_with_override(a, b):
+    assert b["y"] != default_y
+    assert b["z"] == default_z
+    return [dict(name="result", type="objective", value=a["x"] * 2 + b["y"])]
+
+
+def foo_error(x):
+    raise RuntimeError()
+
+
+def foo_maybe_error(x):
+    foo_maybe_error.count += 1
+    if foo_maybe_error.count < 5:
+        raise RuntimeError()
+
+    return [dict(name="result", type="objective", value=x * 2)]
+
+foo_maybe_error.count = 0
+
+
+def foo_trial_args(x, my_trial_arg_name):
+    assert isinstance(my_trial_arg_name, Trial)
+    assert my_trial_arg_name.params["x"] == x
+    return [dict(name="result", type="objective", value=x * 2)]
+
+
+def foo_on_error(x, q):
+    if not q.empty():
+        raise q.get()()
+
+    return [dict(name="result", type="objective", value=x * 2)]
+
+
+def foo_reraise(x):
+    raise NotImplementedError("Do not ignore this!")
+
+
 @pytest.mark.usefixtures("version_XYZ")
 class TestWorkon:
     """Tests for ExperimentClient.workon"""
@@ -834,38 +883,30 @@ class TestWorkon:
     def test_workon(self):
         """Verify that workon processes properly"""
 
-        def foo(x):
-            return [dict(name="result", type="objective", value=x * 2)]
-
         with create_experiment(config, base_trial, statuses=[]) as (
             cfg,
             experiment,
             client,
         ):
-            client.workon(foo, max_trials=5)
+            client.workon(foo_1, max_trials=5)
             assert len(experiment.fetch_trials_by_status("completed")) == 5
             assert client._pacemakers == {}
 
     def test_workon_partial(self):
         """Verify that partial is properly passed to the function"""
 
-        def foo(x, y):
-            return [dict(name="result", type="objective", value=x * 2 + y)]
-
         with create_experiment(config, base_trial, statuses=[]) as (
             cfg,
             experiment,
             client,
         ):
-            client.workon(foo, max_trials=10, y=2)
+            client.workon(foo_2, max_trials=10, y=2)
             assert len(experiment.fetch_trials()) == 10
             assert client._pacemakers == {}
 
     def test_workon_partial_with_override(self):
         """Verify that partial is overriden by trial.params"""
 
-        def foo(x, y):
-            return [dict(name="result", type="objective", value=x * 2 + y)]
 
         ext_config = copy.deepcopy(config)
         ext_config["space"]["y"] = "uniform(0, 10)"
@@ -875,7 +916,7 @@ class TestWorkon:
         ) as (cfg, experiment, client):
             default_y = 2
             assert len(experiment.fetch_trials()) == 0
-            client.workon(foo, max_trials=1, y=default_y)
+            client.workon(foo_2, max_trials=1, y=default_y)
             assert len(experiment.fetch_trials_by_status("completed")) == 1
             assert experiment.fetch_trials()[0].params["y"] != 2
 
@@ -883,11 +924,6 @@ class TestWorkon:
         """Verify that hierarchical partial is overriden by trial.params"""
         default_y = 2
         default_z = "voila"
-
-        def foo(a, b):
-            assert b["y"] != default_y
-            assert b["z"] == default_z
-            return [dict(name="result", type="objective", value=a["x"] * 2 + b["y"])]
 
         ext_config = copy.deepcopy(config)
         ext_config["space"] = {
@@ -899,7 +935,7 @@ class TestWorkon:
             exp_config=ext_config, trial_config=base_trial, statuses=[]
         ) as (cfg, experiment, client):
             assert len(experiment.fetch_trials()) == 0
-            client.workon(foo, max_trials=5, b={"y": default_y, "z": default_z})
+            client.workon(foo_test_workon_hierarchical_partial_with_override, max_trials=5, b={"y": default_y, "z": default_z})
             assert len(experiment.fetch_trials_by_status("completed")) == 5
             params = experiment.fetch_trials()[0].params
             assert len(params)
@@ -909,9 +945,6 @@ class TestWorkon:
     def test_workon_max_trials(self):
         """Verify that workon stop when reaching max_trials"""
 
-        def foo(x):
-            return [dict(name="result", type="objective", value=x * 2)]
-
         with create_experiment(config, base_trial, statuses=[]) as (
             cfg,
             experiment,
@@ -919,14 +952,11 @@ class TestWorkon:
         ):
             MAX_TRIALS = 5
             assert client.max_trials > MAX_TRIALS
-            client.workon(foo, max_trials=MAX_TRIALS)
+            client.workon(foo_1, max_trials=MAX_TRIALS)
             assert len(experiment.fetch_trials_by_status("completed")) == MAX_TRIALS
 
     def test_workon_max_trials_resumed(self):
         """Verify that workon stop when reaching max_trials after resuming"""
-
-        def foo(x):
-            return [dict(name="result", type="objective", value=x * 2)]
 
         with create_experiment(
             config, base_trial, statuses=["completed", "completed"]
@@ -938,14 +968,11 @@ class TestWorkon:
             MAX_TRIALS = 5
             assert client.max_trials > MAX_TRIALS
             assert len(experiment.fetch_trials_by_status("completed")) == 2
-            client.workon(foo, max_trials=MAX_TRIALS)
+            client.workon(foo_1, max_trials=MAX_TRIALS)
             assert len(experiment.fetch_trials_by_status("completed")) == MAX_TRIALS
 
     def test_workon_max_trials_per_worker(self):
         """Verify that workon stop when reaching max_trials_per_worker"""
-
-        def foo(x):
-            return [dict(name="result", type="objective", value=x * 2)]
 
         with create_experiment(config, base_trial, statuses=[]) as (
             cfg,
@@ -955,16 +982,13 @@ class TestWorkon:
             MAX_TRIALS = 5
             assert client.max_trials > MAX_TRIALS
             executed = client.workon(
-                foo, max_trials=MAX_TRIALS, max_trials_per_worker=MAX_TRIALS - 1
+                foo_1, max_trials=MAX_TRIALS, max_trials_per_worker=MAX_TRIALS - 1
             )
             assert executed == MAX_TRIALS - 1
             assert len(experiment.fetch_trials_by_status("completed")) == MAX_TRIALS - 1
 
     def test_workon_max_trials_per_worker_resumed(self):
         """Verify that workon stop when reaching max_trials_per_worker after resuming"""
-
-        def foo(x):
-            return [dict(name="result", type="objective", value=x * 2)]
 
         n_completed = 2
         statuses = ["completed"] * n_completed + ["new"]
@@ -979,14 +1003,14 @@ class TestWorkon:
             assert client.max_trials > MAX_TRIALS
             assert len(experiment.fetch_trials_by_status("completed")) == n_completed
             executed = client.workon(
-                foo, max_trials=MAX_TRIALS, max_trials_per_worker=2
+                foo_1, max_trials=MAX_TRIALS, max_trials_per_worker=2
             )
             assert executed == 2
             assert (
                 len(experiment.fetch_trials_by_status("completed")) == 2 + n_completed
             )
             executed = client.workon(
-                foo, max_trials=MAX_TRIALS, max_trials_per_worker=3
+                foo_1, max_trials=MAX_TRIALS, max_trials_per_worker=3
             )
             assert executed == 3
             assert (
@@ -996,9 +1020,6 @@ class TestWorkon:
 
     def test_workon_exp_max_broken_before_worker_max_broken(self):
         """Verify that workon stop when reaching exp.max_broken"""
-
-        def foo(x):
-            raise RuntimeError()
 
         MAX_TRIALS = 5
         MAX_BROKEN = 20
@@ -1011,7 +1032,7 @@ class TestWorkon:
             client,
         ):
             with pytest.raises(BrokenExperiment):
-                client.workon(foo, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
+                client.workon(foo_error, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
             n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
             n_trials = len(experiment.fetch_trials())
             assert n_broken_trials == MAX_BROKEN // 2
@@ -1019,9 +1040,6 @@ class TestWorkon:
 
     def test_workon_max_broken_all_broken(self):
         """Verify that workon stop when reaching worker's max_broken"""
-
-        def foo(x):
-            raise RuntimeError()
 
         MAX_TRIALS = 5
         MAX_BROKEN = 10
@@ -1035,7 +1053,7 @@ class TestWorkon:
             client,
         ):
             with pytest.raises(BrokenExperiment):
-                client.workon(foo, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
+                client.workon(foo_error, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
             n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
             n_trials = len(experiment.fetch_trials())
             assert n_broken_trials == MAX_BROKEN
@@ -1050,16 +1068,10 @@ class TestWorkon:
             client,
         ):
 
-            def foo(x):
-                if len(client.fetch_trials()) < 5:
-                    raise RuntimeError()
-
-                return [dict(name="result", type="objective", value=x * 2)]
-
             MAX_TRIALS = 5
             MAX_BROKEN = 10
             assert client.max_trials > MAX_TRIALS
-            client.workon(foo, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
+            client.workon(foo_maybe_error, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
             n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
             n_trials = len(experiment.fetch_trials())
             assert n_broken_trials < MAX_BROKEN
@@ -1068,17 +1080,12 @@ class TestWorkon:
     def test_workon_trial_arg(self):
         """Verify that workon pass trial when trial_arg is defined"""
 
-        def foo(x, my_trial_arg_name):
-            assert isinstance(my_trial_arg_name, Trial)
-            assert my_trial_arg_name.params["x"] == x
-            return [dict(name="result", type="objective", value=x * 2)]
-
         with create_experiment(config, base_trial, statuses=[]) as (
             cfg,
             experiment,
             client,
         ):
-            client.workon(foo, max_trials=5, trial_arg="my_trial_arg_name")
+            client.workon(foo_trial_args, max_trials=5, trial_arg="my_trial_arg_name")
             assert len(experiment.fetch_trials()) == 5
 
     def test_workon_on_error_ignore(self):
@@ -1103,26 +1110,30 @@ class TestWorkon:
             AttributeError,
             ImportError,
         ]
-
-        def foo(x):
-            if errors:
-                raise errors.pop()()
-
-            return [dict(name="result", type="objective", value=x * 2)]
-
         MAX_TRIALS = 5
         MAX_BROKEN = len(errors) + 1
+
+        def make_error_queue():
+            from multiprocessing import Manager
+            m = Manager()
+            q = m.Queue()
+            for e in errors:
+                q.put(e)
+
+            return m, q
 
         test_config = copy.deepcopy(config)
         test_config["max_broken"] = MAX_BROKEN * 2
 
-        with create_experiment(test_config, base_trial, statuses=[]) as (
+        manager, errors = make_error_queue()
+
+        with manager, create_experiment(test_config, base_trial, statuses=[]) as (
             cfg,
             experiment,
             client,
         ):
 
-            client.workon(foo, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN)
+            client.workon(foo_on_error, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN, q=errors)
             n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
             n_trials = len(experiment.fetch_trials())
             assert n_broken_trials == MAX_BROKEN - 1
@@ -1134,28 +1145,18 @@ class TestWorkon:
         def on_error(client, trial, error, worker_broken_trials):
             raise error
 
-        def foo(x):
-            raise NotImplementedError("Do not ignore this!")
-
         with create_experiment(config, base_trial, statuses=[]) as (
             cfg,
             experiment,
             client,
         ):
             with pytest.raises(NotImplementedError) as exc:
-                client.workon(foo, max_trials=5, max_broken=5, on_error=on_error)
+                client.workon(foo_reraise, max_trials=5, max_broken=5, on_error=on_error)
 
             assert exc.match("Do not ignore this!")
 
     def test_parallel_workers(self, monkeypatch):
         """Test parallel execution with joblib"""
-
-        def foo(x):
-            return [dict(name="result", type="objective", value=x * 2)]
-
-        def optimize(*args, **kwargs):
-            optimize.count += 1
-            return 1
 
         with create_experiment(exp_config=config, trial_config={}, statuses=[]) as (
             cfg,
@@ -1163,19 +1164,17 @@ class TestWorkon:
             client,
         ):
 
-            monkeypatch.setattr(client, "_optimize", optimize)
-            optimize.count = 0
             with client.tmp_executor("joblib", n_workers=5, backend="threading"):
-                client.workon(foo, max_trials=5, n_workers=2)
+                trials = client.workon(foo_1, max_trials=5, n_workers=2)
 
-            assert optimize.count == 2
-            optimize.count = 0
+            # max_trials is 5 but when we last checked, we were only at 4 tasks
+            # we sampled 2 more for each workers, to prevent idle time
+            # this means we can have additional completed trials.
+            # In the case of failures we can catch up we our backup trials
+            assert trials == 6
+
             with client.tmp_executor("joblib", n_workers=5, backend="threading"):
-                client.workon(foo, max_trials=5, n_workers=3)
-            assert optimize.count == 3
+                trials = client.workon(foo_1, max_trials=5, n_workers=3)
 
-            optimize.count = 0
-            executor = Joblib(n_workers=5, backend="threading")
-            client.executor = executor
-            client.workon(foo, max_trials=5, n_workers=4)
-            assert optimize.count == 4
+            # we are already done
+            assert trials == 0
