@@ -7,10 +7,10 @@ import logging
 
 import joblib
 import pandas.testing
-from orion.client.experiment import AlreadyReleased
 import pytest
 
 import orion.core
+from orion.client.experiment import AlreadyReleased
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
     BrokenExperiment,
@@ -839,6 +839,7 @@ def foo_2(x, y):
 default_y = 2
 default_z = "voila"
 
+
 def foo_test_workon_hierarchical_partial_with_override(a, b):
     assert b["y"] != default_y
     assert b["z"] == default_z
@@ -855,6 +856,7 @@ def foo_maybe_error(x):
         raise RuntimeError()
 
     return [dict(name="result", type="objective", value=x * 2)]
+
 
 foo_maybe_error.count = 0
 
@@ -907,7 +909,6 @@ class TestWorkon:
     def test_workon_partial_with_override(self):
         """Verify that partial is overriden by trial.params"""
 
-
         ext_config = copy.deepcopy(config)
         ext_config["space"]["y"] = "uniform(0, 10)"
 
@@ -935,7 +936,11 @@ class TestWorkon:
             exp_config=ext_config, trial_config=base_trial, statuses=[]
         ) as (cfg, experiment, client):
             assert len(experiment.fetch_trials()) == 0
-            client.workon(foo_test_workon_hierarchical_partial_with_override, max_trials=5, b={"y": default_y, "z": default_z})
+            client.workon(
+                foo_test_workon_hierarchical_partial_with_override,
+                max_trials=5,
+                b={"y": default_y, "z": default_z},
+            )
             assert len(experiment.fetch_trials_by_status("completed")) == 5
             params = experiment.fetch_trials()[0].params
             assert len(params)
@@ -1115,6 +1120,7 @@ class TestWorkon:
 
         def make_error_queue():
             from multiprocessing import Manager
+
             m = Manager()
             q = m.Queue()
             for e in errors:
@@ -1133,7 +1139,9 @@ class TestWorkon:
             client,
         ):
 
-            client.workon(foo_on_error, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN, q=errors)
+            client.workon(
+                foo_on_error, max_trials=MAX_TRIALS, max_broken=MAX_BROKEN, q=errors
+            )
             n_broken_trials = len(experiment.fetch_trials_by_status("broken"))
             n_trials = len(experiment.fetch_trials())
             assert n_broken_trials == MAX_BROKEN - 1
@@ -1151,7 +1159,9 @@ class TestWorkon:
             client,
         ):
             with pytest.raises(NotImplementedError) as exc:
-                client.workon(foo_reraise, max_trials=5, max_broken=5, on_error=on_error)
+                client.workon(
+                    foo_reraise, max_trials=5, max_broken=5, on_error=on_error
+                )
 
             assert exc.match("Do not ignore this!")
 

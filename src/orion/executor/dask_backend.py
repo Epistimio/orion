@@ -1,16 +1,17 @@
-from multiprocessing import TimeoutError as PyTimeoutError, Value
 import traceback
+from multiprocessing import TimeoutError as PyTimeoutError
+from multiprocessing import Value
 
-from orion.executor.base import BaseExecutor, AsyncResult, AsyncException
+from orion.executor.base import AsyncException, AsyncResult, BaseExecutor
 
 try:
     from dask.distributed import (
         Client,
+        TimeoutError,
         get_client,
         get_worker,
         rejoin,
         secede,
-        TimeoutError,
     )
 
     HAS_DASK = True

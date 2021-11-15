@@ -1,15 +1,15 @@
-import traceback
-import pickle
 import dataclasses
-from dataclasses import dataclass
+import pickle
+import traceback
 import uuid
-from multiprocessing import Pool, Manager
+from dataclasses import dataclass
+from multiprocessing import Manager, Pool
 from multiprocessing.pool import AsyncResult
 from queue import Empty
 
-from orion.executor.base import BaseExecutor, AsyncResult, AsyncException
-
 import cloudpickle
+
+from orion.executor.base import AsyncException, AsyncResult, BaseExecutor
 
 
 def _couldpickle_exec(payload):
@@ -65,9 +65,7 @@ class Multiprocess(BaseExecutor):
         return _Future(self.pool.apply_async(_couldpickle_exec, (payload,)))
 
     def wait(self, futures):
-        return [
-            future.get() for future in futures
-        ]
+        return [future.get() for future in futures]
 
     def _find_future_exception(self, future):
         for _, status in self.futures.items():

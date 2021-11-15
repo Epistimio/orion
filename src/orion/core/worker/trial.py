@@ -18,6 +18,7 @@ log = logging.getLogger(__name__)
 
 class AlreadyReleased(Exception):
     """Raised when a trial gets released twice"""
+
     pass
 
 

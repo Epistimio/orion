@@ -7,7 +7,7 @@ Executor without parallelism for debugging
 import functools
 import traceback
 
-from orion.executor.base import BaseExecutor, AsyncResult, AsyncException
+from orion.executor.base import AsyncException, AsyncResult, BaseExecutor
 
 
 class _Future:

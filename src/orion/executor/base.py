@@ -12,6 +12,7 @@ from orion.core.utils import GenericFactory
 
 class AsyncResult:
     """Result of an async computation"""
+
     def __init__(self, future, v):
         self.future = future
         self.value = v
@@ -19,6 +20,7 @@ class AsyncResult:
 
 class AsyncException:
     """Exception raised by a remote worker during computation"""
+
     def __init__(self, future, exception, traceback) -> None:
         self.future = future
         self.exception = exception

@@ -23,7 +23,7 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.utils.flatten import flatten, unflatten
-from orion.core.worker.trial import Trial, TrialCM, AlreadyReleased
+from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.executor.base import AsyncException, AsyncResult, executor_factory
 from orion.plotting.base import PlotAccessor
