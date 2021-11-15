@@ -17,15 +17,13 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
-    InvalidResult,
     SampleTimeout,
     UnsupportedOperation,
     WaitingForTrials,
 )
-from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
-from orion.executor.base import AsyncException, AsyncResult, executor_factory
+from orion.executor.base import executor_factory
 from orion.plotting.base import PlotAccessor
 from orion.storage.base import FailedUpdate
 

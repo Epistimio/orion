@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Runner
+======
+
+Executes the optimization process
+"""
 import logging
 
 from orion.core.utils.exceptions import (
@@ -5,12 +12,11 @@ from orion.core.utils.exceptions import (
     CompletedExperiment,
     InvalidResult,
     SampleTimeout,
-    UnsupportedOperation,
     WaitingForTrials,
 )
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.trial import AlreadyReleased
-from orion.executor.base import AsyncException, AsyncResult, executor_factory
+from orion.executor.base import AsyncException, AsyncResult
 
 
 def _optimize(trial, fct, trial_arg, **kwargs):
