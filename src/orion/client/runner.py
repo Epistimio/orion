@@ -109,6 +109,7 @@ class Runner:
             # NB: suggest reserve the trial already
             new_trials = self._suggest_trials(min(self.free_worker, remains))
 
+        log.debug(f"Sampled new {len(new_trials)} configs")
         return new_trials
 
     def scatter(self, new_trials):
@@ -123,6 +124,7 @@ class Runner:
 
         self.free_worker -= len(new_futures)
         self.futures.extend(new_futures)
+        log.debug(f"Scheduled new trials")
 
     def gather(self):
         """Gather the results from each worker asynchronously"""
@@ -132,6 +134,9 @@ class Runner:
         except (KeyboardInterrupt, InvalidResult):
             self.release_all()
             raise
+
+        to_be_raised = None
+        log.debug(f"Gathered new results {len(results)}")
 
         # register the results
         for result in results:
@@ -144,6 +149,10 @@ class Runner:
                 self.trials += 1
 
             if isinstance(result, AsyncException):
+                if isinstance(result.exception, (KeyboardInterrupt, InvalidResult)):
+                    to_be_raised = result.exception
+                    continue
+
                 exception = result.exception
                 self.worker_broken_trials += 1
                 self.client.release(trial, status="broken")
@@ -159,6 +168,11 @@ class Runner:
 
                 if self.worker_broken_trials >= self.max_broken:
                     raise BrokenExperiment("Worker has reached broken trials threshold")
+
+        if to_be_raised:
+            log.debug("Runner was interrupted")
+            self.release_all()
+            raise to_be_raised
 
     def release_all(self):
         """Release all the trials that were reserved by this runner"""

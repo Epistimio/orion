@@ -3,8 +3,8 @@ import pickle
 import traceback
 import uuid
 from dataclasses import dataclass
-from multiprocessing import Manager, Pool
-from multiprocessing.pool import AsyncResult
+from multiprocessing import Manager, Process
+from multiprocessing.pool import AsyncResult, Pool as PyPool
 from queue import Empty
 
 import cloudpickle
@@ -18,15 +18,36 @@ def _couldpickle_exec(payload):
     return cloudpickle.dumps(result)
 
 
+class _Process(Process):
+    """Process that cannot be a daemon"""
+
+    def _get_daemon(self):
+        return False
+
+    def _set_daemon(self, value):
+        pass
+
+    daemon = property(_get_daemon, _set_daemon)
+
+
+class Pool(PyPool):
+    """Custom pool that does not set its worker as daemon process"""
+
+    @staticmethod
+    def Process(ctx, *args, **kwds):
+        return _Process(*args, **kwds)
+
+
 class _Future:
     """Wraps a python AsyncResult"""
 
-    def __init__(self, future):
+    def __init__(self, future, cloudpickle=False):
         self.future = future
+        self.cloudpickle = cloudpickle
 
     def get(self, timeout=None):
         r = self.future.get(timeout)
-        return pickle.loads(r)
+        return pickle.loads(r) if self.cloudpickle else r
 
     def wait(self, timeout=None):
         return self.future.wait(timeout)
@@ -61,8 +82,14 @@ class Multiprocess(BaseExecutor):
         return super().__exit__(exc_type, exc_value, traceback)
 
     def submit(self, function, *args, **kwargs) -> AsyncResult:
+        return self._submit_python(function, *args, **kwargs)
+
+    def _submit_python(self, function, *args, **kwargs) -> AsyncResult:
+        return _Future(self.pool.apply_async(function, args=args, kwds=kwargs))
+
+    def _submit_cloudpickle(self, function, *args, **kwargs) -> AsyncResult:
         payload = cloudpickle.dumps((function, args, kwargs))
-        return _Future(self.pool.apply_async(_couldpickle_exec, (payload,)))
+        return _Future(self.pool.apply_async(_couldpickle_exec, (payload,)), True)
 
     def wait(self, futures):
         return [future.get() for future in futures]

@@ -16,17 +16,23 @@ class _Future:
     def __init__(self, future):
         self.future = future
         self.result = None
+        self.exception = None
 
     def get(self, timeout=None):
         if self.result:
             return self.result
 
+        if self.exception:
+            raise self.exception
+
         self.result = self.future()
         return self.result
 
     def wait(self, timeout=None):
-        self.future.get(timeout)
-        return
+        try:
+            self.result = self.future()
+        except Exception as e:
+            self.exception = e
 
     def ready(self):
         return self.result is None
@@ -35,7 +41,7 @@ class _Future:
         if self.result is None:
             raise ValueError()
 
-        return True
+        return self.exception is None
 
 
 class SingleExecutor(BaseExecutor):
@@ -56,7 +62,7 @@ class SingleExecutor(BaseExecutor):
         super(SingleExecutor, self).__init__(n_workers=1)
 
     def wait(self, futures):
-        return [future() for future in futures]
+        return [future.get() for future in futures]
 
     def async_get(self, futures, timeout=0.01):
         if len(futures) == 0:

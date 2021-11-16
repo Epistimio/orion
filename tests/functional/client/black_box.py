@@ -44,6 +44,7 @@ def execute():
     if "data" in kwargs:
         kwargs["data"] = [dict(name=kwargs["data"], type="constraint", value=1.0)]
 
+    print("HERE")
     globals()[inputs.fct](**kwargs)
 
 

@@ -1,5 +1,7 @@
 import pytest
 
+import sys
+
 from orion.executor.dask_backend import Dask
 from orion.executor.multiprocess_backend import Multiprocess
 from orion.executor.single_backend import SingleExecutor
@@ -66,6 +68,7 @@ def test_execute_async_all(backend):
             results = executor.async_get(futures, timeout=1)
             all_results_async.extend(results)
 
+    all_results_async = [a.value for a in all_results_async]
     all_results_async.sort()
     assert all_results_async == all_results
 
@@ -79,12 +82,29 @@ def nested_jobs(executor):
     return sum(all_results)
 
 
-@pytest.mark.parametrize("backend", [Dask, SingleExecutor])
+@pytest.mark.parametrize("backend", [SingleExecutor])
 def test_executor_is_serializable(backend):
     with backend(5) as executor:
-        print("serialize sub")
         futures = [executor.submit(nested_jobs, executor) for _ in range(10)]
-        print("serialize wait")
         all_results = executor.wait(futures)
 
     assert sum(all_results) == 1000
+
+
+def proxy(*args):
+    import subprocess
+
+    subprocess.run(["echo", ""])
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_multisubprocess(backend):
+    with backend(5) as executor:
+        futures = [executor.submit(proxy) for i in range(5)]
+
+        results = executor.async_get(futures, timeout=2)
+
+        for r in results:
+            # access the results to make sure no exception is being
+            # suppressed
+            r.value

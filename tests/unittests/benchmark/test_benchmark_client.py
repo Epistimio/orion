@@ -19,6 +19,7 @@ from orion.executor.joblib_backend import Joblib
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 from orion.testing.state import OrionState
+from orion.client import ExperimentClient
 
 
 class DummyTask:
@@ -327,28 +328,56 @@ class TestCreateBenchmark:
             assert orion.core.config.worker.n_workers != 2
 
     def test_experiments_parallel(self, benchmark_config_py, monkeypatch):
-        def optimize(*args, **kwargs):
-            optimize.count += 1
-            return 1
+        import multiprocessing
+
+        class FakeFuture:
+            def __init__(self, value):
+                self.value = value
+
+            def wait(self, timeout=None):
+                return
+
+            def ready(self):
+                return True
+
+            def get(self, timeout=None):
+                return self.value
+
+            def succesful(self):
+                return True
+
+        count = multiprocessing.Value("i", 0)
+
+        def is_done(self):
+            return is_done.done
+
+        is_done.done = False
+
+        def submit(*args, c=count, **kwargs):
+            c.value += 1
+            is_done.done = True
+            return FakeFuture([dict(name="v", type="objective", value=1)])
 
         with OrionState():
             config = copy.deepcopy(benchmark_config_py)
 
-            executor = Joblib(n_workers=5, backend="threading")
-            config["executor"] = executor
-            bm1 = get_or_create_benchmark(**config)
+            with Joblib(n_workers=5, backend="threading") as executor:
+                monkeypatch.setattr(ExperimentClient, "is_done", property(is_done))
+                monkeypatch.setattr(executor, "submit", submit)
 
-            client = bm1.studies[0].experiments_info[0][1]
-            monkeypatch.setattr(client, "_optimize", optimize)
+                config["executor"] = executor
+                bm1 = get_or_create_benchmark(**config)
+                client = bm1.studies[0].experiments_info[0][1]
 
-            optimize.count = 0
-            bm1.process(n_workers=2)
-            assert optimize.count == 2
-            assert executor.n_workers == 5
-            assert orion.core.config.worker.n_workers != 2
+                count.value = 0
+                bm1.process(n_workers=2)
+                assert count.value == 2
+                assert executor.n_workers == 5
+                assert orion.core.config.worker.n_workers != 2
 
-            optimize.count = 0
-            bm1.process(n_workers=3)
-            assert optimize.count == 3
-            assert executor.n_workers == 5
-            assert orion.core.config.worker.n_workers != 3
+                is_done.done = False
+                count.value = 0
+                bm1.process(n_workers=3)
+                assert count.value == 3
+                assert executor.n_workers == 5
+                assert orion.core.config.worker.n_workers != 3

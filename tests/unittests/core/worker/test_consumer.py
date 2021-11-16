@@ -40,7 +40,7 @@ def test_trials_interrupted_sigterm(config, monkeypatch):
     """Check if a trial is set as interrupted when a signal is raised."""
 
     def mock_popen(self, *args, **kwargs):
-        os.kill(os.getpid(), signal.SIGTERM)
+        os.kill(self.pid, signal.SIGTERM)
 
     exp = experiment_builder.build(**config)
 

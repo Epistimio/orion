@@ -81,7 +81,7 @@ class Dask(BaseExecutor):
         results = self.client.gather(list(futures))
         if self.in_worker:
             rejoin()
-        return results
+        return [r.get() for r in results]
 
     def async_get(self, futures, timeout=0.01):
         results = []

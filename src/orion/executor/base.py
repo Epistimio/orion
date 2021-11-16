@@ -26,6 +26,10 @@ class AsyncException:
         self.exception = exception
         self.traceback = traceback
 
+    @property
+    def value(self):
+        raise self.exception
+
 
 class BaseExecutor:
     """Base executor class
