@@ -77,6 +77,29 @@ def rung_2(rung_1):
     return create_rung_from_points(points, n_trials=1, resources=9)
 
 
+@pytest.fixture
+def big_rung_0():
+    """Create fake points and objectives for big rung 0."""
+    n_rung_0 = 9 * 3
+    return create_rung_from_points(
+        np.linspace(0, n_rung_0 - 1, n_rung_0),
+        n_trials=n_rung_0 * 2,
+        resources=1,
+    )
+
+
+@pytest.fixture
+def big_rung_1(big_rung_0):
+    """Create fake points and objectives for big rung 1."""
+    n_rung_0 = len(big_rung_0["results"])
+    n_rung_1 = 3 * 2
+    return create_rung_from_points(
+        np.linspace(n_rung_0 - n_rung_1, n_rung_0 - 1, n_rung_1),
+        n_trials=n_rung_1 * 2,
+        resources=3,
+    )
+
+
 def test_compute_budgets():
     """Verify proper computation of budgets on a logarithmic scale"""
     # Check typical values
@@ -230,26 +253,14 @@ class TestASHABracket:
         assert bracket.rungs[1]["results"][trial_id][1].params == trial.params
         assert candidate.params["epoch"] == 9
 
-    def test_update_rungs_return_candidates(self, asha, bracket):
+    def test_update_rungs_return_candidates(
+        self, asha, bracket, big_rung_0, big_rung_1
+    ):
         """Check if many valid modified candidate is returned by update_rungs."""
         bracket.asha = asha
 
-        n_rung_0 = 9 * 3
-        rung_0 = create_rung_from_points(
-            np.linspace(0, n_rung_0 - 1, n_rung_0), n_trials=n_rung_0, resources=1
-        )
-
-        n_rung_1 = 3 * 2
-        rung_1 = create_rung_from_points(
-            np.linspace(n_rung_0 - n_rung_1, n_rung_0 - 1, n_rung_1),
-            n_trials=n_rung_1,
-            resources=3,
-        )
-
-        bracket.rungs[0] = rung_0
-        bracket.rungs[1] = rung_1
-
-        trial = create_trial_for_hb((3, 0.0), 0.0)
+        bracket.rungs[0] = big_rung_0
+        bracket.rungs[1] = big_rung_1
 
         candidates = bracket.promote(100)
 
@@ -517,6 +528,52 @@ class TestASHA:
         trials = asha.suggest(1)
 
         assert trials[0].params == {"epoch": 3, "lr": 0.0}
+
+    def test_suggest_promote_many(
+        self, asha, bracket, big_rung_0, big_rung_1
+    ):
+        """Test that correct points are promoted and returned."""
+        asha.brackets = [bracket]
+        bracket.asha = asha
+        bracket.rungs[0] = big_rung_0
+        bracket.rungs[1] = big_rung_1
+
+        candidates = asha.suggest(3)
+
+        assert len(candidates) == 2 + 1
+        assert (
+            sum(1 for trial in candidates if trial.params[asha.fidelity_index] == 9)
+            == 2
+        )
+        assert (
+            sum(1 for trial in candidates if trial.params[asha.fidelity_index] == 3)
+            == 1
+        )
+
+    def test_suggest_promote_many_plus_random(
+        self, asha, bracket, big_rung_0, big_rung_1
+    ):
+        """Test that correct points are promoted and returned, plus random points"""
+        asha.brackets = [bracket]
+        bracket.asha = asha
+        bracket.rungs[0] = big_rung_0
+        bracket.rungs[1] = big_rung_1
+
+        candidates = asha.suggest(20)
+
+        assert len(candidates) == 20
+        assert (
+            sum(1 for trial in candidates if trial.params[asha.fidelity_index] == 9)
+            == 2
+        )
+        assert (
+            sum(1 for trial in candidates if trial.params[asha.fidelity_index] == 3)
+            == 3 * 3
+        )
+        assert (
+            sum(1 for trial in candidates if trial.params[asha.fidelity_index] == 1)
+            == 20 - 2 - 3 * 3
+        )
 
 
 class TestGenericASHA(BaseAlgoTests):
