@@ -529,9 +529,7 @@ class TestASHA:
 
         assert trials[0].params == {"epoch": 3, "lr": 0.0}
 
-    def test_suggest_promote_many(
-        self, asha, bracket, big_rung_0, big_rung_1
-    ):
+    def test_suggest_promote_many(self, asha, bracket, big_rung_0, big_rung_1):
         """Test that correct points are promoted and returned."""
         asha.brackets = [bracket]
         bracket.asha = asha
