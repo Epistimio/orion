@@ -17,6 +17,7 @@ from orion.algo.random import Random
 from orion.algo.tpe import TPE
 from orion.benchmark.task.branin import Branin
 from orion.core.io.space_builder import SpaceBuilder
+from orion.core.utils import backward, format_trials
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.testing.space import build_space
 
@@ -204,21 +205,21 @@ class BaseAlgoTests:
         """
         return SpaceBuilder().build(space if space is not None else self.space)
 
-    def observe_points(self, points, algo, objective=0):
-        """Make the algorithm observe points
+    def observe_trials(self, trials, algo, objective=0):
+        """Make the algorithm observe trials
 
         Parameters
         ----------
-        points: list of points
+        trials: list of ``orion.core.worker.trial.Trial``
             Trials formatted as tuples of values
         algo: ``orion.algo.base.BaseAlgorithm``
-            The algorithm used to observe points.
+            The algorithm used to observe trials.
         objective: int, optional
             The base objective for the trials. All objectives
             will have value ``objective + i``. Defaults to 0.
         """
-        algo.observe(
-            points, [dict(objective=objective + i) for i in range(len(points))]
+        backward.algo_observe(
+            algo, trials, [dict(objective=objective + i) for i in range(len(trials))]
         )
 
     def get_num(self, num):
@@ -230,7 +231,7 @@ class BaseAlgoTests:
         return num
 
     def force_observe(self, num, algo):
-        """Force observe ``num`` points.
+        """Force observe ``num`` trials.
 
         Parameters
         ----------
@@ -244,33 +245,32 @@ class BaseAlgoTests:
         RuntimeError
             - If the algorithm returns duplicates. Algorithms may return duplicates across workers,
               but in sequential scenarios as here, it should not happen.
-            - If the algorithm fails to sample any point at least 5 times.
+            - If the algorithm fails to sample any trial at least 5 times.
         """
         objective = 0
         failed = 0
         MAX_FAILED = 5
         ids = set()
+
         while not algo.is_done and algo.n_observed < num and failed < MAX_FAILED:
-            points = algo.suggest(self.get_num(num - algo.n_observed))
-            if len(points) == 0:
+            trials = algo.suggest(self.get_num(num - algo.n_observed))
+            if len(trials) == 0:
                 failed += 1
                 continue
-            for point in points:
-                point_id = algo.get_id(point)
-                if point_id in ids:
-                    raise RuntimeError(f"algo suggested a duplicate: {point}")
-                ids.add(point_id)
-            ids |= set(algo.get_id(point) for point in points)
-            self.observe_points(points, algo, objective)
-            objective += len(points)
+            for trial in trials:
+                if trial.hash_name in ids:
+                    raise RuntimeError(f"algo suggested a duplicate: {trial}")
+                ids.add(trial.hash_name)
+            self.observe_trials(trials, algo, objective)
+            objective += len(trials)
 
         if failed >= MAX_FAILED:
             raise RuntimeError(
-                f"Algorithm cannot sample more than {algo.n_observed} points. Is it normal?"
+                f"Algorithm cannot sample more than {algo.n_observed} trials. Is it normal?"
             )
 
     def spy_phase(self, mocker, num, algo, attribute):
-        """Force observe ``num`` points and then mock a given method to count calls.
+        """Force observe ``num`` trials and then mock a given method to count calls.
 
         Parameters
         ----------
@@ -300,7 +300,7 @@ class BaseAlgoTests:
         spy: Mocked object
             Object mocked by ``BaseAlgoTests.spy_phase``.
         num: int
-            number of points of the phase.
+            number of trials of the phase.
         algo: ``orion.algo.base.BaseAlgorithm``
             The algorithm being tested.
         """
@@ -309,8 +309,8 @@ class BaseAlgoTests:
     def assert_dim_type_supported(self, mocker, num, attr, test_space):
         """Test that a given dimension type is properly supported by the algorithm
 
-        This will test that the algorithm sample points valid for the given type
-        and that the algorithm can observe these points.
+        This will test that the algorithm sample trials valid for the given type
+        and that the algorithm can observe these trials.
 
         Parameters
         ----------
@@ -331,10 +331,10 @@ class BaseAlgoTests:
 
         spy = self.spy_phase(mocker, num, algo, attr)
 
-        points = algo.suggest(1)
-        assert points[0] in space
+        trials = algo.suggest(1)
+        assert trials[0] in space
         spy.call_count == 1
-        self.observe_points(points, algo, 1)
+        self.observe_trials(trials, algo, 1)
         self.assert_callbacks(spy, num, algo)
 
     def test_configuration(self):
@@ -351,33 +351,44 @@ class BaseAlgoTests:
 
         algo = self.create_algo(space=space)
 
-        assert algo.get_id([1, 1, 1]) == algo.get_id([1, 1, 1])
-        assert algo.get_id([1, 1, 1]) != algo.get_id([1, 2, 2])
-        assert algo.get_id([1, 1, 1]) != algo.get_id([2, 1, 1])
+        def get_id(point, ignore_fidelity=False, exp_id=None):
+            trial = format_trials.tuple_to_trial(point, space)
+            trial.experiment = exp_id
+            return algo.get_id(
+                trial,
+                ignore_fidelity=ignore_fidelity,
+            )
 
-        assert algo.get_id([1, 1, 1], ignore_fidelity=False) == algo.get_id(
+        assert get_id([1, 1, 1]) == get_id([1, 1, 1])
+        assert get_id([1, 1, 1]) != get_id([1, 2, 2])
+        assert get_id([1, 1, 1]) != get_id([2, 1, 1])
+
+        assert get_id([1, 1, 1], ignore_fidelity=False) == get_id(
             [1, 1, 1], ignore_fidelity=False
         )
         # Fidelity changes id
-        assert algo.get_id([1, 1, 1], ignore_fidelity=False) != algo.get_id(
+        assert get_id([1, 1, 1], ignore_fidelity=False) != get_id(
             [2, 1, 1], ignore_fidelity=False
         )
         # Non-fidelity changes id
-        assert algo.get_id([1, 1, 1], ignore_fidelity=False) != algo.get_id(
+        assert get_id([1, 1, 1], ignore_fidelity=False) != get_id(
             [1, 1, 2], ignore_fidelity=False
         )
 
-        assert algo.get_id([1, 1, 1], ignore_fidelity=True) == algo.get_id(
+        assert get_id([1, 1, 1], ignore_fidelity=True) == get_id(
             [1, 1, 1], ignore_fidelity=True
         )
         # Fidelity does not change id
-        assert algo.get_id([1, 1, 1], ignore_fidelity=True) == algo.get_id(
+        assert get_id([1, 1, 1], ignore_fidelity=True) == get_id(
             [2, 1, 1], ignore_fidelity=True
         )
         # Non-fidelity still changes id
-        assert algo.get_id([1, 1, 1], ignore_fidelity=True) != algo.get_id(
+        assert get_id([1, 1, 1], ignore_fidelity=True) != get_id(
             [1, 1, 2], ignore_fidelity=True
         )
+
+        # Experiment id is ignored
+        assert get_id([1, 1, 1], exp_id=1) == get_id([1, 1, 1], exp_id=2)
 
     @phase
     def test_seed_rng(self, mocker, num, attr):
@@ -387,14 +398,13 @@ class BaseAlgoTests:
         seed = numpy.random.randint(10000)
         algo.seed_rng(seed)
         spy = self.spy_phase(mocker, num, algo, attr)
-        points = algo.suggest(1)
-        with pytest.raises(AssertionError):
-            numpy.testing.assert_equal(points, algo.suggest(1))
+        trials = algo.suggest(1)
+        trials[0].id != algo.suggest(1)[0].id
 
         new_algo = self.create_algo()
         new_algo.seed_rng(seed)
         self.force_observe(algo.n_observed, new_algo)
-        numpy.testing.assert_equal(points, new_algo.suggest(1))
+        assert trials[0].id == new_algo.suggest(1)[0].id
 
         self.assert_callbacks(spy, num, new_algo)
 
@@ -410,11 +420,10 @@ class BaseAlgoTests:
         a = algo.suggest(1)[0]
 
         new_algo = self.create_algo()
-        with pytest.raises(AssertionError):
-            numpy.testing.assert_equal(a, new_algo.suggest(1)[0])
+        assert a.id != new_algo.suggest(1)[0].id
 
         new_algo.set_state(state)
-        numpy.testing.assert_equal(a, new_algo.suggest(1)[0])
+        assert a.id == new_algo.suggest(1)[0].id
 
         self.assert_callbacks(spy, num, algo)
 
@@ -423,21 +432,21 @@ class BaseAlgoTests:
         """Verify that suggest returns correct number of trials if ``num`` is specified in ``suggest``."""
         algo = self.create_algo()
         spy = self.spy_phase(mocker, num, algo, attr)
-        points = algo.suggest(5)
-        assert len(points) == 5
+        trials = algo.suggest(5)
+        assert len(trials) == 5
 
     @phase
     def test_has_suggested(self, mocker, num, attr):
-        """Verify that algorithm detects correctly if a point was suggested"""
+        """Verify that algorithm detects correctly if a trial was suggested"""
         algo = self.create_algo()
         spy = self.spy_phase(mocker, num, algo, attr)
         a = algo.suggest(1)[0]
         assert algo.has_suggested(a)
-        # NOTE: not algo.has_suggested(some random point) is tested in test_has_suggested_statedict
+        # NOTE: not algo.has_suggested(some random trial) is tested in test_has_suggested_statedict
 
     @phase
     def test_has_suggested_statedict(self, mocker, num, attr):
-        """Verify that algorithm detects correctly if a point was suggested even when state was restored."""
+        """Verify that algorithm detects correctly if a trial was suggested even when state was restored."""
         algo = self.create_algo()
         spy = self.spy_phase(mocker, num, algo, attr)
 
@@ -453,40 +462,40 @@ class BaseAlgoTests:
 
     @phase
     def test_observe(self, mocker, num, attr):
-        """Verify that algorithm observes point without any issues"""
+        """Verify that algorithm observes trial without any issues"""
         algo = self.create_algo()
         spy = self.spy_phase(mocker, num, algo, attr)
 
         a = algo.space.sample()[0]
-        algo.observe([a], [dict(objective=1)])
+        backward.algo_observe(algo, [a], [dict(objective=1)])
 
         b = algo.suggest(1)[0]
-        algo.observe([b], [dict(objective=2)])
+        backward.algo_observe(algo, [b], [dict(objective=2)])
 
     @phase
     def test_has_observed(self, mocker, num, attr):
-        """Verify that algorithm detects correctly if a point was observed"""
+        """Verify that algorithm detects correctly if a trial was observed"""
         algo = self.create_algo()
         spy = self.spy_phase(mocker, num, algo, attr)
 
         a = algo.suggest(1)[0]
         assert not algo.has_observed(a)
-        algo.observe([a], [dict(objective=1)])
+        backward.algo_observe(algo, [a], [dict(objective=1)])
         assert algo.has_observed(a)
 
         b = algo.suggest(1)[0]
         assert not algo.has_observed(b)
-        algo.observe([b], [dict(objective=2)])
+        backward.algo_observe(algo, [b], [dict(objective=2)])
         assert algo.has_observed(b)
 
     @phase
     def test_has_observed_statedict(self, mocker, num, attr):
-        """Verify that algorithm detects correctly if a point was observed even when state was restored."""
+        """Verify that algorithm detects correctly if a trial was observed even when state was restored."""
         algo = self.create_algo()
         spy = self.spy_phase(mocker, num, algo, attr)
 
         a = algo.suggest(1)[0]
-        algo.observe([a], [dict(objective=1)])
+        backward.algo_observe(algo, [a], [dict(objective=1)])
         state = algo.state_dict
 
         algo = self.create_algo()
@@ -495,7 +504,7 @@ class BaseAlgoTests:
         assert algo.has_observed(a)
 
         b = algo.suggest(1)[0]
-        algo.observe([b], [dict(objective=2)])
+        backward.algo_observe(algo, [b], [dict(objective=2)])
         state = algo.state_dict
 
         algo = self.create_algo()
@@ -505,7 +514,7 @@ class BaseAlgoTests:
 
     @phase
     def test_n_suggested(self, mocker, num, attr):
-        """Verify that algorithm returns correct number of suggested points"""
+        """Verify that algorithm returns correct number of suggested trials"""
         algo = self.create_algo()
         spy = self.spy_phase(mocker, num, algo, attr)
         assert algo.n_suggested == num
@@ -514,13 +523,13 @@ class BaseAlgoTests:
 
     @phase
     def test_n_observed(self, mocker, num, attr):
-        """Verify that algorithm returns correct number of observed points"""
+        """Verify that algorithm returns correct number of observed trials"""
         algo = self.create_algo()
         spy = self.spy_phase(mocker, num, algo, attr)
         assert algo.n_observed == num
-        points = algo.suggest(1)
+        trials = algo.suggest(1)
         assert algo.n_observed == num
-        self.observe_points(points, algo)
+        self.observe_trials(trials, algo)
         assert algo.n_observed == num + 1
 
     @phase
@@ -584,7 +593,11 @@ class BaseAlgoTests:
         for i, (x, y, z) in enumerate(itertools.product(range(5), "abc", range(1, 7))):
             assert not algo.is_done
             n = algo.n_suggested
-            algo.observe([[x, y, z]], [dict(objective=i)])
+            backward.algo_observe(
+                algo,
+                [format_trials.tuple_to_trial([x, y, z], space)],
+                [dict(objective=i)],
+            )
             assert algo.n_suggested == n + 1
 
         assert i + 1 == space.cardinality
@@ -606,19 +619,19 @@ class BaseAlgoTests:
         algo = self.create_algo(config={}, space=space)
         algo.algorithm.max_trials = MAX_TRIALS
         safe_guard = 0
-        points = []
+        trials = []
         objectives = []
-        while points or not algo.is_done:
+        while trials or not algo.is_done:
             if safe_guard >= MAX_TRIALS:
                 break
 
-            if not points:
-                points = algo.suggest(MAX_TRIALS - len(objectives))
+            if not trials:
+                trials = algo.suggest(MAX_TRIALS - len(objectives))
 
-            point = points.pop(0)
-            results = task(*point)
+            trial = trials.pop(0)
+            results = task(trial.params["x"])
             objectives.append(results[0]["value"])
-            algo.observe([point], [dict(objective=objectives[-1])])
+            backward.algo_observe(algo, [trial], [dict(objective=objectives[-1])])
             safe_guard += 1
 
         assert algo.is_done

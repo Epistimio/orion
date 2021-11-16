@@ -8,19 +8,19 @@ import time
 import pytest
 
 from orion.core.io.experiment_builder import build
+from orion.core.utils import format_trials
 from orion.core.utils.exceptions import SampleTimeout, WaitingForTrials
-from orion.core.utils.format_trials import trial_to_tuple
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial
+from orion.testing.trial import compare_trials
 
 
 class DumbParallelStrategy:
     """Mock object for parallel strategy"""
 
-    def observe(self, points, results):
+    def observe(self, trials):
         """See ParallelStrategy.observe"""
-        self._observed_points = points
-        self._observed_results = results
+        self._observed_trials = trials
         self._value = None
 
     def lie(self, trial):
@@ -28,7 +28,7 @@ class DumbParallelStrategy:
         if self._value:
             value = self._value
         else:
-            value = len(self._observed_points)
+            value = len(self._observed_trials)
 
         self._lie = lie = Trial.Result(name="lie", type="lie", value=value)
         return lie
@@ -58,7 +58,11 @@ def producer(monkeypatch, hacked_exp, random_dt, categorical_values):
     """Return a setup `Producer`."""
     # make init done
 
-    hacked_exp.algorithms.algorithm.possible_values = categorical_values
+    possible_trials = [
+        format_trials.tuple_to_trial(point, hacked_exp.space)
+        for point in categorical_values
+    ]
+    hacked_exp.algorithms.algorithm.possible_values = possible_trials
     hacked_exp.algorithms.seed_rng(0)
     hacked_exp.max_trials = 20
     hacked_exp.algorithms.algorithm.max_trials = 20
@@ -81,17 +85,26 @@ def test_algo_observe_completed(producer):
     """Test that algo only observes completed trials"""
     assert len(producer.experiment.fetch_trials()) > 3
     producer.update()
-    # Algorithm must have received completed points and their results
-    obs_points = producer.algorithm.algorithm._points
-    obs_results = producer.algorithm.algorithm._results
-    assert len(obs_points) == 3
-    assert obs_points[0] == ("rnn", "lstm")
-    assert obs_points[1] == ("rnn", "rnn")
-    assert obs_points[2] == ("lstm_with_attention", "gru")
-    assert len(obs_results) == 3
-    assert obs_results[0] == {"objective": 3, "gradient": None, "constraint": []}
-    assert obs_results[1] == {"objective": 2, "gradient": (-0.1, 2), "constraint": []}
-    assert obs_results[2] == {"objective": 10, "gradient": (5, 3), "constraint": [1.2]}
+    # Algorithm must have received completed trials and their results
+    obs_trials = producer.algorithm.algorithm._trials
+    assert len(obs_trials) == 3
+    assert obs_trials[0].params == {"/decoding_layer": "rnn", "/encoding_layer": "lstm"}
+    assert obs_trials[1].params == {"/decoding_layer": "rnn", "/encoding_layer": "rnn"}
+    assert obs_trials[2].params == {
+        "/decoding_layer": "lstm_with_attention",
+        "/encoding_layer": "gru",
+    }
+    assert obs_trials[0].objective.value == 3
+    assert obs_trials[0].gradient is None
+    assert obs_trials[0].constraints == []
+
+    assert obs_trials[1].objective.value == 2
+    assert obs_trials[1].gradient.value == [-0.1, 2]
+    assert obs_trials[1].constraints == []
+
+    assert obs_trials[2].objective.value == 10
+    assert obs_trials[2].gradient.value == [5, 3]
+    assert obs_trials[2].constraints[0].value == 1.2
 
 
 def test_strategist_observe_completed(producer):
@@ -99,24 +112,38 @@ def test_strategist_observe_completed(producer):
     assert len(producer.experiment.fetch_trials()) > 3
     producer.update()
     # Algorithm must have received completed points and their results
-    obs_points = producer.strategy._observed_points
-    obs_results = producer.strategy._observed_results
-    assert len(obs_points) == 3
-    assert obs_points[0] == ("rnn", "lstm")
-    assert obs_points[1] == ("rnn", "rnn")
-    assert obs_points[2] == ("lstm_with_attention", "gru")
-    assert len(obs_results) == 3
-    assert obs_results[0] == {"objective": 3, "gradient": None, "constraint": []}
-    assert obs_results[1] == {"objective": 2, "gradient": (-0.1, 2), "constraint": []}
-    assert obs_results[2] == {"objective": 10, "gradient": (5, 3), "constraint": [1.2]}
+    obs_trials = producer.strategy._observed_trials
+    assert len(obs_trials) == 3
+    assert obs_trials[0].params == {"/decoding_layer": "rnn", "/encoding_layer": "lstm"}
+    assert obs_trials[1].params == {"/decoding_layer": "rnn", "/encoding_layer": "rnn"}
+    assert obs_trials[2].params == {
+        "/decoding_layer": "lstm_with_attention",
+        "/encoding_layer": "gru",
+    }
+
+    assert obs_trials[0].objective.value == 3
+    assert obs_trials[0].gradient is None
+    assert obs_trials[0].constraints == []
+
+    assert obs_trials[1].objective.value == 2
+    assert obs_trials[1].gradient.value == [-0.1, 2]
+    assert obs_trials[1].constraints == []
+
+    assert obs_trials[2].objective.value == 10
+    assert obs_trials[2].gradient.value == [5, 3]
+    assert obs_trials[2].constraints[0].value == 1.2
 
 
 def test_naive_algorithm_is_producing(monkeypatch, producer, random_dt):
     """Verify naive algo is used to produce, not original algo"""
-    producer.algorithm.algorithm.possible_values = [("gru", "rnn")]
+    producer.algorithm.algorithm.possible_values = [
+        format_trials.tuple_to_trial(("gru", "rnn"), producer.algorithm.space)
+    ]
     producer.update()
     monkeypatch.setattr(producer.algorithm.algorithm, "set_state", lambda value: None)
-    producer.algorithm.algorithm.possible_values = [("gru", "gru")]
+    producer.algorithm.algorithm.possible_values = [
+        format_trials.tuple_to_trial(("gru", "gru"), producer.algorithm.space)
+    ]
     producer.produce(1)
 
     assert producer.naive_algorithm.algorithm._num == 1  # pool size
@@ -125,7 +152,9 @@ def test_naive_algorithm_is_producing(monkeypatch, producer, random_dt):
 
 def test_update_and_produce(producer, random_dt):
     """Test new trials are properly produced"""
-    possible_values = [("gru", "rnn")]
+    possible_values = [
+        format_trials.tuple_to_trial(("gru", "rnn"), producer.algorithm.space)
+    ]
     producer.experiment.algorithms.algorithm.possible_values = possible_values
 
     producer.update()
@@ -135,7 +164,7 @@ def test_update_and_produce(producer, random_dt):
     num_new_points = producer.naive_algorithm.algorithm._num
     assert num_new_points == 1  # pool size
 
-    assert producer.naive_algorithm.algorithm._suggested == possible_values
+    compare_trials(producer.naive_algorithm.algorithm._suggested, possible_values)
 
 
 def test_register_new_trials(producer, storage, random_dt):
@@ -143,7 +172,9 @@ def test_register_new_trials(producer, storage, random_dt):
     trials_in_db_before = len(storage._fetch_trials({}))
     new_trials_in_db_before = len(storage._fetch_trials({"status": "new"}))
 
-    producer.experiment.algorithms.algorithm.possible_values = [("gru", "rnn")]
+    producer.experiment.algorithms.algorithm.possible_values = [
+        format_trials.tuple_to_trial(("gru", "rnn"), producer.algorithm.space)
+    ]
 
     producer.update()
     producer.produce(1)
@@ -263,7 +294,9 @@ def test_register_duplicate_lies(producer, storage, random_dt):
     producer.strategy._value = 4
 
     # Set specific output value for to algo to ensure successful creation of a new trial.
-    producer.experiment.algorithms.algorithm.possible_values = [("gru", "rnn")]
+    producer.experiment.algorithms.algorithm.possible_values = [
+        format_trials.tuple_to_trial(("gru", "rnn"), producer.algorithm.space)
+    ]
 
     producer.update()
     lies = produce_lies(producer)
@@ -322,8 +355,8 @@ def test_naive_algo_not_trained_when_all_trials_completed(producer, storage, ran
 
     producer.update()
 
-    assert len(producer.algorithm.algorithm._points) == 3
-    assert len(producer.naive_algorithm.algorithm._points) == 3
+    assert len(producer.algorithm.algorithm._trials) == 3
+    assert len(producer.naive_algorithm.algorithm._trials) == 3
 
 
 def test_naive_algo_trained_on_all_non_completed_trials(producer, storage, random_dt):
@@ -350,35 +383,37 @@ def test_naive_algo_trained_on_all_non_completed_trials(producer, storage, rando
     producer.update()
     assert len(produce_lies(producer)) == 6
 
-    assert len(producer.algorithm.algorithm._points) == 1
-    assert len(producer.naive_algorithm.algorithm._points) == (1 + 6)
+    assert len(producer.algorithm.algorithm._trials) == 1
+    assert len(producer.naive_algorithm.algorithm._trials) == (1 + 6)
 
 
 def test_naive_algo_is_discared(producer, monkeypatch):
     """Verify that naive algo is discarded and recopied from original algo"""
     # Set values for predictions
-    producer.experiment.algorithms.algorithm.possible_values = [("gru", "rnn")]
+    producer.experiment.algorithms.algorithm.possible_values = [
+        format_trials.tuple_to_trial(("gru", "rnn"), producer.algorithm.space)
+    ]
 
     producer.update()
     assert len(produce_lies(producer)) == 4
 
     first_naive_algorithm = producer.naive_algorithm
 
-    assert len(producer.algorithm.algorithm._points) == 3
-    assert len(first_naive_algorithm.algorithm._points) == (3 + 4)
+    assert len(producer.algorithm.algorithm._trials) == 3
+    assert len(first_naive_algorithm.algorithm._trials) == (3 + 4)
 
     producer.produce(1)
 
     # Only update the original algo, naive algo is still not discarded
     update_algorithm(producer)
-    assert len(producer.algorithm.algorithm._points) == 3
+    assert len(producer.algorithm.algorithm._trials) == 3
     assert first_naive_algorithm == producer.naive_algorithm
-    assert len(producer.naive_algorithm.algorithm._points) == (3 + 4)
+    assert len(producer.naive_algorithm.algorithm._trials) == (3 + 4)
 
-    # Discard naive algo and create a new one, now trained on 5 points.
+    # Discard naive algo and create a new one, now trained on 5 trials.
     update_naive_algorithm(producer)
     assert first_naive_algorithm != producer.naive_algorithm
-    assert len(producer.naive_algorithm.algorithm._points) == (3 + 5)
+    assert len(producer.naive_algorithm.algorithm._trials) == (3 + 5)
 
 
 def test_concurent_producers(producer, storage, random_dt):
@@ -389,11 +424,14 @@ def test_concurent_producers(producer, storage, random_dt):
     # Avoid limiting number of samples from the within the algorithm.
     producer.algorithm.algorithm.pool_size = 1000
 
-    # Set so that first producer's algorithm generate valid point on first time
-    # And second producer produce same point and thus must produce next one too.
+    # Set so that first producer's algorithm generate valid trial on first time
+    # And second producer produce same trial and thus must produce next one too.
     # Hence, we know that producer algo will have _num == 1 and
     # second producer algo will have _num == 2
-    producer.algorithm.algorithm.possible_values = [("gru", "rnn"), ("gru", "gru")]
+    producer.algorithm.algorithm.possible_values = [
+        format_trials.tuple_to_trial(point, producer.algorithm.space)
+        for point in [("gru", "rnn"), ("gru", "gru")]
+    ]
     # Make sure it starts from index 0
     producer.algorithm.seed_rng(0)
 
@@ -407,12 +445,12 @@ def test_concurent_producers(producer, storage, random_dt):
     second_producer.produce(2)
 
     # Algorithm was required to suggest some trials
-    num_new_points = producer.algorithm.algorithm._num
-    assert num_new_points == 1  # pool size
-    num_new_points = second_producer.algorithm.algorithm._num
-    assert num_new_points == 2  # pool size
+    num_new_trials = producer.algorithm.algorithm._num
+    assert num_new_trials == 1  # pool size
+    num_new_trials = second_producer.algorithm.algorithm._num
+    assert num_new_trials == 2  # pool size
 
-    # `num_new_points` new trials were registered at database
+    # `num_new_trials` new trials were registered at database
     assert len(storage._fetch_trials({})) == trials_in_db_before + 2
     assert len(storage._fetch_trials({"status": "new"})) == new_trials_in_db_before + 2
     new_trials = list(
@@ -438,12 +476,15 @@ def test_concurent_producers_shared_pool(producer, storage, random_dt):
     trials_in_db_before = len(storage._fetch_trials({}))
     new_trials_in_db_before = len(storage._fetch_trials({"status": "new"}))
 
-    # Set so that first producer's algorithm generate valid point on first time
-    # And second producer produce same point and thus must backoff and then stop
+    # Set so that first producer's algorithm generate valid trial on first time
+    # And second producer produce same trial and thus must backoff and then stop
     # because first producer filled the pool.
     # Hence, we know that producer algo will have _num == 1 and
     # second producer algo will have _num == 1
-    producer.algorithm.algorithm.possible_values = [("gru", "rnn"), ("gru", "gru")]
+    producer.algorithm.algorithm.possible_values = [
+        format_trials.tuple_to_trial(point, producer.algorithm.space)
+        for point in [("gru", "rnn"), ("gru", "gru")]
+    ]
     # Make sure it starts from index 0
     producer.algorithm.seed_rng(0)
 
@@ -457,12 +498,12 @@ def test_concurent_producers_shared_pool(producer, storage, random_dt):
     second_producer.produce(1)
 
     # Algorithm was required to suggest some trials
-    num_new_points = producer.algorithm.algorithm._num
-    assert num_new_points == 1  # pool size
-    num_new_points = second_producer.algorithm.algorithm._num
-    assert num_new_points == 0  # pool size
+    num_new_trials = producer.algorithm.algorithm._num
+    assert num_new_trials == 1  # pool size
+    num_new_trials = second_producer.algorithm.algorithm._num
+    assert num_new_trials == 0  # pool size
 
-    # `num_new_points` new trials were registered at database
+    # `num_new_trials` new trials were registered at database
     assert len(storage._fetch_trials({})) == trials_in_db_before + 1
     assert len(storage._fetch_trials({"status": "new"})) == new_trials_in_db_before + 1
     new_trials = list(
@@ -490,19 +531,22 @@ def test_duplicate_within_pool(producer, storage, random_dt):
     producer.algorithm.algorithm.pool_size = 1000
 
     producer.experiment.algorithms.algorithm.possible_values = [
-        ("gru", "rnn"),
-        ("gru", "rnn"),
-        ("gru", "gru"),
+        format_trials.tuple_to_trial(point, producer.algorithm.space)
+        for point in [
+            ("gru", "rnn"),
+            ("gru", "rnn"),
+            ("gru", "gru"),
+        ]
     ]
 
     producer.update()
     producer.produce(2)
 
     # Algorithm was required to suggest some trials
-    num_new_points = producer.algorithm.algorithm._num
-    assert num_new_points == 4  # 2 * pool size
+    num_new_trials = producer.algorithm.algorithm._num
+    assert num_new_trials == 4  # 2 * pool size
 
-    # `num_new_points` new trials were registered at database
+    # `num_new_trials` new trials were registered at database
     assert len(storage._fetch_trials({})) == trials_in_db_before + 2
     assert len(storage._fetch_trials({"status": "new"})) == new_trials_in_db_before + 2
     new_trials = list(
@@ -524,7 +568,7 @@ def test_duplicate_within_pool(producer, storage, random_dt):
 
 
 def test_duplicate_within_pool_and_db(producer, storage, random_dt):
-    """Test that an algo suggesting multiple points can have a few registered even
+    """Test that an algo suggesting multiple trials can have a few registered even
     if one of them is a duplicate with db.
     """
     trials_in_db_before = len(storage._fetch_trials({}))
@@ -534,19 +578,22 @@ def test_duplicate_within_pool_and_db(producer, storage, random_dt):
     producer.algorithm.algorithm.pool_size = 1000
 
     producer.experiment.algorithms.algorithm.possible_values = [
-        ("gru", "rnn"),
-        ("rnn", "rnn"),
-        ("gru", "gru"),
+        format_trials.tuple_to_trial(point, producer.algorithm.space)
+        for point in [
+            ("gru", "rnn"),
+            ("rnn", "rnn"),
+            ("gru", "gru"),
+        ]
     ]
 
     producer.update()
     producer.produce(2)
 
     # Algorithm was required to suggest some trials
-    num_new_points = producer.algorithm.algorithm._num
-    assert num_new_points == 4  # pool size
+    num_new_trials = producer.algorithm.algorithm._num
+    assert num_new_trials == 4  # pool size
 
-    # `num_new_points` new trials were registered at database
+    # `num_new_trials` new trials were registered at database
     assert len(storage._fetch_trials({})) == trials_in_db_before + 2
     assert len(storage._fetch_trials({"status": "new"})) == new_trials_in_db_before + 2
     new_trials = list(
@@ -568,10 +615,12 @@ def test_duplicate_within_pool_and_db(producer, storage, random_dt):
 
 
 def test_exceed_max_idle_time_because_of_duplicates(producer, random_dt):
-    """Test that RuntimeError is raised when algo keep suggesting the same points"""
+    """Test that RuntimeError is raised when algo keep suggesting the same trials"""
     timeout = 3
     producer.max_idle_time = timeout  # to limit run-time, default would work as well.
-    producer.experiment.algorithms.algorithm.possible_values = [("rnn", "rnn")]
+    producer.experiment.algorithms.algorithm.possible_values = [
+        format_trials.tuple_to_trial(("rnn", "rnn"), producer.algorithm.space)
+    ]
 
     producer.update()
 
@@ -700,7 +749,7 @@ def test_evc_duplicates(monkeypatch, producer):
     )
 
     def suggest(pool_size=None):
-        return [trial_to_tuple(experiment.fetch_trials()[-1], experiment.space)]
+        return [experiment.fetch_trials()[-1]]
 
     producer.experiment = new_experiment
     producer.algorithm = new_experiment.algorithms
@@ -723,7 +772,7 @@ def test_algorithm_is_done(monkeypatch, producer):
 
     def suggest_one_only(self, num=1):
         """Return only one point, whatever `num` is"""
-        return [("gru", "rnn")]
+        return [format_trials.tuple_to_trial(("gru", "rnn"), producer.algorithm.space)]
 
     monkeypatch.delattr(producer.experiment.algorithms.algorithm.__class__, "is_done")
     monkeypatch.setattr(
@@ -737,7 +786,7 @@ def test_algorithm_is_done(monkeypatch, producer):
     producer.produce(10)
 
     assert len(producer.experiment.fetch_trials()) == producer.experiment.max_trials
-    assert producer.naive_algorithm.is_done
+    assert not producer.naive_algorithm.is_done
     assert not producer.experiment.is_done
 
 
@@ -749,7 +798,9 @@ def test_suggest_n_max_trials(monkeypatch, producer):
 
     def suggest_n(self, num):
         """Return duplicated points based on `num`"""
-        return [("gru", "rnn")] * num
+        return [
+            format_trials.tuple_to_trial(("gru", "rnn"), producer.algorithm.space)
+        ] * num
 
     monkeypatch.setattr(
         producer.experiment.algorithms.algorithm.__class__, "suggest", suggest_n
@@ -760,13 +811,13 @@ def test_suggest_n_max_trials(monkeypatch, producer):
     # Setup naive algorithm
     producer.update()
 
-    assert len(producer.suggest(50)) == 3
+    assert producer.adjust_pool_size(50) == 3
     # Test pool_size is the min selected
-    assert len(producer.suggest(2)) == 2
+    assert producer.adjust_pool_size(2) == 2
     producer.experiment.max_trials = 7
-    assert len(producer.suggest(50)) == 1
+    assert producer.adjust_pool_size(50) == 1
     producer.experiment.max_trials = 5
-    assert len(producer.suggest(50)) == 1
+    assert producer.adjust_pool_size(50) == 1
 
     trials = producer.experiment.fetch_trials()
     for trial in trials[:4]:
@@ -778,6 +829,6 @@ def test_suggest_n_max_trials(monkeypatch, producer):
     producer.update()
 
     # There is now 3 completed and 4 broken. Max trials is 5. Producer should suggest 2
-    assert len(producer.suggest(50)) == 2
+    assert producer.adjust_pool_size(50) == 2
     # Test pool_size is the min selected
-    assert len(producer.suggest(1)) == 1
+    assert producer.adjust_pool_size(1) == 1

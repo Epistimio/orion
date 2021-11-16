@@ -9,14 +9,9 @@ from orion.core.worker.trial import Trial
 
 
 @pytest.fixture()
-def trial():
-    """Stab trial to match tuple from fixture `fixed_suggestion`."""
-    params = [
-        dict(name="yolo", type="categorical", value=("asdfa", 2)),
-        dict(name="yolo2", type="integer", value=0),
-        dict(name="yolo3", type="real", value=3.5),
-    ]
-    return Trial(params=params)
+def params_tuple():
+    """Stab param tuple to match trial from fixture `fixed_suggestion`."""
+    return (("asdfa", 2), 0, 3.5)
 
 
 @pytest.fixture()
@@ -42,27 +37,27 @@ def hierarchical_dict_params():
     return {"yolo": {"first": ("asdfa", 2), "second": 0}, "yoloflat": 3.5}
 
 
-def test_trial_to_tuple(space, trial, fixed_suggestion):
+def test_trial_to_tuple(space, fixed_suggestion, params_tuple):
     """Check if trial is correctly created from a sample/tuple."""
-    data = trial_to_tuple(trial, space)
-    assert data == fixed_suggestion
+    data = trial_to_tuple(fixed_suggestion, space)
+    assert data == params_tuple
 
-    trial._params[0].name = "lalala"
+    fixed_suggestion._params[0].name = "lalala"
     with pytest.raises(ValueError) as exc:
-        trial_to_tuple(trial, space)
+        trial_to_tuple(fixed_suggestion, space)
 
     assert "Trial params: ['lalala', 'yolo2', 'yolo3']" in str(exc.value)
 
-    trial._params.pop(0)
+    fixed_suggestion._params.pop(0)
     with pytest.raises(ValueError) as exc:
-        trial_to_tuple(trial, space)
+        trial_to_tuple(fixed_suggestion, space)
 
     assert "Trial params: ['yolo2', 'yolo3']" in str(exc.value)
 
 
-def test_tuple_to_trial(space, trial, fixed_suggestion):
+def test_tuple_to_trial(space, fixed_suggestion, params_tuple):
     """Check if sample is recovered successfully from trial."""
-    t = tuple_to_trial(fixed_suggestion, space)
+    t = tuple_to_trial(params_tuple, space)
     assert t.experiment is None
     assert t.status == "new"
     assert t.worker is None
@@ -70,12 +65,12 @@ def test_tuple_to_trial(space, trial, fixed_suggestion):
     assert t.start_time is None
     assert t.end_time is None
     assert t.results == []
-    assert len(t._params) == len(trial.params)
+    assert len(t._params) == len(fixed_suggestion.params)
     for i in range(len(t.params)):
-        assert t._params[i].to_dict() == trial._params[i].to_dict()
+        assert t._params[i].to_dict() == fixed_suggestion._params[i].to_dict()
 
 
-def test_dict_to_trial(space, trial, dict_params):
+def test_dict_to_trial(space, fixed_suggestion, dict_params):
     """Check if dict is converted successfully to trial."""
     t = dict_to_trial(dict_params, space)
     assert t.experiment is None
@@ -85,17 +80,17 @@ def test_dict_to_trial(space, trial, dict_params):
     assert t.start_time is None
     assert t.end_time is None
     assert t.results == []
-    assert len(t._params) == len(trial._params)
+    assert len(t._params) == len(fixed_suggestion._params)
     for i in range(len(t.params)):
-        assert t._params[i].to_dict() == trial._params[i].to_dict()
+        assert t._params[i].to_dict() == fixed_suggestion._params[i].to_dict()
 
 
-def test_tuple_to_trial_to_tuple(space, trial, fixed_suggestion):
+def test_tuple_to_trial_to_tuple(space, fixed_suggestion, params_tuple):
     """The two functions should be inverse."""
-    data = trial_to_tuple(tuple_to_trial(fixed_suggestion, space), space)
-    assert data == fixed_suggestion
+    data = trial_to_tuple(tuple_to_trial(params_tuple, space), space)
+    assert data == params_tuple
 
-    t = tuple_to_trial(trial_to_tuple(trial, space), space)
+    t = tuple_to_trial(trial_to_tuple(fixed_suggestion, space), space)
     assert t.experiment is None
     assert t.status == "new"
     assert t.worker is None
@@ -103,24 +98,24 @@ def test_tuple_to_trial_to_tuple(space, trial, fixed_suggestion):
     assert t.start_time is None
     assert t.end_time is None
     assert t.results == []
-    assert len(t._params) == len(trial._params)
+    assert len(t._params) == len(fixed_suggestion._params)
     for i in range(len(t._params)):
-        assert t._params[i].to_dict() == trial._params[i].to_dict()
+        assert t._params[i].to_dict() == fixed_suggestion._params[i].to_dict()
 
 
 def test_hierarchical_trial_to_tuple(
-    hierarchical_space, hierarchical_trial, fixed_suggestion
+    hierarchical_space, hierarchical_trial, params_tuple
 ):
     """Check if hierarchical trial is correctly created from a sample/tuple."""
     data = trial_to_tuple(hierarchical_trial, hierarchical_space)
-    assert data == fixed_suggestion
+    assert data == params_tuple
 
 
 def test_tuple_to_hierarchical_trial(
-    hierarchical_space, hierarchical_trial, fixed_suggestion
+    hierarchical_space, hierarchical_trial, params_tuple
 ):
     """Check if sample is recovered successfully from hierarchical trial."""
-    t = tuple_to_trial(fixed_suggestion, hierarchical_space)
+    t = tuple_to_trial(params_tuple, hierarchical_space)
     assert len(t._params) == len(hierarchical_trial._params)
     for i in range(len(t._params)):
         assert t._params[i].to_dict() == hierarchical_trial._params[i].to_dict()

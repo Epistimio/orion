@@ -20,14 +20,9 @@ import logging
 from abc import ABCMeta, abstractmethod
 
 from orion.algo.space import Fidelity
-from orion.core.utils import GenericFactory
+from orion.core.utils import GenericFactory, format_trials
 
 log = logging.getLogger(__name__)
-
-
-def infer_trial_id(point):
-    """Compute a hashing of a point"""
-    return hashlib.md5(str(list(point)).encode("utf-8")).hexdigest()
 
 
 # pylint: disable=too-many-public-methods
@@ -134,7 +129,7 @@ class BaseAlgorithm:
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        return {"_trials_info": copy.deepcopy(self._trials_info)}
+        return {"_trials_info": copy.deepcopy(dict(self._trials_info))}
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict
@@ -143,32 +138,34 @@ class BaseAlgorithm:
         """
         self._trials_info = state_dict.get("_trials_info")
 
-    def format_point(self, point):
-        """Format point based on space transformations
+    def format_trial(self, trial):
+        """Format trial based on space transformations
 
-        This will apply the reverse transformation on the point and then
+        This will apply the reverse transformation on the trial and then
         transform it again.
 
-        Some transformations are lossy and thus the points suggested by the algorithm could
-        be different when returned to `observe`. Using `format_point` makes it possible
-        for the algorithm to see the final version of the point after back and forth
-        transformations. This way it can recognise the point in `observe` and also
+        Some transformations are lossy and thus the trials suggested by the algorithm could
+        be different when returned to `observe`. Using `format_trial` makes it possible
+        for the algorithm to see the final version of the trial after back and forth
+        transformations. This way it can recognise the trial in `observe` and also
         avoid duplicates that would have gone unnoticed during suggestion.
 
         Parameters
         ----------
-        point : tuples of array-likes
-            Points from a `orion.algo.space.Space`.
+        trial : `orion.core.worker.trial.Trial`
+            Trial from a `orion.algo.space.Space`.
         """
 
-        point = tuple(point)
         if hasattr(self.space, "transform"):
-            point = self.space.transform(self.space.reverse(point))
+            trial = self.space.transform(self.space.reverse(trial))
 
-        return point
+        return trial
 
-    def get_id(self, point, ignore_fidelity=False):
-        """Compute a unique hash for a point based on params
+    def get_id(self, trial, ignore_fidelity=False):
+        """Return unique hash for a trials based on params
+
+        The trial is assumed to be in the transformed space if the algorithm is working in a
+        transformed space.
 
         Parameters
         ----------
@@ -178,20 +175,24 @@ class BaseAlgorithm:
             If True, the fidelity dimension is ignored when computing a unique hash for
             the trial. Defaults to False.
         """
+
         # Apply transforms and reverse to see data as it would come from DB
         # (Some transformations looses some info. ex: Precision transformation)
-        point = list(self.format_point(point))
 
-        if ignore_fidelity:
-            non_fidelity_dims = point[0 : self.fidelity_index]
-            non_fidelity_dims.extend(point[self.fidelity_index + 1 :])
-            point = non_fidelity_dims
+        # Compute trial hash in the client-facing format.
+        if hasattr(self.space, "reverse"):
+            trial = self.space.reverse(trial)
 
-        return hashlib.md5(str(point).encode("utf-8")).hexdigest()
+        return trial.compute_trial_hash(
+            trial,
+            ignore_fidelity=ignore_fidelity,
+            ignore_experiment=True,
+            ignore_lie=True,
+        )
 
     @property
     def fidelity_index(self):
-        """Compute the index of the point where fidelity is.
+        """Compute the dimension name of the space where fidelity is.
 
         Returns None if there is no fidelity dimension.
         """
@@ -199,11 +200,9 @@ class BaseAlgorithm:
         def _is_fidelity(dim):
             return dim.type == "fidelity"
 
-        fidelity_index = [
-            i for i, dim in enumerate(self.space.values()) if _is_fidelity(dim)
-        ]
-        if fidelity_index:
-            return fidelity_index[0]
+        fidelity_dim = [dim for dim in self.space.values() if _is_fidelity(dim)]
+        if fidelity_dim:
+            return fidelity_dim[0].name
 
         return None
 
@@ -219,8 +218,8 @@ class BaseAlgorithm:
 
         Returns
         -------
-        list of points or None
-            A list of lists representing points suggested by the algorithm. The algorithm may opt
+        list of trials or None
+            A list of trials representing values suggested by the algorithm. The algorithm may opt
             out if it cannot make a good suggestion at the moment (it may be waiting for other
             trials to complete), in which case it will return None.
 
@@ -231,48 +230,38 @@ class BaseAlgorithm:
         """
         pass
 
-    def observe(self, points, results):
-        """Observe the `results` of the evaluation of the `points` in the
+    def observe(self, trials):
+        """Observe the `results` of the evaluation of the `trials` in the
         process defined in user's script.
 
         Parameters
         ----------
-        points : list of tuples of array-likes
-           Points from a `orion.algo.space.Space`.
-        results : list of dicts
-           Contains the result of an evaluation; partial information about the
-           black-box function at each point in `params`.
-
-        Result
-        ------
-        objective : numeric
-           Evaluation of this problem's objective function.
-        gradient : 1D array-like, optional
-           Contains values of the derivatives of the `objective` function
-           with respect to `params`.
-        constraint : list of numeric, optional
-           List of constraints expression evaluation which must be greater
-           or equal to zero by the problem's definition.
+        trials: list of ``orion.core.worker.trial.Trial``
+           Trials from a `orion.algo.space.Space`.
 
         """
-        for point, result in zip(points, results):
-            if not self.has_observed(point):
-                self.register(point, result)
+        for trial in trials:
+            if not self.has_observed(trial):
+                self.register(trial)
 
-    def register(self, point, result=None):
-        """Save the point as one suggested or observed by the algorithm
+    def register(self, trial):
+        """Save the trial as one suggested or observed by the algorithm.
+
+        The trial objectives may change without the algorithm having actually observed it.
+        In order to detect this, we assign a tuple ``(trial and trial.objective)``
+        to the key ``self.get_id(trial)`` so that if the objective was not observed, we
+        will see that second item of the tuple is ``None``.
 
         Parameters
         ----------
-        point : array-likes
-           Point from a `orion.algo.space.Space`.
-        result : dict or None, optional
-           The result of an evaluation; partial information about the
-           black-box function at each point in `params`.
-           None is suggested and not yet completed.
+        trial: ``orion.core.worker.trial.Trial``
+           Trial from a `orion.algo.space.Space`.
 
         """
-        self._trials_info[self.get_id(point)] = (point, result)
+        self._trials_info[self.get_id(trial)] = (
+            trial,
+            format_trials.get_trial_results(trial) if trial.objective else None,
+        )
 
     @property
     def n_suggested(self):
@@ -284,42 +273,41 @@ class BaseAlgorithm:
         """Number of completed trials observed by the algorithm"""
         return sum(bool(point[1] is not None) for point in self._trials_info.values())
 
-    def has_suggested(self, point):
+    def has_suggested(self, trial):
         """Whether the algorithm has suggested a given point.
 
         Parameters
         ----------
-        point : tuples of array-likes
-           Points from a `orion.algo.space.Space`.
+        trial: ``orion.core.worker.trial.Trial``
+           Trial from a `orion.algo.space.Space`.
 
         Returns
         -------
         bool
-            True if the point was suggested by the algo, False otherwise.
+            True if the trial was suggested by the algo, False otherwise.
 
         """
-        return self.get_id(point) in self._trials_info
+        return self.get_id(trial) in self._trials_info
 
-    def has_observed(self, point):
+    def has_observed(self, trial):
         """Whether the algorithm has observed a given point objective.
 
         This only counts observed completed trials.
 
         Parameters
         ----------
-        point : tuples of array-likes
-            Points from a `orion.algo.space.Space`.
+        trial: ``orion.core.worker.trial.Trial``
+           Trial object to retrieve from the database
 
         Returns
         -------
         bool
-            True if the point's objective was observed by the algo, False otherwise.
+            True if the trial's objective was observed by the algo, False otherwise.
 
         """
-
-        trial_id = self.get_id(point)
         return (
-            trial_id in self._trials_info and self._trials_info[trial_id][1] is not None
+            self.get_id(trial) in self._trials_info
+            and self._trials_info[self.get_id(trial)][1] is not None
         )
 
     @property
@@ -338,42 +326,53 @@ class BaseAlgorithm:
 
         return False
 
-    def score(self, point):  # pylint:disable=no-self-use,unused-argument
+    def score(self, trial):  # pylint:disable=no-self-use,unused-argument
         """Allow algorithm to evaluate `point` based on a prediction about
         this parameter set's performance.
 
         By default, return the same score any parameter (no preference).
 
-        :returns: A subjective measure of expected perfomance.
-        :rtype: float
+        Parameters
+        ----------
+        trial: ``orion.core.worker.trial.Trial``
+           Trial object to retrieve from the database
+
+        Returns
+        -------
+        A subjective measure of expected perfomance.
 
         """
         return 0
 
-    def judge(self, point, measurements):  # pylint:disable=no-self-use,unused-argument
+    def judge(self, trial, measurements):  # pylint:disable=no-self-use,unused-argument
         """Inform an algorithm about online `measurements` of a running trial.
-
-        :param point: A tuple which specifies the values of the (hyper)parameters
-           used to execute user's script with.
 
         This method is to be used as a callback in a client-server communication
         between user's script and a orion's worker using a `BaseAlgorithm`.
         Data returned from this method must be serializable and will be used as
         a response to the running environment. Default response is None.
 
-        .. note:: Calling algorithm to `judge` a `point` based on its online
-           `measurements` will effectively change a state in the algorithm (like
-           a reinforcement learning agent's hidden state or an automatic early
-           stopping mechanism's regression), which it may change the value of
-           the property `should_suspend`.
+        Parameters
+        ----------
+        trial: ``orion.core.worker.trial.Trial``
+           Trial object to retrieve from the database
 
-        :returns: None or a serializable dictionary containing named data
+        Notes:
+        ------
+
+        Calling algorithm to `judge` a `point` based on its online `measurements` will effectively
+        change a state in the algorithm (like a reinforcement learning agent's hidden state or an
+        automatic early stopping mechanism's regression), which it may change the value of the
+        property `should_suspend`.
+
+        Returns
+        -------
+        None or a serializable dictionary containing named data
 
         """
         return None
 
-    @property
-    def should_suspend(self):
+    def should_suspend(self, trial):
         """Allow algorithm to decide whether a particular running trial is still
         worth to complete its evaluation, based on information provided by the
         `judge` method.
