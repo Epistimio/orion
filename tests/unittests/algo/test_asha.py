@@ -588,7 +588,12 @@ class TestGenericASHA(BaseAlgoTests):
         algo = self.create_algo()
         spy = self.spy_phase(mocker, num, algo, attr)
         trials = algo.suggest(5)
-        assert len(trials) == 1
+
+        if num == BUDGETS[-1]:
+            # Rung 2 has 2 trials for bracket 1, 1 trial for bracket 2
+            assert len(trials) == 2 + 1
+        else:
+            assert len(trials) == 5
 
     @pytest.mark.skip(reason="See https://github.com/Epistimio/orion/issues/598")
     def test_is_done_cardinality(self):
@@ -681,9 +686,9 @@ class TestGenericASHA(BaseAlgoTests):
 
 
 BUDGETS = [
-    4 + 2,  # rung 0
-    (8 + 4 + 2 + 4),  # rung 1 (first bracket 8 4 2, second bracket 4)
-    (16 + 8 + 4 + 2 + 1 + 8 + 4 + 2),  #  rung 2
+    16 + 8,  # rung 0
+    (16 + 8 + 8 + 4),  # rung 1 (first bracket 8 4 2, second bracket 4)
+    (16 + 8 + 4 + 8 + 4 + 2),  #  rung 2
 ]
 
 TestGenericASHA.set_phases(
