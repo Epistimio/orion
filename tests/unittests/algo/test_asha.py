@@ -156,7 +156,7 @@ class TestASHABracket:
         bracket.asha = asha
         bracket.rungs[0] = rung_0
 
-        point = bracket.get_candidate(0)
+        point = bracket.get_candidates(0)[0]
 
         assert point.params == create_trial_for_hb((1, 0.0), 0.0).params
 
@@ -170,7 +170,8 @@ class TestASHABracket:
             trial,
         )
 
-        trial = bracket.get_candidate(0)
+        trial = bracket.get_candidates(0)[0]
+
         assert trial.params == create_trial_for_hb((1, 1.0), 0.0).params
 
     def test_no_promotion_when_rung_full(self, asha, bracket, rung_0, rung_1):
@@ -179,9 +180,7 @@ class TestASHABracket:
         bracket.rungs[0] = rung_0
         bracket.rungs[1] = rung_1
 
-        point = bracket.get_candidate(0)
-
-        assert point is None
+        assert bracket.get_candidates(0) == []
 
     def test_no_promotion_if_not_enough_points(self, asha, bracket):
         """Test the get_candidate return None if there is not enough points ready."""
@@ -194,9 +193,7 @@ class TestASHABracket:
             },
         )
 
-        point = bracket.get_candidate(0)
-
-        assert point is None
+        assert bracket.get_candidates(0) == []
 
     def test_no_promotion_if_not_completed(self, asha, bracket, rung_0):
         """Test the get_candidate return None if trials are not completed."""
@@ -204,14 +201,12 @@ class TestASHABracket:
         bracket.rungs[0] = rung_0
         rung = bracket.rungs[0]["results"]
 
-        point = bracket.get_candidate(0)
+        point = bracket.get_candidates(0)[0]
 
         for p_id in rung.keys():
             rung[p_id] = (None, rung[p_id][1])
 
-        point = bracket.get_candidate(0)
-
-        assert point is None
+        assert bracket.get_candidates(0) == []
 
     def test_is_done(self, bracket, rung_0):
         """Test that the `is_done` property works."""
@@ -234,6 +229,51 @@ class TestASHABracket:
         assert trial_id in bracket.rungs[1]["results"]
         assert bracket.rungs[1]["results"][trial_id][1].params == trial.params
         assert candidate.params["epoch"] == 9
+
+    def test_update_rungs_return_candidates(self, asha, bracket):
+        """Check if many valid modified candidate is returned by update_rungs."""
+        bracket.asha = asha
+
+        n_rung_0 = 9 * 3
+        rung_0 = create_rung_from_points(
+            np.linspace(0, n_rung_0 - 1, n_rung_0), n_trials=n_rung_0, resources=1
+        )
+
+        n_rung_1 = 3 * 2
+        rung_1 = create_rung_from_points(
+            np.linspace(n_rung_0 - n_rung_1, n_rung_0 - 1, n_rung_1),
+            n_trials=n_rung_1,
+            resources=3,
+        )
+
+        bracket.rungs[0] = rung_0
+        bracket.rungs[1] = rung_1
+
+        trial = create_trial_for_hb((3, 0.0), 0.0)
+
+        candidates = bracket.promote(100)
+
+        assert len(candidates) == 2 + 3 * 3
+        assert (
+            sum(1 for trial in candidates if trial.params[asha.fidelity_index] == 9)
+            == 2
+        )
+        assert (
+            sum(1 for trial in candidates if trial.params[asha.fidelity_index] == 3)
+            == 3 * 3
+        )
+
+        candidates = bracket.promote(3)
+
+        assert len(candidates) == 2 + 1
+        assert (
+            sum(1 for trial in candidates if trial.params[asha.fidelity_index] == 9)
+            == 2
+        )
+        assert (
+            sum(1 for trial in candidates if trial.params[asha.fidelity_index] == 3)
+            == 1
+        )
 
     def test_update_rungs_return_no_candidate(self, asha, bracket, rung_1):
         """Check if no candidate is returned by update_rungs."""
