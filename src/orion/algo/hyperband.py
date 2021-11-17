@@ -170,11 +170,12 @@ class Hyperband(BaseAlgorithm):
         if self.reduction_factor >= 2:
             self.budgets = compute_budgets(self.max_resources, self.reduction_factor)
             self.brackets = self.create_brackets()
-            self.seed_rng(seed)
         else:
             self.budgets = None
             self.brackets = None
             logger.warning("Reduction factor for Hyperband needs to be at least 2")
+
+        self.seed_rng(seed)
 
     def create_bracket(self, i, budgets, iteration):
         return HyperbandBracket(self, budgets, iteration)

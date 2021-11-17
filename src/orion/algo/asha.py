@@ -155,6 +155,8 @@ class ASHA(Hyperband):
 
         self.brackets = self.create_brackets()
 
+        self.seed_rng(seed)
+
     def compute_bracket_idx(self, num):
         def assign_resources(n, remainings, totals):
             if n == 0 or remainings.sum() == 0:
