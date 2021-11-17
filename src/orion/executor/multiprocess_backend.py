@@ -35,7 +35,16 @@ class Pool(PyPool):
     """Custom pool that does not set its worker as daemon process"""
 
     @staticmethod
-    def Process(ctx, *args, **kwds):
+    def Process(*args, **kwds):
+        import sys
+
+        v = sys.version_info
+
+        #  < 3.8 use self._ctx
+        # >= 3.8 ctx as an argument
+        if v.major == 3 and v.minor >= 8:
+            args = args[1:]
+
         return _Process(*args, **kwds)
 
 
