@@ -11,6 +11,7 @@ import orion.core
 from orion.benchmark.assessment import AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task import CarromTable, RosenBrock
+from orion.client import ExperimentClient
 from orion.core.io.database.ephemeraldb import EphemeralDB
 from orion.core.io.database.pickleddb import PickledDB
 from orion.core.utils.exceptions import NoConfigurationError
@@ -19,7 +20,6 @@ from orion.executor.joblib_backend import Joblib
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 from orion.testing.state import OrionState
-from orion.client import ExperimentClient
 
 
 class DummyTask:

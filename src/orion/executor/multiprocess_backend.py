@@ -4,7 +4,8 @@ import traceback
 import uuid
 from dataclasses import dataclass
 from multiprocessing import Manager, Process
-from multiprocessing.pool import AsyncResult, Pool as PyPool
+from multiprocessing.pool import AsyncResult
+from multiprocessing.pool import Pool as PyPool
 from queue import Empty
 
 import cloudpickle

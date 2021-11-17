@@ -1,6 +1,6 @@
-import pytest
-
 import sys
+
+import pytest
 
 from orion.executor.dask_backend import Dask
 from orion.executor.multiprocess_backend import Multiprocess
