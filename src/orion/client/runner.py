@@ -124,7 +124,7 @@ class Runner:
 
         self.free_worker -= len(new_futures)
         self.futures.extend(new_futures)
-        log.debug(f"Scheduled new trials")
+        log.debug("Scheduled new trials")
 
     def gather(self):
         """Gather the results from each worker asynchronously"""
