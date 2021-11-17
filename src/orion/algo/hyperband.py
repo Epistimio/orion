@@ -194,7 +194,12 @@ class Hyperband(BaseAlgorithm):
 
             full_id = self.get_id(trial, ignore_fidelity=False)
             id_wo_fidelity = self.get_id(trial, ignore_fidelity=True)
-            bracket_observed = self.trial_to_brackets.get(id_wo_fidelity)
+
+            bracket_id = self.trial_to_brackets.get(id_wo_fidelity, None)
+            if bracket_id is not None:
+                bracket_observed = self.brackets[bracket_id]
+            else:
+                bracket_observed = None
 
             if not self.has_suggested(trial) and (
                 not bracket_observed
@@ -209,7 +214,7 @@ class Hyperband(BaseAlgorithm):
 
                 trials.append(trial)
                 self.register(trial)
-                self.trial_to_brackets[id_wo_fidelity] = bracket
+                self.trial_to_brackets[id_wo_fidelity] = self.brackets.index(bracket)
 
         return trials
 
@@ -233,8 +238,8 @@ class Hyperband(BaseAlgorithm):
         return {
             "rng_state": self.rng.get_state(),
             "seed": self.seed,
-            "_trials_info": copy.deepcopy(self._trials_info),
-            "trial_to_brackets": copy.deepcopy(self.trial_to_brackets),
+            "_trials_info": copy.deepcopy(dict(self._trials_info)),
+            "trial_to_brackets": copy.deepcopy(dict(self.trial_to_brackets)),
             "brackets": [bracket.state_dict for bracket in self.brackets],
         }
 
@@ -271,7 +276,7 @@ class Hyperband(BaseAlgorithm):
             if self.get_id(sample, ignore_fidelity=True) not in self.trial_to_brackets:
                 self.trial_to_brackets[
                     self.get_id(sample, ignore_fidelity=True)
-                ] = bracket
+                ] = self.brackets.index(bracket)
 
     def promote(self, num):
         samples = []
@@ -346,8 +351,11 @@ class Hyperband(BaseAlgorithm):
         """Counter for how many times Hyperband been executed"""
         if not self.brackets:
             return 0
-        executed_times = self.brackets[0].repetition_id
-        return executed_times - int(not self.brackets[0].is_done)
+        executed_times = self.brackets[-1].repetition_id
+        all_brackets_done = all(
+            bracket.is_done for bracket in self.brackets[-len(self.budgets) :]
+        )
+        return executed_times - int(not all_brackets_done)
 
     def _refresh_brackets(self):
         """Refresh bracket if one hyperband execution is done"""
@@ -363,7 +371,7 @@ class Hyperband(BaseAlgorithm):
                 self.append_brackets()
 
     def append_brackets(self):
-        self.brackets = self.create_brackets() + self.brackets
+        self.brackets = self.brackets + self.create_brackets()
         # Reset brackets seeds
         self.seed_brackets(self.seed)
 
@@ -375,43 +383,8 @@ class Hyperband(BaseAlgorithm):
 
     def _get_bracket(self, trial):
         """Get the bracket of a trial"""
-        fidelity = flatten(trial.params)[self.fidelity_index]
         _id_wo_fidelity = self.get_id(trial, ignore_fidelity=True)
-
-        brackets = []
-        for bracket in self.brackets:
-            # If find same trial in first rung of a bracket,
-            # the trial should register in this bracket
-            if _id_wo_fidelity in bracket.rungs[0]["results"]:
-                brackets = [bracket]
-                break
-
-        if not brackets:
-            # If the trial show in current hyeprband execution the first time,
-            # the bracket with same fidelity in the first rung should be used,
-            # the assumption is that there is no duplicated trials inside same hyperband execution.
-            brackets = [
-                bracket
-                for bracket in self.brackets
-                if bracket.rungs[0]["resources"] == fidelity
-            ]
-
-        if not brackets:
-            raise ValueError(
-                "No bracket found for trial {0} with fidelity {1}".format(
-                    _id_wo_fidelity, fidelity
-                )
-            )
-
-        if len(brackets) > 1:
-            logger.warning(
-                "More than one bracket found for trial %s, this should not happen",
-                str(trial),
-            )
-
-        bracket = brackets[0]
-
-        return bracket
+        return self.brackets[self.trial_to_brackets[_id_wo_fidelity]]
 
     def observe(self, trials):
         """Observe evaluation `results` corresponding to list of `trials` in

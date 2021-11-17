@@ -389,10 +389,10 @@ class TestASHA:
         fidelity = 2
         trial = create_trial_for_hb((fidelity, value))
 
-        with pytest.raises(ValueError) as ex:
-            force_observe(asha, trial)
+        asha.observe([trial])
 
-        assert "No bracket found for trial" in str(ex.value)
+        assert not asha.has_suggested(trial)
+        assert not asha.has_observed(trial)
 
     def test_register_not_sampled(self, space, b_config, caplog):
         """Check that a point cannot registered if not sampled."""
@@ -457,7 +457,7 @@ class TestASHA:
             resources=1,
             results={duplicate_id_wo_fidelity: (0.0, duplicate_trial)},
         )
-        asha.trial_to_brackets[duplicate_id_wo_fidelity] = bracket
+        asha.trial_to_brackets[duplicate_id_wo_fidelity] = 0
 
         asha.register(duplicate_trial)
 
@@ -479,7 +479,7 @@ class TestASHA:
 
         fidelity = 1
         zhe_trial = create_trial_for_hb((fidelity, 0.0))
-        asha.trial_to_brackets[asha.get_id(zhe_trial, ignore_fidelity=True)] = bracket
+        asha.trial_to_brackets[asha.get_id(zhe_trial, ignore_fidelity=True)] = 0
 
         def sample(num=1, seed=None):
             return [zhe_trial]
