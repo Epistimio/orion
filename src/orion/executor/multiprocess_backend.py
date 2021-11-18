@@ -95,7 +95,7 @@ class Multiprocess(BaseExecutor):
         return super().__exit__(exc_type, exc_value, traceback)
 
     def submit(self, function, *args, **kwargs) -> AsyncResult:
-        return self._submit_python(function, *args, **kwargs)
+        return self._submit_cloudpickle(function, *args, **kwargs)
 
     def _submit_python(self, function, *args, **kwargs) -> AsyncResult:
         return _Future(self.pool.apply_async(function, args=args, kwds=kwargs))
