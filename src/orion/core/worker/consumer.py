@@ -17,6 +17,7 @@ import orion.core
 from orion.core.io.convert import JSONConverter
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.io.resolve_config import infer_versioning_metadata
+from orion.core.utils import sigterm_as_interrupt
 from orion.core.utils.exceptions import (
     BranchingEvent,
     InexecutableUserScript,
@@ -131,23 +132,26 @@ class Consumer(object):
             True if the trial was successfully executed. False if the trial is broken.
 
         """
-        log.debug("Creating new directory at '%s':", self.working_dir)
-        temp_dir = not bool(self.experiment.working_dir)
-        prefix = self.experiment.name + "_"
-        suffix = trial.id
+        with sigterm_as_interrupt():
+            log.debug("Creating new directory at '%s':", self.working_dir)
+            temp_dir = not bool(self.experiment.working_dir)
+            prefix = self.experiment.name + "_"
+            suffix = trial.id
 
-        with WorkingDir(
-            self.working_dir, temp_dir, prefix=prefix, suffix=suffix
-        ) as workdirname:
-            log.debug("New consumer context: %s", workdirname)
-            trial.working_dir = workdirname
+            with WorkingDir(
+                self.working_dir, temp_dir, prefix=prefix, suffix=suffix
+            ) as workdirname:
+                log.debug("New consumer context: %s", workdirname)
+                trial.working_dir = workdirname
 
-            results_file = self._consume(trial, workdirname)
+                results_file = self._consume(trial, workdirname)
 
-            log.debug("Parsing results from file and fill corresponding Trial object.")
-            results = self.retrieve_results(results_file)
+                log.debug(
+                    "Parsing results from file and fill corresponding Trial object."
+                )
+                results = self.retrieve_results(results_file)
 
-        return results
+            return results
 
     def retrieve_results(self, results_file):
         """Retrive the results from the file"""
