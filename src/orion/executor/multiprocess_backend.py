@@ -5,9 +5,8 @@ import traceback
 import uuid
 from dataclasses import dataclass
 from multiprocessing import Manager, Process
-from multiprocessing.pool import AsyncResult, ExceptionWithTraceback, MaybeEncodingError
+from multiprocessing.pool import AsyncResult
 from multiprocessing.pool import Pool as PyPool
-from multiprocessing.pool import RemoteTraceback, _helper_reraises_exception
 from queue import Empty
 
 import cloudpickle
@@ -35,60 +34,6 @@ class _Process(Process):
     daemon = property(_get_daemon, _set_daemon)
 
 
-def _worker(
-    inqueue,
-    outqueue,
-    initializer=None,
-    initargs=(),
-    maxtasks=None,
-    wrap_exception=False,
-):
-    if (maxtasks is not None) and not (isinstance(maxtasks, int) and maxtasks >= 1):
-        raise AssertionError("Maxtasks {!r} is not valid".format(maxtasks))
-    put = outqueue.put
-    get = inqueue.get
-    if hasattr(inqueue, "_writer"):
-        inqueue._writer.close()
-        outqueue._reader.close()
-
-    if initializer is not None:
-        initializer(*initargs)
-
-    completed = 0
-    while maxtasks is None or (maxtasks and completed < maxtasks):
-        try:
-            task = get()
-        except (EOFError, OSError):
-            log.debug("worker got EOFError or OSError -- exiting")
-            break
-
-        if task is None:
-            log.debug("worker got sentinel -- exiting")
-            break
-
-        job, i, func, args, kwds = task
-        try:
-            result = (True, func(*args, **kwds))
-        except KeyboardInterrupt as e:
-            if wrap_exception and func is not _helper_reraises_exception:
-                e = ExceptionWithTraceback(e, e.__traceback__)
-            result = (False, e)
-        except Exception as e:
-            if wrap_exception and func is not _helper_reraises_exception:
-                e = ExceptionWithTraceback(e, e.__traceback__)
-            result = (False, e)
-        try:
-            put((job, i, result))
-        except Exception as e:
-            wrapped = MaybeEncodingError(e, result[1])
-            log.debug("Possible encoding error while sending result: %s" % (wrapped))
-            put((job, i, (False, wrapped)))
-
-        task = job = result = func = args = kwds = None
-        completed += 1
-    log.debug("worker exiting after %d tasks" % completed)
-
-
 class Pool(PyPool):
     """Custom pool that does not set its worker as daemon process"""
 
@@ -104,41 +49,6 @@ class Pool(PyPool):
             args = args[1:]
 
         return _Process(*args, **kwds)
-
-    @staticmethod
-    def _repopulate_pool_static(
-        ctx,
-        Process,
-        processes,
-        pool,
-        inqueue,
-        outqueue,
-        initializer,
-        initargs,
-        maxtasksperchild,
-        wrap_exception,
-    ):
-        """Bring the number of pool processes up to the specified number,
-        for use after reaping workers which have exited.
-        """
-        for i in range(processes - len(pool)):
-            w = Process(
-                ctx,
-                target=_worker,
-                args=(
-                    inqueue,
-                    outqueue,
-                    initializer,
-                    initargs,
-                    maxtasksperchild,
-                    wrap_exception,
-                ),
-            )
-            w.name = w.name.replace("Process", "PoolWorker")
-            w.daemon = True
-            w.start()
-            pool.append(w)
-            log.debug("added worker")
 
 
 class _Future:

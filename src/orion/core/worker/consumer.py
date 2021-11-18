@@ -30,7 +30,16 @@ log = logging.getLogger(__name__)
 class ExecutionError(Exception):
     """Error raised when Orion is unable to execute the user's script without errors."""
 
-    pass
+    def __init__(self):
+        super(ExecutionError, self).__init__()
+        self.return_code = 0
+
+
+def _exec_error(return_code):
+    """Pickle helper"""
+    err = ExecutionError()
+    err.return_code = return_code
+    return err
 
 
 class Consumer(object):
@@ -270,11 +279,7 @@ class Consumer(object):
             raise InexecutableUserScript(" ".join(cmd_args))
 
         return_code = process.wait()
+        log.debug(f"Script finished with return code {return_code}")
 
-        if return_code == self.interrupt_signal_code:
-            raise KeyboardInterrupt()
-        elif return_code != 0:
-            raise ExecutionError(
-                "Something went wrong. Check logs. Process "
-                "returned with code {} !".format(return_code)
-            )
+        if return_code != 0:
+            raise _exec_error(return_code)

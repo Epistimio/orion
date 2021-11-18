@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint:disable=too-many-arguments
 """
 Runner
 ======
@@ -7,6 +8,7 @@ Executes the optimization process
 """
 import logging
 
+import orion.core
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
@@ -15,6 +17,7 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.utils.flatten import flatten, unflatten
+from orion.core.worker.consumer import ExecutionError
 from orion.core.worker.trial import AlreadyReleased
 from orion.executor.base import AsyncException, AsyncResult
 
@@ -44,6 +47,7 @@ class Runner:
         max_broken,
         trial_arg,
         on_error,
+        interrupt_signal_code=None,
         **kwargs,
     ):
         self.client = client
@@ -60,6 +64,11 @@ class Runner:
         self.futures = []
         self.pending_trials = dict()
         self.free_worker = pool_size
+
+        if interrupt_signal_code is None:
+            interrupt_signal_code = orion.core.config.worker.interrupt_signal_code
+
+        self.interrupt_signal_code = interrupt_signal_code
 
     @property
     def is_done(self):
@@ -149,10 +158,22 @@ class Runner:
                 self.trials += 1
 
             if isinstance(result, AsyncException):
-                if isinstance(result.exception, (KeyboardInterrupt, InvalidResult)):
-                    to_be_raised = result.exception
+                if (
+                    isinstance(result.exception, ExecutionError)
+                    and result.exception.return_code == self.interrupt_signal_code
+                ):
+                    to_be_raised = KeyboardInterrupt()
+                    self.client.release(trial, status="interrupted")
                     continue
 
+                if isinstance(result.exception, InvalidResult):
+                    # stop the optimization process if we received `InvalidResult`
+                    # as all the experiments are assumed to be returning those
+                    to_be_raised = result.exception
+
+                # Regular exception, might be caused by the choosen hyperparameters
+                # themselves rather than the code in particular (like Out of Memory error
+                # for big batch sizes)
                 exception = result.exception
                 self.worker_broken_trials += 1
                 self.client.release(trial, status="broken")
@@ -166,10 +187,12 @@ class Runner:
                     log.error(str(exception))
                     log.debug(result.traceback)
 
+                # if we receive too many broken trials, it might indicate the user script
+                # is broken, stop the experiment and let the user investigate
                 if self.worker_broken_trials >= self.max_broken:
                     raise BrokenExperiment("Worker has reached broken trials threshold")
 
-        if to_be_raised:
+        if to_be_raised is not None:
             log.debug("Runner was interrupted")
             self.release_all()
             raise to_be_raised
