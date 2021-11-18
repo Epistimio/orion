@@ -193,6 +193,16 @@ def _handler(signum, frame):
 @contextmanager
 def sigterm_as_interrupt():
     """Intercept ``SIGTERM`` signals and raise ``KeyboardInterrupt`` instead"""
-    previous = signal.signal(signal.SIGTERM, _handler)
+    ## Signal only works inside the main process
+    previous = lambda *args: None
+    try:
+        previous = signal.signal(signal.SIGTERM, _handler)
+    except ValueError:
+        pass
+
     yield None
-    signal.signal(signal.SIGTERM, previous)
+
+    try:
+        signal.signal(signal.SIGTERM, previous)
+    except ValueError:
+        pass
