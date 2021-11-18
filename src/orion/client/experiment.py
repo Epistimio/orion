@@ -79,16 +79,25 @@ class ExperimentClient:
         if heartbeat is None:
             heartbeat = orion.core.config.worker.heartbeat
         self.heartbeat = heartbeat
-        self.executor = executor or executor_factory.create(
-            orion.core.config.worker.executor,
-            n_workers=orion.core.config.worker.n_workers,
-            **orion.core.config.worker.executor_configuration,
-        )
+        self._executor = executor
+        self._executor_owner = False
         self.plot = PlotAccessor(self)
 
     ###
     # Attributes
     ###
+    @property
+    def executor(self):
+        """Returns the current executor to use to run jobs in parallel"""
+        if not self._executor:
+            self._executor_owner = True
+            self._executor = executor_factory.create(
+                orion.core.config.worker.executor,
+                n_workers=orion.core.config.worker.n_workers,
+                **orion.core.config.worker.executor_configuration,
+            )
+
+        return self._executor
 
     @property
     def name(self):
@@ -637,11 +646,11 @@ class ExperimentClient:
         """
         if isinstance(executor, str):
             executor = executor_factory.create(executor, **config)
-        old_executor = self.executor
-        self.executor = executor
+        old_executor = self._executor
+        self._executor = executor
         with executor:
             yield self
-        self.executor = old_executor
+        self._executor = old_executor
 
     # pylint:disable=too-many-arguments
     def workon(
@@ -789,6 +798,9 @@ class ExperimentClient:
     ###
     # Private
     ###
+    def __del__(self):
+        if self._executor_owner:
+            self._executor.__exit__(None, None, None)
 
     def __repr__(self):
         """Represent the object as a string."""

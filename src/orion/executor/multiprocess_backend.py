@@ -77,7 +77,7 @@ class Multiprocess(BaseExecutor):
         self.pool = Pool(n_workers)
 
     def __del__(self):
-        self.pool.close()
+        self.pool.terminate()
 
     def __getstate__(self):
         state = super(Multiprocess, self).__getstate__()
