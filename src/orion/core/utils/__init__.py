@@ -194,7 +194,7 @@ def _handler(signum, frame):
 def sigterm_as_interrupt():
     """Intercept ``SIGTERM`` signals and raise ``KeyboardInterrupt`` instead"""
     ## Signal only works inside the main process
-    previous = lambda *args: None
+    previous = None
     try:
         previous = signal.signal(signal.SIGTERM, _handler)
     except ValueError:
@@ -202,7 +202,5 @@ def sigterm_as_interrupt():
 
     yield None
 
-    try:
+    if previous:
         signal.signal(signal.SIGTERM, previous)
-    except ValueError:
-        pass
