@@ -10,9 +10,9 @@ import pytest
 
 from orion.algo.hyperband import Hyperband, HyperbandBracket, compute_budgets
 from orion.algo.space import Fidelity, Integer, Real, Space
+from orion.core.utils.flatten import flatten
 from orion.testing.algo import BaseAlgoTests, phase
 from orion.testing.trial import compare_trials, create_trial
-from orion.core.utils.flatten import flatten
 
 
 def create_trial_for_hb(point, objective=None):
