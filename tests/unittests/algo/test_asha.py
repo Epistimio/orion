@@ -163,7 +163,8 @@ class TestASHABracket:
 
         assert len(bracket.rungs[0])
         assert trial_id in bracket.rungs[0]["results"]
-        assert (trial.objective.value, trial) == bracket.rungs[0]["results"][trial_id]
+        assert bracket.rungs[0]["results"][trial_id][0] == trial.objective.value
+        assert bracket.rungs[0]["results"][trial_id][1].to_dict() == trial.to_dict()
 
     def test_bad_register(self, asha, bracket):
         """Check that a non-valid point is not registered."""

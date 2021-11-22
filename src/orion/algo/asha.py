@@ -299,7 +299,8 @@ class ASHABracket(HyperbandBracket):
                     },
                 )
 
-                candidates.append(candidate)
+                if not self.hyperband.has_suggested(candidate):
+                    candidates.append(candidate)
 
                 if len(candidates) >= num:
                     return candidates

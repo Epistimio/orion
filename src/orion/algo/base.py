@@ -259,7 +259,7 @@ class BaseAlgorithm:
 
         """
         self._trials_info[self.get_id(trial)] = (
-            trial,
+            copy.deepcopy(trial),
             format_trials.get_trial_results(trial) if trial.objective else None,
         )
 

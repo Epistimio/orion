@@ -508,7 +508,7 @@ class HyperbandBracket:
         """Register a trial in the corresponding rung"""
         self._get_results(trial)[self.hyperband.get_id(trial, ignore_fidelity=True)] = (
             trial.objective.value if trial.objective else None,
-            trial,
+            copy.deepcopy(trial),
         )
 
     def _get_results(self, trial):
