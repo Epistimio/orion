@@ -121,10 +121,13 @@ class Benchmark:
 
     def analysis(self):
         """Return all the assessment figures"""
-        figures = []
+        figures = list()
         for study in self.studies:
             figure = study.analysis()
-            figures.append(figure)
+            if isinstance(figure, list):
+                figures.extend(figure)
+            else:
+                figures.append(figure)
         return figures
 
     def experiments(self, silent=True):

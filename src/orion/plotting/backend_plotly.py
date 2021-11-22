@@ -199,7 +199,7 @@ def rankings(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
                 rankings.append(build_frame(competition))
             df = pd.concat(rankings)
             data_frames = orion.analysis.average(
-                df, group_by=["order", "name"], key="rank", return_var=True
+                df, group_by=["order", "name"], keys=["rank"], return_var=True
             )
         else:
             data_frames = build_frame(competitions)
@@ -551,31 +551,72 @@ def regret(
 
 def parallel_advantage(experiments, with_evc_tree=True):
     """Plotly implementation of `orion.plotting.lpi`"""
+    compute_average = bool(
+        isinstance(experiments, dict)
+        and isinstance(next(iter(experiments.values())), Iterable)
+    )
 
     def build_group():
-        exp_parallels = dict(names=list(), objective=list(), n_workers=list())
-        for name, group in experiments.items():
-            for experiment in group:
+        """Build dataframes for groups of experiments"""
+        if compute_average:
+            data_frames = dict()
+            for name, group in experiments.items():
+                frames = build_frame(group)
 
-                dfs = experiment.to_pandas(with_evc_tree=with_evc_tree)
-                dfs = dfs.loc[dfs["status"] == "completed"]
+                df = orion.analysis.average(
+                    frames, group_by="n_workers", keys=["objective", "duration"]
+                )
+                df["names"] = [name] * len(df)
 
-                if not dfs.empty:
-                    dfs = dfs.sort_values("objective")
-                    exp_parallels["names"].append(name)
-                    exp_parallels["n_workers"].append(experiment.executor.n_workers)
-                    exp_parallels["objective"].append(dfs["objective"].tolist()[0])
+                data_frames[name] = df
+            data_frames = pd.concat(data_frames)
+        elif isinstance(experiments, dict):
+            data_frames = build_frame(experiments.values(), list(experiments.keys()))
+        else:
+            data_frames = build_frame(experiments)
 
-        df = pd.DataFrame(exp_parallels)
+        return data_frames
 
-        return df
+    def build_frame(experiments, names=None):
+        """Builds the dataframe for the plot"""
+        frames = []
+        exp_parallels = dict(
+            names=list(), objective=list(), n_workers=list(), duration=list()
+        )
+        for i, experiment in enumerate(experiments):
+            dfs = experiment.to_pandas(with_evc_tree=with_evc_tree)
+            dfs = dfs.loc[dfs["status"] == "completed"]
+            if len(dfs) > experiment.max_trials:
+                dfs = dfs.head(experiment.max_trials)
+            if not dfs.empty:
+                start = dfs["suggested"].iloc[0]
+                end = dfs["completed"].iloc[-1]
+                duration = (end - start).seconds + 1
 
-    def get_objective_name():
-        for _, group in experiments.items():
-            for experiment in group:
-                trials = experiment.fetch_trials_by_status("completed")
-                if trials:
-                    return trials[0].objective.name
+                dfs = dfs.sort_values("objective")
+                exp_parallels["duration"].append(duration)
+                name = names[i] if names else f"{experiment.name}-v{experiment.version}"
+                exp_parallels["names"].append(name)
+                exp_parallels["n_workers"].append(experiment.executor.n_workers)
+                exp_parallels["objective"].append(dfs["objective"].tolist()[0])
+
+            df = pd.DataFrame(exp_parallels)
+            frames.append(df)
+
+        return pd.concat(frames)
+
+    def get_objective_name(experiments):
+        """Infer name of objective based on trials of one experiment"""
+        if compute_average and isinstance(experiments, dict):
+            return get_objective_name(sum(map(list, experiments.values()), []))
+
+        if isinstance(experiments, dict):
+            experiments = experiments.values()
+
+        for experiment in experiments:
+            trials = experiment.fetch_trials_by_status("completed")
+            if trials:
+                return trials[0].objective.name
         return "objective"
 
     if not experiments:
@@ -596,22 +637,146 @@ def parallel_advantage(experiments, with_evc_tree=True):
     names = set(df["names"])
     for i, name in enumerate(sorted(names)):
         parallel_data = df[df["names"] == name]
+        if "objective_mean" in parallel_data:
+            y = parallel_data["objective_mean"]
+            durations = parallel_data["duration_mean"]
+        else:
+            y = parallel_data["objective"]
+            durations = parallel_data["duration"]
+
         x = parallel_data["n_workers"]
-        y = parallel_data["objective"]
 
         fig.add_scatter(
             x=x,
             y=y,
             mode="lines+markers",
             name=name,
-            customdata=list(zip(x, name)),
+            customdata=list(zip(durations, parallel_data["n_workers"])),
             hovertemplate=_template_workers(name),
         )
 
     fig.update_layout(
         title=f"Parallel Advantage",
         xaxis_title=f"Number of workers",
-        yaxis_title=get_objective_name(),
+        yaxis_title=get_objective_name(experiments),
+        hovermode="x",
+    )
+
+    return fig
+
+
+def durations(experiments, with_evc_tree=True, order_by="completed", **kwargs):
+    """Plotly implementation of `orion.plotting.regrets`"""
+
+    compute_average = bool(
+        isinstance(experiments, dict)
+        and isinstance(next(iter(experiments.values())), Iterable)
+    )
+
+    def build_groups():
+        """Build dataframes for groups of experiments"""
+        if compute_average:
+            data_frames = dict()
+            for name, group in experiments.items():
+                df = orion.analysis.average(
+                    build_frame(group), keys=["best", "duration"]
+                )
+                df["name"] = [name] * len(df)
+                data_frames[name] = df
+            data_frames = pd.concat(data_frames)
+        elif isinstance(experiments, dict):
+            data_frames = build_frame(experiments.values(), list(experiments.keys()))
+        else:
+            data_frames = build_frame(experiments)
+
+        return data_frames
+
+    def build_frame(experiments, names=None):
+        """Builds the dataframe for the plot"""
+        frames = []
+        for i, experiment in enumerate(experiments):
+            df = experiment.to_pandas(with_evc_tree=with_evc_tree)
+            df = df.loc[df["status"] == "completed"]
+            df = df.sort_values(order_by)
+            if len(df) > experiment.max_trials:
+                df = df.head(experiment.max_trials)
+            df = orion.analysis.regret(df)
+
+            start = df["suggested"][0]
+            durations = [t.seconds + 1 for t in (df["completed"] - start)]
+            df["duration"] = durations
+
+            df["name"] = [
+                names[i] if names else f"{experiment.name}-v{experiment.version}"
+            ] * len(df)
+            df["order"] = range(len(df))
+            frames.append(df)
+
+        return pd.concat(frames)
+
+    def get_objective_name(experiments):
+        """Infer name of objective based on trials of one experiment"""
+        if compute_average and isinstance(experiments, dict):
+            return get_objective_name(sum(map(list, experiments.values()), []))
+
+        if isinstance(experiments, dict):
+            experiments = experiments.values()
+
+        for experiment in experiments:
+            trials = experiment.fetch_trials_by_status("completed")
+            if trials:
+                return trials[0].objective.name
+        return "objective"
+
+    ORDER_KEYS = ["suggested", "reserved", "completed"]
+
+    if not experiments:
+        raise ValueError("Parameter 'experiment' is None")
+
+    if order_by not in ORDER_KEYS:
+        raise ValueError(f"Parameter 'order_by' is not one of {ORDER_KEYS}")
+
+    df = build_groups()
+
+    fig = go.Figure()
+
+    if df.empty:
+        return fig
+
+    names = set(df["name"])
+    for i, name in enumerate(sorted(names)):
+        exp_data = df[df["name"] == name]
+        if "best_mean" in exp_data:
+            x = exp_data["duration_mean"]
+            y = exp_data["best_mean"]
+        else:
+            x = exp_data["duration"]
+            y = exp_data["best"]
+
+        fig.add_scatter(
+            x=x,
+            y=y,
+            mode="lines+markers",
+            line=dict(color=px.colors.qualitative.G10[i]),
+            name=name,
+            legendgroup=name,
+        )
+        if "best_var" in exp_data:
+            dy = numpy.sqrt(exp_data["best_var"])
+            fig.add_scatter(
+                x=list(x) + list(x)[::-1],
+                y=list(y - dy) + list(y + dy)[::-1],
+                fill="toself",
+                showlegend=False,
+                line=dict(color=px.colors.qualitative.G10[i]),
+                name=name,
+                legendgroup=name,
+            )
+
+    fig.update_layout(
+        title=f"Time to result",
+        xaxis_title=f"Experiment duration",
+        yaxis_title=get_objective_name(experiments),
         hovermode="x",
     )
 
@@ -650,6 +815,8 @@ def regrets(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
             df = experiment.to_pandas(with_evc_tree=with_evc_tree)
             df = df.loc[df["status"] == "completed"]
             df = df.sort_values(order_by)
+            if len(df) > experiment.max_trials:
+                df = df.head(experiment.max_trials)
             df = orion.analysis.regret(df)
             df["name"] = [
                 names[i] if names else f"{experiment.name}-v{experiment.version}"
@@ -755,7 +922,12 @@ def _format_hyperparameters(hyperparameters, names):
 
 
 def _template_workers(name):
-    template = "workers: %{x}<br>" "algorithm: " + name + "<br>" "objective: %{y}<br>"
+    template = (
+        "workers: %{x}<br>"
+        "algorithm: " + name + "<br>"
+        "objective: %{y}<br>"
+        "duration: %{customdata[0]}"
+    )
     template += "<extra></extra>"
 
     return template

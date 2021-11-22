@@ -56,6 +56,7 @@ def get_all_subclasses(parent):
 
 def get_all_types(parent_cls, cls_name):
     """Get all subclasses and lowercase subclass names"""
+    # print(parent_cls.__subclasses__())
     types = list(get_all_subclasses(parent_cls))
     types = [class_ for class_ in types if class_.__name__ != cls_name]
 
@@ -150,6 +151,8 @@ class GenericFactory:
     def get_classes(self):
         """Get children classes of ``self.base``"""
         _import_modules(self.base)
+        # print("*****")
+        # print(self.base, self.base.__name__)
         return get_all_types(self.base, self.base.__name__)
 
 

@@ -247,10 +247,17 @@ def parallel_advantage(experiments, with_evc_tree=True):
 
     The x-axis contain the worker number and the y-axis their respective best performance.
 
+    3 formats are supported for the experiments:
+
+        1. List of experiments. The names of the experiments will be used for the figure labels.
+        2. Dictionary of experiments. The keys of the dictionary will be used for the figure labels.
+        3. Dictionary of list of experiments. The keys of the dictionary will be used for the figure \
+        labels.
+
     Parameters
     ----------
-    experiments: dict
-        Dictionary of list of experiments with differnt number of numbers.
+    experiments: list or dict
+        List or dictionary of experiments.
 
     with_evc_tree: bool, optional
         Fetch all trials from the EVC tree.
@@ -267,6 +274,41 @@ def parallel_advantage(experiments, with_evc_tree=True):
 
     """
     return backend.parallel_advantage(experiments, with_evc_tree=with_evc_tree)
+
+
+def durations(experiments, with_evc_tree=True):
+    """
+    Make a plot to visualize the performance of experiment at different time duration.
+
+    The x-axis contain relative time duration start from the first trial submitted.
+
+    3 formats are supported for the experiments:
+
+        1. List of experiments. The names of the experiments will be used for the figure labels.
+        2. Dictionary of experiments. The keys of the dictionary will be used for the figure labels.
+        3. Dictionary of list of experiments. The keys of the dictionary will be used for the figure \
+        labels.
+
+    Parameters
+    ----------
+    experiments: list or dict
+        List or dictionary of experiments.
+
+    with_evc_tree: bool, optional
+        Fetch all trials from the EVC tree.
+        Default: True
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+
+    Raises
+    ------
+    ValueError
+        If no experiment is provided.
+
+    """
+    return backend.durations(experiments, with_evc_tree=with_evc_tree)
 
 
 def regret(
@@ -378,6 +420,7 @@ PLOT_METHODS = {
     "regrets": regrets,
     "rankings": rankings,
     "parallel_advantage": parallel_advantage,
+    "durations": durations,
 }
 
 

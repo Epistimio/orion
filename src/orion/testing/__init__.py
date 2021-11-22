@@ -64,6 +64,7 @@ def generate_trials(trial_config, statuses, exp_config=None):
 
     # make each trial unique
     for i, trial in enumerate(new_trials):
+        print(trial)
         if trial["status"] == "completed":
             trial["results"].append({"name": "loss", "type": "objective", "value": i})
 

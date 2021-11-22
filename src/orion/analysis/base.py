@@ -4,8 +4,10 @@ Base tools to compute diverse analysis
 
 """
 import itertools
+from functools import reduce
 
 import numpy
+import pandas as pd
 from sklearn.ensemble import (
     AdaBoostRegressor,
     BaggingRegressor,
@@ -25,7 +27,8 @@ _regressors_ = {
 }
 
 
-def average(trials, group_by="order", key="best", return_var=False):
+# pylint:disable=dangerous-default-value
+def average(trials, group_by="order", keys=["best"], return_var=False):
     """Compute the average of some trial attribute.
 
     By default it will compute the average objective at each time step across
@@ -38,8 +41,8 @@ def average(trials, group_by="order", key="best", return_var=False):
     group_by: str, optional
         The attribute to use to group trials for the average. By default it group trials
         by order (ex: all first trials across experiments.)
-    key: str, optional
-        The attribute to average. Defaults to 'best' as returned by ``orion.analysis.regret``.
+    key: list of str, optional
+        The attributes to average. Defaults to 'best' as returned by ``orion.analysis.regret``.
     return_var: bool, optional
         If True, and a column '{key}_var' where '{key}' is the value of the argument `key`.
         Defaults to False.
@@ -53,11 +56,16 @@ def average(trials, group_by="order", key="best", return_var=False):
         return trials
 
     group = trials.groupby(group_by)
-    mean = group[key].mean().reset_index().rename(columns={key: f"{key}_mean"})
-    if return_var:
-        mean[f"{key}_var"] = group[key].var().reset_index()[key]
+    means = list()
+    for key in keys:
+        mean = group[key].mean().reset_index().rename(columns={key: f"{key}_mean"})
+        if return_var:
+            mean[f"{key}_var"] = group[key].var().reset_index()[key]
+        means.append(mean)
 
-    return mean
+    df_merged = reduce(pd.merge, means)
+
+    return df_merged
 
 
 # pylint:disable=unsupported-assignment-operation

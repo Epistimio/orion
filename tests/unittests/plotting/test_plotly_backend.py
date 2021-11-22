@@ -1,5 +1,6 @@
 """Collection of tests for :mod:`orion.plotting.backend_plotly`."""
 import copy
+import datetime
 
 import numpy
 import pandas
@@ -120,10 +121,14 @@ def mock_experiment_with_random_to_pandas(monkeypatch, status=None, unbalanced=F
         x = numpy.random.normal(0, 0.1, size=N)
         y = numpy.random.normal(0, 0.1, size=N)
         objectives = numpy.random.normal(0, 0.1, size=N)
+        start = datetime.datetime.utcnow()
+        suggested = [start + datetime.timedelta(seconds=int(i)) for i in ids]
         if status is None:
             exp_status = ["completed"] * N
         else:
             exp_status = status
+
+        completed = [start + datetime.timedelta(seconds=int(i) + 1) for i in ids]
 
         data = pandas.DataFrame(
             data={
@@ -132,7 +137,8 @@ def mock_experiment_with_random_to_pandas(monkeypatch, status=None, unbalanced=F
                 "y": y,
                 "objective": objectives,
                 "status": exp_status,
-                "suggested": ids,
+                "suggested": suggested,
+                "completed": completed,
             }
         )
 
@@ -1100,7 +1106,7 @@ class TestParallelAdvantage:
         ):
             plot = parallel_advantage({"random": [experiment] * 2})
 
-        asset_parallel_advantage_plot(plot, [f"random"], 2)
+        asset_parallel_advantage_plot(plot, [f"random"], 1)
 
     def test_list_of_experiments(self, monkeypatch):
         """Tests the parallel_advantage with list of experiments"""
@@ -1116,7 +1122,7 @@ class TestParallelAdvantage:
 
             plot = parallel_advantage({"random": [experiment, child]})
 
-        asset_parallel_advantage_plot(plot, ["random"], 2)
+        asset_parallel_advantage_plot(plot, ["random"], 1)
 
         mock_experiment_with_random_to_pandas(monkeypatch)
         with create_experiment(config, trial_config, ["completed"]) as (
@@ -1128,7 +1134,7 @@ class TestParallelAdvantage:
                 {"exp-1": [experiment] * 10, "exp-2": [experiment] * 10}
             )
 
-        asset_parallel_advantage_plot(plot, ["exp-1", "exp-2"], 10)
+        asset_parallel_advantage_plot(plot, ["exp-1", "exp-2"], 1)
 
     def test_list_of_experiments_name_conflict(self, monkeypatch):
         """Tests the parallel_advantage with list of experiments with the same name"""
@@ -1146,7 +1152,7 @@ class TestParallelAdvantage:
             assert child.version == experiment.version + 1
             plot = parallel_advantage({"random": [experiment, child]})
 
-        asset_parallel_advantage_plot(plot, ["random"], 2)
+        asset_parallel_advantage_plot(plot, ["random"], 1)
 
     def test_ignore_uncompleted_statuses(self, monkeypatch):
         """Tests that uncompleted statuses are ignored"""

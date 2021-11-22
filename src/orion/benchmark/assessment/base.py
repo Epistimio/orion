@@ -45,7 +45,7 @@ class BenchmarkAssessment(ABC):
     @abstractmethod
     def analysis(self, task, experiments):
         """
-        Generate a `plotly.graph_objects.Figure` to display the performance analysis
+        Generate `plotly.graph_objects.Figure` objects to display the performance analysis
         based on the assessment purpose.
 
         task: str
@@ -53,6 +53,11 @@ class BenchmarkAssessment(ABC):
         experiments: list
             A list of (task_index, experiment), where task_index is the index of task to run for
             this assessment, and experiment is an instance of `orion.core.worker.experiment`.
+
+        Returns
+        -------
+        One or a list of plotly.graph_objects.Figure objects
+
         """
         pass
 

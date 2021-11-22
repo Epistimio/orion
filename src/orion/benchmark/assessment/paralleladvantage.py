@@ -9,7 +9,7 @@ from collections import defaultdict
 
 from orion.benchmark.assessment.base import BenchmarkAssessment
 from orion.executor.base import executor_factory
-from orion.plotting.base import parallel_advantage
+from orion.plotting.base import durations, parallel_advantage, regrets
 
 
 class ParallelAdvantage(BenchmarkAssessment):
@@ -23,7 +23,7 @@ class ParallelAdvantage(BenchmarkAssessment):
     Parameters
     ----------
     task_num: int
-        Only value 1 is valid.
+        Number of experiment to run for each number of workers.
     executor: str
         Name of orion worker exeuctor.
     n_workers: list
@@ -35,8 +35,6 @@ class ParallelAdvantage(BenchmarkAssessment):
     def __init__(
         self, task_num=1, executor=None, n_workers=[1, 2, 4], **executor_config
     ):
-        if task_num != 1:
-            raise ValueError("ParallelAdvantage only supports task_num=1")
 
         super(ParallelAdvantage, self).__init__(
             task_num=task_num * len(n_workers),
@@ -61,14 +59,21 @@ class ParallelAdvantage(BenchmarkAssessment):
         """
 
         algorithm_groups = defaultdict(list)
-
-        for _, exp in experiments:
-            # n_worker = self.n_workers[task_index]
+        algorithm_worker_groups = defaultdict(list)
+        for task_index, exp in experiments:
             algorithm_name = list(exp.configuration["algorithms"].keys())[0]
             algorithm_groups[algorithm_name].append(exp)
 
-        return parallel_advantage(algorithm_groups)
-        # return self._viz_parallel(algorithm_groups)
+            n_worker = self.n_workers[task_index]
+            algo_key = algorithm_name + "_workers_" + str(n_worker)
+            algorithm_worker_groups[algo_key].append(exp)
+
+        figures = list()
+        figures.append(parallel_advantage(algorithm_groups))
+        figures.append(durations(algorithm_worker_groups))
+        figures.append(regrets(algorithm_worker_groups))
+
+        return figures
 
     def executor(self, task_index):
         return executor_factory.create(

@@ -190,7 +190,7 @@ class TestAverage:
             }
         )
 
-        result = average(data, key="objective")
+        result = average(data, keys=["objective"])
 
         assert result.columns.tolist() == ["order", "objective_mean"]
 
