@@ -71,9 +71,6 @@ class _Future:
     def succesful(self):
         return self.future.succesful()
 
-    def __repr__(self):
-        return f"Future(future={self.future}, cloudpickle={self.cloudpickle})"
-
 
 class Multiprocess(BaseExecutor):
     """Simple multiprocess executor that wraps ``multiprocessing.Pool``."""
@@ -81,15 +78,9 @@ class Multiprocess(BaseExecutor):
     def __init__(self, n_workers, **kwargs):
         super().__init__(n_workers, **kwargs)
         self.pool = Pool(n_workers)
-        import os
-
-        self._track = open(f".audit_{os.getpid()}", "a")
-        self._track.write(f"OPEN: {n_workers}\n")
 
     def __del__(self):
         self.pool.terminate()
-        self._track.write("CLOSE\n")
-        self._track.close()
 
     def __getstate__(self):
         state = super(Multiprocess, self).__getstate__()
@@ -107,7 +98,6 @@ class Multiprocess(BaseExecutor):
         return super().__exit__(exc_type, exc_value, traceback)
 
     def submit(self, function, *args, **kwargs) -> AsyncResult:
-        self._track.write(f"SUB: {function} {args} {kwargs}\n")
         return self._submit_cloudpickle(function, *args, **kwargs)
 
     def _submit_python(self, function, *args, **kwargs) -> AsyncResult:
@@ -140,7 +130,6 @@ class Multiprocess(BaseExecutor):
                     results.append(AsyncException(future, err, traceback.format_exc()))
 
                 tobe_deleted.append(future)
-                self._track.write(f"RES: {future} {results[-1]}\n")
 
         for future in tobe_deleted:
             futures.remove(future)
