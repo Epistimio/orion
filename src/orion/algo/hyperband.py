@@ -456,10 +456,14 @@ class HyperbandBracket:
 
     @property
     def state_dict(self):
-        return {"rungs": copy.deepcopy(self.rungs)}
+        return {
+            "rungs": copy.deepcopy(self.rungs),
+            "samples": copy.deepcopy(self._samples),
+        }
 
     def set_state(self, state_dict):
         self.rungs = state_dict["rungs"]
+        self._samples = state_dict["samples"]
 
     @property
     def is_filled(self):
