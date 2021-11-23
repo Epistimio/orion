@@ -70,7 +70,7 @@ class Pool(PyPool):
         if v.major == 3 and v.minor >= 8:
             args = args[1:]
 
-        return _Process(*args, **kwds)
+        return Process(*args, **kwds)
 
 
 class _ThreadFuture:
