@@ -3,7 +3,7 @@ import logging
 import pickle
 import traceback
 import uuid
-from concurrent.futures import ThreadPoolExecutor, TimeoutError
+from concurrent.futures import ThreadPoolExecutor, TimeoutError, wait
 from dataclasses import dataclass
 from multiprocessing import Manager, Process
 from multiprocessing.pool import AsyncResult
@@ -78,20 +78,12 @@ class _ThreadFuture:
 
     def __init__(self, future):
         self.future = future
-        self.result = None
 
     def get(self, timeout=None):
-        if self.result:
-            return self.result
-
-        self.result = self.future.result(timeout)
-        return self.result
+        return self.future.result(timeout)
 
     def wait(self, timeout=None):
-        try:
-            self.result = self.future.result(timeout)
-        except TimeoutError:
-            pass
+        wait([self.future], timeout)
 
     def ready(self):
         return self.future.done()
@@ -108,6 +100,9 @@ class ThreadPool:
 
     def __init__(self, n_workers):
         self.pool = ThreadPoolExecutor(n_workers)
+
+    def __enter__(self):
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.pool.shutdown()
