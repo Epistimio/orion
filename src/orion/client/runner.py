@@ -150,9 +150,12 @@ class Runner:
         # register the results
         for result in results:
             self.free_worker += 1
-            trial = self.pending_trials.pop(result.future)
 
-            if isinstance(result, AsyncResult):
+            trial = None
+            if result.future in self.pending_trials:
+                trial = self.pending_trials.pop(result.future)
+
+            if trial and isinstance(result, AsyncResult):
                 # NB: observe release the trial already
                 self.client.observe(trial, result.value)
                 self.trials += 1
@@ -163,7 +166,8 @@ class Runner:
                     and result.exception.return_code == self.interrupt_signal_code
                 ):
                     to_be_raised = KeyboardInterrupt()
-                    self.client.release(trial, status="interrupted")
+                    if trial:
+                        self.client.release(trial, status="interrupted")
                     continue
 
                 if isinstance(result.exception, InvalidResult):
@@ -176,7 +180,9 @@ class Runner:
                 # for big batch sizes)
                 exception = result.exception
                 self.worker_broken_trials += 1
-                self.client.release(trial, status="broken")
+
+                if trial:
+                    self.client.release(trial, status="broken")
 
                 if self.on_error is None or self.on_error(
                     self, trial, exception, self.worker_broken_trials

@@ -68,8 +68,8 @@ class _Future:
     def ready(self):
         return self.future.ready()
 
-    def succesful(self):
-        return self.future.succesful()
+    def successful(self):
+        return self.future.successful()
 
 
 class Multiprocess(BaseExecutor):

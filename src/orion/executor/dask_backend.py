@@ -40,7 +40,7 @@ class _Future:
     def ready(self):
         return self.future.done()
 
-    def succesful(self):
+    def successful(self):
         if not self.future.done():
             raise ValueError()
 

@@ -1,6 +1,34 @@
+import traceback
+
 import joblib
 
 from orion.executor.base import BaseExecutor
+from orion.executor.base import AsyncException, AsyncResult, BaseExecutor
+
+
+class _Future:
+    """Wraps a python AsyncResult"""
+
+    def __init__(self, fun, *args, **kwargs):
+        self.future = self
+        self.fun = fun
+        self.args = args
+        self.kwargs = kwargs
+
+    def get(self, timeout=None):
+        return None
+
+    def wait(self, timeout=None):
+        return None
+
+    def ready(self):
+        return False
+
+    def succesful(self):
+        raise ValueError()
+
+    def delayed(self):
+        return joblib.delayed(self.fun)(*self.args, **self.kwargs)
 
 
 class Joblib(BaseExecutor):
@@ -29,13 +57,24 @@ class Joblib(BaseExecutor):
         )
 
     def async_get(self, futures, timeout=None):
-        return joblib.Parallel(n_jobs=self.n_workers)(futures)
+        return self.wait(futures)
 
     def wait(self, futures):
-        return joblib.Parallel(n_jobs=self.n_workers)(futures)
+        try:
+            results = joblib.Parallel(n_jobs=self.n_workers)(
+                [f.delayed() for f in futures]
+            )
+
+            async_results = []
+            for future, result in zip(futures, results):
+                async_results.append(AsyncResult(future, result))
+
+            return async_results
+        except Exception as e:
+            return [AsyncException(None, e, traceback.format_exc())]
 
     def submit(self, function, *args, **kwargs):
-        return joblib.delayed(function)(*args, **kwargs)
+        return _Future(function, *args, **kwargs)
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.joblib_parallel.unregister()
