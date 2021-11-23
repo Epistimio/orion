@@ -83,7 +83,7 @@ class Runner:
     @property
     def running(self):
         """Returns true if we are still running trials."""
-        return self.pending_trials or (not self.is_done and self.has_reached_max)
+        return self.pending_trials or (self.has_reached_max and not self.is_done)
 
     def run(self):
         """Run the optimizing process until completion.
