@@ -14,6 +14,7 @@ import orion.core.io.experiment_builder as experiment_builder
 import orion.core.io.resolve_config as resolve_config
 import orion.core.utils.backward as backward
 import orion.core.worker.consumer as consumer
+from orion.core.utils import sigterm_as_interrupt
 from orion.core.utils.exceptions import BranchingEvent, MissingResultFile
 from orion.core.utils.format_trials import tuple_to_trial
 
@@ -51,7 +52,8 @@ def test_trials_interrupted_sigterm(config, monkeypatch):
     con = Consumer(exp)
 
     with pytest.raises(KeyboardInterrupt):
-        con(trial)
+        with sigterm_as_interrupt():
+            con(trial)
 
 
 @pytest.mark.usefixtures("storage")
