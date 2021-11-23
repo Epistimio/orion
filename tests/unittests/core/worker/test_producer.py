@@ -9,7 +9,7 @@ import pytest
 
 from orion.core.io.experiment_builder import build
 from orion.core.utils import format_trials
-from orion.core.utils.exceptions import SampleTimeout, WaitingForTrials
+from orion.core.utils.exceptions import ReservationTimeout, WaitingForTrials
 from orion.core.worker.producer import Producer
 from orion.core.worker.trial import Trial
 from orion.testing.trial import compare_trials
@@ -70,13 +70,6 @@ def producer(monkeypatch, hacked_exp, random_dt, categorical_values):
     hacked_exp.producer["strategy"] = DumbParallelStrategy()
 
     producer = Producer(hacked_exp)
-
-    def backoff(self):
-        """Dont wait, just update."""
-        self.update()
-        self.failure_count += 1
-
-    monkeypatch.setattr(Producer, "backoff", backoff)
 
     return producer
 
@@ -501,7 +494,7 @@ def test_concurent_producers_shared_pool(producer, storage, random_dt):
     num_new_trials = producer.algorithm.algorithm._num
     assert num_new_trials == 1  # pool size
     num_new_trials = second_producer.algorithm.algorithm._num
-    assert num_new_trials == 0  # pool size
+    assert num_new_trials == 1  # pool size
 
     # `num_new_trials` new trials were registered at database
     assert len(storage._fetch_trials({})) == trials_in_db_before + 1
@@ -540,11 +533,11 @@ def test_duplicate_within_pool(producer, storage, random_dt):
     ]
 
     producer.update()
-    producer.produce(2)
+    producer.produce(3)
 
     # Algorithm was required to suggest some trials
     num_new_trials = producer.algorithm.algorithm._num
-    assert num_new_trials == 4  # 2 * pool size
+    assert num_new_trials == 3  # pool size
 
     # `num_new_trials` new trials were registered at database
     assert len(storage._fetch_trials({})) == trials_in_db_before + 2
@@ -587,11 +580,11 @@ def test_duplicate_within_pool_and_db(producer, storage, random_dt):
     ]
 
     producer.update()
-    producer.produce(2)
+    producer.produce(3)
 
     # Algorithm was required to suggest some trials
     num_new_trials = producer.algorithm.algorithm._num
-    assert num_new_trials == 4  # pool size
+    assert num_new_trials == 3  # pool size
 
     # `num_new_trials` new trials were registered at database
     assert len(storage._fetch_trials({})) == trials_in_db_before + 2
@@ -612,69 +605,6 @@ def test_duplicate_within_pool_and_db(producer, storage, random_dt):
         "/decoding_layer": "gru",
         "/encoding_layer": "gru",
     }
-
-
-def test_exceed_max_idle_time_because_of_duplicates(producer, random_dt):
-    """Test that RuntimeError is raised when algo keep suggesting the same trials"""
-    timeout = 3
-    producer.max_idle_time = timeout  # to limit run-time, default would work as well.
-    producer.experiment.algorithms.algorithm.possible_values = [
-        format_trials.tuple_to_trial(("rnn", "rnn"), producer.algorithm.space)
-    ]
-
-    producer.update()
-
-    start = time.time()
-
-    with pytest.raises(SampleTimeout):
-        producer.produce(1)
-
-    assert timeout <= time.time() - start < timeout + 1
-
-
-def test_exceed_max_idle_time_because_of_optout(producer, random_dt, monkeypatch):
-    """Test that RuntimeError is raised when algo keeps opting out"""
-    timeout = 3
-    producer.max_idle_time = timeout  # to limit run-time, default would work as well.
-
-    def opt_out(self, num=1):
-        """Return None to always opt out"""
-        self._suggested = None
-        return None
-
-    monkeypatch.setattr(
-        producer.experiment.algorithms.algorithm.__class__, "suggest", opt_out
-    )
-
-    producer.update()
-
-    with pytest.raises(WaitingForTrials):
-        producer.produce(1)
-
-
-def test_stops_if_algo_done(producer, storage, random_dt, monkeypatch):
-    """Test that producer stops producing when algo is done."""
-
-    def opt_out_and_complete(self, num=1):
-        """Return None to always opt out and set id_done to True"""
-        self._suggested = None
-        self.done = True
-        print("set")
-        return None
-
-    monkeypatch.setattr(
-        producer.experiment.algorithms.algorithm.__class__,
-        "suggest",
-        opt_out_and_complete,
-    )
-
-    trials_in_db_before = len(storage._fetch_trials({}))
-
-    producer.update()
-    producer.produce(1)
-
-    assert len(storage._fetch_trials({})) == trials_in_db_before
-    assert producer.experiment.algorithms.is_done
 
 
 def test_original_seeding(producer):
@@ -748,46 +678,24 @@ def test_evc_duplicates(monkeypatch, producer):
         experiment.fetch_trials()
     )
 
+    trials = experiment.fetch_trials()
+
     def suggest(pool_size=None):
-        return [experiment.fetch_trials()[-1]]
+        suggest_trials = []
+        while trials and len(suggest_trials) < pool_size:
+            suggest_trials.append(trials.pop(0))
+        return suggest_trials
 
     producer.experiment = new_experiment
     producer.algorithm = new_experiment.algorithms
-    producer.max_idle_time = 1
 
     monkeypatch.setattr(new_experiment.algorithms, "suggest", suggest)
 
     producer.update()
-    with pytest.raises(SampleTimeout):
-        producer.produce(1)
+    producer.produce(len(trials) + 2)
 
+    assert len(trials) == 0
     assert len(new_experiment.fetch_trials(with_evc_tree=False)) == 0
-
-
-def test_algorithm_is_done(monkeypatch, producer):
-    """Verify that producer won't register new samples if algorithm is done meanwhile."""
-    producer.experiment.max_trials = 8
-    producer.experiment.algorithms.algorithm.max_trials = 8
-    producer = Producer(producer.experiment)
-
-    def suggest_one_only(self, num=1):
-        """Return only one point, whatever `num` is"""
-        return [format_trials.tuple_to_trial(("gru", "rnn"), producer.algorithm.space)]
-
-    monkeypatch.delattr(producer.experiment.algorithms.algorithm.__class__, "is_done")
-    monkeypatch.setattr(
-        producer.experiment.algorithms.algorithm.__class__, "suggest", suggest_one_only
-    )
-
-    trials_in_exp_before = len(producer.experiment.fetch_trials())
-    assert trials_in_exp_before == producer.experiment.max_trials - 1
-
-    producer.update()
-    producer.produce(10)
-
-    assert len(producer.experiment.fetch_trials()) == producer.experiment.max_trials
-    assert not producer.naive_algorithm.is_done
-    assert not producer.experiment.is_done
 
 
 def test_suggest_n_max_trials(monkeypatch, producer):

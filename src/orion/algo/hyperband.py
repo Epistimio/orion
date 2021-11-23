@@ -89,7 +89,7 @@ def tabulate_status(brackets):
             row.append(r_i)
         data.append(row)
     table = tabulate(data, header, tablefmt="github")
-    logger.debug(table)
+    logger.info(table)
 
 
 def display_budgets(budgets_tab, max_resources, reduction_factor):
@@ -116,7 +116,7 @@ def display_budgets(budgets_tab, max_resources, reduction_factor):
     table_str += "max resource={}, eta={}, trials number of one execution={}\n".format(
         max_resources, reduction_factor, total_trials
     )
-    logger.debug(table_str)
+    logger.info(table_str)
 
 
 class Hyperband(BaseAlgorithm):
@@ -360,7 +360,7 @@ class Hyperband(BaseAlgorithm):
     def _refresh_brackets(self):
         """Refresh bracket if one hyperband execution is done"""
         if all(bracket.is_done for bracket in self.brackets):
-            logger.debug(
+            logger.info(
                 "Hyperband execution %i is done, required to execute %s times",
                 self.executed_times,
                 str(self.repetitions),
@@ -399,7 +399,7 @@ class Hyperband(BaseAlgorithm):
         for trial in trials:
 
             if not self.has_suggested(trial):
-                logger.info(
+                logger.debug(
                     "Ignoring trial %s because it was not sampled by current algo.",
                     trial,
                 )
