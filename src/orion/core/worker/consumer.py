@@ -17,7 +17,6 @@ import orion.core
 from orion.core.io.convert import JSONConverter
 from orion.core.io.orion_cmdline_parser import OrionCmdlineParser
 from orion.core.io.resolve_config import infer_versioning_metadata
-from orion.core.utils import sigterm_as_interrupt
 from orion.core.utils.exceptions import (
     BranchingEvent,
     InexecutableUserScript,
