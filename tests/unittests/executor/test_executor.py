@@ -6,7 +6,16 @@ from orion.executor.dask_backend import Dask
 from orion.executor.multiprocess_backend import Multiprocess
 from orion.executor.single_backend import SingleExecutor
 
-backends = [Multiprocess, Dask, SingleExecutor]
+
+def multiprocess(n):
+    return Multiprocess(n, "multiprocess")
+
+
+def thread(n):
+    return Multiprocess(n, "thread")
+
+
+backends = [thread, multiprocess, Dask, SingleExecutor]
 
 
 def function(a, b, c):

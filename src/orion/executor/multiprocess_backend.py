@@ -118,12 +118,24 @@ class ThreadPool:
 
 
 class Multiprocess(BaseExecutor):
-    """Simple multiprocess executor that wraps ``multiprocessing.Pool``."""
+    """Simple multiprocess executor that wraps ``multiprocessing.Pool``.
 
-    def __init__(self, n_workers, **kwargs):
+    Parameters
+    ----------
+
+    n_workers: int
+        Number of worker to spawn
+
+    backend: str
+        Pool backend to use; thread or multiprocess, defaults to thread
+
+    """
+
+    BACKENDS = dict(thread=ThreadPool, multiprocess=Pool)
+
+    def __init__(self, n_workers, backend="thread", **kwargs):
         super().__init__(n_workers, **kwargs)
-        # self.pool = Pool(n_workers)
-        self.pool = ThreadPool(n_workers)
+        self.pool = Multiprocess.BACKENDS.get(backend, "thread")(n_workers)
 
     def __del__(self):
         self.pool.terminate()
