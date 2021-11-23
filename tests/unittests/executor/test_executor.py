@@ -3,16 +3,16 @@ import sys
 import pytest
 
 from orion.executor.dask_backend import Dask
-from orion.executor.multiprocess_backend import Multiprocess
+from orion.executor.multiprocess_backend import PoolExecutor
 from orion.executor.single_backend import SingleExecutor
 
 
 def multiprocess(n):
-    return Multiprocess(n, "multiprocess")
+    return PoolExecutor(n, "multiprocess")
 
 
 def thread(n):
-    return Multiprocess(n, "thread")
+    return PoolExecutor(n, "thread")
 
 
 backends = [thread, multiprocess, Dask, SingleExecutor]

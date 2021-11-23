@@ -117,8 +117,8 @@ class ThreadPool:
         return _ThreadFuture(self.pool.submit(fun, *args, **kwds))
 
 
-class Multiprocess(BaseExecutor):
-    """Simple multiprocess executor that wraps ``multiprocessing.Pool``.
+class PoolExecutor(BaseExecutor):
+    """Simple Pool executor.
 
     Parameters
     ----------
@@ -135,17 +135,17 @@ class Multiprocess(BaseExecutor):
 
     def __init__(self, n_workers, backend="thread", **kwargs):
         super().__init__(n_workers, **kwargs)
-        self.pool = Multiprocess.BACKENDS.get(backend, "thread")(n_workers)
+        self.pool = PoolExecutor.BACKENDS.get(backend, "thread")(n_workers)
 
     def __del__(self):
         self.pool.terminate()
 
     def __getstate__(self):
-        state = super(Multiprocess, self).__getstate__()
+        state = super(PoolExecutor, self).__getstate__()
         return state
 
     def __setstate__(self, state):
-        super(Multiprocess, self).__setstate__(state)
+        super(PoolExecutor, self).__setstate__(state)
 
     def __enter__(self):
         self.pool.__enter__()
