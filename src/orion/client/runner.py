@@ -76,14 +76,16 @@ class Runner:
         return self.client.is_done
 
     @property
-    def has_reached_max(self):
-        """Returns true if the worker has reached his max number of trials."""
-        return self.trials - self.worker_broken_trials < self.max_trials_per_worker
+    def has_remaining(self):
+        """Returns true if the worker can still pick up work"""
+        return (
+            self.max_trials_per_worker - (self.trials - self.worker_broken_trials) > 0
+        )
 
     @property
     def running(self):
         """Returns true if we are still running trials."""
-        return self.pending_trials or (self.has_reached_max and not self.is_done)
+        return self.pending_trials or (self.has_remaining and not self.is_done)
 
     def run(self):
         """Run the optimizing process until completion.
