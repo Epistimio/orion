@@ -343,7 +343,7 @@ class TestCreateBenchmark:
             def get(self, timeout=None):
                 return self.value
 
-            def succesful(self):
+            def successful(self):
                 return True
 
         count = multiprocessing.Value("i", 0)

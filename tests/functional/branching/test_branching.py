@@ -1167,7 +1167,7 @@ def test_auto_resolution_does_resolve(init_full_x_full_y, monkeypatch):
 
     name = "full_x_full_y"
     branch = "half_x_no_y_new_w"
-    # If autoresolution was not succesfull, this to fail with a sys.exit without registering the
+    # If autoresolution was not successful, this to fail with a sys.exit without registering the
     # experiment
     orion.core.cli.main(
         (
@@ -1208,7 +1208,7 @@ def test_auto_resolution_with_fidelity(init_full_x_full_y, monkeypatch):
 
     name = "full_x_full_y"
     branch = "half_x_no_y_new_w"
-    # If autoresolution was not succesfull, this to fail with a sys.exit without registering the
+    # If autoresolution was not successful, this to fail with a sys.exit without registering the
     # experiment
     orion.core.cli.main(
         (

@@ -134,7 +134,7 @@ def broken_refers(one_experiment, storage):
 
 @pytest.fixture
 def single_without_success(one_experiment):
-    """Create an experiment without a succesful trial."""
+    """Create an experiment without a successful trial."""
     statuses = list(Trial.allowed_stati)
     statuses.remove("completed")
 
