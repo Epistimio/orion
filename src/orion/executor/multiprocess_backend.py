@@ -110,11 +110,6 @@ class Multiprocess(BaseExecutor):
     def wait(self, futures):
         return [future.get() for future in futures]
 
-    def _find_future_exception(self, future):
-        for _, status in self.futures.items():
-            if id(status.future) == id(future):
-                return status.exception
-
     def async_get(self, futures, timeout=None):
         results = []
         tobe_deleted = []

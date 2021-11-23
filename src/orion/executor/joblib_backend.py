@@ -28,6 +28,9 @@ class Joblib(BaseExecutor):
             self.backend, n_jobs=self.n_workers, **self.config
         )
 
+    def async_get(self, futures, timeout=None):
+        return joblib.Parallel(n_jobs=self.n_workers)(futures)
+
     def wait(self, futures):
         return joblib.Parallel(n_jobs=self.n_workers)(futures)
 
