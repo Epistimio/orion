@@ -152,14 +152,6 @@ class PoolExecutor(BaseExecutor):
     def __setstate__(self, state):
         super(PoolExecutor, self).__setstate__(state)
 
-    def __enter__(self):
-        self.pool.__enter__()
-        return super().__enter__()
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.pool.__exit__(exc_type, exc_value, traceback)
-        return super().__exit__(exc_type, exc_value, traceback)
-
     def submit(self, function, *args, **kwargs) -> AsyncResult:
         return self._submit_cloudpickle(function, *args, **kwargs)
 
