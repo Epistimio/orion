@@ -169,6 +169,19 @@ class TestGridSearch(BaseAlgoTests):
     config = {"n_values": 10}
 
     @phase
+    def test_seed_rng_init(self, mocker, num, attr):
+        """The algo should return the same trials irrespective of the seed"""
+        algo = self.create_algo(seed=1)
+
+        spy = self.spy_phase(mocker, num, algo, attr)
+        trials = algo.suggest(1)
+        algo.suggest(1)[0].id != trials[0].id
+
+        new_algo = self.create_algo(seed=2)
+        self.force_observe(algo.n_observed, new_algo)
+        assert new_algo.suggest(1)[0].id == trials[0].id
+
+    @phase
     def test_suggest_lots(self, mocker, num, attr):
         """Test that gridsearch returns the whole grid when requesting more points"""
         algo = self.create_algo()

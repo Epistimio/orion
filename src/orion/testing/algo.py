@@ -409,6 +409,25 @@ class BaseAlgoTests:
         self.assert_callbacks(spy, num, new_algo)
 
     @phase
+    def test_seed_rng_init(self, mocker, num, attr):
+        """Test that the seeding gives reproducibile results."""
+        algo = self.create_algo(seed=1)
+
+        spy = self.spy_phase(mocker, num, algo, attr)
+        trials = algo.suggest(1)
+        algo.suggest(1)[0].id != trials[0].id
+
+        new_algo = self.create_algo(seed=2)
+        self.force_observe(algo.n_observed, new_algo)
+        assert new_algo.suggest(1)[0].id != trials[0].id
+
+        new_algo = self.create_algo(seed=1)
+        self.force_observe(algo.n_observed, new_algo)
+        assert new_algo.suggest(1)[0].id == trials[0].id
+
+        self.assert_callbacks(spy, num, new_algo)
+
+    @phase
     def test_state_dict(self, mocker, num, attr):
         """Verify that resetting state makes sampling deterministic"""
         algo = self.create_algo()

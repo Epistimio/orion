@@ -155,6 +155,8 @@ class ASHA(Hyperband):
 
         self.brackets = self.create_brackets()
 
+        self.seed_rng(seed)
+
     def compute_bracket_idx(self, num):
         def assign_resources(n, remainings, totals):
             if n == 0 or remainings.sum() == 0:
@@ -192,7 +194,7 @@ class ASHA(Hyperband):
         return samples
 
     def suggest(self, num):
-        return super(ASHA, self).suggest(1)
+        return super(ASHA, self).suggest(num)
 
     def create_bracket(self, i, budgets, iteration):
         return ASHABracket(self, budgets, iteration)
@@ -217,7 +219,7 @@ class ASHABracket(HyperbandBracket):
         should_have_n_trials = self.rungs[0]["n_trials"]
         return self.hyperband.sample_for_bracket(num, self)
 
-    def get_candidate(self, rung_id):
+    def get_candidates(self, rung_id):
         """Get a candidate for promotion
 
         Raises
@@ -238,13 +240,14 @@ class ASHABracket(HyperbandBracket):
         k = len(rung) // self.hyperband.reduction_factor
         k = min(k, len(rung))
 
+        candidates = []
         for i in range(k):
             trial = rung[i][1]
             _id = self.hyperband.get_id(trial, ignore_fidelity=True)
             if _id not in next_rung:
-                return trial
+                candidates.append(trial)
 
-        return None
+        return candidates
 
     @property
     def is_filled(self):
@@ -272,10 +275,9 @@ class ASHABracket(HyperbandBracket):
         if num < 1 or self.is_done:
             return []
 
+        candidates = []
         for rung_id in range(len(self.rungs) - 2, -1, -1):
-            candidate = self.get_candidate(rung_id)
-            if candidate:
-
+            for candidate in self.get_candidates(rung_id):
                 # pylint: disable=logging-format-interpolation
                 logger.debug(
                     "Promoting {trial} from rung {past_rung} with fidelity {past_fidelity} to "
@@ -297,6 +299,10 @@ class ASHABracket(HyperbandBracket):
                     },
                 )
 
-                return [candidate]
+                if not self.hyperband.has_suggested(candidate):
+                    candidates.append(candidate)
 
-        return []
+                if len(candidates) >= num:
+                    return candidates
+
+        return candidates
