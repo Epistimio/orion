@@ -59,6 +59,8 @@ class _Future:
 class Pool(PyPool):
     """Custom pool that does not set its worker as daemon process"""
 
+    ALLOW_DEAMON = True
+
     @staticmethod
     def Process(*args, **kwds):
         import sys
@@ -69,6 +71,9 @@ class Pool(PyPool):
         # >= 3.8 ctx as an argument
         if v.major == 3 and v.minor >= 8:
             args = args[1:]
+
+        if Pool.ALLOW_DEAMON:
+            return Process(*args, **kwds)
 
         return _Process(*args, **kwds)
 
