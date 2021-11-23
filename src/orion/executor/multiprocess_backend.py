@@ -59,7 +59,7 @@ class _Future:
 class Pool(PyPool):
     """Custom pool that does not set its worker as daemon process"""
 
-    ALLOW_DEAMON = True
+    ALLOW_DAEMON = True
 
     @staticmethod
     def Process(*args, **kwds):
@@ -72,7 +72,7 @@ class Pool(PyPool):
         if v.major == 3 and v.minor >= 8:
             args = args[1:]
 
-        if Pool.ALLOW_DEAMON:
+        if Pool.ALLOW_DAEMON:
             return Process(*args, **kwds)
 
         return _Process(*args, **kwds)
