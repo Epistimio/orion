@@ -133,7 +133,7 @@ class PoolExecutor(BaseExecutor):
 
     BACKENDS = dict(thread=ThreadPool, multiprocess=Pool)
 
-    def __init__(self, n_workers, backend="thread", **kwargs):
+    def __init__(self, n_workers, backend="multiprocess", **kwargs):
         super().__init__(n_workers, **kwargs)
         self.pool = PoolExecutor.BACKENDS.get(backend, "thread")(n_workers)
 
