@@ -17,7 +17,6 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
-    SampleTimeout,
     UnsupportedOperation,
     WaitingForTrials,
 )
@@ -30,28 +29,51 @@ from orion.storage.base import FailedUpdate
 log = logging.getLogger(__name__)
 
 
-def reserve_trial(experiment, producer, pool_size, _depth=1):
+def reserve_trial(experiment, producer, pool_size, timeout):
     """Reserve a new trial, or produce and reserve a trial if none are available."""
     log.debug("Trying to reserve a new trial to evaluate.")
-    trial = experiment.reserve_trial()
 
-    if trial is None and not producer.is_done:
+    trial = None
+    start = time.time()
+    failure_count = 0
 
-        if _depth > 10:
-            raise WaitingForTrials(
-                "No trials are available at the moment "
-                "wait for current trials to finish"
-            )
+    n_trials_at_start = len(experiment.fetch_trials())
 
-        log.debug("#### Failed to pull a new trial from database.")
+    while (
+        trial is None
+        and not (experiment.is_done or experiment.is_broken)
+        and time.time() - start < timeout
+    ):
+        trial = experiment.reserve_trial()
 
-        log.debug("#### Fetch most recent completed trials and update algorithm.")
-        producer.update()
+        if trial is not None:
+            break
 
-        log.debug("#### Produce new trials.")
-        producer.produce(pool_size)
+        failure_count += 1
 
-        return reserve_trial(experiment, producer, pool_size, _depth=_depth + 1)
+        # TODO: Add backoff
+        log.debug(
+            "#### Failed %s time to pull a new trial from database.",
+            failure_count,
+        )
+
+        if not (experiment.is_done or experiment.is_broken):
+            log.debug("#### Fetch most recent completed trials and update algorithm.")
+            producer.update()
+
+            log.debug("#### Produce new trials.")
+            produced = producer.produce(pool_size)
+            log.debug("#### %s trials produced.", produced)
+
+    if trial is None and time.time() - start > timeout:
+        new_trials_meanwhile = len(experiment.fetch_trials()) - n_trials_at_start
+        raise ReservationTimeout(
+            f"Unable to reserve a trial in less than {timeout} seconds. "
+            f"Failed to reserve {failure_count} times. "
+            f"{new_trials_meanwhile} new trials were generated meanwhile and reserved "
+            "by other workers. Consider increasing worker.pool_size if you have many workers "
+            "or increasing worker.reservation_timeout if only a few trials were generated."
+        )
 
     return trial
 
@@ -509,7 +531,7 @@ class ExperimentClient:
         finally:
             self._release_reservation(trial, raise_if_unreserved=raise_if_unreserved)
 
-    def suggest(self, pool_size=0):
+    def suggest(self, pool_size=0, timeout=None):
         """Suggest a trial to execute.
 
         Experiment must be in executable ('x') mode.
@@ -527,6 +549,12 @@ class ExperimentClient:
             trials but may return less. Note: The method will still return only 1 trial even though
             if the pool size is larger than 1. This is because atomic reservation of trials
             can only be done one at a time.
+        timeout: int, optional
+            Maximum time allowed to try reserving a trial. ReservationTimeout will be raised if
+            timeout is reached.  Such timeout are generally caused by slow database, large number
+            of concurrent workers leading to many race conditions or small search spaces with
+            integer/categorical dimensions that may be fully explored.
+            Defaults to ``orion.core.config.worker.reservation_timeout``.
 
         Returns
         -------
@@ -543,8 +571,8 @@ class ExperimentClient:
             if too many trials failed to run and the experiment cannot continue.
             This is determined by ``max_broken`` in the configuration of the experiment.
 
-        :class:`orion.core.utils.exceptions.SampleTimeout`
-            if the algorithm of the experiment could not sample new unique trials.
+        :class:`orion.core.utils.exceptions.ReservationTimeout`
+            If a trial could not be reserved in less than ``timeout`` seconds.
 
         :class:`orion.core.utils.exceptions.CompletedExperiment`
             if the experiment was completed and algorithm could not sample new trials.
@@ -558,6 +586,8 @@ class ExperimentClient:
             pool_size = orion.core.config.worker.pool_size
         if not pool_size:
             pool_size = 1
+        if not timeout:
+            timeout = orion.core.config.worker.reservation_timeout
 
         if self.is_broken:
             raise BrokenExperiment("Trials failed too many times")
@@ -566,17 +596,19 @@ class ExperimentClient:
             raise CompletedExperiment("Experiment is done, cannot sample more trials.")
 
         try:
-            trial = reserve_trial(self._experiment, self._producer, pool_size)
+            trial = reserve_trial(self._experiment, self._producer, pool_size, timeout)
 
-        except (WaitingForTrials, SampleTimeout) as e:
+        except (WaitingForTrials, ReservationTimeout) as e:
             if self.is_broken:
                 raise BrokenExperiment("Trials failed too many times") from e
 
             raise e
 
         # This is to handle cases where experiment was completed during call to `reserve_trial`
-        if trial is None:
+        if trial is None and self.is_done:
             raise CompletedExperiment("Producer is done, cannot sample more trials.")
+        elif trial is None and self.is_broken:
+            raise BrokenExperiment("Trials failed too many times")
 
         self._maintain_reservation(trial)
         return TrialCM(self, trial)
@@ -658,6 +690,7 @@ class ExperimentClient:
         fct,
         n_workers=None,
         pool_size=0,
+        reservation_timeout=None,
         max_trials=None,
         max_trials_per_worker=None,
         max_broken=None,
@@ -682,6 +715,12 @@ class ExperimentClient:
             config if defined.  Increase it to improve the sampling speed if workers spend too much
             time waiting for algorithms to sample points. An algorithm will try sampling
             `pool_size` trials but may return less.
+        reservation_timeout: int, optional
+            Maximum time allowed to try reserving a trial. ReservationTimeout will be raised if
+            timeout is reached.  Such timeout are generally caused by slow database, large number
+            of concurrent workers leading to many race conditions or small search spaces with
+            integer/categorical dimensions that may be fully explored.
+            Defaults to ``orion.core.config.worker.reservation_timeout``.
         max_trials: int, optional
             Maximum number of trials to execute within ``workon``. If the experiment or algorithm
             reach status is_done before, the execution of ``workon`` terminates.
@@ -723,7 +762,7 @@ class ExperimentClient:
             if too many trials failed to run and the experiment cannot continue.
             This is determined by ``max_broken`` in the configuration of the experiment.
 
-        :class:`orion.core.utils.exceptions.SampleTimeout`
+        :class:`orion.core.utils.exceptions.ReservationTimeout`
             if the algorithm of the experiment could not sample new unique points.
 
         :class:`orion.core.utils.exceptions.UnsupportedOperation`
@@ -746,6 +785,9 @@ class ExperimentClient:
             pool_size = orion.core.config.worker.pool_size
         if not pool_size:
             pool_size = n_workers
+
+        if not reservation_timeout:
+            reservation_timeout = orion.core.config.worker.reservation_timeout
 
         if max_trials is None:
             max_trials = self.max_trials

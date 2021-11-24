@@ -8,13 +8,8 @@ Suggest new parameter sets which optimize the objective.
 """
 import copy
 import logging
-import random
-import time
 
-import orion.core
 from orion.core.io.database import DuplicateKeyError
-from orion.core.utils import format_trials
-from orion.core.utils.exceptions import SampleTimeout, WaitingForTrials
 from orion.core.worker.trial import Trial
 from orion.core.worker.trials_history import TrialsHistory
 
@@ -30,7 +25,7 @@ class Producer(object):
 
     """
 
-    def __init__(self, experiment, max_idle_time=None):
+    def __init__(self, experiment):
         """Initialize a producer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -45,9 +40,6 @@ class Producer(object):
                 " initialization."
             )
         self.algorithm = experiment.algorithms
-        if max_idle_time is None:
-            max_idle_time = orion.core.config.worker.max_idle_time
-        self.max_idle_time = max_idle_time
         self.strategy = experiment.producer["strategy"]
         self.naive_algorithm = None
         # TODO: Move trials_history into BaseAlgorithm during the refactoring of Algorithm with
@@ -55,81 +47,36 @@ class Producer(object):
         self.trials_history = TrialsHistory()
         self.params_hashes = set()
         self.naive_trials_history = None
-        self.failure_count = 0
         self.num_trials = 0
         self.num_broken = 0
 
-    def backoff(self):
-        """Wait some time and update algorithm."""
-        waiting_time = max(0, random.gauss(1, 0.2))
-        log.info("Waiting %d seconds", waiting_time)
-        time.sleep(waiting_time)
-        log.info("Updating algorithm.")
-        self.update()
-        self.failure_count += 1
-
-    def _sample_guard(self, start):
-        """Check that the time taken sampling is less than max_idle_time"""
-        if time.time() - start > self.max_idle_time:
-            raise SampleTimeout(
-                "Algorithm could not sample new points in less than {} seconds."
-                "Failed to sample points {} times".format(
-                    self.max_idle_time, self.failure_count
-                )
-            )
-
-    @property
-    def is_done(self):
-        """Whether experiment or naive algorithm is done"""
-        return self.experiment.is_done or (
-            self.naive_algorithm is not None and self.naive_algorithm.is_done
-        )
-
-    def suggest(self, pool_size):
-        """Try suggesting new points with the naive algorithm"""
+    def adjust_pool_size(self, pool_size):
+        """Limit pool size if it would overshoot over max_trials"""
         num_pending = self.num_trials - self.num_broken
         num = max(self.experiment.max_trials - num_pending, 1)
-        return self.naive_algorithm.suggest(min(num, pool_size))
+        return min(num, pool_size)
 
     def produce(self, pool_size):
         """Create and register new trials."""
-        sampled_points = 0
-        # reset the number of time we failed to sample points
-        self.failure_count = 0
-        start = time.time()
+        adjusted_pool_size = self.adjust_pool_size(pool_size)
+        log.debug(
+            "### Algorithm attempts suggesting %s new points.", adjusted_pool_size
+        )
+        new_points = self.naive_algorithm.suggest(adjusted_pool_size)
 
-        # This number (self.num_trials) is based on most recent algo state update so it is not
-        # sensitive to race-conditions. If another worker started suggesting points in between, the
-        # value of self.num_trials will not count it and thus the current producer will count new
-        # points of other producer as part of the current pool samples.
-        while (
-            len(self.experiment.fetch_trials(with_evc_tree=True)) - self.num_trials
-            < pool_size
-            and not self.is_done
-        ):
-            self._sample_guard(start)
+        # Sync state of original algo so that state continues evolving.
+        self.algorithm.set_state(self.naive_algorithm.state_dict)
 
-            log.debug("### Algorithm suggests new points.")
-            new_points = self.suggest(pool_size)
+        if not new_points and not self.algorithm.is_done:
+            log.info(
+                "Algo does not have more trials to sample."
+                "Waiting for current trials to finish"
+            )
 
-            # Sync state of original algo so that state continues evolving.
-            self.algorithm.set_state(self.naive_algorithm.state_dict)
+        if not new_points:
+            return 0
 
-            if not new_points:
-                if self.algorithm.is_done:
-                    return
-
-                raise WaitingForTrials(
-                    "Algo does not have more trials to sample."
-                    "Waiting for current trials to finish"
-                )
-
-            registered_trials = self.register_trials(new_points)
-
-            if registered_trials == 0:
-                self.backoff()
-
-            sampled_points += registered_trials
+        return self.register_trials(new_points)
 
     def register_trials(self, new_points):
         """Register new sets of sampled parameters into the DB
@@ -141,7 +88,7 @@ class Producer(object):
 
         return registered_trials
 
-    def register_trial(self, new_point):
+    def register_trial(self, new_trial):
         """Register a new set of sampled parameters into the DB
         guaranteeing their uniqueness
 
@@ -153,10 +100,6 @@ class Producer(object):
         """
         # FIXME: Relying on DB to guarantee uniqueness
         # when the trial history will be held by that algo we can move that logic out of the DB
-
-        log.debug("#### Convert point to `Trial` object.")
-        new_trial = format_trials.tuple_to_trial(new_point, self.space)
-
         try:
             self._prevalidate_trial(new_trial)
             new_trial.parents = self.naive_trials_history.children
@@ -206,27 +149,16 @@ class Producer(object):
         new_completed_trials = []
         for trial in completed_trials:
             # if trial not in self.trials_history:
-            if not self.algorithm.has_observed(
-                format_trials.trial_to_tuple(trial, self.space)
-            ):
+            if not self.algorithm.has_observed(trial):
                 new_completed_trials.append(trial)
 
         log.debug("### %s", new_completed_trials)
 
         if new_completed_trials:
-            log.debug("### Convert them to list of points and their results.")
-            points = list(
-                map(
-                    lambda trial: format_trials.trial_to_tuple(trial, self.space),
-                    new_completed_trials,
-                )
-            )
-            results = list(map(format_trials.get_trial_results, new_completed_trials))
-
             log.debug("### Observe them.")
             self.trials_history.update(new_completed_trials)
-            self.algorithm.observe(points, results)
-            self.strategy.observe(points, results)
+            self.algorithm.observe(new_completed_trials)
+            self.strategy.observe(new_completed_trials)
             self._update_params_hashes(new_completed_trials)
 
     def _produce_lies(self, incomplete_trials):
@@ -264,16 +196,7 @@ class Producer(object):
         lying_trials = self._produce_lies(incomplete_trials)
         log.debug("### %s", lying_trials)
         if lying_trials:
-            log.debug("### Convert them to list of points and their results.")
-            points = list(
-                map(
-                    lambda trial: format_trials.trial_to_tuple(trial, self.space),
-                    lying_trials,
-                )
-            )
-            results = list(map(format_trials.get_trial_results, lying_trials))
-
             log.debug("### Observe them.")
             self.naive_trials_history.update(lying_trials)
-            self.naive_algorithm.observe(points, results)
+            self.naive_algorithm.observe(lying_trials)
             self._update_params_hashes(lying_trials)

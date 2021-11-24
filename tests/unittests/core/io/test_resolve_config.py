@@ -118,6 +118,7 @@ def test_fetch_config_from_cmdargs():
         "worker_max_trials": "worker_max_trials",
         "worker_max_broken": "worker_max_broken",
         "max_idle_time": "max_idle_time",
+        "reservation_timeout": "reservation_timeout",
         "interrupt_signal_code": "interrupt_signal_code",
         "user_script_config": "user_script_config",
         "manual_resolution": "manual_resolution",
@@ -151,6 +152,7 @@ def test_fetch_config_from_cmdargs():
     assert worker_config.pop("max_trials") == "worker_max_trials"
     assert worker_config.pop("max_broken") == "worker_max_broken"
     assert worker_config.pop("max_idle_time") == "max_idle_time"
+    assert worker_config.pop("reservation_timeout") == "reservation_timeout"
     assert worker_config.pop("interrupt_signal_code") == "interrupt_signal_code"
     assert worker_config.pop("user_script_config") == "user_script_config"
 
@@ -273,6 +275,10 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
     assert worker_config.pop("max_trials") == orion.core.config.worker.max_trials
     assert worker_config.pop("max_broken") == orion.core.config.worker.max_broken
     assert worker_config.pop("max_idle_time") == orion.core.config.worker.max_idle_time
+    assert (
+        worker_config.pop("reservation_timeout")
+        == orion.core.config.worker.reservation_timeout
+    )
     assert (
         worker_config.pop("interrupt_signal_code")
         == orion.core.config.worker.interrupt_signal_code

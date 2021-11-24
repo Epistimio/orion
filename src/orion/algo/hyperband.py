@@ -16,6 +16,7 @@ from tabulate import tabulate
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Fidelity
+from orion.core.utils.flatten import flatten
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +89,7 @@ def tabulate_status(brackets):
             row.append(r_i)
         data.append(row)
     table = tabulate(data, header, tablefmt="github")
-    logger.debug(table)
+    logger.info(table)
 
 
 def display_budgets(budgets_tab, max_resources, reduction_factor):
@@ -115,7 +116,7 @@ def display_budgets(budgets_tab, max_resources, reduction_factor):
     table_str += "max resource={}, eta={}, trials number of one execution={}\n".format(
         max_resources, reduction_factor, total_trials
     )
-    logger.debug(table_str)
+    logger.info(table_str)
 
 
 class Hyperband(BaseAlgorithm):
@@ -155,7 +156,7 @@ class Hyperband(BaseAlgorithm):
         if fidelity_index is None:
             raise RuntimeError(SPACE_ERROR)
 
-        fidelity_dim = space.values()[fidelity_index]
+        fidelity_dim = space[fidelity_index]
 
         self.min_resources = fidelity_dim.low
         self.max_resources = fidelity_dim.high
@@ -169,46 +170,53 @@ class Hyperband(BaseAlgorithm):
         if self.reduction_factor >= 2:
             self.budgets = compute_budgets(self.max_resources, self.reduction_factor)
             self.brackets = self.create_brackets()
-            self.seed_rng(seed)
         else:
             self.budgets = None
             self.brackets = None
             logger.warning("Reduction factor for Hyperband needs to be at least 2")
 
+        self.seed_rng(seed)
+
     def create_bracket(self, i, budgets, iteration):
         return HyperbandBracket(self, budgets, iteration)
 
     def sample_from_bracket(self, bracket, num):
-        """Sample new points from bracket"""
-        points = []
-        while len(points) < num:
-            point = bracket.get_sample()
-            if point is None:
+        """Sample new trials from bracket"""
+        trials = []
+        while len(trials) < num:
+            trial = bracket.get_sample()
+            if trial is None:
                 break
 
-            point = list(point)
-            point[self.fidelity_index] = bracket.rungs[0]["resources"]
+            trial = trial.branch(
+                params={self.fidelity_index: bracket.rungs[0]["resources"]}
+            )
 
-            full_id = self.get_id(point, ignore_fidelity=False)
-            id_wo_fidelity = self.get_id(point, ignore_fidelity=True)
-            bracket_observed = self.trial_to_brackets.get(id_wo_fidelity)
+            full_id = self.get_id(trial, ignore_fidelity=False)
+            id_wo_fidelity = self.get_id(trial, ignore_fidelity=True)
 
-            if not self.has_suggested(point) and (
+            bracket_id = self.trial_to_brackets.get(id_wo_fidelity, None)
+            if bracket_id is not None:
+                bracket_observed = self.brackets[bracket_id]
+            else:
+                bracket_observed = None
+
+            if not self.has_suggested(trial) and (
                 not bracket_observed
                 or (
                     bracket_observed.repetition_id < bracket.repetition_id
-                    and bracket_observed.get_point_max_resource(point)
+                    and bracket_observed.get_trial_max_resource(trial)
                     < bracket.rungs[0]["resources"]
                 )
             ):
                 # if no duplicated found or the duplicated found existing in previous hyperband
                 # execution with less resource
 
-                points.append(tuple(point))
-                self.register(point)
-                self.trial_to_brackets[id_wo_fidelity] = bracket
+                trials.append(trial)
+                self.register(trial)
+                self.trial_to_brackets[id_wo_fidelity] = self.brackets.index(bracket)
 
-        return points
+        return trials
 
     def seed_rng(self, seed):
         """Seed the state of the random number generator.
@@ -230,8 +238,8 @@ class Hyperband(BaseAlgorithm):
         return {
             "rng_state": self.rng.get_state(),
             "seed": self.seed,
-            "_trials_info": copy.deepcopy(self._trials_info),
-            "trial_to_brackets": copy.deepcopy(self.trial_to_brackets),
+            "_trials_info": copy.deepcopy(dict(self._trials_info)),
+            "trial_to_brackets": copy.deepcopy(dict(self.trial_to_brackets)),
             "brackets": [bracket.state_dict for bracket in self.brackets],
         }
 
@@ -263,12 +271,12 @@ class Hyperband(BaseAlgorithm):
                     "https://github.com/Epistimio/orion/issues/new/choose"
                 )
             self.register(sample)
-            bracket.register(sample, None)
+            bracket.register(sample)
 
             if self.get_id(sample, ignore_fidelity=True) not in self.trial_to_brackets:
                 self.trial_to_brackets[
                     self.get_id(sample, ignore_fidelity=True)
-                ] = bracket
+                ] = self.brackets.index(bracket)
 
     def promote(self, num):
         samples = []
@@ -343,13 +351,16 @@ class Hyperband(BaseAlgorithm):
         """Counter for how many times Hyperband been executed"""
         if not self.brackets:
             return 0
-        executed_times = self.brackets[0].repetition_id
-        return executed_times - int(not self.brackets[0].is_done)
+        executed_times = self.brackets[-1].repetition_id
+        all_brackets_done = all(
+            bracket.is_done for bracket in self.brackets[-len(self.budgets) :]
+        )
+        return executed_times - int(not all_brackets_done)
 
     def _refresh_brackets(self):
         """Refresh bracket if one hyperband execution is done"""
         if all(bracket.is_done for bracket in self.brackets):
-            logger.debug(
+            logger.info(
                 "Hyperband execution %i is done, required to execute %s times",
                 self.executed_times,
                 str(self.repetitions),
@@ -360,7 +371,7 @@ class Hyperband(BaseAlgorithm):
                 self.append_brackets()
 
     def append_brackets(self):
-        self.brackets = self.create_brackets() + self.brackets
+        self.brackets = self.brackets + self.create_brackets()
         # Reset brackets seeds
         self.seed_brackets(self.seed)
 
@@ -370,71 +381,39 @@ class Hyperband(BaseAlgorithm):
             for i, bracket_budgets in enumerate(self.budgets)
         ]
 
-    def _get_bracket(self, point):
-        """Get the bracket of a point"""
-        fidelity = point[self.fidelity_index]
-        _id_wo_fidelity = self.get_id(point, ignore_fidelity=True)
+    def _get_bracket(self, trial):
+        """Get the bracket of a trial"""
+        _id_wo_fidelity = self.get_id(trial, ignore_fidelity=True)
+        return self.brackets[self.trial_to_brackets[_id_wo_fidelity]]
 
-        brackets = []
-        for bracket in self.brackets:
-            # If find same point in first rung of a bracket,
-            # the point should register in this bracket
-            if _id_wo_fidelity in bracket.rungs[0]["results"]:
-                brackets = [bracket]
-                break
-
-        if not brackets:
-            # If the point show in current hyeprband execution the first time,
-            # the bracket with same fidelity in the first rung should be used,
-            # the assumption is that there is no duplicated points inside same hyperband execution.
-            brackets = [
-                bracket
-                for bracket in self.brackets
-                if bracket.rungs[0]["resources"] == fidelity
-            ]
-
-        if not brackets:
-            raise ValueError(
-                "No bracket found for point {0} with fidelity {1}".format(
-                    _id_wo_fidelity, fidelity
-                )
-            )
-
-        if len(brackets) > 1:
-            logger.warning(
-                "More than one bracket found for point %s, this should not happen",
-                str(point),
-            )
-
-        bracket = brackets[0]
-
-        return bracket
-
-    def observe(self, points, results):
-        """Observe evaluation `results` corresponding to list of `points` in
+    def observe(self, trials):
+        """Observe evaluation `results` corresponding to list of `trials` in
         space.
 
-        A simple random sampler though does not take anything into account.
+        Parameters
+        ----------
+        trials: list of ``orion.core.worker.trial.Trial``
+           Trials from a `orion.algo.space.Space`.
+
         """
+        for trial in trials:
 
-        for point, result in zip(points, results):
-
-            if not self.has_suggested(point):
-                logger.info(
-                    "Ignoring point %s because it was not sampled by current algo.",
-                    point,
+            if not self.has_suggested(trial):
+                logger.debug(
+                    "Ignoring trial %s because it was not sampled by current algo.",
+                    trial,
                 )
                 continue
 
-            self.register(point, result)
+            self.register(trial)
 
-            bracket = self._get_bracket(point)
+            bracket = self._get_bracket(trial)
 
             try:
-                bracket.register(point, result["objective"])
+                bracket.register(trial)
             except IndexError:
                 logger.warning(
-                    "Point registered to wrong bracket. This is likely due "
+                    "Trial registered to wrong bracket. This is likely due "
                     "to a corrupted database, where trials of different fidelity "
                     "have a wrong timestamps."
                 )
@@ -475,26 +454,26 @@ class HyperbandBracket:
 
         logger.debug("Bracket budgets: %s", str(budgets))
 
-        # points = hyperband.sample(compute_rung_sizes(reduction_factor, len(budgets))[0])
-        # for point in points:
-        #     self.register(point, None)
-
     @property
     def state_dict(self):
-        return {"rungs": copy.deepcopy(self.rungs)}
+        return {
+            "rungs": copy.deepcopy(self.rungs),
+            "samples": copy.deepcopy(self._samples),
+        }
 
     def set_state(self, state_dict):
         self.rungs = state_dict["rungs"]
+        self._samples = state_dict["samples"]
 
     @property
     def is_filled(self):
         """Return True if first rung with trials is filled"""
         return self.has_rung_filled(0)
 
-    def get_point_max_resource(self, point):
-        """Return the max resource value that has been tried for a point"""
+    def get_trial_max_resource(self, trial):
+        """Return the max resource value that has been tried for a trial"""
         max_resource = 0
-        _id_wo_fidelity = self.hyperband.get_id(point, ignore_fidelity=True)
+        _id_wo_fidelity = self.hyperband.get_id(trial, ignore_fidelity=True)
         for rung in self.rungs:
             if _id_wo_fidelity in rung["results"]:
                 max_resource = rung["resources"]
@@ -529,15 +508,15 @@ class HyperbandBracket:
             request, self, buffer=should_have_n_trials * 10 / request
         )
 
-    def register(self, point, objective):
-        """Register a point in the corresponding rung"""
-        self._get_results(point)[self.hyperband.get_id(point, ignore_fidelity=True)] = (
-            objective,
-            point,
+    def register(self, trial):
+        """Register a trial in the corresponding rung"""
+        self._get_results(trial)[self.hyperband.get_id(trial, ignore_fidelity=True)] = (
+            trial.objective.value if trial.objective else None,
+            copy.deepcopy(trial),
         )
 
-    def _get_results(self, point):
-        fidelity = point[self.hyperband.fidelity_index]
+    def _get_results(self, trial):
+        fidelity = flatten(trial.params)[self.hyperband.fidelity_index]
         rungs = [
             rung["results"] for rung in self.rungs if rung["resources"] == fidelity
         ]
@@ -545,7 +524,7 @@ class HyperbandBracket:
             budgets = [rung["resources"] for rung in self.rungs]
             raise IndexError(
                 REGISTRATION_ERROR.format(
-                    fidelity=fidelity, budgets=budgets, params=point
+                    fidelity=fidelity, budgets=budgets, params=trial.params
                 )
             )
 
@@ -558,27 +537,36 @@ class HyperbandBracket:
         return max(should_have_n_trials - have_n_trials, 0)
 
     def get_candidates(self, rung_id):
-        """Get a candidate for promotion"""
+        """Get a candidate for promotion
+
+        Raises
+        ------
+        TypeError
+            If get_candidates is called before the entire rung is completed.
+        """
         if self.has_rung_filled(rung_id + 1):
             return []
 
         rung = self.rungs[rung_id]["results"]
         next_rung = self.rungs[rung_id + 1]["results"]
 
-        rung = list(sorted((objective, point) for objective, point in rung.values()))
+        rung = sorted(rung.values(), key=lambda pair: pair[0])
+
+        if not rung:
+            return []
 
         should_have_n_trials = self.rungs[rung_id + 1]["n_trials"]
-        points = []
+        trials = []
         i = 0
-        while len(points) + len(next_rung) < should_have_n_trials:
-            objective, point = rung[i]
+        while len(trials) + len(next_rung) < should_have_n_trials:
+            objective, trial = rung[i]
             assert objective is not None
-            _id = self.hyperband.get_id(point, ignore_fidelity=True)
+            _id = self.hyperband.get_id(trial, ignore_fidelity=True)
             if _id not in next_rung:
-                points.append(point)
+                trials.append(trial)
             i += 1
 
-        return points
+        return trials
 
     @property
     def is_done(self):
@@ -612,7 +600,7 @@ class HyperbandBracket:
 
         The rungs are iterated over in reversed order, so that high rungs
         are prioritised for promotions. When a candidate is promoted, the loop is broken and
-        the method returns the promoted point.
+        the method returns the promoted trial.
 
         .. note ::
 
@@ -632,28 +620,34 @@ class HyperbandBracket:
             if not self.is_ready(rung_id):
                 return []
 
-            points = []
+            trials = []
             for candidate in self.get_candidates(rung_id):
                 # pylint: disable=logging-format-interpolation
                 logger.debug(
-                    "Promoting {point} from rung {past_rung} with fidelity {past_fidelity} to "
+                    "Promoting {trial} from rung {past_rung} with fidelity {past_fidelity} to "
                     "rung {new_rung} with fidelity {new_fidelity}".format(
-                        point=candidate,
+                        trial=candidate,
                         past_rung=rung_id,
-                        past_fidelity=candidate[self.hyperband.fidelity_index],
+                        past_fidelity=flatten(candidate.params)[
+                            self.hyperband.fidelity_index
+                        ],
                         new_rung=rung_id + 1,
                         new_fidelity=self.rungs[rung_id + 1]["resources"],
                     )
                 )
 
-                candidate = list(copy.deepcopy(candidate))
-                candidate[self.hyperband.fidelity_index] = self.rungs[rung_id + 1][
-                    "resources"
-                ]
+                candidate = candidate.branch(
+                    status="new",
+                    params={
+                        self.hyperband.fidelity_index: self.rungs[rung_id + 1][
+                            "resources"
+                        ]
+                    },
+                )
                 if not self.hyperband.has_suggested(candidate):
-                    points.append(tuple(candidate))
+                    trials.append(candidate)
 
-            return points[:num]
+            return trials[:num]
 
         return []
 

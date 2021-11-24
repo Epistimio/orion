@@ -288,7 +288,7 @@ def test_demo_four_workers(storage, monkeypatch):
     status = defaultdict(int)
     for trial in trials:
         status[trial.status] += 1
-    assert status["completed"] == 20
+    assert status["completed"] >= 20
     assert status["new"] < 5
     params = trials[-1].params
     assert len(params) == 1
