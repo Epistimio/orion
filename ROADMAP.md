@@ -1,17 +1,27 @@
 # Roadmap
-Last update Sep 14th, 2021
+Last update Nov 23rd, 2021
 
 ## Next releases - Short-Term
 
-### v0.2
+### v0.2.1
 
-#### Generic `Optimizer` interface supporting various types of algorithms
-
-Change interface to support trial object instead of curated lists. This is necessary to support algorithms such as PBT.
-
-#### More Optimizers
+- New master process to enhance parallelisation efficiency.
 - [PBT](https://arxiv.org/abs/1711.09846)
+
+### v0.2.2
+
+- Use shared algo serialization instead of replications to enhance parallelisation efficiency.
+- [DEBH](https://arxiv.org/abs/2105.09821)
+
+### v0.2.3
+
+- [HEBO](https://github.com/huawei-noah/HEBO/tree/master/HEBO/archived_submissions/hebo)
+
+### v0.2.4
+
 - [BOHB](https://ml.informatik.uni-freiburg.de/papers/18-ICML-BOHB.pdf)
+
+## Next releases - Mid-Term
 
 #### Simple dashboard specific to monitoring and benchmarking of Black-Box optimization
 - Specific to hyper parameter optimizations
@@ -19,7 +29,7 @@ Change interface to support trial object instead of curated lists. This is neces
 
 #### Leveraging previous experiences
 Leveraging the knowledge base contained in the EVC of previous trials to optimize and drive new
- trials.
+trials.
 
 ## Next releases - Long-Term
 

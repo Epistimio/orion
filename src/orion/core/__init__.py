@@ -35,7 +35,7 @@ __license__ = "BSD-3-Clause"
 __author__ = u"Epistímio"
 __author_short__ = u"Epistímio"
 __author_email__ = "xavier.bouthillier@umontreal.ca"
-__copyright__ = u"2017-2020, Epistímio"
+__copyright__ = u"2017-2021, Epistímio"
 __url__ = "https://github.com/epistimio/orion"
 
 DIRS = AppDirs(__name__, __author_short__)
