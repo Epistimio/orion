@@ -132,15 +132,15 @@ class PoolExecutor(BaseExecutor):
         Number of worker to spawn
 
     backend: str
-        Pool backend to use; thread or multiprocess, defaults to thread
+        Pool backend to use; thread or multiprocess, defaults to multiprocess
 
     """
 
-    BACKENDS = dict(thread=ThreadPool, multiprocess=Pool)
+    BACKENDS = dict(thread=ThreadPool, threading=ThreadPool, multiprocess=Pool, loky=Pool)
 
-    def __init__(self, n_workers, backend="thread", **kwargs):
+    def __init__(self, n_workers, backend="multiprocess", **kwargs):
         super().__init__(n_workers, **kwargs)
-        self.pool = PoolExecutor.BACKENDS.get(backend, "thread")(n_workers)
+        self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
 
     def __del__(self):
         self.pool.terminate()
