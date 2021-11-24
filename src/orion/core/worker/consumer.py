@@ -99,11 +99,6 @@ class Consumer(object):
         # Fetch space builder
         self.template_builder = OrionCmdlineParser(user_script_config)
         self.template_builder.set_state_dict(experiment.metadata["parser"])
-        # Get path to user's script and infer trial configuration directory
-        if experiment.working_dir:
-            self.working_dir = os.path.abspath(experiment.working_dir)
-        else:
-            self.working_dir = os.path.join(tempfile.gettempdir(), "orion")
 
         self.pacemaker = None
 
