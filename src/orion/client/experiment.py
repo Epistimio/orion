@@ -18,6 +18,7 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
+    ReservationTimeout,
     UnsupportedOperation,
     WaitingForTrials,
 )
