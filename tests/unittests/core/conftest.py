@@ -189,7 +189,7 @@ dendi_base_trials = [
             {"name": "/decoding_layer", "type": "categorical", "value": "rnn"},
             {"name": "/encoding_layer", "type": "categorical", "value": "lstm"},
         ],
-        "parents": [],
+        "parent": None,
     },
     {
         "status": "completed",
@@ -210,7 +210,7 @@ dendi_base_trials = [
             },
             {"name": "/encoding_layer", "type": "categorical", "value": "gru"},
         ],
-        "parents": [],
+        "parent": None,
     },
     {
         "status": "completed",
@@ -226,7 +226,7 @@ dendi_base_trials = [
             {"name": "/decoding_layer", "type": "categorical", "value": "rnn"},
             {"name": "/encoding_layer", "type": "categorical", "value": "rnn"},
         ],
-        "parents": [],
+        "parent": None,
     },
     {
         "status": "new",
@@ -239,7 +239,7 @@ dendi_base_trials = [
             {"name": "/decoding_layer", "type": "categorical", "value": "rnn"},
             {"name": "/encoding_layer", "type": "categorical", "value": "gru"},
         ],
-        "parents": [],
+        "parent": None,
     },
     {
         "status": "new",
@@ -256,7 +256,7 @@ dendi_base_trials = [
             },
             {"name": "/encoding_layer", "type": "categorical", "value": "rnn"},
         ],
-        "parents": [],
+        "parent": None,
     },
     {
         "status": "interrupted",
@@ -273,7 +273,7 @@ dendi_base_trials = [
             },
             {"name": "/encoding_layer", "type": "categorical", "value": "lstm"},
         ],
-        "parents": [],
+        "parent": None,
     },
     {
         "status": "suspended",
@@ -286,7 +286,7 @@ dendi_base_trials = [
             {"name": "/decoding_layer", "type": "categorical", "value": "gru"},
             {"name": "/encoding_layer", "type": "categorical", "value": "lstm"},
         ],
-        "parents": [],
+        "parent": None,
     },
 ]
 
