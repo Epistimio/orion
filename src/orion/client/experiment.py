@@ -8,6 +8,7 @@ Wraps the core Experiment object to provide further functionalities for the user
 """
 import inspect
 import logging
+import time
 from contextlib import contextmanager
 
 import orion.core
