@@ -31,7 +31,7 @@ class SetupWorkingDir:
     def __enter__(self):
         """Create the a permanent directory or a temporary one."""
 
-        self.tmp = bool(self.experiment.working_dir is None)
+        self.tmp = bool(not self.experiment.working_dir)
 
         if self.tmp:
             base_path = os.path.join(tempfile.gettempdir(), "orion")

@@ -22,7 +22,6 @@ from orion.core.utils.exceptions import (
     InexecutableUserScript,
     MissingResultFile,
 )
-from orion.core.utils.working_dir import WorkingDir
 
 log = logging.getLogger(__name__)
 
@@ -117,21 +116,13 @@ class Consumer(object):
             True if the trial was successfully executed. False if the trial is broken.
 
         """
-        log.debug("Creating new directory at '%s':", self.working_dir)
-        temp_dir = not bool(self.experiment.working_dir)
-        prefix = self.experiment.name + "_"
-        suffix = trial.id
+        log.debug("Consumer context: %s", trial.working_dir)
+        os.makedirs(trial.working_dir, exist_ok=True)
 
-        with WorkingDir(
-            self.working_dir, temp_dir, prefix=prefix, suffix=suffix
-        ) as workdirname:
-            log.debug("New consumer context: %s", workdirname)
-            trial.working_dir = workdirname
+        results_file = self._consume(trial, trial.working_dir)
 
-            results_file = self._consume(trial, workdirname)
-
-            log.debug("Parsing results from file and fill corresponding Trial object.")
-            results = self.retrieve_results(results_file)
+        log.debug("Parsing results from file and fill corresponding Trial object.")
+        results = self.retrieve_results(results_file)
 
         return results
 

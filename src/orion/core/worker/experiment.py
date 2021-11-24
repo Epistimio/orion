@@ -354,6 +354,7 @@ class Experiment:
         trial.experiment = self._id
         trial.status = status
         trial.submit_time = stamp
+        trial.exp_working_dir = self.working_dir
 
         self._storage.register_trial(trial)
 

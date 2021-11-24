@@ -10,6 +10,7 @@ Describe a particular training run, parameters and results.
 import copy
 import hashlib
 import logging
+import os
 
 from orion.core.utils.exceptions import InvalidResult
 from orion.core.utils.flatten import unflatten
@@ -178,7 +179,7 @@ class Trial:
         "_id",
         "_status",
         "worker",
-        "_working_dir",
+        "_exp_working_dir",
         "heartbeat",
         "submit_time",
         "start_time",
@@ -257,16 +258,18 @@ class Trial:
         if params:
             raise ValueError(f"Some parameters are not part of base trial: {params}")
 
-        return Trial(status=status, params=config_params)
+        return Trial(
+            status=status,
+            params=config_params,
+            parent=self.id,
+            exp_working_dir=self.exp_working_dir,
+        )
 
     def to_dict(self):
         """Needed to be able to convert `Trial` to `dict` form."""
         trial_dictionary = dict()
 
         for attrname in self.__slots__:
-            if attrname == "_working_dir":
-                continue
-
             attrname = attrname.lstrip("_")
             trial_dictionary[attrname] = getattr(self, attrname)
 
@@ -313,15 +316,35 @@ class Trial:
 
         self._results = results
 
+    def get_working_dir(
+        self, ignore_fidelity=False, ignore_experiment=False, ignore_lie=False
+    ):
+        if not self.exp_working_dir:
+            raise RuntimeError(
+                "Cannot infer trial's working_dir because trial.exp_working_dir is not set."
+            )
+        trial_hash = self.compute_trial_hash(
+            self,
+            ignore_fidelity=ignore_fidelity,
+            ignore_experiment=ignore_experiment,
+            ignore_lie=ignore_lie,
+        )
+        return os.path.join(self.exp_working_dir, trial_hash)
+
     @property
     def working_dir(self):
         """Return the current working directory of the trial."""
-        return self._working_dir
+        return self.get_working_dir()
 
-    @working_dir.setter
-    def working_dir(self, value):
-        """Change the current working directory of the trial."""
-        self._working_dir = value
+    @property
+    def exp_working_dir(self):
+        """Return the current working directory of the experiment."""
+        return self._exp_working_dir
+
+    @exp_working_dir.setter
+    def exp_working_dir(self, value):
+        """Change the current base working directory of the trial."""
+        self._exp_working_dir = value
 
     @property
     def status(self):
