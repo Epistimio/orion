@@ -11,6 +11,7 @@
 import numpy
 
 from orion.algo.base import BaseAlgorithm
+from orion.core.utils import format_trials
 
 
 class Gradient_Descent(BaseAlgorithm):
@@ -39,17 +40,19 @@ class Gradient_Descent(BaseAlgorithm):
             return self.space.sample(1)
 
         self.current_point -= self.learning_rate * self.gradient
-        return [self.current_point]
+        return [format_trials.tuple_to_trial(self.current_point, self.space)]
 
-    def observe(self, points, results):
+    def observe(self, trials):
         """Observe evaluation `results` corresponding to list of `points` in
         space.
 
         Save current point and gradient corresponding to this point.
 
         """
-        self.current_point = numpy.asarray(points[-1])
-        self.gradient = numpy.asarray(results[-1]["gradient"])
+        self.current_point = numpy.asarray(
+            format_trials.trial_to_tuple(trials[-1], self.space)
+        )
+        self.gradient = numpy.asarray(trials[-1].gradient.value)
         self.has_observed_once = True
 
     @property

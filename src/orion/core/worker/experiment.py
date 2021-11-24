@@ -57,7 +57,7 @@ class Experiment:
        it will overwrite the previous one.
     space: Space
        Object representing the optimization space.
-    algorithms : `PrimaryAlgo` object.
+    algorithms : `BaseAlgorithm` object or a wrapper.
        Complete specification of the optimization and dynamical procedures taking
        place in this `Experiment`.
 

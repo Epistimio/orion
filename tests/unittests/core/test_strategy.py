@@ -5,23 +5,30 @@ import logging
 
 import pytest
 
+from orion.core.utils import backward
 from orion.core.worker.strategy import (
     MaxParallelStrategy,
     MeanParallelStrategy,
     NoParallelStrategy,
-    Strategy,
     StubParallelStrategy,
+    strategy_factory,
 )
 from orion.core.worker.trial import Trial
 
 
 @pytest.fixture
-def observations():
+def trials():
     """10 objective observations"""
-    points = [i for i in range(10)]
-    results = [{"objective": points[i]} for i in range(10)]
+    trials = []
+    for i in range(10):
+        trials.append(
+            Trial(
+                params=[{"name": "x", "type": "real", "value": i}],
+                results=[{"name": "objective", "type": "objective", "value": i}],
+            )
+        )
 
-    return points, results
+    return trials
 
 
 @pytest.fixture
@@ -52,8 +59,7 @@ strategies = [
 def test_handle_corrupted_trials(caplog, strategy, corrupted_trial):
     """Verify that corrupted trials are handled properly"""
     with caplog.at_level(logging.WARNING, logger="orion.core.worker.strategy"):
-        Strategy(strategy).observe([corrupted_trial], [{"objective": 1}])
-        lie = Strategy(strategy).lie(corrupted_trial)
+        lie = strategy_factory.create(strategy).lie(corrupted_trial)
 
     match = "Trial `{}` has an objective but status is not completed".format(
         corrupted_trial.id
@@ -68,8 +74,7 @@ def test_handle_corrupted_trials(caplog, strategy, corrupted_trial):
 def test_handle_uncompleted_trials(caplog, strategy, incomplete_trial):
     """Verify that no warning is logged if trial is valid"""
     with caplog.at_level(logging.WARNING, logger="orion.core.worker.strategy"):
-        Strategy(strategy).observe([incomplete_trial], [{"objective": None}])
-        Strategy(strategy).lie(incomplete_trial)
+        strategy_factory.create(strategy).lie(incomplete_trial)
 
     assert "Trial `{}` has an objective but status is not completed" not in caplog.text
 
@@ -79,56 +84,46 @@ class TestStrategyFactory:
 
     def test_create_noparallel(self):
         """Test creating a NoParallelStrategy class"""
-        strategy = Strategy("NoParallelStrategy")
+        strategy = strategy_factory.create("NoParallelStrategy")
         assert isinstance(strategy, NoParallelStrategy)
 
     def test_create_meanparallel(self):
         """Test creating a MeanParallelStrategy class"""
-        strategy = Strategy("MeanParallelStrategy")
+        strategy = strategy_factory.create("MeanParallelStrategy")
         assert isinstance(strategy, MeanParallelStrategy)
 
 
 class TestParallelStrategies:
     """Test the different parallel strategy methods"""
 
-    def test_max_parallel_strategy(self, observations, incomplete_trial):
+    def test_max_parallel_strategy(self, trials, incomplete_trial):
         """Test that MaxParallelStrategy lies using the max"""
-        points, results = observations
-
         strategy = MaxParallelStrategy()
-        strategy.observe(points, results)
+        strategy.observe(trials)
         lying_result = strategy.lie(incomplete_trial)
 
-        max_value = max(result["objective"] for result in results)
+        max_value = max(trial.objective.value for trial in trials)
         assert lying_result.value == max_value
 
-    def test_mean_parallel_strategy(self, observations, incomplete_trial):
+    def test_mean_parallel_strategy(self, trials, incomplete_trial):
         """Test that MeanParallelStrategy lies using the mean"""
-        points, results = observations
-
         strategy = MeanParallelStrategy()
-        strategy.observe(points, results)
+        strategy.observe(trials)
         lying_result = strategy.lie(incomplete_trial)
 
-        mean_value = sum(result["objective"] for result in results) / float(
-            len(results)
-        )
+        mean_value = sum(trial.objective.value for trial in trials) / float(len(trials))
         assert lying_result.value == mean_value
 
-    def test_no_parallel_strategy(self, observations, incomplete_trial):
+    def test_no_parallel_strategy(self, trials, incomplete_trial):
         """Test that NoParallelStrategy lies outputs None"""
-        points, results = observations
-
         strategy = NoParallelStrategy()
-        strategy.observe(points, results)
+        strategy.observe(trials)
         lying_result = strategy.lie(incomplete_trial)
         assert lying_result is None
 
-    def test_stub_parallel_strategy(self, observations, incomplete_trial):
+    def test_stub_parallel_strategy(self, trials, incomplete_trial):
         """Test that NoParallelStrategy lies outputs None"""
-        points, results = observations
-
         strategy = StubParallelStrategy()
-        strategy.observe(points, results)
+        strategy.observe(trials)
         lying_result = strategy.lie(incomplete_trial)
         assert lying_result.value is None

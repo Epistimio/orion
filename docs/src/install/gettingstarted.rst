@@ -55,7 +55,7 @@ For the previous example, we would run
 
 .. code-block:: console
 
-   $ orion hunt -n <experiment name> script.py --lr~'loguniform(1e-5, 1.0)'
+   $ orion hunt -n <experiment name> --max-trials 10 python script.py --lr~'loguniform(1e-5, 1.0)'
 
 This is going to start the optimization process using the default optimization algorithm and sample
 the values for the ``lr`` hyper-parameter in a log uniform distribution between 0.00001 et 1.0. Each

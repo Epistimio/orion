@@ -9,7 +9,6 @@ import pytest
 
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
-from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Space
 from orion.core.evc.adapters import BaseAdapter
 from orion.core.io.database.ephemeraldb import EphemeralDB
@@ -21,6 +20,7 @@ from orion.core.utils.exceptions import (
     UnsupportedOperation,
 )
 from orion.core.utils.singleton import update_singletons
+from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.storage.base import get_storage
 from orion.storage.legacy import Legacy
 from orion.testing import OrionState
@@ -773,7 +773,7 @@ class TestBuild(object):
         with OrionState(experiments=[new_config], trials=[]):
             exp = experiment_builder.build(**new_config)
 
-        assert isinstance(exp.algorithms, BaseAlgorithm)
+        assert isinstance(exp.algorithms, SpaceTransformAlgoWrapper)
         assert isinstance(exp.space, Space)
         assert isinstance(exp.refers["adapter"], BaseAdapter)
 
@@ -1150,7 +1150,7 @@ def test_load_unavailable_strategy(strategy_unavailable_config, capsys):
 
         with pytest.raises(NotImplementedError) as exc:
             experiment_builder.build("supernaekei")
-        exc.match("Could not find implementation of BaseParallelStrategy")
+        exc.match("Could not find implementation of ParallelStrategy")
 
 
 class TestInitExperimentReadWrite(object):

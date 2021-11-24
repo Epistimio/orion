@@ -9,7 +9,7 @@ import numpy
 from scipy.stats import norm
 
 from orion.algo.base import BaseAlgorithm
-from orion.core.utils.points import flatten_dims, regroup_dims
+from orion.core.utils import format_trials
 
 logger = logging.getLogger(__name__)
 
@@ -142,31 +142,37 @@ class TPE(BaseAlgorithm):
     ----------
     space: `orion.algo.space.Space`
         Optimisation space with priors for each dimension.
-    seed: None, int or sequence of int
+    seed: None, int or sequence of int, optional
         Seed to sample initial points and candidates points.
         Default: ``None``
-    n_initial_points: int
+    n_initial_points: int, optional
         Number of initial points randomly sampled. If new points
         are requested and less than `n_initial_points` are observed,
         the next points will also be sampled randomly instead of being
         sampled from the parzen estimators.
         Default: ``20``
-    n_ei_candidates: int
-        Number of candidates points sampled for ei compute.
+    n_ei_candidates: int, optional
+        Number of candidates points sampled for ei compute. Larger numbers will lead to more
+        exploitation and lower numbers will lead to more exploration. Be carefull with categorical
+        dimension as TPE tend to severily exploit these if n_ei_candidates is larger than 1.
         Default: ``24``
-    gamma: real
-        Ratio to split the observed trials into good and bad distributions.
+    gamma: real, optional
+        Ratio to split the observed trials into good and bad distributions. Lower numbers will
+        load to more exploitation and larger numbers will lead to more exploration.
         Default: ``0.25``
-    equal_weight: bool
+    equal_weight: bool, optional
         True to set equal weights for observed points.
         Default: ``False``
-    prior_weight: int
+    prior_weight: int, optional
         The weight given to the prior point of the input space.
         Default: ``1.0``
-    full_weight_num: int
+    full_weight_num: int, optional
         The number of the most recent trials which get the full weight where the others will be
         applied with a linear ramp from 0 to 1.0. It will only take effect if equal_weight
         is False.
+    max_retry: int, optional
+        Number of attempts to sample new points if the sampled points were already suggested.
+        Default: ``100``
 
     """
 
@@ -185,6 +191,7 @@ class TPE(BaseAlgorithm):
         equal_weight=False,
         prior_weight=1.0,
         full_weight_num=25,
+        max_retry=100,
     ):
 
         if n_initial_points < 2:
@@ -210,6 +217,7 @@ class TPE(BaseAlgorithm):
             equal_weight=equal_weight,
             prior_weight=prior_weight,
             full_weight_num=full_weight_num,
+            max_retry=max_retry,
         )
 
     @property
@@ -277,8 +285,8 @@ class TPE(BaseAlgorithm):
         Parameters
         ----------
         num: int, optional
-            Number of points to sample. If None, TPE will sample all random points at once, or a
-            single point if it is at the Bayesian Optimization stage.
+            Number of trials to sample. If None, TPE will sample all random trials at once, or a
+            single trial if it is at the Bayesian Optimization stage.
         :param num: how many sets to be suggested.
 
         .. note:: New parameters must be compliant with the problem's domain
@@ -303,26 +311,33 @@ class TPE(BaseAlgorithm):
             if not candidates:
                 break
 
-        if samples:
-            return samples
-
-        return None
+        return samples
 
     def _suggest(self, num, function):
-        points = []
+        trials = []
 
         ids = set(self._trials_info.keys())
-        while len(points) < num:
-            for candidate in function(num - len(points)):
+        retries = 0
+        while len(trials) < num and retries < self.max_retry:
+            for candidate in function(num - len(trials)):
                 candidate_id = self.get_id(candidate)
                 if candidate_id not in ids:
                     ids.add(candidate_id)
-                    points.append(candidate)
+                    trials.append(candidate)
+                else:
+                    retries += 1
 
                 if len(ids) >= self.space.cardinality:
-                    return points
+                    return trials
 
-        return points
+        if retries >= self.max_retry:
+            logger.warning(
+                f"Algorithm unable to sample `{num}` trials with less than "
+                f"`{self.max_retry}` retries. Try adjusting the configuration of TPE "
+                "to favor exploration (`n_ei_candidates` and `gamma` in particular)."
+            )
+
+        return trials
 
     def _suggest_random(self, num):
         def sample(num):
@@ -340,85 +355,53 @@ class TPE(BaseAlgorithm):
 
     def _suggest_one_bo(self):
 
-        point = []
-        below_points, above_points = self.split_trials()
+        params = {}
+        below_trials, above_trials = self.split_trials()
 
-        below_points = list(map(list, zip(*below_points)))
-        above_points = list(map(list, zip(*above_points)))
-
-        idx = 0
-        for i, dimension in enumerate(self.space.values()):
-
-            shape = dimension.shape
-            if not shape:
-                shape = (1,)
+        for dimension in self.space.values():
+            dim_below_trials = [trial.params[dimension.name] for trial in below_trials]
+            dim_above_trials = [trial.params[dimension.name] for trial in above_trials]
 
             if dimension.type == "real":
                 dim_samples = self._sample_real_dimension(
                     dimension,
-                    shape[0],
-                    below_points[idx : idx + shape[0]],
-                    above_points[idx : idx + shape[0]],
+                    dim_below_trials,
+                    dim_above_trials,
                 )
             elif dimension.type == "integer" and dimension.prior_name in [
                 "int_uniform",
                 "int_reciprocal",
             ]:
-                dim_samples = self.sample_one_dimension(
+                dim_samples = self._sample_int_point(
                     dimension,
-                    shape[0],
-                    below_points[idx : idx + shape[0]],
-                    above_points[idx : idx + shape[0]],
-                    self._sample_int_point,
+                    dim_below_trials,
+                    dim_above_trials,
                 )
             elif dimension.type == "categorical" and dimension.prior_name == "choices":
-                dim_samples = self.sample_one_dimension(
+                dim_samples = self._sample_categorical_point(
                     dimension,
-                    shape[0],
-                    below_points[idx : idx + shape[0]],
-                    above_points[idx : idx + shape[0]],
-                    self._sample_categorical_point,
+                    dim_below_trials,
+                    dim_above_trials,
                 )
             elif dimension.type == "fidelity":
                 # fidelity dimension
-                dim_samples = [point[i] for point in self.space.sample(1)]
+                trial = self.space.sample(1)[0]
+                dim_samples = trial.params[dimension.name]
             else:
                 raise NotImplementedError()
 
-            idx += shape[0]
-            point += dim_samples
+            params[dimension.name] = dim_samples
 
-        return self.format_point(point)
+        trial = format_trials.dict_to_trial(params, self.space)
+        return self.format_trial(trial)
 
-    # pylint:disable=no-self-use
-    def sample_one_dimension(
-        self, dimension, shape_size, below_points, above_points, sampler
-    ):
-        """Sample values for a dimension
-
-        :param dimension: Dimension.
-        :param shape_size: 1D Shape Size of the Real Dimension.
-        :param below_points: good points with shape (m, n), m=shape_size.
-        :param above_points: bad points with shape (m, n), m=shape_size.
-        :param sampler: method to sample one value for upon the dimension.
-        """
-        points = []
-
-        for j in range(shape_size):
-            new_point = sampler(dimension, below_points[j], above_points[j])
-            points.append(new_point)
-
-        return points
-
-    def _sample_real_dimension(self, dimension, shape_size, below_points, above_points):
+    def _sample_real_dimension(self, dimension, below_points, above_points):
         """Sample values for real dimension"""
         if any(map(dimension.prior_name.endswith, ["uniform", "reciprocal"])):
-            return self.sample_one_dimension(
+            return self._sample_real_point(
                 dimension,
-                shape_size,
                 below_points,
                 above_points,
-                self._sample_real_point,
             )
         else:
             raise NotImplementedError(
@@ -517,25 +500,21 @@ class TPE(BaseAlgorithm):
     def split_trials(self):
         """Split the observed trials into good and bad ones based on the ratio `gamma``"""
         sorted_trials = sorted(
-            (point for point in self._trials_info.values() if point[1] is not None),
-            key=lambda x: x[1]["objective"],
+            (
+                (trial, results)
+                for (trial, results) in self._trials_info.values()
+                if results is not None
+            ),
+            key=lambda point: point[1]["objective"],
         )
-        sorted_points = [list(points) for points, results in sorted_trials]
+        sorted_trials = [trial for trial, results in sorted_trials]
 
-        split_index = int(numpy.ceil(self.gamma * len(sorted_points)))
+        split_index = int(numpy.ceil(self.gamma * len(sorted_trials)))
 
-        below = sorted_points[:split_index]
-        above = sorted_points[split_index:]
+        below = sorted_trials[:split_index]
+        above = sorted_trials[split_index:]
 
         return below, above
-
-    def observe(self, points, results):
-        """Observe evaluation `results` corresponding to list of `points` in
-        space.
-
-        A simple random sampler though does not take anything into account.
-        """
-        super(TPE, self).observe(points, results)
 
 
 class GMMSampler:

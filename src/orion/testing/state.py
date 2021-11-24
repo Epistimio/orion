@@ -19,7 +19,7 @@ from orion.core.utils.singleton import (
     update_singletons,
 )
 from orion.core.worker.trial import Trial
-from orion.storage.base import Storage, get_storage
+from orion.storage.base import get_storage, storage_factory
 
 
 # pylint: disable=no-self-use,protected-access
@@ -197,7 +197,7 @@ class BaseOrionState:
 
         try:
             config["of_type"] = config.pop("type")
-            db = Storage(**config)
+            db = storage_factory.create(**config)
             self.storage_config = config
         except SingletonAlreadyInstantiatedError:
             db = get_storage()

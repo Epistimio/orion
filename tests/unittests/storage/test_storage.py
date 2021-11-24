@@ -23,9 +23,9 @@ from orion.core.worker.trial import Trial
 from orion.storage.base import (
     FailedUpdate,
     MissingArguments,
-    Storage,
     get_storage,
     setup_storage,
+    storage_factory,
 )
 from orion.storage.legacy import Legacy
 from orion.storage.track import HAS_TRACK, REASON
@@ -136,7 +136,7 @@ def test_setup_storage_default():
     """Test that storage is setup using default config"""
     update_singletons()
     setup_storage()
-    storage = Storage()
+    storage = storage_factory.create()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
 
@@ -156,7 +156,7 @@ def test_setup_storage_custom():
     setup_storage(
         {"type": "legacy", "database": {"type": "pickleddb", "host": "test.pkl"}}
     )
-    storage = Storage()
+    storage = storage_factory.create()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     assert storage._db.host == os.path.abspath("test.pkl")
@@ -166,7 +166,7 @@ def test_setup_storage_custom_type_missing():
     """Test setup with local configuration with type missing"""
     update_singletons()
     setup_storage({"database": {"type": "pickleddb", "host": "test.pkl"}})
-    storage = Storage()
+    storage = storage_factory.create()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     assert storage._db.host == os.path.abspath("test.pkl")
@@ -177,7 +177,7 @@ def test_setup_storage_custom_legacy_emtpy():
     """Test setup with local configuration with legacy but no config"""
     update_singletons()
     setup_storage({"type": "legacy"})
-    storage = Storage()
+    storage = storage_factory.create()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     assert storage._db.host == orion.core.config.storage.database.host
@@ -189,13 +189,13 @@ def test_setup_storage_bad_override():
     setup_storage(
         {"type": "legacy", "database": {"type": "pickleddb", "host": "test.pkl"}}
     )
-    storage = Storage()
+    storage = storage_factory.create()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     with pytest.raises(SingletonAlreadyInstantiatedError) as exc:
         setup_storage({"type": "track"})
 
-    assert exc.match("A singleton instance of \(type: Storage\)")
+    assert exc.match("A singleton instance of \(type: BaseStorageProtocol\)")
 
 
 @pytest.mark.xfail(reason="Fix this when introducing #135 in v0.2.0")
@@ -203,7 +203,7 @@ def test_setup_storage_bad_config_override():
     """Test setup with different config than existing singleton"""
     update_singletons()
     setup_storage({"database": {"type": "pickleddb", "host": "test.pkl"}})
-    storage = Storage()
+    storage = storage_factory.create()
     assert isinstance(storage, Legacy)
     assert isinstance(storage._db, PickledDB)
     with pytest.raises(SingletonAlreadyInstantiatedError):
@@ -225,7 +225,9 @@ def test_get_storage_uninitiated():
     with pytest.raises(SingletonNotInstantiatedError) as exc:
         get_storage()
 
-    assert exc.match("No singleton instance of \(type: Storage\) was created")
+    assert exc.match(
+        "No singleton instance of \(type: BaseStorageProtocol\) was created"
+    )
 
 
 def test_get_storage():

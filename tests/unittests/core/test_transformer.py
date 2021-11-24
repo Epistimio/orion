@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# -*: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.transformer`."""
 import copy
 import itertools
@@ -9,6 +8,7 @@ import numpy
 import pytest
 
 from orion.algo.space import Categorical, Dimension, Integer, Real, Space
+from orion.core.utils import format_trials
 from orion.core.worker.transformer import (
     Compose,
     Enumerate,
@@ -24,6 +24,7 @@ from orion.core.worker.transformer import (
     TransformedSpace,
     View,
     build_required_space,
+    change_trial_params,
 )
 
 
@@ -590,28 +591,28 @@ class TestView(object):
         assert t.repr_format(1.0) == "View(shape=(3, 4, 5), index=(0, 2, 1), 1.0)"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def dim():
     """Create an example of `Dimension`."""
-    dim = Real("yolo0", "norm", 0.9, shape=(3, 2))
+    dim = Real("yolo", "norm", 0.9, shape=(3, 2))
     return dim
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def logdim():
     """Create an log example of `Dimension`."""
     dim = Real("yolo4", "reciprocal", 1.0, 10.0, shape=(3, 2))
     return dim
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def logintdim():
     """Create an log integer example of `Dimension`."""
     dim = Integer("yolo5", "reciprocal", 1, 10, shape=(3, 2))
     return dim
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def tdim(dim):
     """Create an example of `TransformedDimension`."""
     transformers = [Quantize()]
@@ -619,7 +620,7 @@ def tdim(dim):
     return tdim
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def rdims(tdim):
     """Create an example of `ReshapedDimension`."""
     transformations = {}
@@ -635,23 +636,23 @@ def rdims(tdim):
     return transformations
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def rdim(dim, rdims):
     """Single ReshapedDimension"""
     return rdims[f"{dim.name}[0,1]"]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def dim2():
     """Create a second example of `Dimension`."""
     probs = (0.1, 0.2, 0.3, 0.4)
     categories = ("asdfa", "2", "3", "4")
     categories = OrderedDict(zip(categories, probs))
-    dim2 = Categorical("yolo2", categories)
+    dim2 = Categorical("yolo2", categories, default_value="2")
     return dim2
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def tdim2(dim2):
     """Create a second example of `TransformedDimension`."""
     transformers = [Enumerate(dim2.categories), OneHotEncode(len(dim2.categories))]
@@ -659,7 +660,7 @@ def tdim2(dim2):
     return tdim2
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def rdims2(tdim2):
     """Create a categorical example of `ReshapedDimension`."""
     transformations = {}
@@ -675,29 +676,32 @@ def rdims2(tdim2):
     return transformations
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def rdim2(dim2, rdims2):
     """Single ReshapedDimension"""
     return rdims2[f"{dim2.name}[1]"]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def dim3():
     """Create an example of integer `Dimension`."""
-    return Integer("yolo3", "uniform", 3, 7)
+    return Integer("yolo3", "uniform", 3, 7, shape=(1,))
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def tdim3(dim3):
     """Create an example of integer `Dimension`."""
     return TransformedDimension(Compose([], dim3.type), dim3)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def rdims3(tdim3):
     """Create an example of integer `Dimension`."""
     rdim3 = ReshapedDimension(
-        transformer=Identity(tdim3.type), original_dimension=tdim3, index=2
+        transformer=View(tdim3.shape, (0,), tdim3.type),
+        original_dimension=tdim3,
+        name="yolo3[0]",
+        index=2,
     )
 
     return {tdim3.name: rdim3}
@@ -778,7 +782,7 @@ class TestTransformedDimension(object):
             "Identity",
             "real",
             "real",
-            "yolo0",
+            "yolo",
             (3, 2),
             "real",
             (0.9,),
@@ -804,7 +808,7 @@ class TestTransformedDimension(object):
             "categorical",
             (),
             (),
-            None,
+            "2",
             "Distribution",
         )
 
@@ -834,12 +838,12 @@ class TestTransformedDimension(object):
         """Check method `__repr__`."""
         assert (
             str(tdim)
-            == "Quantize(Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None))"
+            == "Quantize(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None))"
         )  # noqa
 
     def test_name_property(self, tdim):
         """Check property `name`."""
-        assert tdim.name == "yolo0"
+        assert tdim.name == "yolo"
 
     def test_type_property(self, tdim, tdim2):
         """Check property `type`."""
@@ -858,6 +862,11 @@ class TestTransformedDimension(object):
         assert tdim2.original_dimension.shape == ()
         assert tdim2.shape == (4,)
 
+    def test_default_value_property(self, tdim, tdim2):
+        """Check property `default_value`."""
+        assert tdim.default_value is Dimension.NO_DEFAULT_VALUE
+        assert tuple(tdim2.default_value) == (0, 1, 0, 0)
+
 
 class TestReshapedDimension(object):
     """Check functionality of class `ReshapedDimension`."""
@@ -866,7 +875,7 @@ class TestReshapedDimension(object):
         """Check method `transform`."""
         a = numpy.zeros((3, 2))
         a[0, 1] = 2
-        assert rdim.transform([a, None]) == 2
+        assert rdim.transform(a) == 2
 
     def test_reverse(self, rdim):
         """Check method `reverse`."""
@@ -911,7 +920,7 @@ class TestReshapedDimension(object):
             "Identity",
             "real",
             "real",
-            "yolo0",
+            "yolo",
             (3, 2),
             "real",
             (0.9,),
@@ -940,7 +949,7 @@ class TestReshapedDimension(object):
             "categorical",
             (),
             (),
-            None,
+            "2",
             "Distribution",
         )
 
@@ -948,12 +957,12 @@ class TestReshapedDimension(object):
         """Check method `__repr__`."""
         assert (
             str(rdim)
-            == "View(shape=(3, 2), index=(0, 1), Quantize(Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)))"
+            == "View(shape=(3, 2), index=(0, 1), Quantize(Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)))"
         )  # noqa
 
     def test_name_property(self, rdim):
         """Check property `name`."""
-        assert rdim.name == "yolo0[0,1]"
+        assert rdim.name == "yolo[0,1]"
 
     def test_type_property(self, rdim, rdim2):
         """Check property `type`."""
@@ -972,8 +981,13 @@ class TestReshapedDimension(object):
         assert rdim2.original_dimension.shape == (4,)
         assert rdim2.shape == ()
 
+    def test_default_value_property(self, rdim, rdim2):
+        """Check property `default_value`."""
+        assert rdim.default_value is Dimension.NO_DEFAULT_VALUE
+        assert rdim2.default_value == 1
 
-@pytest.fixture(scope="module")
+
+@pytest.fixture()
 def space(dim, dim2, dim3):
     """Create an example `Space`."""
     space = Space()
@@ -983,7 +997,7 @@ def space(dim, dim2, dim3):
     return space
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def tspace(space, tdim, tdim2, tdim3):
     """Create an example `TransformedSpace`."""
     tspace = TransformedSpace(space)
@@ -993,7 +1007,7 @@ def tspace(space, tdim, tdim2, tdim3):
     return tspace
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def rspace(tspace, rdims, rdims2, rdims3):
     """Create an example `ReshapedSpace`."""
     rspace = ReshapedSpace(tspace)
@@ -1038,20 +1052,24 @@ class TestReshapedSpace(object):
 
     def test_reverse(self, space, tspace, rspace, seed):
         """Check method `reverse`."""
-        ryo = (
-            numpy.zeros(tspace["yolo0"].shape).reshape(-1).tolist()
-            + numpy.zeros(tspace["yolo2"].shape).reshape(-1).tolist()
-            + [10]
+        ryo = format_trials.tuple_to_trial(
+            tuple(
+                numpy.zeros(tspace["yolo2"].shape).reshape(-1).tolist()
+                + [10]
+                + numpy.zeros(tspace["yolo"].shape).reshape(-1).tolist()
+            ),
+            rspace,
         )
         yo = rspace.reverse(ryo)
         assert yo in space
 
     def test_contains(self, tspace, rspace, seed):
         """Check method `transform`."""
-        ryo = (
-            numpy.zeros(tspace["yolo0"].shape).reshape(-1).tolist()
-            + numpy.zeros(tspace["yolo2"].shape).reshape(-1).tolist()
+        ryo = format_trials.tuple_to_trial(
+            numpy.zeros(tspace["yolo2"].shape).reshape(-1).tolist()
             + [10]
+            + numpy.zeros(tspace["yolo"].shape).reshape(-1).tolist(),
+            rspace,
         )
 
         assert ryo in rspace
@@ -1074,37 +1092,54 @@ class TestReshapedSpace(object):
     def test_interval(self, rspace):
         """Check method `interval`."""
         interval = rspace.interval()
+
         assert len(interval) == 3 * 2 + 4 + 1
-        for i in range(3 * 2):
+
+        # Test yolo2
+        for i in range(4):
+            assert interval[i] == (0, 1)
+
+        # Test yolo3
+        assert interval[4] == (3, 10)
+
+        # Test yolo[:, :]
+        for i in range(4 + 1, 4 + 1 + 3 * 2):
             # assert interval[i] == (-float('inf'), float('inf'))
             assert interval[i] == (
                 -numpy.array(numpy.inf).astype(int) + 1,
                 numpy.array(numpy.inf).astype(int) - 1,
             )
-        for i in range(3 * 2, 3 * 2 + 4):
-            assert interval[i] == (0, 1)
-        assert interval[-1] == (3, 10)
 
-    def test_reshape(self, rspace):
+    def test_reshape(self, space, rspace):
         """Verify that the dimension are reshaped properly, forward and backward"""
-        point = [numpy.arange(6).reshape(3, 2), "3", 10]
-        rpoint = point[0].reshape(-1).tolist() + [0.0, 0.0, 1.0, 0.0] + [10]
-        assert rspace.transform(point) == tuple(rpoint)
-        numpy.testing.assert_equal(rspace.reverse(rpoint)[0], point[0])
-        assert rspace.reverse(rpoint)[1] == point[1]
-        assert rspace.reverse(rpoint)[2] == point[2]
+        trial = format_trials.tuple_to_trial(
+            (numpy.arange(6).reshape(3, 2).tolist(), "3", [10]), space
+        )
+
+        rtrial = format_trials.tuple_to_trial(
+            [0.0, 0.0, 1.0, 0.0]
+            + [10]
+            + numpy.array(trial.params["yolo"]).reshape(-1).tolist(),
+            rspace,
+        )
+        assert rspace.transform(trial).params == rtrial.params
+        numpy.testing.assert_equal(
+            rspace.reverse(rtrial).params["yolo"], trial.params["yolo"]
+        )
+        assert rspace.reverse(rtrial).params["yolo2"] == trial.params["yolo2"]
+        assert rspace.reverse(rtrial).params["yolo3"] == trial.params["yolo3"]
 
     def test_cardinality(self, dim2):
         """Check cardinality of reshaped space"""
         space = Space()
-        space.register(Real("yolo0", "reciprocal", 0.1, 1, precision=1, shape=(2, 2)))
+        space.register(Real("yolo", "reciprocal", 0.1, 1, precision=1, shape=(2, 2)))
         space.register(dim2)
 
         rspace = build_required_space(space, shape_requirement="flattened")
         assert rspace.cardinality == (10 ** (2 * 2)) * 4
 
         space = Space()
-        space.register(Real("yolo0", "uniform", 0, 2, shape=(2, 2)))
+        space.register(Real("yolo", "uniform", 0, 2, shape=(2, 2)))
         space.register(dim2)
 
         rspace = build_required_space(
@@ -1113,7 +1148,7 @@ class TestReshapedSpace(object):
         assert rspace.cardinality == (3 ** (2 * 2)) * 4
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def space_each_type(dim, dim2, dim3, logdim, logintdim):
     """Create an example `Space`."""
     space = Space()
@@ -1150,9 +1185,9 @@ class TestRequiredSpaceBuilder(object):
         assert (
             str(tspace)
             == """\
-Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
-       Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None),
-       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None),
+Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
+       Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2),
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None),
        Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None)),
        Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)])\
 """
@@ -1170,9 +1205,9 @@ Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), def
         assert (
             str(tspace)
             == """\
-Space([Quantize(Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None))),
-       Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None)),
-       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None),
+Space([Quantize(Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None))),
+       Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2)),
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None),
        Quantize(Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None))),
        Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)])\
 """
@@ -1190,9 +1225,9 @@ Space([Quantize(Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3
         assert (
             str(tspace)
             == """\
-Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
-       OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None))),
-       ReverseQuantize(Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None)),
+Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
+       OneHotEncode(Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2))),
+       ReverseQuantize(Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None)),
        Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None)),
        ReverseQuantize(Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None))])\
 """
@@ -1210,9 +1245,9 @@ Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), def
         assert (
             str(tspace)
             == """\
-Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
-       Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None)),
-       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None),
+Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
+       Enumerate(Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2)),
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None),
        Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None)),
        Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)])\
 """
@@ -1230,9 +1265,9 @@ Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), def
         assert (
             str(tspace)
             == """\
-Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
-       Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=None),
-       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(), default value=None),
+Space([Precision(4, Real(name=yolo, prior={norm: (0.9,), {}}, shape=(3, 2), default value=None)),
+       Categorical(name=yolo2, prior={asdfa: 0.10, 2: 0.20, 3: 0.30, 4: 0.40}, shape=(), default value=2),
+       Integer(name=yolo3, prior={uniform: (3, 7), {}}, shape=(1,), default value=None),
        Linearize(Precision(4, Real(name=yolo4, prior={reciprocal: (1.0, 10.0), {}}, shape=(3, 2), default value=None))),
        Linearize(ReverseQuantize(Integer(name=yolo5, prior={reciprocal: (1, 10), {}}, shape=(3, 2), default value=None)))])\
 """
@@ -1244,12 +1279,9 @@ Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), def
 
         # 1 integer + 1 categorical + 1 * (3, 2) shapes
         assert len(tspace) == 1 + 1 + 3 * (3 * 2)
-        assert str(tspace).count("View") == 3 * (3 * 2)
+        assert str(tspace).count("View") == 3 * (3 * 2) + 1
 
         i = 0
-        for _ in range(3 * 2):
-            assert tspace[i].type == "real"
-            i += 1
 
         assert tspace[i].type == "categorical"
         i += 1
@@ -1265,13 +1297,17 @@ Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), def
             assert tspace[i].type == "integer"
             i += 1
 
+        for _ in range(3 * 2):
+            assert tspace[i].type == "real"
+            i += 1
+
         tspace = build_required_space(
             space_each_type, shape_requirement="flattened", type_requirement="real"
         )
 
         # 1 integer + 4 categorical + 1 * (3, 2) shapes
         assert len(tspace) == 1 + 4 + 3 * (3 * 2)
-        assert str(tspace).count("View") == 4 + 3 * (3 * 2)
+        assert str(tspace).count("View") == 4 + 3 * (3 * 2) + 1
 
     def test_capacity(self, space_each_type):
         """Check transformer space capacity"""
@@ -1281,7 +1317,7 @@ Space([Precision(4, Real(name=yolo0, prior={norm: (0.9,), {}}, shape=(3, 2), def
         space = Space()
         probs = (0.1, 0.2, 0.3, 0.4)
         categories = ("asdfa", 2, 3, 4)
-        dim = Categorical("yolo0", OrderedDict(zip(categories, probs)), shape=2)
+        dim = Categorical("yolo", OrderedDict(zip(categories, probs)), shape=2)
         space.register(dim)
         dim = Integer("yolo2", "uniform", -3, 6)
         space.register(dim)
@@ -1328,45 +1364,72 @@ def test_precision_with_linear(space, logdim, logintdim):
     space.register(logintdim)
 
     # Force precision on all real or linearized dimensions
-    space["yolo0"].precision = 3
+    space["yolo"].precision = 3
     space["yolo4"].precision = 4
     space["yolo5"].precision = 5
 
     # Create a point
-    point = list(space.sample(1)[0])
-    real_index = list(space.keys()).index("yolo0")
+    trial = space.sample(1)[0]
+    real_index = list(space.keys()).index("yolo")
     logreal_index = list(space.keys()).index("yolo4")
     logint_index = list(space.keys()).index("yolo5")
-    point[real_index] = 0.133333
-    point[logreal_index] = 0.1222222
-    point[logint_index] = 2
+    trial._params[real_index].value = 0.133333
+    trial._params[logreal_index].value = 0.1222222
+    trial._params[logint_index].value = 2
 
     # Check first without linearization
     tspace = build_required_space(space, type_requirement="numerical")
     # Check that transform is fine
-    tpoint = tspace.transform(point)
-    assert tpoint[real_index] == 0.133
-    assert tpoint[logreal_index] == 0.1222
-    assert tpoint[logint_index] == 2
+    ttrial = tspace.transform(trial)
+    assert ttrial.params["yolo"] == 0.133
+    assert ttrial.params["yolo4"] == 0.1222
+    assert ttrial.params["yolo5"] == 2
 
     # Check that reserve does not break precision
-    rpoint = tspace.reverse(tpoint)
-    assert rpoint[real_index] == 0.133
-    assert rpoint[logreal_index] == 0.1222
-    assert rpoint[logint_index] == 2
+    rtrial = tspace.reverse(ttrial)
+    assert rtrial.params["yolo"] == 0.133
+    assert rtrial.params["yolo4"] == 0.1222
+    assert rtrial.params["yolo5"] == 2
 
     # Check with linearization
     tspace = build_required_space(
         space, dist_requirement="linear", type_requirement="real"
     )
     # Check that transform is fine
-    tpoint = tspace.transform(point)
-    assert tpoint[real_index] == 0.133
-    assert tpoint[logreal_index] == numpy.log(0.1222)
-    assert tpoint[logint_index] == numpy.log(2)
+    ttrial = tspace.transform(trial)
+    assert ttrial.params["yolo"] == 0.133
+    assert ttrial.params["yolo4"] == numpy.log(0.1222)
+    assert ttrial.params["yolo5"] == numpy.log(2)
 
     # Check that reserve does not break precision
-    rpoint = tspace.reverse(tpoint)
-    assert rpoint[real_index] == 0.133
-    assert rpoint[logreal_index] == 0.1222
-    assert rpoint[logint_index] == 2
+    rtrial = tspace.reverse(ttrial)
+    assert rtrial.params["yolo"] == 0.133
+    assert rtrial.params["yolo4"] == 0.1222
+    assert rtrial.params["yolo5"] == 2
+
+
+def test_change_trial_params(space, rspace):
+    working_dir = "/new/working/dir"
+    status = "interrupted"
+
+    rtrial = rspace.sample()[0]
+    # Sampling a new point in original space instead of using reserve()
+    trial = space.sample()[0]
+    point = format_trials.trial_to_tuple(trial, space)
+
+    rtrial.working_dir = working_dir
+    rtrial.status = status
+
+    restored_trial = change_trial_params(rtrial, point, space)
+
+    # Test that attributes are conserved
+    assert restored_trial.working_dir == working_dir
+    assert restored_trial.status == status
+
+    # Test params are updated
+    assert restored_trial.params != rtrial.params
+    assert restored_trial.params == trial.params
+
+    # Test that id is based on current params
+    assert restored_trial.id != rtrial.id
+    assert restored_trial.id == trial.id

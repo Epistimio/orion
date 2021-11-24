@@ -8,7 +8,7 @@ Checks for the creation of a `Database` object.
 
 """
 
-from orion.core.io.database import Database
+from orion.core.io.database import database_factory
 from orion.core.utils.exceptions import CheckError
 
 
@@ -37,7 +37,7 @@ class CreationStage:
         db_type = database.pop("type")
 
         try:
-            db = Database(of_type=db_type, **database)
+            db = database_factory.create(db_type, **database)
         except ValueError as ex:
             raise CheckError(str(ex))
 

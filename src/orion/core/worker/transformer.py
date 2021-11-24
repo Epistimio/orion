@@ -7,6 +7,7 @@ Perform transformations on Dimensions
 Provide functions and classes to build a Space which an algorithm can operate on.
 
 """
+import copy
 import functools
 import itertools
 from abc import ABCMeta, abstractmethod
@@ -14,6 +15,8 @@ from abc import ABCMeta, abstractmethod
 import numpy
 
 from orion.algo.space import Categorical, Dimension, Fidelity, Integer, Real, Space
+from orion.core.utils import format_trials
+from orion.core.utils.flatten import flatten
 
 NON_LINEAR = ["loguniform", "reciprocal"]
 
@@ -114,7 +117,7 @@ def reshape(space, shape_requirement):
     reshaped_space = ReshapedSpace(space)
 
     for dim_index, dim in enumerate(space.values()):
-        if not dim.shape or numpy.prod(dim.shape) == 1:
+        if not dim.shape:
             reshaped_space.register(
                 ReshapedDimension(
                     transformer=Identity(dim.type),
@@ -503,6 +506,7 @@ class OneHotEncode(Transformer):
         .. note:: This reverse transformation possibly removes the last tensor dimension
            from `transformed_point`.
         """
+
         point_ = numpy.asarray(transformed_point)
         if self.num_cats == 2:
             return (point_ > 0.5).astype(int)
@@ -564,7 +568,7 @@ class View(Transformer):
 
     def transform(self, point):
         """Only return one element of the group"""
-        return point[self.index]
+        return numpy.array(point)[self.index]
 
     def reverse(self, transformed_point, index=None):
         """Only return packend point if view of first element, otherwise drop."""
@@ -698,6 +702,17 @@ class TransformedDimension(object):
         # Else we don't care what transformation is.
         return self.original_dimension.cardinality
 
+    @property
+    def default_value(self):
+        """Return the default value for this dimensions"""
+        if (
+            self.original_dimension.default_value
+            is self.original_dimension.NO_DEFAULT_VALUE
+        ):
+            return self.NO_DEFAULT_VALUE
+
+        return self.transform(self.original_dimension.default_value)
+
 
 class ReshapedDimension(TransformedDimension):
     """Duck-type :class:`orion.algo.space.Dimension` to mimic its functionality."""
@@ -716,7 +731,7 @@ class ReshapedDimension(TransformedDimension):
 
     def transform(self, point):
         """Expose `Transformer.transform` interface from underlying instance."""
-        return self.transformer.transform(point[self.index])
+        return self.transformer.transform(point)
 
     def reverse(self, transformed_point, index=None):
         """Expose `Transformer.reverse` interface from underlying instance."""
@@ -770,22 +785,33 @@ class TransformedSpace(Space):
         super(TransformedSpace, self).__init__(*args, **kwargs)
         self._original_space = space
 
-    def transform(self, point):
+    def transform(self, trial):
         """Transform a point that was in the original space to be in this one."""
-        return tuple([dim.transform(point[i]) for i, dim in enumerate(self.values())])
+        transformed_point = tuple(
+            dim.transform(flatten(trial.params)[name]) for name, dim in self.items()
+        )
 
-    def reverse(self, transformed_point):
+        return change_trial_params(trial, transformed_point, self)
+
+    def reverse(self, transformed_trial):
         """Reverses transformation so that a point from this `TransformedSpace`
         to be in the original one.
         """
-        return tuple(
-            [dim.reverse(transformed_point[i]) for i, dim in enumerate(self.values())]
+        reversed_point = tuple(
+            dim.reverse(flatten(transformed_trial.params)[name])
+            for name, dim in self.items()
+        )
+
+        return change_trial_params(
+            transformed_trial,
+            reversed_point,
+            self,
         )
 
     def sample(self, n_samples=1, seed=None):
         """Sample from the original dimension and forward transform them."""
-        points = self._original_space.sample(n_samples=n_samples, seed=seed)
-        return [self.transform(point) for point in points]
+        trials = self._original_space.sample(n_samples=n_samples, seed=seed)
+        return [self.transform(trial) for trial in trials]
 
 
 class ReshapedSpace(Space):
@@ -809,62 +835,67 @@ class ReshapedSpace(Space):
         """Original space without reshape or transformations"""
         return self._original_space
 
-    def transform(self, point):
+    def transform(self, trial):
         """Transform a point that was in the original space to be in this one."""
-        return self.reshape(self.original.transform(point))
+        return self.reshape(self.original.transform(trial))
 
-    def reverse(self, transformed_point):
+    def reverse(self, transformed_trial):
         """Reverses transformation so that a point from this `ReshapedSpace` to be in the original
         one.
         """
-        return self.original.reverse(self.restore_shape(transformed_point))
+        return self.original.reverse(self.restore_shape(transformed_trial))
 
-    def reshape(self, point):
+    def reshape(self, trial):
         """Reshape the point"""
-        return tuple([dim.transform(point) for dim in self.values()])
+        point = format_trials.trial_to_tuple(trial, self._original_space)
+        reshaped_point = []
+        for dim in self.values():
+            reshaped_point.append(dim.transform(point[dim.index]))
 
-    def restore_shape(self, transformed_point):
-        """Restore shape"""
-        point = []
+        return change_trial_params(trial, reshaped_point, self)
+
+    def restore_shape(self, transformed_trial):
+        """Restore shape."""
+        transformed_point = format_trials.trial_to_tuple(transformed_trial, self)
+        original_keys = self._original_space.keys()
+        point = [None for _ in original_keys]
         for index, dim in enumerate(self.values()):
             if dim.first:
-                point.append(dim.reverse(transformed_point, index))
+                point_index = original_keys.index(dim.original_dimension.name)
+                point[point_index] = dim.reverse(transformed_point, index)
 
-        return point
+        return change_trial_params(transformed_trial, point, self._original_space)
 
     def sample(self, n_samples=1, seed=None):
         """Sample from the original dimension and forward transform them."""
-        points = self.original.sample(n_samples=n_samples, seed=seed)
-        return [self.reshape(point) for point in points]
+        trials = self.original.sample(n_samples=n_samples, seed=seed)
+        return [self.reshape(trial) for trial in trials]
 
-    def __contains__(self, value):
-        """Check whether `value` is within the bounds of the space.
+    def __contains__(self, key_or_trial):
+        """Check whether `trial` is within the bounds of the space.
         Or check if a name for a dimension is registered in this space.
 
         Parameters
         ----------
-        value: list
-            List of values associated with the dimensions contained or a string indicating a
-            dimension's name.
+        key_or_trial: str or `orion.core.worker.trial.Trial`
+            If str, test if the string is a dimension part of the search space.
+            If a Trial, test if trial's hyperparameters fit the current search space.
 
         """
-        if isinstance(value, str):
-            return super(ReshapedSpace, self).__contains__(value)
+        if isinstance(key_or_trial, str):
+            return super(ReshapedSpace, self).__contains__(key_or_trial)
 
-        try:
-            len(value)
-        except TypeError as exc:
-            raise TypeError(
-                "Can check only for dimension names or "
-                "for tuples with parameter values."
-            ) from exc
-
-        if not self:
-            return False
-
-        return self.restore_shape(value) in self.original
+        return self.restore_shape(key_or_trial) in self.original
 
     @property
     def cardinality(self):
         """Reshape does not affect cardinality"""
         return self.original.cardinality
+
+
+def change_trial_params(trial, point, space):
+    """Convert params in Param objects and update trial"""
+    new_trial = copy.copy(trial)
+    # pylint: disable=protected-access
+    new_trial._params = format_trials.tuple_to_trial(point, space)._params
+    return new_trial

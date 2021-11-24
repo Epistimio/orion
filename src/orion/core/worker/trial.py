@@ -7,6 +7,7 @@ Container class for `Trial` entity
 Describe a particular training run, parameters and results.
 
 """
+import copy
 import hashlib
 import logging
 
@@ -219,6 +220,44 @@ class Trial:
                     self._params.append(self.Param(**item))
             else:
                 setattr(self, attrname, value)
+
+    def branch(self, status="new", params=None):
+        """Copy the trial and modify given attributes
+
+        The status attributes will be reset as if trial was new.
+
+        Parameters
+        ----------
+        status: str, optional
+            The status of the new trial. Defaults to 'new'.
+        params: dict, optional
+            Some parameters to update. A subset of params may be passed. Passing
+            non-existing params in current trial will lead to a ValueError.
+            Defaults to `None`.
+
+        Raises
+        ------
+        ValueError
+            If some parameters are not present in current trial.
+        AttributeError
+            If some attribute does not exist in Trial objects.
+        """
+        if params is None:
+            params = {}
+
+        params = copy.deepcopy(params)
+
+        config_params = []
+        for param in self._params:
+            config_param = param.to_dict()
+            if param.name in params:
+                config_param["value"] = params.pop(param.name)
+            config_params.append(config_param)
+
+        if params:
+            raise ValueError(f"Some parameters are not part of base trial: {params}")
+
+        return Trial(status=status, params=config_params)
 
     def to_dict(self):
         """Needed to be able to convert `Trial` to `dict` form."""
