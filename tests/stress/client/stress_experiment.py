@@ -87,8 +87,8 @@ def worker(worker_id, storage, space_type, size):
 
         num_trials = 0
         while not experiment.is_done:
-            try:
-                trial = experiment.suggest()
+            trial = experiment.suggest()
+
             if trial is None:
                 break
 
