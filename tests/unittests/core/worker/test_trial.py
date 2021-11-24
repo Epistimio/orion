@@ -62,7 +62,7 @@ def trial_config(params):
             ),
         ],
         params=params,
-        parents=[],
+        parent=None,
     )
 
 
@@ -404,6 +404,20 @@ class TestTrial(object):
             t1, ignore_lie=True
         ) == Trial.compute_trial_hash(t2, ignore_lie=True)
 
+    def test_hash_ignore_parent(self, trial_config):
+        """Check property `Trial.compute_trial_hash(ignore_parent=True)`."""
+        trial_config["params"].append(
+            {"name": "/max_epoch", "type": "fidelity", "value": "1"}
+        )
+        t1 = Trial(**trial_config)
+        trial_config["parent"] = 0
+        t2 = Trial(**trial_config)
+        assert t1.hash_name != t2.hash_name
+        assert t1.hash_params == t2.hash_params
+        assert Trial.compute_trial_hash(
+            t1, ignore_parent=True
+        ) == Trial.compute_trial_hash(t2, ignore_parent=True)
+
     def test_full_name_property(self, trial_config):
         """Check property `Trial.full_name`."""
         t = Trial(**trial_config)
@@ -429,15 +443,18 @@ class TestTrial(object):
             trial.working_dir
 
     def test_working_dir(self, tmp_path, params):
-        trial = Trial(experiment=0, exp_working_dir=tmp_path, params=params)
+        trial = Trial(experiment=0, exp_working_dir=tmp_path, params=params, parent=1)
         assert trial.working_dir == os.path.join(tmp_path, trial.id)
         assert trial.get_working_dir() == os.path.join(tmp_path, trial.id)
 
         trial._params.append(Trial.Param(name="/epoch", type="fidelity", value=1))
+
         assert trial.id != trial.hash_params
-        assert trial.get_working_dir(ignore_fidelity=True) == os.path.join(
-            tmp_path, trial.hash_params
-        )
+        assert trial.get_working_dir(
+            ignore_fidelity=True, ignore_lie=True, ignore_parent=True
+        ) == os.path.join(tmp_path, trial.hash_params)
+
+        assert trial.get_working_dir(ignore_parent=True) != trial.working_dir
 
     def test_branch_empty(self, base_trial):
         """Test that branching with no args is only copying"""

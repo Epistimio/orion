@@ -510,7 +510,7 @@
     - name: /encoding_layer
       type: categorical
       value: lstm
-  parents: []
+  parent: None
 - experiment: supernaedo2-dendi
 
   status: completed
@@ -535,7 +535,7 @@
     - name: /encoding_layer
       type: categorical
       value: gru
-  parents: []
+  parent: None
 
 - experiment: supernaedo2-dendi
 
@@ -558,7 +558,7 @@
     - name: /encoding_layer
       type: categorical
       value: rnn
-  parents: []
+  parent: None
 
 
 - experiment: supernaedo2-dendi
@@ -579,7 +579,7 @@
     - name: /encoding_layer
       type: categorical
       value: gru
-  parents: []
+  parent: None
 
 - experiment: supernaedo2-dendi
 
@@ -599,7 +599,7 @@
     - name: /encoding_layer
       type: categorical
       value: rnn
-  parents: []
+  parent: None
 - experiment: supernaedo2-dendi
 
   status: interrupted
@@ -618,7 +618,7 @@
     - name: /encoding_layer
       type: categorical
       value: lstm
-  parents: []
+  parent: None
 - experiment: supernaedo2-dendi
 
   status: suspended
@@ -637,7 +637,7 @@
     - name: /encoding_layer
       type: categorical
       value: lstm
-  parents: []
+  parent: None
 
 - experiment: supernaedo4
 
@@ -660,7 +660,7 @@
     - name: /decoding_layer
       type: categorical
       value: rnn
-  parents: []
+  parent: None
 
 ---
 
