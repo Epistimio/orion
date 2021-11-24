@@ -13,7 +13,6 @@ from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
     InvalidResult,
-    SampleTimeout,
     WaitingForTrials,
 )
 from orion.core.utils.flatten import flatten, unflatten
@@ -221,8 +220,6 @@ class Runner:
 
             # non critical errors
             except WaitingForTrials:
-                break
-            except SampleTimeout:
                 break
             except CompletedExperiment:
                 break
