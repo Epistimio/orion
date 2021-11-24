@@ -777,20 +777,22 @@ class ExperimentClient:
             self._experiment.max_trials = max_trials
             self._experiment.algorithms.algorithm.max_trials = max_trials
 
-        trials = self.executor.wait(
-            self.executor.submit(
-                self._optimize,
-                fct,
-                pool_size,
-                reservation_timeout,
-                max_trials_per_worker,
-                max_broken,
-                trial_arg,
-                on_error,
-                **kwargs,
+        with SetupWorkingDir(experiment):
+
+            trials = self.executor.wait(
+                self.executor.submit(
+                    self._optimize,
+                    fct,
+                    pool_size,
+                    reservation_timeout,
+                    max_trials_per_worker,
+                    max_broken,
+                    trial_arg,
+                    on_error,
+                    **kwargs,
+                )
+                for _ in range(n_workers)
             )
-            for _ in range(n_workers)
-        )
 
         return sum(trials)
 
