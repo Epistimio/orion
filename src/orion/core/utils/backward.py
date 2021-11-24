@@ -178,6 +178,9 @@ def algo_observe(algo, trials, results):
     """Convert trials so that algo can observe with legacy format (trials, results)."""
     for trial, trial_results in zip(trials, results):
         for name, trial_result in trial_results.items():
+            if trial.exp_working_dir is None:
+                trial.exp_working_dir = "/nothing"
+            trial.status = "completed"
             trial.results.append(Trial.Result(name=name, type=name, value=trial_result))
 
     algo.observe(trials)

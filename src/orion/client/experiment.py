@@ -24,6 +24,7 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.utils.flatten import flatten, unflatten
+from orion.core.utils.working_dir import SetupWorkingDir
 from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.executor.base import executor_factory
@@ -201,6 +202,11 @@ class ExperimentClient:
     def working_dir(self):
         """Working directory of the experiment."""
         return self._experiment.working_dir
+
+    @working_dir.setter
+    def working_dir(self, value):
+        """Working directory of the experiment."""
+        self._experiment.working_dir = value
 
     @property
     def producer(self):
@@ -777,7 +783,7 @@ class ExperimentClient:
             self._experiment.max_trials = max_trials
             self._experiment.algorithms.algorithm.max_trials = max_trials
 
-        with SetupWorkingDir(experiment):
+        with SetupWorkingDir(self):
 
             trials = self.executor.wait(
                 self.executor.submit(

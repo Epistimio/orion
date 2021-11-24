@@ -347,11 +347,12 @@ def test_update_completed_trial(random_dt):
 
 
 @pytest.mark.usefixtures("with_user_tsirif")
-def test_register_trials(random_dt):
+def test_register_trials(tmp_path, random_dt):
     """Register a list of newly proposed trials/parameters."""
     with OrionState():
         exp = Experiment("supernaekei", mode="x")
         exp._id = 0
+        exp.working_dir = tmp_path
 
         trials = [
             Trial(params=[{"name": "a", "type": "integer", "value": 5}]),
@@ -368,6 +369,8 @@ def test_register_trials(random_dt):
         assert yo[1]["status"] == "new"
         assert yo[0]["submit_time"] == random_dt
         assert yo[1]["submit_time"] == random_dt
+        assert yo[0]["exp_working_dir"] == tmp_path
+        assert yo[1]["exp_working_dir"] == tmp_path
 
 
 class TestToPandas:
