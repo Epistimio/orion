@@ -373,7 +373,7 @@ class TestHyperband:
         fidelity = 2
         trial = create_trial_for_hb((fidelity, value))
 
-        with caplog.at_level(logging.INFO, logger="orion.algo.hyperband"):
+        with caplog.at_level(logging.DEBUG, logger="orion.algo.hyperband"):
             hyperband.observe([trial])
 
         assert len(caplog.records) == 1

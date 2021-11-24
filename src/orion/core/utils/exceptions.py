@@ -94,8 +94,8 @@ class BranchingEvent(Exception):
         super().__init__(message.format(status))
 
 
-class SampleTimeout(Exception):
-    """Raised when the algorithm is not able to sample new unique points in time"""
+class ReservationTimeout(Exception):
+    """Raised when the experiment client is not able to reserve a trial in time"""
 
     pass
 

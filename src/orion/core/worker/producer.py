@@ -8,12 +8,8 @@ Suggest new parameter sets which optimize the objective.
 """
 import copy
 import logging
-import random
-import time
 
-import orion.core
 from orion.core.io.database import DuplicateKeyError
-from orion.core.utils.exceptions import SampleTimeout, WaitingForTrials
 from orion.core.worker.trial import Trial
 from orion.core.worker.trials_history import TrialsHistory
 
@@ -29,7 +25,7 @@ class Producer(object):
 
     """
 
-    def __init__(self, experiment, max_idle_time=None):
+    def __init__(self, experiment):
         """Initialize a producer.
 
         :param experiment: Manager of this experiment, provides convenient
@@ -44,9 +40,6 @@ class Producer(object):
                 " initialization."
             )
         self.algorithm = experiment.algorithms
-        if max_idle_time is None:
-            max_idle_time = orion.core.config.worker.max_idle_time
-        self.max_idle_time = max_idle_time
         self.strategy = experiment.producer["strategy"]
         self.naive_algorithm = None
         # TODO: Move trials_history into BaseAlgorithm during the refactoring of Algorithm with
@@ -54,35 +47,8 @@ class Producer(object):
         self.trials_history = TrialsHistory()
         self.params_hashes = set()
         self.naive_trials_history = None
-        self.failure_count = 0
         self.num_trials = 0
         self.num_broken = 0
-
-    def backoff(self):
-        """Wait some time and update algorithm."""
-        waiting_time = max(0, random.gauss(1, 0.2))
-        log.info("Waiting %d seconds", waiting_time)
-        time.sleep(waiting_time)
-        log.info("Updating algorithm.")
-        self.update()
-        self.failure_count += 1
-
-    def _sample_guard(self, start):
-        """Check that the time taken sampling is less than max_idle_time"""
-        if time.time() - start > self.max_idle_time:
-            raise SampleTimeout(
-                "Algorithm could not sample new points in less than {} seconds."
-                "Failed to sample points {} times".format(
-                    self.max_idle_time, self.failure_count
-                )
-            )
-
-    @property
-    def is_done(self):
-        """Whether experiment or naive algorithm is done"""
-        return self.experiment.is_done or (
-            self.naive_algorithm is not None and self.naive_algorithm.is_done
-        )
 
     def adjust_pool_size(self, pool_size):
         """Limit pool size if it would overshoot over max_trials"""
@@ -92,43 +58,25 @@ class Producer(object):
 
     def produce(self, pool_size):
         """Create and register new trials."""
-        sampled_points = 0
-        # reset the number of time we failed to sample points
-        self.failure_count = 0
-        start = time.time()
+        adjusted_pool_size = self.adjust_pool_size(pool_size)
+        log.debug(
+            "### Algorithm attempts suggesting %s new points.", adjusted_pool_size
+        )
+        new_points = self.naive_algorithm.suggest(adjusted_pool_size)
 
-        # This number (self.num_trials) is based on most recent algo state update so it is not
-        # sensitive to race-conditions. If another worker started suggesting points in between, the
-        # value of self.num_trials will not count it and thus the current producer will count new
-        # points of other producer as part of the current pool samples.
-        while (
-            len(self.experiment.fetch_trials(with_evc_tree=True)) - self.num_trials
-            < self.adjust_pool_size(pool_size)
-            and not self.is_done
-        ):
-            self._sample_guard(start)
+        # Sync state of original algo so that state continues evolving.
+        self.algorithm.set_state(self.naive_algorithm.state_dict)
 
-            log.debug("### Algorithm suggests new points.")
-            new_points = self.naive_algorithm.suggest(self.adjust_pool_size(pool_size))
+        if not new_points and not self.algorithm.is_done:
+            log.info(
+                "Algo does not have more trials to sample."
+                "Waiting for current trials to finish"
+            )
 
-            # Sync state of original algo so that state continues evolving.
-            self.algorithm.set_state(self.naive_algorithm.state_dict)
+        if not new_points:
+            return 0
 
-            if not new_points:
-                if self.algorithm.is_done:
-                    return
-
-                raise WaitingForTrials(
-                    "Algo does not have more trials to sample."
-                    "Waiting for current trials to finish"
-                )
-
-            registered_trials = self.register_trials(new_points)
-
-            if registered_trials == 0:
-                self.backoff()
-
-            sampled_points += registered_trials
+        return self.register_trials(new_points)
 
     def register_trials(self, new_points):
         """Register new sets of sampled parameters into the DB

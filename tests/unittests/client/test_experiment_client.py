@@ -4,18 +4,20 @@
 import copy
 import datetime
 import logging
+import time
 
 import joblib
 import pandas.testing
 import pytest
 
 import orion.core
+from orion.client.experiment import reserve_trial
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils import format_trials
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
-    SampleTimeout,
+    ReservationTimeout,
 )
 from orion.core.worker.trial import Trial
 from orion.executor.joblib_backend import Joblib
@@ -122,6 +124,95 @@ def test_experiment_to_pandas():
     """Test compliance of client and experiment `to_pandas()`"""
     with create_experiment(config, base_trial) as (cfg, experiment, client):
         pandas.testing.assert_frame_equal(experiment.to_pandas(), client.to_pandas())
+
+
+class TestReservationFct:
+    def test_exceed_timeout(self, monkeypatch):
+        """Test that ReservationTimeout is raised when exp unable to reserve trials."""
+
+        with create_experiment(config, base_trial, ["reserved"]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+
+            N_TRIALS = 5
+
+            def do_nothing(pool_size):
+                # Another worker generates a trial meanwhile
+                n_trials_so_far = len(client.fetch_trials())
+                if n_trials_so_far < N_TRIALS:
+                    client.insert(
+                        dict(x=n_trials_so_far),
+                        results=[
+                            {"name": "objective", "type": "objective", "value": 1}
+                        ],
+                    )
+                return 0
+
+            monkeypatch.setattr(client._producer, "produce", do_nothing)
+
+            # to limit run-time, default would work as well.
+            timeout = 3
+
+            start = time.time()
+
+            with pytest.raises(ReservationTimeout) as exc:
+                reserve_trial(
+                    experiment, client._producer, pool_size=1, timeout=timeout
+                )
+
+            assert timeout <= time.time() - start < timeout + 1
+
+            assert f". {N_TRIALS - 1} new trials were generated" in str(exc.value)
+
+    def test_stops_if_exp_done(self, monkeypatch):
+        """Test that reservation attempt is stopped when experiment is done."""
+
+        with create_experiment(config, base_trial, ["reserved"]) as (
+            cfg,
+            experiment,
+            client,
+        ):
+
+            timeout = 3
+
+            # Make sure first it produces properly
+            n_trials_before_reserve = len(client.fetch_trials())
+            assert not client.is_done
+
+            reserve_trial(experiment, client._producer, pool_size=1, timeout=timeout)
+
+            assert not client.is_done
+            assert len(client.fetch_trials()) == n_trials_before_reserve + 1
+
+            # Then make sure the producer raises properly
+            def cant_produce(pool_size):
+                raise RuntimeError("I should not be called")
+
+            monkeypatch.setattr(client._producer, "produce", cant_produce)
+
+            with pytest.raises(RuntimeError, match="I should not be called"):
+                reserve_trial(
+                    experiment, client._producer, pool_size=1, timeout=timeout
+                )
+
+            # Now make sure the producer is not called and no additional trials are generated
+            def make_exp_is_done(reserve):
+                # Another worker generates a trial meanwhile
+                monkeypatch.setattr(experiment, "max_trials", 0)
+                assert experiment.is_done
+                return None
+
+            monkeypatch.setattr(type(experiment), "reserve_trial", make_exp_is_done)
+
+            n_trials_before_reserve = len(client.fetch_trials())
+            assert not client.is_done
+
+            reserve_trial(experiment, client._producer, pool_size=1, timeout=timeout)
+
+            assert client.is_done
+            assert len(client.fetch_trials()) == n_trials_before_reserve
 
 
 @pytest.mark.usefixtures("version_XYZ")
@@ -601,7 +692,7 @@ class TestSuggest:
             """Never suggest a new trial"""
             return None
 
-        monkeypatch.setattr(orion.core.config.worker, "max_idle_time", -1)
+        monkeypatch.setattr(orion.core.config.worker, "reservation_timeout", -1)
 
         with create_experiment(config, base_trial, statuses=["completed"]) as (
             cfg,
@@ -613,7 +704,7 @@ class TestSuggest:
 
             assert len(experiment.fetch_trials()) == 1
 
-            with pytest.raises(SampleTimeout):
+            with pytest.raises(ReservationTimeout):
                 client.suggest()
 
     def test_suggest_is_done(self):
@@ -709,12 +800,15 @@ class TestSuggest:
 
             monkeypatch.setattr(client._producer, "produce", set_is_broken)
 
+            start_time = time.time()
+
             assert len(experiment.fetch_trials()) == 1
             assert not client.is_broken
 
             with pytest.raises(BrokenExperiment):
-                client.suggest()
+                client.suggest(timeout=5)
 
+            assert time.time() - start_time < 3
             assert len(experiment.fetch_trials()) == 1
             assert client.is_broken
 
