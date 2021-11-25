@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-arguments
+# pylint:disable=too-many-instance-attributes
 """
 Runner
 ======
@@ -26,6 +27,7 @@ from orion.executor.base import AsyncException, AsyncResult
 
 
 class LazyWorkers(Exception):
+    """Raised when all the workers have been idle for a given amount of time"""
     pass
 
 
@@ -44,9 +46,9 @@ log = logging.getLogger(__name__)
 
 @contextmanager
 def _timer(self, name):
-    s = time.time()
+    start = time.time()
     yield
-    total = time.time() - s
+    total = time.time() - start
 
     value = getattr(self, name)
     setattr(self, name, value + total)
@@ -161,7 +163,7 @@ class Runner:
 
             # Make sure at least one worker has a trial
             # if not idle_time starts to tick
-            if len(self.pending_trials):
+            if len(self.pending_trials) > 0:
                 idle_time = 0
             else:
                 idle_time += time.time() - idle_start
