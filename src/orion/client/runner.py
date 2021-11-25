@@ -43,6 +43,7 @@ class Runner:
         client,
         fct,
         pool_size,
+        reservation_timeout,
         max_trials_per_worker,
         max_broken,
         trial_arg,
@@ -58,7 +59,7 @@ class Runner:
         self.trial_arg = trial_arg
         self.on_error = on_error
         self.kwargs = kwargs
-
+        self.reservation_timeout = reservation_timeout
         self.worker_broken_trials = 0
         self.trials = 0
         self.futures = []
@@ -213,7 +214,7 @@ class Runner:
         trials = []
         while True:
             try:
-                trial = self.client.suggest()
+                trial = self.client.suggest(timeout=self.reservation_timeout)
                 trials.append(trial)
 
                 if count is not None and len(trials) == count:

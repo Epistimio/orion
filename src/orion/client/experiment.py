@@ -810,6 +810,7 @@ class ExperimentClient:
             self,
             fct,
             n_workers,
+            reservation_timeout,
             max_trials_per_worker,
             max_broken,
             trial_arg,
