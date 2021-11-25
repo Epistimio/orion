@@ -129,6 +129,10 @@ class Runner:
         )
 
     @property
+    def is_idle(self):
+        return len(self.pending_trials) <= 0
+
+    @property
     def running(self):
         """Returns true if we are still running trials."""
         return self.pending_trials or (self.has_remaining and not self.is_done)
@@ -146,6 +150,9 @@ class Runner:
         while self.running:
             idle_start = time.time()
 
+            if not self.is_idle:
+                idle_time = 0
+
             # Get new trials for our free workers
             with self.stat.time("sample"):
                 new_trials = self.sample()
@@ -158,14 +165,10 @@ class Runner:
             with self.stat.time("gather"):
                 self.gather()
 
-            # Make sure at least one worker has a trial
-            # if not idle_time starts to tick
-            if len(self.pending_trials) > 0:
-                idle_time = 0
-            else:
+            if self.is_idle:
                 idle_time += time.time() - idle_start
 
-            if idle_time > self.idle_timeout:
+            if self.is_idle and idle_time > self.idle_timeout:
                 raise LazyWorkers(f"Workers have been idle for {idle_time}")
 
         return self.trials
