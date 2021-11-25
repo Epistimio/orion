@@ -6,10 +6,10 @@ Runner
 
 Executes the optimization process
 """
-from contextlib import contextmanager
-from dataclasses import dataclass
 import logging
 import time
+from contextlib import contextmanager
+from dataclasses import dataclass
 
 import orion.core
 from orion.core.utils.exceptions import (
@@ -41,6 +41,7 @@ def _optimize(trial, fct, trial_arg, **kwargs):
 
 log = logging.getLogger(__name__)
 
+
 @contextmanager
 def _timer(self, name):
     s = time.time()
@@ -58,21 +59,21 @@ class _Stat:
     gather_time: int = 0
 
     def sample(self):
-        return _timer(self, 'sample_time')
+        return _timer(self, "sample_time")
 
     def scatter(self):
-        return _timer(self, 'scatter_time')
+        return _timer(self, "scatter_time")
 
     def gather(self):
-        return _timer(self, 'gather_time')
+        return _timer(self, "gather_time")
 
     def report(self):
         lines = [
-            f'Sample  {self.sample_time:7.4f}',
-            f'Scatter {self.scatter_time:7.4f}',
-            f'Gather  {self.gather_time:7.4f}'
+            f"Sample  {self.sample_time:7.4f}",
+            f"Scatter {self.scatter_time:7.4f}",
+            f"Gather  {self.gather_time:7.4f}",
         ]
-        print('\n'.join(lines))
+        print("\n".join(lines))
 
 
 class Runner:
@@ -204,7 +205,9 @@ class Runner:
         """Gather the results from each worker asynchronously"""
         results = []
         try:
-            results = self.client.executor.async_get(self.futures, timeout=self.gather_timeout)
+            results = self.client.executor.async_get(
+                self.futures, timeout=self.gather_timeout
+            )
         except (KeyboardInterrupt, InvalidResult):
             self.release_all()
             raise
