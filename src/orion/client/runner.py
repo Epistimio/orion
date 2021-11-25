@@ -28,6 +28,7 @@ from orion.executor.base import AsyncException, AsyncResult
 
 class LazyWorkers(Exception):
     """Raised when all the workers have been idle for a given amount of time"""
+
     pass
 
 
