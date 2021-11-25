@@ -232,9 +232,12 @@ class ASHABracket(HyperbandBracket):
 
         rung = list(
             sorted(
-                (objective, trial)
-                for objective, trial in rung.values()
-                if objective is not None
+                (
+                    (objective, trial)
+                    for objective, trial in rung.values()
+                    if objective is not None
+                ),
+                key=lambda item: item[0],
             )
         )
         k = len(rung) // self.hyperband.reduction_factor
