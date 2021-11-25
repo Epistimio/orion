@@ -130,6 +130,7 @@ class Runner:
 
     @property
     def is_idle(self):
+        """Returns true if none of the workers are running a trial"""
         return len(self.pending_trials) <= 0
 
     @property
