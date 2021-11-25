@@ -147,15 +147,15 @@ class Runner:
             idle_start = time.time()
 
             # Get new trials for our free workers
-            with self.stat.time('sample'):
+            with self.stat.time("sample"):
                 new_trials = self.sample()
 
             # Scatter the new trials to our free workers
-            with self.stat.time('scatter'):
+            with self.stat.time("scatter"):
                 self.scatter(new_trials)
 
             # Gather the results of the workers that have finished
-            with self.stat.time('gather'):
+            with self.stat.time("gather"):
                 self.gather()
 
             # Make sure at least one worker has a trial
