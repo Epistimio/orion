@@ -57,26 +57,22 @@ def _timer(self, name):
 
 @dataclass
 class _Stat:
-    sample_time: int = 0
-    scatter_time: int = 0
-    gather_time: int = 0
+    sample: int = 0
+    scatter: int = 0
+    gather: int = 0
 
-    def sample(self):
-        return _timer(self, "sample_time")
-
-    def scatter(self):
-        return _timer(self, "scatter_time")
-
-    def gather(self):
-        return _timer(self, "gather_time")
+    def time(self, name):
+        """Measure elapsed  time of a given block"""
+        return _timer(self, name)
 
     def report(self):
+        """Show the elapsed time of different blocks"""
         lines = [
-            f"Sample  {self.sample_time:7.4f}",
-            f"Scatter {self.scatter_time:7.4f}",
-            f"Gather  {self.gather_time:7.4f}",
+            f"Sample  {self.sample:7.4f}",
+            f"Scatter {self.scatter:7.4f}",
+            f"Gather  {self.gather:7.4f}",
         ]
-        print("\n".join(lines))
+        return "\n".join(lines)
 
 
 class Runner:
@@ -151,15 +147,15 @@ class Runner:
             idle_start = time.time()
 
             # Get new trials for our free workers
-            with self.stat.sample():
+            with self.stat.time('sample'):
                 new_trials = self.sample()
 
             # Scatter the new trials to our free workers
-            with self.stat.scatter():
+            with self.stat.time('scatter'):
                 self.scatter(new_trials)
 
             # Gather the results of the workers that have finished
-            with self.stat.gather():
+            with self.stat.time('gather'):
                 self.gather()
 
             # Make sure at least one worker has a trial
