@@ -146,13 +146,11 @@ class Runner:
         the total number of trials processed
 
         """
+        idle_start = time.time()
+        idle_end = 0
         idle_time = 0
 
         while self.running:
-            idle_start = time.time()
-
-            if not self.is_idle:
-                idle_time = 0
 
             # Get new trials for our free workers
             with self.stat.time("sample"):
@@ -167,10 +165,27 @@ class Runner:
                 self.gather()
 
             if self.is_idle:
-                idle_time += time.time() - idle_start
+                idle_end = time.time()
+                idle_time += idle_end - idle_start
+                idle_start = idle_end
+
+                log.debug(f"Workers have been idle for {idle_time:.2f} s")
+            else:
+                idle_start = time.time()
+                idle_time = 0
 
             if self.is_idle and idle_time > self.idle_timeout:
-                raise LazyWorkers(f"Workers have been idle for {idle_time}")
+                msg = f"Workers have been idle for {idle_time:.2f} s"
+
+                if self.pending_trials:
+                    msg = f"{msg}; but not all trials finished {self.pending_trials}"
+
+                if self.has_remaining and not self.is_done:
+                    msg = f"{msg}; worker has leg room ({self.has_remaining}) and optimization is not done ({self.is_done})"
+
+                print()
+                print(self.stat.report())
+                raise LazyWorkers(msg)
 
         return self.trials
 
@@ -181,13 +196,22 @@ class Runner:
 
         # try to get more work
         new_trials = []
-        if (not self.is_done) and self.free_worker > 0 and remains > 0:
+        n_trial = min(self.free_worker, remains)
+        should_sample_more = (not self.is_done) and self.free_worker > 0 and remains > 0
+
+        log.debug(
+            f"should_sample_more: {should_sample_more} = {(not self.is_done)} && {self.free_worker > 0} && {remains > 0}"
+        )
+
+        if should_sample_more:
             # the producer does the job of limiting the number of new trials
             # already no need to worry about it
             # NB: suggest reserve the trial already
-            new_trials = self._suggest_trials(min(self.free_worker, remains))
+            new_trials = self._suggest_trials(n_trial)
+            log.debug(
+                f"Sampled {len(new_trials)} new configs wanted {n_trial} (workers: {self.free_worker})"
+            )
 
-        log.debug(f"Sampled new {len(new_trials)} configs")
         return new_trials
 
     def scatter(self, new_trials):
@@ -280,19 +304,18 @@ class Runner:
     def _suggest_trials(self, count):
         """Suggest a bunch of trials to be dispatched to the workers"""
         trials = []
-        while True:
+        for _ in range(count):
             try:
                 trial = self.client.suggest(timeout=self.reservation_timeout)
                 trials.append(trial)
 
-                if count is not None and len(trials) == count:
-                    break
-
             # non critical errors
             except WaitingForTrials:
                 break
+
             except ReservationTimeout:
                 break
+
             except CompletedExperiment:
                 break
 
