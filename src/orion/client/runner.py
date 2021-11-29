@@ -83,7 +83,7 @@ class Runner:
         client,
         fct,
         pool_size,
-        reservation_timeout,
+        idle_timeout,
         max_trials_per_worker,
         max_broken,
         trial_arg,
@@ -101,7 +101,7 @@ class Runner:
         self.kwargs = kwargs
 
         self.gather_timeout = 0.01
-        self.idle_timeout = reservation_timeout
+        self.idle_timeout = idle_timeout
 
         self.worker_broken_trials = 0
         self.trials = 0

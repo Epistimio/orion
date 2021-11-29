@@ -698,6 +698,7 @@ class ExperimentClient:
         max_broken=None,
         trial_arg=None,
         on_error=None,
+        idle_timeout=None,
         **kwargs,
     ):
         """Optimize a given function
@@ -747,6 +748,11 @@ class ExperimentClient:
             If the callblack returns False, the error will be ignored, otherwise it is counted
             for the threshold `max_broken`. In case of critical errors, you may also directly
             raise an error and force break out of ``workon``.
+        idle_timeout: int, optional
+            Maximum time allowed for idle workers. LazyWorker will be raised if
+            timeout is reached. Such timeout are generally caused when reaching the
+            end of the optimization when no new trials can be sampled for the idle workers.
+            Defaults to ``orion.core.config.worker.idle_timeout``.
         **kwargs
             Constant argument to pass to `fct` in addition to trial.params. If values in kwargs are
             present in trial.params, the latter takes precedence.
@@ -791,6 +797,9 @@ class ExperimentClient:
         if not reservation_timeout:
             reservation_timeout = orion.core.config.worker.reservation_timeout
 
+        if not idle_timeout:
+            idle_timeout = orion.core.config.worker.idle_timeout
+
         if max_trials is None:
             max_trials = self.max_trials
 
@@ -810,7 +819,7 @@ class ExperimentClient:
             self,
             fct,
             n_workers,
-            reservation_timeout,
+            idle_timeout,
             max_trials_per_worker,
             max_broken,
             trial_arg,
