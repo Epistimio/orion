@@ -574,6 +574,36 @@ class TestASHA:
             == 20 - 2 - 3 * 3
         )
 
+    def test_suggest_promote_identic_objectives(
+        self, asha, bracket, big_rung_0, big_rung_1
+    ):
+        """Test that identic objectives are handled properly"""
+        asha.brackets = [bracket]
+        bracket.asha = asha
+
+        n_trials = 9
+        resources = 1
+
+        results = {}
+        for param in np.linspace(0, 8, 9):
+            trial = create_trial_for_hb((resources, param), objective=0)
+            trial_hash = trial.compute_trial_hash(
+                trial,
+                ignore_fidelity=True,
+                ignore_experiment=True,
+            )
+            results[trial_hash] = (trial.objective.value, trial)
+
+        bracket.rungs[0] = dict(n_trials=n_trials, resources=resources, results=results)
+
+        candidates = asha.suggest(2)
+
+        assert len(candidates) == 2
+        assert (
+            sum(1 for trial in candidates if trial.params[asha.fidelity_index] == 3)
+            == 2
+        )
+
 
 class TestGenericASHA(BaseAlgoTests):
     algo_name = "asha"
