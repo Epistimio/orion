@@ -19,6 +19,7 @@ from orion.core.utils.exceptions import (
     InvalidResult,
     ReservationTimeout,
     WaitingForTrials,
+    ReservationRaceCondition,
 )
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.consumer import ExecutionError
@@ -177,10 +178,10 @@ class Runner:
                 msg = f"Workers have been idle for {idle_time:.2f} s"
 
                 if self.pending_trials:
-                    msg = f"{msg}; but not all trials finished {self.pending_trials}"
+                    msg = f"{msg}; but not all trials finished pending_trials: {self.pending_trials}"
 
                 if self.has_remaining and not self.is_done:
-                    msg = f"{msg}; worker has leg room ({self.has_remaining}) and optimization is not done ({self.is_done})"
+                    msg = f"{msg}; worker has leg room (has_remaining: {self.has_remaining}) and optimization is not done (is_done: {self.is_done})"
 
                 print()
                 print(self.stat.report())
@@ -316,6 +317,9 @@ class Runner:
                 break
 
             except CompletedExperiment:
+                break
+
+            except ReservationRaceCondition:
                 break
 
         return trials
