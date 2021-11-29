@@ -17,7 +17,7 @@ analyzing an EVC tree.
 import functools
 import logging
 
-from orion.core.evc.tree import TreeNode
+from orion.core.utils.tree import TreeNode
 from orion.storage.base import get_storage
 
 log = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class ExperimentNode(TreeNode):
 
     .. seealso::
 
-        :py:class:`orion.core.evc.tree.TreeNode` for tree-specific attributes and methods.
+        :py:class:`orion.core.utils.tree.TreeNode` for tree-specific attributes and methods.
 
     """
 
@@ -54,7 +54,7 @@ class ExperimentNode(TreeNode):
         """Initialize experiment node with item, experiment, parent and children
 
         .. seealso::
-            :class:`orion.core.evc.tree.TreeNode` for information about the attributes
+            :class:`orion.core.utils.tree.TreeNode` for information about the attributes
         """
         super(ExperimentNode, self).__init__(experiment, parent, children)
         self.name = name
