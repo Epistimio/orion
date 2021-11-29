@@ -100,7 +100,6 @@ class Runner:
         self.on_error = on_error
         self.kwargs = kwargs
 
-        self.reservation_timeout = 0.01
         self.gather_timeout = 0.01
         self.idle_timeout = reservation_timeout
 
@@ -306,7 +305,7 @@ class Runner:
         trials = []
         for _ in range(count):
             try:
-                trial = self.client.suggest(timeout=self.reservation_timeout)
+                trial = self.client.suggest()
                 trials.append(trial)
 
             # non critical errors
