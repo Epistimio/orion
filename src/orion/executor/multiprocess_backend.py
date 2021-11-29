@@ -77,6 +77,12 @@ class Pool(PyPool):
 
         return _Process(*args, **kwds)
 
+    def shutdown(self):
+        # NB: https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html
+        # says to not use terminate although it is what __exit__ does
+        self.close()
+        self.join()
+
 
 class _ThreadFuture:
     """Wraps a concurrent Future to behave like AsyncResult"""
@@ -112,7 +118,7 @@ class ThreadPool:
     def __exit__(self, exc_type, exc_value, traceback):
         self.pool.shutdown()
 
-    def terminate(self):
+    def shutdown(self):
         self.pool.shutdown()
 
     def apply_async(self, fun, args, kwds=None):
@@ -142,8 +148,14 @@ class PoolExecutor(BaseExecutor):
         super().__init__(n_workers, **kwargs)
         self.pool = PoolExecutor.BACKENDS.get(backend, "thread")(n_workers)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.pool.shutdown()
+
     def __del__(self):
-        self.pool.terminate()
+        self.pool.shutdown()
 
     def __getstate__(self):
         state = super(PoolExecutor, self).__getstate__()
