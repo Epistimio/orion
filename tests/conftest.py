@@ -88,11 +88,10 @@ class DumbAlgo(BaseAlgorithm):
         self._times_called_is_done = 0
         self._num = 0
         self._index = 0
-        self._points = []
+        self._trials = []
         self._suggested = None
-        self._results = []
-        self._score_point = None
-        self._judge_point = None
+        self._score_trial = None
+        self._judge_trial = None
         self._measurements = None
         self.pool_size = 1
         self.possible_values = [value]
@@ -157,26 +156,25 @@ class DumbAlgo(BaseAlgorithm):
 
         return rval
 
-    def observe(self, points, results):
+    def observe(self, trials):
         """Log inputs."""
-        super(DumbAlgo, self).observe(points, results)
-        self._points += points
-        self._results += results
+        super(DumbAlgo, self).observe(trials)
+        self._trials += trials
 
-    def score(self, point):
+    def score(self, trial):
         """Log and return stab."""
-        self._score_point = point
+        self._score_trial = trial
         return self.scoring
 
-    def judge(self, point, measurements):
+    def judge(self, trial, measurements):
         """Log and return stab."""
-        self._judge_point = point
+        self._judge_trial = trial
         self._measurements = measurements
         return self.judgement
 
-    @property
-    def should_suspend(self):
+    def should_suspend(self, trial):
         """Cound how many times it has been called and return `suspend`."""
+        self._suspend_trial = trial
         self._times_called_suspend += 1
         return self.suspend
 

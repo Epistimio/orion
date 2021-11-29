@@ -12,7 +12,7 @@ from pymongo import MongoClient
 
 from orion.client import create_experiment
 from orion.core.io.database import DatabaseTimeout
-from orion.core.utils.exceptions import SampleTimeout
+from orion.core.utils.exceptions import ReservationTimeout
 from orion.core.utils.singleton import update_singletons
 
 DB_FILE = "stress.pkl"
@@ -90,8 +90,8 @@ def worker(worker_id, storage, space_type, size):
         while not experiment.is_done:
             try:
                 trial = experiment.suggest()
-            except SampleTimeout:
-                trial = None
+            except ReservationTimeout:
+                trial - None
 
             if trial is None:
                 break

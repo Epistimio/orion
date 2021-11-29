@@ -10,4 +10,4 @@ class Joblib(PoolExecutor):
         warnings.warn(
             "Joblib backend is deprecated, use PoolExecutor instead", DeprecationWarning
         )
-        super(Joblib, self).__init__(n_workers=n_workers)
+        super(Joblib, self).__init__(n_workers=n_workers, backend=backend)

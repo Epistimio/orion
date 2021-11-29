@@ -19,6 +19,8 @@ from orion.algo.space import (
     Space,
     check_random_state,
 )
+from orion.core.utils import format_trials
+from orion.core.worker.trial import Trial
 
 
 class TestCheckRandomState:
@@ -739,8 +741,10 @@ class TestSpace(object):
         """Register bunch of dimensions, check if points/name are in space."""
         space = Space()
 
+        trial = Trial(params=[{"name": "no", "value": 0, "type": "integer"}])
+
         assert "yolo" not in space
-        assert (("asdfa", 2), 0, 3.5) not in space
+        assert trial not in space
 
         categories = {"asdfa": 0.1, 2: 0.2, 3: 0.3, 4: 0.4}
         dim = Categorical("yolo", categories, shape=2)
@@ -754,17 +758,40 @@ class TestSpace(object):
         assert "yolo2" in space
         assert "yolo3" in space
 
-        assert (("asdfa", 2), 0, 3.5) in space
-        assert (("asdfa", 2), 7, 3.5) not in space
+        assert format_trials.tuple_to_trial((("asdfa", 2), 0, 3.5), space) in space
+        assert format_trials.tuple_to_trial((("asdfa", 2), 7, 3.5), space) not in space
 
-    def test_bad_contain(self):
-        """Checking with no iterables does no good."""
+    def test_hierarchical_register_and_contain(self):
+        """Register hierarchical dimensions and check if points/name are in space."""
         space = Space()
-        with pytest.raises(TypeError):
-            5 in space
 
-    def test_sample(self, seed):
+        categories = {"asdfa": 0.1, 2: 0.2, 3: 0.3, 4: 0.4}
+        dim = Categorical("yolo.nested", categories, shape=2)
+        space.register(dim)
+        dim = Integer("yolo2.nested", "uniform", -3, 6)
+        space.register(dim)
+        dim = Real("yolo3", "norm", 0.9)
+        space.register(dim)
+
+        trial = Trial(
+            params=[
+                {"name": "yolo.nested", "value": ["asdfa", 2], "type": "categorical"},
+                {"name": "yolo2.nested", "value": 1, "type": "integer"},
+                {"name": "yolo3", "value": 0.5, "type": "real"},
+            ]
+        )
+
+        assert "yolo" in trial.params
+        assert "nested" in trial.params["yolo"]
+        assert "yolo2" in trial.params
+        assert "nested" in trial.params["yolo2"]
+        assert "yolo3" in trial.params
+
+        assert trial in space
+
+    def test_sample(self):
         """Check whether sampling works correctly."""
+        seed = 5
         space = Space()
         probs = (0.1, 0.2, 0.3, 0.4)
         categories = ("asdfa", 2, 3, 4)
@@ -776,29 +803,35 @@ class TestSpace(object):
         space.register(dim3)
 
         point = space.sample(seed=seed)
+        rng = check_random_state(seed)
         test_point = [
-            (dim1.sample()[0], dim2.sample()[0], dim3.sample()[0]),
+            dict(
+                yolo=dim1.sample(seed=rng)[0],
+                yolo2=dim2.sample(seed=rng)[0],
+                yolo3=dim3.sample(seed=rng)[0],
+            )
         ]
         assert len(point) == len(test_point) == 1
-        assert len(point[0]) == len(test_point[0]) == 3
-        assert np.all(point[0][0] == test_point[0][0])
-        assert point[0][1] == test_point[0][1]
-        assert point[0][2] == test_point[0][2]
+        assert len(point[0].params) == len(test_point[0]) == 3
+        assert np.all(point[0].params["yolo"] == test_point[0]["yolo"])
+        assert point[0].params["yolo2"] == test_point[0]["yolo2"]
+        assert point[0].params["yolo3"] == test_point[0]["yolo3"]
 
         points = space.sample(2, seed=seed)
-        points1 = dim1.sample(2)
-        points2 = dim2.sample(2)
-        points3 = dim3.sample(2)
+        rng = check_random_state(seed)
+        points1 = dim1.sample(2, seed=rng)
+        points2 = dim2.sample(2, seed=rng)
+        points3 = dim3.sample(2, seed=rng)
         test_points = [
-            (points1[0], points2[0], points3[0]),
-            (points1[1], points2[1], points3[1]),
+            dict(yolo=points1[0], yolo2=points2[0], yolo3=points3[0]),
+            dict(yolo=points1[1], yolo2=points2[1], yolo3=points3[1]),
         ]
         assert len(points) == len(test_points) == 2
         for i in range(2):
-            assert len(points[i]) == len(test_points[i]) == 3
-            assert np.all(points[i][0] == test_points[i][0])
-            assert points[i][1] == test_points[i][1]
-            assert points[i][2] == test_points[i][2]
+            assert len(points[i].params) == len(test_points[i]) == 3
+            assert np.all(points[i].params["yolo"] == test_points[i]["yolo"])
+            assert points[i].params["yolo2"] == test_points[i]["yolo2"]
+            assert points[i].params["yolo3"] == test_points[i]["yolo3"]
 
     def test_interval(self):
         """Check whether interval is cool."""

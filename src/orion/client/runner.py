@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # pylint:disable=too-many-arguments
+# pylint:disable=too-many-instance-attributes
 """
 Runner
 ======
@@ -7,19 +8,28 @@ Runner
 Executes the optimization process
 """
 import logging
+import time
+from contextlib import contextmanager
+from dataclasses import dataclass
 
 import orion.core
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
     InvalidResult,
-    SampleTimeout,
+    ReservationTimeout,
     WaitingForTrials,
 )
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.consumer import ExecutionError
 from orion.core.worker.trial import AlreadyReleased
 from orion.executor.base import AsyncException, AsyncResult
+
+
+class LazyWorkers(Exception):
+    """Raised when all the workers have been idle for a given amount of time"""
+
+    pass
 
 
 def _optimize(trial, fct, trial_arg, **kwargs):
@@ -35,6 +45,36 @@ def _optimize(trial, fct, trial_arg, **kwargs):
 log = logging.getLogger(__name__)
 
 
+@contextmanager
+def _timer(self, name):
+    start = time.time()
+    yield
+    total = time.time() - start
+
+    value = getattr(self, name)
+    setattr(self, name, value + total)
+
+
+@dataclass
+class _Stat:
+    sample: int = 0
+    scatter: int = 0
+    gather: int = 0
+
+    def time(self, name):
+        """Measure elapsed  time of a given block"""
+        return _timer(self, name)
+
+    def report(self):
+        """Show the elapsed time of different blocks"""
+        lines = [
+            f"Sample  {self.sample:7.4f}",
+            f"Scatter {self.scatter:7.4f}",
+            f"Gather  {self.gather:7.4f}",
+        ]
+        return "\n".join(lines)
+
+
 class Runner:
     """Run the optimization process given the current executor"""
 
@@ -43,6 +83,7 @@ class Runner:
         client,
         fct,
         pool_size,
+        reservation_timeout,
         max_trials_per_worker,
         max_broken,
         trial_arg,
@@ -59,11 +100,16 @@ class Runner:
         self.on_error = on_error
         self.kwargs = kwargs
 
+        self.reservation_timeout = 0.01
+        self.gather_timeout = 0.01
+        self.idle_timeout = reservation_timeout
+
         self.worker_broken_trials = 0
         self.trials = 0
         self.futures = []
         self.pending_trials = dict()
         self.free_worker = pool_size
+        self.stat = _Stat()
 
         if interrupt_signal_code is None:
             interrupt_signal_code = orion.core.config.worker.interrupt_signal_code
@@ -83,6 +129,11 @@ class Runner:
         )
 
     @property
+    def is_idle(self):
+        """Returns true if none of the workers are running a trial"""
+        return len(self.pending_trials) <= 0
+
+    @property
     def running(self):
         """Returns true if we are still running trials."""
         return self.pending_trials or (self.has_remaining and not self.is_done)
@@ -95,15 +146,31 @@ class Runner:
         the total number of trials processed
 
         """
+        idle_time = 0
+
         while self.running:
+            idle_start = time.time()
+
+            if not self.is_idle:
+                idle_time = 0
+
             # Get new trials for our free workers
-            new_trials = self.sample()
+            with self.stat.time("sample"):
+                new_trials = self.sample()
 
             # Scatter the new trials to our free workers
-            self.scatter(new_trials)
+            with self.stat.time("scatter"):
+                self.scatter(new_trials)
 
             # Gather the results of the workers that have finished
-            self.gather()
+            with self.stat.time("gather"):
+                self.gather()
+
+            if self.is_idle:
+                idle_time += time.time() - idle_start
+
+            if self.is_idle and idle_time > self.idle_timeout:
+                raise LazyWorkers(f"Workers have been idle for {idle_time}")
 
         return self.trials
 
@@ -141,7 +208,9 @@ class Runner:
         """Gather the results from each worker asynchronously"""
         results = []
         try:
-            results = self.client.executor.async_get(self.futures, timeout=0.01)
+            results = self.client.executor.async_get(
+                self.futures, timeout=self.gather_timeout
+            )
         except (KeyboardInterrupt, InvalidResult):
             self.release_all()
             raise
@@ -213,7 +282,7 @@ class Runner:
         trials = []
         while True:
             try:
-                trial = self.client.suggest()
+                trial = self.client.suggest(timeout=self.reservation_timeout)
                 trials.append(trial)
 
                 if count is not None and len(trials) == count:
@@ -222,7 +291,7 @@ class Runner:
             # non critical errors
             except WaitingForTrials:
                 break
-            except SampleTimeout:
+            except ReservationTimeout:
                 break
             except CompletedExperiment:
                 break

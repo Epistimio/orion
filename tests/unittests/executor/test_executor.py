@@ -12,7 +12,7 @@ def multiprocess(n):
 
 
 def thread(n):
-    return PoolExecutor(n, "thread")
+    return PoolExecutor(n, "threading")
 
 
 backends = [thread, multiprocess, Dask, SingleExecutor]

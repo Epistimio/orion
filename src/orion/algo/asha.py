@@ -155,6 +155,8 @@ class ASHA(Hyperband):
 
         self.brackets = self.create_brackets()
 
+        self.seed_rng(seed)
+
     def compute_bracket_idx(self, num):
         def assign_resources(n, remainings, totals):
             if n == 0 or remainings.sum() == 0:
@@ -192,7 +194,7 @@ class ASHA(Hyperband):
         return samples
 
     def suggest(self, num):
-        return super(ASHA, self).suggest(1)
+        return super(ASHA, self).suggest(num)
 
     def create_bracket(self, i, budgets, iteration):
         return ASHABracket(self, budgets, iteration)
@@ -217,32 +219,39 @@ class ASHABracket(HyperbandBracket):
         should_have_n_trials = self.rungs[0]["n_trials"]
         return self.hyperband.sample_for_bracket(num, self)
 
-    def get_candidate(self, rung_id):
-        """Get a candidate for promotion"""
+    def get_candidates(self, rung_id):
+        """Get a candidate for promotion
+
+        Raises
+        ------
+        TypeError
+            If get_candidates is called before the entire rung is completed.
+        """
         rung = self.rungs[rung_id]["results"]
         next_rung = self.rungs[rung_id + 1]["results"]
 
         rung = list(
             sorted(
-                (objective, point)
-                for objective, point in rung.values()
+                (objective, trial)
+                for objective, trial in rung.values()
                 if objective is not None
             )
         )
         k = len(rung) // self.hyperband.reduction_factor
         k = min(k, len(rung))
 
+        candidates = []
         for i in range(k):
-            point = rung[i][1]
-            _id = self.hyperband.get_id(point, ignore_fidelity=True)
+            trial = rung[i][1]
+            _id = self.hyperband.get_id(trial, ignore_fidelity=True)
             if _id not in next_rung:
-                return point
+                candidates.append(trial)
 
-        return None
+        return candidates
 
     @property
     def is_filled(self):
-        """ASHA's first rung can always sample new points"""
+        """ASHA's first rung can always sample new trials"""
         return False
 
     def is_ready(self, rung_id=None):
@@ -254,7 +263,7 @@ class ASHABracket(HyperbandBracket):
 
         The rungs are iterated over in reversed order, so that high rungs
         are prioritised for promotions. When a candidate is promoted, the loop is broken and
-        the method returns the promoted point.
+        the method returns the promoted trial.
 
         .. note ::
 
@@ -266,27 +275,34 @@ class ASHABracket(HyperbandBracket):
         if num < 1 or self.is_done:
             return []
 
+        candidates = []
         for rung_id in range(len(self.rungs) - 2, -1, -1):
-            candidate = self.get_candidate(rung_id)
-            if candidate:
-
+            for candidate in self.get_candidates(rung_id):
                 # pylint: disable=logging-format-interpolation
                 logger.debug(
-                    "Promoting {point} from rung {past_rung} with fidelity {past_fidelity} to "
+                    "Promoting {trial} from rung {past_rung} with fidelity {past_fidelity} to "
                     "rung {new_rung} with fidelity {new_fidelity}".format(
-                        point=candidate,
+                        trial=candidate,
                         past_rung=rung_id,
-                        past_fidelity=candidate[self.hyperband.fidelity_index],
+                        past_fidelity=candidate.params[self.hyperband.fidelity_index],
                         new_rung=rung_id + 1,
                         new_fidelity=self.rungs[rung_id + 1]["resources"],
                     )
                 )
 
-                candidate = list(copy.deepcopy(candidate))
-                candidate[self.hyperband.fidelity_index] = self.rungs[rung_id + 1][
-                    "resources"
-                ]
+                candidate = candidate.branch(
+                    status="new",
+                    params={
+                        self.hyperband.fidelity_index: self.rungs[rung_id + 1][
+                            "resources"
+                        ]
+                    },
+                )
 
-                return [tuple(candidate)]
+                if not self.hyperband.has_suggested(candidate):
+                    candidates.append(candidate)
 
-        return []
+                if len(candidates) >= num:
+                    return candidates
+
+        return candidates
