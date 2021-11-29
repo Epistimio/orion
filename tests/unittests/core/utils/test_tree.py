@@ -1,6 +1,6 @@
-"""Test for generic :class:`orion.core.evc.tree`"""
+"""Test for generic :class:`orion.core.utils.tree`"""
 
-from orion.core.evc.tree import (
+from orion.core.utils.tree import (
     DepthFirstTraversal,
     PreOrderTraversal,
     TreeNode,
