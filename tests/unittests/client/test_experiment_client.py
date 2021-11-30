@@ -17,8 +17,8 @@ from orion.core.utils import format_trials
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
-    ReservationTimeout,
     ReservationRaceCondition,
+    ReservationTimeout,
     WaitingForTrials,
 )
 from orion.core.worker.trial import Trial

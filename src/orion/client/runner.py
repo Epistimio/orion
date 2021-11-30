@@ -17,9 +17,9 @@ from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
     InvalidResult,
+    ReservationRaceCondition,
     ReservationTimeout,
     WaitingForTrials,
-    ReservationRaceCondition,
 )
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.consumer import ExecutionError

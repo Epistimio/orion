@@ -18,10 +18,10 @@ from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
+    ReservationRaceCondition,
     ReservationTimeout,
     UnsupportedOperation,
     WaitingForTrials,
-    ReservationRaceCondition,
 )
 from orion.core.worker.trial import AlreadyReleased, Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker

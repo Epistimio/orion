@@ -279,10 +279,7 @@ def test_fetch_config_global_local_coherence(monkeypatch, config_file):
         worker_config.pop("reservation_timeout")
         == orion.core.config.worker.reservation_timeout
     )
-    assert (
-        worker_config.pop("idle_timeout")
-        == orion.core.config.worker.idle_timeout
-    )
+    assert worker_config.pop("idle_timeout") == orion.core.config.worker.idle_timeout
     assert (
         worker_config.pop("interrupt_signal_code")
         == orion.core.config.worker.interrupt_signal_code
