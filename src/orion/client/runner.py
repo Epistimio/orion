@@ -205,18 +205,12 @@ class Runner:
         n_trial = min(self.free_worker, remains)
         should_sample_more = (not self.is_done) and self.free_worker > 0 and remains > 0
 
-        log.debug(
-            f"should_sample_more: {should_sample_more} = {(not self.is_done)} && {self.free_worker > 0} && {remains > 0}"
-        )
-
         if should_sample_more:
             # the producer does the job of limiting the number of new trials
             # already no need to worry about it
             # NB: suggest reserve the trial already
             new_trials = self._suggest_trials(n_trial)
-            log.debug(
-                f"Sampled {len(new_trials)} new configs wanted {n_trial} (workers: {self.free_worker})"
-            )
+            log.debug(f"Sampled {len(new_trials)} new configs")
 
         return new_trials
 
