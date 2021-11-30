@@ -45,12 +45,7 @@ def reserve_trial(experiment, producer, pool_size, timeout=None):
     # Try to reserve an existing trial
     trial = experiment.reserve_trial()
 
-    if trial is not None:
-        return trial
-
-    # no trial was found; update the producer to generate more trials
-    # if the experiment is still going
-    elif not (experiment.is_done or experiment.is_broken):
+    if trial is None and not (experiment.is_broken or experiment.is_done):
         log.debug("#### Fetch most recent completed trials and update algorithm.")
         producer.update()
 
@@ -58,13 +53,15 @@ def reserve_trial(experiment, producer, pool_size, timeout=None):
         produced = producer.produce(pool_size)
         log.debug("#### %s trials produced.", produced)
 
-    # Try to reverse once more
-    trial = experiment.reserve_trial()
+        # Try to reverse once more
+        trial = experiment.reserve_trial()
 
-    # Could not reserve a trial at the moment
-    # wait until more work finishes
     if trial is None:
-        if produced == 0:
+        if experiment.is_done:
+            raise CompletedExperiment()
+        elif experiment.is_broken:
+            raise BrokenExperiment()
+        elif produced == 0:
             raise WaitingForTrials()
         else:
             raise ReservationRaceCondition()

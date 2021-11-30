@@ -18,6 +18,8 @@ from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
     ReservationTimeout,
+    ReservationRaceCondition,
+    WaitingForTrials,
 )
 from orion.core.worker.trial import Trial
 from orion.executor.joblib_backend import Joblib
@@ -127,8 +129,8 @@ def test_experiment_to_pandas():
 
 
 class TestReservationFct:
-    def test_exceed_timeout(self, monkeypatch):
-        """Test that ReservationTimeout is raised when exp unable to reserve trials."""
+    def test_no_sample(self, monkeypatch):
+        """Test that WaitingForTrials is raised when exp unable to reserve trials."""
 
         with create_experiment(config, base_trial, ["reserved"]) as (
             cfg,
@@ -152,19 +154,10 @@ class TestReservationFct:
 
             monkeypatch.setattr(client._producer, "produce", do_nothing)
 
-            # to limit run-time, default would work as well.
-            timeout = 3
-
             start = time.time()
 
-            with pytest.raises(ReservationTimeout) as exc:
-                reserve_trial(
-                    experiment, client._producer, pool_size=1, timeout=timeout
-                )
-
-            assert timeout <= time.time() - start < timeout + 1
-
-            assert f". {N_TRIALS - 1} new trials were generated" in str(exc.value)
+            with pytest.raises(WaitingForTrials) as exc:
+                reserve_trial(experiment, client._producer, pool_size=1)
 
     def test_stops_if_exp_done(self, monkeypatch):
         """Test that reservation attempt is stopped when experiment is done."""
@@ -209,7 +202,10 @@ class TestReservationFct:
             n_trials_before_reserve = len(client.fetch_trials())
             assert not client.is_done
 
-            reserve_trial(experiment, client._producer, pool_size=1, timeout=timeout)
+            with pytest.raises(CompletedExperiment):
+                reserve_trial(
+                    experiment, client._producer, pool_size=1, timeout=timeout
+                )
 
             assert client.is_done
             assert len(client.fetch_trials()) == n_trials_before_reserve
@@ -676,6 +672,9 @@ class TestSuggest:
 
             assert len(experiment.fetch_trials()) == 1
 
+            with pytest.raises(WaitingForTrials):
+                trial = client.suggest()
+
             trial = client.suggest()
             assert trial.status == "reserved"
             assert trial.params["x"] == new_value
@@ -704,7 +703,7 @@ class TestSuggest:
 
             assert len(experiment.fetch_trials()) == 1
 
-            with pytest.raises(ReservationTimeout):
+            with pytest.raises(WaitingForTrials):
                 client.suggest()
 
     def test_suggest_is_done(self):
@@ -772,7 +771,7 @@ class TestSuggest:
             assert len(experiment.fetch_trials()) == 5
             assert not client.is_done
 
-            with pytest.raises(CompletedExperiment):
+            with pytest.raises(ReservationRaceCondition):
                 client.suggest()
 
             assert len(experiment.fetch_trials()) == 5
@@ -806,7 +805,7 @@ class TestSuggest:
             assert not client.is_broken
 
             with pytest.raises(BrokenExperiment):
-                client.suggest(timeout=5)
+                client.suggest()
 
             assert time.time() - start_time < 3
             assert len(experiment.fetch_trials()) == 1

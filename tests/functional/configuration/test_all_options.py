@@ -722,6 +722,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
             "max_trials": self.env_vars["ORION_WORKER_MAX_TRIALS"],
             "max_broken": self.env_vars["ORION_WORKER_MAX_BROKEN"],
             "reservation_timeout": self.env_vars["ORION_RESERVATION_TIMEOUT"],
+            "idle_timeout": self.env_vars["ORION_IDLE_TIMEOUT"],
             "max_idle_time": self.env_vars["ORION_MAX_IDLE_TIME"],
             "interrupt_signal_code": self.env_vars["ORION_INTERRUPT_CODE"],
             "user_script_config": self.env_vars["ORION_USER_SCRIPT_CONFIG"],
