@@ -77,6 +77,10 @@ class Pool(PyPool):
 
         return _Process(*args, **kwds)
 
+    def shutdown(self):
+        self.close()
+        self.join()
+
 
 class _ThreadFuture:
     """Wraps a concurrent Future to behave like AsyncResult"""
@@ -145,7 +149,7 @@ class PoolExecutor(BaseExecutor):
         self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
 
     def __del__(self):
-        self.pool.terminate()
+        self.pool.shutdown()
 
     def __getstate__(self):
         state = super(PoolExecutor, self).__getstate__()
