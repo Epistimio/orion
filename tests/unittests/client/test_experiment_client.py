@@ -771,11 +771,36 @@ class TestSuggest:
             assert len(experiment.fetch_trials()) == 5
             assert not client.is_done
 
-            with pytest.raises(ReservationRaceCondition):
+            with pytest.raises(CompletedExperiment):
                 client.suggest()
 
             assert len(experiment.fetch_trials()) == 5
             assert client.is_done
+
+    def test_suggest_reserve_race_condition(self, monkeypatch):
+        """Verify that when trials are produced and reserved by a different worker an
+        exception is raised
+
+        """
+        with create_experiment(config, base_trial, statuses=["completed"] * 5) as (
+            cfg,
+            experiment,
+            client,
+        ):
+
+            def produce(pool_size):
+                """Set is_done while algo is trying to suggest"""
+                return 10
+
+            monkeypatch.setattr(client._producer, "produce", produce)
+
+            assert len(experiment.fetch_trials()) == 5
+            assert not client.is_done
+
+            with pytest.raises(ReservationRaceCondition):
+                client.suggest()
+
+            assert len(experiment.fetch_trials()) == 5
 
     def test_suggest_is_broken_race_condition(self, monkeypatch):
         """Verify that experiments that gets broken during local algo.suggest gets properly
