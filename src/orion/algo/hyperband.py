@@ -340,8 +340,9 @@ class Hyperband(BaseAlgorithm):
                 self.space.cardinality,
             )
         else:
-            logger.warning(
-                f"{self.__class__.__name__} cannot suggest new samples, exit."
+            logger.debug(
+                f"{self.__class__.__name__} cannot suggest new samples and must wait "
+                "for trials to complete."
             )
 
         return []

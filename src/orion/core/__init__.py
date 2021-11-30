@@ -295,6 +295,18 @@ def define_worker_config(config):
     )
 
     worker_config.add_option(
+        "idle_timeout",
+        option_type=int,
+        default=60,
+        env_var="ORION_IDLE_TIMEOUT",
+        help=(
+            "Maximum time the workers can spend without work."
+            "Such timeout generally occur when reaching the end of the optimization"
+            "when no new trials can be scheduled"
+        ),
+    )
+
+    worker_config.add_option(
         "interrupt_signal_code",
         option_type=int,
         default=130,

@@ -5,7 +5,7 @@ import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor, TimeoutError, wait
 from dataclasses import dataclass
-from multiprocessing import Manager, Process
+from multiprocessing import Manager, Process, get_context
 from multiprocessing.pool import AsyncResult
 from multiprocessing.pool import Pool as PyPool
 from queue import Empty
@@ -78,8 +78,12 @@ class Pool(PyPool):
         return _Process(*args, **kwds)
 
     def shutdown(self):
+        # NB: https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html
+        # says to not use terminate although it is what __exit__ does
+
         self.close()
         self.join()
+        # self.terminate()
 
 
 class _ThreadFuture:
@@ -116,7 +120,7 @@ class ThreadPool:
     def __exit__(self, exc_type, exc_value, traceback):
         self.pool.shutdown()
 
-    def terminate(self):
+    def shutdown(self):
         self.pool.shutdown()
 
     def apply_async(self, fun, args, kwds=None):
@@ -141,12 +145,21 @@ class PoolExecutor(BaseExecutor):
     """
 
     BACKENDS = dict(
-        thread=ThreadPool, threading=ThreadPool, multiprocess=Pool, loky=Pool
+        thread=ThreadPool,
+        threading=ThreadPool,
+        multiprocess=Pool,
+        loky=Pool,
     )
 
     def __init__(self, n_workers, backend="multiprocess", **kwargs):
-        super().__init__(n_workers, **kwargs)
         self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
+        super().__init__(n_workers, **kwargs)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.pool.shutdown()
 
     def __del__(self):
         self.pool.shutdown()

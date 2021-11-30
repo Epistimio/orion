@@ -136,6 +136,7 @@ def workon(
     ignore_code_changes=None,
     executor=None,
     executor_configuration=None,
+    idle_timeout=None,
 ):
     """Try to find solution to the search problem defined in `experiment`."""
 
@@ -171,6 +172,7 @@ def workon(
                 max_broken=max_broken,
                 trial_arg="trial",
                 on_error=on_error,
+                idle_timeout=idle_timeout,
             )
         except BrokenExperiment as e:
             print(e)

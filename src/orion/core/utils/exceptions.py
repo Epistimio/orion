@@ -40,6 +40,15 @@ class RaceCondition(Exception):
     pass
 
 
+class ReservationRaceCondition(Exception):
+    """Raised when a worker tries to reserve a trial that was
+    recently generated but another worker snatched it first.
+
+    """
+
+    pass
+
+
 MISSING_RESULT_FILE = """
 Cannot parse result file.
 
