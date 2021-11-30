@@ -80,10 +80,8 @@ class Pool(PyPool):
     def shutdown(self):
         # NB: https://pytest-cov.readthedocs.io/en/latest/subprocess-support.html
         # says to not use terminate although it is what __exit__ does
-
         self.close()
         self.join()
-        # self.terminate()
 
 
 class _ThreadFuture:
