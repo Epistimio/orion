@@ -5,7 +5,7 @@ import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor, TimeoutError, wait
 from dataclasses import dataclass
-from multiprocessing import Manager, Process
+from multiprocessing import Manager, Process, get_context
 from multiprocessing.pool import AsyncResult
 from multiprocessing.pool import Pool as PyPool
 from queue import Empty
@@ -130,6 +130,11 @@ class ThreadPool:
         return _ThreadFuture(self.pool.submit(fun, *args, **kwds))
 
 
+def _make_pool(*args, **kwargs):
+    with get_context("spawn") as ctx:
+        return Pool(*args, context=ctx, **kwargs)
+
+
 class PoolExecutor(BaseExecutor):
     """Simple Pool executor.
 
@@ -145,7 +150,10 @@ class PoolExecutor(BaseExecutor):
     """
 
     BACKENDS = dict(
-        thread=ThreadPool, threading=ThreadPool, multiprocess=Pool, loky=Pool
+        thread=ThreadPool,
+        threading=ThreadPool,
+        multiprocess=_make_pool,
+        loky=_make_pool,
     )
 
     def __init__(self, n_workers, backend="multiprocess", **kwargs):
