@@ -8,7 +8,6 @@ Wraps the core Experiment object to provide further functionalities for the user
 """
 import inspect
 import logging
-import time
 from contextlib import contextmanager
 
 import orion.core
@@ -19,7 +18,6 @@ from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
     ReservationRaceCondition,
-    ReservationTimeout,
     UnsupportedOperation,
     WaitingForTrials,
 )
@@ -37,7 +35,7 @@ def reserve_trial(experiment, producer, pool_size, timeout=None):
     log.debug("Trying to reserve a new trial to evaluate.")
 
     if timeout is not None:
-        log.warn("reservation_timeout is deprecated")
+        log.warning("reservation_timeout is deprecated")
 
     trial = None
     produced = 0
