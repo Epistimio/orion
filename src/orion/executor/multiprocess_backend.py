@@ -130,11 +130,6 @@ class ThreadPool:
         return _ThreadFuture(self.pool.submit(fun, *args, **kwds))
 
 
-def _make_pool(*args, **kwargs):
-    with get_context("spawn") as ctx:
-        return Pool(*args, context=ctx, **kwargs)
-
-
 class PoolExecutor(BaseExecutor):
     """Simple Pool executor.
 
@@ -152,13 +147,13 @@ class PoolExecutor(BaseExecutor):
     BACKENDS = dict(
         thread=ThreadPool,
         threading=ThreadPool,
-        multiprocess=_make_pool,
-        loky=_make_pool,
+        multiprocess=Pool,
+        loky=Pool,
     )
 
     def __init__(self, n_workers, backend="multiprocess", **kwargs):
-        super().__init__(n_workers, **kwargs)
         self.pool = PoolExecutor.BACKENDS.get(backend, ThreadPool)(n_workers)
+        super().__init__(n_workers, **kwargs)
 
     def __enter__(self):
         return self
