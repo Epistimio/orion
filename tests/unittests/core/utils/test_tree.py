@@ -8,6 +8,33 @@ from orion.core.utils.tree import (
 )
 
 
+def build_full_tree(depth, child_per_parent=2):
+    """Build a full tree
+
+    Parameters
+    ----------
+    depth: int
+        Depth of the tree
+
+    child_per_parent: int, optional
+        Number of child per node. Default: 2
+    """
+
+    root = TreeNode(0)
+    node_buffer = [root]
+    next_nodes = []
+    node_item = 1
+    for i in range(depth - 1):
+        for node in node_buffer:
+            for k in range(child_per_parent):
+                next_nodes.append(TreeNode(node_item, parent=node))
+                node_item += 1
+        node_buffer = next_nodes
+        next_nodes = []
+
+    return root
+
+
 def test_node_creation():
     """Test empty initialization of tree node"""
     TreeNode("test")
@@ -425,6 +452,30 @@ def test_map_parent():
 
     rval = h.map(increment_parent, h.parent)
     assert [node.item for node in rval.root] == [4, 3, 2]
+
+
+def test_node_depth():
+    root = build_full_tree(3)
+    assert root.node_depth == 0
+    assert root.children[0].node_depth == 1
+    assert root.children[0].children[0].node_depth == 2
+
+
+def test_get_nodes_at_depth():
+    root = build_full_tree(5)
+
+    def test_for_node(node):
+
+        assert node.get_nodes_at_depth(0) == [node]
+        assert node.get_nodes_at_depth(1) == node.children
+        assert (
+            node.get_nodes_at_depth(2)
+            == node.children[0].children + node.children[1].children
+        )
+
+    test_for_node(root)
+    test_for_node(root.children[0])
+    test_for_node(root.children[1])
 
 
 def test_flattened():

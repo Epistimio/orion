@@ -290,6 +290,31 @@ class TreeNode(object):
 
         return self.parent.root
 
+    @property
+    def node_depth(self):
+        """The depth of the node in the tree with respect to the root node."""
+        if self.parent:
+            return self.parent.node_depth + 1
+
+        return 0
+
+    def get_nodes_at_depth(self, depth):
+        """Returns a list of nodes at the corresponding depth.
+
+        Depth is relative to current node. To get nodes at a depth relative
+        to the root, use ``node.root.get_nodes_at_depth(depth)``.
+        """
+
+        def has_depth(node, children):
+            if node.node_depth - self.node_depth == depth:
+                return [node], None
+
+            return [], children
+
+        nodes = self.map(has_depth, self.children)
+
+        return sum([node.item for node in nodes], [])
+
     def map(self, function, node):
         r"""Apply a function recursively on the tree
 
