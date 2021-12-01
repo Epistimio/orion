@@ -506,9 +506,7 @@ class TestRemove(object):
         # call interface
         assert orion_db.remove("test_collection", filt) == count_filt
         database = get_db(orion_db)
-        assert (
-            orion_db.count("test_collection") == count_before - count_filt
-        )
+        assert orion_db.count("test_collection") == count_before - count_filt
         assert orion_db.count("test_collection") == 1
         loaded_config = list(database["test_collection"].find())
         assert loaded_config == test_collection[1:2]
