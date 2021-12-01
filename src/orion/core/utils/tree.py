@@ -291,6 +291,18 @@ class TreeNode(object):
         return self.parent.root
 
     @property
+    def leafs(self):
+        """Get the leafs of the tree"""
+        leafs = []
+        for child in self.children:
+            leafs += child.leafs
+
+        if not leafs:
+            return [self]
+
+        return leafs
+
+    @property
     def node_depth(self):
         """The depth of the node in the tree with respect to the root node."""
         if self.parent:

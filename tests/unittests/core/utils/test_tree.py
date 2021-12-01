@@ -454,6 +454,27 @@ def test_map_parent():
     assert [node.item for node in rval.root] == [4, 3, 2]
 
 
+def test_leafs():
+    root = build_full_tree(4)
+
+    assert [node.item for node in root.leafs] == list(range(7, 15))
+
+    root.children[0].children[0].children[0].drop_parent()
+    assert [node.item for node in root.leafs] == list(range(8, 15))
+
+    root.children[0].children[1].drop_parent()
+    assert [node.item for node in root.leafs] == [8, 11, 12, 13, 14]
+
+    root.children[1].children[0].drop_children()
+    assert [node.item for node in root.leafs] == [8, 5, 13, 14]
+
+    root.children[1].drop_children()
+    assert [node.item for node in root.leafs] == [8, 2]
+
+    root.drop_children()
+    assert [node.item for node in root.leafs] == [0]
+
+
 def test_node_depth():
     root = build_full_tree(3)
     assert root.node_depth == 0
