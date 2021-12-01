@@ -399,11 +399,11 @@ class TestWrite(object):
             {"exp_name": "supernaekei2", "user": "tsirif"},
             {"exp_name": "supernaekei3", "user": "tsirif"},
         ]
-        count_before = get_db(orion_db)["experiments"].count()
+        count_before = orion_db.count("experiments")
         # call interface
         assert orion_db.write("experiments", item) == 2
         database = get_db(orion_db)
-        assert database["experiments"].count() == count_before + 2
+        assert orion_db.count("experiments") == count_before + 2
         value = database["experiments"].find({"exp_name": "supernaekei2"})[0]
         assert value == item[0]
         value = database["experiments"].find({"exp_name": "supernaekei3"})[0]
@@ -420,7 +420,7 @@ class TestWrite(object):
             == count_query
         )
         database = get_db(orion_db)
-        assert database["test_collection"].count() == count_before
+        assert orion_db.count("test_collection") == count_before
         value = list(database["test_collection"].find({}))
         assert value[0]["same_field"] == "diff"
         assert value[1]["same_field"] == "same"
@@ -433,7 +433,7 @@ class TestWrite(object):
         # call interface
         assert orion_db.write("test_collection", {"same_field": "diff"}, filt) == 1
         database = get_db(orion_db)
-        assert database["test_collection"].count() == count_before
+        assert orion_db.count("test_collection") == count_before
         value = list(database["test_collection"].find())
         assert value[0]["same_field"] == "same"
         assert value[1]["same_field"] == "diff"
@@ -500,14 +500,13 @@ class TestRemove(object):
     def test_remove_many_default(self, orion_db, test_collection):
         """Should match existing entries, and delete them all."""
         filt = {"field1": "same1"}
-        database = get_db(orion_db)
-        count_before = database["test_collection"].count()
-        count_filt = database["test_collection"].count(filt)
+        count_before = orion_db.count("test_collection")
+        count_filt = orion_db.count("test_collection", filt)
         # call interface
         assert orion_db.remove("test_collection", filt) == count_filt
         database = get_db(orion_db)
-        assert database["test_collection"].count() == count_before - count_filt
-        assert database["test_collection"].count() == 1
+        assert orion_db.count("test_collection") == count_before - count_filt
+        assert orion_db.count("test_collection") == 1
         loaded_config = list(database["test_collection"].find())
         assert loaded_config == test_collection[1:2]
 
@@ -515,12 +514,12 @@ class TestRemove(object):
         """Query using ``_id`` key."""
         filt = {"_id": test_collection[0]["_id"]}
 
-        database = get_db(orion_db)
-        count_before = database["test_collection"].count()
+        count_before = orion_db.count("test_collection")
+
         # call interface
         assert orion_db.remove("test_collection", filt) == 1
         database = get_db(orion_db)
-        assert database["test_collection"].count() == count_before - 1
+        assert orion_db.count("test_collection") == count_before - 1
         loaded_configs = list(database["test_collection"].find())
         assert loaded_configs == test_collection[1:]
 
@@ -533,12 +532,10 @@ class TestRemove(object):
 
         filt = {"_id": test_collection[0]["_id"]}
 
-        database = get_db(orion_db)
-        count_before = database["test_collection"].count()
+        count_before = orion_db.count("test_collection")
         # call interface
         assert orion_db.remove("test_collection", filt) == 1
-        database = get_db(orion_db)
-        assert database["test_collection"].count() == count_before - 1
+        assert orion_db.count("test_collection") == count_before - 1
         # Should not fail now, otherwise it means the indexes were not updated properly during
         # remove()
         orion_db.write("test_collection", filt)
