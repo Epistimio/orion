@@ -500,7 +500,6 @@ class TestRemove(object):
     def test_remove_many_default(self, orion_db, test_collection):
         """Should match existing entries, and delete them all."""
         filt = {"field1": "same1"}
-        database = get_db(orion_db)
         count_before = orion_db.count("test_collection")
         count_filt = orion_db.count("test_collection", filt)
         # call interface
@@ -515,8 +514,8 @@ class TestRemove(object):
         """Query using ``_id`` key."""
         filt = {"_id": test_collection[0]["_id"]}
 
-        database = get_db(orion_db)
         count_before = orion_db.count("test_collection")
+
         # call interface
         assert orion_db.remove("test_collection", filt) == 1
         database = get_db(orion_db)
@@ -533,11 +532,9 @@ class TestRemove(object):
 
         filt = {"_id": test_collection[0]["_id"]}
 
-        database = get_db(orion_db)
         count_before = orion_db.count("test_collection")
         # call interface
         assert orion_db.remove("test_collection", filt) == 1
-        database = get_db(orion_db)
         assert orion_db.count("test_collection") == count_before - 1
         # Should not fail now, otherwise it means the indexes were not updated properly during
         # remove()
