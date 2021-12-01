@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.algo.random`."""
+import os
 import shutil
 
 import numpy
@@ -15,6 +16,7 @@ from orion.algo.pbt import (
     resample_or_perturb,
     truncate,
     Lineage,
+    Lineages,
 )
 from orion.algo.space import Integer, Real, Space
 from orion.core.io.space_builder import SpaceBuilder
@@ -149,6 +151,20 @@ class TestLineage:
 
         assert lineage.children == []
 
+    def test_fork_to_existing_path(self, tmp_path):
+        trial = TrialStub(id="stub", working_dir=os.path.join(tmp_path, "stub"))
+        os.makedirs(trial.working_dir)
+        lineage = Lineage(trial)
+        new_trial = TrialStub(id="fork", working_dir=os.path.join(tmp_path, "fork"))
+        os.makedirs(new_trial.working_dir)
+
+        with pytest.raises(
+            FileExistsError, match="Folder already exists for trial fork."
+        ):
+            lineage.fork(new_trial)
+
+        assert lineage.children == []
+
     def test_set_jump(self):
         parent_lineage = Lineage(1)
         child_lineage = Lineage(2)
@@ -203,6 +219,24 @@ class TestLineage:
         assert parent_lineage.children == []
         assert parent_lineage.jumps == [child_lineage]
         assert parent_lineage.base is None
+
+    def test_get_true_ancestor_no_parent(self):
+        lineage = Lineage(1)
+        assert lineage.get_true_ancestor() is None
+
+    def test_get_true_ancestor_parent_no_jump(self):
+        lineage = Lineage(1)
+        child_lineage = Lineage(2, parent=lineage)
+        assert child_lineage.get_true_ancestor() is lineage
+
+    def test_get_true_ancestor_with_jump(self):
+        lineage = Lineage(1)
+        child_lineage = Lineage(2, parent=lineage)
+        true_lineage = Lineage(3)
+        true_lineage.set_jump(child_lineage)
+        assert child_lineage.parent is lineage
+        assert child_lineage.base is true_lineage
+        assert child_lineage.get_true_ancestor() is true_lineage
 
     def test_get_best_trial_empty(self):
         trial = TrialStub(id="id-1", objective=1)
@@ -295,7 +329,97 @@ class TestLineage:
 
 
 class TestLineages:
-    def test_what(self):
+    def test_add_new_trial(self):
+        lineages = Lineages()
+        assert len(lineages) == 0
+        lineage = lineages.add(TrialStub(id="stub"))
+        assert len(lineages) == 1
+        assert lineages._lineage_roots[0] is lineage
+        assert lineages._trial_to_lineages["stub"] is lineage
+
+    def test_add_duplicate(self):
+        lineages = Lineages()
+        assert len(lineages) == 0
+        lineage = lineages.add(TrialStub(id="stub"))
+        assert len(lineages) == 1
+
+        new_lineage = lineages.add(TrialStub(id="stub"))
+        assert new_lineage is lineage
+        assert len(lineages) == 1
+
+    def test_fork_existing_trial(self, tmp_path):
+        lineages = Lineages()
+        trial = TrialStub(id="stub", working_dir=os.path.join(tmp_path, "stub"))
+        os.makedirs(trial.working_dir)
+        lineage = lineages.add(trial)
+        assert len(lineages) == 1
+        new_trial = TrialStub(id="fork", working_dir=os.path.join(tmp_path, "fork"))
+        new_lineage = lineages.fork(trial, new_trial)
+        assert len(lineages) == 1
+        assert lineages._lineage_roots[0].children[0] is new_lineage
+        assert lineages._trial_to_lineages["fork"] is new_lineage
+
+    def test_fork_non_existing_trial(self):
+        lineages = Lineages()
+        trial = TrialStub(id="stub")
+        new_trial = TrialStub(id="fork")
+
+        with pytest.raises(KeyError):
+            new_lineage = lineages.fork(trial, new_trial)
+
+    def test_get_lineage_existing_root_trial(self):
+        lineages = Lineages()
+        trial = TrialStub(id="stub")
+        lineage = lineages.add(trial)
+        assert lineages.get_lineage(trial) is lineage
+
+    def test_get_lineage_existing_node_trial(self):
+        lineages = Lineages()
+        trial = TrialStub(id="stub")
+        lineage = lineages.add(trial)
+        # TODO: Complete using fork to create deep branches. Maybe mock shutil.copytree to
+        #       simplify the process
+        assert False
+
+    def test_get_lineage_non_existing_trial(self):
+        assert False
+
+    def test_set_jump_existing_trial(self):
+        assert False
+
+    def test_set_jump_non_existing_base_trial(self):
+        assert False
+
+    def test_set_jump_non_existing_new_trial(self):
+        assert False
+
+    def test_register_new_trial(self):
+        assert False
+
+    def test_register_existing_trial(self):
+        assert False
+
+    def test_get_elites_empty(self):
+        assert False
+
+    def test_get_elites_various_depths(self):
+        # NOTE: lineage.leafs is not implemented.
+        #       There should never be duplicate elite trials returned
+        #       because branches always occur after a jump, thus get_best_trial should
+        #       follow the route of jumps. We should create a function like build_full_tree
+        #       to fake a population with this property.
+        assert False
+
+    def test_get_nodes_at_depth_given_depth(self):
+        assert False
+
+    def test_get_nodes_at_depth_given_existing_trial(self):
+        assert False
+
+    def test_get_nodes_at_depth_given_non_existing_trial(self):
+        assert False
+
+    def test_iter(self):
         assert False
 
 

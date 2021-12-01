@@ -468,7 +468,7 @@ class PopulationBasedTraining(BaseAlgorithm):
             # to retry
             if trial.status == "broken":
                 # Branch again from trial that lead to this broken one.
-                trial_to_retry = self.lineages.get_true_ancestor(trial)
+                trial_to_retry = self.lineages.get_lineage(trial).get_true_ancestor()
                 if trial_to_retry:
                     self._buffer.append(trial_to_retry)
 
@@ -481,19 +481,28 @@ class Lineages:
         self._lineage_roots = []
         self._trial_to_lineages = {}
 
+    def __len__(self):
+        return len(self._lineage_roots)
+
     def __iter__(self):
         return self._lineage_roots
 
     def add(self, trial):
+        if trial.id in self._trial_to_lineages:
+            return self._trial_to_lineages[trial.id]
+
         lineage = Lineage(trial)
         self._lineage_roots.append(lineage)
         self._trial_to_lineages[trial.id] = lineage
         return lineage
 
     def fork(self, base_trial, new_trial):
-        new_lineage = self.get_lineage(base_trial).fork(new_trial)
+        new_lineage = self._trial_to_lineages[base_trial.id].fork(new_trial)
         self._trial_to_lineages[new_trial.id] = new_lineage
         return new_lineage
+
+    def get_lineage(self, trial):
+        return self._trial_to_lineages[trial.id]
 
     def set_jump(self, base_trial, new_trial):
         self.get_lineage(base_trial).set_jump(self.get_lineage(new_trial))
@@ -506,9 +515,6 @@ class Lineages:
             lineage.register(trial)
 
         return lineage
-
-    def get_lineage(self, trial):
-        return self._trial_to_lineages[trial.id]
 
     def get_elites(self):
         trials = []
@@ -530,20 +536,6 @@ class Lineages:
                 trial_nodes.append(trial_node)
 
         return trial_nodes
-
-    def get_true_ancestor(self, trial):
-        """
-        note: return a trial, not a lineage
-        """
-
-        lineage = self.get_lineage(trial)
-        if lineage.base is not None:
-            return lineage.base.item
-
-        if lineage.parent is not None:
-            return lineage.parent.item
-
-        return None
 
 
 class Lineage(TreeNode):
@@ -579,7 +571,13 @@ class Lineage(TreeNode):
                 "report at https://github.com/Epistimio/orion/issues"
             )
 
-        shutil.copytree(self.item.working_dir, new_trial.working_dir)
+        try:
+            shutil.copytree(self.item.working_dir, new_trial.working_dir)
+        except FileExistsError as e:
+            raise FileExistsError(
+                f"Folder already exists for trial {new_trial.id}. This could be a folder "
+                "remaining from a previous experiment with same trial id."
+            ) from e
 
         return Lineage(new_trial, parent=self)
 
@@ -592,13 +590,18 @@ class Lineage(TreeNode):
 
         node._jump.set_parent(self._jump)
 
+    def get_true_ancestor(self):
+        if self.base is not None:
+            return self.base
+
+        if self.parent is not None:
+            return self.parent
+
+        return None
+
     def get_best_trial(self):
         # NOTE: best trial up to this node. Only looking towards parents (or jumps)
-        parent_node = None
-        if self.base is not None:
-            parent_node = self.base
-        elif self.parent is not None:
-            parent_node = self.parent
+        parent_node = self.get_true_ancestor()
 
         if parent_node:
             parent_trial = parent_node.get_best_trial()
