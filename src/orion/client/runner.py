@@ -189,8 +189,6 @@ class Runner:
                         f" and optimization is not done (is_done: {self.is_done})"
                     )
 
-                print()
-                print(self.stat.report())
                 raise LazyWorkers(msg)
 
         return self.trials
