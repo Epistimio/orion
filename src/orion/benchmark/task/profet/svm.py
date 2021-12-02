@@ -36,7 +36,6 @@ class SvmTask(ProfetTask[SvmTaskHParams]):
         train_config: MetaModelTrainingConfig = None,
         device: Union[torch.device, str] = None,
         with_grad: bool = False,
-        benchmark: str = "svm",
     ):
         super().__init__(
             max_trials=max_trials,
@@ -47,8 +46,12 @@ class SvmTask(ProfetTask[SvmTaskHParams]):
             train_config=train_config,
             device=device,
             with_grad=with_grad,
-            benchmark=benchmark,
         )
+
+    @property
+    def benchmark(self) -> str:
+        """ The name of the benchmark to use. """
+        return "svm"
 
     def get_search_space(self) -> Dict[str, str]:
         return dict(

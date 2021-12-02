@@ -40,7 +40,6 @@ class ForresterTask(ProfetTask[ForresterTaskHParams]):
         train_config: MetaModelTrainingConfig = None,
         device: Union[torch.device, str] = None,
         with_grad: bool = False,
-        benchmark: str = "forrester",
     ):
         super().__init__(
             max_trials=max_trials,
@@ -51,8 +50,12 @@ class ForresterTask(ProfetTask[ForresterTaskHParams]):
             train_config=train_config,
             device=device,
             with_grad=with_grad,
-            benchmark=benchmark,
         )
+
+    @property
+    def benchmark(self) -> str:
+        """ The name of the benchmark to use. """
+        return "forrester"
 
     def get_search_space(self) -> Dict[str, str]:
         return {"x": "uniform(0.0, 1.0, discrete=False)"}

@@ -5,6 +5,7 @@ For more information on Profet, see original paper at https://arxiv.org/abs/1905
 Klein, Aaron, Zhenwen Dai, Frank Hutter, Neil Lawrence, and Javier Gonzalez. "Meta-surrogate benchmarking for 
 hyperparameter optimization." Advances in Neural Information Processing Systems 32 (2019): 6270-6280.
 """
+from abc import abstractmethod
 import functools
 import hashlib
 import json
@@ -537,8 +538,6 @@ class ProfetTask(BaseTask, Generic[InputType]):
     
     Parameters
     ----------
-    benchmark : str
-        Name of the benchmark.
     max_trials : int, optional
         Max number of trials to run, by default 100
     task_id : int, optional
@@ -560,7 +559,6 @@ class ProfetTask(BaseTask, Generic[InputType]):
 
     def __init__(
         self,
-        benchmark: str,
         max_trials: int = 100,
         task_id: int = 0,
         seed: int = 123,
@@ -571,7 +569,6 @@ class ProfetTask(BaseTask, Generic[InputType]):
         with_grad: bool = False,
     ):
         super().__init__(max_trials=max_trials)
-        self.benchmark = benchmark
         self.task_id = task_id
         self.seed = seed
         self.input_dir = Path(input_dir)
@@ -645,6 +642,12 @@ class ProfetTask(BaseTask, Generic[InputType]):
         # self._space.sample = seeded_sample
 
         self.name = f"profet.{type(self).__qualname__.lower()}_{self.task_id}"
+
+    @property
+    @abstractmethod
+    def benchmark(self) -> str:
+        """ The name of the benchmark to use. """
+        raise NotImplementedError()
 
     @contextmanager
     def seed_randomness(self):
