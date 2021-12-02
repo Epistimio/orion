@@ -239,6 +239,11 @@ class ProfetTaskTests:
         hparam_dicts = task.sample(n)
         assert isinstance(hparam_dicts, list)
         assert len(hparam_dicts) == n
+
+        assert all(
+            hparam_dicts[i] != hparam_dicts[j] for i in range(n) for j in set(range(n)) - {i}
+        )
+
         for hparam_dict in hparam_dicts:
             assert isinstance(hparam_dict, dict)
             assert hparam_dict.keys() == task.get_search_space().keys()
@@ -284,9 +289,6 @@ class ProfetTaskTests:
             checkpoint_dir=checkpoint_dir,
         )
         assert isinstance(task.space, Space)
-
-        point_tuple = task.space.sample(1)[0]
-
         # BUG mentioned above:
         # assert task.space.keys() == task.get_search_space().keys()
 
@@ -340,11 +342,14 @@ class ProfetTaskTests:
         second_objective = second_results[0]["value"]
         assert first_objective != second_objective
 
+    @pytest.mark.parametrize("use_same_model", [True, False])
     def test_call_is_reproducible(
         self,
         profet_train_config: MetaModelTrainingConfig,
         profet_input_dir: Path,
         checkpoint_dir: Path,
+        tmp_path_factory,
+        use_same_model: bool
     ):
         """ Two tasks created with the same args, given the same point, should produce the same
         results.
@@ -359,7 +364,15 @@ class ProfetTaskTests:
             checkpoint_dir=checkpoint_dir,
         )
         task_a = self.Task(**task_kwargs)
-        task_b = self.Task(**task_kwargs)
+        if use_same_model:
+            task_b = self.Task(**task_kwargs)
+        else:
+            # NOTE: We can also check if the training is seeded properly by using a different
+            # checkpoint directory, which forces the task to re-create a new model using the same
+            # training configuration, rather than load the same one as task_a.
+            task_b_kwargs = task_kwargs.copy()
+            task_b_kwargs["checkpoint_dir"] = tmp_path_factory.mktemp("other_checkpoint_dir") 
+            task_b = self.Task(**task_b_kwargs)
 
         point_a = task_a.sample()
         point_b = task_b.sample()
@@ -370,7 +383,6 @@ class ProfetTaskTests:
         # However, given two different task instances (with the same seed) they should give the same
         # exact sample.
         result_a = task_a(point_a)
-
         result_b = task_b(point_b)
 
         assert len(result_a) == 1

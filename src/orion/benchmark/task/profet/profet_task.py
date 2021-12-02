@@ -5,16 +5,16 @@ For more information on Profet, see original paper at https://arxiv.org/abs/1905
 Klein, Aaron, Zhenwen Dai, Frank Hutter, Neil Lawrence, and Javier Gonzalez. "Meta-surrogate benchmarking for 
 hyperparameter optimization." Advances in Neural Information Processing Systems 32 (2019): 6270-6280.
 """
-from abc import abstractmethod
 import functools
-import hashlib
 import json
 import os
 import pickle
+import random
 import warnings
+from abc import abstractmethod
 from contextlib import contextmanager
 from copy import deepcopy
-from dataclasses import asdict, dataclass, is_dataclass
+from dataclasses import asdict, dataclass
 from logging import getLogger as get_logger
 from pathlib import Path
 from typing import (
@@ -37,7 +37,6 @@ from emukit.examples.profet.meta_benchmarks.architecture import get_default_arch
 from emukit.examples.profet.meta_benchmarks.meta_forrester import get_architecture_forrester
 from emukit.examples.profet.train_meta_model import download_data
 from GPy.models import BayesianGPLVM
-from numpy.random import RandomState
 from pybnn.bohamiann import Bohamiann
 from torch import nn
 from torch.distributions import Normal
@@ -46,11 +45,9 @@ from torch.functional import Tensor
 from orion.algo.space import Space
 from orion.benchmark.task.base import BaseTask
 from orion.core.io.space_builder import SpaceBuilder
+from orion.core.utils import compute_identity
 from orion.core.utils.format_trials import dict_to_trial, trial_to_tuple
 from orion.core.utils.points import flatten_dims
-from orion.core.worker.trial import Trial
-from orion.core.utils import compute_identity
-
 
 logger = get_logger(__name__)
 
@@ -395,7 +392,6 @@ def get_meta_model(
         Surrogate model for the objective, as well as another for the cost, if `with_cose` is True,
         otherwise `None`.
     """
-
     objective_model = Bohamiann(
         get_network=get_architecture, print_every_n_steps=1000, normalize_output=normalize_targets,
     )
@@ -537,6 +533,25 @@ def _patched_forward(self, x):
 AppendLayer.forward = _patched_forward
 
 
+@contextmanager
+def make_reproducible(seed: int):
+    """ Makes the random operations within a block of code reproducible for a given seed. """
+    # First: Get the starting random state, and restore it after.
+    start_np_rng_state = np.random.get_state()
+    start_random_state = random.getstate()
+    with torch.random.fork_rng():
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.random.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+
+        yield
+
+    np.random.set_state(start_np_rng_state)
+    random.setstate(start_random_state)
+
+
 InputDict = TypeVar("InputDict", bound=Dict[str, Any])
 
 
@@ -611,57 +626,48 @@ class ProfetTask(BaseTask, Generic[InputDict]):
         else:
             self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
 
-        # The starting global random state.
-        self._np_rng: np.random.RandomState = RandomState(self.seed)
-        self._torch_rng_state: Optional[Tensor] = None
+        # NOTE: Need to control the randomness that's happening inside *both* the training
+        # function, as well as the loading function (since `load_task_network`` instantiates a model
+        # and then loads the weights, it also affects the global rng state of pytorch).
 
-        if os.path.exists(self.checkpoint_file):
-            logger.info(
-                f"Model has already been trained: loading it from file {self.checkpoint_file}."
-            )
-            self.net, self.h = load_task_network(self.checkpoint_file)
-        else:
-            warnings.warn(
-                RuntimeWarning(
-                    f"Checkpoint file {self.checkpoint_file} doesn't exist: re-training the model. "
-                    f"(This may take a long time, depending on the settings in `train_params`)"
+        with make_reproducible(self.seed):
+            if os.path.exists(self.checkpoint_file):
+                logger.info(
+                    f"Model has already been trained: loading it from file {self.checkpoint_file}."
                 )
-            )
-            logger.info(f"Task hash params: {task_hash_params}")
+                self.net, h = load_task_network(self.checkpoint_file)
+            else:
+                warnings.warn(
+                    RuntimeWarning(
+                        f"Checkpoint file {self.checkpoint_file} doesn't exist: re-training the model. "
+                        f"(This may take a long time, depending on the settings in `train_params`)"
+                    )
+                )
+                logger.info(f"Task hash params: {task_hash_params}")
 
-            self.checkpoint_file.parent.mkdir(exist_ok=True, parents=True)
-            # Need to re-train the meta-model and sample this task.
-            self.net, self.h = get_task_network(
-                self.input_dir,
-                self.benchmark,
-                seed=self.seed,
-                task_id=self.task_id,
-                config=self.train_config,
-            )
-            save_task_network(self.checkpoint_file, self.benchmark, self.net, self.h)
+                self.checkpoint_file.parent.mkdir(exist_ok=True, parents=True)
 
-        self.net = self.net.to(device=self.device)
+                # Need to re-train the meta-model and sample this task.
+                self.net, h = get_task_network(
+                    self.input_dir,
+                    self.benchmark,
+                    seed=self.seed,
+                    task_id=self.task_id,
+                    config=self.train_config,
+                )
+
+        # Numpy random state. Currently only used in `sample()`
+        self._np_rng_state = np.random.RandomState(self.seed)
+
+        self.h: np.ndarray = np.array(h)
+        save_task_network(self.checkpoint_file, self.benchmark, self.net, self.h)
+
+        self.net = self.net.to(device=self.device, dtype=torch.float32)
         self.net.eval()
+
         self.h_tensor = torch.as_tensor(self.h, dtype=torch.float32, device=self.device)
 
         self._space: Space = SpaceBuilder().build(self.get_search_space())
-
-        # ISSUES:
-        # 1. Space.sample() gives back a tuple instead of a dict.
-        #    - Can't call task(task.space.sample())!
-
-        # IDEA: Could 'hack' the `sample` function of this Space instance so it always uses our
-        # numpy rng state.
-        # _original_sample = self._space.sample
-
-        # def seeded_sample(_, n_samples: int = 1, seed=None):
-        #     nonlocal self
-        #     if seed is None:
-        #         seed = self._np_rng
-        #     return _original_sample(n_samples=n_samples, seed=seed)
-
-        # self._space.sample = seeded_sample
-
         self.name = f"profet.{type(self).__qualname__.lower()}_{self.task_id}"
 
     @property
@@ -685,7 +691,7 @@ class ProfetTask(BaseTask, Generic[InputDict]):
             return self.sample(1)[0]
         return [
             dict(zip(self._space.keys(), point_tuple))  # type: ignore
-            for point_tuple in self.space.sample(n, seed=self._np_rng)
+            for point_tuple in self.space.sample(n, seed=self._np_rng_state)
         ]
 
     @property
@@ -729,6 +735,8 @@ class ProfetTask(BaseTask, Generic[InputDict]):
         devices = [] if self.device.type == "cpu" else [self.device]
         with torch.random.fork_rng(devices=devices):
             torch.random.manual_seed(self.seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(self.seed)
 
             # Forward pass:
             out = self.net(p_tensor)
