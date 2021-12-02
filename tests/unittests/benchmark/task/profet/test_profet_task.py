@@ -441,22 +441,26 @@ class ProfetTaskTests:
         point_tuple = tuple(point_dict.values())
         second_point_array = np.array(point_tuple) - step_size * np.array(first_gradient)
 
+        second_point = dict(zip(point_dict.keys(), second_point_array))
+
         if any(isinstance(dim, _Discrete) for dim in task.space.values()):
             # NOTE: Some dimensions don't quite work here because they are discrete: we can't really
             # use a point that has batch_size = 12.04 for example.
             assert second_point_array not in task.space
+            second_point = {
+                k: int(v) if isinstance(v, float) and isinstance(task.space[k], _Discrete) else v
+                for k, v in second_point.items()
+            }
+            second_point_array = np.array(tuple(second_point.values()))
 
-        if second_point_array not in task.space:
-            with pytest.warns(RuntimeWarning, match="isn't a valid point of the space"):
-                # NOTE: Bypassing the conversion that would normally happen in `dict_to_trial` for tuple
-                # inputs when a Tensor is passed directly to the task. When the point doesn't fit the
-                # space exactly, a RuntimeWarning is raised.
-                second_results = task(torch.as_tensor(second_point_array))
-        else:
-            # Check that no warnings are raised if the point is in the space of the task.
-            with pytest.warns(None) as record:
-                second_results = task(second_point_array)
-            assert len(record) == 0, [m.message for m in record.list]
+        assert second_point.values() in task.space
+        assert second_point_array in task.space
+
+        second_results = task(second_point)
+        # Check that no warnings are raised if the point is in the space of the task.
+        with pytest.warns(None) as record:
+            second_results = task(second_point)
+        assert len(record) == 0, [m.message for m in record.list]
 
         second_objective = second_results[0]["value"]
 
