@@ -6,7 +6,6 @@ For more information on Profet, see original paper at https://arxiv.org/abs/1905
 Klein, Aaron, Zhenwen Dai, Frank Hutter, Neil Lawrence, and Javier Gonzalez. "Meta-surrogate benchmarking for 
 hyperparameter optimization." Advances in Neural Information Processing Systems 32 (2019): 6270-6280.
 """
-from dataclasses import dataclass
 from logging import getLogger as get_logger
 from pathlib import Path
 from typing import Dict, Union
@@ -16,9 +15,13 @@ from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig, Pro
 
 logger = get_logger(__name__)
 
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
 
-@dataclass
-class ForresterTaskHParams:
+
+class ForresterTaskHParams(TypedDict):
     """Hyper-Parameters of a Simulated Task consisting in training a Random Forrest predictor."""
 
     # NOTE: (@lebrice) This space is difference in OpenML:

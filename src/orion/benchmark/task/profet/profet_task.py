@@ -17,7 +17,18 @@ from copy import deepcopy
 from dataclasses import asdict, dataclass, is_dataclass
 from logging import getLogger as get_logger
 from pathlib import Path
-from typing import Callable, Dict, Generic, List, Optional, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
+)
 
 import GPy
 import numpy as np
@@ -510,6 +521,7 @@ def save_task_network(
     tmp_file.rename(checkpoint_file)
 
 
+# TODO: Remove this, and instead convert the weight to float if needed.
 # BUG in pybnn/util/layers.py, where they have self.log_var be a
 # DoubleTensor while x is a FloatTensor! Here we overwrite the
 # forward method, instead of editing the code directly.
@@ -525,10 +537,10 @@ def _patched_forward(self, x):
 AppendLayer.forward = _patched_forward
 
 
-InputType = TypeVar("InputType")
+InputDict = TypeVar("InputDict", bound=Dict[str, Any])
 
 
-class ProfetTask(BaseTask, Generic[InputType]):
+class ProfetTask(BaseTask, Generic[InputDict]):
     """Base class for Tasks that are generated using the Profet algorithm.
 
     For more information on Profet, see original paper at https://arxiv.org/abs/1905.12982.
@@ -599,36 +611,45 @@ class ProfetTask(BaseTask, Generic[InputType]):
         else:
             self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
 
-        self._np_rng: Optional[np.random.RandomState] = None
+        # The starting global random state.
+        self._np_rng: np.random.RandomState = RandomState(self.seed)
         self._torch_rng_state: Optional[Tensor] = None
-        with self.seed_randomness():
-            if os.path.exists(self.checkpoint_file):
-                logger.info(
-                    f"Model has already been trained: loading it from file {self.checkpoint_file}."
-                )
-                self.net, self.h = load_task_network(self.checkpoint_file)
-            else:
-                logger.info(
-                    f"Checkpoint file {self.checkpoint_file} doesn't exist: re-training the model."
-                )
-                logger.info(f"Task hash params: {task_hash_params}")
 
-                self.checkpoint_file.parent.mkdir(exist_ok=True, parents=True)
-                # Need to re-train the meta-model and sample this task.
-                self.net, self.h = get_task_network(
-                    self.input_dir,
-                    self.benchmark,
-                    seed=self.seed,
-                    task_id=self.task_id,
-                    config=self.train_config,
+        if os.path.exists(self.checkpoint_file):
+            logger.info(
+                f"Model has already been trained: loading it from file {self.checkpoint_file}."
+            )
+            self.net, self.h = load_task_network(self.checkpoint_file)
+        else:
+            warnings.warn(
+                RuntimeWarning(
+                    f"Checkpoint file {self.checkpoint_file} doesn't exist: re-training the model. "
+                    f"(This may take a long time, depending on the settings in `train_params`)"
                 )
-                save_task_network(self.checkpoint_file, self.benchmark, self.net, self.h)
+            )
+            logger.info(f"Task hash params: {task_hash_params}")
+
+            self.checkpoint_file.parent.mkdir(exist_ok=True, parents=True)
+            # Need to re-train the meta-model and sample this task.
+            self.net, self.h = get_task_network(
+                self.input_dir,
+                self.benchmark,
+                seed=self.seed,
+                task_id=self.task_id,
+                config=self.train_config,
+            )
+            save_task_network(self.checkpoint_file, self.benchmark, self.net, self.h)
 
         self.net = self.net.to(device=self.device)
         self.net.eval()
         self.h_tensor = torch.as_tensor(self.h, dtype=torch.float32, device=self.device)
 
         self._space: Space = SpaceBuilder().build(self.get_search_space())
+
+        # ISSUES:
+        # 1. Space.sample() gives back a tuple instead of a dict.
+        #    - Can't call task(task.space.sample())!
+
         # IDEA: Could 'hack' the `sample` function of this Space instance so it always uses our
         # numpy rng state.
         # _original_sample = self._space.sample
@@ -644,49 +665,35 @@ class ProfetTask(BaseTask, Generic[InputType]):
         self.name = f"profet.{type(self).__qualname__.lower()}_{self.task_id}"
 
     @property
+    def space(self) -> Space:
+        return self._space
+
+    @overload
+    def sample(self) -> InputDict:
+        ...
+
+    @overload
+    def sample(self, n: int) -> List[InputDict]:
+        ...
+
+    def sample(self, n: int = None) -> Union[InputDict, List[InputDict]]:
+        """ Samples a point (dict of hyper-parameters) from the search space of this task.
+
+        This point can then be passed as an input to the task to get the objective.
+        """
+        if n is None:
+            return self.sample(1)[0]
+        return [
+            dict(zip(self._space.keys(), point_tuple))  # type: ignore
+            for point_tuple in self.space.sample(n, seed=self._np_rng)
+        ]
+
+    @property
     @abstractmethod
     def benchmark(self) -> str:
         """ The name of the benchmark to use. """
-        raise NotImplementedError()
 
-    @contextmanager
-    def seed_randomness(self):
-        """Context manager used to seed the portions of the code that use randomness, without
-        affecting the global state.
-        """
-        devices = [] if self.device.type == "cpu" else [self.device]
-        if self._np_rng is None:
-            # Initialize the numpy random state.
-            self._np_rng = RandomState(seed=self.seed)
-
-        start_np_state = np.random.get_state()
-        # Temporarily set the global random state to that of our RNG.
-        np.random.set_state(self._np_rng.get_state())
-
-        # Need to do this when it comes to the torch random state, since `torch.distributions` uses
-        # the global state when sampling, and there are no ways of passing a seed to a distribution.
-        with torch.random.fork_rng(devices=devices):
-            if self._torch_rng_state is None:
-                torch.random.manual_seed(self.seed)
-            else:
-                torch.random.set_rng_state(self._torch_rng_state)
-
-            # Yield, which probably executes a few lines with randomness.
-            yield
-
-            # Update the torch random state.
-            self._torch_rng_state = torch.random.get_rng_state()
-
-        # NOTE: Re-creating a RandomState object and setting the state, since I don't know how to
-        # get the 'global' RandomState object.
-        self._np_rng = RandomState(seed=self.seed)
-        self._np_rng.set_state(np.random.get_state())
-
-        np.random.set_state(start_np_state)
-
-    def call(
-        self, x: Union[InputType, Trial, Dict, Tuple] = None, **kwargs,
-    ) -> List[Dict]:
+    def call(self, x: InputDict) -> List[Dict]:
         """Get the value of the sampled objective function at the given point (hyper-parameters).
 
         If `self.with_grad` is set, also returns the gradient of the objective function with respect
@@ -694,8 +701,8 @@ class ProfetTask(BaseTask, Generic[InputType]):
 
         Parameters
         ----------
-        x : Union[InputType, Trial, Dict, Tuple]
-            Either a Trial, a dataclass, a dict, or a tuple, that is a point from this tasks' space.
+        x : InputDict
+            Dictionary of hyper-parameters.
 
         Returns
         -------
@@ -707,55 +714,25 @@ class ProfetTask(BaseTask, Generic[InputType]):
         ValueError
             If the input isn't of a supported type.
         """
-        logger.debug(f"received x={x}")
-        if x is None and kwargs:
-            x = kwargs
+        logger.debug(f"received x: {x}")
 
-        if is_dataclass(x):
-            x = asdict(x)
-        elif isinstance(x, Trial):
-            x = x.params
-        elif isinstance(x, tuple) and len(x) == len(self._space):
-            x = dict(zip(self._space.keys(), x))
-        elif isinstance(x, dict):
-            # NOTE: Passing ndarrays and tensors is useful for testing, but this task now probably
-            # accepts too many types of inputs.
-            x = x
-        elif isinstance(x, (np.ndarray, Tensor)):
-            if x not in self._space:
-                warnings.warn(
-                    RuntimeWarning(
-                        f"Point {x} isn't a valid point of the space {self._space}, but will still "
-                        f"be passed to the task's model."
-                    )
-                )
-        else:
-            raise ValueError(
-                f"Expected `x` to be a dataclass, a Trial, a dict, or a tuple of length "
-                f"{len(self._space)}, but got {x} instead."
-            )
-
-        if isinstance(x, dict):
-            # A bit of gymnastics to convert the params Dict into a numpy array.
-            trial = dict_to_trial(x, self._space)
-            point_tuple = trial_to_tuple(trial, self._space)
-            flattened_point = flatten_dims(point_tuple, self._space)
-            x = np.array(flattened_point)
-
-        if isinstance(x, np.ndarray):
-            x = torch.as_tensor(x, dtype=torch.float32, device=self.device)
-
-        assert isinstance(x, Tensor)  # Just to keep the type checker happy: this is always true.
-        x_tensor: Tensor = x
-
-        x_tensor = x_tensor.type_as(self.h_tensor)
+        # A bit of gymnastics to convert the params Dict into a PyTorch tensor.
+        trial = dict_to_trial(x, self._space)
+        point_tuple = trial_to_tuple(trial, self._space)
+        flattened_point = flatten_dims(point_tuple, self._space)
+        x_tensor = torch.as_tensor(flattened_point).type_as(self.h_tensor)
         if self.with_grad:
             x_tensor = x_tensor.requires_grad_(True)
         p_tensor = torch.cat([x_tensor, self.h_tensor])
         p_tensor = torch.atleast_2d(p_tensor)
 
-        with self.seed_randomness():
+        devices = [] if self.device.type == "cpu" else [self.device]
+        with torch.random.fork_rng(devices=devices):
+            torch.random.manual_seed(self.seed)
+
+            # Forward pass:
             out = self.net(p_tensor)
+
             # TODO: Double-check that the std is indeed in log form.
             y_mean, y_log_std = out[0, 0], out[0, 1]
             y_std = torch.exp(y_log_std)
@@ -763,13 +740,12 @@ class ProfetTask(BaseTask, Generic[InputType]):
             # NOTE: Here we create a distribution over `y`, and use `rsample()`, so that we get can also
             # return the gradients if need be.
             y_dist = Normal(loc=y_mean, scale=y_std)
-
             y_sample = y_dist.rsample()
             logger.debug(f"y_sample: {y_sample}")
 
-        results: List[Dict] = []
-
-        results.append(dict(name=self.name, type="objective", value=float(y_sample)))
+        results: List[dict] = [
+            dict(name=self.name, type="objective", value=y_sample.detach().cpu().item())
+        ]
 
         if self.with_grad:
             self.net.zero_grad()

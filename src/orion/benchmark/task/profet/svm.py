@@ -14,9 +14,13 @@ from typing import Dict, Union
 import torch
 from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig, ProfetTask
 
+try:
+    from typing import TypedDict
+except:
+    from typing_extensions import TypedDict
 
-@dataclass
-class SvmTaskHParams:
+
+class SvmTaskHParams(TypedDict):
     """Inputs to the SVM Task."""
 
     C: float
@@ -55,6 +59,5 @@ class SvmTask(ProfetTask[SvmTaskHParams]):
 
     def get_search_space(self) -> Dict[str, str]:
         return dict(
-            C="loguniform(np.exp(-10), np.exp(10))",
-            gamma="loguniform(np.exp(-10), np.exp(10))",
+            C="loguniform(np.exp(-10), np.exp(10))", gamma="loguniform(np.exp(-10), np.exp(10))",
         )

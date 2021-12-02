@@ -6,13 +6,21 @@ from typing import ClassVar, Type
 import numpy as np
 import pytest
 import torch
-from orion.algo.space import _Discrete
+from orion.algo.space import _Discrete, Dimension, Space
 from orion.benchmark.task.profet.profet_task import (
     MetaModelTrainingConfig,
     ProfetTask,
 )
 
-from .conftest import REAL_PROFET_DATA_DIR, y_min, y_max, c_min, c_max, is_nonempty_dir
+from .conftest import (
+    REAL_PROFET_DATA_DIR,
+    y_min,
+    y_max,
+    c_min,
+    c_max,
+    is_nonempty_dir,
+    seed_everything,
+)
 
 logger = get_logger(__name__)
 
@@ -189,6 +197,109 @@ class ProfetTaskTests:
         second_task = _get_task(name=name, **config_dict)
         assert second_task.configuration == first_task.configuration
 
+    def test_sample_single_params(
+        self,
+        profet_train_config: MetaModelTrainingConfig,
+        profet_input_dir: Path,
+        checkpoint_dir: Path,
+    ):
+        """ Test the `sample` method. """
+        task = self.Task(
+            max_trials=10,
+            task_id=0,
+            train_config=profet_train_config,
+            seed=123,
+            input_dir=profet_input_dir,
+            checkpoint_dir=checkpoint_dir,
+        )
+        hparam_dict = task.sample()
+        assert isinstance(hparam_dict, dict)
+        assert hparam_dict.keys() == task.get_search_space().keys()
+        # BUG?: Space __contains__ doesn't work with a dict?
+        # assert hparam_dict in task.space
+        assert hparam_dict.values() in task.space
+
+    @pytest.mark.parametrize("n", range(3))
+    def test_sample_multiple_params(
+        self,
+        profet_train_config: MetaModelTrainingConfig,
+        profet_input_dir: Path,
+        checkpoint_dir: Path,
+        n: int,
+    ):
+        """ Test the `sample` method. """
+        task = self.Task(
+            max_trials=10,
+            task_id=0,
+            train_config=profet_train_config,
+            seed=123,
+            input_dir=profet_input_dir,
+            checkpoint_dir=checkpoint_dir,
+        )
+        hparam_dicts = task.sample(n)
+        assert isinstance(hparam_dicts, list)
+        assert len(hparam_dicts) == n
+        for hparam_dict in hparam_dicts:
+            assert isinstance(hparam_dict, dict)
+            assert hparam_dict.keys() == task.get_search_space().keys()
+            # NOTE: space doesn't accept dicts:
+            assert hparam_dict.values() in task.space
+
+    def test_space_attribute(
+        self,
+        profet_train_config: MetaModelTrainingConfig,
+        profet_input_dir: Path,
+        checkpoint_dir: Path,
+    ):
+        """
+        BUG: Space.keys() returns *sorted* keys that don't match the ordering in
+        `get_search_space`, so the values returned by any space using `space.sample()` are not
+        consistent with the ordering of the returned dict from `get_search_space` of the tasks.
+
+        This wouldn't be a big deal if the samples from `space.sample()` were dictionaries, but
+        since they are tuples, there is no way of knowing what the ordering of the keys and values
+        are.
+
+        Dicts are sorted since python 3.7, there's no need to use OrderedDict anymore, and getting
+        things in a different order than you declared them is just confusing.
+
+        Doing this, for example, would be a very subtle bug:
+
+        ```
+        hparam_tuple = task.space.sample()
+        hparam = dict(zip(task.get_search_space(), hparam_tuple))
+        ```
+        This hasn't been a problem for the other tasks because they have a single dimension `x`.
+
+        This is why I'm adding a `sample` method on the task itself, so that I don't have to reach
+        into the task to get the space in order to create dicts, and so the ordering isn't a
+        problem anymore.
+        """
+        task = self.Task(
+            max_trials=10,
+            task_id=0,
+            train_config=profet_train_config,
+            seed=123,
+            input_dir=profet_input_dir,
+            checkpoint_dir=checkpoint_dir,
+        )
+        assert isinstance(task.space, Space)
+
+        point_tuple = task.space.sample(1)[0]
+
+        # BUG mentioned above:
+        # assert task.space.keys() == task.get_search_space().keys()
+
+        # Check that all keys are present, no matter the ordering.
+        assert set(task.space.keys()) == set(task.get_search_space().keys())
+
+        # NOTE: Can't check the strings directly, since the value isn't always displayed the same
+        # way, for example: "1e-6" vs "1e-06". Changing the value in the prior string would be bad.
+        # space_string_dict = task.get_search_space()
+        # dimension: Dimension
+        # for dim_name, dimension in task.space.items():
+        #     assert space_string_dict[dim_name] == dimension.get_prior_string()
+
     def test_sanity_check(
         self,
         profet_train_config: MetaModelTrainingConfig,
@@ -207,7 +318,8 @@ class ProfetTaskTests:
         )
 
         first_task = self.Task(**first_task_kwargs)
-        first_point = first_task._space.sample(1, seed=first_task.seed)[0]
+        first_point = first_task.sample()
+
         first_results = first_task(first_point)
         assert len(first_results) == 1
         assert first_results[0]["type"] == "objective"
@@ -217,13 +329,15 @@ class ProfetTaskTests:
         second_task_kwargs["seed"] += 456
 
         second_task = self.Task(**second_task_kwargs)
-        second_point = second_task._space.sample(1, seed=second_task.seed)[0]
+        second_point = second_task.sample()
+        assert second_point != first_point
+
         second_results = second_task(second_point)
+        assert second_results != first_results
+
         assert len(second_results) == 1
         assert second_results[0]["type"] == "objective"
         second_objective = second_results[0]["value"]
-
-        assert first_point != second_point
         assert first_objective != second_objective
 
     def test_call_is_reproducible(
@@ -244,43 +358,49 @@ class ProfetTaskTests:
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
-        first_task = self.Task(**task_kwargs)
+        task_a = self.Task(**task_kwargs)
+        task_b = self.Task(**task_kwargs)
 
-        first_point = first_task._space.sample(1, seed=first_task.seed)[0]
-        first_results = first_task(first_point)
-        assert len(first_results) == 1
-        assert first_results[0]["type"] == "objective"
-        first_objective = first_results[0]["value"]
+        point_a = task_a.sample()
+        point_b = task_b.sample()
 
-        second_task = self.Task(**task_kwargs)
-        second_point = second_task._space.sample(1, seed=second_task.seed)[0]
-        second_results = second_task(second_point)
-        assert len(second_results) == 1
-        assert second_results[0]["type"] == "objective"
-        second_objective = second_results[0]["value"]
+        assert point_a == point_b
+        # NOTE: The forward pass samples from a distribution, therefore the values might be
+        # different when calling the same task twice on the same input.
+        # However, given two different task instances (with the same seed) they should give the same
+        # exact sample.
+        result_a = task_a(point_a)
 
-        assert second_objective == first_objective
+        result_b = task_b(point_b)
 
+        assert len(result_a) == 1
+        assert result_a[0]["type"] == "objective"
+        assert result_a == result_b
+        objective_a = result_a[0]["value"]
+        objective_b = result_b[0]["value"]
+        assert objective_a == objective_b
+
+    @pytest.mark.parametrize("seed", [123, 456])
     def test_call_twice_with_same_task_gives_same_result(
         self,
         profet_train_config: MetaModelTrainingConfig,
         profet_input_dir: Path,
         checkpoint_dir: Path,
+        seed: int,
     ):
-        """ When using the same task and different values for the same point, the results should
-        be identical.
+        """ When using the same task and the same point twice, the results should be identical.
         """
         task_id = 0
         task = self.Task(
             max_trials=10,
             task_id=task_id,
             train_config=profet_train_config,
-            seed=123,
+            seed=seed,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
-
-        point = task._space.sample(1, seed=task.seed)[0]
+        assert task.seed == seed
+        point = task.sample()
 
         first_results = task(point)
         assert len(first_results) == 1
@@ -288,16 +408,9 @@ class ProfetTaskTests:
         first_objective = first_results[0]["value"]
 
         # Pass the same point under different forms and check that the results are exactly the same.
-        for second_point in [point, tuple(point), dict(zip(task._space.keys(), point))]:
-            second_results = task(second_point)
-            assert second_results[0]["name"] == first_results[0]["name"]
-            assert second_results[0]["type"] == first_results[0]["type"]
-            second_objective = second_results[0]["value"]
+        second_results = task(point)
+        assert first_results == second_results
 
-            # NOTE: Not sure why, but the two values are very close, but different!
-            assert np.isclose(first_objective, second_objective)
-
-    @pytest.mark.xfail(reason="Test isn't perfectly seeded (depends on pybnn being seeded as well.")
     @pytest.mark.parametrize("step_size", [1e-2, 1e-4])
     def test_call_with_gradients(
         self,
@@ -317,8 +430,7 @@ class ProfetTaskTests:
             with_grad=True,
         )
 
-        point_tuple = task._space.sample(1)[0]
-        point_dict = dict(zip(task._space.keys(), point_tuple))
+        point_dict = task.sample()
         results = task(point_dict)
 
         assert results[0]["type"] == "objective"
@@ -326,14 +438,15 @@ class ProfetTaskTests:
         assert results[1]["type"] == "gradient"
         first_gradient = results[1]["value"]
 
+        point_tuple = tuple(point_dict.values())
         second_point_array = np.array(point_tuple) - step_size * np.array(first_gradient)
 
-        if any(isinstance(dim, _Discrete) for dim in task._space.values()):
+        if any(isinstance(dim, _Discrete) for dim in task.space.values()):
             # NOTE: Some dimensions don't quite work here because they are discrete: we can't really
             # use a point that has batch_size = 12.04 for example.
-            assert second_point_array not in task._space
+            assert second_point_array not in task.space
 
-        if second_point_array not in task._space:
+        if second_point_array not in task.space:
             with pytest.warns(RuntimeWarning, match="isn't a valid point of the space"):
                 # NOTE: Bypassing the conversion that would normally happen in `dict_to_trial` for tuple
                 # inputs when a Tensor is passed directly to the task. When the point doesn't fit the

@@ -6,17 +6,19 @@ For more information on Profet, see original paper at https://arxiv.org/abs/1905
 Klein, Aaron, Zhenwen Dai, Frank Hutter, Neil Lawrence, and Javier Gonzalez. "Meta-surrogate benchmarking for 
 hyperparameter optimization." Advances in Neural Information Processing Systems 32 (2019): 6270-6280.
 """
-from dataclasses import dataclass
-from logging import getLogger as get_logger
 from pathlib import Path
-from typing import Dict, Union
+from typing import Dict, TypedDict, Union
 
 import torch
 from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig, ProfetTask
 
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
 
-@dataclass
-class XgBoostTaskHParams:
+
+class XgBoostTaskHParams(TypedDict):
     """Inputs to the XgBoost task."""
 
     learning_rate: float
