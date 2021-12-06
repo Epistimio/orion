@@ -351,8 +351,12 @@ class ProfetTaskTests:
         tmp_path_factory,
         use_same_model: bool
     ):
-        """ Two tasks created with the same args, given the same point, should produce the same
-        results.
+        """ Tests for the seeding of the model.
+        When creating two tasks with the same parameters & seed:
+        - When creating both models from scratch, they should give identical outputs for the same
+          input.
+        - If the model is created once and loaded in the second task, it should also be the same
+          (give the same output for the same input).
         """
         task_id = 0
         task_kwargs = dict(
@@ -365,6 +369,8 @@ class ProfetTaskTests:
         )
         task_a = self.Task(**task_kwargs)
         if use_same_model:
+            # Use the same checkpoint directory, meaning that model for task #2 will be loaded from
+            # the checkpoint created by task #1.
             task_b = self.Task(**task_kwargs)
         else:
             # NOTE: We can also check if the training is seeded properly by using a different
