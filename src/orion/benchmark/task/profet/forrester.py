@@ -19,9 +19,18 @@ class ForresterTaskHParams(TypedDict):
     """Hyper-Parameters of a simulated task based on variants of the Forrester function:
 
     $ f(x) = ((\alpha x - 2)^2) sin(\beta x - 4) $
+
+    NOTE: There appears to be a discrepancy between the paper's description of this task (with two
+    parameters \alpha and \beta in [0,1]) and the code implementation at
+    https://github.com/EmuKit/emukit/blob/main/emukit/examples/profet/meta_benchmarks/meta_forrester.py
+    where the latter has a single `x` parameter in the interval [0,1].
+
+    TODO: Run this with the real data and check which of the two space definitions matches the data.
     """
     alpha: float
     beta: float
+
+    # x: float
 
 
 class ForresterTask(ProfetTask[ForresterTaskHParams]):
@@ -58,4 +67,5 @@ class ForresterTask(ProfetTask[ForresterTaskHParams]):
         return {
             "alpha": "uniform(0.0, 1.0, discrete=False)",
             "beta": "uniform(0.0, 1.0, discrete=False)",
+            # "x": "uniform(0.0, 1.0, discrete=False)",
         }
