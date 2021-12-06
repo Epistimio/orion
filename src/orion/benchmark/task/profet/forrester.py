@@ -22,12 +22,12 @@ except ImportError:
 
 
 class ForresterTaskHParams(TypedDict):
-    """Hyper-Parameters of a Simulated Task consisting in training a Random Forrest predictor."""
+    """Hyper-Parameters of a simulated task based on variants of the Forrester function:
 
-    # NOTE: (@lebrice) This space is difference in OpenML:
-    # alpha='uniform(0, 1)',
-    # beta='uniform(0, 1)'
-    x: float
+    $ f(x) = ((\alpha x - 2)^2) sin(\beta x - 4) $
+    """
+    alpha: float
+    beta: float
 
 
 class ForresterTask(ProfetTask[ForresterTaskHParams]):
@@ -61,4 +61,7 @@ class ForresterTask(ProfetTask[ForresterTaskHParams]):
         return "forrester"
 
     def get_search_space(self) -> Dict[str, str]:
-        return {"x": "uniform(0.0, 1.0, discrete=False)"}
+        return {
+            "alpha": "uniform(0.0, 1.0, discrete=False)",
+            "beta": "uniform(0.0, 1.0, discrete=False)",
+        }

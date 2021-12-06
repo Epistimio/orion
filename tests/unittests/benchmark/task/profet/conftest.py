@@ -58,7 +58,7 @@ def profet_input_dir(tmp_path_factory):
 logger = get_logger(__name__)
 shapes: Dict[str, Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[int, ...]]] = {
     "fcnet": ((600, 6), (27, 600), (27, 600)),
-    "forrester": ((10, 1), (9, 10), (9, 10)),
+    "forrester": ((10, 2), (9, 10), (9, 10)),
     "svm": ((200, 2), (26, 200), (26, 200)),
     "xgboost": ((800, 8), (11, 800), (11, 800)),
 }
