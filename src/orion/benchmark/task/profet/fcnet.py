@@ -37,7 +37,7 @@ class FcNetTask(ProfetTask[FcNetTaskHParams]):
         max_trials: int = 100,
         task_id: int = 0,
         seed: int = 123,
-        input_dir: Union[Path, str] = None,
+        input_dir: Union[Path, str] = "profet_data",
         checkpoint_dir: Union[Path, str] = None,
         train_config: MetaModelTrainingConfig = None,
         device: Union[torch.device, str] = None,
