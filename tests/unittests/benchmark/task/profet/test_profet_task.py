@@ -40,7 +40,7 @@ def test_mock_load_data_fixture_when_data_isnt_available(
     # NOTE: Need to re-import, because the `mock_load_data` fixture modifies that function in the
     # module. If we imported the function at the top of this test module, we would get the original
     # version.
-    from orion.benchmark.task.profet.profet_task import load_data
+    from orion.benchmark.task.profet.model_utils import load_data
 
     fake_input_dir: Path = tmp_path_factory.mktemp("profet_data")
 

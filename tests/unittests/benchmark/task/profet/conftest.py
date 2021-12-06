@@ -103,11 +103,10 @@ def mock_load_data(
 
     if use_real_data and not is_nonempty_dir(REAL_PROFET_DATA_DIR):
         pytest.skip(
-            f"profet data wasn't downloaded to directory "
-            f"'{REAL_PROFET_DATA_DIR}' doesn't exist."
+            f"Real profet data is not found in dir '{REAL_PROFET_DATA_DIR}', skipping test."
         )
 
-    real_load_data = orion.benchmark.task.profet.profet_task.load_data
+    real_load_data = orion.benchmark.task.profet.model_utils.load_data
 
     def _load_data(path: Path, benchmark: str):
         if use_real_data and path == REAL_PROFET_DATA_DIR:
@@ -126,6 +125,6 @@ def mock_load_data(
         C = np.random.rand(*c_shape) * (max_c - min_c) + min_c
         return X, Y, C
 
-    monkeypatch.setattr(orion.benchmark.task.profet.profet_task, "load_data", _load_data)
+    monkeypatch.setattr(orion.benchmark.task.profet.model_utils, "load_data", _load_data)
     # NOTE: Need to set the item in the globals because it might already have been imported.
     monkeypatch.setitem(globals(), "load_data", _load_data)
