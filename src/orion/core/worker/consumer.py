@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 class ExecutionError(Exception):
     """Error raised when Orion is unable to execute the user's script without errors."""
 
-    def __init__(self):
+    def __init__(self, return_code=0):
         super(ExecutionError, self).__init__()
         self.return_code = 0
 
