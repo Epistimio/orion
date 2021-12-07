@@ -7,10 +7,10 @@ Executor without parallelism for debugging
 import functools
 import traceback
 
-from orion.executor.base import AsyncException, AsyncResult, BaseExecutor
+from orion.executor.base import AsyncException, AsyncResult, BaseExecutor, Future
 
 
-class _Future:
+class _Future(Future):
     """Wraps a partial function to act as a Future"""
 
     def __init__(self, future):

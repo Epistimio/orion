@@ -21,7 +21,7 @@ class AsyncResult:
 class AsyncException:
     """Exception raised by a remote worker during computation"""
 
-    def __init__(self, future, exception, traceback) -> None:
+    def __init__(self, future, exception, traceback):
         self.future = future
         self.exception = exception
         self.traceback = traceback
@@ -29,6 +29,54 @@ class AsyncException:
     @property
     def value(self):
         raise self.exception
+
+
+class Future:
+    """Generic Future interface that is used to harmonized different future interface"""
+
+    def __init__(self, future):
+        self.future = future
+        self.exception = None
+
+    def get(self, timeout=None):
+        """Return the result when it arrives.
+        If the remote call raised an exception then that exception will be reraised by get().
+
+        Parameters
+        ----------
+        timeout: int
+            time in second to wait, if none will wait forever
+
+        Raises
+        ------
+        multiprocessing.TimeoutError
+            when the timeout expires
+
+        Exception
+            if the remote called raised an exception
+
+        """
+        pass
+
+    def wait(self, timeout=None):
+        """Wait until the result is available or until timeout seconds pass."""
+        pass
+
+    def ready(self):
+        """Return whether the call has completed."""
+        pass
+
+    def successful(self):
+        """Return whether the call completed without raising an exception.
+        Will raise ValueError if the result is not ready.
+
+        Raises
+        ------
+        ValueError
+            if the result is not yet ready
+
+        """
+        pass
 
 
 class BaseExecutor:

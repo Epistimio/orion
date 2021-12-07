@@ -12,7 +12,7 @@ from queue import Empty
 
 import cloudpickle
 
-from orion.executor.base import AsyncException, AsyncResult, BaseExecutor
+from orion.executor.base import AsyncException, AsyncResult, BaseExecutor, Future
 
 log = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class _Process(Process):
     daemon = property(_get_daemon, _set_daemon)
 
 
-class _Future:
+class _Future(Future):
     """Wraps a python AsyncResult"""
 
     def __init__(self, future, cloudpickle=False):
@@ -84,7 +84,7 @@ class Pool(PyPool):
         self.join()
 
 
-class _ThreadFuture:
+class _ThreadFuture(Future):
     """Wraps a concurrent Future to behave like AsyncResult"""
 
     def __init__(self, future):
@@ -169,23 +169,15 @@ class PoolExecutor(BaseExecutor):
     def __setstate__(self, state):
         super(PoolExecutor, self).__setstate__(state)
 
-    def submit(self, function, *args, **kwargs) -> AsyncResult:
+    def submit(self, function, *args, **kwargs):
         return self._submit_cloudpickle(function, *args, **kwargs)
 
-    def _submit_python(self, function, *args, **kwargs) -> AsyncResult:
-        return _Future(self.pool.apply_async(function, args=args, kwds=kwargs))
-
-    def _submit_cloudpickle(self, function, *args, **kwargs) -> AsyncResult:
+    def _submit_cloudpickle(self, function, *args, **kwargs):
         payload = cloudpickle.dumps((function, args, kwargs))
         return _Future(self.pool.apply_async(_couldpickle_exec, args=(payload,)), True)
 
     def wait(self, futures):
         return [future.get() for future in futures]
-
-    def _find_future_exception(self, future):
-        for _, status in self.futures.items():
-            if id(status.future) == id(future):
-                return status.exception
 
     def async_get(self, futures, timeout=None):
         results = []
