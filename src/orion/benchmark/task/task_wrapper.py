@@ -86,6 +86,8 @@ HParamsType = TypeVar("HParamsType")
 class FixTaskDimensionsWrapper(TaskWrapper[TaskType]):
     """ Wrapper around a Task that fixes the values of some of its input dimensions.
 
+    The value returned by `get_search_space` is also modified.
+
     Parameters
     ----------
     task : TaskType
