@@ -2,22 +2,20 @@
 """
 from dataclasses import dataclass
 from logging import getLogger as get_logger
-from pathlib import Path
-from typing import Callable, ClassVar, Dict, Union
+from typing import Callable, ClassVar, Dict
 
-import torch
 from emukit.examples.profet.meta_benchmarks.meta_forrester import (
     get_architecture_forrester,
 )
 from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 from torch import nn
 
-logger = get_logger(__name__)
-
 try:
-    from typing import TypedDict
+    from typing import Final, TypedDict
 except ImportError:
-    from typing_extensions import TypedDict
+    from typing_extensions import Final, TypedDict  # type: ignore
+
+logger = get_logger(__name__)
 
 
 class ForresterTaskHParams(TypedDict):
@@ -46,8 +44,9 @@ class ForresterTask(ProfetTask[ForresterTaskHParams]):
     class ModelConfig(MetaModelConfig):
         """ Config for training the Profet model on a Forrester task. """
 
+        benchmark: Final[str] = "forrester"
+
         # ---------- "Abstract" class attributes:
-        benchmark: ClassVar[str] = "forrester"
         json_file_name: ClassVar[str] = "data_sobol_forrester.json"
         get_architecture: ClassVar[
             Callable[[int], nn.Module]

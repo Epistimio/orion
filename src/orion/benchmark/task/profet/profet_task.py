@@ -9,34 +9,22 @@ benchmarking for hyperparameter optimization." Advances in Neural Information Pr
 import os
 import random
 import warnings
-from abc import abstractmethod
 from contextlib import contextmanager
 from dataclasses import asdict
 from logging import getLogger as get_logger
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    Generic,
-    List, ClassVar, Type,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import Any, ClassVar, Dict, Generic, List, Type, TypeVar, Union, overload
 
 import numpy as np
 import torch
-from torch.distributions import Normal
-
 from orion.algo.space import Space
 from orion.benchmark.task.base import BaseTask
+from orion.benchmark.task.profet.model_utils import MetaModelConfig
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import compute_identity
 from orion.core.utils.format_trials import dict_to_trial, trial_to_tuple
 from orion.core.utils.points import flatten_dims
-
-from orion.benchmark.task.profet.model_utils import MetaModelConfig
-
+from torch.distributions import Normal
 
 logger = get_logger(__name__)
 
@@ -178,7 +166,9 @@ class ProfetTask(BaseTask, Generic[InputType]):
         self.h_tensor = torch.as_tensor(self.h, dtype=torch.float32, device=self.device)
 
         self._space: Space = SpaceBuilder().build(self.get_search_space())
-        self.name = f"profet.{type(self).__qualname__.lower()}_{self.model_config.task_id}"
+        self.name = (
+            f"profet.{type(self).__qualname__.lower()}_{self.model_config.task_id}"
+        )
 
     @property
     def space(self) -> Space:
@@ -238,6 +228,8 @@ class ProfetTask(BaseTask, Generic[InputType]):
         p_tensor = torch.atleast_2d(p_tensor)
 
         devices = [] if self.device.type == "cpu" else [self.device]
+        # NOTE: Currently no way to locally seed the rng of torch distributions, hence forking the
+        # rng for torch only here.
         with torch.random.fork_rng(devices=devices):
             torch.random.manual_seed(self.seed)
             if torch.cuda.is_available():
@@ -246,13 +238,13 @@ class ProfetTask(BaseTask, Generic[InputType]):
             # Forward pass:
             out = self.net(p_tensor)
 
-            # TODO: Double-check that the std is indeed in log form.
             y_mean, y_log_std = out[0, 0], out[0, 1]
             y_std = torch.exp(y_log_std)
 
-            # NOTE: Here we create a distribution over `y`, and use `rsample()`, so that we get can also
-            # return the gradients if need be.
+            # NOTE: Here we create a distribution over `y`, and use `rsample()`, so that we get can
+            # also return the gradients if need be.
             y_dist = Normal(loc=y_mean, scale=y_std)
+
             y_sample = y_dist.rsample()
             logger.debug(f"y_sample: {y_sample}")
 

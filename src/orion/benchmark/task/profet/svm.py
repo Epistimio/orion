@@ -27,6 +27,7 @@ class SvmTask(ProfetTask[SvmTaskHParams]):
     @dataclass
     class ModelConfig(MetaModelConfig):
         """ Config for training the Profet model on an SVM task. """
+
         benchmark: Final[str] = "svm"
 
         # ---------- "Abstract" class attributes:

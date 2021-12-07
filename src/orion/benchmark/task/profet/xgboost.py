@@ -1,19 +1,16 @@
 """ Simulated Task consisting in training an Extreme-Gradient Boosting (XGBoost) predictor.
 """
-from pathlib import Path
-from typing import Dict, TypedDict, Union, ClassVar, Callable, Type
-
 from dataclasses import dataclass
-import torch
-from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
+from typing import Callable, ClassVar, Dict, TypedDict
+
 from emukit.examples.profet.meta_benchmarks.architecture import get_default_architecture
+from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
+from torch import nn
 
 try:
-    from typing import TypedDict
+    from typing import Final, TypedDict
 except ImportError:
-    from typing_extensions import TypedDict
-from torch import nn
-from functools import partial
+    from typing_extensions import Final, TypedDict
 
 
 class XgBoostTaskHParams(TypedDict):
@@ -29,17 +26,20 @@ class XgBoostTaskHParams(TypedDict):
     min_child_weight: int
 
 
-
 class XgBoostTask(ProfetTask[XgBoostTaskHParams]):
     """Simulated Task consisting in fitting a Extreme-Gradient Boosting predictor."""
 
     @dataclass
     class ModelConfig(MetaModelConfig):
         """ Config for training the Profet model on an XgBoost task. """
+
+        benchmark: Final[str] = "xgboost"
+
         # ---------- "Abstract" class attributes:
-        benchmark: ClassVar[str] = "xgboost"
         json_file_name: ClassVar[str] = "data_sobol_xgboost.json"
-        get_architecture: ClassVar[Callable[[int], nn.Module]] = get_default_architecture
+        get_architecture: ClassVar[
+            Callable[[int], nn.Module]
+        ] = get_default_architecture
         hidden_space: ClassVar[int] = 5
         normalize_targets: ClassVar[bool] = True
         log_cost: ClassVar[bool] = True

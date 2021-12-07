@@ -31,7 +31,7 @@ class ProfetTaskTests:
 
     Task: ClassVar[Type[ProfetTask]]
 
-    @pytest.fixture()
+    @pytest.fixture(scope="module")
     def profet_train_config(self):
         """ Fixture that provides a configuration object for the Profet algorithm for testing. """
         quick_train_config = self.Task.ModelConfig(

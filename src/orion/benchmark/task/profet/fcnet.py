@@ -1,21 +1,17 @@
 """ Simulated Task consisting in training a fully-connected network.
 """
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Callable, ClassVar, Dict, Type, Union
+from functools import partial
+from typing import Callable, ClassVar, Dict
 
-import torch
-from emukit.examples.profet.meta_benchmarks.architecture import \
-    get_default_architecture
+from emukit.examples.profet.meta_benchmarks.architecture import get_default_architecture
 from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 from torch import nn
 
 try:
     from typing import Final, TypedDict
 except ImportError:
-    from typing_extensions import TypedDict, Final
-
-from functools import partial
+    from typing_extensions import Final, TypedDict
 
 
 class FcNetTaskHParams(TypedDict):
@@ -35,7 +31,8 @@ class FcNetTask(ProfetTask[FcNetTaskHParams]):
     @dataclass
     class ModelConfig(MetaModelConfig):
         """ Config for training the Profet model on an FcNet task. """
-        benchmark: str = "fcnet"
+
+        benchmark: Final[str] = "fcnet"
         # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_fcnet.json"
         get_architecture: ClassVar[Callable[[int], nn.Module]] = partial(
