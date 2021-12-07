@@ -205,20 +205,16 @@ class Runner:
     def should_sample(self):
         """Check if more trials could be generated"""
 
-        if self.is_broken() or self.is_done():
+        if self.is_broken or self.is_done:
             return 0
 
         pending = len(self.pending_trials) + self.trials
         remains = self.max_trials_per_worker - pending
 
-        # try to get more work
         n_trial = min(self.free_worker, remains)
         should_sample_more = self.free_worker > 0 and remains > 0
 
-        if should_sample_more:
-            return n_trial
-
-        return 0
+        return int(should_sample_more) * n_trial
 
     def sample(self):
         """Sample new trials for all free workers"""
@@ -302,7 +298,7 @@ class Runner:
 
                 # if we receive too many broken trials, it might indicate the user script
                 # is broken, stop the experiment and let the user investigate
-                if self.is_broken():
+                if self.is_broken:
                     raise BrokenExperiment("Worker has reached broken trials threshold")
 
         if to_be_raised is not None:

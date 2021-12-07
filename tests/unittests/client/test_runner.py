@@ -32,7 +32,7 @@ def function(lhs, rhs):
 
 def new_runner(idle_timeout, n_workers=2):
     """Create a new runner with a mock client."""
-    client = FakeClient()
+    client = FakeClient(n_workers)
     runner = Runner(
         client=client,
         fct=function,
@@ -166,8 +166,21 @@ def test_should_sample():
     ), "5 processes but only 2 trials allowed"
 
     assert (
-        make_runner(2, 5).should_sample() == 5
+        make_runner(2, 5).should_sample() == 2
     ), "2 processes and 5 max trials allowed"
+
+    runner = make_runner(5, 10)
+    runner.trials = 5
+    assert runner.should_sample() == 5, "5 trials are done. 5 free processes"
+
+    runner = make_runner(5, 10)
+    runner.trials = 8
+    assert runner.should_sample() == 2, "8 trials are done. 2 remains"
+
+    runner = make_runner(5, 10)
+    runner.pending_trials = [i for i in range(3)]
+    runner.trials = 2
+    assert runner.should_sample() == 2, "5 trials remains, but only 2 free processes"
 
     runner = make_runner(2, 5)
     runner.client.is_done = True
@@ -180,7 +193,7 @@ def test_should_sample():
 
     runner = make_runner(2, 5)
     runner.pending_trials = [i for i in range(2)]
-    assert runner.should_sample() == 0, "All workers have tasks"
+    assert runner.should_sample() == 0, "All processes have tasks"
 
     runner = make_runner(2, 5)
     runner.trials = 5
