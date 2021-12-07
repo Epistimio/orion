@@ -53,7 +53,7 @@ def make_reproducible(seed: int):
     random.setstate(start_random_state)
 
 
-InputType = TypeVar("InputType", bound=Dict[str, Any], covariant=True)
+InputType = TypeVar("InputType", bound=Dict[str, Any])
 
 
 class ProfetTask(BaseTask, Generic[InputType]):
@@ -196,6 +196,14 @@ class ProfetTask(BaseTask, Generic[InputType]):
             dict(zip(self._space.keys(), point_tuple))  # type: ignore
             for point_tuple in self.space.sample(n, seed=self._np_rng_state)
         ]
+
+    def __call__(self, *args, **kwargs) -> List[Dict]:
+        if args:
+            if kwargs or len(args) != 1:
+                raise RuntimeError("Expect to get either a single pos arg, or only keyword args.")
+            return self.call(args[0])
+        else:
+            return self.call(kwargs)
 
     def call(self, x: InputType) -> List[Dict]:
         """Get the value of the sampled objective function at the given point (hyper-parameters).
