@@ -118,6 +118,7 @@ class Runner:
 
     @property
     def free_worker(self):
+        """Returns the number of free worker"""
         return max(self.client.executor.n_workers - len(self.pending_trials), 0)
 
     @property
