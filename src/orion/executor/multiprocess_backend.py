@@ -135,7 +135,7 @@ class PoolExecutor(BaseExecutor):
     ----------
 
     n_workers: int
-        Number of worker to spawn
+        Number of workers to spawn
 
     backend: str
         Pool backend to use; thread or multiprocess, defaults to multiprocess
@@ -146,7 +146,7 @@ class PoolExecutor(BaseExecutor):
         thread=ThreadPool,
         threading=ThreadPool,
         multiprocess=Pool,
-        loky=Pool,
+        loky=Pool,   # TODO: For compatibility with joblib backend. Remove in v0.4.0.
     )
 
     def __init__(self, n_workers, backend="multiprocess", **kwargs):
