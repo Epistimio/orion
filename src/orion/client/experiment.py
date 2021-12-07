@@ -36,7 +36,8 @@ def reserve_trial(experiment, producer, pool_size, timeout=None):
 
     if timeout is not None:
         log.warning(
-            "Reservation_timeout is deprecated and will be removed in v0.4.0. Use idle_timeout instead."
+            "Reservation_timeout is deprecated and will be removed in v0.4.0."
+            "Use idle_timeout instead."
         )
 
     trial = None
