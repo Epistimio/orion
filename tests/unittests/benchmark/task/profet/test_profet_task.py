@@ -6,9 +6,10 @@ from typing import ClassVar, Type
 import numpy as np
 import pytest
 import torch
+from dataclasses import asdict, replace
 from orion.algo.space import _Discrete, Dimension, Space
 from orion.benchmark.task.profet.profet_task import (
-    MetaModelTrainingConfig,
+    MetaModelConfig,
     ProfetTask,
 )
 
@@ -25,79 +26,87 @@ from .conftest import (
 logger = get_logger(__name__)
 
 
-@pytest.mark.skipif(
-    is_nonempty_dir(REAL_PROFET_DATA_DIR),
-    reason="Need to *not* have the real profet data downloaded to run this test.",
-)
-@pytest.mark.timeout(1)
-@pytest.mark.parametrize("benchmark", ["fcnet", "forrester", "svm", "xgboost"])
-def test_mock_load_data_fixture_when_data_isnt_available(
-    tmp_path_factory, benchmark: str, mock_load_data
-):
-    if REAL_PROFET_DATA_DIR.exists() and list(REAL_PROFET_DATA_DIR.iterdir()):
-        pytest.skip("Skipping since real data is available.")
-
-    # NOTE: Need to re-import, because the `mock_load_data` fixture modifies that function in the
-    # module. If we imported the function at the top of this test module, we would get the original
-    # version.
-    from orion.benchmark.task.profet.model_utils import load_data
-
-    fake_input_dir: Path = tmp_path_factory.mktemp("profet_data")
-
-    # We expect the `load_data` function to NOT attempt to download the dataset, hence the timeout.
-    fake_x, fake_y, fake_c = load_data(fake_input_dir, benchmark=benchmark)
-    # NOTE: This might look a bit weird, but it's consistent for each of the real datasets.
-    assert fake_x.shape[0] == fake_y.shape[1] == fake_c.shape[1]
-
-
-@pytest.mark.skipif(
-    not is_nonempty_dir(REAL_PROFET_DATA_DIR),
-    reason="Need to *not* have the real profet data downloaded for this test.",
-)
-@pytest.mark.timeout(15)
-@pytest.mark.parametrize("benchmark", ["fcnet", "forrester", "svm", "xgboost"])
-def test_mock_load_data_fixture_when_real_data_available(
-    tmp_path_factory, benchmark: str, mock_load_data
-):
-    # NOTE: Need to re-import, because the `mock_load_data` fixture modifies that function in the
-    # module. If we imported the function at the top of this test module, we would get the original
-    # version.
-    from orion.benchmark.task.profet.profet_task import load_data
-
-    real_input_dir: Path = REAL_PROFET_DATA_DIR
-    real_x, real_y, real_c = load_data(real_input_dir, benchmark=benchmark)
-
-    fake_input_dir: Path = tmp_path_factory.mktemp("profet_data")
-    fake_x, fake_y, fake_c = load_data(fake_input_dir, benchmark=benchmark)
-    assert real_x.shape == fake_x.shape
-    assert real_y.shape == fake_y.shape
-    assert real_c.shape == fake_c.shape
-
-    assert real_x.dtype == fake_x.dtype
-    assert real_y.dtype == fake_y.dtype
-    assert real_c.dtype == fake_c.dtype
-
-    assert 0 <= real_x.min() and 0 <= fake_x.min()
-    assert real_x.max() <= 1 and fake_x.max() <= 1
-
-    min_y, max_y = y_min[benchmark], y_max[benchmark]
-    assert min_y <= real_y.min() and min_y <= fake_y.min()
-    assert real_y.max() <= max_y and fake_y.max() <= max_y
-
-    min_c, max_c = c_min[benchmark], c_max[benchmark]
-    assert min_c <= real_c.min() and min_c <= fake_c.min()
-    assert real_c.max() <= max_c and fake_c.max() <= max_c
-
-
 class ProfetTaskTests:
     """ Base class for testing Profet tasks. """
 
     Task: ClassVar[Type[ProfetTask]]
 
+    @pytest.fixture()
+    def profet_train_config(self):
+        """ Fixture that provides a configuration object for the Profet algorithm for testing. """
+        quick_train_config = self.Task.ModelConfig(
+            task_id=0,
+            seed=123,
+            num_burnin_steps=10,
+            # num_steps=10,
+            max_iters=10,
+            n_samples_task=20,
+        )
+        return quick_train_config
+
+    @pytest.mark.skipif(
+        is_nonempty_dir(REAL_PROFET_DATA_DIR),
+        reason="Need to *not* have the real profet data downloaded to run this test.",
+    )
+    @pytest.mark.timeout(1)
+    def test_mock_load_data_fixture_when_data_isnt_available(self, tmp_path_factory):
+        """Test to make sure that the fixture we use to create fake profet data works correctly.
+        
+        The `mock_load_data` fixture should be automatically used if we don't have the real data
+        downloaded.
+        """
+        fake_input_dir: Path = tmp_path_factory.mktemp("profet_data")
+
+        # We expect the `load_data` function to NOT attempt to download the dataset, hence the timeout.
+        fake_x, fake_y, fake_c = self.Task.ModelConfig().load_data(fake_input_dir)
+        # NOTE: This might look a bit weird, but it's consistent for each of the real datasets.
+        assert fake_x.shape[0] == fake_y.shape[1] == fake_c.shape[1]
+
+    @pytest.mark.skipif(
+        not is_nonempty_dir(REAL_PROFET_DATA_DIR),
+        reason="Real profet data is required.",
+    )
+    @pytest.mark.timeout(15)
+    def test_mock_load_data_fixture_when_real_data_available(
+        self, tmp_path_factory, mock_load_data
+    ):
+        """ Test that the mock_load_data fixture returns real data when the input dir is non-empty,
+        and that the means, dtypes, shapes, etc match between the real and fake data.
+        """
+        # NOTE: Need to re-import, because the `mock_load_data` fixture modifies that function in the
+        # module. If we imported the function at the top of this test module, we would get the original
+        # version.
+
+        model_config = self.Task.ModelConfig()
+
+        real_input_dir: Path = REAL_PROFET_DATA_DIR
+        real_x, real_y, real_c = model_config.load_data(real_input_dir)
+
+        fake_input_dir: Path = tmp_path_factory.mktemp("profet_data")
+        fake_x, fake_y, fake_c = model_config.load_data(fake_input_dir)
+        assert real_x.shape == fake_x.shape
+        assert real_y.shape == fake_y.shape
+        assert real_c.shape == fake_c.shape
+
+        assert real_x.dtype == fake_x.dtype
+        assert real_y.dtype == fake_y.dtype
+        assert real_c.dtype == fake_c.dtype
+
+        assert 0 <= real_x.min() and 0 <= fake_x.min()
+        assert real_x.max() <= 1 and fake_x.max() <= 1
+
+        min_y, max_y = y_min[model_config.benchmark], y_max[model_config.benchmark]
+        assert min_y <= real_y.min() and min_y <= fake_y.min()
+        assert real_y.max() <= max_y and fake_y.max() <= max_y
+
+        min_c, max_c = c_min[model_config.benchmark], c_max[model_config.benchmark]
+        assert min_c <= real_c.min() and min_c <= fake_c.min()
+        assert real_c.max() <= max_c and fake_c.max() <= max_c
+
     @pytest.mark.timeout(30)
     def test_attributes(
         self,
-        profet_train_config: MetaModelTrainingConfig,
+        profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
         tmp_path_factory,
     ):
@@ -105,25 +114,22 @@ class ProfetTaskTests:
         correctly.
         """
         max_trials = 123
-        task_id = 0
-        seed = 123
         checkpoint_dir: Path = tmp_path_factory.mktemp("checkpoints")
         task = self.Task(
             max_trials=max_trials,
-            task_id=task_id,
-            train_config=profet_train_config,
-            seed=seed,
+            model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
         assert task.max_trials == max_trials
-        assert task.seed == seed
-        assert task.task_id == task_id
+        # NOTE: The class attributes might differ per task, but that's ok.
+        assert isinstance(task.model_config, self.Task.ModelConfig)
+        assert asdict(task.model_config) == asdict(profet_train_config)
 
     @pytest.mark.timeout(30)
     def test_instantiating_task(
         self,
-        profet_train_config: MetaModelTrainingConfig,
+        profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
         tmp_path_factory,
     ):
@@ -131,8 +137,6 @@ class ProfetTaskTests:
         meta-model is trained only once.
         """
         max_trials = 123
-        task_id = 0
-        seed = 123
 
         checkpoint_dir: Path = tmp_path_factory.mktemp("checkpoints")
         # Directory should be empty.
@@ -140,9 +144,7 @@ class ProfetTaskTests:
 
         task = self.Task(
             max_trials=max_trials,
-            task_id=task_id,
-            train_config=profet_train_config,
-            seed=seed,
+            model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
@@ -152,9 +154,7 @@ class ProfetTaskTests:
 
         task = self.Task(
             max_trials=max_trials,
-            task_id=task_id,
-            train_config=profet_train_config,
-            seed=seed,
+            model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
@@ -162,53 +162,58 @@ class ProfetTaskTests:
         # Directory should *still* only have one file (the trained model checkpoint).
         assert len(list(checkpoint_dir.iterdir())) == 1
 
+    @pytest.mark.parametrize("with_grad", [True, False])
+    @pytest.mark.parametrize(
+        "device_str", ["cpu"] + (["cuda"] if torch.cuda.is_available() else [])
+    )
     def test_configuration(
         self,
-        profet_train_config: MetaModelTrainingConfig,
+        profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
         checkpoint_dir: Path,
+        with_grad: bool,
+        device_str: str,
     ):
         """ Test that tasks have a proper configuration and that they can be created from it.
         """
-        task_id = 0
+        max_trials = 10
         kwargs = dict(
-            max_trials=10,
-            task_id=task_id,
-            train_config=profet_train_config,
-            seed=123,
+            max_trials=max_trials,
+            model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
+            device=device_str,
+            with_grad=with_grad,
         )
         first_task = self.Task(**kwargs)
-        configuration = first_task.configuration
-        assert len(configuration.keys()) == 1
-        key, config_dict = configuration.popitem()
-        assert key == self.Task.__qualname__
 
-        for key, value in kwargs.items():
-            assert key in config_dict
-            assert config_dict[key] == value
+        assert first_task.configuration == {
+            self.Task.__qualname__: dict(
+                max_trials=max_trials,
+                model_config=asdict(profet_train_config),
+                input_dir=str(profet_input_dir),
+                checkpoint_dir=str(checkpoint_dir),
+                device=device_str,
+                with_grad=with_grad,
+            )
+        }
+        from orion.benchmark.benchmark_client import _get_task
 
         # NOTE: This 'name' is the qualname of the class, which is used by the Factory metaclass'
         # `__call__` method.
-        name = self.Task.__qualname__
-        from orion.benchmark.benchmark_client import _get_task
-
+        name, config_dict = first_task.configuration.popitem()
         second_task = _get_task(name=name, **config_dict)
         assert second_task.configuration == first_task.configuration
 
     def test_sample_single_params(
         self,
-        profet_train_config: MetaModelTrainingConfig,
+        profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
         checkpoint_dir: Path,
     ):
         """ Test the `sample` method. """
         task = self.Task(
-            max_trials=10,
-            task_id=0,
-            train_config=profet_train_config,
-            seed=123,
+            model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
@@ -222,17 +227,14 @@ class ProfetTaskTests:
     @pytest.mark.parametrize("n", range(3))
     def test_sample_multiple_params(
         self,
-        profet_train_config: MetaModelTrainingConfig,
+        profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
         checkpoint_dir: Path,
         n: int,
     ):
         """ Test the `sample` method. """
         task = self.Task(
-            max_trials=10,
-            task_id=0,
-            train_config=profet_train_config,
-            seed=123,
+            model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
@@ -241,7 +243,9 @@ class ProfetTaskTests:
         assert len(hparam_dicts) == n
 
         assert all(
-            hparam_dicts[i] != hparam_dicts[j] for i in range(n) for j in set(range(n)) - {i}
+            hparam_dicts[i] != hparam_dicts[j]
+            for i in range(n)
+            for j in set(range(n)) - {i}
         )
 
         for hparam_dict in hparam_dicts:
@@ -252,7 +256,7 @@ class ProfetTaskTests:
 
     def test_space_attribute(
         self,
-        profet_train_config: MetaModelTrainingConfig,
+        profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
         checkpoint_dir: Path,
     ):
@@ -281,10 +285,7 @@ class ProfetTaskTests:
         problem anymore.
         """
         task = self.Task(
-            max_trials=10,
-            task_id=0,
-            train_config=profet_train_config,
-            seed=123,
+            model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
@@ -304,17 +305,13 @@ class ProfetTaskTests:
 
     def test_sanity_check(
         self,
-        profet_train_config: MetaModelTrainingConfig,
+        profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
         checkpoint_dir: Path,
     ):
         """ Tests that two tasks with different arguments give different results. """
-        task_id = 0
         first_task_kwargs = dict(
-            max_trials=10,
-            task_id=task_id,
-            train_config=profet_train_config,
-            seed=123,
+            model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
@@ -327,8 +324,11 @@ class ProfetTaskTests:
         assert first_results[0]["type"] == "objective"
         first_objective = first_results[0]["value"]
 
+        second_task_model_config = replace(
+            profet_train_config, seed=profet_train_config.seed + 456
+        )
         second_task_kwargs = first_task_kwargs.copy()
-        second_task_kwargs["seed"] += 456
+        second_task_kwargs["model_config"] = second_task_model_config
 
         second_task = self.Task(**second_task_kwargs)
         second_point = second_task.sample()
@@ -345,11 +345,11 @@ class ProfetTaskTests:
     @pytest.mark.parametrize("use_same_model", [True, False])
     def test_call_is_reproducible(
         self,
-        profet_train_config: MetaModelTrainingConfig,
+        profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
         checkpoint_dir: Path,
         tmp_path_factory,
-        use_same_model: bool
+        use_same_model: bool,
     ):
         """ Tests for the seeding of the model.
         When creating two tasks with the same parameters & seed:
@@ -358,12 +358,8 @@ class ProfetTaskTests:
         - If the model is created once and loaded in the second task, it should also be the same
           (give the same output for the same input).
         """
-        task_id = 0
         task_kwargs = dict(
-            max_trials=10,
-            task_id=task_id,
-            train_config=profet_train_config,
-            seed=123,
+            model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
@@ -377,7 +373,9 @@ class ProfetTaskTests:
             # checkpoint directory, which forces the task to re-create a new model using the same
             # training configuration, rather than load the same one as task_a.
             task_b_kwargs = task_kwargs.copy()
-            task_b_kwargs["checkpoint_dir"] = tmp_path_factory.mktemp("other_checkpoint_dir") 
+            task_b_kwargs["checkpoint_dir"] = tmp_path_factory.mktemp(
+                "other_checkpoint_dir"
+            )
             task_b = self.Task(**task_b_kwargs)
 
         point_a = task_a.sample()
@@ -401,29 +399,25 @@ class ProfetTaskTests:
     @pytest.mark.parametrize("seed", [123, 456])
     def test_call_twice_with_same_task_gives_same_result(
         self,
-        profet_train_config: MetaModelTrainingConfig,
+        profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
         checkpoint_dir: Path,
         seed: int,
     ):
         """ When using the same task and the same point twice, the results should be identical.
         """
-        task_id = 0
+        model_config = replace(profet_train_config, seed=seed)
         task = self.Task(
-            max_trials=10,
-            task_id=task_id,
-            train_config=profet_train_config,
-            seed=seed,
+            model_config=model_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
-        assert task.seed == seed
+        assert task.model_config.seed == seed
         point = task.sample()
 
         first_results = task(point)
         assert len(first_results) == 1
         assert first_results[0]["type"] == "objective"
-        first_objective = first_results[0]["value"]
 
         # Pass the same point under different forms and check that the results are exactly the same.
         second_results = task(point)
@@ -432,19 +426,16 @@ class ProfetTaskTests:
     @pytest.mark.parametrize("step_size", [1e-2, 1e-4])
     def test_call_with_gradients(
         self,
-        profet_train_config: MetaModelTrainingConfig,
+        profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
         checkpoint_dir: Path,
         step_size: float,
     ):
         """ Test that calling the task with the `with_grad` returns the gradient at that point. """
         task = self.Task(
-            max_trials=10,
-            task_id=0,
-            train_config=profet_train_config,
-            seed=123,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
+            model_config=profet_train_config,
             with_grad=True,
         )
 
@@ -457,7 +448,9 @@ class ProfetTaskTests:
         first_gradient = results[1]["value"]
 
         point_tuple = tuple(point_dict.values())
-        second_point_array = np.array(point_tuple) - step_size * np.array(first_gradient)
+        second_point_array = np.array(point_tuple) - step_size * np.array(
+            first_gradient
+        )
 
         second_point = dict(zip(point_dict.keys(), second_point_array))
 
@@ -466,7 +459,9 @@ class ProfetTaskTests:
             # use a point that has batch_size = 12.04 for example.
             assert second_point_array not in task.space
             second_point = {
-                k: int(v) if isinstance(v, float) and isinstance(task.space[k], _Discrete) else v
+                k: int(v)
+                if isinstance(v, float) and isinstance(task.space[k], _Discrete)
+                else v
                 for k, v in second_point.items()
             }
             second_point_array = np.array(tuple(second_point.values()))

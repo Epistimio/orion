@@ -18,7 +18,7 @@ from typing import (
     Any,
     Dict,
     Generic,
-    List,
+    List, ClassVar, Type,
     TypeVar,
     Union,
     overload,
@@ -35,12 +35,8 @@ from orion.core.utils import compute_identity
 from orion.core.utils.format_trials import dict_to_trial, trial_to_tuple
 from orion.core.utils.points import flatten_dims
 
-from orion.benchmark.task.profet.model_utils import (
-    MetaModelTrainingConfig,
-    load_task_network,
-    get_task_network,
-    save_task_network,
-)
+from orion.benchmark.task.profet.model_utils import MetaModelConfig
+
 
 logger = get_logger(__name__)
 
@@ -66,10 +62,10 @@ def make_reproducible(seed: int):
     random.setstate(start_random_state)
 
 
-InputDict = TypeVar("InputDict", bound=Dict[str, Any])
+InputType = TypeVar("InputType", bound=Dict[str, Any], covariant=True)
 
 
-class ProfetTask(BaseTask, Generic[InputDict]):
+class ProfetTask(BaseTask, Generic[InputType]):
     """Base class for Tasks that are generated using the Profet algorithm.
 
     For more information on Profet, see original paper at https://arxiv.org/abs/1905.12982.
@@ -81,15 +77,11 @@ class ProfetTask(BaseTask, Generic[InputDict]):
     ----------
     max_trials : int, optional
         Max number of trials to run, by default 100
-    task_id : int, optional
-        Task index, by default 0
-    seed : int, optional
-        Random seed, by default 123
     input_dir : Union[Path, str], optional
         Input directory containing the data used to train the meta-model, by default None.
     checkpoint_dir : Union[Path, str], optional
         Directory used to save/load trained meta-models, by default None.
-    train_config : MetaModelTrainingConfig, optional
+    model_config : MetaModelConfig, optional
         Configuration options for the training of the meta-model, by default None
     device : Union[torch.device, str], optional
         The device to use for training, by default None.
@@ -98,34 +90,43 @@ class ProfetTask(BaseTask, Generic[InputDict]):
         the inputs. Defaults to `False`.
     """
 
+    # Type of model config to use. Has to be overwritten by subclasses.
+    ModelConfig: ClassVar[Type[MetaModelConfig]] = MetaModelConfig
+
     def __init__(
         self,
         max_trials: int = 100,
-        task_id: int = 0,
-        seed: int = 123,
         input_dir: Union[Path, str] = "profet_data",
         checkpoint_dir: Union[Path, str] = None,
-        train_config: MetaModelTrainingConfig = None,
+        model_config: MetaModelConfig = None,
         device: Union[torch.device, str] = None,
         with_grad: bool = False,
     ):
         super().__init__(max_trials=max_trials)
-        self.task_id = task_id
-        self.seed = seed
         self.input_dir = Path(input_dir)
         self.checkpoint_dir = Path(checkpoint_dir or self.input_dir / "checkpoints")
+
         # The config for the training of the meta-model.
         # NOTE: the train config is used to determine the hash of the task.
-        self.train_config = train_config or MetaModelTrainingConfig()
+        if model_config is None:
+            self.model_config = self.ModelConfig()
+        elif isinstance(model_config, dict):
+            # If passed a model config, for example through deserializing the configuration,
+            # then convert it back to the right type, so the class attributes are correct.
+            self.model_config = self.ModelConfig(**model_config)
+        elif not isinstance(model_config, self.ModelConfig):
+            self.model_config = self.ModelConfig(**asdict(model_config))
+        else:
+            self.model_config = model_config
+
+        assert isinstance(self.model_config, self.ModelConfig)
+
+        self.seed = self.model_config.seed
+
         self.with_grad = with_grad
         # The parameters that have an influence over the training of the meta-model are used to
         # create the filename where the model will be saved.
-        task_hash_params = dict(
-            benchmark=self.benchmark,
-            task_id=self.task_id,
-            seed=self.seed,
-            **asdict(self.train_config),
-        )
+        task_hash_params = asdict(self.model_config)
         logger.info(f"Task hash params: {task_hash_params}")
         task_hash = compute_identity(**task_hash_params)
 
@@ -151,32 +152,25 @@ class ProfetTask(BaseTask, Generic[InputDict]):
                 logger.info(
                     f"Model has already been trained: loading it from file {self.checkpoint_file}."
                 )
-                self.net, h = load_task_network(self.checkpoint_file)
+                self.net, h = self.model_config.load_task_network(self.checkpoint_file)
             else:
                 warnings.warn(
                     RuntimeWarning(
-                        f"Checkpoint file {self.checkpoint_file} doesn't exist: re-training the model. "
-                        f"(This may take a long time, depending on the settings in `train_params`)"
+                        f"Checkpoint file {self.checkpoint_file} doesn't exist: re-training the "
+                        f"model. (This may take a *very* long time!)"
                     )
                 )
                 logger.info(f"Task hash params: {task_hash_params}")
-
                 self.checkpoint_file.parent.mkdir(exist_ok=True, parents=True)
 
                 # Need to re-train the meta-model and sample this task.
-                self.net, h = get_task_network(
-                    self.input_dir,
-                    self.benchmark,
-                    seed=self.seed,
-                    task_id=self.task_id,
-                    config=self.train_config,
-                )
+                self.net, h = self.model_config.get_task_network(self.input_dir)
 
         # Numpy random state. Currently only used in `sample()`
         self._np_rng_state = np.random.RandomState(self.seed)
 
         self.h: np.ndarray = np.array(h)
-        save_task_network(self.checkpoint_file, self.benchmark, self.net, self.h)
+        self.model_config.save_task_network(self.checkpoint_file, self.net, self.h)
 
         self.net = self.net.to(device=self.device, dtype=torch.float32)
         self.net.eval()
@@ -184,21 +178,21 @@ class ProfetTask(BaseTask, Generic[InputDict]):
         self.h_tensor = torch.as_tensor(self.h, dtype=torch.float32, device=self.device)
 
         self._space: Space = SpaceBuilder().build(self.get_search_space())
-        self.name = f"profet.{type(self).__qualname__.lower()}_{self.task_id}"
+        self.name = f"profet.{type(self).__qualname__.lower()}_{self.model_config.task_id}"
 
     @property
     def space(self) -> Space:
         return self._space
 
     @overload
-    def sample(self) -> InputDict:
+    def sample(self) -> InputType:
         ...
 
     @overload
-    def sample(self, n: int) -> List[InputDict]:
+    def sample(self, n: int) -> List[InputType]:
         ...
 
-    def sample(self, n: int = None) -> Union[InputDict, List[InputDict]]:
+    def sample(self, n: int = None) -> Union[InputType, List[InputType]]:
         """ Samples a point (dict of hyper-parameters) from the search space of this task.
 
         This point can then be passed as an input to the task to get the objective.
@@ -210,12 +204,7 @@ class ProfetTask(BaseTask, Generic[InputDict]):
             for point_tuple in self.space.sample(n, seed=self._np_rng_state)
         ]
 
-    @property
-    @abstractmethod
-    def benchmark(self) -> str:
-        """ The name of the benchmark to use. """
-
-    def call(self, x: InputDict) -> List[Dict]:
+    def call(self, x: InputType) -> List[Dict]:
         """Get the value of the sampled objective function at the given point (hyper-parameters).
 
         If `self.with_grad` is set, also returns the gradient of the objective function with respect
@@ -283,14 +272,13 @@ class ProfetTask(BaseTask, Generic[InputDict]):
     @property
     def configuration(self):
         """Return the configuration of the task."""
-        # TODO: Still not sure I understand how this mess works.
         return {
             self.__class__.__qualname__: {
                 "max_trials": self.max_trials,
-                "task_id": self.task_id,
-                "seed": self.seed,
-                "input_dir": self.input_dir,
-                "checkpoint_dir": self.checkpoint_dir,
-                "train_config": self.train_config,
+                "input_dir": str(self.input_dir),
+                "checkpoint_dir": str(self.checkpoint_dir),
+                "model_config": asdict(self.model_config),
+                "device": self.device.type,
+                "with_grad": self.with_grad,
             }
         }

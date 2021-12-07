@@ -8,7 +8,7 @@ import pytest
 from _pytest.fixtures import SubRequest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
-from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig
+from orion.benchmark.task.profet.profet_task import MetaModelConfig
 import random
 import torch
 import numpy as np
@@ -28,18 +28,6 @@ def seed_everything(seed: int) -> None:
 
 def is_nonempty_dir(p: Path) -> bool:
     return p.exists() and p.is_dir() and bool(list(p.iterdir()))
-
-
-@pytest.fixture(scope="session")
-def profet_train_config():
-    """ Fixture that provides a configuration object for the Profet algorithm for testing. """
-    quick_train_config = MetaModelTrainingConfig(
-        num_burnin_steps=10,
-        # num_steps=10,
-        max_iters=10,
-        n_samples_task=20,
-    )
-    return quick_train_config
 
 
 @pytest.fixture(scope="session")
@@ -106,25 +94,24 @@ def mock_load_data(
             f"Real profet data is not found in dir '{REAL_PROFET_DATA_DIR}', skipping test."
         )
 
-    real_load_data = orion.benchmark.task.profet.model_utils.load_data
+    real_load_data = MetaModelConfig.load_data
+    # real_load_data = orion.benchmark.task.profet.model_utils.MetaModelConfig.load_data
 
-    def _load_data(path: Path, benchmark: str):
+    def _load_data(self: MetaModelConfig, path: Path):
         if use_real_data and path == REAL_PROFET_DATA_DIR:
             # Return real datasets.
             logger.info(f"Testing using the real Profet datasets.")
-            return real_load_data(REAL_PROFET_DATA_DIR, benchmark=benchmark)
+            return real_load_data(self, REAL_PROFET_DATA_DIR)
         # Generate fake datasets.
-        logger.info(f"Warning: Using random data instead of the actual profet training data.")
-        x_shape, y_shape, c_shape = shapes[benchmark]
+        logger.info("Using random data instead of the actual profet training data.")
+        x_shape, y_shape, c_shape = shapes[self.benchmark]
         X = np.random.rand(*x_shape)
-        min_y = y_min[benchmark]
-        max_y = y_max[benchmark]
+        min_y = y_min[self.benchmark]
+        max_y = y_max[self.benchmark]
         Y = np.random.rand(*y_shape) * (max_y - min_y) + min_y
-        min_c = c_min[benchmark]
-        max_c = c_max[benchmark]
+        min_c = c_min[self.benchmark]
+        max_c = c_max[self.benchmark]
         C = np.random.rand(*c_shape) * (max_c - min_c) + min_c
         return X, Y, C
 
-    monkeypatch.setattr(orion.benchmark.task.profet.model_utils, "load_data", _load_data)
-    # NOTE: Need to set the item in the globals because it might already have been imported.
-    monkeypatch.setitem(globals(), "load_data", _load_data)
+    monkeypatch.setattr(MetaModelConfig, "load_data", _load_data)

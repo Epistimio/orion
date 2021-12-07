@@ -6,7 +6,7 @@ import pytest
 
 from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.task import CarromTable, RosenBrock
-from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig
+from orion.benchmark.task.profet.profet_task import MetaModelConfig
 from orion.testing import generate_trials
 
 

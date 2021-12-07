@@ -1,15 +1,21 @@
 """ Simulated Task consisting in training a fully-connected network.
 """
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Union
+from typing import Callable, ClassVar, Dict, Type, Union
 
 import torch
-from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig, ProfetTask
+from emukit.examples.profet.meta_benchmarks.architecture import \
+    get_default_architecture
+from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
+from torch import nn
 
 try:
-    from typing import TypedDict
+    from typing import Final, TypedDict
 except ImportError:
-    from typing_extensions import TypedDict
+    from typing_extensions import TypedDict, Final
+
+from functools import partial
 
 
 class FcNetTaskHParams(TypedDict):
@@ -26,32 +32,20 @@ class FcNetTaskHParams(TypedDict):
 class FcNetTask(ProfetTask[FcNetTaskHParams]):
     """Simulated Task consisting in training a fully-connected network."""
 
-    def __init__(
-        self,
-        max_trials: int = 100,
-        task_id: int = 0,
-        seed: int = 123,
-        input_dir: Union[Path, str] = "profet_data",
-        checkpoint_dir: Union[Path, str] = None,
-        train_config: MetaModelTrainingConfig = None,
-        device: Union[torch.device, str] = None,
-        with_grad: bool = False,
-    ):
-        super().__init__(
-            max_trials=max_trials,
-            task_id=task_id,
-            seed=seed,
-            input_dir=input_dir,
-            checkpoint_dir=checkpoint_dir,
-            train_config=train_config,
-            device=device,
-            with_grad=with_grad,
+    @dataclass
+    class ModelConfig(MetaModelConfig):
+        """ Config for training the Profet model on an FcNet task. """
+        benchmark: str = "fcnet"
+        # ---------- "Abstract" class attributes:
+        json_file_name: ClassVar[str] = "data_sobol_fcnet.json"
+        get_architecture: ClassVar[Callable[[int], nn.Module]] = partial(
+            get_default_architecture
         )
-
-    @property
-    def benchmark(self) -> str:
-        """ The name of the benchmark to use. """
-        return "fcnet"
+        hidden_space: ClassVar[int] = 5
+        log_cost: ClassVar[bool] = True
+        log_target: ClassVar[bool] = False
+        normalize_targets: ClassVar[bool] = False
+        # -----------
 
     def get_search_space(self) -> Dict[str, str]:
         return dict(

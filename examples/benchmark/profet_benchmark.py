@@ -15,7 +15,7 @@ from orion.algo.base import OptimizationAlgorithm
 from orion.benchmark.assessment import AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task.profet import FcNetTask, ForresterTask, SvmTask, XgBoostTask
-from orion.benchmark.task.profet.profet_task import MetaModelTrainingConfig, ProfetTask
+from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 
 try:
     from simple_parsing.helpers import choice
@@ -45,7 +45,7 @@ class ProfetExperimentConfig:
     # Name of the experiment.
     name: str = "profet"
     # Configuration options for the training of the meta-model used in the Profet tasks.
-    profet_train_config: MetaModelTrainingConfig = MetaModelTrainingConfig()
+    profet_train_config: MetaModelConfig = MetaModelConfig()
 
     algorithms: List[str] = choice(*algos_available, default_factory=["random", "tpe"].copy)
 
@@ -80,7 +80,7 @@ def main(config: ProfetExperimentConfig):
         task = config.task_type(
             max_trials=config.max_trials,
             task_id=0,
-            train_config=config.profet_train_config,
+            model_config=config.profet_train_config,
             input_dir=config.input_dir,
             checkpoint_dir=config.checkpoint_dir,
             seed=config.seed,
