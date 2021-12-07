@@ -77,7 +77,7 @@ class BaseExecutor:
 
         Returns
         -------
-        returns a list fo results
+        returns a list of results
 
         """
         pass
