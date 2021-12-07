@@ -2,7 +2,7 @@ import traceback
 from multiprocessing import TimeoutError as PyTimeoutError
 from multiprocessing import Value
 
-from orion.executor.base import AsyncException, AsyncResult, BaseExecutor
+from orion.executor.base import AsyncException, AsyncResult, BaseExecutor, Future
 
 try:
     from dask.distributed import (
@@ -19,13 +19,17 @@ except ImportError:
     HAS_DASK = False
 
 
-class _Future:
+class _Future(Future):
     """Wraps a Dask Future"""
 
     def __init__(self, future):
         self.future = future
+        self.exception = None
 
     def get(self, timeout=None):
+        if self.exception:
+            raise self.exception
+
         try:
             return self.future.result(timeout)
         except TimeoutError as e:
@@ -36,6 +40,8 @@ class _Future:
             self.future.result(timeout)
         except TimeoutError:
             pass
+        except Exception as e:
+            self.exception = e
 
     def ready(self):
         return self.future.done()

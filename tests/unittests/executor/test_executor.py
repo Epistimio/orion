@@ -1,7 +1,10 @@
 import sys
+import time
+from multiprocessing import TimeoutError
 
 import pytest
 
+from orion.executor import AsyncException
 from orion.executor.dask_backend import Dask
 from orion.executor.multiprocess_backend import PoolExecutor
 from orion.executor.single_backend import SingleExecutor
@@ -20,6 +23,11 @@ backends = [thread, multiprocess, Dask, SingleExecutor]
 
 def function(a, b, c):
     return a + b * c
+
+
+def slow_function(a, b, c):
+    time.sleep(5)
+    return function(a, b, c)
 
 
 class BadException(Exception):
@@ -54,6 +62,8 @@ def test_execute_async(backend):
         results = executor.async_get(futures)
 
         assert len(results) <= total_task, "Maybe not all tasks were completed"
+        assert len(results) > 0, "We got some results"
+        assert len(futures) == total_task - len(results), "Finished futures got removed"
         assert len(results) + len(futures) == total_task, "Future were removed"
 
 
@@ -80,6 +90,34 @@ def test_execute_async_all(backend):
     all_results_async = [a.value for a in all_results_async]
     all_results_async.sort()
     assert all_results_async == all_results
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_execute_async_timeout(backend):
+    """Makes sure async_get does not wait after timeout"""
+    with backend(5) as executor:
+        futures = [executor.submit(slow_function, 1, 2, i) for i in range(10)]
+        results = executor.async_get(futures, timeout=1)
+
+        assert len(results) == 0, "No tasks had time to finish yet"
+        assert len(futures) == 10, "All futures are still there"
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_execute_async_bad(backend):
+    """Makes sure async_get does not throw exceptions"""
+    with backend(5) as executor:
+        futures = [executor.submit(bad_function, 1, 2, i) for i in range(10)]
+
+        results = []
+        while futures:
+            results.extend(executor.async_get(futures))
+
+    for result in results:
+        assert isinstance(result, AsyncException)
+
+        with pytest.raises(BadException):
+            result.value
 
 
 def nested_jobs(executor):
