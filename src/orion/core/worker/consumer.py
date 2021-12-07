@@ -32,7 +32,7 @@ class ExecutionError(Exception):
 
     def __init__(self, return_code=0):
         super(ExecutionError, self).__init__()
-        self.return_code = 0
+        self.return_code = return_code
 
 
 def _exec_error(return_code):
