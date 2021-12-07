@@ -108,7 +108,7 @@ class Runner:
         self.trials = 0
         self.futures = []
         self.pending_trials = dict()
-        self.free_worker = pool_size
+        # self.free_worker = pool_size
         self.stat = _Stat()
 
         if interrupt_signal_code is None:
@@ -117,9 +117,18 @@ class Runner:
         self.interrupt_signal_code = interrupt_signal_code
 
     @property
+    def free_worker(self):
+        return max(self.client.executor.n_workers - len(self.pending_trials), 0)
+
+    @property
     def is_done(self):
         """Returns true if the experiment has finished."""
         return self.client.is_done
+
+    @property
+    def is_broken(self):
+        """Returns true if the experiment is broken"""
+        return self.worker_broken_trials >= self.max_broken
 
     @property
     def has_remaining(self):
@@ -193,24 +202,37 @@ class Runner:
 
         return self.trials
 
-    def sample(self):
-        """Sample new trials for all free workers"""
-        ntrials = len(self.pending_trials) + self.trials
-        remains = self.max_trials_per_worker - ntrials
+    def should_sample(self):
+        """Check if more trials could be generated"""
+
+        if self.is_broken() or self.is_done():
+            return 0
+
+        pending = len(self.pending_trials) + self.trials
+        remains = self.max_trials_per_worker - pending
 
         # try to get more work
-        new_trials = []
         n_trial = min(self.free_worker, remains)
-        should_sample_more = (not self.is_done) and self.free_worker > 0 and remains > 0
+        should_sample_more = self.free_worker > 0 and remains > 0
 
         if should_sample_more:
+            return n_trial
+
+        return 0
+
+    def sample(self):
+        """Sample new trials for all free workers"""
+        n_trial = self.should_sample()
+
+        if n_trial > 0:
             # the producer does the job of limiting the number of new trials
             # already no need to worry about it
             # NB: suggest reserve the trial already
             new_trials = self._suggest_trials(n_trial)
             log.debug(f"Sampled {len(new_trials)} new configs")
+            return new_trials
 
-        return new_trials
+        return []
 
     def scatter(self, new_trials):
         """Schedule new trials to be computed"""
@@ -222,7 +244,6 @@ class Runner:
             self.pending_trials[future] = trial
             new_futures.append(future)
 
-        self.free_worker -= len(new_futures)
         self.futures.extend(new_futures)
         log.debug("Scheduled new trials")
 
@@ -242,7 +263,6 @@ class Runner:
 
         # register the results
         for result in results:
-            self.free_worker += 1
             trial = self.pending_trials.pop(result.future)
 
             if isinstance(result, AsyncResult):
@@ -282,7 +302,7 @@ class Runner:
 
                 # if we receive too many broken trials, it might indicate the user script
                 # is broken, stop the experiment and let the user investigate
-                if self.worker_broken_trials >= self.max_broken:
+                if self.is_broken():
                     raise BrokenExperiment("Worker has reached broken trials threshold")
 
         if to_be_raised is not None:
