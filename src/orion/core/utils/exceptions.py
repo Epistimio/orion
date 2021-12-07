@@ -41,8 +41,8 @@ class RaceCondition(Exception):
 
 
 class ReservationRaceCondition(Exception):
-    """Raised when a worker tries to reserve a trial that was
-    recently generated but another worker snatched it first.
+    """Raised when a runner tries to reserve a trial that was
+    recently generated but another runner snatched it first.
 
     """
 
