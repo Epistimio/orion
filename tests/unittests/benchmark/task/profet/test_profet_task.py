@@ -1,7 +1,8 @@
 """ Utilities used to test the different subclasses of the ProfetTask. """
+from collections import defaultdict
 from logging import getLogger as get_logger
 from pathlib import Path
-from typing import ClassVar, Type
+from typing import Any, Callable, ClassVar, Dict, Type
 
 import numpy as np
 import pytest
@@ -31,7 +32,7 @@ class ProfetTaskTests:
 
     Task: ClassVar[Type[ProfetTask]]
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture()
     def profet_train_config(self):
         """ Fixture that provides a configuration object for the Profet algorithm for testing. """
         quick_train_config = self.Task.ModelConfig(
@@ -132,32 +133,57 @@ class ProfetTaskTests:
         profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
         tmp_path_factory,
+        monkeypatch,
     ):
         """ Tests that when instantiating multiple tasks with the same arguments, the
         meta-model is trained only once.
         """
-        max_trials = 123
 
         checkpoint_dir: Path = tmp_path_factory.mktemp("checkpoints")
         # Directory should be empty.
         assert len(list(checkpoint_dir.iterdir())) == 0
 
+        MetaModelConfig.get_task_network.__call_counts = 0
+
+        calls: Dict[Callable, int] = {}
+        
+        def count_calls(f: Callable):
+            calls[f] = 0
+            def _counted_calls(*args, **kwargs) -> Any:
+                calls[f] += 1
+                return f(*args, **kwargs)
+            return _counted_calls
+
+        _get_task_network = profet_train_config.get_task_network
+        _load_task_network = profet_train_config.load_task_network
+
+        monkeypatch.setattr(profet_train_config, "get_task_network", count_calls(profet_train_config.get_task_network))
+        monkeypatch.setattr(profet_train_config, "load_task_network", count_calls(profet_train_config.load_task_network))
+
+        assert calls[_get_task_network] == 0
+        assert calls[_load_task_network] == 0
+
         task = self.Task(
-            max_trials=max_trials,
             model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
+
+        assert calls[_get_task_network] == 1
+        assert calls[_load_task_network] == 0
+
 
         # Directory should have one file (the trained model checkpoint).
         assert len(list(checkpoint_dir.iterdir())) == 1
 
         task = self.Task(
-            max_trials=max_trials,
             model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
         )
+
+        assert calls[_get_task_network] == 1
+        assert calls[_load_task_network] == 1
 
         # Directory should *still* only have one file (the trained model checkpoint).
         assert len(list(checkpoint_dir.iterdir())) == 1
