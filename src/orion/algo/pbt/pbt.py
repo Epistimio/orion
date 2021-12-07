@@ -41,7 +41,7 @@ def compute_fidelities(n_branching, low, high, base):
         return budgets
 
 
-class PopulationBasedTraining(BaseAlgorithm):
+class PBT(BaseAlgorithm):
     """Population Based Training algorithm
 
     TODO
@@ -120,7 +120,7 @@ class PopulationBasedTraining(BaseAlgorithm):
                 ],
             }
 
-        super(PopulationBasedTraining, self).__init__(
+        super(PBT, self).__init__(
             space, seed=seed, exploit=exploit, explore=explore
         )
 
@@ -168,14 +168,14 @@ class PopulationBasedTraining(BaseAlgorithm):
     @property
     def state_dict(self):
         """Return a state dict that can be used to reset the state of the algorithm."""
-        _state_dict = super(PopulationBasedTraining, self).state_dict
+        _state_dict = super(PBT, self).state_dict
         _state_dict["random_search"] = self.random_search.state_dict
         _state_dict["trials_children"] = self._trials_children
         return _state_dict
 
     def set_state(self, state_dict):
         """Reset the state of the algorithm based on the given state_dict"""
-        super(PopulationBasedTraining, self).set_state(state_dict)
+        super(PBT, self).set_state(state_dict)
         self.random_search.set_state(state_dict["random_search"])
         self._trials_children = state_dict["trials_children"]
 
@@ -194,7 +194,7 @@ class PopulationBasedTraining(BaseAlgorithm):
         return n_completed >= self.population_size
 
     def register(self, trial):
-        super(PopulationBasedTraining, self).register(trial)
+        super(PBT, self).register(trial)
         self.lineages.register(trial)
 
     def suggest(self, num):
