@@ -135,7 +135,7 @@ class PoolExecutor(BaseExecutor):
     ----------
 
     n_workers: int
-        Number of worker to spawn
+        Number of workers to spawn
 
     backend: str
         Pool backend to use; thread or multiprocess, defaults to multiprocess
