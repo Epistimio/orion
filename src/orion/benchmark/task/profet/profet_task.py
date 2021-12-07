@@ -38,10 +38,10 @@ def make_reproducible(seed: int):
     with torch.random.fork_rng():
         # Set the random state, using the given seed.
         random.seed(seed)
-        np_seed = random.randint(0, int(1e10))
+        np_seed = random.randint(0, 2**32-1)
         np.random.seed(np_seed)
 
-        torch_seed = random.randint(0, int(1e10))
+        torch_seed = random.randint(0, 2**32-1)
         torch.random.manual_seed(torch_seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(torch_seed)
