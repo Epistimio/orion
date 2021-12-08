@@ -120,14 +120,11 @@ class Benchmark:
         return benchmark_status
 
     def analysis(self):
-        """Return all the assessment figures"""
-        figures = list()
+        """Return all the assessment figures with format as {assessment_name: {figure_name: figure_object}}"""
+        figures = dict()
         for study in self.studies:
             figure = study.analysis()
-            if isinstance(figure, list):
-                figures.extend(figure)
-            else:
-                figures.append(figure)
+            figures[study.assess_name + "_" + study.task_name] = figure
         return figures
 
     def experiments(self, silent=True):
@@ -381,7 +378,7 @@ class Study:
         return list(algorithm_tasks.values())
 
     def analysis(self):
-        """Return assessment figure"""
+        """Return assessment figures"""
         return self.assessment.analysis(self.task_name, self.experiments_info)
 
     def experiments(self):

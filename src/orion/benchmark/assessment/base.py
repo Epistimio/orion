@@ -56,8 +56,7 @@ class BenchmarkAssessment(ABC):
 
         Returns
         -------
-        One or a list of plotly.graph_objects.Figure objects
-
+        Dict of plotly.graph_objects.Figure objects
         """
         pass
 

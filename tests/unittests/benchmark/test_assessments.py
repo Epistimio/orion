@@ -32,9 +32,9 @@ class TestAverageRank:
             experiment,
             _,
         ):
-            plot = ar1.analysis("task_name", [(0, experiment)])
+            figure = ar1.analysis("task_name", [(0, experiment)])
 
-        assert type(plot) is plotly.graph_objects.Figure
+        assert type(figure["rankings"]) is plotly.graph_objects.Figure
 
     @pytest.mark.usefixtures("version_XYZ")
     def test_figure_layout(self, study_experiments_config):
@@ -42,10 +42,10 @@ class TestAverageRank:
         ar1 = AverageRank()
 
         with create_study_experiments(**study_experiments_config) as experiments:
-            plot = ar1.analysis("task_name", experiments)
+            figure = ar1.analysis("task_name", experiments)
 
             assert_rankings_plot(
-                plot,
+                figure["rankings"],
                 [
                     list(algorithm["algorithm"].keys())[0]
                     for algorithm in study_experiments_config["algorithms"]
@@ -77,9 +77,9 @@ class TestAverageResult:
             experiment,
             _,
         ):
-            plot = ar1.analysis("task_name", [(0, experiment)])
+            figure = ar1.analysis("task_name", [(0, experiment)])
 
-        assert type(plot) is plotly.graph_objects.Figure
+        assert type(figure["regrets"]) is plotly.graph_objects.Figure
 
     @pytest.mark.usefixtures("version_XYZ")
     def test_figure_layout(self, study_experiments_config):
@@ -87,10 +87,10 @@ class TestAverageResult:
         ar1 = AverageResult()
 
         with create_study_experiments(**study_experiments_config) as experiments:
-            plot = ar1.analysis("task_name", experiments)
+            figure = ar1.analysis("task_name", experiments)
 
             assert_regrets_plot(
-                plot,
+                figure["regrets"],
                 [
                     list(algorithm["algorithm"].keys())[0]
                     for algorithm in study_experiments_config["algorithms"]

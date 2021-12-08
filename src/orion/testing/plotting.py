@@ -70,7 +70,6 @@ def asset_parallel_advantage_plot(plot, names, n_experiments):
 
     line_plots = plot.data
 
-    print(line_plots)
     assert len(line_plots) == len(names)
 
     for name, trace in zip(names, line_plots):
@@ -78,6 +77,22 @@ def asset_parallel_advantage_plot(plot, names, n_experiments):
         assert trace.name == name
         assert trace.mode == "lines+markers"
         assert len(trace.x) == n_experiments
+
+
+def assert_durations_plot(plot, names):
+    """Checks the layout of a regrets plot"""
+    assert plot.layout.title.text == "Time to result"
+    assert plot.layout.xaxis.title.text == "Experiment duration by seconds"
+    assert plot.layout.yaxis.title.text == "loss"
+
+    line_plots = plot.data
+
+    assert len(line_plots) == len(names) * 4
+
+    for name, trace in zip([name for name in names for i in range(4)], line_plots):
+        assert trace.type == "scatter"
+        assert trace.name == name
+        assert trace.mode == "lines+markers"
 
 
 def assert_rankings_plot(plot, names, balanced=10, with_avg=False):

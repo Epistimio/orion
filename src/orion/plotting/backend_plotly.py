@@ -600,10 +600,7 @@ def parallel_advantage(experiments, with_evc_tree=True):
                 exp_parallels["n_workers"].append(experiment.executor.n_workers)
                 exp_parallels["objective"].append(dfs["objective"].tolist()[0])
 
-            df = pd.DataFrame(exp_parallels)
-            frames.append(df)
-
-        return pd.concat(frames)
+        return pd.DataFrame(exp_parallels)
 
     def get_objective_name(experiments):
         """Infer name of objective based on trials of one experiment"""
@@ -621,12 +618,6 @@ def parallel_advantage(experiments, with_evc_tree=True):
 
     if not experiments:
         raise ValueError("Parameter 'experiment' is None")
-
-    if not bool(
-        isinstance(experiments, dict)
-        and isinstance(next(iter(experiments.values())), Iterable)
-    ):
-        raise ValueError(f"Parameter 'experiments' is not Dictionary")
 
     df = build_group()
     fig = go.Figure()
@@ -737,7 +728,6 @@ def durations(experiments, with_evc_tree=True, order_by="completed", **kwargs):
         raise ValueError(f"Parameter 'order_by' is not one of {ORDER_KEYS}")
 
     df = build_groups()
-
     fig = go.Figure()
 
     if df.empty:
@@ -753,29 +743,117 @@ def durations(experiments, with_evc_tree=True, order_by="completed", **kwargs):
             x = exp_data["duration"]
             y = exp_data["best"]
 
-        fig.add_scatter(
-            x=x,
-            y=y,
-            mode="lines+markers",
-            line=dict(color=px.colors.qualitative.G10[i]),
-            name=name,
-            legendgroup=name,
-        )
-        if "best_var" in exp_data:
-            dy = numpy.sqrt(exp_data["best_var"])
-            fig.add_scatter(
-                x=list(x) + list(x)[::-1],
-                y=list(y - dy) + list(y + dy)[::-1],
-                fill="toself",
-                showlegend=False,
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=y,
+                visible=True,
+                mode="lines+markers",
                 line=dict(color=px.colors.qualitative.G10[i]),
                 name=name,
                 legendgroup=name,
             )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=x / 60.0,
+                y=y,
+                visible=False,
+                mode="lines+markers",
+                line=dict(color=px.colors.qualitative.G10[i]),
+                name=name,
+                legendgroup=name,
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=x / (60.0 * 60.0),
+                y=y,
+                visible=False,
+                mode="lines+markers",
+                line=dict(color=px.colors.qualitative.G10[i]),
+                name=name,
+                legendgroup=name,
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=x / (60.0 * 60.0 * 60.0),
+                y=y,
+                visible=False,
+                mode="lines+markers",
+                line=dict(color=px.colors.qualitative.G10[i]),
+                name=name,
+                legendgroup=name,
+            )
+        )
 
     fig.update_layout(
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="right",
+                active=0,
+                x=0.57,
+                y=1.2,
+                buttons=list(
+                    [
+                        dict(
+                            label="Seconds",
+                            method="update",
+                            args=[
+                                {"visible": [True, False, False, False]},
+                                {
+                                    "xaxis": {
+                                        "title": "Experiment duration by seconds"
+                                    },
+                                    "annotations": [],
+                                },
+                            ],
+                        ),
+                        dict(
+                            label="Minutes",
+                            method="update",
+                            args=[
+                                {"visible": [False, True, False, False]},
+                                {
+                                    "xaxis": {
+                                        "title": "Experiment duration by minutes"
+                                    },
+                                    "annotations": [],
+                                },
+                            ],
+                        ),
+                        dict(
+                            label="Hours",
+                            method="update",
+                            args=[
+                                {"visible": [False, False, True, False]},
+                                {
+                                    "xaxis": {"title": "Experiment duration by hours"},
+                                    "annotations": [],
+                                },
+                            ],
+                        ),
+                        dict(
+                            label="Days",
+                            method="update",
+                            args=[
+                                {"visible": [False, False, False, True]},
+                                {
+                                    "xaxis": {"title": "Experiment duration by days"},
+                                    "annotations": [],
+                                },
+                            ],
+                        ),
+                    ]
+                ),
+            )
+        ]
+    )
+    fig.update_layout(
         title=f"Time to result",
-        xaxis_title=f"Experiment duration",
+        xaxis_title=f"Experiment duration by seconds",
         yaxis_title=get_objective_name(experiments),
         hovermode="x",
     )

@@ -37,4 +37,6 @@ class AverageResult(BenchmarkAssessment):
             algorithm_name = list(exp.configuration["algorithms"].keys())[0]
             algorithm_groups[algorithm_name].append(exp)
 
-        return regrets(algorithm_groups)
+        figures = dict()
+        figures[regrets.__name__] = regrets(algorithm_groups)
+        return figures

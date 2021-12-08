@@ -68,10 +68,10 @@ class ParallelAdvantage(BenchmarkAssessment):
             algo_key = algorithm_name + "_workers_" + str(n_worker)
             algorithm_worker_groups[algo_key].append(exp)
 
-        figures = list()
-        figures.append(parallel_advantage(algorithm_groups))
-        figures.append(durations(algorithm_worker_groups))
-        figures.append(regrets(algorithm_worker_groups))
+        figures = dict()
+        figures[parallel_advantage.__name__] = parallel_advantage(algorithm_groups)
+        figures[durations.__name__] = durations(algorithm_worker_groups)
+        figures[regrets.__name__] = regrets(algorithm_worker_groups)
 
         return figures
 

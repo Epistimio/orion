@@ -38,4 +38,6 @@ class AverageRank(BenchmarkAssessment):
             algorithm_name = list(exp.configuration["algorithms"].keys())[0]
             algorithm_groups[algorithm_name].append(exp)
 
-        return rankings(algorithm_groups)
+        figures = dict()
+        figures[rankings.__name__] = rankings(algorithm_groups)
+        return figures
