@@ -54,6 +54,11 @@ setup_args = dict(
             "tpe = orion.algo.tpe:TPE",
             "EvolutionES = orion.algo.evolution_es:EvolutionES",
         ],
+        "Database": [
+            "ephemeraldb = orion.core.io.database.ephemeraldb:EphemeralDB",
+            "pickleddb = orion.core.io.database.pickleddb:PickledDB",
+            "mongodb = orion.core.io.database.mongodb:MongoDB",
+        ],
         "BaseStorageProtocol": [
             "track = orion.storage.track:Track",
             "legacy = orion.storage.legacy:Legacy",

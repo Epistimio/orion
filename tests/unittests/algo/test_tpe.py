@@ -17,6 +17,7 @@ from orion.algo.tpe import (
     compute_max_ei_point,
     ramp_up_weights,
 )
+from orion.core.utils import backward, format_trials
 from orion.core.worker.transformer import build_required_space
 from orion.testing.algo import BaseAlgoTests, phase
 
@@ -797,7 +798,11 @@ class TestTPE(BaseAlgoTests):
         for i, (x, y, z) in enumerate(itertools.product(range(5), "abc", range(1, 7))):
             assert not algo.is_done
             n = algo.n_suggested
-            algo.observe([[x, y, z]], [dict(objective=i)])
+            backward.algo_observe(
+                algo,
+                [format_trials.tuple_to_trial([x, y, z], space)],
+                [dict(objective=i)],
+            )
             assert algo.n_suggested == n + 1
 
         assert i + 1 == space.cardinality
@@ -816,7 +821,12 @@ class TestTPE(BaseAlgoTests):
 
         # Mock sampling so that it quickly samples all possible integers in given bounds
         def sample(self, n_samples=1, seed=None):
-            return [(numpy.log(values.pop()),) for _ in range(n_samples)]
+            return [
+                format_trials.tuple_to_trial(
+                    (numpy.log(values.pop()),), algo.transformed_space
+                )
+                for _ in range(n_samples)
+            ]
 
         def _suggest_random(self, num):
             return self._suggest(num, sample)
