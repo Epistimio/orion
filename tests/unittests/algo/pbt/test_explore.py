@@ -25,8 +25,8 @@ class TestPipelineExplore:
     def test_configuration(self):
 
         explore_configs = [
-            dict(of_type="explorestub", some="args", rval=1),
-            dict(of_type="explorestub", other="args", rval=None),
+            dict(of_type="explorestub", some="args", rval=1, no_call=False),
+            dict(of_type="explorestub", other="args", rval=None, no_call=True),
         ]
         explore = PipelineExplore(explore_configs)
 
@@ -152,6 +152,8 @@ class TestPerturb:
         explore = PerturbExplore()
         rng = RNGStub()
         rng.randint = lambda low, high, size: [1]
+        rng.choice = lambda choices: choices[0]
+
         dim = Categorical("name", ["one", "two", 3, 4.0])
         assert explore.perturb_cat(rng, "whatever", dim) in dim
 
@@ -161,6 +163,7 @@ class TestPerturb:
         rng.randint = lambda low, high, size: [1]
         rng.random = lambda: 1.0
         rng.normal = lambda mean, variance: 0.0
+        rng.choice = lambda choices: choices[0]
 
         params = {"x": 1.0, "y": 2, "z": 0, "f": 10}
         new_params = explore(rng, space, params)
@@ -173,6 +176,7 @@ class TestPerturb:
         rng.randint = lambda low, high, size: [1]
         rng.random = lambda: 1.0
         rng.normal = lambda mean, variance: 0.0
+        rng.choice = lambda choices: choices[0]
 
         params = {"numerical": {"x": 1.0, "y": 2, "f": 10}, "z": 0}
         new_params = explore(rng, hspace, params)
