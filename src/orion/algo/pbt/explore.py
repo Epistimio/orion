@@ -79,7 +79,7 @@ class PerturbExplore(BaseExplore):
         return new_dim_value
 
     def perturb_cat(self, rng, dim_value, dim):
-        return dim.sample(1, seed=tuple(rng.randint(0, 1000000, size=3)))[0]
+        return rng.choice(dim.interval())
 
     def __call__(self, rng, space, params):
         new_params = {}

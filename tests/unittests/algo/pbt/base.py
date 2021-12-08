@@ -185,11 +185,19 @@ class TrialStub:
 
 
 class ExploitStub(BaseExploit):
-    def __init__(self, rval=None, **kwargs):
+    def __init__(self, rval=None, skip=False, should_receive=None, **kwargs):
         self.rval = rval
+        self.skip = skip
+        self.should_receive = should_receive
         self.kwargs = kwargs
 
     def __call__(self, rng, trial, lineages):
+        if self.should_receive:
+            assert trial is self.should_receive
+
+        if self.skip:
+            return None
+
         if self.rval is not None:
             return self.rval
 
@@ -199,16 +207,22 @@ class ExploitStub(BaseExploit):
     def configuration(self):
         configuration = super(ExploitStub, self).configuration
         configuration["rval"] = self.rval
+        configuration["skip"] = self.skip
+        configuration["should_receive"] = self.should_receive
         configuration.update(self.kwargs)
         return configuration
 
 
 class ExploreStub(BaseExplore):
-    def __init__(self, rval=None, **kwargs):
+    def __init__(self, rval=None, no_call=False, **kwargs):
         self.rval = rval
+        self.no_call = no_call
         self.kwargs = kwargs
 
     def __call__(self, rng, space, params):
+        if self.no_call:
+            raise RuntimeError("Should not have been called!")
+
         if self.rval is not None:
             return self.rval
 
@@ -218,5 +232,6 @@ class ExploreStub(BaseExplore):
     def configuration(self):
         configuration = super(ExploreStub, self).configuration
         configuration["rval"] = self.rval
+        configuration["no_call"] = self.no_call
         configuration.update(self.kwargs)
         return configuration
