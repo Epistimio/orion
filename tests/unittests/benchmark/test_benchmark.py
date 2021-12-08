@@ -135,7 +135,8 @@ class TestBenchmark:
 
             assert len(figures) == 1
             assert (
-                type(figures["AverageResult"]["regrets"]) is plotly.graph_objects.Figure
+                type(figures["AverageResult_RosenBrock"]["regrets"])
+                is plotly.graph_objects.Figure
             )
 
     @pytest.mark.usefixtures("version_XYZ")
