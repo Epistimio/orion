@@ -59,7 +59,7 @@ def test_execute_async(backend):
         futures = [executor.submit(function, 1, 2, i) for i in range(10)]
 
         total_task = len(futures)
-        results = executor.async_get(futures)
+        results = executor.async_get(futures, timeout=1)
 
         assert len(results) <= total_task, "Maybe not all tasks were completed"
         assert len(results) > 0, "We got some results"
@@ -92,7 +92,7 @@ def test_execute_async_all(backend):
     assert all_results_async == all_results
 
 
-@pytest.mark.parametrize("backend", backends)
+@pytest.mark.parametrize("backend", [thread, multiprocess, Dask])
 def test_execute_async_timeout(backend):
     """Makes sure async_get does not wait after timeout"""
     with backend(5) as executor:
