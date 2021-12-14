@@ -733,7 +733,7 @@ class ExperimentClient:
             for the threshold `max_broken`. In case of critical errors, you may also directly
             raise an error and force break out of ``workon``.
         idle_timeout: int, optional
-            Maximum time allowed for idle workers. LazyWorker will be raised if
+            Maximum time (seconds) allowed for idle workers. LazyWorkers will be raised if
             timeout is reached. Such timeout are generally caused when reaching the
             end of the optimization when no new trials can be sampled for the idle workers.
             Defaults to ``orion.core.config.worker.idle_timeout``.
