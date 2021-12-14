@@ -93,11 +93,12 @@ class Dask(BaseExecutor):
         results = []
         tobe_deleted = []
 
-        for future in futures:
-            if timeout:
+        for i, future in enumerate(futures):
+            if timeout and i == 0:
                 future.wait(timeout)
 
             if future.ready():
+
                 try:
                     results.append(AsyncResult(future, future.get()))
                 except Exception as err:
