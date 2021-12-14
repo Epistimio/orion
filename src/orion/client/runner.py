@@ -119,7 +119,13 @@ class Runner:
     @property
     def free_worker(self):
         """Returns the number of free worker"""
-        return max(self.client.executor.n_workers - len(self.pending_trials), 0)
+        return min(
+            max(self.client.executor.n_workers - len(self.pending_trials), 0),
+            # This comes from `workon(n_workers)` it limits the number of worker
+            # that can be used by the executor, even if the executor is created with
+            # 5 workers if pool_size is 2 then only 2 workers will be used
+            self.pool_size,
+        )
 
     @property
     def is_done(self):
