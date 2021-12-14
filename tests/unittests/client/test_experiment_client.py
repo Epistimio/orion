@@ -1294,7 +1294,11 @@ class TestWorkon:
             with client.tmp_executor("joblib", n_workers=5, backend="threading"):
                 trials = client.workon(foo_1, max_trials=5, n_workers=2)
 
-            assert trials == 5
+            # Because we use 2 workers to complete 5 trials
+            # at some point we are waiting for one worker to finish
+            # instead of keeping that worker idle we queue another
+            # so in case of failure we have a backup worker ready
+            assert trials == 6
 
             with client.tmp_executor("joblib", n_workers=5, backend="threading"):
                 trials = client.workon(foo_1, max_trials=5, n_workers=3)

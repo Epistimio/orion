@@ -149,11 +149,14 @@ def test_is_done_worker():
 def test_should_sample():
     """Should sample should return the number of trial we can sample"""
 
-    def make_runner(n_workers, max_trials_per_worker):
+    def make_runner(n_workers, max_trials_per_worker, pool_size=None):
+        if pool_size is None:
+            pool_size = n_workers
+
         return Runner(
             client=FakeClient(n_workers),
             fct=function,
-            pool_size=2,
+            pool_size=pool_size,
             idle_timeout=1,
             max_broken=2,
             max_trials_per_worker=max_trials_per_worker,
@@ -168,6 +171,10 @@ def test_should_sample():
     assert (
         make_runner(2, 5).should_sample() == 2
     ), "2 processes and 5 max trials allowed"
+
+    assert (
+        make_runner(5, 5, 2).should_sample() == 2
+    ), "5 processes and 5 max trials allowed but pool_size is 2"
 
     runner = make_runner(5, 10)
     runner.trials = 5
