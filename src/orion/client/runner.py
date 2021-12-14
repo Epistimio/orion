@@ -63,7 +63,7 @@ class _Stat:
     gather: int = 0
 
     def time(self, name):
-        """Measure elapsed  time of a given block"""
+        """Measure elapsed time of a given block"""
         return _timer(self, name)
 
     def report(self):
