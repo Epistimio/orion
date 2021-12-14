@@ -743,6 +743,9 @@ class ExperimentClient:
 
         Raises
         ------
+        :class:`orion.core.utils.exceptions.LazyWorkers`
+             If workers stay idle for too long.
+
         :class:`orion.core.utils.exceptions.InvalidResult`
              If results returned by `fct` have invalid format.
 

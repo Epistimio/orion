@@ -46,25 +46,21 @@ def _optimize(trial, fct, trial_arg, **kwargs):
 log = logging.getLogger(__name__)
 
 
-@contextmanager
-def _timer(self, name):
-    start = time.time()
-    yield
-    total = time.time() - start
-
-    value = getattr(self, name)
-    setattr(self, name, value + total)
-
-
 @dataclass
 class _Stat:
     sample: int = 0
     scatter: int = 0
     gather: int = 0
 
-    def time(self, name):
+    @contextmanager
+    def timer(self, name):
         """Measure elapsed  time of a given block"""
-        return _timer(self, name)
+        start = time.time()
+        yield
+        total = time.time() - start
+
+        value = getattr(self, name)
+        setattr(self, name, value + total)
 
     def report(self):
         """Show the elapsed time of different blocks"""
@@ -90,6 +86,7 @@ class Runner:
         trial_arg,
         on_error,
         interrupt_signal_code=None,
+        gather_timeout=0.01,
         **kwargs,
     ):
         self.client = client
@@ -101,7 +98,7 @@ class Runner:
         self.on_error = on_error
         self.kwargs = kwargs
 
-        self.gather_timeout = 0.01
+        self.gather_timeout = gather_timeout
         self.idle_timeout = idle_timeout
 
         self.worker_broken_trials = 0
@@ -150,7 +147,7 @@ class Runner:
         return len(self.pending_trials) <= 0
 
     @property
-    def running(self):
+    def is_running(self):
         """Returns true if we are still running trials."""
         return self.pending_trials or (self.has_remaining and not self.is_done)
 
@@ -166,7 +163,7 @@ class Runner:
         idle_end = 0
         idle_time = 0
 
-        while self.running:
+        while self.is_running:
 
             # Get new trials for our free workers
             with self.stat.time("sample"):
@@ -192,12 +189,6 @@ class Runner:
 
             if self.is_idle and idle_time > self.idle_timeout:
                 msg = f"Workers have been idle for {idle_time:.2f} s"
-
-                if self.pending_trials:
-                    msg = (
-                        f"{msg}; but not all trials finished; "
-                        f"pending_trials: {self.pending_trials}"
-                    )
 
                 if self.has_remaining and not self.is_done:
                     msg = (
@@ -257,8 +248,8 @@ class Runner:
             results = self.client.executor.async_get(
                 self.futures, timeout=self.gather_timeout
             )
-        except (KeyboardInterrupt, InvalidResult):
-            self.release_all()
+        except KeyboardInterrupt:
+            self._release_all()
             raise
 
         to_be_raised = None
@@ -310,11 +301,15 @@ class Runner:
 
         if to_be_raised is not None:
             log.debug("Runner was interrupted")
-            self.release_all()
+            self._release_all()
             raise to_be_raised
 
-    def release_all(self):
-        """Release all the trials that were reserved by this runner"""
+    def _release_all(self):
+        """Release all the trials that were reserved by this runner.
+        This is only called during exception handling to avoid retaining trials
+        that cannot be retrieved anymore
+
+        """
         # Sanity check
         for _, trial in self.pending_trials.items():
             try:
@@ -322,12 +317,15 @@ class Runner:
             except AlreadyReleased:
                 pass
 
+        self.pending_trials = dict()
+
     def _suggest_trials(self, count):
         """Suggest a bunch of trials to be dispatched to the workers"""
         trials = []
         for _ in range(count):
             try:
-                trial = self.client.suggest()
+                pool_size = count if self.pool_size == 0 else self.pool_size
+                trial = self.client.suggest(pool_size=pool_size)
                 trials.append(trial)
 
             # non critical errors

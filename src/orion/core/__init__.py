@@ -286,6 +286,11 @@ def define_worker_config(config):
         option_type=int,
         default=60,
         env_var="ORION_RESERVATION_TIMEOUT",
+        deprecate=dict(
+            version="v0.3",
+            alternative="worker.idle_timeout",
+            name="worker.reservation_timeout",
+        ),
         help=(
             "Maximum time the experiment can spend trying to reserve a new suggestion."
             "Such timeout are generally caused by slow database, large number of "

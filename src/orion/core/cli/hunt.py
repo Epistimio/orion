@@ -202,12 +202,11 @@ def main(args):
     if config.get("worker"):
         worker_config.update(config.get("worker"))
 
+    # If EVC is not enabled, we force Consumer to ignore code changes.
+    if not config["branching"].get("enable", orion.core.config.evc.enable):
+        ignore_code_changes = True
+    else:
+        ignore_code_changes = config["branching"].get("ignore_code_changes")
+
     with sigterm_as_interrupt():
-
-        # If EVC is not enabled, we force Consumer to ignore code changes.
-        if not config["branching"].get("enable", orion.core.config.evc.enable):
-            ignore_code_changes = True
-        else:
-            ignore_code_changes = config["branching"].get("ignore_code_changes")
-
         workon(experiment, ignore_code_changes=ignore_code_changes, **worker_config)
