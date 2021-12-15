@@ -184,3 +184,9 @@ def algo_observe(algo, trials, results):
             trial.results.append(Trial.Result(name=name, type=name, value=trial_result))
 
     algo.observe(trials)
+
+
+def ensure_trial_working_dir(experiment, trial):
+    """If the trial's exp working dir is not set, set it to current experiment's working dir."""
+    if not trial.exp_working_dir:
+        trial.exp_working_dir = experiment.working_dir

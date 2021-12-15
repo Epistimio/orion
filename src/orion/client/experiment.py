@@ -15,6 +15,7 @@ from contextlib import contextmanager
 import orion.core
 import orion.core.utils.format_trials as format_trials
 from orion.core.io.database import DuplicateKeyError
+from orion.core.utils import backward
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
@@ -842,6 +843,7 @@ class ExperimentClient:
                 with self.suggest(
                     pool_size=pool_size, timeout=reservation_timeout
                 ) as trial:
+                    backward.ensure_trial_working_dir(self, trial)
 
                     kwargs.update(flatten(trial.params))
 
