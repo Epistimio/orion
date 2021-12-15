@@ -27,6 +27,8 @@ class SetupWorkingDir:
 
     def __init__(self, experiment):
         self.experiment = experiment
+        self.tmp = None
+        self._tmpdir = None
 
     def __enter__(self):
         """Create the a permanent directory or a temporary one."""

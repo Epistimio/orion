@@ -362,8 +362,8 @@ class BaseAlgorithm:
         trial: ``orion.core.worker.trial.Trial``
            Trial object to retrieve from the database
 
-        Notes:
-        ------
+        Notes
+        -----
 
         Calling algorithm to `judge` a `point` based on its online `measurements` will effectively
         change a state in the algorithm (like a reinforcement learning agent's hidden state or an
