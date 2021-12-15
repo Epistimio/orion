@@ -212,7 +212,9 @@ class Trial:
         self.id_override = kwargs.pop("_id", None)
 
         for attrname, value in kwargs.items():
-            if attrname == "results":
+            if attrname == "parents":
+                log.info("Trial.parents attribute is deprecated. Value is ignored.")
+            elif attrname == "results":
                 attr = getattr(self, attrname)
                 for item in value:
                     attr.append(self.Result(**item))
