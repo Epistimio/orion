@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.trial`."""
+import os
+
 import bson
 import numpy
 import pytest
-import os
 
 from orion.core.worker.trial import Trial
 

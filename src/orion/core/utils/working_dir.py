@@ -10,7 +10,6 @@ import logging
 import os
 import tempfile
 
-
 log = logging.getLogger(__name__)
 
 
