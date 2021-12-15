@@ -338,7 +338,7 @@ class BaseAlgoTests:
         assert trials[0] in space
         spy.call_count == 1
         self.observe_trials(trials, algo, 1)
-        self.assert_callbacks(spy, num, algo)
+        self.assert_callbacks(spy, num + 1, algo)
 
     def test_configuration(self):
         """Test that configuration property attribute contains all class arguments."""
@@ -409,7 +409,7 @@ class BaseAlgoTests:
         self.force_observe(algo.n_observed, new_algo)
         assert trials[0].id == new_algo.suggest(1)[0].id
 
-        self.assert_callbacks(spy, num, new_algo)
+        self.assert_callbacks(spy, num + 1, new_algo)
 
     @phase
     def test_seed_rng_init(self, mocker, num, attr):
@@ -428,7 +428,7 @@ class BaseAlgoTests:
         self.force_observe(algo.n_observed, new_algo)
         assert new_algo.suggest(1)[0].id == trials[0].id
 
-        self.assert_callbacks(spy, num, new_algo)
+        self.assert_callbacks(spy, num + 1, new_algo)
 
     @phase
     def test_state_dict(self, mocker, num, attr):
@@ -447,7 +447,7 @@ class BaseAlgoTests:
         new_algo.set_state(state)
         assert a.id == new_algo.suggest(1)[0].id
 
-        self.assert_callbacks(spy, num, algo)
+        self.assert_callbacks(spy, num + 1, algo)
 
     @phase
     def test_suggest_n(self, mocker, num, attr):
@@ -551,6 +551,7 @@ class BaseAlgoTests:
         assert algo.n_observed == num
         trials = algo.suggest(1)
         assert algo.n_observed == num
+        assert len(trials) == 1
         self.observe_trials(trials, algo)
         assert algo.n_observed == num + 1
 

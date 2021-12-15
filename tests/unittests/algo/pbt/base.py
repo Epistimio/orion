@@ -9,10 +9,12 @@ import pytest
 
 from orion.algo.pbt.exploit import BaseExploit
 from orion.algo.pbt.explore import BaseExplore
-from orion.algo.pbt.pbt import Lineage, Lineages, compute_fidelities
+from orion.algo.pbt.pbt import PBT, Lineage, Lineages, compute_fidelities
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.flatten import flatten
 from orion.core.utils.pptree import print_tree
+from orion.core.worker.transformer import build_required_space
+from orion.core.worker.trial import Trial
 
 
 def build_full_tree(depth, child_per_parent=2, starting_objective=1):
@@ -122,6 +124,40 @@ def hspace():
     )
 
 
+def sample_trials(
+    space,
+    num,
+    seed=1,
+    status=None,
+    objective=None,
+    params=None,
+    exp_working_dir="/nothing",
+):
+    if params is None:
+        params = {"f": space["f"].original_dimension.original_dimension.low}
+
+    trials = space.sample(num, seed=seed)
+    new_trials = []
+    for trial in trials:
+        if params:
+            trial = trial.branch(params=params)
+
+        trial = space.transform(space.reverse(trial))
+
+        trial.exp_working_dir = exp_working_dir
+
+        if status:
+            trial.status = status
+        if status == "completed" and objective is not None:
+            trial._results.append(
+                Trial.Result(name="objective", type="objective", value=1)
+            )
+
+        new_trials.append(trial)
+
+    return new_trials
+
+
 def build_lineages_for_exploit(
     space, monkeypatch, trials=None, elites=None, additional_trials=None, seed=1, num=10
 ):
@@ -162,13 +198,21 @@ class ObjectiveStub:
 
 
 class TrialStub:
-    def __init__(self, working_dir=None, objective=None, id=None, status=None):
+    def __init__(
+        self,
+        working_dir=None,
+        objective=None,
+        id=None,
+        status=None,
+        params=None,
+        parent=None,
+    ):
         self.id = id
         if working_dir is None:
             working_dir = id
 
         self.working_dir = working_dir
-        if objective:
+        if objective and (status is None or status == "completed"):
             self.objective = ObjectiveStub(objective)
         else:
             self.objective = None
@@ -179,6 +223,9 @@ class TrialStub:
             self.status = "new"
         else:
             self.status = status
+
+        self.params = params
+        self.parent = parent
 
     def __repr__(self):
         return self.id
