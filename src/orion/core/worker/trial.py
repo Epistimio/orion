@@ -434,6 +434,14 @@ class Trial:
             self, ignore_fidelity=True, ignore_lie=True, ignore_parent=True
         )
 
+    def __eq__(self, other):
+        """Whether two trials are equal is based on id alone.
+
+        This includes params, experiment, parent and lie. All other attributes of the
+        trials are ignored when comparing them.
+        """
+        return self.id == other.id
+
     def __hash__(self):
         """Return the hashname for this trial"""
         return self.hash_name

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """Collection of tests for :mod:`orion.core.worker.trial`."""
+import copy
 import os
 
 import bson
@@ -436,6 +437,34 @@ class TestTrial(object):
         assert (
             trial.id == Trial(**bson.BSON.decode(bson.BSON.encode(trial.to_dict()))).id
         )
+
+    def test_equal(self, trial_config):
+        """Check that two trials are equal based on id"""
+
+        trial_config["params"].append(
+            {"name": "/max_epoch", "type": "fidelity", "value": "1"}
+        )
+        t1 = Trial(**trial_config)
+
+        def change_attr(attrname, attrvalue):
+            t2 = Trial(**trial_config)
+            assert t1 == t2
+            setattr(t2, attrname, attrvalue)
+            return t2
+
+        t2 = change_attr("parent", 0)
+        assert t1 != t2
+
+        params = copy.deepcopy(t1._params)
+        params[-1].value = "2"
+        t2 = change_attr("_params", params)
+        assert t1 != t2
+
+        t2 = change_attr("exp_working_dir", "whatever")
+        assert t1 == t2
+
+        t2 = change_attr("status", "broken")
+        assert t1 == t2
 
     def test_no_exp_working_dir(self):
         trial = Trial()
