@@ -29,7 +29,7 @@ _regressors_ = {
 
 
 # pylint:disable=dangerous-default-value
-def average(trials, group_by="order", keys=["best"], return_var=False):
+def average(trials, group_by="order", key="best", return_var=False):
     """Compute the average of some trial attribute.
 
     By default it will compute the average objective at each time step across
@@ -58,10 +58,11 @@ def average(trials, group_by="order", keys=["best"], return_var=False):
 
     group = trials.groupby(group_by)
     means = list()
-    for key in keys:
-        mean = group[key].mean().reset_index().rename(columns={key: f"{key}_mean"})
+    keys = [v.strip() for v in key.split(",")]
+    for k in keys:
+        mean = group[k].mean().reset_index().rename(columns={k: f"{k}_mean"})
         if return_var:
-            mean[f"{key}_var"] = group[key].var().reset_index()[key]
+            mean[f"{k}_var"] = group[k].var().reset_index()[k]
         means.append(mean)
 
     df_merged = reduce(pd.merge, means)

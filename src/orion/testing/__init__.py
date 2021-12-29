@@ -63,7 +63,6 @@ def generate_trials(trial_config, statuses, exp_config=None):
 
     # make each trial unique
     for i, trial in enumerate(new_trials):
-        print(trial)
         if trial["status"] == "completed":
             trial["results"].append({"name": "loss", "type": "objective", "value": i})
 
@@ -102,17 +101,31 @@ def generate_benchmark_experiments_trials(
 
 @contextmanager
 def create_study_experiments(
-    exp_config, trial_config, algorithms, task_number, max_trial
+    exp_config, trial_config, algorithms, task_number, max_trial, n_workers=(1,)
 ):
     gen_exps, gen_trials = generate_benchmark_experiments_trials(
-        algorithms, exp_config, trial_config, task_number, max_trial
+        algorithms, exp_config, trial_config, task_number * len(n_workers), max_trial
     )
+
+    from orion.client.experiment import ExperimentClient
+    from orion.executor.joblib_backend import Joblib
+
+    workers = []
+    for _ in range(task_number):
+        for worker in n_workers:
+            for _ in range(len(algorithms)):
+                workers.append(worker)
     with OrionState(experiments=gen_exps, trials=gen_trials):
         experiments = []
         experiments_info = []
-        for i in range(task_number * len(algorithms)):
+        for i in range(task_number * len(n_workers) * len(algorithms)):
             experiment = experiment_builder.build("experiment-name-{}".format(i))
-            experiments.append(experiment)
+
+            executor = Joblib(n_workers=workers[i], backend="threading")
+            client = ExperimentClient(
+                experiment, Producer(experiment), executor=executor
+            )
+            experiments.append(client)
 
         for index, exp in enumerate(experiments):
             experiments_info.append((int(index / task_number), exp))

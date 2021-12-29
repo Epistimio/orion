@@ -2,12 +2,19 @@
 # -*- coding: utf-8 -*-
 """Tests for :mod:`orion.benchmark.assessment`."""
 
+from os import name
+
 import plotly
 import pytest
 
-from orion.benchmark.assessment import AverageRank, AverageResult
+from orion.benchmark.assessment import AverageRank, AverageResult, ParallelAssessment
 from orion.testing import create_experiment, create_study_experiments
-from orion.testing.plotting import assert_rankings_plot, assert_regrets_plot
+from orion.testing.plotting import (
+    assert_durations_plot,
+    assert_rankings_plot,
+    assert_regrets_plot,
+    asset_parallel_assessment_plot,
+)
 
 
 class TestAverageRank:
@@ -34,7 +41,10 @@ class TestAverageRank:
         ):
             figure = ar1.analysis("task_name", [(0, experiment)])
 
-        assert type(figure["rankings"]) is plotly.graph_objects.Figure
+        assert (
+            type(figure["AverageRank"]["task_name"]["rankings"])
+            is plotly.graph_objects.Figure
+        )
 
     @pytest.mark.usefixtures("version_XYZ")
     def test_figure_layout(self, study_experiments_config):
@@ -45,7 +55,7 @@ class TestAverageRank:
             figure = ar1.analysis("task_name", experiments)
 
             assert_rankings_plot(
-                figure["rankings"],
+                figure["AverageRank"]["task_name"]["rankings"],
                 [
                     list(algorithm["algorithm"].keys())[0]
                     for algorithm in study_experiments_config["algorithms"]
@@ -79,7 +89,10 @@ class TestAverageResult:
         ):
             figure = ar1.analysis("task_name", [(0, experiment)])
 
-        assert type(figure["regrets"]) is plotly.graph_objects.Figure
+        assert (
+            type(figure["AverageResult"]["task_name"]["regrets"])
+            is plotly.graph_objects.Figure
+        )
 
     @pytest.mark.usefixtures("version_XYZ")
     def test_figure_layout(self, study_experiments_config):
@@ -90,11 +103,71 @@ class TestAverageResult:
             figure = ar1.analysis("task_name", experiments)
 
             assert_regrets_plot(
-                figure["regrets"],
+                figure["AverageResult"]["task_name"]["regrets"],
                 [
                     list(algorithm["algorithm"].keys())[0]
                     for algorithm in study_experiments_config["algorithms"]
                 ],
                 balanced=study_experiments_config["max_trial"],
                 with_avg=True,
+            )
+
+
+class TestParallelAssessment:
+    """Test assessment ParallelAssessment"""
+
+    def test_creation(self):
+        """Test creation"""
+        pa1 = ParallelAssessment()
+        assert pa1.n_workers == [1, 2, 4]
+        assert pa1.task_num == 3
+
+        pa2 = ParallelAssessment(task_num=2)
+        assert pa2.n_workers == [1, 1, 2, 2, 4, 4]
+        assert pa2.task_num == 6
+
+        pa3 = ParallelAssessment(executor="joblib", backend="threading")
+        assert pa1.n_workers == [1, 2, 4]
+        assert pa1.task_num == 3
+        assert pa3.get_executor(0).n_workers == 1
+        assert pa3.get_executor(1).n_workers == 2
+        assert pa3.get_executor(2).n_workers == 4
+
+    @pytest.mark.usefixtures("version_XYZ")
+    def test_analysis(self, study_experiments_config):
+        """Test assessment plot format"""
+        task_num = 2
+        n_workers = [1, 2, 4]
+        pa1 = ParallelAssessment(task_num=task_num, n_workers=n_workers)
+
+        study_experiments_config["task_number"] = task_num
+        study_experiments_config["n_workers"] = n_workers
+        with create_study_experiments(**study_experiments_config) as experiments:
+            figure = pa1.analysis("task_name", experiments)
+
+            names = []
+            algorithms = []
+            for algorithm in study_experiments_config["algorithms"]:
+                algo = list(algorithm["algorithm"].keys())[0]
+                algorithms.append(algo)
+
+                for worker in n_workers:
+                    names.append((algo + "_workers_" + str(worker)))
+
+            assert len(figure["ParallelAssessment"]["task_name"]) == 3
+            assert_regrets_plot(
+                figure["ParallelAssessment"]["task_name"]["regrets"],
+                names,
+                balanced=study_experiments_config["max_trial"],
+                with_avg=True,
+            )
+
+            asset_parallel_assessment_plot(
+                figure["ParallelAssessment"]["task_name"]["parallel_assessment"],
+                algorithms,
+                3,
+            )
+
+            assert_durations_plot(
+                figure["ParallelAssessment"]["task_name"]["durations"], names
             )

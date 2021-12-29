@@ -16,12 +16,14 @@ algorithms = [
 
 
 def assert_benchmark_figures(figures, num):
-
+    print(figures)
     figure_num = 0
-    for _, figure in figures.items():
-        figure_num += len(figure)
-        for _, fig in figure.items():
-            assert type(fig) is plotly.graph_objects.Figure
+    for _, tasks in figures.items():
+        for _, figs in tasks.items():
+            figure_num += len(figs)
+
+            for _, fig in figs.items():
+                assert type(fig) is plotly.graph_objects.Figure
 
     assert figure_num == num
 

@@ -240,7 +240,7 @@ def rankings(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
     )
 
 
-def parallel_advantage(experiments, with_evc_tree=True):
+def parallel_assessment(experiments, with_evc_tree=True):
     """
     Make a plot to visualize the performance of running same experiment with different number of
     workers.
@@ -273,7 +273,7 @@ def parallel_advantage(experiments, with_evc_tree=True):
         If no experiment is provided.
 
     """
-    return backend.parallel_advantage(experiments, with_evc_tree=with_evc_tree)
+    return backend.parallel_assessment(experiments, with_evc_tree=with_evc_tree)
 
 
 def durations(experiments, with_evc_tree=True):
@@ -419,7 +419,7 @@ PLOT_METHODS = {
     "regret": regret,
     "regrets": regrets,
     "rankings": rankings,
-    "parallel_advantage": parallel_advantage,
+    "parallel_assessment": parallel_assessment,
     "durations": durations,
 }
 

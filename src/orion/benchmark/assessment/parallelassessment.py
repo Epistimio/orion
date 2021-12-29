@@ -9,12 +9,12 @@ from collections import defaultdict
 
 from orion.benchmark.assessment.base import BenchmarkAssessment
 from orion.executor.base import executor_factory
-from orion.plotting.base import durations, parallel_advantage, regrets
+from orion.plotting.base import durations, parallel_assessment, regrets
 
 
-class ParallelAdvantage(BenchmarkAssessment):
+class ParallelAssessment(BenchmarkAssessment):
     """
-    Evaluate the advantage to run experiment in multiple parallel workers.
+    Evaluate how algorithms' sampling efficiency is affected by different degrees of parallelization.
 
     Evaluate the average performance (objective value) for each search algorithm
     at different time steps (trial number).
@@ -22,21 +22,21 @@ class ParallelAdvantage(BenchmarkAssessment):
 
     Parameters
     ----------
-    task_num: int
-        Number of experiment to run for each number of workers.
-    executor: str
-        Name of orion worker exeuctor.
-    n_workers: list
-        List of intergers for number of workers for each experiment.
-    executor_config: dict
+    task_num: int, optional
+        Number of experiment to run for each number of workers. Default: 1
+    executor: str, optional
+        Name of orion worker exeuctor. If `None`, the default executor of the benchmark will be used. Default: `None`.
+    n_workers: list or tuple, optional
+        List or tuple of integers for the number of workers for each experiment. Default: (1, 2, 4)
+    **executor_config: dict
         Parameters for the corresponding executor.
     """
 
     def __init__(
-        self, task_num=1, executor=None, n_workers=[1, 2, 4], **executor_config
+        self, task_num=1, executor=None, n_workers=(1, 2, 4), **executor_config
     ):
 
-        super(ParallelAdvantage, self).__init__(
+        super(ParallelAssessment, self).__init__(
             task_num=task_num * len(n_workers),
             executor=executor,
             n_workers=n_workers,
@@ -68,14 +68,34 @@ class ParallelAdvantage(BenchmarkAssessment):
             algo_key = algorithm_name + "_workers_" + str(n_worker)
             algorithm_worker_groups[algo_key].append(exp)
 
-        figures = dict()
-        figures[parallel_advantage.__name__] = parallel_advantage(algorithm_groups)
-        figures[durations.__name__] = durations(algorithm_worker_groups)
-        figures[regrets.__name__] = regrets(algorithm_worker_groups)
+        assessment = self.__class__.__name__
+        # figure = dict()
+        # figure[assessment] = dict()
+        # figure[assessment][task] = dict()
 
-        return figures
+        # figure = build_figure_structure(assessment, task)
+        # print(figure)
 
-    def executor(self, task_index):
+        figure = defaultdict(dict)
+        figure[assessment][task] = dict()
+
+        figure[assessment][task][parallel_assessment.__name__] = parallel_assessment(
+            algorithm_groups
+        )
+        figure[assessment][task][durations.__name__] = durations(
+            algorithm_worker_groups
+        )
+        figure[assessment][task][regrets.__name__] = regrets(algorithm_worker_groups)
+        # print(figure)
+
+        # figures = dict()
+        # figures[parallel_assessment.__name__] = parallel_assessment(algorithm_groups)
+        # figures[durations.__name__] = durations(algorithm_worker_groups)
+        # figures[regrets.__name__] = regrets(algorithm_worker_groups)
+
+        return figure
+
+    def get_executor(self, task_index):
         return executor_factory.create(
             self.executor_name,
             n_workers=self.n_workers[task_index],

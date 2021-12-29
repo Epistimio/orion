@@ -35,7 +35,7 @@ def assert_regrets_plot(plot, names, balanced=10, with_avg=False):
     assert plot.layout.title.text == "Average Regret"
     assert plot.layout.xaxis.title.text == "Trials ordered by suggested time"
     assert plot.layout.yaxis.title.text == "loss"
-
+    print(plot)
     if with_avg:
         line_plots = plot.data[::2]
         err_plots = plot.data[1::2]
@@ -63,8 +63,8 @@ def assert_regrets_plot(plot, names, balanced=10, with_avg=False):
                 assert len(trace.x) == balanced * 2
 
 
-def asset_parallel_advantage_plot(plot, names, n_experiments):
-    assert plot.layout.title.text == "Parallel Advantage"
+def asset_parallel_assessment_plot(plot, names, n_experiments):
+    assert plot.layout.title.text == "Parallel Assessment"
     assert plot.layout.xaxis.title.text == "Number of workers"
     assert plot.layout.yaxis.title.text == "loss"
 

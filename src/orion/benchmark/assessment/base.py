@@ -37,7 +37,7 @@ class BenchmarkAssessment(ABC):
         """Return the task number to run for this assessment"""
         return self.task_number
 
-    def executor(self, task_index):
+    def get_executor(self, task_index):
         """Return an instance of `orion.executor.base.Executor` based on the index of tasks
         that the assessment is asking to run."""
         return None
@@ -56,7 +56,12 @@ class BenchmarkAssessment(ABC):
 
         Returns
         -------
-        Dict of plotly.graph_objects.Figure objects
+        Dict of plotly.graph_objects.Figure objects with a format as like
+        {"assessment name": {"task name": {"figure name": plotly.graph_objects.Figure}}}
+
+        Examples
+        >>> {"AverageRank": {"RosenBrock": {"rankings": plotly.graph_objects.Figure}}}
+
         """
         pass
 

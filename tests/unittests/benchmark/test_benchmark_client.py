@@ -8,7 +8,7 @@ import pytest
 
 import orion.benchmark.benchmark_client as benchmark_client
 import orion.core
-from orion.benchmark.assessment import AverageResult, ParallelAdvantage
+from orion.benchmark.assessment import AverageResult, ParallelAssessment
 from orion.benchmark.benchmark_client import get_or_create_benchmark
 from orion.benchmark.task import CarromTable, RosenBrock
 from orion.core.io.database.ephemeraldb import EphemeralDB
@@ -351,8 +351,9 @@ class TestCreateBenchmark:
             assert executor.n_workers == 5
             assert orion.core.config.worker.n_workers != 3
 
-    def test_assesment_workers(self, benchmark_config_py, monkeypatch):
+    def test_assessment_workers(self, monkeypatch):
         def optimize(*args, **kwargs):
+            """Test that process(n_workers) will not override number of workers defined in assessment's executor"""
             optimize.count += 1
             return 1
 
@@ -364,7 +365,7 @@ class TestCreateBenchmark:
                 targets=[
                     {
                         "assess": [
-                            ParallelAdvantage(
+                            ParallelAssessment(
                                 executor="joblib",
                                 n_workers=[1, 2, 4],
                                 backend="threading",

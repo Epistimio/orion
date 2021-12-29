@@ -6,6 +6,7 @@ Benchmark definition
 """
 import copy
 import itertools
+from collections import defaultdict
 
 from tabulate import tabulate
 
@@ -121,11 +122,11 @@ class Benchmark:
 
     def analysis(self):
         """Return all the assessment figures with format as {assessment_name: {figure_name: figure_object}}"""
-        figures = dict()
+        figures = defaultdict(dict)
         for study in self.studies:
             figure = study.analysis()
-            figures[study.assess_name + "_" + study.task_name] = figure
-        return figures
+            figures[study.assess_name].update(figure[study.assess_name])
+        return dict(figures)
 
     def experiments(self, silent=True):
         """Return all the experiments submitted in benchmark"""
@@ -288,7 +289,7 @@ class Study:
         self.assess_name = type(self.assessment).__name__
         self.task_name = type(self.task).__name__
         self.experiments_info = []
-        self.has_assesment_executor = True if assessment.executor(0) else False
+        self.has_assesment_executor = bool(assessment.get_executor(0))
 
     def _build_benchmark_algorithms(self, algorithms):
         benchmark_algorithms = list()
@@ -324,7 +325,7 @@ class Study:
                 )
 
                 executor = (
-                    self.assessment.executor(task_index) or self.benchmark.executor
+                    self.assessment.get_executor(task_index) or self.benchmark.executor
                 )
                 experiment = create_experiment(
                     experiment_name,

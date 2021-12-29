@@ -13,7 +13,7 @@ from orion.core.worker.experiment import Experiment
 from orion.plotting.base import (
     durations,
     lpi,
-    parallel_advantage,
+    parallel_assessment,
     parallel_coordinates,
     partial_dependencies,
     rankings,
@@ -29,7 +29,7 @@ from orion.testing.plotting import (
     assert_rankings_plot,
     assert_regret_plot,
     assert_regrets_plot,
-    asset_parallel_advantage_plot,
+    asset_parallel_assessment_plot,
 )
 
 config = dict(
@@ -1071,12 +1071,12 @@ class TestRegrets:
 
 @pytest.mark.usefixtures("version_XYZ")
 class TestParallelAdvantage:
-    """Tests the ``parallel_advantage()`` method provided by the plotly backend"""
+    """Tests the ``parallel_assessment()`` method provided by the plotly backend"""
 
     def test_requires_argument(self):
         """Tests that the experiment data are required."""
         with pytest.raises(ValueError):
-            parallel_advantage(None)
+            parallel_assessment(None)
 
     def test_returns_plotly_object(self, monkeypatch):
         """Tests that the plotly backend returns a plotly object"""
@@ -1086,7 +1086,7 @@ class TestParallelAdvantage:
             _,
             experiment,
         ):
-            plot = parallel_advantage({"random": [experiment]})
+            plot = parallel_assessment({"random": [experiment]})
 
         assert type(plot) is plotly.graph_objects.Figure
 
@@ -1098,12 +1098,12 @@ class TestParallelAdvantage:
             _,
             experiment,
         ):
-            plot = parallel_advantage({"random": [experiment] * 2})
+            plot = parallel_assessment({"random": [experiment] * 2})
 
-        asset_parallel_advantage_plot(plot, [f"random"], 1)
+        asset_parallel_assessment_plot(plot, [f"random"], 1)
 
     def test_list_of_experiments(self, monkeypatch):
-        """Tests the parallel_advantage with list of experiments"""
+        """Tests the parallel_assessment with list of experiments"""
         mock_experiment_with_random_to_pandas(monkeypatch)
         with create_experiment(config, trial_config, ["completed"]) as (
             _,
@@ -1114,9 +1114,9 @@ class TestParallelAdvantage:
                 experiment.name, branching={"branch_to": "child", "enable": True}
             )
 
-            plot = parallel_advantage({"random": [experiment, child]})
+            plot = parallel_assessment({"random": [experiment, child]})
 
-        asset_parallel_advantage_plot(plot, ["random"], 1)
+        asset_parallel_assessment_plot(plot, ["random"], 1)
 
         mock_experiment_with_random_to_pandas(monkeypatch)
         with create_experiment(config, trial_config, ["completed"]) as (
@@ -1124,14 +1124,14 @@ class TestParallelAdvantage:
             _,
             experiment,
         ):
-            plot = parallel_advantage(
+            plot = parallel_assessment(
                 {"exp-1": [experiment] * 10, "exp-2": [experiment] * 10}
             )
 
-        asset_parallel_advantage_plot(plot, ["exp-1", "exp-2"], 1)
+        asset_parallel_assessment_plot(plot, ["exp-1", "exp-2"], 1)
 
     def test_list_of_experiments_name_conflict(self, monkeypatch):
-        """Tests the parallel_advantage with list of experiments with the same name"""
+        """Tests the parallel_assessment with list of experiments with the same name"""
         mock_experiment_with_random_to_pandas(monkeypatch)
         with create_experiment(config, trial_config, ["completed"]) as (
             _,
@@ -1144,35 +1144,35 @@ class TestParallelAdvantage:
             )
             assert child.name == experiment.name
             assert child.version == experiment.version + 1
-            plot = parallel_advantage({"random": [experiment, child]})
+            plot = parallel_assessment({"random": [experiment, child]})
 
-        asset_parallel_advantage_plot(plot, ["random"], 1)
+        asset_parallel_assessment_plot(plot, ["random"], 1)
 
     def test_dict_of_experiments(self, monkeypatch):
-        """Tests the parallel_advantage with renamed experiments"""
+        """Tests the parallel_assessment with renamed experiments"""
         mock_experiment_with_random_to_pandas(monkeypatch)
         with create_experiment(config, trial_config, ["completed"]) as (
             _,
             _,
             experiment,
         ):
-            plot = parallel_advantage({"exp-1": experiment, "exp-2": experiment})
+            plot = parallel_assessment({"exp-1": experiment, "exp-2": experiment})
 
-        asset_parallel_advantage_plot(plot, ["exp-1", "exp-2"], 1)
+        asset_parallel_assessment_plot(plot, ["exp-1", "exp-2"], 1)
 
     def test_dict_of_list_of_experiments(self, monkeypatch):
-        """Tests the regrparallel_advantageets with avg of experiments"""
+        """Tests the regrparallel_assessmentets with avg of experiments"""
         mock_experiment_with_random_to_pandas(monkeypatch)
         with create_experiment(config, trial_config, ["completed"]) as (
             _,
             _,
             experiment,
         ):
-            plot = parallel_advantage(
+            plot = parallel_assessment(
                 {"exp-1": [experiment] * 10, "exp-2": [experiment] * 10}
             )
 
-        asset_parallel_advantage_plot(plot, ["exp-1", "exp-2"], 1)
+        asset_parallel_assessment_plot(plot, ["exp-1", "exp-2"], 1)
 
     def test_ignore_uncompleted_statuses(self, monkeypatch):
         """Tests that uncompleted statuses are ignored"""
@@ -1190,9 +1190,9 @@ class TestParallelAdvantage:
             ],
         )
         with create_experiment(config, trial_config) as (_, _, experiment):
-            plot = parallel_advantage({"random": [experiment]})
+            plot = parallel_assessment({"random": [experiment]})
 
-        asset_parallel_advantage_plot(plot, ["random"], 1)
+        asset_parallel_assessment_plot(plot, ["random"], 1)
 
 
 @pytest.mark.usefixtures("version_XYZ")

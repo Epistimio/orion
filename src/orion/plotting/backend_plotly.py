@@ -199,7 +199,7 @@ def rankings(experiments, with_evc_tree=True, order_by="suggested", **kwargs):
                 rankings.append(build_frame(competition))
             df = pd.concat(rankings)
             data_frames = orion.analysis.average(
-                df, group_by=["order", "name"], keys=["rank"], return_var=True
+                df, group_by=["order", "name"], key="rank", return_var=True
             )
         else:
             data_frames = build_frame(competitions)
@@ -549,7 +549,7 @@ def regret(
     return fig
 
 
-def parallel_advantage(experiments, with_evc_tree=True):
+def parallel_assessment(experiments, with_evc_tree=True):
     """Plotly implementation of `orion.plotting.lpi`"""
     compute_average = bool(
         isinstance(experiments, dict)
@@ -564,7 +564,7 @@ def parallel_advantage(experiments, with_evc_tree=True):
                 frames = build_frame(group)
 
                 df = orion.analysis.average(
-                    frames, group_by="n_workers", keys=["objective", "duration"]
+                    frames, group_by="n_workers", key="objective,duration"
                 )
                 df["names"] = [name] * len(df)
 
@@ -647,7 +647,7 @@ def parallel_advantage(experiments, with_evc_tree=True):
         )
 
     fig.update_layout(
-        title=f"Parallel Advantage",
+        title=f"Parallel Assessment",
         xaxis_title=f"Number of workers",
         yaxis_title=get_objective_name(experiments),
         hovermode="x",
@@ -669,9 +669,7 @@ def durations(experiments, with_evc_tree=True, order_by="completed", **kwargs):
         if compute_average:
             data_frames = dict()
             for name, group in experiments.items():
-                df = orion.analysis.average(
-                    build_frame(group), keys=["best", "duration"]
-                )
+                df = orion.analysis.average(build_frame(group), key="best,duration")
                 df["name"] = [name] * len(df)
                 data_frames[name] = df
             data_frames = pd.concat(data_frames)

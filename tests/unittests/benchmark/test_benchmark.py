@@ -135,7 +135,7 @@ class TestBenchmark:
 
             assert len(figures) == 1
             assert (
-                type(figures["AverageResult_RosenBrock"]["regrets"])
+                type(figures[study.assess_name][study.task_name]["regrets"])
                 is plotly.graph_objects.Figure
             )
 
@@ -285,7 +285,10 @@ class TestStudy:
 
             figure = study.analysis()
 
-            assert type(figure["regrets"]) is plotly.graph_objects.Figure
+            assert (
+                type(figure[study.assess_name][study.task_name]["regrets"])
+                is plotly.graph_objects.Figure
+            )
 
     def test_experiments(self, study, study_experiments_config, task_number):
         """Test to get experiments of a study"""
@@ -299,4 +302,4 @@ class TestStudy:
             assert (
                 len(experiments) == study_experiments_config["task_number"] * algo_num
             )
-            assert isinstance(experiments[0], Experiment)
+            assert isinstance(experiments[0], ExperimentClient)
