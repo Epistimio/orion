@@ -69,12 +69,6 @@ class ParallelAssessment(BenchmarkAssessment):
             algorithm_worker_groups[algo_key].append(exp)
 
         assessment = self.__class__.__name__
-        # figure = dict()
-        # figure[assessment] = dict()
-        # figure[assessment][task] = dict()
-
-        # figure = build_figure_structure(assessment, task)
-        # print(figure)
 
         figure = defaultdict(dict)
         figure[assessment][task] = dict()
@@ -86,12 +80,6 @@ class ParallelAssessment(BenchmarkAssessment):
             algorithm_worker_groups
         )
         figure[assessment][task][regrets.__name__] = regrets(algorithm_worker_groups)
-        # print(figure)
-
-        # figures = dict()
-        # figures[parallel_assessment.__name__] = parallel_assessment(algorithm_groups)
-        # figures[durations.__name__] = durations(algorithm_worker_groups)
-        # figures[regrets.__name__] = regrets(algorithm_worker_groups)
 
         return figure
 
