@@ -35,7 +35,7 @@ def assert_regrets_plot(plot, names, balanced=10, with_avg=False):
     assert plot.layout.title.text == "Average Regret"
     assert plot.layout.xaxis.title.text == "Trials ordered by suggested time"
     assert plot.layout.yaxis.title.text == "loss"
-    print(plot)
+
     if with_avg:
         line_plots = plot.data[::2]
         err_plots = plot.data[1::2]

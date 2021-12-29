@@ -42,9 +42,10 @@ class ParallelAssessment(BenchmarkAssessment):
             n_workers=n_workers,
             **executor_config
         )
+        self.worker_num = len(n_workers)
         self.executor_name = executor
         self.executor_config = executor_config
-        self.n_workers = [n_worker for n_worker in n_workers for _ in range(task_num)]
+        self.workers = [n_worker for n_worker in n_workers for _ in range(task_num)]
 
     def analysis(self, task, experiments):
         """
@@ -64,7 +65,7 @@ class ParallelAssessment(BenchmarkAssessment):
             algorithm_name = list(exp.configuration["algorithms"].keys())[0]
             algorithm_groups[algorithm_name].append(exp)
 
-            n_worker = self.n_workers[task_index]
+            n_worker = self.workers[task_index]
             algo_key = algorithm_name + "_workers_" + str(n_worker)
             algorithm_worker_groups[algo_key].append(exp)
 
@@ -86,6 +87,15 @@ class ParallelAssessment(BenchmarkAssessment):
     def get_executor(self, task_index):
         return executor_factory.create(
             self.executor_name,
-            n_workers=self.n_workers[task_index],
+            n_workers=self.workers[task_index],
             **self.executor_config
         )
+
+    @property
+    def configuration(self):
+        """Return the configuration of the assessment."""
+        config = super(ParallelAssessment, self).configuration
+        config[self.__class__.__qualname__]["task_num"] = int(
+            self.task_num / self.worker_num
+        )
+        return config

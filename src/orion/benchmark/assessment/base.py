@@ -26,11 +26,7 @@ class BenchmarkAssessment(ABC):
         self.task_number = task_num
         self._param_names = kwargs
 
-        self._param_names["task_num"] = (
-            int(task_num / len(kwargs.get("n_workers")))
-            if kwargs.get("n_workers")
-            else task_num
-        )
+        self._param_names["task_num"] = task_num
 
     @property
     def task_num(self):

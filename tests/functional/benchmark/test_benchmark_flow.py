@@ -15,11 +15,13 @@ algorithms = [
 ]
 
 
-def assert_benchmark_figures(figures, num):
-    print(figures)
+def assert_benchmark_figures(figures, num, assessments, tasks):
+
     figure_num = 0
-    for _, tasks in figures.items():
-        for _, figs in tasks.items():
+    for i, (assess, task_figs) in enumerate(figures.items()):
+        assert assess == assessments[i].__class__.__name__
+        for j, (task, figs) in enumerate(task_figs.items()):
+            assert task == tasks[j].__class__.__name__
             figure_num += len(figs)
 
             for _, fig in figs.items():
@@ -80,9 +82,9 @@ def test_simple():
 
     figures = benchmark.analysis()
 
-    assert_benchmark_figures(figures, 4)
+    assert_benchmark_figures(figures, 4, assessments, tasks)
 
     benchmark = get_or_create_benchmark(name="bm001")
     figures = benchmark.analysis()
 
-    assert_benchmark_figures(figures, 4)
+    assert_benchmark_figures(figures, 4, assessments, tasks)

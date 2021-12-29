@@ -119,15 +119,15 @@ class TestParallelAssessment:
     def test_creation(self):
         """Test creation"""
         pa1 = ParallelAssessment()
-        assert pa1.n_workers == [1, 2, 4]
+        assert pa1.workers == [1, 2, 4]
         assert pa1.task_num == 3
 
         pa2 = ParallelAssessment(task_num=2)
-        assert pa2.n_workers == [1, 1, 2, 2, 4, 4]
+        assert pa2.workers == [1, 1, 2, 2, 4, 4]
         assert pa2.task_num == 6
 
         pa3 = ParallelAssessment(executor="joblib", backend="threading")
-        assert pa1.n_workers == [1, 2, 4]
+        assert pa1.workers == [1, 2, 4]
         assert pa1.task_num == 3
         assert pa3.get_executor(0).n_workers == 1
         assert pa3.get_executor(1).n_workers == 2
