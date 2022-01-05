@@ -106,17 +106,13 @@ class PBT(BaseAlgorithm):
         Number of generations, from lowest fidelity to highest one. This will determine how
         many branchings occur during the execution of PBT. Default: 10
     exploit: dict or None, optional
-        In the mutate part, one can define the customized mutate function with its mutate factors,
-        such as multiply factor (times/divides by a multiply factor) and add factor
-        (add/subtract by a multiply factor). The function must be defined by
-        an importable string. If None, default
-        mutate function is used: ``orion.algo.mutate_functions.default_mutate``.
+        Configuration for a ``pbt.exploit.BaseExploit`` object that determines
+        when if a trial should be exploited or not. If None, default configuration
+        is a ``PipelineExploit`` with ``BacktrackExploit`` and ``TruncateExploit``.
     explore: dict or None, optional
-        In the mutate part, one can define the customized mutate function with its mutate factors,
-        such as multiply factor (times/divides by a multiply factor) and add factor
-        (add/subtract by a multiply factor). The function must be defined by
-        an importable string. If None, default
-        mutate function is used: ``orion.algo.mutate_functions.default_mutate``.
+        Configuration for a ``pbt.explore.BaseExplore`` object that returns new parameter
+        values for exploited trials. If None, default configuration is a ``PipelineExplore`` with
+        ``ResampleExplore`` and ``PerturbExplore``.
     fork_timeout: int, optional
         Maximum amount of time in seconds that an attempt to mutate a trial should take, otherwise
         algorithm.suggest() will raise ``SuggestionTimeout``. Default: 60
