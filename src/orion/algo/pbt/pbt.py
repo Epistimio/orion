@@ -108,7 +108,7 @@ class PBT(BaseAlgorithm):
         trials executed until lowest fidelity. If a trial is broken during execution at lowest
         fidelity, the algorithm will sample a new trial, keeping the population of *non-broken*
         trials at `population_size`.  For efficiency it is better to have less workers running than
-        total population_size. Default: 50.
+        population_size. Default: 50.
     generations: int, optional
         Number of generations, from lowest fidelity to highest one. This will determine how
         many branchings occur during the execution of PBT. Default: 10
