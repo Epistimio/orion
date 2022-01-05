@@ -21,6 +21,13 @@ from orion.core.utils.tree import TreeNode
 logger = logging.getLogger(__name__)
 
 
+SPACE_ERROR = """
+PBT cannot be used if space does not contain a fidelity dimension.
+For more information on the configuration and usage of Hyperband, see
+https://orion.readthedocs.io/en/develop/user/algorithms.html#pbt
+"""
+
+
 def get_objective(trial):
     if trial.objective and trial.objective.value is not None:
         return trial.objective.value

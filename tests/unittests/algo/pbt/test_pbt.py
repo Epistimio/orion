@@ -609,6 +609,14 @@ class TestGenericPBT(BaseAlgoTests):
     }
     space = {"x": "uniform(0, 1)", "y": "uniform(0, 1)", "f": "fidelity(1, 10, base=1)"}
 
+    def test_no_fidelity(self):
+        space = self.create_space({"x": "uniform(0, 1)", "y": "uniform(0, 1)"})
+
+        with pytest.raises(
+            RuntimeError, match="PBT cannot be used if space does not contain"
+        ):
+            self.create_algo(space=space)
+
     @pytest.mark.skip(
         reason="There are no good reasons to use PBT if search space is so small"
     )
