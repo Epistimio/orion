@@ -173,7 +173,7 @@ def test_should_sample():
     ), "2 processes and 5 max trials allowed"
 
     assert (
-        make_runner(5, 5, 2).should_sample() == 2
+        make_runner(5, 5, 2).should_sample() == 5
     ), "5 processes and 5 max trials allowed but pool_size is 2"
 
     runner = make_runner(5, 10)
