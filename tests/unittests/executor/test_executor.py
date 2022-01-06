@@ -78,10 +78,8 @@ def test_execute_async(backend):
         total_task = len(futures)
         results = executor.async_get(futures, timeout=1)
 
-        assert len(results) <= total_task, "Maybe not all tasks were completed"
         assert len(results) > 0, "We got some results"
         assert len(futures) == total_task - len(results), "Finished futures got removed"
-        assert len(results) + len(futures) == total_task, "Future were removed"
 
 
 @pytest.mark.parametrize("backend", backends)
