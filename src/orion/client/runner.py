@@ -18,7 +18,6 @@ from orion.core.utils.exceptions import (
     CompletedExperiment,
     InvalidResult,
     ReservationRaceCondition,
-    ReservationTimeout,
     WaitingForTrials,
 )
 from orion.core.utils.flatten import flatten, unflatten
@@ -91,7 +90,7 @@ class Runner:
     ):
         self.client = client
         self.fct = fct
-        self.pool_size = pool_size
+        self.batch_size = pool_size
         self.max_trials_per_worker = max_trials_per_worker
         self.max_broken = max_broken
         self.trial_arg = trial_arg
@@ -105,7 +104,6 @@ class Runner:
         self.trials = 0
         self.futures = []
         self.pending_trials = dict()
-        # self.free_worker = pool_size
         self.stat = _Stat()
 
         if interrupt_signal_code is None:
@@ -116,13 +114,7 @@ class Runner:
     @property
     def free_worker(self):
         """Returns the number of free worker"""
-        return min(
-            max(self.client.executor.n_workers - len(self.pending_trials), 0),
-            # This comes from `workon(n_workers)` it limits the number of worker
-            # that can be used by the executor, even if the executor is created with
-            # 5 workers if pool_size is 2 then only 2 workers will be used
-            self.pool_size,
-        )
+        return max(self.client.executor.n_workers - len(self.pending_trials), 0)
 
     @property
     def is_done(self):
@@ -324,21 +316,18 @@ class Runner:
         trials = []
         for _ in range(count):
             try:
-                pool_size = count if self.pool_size == 0 else self.pool_size
-                trial = self.client.suggest(pool_size=pool_size)
+                batch_size = count if self.batch_size == 0 else self.batch_size
+                trial = self.client.suggest(pool_size=batch_size)
                 trials.append(trial)
 
             # non critical errors
             except WaitingForTrials:
                 break
 
-            except ReservationTimeout:
+            except ReservationRaceCondition:
                 break
 
             except CompletedExperiment:
-                break
-
-            except ReservationRaceCondition:
                 break
 
         return trials

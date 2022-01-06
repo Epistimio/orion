@@ -750,15 +750,15 @@ class ExperimentClient:
              If results returned by `fct` have invalid format.
 
         :class:`orion.core.utils.exceptions.WaitingForTrials`
-            if the experiment is not completed and algorithm needs to wait for some
+            If the experiment is not completed and algorithm needs to wait for some
             trials to complete before it can suggest new trials.
 
         :class:`orion.core.utils.exceptions.BrokenExperiment`
-            if too many trials failed to run and the experiment cannot continue.
+            If too many trials failed to run and the experiment cannot continue.
             This is determined by ``max_broken`` in the configuration of the experiment.
 
-        :class:`orion.core.utils.exceptions.ReservationTimeout`
-            if the algorithm of the experiment could not sample new unique points.
+        :class:`orion.core.utils.exceptions.ReservationRaceCondition`
+            If a trial could not be reserved right after they were generated.
 
         :class:`orion.core.utils.exceptions.UnsupportedOperation`
             If the experiment was not loaded in executable mode.
