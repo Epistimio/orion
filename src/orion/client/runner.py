@@ -53,7 +53,7 @@ class _Stat:
     gather: int = 0
 
     @contextmanager
-    def timer(self, name):
+    def time(self, name):
         """Measure elapsed  time of a given block"""
         start = time.time()
         yield

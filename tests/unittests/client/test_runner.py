@@ -16,7 +16,7 @@ class FakeClient:
         self.executor = executor_factory.create("joblib", n_workers)
         self.suggest_error = WaitingForTrials
 
-    def suggest(self):
+    def suggest(self, pool_size=None):
         """Fake suggest."""
         raise self.suggest_error
 
