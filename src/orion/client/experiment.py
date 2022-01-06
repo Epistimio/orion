@@ -828,6 +828,7 @@ class ExperimentClient:
 
         """
         self._check_if_executable()
+        self._free_executor()
 
         if self._pacemakers:
             raise RuntimeError(
@@ -840,8 +841,13 @@ class ExperimentClient:
     # Private
     ###
     def __del__(self):
+        self._free_executor()
+
+    def _free_executor(self):
         if self._executor_owner:
             self._executor.__exit__(None, None, None)
+            self._executor = None
+            self._executor_owner = False
 
     def __repr__(self):
         """Represent the object as a string."""

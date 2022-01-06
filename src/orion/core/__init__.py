@@ -287,7 +287,7 @@ def define_worker_config(config):
         default=60,
         env_var="ORION_RESERVATION_TIMEOUT",
         deprecate=dict(
-            version="v0.3",
+            version="v0.4",
             alternative="worker.idle_timeout",
             name="worker.reservation_timeout",
         ),
