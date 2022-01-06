@@ -657,12 +657,7 @@ class TestSuggest:
             # algo will suggest once an already existing trial
             def amnesia(num=1):
                 """Suggest a new value and then always suggest the same"""
-                if amnesia.count == 0:
-                    value = [0]
-                else:
-                    value = [new_value]
-
-                amnesia.count += 1
+                value = [new_value]
 
                 return [format_trials.tuple_to_trial(value, experiment.space)]
 

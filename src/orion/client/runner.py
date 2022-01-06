@@ -86,6 +86,7 @@ class Runner:
         on_error,
         interrupt_signal_code=None,
         gather_timeout=0.01,
+        n_workers=None,
         **kwargs,
     ):
         self.client = client
@@ -105,6 +106,7 @@ class Runner:
         self.futures = []
         self.pending_trials = dict()
         self.stat = _Stat()
+        self.n_worker_override = n_workers
 
         if interrupt_signal_code is None:
             interrupt_signal_code = orion.core.config.worker.interrupt_signal_code
@@ -114,7 +116,11 @@ class Runner:
     @property
     def free_worker(self):
         """Returns the number of free worker"""
-        return max(self.client.executor.n_workers - len(self.pending_trials), 0)
+        n_workers = self.client.executor.n_workers
+        if self.n_worker_override is not None:
+            n_workers = self.n_worker_override
+
+        return max(n_workers - len(self.pending_trials), 0)
 
     @property
     def is_done(self):

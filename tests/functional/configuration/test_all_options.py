@@ -431,6 +431,7 @@ class TestExperimentConfig(ConfigurationTestSuite):
             "user": "useruvt",
             "max_trials": 50,
             "max_broken": 15,
+            "idle_timeout": 30,
             "working_dir": "here_again",
             "algorithms": {"ac": {"d": "e", "f": "g"}},
             "strategy": {"sd": {"b": "c", "d": "e"}},
@@ -697,9 +698,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
         assert (
             self.workon_kwargs["reservation_timeout"] == config["reservation_timeout"]
         )
-        assert (
-            self.workon_kwargs["idle_timeout"] == config["idle_timeout"]
-        )
+        assert self.workon_kwargs["idle_timeout"] == config["idle_timeout"]
         assert self.workon_kwargs["max_trials"] == config["max_trials"]
         assert self.workon_kwargs["max_broken"] == config["max_broken"]
 
