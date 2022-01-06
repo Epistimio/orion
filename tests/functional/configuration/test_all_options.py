@@ -697,6 +697,9 @@ class TestWorkerConfig(ConfigurationTestSuite):
         assert (
             self.workon_kwargs["reservation_timeout"] == config["reservation_timeout"]
         )
+        assert (
+            self.workon_kwargs["idle_timeout"] == config["idle_timeout"]
+        )
         assert self.workon_kwargs["max_trials"] == config["max_trials"]
         assert self.workon_kwargs["max_broken"] == config["max_broken"]
 
