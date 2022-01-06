@@ -19,17 +19,12 @@ from orion.core.utils.exceptions import (
     InvalidResult,
     ReservationRaceCondition,
     WaitingForTrials,
+    LazyWorkers,
 )
 from orion.core.utils.flatten import flatten, unflatten
 from orion.core.worker.consumer import ExecutionError
 from orion.core.worker.trial import AlreadyReleased
 from orion.executor.base import AsyncException, AsyncResult
-
-
-class LazyWorkers(Exception):
-    """Raised when all the workers have been idle for a given amount of time"""
-
-    pass
 
 
 def _optimize(trial, fct, trial_arg, **kwargs):

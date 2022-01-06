@@ -49,6 +49,12 @@ class ReservationRaceCondition(Exception):
     pass
 
 
+class LazyWorkers(Exception):
+    """Raised when all the workers have been idle for a given amount of time"""
+
+    pass
+
+
 MISSING_RESULT_FILE = """
 Cannot parse result file.
 
