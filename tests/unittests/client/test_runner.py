@@ -606,7 +606,7 @@ class TestWorkon:
             # at some point we are waiting for one worker to finish
             # instead of keeping that worker idle we queue another
             # so in case of failure we have a backup worker ready
-            assert trials == 6
+            assert trials == 8
 
             with client.tmp_executor("joblib", n_workers=5, backend="threading"):
                 trials = client.workon(foo_1, max_trials=5, n_workers=3)
@@ -621,14 +621,20 @@ def test_executor_gets_created_if_not_provided():
     conf = copy.deepcopy(config)
 
     # make sure the executor is not set
-    conf.popitem("executor", None)
+    conf.pop("executor", None)
+    executor = None
 
     with create_experiment(config, base_trial) as (cfg, experiment, client):
-        assert client.executor is not None, "Client created an executor"
+        executor = client.executor
+        assert executor is not None, "Client created an executor"
         assert client._executor_owner is True, "Client own the executor"
 
-    assert client.executor is None, "Client freed the executor"
+    assert client._executor is None, "Client freed the executor"
     assert client._executor_owner is False, "Client does not own the executor"
+
+    # executor was closed and cannot be used
+    with pytest.raises(ValueError):
+        executor.submit(function, 2, 2)
 
 
 def test_user_executor_is_not_deleted():
@@ -636,11 +642,13 @@ def test_user_executor_is_not_deleted():
 
     global config
     conf = copy.deepcopy(config)
-    conf["executor"] = executor_factory.create("joblib")
+
+    executor = executor_factory.create("joblib", 1)
+    conf["executor"] = executor
 
     with create_experiment(config, base_trial) as (cfg, experiment, client):
         assert client.executor is not None, "Client has an executor"
         assert client._executor_owner is True, "Client does not own the executor"
 
-    assert client.executor is None, "Client did not free the executor"
-    assert client._executor_owner is False, "Client does not own the executor"
+    future = executor.submit(function, 2, 2)
+    assert future.get() == 4, "Executor was not closed & can still be used"

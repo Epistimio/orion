@@ -93,8 +93,10 @@ class ExperimentClient:
         if heartbeat is None:
             heartbeat = orion.core.config.worker.heartbeat
         self.heartbeat = heartbeat
+
         self._executor = executor
         self._executor_owner = False
+
         self.plot = PlotAccessor(self)
 
     ###
@@ -103,7 +105,7 @@ class ExperimentClient:
     @property
     def executor(self):
         """Returns the current executor to use to run jobs in parallel"""
-        if not self._executor:
+        if self._executor is None:
             self._executor_owner = True
             self._executor = executor_factory.create(
                 orion.core.config.worker.executor,
