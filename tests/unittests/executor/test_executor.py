@@ -54,6 +54,23 @@ def test_execute_bad_function(backend):
 
 
 @pytest.mark.parametrize("backend", backends)
+def test_execute_async_exception(backend):
+    with backend(5) as executor:
+        futures = [executor.submit(bad_function, 1, 2, i) for i in range(20)]
+        results = []
+
+        # waiting should not raise exception
+        while len(results) != 20:
+            partial = executor.async_get(futures)
+            results.extend(partial)
+
+        # exception is raised when we try to fetch the result
+        for result in results:
+            with pytest.raises(BadException):
+                _ = result.value
+
+
+@pytest.mark.parametrize("backend", backends)
 def test_execute_async(backend):
     with backend(5) as executor:
         futures = [executor.submit(function, 1, 2, i) for i in range(10)]
