@@ -112,6 +112,7 @@ class Runner:
     def free_worker(self):
         """Returns the number of free worker"""
         n_workers = self.client.executor.n_workers
+
         if self.n_worker_override is not None:
             n_workers = self.n_worker_override
 
@@ -157,7 +158,6 @@ class Runner:
         idle_time = 0
 
         while self.is_running:
-
             # Get new trials for our free workers
             with self.stat.time("sample"):
                 new_trials = self.sample()

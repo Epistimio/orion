@@ -807,12 +807,13 @@ class ExperimentClient:
         runner = Runner(
             self,
             fct,
-            n_workers,
-            idle_timeout,
-            max_trials_per_worker,
-            max_broken,
-            trial_arg,
-            on_error,
+            pool_size=pool_size,
+            idle_timeout=idle_timeout,
+            max_trials_per_worker=max_trials_per_worker,
+            max_broken=max_broken,
+            trial_arg=trial_arg,
+            on_error=on_error,
+            n_workers=n_workers,
             **kwargs,
         )
 

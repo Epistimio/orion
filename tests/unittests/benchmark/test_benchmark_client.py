@@ -347,15 +347,16 @@ class TestCreateBenchmark:
                 return True
 
         count = multiprocessing.Value("i", 0)
+        is_done_value = multiprocessing.Value("i", 0)
 
         def is_done(self):
-            return is_done.done
-
-        is_done.done = False
+            return count.value > 0
 
         def submit(*args, c=count, **kwargs):
+            # because worker == 2 only 2 jobs were submitted
+            # we now set is_done to True so when runner checks
+            # for adding more jobs it will stop right away
             c.value += 1
-            is_done.done = True
             return FakeFuture([dict(name="v", type="objective", value=1)])
 
         with OrionState():
