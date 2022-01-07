@@ -946,7 +946,6 @@ class TestObserve:
             assert trial.status == "completed"  # Still completed after __exit__
 
 
-
 def test_executor_receives_correct_worker_count():
     """Check that the client forwards the corrent number count to the executor"""
 
