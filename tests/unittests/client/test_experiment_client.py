@@ -22,6 +22,7 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.worker.trial import Trial
+from orion.executor.base import executor_factory
 from orion.executor.joblib_backend import Joblib
 from orion.storage.base import get_storage
 from orion.testing import create_experiment, mock_space_iterate
@@ -943,3 +944,42 @@ class TestObserve:
                 assert trial.status == "completed"
 
             assert trial.status == "completed"  # Still completed after __exit__
+
+
+def test_executor_gets_created_if_not_provided():
+    """Check that executors created by the client are cleanup"""
+    global config
+    conf = copy.deepcopy(config)
+
+    # make sure the executor is not set
+    conf.pop("executor", None)
+    executor = None
+
+    with create_experiment(config, base_trial) as (cfg, experiment, client):
+        executor = client.executor
+        assert executor is not None, "Client created an executor"
+        assert client._executor_owner is True, "Client own the executor"
+
+    assert client._executor is None, "Client freed the executor"
+    assert client._executor_owner is False, "Client does not own the executor"
+
+    # executor was closed and cannot be used
+    with pytest.raises(ValueError):
+        executor.submit(function, 2, 2)
+
+
+def test_user_executor_is_not_deleted():
+    """Check that executors passed to the client are not cleanup"""
+
+    global config
+    conf = copy.deepcopy(config)
+
+    executor = executor_factory.create("joblib", 1)
+    conf["executor"] = executor
+
+    with create_experiment(config, base_trial) as (cfg, experiment, client):
+        assert client.executor is not None, "Client has an executor"
+        assert client._executor_owner is True, "Client does not own the executor"
+
+    future = executor.submit(function, 2, 2)
+    assert future.get() == 4, "Executor was not closed & can still be used"

@@ -253,9 +253,14 @@ class Runner:
             trial = self.pending_trials.pop(result.future)
 
             if isinstance(result, AsyncResult):
-                # NB: observe release the trial already
-                self.client.observe(trial, result.value)
-                self.trials += 1
+                try:
+                    # NB: observe release the trial already
+                    self.client.observe(trial, result.value)
+                    self.trials += 1
+                except InvalidResult as exception:
+                    # stop the optimization process if we received `InvalidResult`
+                    # as all the experiments are assumed to be returning those
+                    to_be_raised = exception
 
             if isinstance(result, AsyncException):
                 if (
@@ -265,11 +270,6 @@ class Runner:
                     to_be_raised = KeyboardInterrupt()
                     self.client.release(trial, status="interrupted")
                     continue
-
-                if isinstance(result.exception, InvalidResult):
-                    # stop the optimization process if we received `InvalidResult`
-                    # as all the experiments are assumed to be returning those
-                    to_be_raised = result.exception
 
                 # Regular exception, might be caused by the choosen hyperparameters
                 # themselves rather than the code in particular (like Out of Memory error
