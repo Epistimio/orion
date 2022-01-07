@@ -946,6 +946,18 @@ class TestObserve:
             assert trial.status == "completed"  # Still completed after __exit__
 
 
+
+def test_executor_receives_correct_worker_count():
+    """Check that the client forwards the corrent number count to the executor"""
+
+    with create_experiment(config, base_trial) as (cfg, experiment, client):
+        assert client.executor.n_workers == orion.core.config.worker.n_workers
+
+    with create_experiment(config, base_trial) as (cfg, experiment, client):
+        with client.tmp_executor("joblib", n_workers=3, backend="threading"):
+            assert client.executor.n_workers == 3
+
+
 def test_executor_gets_created_if_not_provided():
     """Check that executors created by the client are cleanup"""
     global config
