@@ -40,8 +40,10 @@ class QuadraticsTaskHparamsWithContext(QuadraticsTaskHParams):
 class QuadraticsTask(BaseTask):
     """ Simple task consisting of a quadratic with three coefficients, as described in ABLR.
     
-    NOTE: In the paper, section 4.2, the function is defined over R^3, but here
-    the bounds are limited to [-100,100] for now since otherwise y can be enormous.
+   Notes
+   -----
+   In the paper, section 4.2, the function is defined over R^3, but here
+   the bounds are limited to [-100,100] for now since otherwise y can be enormous.
 
     Parameters
     ----------
