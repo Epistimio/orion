@@ -630,7 +630,8 @@ class ExperimentClient:
             If reservation of the trial has been lost prior to releasing it.
         `orion.core.utils.exceptions.UnsupportedOperation`
             If the experiment was not loaded in executable mode.
-
+        `orion.core.utils.exceptions.InvalidResult`
+            If the format of trial result is invalid.
         """
         self._check_if_executable()
 

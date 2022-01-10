@@ -261,6 +261,7 @@ class Runner:
                     # stop the optimization process if we received `InvalidResult`
                     # as all the experiments are assumed to be returning those
                     to_be_raised = exception
+                    self.client.release(trial, status="broken")
 
             if isinstance(result, AsyncException):
                 if (
@@ -290,7 +291,9 @@ class Runner:
                 # if we receive too many broken trials, it might indicate the user script
                 # is broken, stop the experiment and let the user investigate
                 if self.is_broken:
-                    raise BrokenExperiment("Worker has reached broken trials threshold")
+                    to_be_raised = BrokenExperiment(
+                        "Worker has reached broken trials threshold"
+                    )
 
         if to_be_raised is not None:
             log.debug("Runner was interrupted")

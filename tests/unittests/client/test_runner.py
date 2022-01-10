@@ -8,7 +8,11 @@ from threading import Thread
 import pytest
 
 from orion.client.runner import LazyWorkers, Runner
-from orion.core.utils.exceptions import BrokenExperiment, WaitingForTrials
+from orion.core.utils.exceptions import (
+    BrokenExperiment,
+    WaitingForTrials,
+    InvalidResult,
+)
 from orion.core.worker.trial import Trial
 from orion.executor.base import executor_factory
 from orion.testing import create_experiment
@@ -21,14 +25,41 @@ class FakeClient:
         self.is_done = False
         self.executor = executor_factory.create("joblib", n_workers)
         self.suggest_error = WaitingForTrials
+        self.trials = []
+        self.status = []
 
     def suggest(self, pool_size=None):
         """Fake suggest."""
+        if self.trials:
+            return self.trials.pop()
+
         raise self.suggest_error
 
-    def release(self, *args, **kwargs):
+    def release(self, trial, status=None):
         """Fake release."""
+        self.status.append(status)
+
+    def observe(self, trial, value):
+        """Fake observe"""
         pass
+
+
+class InvalidResultClient(FakeClient):
+    """Fake client that raise InvalidResult on observe"""
+
+    def __init__(self, n_workers):
+        super(InvalidResultClient, self).__init__(n_workers)
+        self.trials.append(
+            Trial(
+                params=[
+                    dict(name="lhs", type="real", value=1),
+                    dict(name="rhs", type="real", value=1),
+                ]
+            )
+        )
+
+    def observe(self, trial, value):
+        raise InvalidResult()
 
 
 def function(lhs, rhs):
@@ -36,9 +67,11 @@ def function(lhs, rhs):
     return lhs + rhs
 
 
-def new_runner(idle_timeout, n_workers=2):
+def new_runner(idle_timeout, n_workers=2, client=None):
     """Create a new runner with a mock client."""
-    client = FakeClient(n_workers)
+    if client is None:
+        client = FakeClient(n_workers)
+
     runner = Runner(
         client=client,
         fct=function,
@@ -50,6 +83,18 @@ def new_runner(idle_timeout, n_workers=2):
         on_error=None,
     )
     return runner
+
+
+def test_invalid_result_worker():
+    """Worker are waiting for new trials but none can be generated."""
+
+    client = InvalidResultClient(2)
+    runner = new_runner(0.01, client=client)
+
+    with pytest.raises(InvalidResult):
+        runner.run()
+
+    assert client.status[0] == "broken", "Trial should be set to broken"
 
 
 def test_idle_worker():

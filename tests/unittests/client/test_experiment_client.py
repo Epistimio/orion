@@ -957,6 +957,10 @@ def test_executor_receives_correct_worker_count():
             assert client.executor.n_workers == 3
 
 
+def function(a, b):
+    return a + b
+
+
 def test_executor_gets_created_if_not_provided():
     """Check that executors created by the client are cleanup"""
     global config
