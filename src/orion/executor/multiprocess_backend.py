@@ -36,7 +36,11 @@ class _Process(Process):
 
 
 class _Future(Future):
-    """Wraps a python AsyncResult"""
+    """Wraps a python AsyncResult and pickle the payload using cloudpickle
+    to enable the use of more python objects as functions and arguments,
+    which makes the multiprocess backend on par with Dask.
+
+    """
 
     def __init__(self, future, cloudpickle=False):
         self.future = future
