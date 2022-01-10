@@ -78,12 +78,16 @@ c_max: Dict[str, float] = {
 def mock_load_data(
     monkeypatch: MonkeyPatch, request: SubRequest, tmp_path_factory: TempPathFactory
 ):
-    """Fixture used in all the profet task tests that, when the real profet data isn't available,
-    modifies `load_data` so it doesn't attempt to download the data, and instead mocks it so that it
-    generates random data with the same shape and basic stats as the real datasets (shown above).
+    """Fixture used in all the profet task tests that does the following:
 
-    NOTE: This fixture is parametrized so that we also run the tests with the fake data, even when
-    the real data is available.
+    Parametrizes all tests so they are run with both real (when possible) and fake training data.
+    - If the profet data is downloaded, then the tests are run with both real data & fake data.
+    - If the profet data is not downloaded, then the tests with real data are skipped, and the tests
+      are run with fake data.
+
+    This works by modifying `load_data` so it doesn't attempt to download the data, and instead
+    mocks it so that it generates random data with the same shape and basic stats as the real
+    datasets (shown above).
     """
     use_real_data: bool = request.param
 
