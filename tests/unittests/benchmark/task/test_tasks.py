@@ -10,26 +10,24 @@ class TestBranin:
 
     def test_creation(self):
         """Test creation"""
-        branin = Branin(2)
-        assert branin.max_trials == 2
-        assert branin.configuration == {"Branin": {"max_trials": 2}}
+        task = Branin(2)
+        assert task.max_trials == 2
+        assert task.configuration == {"Branin": {"max_trials": 2}}
 
     def test_call(self):
         """Test to get task function"""
-        branin = Branin(2)
+        task = Branin(2)
 
-        assert callable(branin)
+        assert callable(task)
 
-        objectives = branin([1, 2])
+        objectives = task([1, 2])
         assert type(objectives[0]) == dict
 
     def test_search_space(self):
         """Test to get task search space"""
-        branin = Branin(2)
+        task = Branin(2)
 
-        assert branin.get_search_space() == {
-            "x": "uniform(0, 1, shape=2, precision=10)"
-        }
+        assert task.get_search_space() == {"x": "uniform(0, 1, shape=2, precision=10)"}
 
 
 class TestCarromTable:
@@ -37,24 +35,24 @@ class TestCarromTable:
 
     def test_creation(self):
         """Test creation"""
-        branin = CarromTable(2)
-        assert branin.max_trials == 2
-        assert branin.configuration == {"CarromTable": {"max_trials": 2}}
+        task = CarromTable(2)
+        assert task.max_trials == 2
+        assert task.configuration == {"CarromTable": {"max_trials": 2}}
 
     def test_call(self):
         """Test to get task function"""
-        carrom = CarromTable(2)
+        task = CarromTable(2)
 
-        assert callable(carrom)
+        assert callable(task)
 
-        objectives = carrom([1, 2])
+        objectives = task([1, 2])
         assert type(objectives[0]) == dict
 
     def test_search_space(self):
         """Test to get task search space"""
-        carrom = CarromTable(2)
+        task = CarromTable(2)
 
-        assert carrom.get_search_space() == {"x": "uniform(-10, 10, shape=2)"}
+        assert task.get_search_space() == {"x": "uniform(-10, 10, shape=2)"}
 
 
 class TestEggHolder:
@@ -62,24 +60,24 @@ class TestEggHolder:
 
     def test_creation(self):
         """Test creation"""
-        branin = EggHolder(max_trials=2, dim=3)
-        assert branin.max_trials == 2
-        assert branin.configuration == {"EggHolder": {"dim": 3, "max_trials": 2}}
+        task = EggHolder(max_trials=2, dim=3)
+        assert task.max_trials == 2
+        assert task.configuration == {"EggHolder": {"dim": 3, "max_trials": 2}}
 
     def test_call(self):
         """Test to get task function"""
-        egg = EggHolder(2)
+        task = EggHolder(2)
 
-        assert callable(egg)
+        assert callable(task)
 
-        objectives = egg([1, 2])
+        objectives = task([1, 2])
         assert type(objectives[0]) == dict
 
     def test_search_space(self):
         """Test to get task search space"""
-        egg = EggHolder(2)
+        task = EggHolder(2)
 
-        assert egg.get_search_space() == {"x": "uniform(-512, 512, shape=2)"}
+        assert task.get_search_space() == {"x": "uniform(-512, 512, shape=2)"}
 
 
 class TestRosenBrock:
@@ -87,20 +85,20 @@ class TestRosenBrock:
 
     def test_creation(self):
         """Test creation"""
-        branin = RosenBrock(max_trials=2, dim=3)
-        assert branin.max_trials == 2
-        assert branin.configuration == {"RosenBrock": {"dim": 3, "max_trials": 2}}
+        task = RosenBrock(max_trials=2, dim=3)
+        assert task.max_trials == 2
+        assert task.configuration == {"RosenBrock": {"dim": 3, "max_trials": 2}}
 
     def test_call(self):
         """Test to get task function"""
-        rb = RosenBrock(2)
+        task = RosenBrock(2)
 
-        assert callable(rb)
+        assert callable(task)
 
-        objectives = rb([1, 2])
+        objectives = task([1, 2])
         assert type(objectives[0]) == dict
 
     def test_search_space(self):
         """Test to get task search space"""
-        rb = RosenBrock(2)
-        assert rb.get_search_space() == {"x": "uniform(-5, 10, shape=2)"}
+        task = RosenBrock(2)
+        assert task.get_search_space() == {"x": "uniform(-5, 10, shape=2)"}
