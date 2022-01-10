@@ -1,17 +1,15 @@
+import random
 from logging import getLogger as get_logger
 from pathlib import Path
 from typing import Dict, Tuple
 
 import numpy as np
-import orion.benchmark.task.profet.profet_task
 import pytest
+import torch
 from _pytest.fixtures import SubRequest
 from _pytest.monkeypatch import MonkeyPatch
 from _pytest.tmpdir import TempPathFactory
 from orion.benchmark.task.profet.profet_task import MetaModelConfig
-import random
-import torch
-import numpy as np
 
 logger = get_logger(__name__)
 

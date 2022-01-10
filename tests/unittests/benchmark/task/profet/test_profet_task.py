@@ -1,5 +1,5 @@
 """ Utilities used to test the different subclasses of the ProfetTask. """
-from collections import defaultdict
+from dataclasses import asdict, replace
 from logging import getLogger as get_logger
 from pathlib import Path
 from typing import Any, Callable, ClassVar, Dict, Type
@@ -7,22 +7,12 @@ from typing import Any, Callable, ClassVar, Dict, Type
 import numpy as np
 import pytest
 import torch
-from dataclasses import asdict, replace
-from orion.algo.space import _Discrete, Dimension, Space
-from orion.benchmark.task.profet.profet_task import (
-    MetaModelConfig,
-    ProfetTask,
-)
+from orion.algo.space import Space, _Discrete
+from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
+from _pytest.monkeypatch import MonkeyPatch
+from _pytest.tmpdir import TempPathFactory
 
-from .conftest import (
-    REAL_PROFET_DATA_DIR,
-    y_min,
-    y_max,
-    c_min,
-    c_max,
-    is_nonempty_dir,
-    seed_everything,
-)
+from .conftest import REAL_PROFET_DATA_DIR, c_max, c_min, is_nonempty_dir, y_max, y_min
 
 logger = get_logger(__name__)
 
@@ -64,8 +54,7 @@ class ProfetTaskTests:
         assert fake_x.shape[0] == fake_y.shape[1] == fake_c.shape[1]
 
     @pytest.mark.skipif(
-        not is_nonempty_dir(REAL_PROFET_DATA_DIR),
-        reason="Real profet data is required.",
+        not is_nonempty_dir(REAL_PROFET_DATA_DIR), reason="Real profet data is required.",
     )
     @pytest.mark.timeout(15)
     def test_mock_load_data_fixture_when_real_data_available(
@@ -106,10 +95,7 @@ class ProfetTaskTests:
 
     @pytest.mark.timeout(30)
     def test_attributes(
-        self,
-        profet_train_config: MetaModelConfig,
-        profet_input_dir: Path,
-        tmp_path_factory,
+        self, profet_train_config: MetaModelConfig, profet_input_dir: Path, tmp_path_factory,
     ):
         """Simple test: Check that a task can be created and that its attributes are used and set
         correctly.
@@ -132,8 +118,8 @@ class ProfetTaskTests:
         self,
         profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
-        tmp_path_factory,
-        monkeypatch,
+        tmp_path_factory: TempPathFactory,
+        monkeypatch: MonkeyPatch,
     ):
         """Tests that when instantiating multiple tasks with the same arguments, the
         meta-model is trained only once.
@@ -240,10 +226,7 @@ class ProfetTaskTests:
         assert second_task.configuration == first_task.configuration
 
     def test_sample_single_params(
-        self,
-        profet_train_config: MetaModelConfig,
-        profet_input_dir: Path,
-        checkpoint_dir: Path,
+        self, profet_train_config: MetaModelConfig, profet_input_dir: Path, checkpoint_dir: Path,
     ):
         """Test the `sample` method."""
         task = self.Task(
@@ -287,10 +270,7 @@ class ProfetTaskTests:
             assert hparam_dict.values() in task.space
 
     def test_space_attribute(
-        self,
-        profet_train_config: MetaModelConfig,
-        profet_input_dir: Path,
-        checkpoint_dir: Path,
+        self, profet_train_config: MetaModelConfig, profet_input_dir: Path, checkpoint_dir: Path,
     ):
         """
         BUG: Space.keys() returns *sorted* keys that don't match the ordering in
@@ -336,10 +316,7 @@ class ProfetTaskTests:
         #     assert space_string_dict[dim_name] == dimension.get_prior_string()
 
     def test_sanity_check(
-        self,
-        profet_train_config: MetaModelConfig,
-        profet_input_dir: Path,
-        checkpoint_dir: Path,
+        self, profet_train_config: MetaModelConfig, profet_input_dir: Path, checkpoint_dir: Path,
     ):
         """Tests that two tasks with different arguments give different results."""
         first_task_kwargs = dict(
@@ -462,9 +439,7 @@ class ProfetTaskTests:
         """When using the same task and the same point twice, the results should be identical."""
         model_config = replace(profet_train_config, seed=seed)
         task = self.Task(
-            model_config=model_config,
-            input_dir=profet_input_dir,
-            checkpoint_dir=checkpoint_dir,
+            model_config=model_config, input_dir=profet_input_dir, checkpoint_dir=checkpoint_dir,
         )
         assert task.model_config.seed == seed
         point = task.sample()
