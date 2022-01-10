@@ -18,7 +18,7 @@ from typing import Any, ClassVar, Dict, Generic, List, Optional, Type, TypeVar, 
 import numpy as np
 import torch
 from orion.algo.space import Space
-from orion.benchmark.task.base import BaseTask
+from orion.benchmark.task.base import BenchmarkTask
 from orion.benchmark.task.profet.model_utils import MetaModelConfig
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import compute_identity
@@ -56,7 +56,7 @@ def make_reproducible(seed: int):
 InputType = TypeVar("InputType", bound=Dict[str, Any])
 
 
-class ProfetTask(BaseTask, Generic[InputType]):
+class ProfetTask(BenchmarkTask, Generic[InputType]):
     """Base class for Tasks that are generated using the Profet algorithm.
 
     For more information on Profet, see original paper at https://arxiv.org/abs/1905.12982.

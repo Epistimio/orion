@@ -7,12 +7,12 @@ Klein, Aaron, Zhenwen Dai, Frank Hutter, Neil Lawrence, and Javier Gonzalez. "Me
 benchmarking for hyperparameter optimization." Advances in Neural Information Processing Systems 32
 (2019): 6270-6280.
 """
-from orion.benchmark.task.base import BaseTask
+from orion.benchmark.task.base import BenchmarkTask
 from typing import List, Dict
 import numpy as np
 
 
-class Forrester(BaseTask):
+class Forrester(BenchmarkTask):
     """ Task based on the Forrester function, as described in https://arxiv.org/abs/1905.12982
     
     $ f(x) = ((\\alpha x - 2)^2) sin(\\beta x - 4) $

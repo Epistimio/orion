@@ -291,8 +291,8 @@ ignore_algo_attr = [
     "orion.core.utils.Factory.__call__",  # TODO: Why this one fails???
     "orion.core.utils.singleton.SingletonType.__call__",
     "orion.plotting.base.PlotAccessor.__call__",
-    "orion.benchmark.task.BaseTask.__call__",
-    "orion.benchmark.task.base.BaseTask.__call__",
+    "orion.benchmark.task.BenchmarkTask.__call__",
+    "orion.benchmark.task.base.BenchmarkTask.__call__",
 ]
 
 nitpicky = True

@@ -38,7 +38,7 @@ class ProfetExperimentConfig:
     """ Configuration option for the demo of the Profet tasks. """
 
     # The type of Profet task to create.
-    task_type: Type[BaseTask] = choice(  # type: ignore
+    task_type: Type[BenchmarkTask] = choice(  # type: ignore
         {"svm": SvmTask, "fcnet": FcNetTask, "xgboost": XgBoostTask, "forrester": ForresterTask}
     )
 

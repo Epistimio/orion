@@ -1,12 +1,12 @@
 """ Tests for the Quadratics Task. """
 
 from orion.benchmark.task.quadratics import QuadraticsTask
-from orion.benchmark.task.base import BaseTask
+from orion.benchmark.task.base import BenchmarkTask
 from typing import ClassVar, Type
 
 
 class TestQuadraticsTask:
-    task: ClassVar[Type[BaseTask]] = QuadraticsTask
+    task: ClassVar[Type[BenchmarkTask]] = QuadraticsTask
 
     def test_seeding(self):
         seed = 123

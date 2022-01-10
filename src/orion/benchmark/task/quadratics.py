@@ -8,7 +8,7 @@ from logging import getLogger as get_logger
 from typing import Dict, Optional, List
 
 import numpy as np
-from orion.benchmark.task.base import BaseTask
+from orion.benchmark.task.base import BenchmarkTask
 
 logger = get_logger(__name__)
 
@@ -37,7 +37,7 @@ class QuadraticsTaskHparamsWithContext(QuadraticsTaskHParams):
     a0: float
 
 
-class QuadraticsTask(BaseTask):
+class QuadraticsTask(BenchmarkTask):
     """ Simple task consisting of a quadratic with three coefficients, as described in ABLR.
     
    Notes
