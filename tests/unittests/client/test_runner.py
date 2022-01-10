@@ -10,8 +10,8 @@ import pytest
 from orion.client.runner import LazyWorkers, Runner
 from orion.core.utils.exceptions import (
     BrokenExperiment,
-    WaitingForTrials,
     InvalidResult,
+    WaitingForTrials,
 )
 from orion.core.worker.trial import Trial
 from orion.executor.base import executor_factory
