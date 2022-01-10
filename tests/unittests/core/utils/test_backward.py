@@ -65,3 +65,24 @@ def test_no_changes(requirement):
         "shape_requirement": "flattened",
         "dist_requirement": "linear",
     }
+
+
+def test_port_algo_config_str():
+    """Function should convert string to compliant dict"""
+    assert backward.port_algo_config("algo_name") == {"of_type": "algo_name"}
+
+
+def test_port_algo_config_dict_legacy():
+    """Function should convert dict to be compliant"""
+    assert backward.port_algo_config({"algo_name": {"some": "args"}}) == {
+        "of_type": "algo_name",
+        "some": "args",
+    }
+
+
+def test_port_algo_config_dict_compliant():
+    """Function should leave compliant dict as-is"""
+    assert backward.port_algo_config({"of_type": "algo_name", "some": "args"}) == {
+        "of_type": "algo_name",
+        "some": "args",
+    }

@@ -10,11 +10,8 @@ from pymongo import MongoClient
 
 import orion.core.io.experiment_builder as experiment_builder
 from orion.client import create_experiment
-from orion.core.io.database import Database
-from orion.core.io.database.mongodb import MongoDB
-from orion.core.io.database.pickleddb import PickledDB
-from orion.storage.base import Storage, get_storage
-from orion.storage.legacy import Legacy
+from orion.core.io.database import database_factory
+from orion.storage.base import get_storage, storage_factory
 
 DIRNAME = os.path.dirname(os.path.abspath(__file__))
 
@@ -226,11 +223,8 @@ def fill_db(request):
 
 def null_db_instances():
     """Nullify singleton instance so that we can assure independent instantiation tests."""
-    Storage.instance = None
-    Legacy.instance = None
-    Database.instance = None
-    MongoDB.instance = None
-    PickledDB.instance = None
+    storage_factory.instance = None
+    database_factory.instance = None
 
 
 def build_storage():

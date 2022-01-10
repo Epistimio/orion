@@ -7,7 +7,13 @@ import pytest
 
 from orion.benchmark.assessment import AverageRank, AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
-from orion.benchmark.task import BaseTask, Branin, CarromTable, EggHolder, RosenBrock
+from orion.benchmark.task import (
+    BenchmarkTask,
+    Branin,
+    CarromTable,
+    EggHolder,
+    RosenBrock,
+)
 
 algorithms = [
     {"algorithm": {"random": {"seed": 1}}},
@@ -15,7 +21,7 @@ algorithms = [
 ]
 
 
-class BirdLike(BaseTask):
+class BirdLike(BenchmarkTask):
     """User defined benchmark task"""
 
     def __init__(self, max_trials=20):

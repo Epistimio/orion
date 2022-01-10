@@ -17,8 +17,9 @@ from orion.algo.tpe import (
     compute_max_ei_point,
     ramp_up_weights,
 )
+from orion.core.utils import backward, format_trials
 from orion.core.worker.transformer import build_required_space
-from orion.testing.algo import BaseAlgoTests
+from orion.testing.algo import BaseAlgoTests, phase
 
 
 @pytest.fixture()
@@ -718,6 +719,7 @@ class TestTPE(BaseAlgoTests):
         "equal_weight": True,
         "prior_weight": 0.8,
         "full_weight_num": 10,
+        "max_retry": 100,
     }
 
     def test_suggest_init(self, mocker):
@@ -796,12 +798,68 @@ class TestTPE(BaseAlgoTests):
         for i, (x, y, z) in enumerate(itertools.product(range(5), "abc", range(1, 7))):
             assert not algo.is_done
             n = algo.n_suggested
-            algo.observe([[x, y, z]], [dict(objective=i)])
+            backward.algo_observe(
+                algo,
+                [format_trials.tuple_to_trial([x, y, z], space)],
+                [dict(objective=i)],
+            )
             assert algo.n_suggested == n + 1
 
         assert i + 1 == space.cardinality
 
         assert algo.is_done
+
+    def test_log_integer(self, monkeypatch):
+        """Verify that log integer dimensions do not go out of bound."""
+        RANGE = 100
+        algo = self.create_algo(
+            space=self.create_space({"x": f"loguniform(1, {RANGE}, discrete=True)"}),
+        )
+        algo.algorithm.max_trials = RANGE * 2
+
+        values = set(range(1, RANGE + 1))
+
+        # Mock sampling so that it quickly samples all possible integers in given bounds
+        def sample(self, n_samples=1, seed=None):
+            return [
+                format_trials.tuple_to_trial(
+                    (numpy.log(values.pop()),), algo.transformed_space
+                )
+                for _ in range(n_samples)
+            ]
+
+        def _suggest_random(self, num):
+            return self._suggest(num, sample)
+
+        monkeypatch.setattr("orion.algo.tpe.TPE._suggest_random", _suggest_random)
+        monkeypatch.setattr("orion.algo.tpe.TPE._suggest_bo", _suggest_random)
+        self.force_observe(RANGE, algo)
+        assert algo.n_observed == RANGE
+        assert algo.n_suggested == RANGE
+
+    @phase
+    def test_stuck_exploiting(self, mocker, num, attr):
+        """Test that algo drops out when exploiting an already explored region."""
+        algo = self.create_algo()
+        spy = self.spy_phase(mocker, 0, algo, "space.sample")
+
+        points = algo.space.sample(1)
+
+        # Mock sampling so that always returns the same point
+        def sample(self, n_samples=1, seed=None):
+            return points
+
+        def _suggest_random(self, num):
+            return self._suggest(num, sample)
+
+        mocker.patch("orion.algo.tpe.TPE._suggest_random", _suggest_random)
+        mocker.patch("orion.algo.tpe.TPE._suggest_bo", _suggest_random)
+
+        with pytest.raises(RuntimeError):
+            self.force_observe(2, algo)
+
+        assert algo.n_observed == 1
+        assert algo.n_suggested == 1
 
 
 TestTPE.set_phases([("random", 0, "space.sample"), ("bo", N_INIT + 1, "_suggest_bo")])

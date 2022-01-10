@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Perform a functional test for branching."""
 
+import logging
 import os
 
 import pytest
@@ -391,7 +392,7 @@ def init_full_x_ignore_cli(init_full_x):
 
 
 @pytest.fixture
-def init_full_x_new_config(init_full_x, tmp_path):
+def init_full_x_new_config(init_full_x, tmp_path, caplog):
     """Add configuration script"""
     name = "full_x"
     branch = "full_x_new_config"
@@ -403,16 +404,24 @@ def init_full_x_new_config(init_full_x, tmp_path):
         )
     )
 
-    orion.core.cli.main(
-        (
-            "hunt --enable-evc --init-only -n {branch} --branch-from {name} "
-            "--cli-change-type noeffect "
-            "--config-change-type unsure "
-            "./black_box_new.py -x~uniform(-10,10) --config {config_file}"
+    caplog.clear()
+    with caplog.at_level(logging.DEBUG):
+        orion.core.cli.main(
+            (
+                "hunt --enable-evc --init-only -n {branch} --branch-from {name} "
+                "--cli-change-type noeffect "
+                "--config-change-type unsure "
+                "--user-script-config custom-config "
+                "./black_box_new.py -x~uniform(-10,10) --custom-config {config_file}"
+            )
+            .format(name=name, branch=branch, config_file=config_file)
+            .split(" ")
         )
-        .format(name=name, branch=branch, config_file=config_file)
-        .split(" ")
-    )
+        # For parent experiment
+        assert "User script config: config" in caplog.text
+        # For child experiment
+        assert "User script config: custom-config" in caplog.text
+
     orion.core.cli.main(
         "insert -n {branch} script -x=1.2 -y=2".format(branch=branch).split(" ")
     )

@@ -10,6 +10,7 @@ import numpy
 
 from orion.algo.base import BaseAlgorithm
 from orion.algo.space import Categorical, Fidelity, Integer, Real
+from orion.core.utils import format_trials
 
 log = logging.getLogger(__name__)
 
@@ -103,7 +104,7 @@ class GridSearch(BaseAlgorithm):
     Parameters
     ----------
     n_values: int or dict
-        Number of points for each dimensions, or dictionary specifying number of points for each
+        Number of trials for each dimensions, or dictionary specifying number of trials for each
         dimension independently (name, n_values). For categorical dimensions, n_values will not be
         used, and all categories will be used to build the grid.
     """
@@ -126,6 +127,7 @@ class GridSearch(BaseAlgorithm):
         self.grid = self.build_grid(
             self.space, n_values, getattr(self, "max_trials", 10000)
         )
+        self.index = 0
 
     @staticmethod
     def build_grid(space, n_values, max_trials=10000):
@@ -134,7 +136,7 @@ class GridSearch(BaseAlgorithm):
         Parameters
         ----------
         n_values: int or dict
-            Number of points for each dimensions, or dictionary specifying number of points for each
+            Number of trials for each dimensions, or dictionary specifying number of trials for each
             dimension independently (name, n_values). For categorical dimensions, n_values will not be
             used, and all categories will be used to build the grid.
         max_trials: int
@@ -176,6 +178,7 @@ class GridSearch(BaseAlgorithm):
         """Return a state dict that can be used to reset the state of the algorithm."""
         state_dict = super(GridSearch, self).state_dict
         state_dict["grid"] = self.grid
+        state_dict["index"] = self.index
         return state_dict
 
     def set_state(self, state_dict):
@@ -188,30 +191,30 @@ class GridSearch(BaseAlgorithm):
         """
         super(GridSearch, self).set_state(state_dict)
         self.grid = state_dict["grid"]
+        self.index = state_dict["index"]
 
     def suggest(self, num):
         """Return the entire grid of suggestions
 
         Returns
         -------
-        list of points or None
-            A list of lists representing points suggested by the algorithm. The algorithm may opt
+        list of trials or None
+            A list of lists representing trials suggested by the algorithm. The algorithm may opt
             out if it cannot make a good suggestion at the moment (it may be waiting for other
             trials to complete), in which case it will return None.
 
         """
         if self.grid is None:
             self._initialize()
-        i = 0
-        points = []
-        while len(points) < num and i < len(self.grid):
-            point = self.grid[i]
-            if not self.has_suggested(point):
-                self.register(point)
-                points.append(point)
-            i += 1
+        trials = []
+        while len(trials) < num and self.index < len(self.grid):
+            trial = format_trials.tuple_to_trial(self.grid[self.index], self.space)
+            if not self.has_suggested(trial):
+                self.register(trial)
+                trials.append(trial)
+            self.index += 1
 
-        return points
+        return trials
 
     @property
     def is_done(self):

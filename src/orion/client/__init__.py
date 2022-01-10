@@ -6,6 +6,8 @@ Python API
 Provides functions for communicating with `orion.core`.
 
 """
+import logging
+
 import orion.core.io.experiment_builder as experiment_builder
 from orion.client.cli import (
     interrupt_trial,
@@ -29,6 +31,8 @@ __all__ = [
     "get_experiment",
     "workon",
 ]
+
+log = logging.getLogger(__name__)
 
 
 def create_experiment(name, **config):
@@ -136,11 +140,8 @@ def build_experiment(
         Working directory created for the experiment inside which a unique folder will be created
         for each trial. Defaults to a temporary directory that is deleted at end of execution.
     max_idle_time: int, optional
-        Maximum time the producer can spend trying to generate a new suggestion.
-        Such timeout are generally caused by slow database, large number of
-        concurrent workers leading to many race conditions or small search spaces
-        with integer/categorical dimensions that may be fully explored.
-        Defaults to ``orion.core.config.worker.max_idle_time``.
+        Deprecated and will be removed in v0.3.0.
+        Use experiment.workon(reservation_timeout) instead.
     heartbeat: int, optional
         Frequency (seconds) at which the heartbeat of the trial is updated.
         If the heartbeat of a `reserved` trial is larger than twice the configured
@@ -177,7 +178,7 @@ def build_experiment(
         config_change_type: str, optional
             How to resolve config change automatically. Must be one of 'noeffect', 'unsure' or
             'break'.  Defaults to 'break'.
-    executor: `orion.executor.base.Executor`, optional
+    executor: `orion.executor.base.BaseExecutor`, optional
         Executor to run the experiment
 
     Raises
@@ -202,6 +203,11 @@ def build_experiment(
         If the algorithm, storage or strategy specified is not properly installed.
 
     """
+    if max_idle_time:
+        log.warning(
+            "max_idle_time is deprecated. Use experiment.workon(reservation_timeout) instead."
+        )
+
     setup_storage(storage=storage, debug=debug)
 
     try:
@@ -241,7 +247,7 @@ def build_experiment(
                 "repository."
             ) from e
 
-    producer = Producer(experiment, max_idle_time)
+    producer = Producer(experiment)
 
     return ExperimentClient(experiment, producer, executor, heartbeat)
 

@@ -8,8 +8,8 @@ import datetime
 import logging
 
 from orion.benchmark import Benchmark, Study
-from orion.benchmark.assessment.base import BenchmarkAssessment
-from orion.benchmark.task.base import BenchmarkTask
+from orion.benchmark.assessment.base import bench_assessment_factory
+from orion.benchmark.task.base import bench_task_factory
 from orion.core.io.database import DuplicateKeyError
 from orion.core.utils.exceptions import NoConfigurationError
 from orion.storage.base import get_storage, setup_storage
@@ -38,7 +38,7 @@ def get_or_create_benchmark(
             Task objects
     storage: dict, optional
         Configuration of the storage backend.
-    executor: `orion.executor.base.Executor`, optional
+    executor: `orion.executor.base.BaseExecutor`, optional
         Executor to run the benchmark experiments
     debug: bool, optional
         If using in debug mode, the storage config is overrided with legacy:EphemeralDB.
@@ -94,11 +94,11 @@ def get_or_create_benchmark(
 
 
 def _get_task(name, **kwargs):
-    return BenchmarkTask(of_type=name, **kwargs)
+    return bench_task_factory.create(of_type=name, **kwargs)
 
 
 def _get_assessment(name, **kwargs):
-    return BenchmarkAssessment(of_type=name, **kwargs)
+    return bench_assessment_factory.create(of_type=name, **kwargs)
 
 
 def _resolve_db_config(db_config):

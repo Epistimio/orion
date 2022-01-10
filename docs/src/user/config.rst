@@ -97,7 +97,6 @@ Full Example of Global Configuration
                 seed: None
         max_broken: 3
         max_trials: 1000000000
-        pool_size: 1
         strategy:
             MaxParallelStrategy
         worker_trials: 1000000000
@@ -105,12 +104,13 @@ Full Example of Global Configuration
 
     worker:
         n_workers: 1
+        pool_size: 0
         executor: joblib
         executor_configuration: {}
         heartbeat: 120
         interrupt_signal_code: 130
         max_broken: 10
-        max_idle_time: 60
+        reservation_timeout: 60
         max_trials: 1000000000
         user_script_config: config
 
@@ -211,7 +211,6 @@ Experiment
                 seed: None
         max_broken: 3
         max_trials: 1000000000
-        pool_size: 1
         strategy:
             MaxParallelStrategy
         worker_trials: 1000000000
@@ -322,22 +321,6 @@ working_dir
 
 
 
-.. _config_experiment_pool_size:
-
-pool_size
-~~~~~~~~~
-
-.. warning::
-
-   **DEPRECATED.** This argument will be removed in v0.3.
-
-:Type: int
-:Default: 1
-:Env var:
-:Description:
-    (DEPRECATED) This argument will be removed in v0.3.
-
-
 .. _config_experiment_algorithms:
 
 algorithms
@@ -376,12 +359,13 @@ Worker
 
     worker:
         n_workers: 1
+        pool_size: 0
         executor: joblib
         executor_configuration: {}
         heartbeat: 120
         interrupt_signal_code: 130
         max_broken: 10
-        max_idle_time: 60
+        reservation_timeout: 60
         max_trials: 1000000000
         user_script_config: config
 
@@ -399,6 +383,20 @@ n_workers
     Number of workers to run in parallel.
     It is possible to run many `orion hunt` in parallel, and each will spawn
     ``n_workers``.
+
+.. _config_worker_pool_size:
+
+pool_size
+~~~~~~~~~
+
+:Type: int
+:Default: 0
+:Env var:
+:Description:
+    Number of trials to sample at a time. If 0, default to number of workers.
+    Increase it to improve the sampling speed if workers spend too much time
+    waiting for algorithms to sample points. An algorithm will try sampling `pool_size`
+    trials but may return less.
 
 
 .. _config_worker_executor:
@@ -466,21 +464,37 @@ max_broken
     Maximum number of broken trials before worker stops.
 
 
+.. _config_worker_reservation_timeout:
+
+reservation_timeout
+~~~~~~~~~~~~~~~~~~~
+
+:Type: int
+:Default: 60
+:Env var: ORION_RESERVATION_TIMEOUT
+:Description:
+    Maximum time the experiment can spend trying to reserve a new suggestion. Such timeout are
+    generally caused by slow database, large number of concurrent workers leading to many race
+    conditions or small search spaces with integer/categorical dimensions that may be fully
+    explored.
+
 
 .. _config_worker_max_idle_time:
 
 max_idle_time
 ~~~~~~~~~~~~~
 
+.. warning::
+
+   **DEPRECATED.** This argument will be removed in v0.3.
+   Use :ref:`config_worker_reservation_timeout` instead.
+
 :Type: int
 :Default: 60
 :Env var: ORION_MAX_IDLE_TIME
 :Description:
-    Maximum time the producer can spend trying to generate a new suggestion.Such timeout are
-    generally caused by slow database, large number of concurrent workers leading to many race
-    conditions or small search spaces with integer/categorical dimensions that may be fully
-    explored.
-
+    (DEPRECATED) This argument will be removed in v0.3. Use :ref:`config_worker_reservation_timeout`
+    instead.
 
 
 .. _config_worker_interrupt_signal_code:

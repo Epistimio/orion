@@ -5,13 +5,27 @@ Generic Storage Protocol
 
 Implement a generic protocol to allow Orion to communicate using different storage backend.
 
+Storage protocol is a generic way of allowing Orion to interface with different storage.
+MongoDB, track, cometML, MLFLow, etc...
+
+Examples
+--------
+>>> storage_factory.create('track', uri='file://orion_test.json')
+>>> storage_factory.create('legacy', experiment=...)
+
+Notes
+-----
+When retrieving an already initialized Storage object you should use `get_storage`.
+`storage_factory.create()` should only be used for initialization purposes as `get_storage`
+raises more granular error messages.
+
 """
 import copy
 import logging
 
 import orion.core
 from orion.core.io import resolve_config
-from orion.core.utils.singleton import AbstractSingletonType, SingletonFactory
+from orion.core.utils.singleton import GenericSingletonFactory
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +76,7 @@ class MissingArguments(Exception):
     pass
 
 
-class BaseStorageProtocol(metaclass=AbstractSingletonType):
+class BaseStorageProtocol:
     """Implement a generic protocol to allow Orion to communicate using
     different storage backend
 
@@ -380,25 +394,7 @@ class BaseStorageProtocol(metaclass=AbstractSingletonType):
         raise NotImplementedError()
 
 
-# pylint: disable=too-few-public-methods,abstract-method
-class Storage(BaseStorageProtocol, metaclass=SingletonFactory):
-    """Storage protocol is a generic way of allowing Orion to interface with different storage.
-    MongoDB, track, cometML, MLFLow, etc...
-
-    Examples
-    --------
-    >>> Storage('track', uri='file://orion_test.json')
-    >>> Storage('legacy', experiment=...)
-
-    Notes
-    -----
-    When retrieving an already initialized Storage object you should use `get_storage`.
-    `Storage()` should only be used for initialization purposes as `get_storage`
-    raises more granular error messages.
-
-    """
-
-    pass
+storage_factory = GenericSingletonFactory(BaseStorageProtocol)
 
 
 def get_storage():
@@ -418,7 +414,7 @@ def get_storage():
     with the appropriate arguments for the chosen backend
 
     """
-    return Storage()
+    return storage_factory.create()
 
 
 def setup_storage(storage=None, debug=False):
@@ -457,9 +453,9 @@ def setup_storage(storage=None, debug=False):
 
     log.debug("Creating %s storage client with args: %s", storage_type, storage)
     try:
-        Storage(of_type=storage_type, **storage)
+        storage_factory.create(of_type=storage_type, **storage)
     except ValueError:
-        if Storage().__class__.__name__.lower() != storage_type.lower():
+        if storage_factory.create().__class__.__name__.lower() != storage_type.lower():
             raise
 
 

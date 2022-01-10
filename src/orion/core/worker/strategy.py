@@ -3,13 +3,14 @@
 Parallel Strategies
 ===================
 
-Register objectives for incomplete trials
+Register objectives for incomplete trials.
+
+Parallel strategy objects can be created using `strategy_factory.create('strategy_name')`.
 
 """
 import logging
-from abc import ABCMeta, abstractmethod
 
-from orion.core.utils import Factory
+from orion.core.utils import GenericFactory
 from orion.core.worker.trial import Trial
 
 log = logging.getLogger(__name__)
@@ -48,32 +49,24 @@ def get_objective(trial):
     return objective
 
 
-class BaseParallelStrategy(object, metaclass=ABCMeta):
+class ParallelStrategy(object):
     """Strategy to give intermediate results for incomplete trials"""
 
     def __init__(self, *args, **kwargs):
         pass
 
-    @abstractmethod
-    def observe(self, points, results):
+    def observe(self, trials):
         """Observe completed trials
 
         .. seealso:: `orion.algo.base.BaseAlgorithm.observe` method
 
         Parameters
         ----------
-        points: list of tuples of array-likes
-           Points from a `orion.algo.space.Space`.
-           Evaluated problem parameters by a consumer.
-        results: list of dict
-           Contains the result of an evaluation; partial information about the
-           black-box function at each point in `params`.
+        trials: list of ``orion.core.worker.trial.Trial``
+           Trials from a `orion.algo.space.Space`.
 
         """
-        # NOTE: In future points and results will be converted to trials for coherence with
-        # `Strategy.lie()` as well as for coherence with `Algorithm.observe` which will also be
-        # converted to expect trials instead of lists and dictionaries.
-        pass
+        raise NotImplementedError()
 
     # pylint: disable=no-self-use
     def lie(self, trial):
@@ -109,15 +102,15 @@ class BaseParallelStrategy(object, metaclass=ABCMeta):
         return self.__class__.__name__
 
 
-class NoParallelStrategy(BaseParallelStrategy):
+class NoParallelStrategy(ParallelStrategy):
     """No parallel strategy"""
 
-    def observe(self, points, results):
-        """See BaseParallelStrategy.observe"""
+    def observe(self, trials):
+        """See ParallelStrategy.observe"""
         pass
 
     def lie(self, trial):
-        """See BaseParallelStrategy.lie"""
+        """See ParallelStrategy.lie"""
         result = super(NoParallelStrategy, self).lie(trial)
         if result:
             return result
@@ -125,7 +118,7 @@ class NoParallelStrategy(BaseParallelStrategy):
         return None
 
 
-class MaxParallelStrategy(BaseParallelStrategy):
+class MaxParallelStrategy(ParallelStrategy):
     """Parallel strategy that uses the max of completed objectives"""
 
     def __init__(self, default_result=float("inf")):
@@ -139,17 +132,16 @@ class MaxParallelStrategy(BaseParallelStrategy):
         """Provide the configuration of the strategy as a dictionary."""
         return {self.__class__.__name__: {"default_result": self.default_result}}
 
-    def observe(self, points, results):
-        """See BaseParallelStrategy.observe"""
-        super(MaxParallelStrategy, self).observe(points, results)
+    def observe(self, trials):
+        """See ParallelStrategy.observe"""
         results = [
-            result["objective"] for result in results if result["objective"] is not None
+            trial.objective.value for trial in trials if trial.objective is not None
         ]
         if results:
             self.max_result = max(results)
 
     def lie(self, trial):
-        """See BaseParallelStrategy.lie"""
+        """See ParallelStrategy.lie"""
         result = super(MaxParallelStrategy, self).lie(trial)
         if result:
             return result
@@ -157,7 +149,7 @@ class MaxParallelStrategy(BaseParallelStrategy):
         return Trial.Result(name="lie", type="lie", value=self.max_result)
 
 
-class MeanParallelStrategy(BaseParallelStrategy):
+class MeanParallelStrategy(ParallelStrategy):
     """Parallel strategy that uses the mean of completed objectives"""
 
     def __init__(self, default_result=float("inf")):
@@ -171,11 +163,10 @@ class MeanParallelStrategy(BaseParallelStrategy):
         """Provide the configuration of the strategy as a dictionary."""
         return {self.__class__.__name__: {"default_result": self.default_result}}
 
-    def observe(self, points, results):
-        """See BaseParallelStrategy.observe"""
-        super(MeanParallelStrategy, self).observe(points, results)
+    def observe(self, trials):
+        """See ParallelStrategy.observe"""
         objective_values = [
-            result["objective"] for result in results if result["objective"] is not None
+            trial.objective.value for trial in trials if trial.objective is not None
         ]
         if objective_values:
             self.mean_result = sum(value for value in objective_values) / float(
@@ -183,7 +174,7 @@ class MeanParallelStrategy(BaseParallelStrategy):
             )
 
     def lie(self, trial):
-        """See BaseParallelStrategy.lie"""
+        """See ParallelStrategy.lie"""
         result = super(MeanParallelStrategy, self).lie(trial)
         if result:
             return result
@@ -191,7 +182,7 @@ class MeanParallelStrategy(BaseParallelStrategy):
         return Trial.Result(name="lie", type="lie", value=self.mean_result)
 
 
-class StubParallelStrategy(BaseParallelStrategy):
+class StubParallelStrategy(ParallelStrategy):
     """Parallel strategy that returns static objective value for incompleted trials."""
 
     def __init__(self, stub_value=None):
@@ -204,12 +195,12 @@ class StubParallelStrategy(BaseParallelStrategy):
         """Provide the configuration of the strategy as a dictionary."""
         return {self.__class__.__name__: {"stub_value": self.stub_value}}
 
-    def observe(self, points, results):
-        """See BaseParallelStrategy.observe"""
+    def observe(self, trials):
+        """See ParallelStrategy.observe"""
         pass
 
     def lie(self, trial):
-        """See BaseParallelStrategy.lie"""
+        """See ParallelStrategy.lie"""
         result = super(StubParallelStrategy, self).lie(trial)
         if result:
             return result
@@ -217,11 +208,4 @@ class StubParallelStrategy(BaseParallelStrategy):
         return Trial.Result(name="lie", type="lie", value=self.stub_value)
 
 
-# pylint: disable=too-few-public-methods,abstract-method
-class Strategy(BaseParallelStrategy, metaclass=Factory):
-    """Class used to build a parallel strategy given name and params
-
-    .. seealso:: `orion.core.utils.Factory` metaclass and `BaseParallelStrategy` interface.
-    """
-
-    pass
+strategy_factory = GenericFactory(ParallelStrategy)

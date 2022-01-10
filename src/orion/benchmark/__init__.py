@@ -11,7 +11,7 @@ from tabulate import tabulate
 
 import orion.core
 from orion.client import create_experiment
-from orion.executor.base import Executor
+from orion.executor.base import executor_factory
 
 
 class Benchmark:
@@ -51,7 +51,7 @@ class Benchmark:
 
     storage: dict, optional
         Configuration of the storage backend.
-    executor: `orion.executor.base.Executor`, optional
+    executor: `orion.executor.base.BaseExecutor`, optional
         Executor to run the benchmark experiments
     """
 
@@ -62,7 +62,7 @@ class Benchmark:
         self.targets = targets
         self.metadata = {}
         self.storage_config = storage
-        self.executor = executor or Executor(
+        self.executor = executor or executor_factory.create(
             orion.core.config.worker.executor,
             n_workers=orion.core.config.worker.n_workers,
             **orion.core.config.worker.executor_configuration,

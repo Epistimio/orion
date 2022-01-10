@@ -15,6 +15,7 @@ from orion.algo.space import Categorical, Integer, Real, Space
 from orion.core.evc import conflicts
 from orion.core.io.convert import JSONConverter, YAMLConverter
 from orion.core.io.space_builder import DimensionBuilder
+from orion.core.utils import format_trials
 from orion.core.worker.trial import Trial
 from orion.testing import MockDatetime
 
@@ -126,10 +127,10 @@ def hierarchical_space():
     return space
 
 
-@pytest.fixture(scope="module")
-def fixed_suggestion():
-    """Return the same tuple/sample from a possible space."""
-    return (("asdfa", 2), 0, 3.5)
+@pytest.fixture(scope="function")
+def fixed_suggestion(space):
+    """Return the same trial from a possible space."""
+    return format_trials.tuple_to_trial((("asdfa", 2), 0, 3.5), space)
 
 
 @pytest.fixture()
@@ -430,6 +431,18 @@ def changed_dimension_conflict(old_config, new_config):
     name = "changed"
     old_prior = "uniform(-10, 10)"
     new_prior = "normal(0, 2)"
+    dimension = DimensionBuilder().build(name, old_prior)
+    return conflicts.ChangedDimensionConflict(
+        old_config, new_config, dimension, old_prior, new_prior
+    )
+
+
+@pytest.fixture
+def changed_dimension_shape_conflict(old_config, new_config):
+    """Generate a changed shape dimension conflict"""
+    name = "changed_shape"
+    old_prior = "uniform(-10, 10)"
+    new_prior = "uniform(-10, 10, shape=2)"
     dimension = DimensionBuilder().build(name, old_prior)
     return conflicts.ChangedDimensionConflict(
         old_config, new_config, dimension, old_prior, new_prior

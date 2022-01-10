@@ -257,7 +257,6 @@ def format_commandline(experiment):
 
 CONFIG_TEMPLATE = """\
 {title}
-pool size: {experiment.pool_size}
 max trials: {experiment.max_trials}
 max broken: {experiment.max_broken}
 working dir: {experiment.working_dir}

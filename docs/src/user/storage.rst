@@ -477,18 +477,22 @@ Here's an example on how you could remove an experiment
 --------------
 
 .. automethod:: orion.core.io.database.Database.read
+   :noindex:
 
 :hidden:`write`
 ---------------
 
 .. automethod:: orion.core.io.database.Database.write
+   :noindex:
 
 :hidden:`remove`
 ----------------
 
 .. automethod:: orion.core.io.database.Database.remove
+   :noindex:
 
 :hidden:`read_and_write`
 ------------------------
 
 .. automethod:: orion.core.io.database.Database.read_and_write
+   :noindex:

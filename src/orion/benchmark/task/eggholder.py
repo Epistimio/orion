@@ -6,10 +6,10 @@ Task for EggHolder Function
 """
 import numpy
 
-from orion.benchmark.task.base import BaseTask
+from orion.benchmark.task.base import BenchmarkTask
 
 
-class EggHolder(BaseTask):
+class EggHolder(BenchmarkTask):
     """`EggHolder function <http://infinity77.net/global_optimization/test_functions_nd_E.html#go_benchmark.EggHolder>`_
     as benchmark task"""
 

@@ -51,30 +51,43 @@ def dict_to_trial(data, space):
             )
         value = data.get(name, dim.default_value)
 
-        if value not in dim:
-            error_msg = "Dimension {} value {} is outside of prior {}".format(
-                name, value, dim.get_prior_string()
-            )
-            raise ValueError(error_msg)
-
         params.append(dict(name=dim.name, type=dim.type, value=value))
-    assert len(params) == len(space)
-    return Trial(params=params)
+
+    trial = Trial(params=params)
+
+    if trial not in space:
+        error_msg = f"Parameters values {trial.params} are outside of space {space}"
+        raise ValueError(error_msg)
+
+    return trial
 
 
-def tuple_to_trial(data, space):
-    """Create a `orion.core.worker.trial.Trial` object from `data`,
-    filling only parameter information from `data`.
+def tuple_to_trial(data, space, status="new"):
+    """Create a `orion.core.worker.trial.Trial` object from `data`.
 
-    :param data: A tuple representing a sample point from `space`.
-    :param space: Definition of problem's domain.
-    :type space: `orion.algo.space.Space`
+    Parameters
+    ----------
+    data: tuple
+        A tuple representing a sample point from `space`.
+    space: `orion.algo.space.Space`
+        Definition of problem's domain.
+    status: str, optional
+        Status of the trial. One of ``orion.core.worker.trial.Trial.allowed_stati``.
+
+    Returns
+    -------
+    A trial object `orion.core.worker.trial.Trial`.
     """
-    assert len(data) == len(space)
+    if len(data) != len(space):
+        raise ValueError(
+            f"Data point is not compatible with search space:\ndata: {data}\nspace: {space}"
+        )
+
     params = []
     for i, dim in enumerate(space.values()):
         params.append(dict(name=dim.name, type=dim.type, value=data[i]))
-    return Trial(params=params)
+
+    return Trial(params=params, status=status)
 
 
 def get_trial_results(trial):
