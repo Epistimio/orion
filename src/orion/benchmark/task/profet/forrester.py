@@ -4,9 +4,7 @@ from dataclasses import dataclass
 from logging import getLogger as get_logger
 from typing import Callable, ClassVar, Dict
 
-from emukit.examples.profet.meta_benchmarks.meta_forrester import (
-    get_architecture_forrester,
-)
+from emukit.examples.profet.meta_benchmarks.meta_forrester import get_architecture_forrester
 from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 from torch import nn
 
@@ -42,15 +40,13 @@ class ForresterTask(ProfetTask[ForresterTaskHParams]):
 
     @dataclass
     class ModelConfig(MetaModelConfig):
-        """ Config for training the Profet model on a Forrester task. """
+        """Config for training the Profet model on a Forrester task."""
 
         benchmark: Final[str] = "forrester"
 
         # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_forrester.json"
-        get_architecture: ClassVar[
-            Callable[[int], nn.Module]
-        ] = get_architecture_forrester
+        get_architecture: ClassVar[Callable[[int], nn.Module]] = get_architecture_forrester
         hidden_space: ClassVar[int] = 2
         normalize_targets: ClassVar[bool] = True
         log_cost: ClassVar[bool] = False

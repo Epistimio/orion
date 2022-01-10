@@ -30,14 +30,12 @@ class FcNetTask(ProfetTask[FcNetTaskHParams]):
 
     @dataclass
     class ModelConfig(MetaModelConfig):
-        """ Config for training the Profet model on an FcNet task. """
+        """Config for training the Profet model on an FcNet task."""
 
         benchmark: Final[str] = "fcnet"
         # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_fcnet.json"
-        get_architecture: ClassVar[Callable[[int], nn.Module]] = partial(
-            get_default_architecture
-        )
+        get_architecture: ClassVar[Callable[[int], nn.Module]] = partial(get_default_architecture)
         hidden_space: ClassVar[int] = 5
         log_cost: ClassVar[bool] = True
         log_target: ClassVar[bool] = False

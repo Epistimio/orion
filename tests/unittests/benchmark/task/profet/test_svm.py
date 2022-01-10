@@ -8,6 +8,6 @@ from .test_profet_task import ProfetTaskTests
 
 
 class TestSvmTask(ProfetTaskTests):
-    """ Tests for the `SvmTask` class. """
+    """Tests for the `SvmTask` class."""
 
     Task: ClassVar[Type[ProfetTask]] = SvmTask

@@ -31,17 +31,17 @@ logger = get_logger(__name__)
 
 @contextmanager
 def make_reproducible(seed: int):
-    """ Makes the random operations within a block of code reproducible for a given seed. """
+    """Makes the random operations within a block of code reproducible for a given seed."""
     # First: Get the starting random state, and restore it after.
     start_random_state = random.getstate()
     start_np_rng_state = np.random.get_state()
     with torch.random.fork_rng():
         # Set the random state, using the given seed.
         random.seed(seed)
-        np_seed = random.randint(0, 2**32-1)
+        np_seed = random.randint(0, 2 ** 32 - 1)
         np.random.seed(np_seed)
 
-        torch_seed = random.randint(0, 2**32-1)
+        torch_seed = random.randint(0, 2 ** 32 - 1)
         torch.random.manual_seed(torch_seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(torch_seed)
@@ -61,9 +61,9 @@ class ProfetTask(BaseTask, Generic[InputType]):
 
     For more information on Profet, see original paper at https://arxiv.org/abs/1905.12982.
 
-    Klein, Aaron, Zhenwen Dai, Frank Hutter, Neil Lawrence, and Javier Gonzalez. "Meta-surrogate benchmarking for 
+    Klein, Aaron, Zhenwen Dai, Frank Hutter, Neil Lawrence, and Javier Gonzalez. "Meta-surrogate benchmarking for
     hyperparameter optimization." Advances in Neural Information Processing Systems 32 (2019): 6270-6280.
-    
+
     Parameters
     ----------
     max_trials : int, optional
@@ -132,9 +132,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
         if isinstance(device, torch.device):
             self.device = device
         else:
-            self.device = torch.device(
-                device or ("cuda" if torch.cuda.is_available() else "cpu")
-            )
+            self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
 
         # NOTE: Need to control the randomness that's happening inside *both* the training
         # function, as well as the loading function (since `load_task_network`` instantiates a model
@@ -171,9 +169,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
         self.h_tensor = torch.as_tensor(self.h, dtype=torch.float32, device=self.device)
 
         self._space: Space = SpaceBuilder().build(self.get_search_space())
-        self.name = (
-            f"profet.{type(self).__qualname__.lower()}_{self.model_config.task_id}"
-        )
+        self.name = f"profet.{type(self).__qualname__.lower()}_{self.model_config.task_id}"
 
     @property
     def space(self) -> Space:
@@ -188,7 +184,7 @@ class ProfetTask(BaseTask, Generic[InputType]):
         ...
 
     def sample(self, n: int = None) -> Union[InputType, List[InputType]]:
-        """ Samples a point (dict of hyper-parameters) from the search space of this task.
+        """Samples a point (dict of hyper-parameters) from the search space of this task.
 
         This point can then be passed as an input to the task to get the objective.
         """
@@ -268,9 +264,8 @@ class ProfetTask(BaseTask, Generic[InputType]):
         if self.with_grad:
             self.net.zero_grad()
             y_sample.backward()
-            results.append(
-                dict(name=self.name, type="gradient", value=x_tensor.grad.cpu().numpy())
-            )
+            assert x_tensor.grad is not None
+            results.append(dict(name=self.name, type="gradient", value=x_tensor.grad.cpu().numpy()))
 
         return results
 

@@ -8,6 +8,6 @@ from .test_profet_task import ProfetTaskTests
 
 
 class TestXgBoostTask(ProfetTaskTests):
-    """ Tests for the XGBoostTask class. """
+    """Tests for the XGBoostTask class."""
 
     Task: ClassVar[Type[ProfetTask]] = XgBoostTask

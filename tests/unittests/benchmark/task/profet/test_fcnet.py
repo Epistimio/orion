@@ -8,6 +8,6 @@ from .test_profet_task import ProfetTaskTests
 
 
 class TestFcNetTask(ProfetTaskTests):
-    """ Tests for the `FcNetTask` class. """
+    """Tests for the `FcNetTask` class."""
 
     Task: ClassVar[Type[ProfetTask]] = FcNetTask

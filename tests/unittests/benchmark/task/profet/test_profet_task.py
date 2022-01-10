@@ -28,13 +28,13 @@ logger = get_logger(__name__)
 
 
 class ProfetTaskTests:
-    """ Base class for testing Profet tasks. """
+    """Base class for testing Profet tasks."""
 
     Task: ClassVar[Type[ProfetTask]]
 
     @pytest.fixture()
     def profet_train_config(self):
-        """ Fixture that provides a configuration object for the Profet algorithm for testing. """
+        """Fixture that provides a configuration object for the Profet algorithm for testing."""
         quick_train_config = self.Task.ModelConfig(
             task_id=0,
             seed=123,
@@ -52,7 +52,7 @@ class ProfetTaskTests:
     @pytest.mark.timeout(1)
     def test_mock_load_data_fixture_when_data_isnt_available(self, tmp_path_factory):
         """Test to make sure that the fixture we use to create fake profet data works correctly.
-        
+
         The `mock_load_data` fixture should be automatically used if we don't have the real data
         downloaded.
         """
@@ -71,7 +71,7 @@ class ProfetTaskTests:
     def test_mock_load_data_fixture_when_real_data_available(
         self, tmp_path_factory, mock_load_data
     ):
-        """ Test that the mock_load_data fixture returns real data when the input dir is non-empty,
+        """Test that the mock_load_data fixture returns real data when the input dir is non-empty,
         and that the means, dtypes, shapes, etc match between the real and fake data.
         """
         # NOTE: Need to re-import, because the `mock_load_data` fixture modifies that function in the
@@ -111,7 +111,7 @@ class ProfetTaskTests:
         profet_input_dir: Path,
         tmp_path_factory,
     ):
-        """ Simple test: Check that a task can be created and that its attributes are used and set
+        """Simple test: Check that a task can be created and that its attributes are used and set
         correctly.
         """
         max_trials = 123
@@ -135,7 +135,7 @@ class ProfetTaskTests:
         tmp_path_factory,
         monkeypatch,
     ):
-        """ Tests that when instantiating multiple tasks with the same arguments, the
+        """Tests that when instantiating multiple tasks with the same arguments, the
         meta-model is trained only once.
         """
 
@@ -146,19 +146,29 @@ class ProfetTaskTests:
         MetaModelConfig.get_task_network.__call_counts = 0
 
         calls: Dict[Callable, int] = {}
-        
+
         def count_calls(f: Callable):
             calls[f] = 0
+
             def _counted_calls(*args, **kwargs) -> Any:
                 calls[f] += 1
                 return f(*args, **kwargs)
+
             return _counted_calls
 
         _get_task_network = profet_train_config.get_task_network
         _load_task_network = profet_train_config.load_task_network
 
-        monkeypatch.setattr(profet_train_config, "get_task_network", count_calls(profet_train_config.get_task_network))
-        monkeypatch.setattr(profet_train_config, "load_task_network", count_calls(profet_train_config.load_task_network))
+        monkeypatch.setattr(
+            profet_train_config,
+            "get_task_network",
+            count_calls(profet_train_config.get_task_network),
+        )
+        monkeypatch.setattr(
+            profet_train_config,
+            "load_task_network",
+            count_calls(profet_train_config.load_task_network),
+        )
 
         assert calls[_get_task_network] == 0
         assert calls[_load_task_network] == 0
@@ -171,7 +181,6 @@ class ProfetTaskTests:
 
         assert calls[_get_task_network] == 1
         assert calls[_load_task_network] == 0
-
 
         # Directory should have one file (the trained model checkpoint).
         assert len(list(checkpoint_dir.iterdir())) == 1
@@ -200,8 +209,7 @@ class ProfetTaskTests:
         with_grad: bool,
         device_str: str,
     ):
-        """ Test that tasks have a proper configuration and that they can be created from it.
-        """
+        """Test that tasks have a proper configuration and that they can be created from it."""
         max_trials = 10
         kwargs = dict(
             max_trials=max_trials,
@@ -237,7 +245,7 @@ class ProfetTaskTests:
         profet_input_dir: Path,
         checkpoint_dir: Path,
     ):
-        """ Test the `sample` method. """
+        """Test the `sample` method."""
         task = self.Task(
             model_config=profet_train_config,
             input_dir=profet_input_dir,
@@ -258,7 +266,7 @@ class ProfetTaskTests:
         checkpoint_dir: Path,
         n: int,
     ):
-        """ Test the `sample` method. """
+        """Test the `sample` method."""
         task = self.Task(
             model_config=profet_train_config,
             input_dir=profet_input_dir,
@@ -269,9 +277,7 @@ class ProfetTaskTests:
         assert len(hparam_dicts) == n
 
         assert all(
-            hparam_dicts[i] != hparam_dicts[j]
-            for i in range(n)
-            for j in set(range(n)) - {i}
+            hparam_dicts[i] != hparam_dicts[j] for i in range(n) for j in set(range(n)) - {i}
         )
 
         for hparam_dict in hparam_dicts:
@@ -335,7 +341,7 @@ class ProfetTaskTests:
         profet_input_dir: Path,
         checkpoint_dir: Path,
     ):
-        """ Tests that two tasks with different arguments give different results. """
+        """Tests that two tasks with different arguments give different results."""
         first_task_kwargs = dict(
             model_config=profet_train_config,
             input_dir=profet_input_dir,
@@ -350,9 +356,7 @@ class ProfetTaskTests:
         assert first_results[0]["type"] == "objective"
         first_objective = first_results[0]["value"]
 
-        second_task_model_config = replace(
-            profet_train_config, seed=profet_train_config.seed + 456
-        )
+        second_task_model_config = replace(profet_train_config, seed=profet_train_config.seed + 456)
         second_task_kwargs = first_task_kwargs.copy()
         second_task_kwargs["model_config"] = second_task_model_config
 
@@ -378,7 +382,7 @@ class ProfetTaskTests:
         use_same_model: bool,
         with_grad: bool,
     ):
-        """ Tests for the seeding of the model.
+        """Tests for the seeding of the model.
         When creating two tasks with the same parameters & seed:
         - When creating both models from scratch
         - When creating the first model from scratch, and loading the same model for the second task
@@ -455,8 +459,7 @@ class ProfetTaskTests:
         checkpoint_dir: Path,
         seed: int,
     ):
-        """ When using the same task and the same point twice, the results should be identical.
-        """
+        """When using the same task and the same point twice, the results should be identical."""
         model_config = replace(profet_train_config, seed=seed)
         task = self.Task(
             model_config=model_config,
@@ -482,7 +485,7 @@ class ProfetTaskTests:
         checkpoint_dir: Path,
         step_size: float,
     ):
-        """ Test that calling the task with the `with_grad` returns the gradient at that point. """
+        """Test that calling the task with the `with_grad` returns the gradient at that point."""
         task = self.Task(
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
@@ -499,9 +502,7 @@ class ProfetTaskTests:
         first_gradient = results[1]["value"]
 
         point_tuple = tuple(point_dict.values())
-        second_point_array = np.array(point_tuple) - step_size * np.array(
-            first_gradient
-        )
+        second_point_array = np.array(point_tuple) - step_size * np.array(first_gradient)
 
         second_point = dict(zip(point_dict.keys(), second_point_array))
 
@@ -510,9 +511,7 @@ class ProfetTaskTests:
             # use a point that has batch_size = 12.04 for example.
             assert second_point_array not in task.space
             second_point = {
-                k: int(v)
-                if isinstance(v, float) and isinstance(task.space[k], _Discrete)
-                else v
+                k: int(v) if isinstance(v, float) and isinstance(task.space[k], _Discrete) else v
                 for k, v in second_point.items()
             }
             second_point_array = np.array(tuple(second_point.values()))

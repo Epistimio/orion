@@ -44,9 +44,11 @@ logger = get_logger(__name__)
 
 from abc import ABC
 
+
 @dataclass
 class MetaModelConfig(ABC):
     """Configuration options for the training of the Profet meta-model."""
+
     benchmark: str
 
     # ---------- "Abstract"/required attributes:
@@ -136,9 +138,7 @@ class MetaModelConfig(ABC):
         h = task_features_mean[self.task_id] + task_features_std[self.task_id] * multiplier
         return net, h
 
-    def load_data(
-        self, input_path: Union[str, Path]
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def load_data(self, input_path: Union[str, Path]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Load the profet data for the given benchmark from the input directory.
 
         When the input directory doesn't exist, attempts to download the data to create the input
@@ -161,9 +161,7 @@ class MetaModelConfig(ABC):
             download_data(input_path)
             logger.info("Download finished.")
             if not file.exists():
-                raise RuntimeError(
-                    f"Download finished, but file {file} still doesn't exist!"
-                )
+                raise RuntimeError(f"Download finished, but file {file} still doesn't exist!")
         res = json.load(open(file, "r"))
         X, Y, C = np.array(res["X"]), np.array(res["Y"]), np.array(res["C"])
         if len(X.shape) == 1:
@@ -248,9 +246,7 @@ class MetaModelConfig(ABC):
         )
         m_lvm.optimize(max_iters=max_iters, messages=display_messages)
 
-        ls = np.array(
-            [m_lvm.kern.lengthscale[i] for i in range(m_lvm.kern.lengthscale.shape[0])]
-        )
+        ls = np.array([m_lvm.kern.lengthscale[i] for i in range(m_lvm.kern.lengthscale.shape[0])])
 
         # generate data to train the multi-task model
         task_features_mean = np.array(m_lvm.X.mean / ls)
@@ -258,7 +254,8 @@ class MetaModelConfig(ABC):
 
         return task_features_mean, task_features_std
 
-    def get_training_data(self,
+    def get_training_data(
+        self,
         X: np.ndarray,
         Y: np.ndarray,
         C: np.ndarray,
@@ -365,9 +362,7 @@ class MetaModelConfig(ABC):
         # NOTE: With the FcNet task, the dataset has size 8_100_000, which takes a LOT of
         # memory to run!
         if self.max_samples is not None:
-            logger.info(
-                f"Limiting the dataset to a maximum of {self.max_samples} samples."
-            )
+            logger.info(f"Limiting the dataset to a maximum of {self.max_samples} samples.")
             X_train = X_train[: self.max_samples, ...]
             Y_train = Y_train[: self.max_samples, ...]
             C_train = C_train[: self.max_samples, ...]
@@ -387,9 +382,7 @@ class MetaModelConfig(ABC):
         )
 
         if with_cost:
-            cost_model = Bohamiann(
-                get_network=get_default_architecture, print_every_n_steps=1000
-            )
+            cost_model = Bohamiann(get_network=get_default_architecture, print_every_n_steps=1000)
             logger.info("Training Bohamiann cost model.")
             cost_model.train(
                 X_train,
@@ -463,10 +456,9 @@ class MetaModelConfig(ABC):
         return network, h
 
     def save_task_network(
-        self, 
-        checkpoint_file: Union[str, Path], network: nn.Module, h: np.ndarray
+        self, checkpoint_file: Union[str, Path], network: nn.Module, h: np.ndarray
     ) -> None:
-        """Save the meta-model for the task at the given path. 
+        """Save the meta-model for the task at the given path.
 
         Parameters
         ----------

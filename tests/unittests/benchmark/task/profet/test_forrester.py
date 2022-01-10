@@ -8,6 +8,6 @@ from .test_profet_task import ProfetTaskTests
 
 
 class TestForresterTask(ProfetTaskTests):
-    """ Tests for the `ForresterTask` class. """
+    """Tests for the `ForresterTask` class."""
 
     Task: ClassVar[Type[ProfetTask]] = ForresterTask

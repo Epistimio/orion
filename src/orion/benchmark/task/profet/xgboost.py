@@ -31,15 +31,13 @@ class XgBoostTask(ProfetTask[XgBoostTaskHParams]):
 
     @dataclass
     class ModelConfig(MetaModelConfig):
-        """ Config for training the Profet model on an XgBoost task. """
+        """Config for training the Profet model on an XgBoost task."""
 
         benchmark: Final[str] = "xgboost"
 
         # ---------- "Abstract" class attributes:
         json_file_name: ClassVar[str] = "data_sobol_xgboost.json"
-        get_architecture: ClassVar[
-            Callable[[int], nn.Module]
-        ] = get_default_architecture
+        get_architecture: ClassVar[Callable[[int], nn.Module]] = get_default_architecture
         hidden_space: ClassVar[int] = 5
         normalize_targets: ClassVar[bool] = True
         log_cost: ClassVar[bool] = True

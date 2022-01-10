@@ -85,7 +85,7 @@ def mock_load_data(
     generates random data with the same shape and basic stats as the real datasets (shown above).
 
     NOTE: This fixture is parametrized so that we also run the tests with the fake data, even when
-    the real data is available. 
+    the real data is available.
     """
     use_real_data: bool = request.param
 
