@@ -369,58 +369,83 @@ class ProfetTaskTests:
         assert first_objective != second_objective
 
     @pytest.mark.parametrize("use_same_model", [True, False])
+    @pytest.mark.parametrize("with_grad", [True, False])
     def test_call_is_reproducible(
         self,
         profet_train_config: MetaModelConfig,
         profet_input_dir: Path,
-        checkpoint_dir: Path,
-        tmp_path_factory,
+        tmp_path: Path,
         use_same_model: bool,
+        with_grad: bool,
     ):
         """ Tests for the seeding of the model.
         When creating two tasks with the same parameters & seed:
-        - When creating both models from scratch, they should give identical outputs for the same
-          input.
-        - If the model is created once and loaded in the second task, it should also be the same
-          (give the same output for the same input).
+        - When creating both models from scratch
+        - When creating the first model from scratch, and loading the same model for the second task
+        The model for both tasks should:
+            - Have identical weights
+            - give identical outputs for the same input.
         """
+        # Create a new, empty training directory for this test.
+        checkpoint_dir = tmp_path
+
         task_kwargs = dict(
             model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
+            with_grad=with_grad,
         )
         task_a = self.Task(**task_kwargs)
+
         if use_same_model:
             # Use the same checkpoint directory, meaning that model for task #2 will be loaded from
             # the checkpoint created by task #1.
             task_b = self.Task(**task_kwargs)
         else:
-            # NOTE: We can also check if the training is seeded properly by using a different
-            # checkpoint directory, which forces the task to re-create a new model using the same
-            # training configuration, rather than load the same one as task_a.
+            # NOTE: check if the training is seeded properly by using a different checkpoint
+            # directory, forcing the task to create and train a new model using the same training
+            # configuration, rather than load the same one as task_a.
             task_b_kwargs = task_kwargs.copy()
-            task_b_kwargs["checkpoint_dir"] = tmp_path_factory.mktemp(
-                "other_checkpoint_dir"
-            )
+            task_b_kwargs["checkpoint_dir"] = checkpoint_dir.with_name(checkpoint_dir.name + "_2")
             task_b = self.Task(**task_b_kwargs)
+
+        # Check that, if the seed is the same, the weights are the same, regardless of if the model
+        # is created from scratch or loaded from a checkpoint.
+        task_a_params = dict(task_a.net.named_parameters())
+        task_b_params = dict(task_b.net.named_parameters())
+        assert task_a_params.keys() == task_b_params.keys()
+        for param_name, task_a_param in task_a_params.items():
+            task_b_param = task_b_params[param_name]
+            assert torch.allclose(task_a_param, task_b_param), param_name
+            if task_a_param.grad is not None:
+                assert task_b_param.grad is not None
+                assert torch.allclose(task_a_param.grad, task_b_param.grad), param_name
 
         point_a = task_a.sample()
         point_b = task_b.sample()
-
         assert point_a == point_b
+
         # NOTE: The forward pass samples from a distribution, therefore the values might be
         # different when calling the same task twice on the same input.
         # However, given two different task instances (with the same seed) they should give the same
         # exact sample.
         result_a = task_a(point_a)
         result_b = task_b(point_b)
+        if not with_grad:
+            # NOTE: Can't do this simple check with grads, bool of numpy arrays is ambiguous.
+            assert result_a == result_b
 
-        assert len(result_a) == 1
+        assert len(result_a) == 1 if not with_grad else 2
         assert result_a[0]["type"] == "objective"
-        assert result_a == result_b
         objective_a = result_a[0]["value"]
         objective_b = result_b[0]["value"]
         assert objective_a == objective_b
+
+        if with_grad:
+            assert result_a[1]["type"] == "gradient"
+            grad_a = result_a[0]["value"]
+            grad_b = result_b[0]["value"]
+            assert np.allclose(grad_a, grad_b)
 
     @pytest.mark.parametrize("seed", [123, 456])
     def test_call_twice_with_same_task_gives_same_result(

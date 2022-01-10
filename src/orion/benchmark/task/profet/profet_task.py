@@ -100,7 +100,9 @@ class ProfetTask(BaseTask, Generic[InputType]):
         # The config for the training of the meta-model.
         # NOTE: the train config is used to determine the hash of the task.
         if model_config is None:
-            self.model_config = self.ModelConfig()
+            # NOTE: This type error is safe to ignore: the benchmark argument will have been set in
+            # each ModelConfig subclass.
+            self.model_config = self.ModelConfig()  # type: ignore
         elif isinstance(model_config, dict):
             # If passed a model config, for example through deserializing the configuration,
             # then convert it back to the right type, so the class attributes are correct.
