@@ -57,10 +57,5 @@ class BenchmarkTask(ABC):
         """Return the configuration of the task."""
         return {self.__class__.__qualname__: self._param_names}
 
-    @property
-    def unwrapped(self) -> "BaseTask":
-        """ Returns the 'unwrapped' task, in this case, `self`. """
-        return self
-
 
 bench_task_factory = GenericFactory(BenchmarkTask)
