@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from dataclasses import asdict
 from logging import getLogger as get_logger
 from pathlib import Path
-from typing import Any, ClassVar, Dict, Generic, List, Type, TypeVar, Union, overload
+from typing import Any, ClassVar, Dict, Generic, List, Optional, Type, TypeVar, Union, overload
 
 import numpy as np
 import torch
@@ -104,10 +104,10 @@ class ProfetTask(BaseTask, Generic[InputType]):
             # each ModelConfig subclass.
             self.model_config = self.ModelConfig()  # type: ignore
         elif isinstance(model_config, dict):
-            # If passed a model config, for example through deserializing the configuration,
-            # then convert it back to the right type, so the class attributes are correct.
             self.model_config = self.ModelConfig(**model_config)
         elif not isinstance(model_config, self.ModelConfig):
+            # If passed a model config, for example through deserializing the configuration,
+            # then convert it back to the right type, so the class attributes are correct.
             self.model_config = self.ModelConfig(**asdict(model_config))
         else:
             self.model_config = model_config
@@ -168,11 +168,13 @@ class ProfetTask(BaseTask, Generic[InputType]):
 
         self.h_tensor = torch.as_tensor(self.h, dtype=torch.float32, device=self.device)
 
-        self._space: Space = SpaceBuilder().build(self.get_search_space())
+        self._space: Optional[Space] = None
         self.name = f"profet.{type(self).__qualname__.lower()}_{self.model_config.task_id}"
 
     @property
     def space(self) -> Space:
+        if self._space is None:
+            self._space = SpaceBuilder().build(self.get_search_space())
         return self._space
 
     @overload
@@ -190,8 +192,9 @@ class ProfetTask(BaseTask, Generic[InputType]):
         """
         if n is None:
             return self.sample(1)[0]
+        keys = self.space.keys()
         return [
-            dict(zip(self._space.keys(), point_tuple))  # type: ignore
+            dict(zip(keys, point_tuple))  # type: ignore
             for point_tuple in self.space.sample(n, seed=self._np_rng_state)
         ]
 

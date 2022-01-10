@@ -1,4 +1,15 @@
-""" Hyper-Parameters of a simulated task based on variants of the Forrester function.
+""" Hyper-Parameters of a simulated task based on variants of the Forrester function:
+
+.. math::
+f(x) = ((\\alpha x - 2)^2) sin(\\beta x - 4)
+..
+
+This task uses a meta-model that is trained using a dataset of points from different functions, each
+with different values of alpha and beta. This meta-model can then be used to sample "fake" points
+from a given forrester function.
+
+TODO: Is there really a use for this? The "base" task is already a synthetic task, why would we have
+a meta-model for a synthetic task, if we can just run the original task very quickly & efficiently?
 """
 from dataclasses import dataclass
 from logging import getLogger as get_logger
@@ -17,26 +28,14 @@ logger = get_logger(__name__)
 
 
 class ForresterTaskHParams(TypedDict):
-    """Hyper-Parameters of a simulated task based on variants of the Forrester function:
-
-    $ f(x) = ((\alpha x - 2)^2) sin(\beta x - 4) $
-
-    NOTE: There appears to be a discrepancy between the paper's description of this task (with two
-    parameters \alpha and \beta in [0,1]) and the code implementation at
-    https://github.com/EmuKit/emukit/blob/main/emukit/examples/profet/meta_benchmarks/meta_forrester.py
-    where the latter has a single `x` parameter in the interval [0,1].
-
-    TODO: Run this with the real data and check which of the two space definitions matches the data.
+    """Hyper-Parameters of the Forrester task.
     """
 
-    alpha: float
-    beta: float
-
-    # x: float
+    x: float
 
 
 class ForresterTask(ProfetTask[ForresterTaskHParams]):
-    """Simulated Task consisting in training a model on a variant of the Forrester function."""
+    """Simulated Task consisting in training a model on a variant of the Forrester function. """
 
     @dataclass
     class ModelConfig(MetaModelConfig):
@@ -55,7 +54,6 @@ class ForresterTask(ProfetTask[ForresterTaskHParams]):
 
     def get_search_space(self) -> Dict[str, str]:
         return {
-            "alpha": "uniform(0.0, 1.0, discrete=False)",
-            "beta": "uniform(0.0, 1.0, discrete=False)",
-            # "x": "uniform(0.0, 1.0, discrete=False)",
+            "x": "uniform(0.0, 1.0, discrete=False)",
         }
+
