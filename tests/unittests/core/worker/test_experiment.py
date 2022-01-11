@@ -50,7 +50,6 @@ def new_config(random_dt):
         max_broken=5,
         working_dir=None,
         algorithms={"dumbalgo": {}},
-        producer={"strategy": "NoParallelStrategy"},
         # attrs starting with '_' also
         # _id='fasdfasfa',
         # and in general anything which is not in Experiment's slots
@@ -601,7 +600,6 @@ read_only_methods = [
     "max_trials",
     "metadata",
     "name",
-    "producer",
     "refers",
     "retrieve_result",
     "space",
@@ -612,7 +610,6 @@ read_only_methods = [
 ]
 read_write_only_methods = [
     "fix_lost_trials",
-    "register_lie",
     "register_trial",
     "set_trial_status",
     "update_completed_trial",
@@ -634,7 +631,6 @@ kwargs = {
     "fetch_trials_by_status": {"status": "completed"},
     "get_trial": {"uid": 0},
     "retrieve_result": {"trial": dummy_trial},
-    "register_lie": {"lying_trial": dummy_trial},
     "register_trial": {"trial": dummy_trial},
     "set_trial_status": {"trial": dummy_trial, "status": "interrupted"},
     "update_completed_trial": {"trial": running_trial},

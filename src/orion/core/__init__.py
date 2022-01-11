@@ -179,8 +179,11 @@ def define_experiment_config(config):
     experiment_config.add_option(
         "strategy",
         option_type=dict,
-        default={"MaxParallelStrategy": {}},
-        help="Parallel strategy to use with the algorithm.",
+        default={},
+        help=(
+            "This option is deprecated and will be removed in v0.4.0. Parallel strategies may "
+            "now be set in algorithm configuration."
+        ),
     )
 
     config.experiment = experiment_config

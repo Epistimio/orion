@@ -68,7 +68,6 @@ def python_api_config():
                 "value": 5,
             }
         },
-        producer={"strategy": "NoParallelStrategy"},
         _id="fasdfasfa",
         something_to_be_ignored="asdfa",
         refers=dict(root_id="supernaekei", parent_id=None, adapter=[]),
@@ -80,14 +79,6 @@ def python_api_config():
 @pytest.fixture()
 def algo_unavailable_config(python_api_config):
     python_api_config["algorithms"] = {"idontreallyexist": {"but": "iwishiwould"}}
-    return python_api_config
-
-
-@pytest.fixture()
-def strategy_unavailable_config(python_api_config):
-    python_api_config["producer"]["strategy"] = {
-        "idontreallyexist": {"but": "iwishiwould"}
-    }
     return python_api_config
 
 
@@ -125,7 +116,6 @@ def new_config(random_dt, script_path):
                 "value": 5,
             }
         },
-        producer={"strategy": "NoParallelStrategy"},
         # attrs starting with '_' also
         _id="fasdfasfa",
         # and in general anything which is not in Experiment's slots
@@ -187,7 +177,6 @@ def test_get_cmd_config(config_file):
     local_config = experiment_builder.get_cmd_config(cmdargs)
 
     assert local_config["algorithms"] == "random"
-    assert local_config["strategy"] == "NoParallelStrategy"
     assert local_config["max_trials"] == 100
     assert local_config["max_broken"] == 5
     assert local_config["name"] == "voila_voici"
@@ -673,7 +662,6 @@ class TestBuild(object):
         new_config["algorithms"]["dumbalgo"]["suspend"] = False
         new_config["algorithms"]["dumbalgo"]["value"] = 5
         new_config["algorithms"]["dumbalgo"]["seed"] = None
-        new_config["producer"]["strategy"] = "NoParallelStrategy"
         new_config.pop("something_to_be_ignored")
         assert exp.configuration == new_config
 
@@ -764,7 +752,6 @@ class TestBuild(object):
         new_config["algorithms"]["dumbalgo"]["suspend"] = False
         new_config["algorithms"]["dumbalgo"]["value"] = 5
         new_config["algorithms"]["dumbalgo"]["seed"] = None
-        new_config["producer"]["strategy"] = "NoParallelStrategy"
         new_config.pop("something_to_be_ignored")
         assert exp.configuration == new_config
 
@@ -1130,27 +1117,6 @@ def test_load_unavailable_algo(algo_unavailable_config, capsys):
         with pytest.raises(NotImplementedError) as exc:
             experiment_builder.build("supernaekei")
         exc.match("Could not find implementation of BaseAlgorithm")
-
-
-def test_load_unavailable_strategy(strategy_unavailable_config, capsys):
-    with OrionState(experiments=[strategy_unavailable_config]):
-        experiment = experiment_builder.load("supernaekei", mode="r")
-        assert experiment.producer == strategy_unavailable_config["producer"]
-        assert (
-            experiment.configuration["producer"]
-            == strategy_unavailable_config["producer"]
-        )
-
-        experiment = experiment_builder.load("supernaekei", mode="w")
-        assert experiment.producer == strategy_unavailable_config["producer"]
-        assert (
-            experiment.configuration["producer"]
-            == strategy_unavailable_config["producer"]
-        )
-
-        with pytest.raises(NotImplementedError) as exc:
-            experiment_builder.build("supernaekei")
-        exc.match("Could not find implementation of ParallelStrategy")
 
 
 class TestInitExperimentReadWrite(object):

@@ -145,14 +145,6 @@ Configuration
                 seed: null
                 repetitions: 1
 
-        strategy: StubParallelStrategy
-
-
-.. note::
-
-   Notice the additional ``strategy`` in configuration which is not mandatory for most other
-   algorithms. See :ref:`StubParallelStrategy` for more information.
-
 
 .. autoclass:: orion.algo.hyperband.Hyperband
    :noindex:
@@ -211,13 +203,6 @@ Configuration
                 num_brackets: 1
                 repetitions: 1
 
-        strategy: StubParallelStrategy
-
-
-.. note::
-
-   Notice the additional ``strategy`` in configuration which is not mandatory for most other
-   algorithms. See :ref:`StubParallelStrategy` for more information.
 
 .. autoclass:: orion.algo.asha.ASHA
    :noindex:
@@ -339,8 +324,6 @@ Configuration
                     multiply_factor: 3.0
                     add_factor: 1
 
-        strategy: StubParallelStrategy
-
 
 .. autoclass:: orion.algo.evolution_es.EvolutionES
    :noindex:
@@ -393,16 +376,10 @@ A parallel strategy is a method to improve parallel optimization
 for sequential algorithms. Such algorithms can only observe
 trials that are completed and have a corresponding objective.
 To get around this, parallel strategies produces *lies*,
-noncompleted trials with fake objectives, which are then
-passed to a temporary copy of the algorithm that will suggest
-a new point. The temporary algorithm is then discarded.
-The original algorithm never obverses lies, and
-the temporary copy always observes lies that are based on
-most up-to-date data.
+noncompleted trials with fake objectives, which can
+be used by algorithms to avoid exploring space nearby pending or broken trials.
 The strategies will differ in how they assign objectives
 to the *lies*.
-
-By default, the strategy used is :ref:`MaxParallelStrategy`
 
 NoParallelStrategy
 ------------------
