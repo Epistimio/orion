@@ -42,8 +42,9 @@ def average(trials, group_by="order", key="best", return_var=False):
     group_by: str, optional
         The attribute to use to group trials for the average. By default it group trials
         by order (ex: all first trials across experiments.)
-    key: list of str, optional
-        The attributes to average. Defaults to 'best' as returned by ``orion.analysis.regret``.
+    key: str, optional
+        One attribute or a list of attributes split by ',' to average.
+        Defaults to 'best' as returned by ``orion.analysis.regret``.
     return_var: bool, optional
         If True, and a column '{key}_var' where '{key}' is the value of the argument `key`.
         Defaults to False.
