@@ -7,6 +7,7 @@ import logging
 
 import pytest
 
+import orion.core
 import orion.core.io.experiment_builder as experiment_builder
 import orion.core.utils.backward as backward
 from orion.algo.space import Space
@@ -527,6 +528,41 @@ def test_build_from_args_without_cmd(old_config_file, script_path, new_config):
     assert exp.max_trials == new_config["max_trials"]
     assert exp.max_broken == new_config["max_broken"]
     assert exp.algorithms.configuration == new_config["algorithms"]
+
+
+# TODO: Remove for v0.4
+class TestStrategyDeprecated:
+    def test_strategy_not_defined(self, caplog, space):
+        """Verify there is no warning"""
+        with OrionState():
+            with caplog.at_level(logging.WARNING):
+                exp = experiment_builder.build(name="whatever", space=space)
+            assert "`strategy` option is not supported anymore." not in caplog.text
+
+    def test_strategy_defined_in_global_config(self, caplog, space, monkeypatch):
+        """Verify there is a warning"""
+
+        with monkeypatch.context() as m:
+            m.setattr(
+                orion.core.config.experiment,
+                "strategy",
+                {"this is deprecated": "and should be ignored"},
+            )
+            with OrionState():
+                with caplog.at_level(logging.WARNING):
+                    exp = experiment_builder.build(name="whatever", space=space)
+                assert "`strategy` option is not supported anymore." in caplog.text
+
+    def test_strategy_defined_in_config(self, caplog, space):
+        """Verify there is a warning"""
+        with OrionState():
+            with caplog.at_level(logging.WARNING):
+                exp = experiment_builder.build(
+                    name="whatever",
+                    space=space,
+                    strategy={"this is deprecated": "and should be ignored"},
+                )
+            assert "`strategy` option is not supported anymore." in caplog.text
 
 
 @pytest.mark.usefixtures(
