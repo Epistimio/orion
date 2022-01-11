@@ -438,3 +438,13 @@ is ``float('inf')`` by default.
    :noindex:
    :exclude-members: state_dict, set_state, infer, lie, configuration, observe
 
+.. _StatusBasedParallelStrategy:
+
+StatusBasedParallelStrategy
+---------------------------
+
+Uses a different strategy based on the status of the trial at hand.
+
+.. autoclass:: orion.algo.parallel_strategy.StatusBasedParallelStrategy
+   :noindex:
+   :exclude-members: state_dict, set_state, infer, lie, configuration, observe, get_strategy
