@@ -411,6 +411,10 @@ Does not return any lie. This is useful to benchmark parallel
 strategies and measure how they can help compared to no
 strategy.
 
+.. autoclass:: orion.algo.parallel_strategy.NoParallelStrategy
+   :noindex:
+   :exclude-members: state_dict, set_state, infer, lie, configuration, observe
+
 .. _StubParallelStrategy:
 
 StubParallelStrategy
@@ -422,12 +426,9 @@ that can leverage parallel optimization.
 
 The value of the objective is customizable with ``stub_value``.
 
-.. code-block:: yaml
-
-    experiment:
-        strategy:
-            StubParallelStrategy:
-                stub_value: 'custom value'
+.. autoclass:: orion.algo.parallel_strategy.StubParallelStrategy
+   :noindex:
+   :exclude-members: state_dict, set_state, infer, lie, configuration, observe
 
 .. _MaxParallelStrategy:
 
@@ -440,13 +441,12 @@ The default value assigned to objective when less than 1 trial
 is completed is configurable with ``default_result``. It
 is ``float('inf')`` by default.
 
-.. code-block:: yaml
+.. autoclass:: orion.algo.parallel_strategy.MaxParallelStrategy
+   :noindex:
+   :exclude-members: state_dict, set_state, infer, lie, configuration, observe
 
-    experiment:
-        strategy:
-            MaxParallelStrategy:
-                default_result: 10000
 
+.. _MeanParallelStrategy:
 
 MeanParallelStrategy
 --------------------
@@ -457,9 +457,7 @@ The default value assigned to objective when less than 2 trials
 are completed is configurable with ``default_result``. It
 is ``float('inf')`` by default.
 
-.. code-block:: yaml
+.. autoclass:: orion.algo.parallel_strategy.MeanParallelStrategy
+   :noindex:
+   :exclude-members: state_dict, set_state, infer, lie, configuration, observe
 
-    experiment:
-        strategy:
-            MeanParallelStrategy:
-                default_result: 0.5
