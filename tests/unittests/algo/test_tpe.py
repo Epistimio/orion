@@ -720,6 +720,16 @@ class TestTPE(BaseAlgoTests):
         "prior_weight": 0.8,
         "full_weight_num": 10,
         "max_retry": 100,
+        "parallel_strategy": {
+            "of_type": "StatusBasedParallelStrategy",
+            "strategy_configs": {
+                "broken": {"of_type": "MaxParallelStrategy", "default_result": 100},
+            },
+            "default_strategy": {
+                "of_type": "meanparallelstrategy",
+                "default_result": 50,
+            },
+        },
     }
 
     def test_suggest_init(self, mocker):

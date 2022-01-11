@@ -256,6 +256,13 @@ Configuration
                 equal_weight: False
                 prior_weight: 1.0
                 full_weight_num: 25
+                parallel_strategy:
+                    of_type: StatusBasedParallelStrategy
+                    strategy_configs:
+                        broken:
+                            of_type: MaxParallelStrategy
+                    default_strategy:
+                        of_type: NoParallelStrategy
 
 
 .. autoclass:: orion.algo.tpe.TPE

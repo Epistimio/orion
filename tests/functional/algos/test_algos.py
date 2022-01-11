@@ -32,6 +32,14 @@ algorithm_configs = {
             "prior_weight": 1.0,
             "full_weight_num": 25,
             "max_retry": 100,
+            "parallel_strategy": {
+                "of_type": "StatusBasedParallelStrategy",
+                "strategy_configs": {
+                    "broken": {
+                        "of_type": "MaxParallelStrategy",
+                    },
+                },
+            },
         }
     },
     "asha": {"asha": {"seed": 1, "num_rungs": 4, "num_brackets": 1, "repetitions": 2}},
