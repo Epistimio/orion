@@ -612,7 +612,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
         "pool-size": 6,
         "executor": "dask",
         "heartbeat": 70,
-        "worker-max-trials": 1,
+        "worker-max-trials": 0,
         "worker-max-broken": 8,
         "reservation-timeout": 18,
         "idle-timeout": 19,
@@ -779,7 +779,7 @@ class TestWorkerConfig(ConfigurationTestSuite):
         # Override executor so that executor and configuration are coherent in global config
         os.environ["ORION_EXECUTOR"] = "dask"
 
-        command = f"hunt --worker-max-trials 0 -c {conf_file} -n cmd-test"
+        command = f"hunt -c {conf_file} -n cmd-test"
         command += " " + " ".join(
             "--{} {}".format(name, value) for name, value in self.cmdargs.items()
         )

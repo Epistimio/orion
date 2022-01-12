@@ -18,6 +18,16 @@ from orion.executor.base import executor_factory
 from orion.testing import create_experiment
 
 
+def new_trial(value):
+    """Generate a dummy new trial"""
+    return Trial(
+        params=[
+            dict(name="lhs", type="real", value=value),
+            dict(name="rhs", type="real", value=value),
+        ]
+    )
+
+
 class FakeClient:
     """Orion mock client for Runner."""
 
@@ -49,14 +59,7 @@ class InvalidResultClient(FakeClient):
 
     def __init__(self, n_workers):
         super(InvalidResultClient, self).__init__(n_workers)
-        self.trials.append(
-            Trial(
-                params=[
-                    dict(name="lhs", type="real", value=1),
-                    dict(name="rhs", type="real", value=1),
-                ]
-            )
-        )
+        self.trials.append(new_trial(1))
 
     def observe(self, trial, value):
         raise InvalidResult()
@@ -94,6 +97,26 @@ def function_raise_on_2(lhs, rhs):
     return lhs + rhs
 
 
+def test_stop_after_max_trial_reached():
+    """Check that all results are registered before exception are raised"""
+
+    count = 10
+    max_trials = 1
+    workers = 2
+
+    runner = new_runner(0.01, n_workers=workers)
+    runner.max_broken = 2
+    runner.max_trials_per_worker = max_trials
+    client = runner.client
+
+    client.trials.extend([new_trial(i) for i in range(count)])
+
+    runner.run()
+
+    status = ["completed" for i in range(max_trials)]
+    assert client.status == status
+
+
 def test_multi_results_with_failure():
     """Check that all results are registered before exception are raised"""
 
@@ -105,17 +128,7 @@ def test_multi_results_with_failure():
     runner.fct = function_raise_on_2
     client = runner.client
 
-    client.trials.extend(
-        [
-            Trial(
-                params=[
-                    dict(name="lhs", type="real", value=i),
-                    dict(name="rhs", type="real", value=i),
-                ]
-            )
-            for i in range(count, -1, -1)
-        ]
-    )
+    client.trials.extend([new_trial(i) for i in range(count, -1, -1)])
 
     new_trials = runner.sample()
     runner.scatter(new_trials)
