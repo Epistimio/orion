@@ -3,5 +3,5 @@ pytest-xdist
 pytest-timeout
 pytest-mock
 pytest-lazy-fixture
-git+git://github.com/Delaunay/track
+git+https://github.com/Delaunay/track
 dask[complete]
