@@ -259,7 +259,7 @@ class Runner:
                     self.trials += 1
                 except InvalidResult as exception:
                     # stop the optimization process if we received `InvalidResult`
-                    # as all the experiments are assumed to be returning those
+                    # as all the trials are assumed to be returning those
                     to_be_raised = exception
                     self.client.release(trial, status="broken")
 
