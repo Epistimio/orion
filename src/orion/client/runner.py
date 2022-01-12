@@ -288,17 +288,19 @@ class Runner:
                     log.error(str(exception))
                     log.debug(result.traceback)
 
-                # if we receive too many broken trials, it might indicate the user script
-                # is broken, stop the experiment and let the user investigate
-                if self.is_broken:
-                    to_be_raised = BrokenExperiment(
-                        "Worker has reached broken trials threshold"
-                    )
+        # if we receive too many broken trials, it might indicate the user script
+        # is broken, stop the experiment and let the user investigate
+        if self.is_broken:
+            to_be_raised = BrokenExperiment(
+                "Worker has reached broken trials threshold"
+            )
 
         if to_be_raised is not None:
             log.debug("Runner was interrupted")
             self._release_all()
             raise to_be_raised
+
+        return len(results)
 
     def _release_all(self):
         """Release all the trials that were reserved by this runner.

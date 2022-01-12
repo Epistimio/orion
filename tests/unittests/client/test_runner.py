@@ -41,7 +41,7 @@ class FakeClient:
 
     def observe(self, trial, value):
         """Fake observe"""
-        pass
+        self.status.append("completed")
 
 
 class InvalidResultClient(FakeClient):
@@ -75,7 +75,7 @@ def new_runner(idle_timeout, n_workers=2, client=None):
     runner = Runner(
         client=client,
         fct=function,
-        pool_size=2,
+        pool_size=10,
         idle_timeout=idle_timeout,
         max_broken=2,
         max_trials_per_worker=2,
@@ -85,11 +85,58 @@ def new_runner(idle_timeout, n_workers=2, client=None):
     return runner
 
 
+def function_raise_on_2(lhs, rhs):
+    """Simple function for testing purposes."""
+
+    if lhs % 2 == 1:
+        raise RuntimeError()
+
+    return lhs + rhs
+
+
+def test_multi_results_with_failure():
+    """Check that all results are registered before exception are raised"""
+
+    count = 10
+
+    runner = new_runner(0.01, n_workers=16)
+    runner.max_broken = 2
+    runner.max_trials_per_worker = count
+    runner.fct = function_raise_on_2
+    client = runner.client
+
+    client.trials.extend(
+        [
+            Trial(
+                params=[
+                    dict(name="lhs", type="real", value=i),
+                    dict(name="rhs", type="real", value=i),
+                ]
+            )
+            for i in range(count, -1, -1)
+        ]
+    )
+
+    new_trials = runner.sample()
+    runner.scatter(new_trials)
+
+    assert len(new_trials) == count
+
+    # wait for multiple future to finish
+    time.sleep(1)
+
+    with pytest.raises(BrokenExperiment):
+        runner.gather()
+
+    status = ["broken" if i % 2 == 1 else "completed" for i in range(count)]
+    assert client.status == status
+
+
 def test_invalid_result_worker():
     """Worker are waiting for new trials but none can be generated."""
 
     client = InvalidResultClient(2)
-    runner = new_runner(0.01, client=client)
+    runner = new_runner(1, client=client)
 
     with pytest.raises(InvalidResult):
         runner.run()
