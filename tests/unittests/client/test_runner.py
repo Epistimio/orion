@@ -104,7 +104,7 @@ def test_stop_after_max_trial_reached():
     max_trials = 1
     workers = 2
 
-    runner = new_runner(0.01, n_workers=workers)
+    runner = new_runner(0.1, n_workers=workers)
     runner.max_broken = 2
     runner.max_trials_per_worker = max_trials
     client = runner.client
