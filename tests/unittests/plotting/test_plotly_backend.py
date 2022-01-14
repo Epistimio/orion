@@ -46,7 +46,6 @@ config = dict(
     max_trials=10,
     working_dir="",
     algorithms={"random": {"seed": 1}},
-    producer={"strategy": "NoParallelStrategy"},
 )
 
 trial_config = {

@@ -371,7 +371,6 @@ class TestExperimentConfig(ConfigurationTestSuite):
             "working_dir": "here",
             "worker_trials": 5,
             "algorithms": {"aa": {"b": "c", "d": {"e": "f"}}},
-            "strategy": {"sa": {"c": "d", "e": {"f": "g"}}},
         }
     }
 
@@ -388,7 +387,6 @@ class TestExperimentConfig(ConfigurationTestSuite):
         "max_broken": 16,
         "working_dir": "in_db?",
         "algorithms": {"ab": {"d": "i", "f": "g"}},
-        "producer": {"strategy": {"sb": {"e": "c", "d": "g"}}},
         "space": {"/x": "uniform(0, 1)"},
         "metadata": {
             "VCS": {
@@ -433,7 +431,6 @@ class TestExperimentConfig(ConfigurationTestSuite):
             "max_broken": 15,
             "working_dir": "here_again",
             "algorithms": {"ac": {"d": "e", "f": "g"}},
-            "strategy": {"sd": {"b": "c", "d": "e"}},
         }
     }
 
@@ -455,9 +452,6 @@ class TestExperimentConfig(ConfigurationTestSuite):
             config = copy.deepcopy(config)
             for key in ignore:
                 config.pop(key, None)
-
-            if "producer" in config:
-                config["strategy"] = config.pop("producer")["strategy"]
 
             if "metadata" in config and "user" in config["metadata"]:
                 config["user"] = config["metadata"]["user"]

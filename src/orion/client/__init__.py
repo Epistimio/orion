@@ -129,7 +129,8 @@ def build_experiment(
     algorithms: str or dict, optional
         Algorithm used for optimization.
     strategy: str or dict, optional
-        Parallel strategy to use to parallelize the algorithm.
+        Deprecated and will be remove in v0.4. It should now be set in algorithm configuration
+        directly if it supports it.
     max_trials: int, optional
         Maximum number or trials before the experiment is considered done.
     max_broken: int, optional
@@ -200,7 +201,7 @@ def build_experiment(
         ``(name, x)`` already has a child ``(name, x+1)``. If you really need to branch from version
         ``x``, give it a new name to branch to with ``branching={'branch_to': <new_name>}``.
     `NotImplementedError`
-        If the algorithm, storage or strategy specified is not properly installed.
+        If the algorithm or storage specified is not properly installed.
 
     """
     if max_idle_time:
@@ -336,7 +337,6 @@ def workon(
             version=1,
             space=space,
             algorithms=algorithms,
-            strategy="NoParallelStrategy",
             max_trials=max_trials,
             max_broken=max_broken,
         )

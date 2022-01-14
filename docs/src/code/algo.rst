@@ -18,3 +18,4 @@ TODO
    algo/hyperband
    algo/asha
    algo/tpe
+   algo/parallel_strategy

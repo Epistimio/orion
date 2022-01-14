@@ -99,7 +99,6 @@ from orion.core.utils.exceptions import (
 )
 from orion.core.worker.experiment import Experiment
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
-from orion.core.worker.strategy import strategy_factory
 from orion.storage.base import get_storage, setup_storage
 
 log = logging.getLogger(__name__)
@@ -130,7 +129,8 @@ def build(name, version=None, branching=None, **config):
     algorithms: str or dict, optional
         Algorithm used for optimization.
     strategy: str or dict, optional
-        Parallel strategy to use to parallelize the algorithm.
+        Deprecated and will be remove in v0.4. It should now be set in algorithm configuration
+        directly if it supports it.
     max_trials: int, optional
         Maximum number of trials before the experiment is considered done.
     max_broken: int, optional
@@ -226,6 +226,7 @@ def clean_config(name, config, branching):
             log.debug(f"Ignoring field {key}")
             config.pop(key)
 
+    # TODO: Remove for v0.4
     if "strategy" in config:
         config["producer"] = {"strategy": config.pop("strategy")}
 
@@ -264,6 +265,7 @@ def consolidate_config(name, version, config):
     resolve_config.update_metadata(config["metadata"])
 
     merge_algorithm_config(config, new_config)
+    # TODO: Remove for v0.4
     merge_producer_config(config, new_config)
 
     config.setdefault("name", name)
@@ -284,9 +286,9 @@ def merge_algorithm_config(config, new_config):
         config["algorithms"] = new_config["algorithms"]
 
 
+# TODO: Remove for v0.4
 def merge_producer_config(config, new_config):
     """Merge given producer configuration with db config"""
-    # TODO: Find a better solution
     if (
         isinstance(config.get("producer", {}).get("strategy"), dict)
         and len(config["producer"]["strategy"]) > 1
@@ -393,10 +395,8 @@ def create_experiment(name, version, mode, space, **kwargs):
         kwargs.get("algorithms"),
         ignore_unavailable=mode != "x",
     )
-    experiment.producer = kwargs.get("producer", {})
-    experiment.producer["strategy"] = _instantiate_strategy(
-        experiment.producer.get("strategy"), ignore_unavailable=mode != "x"
-    )
+    # TODO: Remove for v0.4
+    _instantiate_strategy(kwargs.get("producer", {}).get("strategy"))
     experiment.working_dir = kwargs.get(
         "working_dir", orion.core.config.experiment.working_dir
     )
@@ -519,7 +519,7 @@ def _instantiate_algo(space, max_trials, config=None, ignore_unavailable=False):
     return algo
 
 
-def _instantiate_strategy(config=None, ignore_unavailable=False):
+def _instantiate_strategy(config=None):
     """Instantiate the strategy object
 
     Parameters
@@ -527,32 +527,15 @@ def _instantiate_strategy(config=None, ignore_unavailable=False):
     config: dict, optional
         Configuration of the strategy. If None of empty, system's defaults are used
         (orion.core.config.producer.strategy).
-    ignore_unavailable: bool, optional
-        If True and algorithm is not available (plugin not installed), return the configuration.
-        Otherwise, raise Factory error.
-
 
     """
-    if not config:
-        config = orion.core.config.experiment.strategy
+    if config or orion.core.config.experiment.strategy != {}:
+        log.warning(
+            "`strategy` option is not supported anymore. It should be set in "
+            "algorithm configuration directly."
+        )
 
-    if isinstance(config, str):
-        strategy_type = config
-        config = {}
-    else:
-        config = copy.deepcopy(config)
-        strategy_type, config = next(iter(config.items()))
-
-    try:
-        strategy = strategy_factory.create(strategy_type, **config)
-    except NotImplementedError as e:
-        if not ignore_unavailable:
-            raise e
-        log.warning(str(e))
-        log.warning("Strategy will not be instantiated.")
-        strategy = {strategy_type: config}
-
-    return strategy
+    return None
 
 
 def _register_experiment(experiment):
