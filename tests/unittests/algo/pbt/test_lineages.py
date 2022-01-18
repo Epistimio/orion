@@ -12,13 +12,13 @@ from base import (
     no_shutil_copytree,
 )
 
-from orion.algo.pbt.pbt import Lineage, Lineages
+from orion.algo.pbt.pbt import LineageNode, Lineages
 
 
-class TestLineage:
+class TestLineageNode:
     def test_register(self):
         item = [0]
-        lineage = Lineage(item)
+        lineage = LineageNode(item)
         assert lineage.item == item
         assert lineage.item is not item
 
@@ -30,7 +30,7 @@ class TestLineage:
     def test_fork(self, mocker):
         path = "/some_path"
         trial = TrialStub(path)
-        lineage = Lineage(trial)
+        lineage = LineageNode(trial)
 
         new_path = "/another_path"
         new_trial = TrialStub(new_path)
@@ -45,7 +45,7 @@ class TestLineage:
 
     @pytest.mark.usefixtures("no_shutil_copytree")
     def test_fork_identical_new_trial(self):
-        lineage = Lineage(TrialStub(id="my-id", working_dir="same_folder"))
+        lineage = LineageNode(TrialStub(id="my-id", working_dir="same_folder"))
         with pytest.raises(
             RuntimeError, match="The new trial new-id has the same working directory"
         ):
@@ -56,7 +56,7 @@ class TestLineage:
     def test_fork_to_existing_path(self, tmp_path):
         trial = TrialStub(id="stub", working_dir=os.path.join(tmp_path, "stub"))
         os.makedirs(trial.working_dir)
-        lineage = Lineage(trial)
+        lineage = LineageNode(trial)
         new_trial = TrialStub(id="fork", working_dir=os.path.join(tmp_path, "fork"))
         os.makedirs(new_trial.working_dir)
 
@@ -68,8 +68,8 @@ class TestLineage:
         assert lineage.children == []
 
     def test_set_jump(self):
-        parent_lineage = Lineage(1)
-        child_lineage = Lineage(2)
+        parent_lineage = LineageNode(1)
+        child_lineage = LineageNode(2)
         parent_lineage.set_jump(child_lineage)
 
         assert child_lineage.parent is None
@@ -81,11 +81,11 @@ class TestLineage:
         assert parent_lineage.base is None
 
     def test_set_jump_twice(self):
-        parent_lineage = Lineage(1)
-        child_lineage = Lineage(2)
+        parent_lineage = LineageNode(1)
+        child_lineage = LineageNode(2)
         parent_lineage.set_jump(child_lineage)
 
-        another_child_lineage = Lineage(3)
+        another_child_lineage = LineageNode(3)
         parent_lineage.set_jump(another_child_lineage)
 
         assert child_lineage.parent is None
@@ -101,11 +101,11 @@ class TestLineage:
         assert parent_lineage.base is None
 
     def test_set_jump_to_old_node(self):
-        parent_lineage = Lineage(1)
-        child_lineage = Lineage(2)
+        parent_lineage = LineageNode(1)
+        child_lineage = LineageNode(2)
         parent_lineage.set_jump(child_lineage)
 
-        another_child_lineage = Lineage(3)
+        another_child_lineage = LineageNode(3)
 
         with pytest.raises(RuntimeError, match="Trying to jump to an existing node"):
             another_child_lineage.set_jump(child_lineage)
@@ -123,18 +123,18 @@ class TestLineage:
         assert parent_lineage.base is None
 
     def test_get_true_ancestor_no_parent(self):
-        lineage = Lineage(1)
+        lineage = LineageNode(1)
         assert lineage.get_true_ancestor() is None
 
     def test_get_true_ancestor_parent_no_jump(self):
-        lineage = Lineage(1)
-        child_lineage = Lineage(2, parent=lineage)
+        lineage = LineageNode(1)
+        child_lineage = LineageNode(2, parent=lineage)
         assert child_lineage.get_true_ancestor() is lineage
 
     def test_get_true_ancestor_with_jump(self):
-        lineage = Lineage(1)
-        child_lineage = Lineage(2, parent=lineage)
-        true_lineage = Lineage(3)
+        lineage = LineageNode(1)
+        child_lineage = LineageNode(2, parent=lineage)
+        true_lineage = LineageNode(3)
         true_lineage.set_jump(child_lineage)
         assert child_lineage.parent is lineage
         assert child_lineage.base is true_lineage
@@ -142,7 +142,7 @@ class TestLineage:
 
     def test_get_best_trial_empty(self):
         trial = TrialStub(id="id-1", objective=1)
-        lineage = Lineage(trial)
+        lineage = LineageNode(trial)
         assert lineage.get_best_trial().id == "id-1"
 
     def test_get_best_trial_straigth_lineage(self):
@@ -230,7 +230,7 @@ class TestLineage:
         assert leafs[0].get_best_trial() == root.item
 
     def test_get_best_trial_non_completed_root(self):
-        lineage = Lineage(TrialStub(id="my-id"))
+        lineage = LineageNode(TrialStub(id="my-id"))
         assert lineage.get_best_trial() is None
 
 

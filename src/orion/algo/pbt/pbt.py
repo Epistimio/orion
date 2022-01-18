@@ -551,14 +551,14 @@ class Lineages:
 
         Returns
         -------
-        orion.algo.pbt.pbt.Lineage
+        orion.algo.pbt.pbt.LineageNode
             The lineage node for the given trial.
 
         """
         if trial.id in self._trial_to_lineages:
             return self._trial_to_lineages[trial.id]
 
-        lineage = Lineage(trial)
+        lineage = LineageNode(trial)
         self._lineage_roots.append(lineage)
         self._trial_to_lineages[trial.id] = lineage
         return lineage
@@ -723,7 +723,7 @@ class Lineages:
         return trials
 
 
-class Lineage(TreeNode):
+class LineageNode(TreeNode):
     """
     Lineage node
 
@@ -742,13 +742,13 @@ class Lineage(TreeNode):
     ----------
     trial: ``orion.core.worker.trial.Trial``
         The trial to represent with the lineage node.
-    parent: Lineage, optional
+    parent: LineageNode, optional
         The parent node for this lineage node. Default: None, that is, no parent.
 
     """
 
     def __init__(self, trial, parent=None):
-        super(Lineage, self).__init__(copy.deepcopy(trial), parent=parent)
+        super(LineageNode, self).__init__(copy.deepcopy(trial), parent=parent)
         self._jump = TreeNode(self)
 
     @property
@@ -792,8 +792,8 @@ class Lineage(TreeNode):
 
         Returns
         -------
-        Lineage
-            Lineage node refering to ``new_trial``
+        LineageNode
+            LineageNode refering to ``new_trial``
 
         Raises
         ------
@@ -819,7 +819,7 @@ class Lineage(TreeNode):
                 "remaining from a previous experiment with same trial id."
             ) from e
 
-        return Lineage(new_trial, parent=self)
+        return LineageNode(new_trial, parent=self)
 
     def set_jump(self, node):
         """Set the jump to given node
@@ -828,7 +828,7 @@ class Lineage(TreeNode):
 
         Parameters
         ----------
-        node: Lineage
+        node: LineageNode
             Node to refer to as the jump targen for the current node.
 
         Raises

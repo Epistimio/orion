@@ -12,7 +12,7 @@ from base import (
     space,
 )
 
-from orion.algo.pbt.pbt import PBT, Lineage, Lineages, compute_fidelities
+from orion.algo.pbt.pbt import PBT, compute_fidelities
 from orion.core.worker.primary_algo import SpaceTransformAlgoWrapper
 from orion.core.worker.trial import Trial
 from orion.testing.algo import BaseAlgoTests
