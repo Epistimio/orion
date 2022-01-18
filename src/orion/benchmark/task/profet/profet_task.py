@@ -23,8 +23,10 @@ from orion.benchmark.task.profet.model_utils import MetaModelConfig
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils import compute_identity
 from orion.core.utils.format_trials import dict_to_trial, trial_to_tuple
-from orion.core.utils.points import flatten_dims
 from torch.distributions import Normal
+from orion.core.worker import transformer
+from orion.core.utils.flatten import flatten
+from orion.core.worker.trial import Trial
 
 logger = get_logger(__name__)
 
@@ -167,6 +169,12 @@ class ProfetTask(BenchmarkTask):
 
         self._space: Optional[Space] = None
         self.name = f"profet.{type(self).__qualname__.lower()}_{self.model_config.task_id}"
+        self.transformed_space = transformer.build_required_space(
+            self.space,
+            type_requirement="real",
+            shape_requirement="flattened",
+            dist_requirement="linear",
+        )
 
     @property
     def space(self) -> Space:
@@ -175,25 +183,44 @@ class ProfetTask(BenchmarkTask):
         return self._space
 
     @overload
-    def sample(self) -> Dict:
+    def sample(self) -> Trial:
         ...
 
     @overload
-    def sample(self, n: int) -> List[Dict]:
+    def sample(self, n_samples: int) -> List[Trial]:
         ...
 
-    def sample(self, n: int = None) -> Union[Dict, List[Dict]]:
-        """Samples a point (dict of hyper-parameters) from the search space of this task.
+    def sample(self, n_samples: int = None) -> Union[Trial, List[Trial]]:
+        """Draw random sample(s) from the space of this task.
 
-        This point can then be passed as an input to the task to get the objective.
+        Samples a trial (dict of hyper-parameters) from the search space of this task.
+        This dict can then be passed as an input to the task to get the objective:
+
+        ```python
+        x: Trial = task.sample()
+        assert x in task.space
+        y: float = task(**x.param)
+
+        xs: List[Trial] = task.sample(2)
+        ys = [task(**x.param) for x in xs]
+        ```
+        
+        Parameters
+        ----------
+        n_samples : int, optional
+           The number of samples to be drawn. When None, a single trial is returned. When an integer
+           is passed, a list of Trials is returned. Defaults to `None`.
+
+        Returns
+        -------
+        trials: Union[Trial, List[Trial]]
+           Single `Trial` when `n` is not passed, or list of `Trials`, when `n` is an integer.
+           Each element is a separate sample of this space, a trial containing values associated
+           with the corresponding dimension.
         """
-        if n is None:
-            return self.sample(1)[0]
-        keys = self.space.keys()
-        return [
-            dict(zip(keys, point_tuple))  # type: ignore
-            for point_tuple in self.space.sample(n, seed=self._np_rng_state)
-        ]
+        if n_samples is None:
+            return self.space.sample(n_samples=1, seed=self._np_rng_state)[0]
+        return self.space.sample(n_samples=n_samples, seed=self._np_rng_state)
 
     def call(self, *args, **kwargs) -> List[Dict]:
         """Get the value of the sampled objective function at the given point (hyper-parameters).
@@ -220,8 +247,10 @@ class ProfetTask(BenchmarkTask):
             raise RuntimeError("Expected to receive only keyword arguments.")
         # A bit of gymnastics to convert the params Dict into a PyTorch tensor.
         trial = dict_to_trial(kwargs, self._space)
-        point_tuple = trial_to_tuple(trial, self._space)
-        flattened_point = flatten_dims(point_tuple, self._space)
+        flattened_trial = self.transformed_space.transform(trial)
+        flattened_params = flatten(flattened_trial.params)
+        flattened_point = np.array([flattened_params[key] for key in self.transformed_space.keys()])
+
         x_tensor = torch.as_tensor(flattened_point).type_as(self.h_tensor)
         if self.with_grad:
             x_tensor = x_tensor.requires_grad_(True)

@@ -225,50 +225,6 @@ class ProfetTaskTests:
         second_task = _get_task(name=name, **config_dict)
         assert second_task.configuration == first_task.configuration
 
-    def test_sample_single_params(
-        self, profet_train_config: MetaModelConfig, profet_input_dir: Path, checkpoint_dir: Path,
-    ):
-        """Test the `sample` method."""
-        task = self.Task(
-            model_config=profet_train_config,
-            input_dir=profet_input_dir,
-            checkpoint_dir=checkpoint_dir,
-        )
-        hparam_dict = task.sample()
-        assert isinstance(hparam_dict, dict)
-        assert hparam_dict.keys() == task.get_search_space().keys()
-        # BUG?: Space __contains__ doesn't work with a dict?
-        # assert hparam_dict in task.space
-        assert hparam_dict.values() in task.space
-
-    @pytest.mark.parametrize("n", range(3))
-    def test_sample_multiple_params(
-        self,
-        profet_train_config: MetaModelConfig,
-        profet_input_dir: Path,
-        checkpoint_dir: Path,
-        n: int,
-    ):
-        """Test the `sample` method."""
-        task = self.Task(
-            model_config=profet_train_config,
-            input_dir=profet_input_dir,
-            checkpoint_dir=checkpoint_dir,
-        )
-        hparam_dicts = task.sample(n)
-        assert isinstance(hparam_dicts, list)
-        assert len(hparam_dicts) == n
-
-        assert all(
-            hparam_dicts[i] != hparam_dicts[j] for i in range(n) for j in set(range(n)) - {i}
-        )
-
-        for hparam_dict in hparam_dicts:
-            assert isinstance(hparam_dict, dict)
-            assert hparam_dict.keys() == task.get_search_space().keys()
-            # NOTE: space doesn't accept dicts:
-            assert hparam_dict.values() in task.space
-
     def test_space_attribute(
         self, profet_train_config: MetaModelConfig, profet_input_dir: Path, checkpoint_dir: Path,
     ):
@@ -326,9 +282,9 @@ class ProfetTaskTests:
         )
 
         first_task = self.Task(**first_task_kwargs)
-        first_point = first_task.sample()
+        first_trial = first_task.sample()
 
-        first_results = first_task(first_point)
+        first_results = first_task(**first_trial.params)
         assert len(first_results) == 1
         assert first_results[0]["type"] == "objective"
         first_objective = first_results[0]["value"]
@@ -338,10 +294,10 @@ class ProfetTaskTests:
         second_task_kwargs["model_config"] = second_task_model_config
 
         second_task = self.Task(**second_task_kwargs)
-        second_point = second_task.sample()
-        assert second_point != first_point
+        second_trial = second_task.sample()
+        assert second_trial != first_trial
 
-        second_results = second_task(second_point)
+        second_results = second_task(**second_trial.params)
         assert second_results != first_results
 
         assert len(second_results) == 1
@@ -402,16 +358,16 @@ class ProfetTaskTests:
                 assert task_b_param.grad is not None
                 assert torch.allclose(task_a_param.grad, task_b_param.grad), param_name
 
-        point_a = task_a.sample()
-        point_b = task_b.sample()
-        assert point_a == point_b
+        trial_a = task_a.sample()
+        trial_b = task_b.sample()
+        assert trial_a.params == trial_b.params
 
         # NOTE: The forward pass samples from a distribution, therefore the values might be
         # different when calling the same task twice on the same input.
         # However, given two different task instances (with the same seed) they should give the same
         # exact sample.
-        result_a = task_a(point_a)
-        result_b = task_b(point_b)
+        result_a = task_a(**trial_a.params)
+        result_b = task_b(**trial_b.params)
         if not with_grad:
             # NOTE: Can't do this simple check with grads, bool of numpy arrays is ambiguous.
             assert result_a == result_b
@@ -442,14 +398,14 @@ class ProfetTaskTests:
             model_config=model_config, input_dir=profet_input_dir, checkpoint_dir=checkpoint_dir,
         )
         assert task.model_config.seed == seed
-        point = task.sample()
+        trial = task.sample()
 
-        first_results = task(point)
+        first_results = task(**trial.params)
         assert len(first_results) == 1
         assert first_results[0]["type"] == "objective"
 
         # Pass the same point under different forms and check that the results are exactly the same.
-        second_results = task(point)
+        second_results = task(**trial.params)
         assert first_results == second_results
 
     @pytest.mark.parametrize("step_size", [1e-2, 1e-4])
@@ -468,46 +424,16 @@ class ProfetTaskTests:
             with_grad=True,
         )
 
-        point_dict = task.sample()
-        results = task(point_dict)
+        first_trial = task.sample()
+        results = task(**first_trial.params)
 
         assert results[0]["type"] == "objective"
         first_objective = results[0]["value"]
         assert results[1]["type"] == "gradient"
         first_gradient = results[1]["value"]
-
-        point_tuple = tuple(point_dict.values())
-        second_point_array = np.array(point_tuple) - step_size * np.array(first_gradient)
-
-        second_point = dict(zip(point_dict.keys(), second_point_array))
-
-        if any(isinstance(dim, _Discrete) for dim in task.space.values()):
-            # NOTE: Some dimensions don't quite work here because they are discrete: we can't really
-            # use a point that has batch_size = 12.04 for example.
-            assert second_point_array not in task.space
-            second_point = {
-                k: int(v) if isinstance(v, float) and isinstance(task.space[k], _Discrete) else v
-                for k, v in second_point.items()
-            }
-            second_point_array = np.array(tuple(second_point.values()))
-
-        assert second_point.values() in task.space
-        assert second_point_array in task.space
-
-        second_results = task(second_point)
-        # Check that no warnings are raised if the point is in the space of the task.
-        with pytest.warns(None) as record:
-            second_results = task(second_point)
-        assert len(record) == 0, [m.message for m in record.list]
-
-        second_objective = second_results[0]["value"]
-
-        # NOTE: (@lebrice): Expected this to work for really small step sizes. Using simpler check
-        # below instead.
-        # assert np.isclose(improvement, step_size)
-
-        # This check sort-of works, at least.
-        # NOTE: Lower is better here, hence the order.
-        improvement = first_objective - second_objective
-        # NOTE: For the SVM task, the improvement is sometimes just zero.
-        assert improvement >= 0.0
+        assert first_gradient is not None
+        # TODO: Gradients here might not have the same structure as the inputs, in the case of
+        # XGBoost, since there are categorical variables.
+        # - Should we return the grads in the same format as the input Trial, by applying the
+        #   inverse transform of `self.transformed_space` to the gradients? Is that possible?
+        #   Wouldn't some information be lost?
