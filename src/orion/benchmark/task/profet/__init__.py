@@ -8,7 +8,7 @@ benchmarking for hyperparameter optimization." Advances in Neural Information Pr
 (2019): 6270-6280.
 """
 from .profet_task import ProfetTask
-from .svm import SvmTask, SvmTaskHParams
-from .fcnet import FcNetTask, FcNetTaskHParams
-from .forrester import ForresterTask, ForresterTaskHParams
-from .xgboost import XgBoostTask, XgBoostTaskHParams
+from .svm import SvmTask
+from .fcnet import FcNetTask
+from .forrester import ForresterTask
+from .xgboost import XgBoostTask

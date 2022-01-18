@@ -13,28 +13,21 @@ a meta-model for a synthetic task, if we can just run the original task very qui
 """
 from dataclasses import dataclass
 from logging import getLogger as get_logger
-from typing import Callable, ClassVar, Dict
+from typing import Callable, ClassVar, Dict, List
 
 from emukit.examples.profet.meta_benchmarks.meta_forrester import get_architecture_forrester
 from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 from torch import nn
 
 try:
-    from typing import Final, TypedDict
+    from typing import Final
 except ImportError:
-    from typing_extensions import Final, TypedDict  # type: ignore
+    from typing_extensions import Final  # type: ignore
 
 logger = get_logger(__name__)
 
 
-class ForresterTaskHParams(TypedDict):
-    """Hyper-Parameters of the Forrester task.
-    """
-
-    x: float
-
-
-class ForresterTask(ProfetTask[ForresterTaskHParams]):
+class ForresterTask(ProfetTask):
     """Simulated Task consisting in training a model on a variant of the Forrester function. """
 
     @dataclass
@@ -51,6 +44,9 @@ class ForresterTask(ProfetTask[ForresterTaskHParams]):
         log_cost: ClassVar[bool] = False
         log_target: ClassVar[bool] = False
         # -----------
+
+    def call(self, *args, x: float, **kwargs) -> List[Dict]:
+        return super().call(*args, x=x, **kwargs)
 
     def get_search_space(self) -> Dict[str, str]:
         return {

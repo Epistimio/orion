@@ -1,32 +1,19 @@
 """ Simulated Task consisting in training an Extreme-Gradient Boosting (XGBoost) predictor.
 """
 from dataclasses import dataclass
-from typing import Callable, ClassVar, Dict, TypedDict
+from typing import Callable, ClassVar, Dict, List
 
 from emukit.examples.profet.meta_benchmarks.architecture import get_default_architecture
 from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 from torch import nn
 
 try:
-    from typing import Final, TypedDict
+    from typing import Final
 except ImportError:
-    from typing_extensions import Final, TypedDict
+    from typing_extensions import Final
 
 
-class XgBoostTaskHParams(TypedDict):
-    """Inputs to the XgBoost task."""
-
-    learning_rate: float
-    gamma: float
-    l1_regularization: float
-    l2_regularization: float
-    nb_estimators: int
-    subsampling: float
-    max_depth: int
-    min_child_weight: int
-
-
-class XgBoostTask(ProfetTask[XgBoostTaskHParams]):
+class XgBoostTask(ProfetTask):
     """Simulated Task consisting in fitting a Extreme-Gradient Boosting predictor."""
 
     @dataclass
@@ -43,6 +30,32 @@ class XgBoostTask(ProfetTask[XgBoostTaskHParams]):
         log_cost: ClassVar[bool] = True
         log_target: ClassVar[bool] = True
         # -----------
+
+    def call(
+        self,
+        *args,
+        learning_rate: float,
+        gamma: float,
+        l1_regularization: float,
+        l2_regularization: float,
+        nb_estimators: int,
+        subsampling: float,
+        max_depth: int,
+        min_child_weight: int,
+        **kwargs
+    ) -> List[Dict]:
+        return super().call(
+            *args,
+            learning_rate=learning_rate,
+            gamma=gamma,
+            l1_regularization=l1_regularization,
+            l2_regularization=l2_regularization,
+            nb_estimators=nb_estimators,
+            subsampling=subsampling,
+            max_depth=max_depth,
+            min_child_weight=min_child_weight,
+            **kwargs
+        )
 
     def get_search_space(self) -> Dict[str, str]:
         return dict(

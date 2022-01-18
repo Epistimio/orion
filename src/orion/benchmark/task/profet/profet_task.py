@@ -53,10 +53,7 @@ def make_reproducible(seed: int):
     random.setstate(start_random_state)
 
 
-InputType = TypeVar("InputType", bound=Dict[str, Any])
-
-
-class ProfetTask(BenchmarkTask, Generic[InputType]):
+class ProfetTask(BenchmarkTask):
     """Base class for Tasks that are generated using the Profet algorithm.
 
     For more information on Profet, see original paper at https://arxiv.org/abs/1905.12982.
@@ -178,14 +175,14 @@ class ProfetTask(BenchmarkTask, Generic[InputType]):
         return self._space
 
     @overload
-    def sample(self) -> InputType:
+    def sample(self) -> Dict:
         ...
 
     @overload
-    def sample(self, n: int) -> List[InputType]:
+    def sample(self, n: int) -> List[Dict]:
         ...
 
-    def sample(self, n: int = None) -> Union[InputType, List[InputType]]:
+    def sample(self, n: int = None) -> Union[Dict, List[Dict]]:
         """Samples a point (dict of hyper-parameters) from the search space of this task.
 
         This point can then be passed as an input to the task to get the objective.
@@ -198,15 +195,7 @@ class ProfetTask(BenchmarkTask, Generic[InputType]):
             for point_tuple in self.space.sample(n, seed=self._np_rng_state)
         ]
 
-    def __call__(self, *args, **kwargs) -> List[Dict]:
-        if args:
-            if kwargs or len(args) != 1:
-                raise RuntimeError("Expect to get either a single pos arg, or only keyword args.")
-            return self.call(args[0])
-        else:
-            return self.call(kwargs)
-
-    def call(self, x: InputType) -> List[Dict]:
+    def call(self, *args, **kwargs) -> List[Dict]:
         """Get the value of the sampled objective function at the given point (hyper-parameters).
 
         If `self.with_grad` is set, also returns the gradient of the objective function with respect
@@ -227,10 +216,10 @@ class ProfetTask(BenchmarkTask, Generic[InputType]):
         ValueError
             If the input isn't of a supported type.
         """
-        logger.debug(f"received x: {x}")
-
+        if args:
+            raise RuntimeError("Expected to receive only keyword arguments.")
         # A bit of gymnastics to convert the params Dict into a PyTorch tensor.
-        trial = dict_to_trial(x, self._space)
+        trial = dict_to_trial(kwargs, self._space)
         point_tuple = trial_to_tuple(trial, self._space)
         flattened_point = flatten_dims(point_tuple, self._space)
         x_tensor = torch.as_tensor(flattened_point).type_as(self.h_tensor)
