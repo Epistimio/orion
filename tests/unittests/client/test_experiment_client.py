@@ -658,16 +658,7 @@ class TestSuggest:
             # algo will suggest once an already existing trial
             def amnesia(num=1):
                 """Suggest a new value and then always suggest the same"""
-                if amnesia.count == 0:
-                    value = [0]
-                else:
-                    value = [new_value]
-
-                amnesia.count += 1
-
-                return [format_trials.tuple_to_trial(value, experiment.space)]
-
-            amnesia.count = 0
+                return [format_trials.tuple_to_trial([0], experiment.space)]
 
             monkeypatch.setattr(experiment.algorithms, "suggest", amnesia)
 
@@ -676,14 +667,7 @@ class TestSuggest:
             with pytest.raises(WaitingForTrials):
                 trial = client.suggest()
 
-            trial = client.suggest()
-            assert trial.status == "reserved"
-            assert trial.params["x"] == new_value
-            assert amnesia.count == 2
-
-            assert len(experiment.fetch_trials()) == 2
-            assert client._pacemakers[trial.id].is_alive()
-            client._pacemakers.pop(trial.id).stop()
+            assert len(experiment.fetch_trials()) == 1
 
     def test_suggest_algo_opt_out(self, monkeypatch):
         """Verify that None is returned when algo cannot sample new trials (opting opt)"""
