@@ -31,7 +31,7 @@ class _Future(Future):
     def wait(self, timeout=None):
         try:
             self.future.result(timeout)
-        except TimeoutError:
+        except dask.distributed.TimeoutError:
             pass
         except Exception as e:
             self.exception = e
