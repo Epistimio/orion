@@ -1,9 +1,11 @@
+import concurrent.futures
 import dataclasses
 import logging
+import multiprocessing
 import pickle
 import traceback
 import uuid
-from concurrent.futures import ThreadPoolExecutor, TimeoutError, wait
+from concurrent.futures import ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from multiprocessing import Manager, Process, get_context
 from multiprocessing.pool import AsyncResult
@@ -47,8 +49,11 @@ class _Future(Future):
         self.cloudpickle = cloudpickle
 
     def get(self, timeout=None):
-        r = self.future.get(timeout)
-        return pickle.loads(r) if self.cloudpickle else r
+        try:
+            r = self.future.get(timeout)
+            return pickle.loads(r) if self.cloudpickle else r
+        except multiprocessing.context.TimeoutError as e:
+            raise TimeoutError() from e
 
     def wait(self, timeout=None):
         return self.future.wait(timeout)
@@ -95,7 +100,10 @@ class _ThreadFuture(Future):
         self.future = future
 
     def get(self, timeout=None):
-        return self.future.result(timeout)
+        try:
+            return self.future.result(timeout)
+        except concurrent.futures.TimeoutError as e:
+            raise TimeoutError() from e
 
     def wait(self, timeout=None):
         wait([self.future], timeout)

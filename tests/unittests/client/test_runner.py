@@ -85,6 +85,7 @@ def new_runner(idle_timeout, n_workers=2, client=None):
         trial_arg=[],
         on_error=None,
     )
+    runner.stat.report()
     return runner
 
 

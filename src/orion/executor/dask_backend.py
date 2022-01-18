@@ -1,18 +1,11 @@
 import traceback
-from multiprocessing import TimeoutError as PyTimeoutError
 from multiprocessing import Value
 
 from orion.executor.base import AsyncException, AsyncResult, BaseExecutor, Future
 
 try:
-    from dask.distributed import (
-        Client,
-        TimeoutError,
-        get_client,
-        get_worker,
-        rejoin,
-        secede,
-    )
+    import dask.distributed
+    from dask.distributed import Client, get_client, get_worker, rejoin, secede
 
     HAS_DASK = True
 except ImportError:
@@ -32,8 +25,8 @@ class _Future(Future):
 
         try:
             return self.future.result(timeout)
-        except TimeoutError as e:
-            raise PyTimeoutError from e
+        except dask.distributed.TimeoutError as e:
+            raise TimeoutError() from e
 
     def wait(self, timeout=None):
         try:
