@@ -34,10 +34,6 @@ class AsyncException:
 class Future:
     """Generic Future interface that is used to harmonized different future interface"""
 
-    def __init__(self, future):
-        self.future = future
-        self.exception = None
-
     def get(self, timeout=None):
         """Return the result when it arrives.
         If the remote call raised an exception then that exception will be reraised by get().

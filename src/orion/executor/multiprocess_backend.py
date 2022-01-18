@@ -166,10 +166,11 @@ class PoolExecutor(BaseExecutor):
         super().__init__(n_workers, **kwargs)
 
     def __enter__(self):
+        self.pool.__enter__()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.pool.shutdown()
+        self.pool.__exit__(exc_type, exc_value, traceback)
 
     def __del__(self):
         self.pool.shutdown()
