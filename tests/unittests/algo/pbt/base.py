@@ -9,7 +9,7 @@ import pytest
 
 from orion.algo.pbt.exploit import BaseExploit
 from orion.algo.pbt.explore import BaseExplore
-from orion.algo.pbt.pbt import PBT, Lineage, Lineages, compute_fidelities
+from orion.algo.pbt.pbt import PBT, LineageNode, Lineages, compute_fidelities
 from orion.core.io.space_builder import SpaceBuilder
 from orion.core.utils.flatten import flatten
 from orion.core.utils.pptree import print_tree
@@ -33,14 +33,16 @@ def build_full_tree(depth, child_per_parent=2, starting_objective=1):
         return TrialStub(id=f"id-{node_index}", objective=node_index)
 
     node_index = starting_objective
-    root = Lineage(create_node_item(node_index))
+    root = LineageNode(create_node_item(node_index))
     node_index += 1
     node_buffer = [root]
     next_nodes = []
     for i in range(depth - 1):
         for node in node_buffer:
             for k in range(child_per_parent):
-                next_nodes.append(Lineage(create_node_item(node_index), parent=node))
+                next_nodes.append(
+                    LineageNode(create_node_item(node_index), parent=node)
+                )
                 node_index += 1
         node_buffer = next_nodes
         next_nodes = []
