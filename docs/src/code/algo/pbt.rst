@@ -14,10 +14,10 @@ Population Based Training
 .. autoclass:: orion.algo.pbt.pbt.PBT
    :members:
 
-Lineage
--------
+LineageNode
+-----------
 
-.. autoclass:: orion.algo.pbt.pbt.Lineage
+.. autoclass:: orion.algo.pbt.pbt.LineageNode
    :members:
 
 Lineages
