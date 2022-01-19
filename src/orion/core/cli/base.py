@@ -9,6 +9,7 @@ import sys
 import textwrap
 
 import orion
+import orion.core
 from orion.core.io.database import DatabaseError
 from orion.core.utils.exceptions import (
     BranchingEvent,
@@ -71,6 +72,8 @@ class OrionArgsParser:
             format="%(asctime)-15s::%(levelname)s::%(name)s::%(message)s",
             level=levels.get(verbose, logging.DEBUG),
         )
+        if verbose >= 2:
+            print("Orion version : " + orion.core.__version__)
 
         if args["command"] is None:
             self.parser.parse_args(["--help"])
