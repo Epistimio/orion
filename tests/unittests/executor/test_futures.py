@@ -40,100 +40,107 @@ def function(exception, sleep_time, result):
 class TestFutures:
     """Test Future interface to make sure all backend behave the same"""
 
-    def test_future_get_ok(self, backend):
+    def test_futures(self, backend):
+        with backend(1) as exectuor:
+            self.get_ok(exectuor)
+            self.get_error(exectuor)
+            self.get_timeout(exectuor)
+
+            self.wait_ok(exectuor)
+            self.wait_error(exectuor)
+            self.wait_timeout(exectuor)
+
+            self.ready_ok(exectuor)
+            self.ready_error(exectuor)
+
+            self.successful_ok(exectuor)
+            self.successful_error(exectuor)
+
+    def get_ok(self, executor):
         """Get - OK"""
-        with backend(1) as executor:
-            future = executor.submit(function, None, 0, 1)
-            assert future.get() == 1
+        future = executor.submit(function, None, 0, 1)
+        assert future.get() == 1
 
-    def test_future_get_exception(self, backend):
+    def get_error(self, executor):
         """Get - Error"""
-        with backend(1) as executor:
-            future = executor.submit(function, FunctionException, 0, None)
 
-            with pytest.raises(FunctionException):
-                future.get()
+        future = executor.submit(function, FunctionException, 0, None)
 
-    def test_future_get_timeout(self, backend):
+        with pytest.raises(FunctionException):
+            future.get()
+
+    def get_timeout(self, executor):
         """Get - Timeout"""
-        with backend(1) as executor:
-            future = executor.submit(function, None, 1, 1)
+        future = executor.submit(function, None, 1, 1)
 
-            with pytest.raises(TimeoutError):
-                future.get(0.01) == 1
+        with pytest.raises(TimeoutError):
+            future.get(0.01) == 1
 
-    def test_future_wait_ok(self, backend):
+    def wait_ok(self, executor):
         """Wait - OK"""
-        with backend(1) as executor:
-            future = executor.submit(function, None, 0.1, 1)
+        future = executor.submit(function, None, 0.1, 1)
 
-            assert future.ready() is False
-            future.wait()
-            assert future.ready() is True
+        assert future.ready() is False
+        future.wait()
+        assert future.ready() is True
 
-    def test_future_wait_error(self, backend):
+    def wait_error(self, executor):
         """Wait - Error"""
-        with backend(1) as executor:
-            future = executor.submit(function, FunctionException, 0.1, None)
+        future = executor.submit(function, FunctionException, 0.1, None)
 
-            assert future.ready() is False
-            future.wait()
-            assert future.ready() is True
+        assert future.ready() is False
+        future.wait()
+        assert future.ready() is True
 
-            with pytest.raises(FunctionException):
-                future.get()
+        with pytest.raises(FunctionException):
+            future.get()
 
-    def test_future_wait_timeout(self, backend):
+    def wait_timeout(self, executor):
         """Wait - Timeout"""
-        with backend(1) as executor:
-            future = executor.submit(function, FunctionException, 1, None)
+        future = executor.submit(function, FunctionException, 1, None)
 
-            assert future.ready() is False
-            future.wait(0.01)
-            assert future.ready() is False
-            future.wait()
-            assert future.ready() is True
+        assert future.ready() is False
+        future.wait(0.01)
+        assert future.ready() is False
+        future.wait()
+        assert future.ready() is True
 
-    def test_future_ready_ok(self, backend):
+    def ready_ok(self, executor):
         """Ready - OK"""
-        with backend(1) as executor:
-            future = executor.submit(function, None, 1, 1)
-            assert future.ready() is False
-            future.wait()
-            assert future.ready() is True
+        future = executor.submit(function, None, 1, 1)
+        assert future.ready() is False
+        future.wait()
+        assert future.ready() is True
 
-    def test_future_ready_error(self, backend):
+    def ready_error(self, executor):
         """Ready - Error"""
-        with backend(1) as executor:
-            future = executor.submit(function, FunctionException, 0.1, None)
-            assert future.ready() is False
-            future.wait()
-            assert future.ready() is True
+        future = executor.submit(function, FunctionException, 0.1, None)
+        assert future.ready() is False
+        future.wait()
+        assert future.ready() is True
 
-            with pytest.raises(FunctionException):
-                future.get()
+        with pytest.raises(FunctionException):
+            future.get()
 
-    def test_future_successful_ok(self, backend):
+    def successful_ok(self, executor):
         """Successful - OK"""
-        with backend(1) as executor:
-            future = executor.submit(function, None, 1, 1)
+        future = executor.submit(function, None, 1, 1)
 
-            with pytest.raises(ValueError):
-                assert future.successful()
+        with pytest.raises(ValueError):
+            assert future.successful()
 
-            future.wait()
-            assert future.successful() is True
+        future.wait()
+        assert future.successful() is True
 
-    def test_future_sucessful_error(self, backend):
+    def successful_error(self, executor):
         """Successful - Error"""
-        with backend(1) as executor:
-            future = executor.submit(function, FunctionException, 1, None)
+        future = executor.submit(function, FunctionException, 1, None)
 
-            with pytest.raises(ValueError):
-                assert future.successful()
+        with pytest.raises(ValueError):
+            assert future.successful()
 
-            future.wait()
-            assert future.successful() is False
+        future.wait()
+        assert future.successful() is False
 
-            with pytest.raises(FunctionException):
-                future.get()
+        with pytest.raises(FunctionException):
+            future.get()
