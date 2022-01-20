@@ -1,7 +1,13 @@
 import traceback
 from multiprocessing import Value
 
-from orion.executor.base import AsyncException, AsyncResult, BaseExecutor, Future
+from orion.executor.base import (
+    AsyncException,
+    AsyncResult,
+    BaseExecutor,
+    ExecutorClosed,
+    Future,
+)
 
 try:
     import dask.distributed
@@ -105,7 +111,18 @@ class Dask(BaseExecutor):
         return results
 
     def submit(self, function, *args, **kwargs):
-        return _Future(self.client.submit(function, *args, **kwargs, pure=False))
+        try:
+            return _Future(self.client.submit(function, *args, **kwargs, pure=False))
+        except Exception as e:
+            if str(e).startswith(
+                "Tried sending message after closing.  Status: closed"
+            ):
+                raise ExecutorClosed() from e
+
+            raise
+
+    def __del__(self):
+        self.client.close()
 
     def __enter__(self):
         return self

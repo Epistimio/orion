@@ -10,6 +10,10 @@ Base executor class for the parallelisation of experiments.
 from orion.core.utils import GenericFactory
 
 
+class ExecutorClosed(Exception):
+    """Raised when submitting to a closed executor"""
+
+
 class AsyncResult:
     """Result of an async computation"""
 

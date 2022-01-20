@@ -4,7 +4,7 @@ from multiprocessing import TimeoutError
 
 import pytest
 
-from orion.executor.base import AsyncException
+from orion.executor.base import AsyncException, ExecutorClosed
 from orion.executor.dask_backend import Dask
 from orion.executor.multiprocess_backend import PoolExecutor
 from orion.executor.single_backend import SingleExecutor
@@ -43,6 +43,24 @@ def test_execute_function(backend):
     with backend(5) as executor:
         future = executor.submit(function, 1, 2, c=3)
         assert executor.wait([future]) == [7]
+
+    # Executor was closed at exit
+    with pytest.raises(ExecutorClosed):
+        executor.submit(function, 1, 2, c=3)
+
+
+@pytest.mark.parametrize("backend", backends)
+def test_execute_delete(backend):
+    executor = backend(5)
+
+    future = executor.submit(function, 1, 2, c=3)
+    assert executor.wait([future]) == [7]
+
+    executor.__del__()
+
+    # Executor was closed when deleted
+    with pytest.raises(ExecutorClosed):
+        executor.submit(function, 1, 2, c=3)
 
 
 @pytest.mark.parametrize("backend", backends)

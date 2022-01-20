@@ -7,7 +7,13 @@ Executor without parallelism for debugging
 import functools
 import traceback
 
-from orion.executor.base import AsyncException, AsyncResult, BaseExecutor, Future
+from orion.executor.base import (
+    AsyncException,
+    AsyncResult,
+    BaseExecutor,
+    ExecutorClosed,
+    Future,
+)
 
 
 class _Future(Future):
@@ -60,6 +66,13 @@ class SingleExecutor(BaseExecutor):
 
     def __init__(self, n_workers=1, **config):
         super(SingleExecutor, self).__init__(n_workers=1)
+        self.closed = False
+
+    def __del__(self):
+        self.closed = True
+
+    def __exit__(self, *args, **kwargs):
+        self.closed = True
 
     def wait(self, futures):
         return [future.get() for future in futures]
@@ -78,4 +91,7 @@ class SingleExecutor(BaseExecutor):
         return results
 
     def submit(self, function, *args, **kwargs):
+        if self.closed:
+            raise ExecutorClosed()
+
         return _Future(functools.partial(function, *args, **kwargs))

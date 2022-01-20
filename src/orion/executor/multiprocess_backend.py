@@ -14,7 +14,13 @@ from queue import Empty
 
 import cloudpickle
 
-from orion.executor.base import AsyncException, AsyncResult, BaseExecutor, Future
+from orion.executor.base import (
+    AsyncException,
+    AsyncResult,
+    BaseExecutor,
+    ExecutorClosed,
+    Future,
+)
 
 log = logging.getLogger(__name__)
 
@@ -183,7 +189,18 @@ class PoolExecutor(BaseExecutor):
         super(PoolExecutor, self).__setstate__(state)
 
     def submit(self, function, *args, **kwargs):
-        return self._submit_cloudpickle(function, *args, **kwargs)
+        try:
+            return self._submit_cloudpickle(function, *args, **kwargs)
+        except ValueError as e:
+            if str(e).startswith("Pool not running"):
+                raise ExecutorClosed() from e
+
+            raise
+        except RuntimeError as e:
+            if str(e).startswith("cannot schedule new futures after shutdown"):
+                raise ExecutorClosed() from e
+
+            raise
 
     def _submit_cloudpickle(self, function, *args, **kwargs):
         payload = cloudpickle.dumps((function, args, kwargs))
