@@ -22,7 +22,7 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.worker.trial import Trial
-from orion.executor.base import executor_factory
+from orion.executor.base import ExecutorClosed, executor_factory
 from orion.executor.joblib_backend import Joblib
 from orion.storage.base import get_storage
 from orion.testing import create_experiment, mock_space_iterate
@@ -963,7 +963,7 @@ def test_executor_gets_created_if_not_provided():
     assert client._executor_owner is False, "Client does not own the executor"
 
     # executor was closed and cannot be used
-    with pytest.raises(ValueError):
+    with pytest.raises(ExecutorClosed):
         executor.submit(function, 2, 2)
 
 
