@@ -67,12 +67,22 @@ class SingleExecutor(BaseExecutor):
     def __init__(self, n_workers=1, **config):
         super(SingleExecutor, self).__init__(n_workers=1)
         self.closed = False
+        self.nested = 0
 
     def __del__(self):
-        self.closed = True
+        self.close()
+
+    def __enter__(self):
+        self.nested += 1
+        return self
 
     def __exit__(self, *args, **kwargs):
-        self.closed = True
+        self.close()
+
+    def close(self):
+        """Prevent user from submitting work after closing."""
+        if self.nested <= 1:
+            self.closed = True
 
     def wait(self, futures):
         return [future.get() for future in futures]
