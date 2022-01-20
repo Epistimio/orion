@@ -68,6 +68,10 @@ class _Future(Future):
         return self.future.ready()
 
     def successful(self):
+        # Python 3.6 raise assertion error
+        if not self.ready():
+            raise ValueError()
+
         return self.future.successful()
 
 
