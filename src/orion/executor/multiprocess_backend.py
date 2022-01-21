@@ -134,12 +134,6 @@ class ThreadPool:
     def __init__(self, n_workers):
         self.pool = ThreadPoolExecutor(n_workers)
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.pool.shutdown()
-
     def shutdown(self):
         self.pool.shutdown()
 
