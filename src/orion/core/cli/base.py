@@ -19,6 +19,8 @@ from orion.core.utils.exceptions import (
     NoNameError,
 )
 
+logger = logging.getLogger(__name__)
+
 CLI_DOC_HEADER = "Oríon CLI for asynchronous distributed optimization"
 
 
@@ -72,8 +74,7 @@ class OrionArgsParser:
             format="%(asctime)-15s::%(levelname)s::%(name)s::%(message)s",
             level=levels.get(verbose, logging.DEBUG),
         )
-        if verbose >= 2:
-            print("Orion version : " + orion.core.__version__)
+        logger.debug("Orion version : " + orion.core.__version__)
 
         if args["command"] is None:
             self.parser.parse_args(["--help"])
