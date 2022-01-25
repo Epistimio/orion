@@ -14,7 +14,7 @@ except ImportError:
     from typing_extensions import Final  # type: ignore
 
 
-class SvmTask(ProfetTask):
+class ProfetSvmTask(ProfetTask):
     """Simulated Task consisting in training a Support Vector Machine."""
 
     @dataclass

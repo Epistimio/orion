@@ -14,7 +14,7 @@ from orion.algo.base import OptimizationAlgorithm
 
 from orion.benchmark.assessment import AverageResult
 from orion.benchmark.benchmark_client import get_or_create_benchmark
-from orion.benchmark.task.profet import FcNetTask, ForresterTask, SvmTask, XgBoostTask
+from orion.benchmark.task.profet import ProfetFcNetTask, ProfetForresterTask, ProfetSvmTask, ProfetXgBoostTask
 from orion.benchmark.task.profet.profet_task import MetaModelConfig, ProfetTask
 
 try:
@@ -39,7 +39,7 @@ class ProfetExperimentConfig:
 
     # The type of Profet task to create.
     task_type: Type[BenchmarkTask] = choice(  # type: ignore
-        {"svm": SvmTask, "fcnet": FcNetTask, "xgboost": XgBoostTask, "forrester": ForresterTask}
+        {"svm": ProfetSvmTask, "fcnet": ProfetFcNetTask, "xgboost": ProfetXgBoostTask, "forrester": ProfetForresterTask}
     )
 
     # Name of the experiment.

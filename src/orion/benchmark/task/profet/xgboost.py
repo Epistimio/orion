@@ -13,7 +13,7 @@ except ImportError:
     from typing_extensions import Final
 
 
-class XgBoostTask(ProfetTask):
+class ProfetXgBoostTask(ProfetTask):
     """Simulated Task consisting in fitting a Extreme-Gradient Boosting predictor."""
 
     @dataclass

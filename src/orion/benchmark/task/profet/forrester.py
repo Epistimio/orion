@@ -24,7 +24,7 @@ except ImportError:
 logger = get_logger(__name__)
 
 
-class ForresterTask(ProfetTask):
+class ProfetForresterTask(ProfetTask):
     """Simulated Task consisting in training a model on a variant of the Forrester function. """
 
     @dataclass

@@ -14,7 +14,7 @@ except ImportError:
     from typing_extensions import Final
 
 
-class FcNetTask(ProfetTask):
+class ProfetFcNetTask(ProfetTask):
     """Simulated Task consisting in training a fully-connected network."""
 
     @dataclass
