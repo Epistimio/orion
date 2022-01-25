@@ -16,6 +16,10 @@ from .conftest import REAL_PROFET_DATA_DIR, c_max, c_min, is_nonempty_dir, y_max
 
 logger = get_logger(__name__)
 
+_devices = ["cpu"]
+if torch.cuda.is_available():
+    _devices.append("cuda")
+
 
 class ProfetTaskTests:
     """Base class for testing Profet tasks."""
@@ -94,21 +98,33 @@ class ProfetTaskTests:
         assert real_c.max() <= max_c and fake_c.max() <= max_c
 
     @pytest.mark.timeout(30)
+    @pytest.mark.parametrize("device_str", _devices)
     def test_attributes(
-        self, profet_train_config: MetaModelConfig, profet_input_dir: Path, tmp_path_factory,
+        self,
+        profet_train_config: MetaModelConfig,
+        profet_input_dir: Path,
+        device_str: str,
+        tmp_path_factory,
     ):
         """Simple test: Check that a task can be created and that its attributes are used and set
         correctly.
         """
         max_trials = 123
         checkpoint_dir: Path = tmp_path_factory.mktemp("checkpoints")
+        device = torch.device(device_str)
         task = self.Task(
             max_trials=max_trials,
             model_config=profet_train_config,
             input_dir=profet_input_dir,
             checkpoint_dir=checkpoint_dir,
+            device=device,
         )
         assert task.max_trials == max_trials
+        assert task.input_dir == profet_input_dir
+        assert task.checkpoint_dir == checkpoint_dir
+        assert isinstance(task.device, torch.device)
+        assert task.device == device
+        assert task.device.type == device_str
         # NOTE: The class attributes might differ per task, but that's ok.
         assert isinstance(task.model_config, self.Task.ModelConfig)
         assert asdict(task.model_config) == asdict(profet_train_config)
