@@ -15,7 +15,18 @@ import numpy as np
 class Forrester(BenchmarkTask):
     """ Task based on the Forrester function, as described in https://arxiv.org/abs/1905.12982
     
-    $ f(x) = ((\\alpha x - 2)^2) sin(\\beta x - 4) $
+    .. math::
+    f(x) = ((\\alpha x - 2)^2) sin(\\beta x - 4)
+    ..
+
+    Parameters
+        ----------
+        max_trials : int
+            Maximum number of trials for this task.
+        alpha : float, optional
+            Alpha parameter used in the above equation, by default 0.5
+        beta : float, optional
+            Beta parameter used in the above equation, by default 0.5
     """
 
     def __init__(self, max_trials: int, alpha: float = 0.5, beta: float = 0.5):
