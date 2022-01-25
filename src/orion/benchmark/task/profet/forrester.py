@@ -7,9 +7,6 @@ f(x) = ((\\alpha x - 2)^2) sin(\\beta x - 4)
 This task uses a meta-model that is trained using a dataset of points from different functions, each
 with different values of alpha and beta. This meta-model can then be used to sample "fake" points
 from a given forrester function.
-
-TODO: Is there really a use for this? The "base" task is already a synthetic task, why would we have
-a meta-model for a synthetic task, if we can just run the original task very quickly & efficiently?
 """
 from dataclasses import dataclass
 from logging import getLogger as get_logger
