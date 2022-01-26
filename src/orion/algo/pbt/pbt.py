@@ -64,18 +64,21 @@ class PBT(BaseAlgorithm):
     so that the user script can resume execution from model parameters of original trial.
 
     It is important that the weights of models trained for each trial are saved in the corresponding
-    directory at path `trial.working_dir`. The file name does not matter. The entire directory is
-    copied to a new `trial.working_dir` when PBT selects a good model and explore new
+    directory at path ``trial.working_dir``. The file name does not matter. The entire directory is
+    copied to a new ``trial.working_dir`` when PBT selects a good model and explore new
     hyperparameters. The new trial can be resumed by the user by loading the weigths found in the
-    freshly copied `new_trial.working_dir`, and saved back at the same path at end of trial
-    execution.
+    freshly copied ``new_trial.working_dir``, and saved back at the same path at end of trial
+    execution. To access ``trial.working_dir`` from Oríon's commandline API, see documentation at
+    https://orion.readthedocs.io/en/stable/user/script.html#command-line-templating. To access
+    ``trial.working_dir`` from Oríon's Python API, set argument ``trial_arg="trial"`` when executing
+    method :py:meth:`orion.client.experiment.ExperimentClient.workon`.
 
     The number of fidelity levels is determined by the argument ``generations``. The lowest
     and highest fidelity levels, and the distrubition, is determined by the search space's
     dimension that will have a prior ``fidelity(low, high, base)``, where ``base`` is the
     logarithm base of the dimension. Original PBT algorithm uses a base of 1.
 
-    PBT will try to return as many trials as possible when calling ``suggest(num)``, up to `num`.
+    PBT will try to return as many trials as possible when calling ``suggest(num)``, up to ``num``.
     When ``population_size`` trials are sampled and more trials are requested, it will try to
     generate new trials by promoting or forking existing trials in a queue. This queue will get
     filled when calling ``observe(trials)`` on completed or broken trials.
