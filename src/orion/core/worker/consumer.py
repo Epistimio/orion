@@ -35,13 +35,6 @@ class ExecutionError(Exception):
         self.return_code = return_code
 
 
-def _exec_error(return_code):
-    """Pickle helper"""
-    err = ExecutionError()
-    err.return_code = return_code
-    return err
-
-
 class Consumer(object):
     """Consume a trial by using it to initialize a black-box box to evaluate it.
 
@@ -282,4 +275,4 @@ class Consumer(object):
         log.debug(f"Script finished with return code {return_code}")
 
         if return_code != 0:
-            raise _exec_error(return_code)
+            raise ExecutionError(return_code)
