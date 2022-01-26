@@ -522,11 +522,8 @@ class Experiment:
 
     @property
     def stats(self):
-        """Calculate a stats dictionary for this particular experiment.
-
-        Returns
-        -------
-        stats : :py:class:`orion.core.worker.experiment.ExperimentStats`
+        """Calculate :py:class:`orion.core.worker.experiment.ExperimentStats` for this particular
+        experiment.
         """
         completed_trials = self.fetch_trials_by_status("completed")
 
