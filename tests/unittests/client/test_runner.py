@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 """Example usage and tests for :mod:`orion.client.experiment`."""
 import copy
+import os
+import signal
 import time
+from multiprocessing import Process
 from threading import Thread
 
 import pytest
@@ -10,7 +13,9 @@ import pytest
 from orion.client.runner import LazyWorkers, Runner
 from orion.core.utils.exceptions import (
     BrokenExperiment,
+    CompletedExperiment,
     InvalidResult,
+    ReservationRaceCondition,
     WaitingForTrials,
 )
 from orion.core.worker.trial import Trial
@@ -18,12 +23,12 @@ from orion.executor.base import executor_factory
 from orion.testing import create_experiment
 
 
-def new_trial(value):
+def new_trial(value, sleep=0.01):
     """Generate a dummy new trial"""
     return Trial(
         params=[
             dict(name="lhs", type="real", value=value),
-            dict(name="rhs", type="real", value=value),
+            dict(name="sleep", type="real", value=sleep),
         ]
     )
 
@@ -65,9 +70,10 @@ class InvalidResultClient(FakeClient):
         raise InvalidResult()
 
 
-def function(lhs, rhs):
+def function(lhs, sleep):
     """Simple function for testing purposes."""
-    return lhs + rhs
+    time.sleep(sleep)
+    return lhs + sleep
 
 
 def new_runner(idle_timeout, n_workers=2, client=None):
@@ -116,6 +122,43 @@ def test_stop_after_max_trial_reached():
 
     status = ["completed" for i in range(max_trials)]
     assert client.status == status
+
+
+def test_interrupted_gather():
+    count = 10
+
+    runner = new_runner(0.01, n_workers=16)
+    runner.fct = function
+    client = runner.client
+
+    client.trials.extend([new_trial(i) for i in range(count, -1, -1)])
+
+    def bad_async(*args, **kwargs):
+        raise KeyboardInterrupt()
+
+    client.executor.async_get = bad_async
+
+    with pytest.raises(KeyboardInterrupt):
+        runner.run()
+
+    status = ["interrupted" for i in range(count)]
+    assert client.status == status
+
+
+failures = [WaitingForTrials, ReservationRaceCondition, CompletedExperiment]
+
+
+@pytest.mark.parametrize("failure", failures)
+def test_suggest_failures_are_handled(failure):
+    runner = new_runner(0.01, n_workers=16)
+    client = runner.client
+    client.suggest_error = failure
+
+    # The Suggest exception got handled
+    # instead we get a LazyWorker exception
+    # because not work has been queued for some time
+    with pytest.raises(LazyWorkers):
+        runner.run()
 
 
 def test_multi_results_with_failure():

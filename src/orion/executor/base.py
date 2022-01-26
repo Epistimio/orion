@@ -32,6 +32,7 @@ class AsyncException:
 
     @property
     def value(self):
+        """Raise the exception"""
         raise self.exception
 
 

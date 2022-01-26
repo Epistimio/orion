@@ -1,5 +1,4 @@
 import traceback
-from multiprocessing import Value
 
 from orion.executor.base import (
     AsyncException,

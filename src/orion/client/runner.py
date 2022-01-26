@@ -311,7 +311,7 @@ class Runner:
         # Sanity check
         for _, trial in self.pending_trials.items():
             try:
-                self.client.release(trial)
+                self.client.release(trial, status="interrupted")
             except AlreadyReleased:
                 pass
 
