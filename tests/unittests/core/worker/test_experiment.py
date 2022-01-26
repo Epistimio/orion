@@ -553,13 +553,12 @@ def test_experiment_stats():
         exp._id = cfg.trials[0]["experiment"]
         exp.metadata = {"datetime": datetime.datetime.utcnow()}
         stats = exp.stats
-        assert stats["trials_completed"] == NUM_COMPLETED
-        assert stats["best_trials_id"] == cfg.trials[3]["_id"]
-        assert stats["best_evaluation"] == 0
-        assert stats["start_time"] == exp.metadata["datetime"]
-        assert stats["finish_time"] == cfg.trials[0]["end_time"]
-        assert stats["duration"] == stats["finish_time"] - stats["start_time"]
-        assert len(stats) == 6
+        assert stats.trials_completed == NUM_COMPLETED
+        assert stats.best_trials_id == cfg.trials[3]["_id"]
+        assert stats.best_evaluation == 0
+        assert stats.start_time == exp.metadata["datetime"]
+        assert stats.finish_time == cfg.trials[0]["end_time"]
+        assert stats.duration == stats.finish_time - stats.start_time
 
 
 def test_experiment_pickleable():
