@@ -74,7 +74,7 @@ class OrionArgsParser:
             format="%(asctime)-15s::%(levelname)s::%(name)s::%(message)s",
             level=levels.get(verbose, logging.DEBUG),
         )
-        logger.debug("Orion version : %s",orion.core.__version__)
+        logger.debug("Orion version : %s", orion.core.__version__)
 
         if args["command"] is None:
             self.parser.parse_args(["--help"])
