@@ -49,9 +49,9 @@ class ExperimentStats:
     trials_completed: int
     best_trials_id: int
     best_evaluation: float
-    start_time: field(default_factory=datetime.datetime)
-    finish_time: field(default_factory=datetime.datetime)
-    duration: field(default_factory=datetime.timedelta)
+    start_time: datetime.datetime = field(default_factory=datetime.datetime)
+    finish_time: datetime.datetime = field(default_factory=datetime.datetime)
+    duration: datetime.timedelta = field(default_factory=datetime.timedelta)
 
 
 # pylint: disable=too-many-public-methods
