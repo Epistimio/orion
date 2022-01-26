@@ -187,28 +187,8 @@ class ExperimentClient:
 
     @property
     def stats(self):
-        """Calculate a stats dictionary for this particular experiment.
-
-        Returns
-        -------
-        stats : dict
-
-        Stats
-        -----
-        trials_completed : int
-           Number of completed trials
-        best_trials_id : int
-           Unique identifier of the :class:`orion.core.worker.trial.Trial` object in the database
-           which achieved the best known objective result.
-        best_evaluation : float
-           Evaluation score of the best trial
-        start_time : `datetime.datetime`
-           When Experiment was first dispatched and started running.
-        finish_time : `datetime.datetime`
-           When Experiment reached terminating condition and stopped running.
-        duration : `datetime.timedelta`
-           Elapsed time.
-
+        """Calculate :py:class:`orion.core.worker.experiment.ExperimentStats` for this particular
+        experiment.
         """
         return self._experiment.stats
 

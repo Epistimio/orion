@@ -62,5 +62,5 @@ def test_result_reproducibility(monkeypatch):
     )
 
     experiment = create_experiment(name="scikit-iris-tutorial")
-    assert "best_evaluation" in experiment.stats
-    assert experiment.stats["best_evaluation"] == 0.6666666666666667
+    assert experiment.stats is not None
+    assert experiment.stats.best_evaluation == 0.6666666666666667
