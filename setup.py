@@ -70,6 +70,7 @@ setup_args = dict(
         ],
     },
     install_requires=[
+        "dataclasses",
         "PyYAML",
         "pymongo>=3",
         "numpy",
