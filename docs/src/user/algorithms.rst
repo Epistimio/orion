@@ -212,6 +212,69 @@ Configuration
                      executed_times, compute_bracket_idx
 
 
+.. _PBT:
+
+Population Based Training (PBT)
+-------------------------------
+
+Population based training is an evolutionary algorithm that evolve trials
+from low fidelity levels to high fidelity levels (ex: number of epochs), reusing
+the model's parameters along the way. This has the effect of creating hyperparameter
+schedules through the fidelity levels.
+
+See documentation below for more information on the algorithm and how to use it.
+
+.. note::
+
+   Current implementation does not support more than one fidelity dimension.
+
+Configuration
+~~~~~~~~~~~~~
+
+.. code-block:: yaml
+
+  experiment:
+
+    strategy: StubParallelStrategy
+
+    algorithms:
+      pbt:
+        population_size: 50
+        generations: 10
+        fork_timeout: 60
+        exploit:
+          of_type: PipelineExploit
+          exploit_configs:
+            - of_type: BacktrackExploit
+              min_forking_population: 5
+              truncation_quantile: 0.9
+              candidate_pool_ratio: 0.2
+            - of_type: TruncateExploit
+              min_forking_population: 5
+              truncation_quantile: 0.8
+              candidate_pool_ratio: 0.2
+         explore:
+           of_type: PipelineExplore
+           explore_configs:
+             - of_type: ResampleExplore
+               probability: 0.2
+             - of_type: PerturbExplore
+               factor: 1.2
+               volatility: 0.0001
+
+
+
+.. note::
+   Notice the additional ``strategy`` in configuration which is not mandatory for most other
+   algorithms. See :ref:`StubParallelStrategy` for more information.
+
+
+.. autoclass:: orion.algo.pbt.pbt.PBT
+   :noindex:
+   :exclude-members: space, state_dict, set_state, suggest, observe, is_done, seed_rng,
+                     configuration, requires_type, rng, register
+
+
 
 .. _tpe-algorithm:
 

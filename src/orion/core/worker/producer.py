@@ -112,7 +112,9 @@ class Producer(object):
         """Register locally all param hashes of trials"""
         for trial in trials:
             self.params_hashes.add(
-                Trial.compute_trial_hash(trial, ignore_experiment=True, ignore_lie=True)
+                Trial.compute_trial_hash(
+                    trial, ignore_experiment=True, ignore_lie=True, ignore_parent=True
+                )
             )
 
     def update(self):

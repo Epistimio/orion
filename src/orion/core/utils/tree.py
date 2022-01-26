@@ -1,15 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Tree data structure for the experiment version control system
-=============================================================
+Tree data structure
+===================
 
-Tree data structure for the experiment version control system
-
-Experiment version control requires building trees of the experiments so
-that we can fetch trials from one experiment to another or navigate from
-one experiment to another to visualise different statistics.
-
-TreeNode and tree iterators support the tree data structure of the experiment version control.
 TreeNode is a generic class which can carry arbitrary python objects. It comes with basic methods to
 set parent and children. A method `map` allows to apply functions recursively on the tree in a
 generic manner.
@@ -23,7 +16,7 @@ class PreOrderTraversal(object):
 
     Attributes
     ----------
-    stack: list of `orion.core.evc.tree.TreeNode`
+    stack: list of `orion.core.utils.tree.TreeNode`
         Nodes logged during iteration
 
     """
@@ -56,9 +49,9 @@ class DepthFirstTraversal(object):
 
     Attributes
     ----------
-    stack: list of `orion.core.evc.tree.TreeNode`
+    stack: list of `orion.core.utils.tree.TreeNode`
         Nodes logged during iteration
-    seen: set of `orion.core.evc.tree.TreeNode`
+    seen: set of `orion.core.utils.tree.TreeNode`
         Nodes which have been returned during iteration
 
     """
@@ -113,18 +106,18 @@ class TreeNode(object):
     Tree of nodes are iterable, by default with preorder traversal.
 
     .. seealso::
-        `orion.core.evc.tree.PreOrderTraversal`
-        `orion.core.evc.tree.DepthFirstTraversal`
+        `orion.core.utils.tree.PreOrderTraversal`
+        `orion.core.utils.tree.DepthFirstTraversal`
 
     Attributes
     ----------
     item: object
         Can be anything
-    parent: None or instance of `orion.core.evc.tree.TreeNode`
+    parent: None or instance of `orion.core.utils.tree.TreeNode`
         The parent of the current node, None if the current node is the root.
-    children: None or list of instances of `orion.core.evc.tree.TreeNode`
+    children: None or list of instances of `orion.core.utils.tree.TreeNode`
         The children of the curent node.
-    root: instance of `orion.core.evc.tree.TreeNode`
+    root: instance of `orion.core.utils.tree.TreeNode`
         The top node of the current tree. The root node returns itself.
 
     Examples
@@ -185,7 +178,7 @@ class TreeNode(object):
         """Initialize node with item, parent and children
 
         .. seealso::
-            :class:`orion.core.evc.tree.TreeNode` for information about the attributes
+            :class:`orion.core.utils.tree.TreeNode` for information about the attributes
         """
         self._item = item
         self._parent = None
@@ -226,7 +219,7 @@ class TreeNode(object):
         dropping this current node from the previous parent's children list.
 
         .. seealso::
-            `orion.core.evc.tree.TreeNode.drop_parent`
+            `orion.core.utils.tree.TreeNode.drop_parent`
         """
         if node is self.parent:
             return
@@ -272,7 +265,7 @@ class TreeNode(object):
         Note that added children will have their parent set to the current node as well.
 
         .. seealso::
-            `orion.core.evc.tree.TreeNode.drop_children`
+            `orion.core.utils.tree.TreeNode.drop_children`
         """
         for child in nodes:
             if child is not None and not isinstance(child, TreeNode):
@@ -296,6 +289,43 @@ class TreeNode(object):
             return self
 
         return self.parent.root
+
+    @property
+    def leafs(self):
+        """Get the leafs of the tree"""
+        leafs = []
+        for child in self.children:
+            leafs += child.leafs
+
+        if not leafs:
+            return [self]
+
+        return leafs
+
+    @property
+    def node_depth(self):
+        """The depth of the node in the tree with respect to the root node."""
+        if self.parent:
+            return self.parent.node_depth + 1
+
+        return 0
+
+    def get_nodes_at_depth(self, depth):
+        """Returns a list of nodes at the corresponding depth.
+
+        Depth is relative to current node. To get nodes at a depth relative
+        to the root, use ``node.root.get_nodes_at_depth(depth)``.
+        """
+
+        def has_depth(node, children):
+            if node.node_depth - self.node_depth == depth:
+                return [node], None
+
+            return [], children
+
+        nodes = self.map(has_depth, self.children)
+
+        return sum([node.item for node in nodes], [])
 
     def map(self, function, node):
         r"""Apply a function recursively on the tree

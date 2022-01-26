@@ -15,6 +15,7 @@ from contextlib import contextmanager
 import orion.core
 import orion.core.utils.format_trials as format_trials
 from orion.core.io.database import DuplicateKeyError
+from orion.core.utils import backward
 from orion.core.utils.exceptions import (
     BrokenExperiment,
     CompletedExperiment,
@@ -24,6 +25,7 @@ from orion.core.utils.exceptions import (
     WaitingForTrials,
 )
 from orion.core.utils.flatten import flatten, unflatten
+from orion.core.utils.working_dir import SetupWorkingDir
 from orion.core.worker.trial import Trial, TrialCM
 from orion.core.worker.trial_pacemaker import TrialPacemaker
 from orion.executor.base import executor_factory
@@ -201,6 +203,11 @@ class ExperimentClient:
     def working_dir(self):
         """Working directory of the experiment."""
         return self._experiment.working_dir
+
+    @working_dir.setter
+    def working_dir(self, value):
+        """Working directory of the experiment."""
+        self._experiment.working_dir = value
 
     @property
     def producer(self):
@@ -777,20 +784,22 @@ class ExperimentClient:
             self._experiment.max_trials = max_trials
             self._experiment.algorithms.algorithm.max_trials = max_trials
 
-        trials = self.executor.wait(
-            self.executor.submit(
-                self._optimize,
-                fct,
-                pool_size,
-                reservation_timeout,
-                max_trials_per_worker,
-                max_broken,
-                trial_arg,
-                on_error,
-                **kwargs,
+        with SetupWorkingDir(self):
+
+            trials = self.executor.wait(
+                self.executor.submit(
+                    self._optimize,
+                    fct,
+                    pool_size,
+                    reservation_timeout,
+                    max_trials_per_worker,
+                    max_broken,
+                    trial_arg,
+                    on_error,
+                    **kwargs,
+                )
+                for _ in range(n_workers)
             )
-            for _ in range(n_workers)
-        )
 
         return sum(trials)
 
@@ -814,6 +823,7 @@ class ExperimentClient:
                 with self.suggest(
                     pool_size=pool_size, timeout=reservation_timeout
                 ) as trial:
+                    backward.ensure_trial_working_dir(self, trial)
 
                     kwargs.update(flatten(trial.params))
 
